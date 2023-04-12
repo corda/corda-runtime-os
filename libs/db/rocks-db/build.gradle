@@ -1,0 +1,37 @@
+plugins {
+    id 'corda.common-library'
+    id 'corda.common-publishing'
+}
+
+dependencies {
+    compileOnly "org.osgi:osgi.annotation"
+    compileOnly "org.osgi:osgi.core"
+    compileOnly "org.osgi:org.osgi.service.component.annotations"
+
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation "net.corda:corda-config-schema"
+
+    implementation project(':libs:configuration:configuration-core')
+    implementation project(':libs:lifecycle:lifecycle')
+    implementation project(':libs:messaging:messaging')
+    implementation project(':libs:utilities')
+
+    implementation "org.slf4j:slf4j-api:$slf4jVersion"
+    implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
+
+    implementation "org.rocksdb:rocksdbjni:$rocksdbVersion"
+}
+
+
+def jar = tasks.named('jar', Jar) {
+    archiveBaseName = 'corda-rocks-db'
+
+    bundle {
+        bnd """\
+Bundle-Name: Corda RocksDB
+Bundle-SymbolicName: \${project.group}.rocks-db
+
+-includeresource: @rocksdbjni-${rocksdbVersion}.jar
+"""
+    }
+}

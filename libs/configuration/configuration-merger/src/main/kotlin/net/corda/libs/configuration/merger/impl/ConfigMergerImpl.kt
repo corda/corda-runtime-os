@@ -1,10 +1,12 @@
 package net.corda.libs.configuration.merger.impl
 
+import com.typesafe.config.ConfigValueFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.libs.configuration.merger.ConfigMerger
 import net.corda.messagebus.api.configuration.BusConfigMerger
 import net.corda.messagebus.api.configuration.getConfigOrEmpty
+import net.corda.schema.configuration.BootConfig
 import net.corda.schema.configuration.BootConfig.BOOT_DB
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -17,7 +19,10 @@ class ConfigMergerImpl @Activate constructor(
 ) : ConfigMerger {
 
     override fun getMessagingConfig(bootConfig: SmartConfig, messagingConfig: SmartConfig?): SmartConfig {
-        return busConfigMerger.getMessagingConfig(bootConfig, messagingConfig)
+        val busSpecificConfigMerge = busConfigMerger.getMessagingConfig(bootConfig, messagingConfig)
+        return  busSpecificConfigMerge.withValue(BootConfig.BOOT_WORKSPACE_DIR, ConfigValueFactory.fromAnyRef(bootConfig.getString
+            (BootConfig.BOOT_WORKSPACE_DIR)))
+
     }
 
     override fun getDbConfig(bootConfig: SmartConfig, dbConfig: SmartConfig?): SmartConfig {

@@ -1,5 +1,10 @@
 package net.corda.messaging.subscription.consumer
 
+import java.time.Clock
+import java.time.Duration
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.Executors
 import net.corda.lifecycle.Resource
 import net.corda.messagebus.api.CordaTopicPartition
 import net.corda.messagebus.api.consumer.CordaConsumer
@@ -12,11 +17,6 @@ import net.corda.messaging.utils.tryGetResult
 import net.corda.schema.Schemas.getStateAndEventStateTopic
 import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
-import java.time.Clock
-import java.time.Duration
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.Executors
 
 @Suppress("LongParameterList", "TooManyFunctions")
 internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
@@ -24,7 +24,7 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
     override val eventConsumer: CordaConsumer<K, E>,
     override val stateConsumer: CordaConsumer<K, S>,
     private val partitionState: StateAndEventPartitionState<K, S>,
-    private val stateAndEventListener: StateAndEventListener<K, S>?
+    private val stateAndEventListener: StateAndEventListener<K, S>?,
 ) : StateAndEventConsumer<K, S, E>, Resource {
 
     companion object {
@@ -127,7 +127,7 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
 
     private fun updateStateConsumerAssignment(
         partitions: Collection<CordaTopicPartition>,
-        operation: StatePartitionOperation
+        operation: StatePartitionOperation,
     ) {
         val statePartitions = partitions.map {
             it.toStatePartition()
@@ -145,7 +145,7 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
         currentStates.forEach {
             val state = it.value[key]
             if (state != null) {
-                return state.second
+                return state
             }
         }
 
@@ -201,6 +201,7 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
                     log.debug { "Received ${it.size} events on keys ${it.joinToString { it.key.toString() }}" }
                 }
             }
+
             partitionsToSync.isEmpty() -> {
                 // Call poll more frequently to trigger a rebalance of the event consumer.
                 eventConsumer.poll(EVENT_POLL_TIMEOUT).also {
@@ -214,6 +215,7 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
                     }
                 }
             }
+
             System.currentTimeMillis() > pollIntervalCutoff -> {
                 // Poll here to keep us in the consumer group.
                 pollIntervalCutoff = getNextPollIntervalCutoff()
@@ -228,6 +230,7 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
                     }
                 }
             }
+
             else -> {
                 listOf()
             }
@@ -269,13 +272,15 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
     private fun pollWithCleanUpAndExceptionOnRebalance(
         message: String,
         pausedPartitions: Set<CordaTopicPartition>,
-        cleanUp: () -> Unit
+        cleanUp: () -> Unit,
     ) {
         partitionState.dirty = false
         eventConsumer.poll(PAUSED_POLL_TIMEOUT).forEach { event ->
             // Should not happen, the warning is left in place for easier troubleshooting in case it does.
-            log.warn("Polling from paused eventConsumer has lost event with key: ${event.key}, this will likely " +
-                    "cause execution problems for events with this id")
+            log.warn(
+                "Polling from paused eventConsumer has lost event with key: ${event.key}, this will likely " +
+                        "cause execution problems for events with this id"
+            )
         }
 
         // Rebalance occurred: give up, nothing can be assumed at this point.
@@ -322,20 +327,8 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
     }
 
     private fun updateInMemoryState(state: CordaConsumerRecord<K, S>) {
-        currentStates[state.partition]?.compute(state.key) { _, currentState ->
-            if (currentState == null || currentState.first <= state.timestamp) {
-                val value = state.value
-                if (value == null) {
-                    // Removes this state from the map
-                    null
-                } else {
-                    // Replaces/adds the new state
-                    Pair(state.timestamp, value)
-                }
-            } else {
-                // Keeps the old state
-                currentState
-            }
+        currentStates[state.partition]?.compute(state.key) { _, _ ->
+            state.value
         }
     }
 
@@ -348,11 +341,13 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
                 val stateTopic = getStateAndEventStateTopic(config.topic)
                 //will never be null, created on assignment in rebalance listener
                 val currentStatesByPartition = currentStates[partitionId]
-                    ?: throw CordaMessageAPIFatalException("Current State map for " +
-                            "group ${config.group} on topic $stateTopic[$partitionId] is null.")
+                    ?: throw CordaMessageAPIFatalException(
+                        "Current State map for " +
+                                "group ${config.group} on topic $stateTopic[$partitionId] is null."
+                    )
                 updatedStatesByKey[key] = value
                 if (value != null) {
-                    currentStatesByPartition[key] = Pair(clock.instant().toEpochMilli(), value)
+                    currentStatesByPartition[key] = value
                 } else {
                     currentStatesByPartition.remove(key)
                 }
@@ -412,12 +407,15 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
     private fun getNextPollIntervalCutoff(): Long {
         return System.currentTimeMillis() + (maxPollInterval / 2)
     }
-
     private fun getStatesForPartition(partitionId: Int): Map<K, S> {
-        return currentStates[partitionId]?.map { state -> Pair(state.key, state.value.second) }?.toMap() ?: mapOf()
+        val partitionStates = currentStates[partitionId]
+        return partitionStates?.keys?.mapNotNull { key ->
+            val state = partitionStates[key]
+            if (state != null) { Pair(key, state) } else { null }
+        }?.toMap() ?: emptyMap()
     }
 
-    private fun CordaTopicPartition.toStatePartition() : CordaTopicPartition {
+    private fun CordaTopicPartition.toStatePartition(): CordaTopicPartition {
         return CordaTopicPartition(getStateAndEventStateTopic(this.topic), this.partition)
     }
 }

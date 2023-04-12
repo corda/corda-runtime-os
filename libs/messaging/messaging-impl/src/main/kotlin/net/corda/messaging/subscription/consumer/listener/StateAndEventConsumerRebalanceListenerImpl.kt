@@ -13,7 +13,7 @@ import org.slf4j.LoggerFactory
 @Suppress("LongParameterList")
 internal class StateAndEventConsumerRebalanceListenerImpl<K : Any, S : Any, E : Any>(
     private val config: ResolvedSubscriptionConfig,
-    private val mapFactory: MapFactory<K, Pair<Long, S>>,
+    private val mapFactory: MapFactory<K, S>,
     private val stateAndEventConsumer: StateAndEventConsumer<K, S, E>,
     private val partitionState: StateAndEventPartitionState<K, S>,
     private val stateAndEventListener: StateAndEventListener<K, S>? = null
@@ -60,9 +60,7 @@ internal class StateAndEventConsumerRebalanceListenerImpl<K : Any, S : Any, E : 
         stateAndEventConsumer.onPartitionsRevoked(partitions.toSet())
         val removedPartitionIds = partitions.map { it.partition }
         for (partitionId in removedPartitionIds) {
-
             stateAndEventListener?.onPartitionLost(getStatesForPartition(partitionId))
-
             currentStates[partitionId]?.let { partitionStates ->
                 mapFactory.destroyMap(partitionStates)
             }
@@ -70,7 +68,6 @@ internal class StateAndEventConsumerRebalanceListenerImpl<K : Any, S : Any, E : 
 
         partitionState.dirty = true
     }
-
 
     override fun close() {
         stateAndEventListener?.let { listener ->
@@ -95,7 +92,11 @@ internal class StateAndEventConsumerRebalanceListenerImpl<K : Any, S : Any, E : 
     }
 
     private fun getStatesForPartition(partitionId: Int): Map<K, S> {
-        return currentStates[partitionId]?.map { state -> Pair(state.key, state.value.second) }?.toMap() ?: mapOf()
+        val partitionStates = currentStates[partitionId]
+        return partitionStates?.keys?.mapNotNull { key ->
+            val state = partitionStates[key]
+            if (state != null) { Pair(key, state) } else { null }
+        }?.toMap() ?: emptyMap()
     }
 
     private fun CordaTopicPartition.toStateTopic() =

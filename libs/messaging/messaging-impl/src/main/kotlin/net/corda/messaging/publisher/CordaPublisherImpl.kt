@@ -1,5 +1,7 @@
 package net.corda.messaging.publisher
 
+import java.nio.ByteBuffer
+import java.util.concurrent.CompletableFuture
 import net.corda.messagebus.api.configuration.ProducerConfig
 import net.corda.messagebus.api.producer.CordaProducer
 import net.corda.messagebus.api.producer.CordaProducerRecord
@@ -15,8 +17,6 @@ import net.corda.messaging.utils.toCordaProducerRecords
 import net.corda.utilities.debug
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.nio.ByteBuffer
-import java.util.concurrent.CompletableFuture
 
 /**
  * Publisher will use a [CordaProducer] to communicate with the message bus. Failed producers are closed and recreated.

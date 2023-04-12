@@ -113,8 +113,7 @@ class FlowSessionImpl(
 
     @Suspendable
     override fun send(payload: Any) {
-        val request =
-            FlowIORequest.Send(mapOf(getSessionInfo() to serialize(payload)))
+        val request = FlowIORequest.Send(mapOf(getSessionInfo() to serialize(payload)))
         fiber.suspend(request)
         setSessionConfirmed()
     }
