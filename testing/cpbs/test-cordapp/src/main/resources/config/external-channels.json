@@ -1,0 +1,8 @@
+{
+  "channels": [
+    {
+      "name": "external_app",
+      "type": "SEND"
+    }
+  ]
+}

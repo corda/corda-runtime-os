@@ -2,6 +2,8 @@ package net.corda.membership.service.impl
 
 import net.corda.data.membership.async.request.MembershipAsyncRequest
 import net.corda.data.membership.async.request.MembershipAsyncRequestState
+import net.corda.data.membership.async.request.RetriableFailure
+import net.corda.data.membership.async.request.SentToMgmWaitingForNetwork
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -12,7 +14,6 @@ import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.Membership.MEMBERSHIP_ASYNC_REQUEST_TOPIC
-import net.corda.utilities.time.Clock
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito.never
@@ -25,7 +26,6 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.same
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-import java.time.Instant
 
 class CommandsRetryManagerTest {
     private val handler = argumentCaptor<LifecycleEventHandler>()
@@ -38,19 +38,11 @@ class CommandsRetryManagerTest {
     private val publisherFactory = mock<PublisherFactory> {
         on { createPublisher(any(), same(messagingConfig)) } doReturn publisher
     }
-    private val nowInMillis = 10000L
-    private val now = mock<Instant> {
-        on { toEpochMilli() } doReturn nowInMillis
-    }
-    private val clock = mock<Clock> {
-        on { instant() } doReturn now
-    }
 
     private val manager = CommandsRetryManager(
         coordinatorFactory,
         publisherFactory,
         messagingConfig,
-        clock,
     )
 
     @Test
@@ -86,16 +78,15 @@ class CommandsRetryManagerTest {
     fun `onPartitionSynced will add a timer for each command`() {
         val states = (1..3).associate {
             "key-$it" to mock<MembershipAsyncRequestState> {
-                on { lastFailedOn } doReturn now
                 on { request } doReturn mock()
             }
         }
 
         manager.onPartitionSynced(states)
 
-        verify(coordinator).setTimer(eq("retry-key-1"), eq(2000), any())
-        verify(coordinator).setTimer(eq("retry-key-2"), eq(2000), any())
-        verify(coordinator).setTimer(eq("retry-key-3"), eq(2000), any())
+        verify(coordinator).setTimer(eq("retry-key-1"), any(), any())
+        verify(coordinator).setTimer(eq("retry-key-2"), any(), any())
+        verify(coordinator).setTimer(eq("retry-key-3"), any(), any())
     }
 
     @Test
@@ -116,12 +107,10 @@ class CommandsRetryManagerTest {
         val states = mapOf(
             "key-1" to null,
             "key-2" to mock<MembershipAsyncRequestState> {
-                on { lastFailedOn } doReturn now
                 on { request } doReturn mock()
             },
             "key-3" to null,
             "key-4" to mock<MembershipAsyncRequestState> {
-                on { lastFailedOn } doReturn now
                 on { request } doReturn mock()
             },
         )
@@ -139,56 +128,48 @@ class CommandsRetryManagerTest {
         val states = mapOf(
             "key-1" to null,
             "key-2" to mock<MembershipAsyncRequestState> {
-                on { lastFailedOn } doReturn now
                 on { request } doReturn mock()
             },
             "key-3" to null,
             "key-4" to mock<MembershipAsyncRequestState> {
-                on { lastFailedOn } doReturn now
                 on { request } doReturn mock()
             },
         )
 
         manager.onPostCommit(states)
 
-        verify(coordinator, never()).setTimer(eq("retry-key-1"), eq(2000), any())
-        verify(coordinator).setTimer(eq("retry-key-2"), eq(2000), any())
-        verify(coordinator, never()).setTimer(eq("retry-key-3"), eq(2000), any())
-        verify(coordinator).setTimer(eq("retry-key-4"), eq(2000), any())
+        verify(coordinator, never()).setTimer(eq("retry-key-1"), any(), any())
+        verify(coordinator).setTimer(eq("retry-key-2"), any(), any())
+        verify(coordinator, never()).setTimer(eq("retry-key-3"), any(), any())
+        verify(coordinator).setTimer(eq("retry-key-4"), any(), any())
     }
 
     @Test
-    fun `addTimer will use the correct delay`() {
-        val failedOn = mock<Instant> {
-            on { toEpochMilli() } doReturn nowInMillis - 500
-        }
+    fun `addTimer will use the correct delay after failure`() {
         val states = mapOf(
             "key" to mock<MembershipAsyncRequestState> {
-                on { lastFailedOn } doReturn failedOn
                 on { request } doReturn mock()
+                on { cause } doReturn RetriableFailure()
             },
         )
 
         manager.onPostCommit(states)
 
-        verify(coordinator).setTimer(eq("retry-key"), eq(1500), any())
+        verify(coordinator).setTimer(eq("retry-key"), eq(10000), any())
     }
 
     @Test
-    fun `addTimer will not try to use negative duration`() {
-        val failedOn = mock<Instant> {
-            on { toEpochMilli() } doReturn nowInMillis - 3500
-        }
+    fun `addTimer will use the correct delay after sending`() {
         val states = mapOf(
             "key" to mock<MembershipAsyncRequestState> {
-                on { lastFailedOn } doReturn failedOn
                 on { request } doReturn mock()
+                on { cause } doReturn SentToMgmWaitingForNetwork()
             },
         )
 
         manager.onPostCommit(states)
 
-        verify(coordinator).setTimer(eq("retry-key"), eq(0), any())
+        verify(coordinator).setTimer(eq("retry-key"), eq(40000), any())
     }
 
     @Test
@@ -200,7 +181,6 @@ class CommandsRetryManagerTest {
         val command = mock<MembershipAsyncRequest>()
         val states = mapOf(
             "key" to mock<MembershipAsyncRequestState> {
-                on { lastFailedOn } doReturn now
                 on { request } doReturn command
             },
         )

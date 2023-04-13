@@ -37,8 +37,8 @@ class ExternalMessagingRouteConfigGeneratorImpl(
                 val defaultConfig = externalMessagingConfigProvider.getDefaults()
                 val topicPattern = defaultConfig.receiveTopicPattern
 
-                    .replace("\$HOLDING_ID\$", holdingId.shortHash.toString())
-                    .replace("\$CHANNEL_NAME\$", channelConfig.name)
+                    .replace("\$HOLDING_ID", holdingId.shortHash.toString())
+                    .replace("\$CHANNEL_NAME", channelConfig.name)
 
                 Route(
                     channelConfig.name,

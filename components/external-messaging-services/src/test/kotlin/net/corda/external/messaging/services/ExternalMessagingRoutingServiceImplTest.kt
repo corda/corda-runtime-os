@@ -59,7 +59,7 @@ class ExternalMessagingRoutingServiceImplTest {
 
         // Setup different topic specs for the two example buses
         whenever(busAdmin1.getTopics()).thenReturn(setOf("t1"))
-        whenever(busAdmin2.getTopics()).thenReturn(setOf("t1","t2","t3"))
+        whenever(busAdmin2.getTopics()).thenReturn(setOf("t1", "t2", "t3"))
     }
 
     @Test
@@ -88,18 +88,18 @@ class ExternalMessagingRoutingServiceImplTest {
         target.onConfigChange(configurations) // using busAdmin1 so only topic t1 available
         listenerCaptor.firstValue.onUpdate(getExampleRoutes())
 
-        assertSoftly{
-            var result =target.getRoute("h1","c1")
+        assertSoftly {
+            var result = target.getRoute("h1", "c1")
             it.assertThat(result).isNotNull
             it.assertThat(result!!.route).isEqualTo(route1)
             it.assertThat(result.externalReceiveTopicNameExists).isEqualTo(true)
 
-            result =target.getRoute("h1","c2")
+            result = target.getRoute("h1", "c2")
             it.assertThat(result).isNotNull
             it.assertThat(result!!.route).isEqualTo(route2)
             it.assertThat(result.externalReceiveTopicNameExists).isEqualTo(false)
 
-            result =target.getRoute("h2","c3")
+            result = target.getRoute("h2", "c3")
             it.assertThat(result).isNotNull
             it.assertThat(result!!.route).isEqualTo(route3)
             it.assertThat(result.externalReceiveTopicNameExists).isEqualTo(false)
@@ -112,18 +112,18 @@ class ExternalMessagingRoutingServiceImplTest {
         target.onConfigChange(configurations)
         target.onConfigChange(configurations) // using busAdmin2 so all topics available
 
-        assertSoftly{
-            var result =target.getRoute("h1","c1")
+        assertSoftly {
+            var result = target.getRoute("h1", "c1")
             it.assertThat(result).isNotNull
             it.assertThat(result!!.route).isEqualTo(route1)
             it.assertThat(result.externalReceiveTopicNameExists).isEqualTo(true)
 
-            result =target.getRoute("h1","c2")
+            result = target.getRoute("h1", "c2")
             it.assertThat(result).isNotNull
             it.assertThat(result!!.route).isEqualTo(route2)
             it.assertThat(result.externalReceiveTopicNameExists).isEqualTo(true)
 
-            result =target.getRoute("h2","c3")
+            result = target.getRoute("h2", "c3")
             it.assertThat(result).isNotNull
             it.assertThat(result!!.route).isEqualTo(route3)
             it.assertThat(result.externalReceiveTopicNameExists).isEqualTo(true)
@@ -131,15 +131,33 @@ class ExternalMessagingRoutingServiceImplTest {
     }
 
     @Test
-    fun `get routes that dont exist returns null`() {
+    fun `get route for missing topic queries the message bus`() {
+        target.onConfigChange(configurations) // using busAdmin1 so only topic t1 available
+        listenerCaptor.firstValue.onUpdate(getExampleRoutes())
+
+        var result = target.getRoute("h2", "c3")
+        assertThat(result).isNotNull
+        assertThat(result!!.route).isEqualTo(route3)
+        assertThat(result.externalReceiveTopicNameExists).isEqualTo(false)
+
+        whenever(busAdmin1.getTopics()).thenReturn(setOf("t3"))
+
+        result = target.getRoute("h2", "c3")
+        assertThat(result).isNotNull
+        assertThat(result!!.route).isEqualTo(route3)
+        assertThat(result.externalReceiveTopicNameExists).isEqualTo(true)
+    }
+
+    @Test
+    fun `get routes that don't exist returns null`() {
         target.onConfigChange(configurations)
         listenerCaptor.firstValue.onUpdate(getExampleRoutes())
 
-        assertSoftly{
-            var result =target.getRoute("h1","cX")
+        assertSoftly {
+            var result = target.getRoute("h1", "cX")
             assertThat(result).isNull()
 
-            result =target.getRoute("hX","c1")
+            result = target.getRoute("hX", "c1")
             assertThat(result).isNull()
         }
     }
