@@ -45,7 +45,7 @@ internal class ConfigProcessor(
                 addToCache(configSection, configuration)
             }
 
-            coordinator.postEvent(NewConfigReceived(config))
+            coordinator.postEvent(NewConfigReceived(config, isInitialConfig = true))
         }
     }
 

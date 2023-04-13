@@ -11,7 +11,6 @@ import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleEventHandler
 import net.corda.lifecycle.LifecycleStatus
-import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
@@ -43,8 +42,6 @@ internal class ConfigReadServiceEventHandler(
     private var bootstrapConfig: SmartConfig? = null
     private var configSubscription: CompactedSubscription<String, Configuration>? = null
     private var avroSchemaSubscription: CompactedSubscription<Fingerprint, String>? = null
-    private var configSubReg: RegistrationHandle? = null
-    private var avroSubReg: RegistrationHandle? = null
 
     private val registrations = mutableSetOf<ConfigurationChangeRegistration>()
     private val configuration = mutableMapOf<String, SmartConfig>()
@@ -91,6 +88,12 @@ internal class ConfigReadServiceEventHandler(
                     configuration[key] = config
                 }
                 publishAvroSchemas()
+                if (event.isInitialConfig) {
+                    // Only set LifecycleStatus.UP for coordinator after the config subscription onSnapshot
+                    // has run (initial config). This is to make sure config reconciler will not start
+                    // reconciling before its kafka reader (config read service) has read the initial config from Kafka.
+                    coordinator.updateStatus(LifecycleStatus.UP)
+                }
                 registrations.forEach { it.invoke(event.config.keys, configuration) }
             }
 
@@ -106,22 +109,15 @@ internal class ConfigReadServiceEventHandler(
             }
 
             is RegistrationStatusChangeEvent -> {
-                // Only set LifecycleStatus.UP for coordinator after the config subscription is UP
-                if (event.status == LifecycleStatus.UP) {
-                    if (event.registration == configSubReg) {
-                        coordinator.updateStatus(LifecycleStatus.UP)
-                    }
-                } else {
+                if (event.status != LifecycleStatus.UP) {
                     coordinator.updateStatus(LifecycleStatus.DOWN)
                 }
             }
 
             is StopEvent -> {
                 logger.debug { "Configuration read service stopping." }
-                configSubReg?.close()
                 configSubscription?.close()
                 configSubscription = null
-                avroSubReg?.close()
                 avroSchemaSubscription?.close()
                 avroSchemaSubscription = null
             }
@@ -148,7 +144,6 @@ internal class ConfigReadServiceEventHandler(
             avroSchemaProcessor,
             configMerger.getMessagingConfig(config, null)
         )
-        avroSubReg = coordinator.followStatusChangesByName(setOf(sub.subscriptionName))
         this.avroSchemaProcessor = avroSchemaProcessor
         avroSchemaSubscription = sub
         sub.start()
@@ -178,7 +173,6 @@ internal class ConfigReadServiceEventHandler(
         val sub = subscriptionFactory.createCompactedSubscription(
             SubscriptionConfig(CONFIG_GROUP, CONFIG_TOPIC), configProcessor, configMerger.getMessagingConfig(config, null)
         )
-        configSubReg = coordinator.followStatusChangesByName(setOf(sub.subscriptionName))
         this.configProcessor = configProcessor
         configSubscription = sub
         sub.start()
