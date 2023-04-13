@@ -391,10 +391,6 @@ a second init container to execute the output SQL to the relevant database
   args: [ 'initial-config', '{{ .subCommand | default "create-db-config" }}',{{ " " -}}
   
          {{- /* request admin access in some cases, only when the optional admin argument to this function (named template) is specified as true */ -}}
-         {{- if (.admin | default false) -}} '-a',{{ " " -}}{{- end -}}
-  args: [ 'initial-config', '{{ .subCommand | default "create-db-config" }}',
- 
-         {{- /* request admin access when creating vnodes */ -}}
          {{- if eq .name "vnodes" -}} '-a',{{- end -}}
          
          {{- if (and (not (eq .name "db")) (not (eq .subCommand "create-crypto-config"))) -}}
@@ -436,7 +432,7 @@ a second init container to execute the output SQL to the relevant database
        {{- "\n    " -}} {{- /* legacy whitespace compliance */ -}}
     {{- end -}}    
 
-    {{ include "corda.bootstrapCliEnv" . | nindent 4 -}}{{- /* set JAVA_TOOL_OPTIONS, CONSOLE_LOG*, CORDA_CLI_HOME_DIR */ -}}
+    {{- include "corda.bootstrapCliEnv" . | nindent 4 -}}{{- /* set JAVA_TOOL_OPTIONS, CONSOLE_LOG*, CORDA_CLI_HOME_DIR */ -}}
 
     {{- if or (eq .name "rbac") (eq .name "vnodes") }}
     {{ include "corda.rbacDbUserEnv" . | nindent 4 }}
@@ -450,7 +446,7 @@ a second init container to execute the output SQL to the relevant database
     {{- end -}}
     {{- if eq .environmentVariablePrefix "CRYPTO_DB_USER" -}}
       {{- include "corda.cryptoDbUserEnv" . | nindent 4 -}}
-    {{- end -}}
+    {{- end }}
 - name: apply-{{ .name }}
   image: {{ include "corda.bootstrapDbClientImage" . }}
   imagePullPolicy: {{ .Values.imagePullPolicy }}
