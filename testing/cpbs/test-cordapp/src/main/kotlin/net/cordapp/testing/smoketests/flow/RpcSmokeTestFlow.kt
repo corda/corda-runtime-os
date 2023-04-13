@@ -57,7 +57,7 @@ class RpcSmokeTestFlow : ClientStartableFlow {
         "persistence_find_bulk" to this::persistenceFindDogs,
         "persistence_findall" to { persistenceFindAllDogs() },
         "persistence_query" to { persistenceQueryDogs() },
-        "throw_platform_error" to this::throwPlatformError,
+        "throw_session_error" to this::closeSessionThenSend,
         "subflow_passed_in_initiated_session" to { createSessionsInInitiatingFlowAndPassToInlineFlow(it, true) },
         "subflow_passed_in_non_initiated_session" to { createSessionsInInitiatingFlowAndPassToInlineFlow(it, false) },
         "flow_messaging_apis" to { createMultipleSessionsSingleFlowAndExerciseFlowMessaging(it) },
@@ -210,7 +210,7 @@ class RpcSmokeTestFlow : ClientStartableFlow {
     }
 
     @Suspendable
-    private fun throwPlatformError(input: RpcSmokeTestInput): String {
+    private fun closeSessionThenSend(input: RpcSmokeTestInput): String {
         val x500 = input.getValue("x500")
         log.info("Creating session for '${x500}'...")
         val session = flowMessaging.initiateFlow(MemberX500Name.parse(x500))

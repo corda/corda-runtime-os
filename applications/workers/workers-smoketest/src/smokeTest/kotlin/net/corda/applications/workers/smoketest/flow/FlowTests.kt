@@ -244,7 +244,7 @@ class FlowTests {
     @Test
     fun `Platform Error - user code receives platform errors`() {
         val requestBody = RpcSmokeTestInput().apply {
-            command = "throw_platform_error"
+            command = "throw_session_error"
             data = mapOf("x500" to bobX500)
         }
 
@@ -254,8 +254,8 @@ class FlowTests {
 
         val flowResult = result.getRpcFlowResult()
         assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
-        assertThat(flowResult.command).isEqualTo("throw_platform_error")
-        assertThat(flowResult.result).startsWith("Type='PLATFORM_ERROR'")
+        assertThat(flowResult.command).isEqualTo("throw_session_error")
+        assertThat(flowResult.result).isEqualTo("Session Status is CLOSED")
     }
 
     @Test
