@@ -1,10 +1,9 @@
 package net.corda.cli.plugin.initialconfig
 
 import com.github.stefanbirkner.systemlambda.SystemLambda
-import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
-import net.corda.crypto.config.impl.MasterKeyPolicy
-import net.corda.crypto.config.impl.PrivateKeyPolicy
+import com.typesafe.config.ConfigList
+import com.typesafe.config.ConfigObject
 import net.corda.crypto.config.impl.flowBusProcessor
 import net.corda.crypto.config.impl.hsm
 import net.corda.crypto.config.impl.hsmRegistrationBusProcessor
@@ -14,7 +13,6 @@ import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.secret.EncryptionSecretsServiceFactory
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
 import picocli.CommandLine
 
@@ -78,8 +76,8 @@ class TestInitialConfigPluginCrypto {
         val outJsonEnd = outText.indexOf("}}}',", expectedPrefix.length)
         val json = outText.substring(expectedPrefix.length until (outJsonEnd + 3))
         assertThat(json).containsSubsequence("\"passphrase\":{\"configSecret\":{\"encryptedSecret\":")
-        assertGeneratedJson(json) { config: Config, factory: SmartConfigFactory ->
-            val key1 = factory.create(config.getConfigList("wrappingKeys")[0])
+        assertGeneratedJson(json) { config: ConfigList, factory: SmartConfigFactory ->
+            val key1 = factory.create((config[0] as ConfigObject).toConfig())
             assertEquals("master-salt", key1.getString("salt"))
             assertEquals("master-passphrase", key1.getString("passphrase"))
         }
@@ -102,8 +100,8 @@ class TestInitialConfigPluginCrypto {
         assertThat(outText).startsWith(expectedPrefix)
         val outJsonEnd = outText.indexOf("}}}',", expectedPrefix.length)
         val json = outText.substring(expectedPrefix.length until (outJsonEnd + 3))
-        assertGeneratedJson(json) { it: Config, _: SmartConfigFactory ->
-            val key1 = it.getObjectList("wrappingKeys")[0]
+        assertGeneratedJson(json) { it: ConfigList, _: SmartConfigFactory ->
+            val key1 = it[0] as ConfigObject
             assertThat(key1.getValue("salt").render()).contains("configSecret")
             assertThat(key1.getValue("salt").render()).contains("encryptedSecret")
             assertThat(key1.getValue("passphrase").render()).contains("configSecret")
@@ -130,8 +128,8 @@ class TestInitialConfigPluginCrypto {
         assertThat(outText).startsWith(expectedPrefix)
         val outJsonEnd = outText.indexOf("}}}',", expectedPrefix.length)
         val json = outText.substring(expectedPrefix.length until (outJsonEnd + 3))
-        assertGeneratedJson(json) { it: Config, _: SmartConfigFactory ->
-            val key1 = it.getObjectList("wrappingKeys")[0]
+        assertGeneratedJson(json) { it: ConfigList, _: SmartConfigFactory ->
+            val key1 = it[0] as ConfigObject
             assertThat(key1.getValue("salt").render()).doesNotContain("encryptedSecret")
             assertThat(key1.getValue("passphrase").render()).doesNotContain("encryptedSecret")
             assertThat(key1.getValue("salt").render()).contains("vaultKey")
@@ -141,7 +139,7 @@ class TestInitialConfigPluginCrypto {
         }
     }
 
-    private fun assertGeneratedJson(json: String, wrappingKeyAssert: (Config, SmartConfigFactory) -> Unit) {
+    private fun assertGeneratedJson(json: String, wrappingKeyAssert: (ConfigList, SmartConfigFactory) -> Unit) {
         val smartConfigFactory = SmartConfigFactory.createWith(
             ConfigFactory.parseString(
                 """
@@ -156,27 +154,9 @@ class TestInitialConfigPluginCrypto {
         assertEquals(60, signingService.cache.expireAfterAccessMins)
         assertEquals(10000, signingService.cache.maximumSize)
         val softWorker = config.hsm()
-        assertEquals(20000L, softWorker.retry.attemptTimeoutMills)
-        assertEquals(3, softWorker.retry.maxAttempts)
-        assertThat(softWorker.categories).hasSize(1)
-        assertEquals("*", softWorker.categories[0].category)
-        assertEquals(PrivateKeyPolicy.WRAPPED, softWorker.categories[0].policy)
-        assertEquals(MasterKeyPolicy.UNIQUE, softWorker.masterKeyPolicy)
-        assertNull(softWorker.masterKeyAlias)
-        assertEquals(-1, softWorker.capacity)
-        assertThat(softWorker.supportedSchemes).hasSize(8)
-        assertThat(softWorker.supportedSchemes).contains(
-            "CORDA.RSA",
-            "CORDA.ECDSA.SECP256R1",
-            "CORDA.ECDSA.SECP256K1",
-            "CORDA.EDDSA.ED25519",
-            "CORDA.X25519",
-            "CORDA.SM2",
-            "CORDA.GOST3410.GOST3411",
-            "CORDA.SPHINCS-256"
-        )
-        val hsmCfg = softWorker.cfg
-        wrappingKeyAssert(hsmCfg, smartConfigFactory)
+        assertEquals(20000L, softWorker.retrying.attemptTimeoutMills)
+        assertEquals(3, softWorker.retrying.maxAttempts)
+        wrappingKeyAssert(softWorker.wrappingKeys, smartConfigFactory)
         val opsBusProcessor = config.opsBusProcessor()
         assertEquals(3, opsBusProcessor.maxAttempts)
         assertEquals(1, opsBusProcessor.waitBetweenMills.size)

@@ -128,8 +128,8 @@ open class SoftCryptoServiceProviderImpl @Activate constructor(
             val cachingConfig = config.getConfig("caching")
             val expireAfterAccessMins = cachingConfig.getConfig("expireAfterAccessMins").getLong("default")
             val maximumSize = cachingConfig.getConfig("maximumSize").getLong("default")
-            val hsmConfig = config.hsm().cfg
-            val keysList: ConfigList = hsmConfig.getList("wrappingKeys")
+            val hsmConfig = config.hsm()
+            val keysList: ConfigList = hsmConfig.wrappingKeys
             val unmanagedWrappingKeys: Map<String, WrappingKey> =
                 keysList.map { it: ConfigValue ->
                     when (it) {
@@ -145,7 +145,7 @@ open class SoftCryptoServiceProviderImpl @Activate constructor(
                         else -> throw InvalidParameterException("unexpected item ")
                     }
                 }.toMap()
-            val defaultUnmanagedWrappingKeyName = hsmConfig.getString("defaultWrappingKey")
+            val defaultUnmanagedWrappingKeyName = hsmConfig.defaultWrappingKey
             require(unmanagedWrappingKeys.containsKey(defaultUnmanagedWrappingKeyName)) {
                 "default key $defaultUnmanagedWrappingKeyName must be in wrappingKeys"
             }
