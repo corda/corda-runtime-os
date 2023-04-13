@@ -47,6 +47,7 @@ import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro
 import net.corda.virtualnode.toCorda
+import org.apache.avro.specific.SpecificRecordBase
 import org.slf4j.LoggerFactory
 
 @Suppress("LongParameterList")
@@ -62,7 +63,8 @@ internal class StartRegistrationHandler(
         cordaAvroSerializationFactory,
         clock,
     ),
-    private val registrationContextCustomFieldsVerifier: RegistrationContextCustomFieldsVerifier = RegistrationContextCustomFieldsVerifier()
+    private val registrationContextCustomFieldsVerifier: RegistrationContextCustomFieldsVerifier =
+        RegistrationContextCustomFieldsVerifier()
 ) : RegistrationHandler<StartRegistration> {
 
     private companion object {
@@ -90,7 +92,9 @@ internal class StartRegistrationHandler(
                 )
             }
 
-        val (outputCommand, outputStates) = try {
+        val outputRecords: MutableList<Record<String, out SpecificRecordBase>> = mutableListOf()
+
+        val (outputCommand, newRecords) = try {
             validateRegistrationRequest(!memberTypeChecker.isMgm(pendingMemberHoldingId)) {
                 "Registration request is registering an MGM holding identity."
             }
@@ -107,6 +111,18 @@ internal class StartRegistrationHandler(
 
             logger.info("Registering $pendingMemberHoldingId with MGM for holding identity: $mgmHoldingId")
             val pendingMemberInfo = buildPendingMemberInfo(registrationRequest)
+            val persistentMemberInfo = PersistentMemberInfo.newBuilder()
+                .setMemberContext(pendingMemberInfo.memberProvidedContext.toAvro())
+                .setViewOwningMember(mgmMemberInfo.holdingIdentity.toAvro())
+                .setMgmContext(pendingMemberInfo.mgmProvidedContext.toAvro())
+                .build()
+            val pendingMemberRecord = Record(
+                topic = Schemas.Membership.MEMBER_LIST_TOPIC,
+                key = "${mgmMemberInfo.holdingIdentity.shortHash}-${pendingMemberInfo.holdingIdentity.shortHash}" +
+                        "-${pendingMemberInfo.status}",
+                value = persistentMemberInfo,
+            )
+            outputRecords.add(pendingMemberRecord)
 
             validatePreAuthTokenUsage(mgmHoldingId, pendingMemberInfo)
             // Parse the registration request and verify contents
@@ -127,6 +143,7 @@ internal class StartRegistrationHandler(
             val activeOrSuspendedInfo = existingMemberInfos.lastOrNull {
                 it.status == MEMBER_STATUS_ACTIVE || it.status == MEMBER_STATUS_SUSPENDED
             }
+
             validateRegistrationRequest(
                 activeOrSuspendedInfo == null || activeOrSuspendedInfo.serial <= registrationRequest.serial!!
             ) {
@@ -162,17 +179,6 @@ internal class StartRegistrationHandler(
                 }
             }
 
-            val persistentMemberInfo = PersistentMemberInfo.newBuilder()
-                .setMemberContext(pendingMemberInfo.memberProvidedContext.toAvro())
-                .setViewOwningMember(mgmMemberInfo.holdingIdentity.toAvro())
-                .setMgmContext(pendingMemberInfo.mgmProvidedContext.toAvro())
-                .build()
-            val pendingMemberRecord = Record(
-                topic = Schemas.Membership.MEMBER_LIST_TOPIC,
-                key = "${mgmMemberInfo.holdingIdentity.shortHash}-${pendingMemberInfo.holdingIdentity.shortHash}" +
-                        "-${pendingMemberInfo.status}",
-                value = persistentMemberInfo,
-            )
             val persistMemberStatusMessage = p2pRecordsFactory.createAuthenticatedMessageRecord(
                 source = mgmHoldingId.toAvro(),
                 destination = pendingMemberHoldingId.toAvro(),
@@ -184,7 +190,7 @@ internal class StartRegistrationHandler(
             )
 
             logger.info("Successful initial validation of registration request with ID ${registrationRequest.registrationId}")
-            Pair(VerifyMember(), listOf(pendingMemberRecord, persistMemberStatusMessage))
+            Pair(VerifyMember(), listOf(persistMemberStatusMessage))
         } catch (ex: InvalidRegistrationRequestException) {
             logger.warn("Declined registration.", ex)
             Pair(DeclineRegistration(ex.originalMessage), emptyList())
@@ -192,6 +198,8 @@ internal class StartRegistrationHandler(
             logger.warn("Declined registration.", ex)
             Pair(DeclineRegistration("Failed to verify registration request due to: [${ex.message}]"), emptyList())
         }
+        outputRecords.addAll(newRecords)
+        outputRecords.add(Record(REGISTRATION_COMMAND_TOPIC, key, RegistrationCommand(outputCommand)))
 
         return RegistrationHandlerResult(
             RegistrationState(
@@ -199,9 +207,7 @@ internal class StartRegistrationHandler(
                 pendingMemberHoldingId.toAvro(),
                 mgmHoldingId.toAvro()
             ),
-            listOf(
-                Record(REGISTRATION_COMMAND_TOPIC, key, RegistrationCommand(outputCommand))
-            ) + outputStates
+            outputRecords
         )
     }
 
