@@ -12,6 +12,7 @@
     "PENDING_AUTO_APPROVAL",
     "DECLINED",
     "INVALID",
+    "FAILED",
     "APPROVED"
   ]
 }

@@ -40,5 +40,10 @@ public final class MembershipConfig {
          * Maximum waiting time in minutes for verification of a member request.
          */
         public static final String VERIFY_MEMBER_REQUEST = "verifyMemberRequest";
+
+        /**
+         * Maximum waiting time for a registration request to be received by the MGM.
+         */
+        public static final String WAIT_FOR_MGM_SESSION = "waitForMgmSession";
     }
 }
