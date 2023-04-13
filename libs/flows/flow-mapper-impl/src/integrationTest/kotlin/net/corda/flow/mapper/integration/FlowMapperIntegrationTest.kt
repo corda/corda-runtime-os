@@ -228,7 +228,7 @@ class FlowMapperIntegrationTest {
     }
 
     @Test
-    fun `Receive SessionError in CLOSING state - ignore`() {
+    fun `Receive SessionError in CLOSING state - ignore and change state to ERROR`() {
         val inputKey = "sessionId"
         val sessionEvent =
             buildSessionEvent(MessageDirection.INBOUND, inputKey, 3, SessionError())
@@ -236,6 +236,9 @@ class FlowMapperIntegrationTest {
         val flowMapperState = FlowMapperState("flowKey", null, FlowMapperStateType.CLOSING)
         val result = onNext(flowMapperState, Record(FLOW_MAPPER_EVENT_TOPIC, inputKey, flowMapperEvent))
         val outputEvent = result.responseEvents
+
+        val state = result.updatedState
+        assertThat(state?.status).isEqualTo(FlowMapperStateType.ERROR)
 
         assertThat(outputEvent).isEmpty()
     }
@@ -250,11 +253,14 @@ class FlowMapperIntegrationTest {
         val result = onNext(flowMapperState, Record(FLOW_MAPPER_EVENT_TOPIC, inputKey, flowMapperEvent))
         val outputEvent = result.responseEvents
 
+        val state = result.updatedState
+        assertThat(state?.status).isEqualTo(FlowMapperStateType.ERROR)
+
         assertThat(outputEvent).isEmpty()
     }
 
     @Test
-    fun `Receive SessionError in OPEN state - forward`() {
+    fun `Receive SessionError in OPEN state - forward and change state to ERROR`() {
         val inputKey = "sessionId"
         val sessionEvent =
             buildSessionEvent(MessageDirection.INBOUND, inputKey, 3, SessionError())
@@ -265,6 +271,10 @@ class FlowMapperIntegrationTest {
 
         val outputEventPayload = outputEvent.value ?: fail("Payload was null")
         val outputFlowEvent = outputEventPayload as FlowEvent
+
+        val state = result.updatedState
+        assertThat(state?.status).isEqualTo(FlowMapperStateType.ERROR)
+
         assertThat(outputFlowEvent.payload::class.java).isEqualTo(SessionEvent::class.java)
     }
 
