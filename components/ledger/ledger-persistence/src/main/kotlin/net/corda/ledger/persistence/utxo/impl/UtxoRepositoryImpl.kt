@@ -472,14 +472,15 @@ class UtxoRepositoryImpl @Activate constructor(
     override fun persistSignedGroupParameters(
         entityManager: EntityManager,
         hash: String,
-        signedGroupParameters: SignedGroupParameters
+        signedGroupParameters: SignedGroupParameters,
+        timestamp: Instant
     ) {
         entityManager.createNativeQuery(
             """
             INSERT INTO {h-schema}utxo_group_parameters(
-                hash, parameters, signature_public_key, signature_content, signature_spec)
+                hash, parameters, signature_public_key, signature_content, signature_spec, created)
             VALUES (
-                :hash, :parameters, :signature_public_key, :signature_content, :signature_spec)
+                :hash, :parameters, :signature_public_key, :signature_content, :signature_spec, :createdAt)
             ON CONFLICT DO NOTHING"""
         )
             .setParameter("hash", hash)
@@ -487,6 +488,7 @@ class UtxoRepositoryImpl @Activate constructor(
             .setParameter("signature_public_key", signedGroupParameters.mgmSignature.publicKey.array())
             .setParameter("signature_content", signedGroupParameters.mgmSignature.bytes.array())
             .setParameter("signature_spec", signedGroupParameters.mgmSignatureSpec.signatureName)
+            .setParameter("createdAt", timestamp)
             .executeUpdate()
             .logResult("signed group parameters [$hash]")
     }

@@ -278,7 +278,8 @@ class UtxoPersistenceServiceImpl constructor(
                 repository.persistSignedGroupParameters(
                     em,
                     hash,
-                    signedGroupParameters
+                    signedGroupParameters,
+                    utcClock.instant()
                 )
             }
         }

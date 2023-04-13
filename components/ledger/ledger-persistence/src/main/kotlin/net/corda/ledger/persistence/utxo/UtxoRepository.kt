@@ -161,6 +161,7 @@ interface UtxoRepository {
     fun persistSignedGroupParameters(
         entityManager: EntityManager,
         hash: String,
-        signedGroupParameters: SignedGroupParameters
+        signedGroupParameters: SignedGroupParameters,
+        timestamp: Instant
     )
 }
