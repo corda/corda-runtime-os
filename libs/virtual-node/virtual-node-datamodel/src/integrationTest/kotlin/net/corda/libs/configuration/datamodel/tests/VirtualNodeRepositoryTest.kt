@@ -278,7 +278,7 @@ class VirtualNodeRepositoryTest {
             testName,
             "v1",
             signerSummaryHash,
-            externalMessagingRouteConfig = """ "dummy":"dummy" """
+            externalMessagingRouteConfig = externalMessagingRouteConfig
         )
 
         entityManagerFactory.createEntityManager().transaction { em ->
