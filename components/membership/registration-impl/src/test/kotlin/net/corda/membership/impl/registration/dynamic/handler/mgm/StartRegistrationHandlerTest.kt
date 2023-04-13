@@ -663,6 +663,22 @@ class StartRegistrationHandlerTest {
         }
     }
 
+    @Test
+    fun `declined if non-custom properties are updated during re-registration`() {
+        val contextWithUpdates = mock<MemberContext> {
+            on { parse(eq(GROUP_ID), eq(String::class.java)) } doReturn groupId
+            on { parseList(eq(ENDPOINTS), eq(EndpointInfo::class.java)) } doReturn listOf(mock())
+            on { entries } doReturn mapOf("ext.property" to "test", "$ROLES_PREFIX.0" to "changed").entries
+        }
+        whenever(pendingMemberInfo.memberProvidedContext).doReturn(contextWithUpdates)
+        whenever(membershipQueryClient.queryMemberInfo(eq(mgmHoldingIdentity.toCorda()), any()))
+            .doReturn(MembershipQueryResult.Success(listOf(activeMemberInfo)))
+        whenever(membershipQueryClient.queryRegistrationRequest(eq(mgmHoldingIdentity.toCorda()), eq(registrationId)))
+            .doReturn(MembershipQueryResult.Success(createRegistrationRequest(serial = 2L)))
+        val result = handler.invoke(registrationState, Record(testTopic, testTopicKey, startRegistrationCommand))
+        result.assertDeclinedRegistration()
+    }
+
     @Nested
     inner class PreAuthTokenTest {
         @Test

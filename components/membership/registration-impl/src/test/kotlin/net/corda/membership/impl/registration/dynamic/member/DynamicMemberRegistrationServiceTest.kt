@@ -50,6 +50,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEY_SIGNATU
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_CPI_NAME
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_CPI_SIGNER_HASH
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_CPI_VERSION
+import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_KEY_HASH
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_KEY_PEM
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_KEY_SPEC
@@ -70,6 +71,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.URL_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.ecdhKey
 import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
 import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
+import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidationException
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidator
@@ -430,9 +432,10 @@ class DynamicMemberRegistrationServiceTest {
             postConfigChangedEvent()
             registrationService.start()
             val memberInfo = mock<MemberInfo> {
+                on { mgmProvidedContext } doReturn mock()
                 on { serial } doReturn 4
             }
-            whenever(groupReader.lookup(memberName)).doReturn(memberInfo)
+            whenever(groupReader.lookup(eq(memberName), any())).doReturn(memberInfo)
             val capturedRequest = argumentCaptor<MembershipRegistrationRequest>()
             registrationService.register(registrationResultId, member, context)
             verify(registrationRequestSerializer).serialize(capturedRequest.capture())
@@ -857,6 +860,29 @@ class DynamicMemberRegistrationServiceTest {
                 registrationService.register(registrationResultId, member, context)
             }
             assertThat(exception).hasMessageContaining("MGM information")
+        }
+
+        @Test
+        fun `registration fails when non-custom properties are updated`() {
+            val contextWithUpdates = mock<MemberContext> {
+                on { entries } doReturn (context + mapOf("ext.property" to "test", "$ROLES_PREFIX.0" to "notary")).entries
+            }
+            val memberInfo = mock<MemberInfo> {
+                on { memberProvidedContext } doReturn contextWithUpdates
+                on { mgmProvidedContext } doReturn mock()
+                on { status } doReturn MEMBER_STATUS_ACTIVE
+                on { name } doReturn memberName
+                on { groupId } doReturn GROUP_NAME
+            }
+            whenever(groupReader.lookup(memberName)).doReturn(memberInfo)
+
+            postConfigChangedEvent()
+            registrationService.start()
+
+            val exception = assertThrows<InvalidMembershipRegistrationException> {
+                registrationService.register(registrationResultId, member, context)
+            }
+            assertThat(exception).hasMessageContaining("Only custom fields")
         }
     }
 

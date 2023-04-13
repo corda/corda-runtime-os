@@ -53,6 +53,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEY_HASHES_
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_CPI_NAME
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_CPI_SIGNER_HASH
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_CPI_VERSION
+import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_PENDING
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_KEY_SPEC
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_ROLE
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_PROTOCOL_VERSIONS
@@ -71,6 +72,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.TLS_CERTIFICATE_SU
 import net.corda.membership.lib.MemberInfoExtension.Companion.ecdhKey
 import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
 import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
+import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.TlsType
 import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidationException
@@ -164,6 +166,7 @@ class DynamicMemberRegistrationService @Activate constructor(
         const val NOTARY_KEY_ID = "corda.notary.keys.%s.id"
         const val LEDGER_KEY_SIGNATURE_SPEC = "$LEDGER_KEYS.%s.signature.spec"
         const val MEMBERSHIP_P2P_SUBSYSTEM = "membership"
+        const val CUSTOM_KEY_PREFIX = "ext."
 
         val notaryIdRegex = NOTARY_KEY_ID.format("[0-9]+").toRegex()
         val ledgerIdRegex = LEDGER_KEY_ID.format("[0-9]+").toRegex()
@@ -267,8 +270,14 @@ class DynamicMemberRegistrationService @Activate constructor(
                     ex
                 )
             }
+            val groupReader = membershipGroupReaderProvider.getGroupReader(member)
+            val previousContext = groupReader
+                .lookup(member.x500Name)
+                ?.takeIf { it.status != MEMBER_STATUS_PENDING }
+                ?.memberProvidedContext
+                ?.entries?.associate { it.key to it.value }
             try {
-                validateContext(context)
+                validateContext(context, previousContext)
             } catch (ex: IllegalArgumentException) {
                 throw InvalidMembershipRegistrationException(
                     "Registration failed. The registration context is invalid: " + ex.message,
@@ -310,7 +319,6 @@ class DynamicMemberRegistrationService @Activate constructor(
                         ByteBuffer.wrap(it.bytes)
                     )
                 }
-                val groupReader = membershipGroupReaderProvider.getGroupReader(member)
                 val mgm = groupReader.lookup().firstOrNull { it.isMgm }
                     ?: throw IllegalArgumentException("Failed to look up MGM information.")
 
@@ -457,7 +465,7 @@ class DynamicMemberRegistrationService @Activate constructor(
             }
         }
 
-        private fun validateContext(context: Map<String, String>) {
+        private fun validateContext(context: Map<String, String>, previousContext: Map<String, String>?) {
             context.keys.filter { sessionKeyIdRegex.matches(it) }.apply {
                 require(isNotEmpty()) { "No session key ID was provided." }
                 require(orderVerifier.isOrdered(this, 3)) { "Provided session key IDs are incorrectly numbered." }
@@ -475,6 +483,11 @@ class DynamicMemberRegistrationService @Activate constructor(
                 context.keys.filter { notaryProtocolVersionsRegex.matches(it) }.apply {
                     require(orderVerifier.isOrdered(this, 6)) { "Provided notary protocol versions are incorrectly numbered." }
                 }
+            }
+            previousContext?.let { previous ->
+                val diff = ((context.entries - previous.entries) + (previous.entries - context.entries))
+                    .filterNot { it.key.startsWith(CUSTOM_KEY_PREFIX) }
+                require(diff.isEmpty()) { "Only custom fields with the 'ext.' prefix may be updated during re-registration." }
             }
         }
 

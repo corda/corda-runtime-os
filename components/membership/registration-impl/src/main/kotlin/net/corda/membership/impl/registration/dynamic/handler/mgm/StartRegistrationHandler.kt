@@ -29,6 +29,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.preAuthToken
 import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.SignedMemberInfo
+import net.corda.membership.lib.toMap
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.persistence.client.MembershipQueryClient
@@ -44,6 +45,7 @@ import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro
 import net.corda.virtualnode.toCorda
+import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 @Suppress("LongParameterList")
@@ -58,7 +60,8 @@ internal class StartRegistrationHandler(
 ) : RegistrationHandler<StartRegistration> {
 
     private companion object {
-        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        const val CUSTOM_KEY_PREFIX = "ext."
+        val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     override val commandType = StartRegistration::class.java
@@ -119,6 +122,16 @@ internal class StartRegistrationHandler(
             ) {
                 "Registration request was submitted for an older version of member info. " +
                         "Please submit a new request."
+            }
+
+            activeOrSuspendedInfo?.let { previous ->
+                val previousContext = previous.memberProvidedContext.toMap()
+                val pendingContext = pendingMemberInfo.memberProvidedContext.toMap()
+                val diff = ((pendingContext.entries - previousContext.entries) + (previousContext.entries - pendingContext.entries))
+                    .filterNot { it.key.startsWith(CUSTOM_KEY_PREFIX) }
+                validateRegistrationRequest(
+                    diff.isEmpty()
+                ) { "Only custom fields with the 'ext.' prefix may be updated during re-registration." }
             }
 
             // The group ID matches the group ID of the MGM
