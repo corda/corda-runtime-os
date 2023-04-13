@@ -65,11 +65,13 @@ class UtxoLedgerTransactionVerificationServiceImpl @Activate constructor(
         }
     }
 
+    @Suspendable
     private fun verifyNotary(transaction: UtxoLedgerTransaction) {
         val signedGroupParameters = fetchSignedGroupParameters(transaction)
         verifyNotaryAllowed(transaction, signedGroupParameters)
     }
 
+    @Suspendable
     private fun fetchSignedGroupParameters(transaction: UtxoLedgerTransaction): SignedGroupParameters {
         val membershipGroupParametersHashString =
             (transaction.metadata as TransactionMetadataInternal).getMembershipGroupParametersHash()
