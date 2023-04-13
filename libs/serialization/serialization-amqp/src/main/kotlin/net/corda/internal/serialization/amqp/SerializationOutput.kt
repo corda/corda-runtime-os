@@ -149,11 +149,13 @@ open class SerializationOutput constructor(
         }
 
         val retrievedRefCount = objectHistory[obj]
-        if (retrievedRefCount == null) {
+        if (!context.objectReferencesEnabled || retrievedRefCount == null) {
             serializer.writeObject(obj, data, type, this, context, debugIndent)
             // Important to do it after serialization such that dependent object will have preceding reference numbers
             // assigned to them first as they will be first read from the stream on receiving end.
             // Skip for primitive types as they are too small and overhead of referencing them will be much higher than their content
+
+            // todo CORE-12472 is this needed if referencing is disabled?
             if (serializerFactory.isSuitableForObjectReference(obj.javaClass)) {
                 objectHistory[obj] = objectHistory.size
             }

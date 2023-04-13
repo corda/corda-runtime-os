@@ -178,8 +178,8 @@ class ConsensualLedgerMessageProcessorTests {
         assertThat(entityResponse.results).hasSize(1)
         val retrievedTransaction = ctx.deserialize<SignedTransactionContainer>(entityResponse.results.first())
         assertThat(retrievedTransaction).isEqualTo(transaction)
-        // todo Enable with CORE-12441
-        // assertThat(entityResponse.results.first()).isEqualTo(serializedTransaction)
+        // todo re-check with CORE-12472
+        assertThat(entityResponse.results.first()).isEqualTo(serializedTransaction)
     }
 
     private fun createTestTransaction(ctx: SandboxGroupContext): SignedTransactionContainer {

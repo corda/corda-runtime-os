@@ -17,7 +17,7 @@ import net.corda.serialization.SerializationContext
 val AMQP_STORAGE_CONTEXT = SerializationContextImpl(
         amqpMagic,
         emptyMap(),
-        true,
+        true, // todo should not this be false? CORE-12472
         SerializationContext.UseCase.Storage,
         null,
         AlwaysAcceptEncodingAllowList
