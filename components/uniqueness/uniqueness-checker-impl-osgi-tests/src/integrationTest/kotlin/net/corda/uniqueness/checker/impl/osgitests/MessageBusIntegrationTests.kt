@@ -164,8 +164,10 @@ class MessageBusIntegrationTests {
 
     private val groupId = UUID.randomUUID().toString()
 
-    private val defaultHoldingIdentity = createTestHoldingIdentity(
-        "C=GB, L=London, O=Alice", groupId).toAvro()
+    private val defaultNotaryVNodeHoldingIdentity = createTestHoldingIdentity(
+        "C=GB, L=London, O=NotaryRep1", groupId).toAvro()
+
+    private val defaultOriginatorX500Name = "C=GB, L=London, O=Alice"
 
     // We don't use Instant.MAX because this appears to cause a long overflow in Avro
     private val defaultTimeWindowUpperBound: Instant =
@@ -179,13 +181,14 @@ class MessageBusIntegrationTests {
             : UniquenessCheckRequestAvro.Builder =
         UniquenessCheckRequestAvro.newBuilder(
             UniquenessCheckRequestAvro(
-                defaultHoldingIdentity,
+                defaultNotaryVNodeHoldingIdentity,
                 ExternalEventContext(
                     UUID.randomUUID().toString(),
                     UUID.randomUUID().toString(),
                     KeyValuePairList(emptyList())
                 ),
                 txId.toString(),
+                defaultOriginatorX500Name,
                 emptyList(),
                 emptyList(),
                 0,

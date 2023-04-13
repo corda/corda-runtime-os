@@ -30,6 +30,13 @@ import org.mockito.kotlin.whenever
 import org.osgi.framework.Bundle
 import org.osgi.framework.BundleContext
 import org.osgi.framework.BundleException
+import org.osgi.framework.Version
+import org.osgi.framework.wiring.BundleCapability
+import org.osgi.framework.wiring.BundleRequirement
+import org.osgi.framework.wiring.BundleRevision
+import org.osgi.framework.wiring.BundleWiring
+import org.osgi.resource.Capability
+import org.osgi.resource.Requirement
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.InputStream
@@ -107,6 +114,7 @@ class SandboxServiceImplTests {
                     if (bundleName in notUninstallableBundles) throw BundleException("Uninstall")
                     uninstalledBundles.add(bundle)
                 }
+                whenever(bundle.adapt(BundleRevision::class.java)).thenReturn(DummyBundleRevision(bundle))
 
                 bundle
             }
@@ -581,5 +589,32 @@ private data class CpkAndContents(
         override fun getInputStream() = ByteArrayInputStream(cpkBytes.toByteArray())
         override fun getResourceAsStream(resourceName: String) = ByteArrayInputStream(ByteArray(0))
         override fun getMainBundle(): InputStream = ByteArrayInputStream(ByteArray(0))
+    }
+}
+
+private class DummyBundleRevision(private val bundle: Bundle): BundleRevision {
+    override fun getBundle(): Bundle = bundle
+    override fun getSymbolicName(): String = bundle.symbolicName
+    override fun getVersion(): Version = bundle.version
+    override fun getTypes(): Int = 0
+
+    override fun getCapabilities(namespace: String?): List<Capability> {
+        TODO("Not yet implemented")
+    }
+
+    override fun getRequirements(namespace: String?): List<Requirement> {
+        TODO("Not yet implemented")
+    }
+
+    override fun getDeclaredCapabilities(namespace: String?): List<BundleCapability> {
+        TODO("Not yet implemented")
+    }
+
+    override fun getDeclaredRequirements(namespace: String?): List<BundleRequirement> {
+        TODO("Not yet implemented")
+    }
+
+    override fun getWiring(): BundleWiring {
+        TODO("Not yet implemented")
     }
 }

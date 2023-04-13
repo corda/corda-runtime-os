@@ -60,6 +60,8 @@ dependencies {
     testImplementation project(":libs:lifecycle:lifecycle-test-impl")
     testImplementation project(":libs:lifecycle:lifecycle-impl")
     testImplementation project(":libs:lifecycle:registry")
+    testImplementation project(":testing:crypto-testkit")
+    testImplementation project(":libs:application:application-impl")
 
     testRuntimeOnly "org.ops4j.pax.jdbc:pax-jdbc-hsqldb:$paxJdbcVersion"
     testRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"

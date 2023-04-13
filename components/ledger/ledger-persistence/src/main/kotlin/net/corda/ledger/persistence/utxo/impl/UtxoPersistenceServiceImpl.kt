@@ -1,8 +1,10 @@
 package net.corda.ledger.persistence.utxo.impl
 
+import com.fasterxml.jackson.core.JsonProcessingException
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.persistence.common.InconsistentLedgerStateException
+import net.corda.ledger.persistence.json.ContractStateVaultJsonFactoryRegistry
 import net.corda.ledger.persistence.utxo.CustomRepresentation
 import net.corda.ledger.persistence.utxo.UtxoPersistenceService
 import net.corda.ledger.persistence.utxo.UtxoRepository
@@ -12,21 +14,31 @@ import net.corda.orm.utils.transaction
 import net.corda.utilities.serialization.deserialize
 import net.corda.utilities.time.Clock
 import net.corda.v5.application.crypto.DigestService
+import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.ledger.common.transaction.CordaPackageSummary
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.StateRef
+import net.corda.v5.ledger.utxo.query.json.ContractStateVaultJsonFactory
+import org.slf4j.LoggerFactory
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 
+@Suppress("LongParameterList")
 class UtxoPersistenceServiceImpl constructor(
     private val entityManagerFactory: EntityManagerFactory,
     private val repository: UtxoRepository,
     private val serializationService: SerializationService,
     private val sandboxDigestService: DigestService,
+    private val factoryStorage: ContractStateVaultJsonFactoryRegistry,
+    private val jsonMarshallingService: JsonMarshallingService,
     private val utcClock: Clock
 ) : UtxoPersistenceService {
+
+    private companion object {
+        val log = LoggerFactory.getLogger(UtxoPersistenceServiceImpl::class.java)
+    }
 
     override fun findTransaction(
         id: String,
@@ -154,7 +166,9 @@ class UtxoPersistenceServiceImpl constructor(
                 UtxoComponentGroup.OUTPUTS.ordinal,
                 visibleStateIndex,
                 consumed = false,
-                CustomRepresentation("{\"temp\": \"value\"}"),
+                CustomRepresentation(
+                    extractJsonDataFromState(transaction.getProducedStates()[visibleStateIndex].state.contractState)
+                ),
                 nowUtc
             )
         }
@@ -215,6 +229,34 @@ class UtxoPersistenceServiceImpl constructor(
     override fun updateStatus(id: String, transactionStatus: TransactionStatus) {
         entityManagerFactory.transaction { em ->
             repository.persistTransactionStatus(em, id, transactionStatus, utcClock.instant())
+        }
+    }
+
+    private fun extractJsonDataFromState(
+        contractState: ContractState
+    ): String {
+        val jsonMap = factoryStorage.getFactoriesForClass(contractState).associate {
+
+            val jsonToParse = @Suppress("unchecked_cast")
+            (it as ContractStateVaultJsonFactory<ContractState>)
+                .create(contractState, jsonMarshallingService)
+                .ifBlank { "{}" } // Default to "{}" if the provided factory returns empty string to avoid exception
+
+            it.stateType.name to try {
+                jsonMarshallingService.parse(jsonToParse, Any::class.java)
+            } catch (e: Exception) {
+                log.warn("Error while processing factory for class: ${it.stateType.name}. " +
+                        "JSON that could not be processed: $jsonToParse. Defaulting to empty JSON.")
+                jsonMarshallingService.parse("{}", Any::class.java)
+            }
+        }
+
+        return try {
+            jsonMarshallingService.format(jsonMap)
+        } catch (e: JsonProcessingException) {
+            // Since we validate the factory outputs one-by-one this should not happen.
+            log.warn("Error while formatting combined JSON, defaulting to empty JSON.")
+            "{}"
         }
     }
 }
