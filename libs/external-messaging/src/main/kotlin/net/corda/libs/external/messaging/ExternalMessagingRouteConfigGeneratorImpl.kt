@@ -8,6 +8,7 @@ import net.corda.libs.external.messaging.serialization.ExternalMessagingRouteCon
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.virtualnode.HoldingIdentity
+import net.corda.virtualnode.VirtualNodeInfo
 
 class ExternalMessagingRouteConfigGeneratorImpl(
     private val externalMessagingConfigProvider: ExternalMessagingConfigProvider,
@@ -15,12 +16,61 @@ class ExternalMessagingRouteConfigGeneratorImpl(
     private val channelsConfigSerializer: ExternalMessagingChannelConfigSerializer
 ) : ExternalMessagingRouteConfigGenerator {
 
-    override fun generateConfig(holdingId: HoldingIdentity, cpiId: CpiIdentifier, cpks: Collection<CpkMetadata>): String {
+    /**
+     * The method generates the configuration for external messaging.
+     * N.B.: Please keep in mind that any historical configuration is lost when this method is called.
+     */
+    override fun generateNewConfig(
+        holdingId: HoldingIdentity,
+        cpiId: CpiIdentifier,
+        cpks: Collection<CpkMetadata>
+    ): String? {
+        return generateConfig(holdingId, cpiId, cpks, emptyList())
+    }
+
+    /**
+     * The method generates the configuration for external messaging.
+     * N.B.: Please keep in mind that the historical configuration is preserved when this method is called.
+     */
+    override fun generateUpgradeConfig(
+        virtualNode: VirtualNodeInfo,
+        cpiId: CpiIdentifier,
+        cpks: Collection<CpkMetadata>
+    ): String? {
+        if (virtualNode.externalMessagingRouteConfig == null) {
+            // Before the upgrade there was no configuration for the external messaging route.
+            // Create the configuration from scratch
+            return generateNewConfig(virtualNode.holdingIdentity, cpiId, cpks)
+        }
+
+        // There is already configuration for the external messaging route.
+        // Generate the new configuration but keep record of the previous one.
+        val externalMessagingRouteConfig = routeConfigSerializer.deserialize(virtualNode.externalMessagingRouteConfig!!)
+
+        return generateConfig(
+            virtualNode.holdingIdentity,
+            cpiId,
+            cpks,
+            listOf(externalMessagingRouteConfig.currentRoutes) + externalMessagingRouteConfig.previousVersionRoutes
+        )
+    }
+
+    private fun generateConfig(
+        holdingId: HoldingIdentity,
+        cpiId: CpiIdentifier,
+        cpks: Collection<CpkMetadata>,
+        previousVersionRoutes: List<Routes>
+    ): String? {
         val routes = generateRoutes(holdingId, cpks)
+
+        if( routes.isEmpty() ) {
+            return null
+        }
+
         return routeConfigSerializer.serialize(
             RouteConfiguration(
                 Routes(cpiId, routes),
-                emptyList()
+                previousVersionRoutes
             )
         )
     }
