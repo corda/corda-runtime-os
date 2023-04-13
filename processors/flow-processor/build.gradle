@@ -3,17 +3,15 @@ plugins {
     id 'corda.common-library'
 }
 
+description 'Flow Worker Processor'
+
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
-    compileOnly 'org.osgi:osgi.core'
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
-    compileOnly "org.osgi:org.osgi.service.cm:$osgiCmVersion"
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
 
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
-    implementation "com.typesafe:config:$typeSafeConfigVersion"
-    implementation "info.picocli:picocli:$picocliVersion"
     implementation 'org.slf4j:slf4j-api'
     implementation 'net.corda:corda-base'
     implementation 'net.corda:corda-ledger-utxo'
@@ -36,11 +34,6 @@ dependencies {
     implementation project(':libs:utilities')
     implementation project(':libs:virtual-node:sandbox-group-context')
     implementation project(":notary-plugins:notary-plugin-common")
-    implementation project(":osgi-framework-api")
-
-    runtimeOnly 'javax.persistence:javax.persistence-api'
-    runtimeOnly "net.corda:corda-avro-schema"
-
 
     runtimeOnly project(":components:configuration:configuration-read-service-impl")
     runtimeOnly project(":components:flow:flow-service")
@@ -80,5 +73,3 @@ dependencies {
     runtimeOnly project(":libs:serialization:serialization-kryo")
 
 }
-
-description 'Flow Worker Processor'
