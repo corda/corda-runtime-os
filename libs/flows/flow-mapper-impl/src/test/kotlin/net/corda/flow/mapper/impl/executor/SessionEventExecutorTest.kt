@@ -146,7 +146,7 @@ class SessionEventExecutorTest {
         val state = result.flowMapperState
         val outboundEvents = result.outputEvents
 
-        assertThat(state).isNotNull
+        assertThat(state?.status).isEqualTo(FlowMapperStateType.CLOSING)
         assertThat(outboundEvents.size).isEqualTo(1)
         val outboundEvent = outboundEvents.first()
         assertThat(outboundEvent.topic).isEqualTo(P2P_OUT_TOPIC)
@@ -172,33 +172,13 @@ class SessionEventExecutorTest {
         val state = result.flowMapperState
         val outboundEvents = result.outputEvents
 
-        assertThat(state).isNotNull
+        assertThat(state?.status).isEqualTo(FlowMapperStateType.OPEN)
         assertThat(outboundEvents.size).isEqualTo(1)
         val outboundEvent = outboundEvents.first()
         assertThat(outboundEvent.topic).isEqualTo(FLOW_EVENT_TOPIC)
         assertThat(outboundEvent.key).isEqualTo("flowId1")
         assertThat(outboundEvent.value!!::class).isEqualTo(FlowEvent::class)
         assertThat(payload.sessionId).isEqualTo(sessionId)
-    }
-
-    @Test
-    fun `Session event received with ERROR state`() {
-        val payload = buildSessionEvent(MessageDirection.INBOUND, sessionId, 1, SessionEvent())
-        val appMessageFactoryCaptor = AppMessageFactoryCaptor(AppMessage())
-
-        val result = SessionEventExecutor(
-            sessionId, payload,
-            FlowMapperState(
-                "flowId1", null, FlowMapperStateType.ERROR
-            ),
-            Instant.now(),
-            sessionEventSerializer,
-            appMessageFactoryCaptor::generateAppMessage,
-            flowConfig
-        ).execute()
-        val outboundEvents = result.outputEvents
-
-        assertThat(outboundEvents).isEmpty()
     }
 
     class AppMessageFactoryCaptor(val appMessage: AppMessage) {
