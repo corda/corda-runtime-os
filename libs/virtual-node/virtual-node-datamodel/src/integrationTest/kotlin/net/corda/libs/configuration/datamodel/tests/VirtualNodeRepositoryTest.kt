@@ -1,5 +1,9 @@
 package net.corda.libs.configuration.datamodel.tests
 
+import java.time.Instant
+import java.util.UUID
+import javax.persistence.EntityManagerFactory
+import kotlin.streams.toList
 import net.corda.crypto.core.ShortHash
 import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
@@ -9,6 +13,12 @@ import net.corda.libs.configuration.datamodel.ConfigurationEntities
 import net.corda.libs.cpi.datamodel.CpiEntities
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.virtualnode.datamodel.VirtualNodeEntities
+import net.corda.libs.virtualnode.datamodel.dto.VirtualNodeOperationStateDto
+import net.corda.libs.virtualnode.datamodel.dto.VirtualNodeOperationType
+import net.corda.libs.virtualnode.datamodel.entities.OperationType
+import net.corda.libs.virtualnode.datamodel.entities.VirtualNodeEntity
+import net.corda.libs.virtualnode.datamodel.entities.VirtualNodeOperationEntity
+import net.corda.libs.virtualnode.datamodel.entities.VirtualNodeOperationState
 import net.corda.libs.virtualnode.datamodel.repository.VirtualNodeRepositoryImpl
 import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
 import net.corda.orm.utils.transaction
@@ -26,16 +36,6 @@ import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.assertThrows
-import java.time.Instant
-import java.util.UUID
-import javax.persistence.EntityManagerFactory
-import kotlin.streams.toList
-import net.corda.libs.virtualnode.datamodel.dto.VirtualNodeOperationStateDto
-import net.corda.libs.virtualnode.datamodel.dto.VirtualNodeOperationType
-import net.corda.libs.virtualnode.datamodel.entities.VirtualNodeEntity
-import net.corda.libs.virtualnode.datamodel.entities.VirtualNodeOperationEntity
-import net.corda.libs.virtualnode.datamodel.entities.VirtualNodeOperationState
-import net.corda.libs.virtualnode.datamodel.entities.OperationType
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class VirtualNodeRepositoryTest {
@@ -294,6 +294,7 @@ class VirtualNodeRepositoryTest {
                 it,
                 holdingIdentityShortHash,
                 testName, "v2", signerSummaryHash.toString(),
+                null,
                 requestId, requestTimestamp, "serializedRequest"
             )
         }

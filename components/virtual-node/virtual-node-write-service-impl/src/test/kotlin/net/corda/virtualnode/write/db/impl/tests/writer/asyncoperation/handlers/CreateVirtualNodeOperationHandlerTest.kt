@@ -15,6 +15,7 @@ import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.VirtualNode.VIRTUAL_NODE_OPERATION_STATUS_TOPIC
 import net.corda.v5.membership.MemberInfo
+import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.write.db.impl.tests.ALICE_HOLDING_ID1
 import net.corda.virtualnode.write.db.impl.tests.CPI_CHECKSUM1
 import net.corda.virtualnode.write.db.impl.tests.CPI_IDENTIFIER1
@@ -33,11 +34,13 @@ import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.eq
+import org.mockito.kotlin.isA
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+
 
 class CreateVirtualNodeOperationHandlerTest {
     private val timestamp = Instant.now()
@@ -59,7 +62,7 @@ class CreateVirtualNodeOperationHandlerTest {
     }
 
     private val externalMessagingRouteConfigGenerator = mock<ExternalMessagingRouteConfigGenerator>().apply {
-        whenever(generateConfig(any(),any(),any())).thenReturn(externalMessagingRouteConfig)
+        whenever(generateConfig(isA<HoldingIdentity>(),any(),any())).thenReturn(externalMessagingRouteConfig)
     }
 
     private val virtualNodeDbFactory = mock<VirtualNodeDbFactory>().apply {
