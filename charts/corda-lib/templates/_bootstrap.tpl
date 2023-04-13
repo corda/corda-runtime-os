@@ -391,7 +391,7 @@ a second init container to execute the output SQL to the relevant database
   args: [ 'initial-config', '{{ .subCommand | default "create-db-config" }}',{{ " " -}}
   
          {{- /* request admin access in some cases, only when the optional admin argument to this function (named template) is specified as true */ -}}
-         {{- if eq (.admin | default "false") "true" -}} '-a',{{ " " -}}{{- end -}}
+         {{- if (.admin | default false) -}} '-a',{{ " " -}}{{- end -}}
          
          {{- if (and (not (eq .name "db")) (not (eq .subCommand "create-crypto-config"))) -}}
            {{- /* specify DB user - note that the quotes being optional is to preserve output while refactory, we can always safely quote */ -}}
