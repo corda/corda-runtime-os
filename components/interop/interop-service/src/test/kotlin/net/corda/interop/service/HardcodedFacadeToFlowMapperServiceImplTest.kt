@@ -31,6 +31,6 @@ internal class HardcodedFacadeToFlowMapperServiceImplTest {
         val flowName = facadeToFlowMapperService.getFlowName(holdingIdentity, facadeId, facadeMethod)
 
         //then
-        Assertions.assertEquals(flowName, "com.net.corda.flow.SayHelloFlow")
+        Assertions.assertEquals(flowName, "net.cordapp.testing.testflows.FacadeInvocationResponderFlow")
     }
 }
