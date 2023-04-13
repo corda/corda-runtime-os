@@ -41,11 +41,11 @@ spec:
             - mountPath: /tmp/working_dir
               name: working-volume
       initContainers:
-        {{- include "corda.generateAndExecuteSql" ( dict "name" "db" "Values" .Values "Chart" .Chart "Release" .Release "schema" "RBAC" "quoteUser" "true" "namePostfix" "schemas") | nindent 8 }}
-        {{- include "corda.generateAndExecuteSql" ( dict "name" "rbac" "Values" .Values "Chart" .Chart "Release" .Release "environmentVariablePrefix" "RBAC_DB_USER" "schema" "RBAC" "quoteUser" "true") | nindent 8 }}
+        {{- include "corda.generateAndExecuteSql" ( dict "name" "db" "Values" .Values "Chart" .Chart "Release" .Release "schema" "RBAC" "namePostfix" "schemas") | nindent 8 }}
+        {{- include "corda.generateAndExecuteSql" ( dict "name" "rbac" "Values" .Values "Chart" .Chart "Release" .Release "environmentVariablePrefix" "RBAC_DB_USER" "schema" "RBAC") | nindent 8 }}
         {{- include "corda.generateAndExecuteSql" ( dict "name" "vnodes" "longName" "virtual-nodes" "dbName" "rbac" "admin" "true" "Values" .Values "Chart" .Chart "Release" .Release "environmentVariablePrefix" "DB_CLUSTER") | nindent 8 }}
-        {{- include "corda.generateAndExecuteSql" ( dict "name" "crypto" "Values" .Values "Chart" .Chart "Release" .Release "environmentVariablePrefix" "CRYPTO_DB_USER" "quoteUser" "true" "schema" "CRYPTO") | nindent 8 }}                
-        {{- include "corda.generateAndExecuteSql" ( dict "name" "rpc"  "Values" .Values "Chart" .Chart "Release" .Release "environmentVariablePrefix" "REST_API_ADMIN" "quoteUser" "true" "schema" "RBAC"  "searchPath" "RBAC" "subCommand" "create-user-config" "namePostfix" "admin" "sqlFile" "rbac-config.sql") | nindent 8 }}
+        {{- include "corda.generateAndExecuteSql" ( dict "name" "crypto" "Values" .Values "Chart" .Chart "Release" .Release "environmentVariablePrefix" "CRYPTO_DB_USER"  "schema" "CRYPTO") | nindent 8 }}                
+        {{- include "corda.generateAndExecuteSql" ( dict "name" "rpc"  "Values" .Values "Chart" .Chart "Release" .Release "environmentVariablePrefix" "REST_API_ADMIN"  "schema" "RBAC"  "searchPath" "RBAC" "subCommand" "create-user-config" "namePostfix" "admin" "sqlFile" "rbac-config.sql") | nindent 8 }}
         - name: create-db-users-and-grant
           image: {{ include "corda.bootstrapDbClientImage" . }}
           imagePullPolicy: {{ .Values.imagePullPolicy }}
@@ -71,7 +71,7 @@ spec:
           {{ include "corda.rbacDbUserEnv" . | nindent 12 }}
           {{ include "corda.cryptoDbUserEnv" . | nindent 12 }}
           {{- include "corda.clusterDbEnv" . | nindent 12 }}
-        {{- include "corda.generateAndExecuteSql" ( dict "name" "crypto-config" "subCommand" "create-crypto-config" "Values" .Values "Chart" .Chart "Release" .Release "quoteUser" "true" "schema" "CRYPTO" "namePostfix" "worker-config" "sqlFile" "crypto-config.sql") | nindent 8 }}
+        {{- include "corda.generateAndExecuteSql" ( dict "name" "crypto-config" "subCommand" "create-crypto-config" "Values" .Values "Chart" .Chart "Release" .Release "schema" "CRYPTO" "namePostfix" "worker-config" "sqlFile" "crypto-config.sql") | nindent 8 }}
 
       volumes:
         - name: working-volume
@@ -408,7 +408,11 @@ a second init container to execute the output SQL to the relevant database
          {{- end -}}         
          
          {{- if not (eq .name "rpc") -}}
-             {{- "'--salt'" -}}, "$(SALT)", '--passphrase', "$(PASSPHRASE)", 
+           {{- if and (hasKey .Values "config") (hasKey .Values.config "vault") (hasKey .Values.config.vault "url") -}} 
+             '-t', 'VAULT', '--vault-path', 'dbsecrets', '--key', {{ .name }}
+           {{- else -}}
+             '--salt', "$(SALT)", '--passphrase', "$(PASSPHRASE)",
+           {{- end -}} 
          {{- end -}}
          
          {{- " '-l'" -}}, '/tmp/working_dir']
