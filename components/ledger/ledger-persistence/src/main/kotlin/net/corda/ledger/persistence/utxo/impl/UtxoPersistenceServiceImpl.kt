@@ -11,8 +11,7 @@ import net.corda.ledger.persistence.utxo.UtxoPersistenceService
 import net.corda.ledger.persistence.utxo.UtxoRepository
 import net.corda.ledger.persistence.utxo.UtxoTransactionReader
 import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
-import net.corda.membership.lib.GroupParametersFactory
-import net.corda.membership.lib.SignedGroupParameters as CordaSignedGroupParameters
+import net.corda.libs.packaging.hash
 import net.corda.orm.utils.transaction
 import net.corda.utilities.serialization.deserialize
 import net.corda.utilities.time.Clock
@@ -29,15 +28,14 @@ import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 
 @Suppress("LongParameterList")
-class UtxoPersistenceServiceImpl constructor(
+class UtxoPersistenceServiceImpl(
     private val entityManagerFactory: EntityManagerFactory,
     private val repository: UtxoRepository,
     private val serializationService: SerializationService,
     private val sandboxDigestService: DigestService,
     private val factoryStorage: ContractStateVaultJsonFactoryRegistry,
     private val jsonMarshallingService: JsonMarshallingService,
-    private val utcClock: Clock,
-    private val groupParametersFactory: GroupParametersFactory
+    private val utcClock: Clock
 ) : UtxoPersistenceService {
 
     private companion object {
@@ -271,8 +269,7 @@ class UtxoPersistenceServiceImpl constructor(
     }
 
     override fun persistSignedGroupParametersIfDoNotExist(signedGroupParameters: SignedGroupParameters) {
-        val cordaSignedGroupParameters = groupParametersFactory.create(signedGroupParameters) as CordaSignedGroupParameters
-        val hash = cordaSignedGroupParameters.hash.toString()
+        val hash = signedGroupParameters.groupParameters.array().hash(DigestAlgorithmName.SHA2_256).toString()
         if (findSignedGroupParameters(hash) == null) {
             entityManagerFactory.transaction { em ->
                 repository.persistSignedGroupParameters(
