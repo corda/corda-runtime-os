@@ -1,9 +1,9 @@
 package net.corda.virtualnode
 
-import net.corda.data.virtualnode.VirtualNodeOperationalState
-import net.corda.libs.packaging.core.CpiIdentifier
 import java.time.Instant
 import java.util.UUID
+import net.corda.data.virtualnode.VirtualNodeOperationalState
+import net.corda.libs.packaging.core.CpiIdentifier
 
 /**
  * Contains information relevant to a particular virtual node (a CPI and a holding identity).
@@ -77,6 +77,7 @@ fun VirtualNodeInfo.toAvro(): VirtualNodeInfoAvro =
             .setFlowOperationalStatus(flowOperationalStatus.toAvro())
             .setVaultDbOperationalStatus(vaultDbOperationalStatus.toAvro())
             .setOperationInProgress(operationInProgress)
+            .setExternalMessagingRouteConfig(externalMessagingRouteConfig)
             .setVersion(version)
             .setTimestamp(timestamp)
             .build()

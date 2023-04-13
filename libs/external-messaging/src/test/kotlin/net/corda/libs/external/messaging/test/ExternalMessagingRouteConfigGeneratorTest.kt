@@ -97,7 +97,7 @@ class ExternalMessagingRouteConfigGeneratorTest {
     fun `ensure the route configuration is generated correctly`() {
 
         val smartConfig =
-            genExternalMsgConfig("ext.\$HOLDING_ID\$.\$CHANNEL_NAME\$.receive", false, InactiveResponseType.IGNORE)
+            genExternalMsgConfig("ext.\$HOLDING_ID.\$CHANNEL_NAME.receive", false, InactiveResponseType.IGNORE)
 
         val externalMessagingRouteConfigGenerator =
             ExternalMessagingRouteConfigGeneratorImpl(
