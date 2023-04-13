@@ -43,7 +43,7 @@ spec:
       initContainers:
         {{- include "corda.generateAndExecuteSql" ( dict "name" "db" "Values" .Values "Chart" .Chart "Release" .Release "schema" "RBAC" "quoteUser" "true" "namePostfix" "schemas") | nindent 8 }}
         {{- include "corda.generateAndExecuteSql" ( dict "name" "rbac" "Values" .Values "Chart" .Chart "Release" .Release "environmentVariablePrefix" "RBAC_DB_USER" "schema" "RBAC" "quoteUser" "true") | nindent 8 }}
-        {{- include "corda.generateAndExecuteSql" ( dict "name" "vnodes" "longName" "virtual-nodes" "admin" "true" "Values" .Values "Chart" .Chart "Release" .Release "environmentVariablePrefix" "DB_CLUSTER") | nindent 8 }}
+        {{- include "corda.generateAndExecuteSql" ( dict "name" "vnodes" "longName" "virtual-nodes" "dbName" "rbac" "admin" "true" "Values" .Values "Chart" .Chart "Release" .Release "environmentVariablePrefix" "DB_CLUSTER") | nindent 8 }}
         {{- include "corda.generateAndExecuteSql" ( dict "name" "crypto" "Values" .Values "Chart" .Chart "Release" .Release "environmentVariablePrefix" "CRYPTO_DB_USER" "quoteUser" "true" "quotePassword" "false" "schema" "CRYPTO") | nindent 8 }}                
         {{- include "corda.generateAndExecuteSql" ( dict "name" "rpc"  "Values" .Values "Chart" .Chart "Release" .Release "environmentVariablePrefix" "REST_API_ADMIN" "quoteUser" "true" "quotePassword" "false" "schema" "RBAC"  "searchPath" "RBAC" "subCommand" "create-user-config" "namePostfix" "admin" "sqlFile" "rbac-config.sql") | nindent 8 }}
         - name: create-db-users-and-grant
@@ -404,7 +404,7 @@ a second init container to execute the output SQL to the relevant database
          {{- if and (not (eq .name "rpc")) (not (eq .subCommand "create-crypto-config")) -}}
              {{- " '--name'" -}}, 'corda-{{ .longName | default .name }}', 
              {{- " '--jdbc-url'" -}}, 'jdbc:{{ include "corda.clusterDbType" . }}://{{ required "A db host is required" .Values.db.cluster.host }}:{{ include "corda.clusterDbPort" . }}/{{ include "corda.clusterDbName" . }}{{- if .schema }}?currentSchema={{.schema }}{{- end -}}', 
-             {{- " '--jdbc-pool-max-size'" -}}, {{ .Values.bootstrap.db.rbac.dbConnectionPool.maxSize | quote }}, {{- " " -}}
+             {{- " '--jdbc-pool-max-size'" -}}, {{ (index .Values.bootstrap.db (.dbName | default .name)).dbConnectionPool.maxSize | quote }}, {{- " " -}}
          {{- end -}}         
          
          {{- if not (eq .name "rpc") -}}
