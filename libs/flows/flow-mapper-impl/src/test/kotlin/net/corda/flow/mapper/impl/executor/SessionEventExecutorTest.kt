@@ -149,10 +149,9 @@ class SessionEventExecutorTest {
         assertThat(state).isNotNull
         assertThat(outboundEvents.size).isEqualTo(1)
         val outboundEvent = outboundEvents.first()
-        assertThat(outboundEvent.topic).isEqualTo(FLOW_EVENT_TOPIC)
-        assertThat(outboundEvent.key).isEqualTo("flowId1")
-        assertThat(outboundEvent.value!!::class).isEqualTo(FlowEvent::class)
-        assertThat(payload.sessionId).isEqualTo(sessionId)
+        assertThat(outboundEvent.topic).isEqualTo(P2P_OUT_TOPIC)
+        assertThat(outboundEvent.key).isEqualTo(sessionId)
+        assertThat(outboundEvent.value!!::class).isEqualTo(AppMessage::class)
     }
 
     @Test
