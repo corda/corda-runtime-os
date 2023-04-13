@@ -208,11 +208,11 @@ class MemberOpsServiceImpl @Activate constructor(
                 virtualNodeInfoReadService,
                 membershipPersistenceClient,
                 membershipQueryClient,
+                membershipConfig,
                 clock,
             )
             val retryManager = CommandsRetryManager(
                 messagingConfig = messagingConfig,
-                clock = clock,
                 publisherFactory = publisherFactory,
                 coordinatorFactory = coordinatorFactory,
             )
