@@ -71,7 +71,7 @@ spec:
           {{ include "corda.rbacDbUserEnv" . | nindent 12 }}
           {{ include "corda.cryptoDbUserEnv" . | nindent 12 }}
           {{- include "corda.clusterDbEnv" . | nindent 12 }}
-        {{- include "corda.generateAndExecuteSql" ( dict "name" "crypto" "subCommand" "create-crypto-config" "Values" .Values "Chart" .Chart "Release" .Release "quoteUser" "true" "schema" "CRYPTO" "namePostfix" "worker-config" "sqlFile" "crypto-config.sql") | nindent 8 }}
+        {{- include "corda.generateAndExecuteSql" ( dict "name" "crypto-config" "subCommand" "create-crypto-config" "Values" .Values "Chart" .Chart "Release" .Release "quoteUser" "true" "schema" "CRYPTO" "namePostfix" "worker-config" "sqlFile" "crypto-config.sql") | nindent 8 }}
 
       volumes:
         - name: working-volume
