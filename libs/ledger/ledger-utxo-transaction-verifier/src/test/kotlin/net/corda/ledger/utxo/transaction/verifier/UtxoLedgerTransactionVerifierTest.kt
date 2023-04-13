@@ -27,6 +27,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.security.PublicKey
 
+@Suppress("MaxLineLength")
 class UtxoLedgerTransactionVerifierTest {
 
     private val transaction = mock<UtxoLedgerTransaction>()
