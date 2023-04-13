@@ -120,7 +120,7 @@ class InteropAliasProcessor(
         oldValue: HostedIdentityEntry?,
         currentData: Map<String, HostedIdentityEntry>
     ) {
-        logger.info("currentData=${currentData.size} newRecord=${newRecord}")
+        logger.info("currentData=${currentData.size} newRecord=${newRecord}") //TODO remove once CORE-10444 is done
 
         if (oldValue != null) {
             identityMappingCache.remove(oldValue.holdingIdentity.x500Name.toString())
@@ -132,7 +132,7 @@ class InteropAliasProcessor(
     }
 
     override fun onSnapshot(currentData: Map<String, HostedIdentityEntry>) {
-        logger.info("currentData=${currentData.size}")
+        logger.info("currentData=${currentData.size}") //TODO remove once CORE-10444 is done
         identityMappingCache.clear()
         currentData.values.forEach {
             addEntry(it)
