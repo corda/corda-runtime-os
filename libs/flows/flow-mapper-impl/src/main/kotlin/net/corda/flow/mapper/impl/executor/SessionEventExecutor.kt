@@ -115,9 +115,20 @@ class SessionEventExecutor(
                 FlowMapperResult(null, listOf())
             }
             FlowMapperStateType.CLOSING -> {
-                val outputRecord =
-                    Record(outputTopic, flowMapperState.flowId, FlowEvent(flowMapperState.flowId, generateAck(instant)))
-                FlowMapperResult(flowMapperState, listOf(outputRecord))
+                if (messageDirection == MessageDirection.OUTBOUND) {
+                    log.warn("Attempted to send a message but flow mapper state is in CLOSING. Session ID: ${sessionEvent.sessionId}")
+                    FlowMapperResult(flowMapperState, listOf())
+                } else {
+                    val outputRecord =
+                        Record(
+                            Schemas.P2P.P2P_OUT_TOPIC, sessionEvent.sessionId, appMessageFactory(
+                                generateAck(instant),
+                                sessionEventSerializer,
+                                flowConfig
+                            )
+                        )
+                    FlowMapperResult(flowMapperState, listOf(outputRecord))
+                }
             }
             FlowMapperStateType.OPEN -> {
                 val outputRecord = if (messageDirection == MessageDirection.OUTBOUND) {
