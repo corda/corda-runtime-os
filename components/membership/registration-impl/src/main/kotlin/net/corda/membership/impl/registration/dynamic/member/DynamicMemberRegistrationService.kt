@@ -26,6 +26,7 @@ import net.corda.data.membership.p2p.MembershipRegistrationRequest
 import net.corda.data.membership.p2p.UnauthenticatedRegistrationRequest
 import net.corda.data.membership.p2p.UnauthenticatedRegistrationRequestHeader
 import net.corda.data.p2p.app.AppMessage
+import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.data.p2p.app.UnauthenticatedMessage
 import net.corda.data.p2p.app.UnauthenticatedMessageHeader
 import net.corda.libs.configuration.helper.getConfig
@@ -312,8 +313,13 @@ class DynamicMemberRegistrationService @Activate constructor(
                 val mgm = groupReader.lookup().firstOrNull { it.isMgm }
                     ?: throw IllegalArgumentException("Failed to look up MGM information.")
 
+                val currentInfo = groupReader.lookup(member.x500Name, MembershipStatusFilter.ACTIVE_OR_SUSPENDED)
+                require(currentInfo == null) {
+                    "Re-registration is not supported."
+                }
+
                 val serialInfo = context[SERIAL]?.toLong()
-                    ?: groupReader.lookup(member.x500Name)?.serial
+                    ?: currentInfo?.serial
                     ?: 0
 
                 val message = MembershipRegistrationRequest(
@@ -461,11 +467,12 @@ class DynamicMemberRegistrationService @Activate constructor(
                 require(orderVerifier.isOrdered(this, 3)) { "Provided session key IDs are incorrectly numbered." }
             }
             p2pEndpointVerifier.verifyContext(context)
+            val isNotary = context.entries.any { it.key.startsWith(ROLES_PREFIX) && it.value == NOTARY_ROLE }
             context.keys.filter { ledgerIdRegex.matches(it) }.apply {
-                require(isNotEmpty()) { "No ledger key ID was provided." }
+                if (!isNotary) require(isNotEmpty()) { "No ledger key ID was provided." }
                 require(orderVerifier.isOrdered(this, 3)) { "Provided ledger key IDs are incorrectly numbered." }
             }
-            if (context.entries.any { it.key.startsWith(ROLES_PREFIX) && it.value == NOTARY_ROLE }) {
+            if (isNotary) {
                 context.keys.filter { notaryIdRegex.matches(it) }.apply {
                     require(isNotEmpty()) { "No notary key ID was provided." }
                     require(orderVerifier.isOrdered(this, 3)) { "Provided notary key IDs are incorrectly numbered." }

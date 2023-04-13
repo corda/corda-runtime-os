@@ -179,6 +179,23 @@ interface FlowSessionManager {
     ): List<SessionState>
 
     /**
+     * Gets the sessions with the passed in [statuses].
+     *
+     * @param checkpoint The flow's [FlowCheckpoint].
+     * @param sessionIds The session ids to check the status of.
+     * @param statuses The acceptable statuses the sessions can have.
+     *
+     * @return A list of [SessionState]s that have a [SessionState.status] of one of [statuses].
+     *
+     * @throws []FlowSessionStateException] If a session does not exist within the flow's [FlowCheckpoint].
+     */
+    fun getSessionsWithStatuses(
+        checkpoint: FlowCheckpoint,
+        sessionIds: List<String>,
+        statuses: Set<SessionStateType>
+    ): List<SessionState>
+
+    /**
      * Do all the specified sessions have a [SessionStateType] included within [statuses]?
      *
      * @param checkpoint The flow's [FlowCheckpoint].

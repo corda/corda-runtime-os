@@ -57,7 +57,7 @@ class CryptoFlowOpsBusProcessor(
         val expireAt = getRequestExpireAt(request)
         
         if (Instant.now() >= expireAt) {
-            logger.error(
+            logger.warn(
                 "Event ${request.request::class.java} for tenant ${request.context.tenantId} is no longer valid, " +
                         "expired at $expireAt { requestId: $requestId, key: $flowId }"
             )
