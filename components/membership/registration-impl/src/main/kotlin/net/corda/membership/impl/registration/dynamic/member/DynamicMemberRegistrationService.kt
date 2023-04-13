@@ -270,14 +270,8 @@ class DynamicMemberRegistrationService @Activate constructor(
                     ex
                 )
             }
-            val groupReader = membershipGroupReaderProvider.getGroupReader(member)
-            val previousContext = groupReader
-                .lookup(member.x500Name)
-                ?.takeIf { it.status != MEMBER_STATUS_PENDING }
-                ?.memberProvidedContext
-                ?.entries?.associate { it.key to it.value }
             try {
-                validateContext(context, previousContext)
+                validateContext(context)
             } catch (ex: IllegalArgumentException) {
                 throw InvalidMembershipRegistrationException(
                     "Registration failed. The registration context is invalid: " + ex.message,
@@ -293,12 +287,19 @@ class DynamicMemberRegistrationService @Activate constructor(
                 val roles = MemberRole.extractRolesFromContext(context)
                 val notaryKeys = generateNotaryKeys(context, member.shortHash.value)
                 logger.debug("Member roles: {}, notary keys: {}", roles, notaryKeys)
+                val groupReader = membershipGroupReaderProvider.getGroupReader(member)
+                val previousContext = groupReader
+                    .lookup(member.x500Name)
+                    ?.takeIf { it.status != MEMBER_STATUS_PENDING }
+                    ?.memberProvidedContext
+                    ?.entries?.associate { it.key to it.value }
                 val memberContext = buildMemberContext(
                     context,
                     registrationId,
                     member,
                     roles,
                     notaryKeys,
+                    previousContext,
                 ).toSortedMap()
                     .toWire()
                 val serializedMemberContext = keyValuePairListSerializer.serialize(memberContext)
@@ -416,6 +417,7 @@ class DynamicMemberRegistrationService @Activate constructor(
             member: HoldingIdentity,
             roles: Collection<MemberRole>,
             notaryKeys: List<KeyDetails>,
+            previousContext: Map<String, String>?,
         ): Map<String, String> {
             val cpi = virtualNodeInfoReadService.get(member)?.cpiIdentifier
                 ?: throw CordaRuntimeException("Could not find virtual node info for member ${member.shortHash}")
@@ -436,7 +438,7 @@ class DynamicMemberRegistrationService @Activate constructor(
             )
             val roleContext = roles.toMemberInfo { notaryKeys }
             val optionalContext = mapOf(MEMBER_CPI_SIGNER_HASH to cpi.signerSummaryHash.toString())
-            return filteredContext +
+            val result = filteredContext +
                     sessionKeyContext +
                     ledgerKeyContext +
                     additionalContext +
@@ -444,6 +446,20 @@ class DynamicMemberRegistrationService @Activate constructor(
                     optionalContext +
                     tlsSubject
 
+            previousContext?.let { previous ->
+                ((result.entries - previous.entries) + (previous.entries - result.entries)).filterNot {
+                    it.key.startsWith(CUSTOM_KEY_PREFIX)
+                }.apply {
+                    require(isEmpty()) {
+                        throw InvalidMembershipRegistrationException(
+                            "Registration failed. The registration context is invalid: Only custom fields with the " +
+                                    "'ext.' prefix may be updated during re-registration."
+                        )
+                    }
+                }
+            }
+
+            return result
         }
 
         private fun getTlsSubject(member: HoldingIdentity) : Map<String, String> {
@@ -465,7 +481,7 @@ class DynamicMemberRegistrationService @Activate constructor(
             }
         }
 
-        private fun validateContext(context: Map<String, String>, previousContext: Map<String, String>?) {
+        private fun validateContext(context: Map<String, String>) {
             context.keys.filter { sessionKeyIdRegex.matches(it) }.apply {
                 require(isNotEmpty()) { "No session key ID was provided." }
                 require(orderVerifier.isOrdered(this, 3)) { "Provided session key IDs are incorrectly numbered." }
@@ -483,11 +499,6 @@ class DynamicMemberRegistrationService @Activate constructor(
                 context.keys.filter { notaryProtocolVersionsRegex.matches(it) }.apply {
                     require(orderVerifier.isOrdered(this, 6)) { "Provided notary protocol versions are incorrectly numbered." }
                 }
-            }
-            previousContext?.let { previous ->
-                val diff = ((context.entries - previous.entries) + (previous.entries - context.entries))
-                    .filterNot { it.key.startsWith(CUSTOM_KEY_PREFIX) }
-                require(diff.isEmpty()) { "Only custom fields with the 'ext.' prefix may be updated during re-registration." }
             }
         }
 
