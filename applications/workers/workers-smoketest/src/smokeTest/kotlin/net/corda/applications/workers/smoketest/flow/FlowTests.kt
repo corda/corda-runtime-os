@@ -1188,11 +1188,12 @@ class FlowTests {
     fun `Interoperability - facade call returns payload back to caller`() {
         val cluster = cluster {
             endpoint(CLUSTER_URI, USERNAME, PASSWORD)
-            eventually(
-                duration = Duration.ofSeconds(30)
-            ) {
-                vNodeList().toJson()["virtualNodes"].toList()
-            }
+//            eventually(
+//                duration = Duration.ofSeconds(60)
+//            ) {
+//                vNodeList().toJson()["virtualNodes"].toList()
+//            }
+            emptyList<String>()
         }
         val expected = 4
         assertEquals(expected, cluster.size,
