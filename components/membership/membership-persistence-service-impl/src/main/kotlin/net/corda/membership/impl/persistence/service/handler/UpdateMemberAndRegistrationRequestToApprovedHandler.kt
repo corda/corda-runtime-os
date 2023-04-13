@@ -49,6 +49,15 @@ internal class UpdateMemberAndRegistrationRequestToApprovedHandler(
         logger.info("Update member and registration request to approve.")
         return transaction(context.holdingIdentity.toCorda().shortHash) { em ->
             val now = clock.instant()
+            val currentNonPendingMemberStatus = em.find(
+                MemberInfoEntity::class.java,
+                MemberInfoEntityPrimaryKey(request.member.groupId, request.member.x500Name, false),
+                LockModeType.PESSIMISTIC_WRITE,
+            )?.status
+            val newStatus = when (currentNonPendingMemberStatus) {
+                MEMBER_STATUS_ACTIVE, MEMBER_STATUS_SUSPENDED -> currentNonPendingMemberStatus
+                else -> MEMBER_STATUS_ACTIVE
+            }
             val member = em.find(
                 MemberInfoEntity::class.java,
                 MemberInfoEntityPrimaryKey(request.member.groupId, request.member.x500Name, true),
@@ -56,7 +65,15 @@ internal class UpdateMemberAndRegistrationRequestToApprovedHandler(
             ) ?: throw MembershipPersistenceException("Could not find member: ${request.member}")
             val currentMgmContext = keyValuePairListDeserializer.deserialize(member.mgmContext)
                 ?: throw MembershipPersistenceException("Can not extract the mgm context")
-            val (newStatus, mgmContext) = processMgmContext(currentMgmContext)
+            val mgmContext = KeyValuePairList(
+                currentMgmContext.items.map {
+                    if (it.key == STATUS) {
+                        KeyValuePair(it.key, newStatus)
+                    } else {
+                        it
+                    }
+                }
+            )
 
             val serializedMgmContext = keyValuePairListSerializer.serialize(mgmContext)
                 ?: throw MembershipPersistenceException("Can not serialize the mgm context")
@@ -98,23 +115,5 @@ internal class UpdateMemberAndRegistrationRequestToApprovedHandler(
                 ),
             )
         }
-    }
-
-    private fun processMgmContext(
-        currentMgmContext: KeyValuePairList,
-    ): Pair<String, KeyValuePairList> {
-        var newStatus = MEMBER_STATUS_ACTIVE
-        val newContext = currentMgmContext.items.map {
-            if (it.key == STATUS) {
-                newStatus = when (it.value) {
-                    MEMBER_STATUS_ACTIVE, MEMBER_STATUS_SUSPENDED -> it.value
-                    else -> MEMBER_STATUS_ACTIVE
-                }
-                KeyValuePair(it.key, newStatus)
-            } else {
-                it
-            }
-        }
-        return newStatus to KeyValuePairList(newContext)
     }
 }

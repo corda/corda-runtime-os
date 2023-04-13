@@ -231,11 +231,27 @@ class UpdateMemberAndRegistrationRequestToApprovedHandlerTest {
     }
 
     @Test
-    fun `invoke will keep the status as suspended`() {
+    fun `invoke will keep the state if it was suspended`() {
+        val existingEntity = mock<MemberInfoEntity> {
+            on { status } doReturn MEMBER_STATUS_SUSPENDED
+        }
+        whenever(
+            entityManager.find(
+                eq(MemberInfoEntity::class.java),
+                eq(
+                    MemberInfoEntityPrimaryKey(
+                        groupId = member.groupId,
+                        memberX500Name = member.x500Name,
+                        false,
+                    ),
+                ),
+                eq(LockModeType.PESSIMISTIC_WRITE),
+            ),
+        ).doReturn(existingEntity)
         whenever(keyValuePairListDeserializer.deserialize(mgmContextBytes)).doReturn(
             KeyValuePairList(
                 listOf(
-                    KeyValuePair(STATUS, MEMBER_STATUS_SUSPENDED),
+                    KeyValuePair(STATUS, MEMBER_STATUS_PENDING),
                     KeyValuePair("another-key", "value"),
                 ),
             ),
@@ -244,8 +260,8 @@ class UpdateMemberAndRegistrationRequestToApprovedHandlerTest {
         whenever(keyValuePairListSerializer.serialize(mgmContextCapture.capture())).doReturn(byteArrayOf(0))
         mockMemberInfoEntity()
         mockRegistrationRequestEntity()
-        val context = MembershipRequestContext(clock.instant(), requestId, member)
-        val request = UpdateMemberAndRegistrationRequestToApproved(member, requestId)
+        val context = MembershipRequestContext(clock.instant(), requestId, member,)
+        val request = UpdateMemberAndRegistrationRequestToApproved(member, requestId,)
 
         clock.setTime(Instant.ofEpochMilli(500))
         handler.invoke(context, request)
@@ -257,11 +273,27 @@ class UpdateMemberAndRegistrationRequestToApprovedHandlerTest {
     }
 
     @Test
-    fun `invoke will keep the status as active`() {
+    fun `invoke will keep the state if it was active`() {
+        val existingEntity = mock<MemberInfoEntity> {
+            on { status } doReturn MEMBER_STATUS_ACTIVE
+        }
+        whenever(
+            entityManager.find(
+                eq(MemberInfoEntity::class.java),
+                eq(
+                    MemberInfoEntityPrimaryKey(
+                        groupId = member.groupId,
+                        memberX500Name = member.x500Name,
+                        false,
+                    ),
+                ),
+                eq(LockModeType.PESSIMISTIC_WRITE),
+            ),
+        ).doReturn(existingEntity)
         whenever(keyValuePairListDeserializer.deserialize(mgmContextBytes)).doReturn(
             KeyValuePairList(
                 listOf(
-                    KeyValuePair(STATUS, MEMBER_STATUS_ACTIVE),
+                    KeyValuePair(STATUS, MEMBER_STATUS_PENDING),
                     KeyValuePair("another-key", "value"),
                 ),
             ),
@@ -270,8 +302,8 @@ class UpdateMemberAndRegistrationRequestToApprovedHandlerTest {
         whenever(keyValuePairListSerializer.serialize(mgmContextCapture.capture())).doReturn(byteArrayOf(0))
         mockMemberInfoEntity()
         mockRegistrationRequestEntity()
-        val context = MembershipRequestContext(clock.instant(), requestId, member)
-        val request = UpdateMemberAndRegistrationRequestToApproved(member, requestId)
+        val context = MembershipRequestContext(clock.instant(), requestId, member,)
+        val request = UpdateMemberAndRegistrationRequestToApproved(member, requestId,)
 
         clock.setTime(Instant.ofEpochMilli(500))
         handler.invoke(context, request)
