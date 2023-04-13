@@ -60,7 +60,7 @@ class FlowMessagingImpl @Activate constructor(
         methodName: String,
         payload: String
     ): String {
-        // TODO: CORE-10240 return an actual FacadeInvocationResponse result
+        // TODO revisit input/results while integrating with CORE-10430
         val session = createInteropFlowSession(memberName, facadeName, methodName)
         return session.sendAndReceive(String::class.java, payload)
     }
