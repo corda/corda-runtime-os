@@ -63,6 +63,8 @@ class SessionErrorExecutorTest {
         ).execute()
         val outboundEvents = result.outputEvents
 
+        val state = result.flowMapperState
+        Assertions.assertThat(state?.status).isEqualTo(FlowMapperStateType.ERROR)
         Assertions.assertThat(outboundEvents.size).isEqualTo(0)
     }
 
@@ -83,6 +85,8 @@ class SessionErrorExecutorTest {
         ).execute()
         val outboundEvents = result.outputEvents
 
+        val state = result.flowMapperState
+        Assertions.assertThat(state?.status).isEqualTo(FlowMapperStateType.ERROR)
         Assertions.assertThat(outboundEvents.size).isEqualTo(0)
     }
 
@@ -103,7 +107,7 @@ class SessionErrorExecutorTest {
         ).execute()
         val outboundEvents = result.outputEvents
         val state = result.flowMapperState
-        Assertions.assertThat(state).isNotNull
+        Assertions.assertThat(state?.status).isEqualTo(FlowMapperStateType.ERROR)
 
         Assertions.assertThat(outboundEvents.size).isEqualTo(1)
         val outboundEvent = outboundEvents.first()
