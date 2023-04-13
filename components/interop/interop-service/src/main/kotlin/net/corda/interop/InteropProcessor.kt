@@ -152,17 +152,17 @@ class InteropProcessor(
             logEntering("OUTBOUND", sourceIdentity, destinationIdentity, sessionEvent)
             val translatedSource = sourceIdentity.apply {
                 x500Name = state?.aliasHoldingIdentity ?: addAliasSubstringToOrganisationName(this.toCorda()).x500Name.toString()
-                groupId = state?.groupId ?: INTEROP_GROUP_ID // TODO For the first message need to find an alias group,
+                groupId = state?.groupId ?: INTEROP_GROUP_ID // TODO CORE-12208 For the first message need to find an alias group,
             // as FlowProcessor assigns a real group of the source
             }
             val translatedDestination = destinationIdentity.apply {
                 //TODO review destination from initiating flow vs from initiated
                 val name = this.toCorda()
                 if (!name.toString().contains(POSTFIX_DENOTING_ALIAS)) {
-                    //TODO this should be always an alias (set by API or kept by responder flow
+                    //TODO CORE-12208 this should be always an alias (set by API or kept by responder flow)
                     x500Name = addAliasSubstringToOrganisationName(name).x500Name.toString()
                 }
-                groupId = INTEROP_GROUP_ID // TODO For the first message need to find an alias group,
+                groupId = INTEROP_GROUP_ID // TODO CORE-12208 For the first message need to find an alias group,
                 // as FlowProcessor assigns a real group of the source,
                 // for the following messages it should already have a alias group worth comparing with the session
             }
@@ -210,10 +210,8 @@ class InteropProcessor(
         val groupReader = membershipGroupReaderProvider.getGroupReader(fakeHoldingIdentity)
         val memberProvidedContext = groupReader.lookup(fakeHoldingIdentity.x500Name)?.memberProvidedContext
         memberProvidedContext ?: return null
-        val x500Name = memberProvidedContext.get("corda.interop.mapping.x500name")
-        val groupId = memberProvidedContext.get("corda.interop.mapping.group")
-        x500Name ?: return null
-        groupId ?: return null
+        val x500Name = memberProvidedContext.get("corda.interop.mapping.x500name") ?: return null
+        val groupId = memberProvidedContext.get("corda.interop.mapping.group") ?: return null
         return HoldingIdentity(MemberX500Name.parse(x500Name), groupId)
     }
 
@@ -224,10 +222,11 @@ class InteropProcessor(
      */
     private fun getSourceAndDestinationIdentity(sessionEvent: SessionEvent):
             Pair<net.corda.data.identity.HoldingIdentity, net.corda.data.identity.HoldingIdentity> =
-         if (sessionEvent.sessionId.contains(Constants.INITIATED_SESSION_ID_SUFFIX))
-            Pair(sessionEvent.initiatedIdentity, sessionEvent.initiatingIdentity)
-        else
-            Pair(sessionEvent.initiatingIdentity, sessionEvent.initiatedIdentity)
+         if (sessionEvent.sessionId.contains(Constants.INITIATED_SESSION_ID_SUFFIX)) {
+             Pair(sessionEvent.initiatedIdentity, sessionEvent.initiatingIdentity)
+         } else {
+             Pair(sessionEvent.initiatingIdentity, sessionEvent.initiatedIdentity)
+         }
 
     private fun SessionEvent.isInitiatingIdentityDestination() = !sessionId.contains(Constants.INITIATED_SESSION_ID_SUFFIX)
     private fun SessionEvent.isInitiatedIdentityDestination() = !isInitiatingIdentityDestination()
