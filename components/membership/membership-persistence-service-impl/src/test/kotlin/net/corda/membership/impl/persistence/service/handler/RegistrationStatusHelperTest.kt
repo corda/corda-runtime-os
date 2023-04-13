@@ -1,7 +1,6 @@
 package net.corda.membership.impl.persistence.service.handler
 
 import net.corda.data.membership.common.RegistrationStatus
-import net.corda.membership.impl.persistence.service.handler.RegistrationStatusHelper.canMoveToStatus
 import net.corda.membership.impl.persistence.service.handler.RegistrationStatusHelper.toStatus
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import org.assertj.core.api.Assertions.assertThat
@@ -24,21 +23,5 @@ class RegistrationStatusHelperTest {
         assertThrows<MembershipPersistenceException> {
             "test".toStatus()
         }
-    }
-
-    @ParameterizedTest
-    @EnumSource(RegistrationStatus::class)
-    fun `canMoveToStatus return true for the same state`(status: RegistrationStatus) {
-        assertThat(status.canMoveToStatus(status)).isTrue
-    }
-
-    @Test
-    fun `canMoveToStatus return true when the status comes after this status`() {
-        assertThat(RegistrationStatus.NEW.canMoveToStatus(RegistrationStatus.SENT_TO_MGM)).isTrue
-    }
-
-    @Test
-    fun `canMoveToStatus return false when the status comes before this status`() {
-        assertThat(RegistrationStatus.SENT_TO_MGM.canMoveToStatus(RegistrationStatus.NEW)).isFalse
     }
 }

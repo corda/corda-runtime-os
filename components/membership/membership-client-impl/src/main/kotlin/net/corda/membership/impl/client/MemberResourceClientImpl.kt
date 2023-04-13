@@ -385,6 +385,7 @@ class MemberResourceClientImpl @Activate constructor(
             RegistrationStatus.PENDING_AUTO_APPROVAL -> RegistrationStatusDto.PENDING_AUTO_APPROVAL
             RegistrationStatus.DECLINED -> RegistrationStatusDto.DECLINED
             RegistrationStatus.INVALID -> RegistrationStatusDto.INVALID
+            RegistrationStatus.FAILED -> RegistrationStatusDto.FAILED
             RegistrationStatus.APPROVED -> RegistrationStatusDto.APPROVED
         }
     }
