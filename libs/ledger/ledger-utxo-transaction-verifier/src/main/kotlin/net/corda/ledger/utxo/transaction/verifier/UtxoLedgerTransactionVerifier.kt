@@ -33,7 +33,6 @@ class UtxoLedgerTransactionVerifier(
         verifyNoDuplicateInputsOrReferences(transaction.inputStateRefs, transaction.referenceStateRefs)
         verifyNoInputAndReferenceOverlap(transaction.inputStateRefs, transaction.referenceStateRefs)
         verifyCommands(transaction.commands)
-        verifyNotaryIsWhitelisted()
 
         /**
          * These checks require backchain resolution.

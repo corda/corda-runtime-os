@@ -47,8 +47,4 @@ abstract class UtxoTransactionVerifier {
             "At least one command must be applied to the current $subjectClass."
         }
     }
-
-    protected fun verifyNotaryIsWhitelisted() {
-        // TODO CORE-8956 Check the notary is in the group parameters whitelist
-    }
 }

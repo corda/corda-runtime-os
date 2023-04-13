@@ -132,11 +132,6 @@ class UtxoLedgerTransactionVerifierTest {
     }
 
     @Test
-    fun `throws an exception if the notary is not allowed`() {
-        // TODO CORE-8956 Check the notary is in the group parameters whitelist
-    }
-
-    @Test
     fun `throws an exception when input and reference states don't have the same notary`() {
         whenever(inputTransactionState.notaryName).thenReturn(notaryX500Name)
         whenever(inputTransactionState.notaryKey).thenReturn(publicKeyExample)
