@@ -188,28 +188,32 @@ class SessionManagerImpl @Activate constructor(
         instant: Instant,
         config: SmartConfig,
     ): List<SessionEvent> {
+        if (sessionState.sendEventsState.undeliveredMessages.isEmpty())
+            return emptyList()
 
         //get all events with a timestamp in the past, as well as any acks or errors
-        val sessionEvents = sessionState.sendEventsState.undeliveredMessages.filter {
+        var sessionEvents = sessionState.sendEventsState.undeliveredMessages.filter {
             it.timestamp <= instant || it.payload is SessionError
         }
 
-        //if any of the events are a [SessionInit], send only that. Otherwise, send all.
-        val eventsToSend =
-            sessionEvents.firstOrNull { event -> event.payload is SessionInit }?.let { listOf(it) }
-            ?: sessionEvents
+        //if any of the events are a [SessionInit], send only that. Otherwise, send all events.
+        if (SessionStateType.CREATED == sessionState.status) {
+            sessionEvents =
+                sessionEvents.firstOrNull { event -> event.payload is SessionInit }?.let { listOf(it) }
+                ?: sessionEvents
+        }
 
         //update events with the latest ack info from the current state
-        eventsToSend.forEach { eventToSend ->
+        sessionEvents.forEach { eventToSend ->
             eventToSend.receivedSequenceNum = sessionState.receivedEventsState.lastProcessedSequenceNum
             eventToSend.outOfOrderSequenceNums = sessionState.receivedEventsState.undeliveredMessages.map { it.sequenceNum }
         }
 
         //remove SessionAcks/SessionErrors and increase timestamp of messages to be sent that are awaiting acknowledgement
         val messageResendWindow = config.getLong(SESSION_MESSAGE_RESEND_WINDOW)
-        updateSessionStateSendEvents(sessionState, instant, messageResendWindow)
+        updateSessionStateSendEvents(sessionState, instant, messageResendWindow, sessionEvents)
 
-        return eventsToSend
+        return sessionEvents
     }
 
     /**
@@ -224,11 +228,12 @@ class SessionManagerImpl @Activate constructor(
         sessionState: SessionState,
         instant: Instant,
         messageResendWindow: Long,
+        dispatchedEvents: List<SessionEvent>,
     ) {
         sessionState.sendEventsState.undeliveredMessages = sessionState.sendEventsState.undeliveredMessages.filter {
             it.payload !is SessionError
         }.map {
-            if (it.timestamp <= instant) {
+            if (it.timestamp <= instant && dispatchedEvents.toSet().contains(it)) {
                 it.timestamp = instant.plusMillis(messageResendWindow)
             }
             it

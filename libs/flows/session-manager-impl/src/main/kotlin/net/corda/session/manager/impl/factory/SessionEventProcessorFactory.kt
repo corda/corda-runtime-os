@@ -92,7 +92,7 @@ class SessionEventProcessorFactory @Activate constructor(
             }
             is SessionClose -> SessionCloseProcessorSend(key, sessionState, sessionEvent, instant)
             is SessionError -> SessionErrorProcessorSend(key, sessionState, sessionEvent, payload.errorMessage, instant)
-            is SessionConfirm -> SessionConfirmProcessorSend(key, sessionState, sessionEvent, payload, instant)
+            is SessionConfirm -> SessionConfirmProcessorSend(key, sessionState, sessionEvent, instant)
             else -> throw NotImplementedError(
                 "The session event type '${payload.javaClass.name}' is not supported."
             )
