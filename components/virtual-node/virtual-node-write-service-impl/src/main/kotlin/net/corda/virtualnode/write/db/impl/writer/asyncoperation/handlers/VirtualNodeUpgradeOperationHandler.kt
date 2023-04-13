@@ -99,7 +99,7 @@ internal class VirtualNodeUpgradeOperationHandler(
         val (upgradedVNodeInfo, cpkChangelogs) = entityManagerFactory.createEntityManager().transaction { em ->
             val (virtualNode, targetCpi) = validateUpgradeRequest(em, request, requestId)
 
-            val externalMessagingRouteConfig = externalMessagingRouteConfigGenerator.generateConfig(
+            val externalMessagingRouteConfig = externalMessagingRouteConfigGenerator.generateUpgradeConfig(
                 virtualNode,
                 targetCpi.cpiId,
                 targetCpi.cpksMetadata

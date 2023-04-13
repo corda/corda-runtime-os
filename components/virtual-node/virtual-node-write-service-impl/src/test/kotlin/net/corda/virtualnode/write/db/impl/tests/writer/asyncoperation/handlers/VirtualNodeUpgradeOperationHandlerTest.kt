@@ -38,7 +38,6 @@ import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.eq
-import org.mockito.kotlin.isA
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
@@ -58,8 +57,8 @@ class VirtualNodeUpgradeOperationHandlerTest {
     private val newExternalMessagingRouteConfig = """ { "dummy2":"dummy2" } """
 
     private val externalMessagingRouteConfigGenerator = mock<ExternalMessagingRouteConfigGenerator>().apply {
-        whenever(generateConfig(isA<HoldingIdentity>(), any(), any())).thenReturn(externalMessagingRouteConfig)
-        whenever(generateConfig(isA<VirtualNodeInfo>(), any(), any())).thenReturn(newExternalMessagingRouteConfig)
+        whenever(generateNewConfig(any(), any(), any())).thenReturn(externalMessagingRouteConfig)
+        whenever(generateUpgradeConfig(any(), any(), any())).thenReturn(newExternalMessagingRouteConfig)
     }
 
     private val vnodeId = "123456789011"

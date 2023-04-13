@@ -108,7 +108,7 @@ class ExternalMessagingRouteConfigGeneratorTest {
 
     @Test
     fun `null should be returned if no channel configuration is provided`() {
-        val routesConfig = externalMessagingRouteConfigGenerator.generateConfig(
+        val routesConfig = externalMessagingRouteConfigGenerator.generateNewConfig(
             ALICE_HOLDING_ID1,
             cpiId,
             cpks = setOf(genCpk(null))
@@ -152,7 +152,7 @@ class ExternalMessagingRouteConfigGeneratorTest {
                 }
             """.trimIndent()
 
-        val routesConfig = externalMessagingRouteConfigGenerator.generateConfig(
+        val routesConfig = externalMessagingRouteConfigGenerator.generateNewConfig(
             ALICE_HOLDING_ID1,
             cpiId,
             cpks = setOf(
@@ -266,7 +266,7 @@ class ExternalMessagingRouteConfigGeneratorTest {
                 }
             """.trimIndent()
 
-        val routesConfig = externalMessagingRouteConfigGenerator.generateConfig(
+        val routesConfig = externalMessagingRouteConfigGenerator.generateNewConfig(
             ALICE_HOLDING_ID1,
             cpiId,
             cpks = setOf(genCpk(externalChannelsConfigJson), genCpk(externalChannelsConfigJson2))
@@ -316,7 +316,7 @@ class ExternalMessagingRouteConfigGeneratorTest {
                 }
             """.trimIndent()
 
-        val routesConfig = externalMessagingRouteConfigGenerator.generateConfig(
+        val routesConfig = externalMessagingRouteConfigGenerator.generateUpgradeConfig(
             virtualNodeInfo,
             cpiId,
             cpks = setOf(genCpk(externalChannelsConfigJson))
@@ -402,7 +402,7 @@ class ExternalMessagingRouteConfigGeneratorTest {
                 }
             """.trimIndent()
 
-        val routesConfig = externalMessagingRouteConfigGenerator.generateConfig(
+        val routesConfig = externalMessagingRouteConfigGenerator.generateUpgradeConfig(
             virtualNodeInfo,
             cpiId,
             cpks = setOf(genCpk(externalChannelsConfigJson))
@@ -519,7 +519,7 @@ class ExternalMessagingRouteConfigGeneratorTest {
                 }
             """.trimIndent()
 
-        val routesConfig = externalMessagingRouteConfigGenerator.generateConfig(
+        val routesConfig = externalMessagingRouteConfigGenerator.generateUpgradeConfig(
             virtualNodeInfo,
             cpiId,
             cpks = setOf(genCpk(externalChannelsConfigJson))

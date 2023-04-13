@@ -10,11 +10,11 @@ interface ExternalMessagingRouteConfigGenerator {
      * The method generates the configuration for external messaging.
      * N.B.: Please keep in mind that any historical configuration is lost when this method is called.
      */
-    fun generateConfig(holdingId: HoldingIdentity, cpiId: CpiIdentifier, cpks: Collection<CpkMetadata>): String?
+    fun generateNewConfig(holdingId: HoldingIdentity, cpiId: CpiIdentifier, cpks: Collection<CpkMetadata>): String?
 
     /**
      * The method generates the configuration for external messaging.
      * N.B.: Please keep in mind that the historical configuration is preserved when this method is called.
      */
-    fun generateConfig(virtualNode: VirtualNodeInfo, cpiId: CpiIdentifier, cpks: Collection<CpkMetadata>): String?
+    fun generateUpgradeConfig(virtualNode: VirtualNodeInfo, cpiId: CpiIdentifier, cpks: Collection<CpkMetadata>): String?
 }

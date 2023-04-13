@@ -20,7 +20,7 @@ class ExternalMessagingRouteConfigGeneratorImpl(
      * The method generates the configuration for external messaging.
      * N.B.: Please keep in mind that any historical configuration is lost when this method is called.
      */
-    override fun generateConfig(
+    override fun generateNewConfig(
         holdingId: HoldingIdentity,
         cpiId: CpiIdentifier,
         cpks: Collection<CpkMetadata>
@@ -32,7 +32,7 @@ class ExternalMessagingRouteConfigGeneratorImpl(
      * The method generates the configuration for external messaging.
      * N.B.: Please keep in mind that the historical configuration is preserved when this method is called.
      */
-    override fun generateConfig(
+    override fun generateUpgradeConfig(
         virtualNode: VirtualNodeInfo,
         cpiId: CpiIdentifier,
         cpks: Collection<CpkMetadata>
@@ -40,7 +40,7 @@ class ExternalMessagingRouteConfigGeneratorImpl(
         if (virtualNode.externalMessagingRouteConfig == null) {
             // Before the upgrade there was no configuration for the external messaging route.
             // Create the configuration from scratch
-            return generateConfig(virtualNode.holdingIdentity, cpiId, cpks)
+            return generateNewConfig(virtualNode.holdingIdentity, cpiId, cpks)
         }
 
         // There is already configuration for the external messaging route.
