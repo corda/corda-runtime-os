@@ -1,63 +1,15 @@
 package net.corda.cli.plugins.preinstall
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties
-import com.fasterxml.jackson.annotation.JsonProperty
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.databind.exc.ValueInstantiationException
-import com.fasterxml.jackson.dataformat.yaml.YAMLMapper
+import net.corda.cli.plugins.preinstall.PreInstallPlugin.ResourceConfig
+import net.corda.cli.plugins.preinstall.PreInstallPlugin.ResourceValues
+import net.corda.cli.plugins.preinstall.PreInstallPlugin.Configurations
+import net.corda.cli.plugins.preinstall.PreInstallPlugin.PluginContext
 import picocli.CommandLine
 import picocli.CommandLine.Parameters
 import picocli.CommandLine.Option
-import java.io.File
-
-data class ResourceValues(
-    @JsonProperty("memory")
-    val memory: String,
-    @JsonProperty("cpu")
-    val cpu: String
-)
-
-data class ResourceConfig(
-    @JsonProperty("requests")
-    val requests: ResourceValues,
-    @JsonProperty("limits")
-    val limits: ResourceValues
-)
-
-@JsonIgnoreProperties(ignoreUnknown = true)
-data class Resources(
-    @JsonProperty("resources")
-    val resources: ResourceConfig
-)
-
-@JsonIgnoreProperties(ignoreUnknown = true)
-data class Workers(
-    @JsonProperty("db")
-    val db: Resources?,
-    @JsonProperty("flow")
-    val flow: Resources?,
-    @JsonProperty("membership")
-    val membership: Resources?,
-    @JsonProperty("rest")
-    val rest: Resources?,
-    @JsonProperty("p2pLinkManager")
-    val p2pLinkManager: Resources?,
-    @JsonProperty("p2pGateway")
-    val p2pGateway: Resources?
-)
-
-@JsonIgnoreProperties(ignoreUnknown = true)
-data class Configurations(
-    @JsonProperty("bootstrap")
-    val bootstrap: Resources?,
-    @JsonProperty("workers")
-    val workers: Workers?,
-    @JsonProperty("resources")
-    val resources: ResourceConfig
-)
 
 @CommandLine.Command(name = "check-limits", description = ["Check the resource limits have been assigned."])
-class CheckLimits : Runnable {
+class CheckLimits : Runnable, PluginContext() {
 
     @Parameters(index = "0", description = ["The yaml file containing resource limit overrides for the corda install."])
     lateinit var path: String
@@ -67,21 +19,6 @@ class CheckLimits : Runnable {
 
     @Option(names = ["-d", "--debug"], description = ["Show information about limit calculation for debugging purposes"])
     var debug: Boolean = false
-
-    companion object LogLevel {
-        const val ERROR: Int = 0
-        const val INFO: Int = 1
-        const val DEBUG: Int = 2
-    }
-
-    // used for logging
-    private fun log(s: String, level: Int) {
-        when (level) {
-            ERROR -> println("[ERROR] $s")
-            INFO -> if (verbose) println("[INFO] $s")
-            DEBUG -> if (debug) println("[DEBUG] $s")
-        }
-    }
 
     // split resource into a digit portion and a unit portion
     private fun parseResourceString(resourceString: String): Long {
@@ -151,23 +88,9 @@ class CheckLimits : Runnable {
     }
 
     override fun run() {
-        log("Working Directory = ${System.getProperty("user.dir")}\n", INFO)
-        val file = File(path)
+        register(verbose, debug)
 
-        if(!file.isFile) {
-            log("File does not exist", ERROR)
-            return
-        }
-
-        lateinit var yaml: Configurations
-        try {
-            val mapper: ObjectMapper = YAMLMapper()
-            yaml = mapper.readValue(file, Configurations::class.java)
-        }
-        catch ( e: ValueInstantiationException ) {
-            log("Could not parse the YAML file at $path: ${e.message}", ERROR)
-            return
-        }
+        val yaml: Configurations = parseYaml<Configurations>(path) ?: return
 
         var check: Boolean = checkResources(yaml.resources, "resources")
 
