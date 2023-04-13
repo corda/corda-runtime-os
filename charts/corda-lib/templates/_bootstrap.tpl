@@ -407,7 +407,7 @@ a second init container to execute the output SQL to the relevant database
              {{- " '--jdbc-pool-max-size'" -}}, {{ .Values.bootstrap.db.rbac.dbConnectionPool.maxSize | quote }}, {{- " " -}}
          {{- end -}}         
          
-         {{- if (and (not (eq .name "rpc")) (not (eq .name "db"))) -}}
+         {{- if not (eq .name "rpc") -}}
              {{- "'--salt'" -}}, "$(SALT)", '--passphrase', "$(PASSPHRASE)", 
          {{- end -}}
                   
