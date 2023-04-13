@@ -10,10 +10,7 @@ import net.corda.data.membership.StaticNetworkInfo
 import net.corda.membership.lib.GroupParametersFactory
 import net.corda.membership.lib.GroupParametersNotaryUpdater
 import net.corda.membership.lib.MemberInfoExtension.Companion.notaryDetails
-import net.corda.membership.lib.addNewNotaryService
-import net.corda.membership.lib.notaryServiceRegex
 import net.corda.membership.lib.toMap
-import net.corda.membership.lib.updateExistingNotaryService
 import net.corda.membership.registration.MembershipRegistrationException
 import net.corda.membership.network.writer.staticnetwork.StaticNetworkUtils.mgmSignatureSpec
 import net.corda.membership.network.writer.staticnetwork.StaticNetworkUtils.mgmSigningKeyProvider
@@ -56,7 +53,7 @@ object StaticNetworkGroupParametersUtils {
             .firstOrNull {
                 it.value == notaryDetails.serviceName.toString()
             }?.run {
-                notaryServiceRegex.find(key)?.groups?.get(1)?.value?.toIntOrNull()
+                GroupParametersNotaryUpdater.notaryServiceRegex.find(key)?.groups?.get(1)?.value?.toIntOrNull()
             }
 
         val notaryUpdater = GroupParametersNotaryUpdater(keyEncodingService, clock)

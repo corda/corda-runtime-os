@@ -112,7 +112,7 @@ class DistributeMemberInfoActionHandler(
 
         val allActiveMembers = groupReader.lookup()
         val allActiveMembersExcludingMgm = allActiveMembers.filterNot { it.isMgm }
-        //If the updated member is suspended then we only send it's own member info to itself (so it can tell it has been suspended).
+        //If the updated member is suspended then we only send its own member info to itself (so it can tell it has been suspended).
         val membersToDistributeToUpdatedMember = if (updatedMemberInfo.status == MEMBER_STATUS_SUSPENDED) {
             listOf(updatedMemberInfo)
         } else {

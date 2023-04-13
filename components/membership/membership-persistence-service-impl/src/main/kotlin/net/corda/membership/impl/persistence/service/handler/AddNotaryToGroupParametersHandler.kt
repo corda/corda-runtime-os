@@ -11,10 +11,10 @@ import net.corda.data.membership.db.response.command.PersistGroupParametersRespo
 import net.corda.membership.datamodel.GroupParametersEntity
 import net.corda.membership.datamodel.MemberInfoEntity
 import net.corda.membership.lib.GroupParametersNotaryUpdater
+import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.NOTARY_SERVICE_NAME_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.lib.MemberInfoExtension.Companion.notaryDetails
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
-import net.corda.membership.lib.NOTARY_SERVICE_NAME_KEY
 import net.corda.membership.lib.toMap
 import net.corda.membership.lib.toSortedMap
 import net.corda.virtualnode.toCorda

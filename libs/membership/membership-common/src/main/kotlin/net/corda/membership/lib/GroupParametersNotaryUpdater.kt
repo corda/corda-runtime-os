@@ -14,6 +14,7 @@ class GroupParametersNotaryUpdater(
     private val clock: Clock = UTCClock()
 ) {
     companion object {
+        const val NOTARIES_KEY = "corda.notary.service."
         private const val NOTARY_SERVICE_KEY_PREFIX = "corda.notary.service.%s"
         const val NOTARY_SERVICE_NAME_KEY = "$NOTARY_SERVICE_KEY_PREFIX.name"
         const val NOTARY_SERVICE_PROTOCOL_KEY = "$NOTARY_SERVICE_KEY_PREFIX.flow.protocol.name"
