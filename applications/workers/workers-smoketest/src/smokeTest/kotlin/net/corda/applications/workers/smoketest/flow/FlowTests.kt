@@ -1183,16 +1183,16 @@ class FlowTests {
         assertThat(flowResult.result).isEqualTo(expectedOutputJson)
     }
 
-    @Disabled("Fails in e2e because require a single cluster.") //TODO CORE-12134
+    //@Disabled("Fails in e2e because require a single cluster.") //TODO CORE-12134
     @Test
     fun `Interoperability - facade call returns payload back to caller`() {
         val cluster = cluster {
-//            endpoint(CLUSTER_URI, USERNAME, PASSWORD)
-//            eventually(
-//                duration = Duration.ofSeconds(60)
-//            ) {
-//                vNodeList().toJson()["virtualNodes"].toList()
-//            }
+            endpoint(CLUSTER_URI, USERNAME, PASSWORD)
+            eventually(
+                duration = Duration.ofSeconds(60)
+            ) {
+                vNodeList().toJson()["virtualNodes"].toList()
+            }
             emptyList<String>()
         }
         val expected = 4
