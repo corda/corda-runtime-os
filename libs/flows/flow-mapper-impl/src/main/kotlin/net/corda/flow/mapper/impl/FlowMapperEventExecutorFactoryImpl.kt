@@ -40,39 +40,49 @@ class FlowMapperEventExecutorFactoryImpl @Activate constructor(
         flowConfig: SmartConfig,
         instant: Instant
     ): FlowMapperEventExecutor {
-        return when (val sessionEvent = flowMapperEvent.payload) {
+        return when (val flowMapperEventPayload = flowMapperEvent.payload) {
             is SessionEvent -> {
-                val eventPayload = sessionEvent.payload
-                if (eventPayload is SessionInit) {
-                    SessionInitExecutor(eventKey, sessionEvent, eventPayload, state, sessionEventSerializer, flowConfig)
-                } else if (eventPayload is SessionError) {
-                    SessionErrorExecutor(
-                        eventKey,
-                        sessionEvent,
-                        state,
-                        instant,
-                        sessionEventSerializer,
-                        ::generateAppMessage,
-                        flowConfig
-                    )
-                } else {
-                    SessionEventExecutor(
-                        eventKey,
-                        sessionEvent,
-                        state,
-                        instant,
-                        sessionEventSerializer,
-                        ::generateAppMessage,
-                        flowConfig
-                    )
+                when (val sessionPayload = flowMapperEventPayload.payload) {
+                    is SessionInit -> {
+                        SessionInitExecutor(
+                            eventKey,
+                            flowMapperEventPayload,
+                            sessionPayload,
+                            state,
+                            sessionEventSerializer,
+                            flowConfig
+                        )
+                    }
+                    is SessionError -> {
+                        SessionErrorExecutor(
+                            eventKey,
+                            flowMapperEventPayload,
+                            state,
+                            instant,
+                            sessionEventSerializer,
+                            ::generateAppMessage,
+                            flowConfig
+                        )
+                    }
+                    else -> {
+                        SessionEventExecutor(
+                            eventKey,
+                            flowMapperEventPayload,
+                            state,
+                            instant,
+                            sessionEventSerializer,
+                            ::generateAppMessage,
+                            flowConfig
+                        )
+                    }
                 }
             }
-            is StartFlow -> StartFlowExecutor(eventKey, FLOW_EVENT_TOPIC, sessionEvent, state)
+            is StartFlow -> StartFlowExecutor(eventKey, FLOW_EVENT_TOPIC, flowMapperEventPayload, state)
             is ExecuteCleanup -> ExecuteCleanupEventExecutor(eventKey)
-            is ScheduleCleanup -> ScheduleCleanupEventExecutor(eventKey, sessionEvent, state)
+            is ScheduleCleanup -> ScheduleCleanupEventExecutor(eventKey, flowMapperEventPayload, state)
 
             else -> throw NotImplementedError(
-                "The event type '${sessionEvent.javaClass.name}' is not supported."
+                "The event type '${flowMapperEventPayload.javaClass.name}' is not supported."
             )
         }
     }
