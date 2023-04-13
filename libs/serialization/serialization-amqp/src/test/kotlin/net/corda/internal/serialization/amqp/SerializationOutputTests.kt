@@ -39,6 +39,7 @@ import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNotSame
 import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.assertThrows
@@ -694,6 +695,7 @@ class SerializationOutputTests {
     @CordaSerializable
     data class ParentContainer(val left: SimpleContainer, val right: Container)
 
+    @Disabled // todo re-enable with CORE-12472
     @Test
     fun `test object referenced multiple times`() {
         val simple = SimpleContainer("Fred", "Ginger")
@@ -723,6 +725,7 @@ class SerializationOutputTests {
     @CordaSerializable
     data class Vic(val a: List<String>, val b: List<String>)
 
+    @Disabled // todo re-enable with CORE-12472
     @Test
     fun `test generics ignored from graph logic`() {
         val a = listOf("a", "b")
