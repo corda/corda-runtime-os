@@ -393,7 +393,7 @@ a second init container to execute the output SQL to the relevant database
          {{- /* request admin access in some cases, only when the optional admin argument to this function (named template) is specified as true */ -}}
          {{- if eq .name "vnodes" -}} '-a',{{- end -}}
          
-         {{- if (and (not (eq .name "db")) (not (eq .subCommand "create-crypto-config"))) -}}
+         {{- if and (not (eq .name "db")) (not (eq .name "crypto-config")) -}}
            {{- /* specify DB user - note that the quotes being optional is to preserve output while refactory, we can always safely quote */ -}}
            {{- "'-u'" -}}, '$({{ .environmentVariablePrefix -}}_USERNAME)',
          
@@ -413,6 +413,10 @@ a second init container to execute the output SQL to the relevant database
            {{- else -}}
              '--salt', "$(SALT)", '--passphrase', "$(PASSPHRASE)",
            {{- end -}} 
+         {{- end -}}
+         
+         {{- if and (eq .name "crypto-config") (hasKey .Values "config") (hasKey .Values.config "vault") (hasKey .Values.config.vault "url") -}}
+            '-v', 'cryptosecrets', '-ks', 'salt', '-kp', 'passphrase'
          {{- end -}}
          
          {{- " '-l'" -}}, '/tmp/working_dir']
