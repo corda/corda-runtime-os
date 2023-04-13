@@ -74,21 +74,21 @@ class FlowMapperMessageProcessorTest {
     }
 
     @Test
-    fun `when state is OPEN expired session events are processed`() {
+    fun `when state is OPEN expired session events are not processed`() {
         flowMapperMessageProcessor.onNext(buildMapperState(FlowMapperStateType.OPEN), buildMapperEvent(buildSessionEvent(Instant.now()
             .minusSeconds(100000))))
         verify(flowMapperEventExecutorFactory, times(0)).create(any(), any(), anyOrNull(), any(), any())
     }
 
     @Test
-    fun `when state is CLOSING new session events are processed`() {
+    fun `when state is CLOSING expired session events are not processed`() {
         flowMapperMessageProcessor.onNext(buildMapperState(FlowMapperStateType.CLOSING), buildMapperEvent(buildSessionEvent(Instant.now()
             .minusSeconds(100000))))
         verify(flowMapperEventExecutorFactory, times(0)).create(any(), any(), anyOrNull(), any(), any())
     }
 
     @Test
-    fun `when state is ERROR new session events are processed`() {
+    fun `when state is ERROR expired session events are not processed`() {
         flowMapperMessageProcessor.onNext(buildMapperState(FlowMapperStateType.ERROR), buildMapperEvent(buildSessionEvent(Instant.now()
             .minusSeconds(100000))))
         verify(flowMapperEventExecutorFactory, times(0)).create(any(), any(), anyOrNull(), any(), any())
@@ -97,6 +97,18 @@ class FlowMapperMessageProcessorTest {
     @Test
     fun `when state is CLOSING cleanup events are processed`() {
         flowMapperMessageProcessor.onNext(buildMapperState(FlowMapperStateType.CLOSING), buildMapperEvent(ExecuteCleanup()))
+        verify(flowMapperEventExecutorFactory, times(1)).create(any(), any(), anyOrNull(), any(), any())
+    }
+
+    @Test
+    fun `when state is CLOSING new session events are processed`() {
+        flowMapperMessageProcessor.onNext(buildMapperState(FlowMapperStateType.CLOSING), buildMapperEvent(buildSessionEvent(Instant.now())))
+        verify(flowMapperEventExecutorFactory, times(1)).create(any(), any(), anyOrNull(), any(), any())
+    }
+
+    @Test
+    fun `when state is ERROR new session events are processed`() {
+        flowMapperMessageProcessor.onNext(buildMapperState(FlowMapperStateType.ERROR), buildMapperEvent(buildSessionEvent(Instant.now())))
         verify(flowMapperEventExecutorFactory, times(1)).create(any(), any(), anyOrNull(), any(), any())
     }
 }
