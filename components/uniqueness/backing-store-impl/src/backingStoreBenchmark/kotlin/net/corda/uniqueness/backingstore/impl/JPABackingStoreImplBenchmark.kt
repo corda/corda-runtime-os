@@ -75,6 +75,8 @@ class JPABackingStoreImplBenchmark {
     private var currentTestExecTimeMs = 0L
     private val resultsMap = TreeMap<String, Int>()
 
+    private val originatorX500Name = "C=GB, L=London, O=Alice"
+
     private lateinit var holdingIdentity: HoldingIdentity
     private lateinit var backingStore: BackingStore
     private lateinit var testClock: AutoTickTestClock
@@ -90,8 +92,8 @@ class JPABackingStoreImplBenchmark {
         // An entirely new database is created for each test case, to ensure performance is not
         // impacted between different test cases
         holdingIdentity = createTestHoldingIdentity(
-            "C=GB, L=London, O=Alice", UUID.randomUUID().toString())
-         val holdingIdentityDbName =
+            "C=GB, L=London, O=NotaryRep1", UUID.randomUUID().toString())
+        val holdingIdentityDbName =
             VirtualNodeDbType.UNIQUENESS.getSchemaName(holdingIdentity.shortHash)
 
         val databaseInstaller = DatabaseInstaller(
@@ -247,6 +249,7 @@ class JPABackingStoreImplBenchmark {
                         UniquenessCheckRequestInternal(
                             txId,
                             txId.toString(),
+                            originatorX500Name,
                             emptyList(),
                             emptyList(),
                             0,
