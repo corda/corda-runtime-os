@@ -79,7 +79,7 @@ class DeclineRegistrationHandlerTest {
     private val handler = DeclineRegistrationHandler(membershipPersistenceClient, mock(), mock(), mock(), config, p2pRecordsFactory)
 
     @Test
-    fun `handler calls persistence client and returns no output states`() {
+    fun `handler calls persistence client and returns output states`() {
         val result = handler.invoke(state, Record(TOPIC, member.toString(), RegistrationCommand(command)))
 
         verify(membershipPersistenceClient, times(1)).setRegistrationRequestStatus(
