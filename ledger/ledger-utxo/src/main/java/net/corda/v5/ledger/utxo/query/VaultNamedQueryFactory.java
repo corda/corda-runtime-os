@@ -1,11 +1,15 @@
 package net.corda.v5.ledger.utxo.query;
 
+import net.corda.v5.ledger.utxo.query.json.ContractStateVaultJsonFactory;
 import net.corda.v5.ledger.utxo.query.registration.VaultNamedQueryBuilderFactory;
 import org.jetbrains.annotations.NotNull;
 
 /**
  * The main interface that needs to be implemented by the named ledger queries. Implementing this interface will define how
  * the named query will be built and stored.
+ *
+ * @see ContractStateVaultJsonFactory to define how a given state type will be represented as a JSON string.
+ *
  * <p>
  * Example usage:
  * <ul>
