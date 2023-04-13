@@ -56,6 +56,9 @@
             <column name="tx_id" type="VARBINARY(64)">
                 <constraints nullable="false"/>s
             </column>
+            <column name="originator_x500_name" type="VARCHAR(1024)">
+                <constraints nullable="false"/>
+            </column>
             <column name="expiry_datetime" type="TIMESTAMP">
                 <constraints nullable="false"/>
             </column>
