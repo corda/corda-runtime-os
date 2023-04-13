@@ -14,6 +14,7 @@ import net.corda.data.interop.InteropMessage
 import net.corda.data.p2p.app.AppMessage
 import net.corda.db.messagebus.testkit.DBSetup
 import net.corda.flow.utils.emptyKeyValuePairList
+import net.corda.interop.InteropAliasProcessor.Companion.createHostedAliasIdentity
 import net.corda.interop.InteropService
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.membership.read.MembershipGroupReaderProvider
@@ -26,6 +27,7 @@ import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas
 import net.corda.schema.Schemas.Config.CONFIG_TOPIC
+import net.corda.schema.Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC
 import net.corda.schema.Schemas.P2P.P2P_OUT_TOPIC
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.BootConfig.TOPIC_PREFIX
@@ -33,6 +35,7 @@ import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.schema.configuration.MessagingConfig
 import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
+import net.corda.virtualnode.toCorda
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
@@ -94,9 +97,11 @@ class InteropServiceIntegrationTest {
         }
     }
 
+    val groupId = "3dfc0aae-be7c-44c2-aa4f-4d0d7145cf08"
+    val sourceIdentity = HoldingIdentity("CN=Alice, O=Alice Corp, L=LDN, C=GB", groupId)
+    val destinationIdentity = HoldingIdentity("CN=Alice Alias, O=Alice Corp, L=LDN, C=GB", groupId)
 
     private fun messagesToPublish(session: String) : List<Record<*,*>> {
-        val groupId = "3dfc0aae-be7c-44c2-aa4f-4d0d7145cf08"
         val interopMessage: ByteBuffer = ByteBuffer.wrap(
             cordaAvroSerializationFactory.createAvroSerializer<InteropMessage> { }.serialize(
                 InteropMessage(
@@ -118,11 +123,8 @@ class InteropServiceIntegrationTest {
             )
         )
 
-        val sourceIdentity = HoldingIdentity("CN=Alice, O=Alice Corp, L=LDN, C=GB", groupId)
-        val destinationIdentity = HoldingIdentity("CN=Alice Alias, O=Alice Corp, L=NC, C=US", groupId)
-
         val inboundSessionEvent = SessionEvent(
-            MessageDirection.INBOUND, Instant.now(), session, 1, sourceIdentity, destinationIdentity, 0, listOf(),
+            MessageDirection.INBOUND, Instant.now(), session, 1, destinationIdentity, sourceIdentity, 0, listOf(),
             SessionInit(sourceIdentity.toString(), null, emptyKeyValuePairList(), emptyKeyValuePairList(), emptyKeyValuePairList(), interopMessage))
 
         val outboundSessionEvent = SessionEvent(
@@ -131,7 +133,7 @@ class InteropServiceIntegrationTest {
 
         val inboundMsg = Record(Schemas.Flow.FLOW_INTEROP_EVENT_TOPIC, session, FlowMapperEvent(inboundSessionEvent))
         val outboundMsg = Record(Schemas.Flow.FLOW_INTEROP_EVENT_TOPIC, session, FlowMapperEvent(outboundSessionEvent))
-        return listOf(inboundMsg, inboundMsg, outboundMsg)
+        return listOf(inboundMsg, outboundMsg)
     }
 
     @Test
@@ -140,32 +142,32 @@ class InteropServiceIntegrationTest {
         val publisher = publisherFactory.createPublisher(PublisherConfig("client1"), bootConfig)
         // Test config updates don't break Interop Service
         republishConfig(publisher)
+        publisher.publish(listOf(createHostedAliasIdentity(sourceIdentity.toCorda())))
         val session = "session1"
         //TODO revisit sleep in CORE-12134
         Thread.sleep(30000)
         publisher.publish(messagesToPublish(session))
 
-        //TODO CORE-12134
-//        val flowMapperExpectedOutputMessages = 2
-//        flowMapperExpectedOutputMessages.let { expectedMessageCount ->
-//            val mapperLatch = CountDownLatch(expectedMessageCount)
-//            val testProcessor = FlowMapperEventCounter(session, mapperLatch, expectedMessageCount)
-//            val eventTopic = subscriptionFactory.createDurableSubscription(
-//                SubscriptionConfig("client-flow-mapper", FLOW_MAPPER_EVENT_TOPIC),
-//                testProcessor,
-//                bootConfig,
-//                null
-//            )
-//            eventTopic.start()
-//            assertTrue(
-//                mapperLatch.await(60, TimeUnit.SECONDS),
-//                "Fewer messages on $FLOW_MAPPER_EVENT_TOPIC were observed (${testProcessor.recordCount})" +
-//                        " than expected ($expectedMessageCount)."
-//            )
-//            assertEquals(expectedMessageCount, testProcessor.recordCount,
-//                "More messages on $FLOW_MAPPER_EVENT_TOPIC were observed that expected.")
-//            eventTopic.close()
-//        }
+        val flowMapperExpectedOutputMessages = 1
+        flowMapperExpectedOutputMessages.let { expectedMessageCount ->
+            val mapperLatch = CountDownLatch(expectedMessageCount)
+            val testProcessor = FlowMapperEventCounter(session, mapperLatch, expectedMessageCount)
+            val eventTopic = subscriptionFactory.createDurableSubscription(
+                SubscriptionConfig("client-flow-mapper", FLOW_MAPPER_EVENT_TOPIC),
+                testProcessor,
+                bootConfig,
+                null
+            )
+            eventTopic.start()
+            assertTrue(
+                mapperLatch.await(60, TimeUnit.SECONDS),
+                "Fewer messages on $FLOW_MAPPER_EVENT_TOPIC were observed (${testProcessor.recordCount})" +
+                        " than expected ($expectedMessageCount)."
+            )
+            assertEquals(expectedMessageCount, testProcessor.recordCount,
+                "More messages on $FLOW_MAPPER_EVENT_TOPIC were observed that expected.")
+            eventTopic.close()
+        }
         val p2pExpectedOutputMessages = 1
         p2pExpectedOutputMessages.let { expectedMessageCount ->
             val mapperLatch = CountDownLatch(expectedMessageCount)
