@@ -1,5 +1,6 @@
 package net.corda.chunking.db.impl
 
+import javax.persistence.EntityManagerFactory
 import net.corda.chunking.RequestId
 import net.corda.chunking.db.ChunkDbWriter
 import net.corda.chunking.db.ChunkDbWriterFactory
@@ -8,9 +9,11 @@ import net.corda.chunking.db.impl.persistence.StatusPublisher
 import net.corda.chunking.db.impl.persistence.database.DatabaseChunkPersistence
 import net.corda.chunking.db.impl.persistence.database.DatabaseCpiPersistence
 import net.corda.chunking.db.impl.validation.CpiValidatorImpl
+import net.corda.chunking.db.impl.validation.ExternalChannelsConfigValidatorImpl
 import net.corda.cpiinfo.write.CpiInfoWriteService
 import net.corda.data.chunking.Chunk
 import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.configuration.validation.ConfigurationValidatorFactory
 import net.corda.membership.certificate.service.CertificatesService
 import net.corda.membership.group.policy.validation.MembershipGroupPolicyValidator
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidatorFactory
@@ -28,9 +31,6 @@ import net.corda.utilities.time.UTCClock
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import javax.persistence.EntityManagerFactory
-import net.corda.chunking.db.impl.validation.ExternalChannelsConfigValidatorImpl
-import net.corda.libs.configuration.validation.ConfigurationValidatorFactory
 
 @Suppress("UNUSED", "LongParameterList")
 @Component(service = [ChunkDbWriterFactory::class])
@@ -133,7 +133,8 @@ class ChunkDbWriterFactoryImpl(
         val cpiCacheDir = tempPathProvider.getOrCreate(bootConfig, CPI_CACHE_DIR)
         val cpiPartsDir = tempPathProvider.getOrCreate(bootConfig, CPI_PARTS_DIR)
         val membershipSchemaValidator = membershipSchemaValidatorFactory.createValidator()
-        val externalChannelsConfigValidator = ExternalChannelsConfigValidatorImpl(configurationValidatorFactory.createConfigValidator())
+        val externalChannelsConfigValidator =
+            ExternalChannelsConfigValidatorImpl(configurationValidatorFactory.createCordappConfigValidator())
         val validator = CpiValidatorImpl(
             statusPublisher,
             chunkPersistence,

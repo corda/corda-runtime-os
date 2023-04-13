@@ -1,8 +1,9 @@
 package net.corda.ledger.persistence.query.impl.parsing
 
-import net.corda.ledger.persistence.query.impl.parsing.converters.PostgresVaultNamedQueryConverter
-import net.corda.ledger.persistence.query.impl.parsing.expressions.PostgresVaultNamedQueryExpressionParser
-import net.corda.ledger.persistence.query.impl.parsing.expressions.VaultNamedQueryExpressionValidatorImpl
+import net.corda.ledger.persistence.query.parsing.VaultNamedQueryParserImpl
+import net.corda.ledger.persistence.query.parsing.converters.PostgresVaultNamedQueryConverter
+import net.corda.ledger.persistence.query.parsing.expressions.PostgresVaultNamedQueryExpressionParser
+import net.corda.ledger.persistence.query.parsing.expressions.VaultNamedQueryExpressionValidatorImpl
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
