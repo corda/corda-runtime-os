@@ -2,7 +2,6 @@ package net.corda.ledger.consensual.flow.impl.transaction.factory
 
 import net.corda.common.json.validation.JsonValidator
 import net.corda.ledger.common.data.transaction.TransactionMetadataImpl
-import net.corda.ledger.common.data.transaction.TransactionMetadataInternal
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
 import net.corda.ledger.common.flow.transaction.TransactionSignatureServiceInternal
@@ -64,10 +63,6 @@ class ConsensualSignedTransactionFactoryImpl @Activate constructor(
         val metadataBytes = serializeMetadata(metadata)
         val componentGroups = calculateComponentGroups(consensualTransactionBuilder, metadataBytes)
         val wireTransaction = wireTransactionFactory.create(componentGroups)
-
-        check((wireTransaction.metadata as TransactionMetadataInternal).getNumberOfComponentGroups() == componentGroups.size){
-            "Number of component groups in metadata structure description does not match with the real number!"
-        }
 
         verifyTransaction(wireTransaction)
 

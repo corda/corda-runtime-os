@@ -33,12 +33,6 @@ class CurrentGroupParametersServiceImpl @Activate constructor(
         val signedGroupParameters = requireNotNull(groupReader.signedGroupParameters) {
             "signedGroupParameters could not be accessed."
         }
-        requireNotNull(signedGroupParameters.signature) {
-            "signedGroupParameters needs to be signed."
-        }
-        requireNotNull(signedGroupParameters.signatureSpec) {
-            "signedGroupParameters needs a signature specification."
-        }
         return signedGroupParameters
     }
 
