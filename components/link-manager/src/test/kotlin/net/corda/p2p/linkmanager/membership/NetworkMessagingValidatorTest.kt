@@ -4,6 +4,7 @@ import net.corda.data.p2p.app.MembershipStatusFilter.ACTIVE_OR_SUSPENDED
 import net.corda.membership.lib.MemberInfoExtension.Companion.IS_MGM
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
+import net.corda.utilities.Either
 import net.corda.utilities.parseOrNull
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.membership.MGMContext
@@ -105,9 +106,9 @@ class NetworkMessagingValidatorTest {
         val result = networkMessagingValidator.validateInbound(testConfig.sender, testConfig.receiver)
 
         if (testConfig.canMessage) {
-            assertThat(result).isInstanceOf(NetworkStatusValidationResult.Pass::class.java)
+            assertThat(result).isInstanceOf(Either.Left::class.java)
         } else {
-            assertThat(result).isInstanceOf(NetworkStatusValidationResult.Fail::class.java)
+            assertThat(result).isInstanceOf(Either.Right::class.java)
         }
     }
 
@@ -117,9 +118,9 @@ class NetworkMessagingValidatorTest {
         val result = networkMessagingValidator.validateOutbound(testConfig.sender, testConfig.receiver)
 
         if (testConfig.canMessage) {
-            assertThat(result).isInstanceOf(NetworkStatusValidationResult.Pass::class.java)
+            assertThat(result).isInstanceOf(Either.Left::class.java)
         } else {
-            assertThat(result).isInstanceOf(NetworkStatusValidationResult.Fail::class.java)
+            assertThat(result).isInstanceOf(Either.Right::class.java)
         }
     }
 

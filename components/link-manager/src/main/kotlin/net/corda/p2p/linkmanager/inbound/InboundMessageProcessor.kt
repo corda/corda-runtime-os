@@ -27,13 +27,13 @@ import net.corda.p2p.crypto.protocol.api.Session
 import net.corda.p2p.linkmanager.LinkManager
 import net.corda.p2p.linkmanager.common.AvroSealedClasses
 import net.corda.p2p.linkmanager.common.MessageConverter
-import net.corda.p2p.linkmanager.membership.NetworkStatusValidationResult
 import net.corda.p2p.linkmanager.membership.NetworkMessagingValidator
 import net.corda.p2p.linkmanager.sessions.SessionManager
 import net.corda.data.p2p.markers.AppMessageMarker
 import net.corda.data.p2p.markers.LinkManagerReceivedMarker
 import net.corda.metrics.CordaMetrics
 import net.corda.schema.Schemas
+import net.corda.utilities.Either
 import net.corda.utilities.debug
 import net.corda.utilities.time.Clock
 import net.corda.virtualnode.toCorda
@@ -46,7 +46,8 @@ internal class InboundMessageProcessor(
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
     private val inboundAssignmentListener: InboundAssignmentListener,
     private val clock: Clock,
-    private val networkMessagingValidator: NetworkMessagingValidator = NetworkMessagingValidator(membershipGroupReaderProvider),
+    private val networkMessagingValidator: NetworkMessagingValidator =
+        NetworkMessagingValidator(membershipGroupReaderProvider),
 ) :
     EventLogProcessor<String, LinkInMessage> {
 
@@ -82,7 +83,7 @@ internal class InboundMessageProcessor(
                         payload.header.destination.toCorda()
                     )
                     when(validationResult) {
-                        is NetworkStatusValidationResult.Pass -> {
+                        is Either.Left -> {
                             listOf(
                                 Record(
                                     Schemas.P2P.P2P_IN_TOPIC,
@@ -91,9 +92,9 @@ internal class InboundMessageProcessor(
                                 )
                             )
                         }
-                        is NetworkStatusValidationResult.Fail -> {
+                        is Either.Right -> {
                             logger.warn("Dropped unauthenticated message. Network membership is not valid for " +
-                                    "messaging because ${validationResult.reason}")
+                                    "messaging because ${validationResult.b}")
                             emptyList()
                         }
                     }

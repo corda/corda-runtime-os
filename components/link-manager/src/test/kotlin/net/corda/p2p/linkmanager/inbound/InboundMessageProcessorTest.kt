@@ -32,7 +32,6 @@ import net.corda.p2p.crypto.protocol.api.AuthenticatedSession
 import net.corda.p2p.crypto.protocol.api.AuthenticationResult
 import net.corda.p2p.crypto.protocol.api.EncryptionResult
 import net.corda.p2p.linkmanager.membership.NetworkMessagingValidator
-import net.corda.p2p.linkmanager.membership.NetworkStatusValidationResult
 import net.corda.p2p.linkmanager.sessions.SessionManager
 import net.corda.p2p.linkmanager.utilities.LoggingInterceptor
 import net.corda.p2p.linkmanager.utilities.mockMembersAndGroups
@@ -43,6 +42,7 @@ import net.corda.schema.Schemas.P2P.P2P_OUT_MARKERS
 import net.corda.schema.Schemas.P2P.SESSION_OUT_PARTITIONS
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.test.util.time.MockTimeFacilitiesProvider
+import net.corda.utilities.Either
 import net.corda.utilities.seconds
 import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
@@ -89,7 +89,7 @@ class InboundMessageProcessorTest {
             @Suppress("unchecked_cast")
             (it.arguments[2] as (() -> Unit)).invoke()
         }
-        on { validateInbound(any(), any()) } doReturn NetworkStatusValidationResult.Pass
+        on { validateInbound(any(), any()) } doReturn Either.Left(Unit)
     }
 
     private val processor = InboundMessageProcessor(
@@ -907,7 +907,7 @@ class InboundMessageProcessorTest {
         fun `UnauthenticatedMessage will not produce message in P2P in topic if messaging is not allowed`() {
             whenever(
                 networkMessagingValidator.validateInbound(eq(myIdentity), eq(remoteIdentity))
-            ).doReturn(NetworkStatusValidationResult.Fail("foo-bar"))
+            ).doReturn(Either.Right("foo-bar"))
             val unauthenticatedMessageHeader = mock<UnauthenticatedMessageHeader> {
                 on { messageId } doReturn "messageId"
                 on { source } doReturn myIdentity.toAvro()

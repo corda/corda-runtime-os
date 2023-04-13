@@ -1,38 +1,37 @@
 package net.corda.p2p.linkmanager.outbound
 
 import net.corda.data.identity.HoldingIdentity
-import net.corda.membership.grouppolicy.GroupPolicyProvider
-import net.corda.membership.read.MembershipGroupReaderProvider
-import net.corda.messaging.api.processor.EventLogProcessor
-import net.corda.messaging.api.records.EventLogRecord
-import net.corda.messaging.api.records.Record
 import net.corda.data.p2p.AuthenticatedMessageAndKey
 import net.corda.data.p2p.SessionPartitions
 import net.corda.data.p2p.app.AppMessage
 import net.corda.data.p2p.app.AuthenticatedMessage
 import net.corda.data.p2p.app.UnauthenticatedMessage
-import net.corda.p2p.linkmanager.LinkManager
-import net.corda.p2p.linkmanager.hosting.LinkManagerHostingMap
-import net.corda.p2p.linkmanager.sessions.PendingSessionMessageQueues
-import net.corda.p2p.linkmanager.common.MessageConverter
-import net.corda.p2p.linkmanager.inbound.InboundAssignmentListener
-import net.corda.p2p.linkmanager.membership.lookup
-import net.corda.p2p.linkmanager.sessions.SessionManager
-import net.corda.data.p2p.markers.TtlExpiredMarker
 import net.corda.data.p2p.markers.AppMessageMarker
+import net.corda.data.p2p.markers.Component
 import net.corda.data.p2p.markers.LinkManagerDiscardedMarker
+import net.corda.data.p2p.markers.LinkManagerProcessedMarker
 import net.corda.data.p2p.markers.LinkManagerReceivedMarker
 import net.corda.data.p2p.markers.LinkManagerSentMarker
-import net.corda.data.p2p.markers.LinkManagerProcessedMarker
-import net.corda.data.p2p.markers.Component
+import net.corda.data.p2p.markers.TtlExpiredMarker
+import net.corda.membership.grouppolicy.GroupPolicyProvider
+import net.corda.membership.read.MembershipGroupReaderProvider
+import net.corda.messaging.api.processor.EventLogProcessor
+import net.corda.messaging.api.records.EventLogRecord
+import net.corda.messaging.api.records.Record
 import net.corda.metrics.CordaMetrics
-import net.corda.p2p.linkmanager.membership.NetworkStatusValidationResult
+import net.corda.p2p.linkmanager.LinkManager
+import net.corda.p2p.linkmanager.common.MessageConverter
+import net.corda.p2p.linkmanager.hosting.LinkManagerHostingMap
+import net.corda.p2p.linkmanager.inbound.InboundAssignmentListener
 import net.corda.p2p.linkmanager.membership.NetworkMessagingValidator
+import net.corda.p2p.linkmanager.membership.lookup
+import net.corda.p2p.linkmanager.sessions.PendingSessionMessageQueues
+import net.corda.p2p.linkmanager.sessions.SessionManager
 import net.corda.schema.Schemas
+import net.corda.utilities.Either
 import net.corda.utilities.debug
-import net.corda.utilities.trace
 import net.corda.utilities.time.Clock
-import net.corda.v5.base.types.MemberX500Name
+import net.corda.utilities.trace
 import net.corda.virtualnode.toCorda
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -47,7 +46,8 @@ internal class OutboundMessageProcessor(
     private val inboundAssignmentListener: InboundAssignmentListener,
     private val messagesPendingSession: PendingSessionMessageQueues,
     private val clock: Clock,
-    private val networkMessagingValidator: NetworkMessagingValidator = NetworkMessagingValidator(membershipGroupReaderProvider)
+    private val networkMessagingValidator: NetworkMessagingValidator =
+        NetworkMessagingValidator(membershipGroupReaderProvider)
 ) : EventLogProcessor<String, AppMessage> {
 
     override val keyClass = String::class.java
@@ -125,8 +125,8 @@ internal class OutboundMessageProcessor(
         } catch (e: Exception) {
             return "source '${source.x500Name}' is not a valid X500 name: ${e.message}"
         }
-        try {
-            MemberX500Name.parse(destination.x500Name)
+        val cordaDestination = try {
+            destination.toCorda()
         } catch (e: Exception) {
             return "destination '${destination.x500Name}' is not a valid X500 name: ${e.message}"
         }
@@ -134,10 +134,15 @@ internal class OutboundMessageProcessor(
             "group IDs do not match"
         } else if (!linkManagerHostingMap.isHostedLocally(cordaSource)) {
             "source ID is not locally hosted"
+        } else if (linkManagerHostingMap.isHostedLocally(cordaDestination)) {
+            when (val result = networkMessagingValidator.validateInbound(source.toCorda(), destination.toCorda())) {
+                is Either.Left -> null
+                is Either.Right -> result.b
+            }
         } else {
-            when(val result = networkMessagingValidator.validateOutbound(source.toCorda(), destination.toCorda())) {
-                is NetworkStatusValidationResult.Pass -> null
-                is NetworkStatusValidationResult.Fail -> result.reason
+            when (val result = networkMessagingValidator.validateOutbound(source.toCorda(), destination.toCorda())) {
+                is Either.Left -> null
+                is Either.Right -> result.b
             }
         }
     }
