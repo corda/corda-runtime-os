@@ -4,6 +4,7 @@
   "title": "Corda Crypto Library Configuration Schema",
   "description": "Configuration schema for the crypto library subsection.",
   "type": "object",
+  "default": {},
   "properties": {
     "caching": {
       "description": "Caching settings",
@@ -73,7 +74,7 @@
       "type": "object",
       "default": {},
       "properties": {
-        "retry": {
+        "retrying": {
           "description": "Retry settings for the HSM",
           "type": "object",
           "default": {},
@@ -91,107 +92,46 @@
           },
           "additionalProperties": false
         },
-        "categories": {
-          "description": "Categories which the HSM can be used for",
+        "wrappingKeys": {
+          "description" : "Key derivation parameters for wrapping keys supplied in config",
           "type": "array",
-          "minItems": 1,
           "items": {
             "type": "object",
             "properties": {
-              "category": {
-                "description": "Category name, could be the wildcard * meaning all which has to be the last item if used",
+              "alias": {
+                "description": "The alias for the wrapping key.",
                 "type": "string"
               },
-              "policy": {
-                "description": "Defines how private keys are generated for that category, ALIASED - stored in the HSM, WRAPPED - wrapped by the HSM, BOTH - decision is taken by the HSM at runtime",
-                "enum": [
-                  "ALIASED",
-                  "WRAPPED",
-                  "BOTH"
-                ]
+              "algorithm": {
+                "description": "Key derivation function and wrapping key algorithm selection",
+                "type": "string",
+                "default": "PBKDF2WithHmacSHA256"
+              },
+              "salt": {
+                "description": "Salt for the key derivation function",
+                "type": "string"
+              },
+              "passphrase": {
+                "description": "Passphrase for the key derivation function",
+                "type": "string"
               }
             },
+            "additionalProperties": false,
             "required": [
-              "category",
-              "policy"
-            ],
-            "additionalProperties": false
+              "alias",
+              "salt",
+              "passphrase"
+            ]
           }
         },
-        "masterKeyPolicy": {
-          "description": "Wrapping key policy, NONE - no wrapping key is required, SHARED - wrapping key shared by all tenants, UNIQUE - wrapping key unique for each tenant",
-          "enum": [
-            "NONE",
-            "SHARED",
-            "UNIQUE"
-          ]
-        },
-        "masterKeyAlias": {
-          "description": "If the masterKeyPolicy is SHARED then this specifies the alias of the shared key and as such is required",
+        "defaultWrappingKey": {
+          "description": "The default wrapping key, which must be in the wrappingKeys array.",
           "type": "string"
-        },
-        "capacity": {
-          "description": "Number of keys which can be handled by the HSM, -1 means unlimited capacity",
-          "type": "integer"
-        },
-        "supportedSchemes": {
-          "description": "Key schemes that are supported by the HSM",
-          "type": "array",
-          "minItems": 1,
-          "items": {
-            "type": "string"
-          }
-        },
-        "cfg": {
-          "description": "SOFT HSM specific configuration",
-          "type": "object",
-          "properties": {
-            "wrappingKeys": {
-              "description" : "Key derivation parameters for wrapping keys supplied in config",
-              "type": "array",
-              "items": {
-                "type": "object",
-                "properties": {
-                  "alias": {
-                    "description": "The alias for the wrapping key.",
-                    "type": "string"
-                  },
-                  "algorithm": {
-                    "description": "Key derivation function and wrapping key algorithm selection",
-                    "type": "string",
-                    "default": "PBKDF2WithHmacSHA256"
-                  },
-                  "salt": {
-                    "description": "Salt for the key derivation function",
-                    "type": "string"
-                  },
-                  "passphrase": {
-                    "description": "Passphrase for the key derivation function",
-                    "type": "string"
-                  }
-                },
-                "additionalProperties": false,
-                "required": [
-                  "alias",
-                  "salt",
-                  "passphrase"
-                ]
-              }
-            },
-            "defaultWrappingKey": {
-              "description": "The default wrapping key, which must be in the wrappingKeys array.",
-              "type": "string"
-            }
-          },
-          "additionalProperties": false
         }
       },
       "required": [
-        "masterKeyPolicy",
-        "capacity",
-        "supportedSchemes",
-        "categories",
-        "cfg"
+        "wrappingKeys",
+        "defaultWrappingKey"
       ],
       "additionalProperties": false
     }
