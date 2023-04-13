@@ -190,6 +190,32 @@
         <addPrimaryKey columnNames="transaction_id, file_checksum"
                        constraintName="utxo_transaction_cpk_pkey"
                        tableName="utxo_transaction_cpk"/>
+
+        <comment>
+            Keep utxo_group_parameters's relevant fields in sync with vnode-vault-creation-v1.0.xml's vnode_group_parameters.
+        </comment>
+
+        <createTable tableName="utxo_group_parameters">
+            <column name="hash" type="VARCHAR(160)">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+
+            <column name="parameters" type="VARBINARY(1048576)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="signature_public_key" type="VARBINARY(1048576)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="signature_content" type="VARBINARY(1048576)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="signature_spec" type="NVARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
     </changeSet>
 
     <include file="net/corda/db/schema/vnode-vault/migration/ledger-utxo-visible-transaction-state-creation-v1.0.xml"/>
