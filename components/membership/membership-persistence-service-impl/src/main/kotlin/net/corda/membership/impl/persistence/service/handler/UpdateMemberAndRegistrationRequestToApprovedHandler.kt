@@ -16,6 +16,7 @@ import net.corda.membership.impl.persistence.service.handler.RegistrationStatusH
 import net.corda.membership.impl.persistence.service.handler.RegistrationStatusHelper.toStatus
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
+import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_SUSPENDED
 import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
 import net.corda.virtualnode.toCorda
 import javax.persistence.LockModeType
@@ -55,15 +56,7 @@ internal class UpdateMemberAndRegistrationRequestToApprovedHandler(
             ) ?: throw MembershipPersistenceException("Could not find member: ${request.member}")
             val currentMgmContext = keyValuePairListDeserializer.deserialize(member.mgmContext)
                 ?: throw MembershipPersistenceException("Can not extract the mgm context")
-            val mgmContext = KeyValuePairList(
-                currentMgmContext.items.map {
-                    if (it.key == STATUS) {
-                        KeyValuePair(it.key, MEMBER_STATUS_ACTIVE)
-                    } else {
-                        it
-                    }
-                }
-            )
+            val (newStatus, mgmContext) = processMgmContext(currentMgmContext)
 
             val serializedMgmContext = keyValuePairListSerializer.serialize(mgmContext)
                 ?: throw MembershipPersistenceException("Can not serialize the mgm context")
@@ -73,7 +66,7 @@ internal class UpdateMemberAndRegistrationRequestToApprovedHandler(
                     member.groupId,
                     member.memberX500Name,
                     false,
-                    MEMBER_STATUS_ACTIVE,
+                    newStatus,
                     now,
                     member.memberContext,
                     member.memberSignatureKey,
@@ -105,5 +98,23 @@ internal class UpdateMemberAndRegistrationRequestToApprovedHandler(
                 ),
             )
         }
+    }
+
+    private fun processMgmContext(
+        currentMgmContext: KeyValuePairList,
+    ): Pair<String, KeyValuePairList> {
+        var newStatus = MEMBER_STATUS_ACTIVE
+        val newContext = currentMgmContext.items.map {
+            if (it.key == STATUS) {
+                newStatus = when (it.value) {
+                    MEMBER_STATUS_ACTIVE, MEMBER_STATUS_SUSPENDED -> it.value
+                    else -> MEMBER_STATUS_ACTIVE
+                }
+                KeyValuePair(it.key, newStatus)
+            } else {
+                it
+            }
+        }
+        return newStatus to KeyValuePairList(newContext)
     }
 }

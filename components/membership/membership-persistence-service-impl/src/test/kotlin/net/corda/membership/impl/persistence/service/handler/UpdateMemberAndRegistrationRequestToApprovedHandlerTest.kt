@@ -20,6 +20,7 @@ import net.corda.membership.datamodel.MemberInfoEntityPrimaryKey
 import net.corda.membership.datamodel.RegistrationRequestEntity
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_PENDING
+import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_SUSPENDED
 import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
@@ -219,6 +220,58 @@ class UpdateMemberAndRegistrationRequestToApprovedHandlerTest {
         mockRegistrationRequestEntity()
         val context = MembershipRequestContext(clock.instant(), requestId, member,)
         val request = UpdateMemberAndRegistrationRequestToApproved(member, requestId,)
+
+        clock.setTime(Instant.ofEpochMilli(500))
+        handler.invoke(context, request)
+
+        assertThat(mgmContextCapture.firstValue.items).containsExactly(
+            KeyValuePair(STATUS, MEMBER_STATUS_ACTIVE),
+            KeyValuePair("another-key", "value"),
+        )
+    }
+
+    @Test
+    fun `invoke will keep the status as suspended`() {
+        whenever(keyValuePairListDeserializer.deserialize(mgmContextBytes)).doReturn(
+            KeyValuePairList(
+                listOf(
+                    KeyValuePair(STATUS, MEMBER_STATUS_SUSPENDED),
+                    KeyValuePair("another-key", "value"),
+                ),
+            ),
+        )
+        val mgmContextCapture = argumentCaptor<KeyValuePairList>()
+        whenever(keyValuePairListSerializer.serialize(mgmContextCapture.capture())).doReturn(byteArrayOf(0))
+        mockMemberInfoEntity()
+        mockRegistrationRequestEntity()
+        val context = MembershipRequestContext(clock.instant(), requestId, member)
+        val request = UpdateMemberAndRegistrationRequestToApproved(member, requestId)
+
+        clock.setTime(Instant.ofEpochMilli(500))
+        handler.invoke(context, request)
+
+        assertThat(mgmContextCapture.firstValue.items).containsExactly(
+            KeyValuePair(STATUS, MEMBER_STATUS_SUSPENDED),
+            KeyValuePair("another-key", "value"),
+        )
+    }
+
+    @Test
+    fun `invoke will keep the status as active`() {
+        whenever(keyValuePairListDeserializer.deserialize(mgmContextBytes)).doReturn(
+            KeyValuePairList(
+                listOf(
+                    KeyValuePair(STATUS, MEMBER_STATUS_ACTIVE),
+                    KeyValuePair("another-key", "value"),
+                ),
+            ),
+        )
+        val mgmContextCapture = argumentCaptor<KeyValuePairList>()
+        whenever(keyValuePairListSerializer.serialize(mgmContextCapture.capture())).doReturn(byteArrayOf(0))
+        mockMemberInfoEntity()
+        mockRegistrationRequestEntity()
+        val context = MembershipRequestContext(clock.instant(), requestId, member)
+        val request = UpdateMemberAndRegistrationRequestToApproved(member, requestId)
 
         clock.setTime(Instant.ofEpochMilli(500))
         handler.invoke(context, request)
