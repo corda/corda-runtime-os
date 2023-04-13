@@ -12,7 +12,7 @@ dependencies {
 
     implementation project(':libs:ledger:ledger-utxo-transaction-verifier')
     implementation project(':components:ledger:ledger-utxo-flow')
-    implementation project(':components:membership:membership-group-read')
+    implementation project(':libs:membership:membership-common')
     implementation project(':libs:flows:flow-api')
     implementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 }

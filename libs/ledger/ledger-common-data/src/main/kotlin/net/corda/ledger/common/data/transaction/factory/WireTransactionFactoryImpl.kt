@@ -46,8 +46,7 @@ class WireTransactionFactoryImpl @Activate constructor(
         val metadata =
             parseMetadata(componentGroupLists[TransactionMetadataImpl.ALL_LEDGER_METADATA_COMPONENT_GROUP_ID].first())
         check((metadata as TransactionMetadataInternal).getNumberOfComponentGroups() == componentGroupLists.size){
-            "Number of component groups in metadata structure description does not match with the real number!" +
-            (metadata as TransactionMetadataInternal).getNumberOfComponentGroups() + " vs " + componentGroupLists.size
+            "Number of component groups in metadata structure description does not match with the real number!"
         }
         return create(componentGroupLists, generatePrivacySalt())
     }

@@ -14,7 +14,7 @@ import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 
 /*
- * Verify Signed Group parameters containers consistency. (hash and MGM signature.)
+ * Verify Signed Group parameters consistency. (hash and MGM signature.)
  */
 @Component(
     service = [ SignedGroupParametersVerifier::class, UsedByFlow::class ],

@@ -72,8 +72,7 @@ class UtxoPersistenceServiceImplTest {
         mock(),
         storage,
         JsonMarshallingServiceImpl(), // We could mock this but this is basically just a layer on top of Jackson
-        UTCClock(),
-        mock()
+        UTCClock()
     )
 
     @BeforeEach
@@ -121,8 +120,7 @@ class UtxoPersistenceServiceImplTest {
             mock(),
             storage,
             JsonMarshallingServiceImpl(),
-            UTCClock(),
-            mock()
+            UTCClock()
         )
 
         val tx = createMockTransaction(listOf(
@@ -204,8 +202,7 @@ class UtxoPersistenceServiceImplTest {
             mock(),
             ContractStateVaultJsonFactoryRegistryImpl(), // Empty storage
             JsonMarshallingServiceImpl(),
-            UTCClock(),
-            mock()
+            UTCClock()
         )
 
         val tx = createMockTransaction(listOf(
