@@ -13,6 +13,7 @@ import net.corda.sandbox.type.UsedByPersistence
 import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.ledger.common.data.transaction.PrivacySalt
+import net.corda.ledger.common.data.transaction.TransactionMetadataInternal
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -42,6 +43,12 @@ class WireTransactionFactoryImpl @Activate constructor(
     }
 
     override fun create(componentGroupLists: List<List<ByteArray>>): WireTransaction {
+        val metadata =
+            parseMetadata(componentGroupLists[TransactionMetadataImpl.ALL_LEDGER_METADATA_COMPONENT_GROUP_ID].first())
+        check((metadata as TransactionMetadataInternal).getNumberOfComponentGroups() == componentGroupLists.size){
+            "Number of component groups in metadata structure description does not match with the real number!" +
+            (metadata as TransactionMetadataInternal).getNumberOfComponentGroups() + " vs " + componentGroupLists.size
+        }
         return create(componentGroupLists, generatePrivacySalt())
     }
 
