@@ -5,7 +5,6 @@ import com.fasterxml.jackson.module.kotlin.readValue
 import net.corda.applications.workers.smoketest.TEST_CPB_LOCATION
 import net.corda.applications.workers.smoketest.TEST_CPI_NAME
 import net.corda.crypto.core.CryptoConsts.Categories.LEDGER
-import net.corda.e2etest.utilities.CLUSTER_URI
 import net.corda.e2etest.utilities.FlowStatus
 import net.corda.e2etest.utilities.GROUP_ID
 import net.corda.e2etest.utilities.RPC_FLOW_STATUS_FAILED
@@ -13,16 +12,11 @@ import net.corda.e2etest.utilities.RPC_FLOW_STATUS_SUCCESS
 import net.corda.e2etest.utilities.RpcSmokeTestInput
 import net.corda.e2etest.utilities.TEST_NOTARY_CPB_LOCATION
 import net.corda.e2etest.utilities.TEST_NOTARY_CPI_NAME
-import net.corda.e2etest.utilities.USERNAME
-import net.corda.e2etest.utilities.PASSWORD
-import net.corda.e2etest.utilities.assertWithRetry
 import net.corda.e2etest.utilities.awaitRpcFlowFinished
-import net.corda.e2etest.utilities.cluster
 import net.corda.e2etest.utilities.conditionallyUploadCordaPackage
 import net.corda.e2etest.utilities.configWithDefaultsNode
 import net.corda.e2etest.utilities.createKeyFor
 import net.corda.e2etest.utilities.getConfig
-import net.corda.e2etest.utilities.getExistingCpi
 import net.corda.e2etest.utilities.getFlowClasses
 import net.corda.e2etest.utilities.getHoldingIdShortHash
 import net.corda.e2etest.utilities.getOrCreateVirtualNodeFor
@@ -30,12 +24,10 @@ import net.corda.e2etest.utilities.getRpcFlowResult
 import net.corda.e2etest.utilities.registerStaticMember
 import net.corda.e2etest.utilities.startRpcFlow
 import net.corda.e2etest.utilities.toJsonString
-import net.corda.e2etest.utilities.truncateLongHash
 import net.corda.e2etest.utilities.updateConfig
 import net.corda.e2etest.utilities.waitForConfigurationChange
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.schema.configuration.MessagingConfig.MAX_ALLOWED_MSG_SIZE
-import net.corda.test.util.eventually
 import net.corda.v5.crypto.DigestAlgorithmName
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertAll
@@ -49,11 +41,8 @@ import org.junit.jupiter.api.TestInstance.Lifecycle
 import org.junit.jupiter.api.TestMethodOrder
 import java.util.UUID
 import net.corda.v5.application.flows.FlowContextPropertyKeys
-import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.KeySchemeCodes.RSA_CODE_NAME
-import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Disabled
-import java.time.Duration
 import kotlin.text.Typography.quote
 
 @Suppress("Unused", "FunctionName")
@@ -1183,25 +1172,9 @@ class FlowTests {
         assertThat(flowResult.result).isEqualTo(expectedOutputJson)
     }
 
-    //@Disabled("Fails in e2e because require a single cluster.") //TODO CORE-12134
+    @Disabled("Fails in e2e because require a single cluster.") //TODO CORE-12469
     @Test
     fun `Interoperability - facade call returns payload back to caller`() {
-        val cluster = cluster {
-            endpoint(CLUSTER_URI, USERNAME, PASSWORD)
-            eventually(
-                duration = Duration.ofSeconds(60)
-            ) {
-                vNodeList().toJson()["virtualNodes"].toList()
-            }
-            emptyList<String>()
-        }
-        //val expected = 4
-        //assertEquals(expected, cluster.size,
-        //    "Expected cluster size $expected, got ${cluster.size}, entries=$cluster")
-
-        if (cluster.isEmpty())
-            return
-
         val payload = "Hello world!"
 
         val args = mapOf(
