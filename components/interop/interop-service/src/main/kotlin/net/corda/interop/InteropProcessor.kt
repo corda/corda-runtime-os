@@ -5,10 +5,11 @@ package net.corda.interop
 import net.corda.data.CordaAvroDeserializer
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.CordaAvroSerializer
+import net.corda.data.KeyValuePair
+import net.corda.data.KeyValuePairList
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.mapper.FlowMapperEvent
-import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.interop.InteropMessage
 import net.corda.data.interop.InteropState
@@ -55,6 +56,7 @@ class InteropProcessor(
     private val sessionEventSerializer: CordaAvroSerializer<SessionEvent> =
         cordaAvroSerializationFactory.createAvroSerializer{}
 
+    @Suppress("LongMethod", "NestedBlockDepth")
     override fun onNext(
         state: InteropState?,
         event: Record<String, FlowMapperEvent>
@@ -85,30 +87,39 @@ class InteropProcessor(
                 return StateAndEventProcessor.Response(state, emptyList())
             }
 
-            val facadeName = when (val sessionPayload = sessionEvent.payload) {
-                is SessionInit -> null
-                is SessionData -> {
-                    val payload : ByteBuffer = sessionPayload.payload as ByteBuffer
-                    val message = String(payload.array())
-                    message
+            val sessionPayload = sessionEvent.payload
+            val newPayload = if (sessionPayload is SessionInit) {
+                val facadeName = sessionPayload.contextUserProperties.items.find { it.key == "facadeName"}?.value
+                val facadeMethod = sessionPayload.contextUserProperties.items.find { it.key == "methodName"}?.value
+                if (facadeName == null) {
+                    logger.warn("Message without facadeName. Key: ${event.key}.")
+                    null
+                } else if (facadeMethod == null) {
+                    logger.warn("Message without facadeMethod. Key: ${event.key}.")
+                    null
+                } else {
+                    logger.info(
+                        "Processing message from flow.interop.event with subsystem $SUBSYSTEM." +
+                                " Key: ${event.key}, facade request: $facadeName/$facadeMethod"
+                    )
+                    try {
+                        val flowName =
+                            facadeToFlowMapperService.getFlowName(realHoldingIdentity, facadeName, facadeMethod)
+                        logger.info("Mapped flowName=$flowName for facade=$facadeName/$facadeMethod")
+                        sessionPayload.apply {
+                            contextUserProperties = KeyValuePairList(
+                                contextUserProperties.items
+                                        + KeyValuePair("flowClassName", flowName)
+                            )
+                        }
+                    } catch (e: IllegalStateException) {
+                        logger.warn(e.message)
+                        null
+                    }
                 }
-                else -> null
-            }
-
-            if (facadeName == null) {
-                logger.info("Pass-through event ${sessionEvent.payload::class.java} without FacadeRequest")
             } else {
-                logger.info("Processing message from flow.interop.event with subsystem $SUBSYSTEM." +
-                            " Key: ${event.key}, facade request: $facadeName."
-                )
-                val flowName = try {
-                    facadeToFlowMapperService.getFlowName(realHoldingIdentity, facadeName, "say-hello")
-                } catch (e: IllegalStateException) {
-                    logger.warn(e.message)
-                }
-                //TODO utilise flowName as input to data send to FlowProcessor (for now it's only used by the logger),
-                // this change is required for CORE-10426 Support For Façade Handlers
-                logger.info("Flow name associated with facade request : $flowName")
+                logger.info("Pass-through event ${sessionEvent.payload::class.java} without FacadeRequest")
+                null
             }
 
             return StateAndEventProcessor.Response(
@@ -136,6 +147,9 @@ class InteropProcessor(
                                     groupId = realHoldingIdentity.groupId
                                 }
                             }
+                            if (newPayload != null) {
+                                payload = newPayload // We could do substitution only for SessionInit though
+                            }
                         }.apply {
                             val (newDest, newSource) = if (isInitiatingIdentityDestination())
                                 Pair(initiatingIdentity, initiatedIdentity)
@@ -152,17 +166,17 @@ class InteropProcessor(
             logEntering("OUTBOUND", sourceIdentity, destinationIdentity, sessionEvent)
             val translatedSource = sourceIdentity.apply {
                 x500Name = state?.aliasHoldingIdentity ?: addAliasSubstringToOrganisationName(this.toCorda()).x500Name.toString()
-                groupId = state?.groupId ?: INTEROP_GROUP_ID // TODO For the first message need to find an alias group,
+                groupId = state?.groupId ?: INTEROP_GROUP_ID // TODO CORE-12208 For the first message need to find an alias group,
             // as FlowProcessor assigns a real group of the source
             }
             val translatedDestination = destinationIdentity.apply {
                 //TODO review destination from initiating flow vs from initiated
                 val name = this.toCorda()
                 if (!name.toString().contains(POSTFIX_DENOTING_ALIAS)) {
-                    //TODO this should be always an alias (set by API or kept by responder flow
+                    //TODO CORE-12208 this should be always an alias (set by API or kept by responder flow)
                     x500Name = addAliasSubstringToOrganisationName(name).x500Name.toString()
                 }
-                groupId = INTEROP_GROUP_ID // TODO For the first message need to find an alias group,
+                groupId = INTEROP_GROUP_ID // TODO CORE-12208 For the first message need to find an alias group,
                 // as FlowProcessor assigns a real group of the source,
                 // for the following messages it should already have a alias group worth comparing with the session
             }
@@ -210,10 +224,8 @@ class InteropProcessor(
         val groupReader = membershipGroupReaderProvider.getGroupReader(fakeHoldingIdentity)
         val memberProvidedContext = groupReader.lookup(fakeHoldingIdentity.x500Name)?.memberProvidedContext
         memberProvidedContext ?: return null
-        val x500Name = memberProvidedContext.get("corda.interop.mapping.x500name")
-        val groupId = memberProvidedContext.get("corda.interop.mapping.group")
-        x500Name ?: return null
-        groupId ?: return null
+        val x500Name = memberProvidedContext.get("corda.interop.mapping.x500name") ?: return null
+        val groupId = memberProvidedContext.get("corda.interop.mapping.group") ?: return null
         return HoldingIdentity(MemberX500Name.parse(x500Name), groupId)
     }
 
@@ -224,10 +236,11 @@ class InteropProcessor(
      */
     private fun getSourceAndDestinationIdentity(sessionEvent: SessionEvent):
             Pair<net.corda.data.identity.HoldingIdentity, net.corda.data.identity.HoldingIdentity> =
-         if (sessionEvent.sessionId.contains(Constants.INITIATED_SESSION_ID_SUFFIX))
-            Pair(sessionEvent.initiatedIdentity, sessionEvent.initiatingIdentity)
-        else
-            Pair(sessionEvent.initiatingIdentity, sessionEvent.initiatedIdentity)
+         if (sessionEvent.sessionId.contains(Constants.INITIATED_SESSION_ID_SUFFIX)) {
+             Pair(sessionEvent.initiatedIdentity, sessionEvent.initiatingIdentity)
+         } else {
+             Pair(sessionEvent.initiatingIdentity, sessionEvent.initiatedIdentity)
+         }
 
     private fun SessionEvent.isInitiatingIdentityDestination() = !sessionId.contains(Constants.INITIATED_SESSION_ID_SUFFIX)
     private fun SessionEvent.isInitiatedIdentityDestination() = !isInitiatingIdentityDestination()

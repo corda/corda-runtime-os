@@ -60,12 +60,9 @@ class FlowMessagingImpl @Activate constructor(
         methodName: String,
         payload: String
     ): String {
-        // For now, the flow mapper sends back the invocation
         // TODO: CORE-10240 return an actual FacadeInvocationResponse result
-        val session = createInteropFlowSession(memberName)
-        val response =
-            session.sendAndReceive(String::class.java, facadeName)
-        return response
+        val session = createInteropFlowSession(memberName, facadeName, methodName)
+        return session.sendAndReceive(String::class.java, payload)
     }
 
     @Suspendable
@@ -182,10 +179,13 @@ class FlowMessagingImpl @Activate constructor(
     }
 
     @Suspendable
-    private fun createInteropFlowSession(x500Name: MemberX500Name): FlowSession {
+    private fun createInteropFlowSession(x500Name: MemberX500Name, facadeName: String, methodName: String,): FlowSession {
         val sessionId = UUID.randomUUID().toString()
         addSessionIdToFlowStackItem(sessionId)
-        return flowSessionFactory.createInitiatingFlowSession(sessionId, x500Name, null, true)
+        return flowSessionFactory.createInitiatingFlowSession(sessionId, x500Name, { flowContextProperties ->
+            flowContextProperties.put("facadeName", facadeName)
+            flowContextProperties.put("methodName", methodName)
+        }, true)
     }
 
     private fun checkFlowCanBeInitiated() {
