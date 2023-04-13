@@ -272,12 +272,13 @@ class VirtualNodeRepositoryTest {
     fun `upgrade virtual node CPI test`() {
         val signerSummaryHash = TestRandom.secureHash()
         val testName = "Testing ${UUID.randomUUID()}"
+        val externalMessagingRouteConfig =  """ "dummy":"dummy" """
         val vnode = VNodeTestUtils.newVNode(
             entityManagerFactory,
             testName,
             "v1",
             signerSummaryHash,
-            externalMessagingRouteConfig = null
+            externalMessagingRouteConfig = """ "dummy":"dummy" """
         )
 
         entityManagerFactory.createEntityManager().transaction { em ->
@@ -294,7 +295,7 @@ class VirtualNodeRepositoryTest {
                 it,
                 holdingIdentityShortHash,
                 testName, "v2", signerSummaryHash.toString(),
-                null,
+                externalMessagingRouteConfig,
                 requestId, requestTimestamp, "serializedRequest"
             )
         }
@@ -302,6 +303,7 @@ class VirtualNodeRepositoryTest {
         assertThat(upgradeVirtualNodeInfo.cpiIdentifier.name).isEqualTo(testName)
         assertThat(upgradeVirtualNodeInfo.cpiIdentifier.version).isEqualTo("v2")
         assertThat(upgradeVirtualNodeInfo.cpiIdentifier.signerSummaryHash).isEqualTo(signerSummaryHash)
+        assertThat(upgradeVirtualNodeInfo.externalMessagingRouteConfig).isEqualTo(externalMessagingRouteConfig)
 
         val foundEntity = entityManagerFactory.createEntityManager().transaction {
             it.find(VirtualNodeEntity::class.java, holdingIdentityShortHash)
@@ -311,6 +313,7 @@ class VirtualNodeRepositoryTest {
         assertThat(foundEntity.cpiName).isEqualTo(testName)
         assertThat(foundEntity.cpiVersion).isEqualTo("v2")
         assertThat(foundEntity.cpiSignerSummaryHash).isEqualTo(signerSummaryHash.toString())
+        assertThat(foundEntity.externalMessagingRouteConfig).isEqualTo(externalMessagingRouteConfig)
 
         assertThat(foundEntity.operationInProgress).isNotNull
         val operation = foundEntity.operationInProgress!!
