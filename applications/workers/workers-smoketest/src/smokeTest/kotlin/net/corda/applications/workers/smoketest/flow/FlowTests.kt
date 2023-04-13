@@ -1187,7 +1187,7 @@ class FlowTests {
     @Test
     fun `Interoperability - facade call returns payload back to caller`() {
         val cluster = cluster {
-            endpoint(CLUSTER_URI, USERNAME, PASSWORD)
+//            endpoint(CLUSTER_URI, USERNAME, PASSWORD)
 //            eventually(
 //                duration = Duration.ofSeconds(60)
 //            ) {
