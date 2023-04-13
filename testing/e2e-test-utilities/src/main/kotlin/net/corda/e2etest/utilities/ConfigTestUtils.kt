@@ -32,8 +32,10 @@ fun getConfig(section: String): JsonNode {
  * The currently installed schema and configuration versions are automatically obtained from the running system
  * before updating.
  */
-fun updateConfig(config: String, section: String) {
-    return DEFAULT_CLUSTER.cluster {
+fun updateConfig(config: String, section: String) = DEFAULT_CLUSTER.updateConfig(config, section)
+
+fun ClusterInfo.updateConfig(config: String, section: String) {
+    return cluster {
         val currentConfig = getConfig(section).body.toJson()
         val currentSchemaVersion = currentConfig["schemaVersion"]
 
