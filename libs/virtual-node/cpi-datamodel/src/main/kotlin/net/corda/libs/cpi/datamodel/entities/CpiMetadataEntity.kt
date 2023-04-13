@@ -188,7 +188,25 @@ class CpiMetadataEntityKey(
     private val name: String,
     private val version: String,
     private val signerSummaryHash: String,
-) : Serializable
+) : Serializable {
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is CpiMetadataEntityKey) return false
+
+        if (name != other.name) return false
+        if (version != other.version) return false
+        if (signerSummaryHash != other.signerSummaryHash) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = name.hashCode()
+        result = 31 * result + version.hashCode()
+        result = 31 * result + signerSummaryHash.hashCode()
+        return result
+    }
+}
 
 fun EntityManager.findAllCpiMetadata(): Stream<CpiMetadataEntity> {
     // Joining the other tables to ensure all data is fetched eagerly

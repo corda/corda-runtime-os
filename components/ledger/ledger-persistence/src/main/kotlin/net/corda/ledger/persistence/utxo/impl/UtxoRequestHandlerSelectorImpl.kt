@@ -1,9 +1,11 @@
 package net.corda.ledger.persistence.utxo.impl
 
+import net.corda.data.ledger.persistence.FindSignedGroupParameters
 import net.corda.data.ledger.persistence.FindTransaction
 import net.corda.data.ledger.persistence.FindUnconsumedStatesByType
 import net.corda.data.ledger.persistence.LedgerPersistenceRequest
 import net.corda.data.ledger.persistence.LedgerTypes
+import net.corda.data.ledger.persistence.PersistSignedGroupParametersIfDoNotExist
 import net.corda.data.ledger.persistence.PersistTransaction
 import net.corda.data.ledger.persistence.PersistTransactionIfDoesNotExist
 import net.corda.data.ledger.persistence.ResolveStateRefs
@@ -14,6 +16,7 @@ import net.corda.ledger.persistence.common.RequestHandler
 import net.corda.ledger.persistence.common.UnsupportedRequestTypeException
 import net.corda.ledger.persistence.query.execution.impl.VaultNamedQueryExecutorImpl
 import net.corda.ledger.persistence.utxo.UtxoRequestHandlerSelector
+import net.corda.membership.lib.GroupParametersFactory
 import net.corda.persistence.common.ResponseFactory
 import net.corda.persistence.common.getEntityManagerFactory
 import net.corda.persistence.common.getSerializationService
@@ -30,7 +33,9 @@ class UtxoRequestHandlerSelectorImpl @Activate constructor(
     @Reference(service = ExternalEventResponseFactory::class)
     private val externalEventResponseFactory: ExternalEventResponseFactory,
     @Reference(service = ResponseFactory::class)
-    private val responseFactory: ResponseFactory
+    private val responseFactory: ResponseFactory,
+    @Reference(service = GroupParametersFactory::class)
+    private val groupParametersFactory: GroupParametersFactory
 ): UtxoRequestHandlerSelector {
 
     override fun selectHandler(sandbox: SandboxGroupContext, request: LedgerPersistenceRequest): RequestHandler {
@@ -41,7 +46,8 @@ class UtxoRequestHandlerSelectorImpl @Activate constructor(
             sandbox.getSandboxSingletonService(),
             sandbox.getSandboxSingletonService(),
             sandbox.getSandboxSingletonService(),
-            UTCClock()
+            UTCClock(),
+            groupParametersFactory
         )
 
         val vaultNamedQueryExecutor = VaultNamedQueryExecutorImpl(
@@ -115,6 +121,23 @@ class UtxoRequestHandlerSelectorImpl @Activate constructor(
                     externalEventResponseFactory
                 )
             }
+            is FindSignedGroupParameters -> {
+                return UtxoFindSignedGroupParametersRequestHandler(
+                    req,
+                    request.flowExternalEventContext,
+                    persistenceService,
+                    responseFactory
+                )
+            }
+            is PersistSignedGroupParametersIfDoNotExist -> {
+                UtxoPersistSignedGroupParametersIfDoNotExistRequestHandler(
+                    req,
+                    request.flowExternalEventContext,
+                    externalEventResponseFactory,
+                    persistenceService
+                )
+            }
+
             else -> {
                 throw UnsupportedRequestTypeException(LedgerTypes.UTXO, request.request.javaClass)
             }

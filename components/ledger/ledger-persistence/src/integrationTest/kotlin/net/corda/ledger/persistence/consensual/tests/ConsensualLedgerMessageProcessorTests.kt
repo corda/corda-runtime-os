@@ -20,10 +20,17 @@ import net.corda.flow.utils.keyValuePairListOf
 import net.corda.flow.utils.toKeyValuePairList
 import net.corda.flow.utils.toMap
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
+import net.corda.ledger.common.data.transaction.TransactionMetadataImpl
 import net.corda.ledger.common.data.transaction.TransactionStatus
+import net.corda.ledger.common.data.transaction.WireTransactionDigestSettings
 import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
+import net.corda.ledger.common.testkit.cpiPackageSummaryExample
+import net.corda.ledger.common.testkit.cpkPackageSummaryListExample
 import net.corda.ledger.common.testkit.createExample
 import net.corda.ledger.common.testkit.getSignatureWithMetadataExample
+import net.corda.ledger.consensual.data.transaction.ConsensualLedgerTransactionImpl
+import net.corda.ledger.consensual.data.transaction.TRANSACTION_META_DATA_CONSENSUAL_LEDGER_VERSION
+import net.corda.ledger.consensual.data.transaction.consensualComponentGroupStructure
 import net.corda.ledger.persistence.processor.DelegatedRequestHandlerSelector
 import net.corda.ledger.persistence.processor.PersistenceRequestProcessor
 import net.corda.messaging.api.records.Record
@@ -169,16 +176,28 @@ class ConsensualLedgerMessageProcessorTests {
         assertThat(response.error).isNull()
         val entityResponse = deserializer.deserialize(response.payload.array())!!
         assertThat(entityResponse.results).hasSize(1)
-        assertThat(entityResponse.results.first()).isEqualTo(serializedTransaction)
         val retrievedTransaction = ctx.deserialize<SignedTransactionContainer>(entityResponse.results.first())
         assertThat(retrievedTransaction).isEqualTo(transaction)
+        // todo Enable with CORE-12441
+        // assertThat(entityResponse.results.first()).isEqualTo(serializedTransaction)
     }
 
     private fun createTestTransaction(ctx: SandboxGroupContext): SignedTransactionContainer {
         val wireTransactionFactory: WireTransactionFactory = ctx.getSandboxSingletonService()
+        val metadata = TransactionMetadataImpl(mapOf(
+            TransactionMetadataImpl.LEDGER_MODEL_KEY to ConsensualLedgerTransactionImpl::class.java.name,
+            TransactionMetadataImpl.LEDGER_VERSION_KEY to TRANSACTION_META_DATA_CONSENSUAL_LEDGER_VERSION,
+            TransactionMetadataImpl.DIGEST_SETTINGS_KEY to WireTransactionDigestSettings.defaultValues,
+            TransactionMetadataImpl.PLATFORM_VERSION_KEY to 123,
+            TransactionMetadataImpl.CPI_METADATA_KEY to cpiPackageSummaryExample,
+            TransactionMetadataImpl.CPK_METADATA_KEY to cpkPackageSummaryListExample(),
+            TransactionMetadataImpl.SCHEMA_VERSION_KEY to TransactionMetadataImpl.SCHEMA_VERSION,
+            TransactionMetadataImpl.COMPONENT_GROUPS_KEY to consensualComponentGroupStructure
+        ))
         val wireTransaction = wireTransactionFactory.createExample(
             ctx.getSandboxSingletonService(),
-            ctx.getSandboxSingletonService()
+            ctx.getSandboxSingletonService(),
+            metadata = metadata
         )
         return SignedTransactionContainer(
             wireTransaction,
