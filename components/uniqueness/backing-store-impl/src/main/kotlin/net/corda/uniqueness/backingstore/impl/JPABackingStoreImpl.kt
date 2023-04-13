@@ -408,6 +408,7 @@ open class JPABackingStoreImpl @Activate constructor(
                         UniquenessTransactionDetailEntity(
                             request.txId.algorithm,
                             request.txId.bytes,
+                            request.originatorX500Name,
                             request.timeWindowUpperBound,
                             result.resultTimestamp,
                             result.toCharacterRepresentation()

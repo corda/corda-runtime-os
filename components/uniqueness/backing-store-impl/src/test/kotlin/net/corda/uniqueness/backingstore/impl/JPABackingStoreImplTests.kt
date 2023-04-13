@@ -65,7 +65,9 @@ class JPABackingStoreImplTests {
     private lateinit var dbConnectionManager: DbConnectionManager
 
     private val groupId = UUID.randomUUID().toString()
-    private val aliceIdentity = createTestHoldingIdentity("C=GB, L=London, O=Alice", groupId)
+    private val notaryRepIdentity = createTestHoldingIdentity("C=GB, L=London, O=NotaryRep1", groupId)
+
+    private val originatorX500Name = "C=GB, L=London, O=Alice"
 
     inner class DummyLifecycle : LifecycleEvent
 
@@ -207,14 +209,14 @@ class JPABackingStoreImplTests {
 
         @Test
         fun `Session always closes entity manager after use`() {
-            backingStoreImpl.session(aliceIdentity) { }
+            backingStoreImpl.session(notaryRepIdentity) { }
             Mockito.verify(entityManager, times(1)).close()
         }
 
         @Test
         fun `Session closes entity manager even when exception occurs`() {
             assertThrows<java.lang.RuntimeException> {
-                backingStoreImpl.session(aliceIdentity) { throw java.lang.RuntimeException("test exception") }
+                backingStoreImpl.session(notaryRepIdentity) { throw java.lang.RuntimeException("test exception") }
             }
             Mockito.verify(entityManager, times(1)).close()
         }
@@ -231,7 +233,7 @@ class JPABackingStoreImplTests {
 
         @Test
         fun `Executing transaction runs with transaction begin and commit`() {
-            backingStoreImpl.session(aliceIdentity) { session ->
+            backingStoreImpl.session(notaryRepIdentity) { session ->
                 session.executeTransaction { _, _ -> }
             }
 
@@ -245,17 +247,18 @@ class JPABackingStoreImplTests {
             // Prepare a rejected transaction
             txnDetails.add(
                 UniquenessTransactionDetailEntity(
-                "SHA-256",
-                "0xA1".toByteArray(),
-                LocalDate.parse("2099-12-12").atStartOfDay().toInstant(ZoneOffset.UTC),
-                LocalDate.now().atStartOfDay().toInstant(ZoneOffset.UTC),
-                UniquenessConstants.RESULT_REJECTED_REPRESENTATION
-            )
+                    "SHA-256",
+                    "0xA1".toByteArray(),
+                    originatorX500Name,
+                    LocalDate.parse("2099-12-12").atStartOfDay().toInstant(ZoneOffset.UTC),
+                    LocalDate.now().atStartOfDay().toInstant(ZoneOffset.UTC),
+                    UniquenessConstants.RESULT_REJECTED_REPRESENTATION
+                )
             )
 
             // Expect an exception because no error details is available from the mock.
             assertThrows<IllegalStateException> {
-                backingStoreImpl.session(aliceIdentity) { session ->
+                backingStoreImpl.session(notaryRepIdentity) { session ->
                     session.getTransactionDetails(List(1) { SecureHashUtils.randomSecureHash() })
                 }
             }
@@ -267,12 +270,13 @@ class JPABackingStoreImplTests {
             // Prepare a rejected transaction
             txnDetails.add(
                 UniquenessTransactionDetailEntity(
-                "SHA-256",
-                txId.bytes,
-                LocalDate.parse("2099-12-12").atStartOfDay().toInstant(ZoneOffset.UTC),
-                LocalDate.now().atStartOfDay().toInstant(ZoneOffset.UTC),
-                UniquenessConstants.RESULT_REJECTED_REPRESENTATION
-            )
+                    "SHA-256",
+                    txId.bytes,
+                    originatorX500Name,
+                    LocalDate.parse("2099-12-12").atStartOfDay().toInstant(ZoneOffset.UTC),
+                    LocalDate.now().atStartOfDay().toInstant(ZoneOffset.UTC),
+                    UniquenessConstants.RESULT_REJECTED_REPRESENTATION
+                )
             )
 
             errorEntities.add(
@@ -285,7 +289,7 @@ class JPABackingStoreImplTests {
             )
             )
 
-            backingStoreImpl.session(aliceIdentity) { session ->
+            backingStoreImpl.session(notaryRepIdentity) { session ->
                 val txResult = session.getTransactionDetails(listOf(txId))[txId]?.result!!
 
                 assertThat(txResult).isInstanceOf(UniquenessCheckResultFailure::class.java)

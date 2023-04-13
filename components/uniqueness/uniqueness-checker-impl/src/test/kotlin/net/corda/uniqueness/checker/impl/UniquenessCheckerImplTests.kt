@@ -59,8 +59,10 @@ class UniquenessCheckerImplTests {
     private val groupId = UUID.randomUUID().toString()
 
     // Default holding id used in most tests
-    private val defaultHoldingIdentity = createTestHoldingIdentity(
-        "C=GB, L=London, O=Alice", groupId).toAvro()
+    private val defaultNotaryVNodeHoldingIdentity = createTestHoldingIdentity(
+        "C=GB, L=London, O=NotaryRep1", groupId).toAvro()
+
+    private val originatorX500Name = "C=GB, L=London, O=Alice"
 
     // We don't use Instant.MAX because this appears to cause a long overflow in Avro
     private val defaultTimeWindowUpperBound: Instant =
@@ -77,9 +79,10 @@ class UniquenessCheckerImplTests {
     private fun newRequestBuilder(txId: SecureHash = randomSecureHash()): UniquenessCheckRequestAvro.Builder =
         UniquenessCheckRequestAvro.newBuilder(
             UniquenessCheckRequestAvro(
-                defaultHoldingIdentity,
+                defaultNotaryVNodeHoldingIdentity,
                 ExternalEventContext(),
                 txId.toString(),
+                originatorX500Name,
                 emptyList(),
                 emptyList(),
                 0,
