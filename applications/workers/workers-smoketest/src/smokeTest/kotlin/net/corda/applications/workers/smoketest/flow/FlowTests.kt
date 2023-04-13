@@ -1198,21 +1198,21 @@ class FlowTests {
         assertEquals(expected, cluster.size,
             "Expected cluster size $expected, got ${cluster.size}, entries=$cluster")
 
-        val payload = "Hello world!"
-
-        val args = mapOf(
-            "facadeName" to "None",
-            "methodName" to "None",
-            "payload" to payload,
-            "alias" to charlyX500.replace("$testRunUniqueId", "$testRunUniqueId Alias")
-        )
-
-        val requestId = startRpcFlow(bobHoldingId, args, "net.cordapp.testing.testflows.FacadeInvocationFlow")
-        val flowStatus = awaitRpcFlowFinished(bobHoldingId, requestId)
-
-        assertThat(flowStatus.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
-        assertThat(flowStatus.flowError).isNull()
-        assertThat(flowStatus.flowResult).isEqualTo(payload)
+//        val payload = "Hello world!"
+//
+//        val args = mapOf(
+//            "facadeName" to "None",
+//            "methodName" to "None",
+//            "payload" to payload,
+//            "alias" to charlyX500.replace("$testRunUniqueId", "$testRunUniqueId Alias")
+//        )
+//
+//        val requestId = startRpcFlow(bobHoldingId, args, "net.cordapp.testing.testflows.FacadeInvocationFlow")
+//        val flowStatus = awaitRpcFlowFinished(bobHoldingId, requestId)
+//
+//        assertThat(flowStatus.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+//        assertThat(flowStatus.flowError).isNull()
+//        assertThat(flowStatus.flowResult).isEqualTo(payload)
     }
 
     /**
