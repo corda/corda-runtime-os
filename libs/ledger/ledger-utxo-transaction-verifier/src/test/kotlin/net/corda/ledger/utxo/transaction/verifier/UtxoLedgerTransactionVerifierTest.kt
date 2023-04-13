@@ -22,6 +22,7 @@ import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertDoesNotThrow
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.security.PublicKey
@@ -132,25 +133,36 @@ class UtxoLedgerTransactionVerifierTest {
     }
 
     @Test
-    fun `throws an exception when input and reference states don't have the same notary`() {
+    fun `throws an exception when input and reference states don't have the same notary (names are different)`() {
         whenever(inputTransactionState.notaryName).thenReturn(notaryX500Name)
-        whenever(inputTransactionState.notaryKey).thenReturn(publicKeyExample)
         whenever(referenceTransactionState.notaryName).thenReturn(anotherNotaryX500Name)
-        whenever(referenceTransactionState.notaryKey).thenReturn(anotherPublicKeyExample)
         assertThatThrownBy { verifier.verify() }
             .isExactlyInstanceOf(IllegalStateException::class.java)
             .hasMessageContaining("Input and reference states' notaries need to be the same.")
     }
 
     @Test
-    fun `throws an exception when input and reference states don't have the same notary passed into the verification`() {
-        whenever(inputTransactionState.notaryName).thenReturn(anotherNotaryX500Name)
-        whenever(inputTransactionState.notaryKey).thenReturn(anotherPublicKeyExample)
-        whenever(referenceTransactionState.notaryName).thenReturn(anotherNotaryX500Name)
+    fun `does not throw when input and reference states don't have the same notary keys (but the names are still the same)`() {
+        whenever(inputTransactionState.notaryKey).thenReturn(publicKeyExample)
         whenever(referenceTransactionState.notaryKey).thenReturn(anotherPublicKeyExample)
+        assertDoesNotThrow { verifier.verify() }
+    }
+
+
+    @Test
+    fun `throws an exception when input and reference states don't have the same notary passed into the verification (names are different)`() {
+        whenever(inputTransactionState.notaryName).thenReturn(anotherNotaryX500Name)
+        whenever(referenceTransactionState.notaryName).thenReturn(anotherNotaryX500Name)
         assertThatThrownBy { verifier.verify() }
             .isExactlyInstanceOf(IllegalStateException::class.java)
             .hasMessageContaining("Input and reference states' notaries need to be the same as the UtxoLedgerTransaction's notary")
+    }
+
+    @Test
+    fun `does not throw when input and reference states don't have the same notary keys passed into the verification (but the names are still the same)`() {
+        whenever(inputTransactionState.notaryKey).thenReturn(anotherPublicKeyExample)
+        whenever(referenceTransactionState.notaryKey).thenReturn(anotherPublicKeyExample)
+        assertDoesNotThrow { verifier.verify() }
     }
 
     @Test

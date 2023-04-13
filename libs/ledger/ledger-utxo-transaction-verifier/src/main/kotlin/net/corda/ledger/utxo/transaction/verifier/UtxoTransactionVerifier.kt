@@ -41,7 +41,6 @@ abstract class UtxoTransactionVerifier {
         }
     }
 
-
     protected fun verifyCommands(commands: List<Command>) {
         check(commands.isNotEmpty()) {
             "At least one command must be applied to the current $subjectClass."
