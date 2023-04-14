@@ -27,7 +27,6 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.security.PublicKey
 
-@Suppress("MaxLineLength")
 class UtxoLedgerTransactionVerifierTest {
 
     private val transaction = mock<UtxoLedgerTransaction>()
@@ -151,7 +150,7 @@ class UtxoLedgerTransactionVerifierTest {
 
 
     @Test
-    fun `throws an exception when input and reference states don't have the same notary passed into the verification (names are different)`() {
+    fun `throws an exception when input and reference states don't have the same notary passed into verification (names are different)`() {
         whenever(inputTransactionState.notaryName).thenReturn(anotherNotaryX500Name)
         whenever(referenceTransactionState.notaryName).thenReturn(anotherNotaryX500Name)
         assertThatThrownBy { verifier.verify() }

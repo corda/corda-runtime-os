@@ -54,7 +54,7 @@ class UtxoNotaryVerifierTest {
     fun `verifyNotaryAllowed throws if no keys or names matches`() {
         assertThatThrownBy { verifyNotaryAllowed(transaction, signedGroupParameters) }
             .isExactlyInstanceOf(IllegalStateException::class.java)
-            .hasMessageContaining("Notary of the transaction is not listed in the available notaries.")
+            .hasMessageContaining("is not listed in the available notaries.")
     }
 
     @Test
@@ -62,7 +62,7 @@ class UtxoNotaryVerifierTest {
         whenever(notary1.publicKey).thenReturn(publicKeyExample)
         assertThatThrownBy { verifyNotaryAllowed(transaction, signedGroupParameters) }
             .isExactlyInstanceOf(IllegalStateException::class.java)
-            .hasMessageContaining("Notary of the transaction is not listed in the available notaries.")
+            .hasMessageContaining("is not listed in the available notaries.")
     }
 
     @Test
@@ -70,7 +70,7 @@ class UtxoNotaryVerifierTest {
         whenever(notary1.name).thenReturn(notaryX500Name)
         assertThatThrownBy { verifyNotaryAllowed(transaction, signedGroupParameters) }
             .isExactlyInstanceOf(IllegalStateException::class.java)
-            .hasMessageContaining("Notary key of the transaction is not matching against the related notary in Signed Group Parameters.")
+            .hasMessageContaining("is not matching against the related notary")
     }
 
     @Test
