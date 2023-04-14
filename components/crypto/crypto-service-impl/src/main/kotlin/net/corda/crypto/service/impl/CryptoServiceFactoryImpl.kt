@@ -101,7 +101,7 @@ class CryptoServiceFactoryImpl @Activate constructor(
         }
 
         private val cryptoService: CryptoService by lazy(LazyThreadSafetyMode.PUBLICATION) {
-            val retry = hsmConfig.retry
+            val retry = hsmConfig.retrying
             val cryptoService = cryptoServiceProvider.getInstance(cryptoConfig)
             CryptoServiceDecorator.create(
                 cryptoService,

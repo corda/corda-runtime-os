@@ -194,6 +194,12 @@ wait_for_approve() {
     elif [[ "$registrationStatus" == "DECLINED" ]]; then
       curl --fail-with-body -s -S --insecure -u admin:admin https://$1/api/v1/membership/$2/$3 | jq
       exit -1
+    elif [[ "$registrationStatus" == "FAILED" ]]; then
+      curl --fail-with-body -s -S --insecure -u admin:admin https://$1/api/v1/membership/$2/$3 | jq
+      exit -1
+    elif [[ "$registrationStatus" == "INVALID" ]]; then
+      curl --fail-with-body -s -S --insecure -u admin:admin https://$1/api/v1/membership/$2/$3 | jq
+      exit -1
     else
       echo "Registration status is $registrationStatus, waiting a bit"
       n=$((n+1))

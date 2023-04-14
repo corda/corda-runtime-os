@@ -8,9 +8,13 @@ import net.corda.v5.ledger.common.transaction.TransactionWithMetadata
 import java.security.MessageDigest
 import java.security.PublicKey
 
-private class MockTransactionSignatureService: TransactionSignatureServiceInternal {
-    override fun sign(transaction: TransactionWithMetadata, publicKeys: Iterable<PublicKey>): List<DigitalSignatureAndMetadata> =
+private class FakeTransactionSignatureService: TransactionSignatureServiceInternal {
+    override fun sign(
+        transaction: TransactionWithMetadata,
+        publicKeys: Iterable<PublicKey>
+    ): List<DigitalSignatureAndMetadata> =
         publicKeys.map { getSignatureWithMetadataExample(it) }
+
     override fun signBatch(
         transactions: List<TransactionWithMetadata>,
         publicKeys: Iterable<PublicKey>
@@ -23,13 +27,12 @@ private class MockTransactionSignatureService: TransactionSignatureServiceIntern
         publicKey: PublicKey
     ) {}
 
-    override fun getIdOfPublicKey(publicKey: PublicKey, digestAlgorithmName: String): SecureHash
-        = SecureHashImpl(
-            digestAlgorithmName,
-            MessageDigest.getInstance(digestAlgorithmName).digest(publicKey.encoded)
-        )
+    override fun getIdOfPublicKey(publicKey: PublicKey, digestAlgorithmName: String): SecureHash = SecureHashImpl(
+        digestAlgorithmName,
+        MessageDigest.getInstance(digestAlgorithmName).digest(publicKey.encoded)
+    )
 }
 
-fun mockTransactionSignatureService(): TransactionSignatureServiceInternal {
-    return MockTransactionSignatureService()
+fun fakeTransactionSignatureService(): TransactionSignatureServiceInternal {
+    return FakeTransactionSignatureService()
 }

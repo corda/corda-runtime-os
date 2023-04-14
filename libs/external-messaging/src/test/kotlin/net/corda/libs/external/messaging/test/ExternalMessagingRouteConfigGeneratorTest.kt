@@ -24,8 +24,11 @@ import net.corda.libs.packaging.core.CpkType
 import net.corda.schema.configuration.ExternalMessagingConfig
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.DigestAlgorithmName
+import net.corda.virtualnode.VirtualNodeInfo
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.mock
 
 class ExternalMessagingRouteConfigGeneratorTest {
 
@@ -40,6 +43,16 @@ class ExternalMessagingRouteConfigGeneratorTest {
             "1.0",
             SecureHashImpl(DigestAlgorithmName.SHA2_256.name, "signerSummaryHash".toByteArray())
         )
+
+        val smartConfig =
+            genExternalMsgConfig("ext.\$HOLDING_ID.\$CHANNEL_NAME.receive", false, InactiveResponseType.IGNORE)
+
+        val externalMessagingRouteConfigGenerator =
+            ExternalMessagingRouteConfigGeneratorImpl(
+                ExternalMessagingConfigProviderImpl(smartConfig),
+                ExternalMessagingRouteConfigSerializerImpl(),
+                ExternalMessagingChannelConfigSerializerImpl()
+            )
 
         fun genExternalMsgConfig(
             receiveTopicPattern: String,
@@ -59,7 +72,7 @@ class ExternalMessagingRouteConfigGeneratorTest {
             return SmartConfigFactory.createWithoutSecurityServices().create(externalMsgConfig)
         }
 
-        fun genCpk(externalChannelsConfigJson: String): CpkMetadata {
+        fun genCpk(externalChannelsConfigJson: String?): CpkMetadata {
             return CpkMetadata(
                 cpkId = CpkIdentifier(
                     UUID.randomUUID().toString(),
@@ -94,18 +107,95 @@ class ExternalMessagingRouteConfigGeneratorTest {
     }
 
     @Test
-    fun `ensure the route configuration is generated correctly`() {
+    fun `null should be returned if no channel configuration is provided`() {
+        val routesConfig = externalMessagingRouteConfigGenerator.generateNewConfig(
+            ALICE_HOLDING_ID1,
+            cpiId,
+            cpks = setOf(genCpk(null))
+        )
+        assertThat(routesConfig).isNull()
+    }
 
-        val smartConfig =
-            genExternalMsgConfig("ext.\$HOLDING_ID\$.\$CHANNEL_NAME\$.receive", false, InactiveResponseType.IGNORE)
+    @Test
+    fun `ensure the route configuration is generated correctly even when some cpks do not provide configuration for the channels`() {
+        val expectedRouteConfig =
+            """
+                {
+                    "currentRoutes": {
+                        "cpiIdentifier": {
+                            "name": "myCpi",
+                            "version": "1.0",
+                            "signerSummaryHash": "SHA-256:7369676E657253756D6D61727948617368"
+                        },
+                        "routes": [
+                            {
+                                "channelName": "x.y.z",
+                                "externalReceiveTopicName": "ext.7EA3CA6EF888.x.y.z.receive",
+                                "active": false,
+                                "inactiveResponseType": "IGNORE"
+                            },
+                            {
+                                "channelName": "a.b.c",
+                                "externalReceiveTopicName": "ext.7EA3CA6EF888.a.b.c.receive",
+                                "active": false,
+                                "inactiveResponseType": "IGNORE"
+                            },
+                            {
+                                "channelName": "1.2.3",
+                                "externalReceiveTopicName": "ext.7EA3CA6EF888.1.2.3.receive",
+                                "active": false,
+                                "inactiveResponseType": "IGNORE"
+                            }
+                        ]
+                    },
+                    "previousVersionRoutes": []
+                }
+            """.trimIndent()
 
-        val externalMessagingRouteConfigGenerator =
-            ExternalMessagingRouteConfigGeneratorImpl(
-                ExternalMessagingConfigProviderImpl(smartConfig),
-                ExternalMessagingRouteConfigSerializerImpl(),
-                ExternalMessagingChannelConfigSerializerImpl()
+        val routesConfig = externalMessagingRouteConfigGenerator.generateNewConfig(
+            ALICE_HOLDING_ID1,
+            cpiId,
+            cpks = setOf(
+                genCpk(null),
+                genCpk(
+                    """
+                        {
+                            "channels": [
+                                {
+                                    "name": "x.y.z",
+                                    "type": "SEND_RECEIVE"
+                                }
+                            ]
+                        }
+                    """.trimMargin()
+                ),
+                genCpk(null),
+                genCpk(
+                    """
+                        {
+                            "channels": [
+                                {
+                                    "name": "a.b.c",
+                                    "type": "SEND"
+                                },
+                                {
+                                    "name": "1.2.3",
+                                    "type": "SEND_RECEIVE"
+                                }
+                            ]
+                        }
+                    """.trimMargin(),
+                ),
+                genCpk(null)
             )
+        )
 
+        val mapper = ObjectMapper()
+        assertThat(mapper.readTree(routesConfig)).isEqualTo(mapper.readTree(expectedRouteConfig))
+    }
+
+    @Test
+    fun `ensure the route configuration is generated correctly`() {
         val externalChannelsConfigJson = """
                         {
                             "channels": [
@@ -176,10 +266,263 @@ class ExternalMessagingRouteConfigGeneratorTest {
                 }
             """.trimIndent()
 
-        val routesConfig = externalMessagingRouteConfigGenerator.generateConfig(
+        val routesConfig = externalMessagingRouteConfigGenerator.generateNewConfig(
             ALICE_HOLDING_ID1,
             cpiId,
             cpks = setOf(genCpk(externalChannelsConfigJson), genCpk(externalChannelsConfigJson2))
+        )
+
+        val mapper = ObjectMapper()
+        assertThat(mapper.readTree(routesConfig)).isEqualTo(mapper.readTree(expectedRouteConfig))
+    }
+
+    @Test
+    fun `ensure the history for the route configuration is preserved starting with an empty configuration`() {
+        val virtualNodeInfo = mock<VirtualNodeInfo> {
+            on { holdingIdentity } doReturn ALICE_HOLDING_ID1
+            on { externalMessagingRouteConfig } doReturn null
+        }
+
+        val externalChannelsConfigJson = """
+                        {
+                            "channels": [
+                                {
+                                    "name": "a.b.c",
+                                    "type": "SEND"
+                                }
+                            ]
+                        }
+                    """.trimMargin()
+
+        val expectedRouteConfig =
+            """
+                {
+                    "currentRoutes": {
+                        "cpiIdentifier": {
+                            "name": "myCpi",
+                            "version": "1.0",
+                            "signerSummaryHash": "SHA-256:7369676E657253756D6D61727948617368"
+                        },
+                        "routes": [
+                            {
+                                "channelName": "a.b.c",
+                                "externalReceiveTopicName": "ext.7EA3CA6EF888.a.b.c.receive",
+                                "active": false,
+                                "inactiveResponseType": "IGNORE"
+                            }
+                        ]
+                    },
+                    "previousVersionRoutes": []
+                }
+            """.trimIndent()
+
+        val routesConfig = externalMessagingRouteConfigGenerator.generateUpgradeConfig(
+            virtualNodeInfo,
+            cpiId,
+            cpks = setOf(genCpk(externalChannelsConfigJson))
+        )
+
+        val mapper = ObjectMapper()
+        assertThat(mapper.readTree(routesConfig)).isEqualTo(mapper.readTree(expectedRouteConfig))
+    }
+
+    @Test
+    fun `ensure the history for the route configuration is preserved starting with an non-empty configuration`() {
+        val virtualNodeInfo = mock<VirtualNodeInfo> {
+            on { holdingIdentity } doReturn ALICE_HOLDING_ID1
+            on { externalMessagingRouteConfig } doReturn
+                    """
+                        {
+                            "currentRoutes": {
+                                "cpiIdentifier": {
+                                    "name": "myCpi",
+                                    "version": "1.0",
+                                    "signerSummaryHash": "SHA-256:7369676E657253756D6D61727948617368"
+                                },
+                                "routes": [
+                                    {
+                                        "channelName": "a.b.c",
+                                        "externalReceiveTopicName": "ext.7EA3CA6EF888.a.b.c.receive",
+                                        "active": false,
+                                        "inactiveResponseType": "IGNORE"
+                                    }
+                                ]
+                            },
+                            "previousVersionRoutes": []
+                        }
+                    """.trimIndent()
+        }
+
+        val externalChannelsConfigJson = """
+                        {
+                            "channels": [
+                                {
+                                    "name": "x.y.z",
+                                    "type": "SEND"
+                                }
+                            ]
+                        }
+                    """.trimMargin()
+
+        val expectedRouteConfig =
+            """
+                {
+                    "currentRoutes": {
+                        "cpiIdentifier": {
+                            "name": "myCpi",
+                            "version": "1.0",
+                            "signerSummaryHash": "SHA-256:7369676E657253756D6D61727948617368"
+                        },
+                        "routes": [
+                            {
+                                "channelName": "x.y.z",
+                                "externalReceiveTopicName": "ext.7EA3CA6EF888.x.y.z.receive",
+                                "active": false,
+                                "inactiveResponseType": "IGNORE"
+                            }
+                        ]
+                    },
+                    "previousVersionRoutes": [ 
+                        {
+                             "cpiIdentifier": {
+                                        "name": "myCpi",
+                                        "version": "1.0",
+                                        "signerSummaryHash": "SHA-256:7369676E657253756D6D61727948617368"
+                             },
+                             "routes": [
+                                    {
+                                        "channelName": "a.b.c",
+                                        "externalReceiveTopicName": "ext.7EA3CA6EF888.a.b.c.receive",
+                                        "active": false,
+                                        "inactiveResponseType": "IGNORE"
+                                    }
+                                ]
+                        }
+                    ]
+                }
+            """.trimIndent()
+
+        val routesConfig = externalMessagingRouteConfigGenerator.generateUpgradeConfig(
+            virtualNodeInfo,
+            cpiId,
+            cpks = setOf(genCpk(externalChannelsConfigJson))
+        )
+
+        val mapper = ObjectMapper()
+        assertThat(mapper.readTree(routesConfig)).isEqualTo(mapper.readTree(expectedRouteConfig))
+    }
+
+    @Test
+    fun `ensure the history for the route configuration is preserved starting with historical configuration`() {
+        val virtualNodeInfo = mock<VirtualNodeInfo> {
+            on { holdingIdentity } doReturn ALICE_HOLDING_ID1
+            on { externalMessagingRouteConfig } doReturn
+                    """
+                        {
+                            "currentRoutes": {
+                                "cpiIdentifier": {
+                                    "name": "myCpi",
+                                    "version": "1.0",
+                                    "signerSummaryHash": "SHA-256:7369676E657253756D6D61727948617368"
+                                },
+                                "routes": [
+                                    {
+                                        "channelName": "a.b.c",
+                                        "externalReceiveTopicName": "ext.7EA3CA6EF888.a.b.c.receive",
+                                        "active": false,
+                                        "inactiveResponseType": "IGNORE"
+                                    }
+                                ]
+                            },
+                            "previousVersionRoutes": [
+                                 {
+                                    "cpiIdentifier": {
+                                        "name": "myCpi",
+                                        "version": "1.0",
+                                        "signerSummaryHash": "SHA-256:7369676E657253756D6D61727948617368"
+                                    },
+                                    "routes": [
+                                        {
+                                            "channelName": "1.2.3",
+                                            "externalReceiveTopicName": "ext.7EA3CA6EF888.1.2.3.receive",
+                                            "active": false,
+                                            "inactiveResponseType": "IGNORE"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    """.trimIndent()
+        }
+
+        val externalChannelsConfigJson = """
+                        {
+                            "channels": [
+                                {
+                                    "name": "x.y.z",
+                                    "type": "SEND"
+                                }
+                            ]
+                        }
+                    """.trimMargin()
+
+        val expectedRouteConfig =
+            """
+                {
+                    "currentRoutes": {
+                        "cpiIdentifier": {
+                            "name": "myCpi",
+                            "version": "1.0",
+                            "signerSummaryHash": "SHA-256:7369676E657253756D6D61727948617368"
+                        },
+                        "routes": [
+                            {
+                                "channelName": "x.y.z",
+                                "externalReceiveTopicName": "ext.7EA3CA6EF888.x.y.z.receive",
+                                "active": false,
+                                "inactiveResponseType": "IGNORE"
+                            }
+                        ]
+                    },
+                    "previousVersionRoutes": [ 
+                        {
+                             "cpiIdentifier": {
+                                        "name": "myCpi",
+                                        "version": "1.0",
+                                        "signerSummaryHash": "SHA-256:7369676E657253756D6D61727948617368"
+                             },
+                             "routes": [
+                                    {
+                                        "channelName": "a.b.c",
+                                        "externalReceiveTopicName": "ext.7EA3CA6EF888.a.b.c.receive",
+                                        "active": false,
+                                        "inactiveResponseType": "IGNORE"
+                                    }
+                                ]
+                        },
+                       {
+                            "cpiIdentifier": {
+                                "name": "myCpi",
+                                "version": "1.0",
+                                "signerSummaryHash": "SHA-256:7369676E657253756D6D61727948617368"
+                            },
+                            "routes": [
+                                {
+                                    "channelName": "1.2.3",
+                                    "externalReceiveTopicName": "ext.7EA3CA6EF888.1.2.3.receive",
+                                    "active": false,
+                                    "inactiveResponseType": "IGNORE"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            """.trimIndent()
+
+        val routesConfig = externalMessagingRouteConfigGenerator.generateUpgradeConfig(
+            virtualNodeInfo,
+            cpiId,
+            cpks = setOf(genCpk(externalChannelsConfigJson))
         )
 
         val mapper = ObjectMapper()

@@ -210,7 +210,8 @@ class UtxoLedgerMessageProcessorTests {
                 listOf("9".toByteArray())
             ),
             ledgerModel = UtxoLedgerTransactionImpl::class.java.name,
-            transactionSubType = "GENERAL"
+            transactionSubType = "GENERAL",
+            memberShipGroupParametersHash = "MEMBERSHIP_GROUP_PARAMETERS_HASH"
         )
         return SignedTransactionContainer(
             wireTransaction,
