@@ -292,14 +292,4 @@ class FlowMessagingImpl @Activate constructor(
                     ?.let { payload -> session.getSessionInfo() to payload }
             }.toMap()
     }
-
-//    private fun verifySessionStatusNotErrorOrClose(sessionId: String, flowFiberService: FlowFiberService) {
-//        val status = flowFiberService.getExecutingFiber().getExecutionContext().flowCheckpoint.getSessionState(
-//            sessionId
-//        )?.status
-//
-//        if (setOf(SessionStateType.CLOSED, SessionStateType.ERROR).contains(status)) {
-//            throw CordaRuntimeException("Session: $sessionId Status is ${status?.name ?: "NULL"}")
-//        }
-//    }
 }
