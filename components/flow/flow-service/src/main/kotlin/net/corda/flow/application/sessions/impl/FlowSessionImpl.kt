@@ -1,11 +1,11 @@
 package net.corda.flow.application.sessions.impl
 
 import net.corda.data.KeyValuePairList
-import net.corda.data.flow.state.session.SessionStateType
 import net.corda.flow.application.serialization.DeserializedWrongAMQPObjectException
 import net.corda.flow.application.serialization.SerializationServiceInternal
 import net.corda.flow.application.sessions.FlowSessionInternal
 import net.corda.flow.application.sessions.SessionInfo
+import net.corda.flow.application.sessions.utils.SessionUtils.verifySessionStatusNotErrorOrClose
 import net.corda.flow.fiber.FlowFiber
 import net.corda.flow.fiber.FlowFiberService
 import net.corda.flow.fiber.FlowIORequest
@@ -99,7 +99,7 @@ class FlowSessionImpl(
 
     @Suspendable
     override fun <R : Any> sendAndReceive(receiveType: Class<R>, payload: Any): R {
-        verifySessionStatusNotErrorOrClose()
+        verifySessionStatusNotErrorOrClose(sourceSessionId, flowFiberService)
         requireBoxedType(receiveType)
         val request = FlowIORequest.SendAndReceive(mapOf(getSessionInfo() to serialize(payload)))
         val received = fiber.suspend(request)
@@ -109,7 +109,7 @@ class FlowSessionImpl(
 
     @Suspendable
     override fun <R : Any> receive(receiveType: Class<R>): R {
-        verifySessionStatusNotErrorOrClose()
+        verifySessionStatusNotErrorOrClose(sourceSessionId, flowFiberService)
         requireBoxedType(receiveType)
         val request = FlowIORequest.Receive(setOf(getSessionInfo()))
         val received = fiber.suspend(request)
@@ -118,7 +118,7 @@ class FlowSessionImpl(
     }
     @Suspendable
     override fun send(payload: Any) {
-        verifySessionStatusNotErrorOrClose()
+        verifySessionStatusNotErrorOrClose(sourceSessionId, flowFiberService)
         val request =
             FlowIORequest.Send(mapOf(getSessionInfo() to serialize(payload)))
         fiber.suspend(request)
@@ -144,16 +144,6 @@ class FlowSessionImpl(
 
     private fun serialize(payload: Any): ByteArray {
         return serializationService.serialize(payload).bytes
-    }
-
-    private fun verifySessionStatusNotErrorOrClose() {
-        val status = flowFiberService.getExecutingFiber().getExecutionContext().flowCheckpoint.getSessionState(
-            sourceSessionId
-        )?.status
-
-        if (setOf(SessionStateType.CLOSED, SessionStateType.ERROR).contains(status)) {
-            throw CordaRuntimeException("Session Status is ${status?.name ?: "NULL"}")
-        }
     }
 
     private fun <R : Any> deserializeReceivedPayload(

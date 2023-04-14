@@ -25,7 +25,7 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 import java.util.UUID
-import net.corda.data.flow.state.session.SessionStateType
+import net.corda.flow.application.sessions.utils.SessionUtils.verifySessionStatusNotErrorOrClose
 
 @Suppress("TooManyFunctions")
 @Component(service = [FlowMessaging::class, UsedByFlow::class], scope = PROTOTYPE)
@@ -61,7 +61,7 @@ class FlowMessagingImpl @Activate constructor(
         val flowSessionInternals = sessions as Set<FlowSessionInternal>
 
         flowSessionInternals.forEach { session ->
-            verifySessionStatusNotErrorOrClose(session.getSessionId())
+            verifySessionStatusNotErrorOrClose(session.getSessionId(), flowFiberService)
         }
 
         val versionReceivingFlowSessionPayloads =
@@ -93,7 +93,7 @@ class FlowMessagingImpl @Activate constructor(
         }
 
         flowSessionInternals.forEach { session ->
-            verifySessionStatusNotErrorOrClose(session.key.getSessionId())
+            verifySessionStatusNotErrorOrClose(session.key.getSessionId(), flowFiberService)
         }
 
         val versionReceivingFlowSessionPayloads = getVersionReceivingFlowSessionPayloads(flowSessionInternals)
@@ -133,7 +133,7 @@ class FlowMessagingImpl @Activate constructor(
         val flowSessionInternals = sessions as Set<FlowSessionInternal>
         val serializedPayload = serialize(payload)
         val sessionToPayload = flowSessionInternals.associate { session ->
-            verifySessionStatusNotErrorOrClose(session.getSessionId())
+            verifySessionStatusNotErrorOrClose(session.getSessionId(), flowFiberService)
             session.getSessionInfo() to when (session) {
                 is VersionSendingFlowSession -> session.getPayloadToSend(serializedPayload)
                 else -> serializedPayload
@@ -151,7 +151,7 @@ class FlowMessagingImpl @Activate constructor(
         val sessionPayload = payloadsPerSession.map { (session, payload) ->
             requireBoxedType(payload::class.java)
             val flowSessionInternal = session as FlowSessionInternal
-            verifySessionStatusNotErrorOrClose(session.getSessionId())
+            verifySessionStatusNotErrorOrClose(session.getSessionId(), flowFiberService)
             flowSessionInternal.getSessionInfo() to when (session) {
                 is VersionSendingFlowSession -> session.getPayloadToSend(serialize(payload))
                 else -> serialize(payload)
@@ -293,13 +293,13 @@ class FlowMessagingImpl @Activate constructor(
             }.toMap()
     }
 
-    private fun verifySessionStatusNotErrorOrClose(sessionId: String) {
-        val status = flowFiberService.getExecutingFiber().getExecutionContext().flowCheckpoint.getSessionState(
-            sessionId
-        )?.status
-
-        if (setOf(SessionStateType.CLOSED, SessionStateType.ERROR).contains(status)) {
-            throw CordaRuntimeException("Session Status is ${status?.name ?: "NULL"}")
-        }
-    }
+//    private fun verifySessionStatusNotErrorOrClose(sessionId: String, flowFiberService: FlowFiberService) {
+//        val status = flowFiberService.getExecutingFiber().getExecutionContext().flowCheckpoint.getSessionState(
+//            sessionId
+//        )?.status
+//
+//        if (setOf(SessionStateType.CLOSED, SessionStateType.ERROR).contains(status)) {
+//            throw CordaRuntimeException("Session: $sessionId Status is ${status?.name ?: "NULL"}")
+//        }
+//    }
 }
