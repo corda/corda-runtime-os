@@ -31,6 +31,12 @@ pipeline {
         }
     }
 
+    environment {
+        GRADLE_ADDITIONAL_ARGS = ''
+        GRADLE_PERFORMANCE_TUNING = '--parallel --build-cache'
+        GRADLE_USER_HOME = "/host_tmp/gradle"
+    }
+
     stages {
         stage('Publishing') {
             parallel {
@@ -71,8 +77,6 @@ pipeline {
                         HELM_REGISTRY = publishingUtils.getInternalRegistry(false)
                         HELM_CHART_VERSION = publishingUtils.getHelmVersionFromYaml()
                         HELM_CHART_REPO_NAME = publishingUtils.getHelmRepo()
-                        GRADLE_ADDITIONAL_ARGS = ''
-                        GRADLE_PERFORMANCE_TUNING = '--parallel --build-cache'
                     }
                     steps {
                         script {
