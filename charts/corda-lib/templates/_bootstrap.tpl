@@ -72,24 +72,6 @@ spec:
           {{ include "corda.cryptoDbUserEnv" . | nindent 12 }}
           {{- include "corda.clusterDbEnv" . | nindent 12 }}
         {{- include "corda.generateAndExecuteSql" ( dict "name" "crypto-config" "subCommand" "create-crypto-config" "Values" .Values "Chart" .Chart "Release" .Release "schema" "CRYPTO" "namePostfix" "worker-config" "sqlFile" "crypto-config.sql" "sequenceNumber" 12) | nindent 8 }}
-        {{- if (((.Values).config).vault).url }} 
-        - name: 14-apply-db-secrets-to-vault
-          image: curlimages/curl:8.00.1
-          imagePullPolicy: {{ .Values.imagePullPolicy }}
-          {{- include "corda.bootstrapResources" . | nindent 10 }}
-          {{- include "corda.containerSecurityContext" . | nindent 10 }}
-          args: [ '--retry', '5', '--retry-max-time', '30', '--retry-all-errors', '--header', 'X-Vault-Token: {{ .Values.config.vault.token }}', '--request', 'POST', '--data', '{ "data": {"crypto": "$(CRYPTO_DB_USER_PASSWORD)", "vnodes": "$(DB_CLUSTER_PASSWORD)", "rbac": "$(RBAC_DB_USER_PASSWORD)"} }', '{{ .Values.config.vault.url }}/v1/secret/data/dbsecrets', '--verbose']
-          env:
-          {{ include "corda.rbacDbUserEnv" . | nindent 12 }}
-          {{ include "corda.cryptoDbUserEnv" . | nindent 12 }}
-          {{- include "corda.clusterDbEnv" . | nindent 12 }}
-        - name: 15-apply-crypto-secrets-to-vault
-          image: curlimages/curl:8.00.1
-          imagePullPolicy: {{ .Values.imagePullPolicy }}
-          {{- include "corda.bootstrapResources" . | nindent 10 }}
-          {{- include "corda.containerSecurityContext" . | nindent 10 }}
-          args: [ '--retry', '5', '--retry-max-time', '30', '--retry-all-errors', '--header', 'X-Vault-Token: {{ .Values.config.vault.token }}', '--request', 'POST', '--data', '{ "data": {"passphrase": "6SIgbxSKt6WpBcSifBUy4geKOGyyVDMIELQ/uj8k2P4=", "salt": "URSKJ/t6xNd/hu3XmQ6q57BVq3R0DNgQn75Hz/2SPf0="} }', '{{ .Values.config.vault.url }}/v1/secret/data/cryptosecrets', '--verbose']
-        {{- end }}
       volumes:
         - name: working-volume
           emptyDir: {}
