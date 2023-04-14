@@ -188,25 +188,15 @@ class SessionManagerImpl @Activate constructor(
         instant: Instant,
         config: SmartConfig,
     ): List<SessionEvent> {
-        if (sessionState.sendEventsState.undeliveredMessages.isEmpty())
-            return emptyList()
+        val undeliveredMessages = sessionState.sendEventsState.undeliveredMessages
+        if (undeliveredMessages.isEmpty()) return emptyList()
 
-        //get all events with a timestamp in the past, as well as any acks or errors
-        var sessionEvents = sessionState.sendEventsState.undeliveredMessages.filter {
-            it.timestamp <= instant || it.payload is SessionError
-        }
-
-        //if any of the events are a [SessionInit], send only that. Otherwise, send all events.
-        if (SessionStateType.CREATED == sessionState.status) {
-            sessionEvents =
-                sessionEvents.firstOrNull { event -> event.payload is SessionInit }?.let { listOf(it) }
-                ?: sessionEvents
-        }
+        val sessionEvents = filterSessionEvents(undeliveredMessages, instant, sessionState.status)
 
         //update events with the latest ack info from the current state
         sessionEvents.forEach { eventToSend ->
             eventToSend.receivedSequenceNum = sessionState.receivedEventsState.lastProcessedSequenceNum
-            eventToSend.outOfOrderSequenceNums = sessionState.receivedEventsState.undeliveredMessages.map { it.sequenceNum }
+            eventToSend.outOfOrderSequenceNums = undeliveredMessages.map { it.sequenceNum }
         }
 
         //remove SessionAcks/SessionErrors and increase timestamp of messages to be sent that are awaiting acknowledgement
@@ -214,6 +204,35 @@ class SessionManagerImpl @Activate constructor(
         updateSessionStateSendEvents(sessionState, instant, messageResendWindow, sessionEvents)
 
         return sessionEvents
+    }
+
+    /**
+     * Filters the undelivered session events based on the given instant and session status.
+     *
+     * This function retrieves events with a timestamp in the past, as well as any errors, from the given list of undelivered messages.
+     * If the [SessionState.status] is [SessionStateType.CREATED], the function returns only the first [SessionInit] event found, if any.
+     * Otherwise, it returns all past events and errors.
+     *
+     * @param undeliveredMessages A list of undelivered [SessionEvent] objects.
+     * @param instant The current instant used to filter events based on their timestamp.
+     * @param sessionStatus The status of the session ([SessionStateType]).
+     * @return A filtered list of [SessionEvent] objects to be processed.
+     */
+    private fun filterSessionEvents(
+        undeliveredMessages: List<SessionEvent>,
+        instant: Instant,
+        sessionStatus: SessionStateType
+    ): List<SessionEvent> {
+        //get all events with a timestamp in the past, as well as any acks or errors
+        val pastEventsAndErrors = undeliveredMessages.filter {
+            it.timestamp <= instant || it.payload is SessionError
+        }
+
+        return if (sessionStatus == SessionStateType.CREATED) {
+            pastEventsAndErrors.firstOrNull { it.payload is SessionInit }?.let { listOf(it) } ?: emptyList()
+        } else {
+            pastEventsAndErrors
+        }
     }
 
     /**
