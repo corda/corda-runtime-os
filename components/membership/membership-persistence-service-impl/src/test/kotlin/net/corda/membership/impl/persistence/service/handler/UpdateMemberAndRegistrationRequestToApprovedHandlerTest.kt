@@ -20,6 +20,7 @@ import net.corda.membership.datamodel.MemberInfoEntityPrimaryKey
 import net.corda.membership.datamodel.RegistrationRequestEntity
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_PENDING
+import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_SUSPENDED
 import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
@@ -212,6 +213,90 @@ class UpdateMemberAndRegistrationRequestToApprovedHandlerTest {
                     KeyValuePair("another-key", "value"),
                 )
             )
+        )
+        val mgmContextCapture = argumentCaptor<KeyValuePairList>()
+        whenever(keyValuePairListSerializer.serialize(mgmContextCapture.capture())).doReturn(byteArrayOf(0))
+        mockMemberInfoEntity()
+        mockRegistrationRequestEntity()
+        val context = MembershipRequestContext(clock.instant(), requestId, member,)
+        val request = UpdateMemberAndRegistrationRequestToApproved(member, requestId,)
+
+        clock.setTime(Instant.ofEpochMilli(500))
+        handler.invoke(context, request)
+
+        assertThat(mgmContextCapture.firstValue.items).containsExactly(
+            KeyValuePair(STATUS, MEMBER_STATUS_ACTIVE),
+            KeyValuePair("another-key", "value"),
+        )
+    }
+
+    @Test
+    fun `invoke will keep the state if it was suspended`() {
+        val existingEntity = mock<MemberInfoEntity> {
+            on { status } doReturn MEMBER_STATUS_SUSPENDED
+        }
+        whenever(
+            entityManager.find(
+                eq(MemberInfoEntity::class.java),
+                eq(
+                    MemberInfoEntityPrimaryKey(
+                        groupId = member.groupId,
+                        memberX500Name = member.x500Name,
+                        false,
+                    ),
+                ),
+                eq(LockModeType.PESSIMISTIC_WRITE),
+            ),
+        ).doReturn(existingEntity)
+        whenever(keyValuePairListDeserializer.deserialize(mgmContextBytes)).doReturn(
+            KeyValuePairList(
+                listOf(
+                    KeyValuePair(STATUS, MEMBER_STATUS_PENDING),
+                    KeyValuePair("another-key", "value"),
+                ),
+            ),
+        )
+        val mgmContextCapture = argumentCaptor<KeyValuePairList>()
+        whenever(keyValuePairListSerializer.serialize(mgmContextCapture.capture())).doReturn(byteArrayOf(0))
+        mockMemberInfoEntity()
+        mockRegistrationRequestEntity()
+        val context = MembershipRequestContext(clock.instant(), requestId, member,)
+        val request = UpdateMemberAndRegistrationRequestToApproved(member, requestId,)
+
+        clock.setTime(Instant.ofEpochMilli(500))
+        handler.invoke(context, request)
+
+        assertThat(mgmContextCapture.firstValue.items).containsExactly(
+            KeyValuePair(STATUS, MEMBER_STATUS_SUSPENDED),
+            KeyValuePair("another-key", "value"),
+        )
+    }
+
+    @Test
+    fun `invoke will keep the state if it was active`() {
+        val existingEntity = mock<MemberInfoEntity> {
+            on { status } doReturn MEMBER_STATUS_ACTIVE
+        }
+        whenever(
+            entityManager.find(
+                eq(MemberInfoEntity::class.java),
+                eq(
+                    MemberInfoEntityPrimaryKey(
+                        groupId = member.groupId,
+                        memberX500Name = member.x500Name,
+                        false,
+                    ),
+                ),
+                eq(LockModeType.PESSIMISTIC_WRITE),
+            ),
+        ).doReturn(existingEntity)
+        whenever(keyValuePairListDeserializer.deserialize(mgmContextBytes)).doReturn(
+            KeyValuePairList(
+                listOf(
+                    KeyValuePair(STATUS, MEMBER_STATUS_PENDING),
+                    KeyValuePair("another-key", "value"),
+                ),
+            ),
         )
         val mgmContextCapture = argumentCaptor<KeyValuePairList>()
         whenever(keyValuePairListSerializer.serialize(mgmContextCapture.capture())).doReturn(byteArrayOf(0))

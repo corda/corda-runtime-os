@@ -40,15 +40,15 @@ class MemberInfoEntity(
     @Column(name = "member_context", nullable = false)
     val memberContext: ByteArray,
 
-    @Column(name = "member_signature_key", nullable = false, updatable = false, columnDefinition = "BLOB")
+    @Column(name = "member_signature_key", nullable = false, columnDefinition = "BLOB")
     val memberSignatureKey: ByteArray,
 
-    @Column(name = "member_signature_content", nullable = false, updatable = false, columnDefinition = "BLOB")
+    @Column(name = "member_signature_content", nullable = false, columnDefinition = "BLOB")
     val memberSignatureContent: ByteArray,
 
     // TODO Are we going to be storing `ParameterizedSignatureSpec` here?
     //  If so need to consider saving extra signature spec parameters as recorded in https://r3-cev.atlassian.net/browse/CORE-11685
-    @Column(name = "member_signature_spec", nullable = false, updatable = false)
+    @Column(name = "member_signature_spec", nullable = false)
     val memberSignatureSpec: String,
 
     @Column(name = "mgm_context", nullable = false)
