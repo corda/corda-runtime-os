@@ -20,13 +20,6 @@ class FacadeInvocationFlow : ClientStartableFlow {
         }
     }
 
-    private val alterEgoX500Name = MemberX500Name(
-        "Bob",
-        "Other Bob Corp",
-        "LDN",
-        "GB"
-    )
-
     @CordaInject
     lateinit var flowMessaging: FlowMessaging
 
@@ -35,17 +28,18 @@ class FacadeInvocationFlow : ClientStartableFlow {
 
     @Suspendable
     override fun call(requestBody: ClientRequestBody): String {
-        log.info("FacadeInfocationFlow.call() starting")
+        log.info("FacadeInvocationFlow.call() starting")
 
         val args = requestBody.getRequestBodyAsMap(jsonMarshallingService, String::class.java, String::class.java)
 
         val facadeName = getArgument(args, "facadeName")
         val methodName = getArgument(args, "methodName")
+        val alias = MemberX500Name.parse(getArgument(args,"alias"))
         val payload = getArgument(args, "payload")
 
-        log.info("Calling facade method '$methodName@$facadeName' with payload '$payload'")
+        log.info("Calling facade method '$methodName@$facadeName' with payload '$payload' to $alias")
 
-        val response = flowMessaging.callFacade(alterEgoX500Name, facadeName, methodName, payload)
+        val response = flowMessaging.callFacade(alias, facadeName, methodName, payload)
 
         log.info("Facade responded with '$response'")
         log.info("FacadeInvocationFlow.call() ending")

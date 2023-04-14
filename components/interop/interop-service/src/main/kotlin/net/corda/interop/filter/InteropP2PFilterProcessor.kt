@@ -36,8 +36,6 @@ class InteropP2PFilterProcessor(cordaAvroSerializationFactory: CordaAvroSerializ
             authMessage.header.subsystem != SUBSYSTEM
         ) return@mapNotNull null
 
-        logger.info("Processing message from p2p.in with subsystem $SUBSYSTEM. Key: $key." )
-
         processInteropMessage(authMessage.payload, key)
     }
 
@@ -46,14 +44,16 @@ class InteropP2PFilterProcessor(cordaAvroSerializationFactory: CordaAvroSerializ
         key: String
     ) : Record<String, FlowMapperEvent>? {
         val sessionEvent = cordaAvroDeserializer.deserialize(payload.array())
-        logger.info("Processing message from p2p.in with subsystem ${Constants.FLOW_SESSION_SUBSYSTEM}. Key: $key, Event: $sessionEvent")
 
         return if (sessionEvent != null) {
             sessionEvent.messageDirection = MessageDirection.INBOUND
             val sessionId = toggleSessionId(key)
             sessionEvent.sessionId = sessionId
+            logger.info("Processing message from p2p.in. Key: $key," +
+                    " session ${sessionEvent.sessionId}/${sessionEvent.sequenceNum} type ${sessionEvent.payload::class.java}")
             Record(FLOW_INTEROP_EVENT_TOPIC, sessionId, FlowMapperEvent(sessionEvent))
         } else {
+            logger.info("Processing message from p2p.in. Key: $key. with null payload" )
             null
         }
     }

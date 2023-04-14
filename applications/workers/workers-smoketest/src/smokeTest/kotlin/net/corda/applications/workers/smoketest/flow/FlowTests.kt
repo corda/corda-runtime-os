@@ -42,6 +42,7 @@ import org.junit.jupiter.api.TestMethodOrder
 import java.util.UUID
 import net.corda.v5.application.flows.FlowContextPropertyKeys
 import net.corda.v5.crypto.KeySchemeCodes.RSA_CODE_NAME
+import org.junit.jupiter.api.Disabled
 import kotlin.text.Typography.quote
 
 @Suppress("Unused", "FunctionName")
@@ -1171,6 +1172,7 @@ class FlowTests {
         assertThat(flowResult.result).isEqualTo(expectedOutputJson)
     }
 
+    @Disabled("Fails in e2e because require a single cluster.") //TODO CORE-12134
     @Test
     fun `Interoperability - facade call returns payload back to caller`() {
         val payload = "Hello world!"
@@ -1178,7 +1180,8 @@ class FlowTests {
         val args = mapOf(
             "facadeName" to "None",
             "methodName" to "None",
-            "payload" to payload
+            "payload" to payload,
+            "alias" to charlyX500.replace("$testRunUniqueId", "$testRunUniqueId Alias")
         )
 
         val requestId = startRpcFlow(bobHoldingId, args, "net.cordapp.testing.testflows.FacadeInvocationFlow")

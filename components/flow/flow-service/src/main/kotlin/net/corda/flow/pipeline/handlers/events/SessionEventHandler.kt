@@ -124,7 +124,7 @@ class SessionEventHandler @Activate constructor(
             initiatedFlowNameAndProtocol = flowAndProtocolVersion
             FlowStartContext.newBuilder()
                 .setStatusKey(FlowKey(sessionId, initiatedIdentity))
-                .setInitiatorType(FlowInitiatorType.P2P)
+                .setInitiatorType(if (initialSessionState.isInteropSession) FlowInitiatorType.INTEROP else FlowInitiatorType.P2P)
                 .setRequestId(sessionId)
                 .setIdentity(initiatedIdentity)
                 .setCpiId(sessionInit.cpiId)

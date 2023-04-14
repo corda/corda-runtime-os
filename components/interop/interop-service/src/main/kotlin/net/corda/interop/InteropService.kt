@@ -4,7 +4,6 @@ import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.interop.service.InteropFacadeToFlowMapperService
-import net.corda.interop.service.InteropMemberRegistrationService
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
@@ -46,8 +45,6 @@ class InteropService @Activate constructor(
     private val cordaAvroSerializationFactory: CordaAvroSerializationFactory,
     @Reference(service = PublisherFactory::class)
     private val publisherFactory: PublisherFactory,
-    @Reference(service = InteropMemberRegistrationService::class)
-    private val registrationService: InteropMemberRegistrationService,
     @Reference(service = MembershipGroupReaderProvider::class)
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
     @Reference(service = InteropFacadeToFlowMapperService::class)
@@ -105,18 +102,14 @@ class InteropService @Activate constructor(
         publisher?.close()
         publisher = publisherFactory.createPublisher(
             PublisherConfig("interop-registration-service"),
-            event.config.getConfig(MESSAGING_CONFIG)
+            messagingConfig
         )
         publisher?.start()
-        logger.info("Publishing member infos")
-        publisher?.publish(registrationService.createDummyMemberInfo())
-        logger.info("Publishing hosted identities")
-        publisher?.publish(registrationService.createDummyHostedIdentity())
 
-        coordinator.createManagedResource(SUBSCRIPTION) {
+        coordinator.createManagedResource("InteropAliasProcessor.subscription") {
             subscriptionFactory.createCompactedSubscription(
                 SubscriptionConfig(GROUP_NAME, Schemas.P2P.P2P_HOSTED_IDENTITIES_TOPIC),
-                InteropAliasProcessor(),
+                InteropAliasProcessor(publisher!!),
                 messagingConfig).also {
                 it.start()
             }
@@ -144,10 +137,6 @@ class InteropService @Activate constructor(
             )
         }
         coordinator.getManagedResource<StateAndEventSubscription<*, *, *>>(SUBSCRIPTION)!!.start()
-        coordinator.updateStatus(LifecycleStatus.UP)
-
-        logger.info("Publishing seed message")
-        publisher?.publish(registrationService.seedMessage())
         coordinator.updateStatus(LifecycleStatus.UP)
     }
 

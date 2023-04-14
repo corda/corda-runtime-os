@@ -144,6 +144,7 @@ class LocallyHostedIdentitiesServiceImpl(
             oldValue: HostedIdentityEntry?,
             currentData: Map<String, HostedIdentityEntry>,
         ) {
+            logger.info("onNext currentData=${currentData.size} newRecord=${newRecord}" )
             val newEntry = newRecord.value
             if (newEntry == null) {
                 if (oldValue != null) {
@@ -157,6 +158,7 @@ class LocallyHostedIdentitiesServiceImpl(
         }
 
         override fun onSnapshot(currentData: Map<String, HostedIdentityEntry>) {
+            logger.info("onSnapshot=${currentData.size}" )
             currentData.values.forEach {
                 addEntry(it)
             }
