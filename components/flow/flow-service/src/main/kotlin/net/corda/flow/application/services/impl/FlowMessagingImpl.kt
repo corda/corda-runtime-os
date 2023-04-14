@@ -61,6 +61,7 @@ class FlowMessagingImpl @Activate constructor(
         payload: String
     ): String {
         // TODO revisit input/results while integrating with CORE-10430
+        // TODO pass payload instead of facadeName as part of CORE-10419
         val session = createInteropFlowSession(memberName)
         return session.sendAndReceive(String::class.java, facadeName)
     }

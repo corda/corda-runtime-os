@@ -71,10 +71,11 @@ class InteropProcessor(
         }
 
         if (sessionEvent.messageDirection == MessageDirection.INBOUND) {
-            val (destinationAlias, oldSource) = if(sessionEvent.isInitiatingIdentityDestination())
+            val (destinationAlias, oldSource) = if(sessionEvent.isInitiatingIdentityDestination()) {
                 Pair(sessionEvent.initiatingIdentity, sessionEvent.initiatedIdentity)
-            else
+            } else {
                 Pair(sessionEvent.initiatedIdentity, sessionEvent.initiatingIdentity)
+            }
             logEntering("INBOUND", oldSource, destinationAlias, sessionEvent)
 
             val realHoldingIdentity = getRealHoldingIdentityFromAliasMapping(
@@ -85,6 +86,7 @@ class InteropProcessor(
                 return StateAndEventProcessor.Response(state, emptyList())
             }
 
+            //TODO payload contains a facadeName, will be change by CORE-10419
             val facadeName = when (val sessionPayload = sessionEvent.payload) {
                 is SessionInit -> null
                 is SessionData -> {
@@ -136,7 +138,6 @@ class InteropProcessor(
                                     groupId = realHoldingIdentity.groupId
                                 }
                             }
-                        }.apply {
                             val (newDest, newSource) = if (isInitiatingIdentityDestination())
                                 Pair(initiatingIdentity, initiatedIdentity)
                             else
