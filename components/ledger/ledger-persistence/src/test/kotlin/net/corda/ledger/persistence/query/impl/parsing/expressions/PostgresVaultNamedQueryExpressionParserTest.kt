@@ -11,6 +11,7 @@ import net.corda.ledger.persistence.query.parsing.IsNotNull
 import net.corda.ledger.persistence.query.parsing.IsNull
 import net.corda.ledger.persistence.query.parsing.JsonArrayOrObjectAsText
 import net.corda.ledger.persistence.query.parsing.JsonCast
+import net.corda.ledger.persistence.query.parsing.JsonField
 import net.corda.ledger.persistence.query.parsing.JsonKeyExists
 import net.corda.ledger.persistence.query.parsing.LeftParentheses
 import net.corda.ledger.persistence.query.parsing.LessThan
@@ -130,6 +131,18 @@ class PostgresVaultNamedQueryExpressionParserTest {
             .contains(Number("1.0"), Index.atIndex(0))
             .contains(Number("23.456"), Index.atIndex(1))
             .contains(Number("78910.00000001"), Index.atIndex(4))
+    }
+
+    /**
+     * JSON field operator
+     */
+    @Test
+    fun `json field is parsed as JsonArrayOrObjectAsText`() {
+        val expression = expressionParser.parse("these ARE -> field nAmEs != ->> -> is null is not null")
+        assertThat(expression.filterIsInstance<JsonField>()).hasSize(2)
+        assertThat(expression)
+            .contains(JsonField(), Index.atIndex(2))
+            .contains(JsonField(), Index.atIndex(7))
     }
 
     /**
