@@ -47,7 +47,7 @@ class FlowMapperMessageProcessor(
             StateAndEventProcessor.Response(result.flowMapperState, result.outputEvents)
         } else {
             logger.debug {
-                errorMsg.format("ignored", isExpiredSessionEvent(value), state)
+                errorMsg.format("ignored", event, state)
             }
             StateAndEventProcessor.Response(state, emptyList())
         }

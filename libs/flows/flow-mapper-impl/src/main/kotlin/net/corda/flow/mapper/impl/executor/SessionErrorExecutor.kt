@@ -13,7 +13,6 @@ import net.corda.flow.mapper.FlowMapperResult
 import net.corda.flow.mapper.executor.FlowMapperEventExecutor
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.records.Record
-import net.corda.schema.Schemas
 import org.slf4j.LoggerFactory
 import java.time.Instant
 
@@ -64,27 +63,19 @@ class SessionErrorExecutor(
                 if (messageDirection == MessageDirection.OUTBOUND) {
                     FlowMapperResult(
                         flowMapperState, listOf(
-                            Record(
-                                Schemas.P2P.P2P_OUT_TOPIC, sessionId, appMessageFactory(
-                                    SessionEvent(
-                                        MessageDirection.OUTBOUND,
-                                        instant,
-                                        sessionEvent.sessionId,
-                                        null,
-                                        sessionEvent.initiatingIdentity,
-                                        sessionEvent.initiatedIdentity,
-                                        0,
-                                        emptyList(),
-                                        SessionError(
-                                            ExceptionEnvelope(
-                                                "FlowMapper-SessionError",
-                                                "Received SessionError with sessionId $sessionId"
-                                            )
-                                        )
-                                    ),
-                                    sessionEventSerializer,
-                                    flowConfig
-                                )
+                            createP2PRecord(
+                                sessionEvent,
+                                SessionError(
+                                    ExceptionEnvelope(
+                                        "FlowMapper-SessionError",
+                                        "Received SessionError with sessionId $sessionId"
+                                    )
+                                ),
+                                instant,
+                                sessionEventSerializer,
+                                appMessageFactory,
+                                flowConfig,
+                                0
                             )
                         )
                     )

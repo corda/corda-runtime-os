@@ -14,7 +14,6 @@ import net.corda.flow.mapper.FlowMapperResult
 import net.corda.flow.mapper.executor.FlowMapperEventExecutor
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.records.Record
-import net.corda.schema.Schemas
 import org.slf4j.LoggerFactory
 import java.time.Instant
 
@@ -55,27 +54,19 @@ class SessionEventExecutor(
             val sessionId = sessionEvent.sessionId
             FlowMapperResult(
                 null, listOf(
-                    Record(
-                        Schemas.P2P.P2P_OUT_TOPIC, sessionId, appMessageFactory(
-                            SessionEvent(
-                                MessageDirection.OUTBOUND,
-                                instant,
-                                sessionEvent.sessionId,
-                                null,
-                                sessionEvent.initiatingIdentity,
-                                sessionEvent.initiatedIdentity,
-                                0,
-                                emptyList(),
-                                SessionError(
-                                    ExceptionEnvelope(
-                                        "FlowMapper-SessionExpired",
-                                        "Tried to process session event for expired session with sessionId $sessionId"
-                                    )
-                                )
-                            ),
-                            sessionEventSerializer,
-                            flowConfig
-                        )
+                    createP2PRecord(
+                        sessionEvent,
+                        SessionError(
+                            ExceptionEnvelope(
+                                "FlowMapper-SessionExpired",
+                                "Tried to process session event for expired session with sessionId $sessionId"
+                            )
+                        ),
+                        instant,
+                        sessionEventSerializer,
+                        appMessageFactory,
+                        flowConfig,
+                        0
                     )
                 )
             )
@@ -86,20 +77,6 @@ class SessionEventExecutor(
             )
             FlowMapperResult(null, listOf())
         }
-    }
-
-    private fun generateAck(instant: Instant): SessionEvent {
-        return SessionEvent.newBuilder()
-            .setMessageDirection(MessageDirection.OUTBOUND)
-            .setTimestamp(instant)
-            .setSequenceNum(null)
-            .setInitiatingIdentity(sessionEvent.initiatingIdentity)
-            .setInitiatedIdentity(sessionEvent.initiatedIdentity)
-            .setSessionId(sessionEvent.sessionId)
-            .setReceivedSequenceNum(sessionEvent.sequenceNum)
-            .setOutOfOrderSequenceNums(emptyList())
-            .setPayload(SessionAck())
-            .build()
     }
 
     /**
@@ -120,12 +97,13 @@ class SessionEventExecutor(
                     FlowMapperResult(flowMapperState, listOf())
                 } else {
                     val outputRecord =
-                        Record(
-                            Schemas.P2P.P2P_OUT_TOPIC, sessionEvent.sessionId, appMessageFactory(
-                                generateAck(instant),
-                                sessionEventSerializer,
-                                flowConfig
-                            )
+                        createP2PRecord(
+                            sessionEvent,
+                            SessionAck(),
+                            instant,
+                            sessionEventSerializer,
+                            appMessageFactory,
+                            flowConfig
                         )
                     FlowMapperResult(flowMapperState, listOf(outputRecord))
                 }
