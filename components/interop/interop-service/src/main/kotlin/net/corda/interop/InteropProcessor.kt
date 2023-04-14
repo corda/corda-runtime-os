@@ -73,10 +73,11 @@ class InteropProcessor(
         }
 
         if (sessionEvent.messageDirection == MessageDirection.INBOUND) {
-            val (destinationAlias, oldSource) = if(sessionEvent.isInitiatingIdentityDestination())
+            val (destinationAlias, oldSource) = if(sessionEvent.isInitiatingIdentityDestination()) {
                 Pair(sessionEvent.initiatingIdentity, sessionEvent.initiatedIdentity)
-            else
+            } else {
                 Pair(sessionEvent.initiatedIdentity, sessionEvent.initiatingIdentity)
+            }
             logEntering("INBOUND", oldSource, destinationAlias, sessionEvent)
 
             val realHoldingIdentity = getRealHoldingIdentityFromAliasMapping(
@@ -150,7 +151,6 @@ class InteropProcessor(
                             if (newPayload != null) {
                                 payload = newPayload // We could do substitution only for SessionInit though
                             }
-                        }.apply {
                             val (newDest, newSource) = if (isInitiatingIdentityDestination())
                                 Pair(initiatingIdentity, initiatedIdentity)
                             else
