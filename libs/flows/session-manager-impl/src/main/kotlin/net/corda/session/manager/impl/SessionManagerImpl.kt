@@ -239,9 +239,10 @@ class SessionManagerImpl @Activate constructor(
      * Remove Acks and Errors from the session state sendEvents.undeliveredMessages as these cannot be acked by a counterparty.
      * Increase the timestamps of messages with a timestamp less than [instantInMillis]
      * by the configurable value of the [messageResendWindow]. This will avoid message resends in quick succession.
-     * @param sessionState to update the sendEventsState.undeliveredMessages
-     * @param instant to update the sendEventsState.undeliveredMessages
-     * @param messageResendWindow time to wait between resending messages
+     * @param sessionState to update the sendEventsState.undeliveredMessages.
+     * @param instant to update the sendEventsState.undeliveredMessages.
+     * @param messageResendWindow time to wait between resending messages.
+     * @param dispatchedEvents list of events which have been dispatched to the counterparty.
      */
     private fun updateSessionStateSendEvents(
         sessionState: SessionState,
