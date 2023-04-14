@@ -1,9 +1,10 @@
 package net.corda.membership.impl.registration.dynamic.verifiers
 
+import net.corda.membership.lib.MemberInfoExtension.Companion.CUSTOM_KEY_PREFIX
+
 internal class RegistrationContextCustomFieldsVerifier {
 
     private companion object {
-        const val CUSTOM_KEY_PREFIX = "ext."
         const val MAX_VALUE_LENGTH = 256
         const val MAX_KEY_LENGTH = 128
         const val MAX_CUSTOM_FIELDS = 100

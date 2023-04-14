@@ -46,6 +46,7 @@ import net.corda.membership.impl.registration.MemberRole.Companion.toMemberInfo
 import net.corda.membership.impl.registration.dynamic.verifiers.OrderVerifier
 import net.corda.membership.impl.registration.dynamic.verifiers.P2pEndpointVerifier
 import net.corda.membership.impl.registration.dynamic.verifiers.RegistrationContextCustomFieldsVerifier
+import net.corda.membership.lib.MemberInfoExtension.Companion.CUSTOM_KEY_PREFIX
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEYS
 import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEYS_KEY
@@ -53,7 +54,6 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEY_HASHES_
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_CPI_NAME
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_CPI_SIGNER_HASH
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_CPI_VERSION
-import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_PENDING
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_KEY_SPEC
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_ROLE
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_PROTOCOL_VERSIONS
@@ -72,11 +72,11 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.TLS_CERTIFICATE_SU
 import net.corda.membership.lib.MemberInfoExtension.Companion.ecdhKey
 import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
 import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
-import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.TlsType
 import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidationException
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidatorFactory
+import net.corda.membership.lib.toMap
 import net.corda.membership.lib.toWire
 import net.corda.membership.locally.hosted.identities.LocallyHostedIdentitiesService
 import net.corda.membership.p2p.helpers.KeySpecExtractor.Companion.spec
@@ -166,7 +166,6 @@ class DynamicMemberRegistrationService @Activate constructor(
         const val NOTARY_KEY_ID = "corda.notary.keys.%s.id"
         const val LEDGER_KEY_SIGNATURE_SPEC = "$LEDGER_KEYS.%s.signature.spec"
         const val MEMBERSHIP_P2P_SUBSYSTEM = "membership"
-        const val CUSTOM_KEY_PREFIX = "ext."
 
         val notaryIdRegex = NOTARY_KEY_ID.format("[0-9]+").toRegex()
         val ledgerIdRegex = LEDGER_KEY_ID.format("[0-9]+").toRegex()
@@ -288,18 +287,14 @@ class DynamicMemberRegistrationService @Activate constructor(
                 val notaryKeys = generateNotaryKeys(context, member.shortHash.value)
                 logger.debug("Member roles: {}, notary keys: {}", roles, notaryKeys)
                 val groupReader = membershipGroupReaderProvider.getGroupReader(member)
-                val previousContext = groupReader
-                    .lookup(member.x500Name)
-                    ?.takeIf { it.status != MEMBER_STATUS_PENDING }
-                    ?.memberProvidedContext
-                    ?.entries?.associate { it.key to it.value }
+                val previousInfo = groupReader.lookup(member.x500Name, MembershipStatusFilter.ACTIVE_OR_SUSPENDED)
                 val memberContext = buildMemberContext(
                     context,
                     registrationId,
                     member,
                     roles,
                     notaryKeys,
-                    previousContext,
+                    previousInfo?.memberProvidedContext?.toMap(),
                 ).toSortedMap()
                     .toWire()
                 val serializedMemberContext = keyValuePairListSerializer.serialize(memberContext)
@@ -324,7 +319,7 @@ class DynamicMemberRegistrationService @Activate constructor(
                     ?: throw IllegalArgumentException("Failed to look up MGM information.")
 
                 val serialInfo = context[SERIAL]?.toLong()
-                    ?: groupReader.lookup(member.x500Name, MembershipStatusFilter.ACTIVE_OR_SUSPENDED)?.serial
+                    ?: previousInfo?.serial
                     ?: 0
 
                 val message = MembershipRegistrationRequest(
@@ -453,7 +448,7 @@ class DynamicMemberRegistrationService @Activate constructor(
                     require(isEmpty()) {
                         throw InvalidMembershipRegistrationException(
                             "Registration failed. The registration context is invalid: Only custom fields with the " +
-                                    "'ext.' prefix may be updated during re-registration."
+                                    "'$CUSTOM_KEY_PREFIX' prefix may be updated during re-registration."
                         )
                     }
                 }

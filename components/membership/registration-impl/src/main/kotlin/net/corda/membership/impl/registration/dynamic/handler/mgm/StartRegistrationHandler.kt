@@ -15,6 +15,7 @@ import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandle
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandlerResult
 import net.corda.membership.impl.registration.dynamic.verifiers.RegistrationContextCustomFieldsVerifier
 import net.corda.membership.lib.MemberInfoExtension.Companion.CREATION_TIME
+import net.corda.membership.lib.MemberInfoExtension.Companion.CUSTOM_KEY_PREFIX
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_PENDING
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_SUSPENDED
@@ -60,7 +61,6 @@ internal class StartRegistrationHandler(
 ) : RegistrationHandler<StartRegistration> {
 
     private companion object {
-        const val CUSTOM_KEY_PREFIX = "ext."
         val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
@@ -131,7 +131,7 @@ internal class StartRegistrationHandler(
                     .filterNot { it.key.startsWith(CUSTOM_KEY_PREFIX) }
                 validateRegistrationRequest(
                     diff.isEmpty()
-                ) { "Only custom fields with the 'ext.' prefix may be updated during re-registration." }
+                ) { "Only custom fields with the '$CUSTOM_KEY_PREFIX' prefix may be updated during re-registration." }
             }
 
             // The group ID matches the group ID of the MGM

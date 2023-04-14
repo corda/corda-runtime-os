@@ -20,6 +20,7 @@ import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandle
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandlerResult
 import net.corda.membership.impl.registration.dynamic.verifiers.RegistrationContextCustomFieldsVerifier
 import net.corda.membership.lib.InternalGroupParameters
+import net.corda.membership.lib.MemberInfoExtension.Companion.CUSTOM_KEY_PREFIX
 import net.corda.membership.lib.MemberInfoExtension.Companion.ENDPOINTS
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.IS_MGM
@@ -115,10 +116,11 @@ class StartRegistrationHandlerTest {
     lateinit var membershipPersistenceClient: MembershipPersistenceClient
     private lateinit var membershipQueryClient: MembershipQueryClient
 
+    private val memberContextEntries = mapOf("$ROLES_PREFIX.0" to "notary", "$CUSTOM_KEY_PREFIX.0" to "test")
     private val memberMemberContext: MemberContext = mock {
         on { parse(eq(GROUP_ID), eq(String::class.java)) } doReturn groupId
         on { parseList(eq(ENDPOINTS), eq(EndpointInfo::class.java)) } doReturn listOf(mock())
-        on { entries } doReturn mapOf("$ROLES_PREFIX.0" to "notary").entries
+        on { entries } doReturn memberContextEntries.entries
     }
     private val memberMgmContext: MGMContext = mock {
         on { parse(eq(MODIFIED_TIME), eq(Instant::class.java)) } doReturn clock.instant()
@@ -664,11 +666,11 @@ class StartRegistrationHandlerTest {
     }
 
     @Test
-    fun `declined if non-custom properties are updated during re-registration`() {
+    fun `declined if non-custom properties are added during re-registration`() {
         val contextWithUpdates = mock<MemberContext> {
             on { parse(eq(GROUP_ID), eq(String::class.java)) } doReturn groupId
             on { parseList(eq(ENDPOINTS), eq(EndpointInfo::class.java)) } doReturn listOf(mock())
-            on { entries } doReturn mapOf("ext.property" to "test", "$ROLES_PREFIX.0" to "changed").entries
+            on { entries } doReturn (memberContextEntries + mapOf("$ROLES_PREFIX.1" to "added")).entries
         }
         whenever(pendingMemberInfo.memberProvidedContext).doReturn(contextWithUpdates)
         whenever(membershipQueryClient.queryMemberInfo(eq(mgmHoldingIdentity.toCorda()), any()))
@@ -677,6 +679,92 @@ class StartRegistrationHandlerTest {
             .doReturn(MembershipQueryResult.Success(createRegistrationRequest(serial = 2L)))
         val result = handler.invoke(registrationState, Record(testTopic, testTopicKey, startRegistrationCommand))
         result.assertDeclinedRegistration()
+    }
+
+    @Test
+    fun `declined if non-custom properties are removed during re-registration`() {
+        val contextWithUpdates = mock<MemberContext> {
+            on { parse(eq(GROUP_ID), eq(String::class.java)) } doReturn groupId
+            on { parseList(eq(ENDPOINTS), eq(EndpointInfo::class.java)) } doReturn listOf(mock())
+            on { entries } doReturn emptySet()
+        }
+        whenever(pendingMemberInfo.memberProvidedContext).doReturn(contextWithUpdates)
+        whenever(membershipQueryClient.queryMemberInfo(eq(mgmHoldingIdentity.toCorda()), any()))
+            .doReturn(MembershipQueryResult.Success(listOf(activeMemberInfo)))
+        whenever(membershipQueryClient.queryRegistrationRequest(eq(mgmHoldingIdentity.toCorda()), eq(registrationId)))
+            .doReturn(MembershipQueryResult.Success(createRegistrationRequest(serial = 2L)))
+        val result = handler.invoke(registrationState, Record(testTopic, testTopicKey, startRegistrationCommand))
+        result.assertDeclinedRegistration()
+    }
+
+    @Test
+    fun `declined if non-custom properties are updated during re-registration`() {
+        val newContextEntries = memberContextEntries.toMutableMap().apply {
+            put("${ROLES_PREFIX}0", "changed")
+        }.entries
+        val contextWithUpdates = mock<MemberContext> {
+            on { parse(eq(GROUP_ID), eq(String::class.java)) } doReturn groupId
+            on { parseList(eq(ENDPOINTS), eq(EndpointInfo::class.java)) } doReturn listOf(mock())
+            on { entries } doReturn newContextEntries
+        }
+        whenever(pendingMemberInfo.memberProvidedContext).doReturn(contextWithUpdates)
+        whenever(membershipQueryClient.queryMemberInfo(eq(mgmHoldingIdentity.toCorda()), any()))
+            .doReturn(MembershipQueryResult.Success(listOf(activeMemberInfo)))
+        whenever(membershipQueryClient.queryRegistrationRequest(eq(mgmHoldingIdentity.toCorda()), eq(registrationId)))
+            .doReturn(MembershipQueryResult.Success(createRegistrationRequest(serial = 2L)))
+        val result = handler.invoke(registrationState, Record(testTopic, testTopicKey, startRegistrationCommand))
+        result.assertDeclinedRegistration()
+    }
+
+    @Test
+    fun `allows custom properties to be added during re-registration`() {
+        val contextWithUpdates = mock<MemberContext> {
+            on { parse(eq(GROUP_ID), eq(String::class.java)) } doReturn groupId
+            on { parseList(eq(ENDPOINTS), eq(EndpointInfo::class.java)) } doReturn listOf(mock())
+            on { entries } doReturn (memberContextEntries + mapOf("$CUSTOM_KEY_PREFIX.1" to "added")).entries
+        }
+        whenever(pendingMemberInfo.memberProvidedContext).doReturn(contextWithUpdates)
+        whenever(membershipQueryClient.queryMemberInfo(eq(mgmHoldingIdentity.toCorda()), any()))
+            .doReturn(MembershipQueryResult.Success(listOf(activeMemberInfo)))
+        whenever(membershipQueryClient.queryRegistrationRequest(eq(mgmHoldingIdentity.toCorda()), eq(registrationId)))
+            .doReturn(MembershipQueryResult.Success(createRegistrationRequest(serial = 2L)))
+        val result = handler.invoke(registrationState, Record(testTopic, testTopicKey, startRegistrationCommand))
+        result.assertRegistrationStarted()
+    }
+
+    @Test
+    fun `allows custom properties to be removed during re-registration`() {
+        val contextWithUpdates = mock<MemberContext> {
+            on { parse(eq(GROUP_ID), eq(String::class.java)) } doReturn groupId
+            on { parseList(eq(ENDPOINTS), eq(EndpointInfo::class.java)) } doReturn listOf(mock())
+            on { entries } doReturn memberContextEntries.filterNot { it.key == "$CUSTOM_KEY_PREFIX.0" }.entries
+        }
+        whenever(pendingMemberInfo.memberProvidedContext).doReturn(contextWithUpdates)
+        whenever(membershipQueryClient.queryMemberInfo(eq(mgmHoldingIdentity.toCorda()), any()))
+            .doReturn(MembershipQueryResult.Success(listOf(activeMemberInfo)))
+        whenever(membershipQueryClient.queryRegistrationRequest(eq(mgmHoldingIdentity.toCorda()), eq(registrationId)))
+            .doReturn(MembershipQueryResult.Success(createRegistrationRequest(serial = 2L)))
+        val result = handler.invoke(registrationState, Record(testTopic, testTopicKey, startRegistrationCommand))
+        result.assertRegistrationStarted()
+    }
+
+    @Test
+    fun `allows custom properties to be updated during re-registration`() {
+        val newContextEntries = memberContextEntries.toMutableMap().apply {
+            put("$CUSTOM_KEY_PREFIX.0", "changed")
+        }.entries
+        val contextWithUpdates = mock<MemberContext> {
+            on { parse(eq(GROUP_ID), eq(String::class.java)) } doReturn groupId
+            on { parseList(eq(ENDPOINTS), eq(EndpointInfo::class.java)) } doReturn listOf(mock())
+            on { entries } doReturn newContextEntries
+        }
+        whenever(pendingMemberInfo.memberProvidedContext).doReturn(contextWithUpdates)
+        whenever(membershipQueryClient.queryMemberInfo(eq(mgmHoldingIdentity.toCorda()), any()))
+            .doReturn(MembershipQueryResult.Success(listOf(activeMemberInfo)))
+        whenever(membershipQueryClient.queryRegistrationRequest(eq(mgmHoldingIdentity.toCorda()), eq(registrationId)))
+            .doReturn(MembershipQueryResult.Success(createRegistrationRequest(serial = 2L)))
+        val result = handler.invoke(registrationState, Record(testTopic, testTopicKey, startRegistrationCommand))
+        result.assertRegistrationStarted()
     }
 
     @Nested

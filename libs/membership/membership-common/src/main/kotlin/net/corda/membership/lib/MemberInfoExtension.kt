@@ -124,6 +124,11 @@ class MemberInfoExtension {
         const val ROLES_PREFIX = "corda.roles"
 
         /**
+         * Prefix for custom properties
+         */
+        const val CUSTOM_KEY_PREFIX = "ext"
+
+        /**
          * Notary role name
          */
         const val NOTARY_ROLE = "notary"
