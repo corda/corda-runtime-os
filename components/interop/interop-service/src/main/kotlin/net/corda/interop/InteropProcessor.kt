@@ -88,12 +88,14 @@ class InteropProcessor(
                 return StateAndEventProcessor.Response(state, emptyList())
             }
             val facadeRequest = when (val sessionPayload = sessionEvent.payload) {
-                is SessionInit -> InteropMessageTransformer.getFacadeRequest(
-                    interopAvroDeserializer.deserialize(sessionPayload.payload.array())!!
-                )
+                is SessionInit -> ""
+//                    InteropMessageTransformer.getFacadeRequest(
+//                    interopAvroDeserializer.deserialize(sessionPayload.payload.array())!!
+//                )
                 is SessionData -> {
                     val payload : ByteBuffer = sessionPayload.payload as ByteBuffer
-                    InteropMessageTransformer.getFacadeRequest(interopAvroDeserializer.deserialize(payload.array())!!)
+                    ""
+                    //InteropMessageTransformer.getFacadeRequest(interopAvroDeserializer.deserialize(payload.array())!!)
                 }
                 else -> null
             }
@@ -106,8 +108,9 @@ class InteropProcessor(
                             " Key: ${event.key}, facade request: $facadeRequest."
                 )
                 val flowName = facadeToFlowMapperService.getFlowName(
-                    realHoldingIdentity, facadeRequest.facadeId.toString(),
-                    facadeRequest.methodName
+//                    realHoldingIdentity, facadeRequest.facadeId.toString(),
+//                    facadeRequest.methodName
+                    realHoldingIdentity, "", ""
                 )
                 //TODO utilise flowName as input to data send to FlowProcessor (for now it's only used by the logger),
                 // this change is required for CORE-10426 Support For Façade Handlers
