@@ -7,11 +7,11 @@ import net.corda.serialization.SerializationContext
 import net.corda.serialization.SerializationEncoding
 
 val AMQP_P2P_CONTEXT = SerializationContextImpl(
-        amqpMagic,
-        emptyMap(),
-        true, //todo double check in CORE-12472
-        SerializationContext.UseCase.P2P,
-        null
+        preferredSerializationVersion = amqpMagic,
+        properties = emptyMap(),
+        objectReferencesEnabled = true, //todo double check in CORE-12472
+        useCase = SerializationContext.UseCase.P2P,
+        encoding = null
 )
 
 object AlwaysAcceptEncodingAllowList : EncodingAllowList {
