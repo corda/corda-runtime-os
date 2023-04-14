@@ -85,6 +85,7 @@ fun generateAppMessage(
  * @param sessionEventSerializer Serializer for session events
  * @param appMessageFactory AppMessage factory
  * @param flowConfig config
+ * @param receivedSequenceNumber Received sequence number of the session event
  */
 fun createP2PRecord(
     sessionEvent: SessionEvent,
