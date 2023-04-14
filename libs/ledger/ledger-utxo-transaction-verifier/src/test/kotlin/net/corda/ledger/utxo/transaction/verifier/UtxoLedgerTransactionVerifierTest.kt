@@ -160,7 +160,7 @@ class UtxoLedgerTransactionVerifierTest {
     }
 
     @Test
-    fun `does not throw when input and reference states don't have the same notary keys passed into the verification (but the names are still the same)`() {
+    fun `does not throw when input and reference states have different notary keys passed into verification (names are the same)`() {
         whenever(inputTransactionState.notaryKey).thenReturn(anotherPublicKeyExample)
         whenever(referenceTransactionState.notaryKey).thenReturn(anotherPublicKeyExample)
         assertDoesNotThrow { verifier.verify() }
