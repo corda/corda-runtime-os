@@ -5,8 +5,6 @@ import net.corda.membership.lib.SignedGroupParameters
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 
 fun verifyNotaryAllowed(transaction: UtxoLedgerTransaction, signedGroupParameters: SignedGroupParameters) {
-    val txNotaryPublicKey = transaction.notaryKey
-    val txNotaryName = transaction.notaryName
     val allowedNotaries = signedGroupParameters.notaries
 
     val txGroupParametersHash = (transaction.metadata as TransactionMetadataInternal).getMembershipGroupParametersHash()
@@ -16,8 +14,8 @@ fun verifyNotaryAllowed(transaction: UtxoLedgerTransaction, signedGroupParameter
     }
 
     checkNotNull(
-        allowedNotaries.firstOrNull { it.publicKey == txNotaryPublicKey }
-            ?: allowedNotaries.firstOrNull { it.name == txNotaryName }
+        allowedNotaries.firstOrNull { it.publicKey == transaction.notaryKey }
+            ?: allowedNotaries.firstOrNull { it.name == transaction.notaryName }
     ) {
         "Notary of the transaction is not listed in the available notaries."
     }
