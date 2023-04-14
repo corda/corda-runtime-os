@@ -229,6 +229,7 @@ class SessionManagerImpl @Activate constructor(
         }
 
         return if (sessionStatus == SessionStateType.CREATED) {
+            logger.info("We're in CREATED")
             pastEventsAndErrors.firstOrNull { it.payload is SessionInit }?.let { listOf(it) } ?: emptyList()
         } else {
             pastEventsAndErrors
@@ -252,7 +253,7 @@ class SessionManagerImpl @Activate constructor(
         sessionState.sendEventsState.undeliveredMessages = sessionState.sendEventsState.undeliveredMessages.filter {
             it.payload !is SessionError
         }.map {
-            if (it.timestamp <= instant && dispatchedEvents.toSet().contains(it)) {
+            if (dispatchedEvents.toSet().contains(it)) {
                 it.timestamp = instant.plusMillis(messageResendWindow)
             }
             it
