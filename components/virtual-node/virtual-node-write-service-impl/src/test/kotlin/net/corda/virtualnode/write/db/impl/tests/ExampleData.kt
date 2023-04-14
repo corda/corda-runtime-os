@@ -1,5 +1,6 @@
 package net.corda.virtualnode.write.db.impl.tests
 
+import java.time.Instant
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.core.parseSecureHash
 import net.corda.data.virtualnode.VirtualNodeCreateRequest
@@ -7,9 +8,9 @@ import net.corda.db.connection.manager.VirtualNodeDbType
 import net.corda.db.core.DbPrivilege
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.packaging.core.CpiIdentifier
+import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.HoldingIdentity
-import net.corda.virtualnode.write.db.impl.writer.CpiMetadataLite
 import net.corda.virtualnode.write.db.impl.writer.DbConnection
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeDb
 import org.mockito.kotlin.mock
@@ -31,7 +32,7 @@ internal const val CPI_VERSION1 = "1.0"
 internal val CPI_CHECKSUM1 = SecureHashImpl("SHA-256","CPI_CHECKSUM1".toByteArray())
 internal val CPI_SIGNER_HASH1 = parseSecureHash("SHA-256:1234567890123456")
 internal val CPI_IDENTIFIER1 = CpiIdentifier(CPI_NAME1, CPI_VERSION1, CPI_SIGNER_HASH1)
-internal val CPI_METADATA1 = CpiMetadataLite(CPI_IDENTIFIER1, CPI_CHECKSUM1, GROUP_ID1, GROUP_POLICY1, emptySet())
+internal val CPI_METADATA1 = CpiMetadata(CPI_IDENTIFIER1, CPI_CHECKSUM1, emptySet(), GROUP_POLICY1, -1, Instant.now())
 
 internal fun getValidRequest(): VirtualNodeCreateRequest {
     return VirtualNodeCreateRequest().apply {

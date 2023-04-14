@@ -1898,7 +1898,7 @@
         } ],
         "responses" : {
           "200" : {
-            "description" : "\n            The registration status information, including:\n            registrationId: the registration request ID\n            registrationSent: the date and the when the registration progress started; \n                value of null indicated that registration has not started yet\n            registrationUpdated: the date and the when the registration has been last updated    \n            registrationStatus: the status of the registration request; \n                possible values are \"NEW\", \"PENDING_MEMBER_VERIFICATION\", \"PENDING_MANUAL_APPROVAL\", \n                \"PENDING_AUTO_APPROVAL\", \"DECLINED\", or \"APPROVED\"\n            memberInfoSubmitted: the properties submitted to MGM during the registration     \n        ",
+            "description" : "\n            The registration status information, including:\n            registrationId: the registration request ID\n            registrationSent: the date and the when the registration progress started; \n                value of null indicated that registration has not started yet\n            registrationUpdated: the date and the when the registration has been last updated    \n            registrationStatus: the status of the registration request;\n                possible values are \"NEW\", \"SENT_TO_MGM\", \"RECEIVED_BY_MGM\", \"PENDING_MEMBER_VERIFICATION\", \"PENDING_MANUAL_APPROVAL\",\n                \"PENDING_AUTO_APPROVAL\", \"DECLINED\", \"INVALID\", \"FAILED\" or \"APPROVED\"\n            memberInfoSubmitted: the properties submitted to MGM during the registration     \n        ",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -1997,7 +1997,7 @@
         } ],
         "responses" : {
           "200" : {
-            "description" : "\n            The registration status information, including:\n            registrationId: the registration request ID\n            registrationSent: the date and the when the registration progress started; \n                value of null indicated that registration has not started yet\n            registrationUpdated: the date and the when the registration has been last updated    \n            registrationStatus: the status of the registration request; \n                possible values are \"NEW\", \"PENDING_MEMBER_VERIFICATION\", \"PENDING_MANUAL_APPROVAL\", \n                \"PENDING_AUTO_APPROVAL\", \"DECLINED\", or \"APPROVED\"\n            memberInfoSubmitted: the properties submitted to MGM during the registration     \n        ",
+            "description" : "\n            The registration status information, including:\n            registrationId: the registration request ID\n            registrationSent: the date and the when the registration progress started; \n                value of null indicated that registration has not started yet\n            registrationUpdated: the date and the when the registration has been last updated    \n            registrationStatus: the status of the registration request;\n                possible values are \"NEW\", \"SENT_TO_MGM\", \"RECEIVED_BY_MGM\", \"PENDING_MEMBER_VERIFICATION\", \"PENDING_MANUAL_APPROVAL\",\n                \"PENDING_AUTO_APPROVAL\", \"DECLINED\", \"INVALID\", \"FAILED\" or \"APPROVED\"\n            memberInfoSubmitted: the properties submitted to MGM during the registration     \n        ",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -4980,7 +4980,7 @@
             "type" : "object",
             "nullable" : false,
             "example" : "SENT_TO_MGM",
-            "enum" : [ "NEW", "SENT_TO_MGM", "RECEIVED_BY_MGM", "PENDING_MEMBER_VERIFICATION", "PENDING_MANUAL_APPROVAL", "PENDING_AUTO_APPROVAL", "DECLINED", "INVALID", "APPROVED" ]
+            "enum" : [ "NEW", "SENT_TO_MGM", "RECEIVED_BY_MGM", "PENDING_MEMBER_VERIFICATION", "PENDING_MANUAL_APPROVAL", "PENDING_AUTO_APPROVAL", "DECLINED", "INVALID", "FAILED", "APPROVED" ]
           },
           "registrationUpdated" : {
             "type" : "string",

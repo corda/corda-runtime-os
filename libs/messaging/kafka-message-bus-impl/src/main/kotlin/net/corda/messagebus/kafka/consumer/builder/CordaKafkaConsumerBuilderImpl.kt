@@ -13,9 +13,9 @@ import net.corda.messagebus.kafka.serialization.CordaAvroDeserializerImpl
 import net.corda.messagebus.kafka.utils.KafkaRetryUtils.executeKafkaActionWithRetry
 import net.corda.messaging.api.chunking.MessagingChunkFactory
 import net.corda.schema.registry.AvroSchemaRegistry
-import net.corda.utilities.classload.OsgiDelegatedClassLoader
 import org.apache.kafka.clients.consumer.KafkaConsumer
 import org.osgi.framework.FrameworkUtil
+import org.osgi.framework.wiring.BundleWiring
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -84,7 +84,7 @@ class CordaKafkaConsumerBuilderImpl @Activate constructor(
 
         return try {
             if (currentBundle != null) {
-                Thread.currentThread().contextClassLoader = OsgiDelegatedClassLoader(currentBundle)
+                Thread.currentThread().contextClassLoader = currentBundle.adapt(BundleWiring::class.java).classLoader
             }
             KafkaConsumer(
                 kafkaProperties,

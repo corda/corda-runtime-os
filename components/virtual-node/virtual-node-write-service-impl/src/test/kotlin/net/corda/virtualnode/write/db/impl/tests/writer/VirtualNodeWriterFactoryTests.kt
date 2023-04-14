@@ -54,7 +54,7 @@ class VirtualNodeWriterFactoryTests {
             ConfigFactory.empty()
                 .withValue(
                     ExternalMessagingConfig.EXTERNAL_MESSAGING_RECEIVE_TOPIC_PATTERN,
-                    ConfigValueFactory.fromAnyRef("ext.\$HOLDING_ID\$.\$CHANNEL_NAME\$.receive")
+                    ConfigValueFactory.fromAnyRef("ext.\$HOLDING_ID.\$CHANNEL_NAME.receive")
                 )
                 .withValue(ExternalMessagingConfig.EXTERNAL_MESSAGING_ACTIVE, ConfigValueFactory.fromAnyRef(true))
                 .withValue(

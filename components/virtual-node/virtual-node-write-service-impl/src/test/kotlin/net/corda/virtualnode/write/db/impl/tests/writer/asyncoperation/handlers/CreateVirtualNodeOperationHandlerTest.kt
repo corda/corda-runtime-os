@@ -7,6 +7,7 @@ import net.corda.db.connection.manager.VirtualNodeDbType.CRYPTO
 import net.corda.db.connection.manager.VirtualNodeDbType.UNIQUENESS
 import net.corda.db.connection.manager.VirtualNodeDbType.VAULT
 import net.corda.libs.external.messaging.ExternalMessagingRouteConfigGenerator
+import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.ProtocolParameters.STATIC_NETWORK
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.Root.PROTOCOL_PARAMETERS
 import net.corda.membership.lib.grouppolicy.GroupPolicyParser
@@ -18,11 +19,9 @@ import net.corda.virtualnode.write.db.impl.tests.ALICE_HOLDING_ID1
 import net.corda.virtualnode.write.db.impl.tests.CPI_CHECKSUM1
 import net.corda.virtualnode.write.db.impl.tests.CPI_IDENTIFIER1
 import net.corda.virtualnode.write.db.impl.tests.CPI_METADATA1
-import net.corda.virtualnode.write.db.impl.tests.GROUP_ID1
 import net.corda.virtualnode.write.db.impl.tests.GROUP_POLICY1
 import net.corda.virtualnode.write.db.impl.tests.getVNodeDb
 import net.corda.virtualnode.write.db.impl.tests.getValidRequest
-import net.corda.virtualnode.write.db.impl.writer.CpiMetadataLite
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeDbConnections
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeDbFactory
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.factories.RecordFactory
@@ -39,6 +38,7 @@ import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+
 
 class CreateVirtualNodeOperationHandlerTest {
     private val timestamp = Instant.now()
@@ -60,7 +60,7 @@ class CreateVirtualNodeOperationHandlerTest {
     }
 
     private val externalMessagingRouteConfigGenerator = mock<ExternalMessagingRouteConfigGenerator>().apply {
-        whenever(generateConfig(any(),any(),any())).thenReturn(externalMessagingRouteConfig)
+        whenever(generateNewConfig(any(),any(),any())).thenReturn(externalMessagingRouteConfig)
     }
 
     private val virtualNodeDbFactory = mock<VirtualNodeDbFactory>().apply {
@@ -263,10 +263,14 @@ class CreateVirtualNodeOperationHandlerTest {
     @Test
     fun `Handler doesn't try to handle MGM info if CPI is for a static network`() {
         whenever(createVirtualNodeService.getCpiMetaData(CPI_CHECKSUM1.toString()))
-            .thenReturn(CpiMetadataLite(CPI_IDENTIFIER1, CPI_CHECKSUM1, GROUP_ID1, """
+            .thenReturn(
+                CpiMetadata(CPI_IDENTIFIER1, CPI_CHECKSUM1, emptySet(), """
                 {"$PROTOCOL_PARAMETERS": { "$STATIC_NETWORK": {}}}
-            """.trimIndent(), emptySet()
-            ))
+            """.trimIndent(),
+                    -1,
+                    Instant.now()
+                )
+            )
         val request = getValidRequest()
         val virtualNodeInfoRecord = Record("vnode", "", "")
         val dbConnections = mock<VirtualNodeDbConnections>()

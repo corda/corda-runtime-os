@@ -63,7 +63,17 @@ class ExternalMessagingRoutingServiceImpl(
 
     override fun getRoute(holdingIdentity: String, channelName: String): VerifiedRoute? {
         val key = VirtualNodeRouteKey(holdingIdentity, channelName)
-        return cacheRoutes[key]
+        var foundRoute = cacheRoutes[key]
+
+        // If the topic does not exist for the route we have found, refresh the cache as it's possible
+        // the topic has been created since the cache last refreshed. This is a simplistic strategy and should be
+        // reviewed when we add send & receive.
+        if (foundRoute != null && !foundRoute.externalReceiveTopicNameExists) {
+            rebuildCache()
+            foundRoute = cacheRoutes[key]
+        }
+
+        return foundRoute
     }
 
     private fun rebuildCache() {

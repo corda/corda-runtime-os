@@ -87,24 +87,24 @@ internal class CreateVirtualNodeOperationHandler(
                 }
             }
 
-            val externalMessagingRouteConfig = externalMessagingRouteConfigGenerator.generateConfig(
+            val externalMessagingRouteConfig = externalMessagingRouteConfigGenerator.generateNewConfig(
                 holdingId,
-                cpiMetadata.id,
-                cpiMetadata.cpks
+                cpiMetadata.cpiId,
+                cpiMetadata.cpksMetadata
             )
 
             val vNodeConnections = execLog.measureExecTime("persist holding ID and virtual node") {
                 createVirtualNodeService.persistHoldingIdAndVirtualNode(
                     holdingId,
                     vNodeDbs,
-                    cpiMetadata.id,
+                    cpiMetadata.cpiId,
                     request.updateActor,
                     externalMessagingRouteConfig
                 )
             }
 
-            val mgmInfo = if (!GroupPolicyParser.isStaticNetwork(cpiMetadata.groupPolicy)) {
-                policyParser.getMgmInfo(holdingId, cpiMetadata.groupPolicy)
+            val mgmInfo = if (!GroupPolicyParser.isStaticNetwork(cpiMetadata.groupPolicy!!)) {
+                policyParser.getMgmInfo(holdingId, cpiMetadata.groupPolicy!!)
             } else {
                 null
             }
@@ -119,7 +119,7 @@ internal class CreateVirtualNodeOperationHandler(
             records.add(
                 recordFactory.createVirtualNodeInfoRecord(
                     holdingId,
-                    cpiMetadata.id,
+                    cpiMetadata.cpiId,
                     vNodeConnections,
                     externalMessagingRouteConfig
                 )

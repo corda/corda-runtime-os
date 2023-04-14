@@ -46,6 +46,21 @@ class PlatformDigestServiceImpl @Activate constructor(
             digestFor(platformDigestName).digestLength
         }
 
+    override fun defaultDigestAlgorithm(): DigestAlgorithmName =
+        DigestAlgorithmName.SHA2_256
+
+    companion object {
+        val supportedDigestAlgorithms = linkedSetOf(
+            DigestAlgorithmName.SHA2_256,
+            DigestAlgorithmName.SHA2_256D,
+            DigestAlgorithmName.SHA2_384,
+            DigestAlgorithmName.SHA2_512
+        )
+    }
+
+    override fun supportedDigestAlgorithms(): Set<DigestAlgorithmName> =
+        supportedDigestAlgorithms
+
     private fun digestFor(digestAlgorithmName: DigestAlgorithmName): DigestAlgorithm =
         factories.getOrPut(digestAlgorithmName.name) {
             SpiDigestAlgorithmFactory(schemeMetadata, digestAlgorithmName.name)

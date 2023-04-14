@@ -3,8 +3,8 @@ package net.corda.membership.impl.persistence.service.handler
 import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.data.membership.db.request.command.PersistRegistrationRequest
 import net.corda.membership.datamodel.RegistrationRequestEntity
-import net.corda.membership.impl.persistence.service.handler.RegistrationStatusHelper.canMoveToStatus
 import net.corda.membership.impl.persistence.service.handler.RegistrationStatusHelper.toStatus
+import net.corda.membership.lib.registration.RegistrationStatusExt.canMoveToStatus
 import net.corda.virtualnode.toCorda
 import javax.persistence.LockModeType
 

@@ -10,25 +10,31 @@ import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
 import java.time.Instant
 
+@Suppress("LongParameterList")
 fun WireTransactionFactory.createExample(
     jsonMarshallingService: JsonMarshallingService,
     jsonValidator: JsonValidator,
     componentGroups: List<List<ByteArray>> = defaultComponentGroups,
     ledgerModel: String = "net.corda.ledger.consensual.data.transaction.ConsensualLedgerTransactionImpl",
-    transactionSubType: String? = null
+    transactionSubType: String? = null,
+    memberShipGroupParametersHash: String? = null,
+    metadata: TransactionMetadata = transactionMetadataExample(
+        ledgerModel = ledgerModel,
+        transactionSubType = transactionSubType,
+        memberShipGroupParametersHash = memberShipGroupParametersHash
+    )
 ): WireTransaction {
-    val metadata =
-        transactionMetadataExample(
-            numberOfComponentGroups = componentGroups.size + 1,
-            ledgerModel = ledgerModel,
-            transactionSubType = transactionSubType
-        )
     val metadataJson = jsonMarshallingService.format(metadata)
     val canonicalJson = jsonValidator.canonicalize(metadataJson)
 
-    val allGroupLists = listOf(
-        listOf(canonicalJson.toByteArray()),
-    ) + componentGroups
+    val allGroupLists =
+        listOf(
+            listOf(canonicalJson.toByteArray()),
+        ) +
+        componentGroups +
+        List(
+            (metadata as TransactionMetadataInternal).getNumberOfComponentGroups() - 1 - componentGroups.size,
+        ) { emptyList() }
     return create(allGroupLists)
 }
 
@@ -39,8 +45,7 @@ fun getWireTransactionExample(
     jsonMarshallingService: JsonMarshallingService,
     jsonValidator: JsonValidator,
     componentGroupLists: List<List<ByteArray>> = defaultComponentGroups,
-    numberOfComponentGroups: Int = componentGroupLists.size + 1,
-    metadata: TransactionMetadata = transactionMetadataExample(numberOfComponentGroups = numberOfComponentGroups),
+    metadata: TransactionMetadata = transactionMetadataExample(),
 ): WireTransaction {
     val metadataJson = jsonMarshallingService.format(metadata)
     val canonicalJson = jsonValidator.canonicalize(metadataJson)
