@@ -1,5 +1,11 @@
 #! /bin/zsh
 
+# Set up Corda on Kubernetes; must be run from the root of corda-runtime-os
+
+set -e
+
+./gradlew publishOSGiImage
+
 # Currently the init containers are not repeatble, so ensure we start from scratch each time
 kubectl delete namespace corda
 kubectl create namespace corda
@@ -8,9 +14,8 @@ kubectl create namespace corda
 helm install prereqs -n corda --create-namespace oci://registry-1.docker.io/corda/corda-dev-prereqs --timeout 10m --wait
 
 # Corda
-helm dependency build ../corda5-runtime-os/charts/corda
-helm upgrade --install corda -n corda \
-  ../corda-runtime-os/charts/corda \
+helm dependency build charts/corda
+helm upgrade --install corda -n corda charts/corda \
   --values ../corda-runtime-os/values-prereqs.yaml \
   --wait
 
