@@ -58,7 +58,7 @@ class RpcSmokeTestFlow : ClientStartableFlow {
         "persistence_find_bulk" to this::persistenceFindDogs,
         "persistence_findall" to { persistenceFindAllDogs() },
         "persistence_query" to { persistenceQueryDogs() },
-        "throw_platform_error" to this::throwPlatformError,
+        "throw_platform_error" to { throwPlatformError() },
         "throw_session_error" to this::closeSessionThenSend,
         "subflow_passed_in_initiated_session" to { createSessionsInInitiatingFlowAndPassToInlineFlow(it, true) },
         "subflow_passed_in_non_initiated_session" to { createSessionsInInitiatingFlowAndPassToInlineFlow(it, false) },
@@ -235,7 +235,7 @@ class RpcSmokeTestFlow : ClientStartableFlow {
     }
 
     @Suspendable
-    private fun throwPlatformError(input: RpcSmokeTestInput): String {
+    private fun throwPlatformError(): String {
         try {
             externalMessaging.send("junk", "junk")
         } catch (e: Exception) {
