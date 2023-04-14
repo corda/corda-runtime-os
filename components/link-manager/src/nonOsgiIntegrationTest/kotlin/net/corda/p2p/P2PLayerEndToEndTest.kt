@@ -85,6 +85,7 @@ import net.corda.utilities.seconds
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.membership.EndpointInfo
+import net.corda.v5.membership.MGMContext
 import net.corda.v5.membership.MemberContext
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
@@ -458,14 +459,19 @@ class P2PLayerEndToEndTest {
         }
 
         fun createMemberInfo(endpointInfo: EndpointInfo) : MemberInfo {
-            val context = mock<MemberContext> {
+            val memberContext = mock<MemberContext> {
                 on { parseList(ENDPOINTS, EndpointInfo::class.java) } doReturn listOf(endpointInfo)
                 on { parse(MemberInfoExtension.GROUP_ID, String::class.java) } doReturn identity.groupId
                 on { parseList(SESSION_KEYS, PublicKey::class.java) } doReturn listOf(keyPair.public)
             }
+            val mgmContext = mock<MGMContext> {
+                on { parse(MemberInfoExtension.IS_MGM, Boolean::class.java) } doReturn false
+            }
             return mock {
                 on { name } doReturn identity.name
-                on { memberProvidedContext } doReturn context
+                on { isActive } doReturn true
+                on { memberProvidedContext } doReturn memberContext
+                on { mgmProvidedContext } doReturn mgmContext
             }
         }
     }
@@ -680,10 +686,10 @@ class P2PLayerEndToEndTest {
             configPublisher.publishConfig(ConfigKeys.P2P_LINK_MANAGER_CONFIG, linkManagerConfig)
         }
 
-        private fun publishNetworkMapAndIdentityKeys(otherHost: Host? = null) {
-            otherHost?.localInfos?.forEach { info ->
+        private fun publishNetworkMapAndIdentityKeys(host: Host? = null) {
+            host?.localInfos?.forEach { info ->
                 val identity = info.identity
-                val memberInfo = info.createMemberInfo(otherHost.endpointInfo)
+                val memberInfo = info.createMemberInfo(host.endpointInfo)
 
                 val keyHash = PublicKeyHash.calculate(info.keyPair.public)
 
@@ -725,6 +731,7 @@ class P2PLayerEndToEndTest {
             gateway.start()
 
             publishConfig()
+            publishNetworkMapAndIdentityKeys(this)
             publishNetworkMapAndIdentityKeys(otherHost)
 
             eventually(20.seconds) {
