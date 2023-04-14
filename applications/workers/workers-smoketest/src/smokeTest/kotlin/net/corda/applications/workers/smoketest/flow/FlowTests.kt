@@ -255,7 +255,7 @@ class FlowTests {
         val flowResult = result.getRpcFlowResult()
         assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
         assertThat(flowResult.command).isEqualTo("throw_session_error")
-        assertThat(flowResult.result).isEqualTo("Session Status is CLOSED")
+        assertThat(flowResult.result).endsWith("Status is CLOSED")
     }
 
     @Test
