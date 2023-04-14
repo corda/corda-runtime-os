@@ -103,7 +103,8 @@ class SessionEventExecutor(
                             instant,
                             sessionEventSerializer,
                             appMessageFactory,
-                            flowConfig
+                            flowConfig,
+                            sessionEvent.sequenceNum
                         )
                     FlowMapperResult(flowMapperState, listOf(outputRecord))
                 }

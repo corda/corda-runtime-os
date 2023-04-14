@@ -87,6 +87,7 @@ fun generateAppMessage(
  * @param flowConfig config
  * @param receivedSequenceNumber Received sequence number of the session event
  */
+@Suppress("LongParameterList")
 fun createP2PRecord(
     sessionEvent: SessionEvent,
     payload: Any,
