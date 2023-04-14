@@ -2,7 +2,6 @@ package net.corda.flow.application.services.impl.interop.dispatch
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.registerKotlinModule
-import org.corda.weft.binding.FacadeInterfaceBinding
 import org.corda.weft.binding.FacadeMethodBinding
 import org.corda.weft.binding.FacadeOutParameterBindings
 import org.corda.weft.binding.api.BindsFacade

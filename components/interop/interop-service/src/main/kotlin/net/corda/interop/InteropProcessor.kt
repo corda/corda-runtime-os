@@ -76,9 +76,8 @@ class InteropProcessor(
 
             //TODO use getRealHoldingIdentityFromAliasMapping after
             // general fix of CORE-10427, currently the code always returns null
-            val realHoldingIdentity = //InteropAliasProcessor.getRealHoldingIdentity(
-                //getRealHoldingIdentityFromAliasMapping(destinationAlias.toCorda())
-            //)
+            val realHoldingIdentity = InteropAliasProcessor.getRealHoldingIdentity(
+                getRealHoldingIdentityFromAliasMapping(destinationAlias.toCorda()))
                 InteropAliasProcessor.getRealHoldingIdentity(
                 destinationAlias.toCorda().x500Name.toString()
             )
@@ -88,14 +87,12 @@ class InteropProcessor(
                 return StateAndEventProcessor.Response(state, emptyList())
             }
             val facadeRequest = when (val sessionPayload = sessionEvent.payload) {
-                is SessionInit -> ""
-//                    InteropMessageTransformer.getFacadeRequest(
-//                    interopAvroDeserializer.deserialize(sessionPayload.payload.array())!!
-//                )
+                is SessionInit -> InteropMessageTransformer.getFacadeRequest(
+                    interopAvroDeserializer.deserialize(sessionPayload.payload.array())!!
+                )
                 is SessionData -> {
                     val payload : ByteBuffer = sessionPayload.payload as ByteBuffer
-                    ""
-                    //InteropMessageTransformer.getFacadeRequest(interopAvroDeserializer.deserialize(payload.array())!!)
+                    InteropMessageTransformer.getFacadeRequest(interopAvroDeserializer.deserialize(payload.array())!!)
                 }
                 else -> null
             }
