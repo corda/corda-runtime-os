@@ -39,6 +39,7 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
+
 class CreateVirtualNodeOperationHandlerTest {
     private val timestamp = Instant.now()
     private val requestId = "r1"
@@ -59,7 +60,7 @@ class CreateVirtualNodeOperationHandlerTest {
     }
 
     private val externalMessagingRouteConfigGenerator = mock<ExternalMessagingRouteConfigGenerator>().apply {
-        whenever(generateConfig(any(),any(),any())).thenReturn(externalMessagingRouteConfig)
+        whenever(generateNewConfig(any(),any(),any())).thenReturn(externalMessagingRouteConfig)
     }
 
     private val virtualNodeDbFactory = mock<VirtualNodeDbFactory>().apply {

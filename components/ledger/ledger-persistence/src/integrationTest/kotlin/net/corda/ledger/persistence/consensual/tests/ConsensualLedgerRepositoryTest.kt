@@ -12,7 +12,6 @@ import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
 import net.corda.ledger.common.testkit.getPrivacySalt
 import net.corda.ledger.common.testkit.getSignatureWithMetadataExample
 import net.corda.ledger.common.testkit.transactionMetadataExample
-import net.corda.ledger.consensual.data.transaction.ConsensualComponentGroup
 import net.corda.ledger.persistence.consensual.ConsensualPersistenceService
 import net.corda.ledger.persistence.consensual.ConsensualRepository
 import net.corda.ledger.persistence.consensual.ConsensualTransactionReader
@@ -371,8 +370,7 @@ class ConsensualLedgerRepositoryTest {
         seed: String = seedSequence.incrementAndGet().toString()
     ): SignedTransactionContainer {
         val transactionMetadata = transactionMetadataExample(
-            cpkPackageSeed = seed,
-            numberOfComponentGroups = ConsensualComponentGroup.values().size
+            cpkPackageSeed = seed
         )
         val componentGroupLists: List<List<ByteArray>> = listOf(
             listOf(jsonValidator.canonicalize(jsonMarshallingService.format(transactionMetadata)).toByteArray()),

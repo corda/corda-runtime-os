@@ -1,18 +1,18 @@
 package net.corda.libs.virtualnode.datamodel.repository
 
-import net.corda.crypto.core.ShortHash
 import java.time.Instant
-import net.corda.libs.packaging.core.CpiIdentifier
-import net.corda.libs.virtualnode.datamodel.dto.VirtualNodeOperationDto
-import net.corda.virtualnode.HoldingIdentity
-import net.corda.virtualnode.VirtualNodeInfo
 import java.util.UUID
 import java.util.stream.Stream
 import javax.persistence.EntityManager
+import net.corda.crypto.core.ShortHash
+import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.virtualnode.common.exception.VirtualNodeOperationNotFoundException
+import net.corda.libs.virtualnode.datamodel.dto.VirtualNodeOperationDto
 import net.corda.libs.virtualnode.datamodel.dto.VirtualNodeOperationStateDto
 import net.corda.libs.virtualnode.datamodel.dto.VirtualNodeOperationType
+import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.OperationalStatus
+import net.corda.virtualnode.VirtualNodeInfo
 
 /**
  * Interface for CRUD operations for a virtual node.
@@ -64,6 +64,7 @@ interface VirtualNodeRepository {
         entityManager: EntityManager,
         holdingIdentityShortHash: String,
         cpiName: String, cpiVersion: String, cpiSignerSummaryHash: String,
+        externalMessagingRouteConfig: String?,
         requestId: String, requestTimestamp: Instant, serializedRequest: String
     ): VirtualNodeInfo
 

@@ -12,7 +12,11 @@ import net.corda.libs.packaging.core.CpkType
 import net.corda.sandbox.SandboxGroup
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.sandboxgroupcontext.SandboxGroupContext
+import net.corda.sandboxgroupcontext.SandboxGroupType
+import net.corda.sandboxgroupcontext.VirtualNodeContext
+import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.DigestAlgorithmName
+import net.corda.virtualnode.HoldingIdentity
 import org.mockito.Mockito
 import org.osgi.framework.Bundle
 import java.time.Instant
@@ -22,11 +26,14 @@ internal fun mockCurrentSandboxGroupContext(): CurrentSandboxGroupContext {
     val sandboxGroupContext = Mockito.mock(SandboxGroupContext::class.java)
     val currentSandboxGroupContext = Mockito.mock(CurrentSandboxGroupContext::class.java)
     val mockSandboxGroup = Mockito.mock(SandboxGroup::class.java)
+    val holdingIdentity = HoldingIdentity(MemberX500Name.parse("O=Random, L=London, C=GB"), "groupId")
+    val virtualNodeContext = VirtualNodeContext(holdingIdentity, emptySet(), SandboxGroupType.FLOW, null)
 
     Mockito.`when`(mockSandboxGroup.metadata).thenReturn(mockCpkMetadata())
     Mockito.`when`(mockSandboxGroup.getEvolvableTag(MockitoHelper.anyObject())).thenReturn("E;bundle;sandbox")
     Mockito.`when`(currentSandboxGroupContext.get()).thenReturn(sandboxGroupContext)
     Mockito.`when`(sandboxGroupContext.sandboxGroup).thenReturn(mockSandboxGroup)
+    Mockito.`when`(sandboxGroupContext.virtualNodeContext).thenReturn(virtualNodeContext)
 
     return currentSandboxGroupContext
 }

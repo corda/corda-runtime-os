@@ -1,6 +1,7 @@
 package net.corda.ledger.persistence.utxo.impl
 
 import com.fasterxml.jackson.core.JsonProcessingException
+import net.corda.data.membership.SignedGroupParameters
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.persistence.common.InconsistentLedgerStateException
@@ -10,6 +11,7 @@ import net.corda.ledger.persistence.utxo.UtxoPersistenceService
 import net.corda.ledger.persistence.utxo.UtxoRepository
 import net.corda.ledger.persistence.utxo.UtxoTransactionReader
 import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
+import net.corda.libs.packaging.hash
 import net.corda.orm.utils.transaction
 import net.corda.utilities.serialization.deserialize
 import net.corda.utilities.time.Clock
@@ -26,7 +28,7 @@ import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 
 @Suppress("LongParameterList")
-class UtxoPersistenceServiceImpl constructor(
+class UtxoPersistenceServiceImpl(
     private val entityManagerFactory: EntityManagerFactory,
     private val repository: UtxoRepository,
     private val serializationService: SerializationService,
@@ -257,6 +259,26 @@ class UtxoPersistenceServiceImpl constructor(
             // Since we validate the factory outputs one-by-one this should not happen.
             log.warn("Error while formatting combined JSON, defaulting to empty JSON.")
             "{}"
+        }
+    }
+
+    override fun findSignedGroupParameters(hash: String): SignedGroupParameters? {
+        return entityManagerFactory.transaction { em ->
+            repository.findSignedGroupParameters(em, hash)
+        }
+    }
+
+    override fun persistSignedGroupParametersIfDoNotExist(signedGroupParameters: SignedGroupParameters) {
+        val hash = signedGroupParameters.groupParameters.array().hash(DigestAlgorithmName.SHA2_256).toString()
+        if (findSignedGroupParameters(hash) == null) {
+            entityManagerFactory.transaction { em ->
+                repository.persistSignedGroupParameters(
+                    em,
+                    hash,
+                    signedGroupParameters,
+                    utcClock.instant()
+                )
+            }
         }
     }
 }
