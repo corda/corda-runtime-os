@@ -44,77 +44,73 @@ pipeline {
     }
 
     stages {
-        stage('Publishing') {
-            parallel {
-                stage('Prepare Helm charts') {
-                    /*
-                    * Depending on the situation, Helm charts are published to the following repositories with the given chart version:
-                    * See {@link PublishingUtils#getHelmRepo()} for details on how helm chart repo name is generated
-                    *
-                    * Release tag          corda-os-docker-stable.software.r3.com/helm-charts/<branch-name>      <CHART_VERSION>
-                    * Release/main branch  corda-os-docker-unstable.software.r3.com/helm-charts/<branch-name>    <CHART_VERSION>-beta.<TIMESTAMP>
-                    * PR / feature branch  corda-os-docker-dev.software.r3.com/helm-charts/<branch-name>         <CHART_VERSION>-alpha.<TIMESTAMP>
-                    */
-                    environment {
-                        HELM_CHART_VERSION = publishingUtils.getHelmChartVersion()
-                        HELM_CHART_APP_VERSION = getGradleProperty("version")
-                    }
-                    steps {
-                        script {
-                            publishingUtils.prepareHelmChart('artifactory-credentials')
-                        }
+        stage('Prepare Helm charts') {
+            /*
+            * Depending on the situation, Helm charts are published to the following repositories with the given chart version:
+            * See {@link PublishingUtils#getHelmRepo()} for details on how helm chart repo name is generated
+            *
+            * Release tag          corda-os-docker-stable.software.r3.com/helm-charts/<branch-name>      <CHART_VERSION>
+            * Release/main branch  corda-os-docker-unstable.software.r3.com/helm-charts/<branch-name>    <CHART_VERSION>-beta.<TIMESTAMP>
+            * PR / feature branch  corda-os-docker-dev.software.r3.com/helm-charts/<branch-name>         <CHART_VERSION>-alpha.<TIMESTAMP>
+            */
+            environment {
+                HELM_CHART_VERSION = publishingUtils.getHelmChartVersion()
+                HELM_CHART_APP_VERSION = getGradleProperty("version")
+            }
+            steps {
+                script {
+                    publishingUtils.prepareHelmChart('artifactory-credentials')
+                }
+            }
+        }
+        stage('Publish / Publish Images') {
+            environment {
+                BASE_IMAGE = 'docker-remotes.software.r3.com/azul/zulu-openjdk'
+                BASE_IMAGE_TAG = '11.0.15-11.56.19'
+            }
+            steps {
+                script {
+                    gradlewMinimumLogging(
+                        'publishOSGiImage',
+                        '-PjibRemotePublish=true',
+                        "-PworkerBaseImageTag=${env.BASE_IMAGE_TAG}",
+                        "-PbaseImage=${env.BASE_IMAGE}",
+                        "-PuseDockerDaemon=false"
+                    )
+                }
+            }
+            post {
+                success {
+                    script{
+                        renderWidget("Release artifacts version: ${getGradleProperty("version")}")
                     }
                 }
-                stage('Publish / Publish Images') {
-                    environment {
-                        BASE_IMAGE = 'docker-remotes.software.r3.com/azul/zulu-openjdk'
-                        BASE_IMAGE_TAG = '11.0.15-11.56.19'
-                    }
-                    steps {
-                        script {
-                            gradlewMinimumLogging(
-                                'publishOSGiImage',
-                                '-PjibRemotePublish=true',
-                                "-PworkerBaseImageTag=${env.BASE_IMAGE_TAG}",
-                                "-PbaseImage=${env.BASE_IMAGE}",
-                                "-PuseDockerDaemon=false"
-                            )
-                        }
-                    }
-                    post {
-                        success {
-                            script{
-                                renderWidget("Release artifacts version: ${getGradleProperty("version")}")
-                            }
-                        }
-                    }
+            }
+        }
+        stage('Publish Helm Chart to Artifactory') {
+            /*
+            * Depending on the situation, Helm charts are published to the following repositories with the given chart version:
+            * See {@link PublishingUtils#getHelmRepo()} for details on how helm chart repo name is generated
+            *
+            * Release tag          corda-os-docker-stable.software.r3.com/helm-charts/<branch-name>      <CHART_VERSION>
+            * Release/main branch  corda-os-docker-unstable.software.r3.com/helm-charts/<branch-name>    <CHART_VERSION>-beta.<TIMESTAMP>
+            * PR / feature branch  corda-os-docker-dev.software.r3.com/helm-charts/<branch-name>         <CHART_VERSION>-alpha.<TIMESTAMP>
+            */
+            environment {
+                HELM_REGISTRY = publishingUtils.getInternalRegistry(false)
+                HELM_CHART_VERSION = publishingUtils.getHelmVersionFromYaml()
+                HELM_CHART_REPO = publishingUtils.getHelmRepo()
+            }
+            steps {
+                script {
+                    publishingUtils.publishHelmCharts('artifactory-credentials')
                 }
-                stage('Publish Helm Chart to Artifactory') {
-                    /*
-                    * Depending on the situation, Helm charts are published to the following repositories with the given chart version:
-                    * See {@link PublishingUtils#getHelmRepo()} for details on how helm chart repo name is generated
-                    *
-                    * Release tag          corda-os-docker-stable.software.r3.com/helm-charts/<branch-name>      <CHART_VERSION>
-                    * Release/main branch  corda-os-docker-unstable.software.r3.com/helm-charts/<branch-name>    <CHART_VERSION>-beta.<TIMESTAMP>
-                    * PR / feature branch  corda-os-docker-dev.software.r3.com/helm-charts/<branch-name>         <CHART_VERSION>-alpha.<TIMESTAMP>
-                    */
-                    environment {
-                        HELM_REGISTRY = publishingUtils.getInternalRegistry(false)
-                        HELM_CHART_VERSION = publishingUtils.getHelmVersionFromYaml()
-                        HELM_CHART_REPO = publishingUtils.getHelmRepo()
-                    }
-                    steps {
-                        script {
-                            publishingUtils.publishHelmCharts('artifactory-credentials')
-                        }
-                    }
-                    post {
-                        success {
-                            script{
-                                renderWidget("Published Corda helm chart version to Artifactory: ${publishingUtils.getHelmVersionFromYaml()}")
-                                renderWidget("Published Corda helm chart repo name: ${publishingUtils.getHelmRepo()}")
-                            }
-                        }
+            }
+            post {
+                success {
+                    script{
+                        renderWidget("Published Corda helm chart version to Artifactory: ${publishingUtils.getHelmVersionFromYaml()}")
+                        renderWidget("Published Corda helm chart repo name: ${publishingUtils.getHelmRepo()}")
                     }
                 }
             }
