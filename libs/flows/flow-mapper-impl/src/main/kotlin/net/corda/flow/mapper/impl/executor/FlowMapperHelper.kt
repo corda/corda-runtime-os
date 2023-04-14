@@ -95,7 +95,7 @@ fun createP2PRecord(
     sessionEventSerializer: CordaAvroSerializer<SessionEvent>,
     appMessageFactory: (SessionEvent, CordaAvroSerializer<SessionEvent>, SmartConfig) -> AppMessage,
     flowConfig: SmartConfig,
-    receivedSequenceNumber: Int = sessionEvent.receivedSequenceNum
+    receivedSequenceNumber: Int = sessionEvent.sequenceNum
 ) : Record<*, *> {
     val sessionId = sessionEvent.sessionId
     return Record(
