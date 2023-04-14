@@ -158,7 +158,7 @@ class PostgresVaultNamedQueryExpressionParser : VaultNamedQueryExpressionParser 
             "IN" -> In()
             "?" -> JsonKeyExists()
             "LIKE" -> Like()
-            else -> throw IllegalArgumentException("Unknown keyword $keyword")
+            else -> throw IllegalArgumentException("Unknown keyword '$keyword'")
         }
     }
 }
