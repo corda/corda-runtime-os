@@ -60,8 +60,8 @@ class PostgresVaultNamedQueryConverter : VaultNamedQueryConverter {
                     }
                     output.append(")")
                 }
-                is JsonKeyExists -> output.append(" ? ")
-                is JsonCast -> output.append("::${token.value}")
+                is JsonKeyExists -> output.append(" \\?\\? ")
+                is JsonCast -> output.append("\\:\\:${token.value}")
                 is Like -> output.append(" LIKE ")
                 is ParameterEnd -> output.append(", ")
                 else -> throw IllegalArgumentException("Invalid token in expression - $token")

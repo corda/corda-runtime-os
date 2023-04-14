@@ -214,14 +214,14 @@ class PostgresVaultNamedQueryConverterTest {
     fun `JsonCast is appended directly to the output with no spaces`() {
         val expression = listOf(JsonCast("int"))
         postgresVaultNamedQueryParser.convert(output, expression)
-        assertThat(output.toString()).isEqualTo("::int")
+        assertThat(output.toString()).isEqualTo("\\:\\:int")
     }
 
     @Test
     fun `JsonKeyExists is appended to the output with a space on either side`() {
         val expression = listOf(JsonKeyExists())
         postgresVaultNamedQueryParser.convert(output, expression)
-        assertThat(output.toString()).isEqualTo(" ? ")
+        assertThat(output.toString()).isEqualTo(" \\?\\? ")
     }
 
     @Test

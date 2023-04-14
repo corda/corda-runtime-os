@@ -103,7 +103,7 @@ class PostgresVaultNamedQueryExpressionParserTest {
 
     @Test
     fun `parameter name is parsed as Parameter`() {
-        val expression = expressionParser.parse(":parameter ARE 123 :another_one nAmEs != :with-dashes ::int ->> is null is not null")
+        val expression = expressionParser.parse(":parameter ARE 123 :another_one nAmEs != :with-dashes \\:\\:int ->> is null is not null")
         assertThat(expression.filterIsInstance<Parameter>()).hasSize(3)
         assertThat(expression)
             .contains(Parameter(":parameter"), Index.atIndex(0))
@@ -324,10 +324,10 @@ class PostgresVaultNamedQueryExpressionParserTest {
 
     @Test
     fun `json cast to is parsed as JsonCast`() {
-        val expression = expressionParser.parse("::int::int::int ::date ::string->> ::int=5 ::int>5 z::intz<=1 != ->> is null is not null")
+        val expression = expressionParser.parse("\\:\\:int\\:\\:int\\:\\:int \\:\\:date \\:\\:string->> \\:\\:int=5 \\:\\:int>5 z\\:\\:intz<=1 != ->> is null is not null")
         assertThat(expression.filterIsInstance<JsonCast>()).hasSize(6)
         assertThat(expression)
-            .contains(JsonCast("int::int::int"), Index.atIndex(0))
+            .contains(JsonCast("int\\:\\:int\\:\\:int"), Index.atIndex(0))
             .contains(JsonCast("date"), Index.atIndex(1))
             .contains(JsonCast("string"), Index.atIndex(2))
             .contains(JsonCast("int"), Index.atIndex(4))
@@ -337,7 +337,7 @@ class PostgresVaultNamedQueryExpressionParserTest {
 
     @Test
     fun `json key exist is parsed as JsonKeyExists`() {
-        val expression = expressionParser.parse("??? ? ->> ? ? z?z ->> is null is not null")
+        val expression = expressionParser.parse("\\?\\?\\?\\?\\?\\? \\?\\? ->> \\?\\? \\?\\? z\\?\\?z ->> is null is not null")
         assertThat(expression.filterIsInstance<JsonKeyExists>()).hasSize(7)
         assertThat(expression)
             .contains(JsonKeyExists(), Index.atIndex(0))

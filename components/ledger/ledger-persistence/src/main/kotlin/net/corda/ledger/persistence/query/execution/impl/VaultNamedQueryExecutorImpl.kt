@@ -14,23 +14,21 @@ import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
 import net.corda.ledger.utxo.data.transaction.UtxoOutputInfoComponent
 import net.corda.orm.utils.transaction
 import net.corda.persistence.common.exceptions.NullParameterException
-import net.corda.sandbox.type.UsedByPersistence
 import net.corda.utilities.serialization.deserialize
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.StateRef
-import org.osgi.service.component.annotations.Activate
 import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
 import javax.persistence.EntityManagerFactory
 import javax.persistence.Tuple
 
-class VaultNamedQueryExecutorImpl @Activate constructor(
+class VaultNamedQueryExecutorImpl(
     private val entityManagerFactory: EntityManagerFactory,
     private val registry: VaultNamedQueryRegistry,
     private val serializationService: SerializationService
-) : VaultNamedQueryExecutor, UsedByPersistence {
+) : VaultNamedQueryExecutor {
 
     private companion object {
         const val UTXO_VISIBLE_TX_TABLE = "utxo_visible_transaction_state"
