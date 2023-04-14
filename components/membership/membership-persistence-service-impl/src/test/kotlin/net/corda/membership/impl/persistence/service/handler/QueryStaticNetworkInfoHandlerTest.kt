@@ -7,7 +7,7 @@ import net.corda.data.KeyValuePairList
 import net.corda.data.membership.db.request.query.QueryStaticNetworkInfo
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.membership.datamodel.StaticNetworkInfoEntity
-import net.corda.membership.lib.EPOCH_KEY
+import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.EPOCH_KEY
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any

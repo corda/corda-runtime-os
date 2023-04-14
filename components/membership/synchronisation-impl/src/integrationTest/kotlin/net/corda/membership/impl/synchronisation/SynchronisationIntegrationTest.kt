@@ -55,8 +55,8 @@ import net.corda.membership.impl.synchronisation.dummy.TestGroupReaderProvider
 import net.corda.membership.impl.synchronisation.dummy.TestLocallyHostedIdentitiesService
 import net.corda.membership.impl.synchronisation.dummy.TestMembershipPersistenceClient
 import net.corda.membership.impl.synchronisation.dummy.TestMembershipQueryClient
-import net.corda.membership.lib.EPOCH_KEY
-import net.corda.membership.lib.MODIFIED_TIME_KEY
+import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.EPOCH_KEY
+import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.MODIFIED_TIME_KEY
 import net.corda.membership.lib.MemberInfoExtension
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.lib.MemberInfoExtension.Companion.groupId

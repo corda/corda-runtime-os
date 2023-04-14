@@ -219,7 +219,7 @@ class MgmSynchronisationServiceImpl internal constructor(
             val requesterInfo = groupReader.lookup(requesterName, filter = MembershipStatusFilter.ACTIVE_OR_SUSPENDED)
                 ?: throw CordaRuntimeException("Requester $requesterName $IDENTITY_EX_MESSAGE")
             // we don't want to include the MGM in the data package since MGM information comes from the group policy
-            val allMembersActiveMemberExcludingMgm = groupReader.lookup().filterNot { it.holdingIdentity == mgm.toCorda() }
+            val allActiveMembersExcludingMgm = groupReader.lookup().filterNot { it.holdingIdentity == mgm.toCorda() }
             val groupParameters = groupReader.groupParameters
                 ?: throw CordaRuntimeException("Failed to retrieve group parameters for building membership packages.")
             if (compareHashes(memberHashFromTheReq.toCorda(), requesterInfo)) {
@@ -228,7 +228,7 @@ class MgmSynchronisationServiceImpl internal constructor(
                 if (requesterInfo.status == MEMBER_STATUS_SUSPENDED) {
                     sendPackage(mgm, requester, createMembershipPackage(mgmInfo, listOf(requesterInfo), groupParameters))
                 } else {
-                    sendPackage(mgm, requester, createMembershipPackage(mgmInfo, allMembersActiveMemberExcludingMgm, groupParameters))
+                    sendPackage(mgm, requester, createMembershipPackage(mgmInfo, allActiveMembersExcludingMgm, groupParameters))
                 }
             } else {
                 // member has not received the latest updates regarding its own membership
