@@ -233,12 +233,15 @@ class LifecycleTest<T : Lifecycle>(
         dependency: LifecycleCoordinatorName,
         verificationWhenDown: () -> Unit = {},
         verificationWhenUp: () -> Unit = {},
+        onUppingDependency: () -> Unit = {}
     ) {
         bringDependencyDown(dependency)
         verifyIsDown(dependency)
         verificationWhenDown.invoke()
-        bringDependencyUp(dependency)
-        verifyIsUp(dependency)
+        bringDependencyUp(dependency).also {
+            verifyIsUp(dependency)
+            onUppingDependency()
+        }
         verificationWhenUp.invoke()
     }
 

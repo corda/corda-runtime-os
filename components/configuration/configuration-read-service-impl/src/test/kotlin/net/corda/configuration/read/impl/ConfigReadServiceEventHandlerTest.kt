@@ -141,6 +141,12 @@ internal class ConfigReadServiceEventHandlerTest {
             RegistrationStatusChangeEvent(configSubReg, LifecycleStatus.UP),
             coordinator
         )
+        verify(coordinator, times(0)).updateStatus(any(), any())
+
+        configReadServiceEventHandler.processEvent(
+            NewConfigReceived(mock(), true),
+            coordinator
+        )
         verify(coordinator).updateStatus(capture(lifecycleStatusCaptor), any())
         assertThat(lifecycleStatusCaptor.firstValue).isEqualTo(LifecycleStatus.UP)
     }

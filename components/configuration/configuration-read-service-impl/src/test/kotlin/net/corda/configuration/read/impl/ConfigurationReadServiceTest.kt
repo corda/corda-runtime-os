@@ -65,7 +65,7 @@ internal class ConfigurationReadServiceTest {
         val avroSchemaRegistry = mock<AvroSchemaRegistry>()
         val publisherFactory = mock<PublisherFactory>()
 
-        LifecycleTest<ConfigurationReadService>{
+        LifecycleTest<ConfigurationReadService> {
             addDependency(subName)
 
             ConfigurationReadServiceImpl(
@@ -77,9 +77,14 @@ internal class ConfigurationReadServiceTest {
             verifyIsDown(subName)
             verifyIsDown<ConfigurationReadService>()
             bringDependenciesUp()
-            coordinatorFactory.registry.getCoordinator(
+
+            val configReadServiceCoordinator = coordinatorFactory.registry.getCoordinator(
                 LifecycleCoordinatorName.forComponent<ConfigurationReadService>()
-            ).postEvent(SetupConfigSubscription())
+            )
+            configReadServiceCoordinator.postEvent(SetupConfigSubscription())
+            verifyIsDown<ConfigurationReadService>()
+
+            configReadServiceCoordinator.postEvent(NewConfigReceived(mock(), true))
             verifyIsUp<ConfigurationReadService>()
 
             repeat(5) {
@@ -91,6 +96,9 @@ internal class ConfigurationReadServiceTest {
                     verificationWhenUp = {
                         verifyIsUp<ConfigurationReadService>()
                     },
+                    onUppingDependency = {
+                        configReadServiceCoordinator.postEvent(NewConfigReceived(mock(), true))
+                    }
                 )
             }
 
