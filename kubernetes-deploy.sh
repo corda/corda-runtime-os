@@ -11,7 +11,7 @@ kubectl delete namespace corda
 kubectl create namespace corda
 
 # Usual prereqs
-helm install prereqs -n corda --create-namespace oci://registry-1.docker.io/corda/corda-dev-prereqs --timeout 10m --wait
+helm install prereqs -n corda oci://registry-1.docker.io/corda/corda-dev-prereqs --timeout 10m --wait
 
 # Corda
 helm dependency build charts/corda
