@@ -6,6 +6,7 @@ import net.corda.data.membership.actions.request.DistributeMemberInfo
 import net.corda.data.membership.actions.request.MembershipActionsRequest
 import net.corda.data.membership.command.registration.RegistrationCommand
 import net.corda.data.membership.command.registration.mgm.ApproveRegistration
+import net.corda.data.membership.command.registration.mgm.CheckForPendingRegistration
 import net.corda.data.membership.command.registration.mgm.DeclineRegistration
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.p2p.SetOwnRegistrationStatus
@@ -125,7 +126,13 @@ internal class ApproveRegistrationHandler(
                 )
             )
 
-            listOf(memberRecord, persistApproveMessage, distributionAction)
+            val commandToStartProcessingTheNextRequest = Record(
+                topic = REGISTRATION_COMMAND_TOPIC,
+                key = key,
+                value = RegistrationCommand(CheckForPendingRegistration(approvedBy, approvedMember, 0))
+            )
+
+            listOf(memberRecord, persistApproveMessage, distributionAction, commandToStartProcessingTheNextRequest)
         } catch (e: Exception) {
             logger.warn("Could not approve registration request: '$registrationId'", e)
             listOf(
@@ -140,7 +147,7 @@ internal class ApproveRegistrationHandler(
         }
 
         return RegistrationHandlerResult(
-            RegistrationState(registrationId, approvedMember, approvedBy),
+            null,
             messages
         )
     }

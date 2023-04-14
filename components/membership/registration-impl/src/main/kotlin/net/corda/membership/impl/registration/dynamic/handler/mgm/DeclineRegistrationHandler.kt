@@ -1,6 +1,8 @@
 package net.corda.membership.impl.registration.dynamic.handler.mgm
 
 import net.corda.data.CordaAvroSerializationFactory
+import net.corda.data.membership.command.registration.RegistrationCommand
+import net.corda.data.membership.command.registration.mgm.CheckForPendingRegistration
 import net.corda.data.membership.command.registration.mgm.DeclineRegistration
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.p2p.SetOwnRegistrationStatus
@@ -14,6 +16,8 @@ import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandle
 import net.corda.membership.p2p.helpers.P2pRecordsFactory
 import net.corda.membership.p2p.helpers.P2pRecordsFactory.Companion.getTtlMinutes
 import net.corda.membership.persistence.client.MembershipPersistenceClient
+import net.corda.messaging.api.records.Record
+import net.corda.schema.Schemas.Membership.REGISTRATION_COMMAND_TOPIC
 import net.corda.schema.configuration.MembershipConfig.TtlsConfig.DECLINE_REGISTRATION
 import net.corda.utilities.time.Clock
 import net.corda.virtualnode.toCorda
@@ -68,9 +72,14 @@ internal class DeclineRegistrationHandler(
             ),
             filter = MembershipStatusFilter.PENDING,
         )
+        val commandToStartProcessingTheNextRequest = Record(
+            topic = REGISTRATION_COMMAND_TOPIC,
+            key = key,
+            value = RegistrationCommand(CheckForPendingRegistration(declinedBy, declinedMember, 0))
+        )
         return RegistrationHandlerResult(
-            state,
-            listOf(persistDeclineMessage)
+            null,
+            listOf(persistDeclineMessage, commandToStartProcessingTheNextRequest)
         )
     }
 
