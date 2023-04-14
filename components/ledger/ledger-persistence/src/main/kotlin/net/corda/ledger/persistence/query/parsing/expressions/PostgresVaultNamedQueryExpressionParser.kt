@@ -45,10 +45,10 @@ class PostgresVaultNamedQueryExpressionParser : VaultNamedQueryExpressionParser 
 
     @Suppress("MaxLineLength")
     private val opsPattern = Regex(
-        """(?<op>(->>)|[+-/*=?]|<(=)?|>(=)?|==|!(=)?|(\\\?\\\?)|(?i)\bas\b|(?i)\bfrom\b|(?i)\bselect\b|(?i)\bwhere\b|(?i)\band\b|(?i)\bor\b|(?i)\bis null\b|(?i)\bis not null\b|(?i)\bin\b|(?i)\blike\b)"""
+        """(?<op>(->>)|[+-/*=?]|<(=)?|>(=)?|==|!(=)?|(?i)\bas\b|(?i)\bfrom\b|(?i)\bselect\b|(?i)\bwhere\b|(?i)\band\b|(?i)\bor\b|(?i)\bis null\b|(?i)\bis not null\b|(?i)\bin\b|(?i)\blike\b)"""
     )
 
-    private val jsonCastPattern = Regex("""\\:\\:(?<cast>.*?)((->>)|[+*=]|&&|\|\||<(=)?|>(=)?|==|!(=)?|\s|$)""")
+    private val jsonCastPattern = Regex("""::(?<cast>.*?)((->>)|[+*=]|&&|\|\||<(=)?|>(=)?|==|!(=)?|\s|$)""")
 
     private val parameterPattern = Regex("""(?<parameter>:[^:]\S+)""")
 
@@ -156,7 +156,7 @@ class PostgresVaultNamedQueryExpressionParser : VaultNamedQueryExpressionParser 
             "AND" -> And()
             "=" -> Equals()
             "IN" -> In()
-            "\\?\\?" -> JsonKeyExists()
+            "?" -> JsonKeyExists()
             "LIKE" -> Like()
             else -> throw IllegalArgumentException("Unknown keyword '$keyword'")
         }
