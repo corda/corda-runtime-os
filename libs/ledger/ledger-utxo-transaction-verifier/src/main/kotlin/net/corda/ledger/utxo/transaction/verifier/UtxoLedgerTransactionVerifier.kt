@@ -52,7 +52,6 @@ class UtxoLedgerTransactionVerifier(
         check(allInputs.first().notaryName == transaction.notaryName) {
             "Input and reference states' notaries need to be the same as the $subjectClass's notary."
         }
-        // TODO CORE-8958 check rotated notaries
     }
 
     private fun verifyInputsAreOlderThanOutputs() {

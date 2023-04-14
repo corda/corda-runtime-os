@@ -58,14 +58,25 @@ class UtxoNotaryVerifierTest {
     }
 
     @Test
-    fun `verifyNotaryAllowed does not throw if any keys matches`() {
+    fun `verifyNotaryAllowed throws if only key matches, but not the name`() {
         whenever(notary1.publicKey).thenReturn(publicKeyExample)
-        assertDoesNotThrow { verifyNotaryAllowed(transaction, signedGroupParameters) }
+        assertThatThrownBy { verifyNotaryAllowed(transaction, signedGroupParameters) }
+            .isExactlyInstanceOf(IllegalStateException::class.java)
+            .hasMessageContaining("Notary of the transaction is not listed in the available notaries.")
     }
 
     @Test
-    fun `verifyNotaryAllowed does not throw if any names matches`() {
+    fun `verifyNotaryAllowed throws if only name matches, but not the key`() {
         whenever(notary1.name).thenReturn(notaryX500Name)
+        assertThatThrownBy { verifyNotaryAllowed(transaction, signedGroupParameters) }
+            .isExactlyInstanceOf(IllegalStateException::class.java)
+            .hasMessageContaining("Notary key of the transaction is not matching against the related notary in Signed Group Parameters.")
+    }
+
+    @Test
+    fun `verifyNotaryAllowed does not throw if both key and name matches`() {
+        whenever(notary1.name).thenReturn(notaryX500Name)
+        whenever(notary1.publicKey).thenReturn(publicKeyExample)
         assertDoesNotThrow { verifyNotaryAllowed(transaction, signedGroupParameters) }
     }
 }
