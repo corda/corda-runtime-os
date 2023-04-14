@@ -165,7 +165,7 @@ class MgmSynchronisationServiceImplTest {
     private val memberInfosWithoutMgm = listOf(aliceInfo, bobInfo, daisyInfo)
     private val groupParameters: InternalGroupParameters = mock()
     private val groupReader: MembershipGroupReader = mock {
-        on { lookup() } doReturn memberInfos
+        on { lookup(MembershipStatusFilter.ACTIVE_OR_SUSPENDED) } doReturn memberInfos
         on { lookup(eq(MemberX500Name.parse(mgmName)), any()) } doReturn mgmInfo
         on { lookup(eq(MemberX500Name.parse(aliceName)), any()) } doReturn aliceInfo
         on { lookup(eq(MemberX500Name.parse(bobName)), any()) } doReturn bobInfo

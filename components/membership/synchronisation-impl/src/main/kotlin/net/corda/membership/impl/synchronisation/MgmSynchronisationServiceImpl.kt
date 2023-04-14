@@ -10,7 +10,7 @@ import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.membership.command.synchronisation.mgm.ProcessSyncRequest
 import net.corda.data.membership.p2p.DistributionType
 import net.corda.data.membership.p2p.MembershipPackage
-import net.corda.data.p2p.app.MembershipStatusFilter
+import net.corda.data.p2p.app.MembershipStatusFilter.ACTIVE_OR_SUSPENDED
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.LifecycleCoordinator
@@ -216,10 +216,10 @@ class MgmSynchronisationServiceImpl internal constructor(
             val mgmInfo = groupReader.lookup(mgmName)
                 ?: throw CordaRuntimeException("MGM $mgmName $IDENTITY_EX_MESSAGE")
             val requesterName = MemberX500Name.parse(requester.x500Name)
-            val requesterInfo = groupReader.lookup(requesterName, filter = MembershipStatusFilter.ACTIVE_OR_SUSPENDED)
+            val requesterInfo = groupReader.lookup(requesterName, filter = ACTIVE_OR_SUSPENDED)
                 ?: throw CordaRuntimeException("Requester $requesterName $IDENTITY_EX_MESSAGE")
             // we don't want to include the MGM in the data package since MGM information comes from the group policy
-            val allActiveMembersExcludingMgm = groupReader.lookup().filterNot { it.holdingIdentity == mgm.toCorda() }
+            val allNonPendingMembersExcludingMgm = groupReader.lookup(ACTIVE_OR_SUSPENDED).filterNot { it.holdingIdentity == mgm.toCorda() }
             val groupParameters = groupReader.groupParameters
                 ?: throw CordaRuntimeException("Failed to retrieve group parameters for building membership packages.")
             if (compareHashes(memberHashFromTheReq.toCorda(), requesterInfo)) {
@@ -228,7 +228,7 @@ class MgmSynchronisationServiceImpl internal constructor(
                 if (requesterInfo.status == MEMBER_STATUS_SUSPENDED) {
                     sendPackage(mgm, requester, createMembershipPackage(mgmInfo, listOf(requesterInfo), groupParameters))
                 } else {
-                    sendPackage(mgm, requester, createMembershipPackage(mgmInfo, allActiveMembersExcludingMgm, groupParameters))
+                    sendPackage(mgm, requester, createMembershipPackage(mgmInfo, allNonPendingMembersExcludingMgm, groupParameters))
                 }
             } else {
                 // member has not received the latest updates regarding its own membership
