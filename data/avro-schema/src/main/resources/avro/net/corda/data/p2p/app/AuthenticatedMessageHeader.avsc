@@ -45,7 +45,7 @@
       "type": {
         "type": "enum",
         "name": "MembershipStatusFilter",
-        "symbols": ["PENDING", "ACTIVE", "ACTIVE_OR_SUSPENDED", "ACTIVE_IF_PRESENT_OR_PENDING"]
+        "symbols": ["PENDING", "ACTIVE", "ACTIVE_OR_SUSPENDED", "ACTIVE_IF_PRESENT_OR_PENDING", "ACTIVE_OR_SUSPENDED_IF_PRESENT_OR_PENDING"]
       },
       "default": "ACTIVE"
     }
