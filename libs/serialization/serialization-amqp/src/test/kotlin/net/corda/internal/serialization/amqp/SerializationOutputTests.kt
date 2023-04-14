@@ -701,7 +701,7 @@ class SerializationOutputTests {
         assertSame(parentContainer.left, parentContainer.right)
 
         val parentCopy = serdes(parentContainer)
-        // todo remvert to assertSame in CORE-12472
+        // todo revert to assertSame in CORE-12472
         assertNotSame(parentCopy.left, parentCopy.right)
     }
 
