@@ -149,6 +149,11 @@ class MGMResourceClientImpl @Activate constructor(
             reason: String?,
         )
 
+        fun forceDeclineRegistrationRequest(
+            holdingIdentityShortHash: ShortHash,
+            requestId: UUID,
+        )
+
         fun suspendMember(
             holdingIdentityShortHash: ShortHash, memberX500Name: MemberX500Name, serialNumber: Long?, reason: String?
         )
@@ -232,6 +237,9 @@ class MGMResourceClientImpl @Activate constructor(
     override fun reviewRegistrationRequest(
         holdingIdentityShortHash: ShortHash, requestId: UUID, approve: Boolean, reason: String?
     ) = impl.reviewRegistrationRequest(holdingIdentityShortHash, requestId, approve, reason)
+
+    override fun forceDeclineRegistrationRequest(holdingIdentityShortHash: ShortHash, requestId: UUID) =
+        impl.forceDeclineRegistrationRequest(holdingIdentityShortHash, requestId)
 
     override fun suspendMember(
         holdingIdentityShortHash: ShortHash, memberX500Name: MemberX500Name, serialNumber: Long?, reason: String?
@@ -342,6 +350,10 @@ class MGMResourceClientImpl @Activate constructor(
 
         override fun reviewRegistrationRequest(
             holdingIdentityShortHash: ShortHash, requestId: UUID, approve: Boolean, reason: String?
+        ) = throw IllegalStateException(ERROR_MSG)
+
+        override fun forceDeclineRegistrationRequest(
+            holdingIdentityShortHash: ShortHash, requestId: UUID
         ) = throw IllegalStateException(ERROR_MSG)
 
         override fun suspendMember(
@@ -537,6 +549,11 @@ class MGMResourceClientImpl @Activate constructor(
             } else {
                 publishApprovalDecision(DeclineRegistration(reason ?: ""), holdingIdentityShortHash, requestId.toString())
             }
+        }
+
+        override fun forceDeclineRegistrationRequest(holdingIdentityShortHash: ShortHash, requestId: UUID) {
+            mgmHoldingIdentity(holdingIdentityShortHash)
+            publishApprovalDecision(DeclineRegistration(""), holdingIdentityShortHash, requestId.toString())
         }
 
         override fun suspendMember(

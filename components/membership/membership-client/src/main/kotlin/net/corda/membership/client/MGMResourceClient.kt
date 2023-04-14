@@ -16,6 +16,7 @@ import kotlin.jvm.Throws
 /**
  * The MGM ops client to perform group operations.
  */
+@Suppress("TooManyFunctions")
 interface MGMResourceClient : Lifecycle {
 
     /**
@@ -174,6 +175,15 @@ interface MGMResourceClient : Lifecycle {
         requestId: UUID,
         approve: Boolean,
         reason: String? = null,
+    )
+
+    /**
+     * TODO
+     */
+    @Throws(CouldNotFindMemberException::class, MemberNotAnMgmException::class, IllegalArgumentException::class)
+    fun forceDeclineRegistrationRequest(
+        holdingIdentityShortHash: ShortHash,
+        requestId: UUID,
     )
 
     /**
