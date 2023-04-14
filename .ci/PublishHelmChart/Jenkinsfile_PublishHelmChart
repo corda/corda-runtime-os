@@ -6,7 +6,6 @@ import com.r3.build.utils.PublishingUtils
 int cpus = 1
 BuildEnvironment buildEnvironment = BuildEnvironment.AMD64_LINUX
 
-@Field
 PublishingUtils publishingUtils = new PublishingUtils(this)
 
 pipeline {
@@ -82,6 +81,7 @@ pipeline {
                         success {
                             script{
                                 renderWidget("Published Corda helm chart version to Artifactory: ${publishingUtils.getHelmVersionFromYaml()}")
+                                renderWidget("Published Corda helm chart repo name: ${publishingUtils.getHelmRepo()}")
                             }
                         }
                     }
