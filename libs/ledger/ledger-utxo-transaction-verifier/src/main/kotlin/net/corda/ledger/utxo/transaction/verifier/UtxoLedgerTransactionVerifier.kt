@@ -33,7 +33,6 @@ class UtxoLedgerTransactionVerifier(
         verifyNoDuplicateInputsOrReferences(transaction.inputStateRefs, transaction.referenceStateRefs)
         verifyNoInputAndReferenceOverlap(transaction.inputStateRefs, transaction.referenceStateRefs)
         verifyCommands(transaction.commands)
-        verifyNotaryIsWhitelisted()
 
         /**
          * These checks require backchain resolution.
@@ -47,14 +46,12 @@ class UtxoLedgerTransactionVerifier(
         if (allInputs.isEmpty()) {
             return
         }
-        check(allInputs.map { Pair(it.notaryName, it.notaryKey) }.distinct().size == 1) {
+        check(allInputs.map { it.notaryName }.distinct().size == 1) {
             "Input and reference states' notaries need to be the same."
         }
-        check(allInputs.first().notaryName == transaction.notaryName
-                && allInputs.first().notaryKey == transaction.notaryKey ) {
+        check(allInputs.first().notaryName == transaction.notaryName) {
             "Input and reference states' notaries need to be the same as the $subjectClass's notary."
         }
-        // TODO CORE-8958 check rotated notaries
     }
 
     private fun verifyInputsAreOlderThanOutputs() {
