@@ -1,11 +1,8 @@
 package net.corda.flow.application.services.impl.interop.facade
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import net.corda.v5.application.interop.facade.Facade
+import net.corda.v5.application.interop.facade.*
 import java.io.Reader
-import net.corda.v5.application.interop.facade.FacadeId
-import net.corda.v5.application.interop.facade.FacadeMethod
-import net.corda.v5.application.interop.facade.FacadeReader
 import net.corda.v5.application.interop.parameters.ParameterType
 
 /**
@@ -44,11 +41,11 @@ class JacksonFacadeReader(val deserialiser: (Reader) -> FacadeDefinition) : Faca
         methodJson: FacadeMethodDefinition? // A method with neither in nor out parameters will have no methodJson
     ): FacadeMethod {
         val inParams = methodJson?.`in`
-            ?.map { (name, type) -> TypedParameter(name, ParameterType.of(type, aliases)) }
+            ?.map { (name, type) -> ParameterType(name, ParameterType.of(type, aliases)) }
             ?: emptyList()
 
         val outParams = methodJson?.out
-            ?.map { (name, type) -> TypedParameter(name, ParameterType.of(type, aliases)) }
+            ?.map { (name, type) -> ParameterType(name, ParameterType.of(type, aliases)) }
             ?: emptyList()
 
         return FacadeMethod(facadeId, id, methodType, inParams, outParams)
