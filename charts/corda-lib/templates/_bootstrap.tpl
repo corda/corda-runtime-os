@@ -72,7 +72,7 @@ spec:
           {{ include "corda.cryptoDbUserEnv" . | nindent 12 }}
           {{- include "corda.clusterDbEnv" . | nindent 12 }}
         {{- include "corda.generateAndExecuteSql" ( dict "name" "crypto-config" "subCommand" "create-crypto-config" "Values" .Values "Chart" .Chart "Release" .Release "schema" "CRYPTO" "namePostfix" "worker-config" "sqlFile" "crypto-config.sql" "sequenceNumber" 12) | nindent 8 }}
-        {{- if and (hasKey .Values "config") (hasKey .Values.config "vault") (hasKey .Values.config.vault "url") }} 
+        {{- if (((.Values).config).vault).url }} 
         - name: 14-apply-db-secrets-to-vault
           image: curlimages/curl:8.00.1
           imagePullPolicy: {{ .Values.imagePullPolicy }}
@@ -425,14 +425,14 @@ a second init container to execute the output SQL to the relevant database
          {{- end -}}         
          
          {{- if not (eq .name "rpc") -}}
-           {{- if and (hasKey .Values "config") (hasKey .Values.config "vault") (hasKey .Values.config.vault "url") (not (eq .name "crypto-config")) -}} 
+           {{- if and (((.Values).config).vault).url  (not (eq .name "crypto-config")) -}} 
              '-t', 'VAULT', '--vault-path', 'dbsecrets', '--key', {{ .name | quote }},
            {{- else -}}
              '--salt', "$(SALT)", '--passphrase', "$(PASSPHRASE)",
            {{- end -}} 
          {{- end -}}
          
-         {{- if and (eq .name "crypto-config") (hasKey .Values "config") (hasKey .Values.config "vault") (hasKey .Values.config.vault "url") -}}
+         {{- if and (eq .name "crypto-config") (((.Values).config).vault).url  -}}
             '--vault-path', 'cryptosecrets', '-ks', 'salt', '-kp', 'passphrase',
          {{- end -}}
          
