@@ -135,16 +135,39 @@ internal class OutboundMessageProcessor(
         } else if (!linkManagerHostingMap.isHostedLocally(cordaSource)) {
             "source ID is not locally hosted"
         } else if (linkManagerHostingMap.isHostedLocally(cordaDestination)) {
-            when (val result = networkMessagingValidator.validateInbound(source.toCorda(), destination.toCorda())) {
-                is Either.Left -> null
-                is Either.Right -> result.b
-            }
+            validateCanMessage(cordaSource, cordaDestination, outbound = true, inbound = true)
         } else {
-            when (val result = networkMessagingValidator.validateOutbound(source.toCorda(), destination.toCorda())) {
+            validateCanMessage(cordaSource, cordaDestination, outbound = true)
+        }
+    }
+
+    /**
+     * Validates that a message can be sent between network participants in either an outbound or inbound direction,
+     * or both.
+     *
+     * Returns error message if either outbound or inbound validation failed or null if validation was successful.
+     */
+    private fun validateCanMessage(
+        source: net.corda.virtualnode.HoldingIdentity,
+        destination: net.corda.virtualnode.HoldingIdentity,
+        outbound: Boolean = false,
+        inbound: Boolean = false
+    ) : String? {
+        val outResult = if(outbound) {
+            when (val result = networkMessagingValidator.validateOutbound(source, destination)) {
                 is Either.Left -> null
                 is Either.Right -> result.b
             }
-        }
+        } else null
+
+        val inResult = if(inbound) {
+            when (val result = networkMessagingValidator.validateInbound(source, destination)) {
+                is Either.Left -> null
+                is Either.Right -> result.b
+            }
+        } else null
+
+        return outResult ?: inResult
     }
 
     private fun processUnauthenticatedMessage(message: UnauthenticatedMessage): List<Record<String, *>> {
