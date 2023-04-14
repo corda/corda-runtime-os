@@ -45,7 +45,8 @@ class UtxoLedgerTransactionVerificationServiceImpl @Activate constructor(
     @Suspendable
     override fun verify(transaction: UtxoLedgerTransaction) {
 
-        verifyNotary(transaction)
+        val signedGroupParameters = fetchAndVerifySignedGroupParameters(transaction)
+        verifyNotaryAllowed(transaction, signedGroupParameters)
 
         val verificationResult = externalEventExecutor.execute(
             TransactionVerificationExternalEventFactory::class.java,
@@ -66,13 +67,7 @@ class UtxoLedgerTransactionVerificationServiceImpl @Activate constructor(
     }
 
     @Suspendable
-    private fun verifyNotary(transaction: UtxoLedgerTransaction) {
-        val signedGroupParameters = fetchSignedGroupParameters(transaction)
-        verifyNotaryAllowed(transaction, signedGroupParameters)
-    }
-
-    @Suspendable
-    private fun fetchSignedGroupParameters(transaction: UtxoLedgerTransaction): SignedGroupParameters {
+    private fun fetchAndVerifySignedGroupParameters(transaction: UtxoLedgerTransaction): SignedGroupParameters {
         val membershipGroupParametersHashString =
             (transaction.metadata as TransactionMetadataInternal).getMembershipGroupParametersHash()
         requireNotNull(membershipGroupParametersHashString) {
