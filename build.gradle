@@ -290,11 +290,11 @@ allprojects {
 void configureKotlinForOSGi(Configuration configuration) {
     configuration.resolutionStrategy {
         dependencySubstitution {
-            substitute module('org.jetbrains.kotlin:kotlin-stdlib-jdk8') with module("org.jetbrains.kotlin:kotlin-osgi-bundle:$kotlinVersion")
-            substitute module('org.jetbrains.kotlin:kotlin-stdlib-jdk7') with module("org.jetbrains.kotlin:kotlin-osgi-bundle:$kotlinVersion")
-            substitute module('org.jetbrains.kotlin:kotlin-stdlib-common') with module("org.jetbrains.kotlin:kotlin-osgi-bundle:$kotlinVersion")
-            substitute module('org.jetbrains.kotlin:kotlin-stdlib') with module("org.jetbrains.kotlin:kotlin-osgi-bundle:$kotlinVersion")
-            substitute module('org.jetbrains.kotlin:kotlin-reflect') with module("org.jetbrains.kotlin:kotlin-osgi-bundle:$kotlinVersion")
+            substitute module('org.jetbrains.kotlin:kotlin-stdlib-jdk8') using module("org.jetbrains.kotlin:kotlin-osgi-bundle:$kotlinVersion")
+            substitute module('org.jetbrains.kotlin:kotlin-stdlib-jdk7') using module("org.jetbrains.kotlin:kotlin-osgi-bundle:$kotlinVersion")
+            substitute module('org.jetbrains.kotlin:kotlin-stdlib-common') using module("org.jetbrains.kotlin:kotlin-osgi-bundle:$kotlinVersion")
+            substitute module('org.jetbrains.kotlin:kotlin-stdlib') using module("org.jetbrains.kotlin:kotlin-osgi-bundle:$kotlinVersion")
+            substitute module('org.jetbrains.kotlin:kotlin-reflect') using module("org.jetbrains.kotlin:kotlin-osgi-bundle:$kotlinVersion")
         }
     }
 }
