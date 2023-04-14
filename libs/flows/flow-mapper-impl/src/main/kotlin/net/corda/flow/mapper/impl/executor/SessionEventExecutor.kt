@@ -6,6 +6,7 @@ import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.session.SessionAck
+import net.corda.data.flow.event.session.SessionClose
 import net.corda.data.flow.event.session.SessionError
 import net.corda.data.flow.state.mapper.FlowMapperState
 import net.corda.data.flow.state.mapper.FlowMapperStateType
@@ -96,16 +97,20 @@ class SessionEventExecutor(
                     log.warn("Attempted to send a message but flow mapper state is in CLOSING. Session ID: ${sessionEvent.sessionId}")
                     FlowMapperResult(flowMapperState, listOf())
                 } else {
-                    val outputRecord =
-                        createP2PRecord(
-                            sessionEvent,
-                            SessionAck(),
-                            instant,
-                            sessionEventSerializer,
-                            appMessageFactory,
-                            flowConfig
-                        )
-                    FlowMapperResult(flowMapperState, listOf(outputRecord))
+                    if (sessionEvent.payload is SessionClose) {
+                        val outputRecord =
+                            createP2PRecord(
+                                sessionEvent,
+                                SessionAck(),
+                                instant,
+                                sessionEventSerializer,
+                                appMessageFactory,
+                                flowConfig
+                            )
+                        FlowMapperResult(flowMapperState, listOf(outputRecord))
+                    } else {
+                        FlowMapperResult(flowMapperState, listOf())
+                    }
                 }
             }
             FlowMapperStateType.OPEN -> {
