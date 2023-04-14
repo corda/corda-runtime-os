@@ -34,6 +34,7 @@ import net.cordapp.testing.smoketests.flow.messages.RpcSmokeTestOutput
 import org.slf4j.LoggerFactory
 import java.time.Instant
 import java.util.UUID
+import net.corda.v5.application.messaging.ExternalMessaging
 
 @Suppress("unused", "TooManyFunctions")
 @InitiatingFlow(protocol = "smoke-test-protocol")
@@ -57,6 +58,7 @@ class RpcSmokeTestFlow : ClientStartableFlow {
         "persistence_find_bulk" to this::persistenceFindDogs,
         "persistence_findall" to { persistenceFindAllDogs() },
         "persistence_query" to { persistenceQueryDogs() },
+        "throw_platform_error" to this::throwPlatformError,
         "throw_session_error" to this::closeSessionThenSend,
         "subflow_passed_in_initiated_session" to { createSessionsInInitiatingFlowAndPassToInlineFlow(it, true) },
         "subflow_passed_in_non_initiated_session" to { createSessionsInInitiatingFlowAndPassToInlineFlow(it, false) },
@@ -108,6 +110,9 @@ class RpcSmokeTestFlow : ClientStartableFlow {
 
     @CordaInject
     lateinit var digestService: DigestService
+
+    @CordaInject
+    lateinit var externalMessaging: ExternalMessaging
 
     @Suspendable
     override fun call(requestBody: ClientRequestBody): String {
@@ -223,6 +228,18 @@ class RpcSmokeTestFlow : ClientStartableFlow {
             session.send(InitiatedSmokeTestMessage("test 2"))
         } catch (e: Exception) {
             log.info("Caught exception for '${session}'...", e)
+            return e.message ?: "Error with no message"
+        }
+
+        return "No error thrown"
+    }
+
+    @Suspendable
+    private fun throwPlatformError(input: RpcSmokeTestInput): String {
+        try {
+            externalMessaging.send("junk", "junk")
+        } catch (e: Exception) {
+            log.info("Caught exception for external Messaging...", e)
             return e.message ?: "Error with no message"
         }
 
