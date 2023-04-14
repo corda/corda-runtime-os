@@ -41,7 +41,7 @@
       "default": 3
     },
     "processorTimeout": {
-      "description": "The length of time in milliseconds that Corda waits for an individual event to process. This is applied if the subscription must also maintain a state that needs to be periodically serviced.",
+      "description": "The length of time in milliseconds that Corda waits for an individual event to process. This is applied if the subscription must also maintain a state that needs to be periodically serviced. If using KAFKA as the message bus. This value needs to be set lower than the kafka consumer max.poll.interval.ms config value.",
       "type": "integer",
       "minimum": 1000,
       "maximum": 2147483647,

@@ -33,11 +33,11 @@
           "default": 60000
         },
         "cleanupTime": {
-          "description": "The length of time in milliseconds that the flow mapper holds onto its state for a flow that has finished.",
+          "description": "The length of time in milliseconds that the flow mapper holds onto its state for a flow that has finished. This value should be at least 2 times larger than the session.p2pTTL.",
           "type": "integer",
-          "minimum": 10000,
+          "minimum": 1000,
           "maximum": 2147483647,
-          "default": 480000
+          "default": 600000
         }
       },
       "additionalProperties": false
@@ -55,32 +55,32 @@
           "default": 120000
         },
         "heartbeatTimeout": {
-          "description": "The length of time in milliseconds that Corda waits when no message has been received from a counterparty before causing the session to error.",
+          "description": "The length of time in milliseconds that Corda waits when no message has been received from a counterparty before causing the session to error. This should be set at least 2 times larger than session.messageResendWindow.",
           "type": "integer",
-          "minimum": 600000,
+          "minimum": 1000,
           "maximum": 2147483647,
-          "default": 3600000
+          "default": 1800000
         },
         "missingCounterpartyTimeout": {
-          "description": "Length of time to wait when the counterparty can't be found in a member lookup before causing the session to error, in milliseconds",
+          "description": "Length of time to wait when the counterparty can't be found in a member lookup before causing the session to error, in milliseconds. ",
           "type": "integer",
-          "minimum": 30000,
+          "minimum": 1000,
           "maximum": 2147483647,
           "default": 300000
         },
           "p2pTTL": {
-          "description": "The TTL set in milliseconds. This is added to the current time and set on messages passed to the P2P layer to send to a counterparty.",
+          "description": "The TTL set in milliseconds. This is added to the current time and set on messages passed to the P2P layer to send to a counterparty. Messages received with a TTL timestamp set in the past will be discarded.",
           "type": "integer",
           "minimum": 10000,
           "maximum": 2147483647,
-          "default": 240000
+          "default": 300000
         },
         "cleanupTime": {
-          "description": "The length of time in milliseconds that the flow mapper holds onto its state for a session after the session has finished.",
+          "description": "The length of time in milliseconds that the flow mapper holds onto its state for a session after the session has finished. This value should be at least 2 times larger than the session.p2pTTL",
           "type": "integer",
           "minimum": 10000,
           "maximum": 2147483647,
-          "default": 480000
+          "default": 600000
         }
       },
       "additionalProperties": false
@@ -93,9 +93,9 @@
         "messageResendWindow": {
           "description": "The length of time in milliseconds that Corda waits before resending unprocessed external events.",
           "type": "integer",
-          "minimum": 100,
+          "minimum": 1000,
           "maximum": 2147483647,
-          "default": 5000
+          "default": 60000
         },
         "maxRetries": {
           "description": "The maximum number of times Corda retries a request before returning an exception.",
