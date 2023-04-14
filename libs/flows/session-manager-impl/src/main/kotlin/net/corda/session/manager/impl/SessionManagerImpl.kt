@@ -229,7 +229,6 @@ class SessionManagerImpl @Activate constructor(
         }
 
         return if (sessionStatus == SessionStateType.CREATED) {
-            logger.info("We're in CREATED")
             pastEventsAndErrors.firstOrNull { it.payload is SessionInit }?.let { listOf(it) } ?: emptyList()
         } else {
             pastEventsAndErrors
