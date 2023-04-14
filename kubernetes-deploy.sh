@@ -1,4 +1,4 @@
-#! /bin/zsh
+#! /bin/bash
 
 # Set up Corda on Kubernetes; must be run from the root of corda-runtime-os
 
