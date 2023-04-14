@@ -91,6 +91,10 @@ pipeline {
     }
 }
 
+def gradleCmd() {
+    return isUnix() ? './gradlew' : './gradlew.bat'
+}
+
 def gradlewMinimumLogging(String... args) {
     def allArgs = args.join(' ')
     sh "${gradleCmd()} ${allArgs} \${GRADLE_ADDITIONAL_ARGS} \${GRADLE_PERFORMANCE_TUNING}"
