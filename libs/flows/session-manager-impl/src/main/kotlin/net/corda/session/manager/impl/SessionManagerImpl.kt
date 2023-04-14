@@ -250,14 +250,13 @@ class SessionManagerImpl @Activate constructor(
         messageResendWindow: Long,
         dispatchedEvents: List<SessionEvent>,
     ) {
-        sessionState.sendEventsState.undeliveredMessages = sessionState.sendEventsState.undeliveredMessages.filter {
-            it.payload !is SessionError
-        }.map {
-            if (dispatchedEvents.toSet().contains(it)) {
-                it.timestamp = instant.plusMillis(messageResendWindow)
+        sessionState.sendEventsState.undeliveredMessages = sessionState.sendEventsState.undeliveredMessages
+            .filter { it.payload !is SessionError }
+            .onEach { message ->
+                if (message in dispatchedEvents) {
+                    message.timestamp = instant.plusMillis(messageResendWindow)
+                }
             }
-            it
-        }
     }
 
     /**
