@@ -208,7 +208,6 @@ abstract class DeployableContainerBuilder extends DefaultTask {
         JibContainerBuilder builder = null
 
         if (useDaemon.get()) {
-
             logger.info("Daemon available")
             def imageName = "${baseImageTag.get().empty ? baseImageName.get() : "${baseImageName.get()}:${baseImageTag.get()}"}"
             if (imageName.endsWith("-local")) {
