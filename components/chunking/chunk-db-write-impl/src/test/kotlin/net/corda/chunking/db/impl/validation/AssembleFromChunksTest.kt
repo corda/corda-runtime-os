@@ -4,6 +4,7 @@ import com.google.common.jimfs.Jimfs
 import net.corda.chunking.ChunkReader
 import net.corda.chunking.ChunkReaderFactory
 import net.corda.chunking.ChunksCombined
+import net.corda.chunking.Constants.Companion.CHUNK_FILENAME_KEY
 import net.corda.chunking.RequestId
 import net.corda.chunking.db.impl.AllChunksReceived
 import net.corda.chunking.db.impl.persistence.ChunkPersistence
@@ -24,10 +25,16 @@ import java.util.UUID
 
 internal class AssembleFromChunksTest {
     lateinit var fs: FileSystem
+    companion object {
+        const val expectedFileName = "some.cpi"
 
+    }
+    private var properties: MutableMap<String, String?>? = null
     @BeforeEach
     fun beforeEach() {
         fs = Jimfs.newFileSystem()
+        properties = mutableMapOf()
+        properties!![CHUNK_FILENAME_KEY] = expectedFileName
     }
 
     @AfterEach
@@ -48,12 +55,11 @@ internal class AssembleFromChunksTest {
             override fun forEachChunk(requestId: RequestId, onChunk: (chunk: Chunk) -> Unit) = onChunk(Chunk())
         }
         val requestId = UUID.randomUUID().toString()
-        val expectedFileName = "some.cpi"
         val expectedChecksum = parseSecureHash("DUMMY:1234567890")
         val chunkReader = object : ChunkReader {
             var cb: ChunksCombined? = null
             override fun read(chunk: Chunk) {
-                cb!!.onChunksCombined(expectedFileName, expectedTempDir, expectedChecksum, emptyMap())
+                cb!!.onChunksCombined(expectedTempDir, expectedChecksum, properties)
             }
 
             override fun onComplete(chunksCombinedCallback: ChunksCombined) {
@@ -68,7 +74,6 @@ internal class AssembleFromChunksTest {
         assertThat(fileInfo.name).isEqualTo(expectedFileName)
         assertThat(fileInfo.path).isEqualTo(expectedTempDir)
         assertThat(fileInfo.checksum).isEqualTo(expectedChecksum)
-        assertThat(fileInfo.properties!!.isEmpty()).isTrue
     }
 
     @Test

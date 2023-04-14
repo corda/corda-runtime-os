@@ -1,6 +1,7 @@
 package net.corda.chunking.db.impl.validation
 
 import net.corda.chunking.ChunkReaderFactory
+import net.corda.chunking.Constants.Companion.CHUNK_FILENAME_KEY
 import net.corda.chunking.RequestId
 import net.corda.chunking.db.impl.cpi.liquibase.LiquibaseScriptExtractor
 import net.corda.chunking.db.impl.persistence.ChunkPersistence
@@ -42,8 +43,8 @@ fun assembleFileFromChunks(
 
     // Set up chunk reader.  If onComplete is never called, we've failed.
     val reader = chunkReaderFactory.create(cacheDir).apply {
-        onComplete { originalFileName: String?, tempPathOfBinary: Path, fileChecksum: SecureHash, properties: Map<String, String?>? ->
-            fileName = originalFileName
+        onComplete {  tempPathOfBinary: Path, fileChecksum: SecureHash, properties: Map<String, String?>? ->
+            fileName = properties?.get(CHUNK_FILENAME_KEY)
             tempPath = tempPathOfBinary
             checksum = fileChecksum
             localProperties = properties

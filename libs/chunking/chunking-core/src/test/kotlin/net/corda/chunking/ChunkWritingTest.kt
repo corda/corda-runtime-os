@@ -8,6 +8,7 @@ import java.nio.file.Path
 import java.nio.file.StandardOpenOption
 import java.util.UUID
 import net.corda.chunking.Constants.Companion.APP_LEVEL_CHUNK_MESSAGE_OVERHEAD
+import net.corda.chunking.Constants.Companion.CHUNK_FILENAME_KEY
 import net.corda.chunking.Constants.Companion.KB
 import net.corda.chunking.Constants.Companion.MB
 import net.corda.chunking.impl.ChunkBuilderServiceImpl
@@ -77,7 +78,8 @@ class ChunkWritingTest {
         val fileName = randomFileName()
         val writer = ChunkWriterFactory.create(1 * MB)
         writer.apply {
-            this.onChunk { chunk -> assertThat(chunk.properties.items.find { it.key == "FileName" }?.value).isEqualTo(fileName) }
+            this.onChunk { chunk -> assertThat(chunk.properties.items.find
+            { it.key == CHUNK_FILENAME_KEY }?.value).isEqualTo(fileName) }
         }
 
         val path = createFile((32 * KB).toLong())

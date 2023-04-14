@@ -8,6 +8,7 @@ import java.nio.file.Path
 import java.nio.file.StandardOpenOption
 import java.util.UUID
 import net.corda.chunking.Constants.Companion.APP_LEVEL_CHUNK_MESSAGE_OVERHEAD
+import net.corda.chunking.Constants.Companion.CHUNK_FILENAME_KEY
 import net.corda.chunking.Constants.Companion.MB
 import net.corda.chunking.impl.ChunkBuilderServiceImpl
 import net.corda.chunking.impl.ChunkReaderImpl
@@ -52,8 +53,8 @@ class ChunkReadingTest {
         var actualFileName: String? = null
         var actualPath: Path? = null
         val reader = chunkReaderFactory.create(Files.createDirectory(fs.getPath("temp"))).apply {
-            onComplete { originalFileName, tempBinaryPath, _, _ ->
-                actualFileName = originalFileName
+            onComplete {tempBinaryPath, _, properties ->
+                actualFileName = properties?.get(CHUNK_FILENAME_KEY)
                 actualPath = tempBinaryPath
             }
         }
@@ -76,7 +77,7 @@ class ChunkReadingTest {
 
         var readCompleted = false
         val reader = chunkReaderFactory.create(Files.createDirectory(fs.getPath("temp"))).apply {
-            onComplete { _, _, _, _ -> readCompleted = true }
+            onComplete { _, _, _ -> readCompleted = true }
         }
 
         val chunkCount = 5
@@ -111,8 +112,8 @@ class ChunkReadingTest {
         var actualPath: Path? = null
         var readCompleted = false
         val reader = chunkReaderFactory.create(Files.createDirectory(fs.getPath("temp"))).apply {
-            onComplete { originalFileName, tempBinaryPath, _, _ ->
-                actualFileName = originalFileName
+            onComplete {tempBinaryPath, _, properties ->
+                actualFileName = properties?.get(CHUNK_FILENAME_KEY)
                 actualPath = tempBinaryPath
                 readCompleted = true
             }
@@ -154,7 +155,7 @@ class ChunkReadingTest {
         var completionCount = 0
 
         val reader = ChunkReaderImpl(Files.createDirectory(fs.getPath("temp"))).apply {
-            onComplete { _, _, _, _ -> completionCount++ }
+            onComplete { _, _, _-> completionCount++ }
         }
 
         val fileCount = 5
@@ -213,9 +214,9 @@ class ChunkReadingTest {
         lateinit var actualPath: Path
         var actualFileName: String? = null
         val reader = ChunkReaderImpl(Files.createDirectory(fs.getPath("temp"))).apply {
-            onComplete { originalFileName, tempPathOfBinary, _, _ ->
+            onComplete {tempPathOfBinary, _, properties ->
                 actualPath = tempPathOfBinary
-                actualFileName = originalFileName
+                actualFileName = properties?.get(CHUNK_FILENAME_KEY)
             }
         }
 

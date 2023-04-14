@@ -9,6 +9,7 @@ import java.util.UUID
 import net.corda.chunking.ChunkReaderFactoryImpl
 import net.corda.chunking.ChunkWriterFactory
 import net.corda.chunking.Constants.Companion.APP_LEVEL_CHUNK_MESSAGE_OVERHEAD
+import net.corda.chunking.Constants.Companion.CHUNK_FILENAME_KEY
 import net.corda.chunking.datamodel.ChunkingEntities
 import net.corda.chunking.db.impl.persistence.database.DatabaseChunkPersistence
 import net.corda.data.chunking.Chunk
@@ -129,8 +130,8 @@ class RecreateBinaryTest {
         val destDir = fs.getPath("destDir").apply { Files.createDirectories(this) }
 
         val chunkReader = ChunkReaderFactoryImpl.create(destDir).apply {
-            this.onComplete { originalFileName: String?, tempPathOfBinary: Path, _: SecureHash, _ ->
-                actualFileName = originalFileName
+            this.onComplete {tempPathOfBinary: Path, _: SecureHash, properties ->
+                actualFileName = properties?.get(CHUNK_FILENAME_KEY)
                 tempPath = tempPathOfBinary
             }
         }

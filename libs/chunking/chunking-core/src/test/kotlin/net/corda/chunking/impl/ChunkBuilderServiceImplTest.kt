@@ -2,6 +2,7 @@ package net.corda.chunking.impl
 
 import java.nio.ByteBuffer
 import net.corda.chunking.Checksum
+import net.corda.chunking.Constants.Companion.CHUNK_FILENAME_KEY
 import net.corda.crypto.core.toAvro
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
@@ -19,7 +20,7 @@ class ChunkBuilderServiceImplTest {
         const val chunkNumber = 1
         const val offset = 30L
         const val offsetIndex = "Offset"
-        const val fileNameIndex = "FileName"
+        const val fileNameIndex = CHUNK_FILENAME_KEY
         const val fileName = "MyFileName"
         val chunkBytes = ByteBuffer.wrap("chunk".toByteArray())
     }

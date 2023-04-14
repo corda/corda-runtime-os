@@ -72,7 +72,6 @@ class DatabaseChunkPersistence(private val entityManagerFactory: EntityManagerFa
             // Persist this chunk.
             val chunkEntity = ChunkEntity(
                 chunk.requestId,
-                chunk.properties.items.find {it.key == "FileName"}?.value,
                 cordaSecureHash?.toString(),
                 chunk.partNumber,
                 chunk.offset,
