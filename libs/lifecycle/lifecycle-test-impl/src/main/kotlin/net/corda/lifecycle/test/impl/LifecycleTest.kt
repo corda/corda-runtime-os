@@ -228,6 +228,7 @@ class LifecycleTest<T : Lifecycle>(
      * @param dependency the coordinator name of the dependency to toggle
      * @param verificationWhenDown can be used to assert expectations for once the dependency is down
      * @param verificationWhenUp can be used to assert expectations for once the dependency is back up
+     * @param onUppingDependency additional actions after [dependency] going up
      */
     fun toggleDependency(
         dependency: LifecycleCoordinatorName,
