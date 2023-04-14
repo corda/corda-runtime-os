@@ -35,6 +35,12 @@ pipeline {
         GRADLE_ADDITIONAL_ARGS = ''
         GRADLE_PERFORMANCE_TUNING = '--parallel --build-cache'
         GRADLE_USER_HOME = "/host_tmp/gradle"
+        ARTIFACTORY_CREDENTIALS = credentials('artifactory-credentials')
+        BUILD_CACHE_CREDENTIALS = credentials('gradle-ent-cache-credentials')
+        BUILD_CACHE_PASSWORD = "${env.BUILD_CACHE_CREDENTIALS_PSW}"
+        BUILD_CACHE_USERNAME = "${env.BUILD_CACHE_CREDENTIALS_USR}"
+        CORDA_ARTIFACTORY_PASSWORD = "${env.ARTIFACTORY_CREDENTIALS_PSW}"
+        CORDA_ARTIFACTORY_USERNAME = "${env.ARTIFACTORY_CREDENTIALS_USR}"
     }
 
     stages {
