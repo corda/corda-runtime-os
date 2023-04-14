@@ -64,6 +64,11 @@ class MembershipGroupReaderImpl(
                         memberEntry.value.filterBy(MembershipStatusFilter.PENDING)
                     }
                 }
+            MembershipStatusFilter.ACTIVE_OR_SUSPENDED_IF_PRESENT_OR_PENDING -> groupBy { it.name }.flatMap {
+                it.value.filterBy(MembershipStatusFilter.ACTIVE_OR_SUSPENDED).ifEmpty {
+                    it.value.filterBy(MembershipStatusFilter.PENDING)
+                }
+            }
             else -> this.filter { it.status == MEMBER_STATUS_ACTIVE || it.status == MEMBER_STATUS_SUSPENDED }
         }
     }

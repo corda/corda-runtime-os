@@ -11,6 +11,7 @@ import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerGroupParametersPers
 import net.corda.ledger.utxo.flow.impl.transaction.verifier.external.events.TransactionVerificationExternalEventFactory
 import net.corda.ledger.utxo.flow.impl.transaction.verifier.external.events.TransactionVerificationParameters
 import net.corda.ledger.utxo.transaction.verifier.SignedGroupParametersVerifier
+import net.corda.membership.lib.SignedGroupParameters
 import net.corda.sandbox.type.SandboxConstants.CORDA_SYSTEM_SERVICE
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.v5.application.serialization.SerializationService
@@ -24,8 +25,8 @@ import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 import java.nio.ByteBuffer
 
 @Component(
-    service = [ UtxoLedgerTransactionVerificationService::class, UsedByFlow::class ],
-    property = [ CORDA_SYSTEM_SERVICE ],
+    service = [UtxoLedgerTransactionVerificationService::class, UsedByFlow::class],
+    property = [CORDA_SYSTEM_SERVICE],
     scope = PROTOTYPE
 )
 class UtxoLedgerTransactionVerificationServiceImpl @Activate constructor(
@@ -43,24 +44,10 @@ class UtxoLedgerTransactionVerificationServiceImpl @Activate constructor(
 
     @Suspendable
     override fun verify(transaction: UtxoLedgerTransaction) {
-        val membershipGroupParametersHashString =
-            (transaction.metadata as TransactionMetadataInternal).getMembershipGroupParametersHash()
-        // todo CORE-8956, CORE-8958 requireNotNull
-        if (membershipGroupParametersHashString != null) {
-            val currentGroupParameters = currentGroupParametersService.get()
-            val signedGroupParameters =
-                if (currentGroupParameters.hash.toString() == membershipGroupParametersHashString) {
-                    currentGroupParameters
-                } else {
-                    val membershipGroupParametersHash = parseSecureHash(membershipGroupParametersHashString)
-                    utxoLedgerGroupParametersPersistenceService.find(membershipGroupParametersHash)
-                }
-            signedGroupParametersVerifier.verify(
-                transaction,
-                signedGroupParameters,
-                currentGroupParametersService.getMgmKeys()
-            )
-        }
+
+        val signedGroupParameters = fetchAndVerifySignedGroupParameters(transaction)
+        verifyNotaryAllowed(transaction, signedGroupParameters)
+
         val verificationResult = externalEventExecutor.execute(
             TransactionVerificationExternalEventFactory::class.java,
             TransactionVerificationParameters(
@@ -77,6 +64,33 @@ class UtxoLedgerTransactionVerificationServiceImpl @Activate constructor(
                 verificationResult.errorMessage
             )
         }
+    }
+
+    @Suspendable
+    private fun fetchAndVerifySignedGroupParameters(transaction: UtxoLedgerTransaction): SignedGroupParameters {
+        val membershipGroupParametersHashString =
+            (transaction.metadata as TransactionMetadataInternal).getMembershipGroupParametersHash()
+        requireNotNull(membershipGroupParametersHashString) {
+            "Membership group parameters hash cannot be found in the transaction metadata."
+        }
+
+        val currentGroupParameters = currentGroupParametersService.get()
+        val signedGroupParameters =
+            if (currentGroupParameters.hash.toString() == membershipGroupParametersHashString) {
+                currentGroupParameters
+            } else {
+                val membershipGroupParametersHash = parseSecureHash(membershipGroupParametersHashString)
+                utxoLedgerGroupParametersPersistenceService.find(membershipGroupParametersHash)
+            }
+        requireNotNull(signedGroupParameters) {
+            "Signed group parameters $membershipGroupParametersHashString related to the transaction ${transaction.id} cannot be accessed."
+        }
+        signedGroupParametersVerifier.verify(
+            transaction,
+            signedGroupParameters,
+            currentGroupParametersService.getMgmKeys()
+        )
+        return signedGroupParameters
     }
 
     private fun UtxoLedgerTransaction.toContainer() =
