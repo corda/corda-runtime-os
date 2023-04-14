@@ -1,5 +1,6 @@
 #! /bin/zsh
 
+# Currently the init containers are not repeatble, so ensure we start from scratch each time
 kubectl delete namespace corda
 kubectl create namespace corda
 
