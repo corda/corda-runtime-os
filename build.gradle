@@ -60,11 +60,11 @@ def revision = {
 void configureKotlinForOSGi(Configuration configuration) {
     configuration.resolutionStrategy {
         dependencySubstitution {
-            substitute module('org.jetbrains.kotlin:kotlin-stdlib-jdk8') with module("org.jetbrains.kotlin:kotlin-osgi-bundle:$kotlinVersion")
-            substitute module('org.jetbrains.kotlin:kotlin-stdlib-jdk7') with module("org.jetbrains.kotlin:kotlin-osgi-bundle:$kotlinVersion")
-            substitute module('org.jetbrains.kotlin:kotlin-stdlib-common') with module("org.jetbrains.kotlin:kotlin-osgi-bundle:$kotlinVersion")
-            substitute module('org.jetbrains.kotlin:kotlin-stdlib') with module("org.jetbrains.kotlin:kotlin-osgi-bundle:$kotlinVersion")
-            substitute module('org.jetbrains.kotlin:kotlin-reflect') with module("org.jetbrains.kotlin:kotlin-osgi-bundle:$kotlinVersion")
+            substitute module('org.jetbrains.kotlin:kotlin-stdlib-jdk8') using module("org.jetbrains.kotlin:kotlin-osgi-bundle:$kotlinVersion")
+            substitute module('org.jetbrains.kotlin:kotlin-stdlib-jdk7') using module("org.jetbrains.kotlin:kotlin-osgi-bundle:$kotlinVersion")
+            substitute module('org.jetbrains.kotlin:kotlin-stdlib-common') using module("org.jetbrains.kotlin:kotlin-osgi-bundle:$kotlinVersion")
+            substitute module('org.jetbrains.kotlin:kotlin-stdlib') using module("org.jetbrains.kotlin:kotlin-osgi-bundle:$kotlinVersion")
+            substitute module('org.jetbrains.kotlin:kotlin-reflect') using module("org.jetbrains.kotlin:kotlin-osgi-bundle:$kotlinVersion")
         }
     }
 }
@@ -116,6 +116,31 @@ subprojects {
                 languageVersion = of(javaVersion.majorVersion.toInteger())
             }
             withSourcesJar()
+        }
+
+        tasks.withType(JavaCompile).configureEach {
+            options.compilerArgs << '-parameters'
+
+            options.encoding = 'UTF-8'
+        }
+
+        // Added to support junit5 tests
+        tasks.withType(Test).configureEach {
+            useJUnitPlatform {
+                excludeTags project.hasProperty('runUnstableTests') ? 'runAllTestsNoExclusions' : 'Unstable'
+            }
+
+            doFirst {
+                // Create all temporary files within the build directory.
+                systemProperty 'java.io.tmpdir', buildDir.absolutePath
+            }
+
+            retry {
+                if (System.getenv().containsKey("JENKINS_URL")) {
+                    maxRetries = 2
+                    maxFailures = 10
+                }
+            }
         }
     }
 
@@ -246,13 +271,6 @@ subprojects {
         }
     }
 
-    tasks.withType(JavaCompile).configureEach {
-        def compilerArgs = options.compilerArgs
-        compilerArgs << '-parameters'
-
-        options.encoding = 'UTF-8'
-    }
-
     // TODO: as above, this may not apply to all modules, so maybe should be moved out
     tasks.withType(Jar).matching { it.name != 'cpk' && it.name != 'cpb' }.configureEach {
         manifest {
@@ -262,25 +280,6 @@ subprojects {
             // NOTE: this needs to be reverted to a URL with the version once the URL structure has been defined.
 //                attributes("Corda-Docs-Link": "https://docs.corda.net/docs/corda-os/$cordaVersion")
             attributes("Corda-Docs-Link": "https://docs.r3.com/")
-        }
-    }
-
-    // Added to support junit5 tests
-    tasks.withType(Test).configureEach {
-        useJUnitPlatform(){
-            excludeTags project.hasProperty('runUnstableTests') ? 'runAllTestsNoExclusions' : 'Unstable'
-        }
-
-        doFirst {
-            // Create all temporary files within the build directory.
-            systemProperty 'java.io.tmpdir', buildDir.absolutePath
-        }
-
-        retry {
-            if (System.getenv().containsKey("JENKINS_URL")) {
-                maxRetries = 2
-                maxFailures = 10
-            }
         }
     }
 
