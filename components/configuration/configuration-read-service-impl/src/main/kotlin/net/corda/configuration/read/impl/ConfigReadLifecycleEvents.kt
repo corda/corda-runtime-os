@@ -25,7 +25,7 @@ internal class SetupConfigSubscription : LifecycleEvent
  *
  * @param config A map of changed keys to changed configuration.
  */
-internal data class NewConfigReceived(val config: Map<String, SmartConfig>, val isInitialConfig: Boolean = false) : LifecycleEvent
+internal data class NewConfigReceived(val config: Map<String, SmartConfig>) : LifecycleEvent
 
 /**
  * A new configuration change handler has been added by another component
@@ -40,3 +40,5 @@ internal data class ConfigRegistrationAdd(val registration: ConfigurationChangeR
  * @param registration The removed registration
  */
 internal data class ConfigRegistrationRemove(val registration: ConfigurationChangeRegistration) : LifecycleEvent
+
+internal object ConfigOnSnapshotRun : LifecycleEvent

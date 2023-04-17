@@ -45,8 +45,9 @@ internal class ConfigProcessor(
                 addToCache(configSection, configuration)
             }
 
-            coordinator.postEvent(NewConfigReceived(config, isInitialConfig = true))
+            coordinator.postEvent(NewConfigReceived(config))
         }
+        coordinator.postEvent(ConfigOnSnapshotRun)
     }
 
     override fun onNext(

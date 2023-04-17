@@ -86,18 +86,19 @@ internal class ConfigReadServiceEventHandler(
                 setupConfigSubscription(coordinator)
             }
 
+            is ConfigOnSnapshotRun -> {
+                // Only set LifecycleStatus.UP for coordinator after the initial config is read from Kafka.
+                // This is to make sure config reconciler will not start reconciling before its
+                // kafka reader (config read service) has read the initial config from Kafka, otherwise
+                // the config reconciler understands empty Kafka and tries to reconcile the full DB config.
+                coordinator.updateStatus(LifecycleStatus.UP)
+            }
+
             is NewConfigReceived -> {
                 for ((key, config) in event.config) {
                     configuration[key] = config
                 }
                 publishAvroSchemas()
-                if (event.isInitialConfig) {
-                    // Only set LifecycleStatus.UP for coordinator after the initial config is read from Kafka.
-                    // This is to make sure config reconciler will not start reconciling before its
-                    // kafka reader (config read service) has read the initial config from Kafka, otherwise
-                    // the config reconciler understands empty Kafka and tries to reconcile the full DB config.
-                    coordinator.updateStatus(LifecycleStatus.UP)
-                }
                 registrations.forEach { it.invoke(event.config.keys, configuration) }
             }
 
