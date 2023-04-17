@@ -1,5 +1,6 @@
 #! groovy
 @Library('corda-shared-build-pipeline-steps@5.0.1') _
+
 import com.r3.build.enums.BuildEnvironment
 import com.r3.build.utils.PublishingUtils
 
@@ -32,7 +33,6 @@ pipeline {
     }
 
     environment {
-        GRADLE_ADDITIONAL_ARGS = ''
         GRADLE_PERFORMANCE_TUNING = '--parallel --build-cache'
         GRADLE_USER_HOME = "/host_tmp/gradle"
         ARTIFACTORY_CREDENTIALS = credentials('artifactory-credentials')
@@ -115,6 +115,7 @@ pipeline {
                     script{
                         renderWidget("Published Corda helm chart version to Artifactory: ${publishingUtils.getHelmVersionFromYaml()}")
                         renderWidget("Published Corda helm chart repo name: ${publishingUtils.getHelmRepo()}")
+                        renderWidget("Published Corda helm chart OCI path: oci://$HELM_REGISTRY/${publishingUtils.getHelmRepo()}/corda")
                     }
                 }
             }
@@ -122,11 +123,7 @@ pipeline {
     }
 }
 
-def gradleCmd() {
-    return isUnix() ? './gradlew' : './gradlew.bat'
-}
-
 def gradlewMinimumLogging(String... args) {
     def allArgs = args.join(' ')
-    sh "${gradleCmd()} ${allArgs} \${GRADLE_ADDITIONAL_ARGS} \${GRADLE_PERFORMANCE_TUNING}"
+    sh "${isUnix() ? './gradlew' : './gradlew.bat'} ${allArgs} \${GRADLE_PERFORMANCE_TUNING}"
 }
