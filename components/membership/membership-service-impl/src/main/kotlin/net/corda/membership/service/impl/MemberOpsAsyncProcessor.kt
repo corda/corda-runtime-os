@@ -3,6 +3,7 @@ package net.corda.membership.service.impl
 import net.corda.crypto.core.ShortHash
 import net.corda.data.membership.async.request.MembershipAsyncRequest
 import net.corda.data.membership.async.request.MembershipAsyncRequestState
+import net.corda.data.membership.async.request.MembershipAsyncRequestStates
 import net.corda.data.membership.async.request.RetriableFailure
 import net.corda.data.membership.async.request.SentToMgmWaitingForNetwork
 import net.corda.data.membership.common.RegistrationStatus
@@ -37,10 +38,11 @@ internal class MemberOpsAsyncProcessor(
     private val membershipQueryClient: MembershipQueryClient,
     private val membershipConfig: SmartConfig,
     private val clock: Clock,
-) : StateAndEventProcessor<String, MembershipAsyncRequestState, MembershipAsyncRequest> {
+) : StateAndEventProcessor<String, MembershipAsyncRequestStates, MembershipAsyncRequest> {
     private companion object {
         val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         const val MAX_RETRIES = 10
+        const val WAIT_AFTER_FAILURE_IN_SECONDS = 10L
     }
 
     private val waitForMgmSeconds by lazy {
@@ -48,23 +50,28 @@ internal class MemberOpsAsyncProcessor(
     }
 
     override fun onNext(
-        state: MembershipAsyncRequestState?,
+        state: MembershipAsyncRequestStates?,
         event: Record<String, MembershipAsyncRequest>,
-    ): Response {
+    ): StateAndEventProcessor.Response<MembershipAsyncRequestStates> {
         val value = event.value
         if (value?.request == null) {
             return StateAndEventProcessor.Response(
-                updatedState = null,
+                updatedState = state,
                 responseEvents = emptyList(),
-                markForDLQ = true,
+                markForDLQ = false,
             )
         }
-        return register(value, state)
+        val currentStates = state?.states ?: emptyList()
+        val (currentState, otherStates) = currentStates.partition {
+            it.request.request.requestId == value.request.requestId
+        }
+        val newState = register(value, currentState.firstOrNull())
+        return newState.withStates(otherStates)
     }
 
     override val keyClass = String::class.java
     override val eventValueClass = MembershipAsyncRequest::class.java
-    override val stateValueClass = MembershipAsyncRequestState::class.java
+    override val stateValueClass = MembershipAsyncRequestStates::class.java
 
     private fun createFailureWithoutRetryResponse(
         responseEvents: Collection<Record<*, *>>,
@@ -72,7 +79,7 @@ internal class MemberOpsAsyncProcessor(
         Response(
             updatedState = null,
             responseEvents = responseEvents.toList(),
-            markForDLQ = true,
+            markForDLQ = false,
         )
     private fun persistAndCreateFailureWithoutRetryResponse(
         holdingIdentity: HoldingIdentity,
@@ -103,7 +110,7 @@ internal class MemberOpsAsyncProcessor(
         return StateAndEventProcessor.Response(
             updatedState = MembershipAsyncRequestState(
                 value,
-                RetriableFailure(retries - 1),
+                RetriableFailure(retries - 1, clock.instant().plusSeconds(WAIT_AFTER_FAILURE_IN_SECONDS)),
             ),
             responseEvents = emptyList(),
             markForDLQ = false,
@@ -278,5 +285,24 @@ internal class MemberOpsAsyncProcessor(
                 createFailureWithRetryResponse(value, retries)
             }
         }
+    }
+
+    private fun Response.withStates(
+        otherStates: List<MembershipAsyncRequestState>,
+    ): StateAndEventProcessor.Response<MembershipAsyncRequestStates> {
+        val newState = if (this.updatedState == null) {
+            if (otherStates.isEmpty()) {
+                null
+            } else {
+                MembershipAsyncRequestStates(otherStates)
+            }
+        } else {
+            MembershipAsyncRequestStates(otherStates + this.updatedState)
+        }
+        return StateAndEventProcessor.Response(
+            updatedState = newState,
+            markForDLQ = this.markForDLQ,
+            responseEvents = this.responseEvents,
+        )
     }
 }

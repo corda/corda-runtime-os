@@ -4,7 +4,7 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.data.membership.actions.request.MembershipActionsRequest
 import net.corda.data.membership.async.request.MembershipAsyncRequest
-import net.corda.data.membership.async.request.MembershipAsyncRequestState
+import net.corda.data.membership.async.request.MembershipAsyncRequestStates
 import net.corda.data.membership.rpc.request.MembershipRpcRequest
 import net.corda.data.membership.rpc.response.MembershipRpcResponse
 import net.corda.libs.configuration.SmartConfig
@@ -39,7 +39,7 @@ class MemberOpsServiceTest {
         on { createPublisher(any(), any()) } doReturn mock()
     }
     private val asyncSubName = LifecycleCoordinatorName("ASYNC_SUBSCRIPTION")
-    private val asyncSubscription: StateAndEventSubscription<String, MembershipAsyncRequestState, MembershipAsyncRequest> = mock {
+    private val asyncSubscription: StateAndEventSubscription<String, MembershipAsyncRequestStates, MembershipAsyncRequest> = mock {
         on { subscriptionName } doReturn asyncSubName
     }
     private val actionsSubName = LifecycleCoordinatorName("ACTIONS_SUBSCRIPTION")

@@ -5,6 +5,7 @@ import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.membership.async.request.MembershipAsyncRequest
 import net.corda.data.membership.async.request.MembershipAsyncRequestState
+import net.corda.data.membership.async.request.MembershipAsyncRequestStates
 import net.corda.data.membership.async.request.RegistrationAsyncRequest
 import net.corda.data.membership.async.request.RetriableFailure
 import net.corda.data.membership.async.request.SentToMgmWaitingForNetwork
@@ -96,7 +97,7 @@ class MemberOpsAsyncProcessorTest {
     private val clock = TestClock(
         Instant.ofEpochMilli(4000)
     )
-    private val membershipConfig =  mock<SmartConfig> {
+    private val membershipConfig = mock<SmartConfig> {
         on { getLong("$TTLS.$WAIT_FOR_MGM_SESSION") } doReturn 10
     }
 
@@ -139,9 +140,13 @@ class MemberOpsAsyncProcessorTest {
 
             assertThat(reply).isEqualTo(
                 StateAndEventProcessor.Response(
-                    updatedState = MembershipAsyncRequestState(
-                        command,
-                        SentToMgmWaitingForNetwork(clock.instant().plusSeconds(10 * 60)),
+                    updatedState = MembershipAsyncRequestStates(
+                        listOf(
+                            MembershipAsyncRequestState(
+                                command,
+                                SentToMgmWaitingForNetwork(clock.instant().plusSeconds(10 * 60)),
+                            ),
+                        ),
                     ),
                     markForDLQ = false,
                     responseEvents = registerCommands,
@@ -172,7 +177,9 @@ class MemberOpsAsyncProcessorTest {
                 SentToMgmWaitingForNetwork(clock.instant().plusSeconds(7 * 60)),
             )
             val reply = processor.onNext(
-                state,
+                MembershipAsyncRequestStates(
+                    listOf(state)
+                ),
                 Record(
                     "topic",
                     "key",
@@ -182,7 +189,7 @@ class MemberOpsAsyncProcessorTest {
 
             assertThat(reply).isEqualTo(
                 StateAndEventProcessor.Response(
-                    updatedState = state,
+                    updatedState = MembershipAsyncRequestStates(listOf(state)),
                     markForDLQ = false,
                     responseEvents = registerCommands,
                 )
@@ -211,7 +218,9 @@ class MemberOpsAsyncProcessorTest {
                 SentToMgmWaitingForNetwork(clock.instant().minusSeconds(5)),
             )
             val reply = processor.onNext(
-                state,
+                MembershipAsyncRequestStates(
+                    listOf(state),
+                ),
                 Record(
                     "topic",
                     "key",
@@ -222,14 +231,14 @@ class MemberOpsAsyncProcessorTest {
             assertThat(reply).isEqualTo(
                 StateAndEventProcessor.Response(
                     updatedState = null,
-                    markForDLQ = true,
+                    markForDLQ = false,
                     responseEvents = setStatusCommands,
                 )
             )
         }
 
         @Test
-        fun `it with a command that can not be replayed will raise the DLQ flag`() {
+        fun `it with a command that can not be replayed will not raise the DLQ flag`() {
             val reply = processor.onNext(
                 null,
                 Record(
@@ -243,7 +252,7 @@ class MemberOpsAsyncProcessorTest {
                 StateAndEventProcessor.Response(
                     updatedState = null,
                     responseEvents = emptyList(),
-                    markForDLQ = true,
+                    markForDLQ = false,
                 )
             )
         }
@@ -279,9 +288,13 @@ class MemberOpsAsyncProcessorTest {
 
             assertThat(reply).isEqualTo(
                 StateAndEventProcessor.Response(
-                    updatedState = MembershipAsyncRequestState(
-                        command,
-                        RetriableFailure(9),
+                    updatedState = MembershipAsyncRequestStates(
+                        listOf(
+                            MembershipAsyncRequestState(
+                                command,
+                                RetriableFailure(9, Instant.ofEpochMilli(14000)),
+                            ),
+                        ),
                     ),
                     responseEvents = emptyList(),
                     markForDLQ = false,
@@ -310,9 +323,13 @@ class MemberOpsAsyncProcessorTest {
             )
 
             val reply = processor.onNext(
-                MembershipAsyncRequestState(
-                    command,
-                    RetriableFailure(6),
+                MembershipAsyncRequestStates(
+                    listOf(
+                        MembershipAsyncRequestState(
+                            command,
+                            RetriableFailure(6, Instant.ofEpochMilli(3000)),
+                        ),
+                    ),
                 ),
                 Record(
                     "topic",
@@ -323,9 +340,13 @@ class MemberOpsAsyncProcessorTest {
 
             assertThat(reply).isEqualTo(
                 StateAndEventProcessor.Response(
-                    updatedState = MembershipAsyncRequestState(
-                        command,
-                        RetriableFailure(5),
+                    updatedState = MembershipAsyncRequestStates(
+                        listOf(
+                            MembershipAsyncRequestState(
+                                command,
+                                RetriableFailure(5, Instant.ofEpochMilli(14000)),
+                            ),
+                        ),
                     ),
                     responseEvents = emptyList(),
                     markForDLQ = false,
@@ -354,9 +375,13 @@ class MemberOpsAsyncProcessorTest {
             )
 
             val reply = processor.onNext(
-                MembershipAsyncRequestState(
-                    command,
-                    RetriableFailure(0),
+                MembershipAsyncRequestStates(
+                    listOf(
+                        MembershipAsyncRequestState(
+                            command,
+                            RetriableFailure(0, Instant.ofEpochMilli(4000)),
+                        ),
+                    ),
                 ),
                 Record(
                     "topic",
@@ -369,7 +394,7 @@ class MemberOpsAsyncProcessorTest {
                 StateAndEventProcessor.Response(
                     updatedState = null,
                     responseEvents = setStatusCommands,
-                    markForDLQ = true,
+                    markForDLQ = false,
                 )
             )
         }
@@ -395,9 +420,13 @@ class MemberOpsAsyncProcessorTest {
             )
 
             processor.onNext(
-                MembershipAsyncRequestState(
-                    command,
-                    RetriableFailure(0),
+                MembershipAsyncRequestStates(
+                    listOf(
+                        MembershipAsyncRequestState(
+                            command,
+                            RetriableFailure(0, Instant.ofEpochMilli(4000)),
+                        ),
+                    ),
                 ),
                 Record(
                     "topic",
@@ -493,10 +522,14 @@ class MemberOpsAsyncProcessorTest {
             )
             val state = MembershipAsyncRequestState(
                 command,
-                RetriableFailure(0),
+                RetriableFailure(0, Instant.ofEpochMilli(4000)),
             )
             val reply = processor.onNext(
-                state,
+                MembershipAsyncRequestStates(
+                    listOf(
+                        state,
+                    ),
+                ),
                 Record(
                     "topic",
                     "key",
@@ -531,7 +564,7 @@ class MemberOpsAsyncProcessorTest {
                 )
             )
 
-            assertThat(reply.markForDLQ).isTrue
+            assertThat(reply.markForDLQ).isFalse
         }
 
         @Test
@@ -691,9 +724,13 @@ class MemberOpsAsyncProcessorTest {
                 )
             )
             processor.onNext(
-                MembershipAsyncRequestState(
-                    request,
-                    SentToMgmWaitingForNetwork(clock.instant().plusSeconds(4)),
+                MembershipAsyncRequestStates(
+                    listOf(
+                        MembershipAsyncRequestState(
+                            request,
+                            SentToMgmWaitingForNetwork(clock.instant().plusSeconds(4)),
+                        ),
+                    )
                 ),
                 Record(
                     "topic",
@@ -739,9 +776,13 @@ class MemberOpsAsyncProcessorTest {
                 )
             )
             processor.onNext(
-                MembershipAsyncRequestState(
-                    request,
-                    null,
+                MembershipAsyncRequestStates(
+                    listOf(
+                        MembershipAsyncRequestState(
+                            request,
+                            null,
+                        ),
+                    )
                 ),
                 Record(
                     "topic",
@@ -787,9 +828,13 @@ class MemberOpsAsyncProcessorTest {
                 )
             )
             processor.onNext(
-                MembershipAsyncRequestState(
-                    request,
-                    null,
+                MembershipAsyncRequestStates(
+                    listOf(
+                        MembershipAsyncRequestState(
+                            request,
+                            null,
+                        ),
+                    ),
                 ),
                 Record(
                     "topic",
@@ -824,9 +869,13 @@ class MemberOpsAsyncProcessorTest {
                 )
             )
             processor.onNext(
-                MembershipAsyncRequestState(
-                    request,
-                    null,
+                MembershipAsyncRequestStates(
+                    listOf(
+                        MembershipAsyncRequestState(
+                            request,
+                            null,
+                        ),
+                    ),
                 ),
                 Record(
                     "topic",
@@ -865,7 +914,7 @@ class MemberOpsAsyncProcessorTest {
                 )
             )
 
-            assertThat(reply.markForDLQ).isTrue
+            assertThat(reply.markForDLQ).isFalse
         }
 
         @Test

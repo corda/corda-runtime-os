@@ -214,7 +214,7 @@ class MemberOpsServiceImpl @Activate constructor(
             val retryManager = CommandsRetryManager(
                 messagingConfig = messagingConfig,
                 publisherFactory = publisherFactory,
-                coordinatorFactory = coordinatorFactory,
+                clock = clock,
             )
             val asyncSubscription = subscriptionFactory.createStateAndEventSubscription(
                 SubscriptionConfig(
