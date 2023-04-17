@@ -74,10 +74,10 @@ class LayeredPropertyMapTest {
                 "corda.endpoints.1.protocolVersion" to "2",
                 "listWithNull.0" to "42",
                 "listWithNull.1" to null,
-                "singleSecureHash" to toHexString("single".toByteArray().sha256Bytes()),
-                "setSecureHash.0" to toHexString("set0".toByteArray().sha256Bytes()),
-                "setSecureHash.1" to toHexString("set1".toByteArray().sha256Bytes()),
-                "setSecureHash.2" to toHexString("set2".toByteArray().sha256Bytes()),
+                "singlePublicKeyId" to toHexString("single".toByteArray().sha256Bytes()),
+                "setPublicKeyId.0" to toHexString("set0".toByteArray().sha256Bytes()),
+                "setPublicKeyId.1" to toHexString("set1".toByteArray().sha256Bytes()),
+                "setPublicKeyId.2" to toHexString("set2".toByteArray().sha256Bytes()),
             ),
             PropertyConverter(
                 mapOf(
@@ -92,11 +92,11 @@ class LayeredPropertyMapTest {
     @Test
     fun `converter functions should work for custom converter of single value`() {
         val propertyMap = createLayeredPropertyMapImpl()
-        val single1 = propertyMap.parse<SecureHash>("singleSecureHash")
-        val single2 = propertyMap.parseOrNull<SecureHash>("singleSecureHash")
+        val single1 = propertyMap.parse<SecureHash>("singlePublicKeyId")
+        val single2 = propertyMap.parseOrNull<SecureHash>("singlePublicKeyId")
         assertEquals(single1, single2)
         assertEquals(toHexString("single".toByteArray().sha256Bytes()), single1.toString())
-        val set = propertyMap.parseSet<SecureHash>("setSecureHash")
+        val set = propertyMap.parseSet<SecureHash>("setPublicKeyId")
         assertEquals(3, set.size)
         val setContents = set.map { it.toString() }
         assertTrue(setContents.contains(toHexString("set0".toByteArray().sha256Bytes())))

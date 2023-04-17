@@ -20,5 +20,5 @@ class SharedSecretWrappedSpec(
     override val otherPublicKey: PublicKey
 ) : SharedSecretSpec {
     override fun toString(): String =
-        "$keyScheme,otherPublicKey=${ShortHash.of(otherPublicKey.hexString())},spec=$keyMaterialSpec"
+        "$keyScheme,otherPublicKey=${ShortHash.of(otherPublicKey.sha256HexString())},spec=$keyMaterialSpec"
 }

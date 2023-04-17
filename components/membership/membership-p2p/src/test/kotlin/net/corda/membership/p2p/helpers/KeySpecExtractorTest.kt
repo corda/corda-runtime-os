@@ -3,7 +3,7 @@ package net.corda.membership.p2p.helpers
 import net.corda.crypto.cipher.suite.SignatureSpecs
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.core.ShortHash
-import net.corda.crypto.core.hexString
+import net.corda.crypto.core.sha256HexString
 import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.membership.p2p.helpers.KeySpecExtractor.Companion.validateSpecName
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -28,8 +28,8 @@ class KeySpecExtractorTest {
         on { schemeCodeName } doReturn ECDSA_SECP256R1_CODE_NAME
     }
     private val cryptoOpsClient = mock<CryptoOpsClient> {
-        on { lookupKeysByIds(tenantId, listOf(ShortHash.of(publicKeyOne.hexString()))) } doReturn listOf(signingKey)
-        on { lookupKeysByIds(tenantId, listOf(ShortHash.of(publicKeyTwo.hexString()))) } doReturn emptyList()
+        on { lookupKeysByIds(tenantId, listOf(ShortHash.of(publicKeyOne.sha256HexString()))) } doReturn listOf(signingKey)
+        on { lookupKeysByIds(tenantId, listOf(ShortHash.of(publicKeyTwo.sha256HexString()))) } doReturn emptyList()
     }
 
     private val extractor = KeySpecExtractor(tenantId, cryptoOpsClient)

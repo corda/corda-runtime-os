@@ -3,7 +3,7 @@ package net.corda.crypto.hes.core.impl
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.cipher.suite.schemes.KeyScheme
 import net.corda.crypto.core.ShortHash
-import net.corda.crypto.core.hexString
+import net.corda.crypto.core.sha256HexString
 import net.corda.crypto.hes.CryptoUnsafeHESKeyException
 import net.corda.crypto.hes.EncryptedDataWithKey
 import net.corda.crypto.hes.HybridEncryptionParamsProvider
@@ -55,7 +55,7 @@ fun publicKeyOnCurve(scheme: KeyScheme, publicKey: PublicKey) {
         else -> true
     }
     if(!result) {
-        throw CryptoUnsafeHESKeyException("The key pair is not safe, publicKey=${ShortHash.of(publicKey.hexString())}:$scheme")
+        throw CryptoUnsafeHESKeyException("The key pair is not safe, publicKey=${ShortHash.of(publicKey.sha256HexString())}:$scheme")
     }
 }
 

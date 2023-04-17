@@ -7,8 +7,8 @@ import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.ALIAS_FILTER
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.CATEGORY_FILTER
 import net.corda.crypto.core.KeyAlreadyExistsException
 import net.corda.crypto.core.ShortHash
-import net.corda.crypto.core.hexString
 import net.corda.crypto.core.publicKeyHashFromBytes
+import net.corda.crypto.core.sha256HexString
 import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256R1_CODE_NAME
 import org.assertj.core.api.Assertions.assertThat
@@ -77,7 +77,7 @@ class KeysFactoryTest {
             )
         } doThrow KeyAlreadyExistsException("", "", "")
         on {
-            lookupKeysByIds(tenantId, listOf(ShortHash.of(publicKey.hexString())))
+            lookupKeysByIds(tenantId, listOf(ShortHash.of(publicKey.sha256HexString())))
         } doReturn listOf(cryptoSigningKey)
     }
 

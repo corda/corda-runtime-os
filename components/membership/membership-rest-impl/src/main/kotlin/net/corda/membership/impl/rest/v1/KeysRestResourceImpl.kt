@@ -13,7 +13,7 @@ import net.corda.crypto.core.InvalidParamsException
 import net.corda.crypto.core.KeyAlreadyExistsException
 import net.corda.crypto.core.ShortHash
 import net.corda.crypto.core.ShortHashException
-import net.corda.crypto.core.hexString
+import net.corda.crypto.core.sha256HexString
 import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.data.crypto.wire.ops.rpc.queries.CryptoKeyOrderBy
 import net.corda.lifecycle.Lifecycle
@@ -196,7 +196,7 @@ class KeysRestResourceImpl @Activate constructor(
                         category = hsmCategory.uppercase(),
                         alias = alias,
                         scheme = scheme,
-                    ).hexString()).toString()
+                    ).sha256HexString()).toString()
                 }
             )
         } catch (e: KeyAlreadyExistsException) {

@@ -15,9 +15,10 @@ class PublicKeyHashConverter : CustomPropertyConverter<SecureHash> {
     override val type: Class<SecureHash>
         get() = SecureHash::class.java
 
-    override fun convert(context: ConversionContext): SecureHash? = if (context.value("hash") != null) {
-        context.value("hash")?.let { SecureHashImpl(DigestAlgorithmName.SHA2_256.name, it.toByteArray()) }
-    } else {
-        context.value()?.let { SecureHashImpl(DigestAlgorithmName.SHA2_256.name, it.toByteArray()) }
-    }
+    override fun convert(context: ConversionContext): SecureHash? =
+        if (context.value("hash") != null) {
+            context.value("hash")?.let { SecureHashImpl(DigestAlgorithmName.SHA2_256.name, it.toByteArray()) }
+        } else {
+            context.value()?.let { SecureHashImpl(DigestAlgorithmName.SHA2_256.name, it.toByteArray()) }
+        }
 }

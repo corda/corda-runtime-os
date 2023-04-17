@@ -20,7 +20,7 @@ import net.corda.crypto.core.SharedSecretAliasSpec
 import net.corda.crypto.core.SharedSecretWrappedSpec
 import net.corda.crypto.core.ShortHash
 import net.corda.crypto.core.fullIdHash
-import net.corda.crypto.core.hexString
+import net.corda.crypto.core.sha256HexString
 import net.corda.crypto.persistence.SigningKeyInfo
 import net.corda.crypto.persistence.SigningKeyOrderBy
 import net.corda.crypto.persistence.SigningPublicKeySaveContext
@@ -269,7 +269,7 @@ class SigningServiceImpl(
             "deriveSharedSecret(tenant={}, publicKey={}, otherPublicKey={})",
             tenantId,
             record.data.id,
-            ShortHash.of(otherPublicKey.hexString())
+            ShortHash.of(otherPublicKey.sha256HexString())
         )
         val scheme = schemeMetadata.findKeyScheme(record.data.schemeCodeName)
         val cryptoService = cryptoServiceFactory.getInstance(record.data.hsmId)
@@ -286,7 +286,7 @@ class SigningServiceImpl(
         tenantId: String,
     ): String = record.data.hsmAlias ?: throw IllegalStateException(
         "HSM alias must be specified if key material is not specified, and both are null for " +
-                "${ShortHash.of(publicKey.hexString())} of tenant $tenantId"
+                "${ShortHash.of(publicKey.sha256HexString())} of tenant $tenantId"
     )
 
     @Suppress("LongParameterList")
@@ -354,7 +354,7 @@ class SigningServiceImpl(
                 }
             }
             throw IllegalArgumentException(
-                "The tenant $tenantId doesn't own any public key in '${ShortHash.of(publicKey.hexString())}' composite key."
+                "The tenant $tenantId doesn't own any public key in '${ShortHash.of(publicKey.sha256HexString())}' composite key."
             )
         } else {
             // TODO - use cache?
@@ -370,7 +370,7 @@ class SigningServiceImpl(
                 }?.let {
                     OwnedKeyRecord(publicKey, it)
                 } ?: throw IllegalArgumentException(
-                    "The tenant $tenantId doesn't own public key '${ShortHash.of(publicKey.hexString())}'."
+                    "The tenant $tenantId doesn't own public key '${ShortHash.of(publicKey.sha256HexString())}'."
                 )
             }
         }
@@ -383,13 +383,13 @@ class SigningServiceImpl(
         tenantId: String,
     ): KeyMaterialSpec {
         val keyMaterial: ByteArray = record.data.keyMaterial ?: throw IllegalStateException(
-            "The key material is null for public key ${ShortHash.of(publicKey.hexString())} of tenant $tenantId  "
+            "The key material is null for public key ${ShortHash.of(publicKey.sha256HexString())} of tenant $tenantId  "
         )
         val masterKeyAlias = record.data.masterKeyAlias ?: throw IllegalStateException(
-            "The master key alias for public key ${ShortHash.of(publicKey.hexString())} of tenant $tenantId must be specified, but is null"
+            "The master key alias for public key ${ShortHash.of(publicKey.sha256HexString())} of tenant $tenantId must be specified, but is null"
         )
         val encodingVersion = record.data.encodingVersion ?: throw IllegalStateException(
-            "The encoding version for public key ${ShortHash.of(publicKey.hexString())} of tenant $tenantId must be specified, but is null"
+            "The encoding version for public key ${ShortHash.of(publicKey.sha256HexString())} of tenant $tenantId must be specified, but is null"
         )
         return KeyMaterialSpec(
             keyMaterial = keyMaterial,

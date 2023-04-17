@@ -48,4 +48,3 @@ val SecureHash.bytes: ByteArray
             ?: throw IllegalArgumentException(
                 "User defined subtypes of ${SecureHash::class.java.simpleName} are not permitted"
             )
-

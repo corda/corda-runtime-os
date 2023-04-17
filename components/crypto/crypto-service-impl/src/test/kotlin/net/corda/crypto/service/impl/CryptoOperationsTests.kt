@@ -11,7 +11,7 @@ import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.ALIAS_FILTER
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.MASTER_KEY_ALIAS_FILTER
 import net.corda.crypto.core.ShortHash
-import net.corda.crypto.core.hexString
+import net.corda.crypto.core.sha256HexString
 import net.corda.crypto.hes.HybridEncryptionParams
 import net.corda.crypto.hes.impl.EphemeralKeyPairEncryptorImpl
 import net.corda.crypto.hes.impl.StableKeyPairDecryptorImpl
@@ -355,7 +355,7 @@ class CryptoOperationsTests {
         val key2 = signingFreshKeys.values.first().publicKey
         val ourKeys = signingFreshKeys.values.first().signingService.lookupSigningKeysByPublicKeyShortHash(
             tenantId,
-            listOf(ShortHash.of(key1.hexString()), ShortHash.of(key2.hexString()))
+            listOf(ShortHash.of(key1.sha256HexString()), ShortHash.of(key2.sha256HexString()))
         ).toList()
         assertThat(ourKeys).hasSize(1)
         assertTrue(ourKeys.any { it.publicKey.contentEquals(key2.encoded) })
@@ -371,7 +371,7 @@ class CryptoOperationsTests {
         }
         val ourKeys = signingFreshKeys.values.first().signingService.lookupSigningKeysByPublicKeyShortHash(
             tenantId,
-            listOf(ShortHash.of(key1.hexString()), ShortHash.of(key2.hexString()))
+            listOf(ShortHash.of(key1.sha256HexString()), ShortHash.of(key2.sha256HexString()))
         ).toList()
         assertThat(ourKeys).isEmpty()
     }
@@ -385,7 +385,7 @@ class CryptoOperationsTests {
         val returned =
             info.signingService.lookupSigningKeysByPublicKeyShortHash(
                 tenantId,
-                listOf(ShortHash.of(info.publicKey.hexString()))
+                listOf(ShortHash.of(info.publicKey.sha256HexString()))
             )
         assertEquals(1, returned.size)
         verifySigningKeyInfo(info.publicKey, info.alias, scheme, returned.first())
@@ -401,7 +401,7 @@ class CryptoOperationsTests {
         val returned =
             info.signingService.lookupSigningKeysByPublicKeyShortHash(
                 tenantId,
-                listOf(ShortHash.of(info.publicKey.hexString()))
+                listOf(ShortHash.of(info.publicKey.sha256HexString()))
             )
         assertEquals(1, returned.size)
         verifySigningKeyInfo(info.publicKey, null, scheme, returned.first())
@@ -470,7 +470,7 @@ class CryptoOperationsTests {
         val returned =
             info.signingService.lookupSigningKeysByPublicKeyShortHash(
                 tenantId,
-                listOf(ShortHash.of(unknownPublicKey.hexString()))
+                listOf(ShortHash.of(unknownPublicKey.sha256HexString()))
             )
         assertEquals(0, returned.size)
     }

@@ -22,10 +22,10 @@ import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.SCHEME_CODE_NAME_FIL
 import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.core.KEY_LOOKUP_INPUT_ITEMS_LIMIT
 import net.corda.crypto.core.ShortHash
-import net.corda.crypto.core.hexString
 import net.corda.crypto.core.publicKeyIdFromBytes
 import net.corda.crypto.core.publicKeyShortHashFromBytes
 import net.corda.crypto.core.sha256Bytes
+import net.corda.crypto.core.sha256HexString
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.ShortHashes
@@ -349,7 +349,7 @@ class CryptoOpsClientComponentTests {
             component.lookupKeysByIds(
                 knownTenantId,
                 listOf(
-                    ShortHash.of(keyPair.public.hexString())
+                    ShortHash.of(keyPair.public.sha256HexString())
                 )
             )
         }
@@ -399,7 +399,7 @@ class CryptoOpsClientComponentTests {
             )
         }
         val ids = (0..KEY_LOOKUP_INPUT_ITEMS_LIMIT).map {
-            ShortHash.of(keyPair.public.hexString())
+            ShortHash.of(keyPair.public.sha256HexString())
         }
         assertThrows(IllegalArgumentException::class.java) {
             component.lookupKeysByIds(knownTenantId, ids)

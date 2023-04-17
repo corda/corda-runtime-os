@@ -7,8 +7,8 @@ import net.corda.crypto.cipher.suite.SignatureSpecs
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.ShortHash
-import net.corda.crypto.core.hexString
 import net.corda.crypto.core.parseSecureHash
+import net.corda.crypto.core.sha256HexString
 import net.corda.data.CordaAvroDeserializer
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePairList
@@ -386,14 +386,14 @@ class MemberRegistrationIntegrationTest {
                 "SESSION_INIT",
                 member.shortHash.value + "session",
                 ECDSA_SECP256R1_CODE_NAME
-            ).hexString())
+            ).sha256HexString())
         val ledgerKeyId =
             ShortHash.of(cryptoOpsClient.generateKeyPair(
                 member.shortHash.value,
                 "LEDGER",
                 member.shortHash.value + "ledger",
                 ECDSA_SECP256R1_CODE_NAME
-            ).hexString())
+            ).sha256HexString())
         return mapOf(
             "corda.session.keys.0.id" to sessionKeyId.toString(),
             "corda.session.keys.0.signature.spec" to SignatureSpecs.ECDSA_SHA512.signatureName,

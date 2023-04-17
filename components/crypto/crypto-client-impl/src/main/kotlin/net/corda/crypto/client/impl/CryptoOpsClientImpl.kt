@@ -11,9 +11,9 @@ import net.corda.crypto.core.KEY_LOOKUP_INPUT_ITEMS_LIMIT
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.core.ShortHash
 import net.corda.crypto.core.bytes
-import net.corda.crypto.core.hexString
 import net.corda.crypto.core.publicKeyIdFromBytes
 import net.corda.crypto.core.sha256Bytes
+import net.corda.crypto.core.sha256HexString
 import net.corda.crypto.core.toStringShort
 import net.corda.crypto.impl.createWireRequestContext
 import net.corda.crypto.impl.toWire
@@ -335,8 +335,8 @@ class CryptoOpsClientImpl(
         logger.info(
             "Sending '{}'(publicKey={},otherPublicKey={})",
             DeriveSharedSecretCommand::class.java.simpleName,
-            ShortHash.of(publicKey.hexString()),
-            ShortHash.of(otherPublicKey.hexString())
+            ShortHash.of(publicKey.sha256HexString()),
+            ShortHash.of(otherPublicKey.sha256HexString())
         )
         val request = createRequest(
             tenantId,
