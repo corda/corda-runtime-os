@@ -9,7 +9,6 @@ import net.corda.crypto.client.hsm.HSMRegistrationClient
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoConsts.Categories.LEDGER
 import net.corda.crypto.core.CryptoConsts.Categories.SESSION_INIT
-import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.core.publicKeyHashFromBytes
 import net.corda.crypto.core.sha256Bytes
 import net.corda.crypto.impl.converter.PublicKeyConverter
@@ -101,7 +100,6 @@ import net.corda.schema.Schemas.P2P.P2P_HOSTED_IDENTITIES_TOPIC
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.membership.MembershipSchema
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.crypto.KeySchemeCodes.RSA_CODE_NAME
 import net.corda.v5.membership.MemberContext
@@ -820,14 +818,13 @@ class StaticMemberRegistrationServiceTest {
                         it.publicKey == defaultKey
                     }
                     .allMatch {
-                        it.publicKeyHash == SecureHashImpl(DigestAlgorithmName.SHA2_256.name, defaultKey.encoded) //publicKeyHashFromBytes(defaultKey.sha256Bytes())
+                        it.publicKeyHash == publicKeyHashFromBytes(defaultKey.sha256Bytes())
                     }
                     .allMatch {
                         it.spec.signatureName == SignatureSpecs.RSA_SHA512.signatureName
                     }
             }
         }
-
 
         @Test
         fun `registration without notary will not add notary to member info`() {

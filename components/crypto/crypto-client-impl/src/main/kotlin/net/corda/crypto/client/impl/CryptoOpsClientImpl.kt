@@ -12,7 +12,7 @@ import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.core.ShortHash
 import net.corda.crypto.core.bytes
 import net.corda.crypto.core.hexString
-import net.corda.crypto.core.publicKeyShortHashFromBytes
+import net.corda.crypto.core.publicKeyIdFromBytes
 import net.corda.crypto.core.sha256Bytes
 import net.corda.crypto.core.toStringShort
 import net.corda.crypto.impl.createWireRequestContext
@@ -105,7 +105,7 @@ class CryptoOpsClientImpl(
             } else {
                 ShortHashes(
                     candidateKeys.map {
-                        publicKeyShortHashFromBytes(schemeMetadata.encodeAsByteArray(it)).toString()
+                        publicKeyIdFromBytes(schemeMetadata.encodeAsByteArray(it))
                             .also { shortHash -> keyIdsForLogging.add(shortHash) }
                     }
                 )
@@ -131,7 +131,7 @@ class CryptoOpsClientImpl(
     // This path is not being currently used - consider removing it
     fun filterMyKeysProxy(tenantId: String, candidateKeys: Iterable<ByteBuffer>): CryptoSigningKeys {
         val publicKeyIds = candidateKeys.map {
-            publicKeyShortHashFromBytes(it.array()).toString()
+            publicKeyIdFromBytes(it.array())
         }
         return lookupKeysByIdsProxy(tenantId, ShortHashes(publicKeyIds))
     }

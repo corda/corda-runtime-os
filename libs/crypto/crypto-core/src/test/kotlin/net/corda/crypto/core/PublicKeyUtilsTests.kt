@@ -12,22 +12,22 @@ class PublicKeyUtilsTests {
     @Test
     fun `Should produce the public key id with length of 12 for a byte array`() {
         val byteArray = UUID.randomUUID().toString().toByteArray()
-        val id = publicKeyShortHashFromBytes(byteArray).value
+        val id = publicKeyIdFromBytes(byteArray)
         assertEquals(12, id.length)
     }
 
     @Test
     fun `Should produce the same public key id for equal byte arrays`() {
         val byteArray = UUID.randomUUID().toString().toByteArray()
-        val id1 = publicKeyShortHashFromBytes(byteArray).value
-        val id2 = publicKeyShortHashFromBytes(byteArray).value
+        val id1 = publicKeyIdFromBytes(byteArray)
+        val id2 = publicKeyIdFromBytes(byteArray)
         assertEquals(id1, id2)
     }
 
     @Test
     fun `Should produce the different public key id for different byte arrays`() {
         val ids = (0 until 100).map {
-            publicKeyShortHashFromBytes(UUID.randomUUID().toString().toByteArray()).value
+            publicKeyIdFromBytes(UUID.randomUUID().toString().toByteArray())
         }
         for (i in ids.indices) {
             ids.filterIndexed { index, _ -> index != i }.forEach {

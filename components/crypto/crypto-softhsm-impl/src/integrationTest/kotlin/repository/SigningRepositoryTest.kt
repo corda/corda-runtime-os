@@ -10,7 +10,7 @@ import net.corda.crypto.core.KEY_LOOKUP_INPUT_ITEMS_LIMIT
 import net.corda.crypto.core.ShortHash
 import net.corda.crypto.core.fullPublicKeyIdFromBytes
 import net.corda.crypto.core.parseSecureHash
-import net.corda.crypto.core.publicKeyShortHashFromBytes
+import net.corda.crypto.core.publicKeyIdFromBytes
 import net.corda.crypto.persistence.SigningKeyInfo
 import net.corda.crypto.persistence.SigningKeyOrderBy
 import net.corda.crypto.persistence.SigningKeyStatus
@@ -56,7 +56,7 @@ class SigningRepositoryTest : CryptoRepositoryTest() {
     private fun createNewPubKeyInfo(): SigningKeyInfo {
         val unique = UUID.randomUUID().toString()
         val key = SecureHashUtils.randomBytes()
-        val keyId = publicKeyShortHashFromBytes(key).toString()
+        val keyId = publicKeyIdFromBytes(key)
         val fullKey = fullPublicKeyIdFromBytes(key, digestService)
         return SigningKeyInfo(
             id = ShortHash.parse(keyId),

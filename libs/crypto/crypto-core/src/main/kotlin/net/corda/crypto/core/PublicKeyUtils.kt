@@ -11,10 +11,10 @@ import java.security.PublicKey
 /**
  * Returns the id as the first 12 characters of an SHA-256 hash of the public key.
  */
-//// TODO Should use `digestService`
-//fun publicKeyIdFromBytes(publicKey: ByteArray): String =
-//    // TODO Need to replace below calculation with using `DigestService` and get short id from its outcome
-//    publicKeyShortHashFromBytes(publicKey).toString()
+// TODO Should use `digestService`
+fun publicKeyIdFromBytes(publicKey: ByteArray): String =
+    // TODO Need to replace below calculation with using `DigestService` and get short id from its outcome
+    publicKeyShortHashFromBytes(publicKey).toString()
 
 fun fullPublicKeyIdFromBytes(publicKey: ByteArray, digestService: PlatformDigestService): String =
     // TODO default digest algorithm needs to selected through default digest service

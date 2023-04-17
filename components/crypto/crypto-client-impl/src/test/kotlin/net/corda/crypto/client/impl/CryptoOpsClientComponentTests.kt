@@ -23,6 +23,7 @@ import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.core.KEY_LOOKUP_INPUT_ITEMS_LIMIT
 import net.corda.crypto.core.ShortHash
 import net.corda.crypto.core.hexString
+import net.corda.crypto.core.publicKeyIdFromBytes
 import net.corda.crypto.core.publicKeyShortHashFromBytes
 import net.corda.crypto.core.sha256Bytes
 import net.corda.data.KeyValuePair
@@ -414,7 +415,7 @@ class CryptoOpsClientComponentTests {
         setupCompletedResponse {
             CryptoSigningKeys(emptyList())
         }
-        val id = publicKeyShortHashFromBytes(UUID.randomUUID().toString().toByteArray()).toString()
+        val id = publicKeyIdFromBytes(UUID.randomUUID().toString().toByteArray())
         val result = sender.act {
             component.lookupKeysByIds(knownTenantId, listOf(ShortHash.of(id)))
         }
@@ -465,9 +466,9 @@ class CryptoOpsClientComponentTests {
         val query = assertOperationType<ByIdsRpcQuery>()
         val keyIds = (query.keyIds as ShortHashes).hashes
         assertEquals(3, keyIds.size)
-        assertTrue(keyIds.any { it == publicKeyShortHashFromBytes(schemeMetadata.encodeAsByteArray(myPublicKeys[0])).toString() })
-        assertTrue(keyIds.any { it == publicKeyShortHashFromBytes(schemeMetadata.encodeAsByteArray(myPublicKeys[1])).toString() })
-        assertTrue(keyIds.any { it == publicKeyShortHashFromBytes(schemeMetadata.encodeAsByteArray(notMyKey)).toString() })
+        assertTrue(keyIds.any { it == publicKeyIdFromBytes(schemeMetadata.encodeAsByteArray(myPublicKeys[0])) })
+        assertTrue(keyIds.any { it == publicKeyIdFromBytes(schemeMetadata.encodeAsByteArray(myPublicKeys[1])) })
+        assertTrue(keyIds.any { it == publicKeyIdFromBytes(schemeMetadata.encodeAsByteArray(notMyKey)) })
         assertRequestContext(result)
     }
 
@@ -492,7 +493,7 @@ class CryptoOpsClientComponentTests {
             CryptoSigningKeys(
                 myPublicKeys.map {
                     CryptoSigningKey(
-                        publicKeyShortHashFromBytes(it.array()).toString(),
+                        publicKeyIdFromBytes(it.array()),
                         "tenant",
                         "LEDGER",
                         null,
@@ -517,9 +518,9 @@ class CryptoOpsClientComponentTests {
         val query = assertOperationType<ByIdsRpcQuery>()
         val keyIds = (query.keyIds as ShortHashes).hashes
         assertEquals(3, keyIds.size)
-        assertTrue(keyIds.any { it == publicKeyShortHashFromBytes(myPublicKeys[0].array()).toString() })
-        assertTrue(keyIds.any { it == publicKeyShortHashFromBytes(myPublicKeys[1].array()).toString() })
-        assertTrue(keyIds.any { it == publicKeyShortHashFromBytes(notMyKey.array()).toString() })
+        assertTrue(keyIds.any { it == publicKeyIdFromBytes(myPublicKeys[0].array()) })
+        assertTrue(keyIds.any { it == publicKeyIdFromBytes(myPublicKeys[1].array()) })
+        assertTrue(keyIds.any { it == publicKeyIdFromBytes(notMyKey.array()) })
         assertRequestContext(result)
     }
 
@@ -545,9 +546,9 @@ class CryptoOpsClientComponentTests {
         val query = assertOperationType<ByIdsRpcQuery>()
         val keyIds = (query.keyIds as ShortHashes).hashes
         assertEquals(3, keyIds.size)
-        assertTrue(keyIds.any { it == publicKeyShortHashFromBytes(schemeMetadata.encodeAsByteArray(myPublicKeys[0])).toString() })
-        assertTrue(keyIds.any { it == publicKeyShortHashFromBytes(schemeMetadata.encodeAsByteArray(myPublicKeys[1])).toString() })
-        assertTrue(keyIds.any { it == publicKeyShortHashFromBytes(schemeMetadata.encodeAsByteArray(notMyKey)).toString() })
+        assertTrue(keyIds.any { it == publicKeyIdFromBytes(schemeMetadata.encodeAsByteArray(myPublicKeys[0])) })
+        assertTrue(keyIds.any { it == publicKeyIdFromBytes(schemeMetadata.encodeAsByteArray(myPublicKeys[1])) })
+        assertTrue(keyIds.any { it == publicKeyIdFromBytes(schemeMetadata.encodeAsByteArray(notMyKey)) })
         assertRequestContext(result)
     }
 
@@ -579,9 +580,9 @@ class CryptoOpsClientComponentTests {
         val query = assertOperationType<ByIdsRpcQuery>()
         val keyIds = (query.keyIds as ShortHashes).hashes
         assertEquals(3, keyIds.size)
-        assertTrue(keyIds.any { it == publicKeyShortHashFromBytes(myPublicKeys[0].array()).toString() })
-        assertTrue(keyIds.any { it == publicKeyShortHashFromBytes(myPublicKeys[1].array()).toString() })
-        assertTrue(keyIds.any { it == publicKeyShortHashFromBytes(notMyKey.array()).toString() })
+        assertTrue(keyIds.any { it == publicKeyIdFromBytes(myPublicKeys[0].array()) })
+        assertTrue(keyIds.any { it == publicKeyIdFromBytes(myPublicKeys[1].array()) })
+        assertTrue(keyIds.any { it == publicKeyIdFromBytes(notMyKey.array()) })
         assertRequestContext(result)
     }
 
