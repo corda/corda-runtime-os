@@ -4,9 +4,10 @@ import com.typesafe.config.ConfigFactory
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.cipher.suite.SignatureSpecs
-import net.corda.crypto.cipher.suite.publicKeyId
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.core.CryptoConsts
+import net.corda.crypto.core.ShortHash
+import net.corda.crypto.core.hexString
 import net.corda.crypto.core.parseSecureHash
 import net.corda.data.CordaAvroDeserializer
 import net.corda.data.CordaAvroSerializationFactory
@@ -380,27 +381,25 @@ class MemberRegistrationIntegrationTest {
 
     private fun buildTestContext(member: HoldingIdentity): Map<String, String> {
         val sessionKeyId =
-            cryptoOpsClient.generateKeyPair(
+            ShortHash.of(cryptoOpsClient.generateKeyPair(
                 member.shortHash.value,
                 "SESSION_INIT",
                 member.shortHash.value + "session",
                 ECDSA_SECP256R1_CODE_NAME
-            )
-                .publicKeyId()
+            ).hexString())
         val ledgerKeyId =
-            cryptoOpsClient.generateKeyPair(
+            ShortHash.of(cryptoOpsClient.generateKeyPair(
                 member.shortHash.value,
                 "LEDGER",
                 member.shortHash.value + "ledger",
                 ECDSA_SECP256R1_CODE_NAME
-            )
-                .publicKeyId()
+            ).hexString())
         return mapOf(
-            "corda.session.keys.0.id" to sessionKeyId,
+            "corda.session.keys.0.id" to sessionKeyId.toString(),
             "corda.session.keys.0.signature.spec" to SignatureSpecs.ECDSA_SHA512.signatureName,
             URL_KEY to URL_VALUE,
             PROTOCOL_KEY to PROTOCOL_VALUE,
-            "corda.ledger.keys.0.id" to ledgerKeyId,
+            "corda.ledger.keys.0.id" to ledgerKeyId.toString(),
             "corda.ledger.keys.0.signature.spec" to SignatureSpecs.ECDSA_SHA512.signatureName,
             CUSTOM_KEY to CUSTOM_VALUE
         )

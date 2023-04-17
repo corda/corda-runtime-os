@@ -1,9 +1,9 @@
 package net.corda.p2p.linkmanager.sessions
 
-import net.corda.crypto.cipher.suite.PublicKeyHash
 import net.corda.crypto.cipher.suite.SignatureSpecs
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.core.DigitalSignatureWithKey
+import net.corda.crypto.core.publicKeyHashFromBytes
 import net.corda.data.p2p.AuthenticatedMessageAndKey
 import net.corda.data.p2p.DataMessagePayload
 import net.corda.data.p2p.HeartbeatMessage
@@ -202,11 +202,11 @@ class SessionManagerTest {
     private val membershipGroupReader = mock<MembershipGroupReader> {
         on { lookup(eq(OUR_PARTY.x500Name), any()) } doReturn OUR_MEMBER_INFO
         on { lookupBySessionKey(
-            eq(PublicKeyHash.parse(messageDigest.hash(OUR_KEY.public.encoded))), any()
+            eq(publicKeyHashFromBytes(messageDigest.hash(OUR_KEY.public.encoded))), any()
         ) } doReturn OUR_MEMBER_INFO
         on { lookup(eq(PEER_PARTY.x500Name), any()) } doReturn PEER_MEMBER_INFO
         on { lookupBySessionKey(
-            eq(PublicKeyHash.parse(messageDigest.hash(PEER_KEY.public.encoded))), any()
+            eq(publicKeyHashFromBytes(messageDigest.hash(PEER_KEY.public.encoded))), any()
         ) } doReturn PEER_MEMBER_INFO
     }
     private val otherMembershipGroupReader = mock<MembershipGroupReader>()
@@ -578,7 +578,7 @@ class SessionManagerTest {
             .thenReturn(listOf(OUR_PARTY, ourSecondParty))
         val secondMembershipGroupReader = mock<MembershipGroupReader>()
         whenever(membershipGroupReader.lookupBySessionKey(
-            eq(PublicKeyHash.parse(messageDigest.hash(PEER_KEY.public.encoded))),
+            eq(publicKeyHashFromBytes(messageDigest.hash(PEER_KEY.public.encoded))),
             eq(MembershipStatusFilter.ACTIVE_OR_SUSPENDED_IF_PRESENT_OR_PENDING)
         )).thenReturn(secondPeerMemberInfo)
         whenever(membershipGroupReaderProvider.getGroupReader(ourSecondParty)).thenReturn(secondMembershipGroupReader)
@@ -627,7 +627,7 @@ class SessionManagerTest {
         whenever(protocolResponder.generateResponderHello()).thenReturn(responderHello)
         whenever(
             membershipGroupReader.lookupBySessionKey(
-                PublicKeyHash.parse(initiatorKeyHash),
+                publicKeyHashFromBytes(initiatorKeyHash),
                 MembershipStatusFilter.ACTIVE_OR_SUSPENDED_IF_PRESENT_OR_PENDING
             )
         ).thenReturn(null)
@@ -1003,7 +1003,7 @@ class SessionManagerTest {
         val initiatorHandshake = InitiatorHandshakeMessage(initiatorHandshakeHeader, RANDOM_BYTES, RANDOM_BYTES)
         whenever(
             membershipGroupReader.lookupBySessionKey(
-                PublicKeyHash.parse(initiatorPublicKeyHash),
+                publicKeyHashFromBytes(initiatorPublicKeyHash),
                 MembershipStatusFilter.ACTIVE_OR_SUSPENDED_IF_PRESENT_OR_PENDING
             )
         ).thenReturn(null)

@@ -1,6 +1,5 @@
 package net.corda.crypto.softhsm.impl
 
-import java.security.PublicKey
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.cipher.suite.PlatformDigestService
 import net.corda.crypto.core.InvalidParamsException
@@ -9,7 +8,7 @@ import net.corda.crypto.core.ShortHash
 import net.corda.crypto.core.fullIdHash
 import net.corda.crypto.core.fullPublicKeyIdFromBytes
 import net.corda.crypto.core.parseSecureHash
-import net.corda.crypto.core.publicKeyIdFromBytes
+import net.corda.crypto.core.publicKeyShortHashFromBytes
 import net.corda.crypto.persistence.SigningKeyFilterMapImpl
 import net.corda.crypto.persistence.SigningKeyInfo
 import net.corda.crypto.persistence.SigningKeyOrderBy
@@ -33,6 +32,7 @@ import net.corda.orm.utils.transaction
 import net.corda.orm.utils.use
 import net.corda.v5.crypto.SecureHash
 import java.io.InvalidObjectException
+import java.security.PublicKey
 import java.time.Instant
 import java.util.*
 import javax.persistence.EntityManager
@@ -55,7 +55,7 @@ class SigningRepositoryImpl(
      */
     override fun savePublicKey(context: SigningPublicKeySaveContext): SigningKeyInfo {
         val publicKeyBytes = keyEncodingService.encodeAsByteArray(context.key.publicKey)
-        val keyId = publicKeyIdFromBytes(publicKeyBytes)
+        val keyId = publicKeyShortHashFromBytes(publicKeyBytes).toString()
         val fullKeyId = fullPublicKeyIdFromBytes(publicKeyBytes, digestService)
         val now = Instant.now()
         val entity = SigningKeyEntity(
@@ -86,7 +86,7 @@ class SigningRepositoryImpl(
     @Suppress("NestedBlockDepth")
     override fun savePrivateKey(context: SigningWrappedKeySaveContext): SigningKeyInfo {
         val publicKeyBytes = keyEncodingService.encodeAsByteArray(context.key.publicKey)
-        val keyId = publicKeyIdFromBytes(publicKeyBytes)
+        val keyId = publicKeyShortHashFromBytes(publicKeyBytes).toString()
         val fullKeyId = fullPublicKeyIdFromBytes(publicKeyBytes, digestService)
         val keyMainId = UUID.randomUUID()
         val now = Instant.now()

@@ -1,10 +1,10 @@
 package net.corda.membership.impl.synchronisation.dummy
 
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
-import net.corda.crypto.cipher.suite.publicKeyId
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.core.DigitalSignatureWithKey
 import net.corda.crypto.core.ShortHash
+import net.corda.crypto.core.publicKeyShortHashFromBytes
 import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.data.crypto.wire.ops.rpc.queries.CryptoKeyOrderBy
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -89,7 +89,7 @@ class TestCryptoOpsClientImpl @Activate constructor(
         val keyPair = keyPairGenerator.generateKeyPair()
         val publicKey = keyPair.public
         generatedKeys[publicKey] = keyPair
-        val keyId = publicKey.publicKeyId()
+        val keyId = publicKeyShortHashFromBytes(publicKey.encoded).value
         keys[ShortHash.of(keyId)] = CryptoSigningKey(
             keyId,
             tenantId,

@@ -2,8 +2,6 @@ package net.corda.crypto.service.impl
 
 import com.github.benmanes.caffeine.cache.Cache
 import com.github.benmanes.caffeine.cache.Caffeine
-import java.security.InvalidParameterException
-import java.util.concurrent.TimeUnit
 import net.corda.cache.caffeine.CacheFactoryImpl
 import net.corda.crypto.cipher.suite.CRYPTO_CATEGORY
 import net.corda.crypto.cipher.suite.CRYPTO_TENANT_ID
@@ -11,18 +9,18 @@ import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.cipher.suite.KeyGenerationSpec
 import net.corda.crypto.cipher.suite.KeyMaterialSpec
 import net.corda.crypto.cipher.suite.PlatformDigestService
-import net.corda.crypto.cipher.suite.SharedSecretAliasSpec
-import net.corda.crypto.cipher.suite.SharedSecretWrappedSpec
 import net.corda.crypto.cipher.suite.SigningAliasSpec
 import net.corda.crypto.cipher.suite.SigningWrappedSpec
-import net.corda.crypto.cipher.suite.publicKeyId
 import net.corda.crypto.cipher.suite.schemes.KeyScheme
 import net.corda.crypto.config.impl.CryptoSigningServiceConfig
 import net.corda.crypto.core.DigitalSignatureWithKey
 import net.corda.crypto.core.KEY_LOOKUP_INPUT_ITEMS_LIMIT
 import net.corda.crypto.core.KeyAlreadyExistsException
+import net.corda.crypto.core.SharedSecretAliasSpec
+import net.corda.crypto.core.SharedSecretWrappedSpec
 import net.corda.crypto.core.ShortHash
 import net.corda.crypto.core.fullIdHash
+import net.corda.crypto.core.hexString
 import net.corda.crypto.persistence.SigningKeyInfo
 import net.corda.crypto.persistence.SigningKeyOrderBy
 import net.corda.crypto.persistence.SigningPublicKeySaveContext
@@ -36,7 +34,9 @@ import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
 import org.slf4j.LoggerFactory
+import java.security.InvalidParameterException
 import java.security.PublicKey
+import java.util.concurrent.TimeUnit
 
 data class CacheKey(val tenantId: String, val publicKeyId: ShortHash)
 
@@ -269,7 +269,7 @@ class SigningServiceImpl(
             "deriveSharedSecret(tenant={}, publicKey={}, otherPublicKey={})",
             tenantId,
             record.data.id,
-            otherPublicKey.publicKeyId()
+            ShortHash.of(otherPublicKey.hexString())
         )
         val scheme = schemeMetadata.findKeyScheme(record.data.schemeCodeName)
         val cryptoService = cryptoServiceFactory.getInstance(record.data.hsmId)
@@ -285,7 +285,8 @@ class SigningServiceImpl(
         publicKey: PublicKey,
         tenantId: String,
     ): String = record.data.hsmAlias ?: throw IllegalStateException(
-        "HSM alias must be specified if key material is not specified, and both are null for ${publicKey.publicKeyId()} of tenant $tenantId"
+        "HSM alias must be specified if key material is not specified, and both are null for " +
+                "${ShortHash.of(publicKey.hexString())} of tenant $tenantId"
     )
 
     @Suppress("LongParameterList")
@@ -353,7 +354,7 @@ class SigningServiceImpl(
                 }
             }
             throw IllegalArgumentException(
-                "The tenant $tenantId doesn't own any public key in '${publicKey.publicKeyId()}' composite key."
+                "The tenant $tenantId doesn't own any public key in '${ShortHash.of(publicKey.hexString())}' composite key."
             )
         } else {
             // TODO - use cache?
@@ -369,7 +370,7 @@ class SigningServiceImpl(
                 }?.let {
                     OwnedKeyRecord(publicKey, it)
                 } ?: throw IllegalArgumentException(
-                    "The tenant $tenantId doesn't own public key '${publicKey.publicKeyId()}'."
+                    "The tenant $tenantId doesn't own public key '${ShortHash.of(publicKey.hexString())}'."
                 )
             }
         }
@@ -382,13 +383,13 @@ class SigningServiceImpl(
         tenantId: String,
     ): KeyMaterialSpec {
         val keyMaterial: ByteArray = record.data.keyMaterial ?: throw IllegalStateException(
-            "The key material is null for public key ${publicKey.publicKeyId()} of tenant $tenantId  "
+            "The key material is null for public key ${ShortHash.of(publicKey.hexString())} of tenant $tenantId  "
         )
         val masterKeyAlias = record.data.masterKeyAlias ?: throw IllegalStateException(
-            "The master key alias for public key ${publicKey.publicKeyId()} of tenant $tenantId must be specified, but is null"
+            "The master key alias for public key ${ShortHash.of(publicKey.hexString())} of tenant $tenantId must be specified, but is null"
         )
         val encodingVersion = record.data.encodingVersion ?: throw IllegalStateException(
-            "The encoding version for public key ${publicKey.publicKeyId()} of tenant $tenantId must be specified, but is null"
+            "The encoding version for public key ${ShortHash.of(publicKey.hexString())} of tenant $tenantId must be specified, but is null"
         )
         return KeyMaterialSpec(
             keyMaterial = keyMaterial,

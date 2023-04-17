@@ -2,7 +2,6 @@ package net.corda.membership.lib.impl.grouppolicy
 
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.impl.converter.PublicKeyConverter
-import net.corda.crypto.impl.converter.PublicKeyHashConverter
 import net.corda.layeredpropertymap.testkit.LayeredPropertyMapMocks
 import net.corda.membership.lib.MemberInfoExtension.Companion.endpoints
 import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
@@ -65,8 +64,7 @@ class GroupPolicyParserImplTest {
         listOf(
             EndpointInfoConverter(),
             MemberNotaryDetailsConverter(keyEncodingService),
-            PublicKeyConverter(keyEncodingService),
-            PublicKeyHashConverter()
+            PublicKeyConverter(keyEncodingService)
         )
     )
     private val memberInfoFactory = MemberInfoFactoryImpl(layeredPropertyMapFactory)

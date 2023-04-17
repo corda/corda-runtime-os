@@ -4,8 +4,6 @@ import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.cipher.suite.CustomSignatureSpec
 import net.corda.crypto.cipher.suite.SignatureSpecs
-import net.corda.crypto.cipher.suite.publicKeyId
-import net.corda.crypto.cipher.suite.sha256Bytes
 import net.corda.crypto.component.impl.exceptionFactories
 import net.corda.crypto.component.test.utils.SendActResult
 import net.corda.crypto.component.test.utils.TestConfigurationReadService
@@ -24,7 +22,9 @@ import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.SCHEME_CODE_NAME_FIL
 import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.core.KEY_LOOKUP_INPUT_ITEMS_LIMIT
 import net.corda.crypto.core.ShortHash
-import net.corda.crypto.core.publicKeyIdFromBytes
+import net.corda.crypto.core.hexString
+import net.corda.crypto.core.publicKeyShortHashFromBytes
+import net.corda.crypto.core.sha256Bytes
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.ShortHashes
@@ -209,7 +209,7 @@ class CryptoOpsClientComponentTests {
             CryptoSigningKeys(
                 listOf(
                     CryptoSigningKey(
-                        keyPair.public.publicKeyId(),
+                        publicKeyShortHashFromBytes(keyPair.public.encoded).toString(),
                         knownTenantId,
                         CryptoConsts.Categories.LEDGER,
                         "alias1",
@@ -242,7 +242,7 @@ class CryptoOpsClientComponentTests {
         }
         assertNotNull(result.value)
         assertEquals(1, result.value.size)
-        assertEquals(keyPair.public.publicKeyId(), result.value[0].id)
+        assertEquals(publicKeyShortHashFromBytes(keyPair.public.encoded).toString(), result.value[0].id)
         assertEquals(knownTenantId, result.value[0].tenantId)
         assertEquals(CryptoConsts.Categories.LEDGER, result.value[0].category)
         assertEquals("alias1", result.value[0].alias)
@@ -329,7 +329,7 @@ class CryptoOpsClientComponentTests {
             CryptoSigningKeys(
                 listOf(
                     CryptoSigningKey(
-                        keyPair.public.publicKeyId(),
+                        publicKeyShortHashFromBytes(keyPair.public.encoded).toString(),
                         knownTenantId,
                         CryptoConsts.Categories.LEDGER,
                         "alias1",
@@ -348,13 +348,13 @@ class CryptoOpsClientComponentTests {
             component.lookupKeysByIds(
                 knownTenantId,
                 listOf(
-                    ShortHash.of(keyPair.public.publicKeyId())
+                    ShortHash.of(keyPair.public.hexString())
                 )
             )
         }
         assertNotNull(result.value)
         assertEquals(1, result.value.size)
-        assertEquals(keyPair.public.publicKeyId(), result.value[0].id)
+        assertEquals(publicKeyShortHashFromBytes(keyPair.public.encoded).toString(), result.value[0].id)
         assertEquals(knownTenantId, result.value[0].tenantId)
         assertEquals(CryptoConsts.Categories.LEDGER, result.value[0].category)
         assertEquals("alias1", result.value[0].alias)
@@ -366,7 +366,7 @@ class CryptoOpsClientComponentTests {
         assertEquals(now.epochSecond, result.value[0].created.epochSecond)
         val query = assertOperationType<ByIdsRpcQuery>()
         assertEquals(1, (query.keyIds as ShortHashes).hashes.size)
-        assertEquals(keyPair.public.publicKeyId(), (query.keyIds as ShortHashes).hashes[0])
+        assertEquals(publicKeyShortHashFromBytes(keyPair.public.encoded).toString(), (query.keyIds as ShortHashes).hashes[0])
         assertRequestContext(result)
     }
 
@@ -382,7 +382,7 @@ class CryptoOpsClientComponentTests {
             CryptoSigningKeys(
                 listOf(
                     CryptoSigningKey(
-                        keyPair.public.publicKeyId(),
+                        publicKeyShortHashFromBytes(keyPair.public.encoded).toString(),
                         knownTenantId,
                         CryptoConsts.Categories.LEDGER,
                         "alias1",
@@ -398,7 +398,7 @@ class CryptoOpsClientComponentTests {
             )
         }
         val ids = (0..KEY_LOOKUP_INPUT_ITEMS_LIMIT).map {
-            ShortHash.of(keyPair.public.publicKeyId())
+            ShortHash.of(keyPair.public.hexString())
         }
         assertThrows(IllegalArgumentException::class.java) {
             component.lookupKeysByIds(knownTenantId, ids)
@@ -414,7 +414,7 @@ class CryptoOpsClientComponentTests {
         setupCompletedResponse {
             CryptoSigningKeys(emptyList())
         }
-        val id = publicKeyIdFromBytes(UUID.randomUUID().toString().toByteArray())
+        val id = publicKeyShortHashFromBytes(UUID.randomUUID().toString().toByteArray()).toString()
         val result = sender.act {
             component.lookupKeysByIds(knownTenantId, listOf(ShortHash.of(id)))
         }
@@ -440,7 +440,7 @@ class CryptoOpsClientComponentTests {
             CryptoSigningKeys(
                 myPublicKeys.map {
                     CryptoSigningKey(
-                        it.publicKeyId(),
+                        publicKeyShortHashFromBytes(it.encoded).toString(),
                         "tenant",
                         "LEDGER",
                         null,
@@ -465,9 +465,9 @@ class CryptoOpsClientComponentTests {
         val query = assertOperationType<ByIdsRpcQuery>()
         val keyIds = (query.keyIds as ShortHashes).hashes
         assertEquals(3, keyIds.size)
-        assertTrue(keyIds.any { it == publicKeyIdFromBytes(schemeMetadata.encodeAsByteArray(myPublicKeys[0])) })
-        assertTrue(keyIds.any { it == publicKeyIdFromBytes(schemeMetadata.encodeAsByteArray(myPublicKeys[1])) })
-        assertTrue(keyIds.any { it == publicKeyIdFromBytes(schemeMetadata.encodeAsByteArray(notMyKey)) })
+        assertTrue(keyIds.any { it == publicKeyShortHashFromBytes(schemeMetadata.encodeAsByteArray(myPublicKeys[0])).toString() })
+        assertTrue(keyIds.any { it == publicKeyShortHashFromBytes(schemeMetadata.encodeAsByteArray(myPublicKeys[1])).toString() })
+        assertTrue(keyIds.any { it == publicKeyShortHashFromBytes(schemeMetadata.encodeAsByteArray(notMyKey)).toString() })
         assertRequestContext(result)
     }
 
@@ -492,7 +492,7 @@ class CryptoOpsClientComponentTests {
             CryptoSigningKeys(
                 myPublicKeys.map {
                     CryptoSigningKey(
-                        publicKeyIdFromBytes(it.array()),
+                        publicKeyShortHashFromBytes(it.array()).toString(),
                         "tenant",
                         "LEDGER",
                         null,
@@ -517,9 +517,9 @@ class CryptoOpsClientComponentTests {
         val query = assertOperationType<ByIdsRpcQuery>()
         val keyIds = (query.keyIds as ShortHashes).hashes
         assertEquals(3, keyIds.size)
-        assertTrue(keyIds.any { it == publicKeyIdFromBytes(myPublicKeys[0].array()) })
-        assertTrue(keyIds.any { it == publicKeyIdFromBytes(myPublicKeys[1].array()) })
-        assertTrue(keyIds.any { it == publicKeyIdFromBytes(notMyKey.array()) })
+        assertTrue(keyIds.any { it == publicKeyShortHashFromBytes(myPublicKeys[0].array()).toString() })
+        assertTrue(keyIds.any { it == publicKeyShortHashFromBytes(myPublicKeys[1].array()).toString() })
+        assertTrue(keyIds.any { it == publicKeyShortHashFromBytes(notMyKey.array()).toString() })
         assertRequestContext(result)
     }
 
@@ -545,9 +545,9 @@ class CryptoOpsClientComponentTests {
         val query = assertOperationType<ByIdsRpcQuery>()
         val keyIds = (query.keyIds as ShortHashes).hashes
         assertEquals(3, keyIds.size)
-        assertTrue(keyIds.any { it == publicKeyIdFromBytes(schemeMetadata.encodeAsByteArray(myPublicKeys[0])) })
-        assertTrue(keyIds.any { it == publicKeyIdFromBytes(schemeMetadata.encodeAsByteArray(myPublicKeys[1])) })
-        assertTrue(keyIds.any { it == publicKeyIdFromBytes(schemeMetadata.encodeAsByteArray(notMyKey)) })
+        assertTrue(keyIds.any { it == publicKeyShortHashFromBytes(schemeMetadata.encodeAsByteArray(myPublicKeys[0])).toString() })
+        assertTrue(keyIds.any { it == publicKeyShortHashFromBytes(schemeMetadata.encodeAsByteArray(myPublicKeys[1])).toString() })
+        assertTrue(keyIds.any { it == publicKeyShortHashFromBytes(schemeMetadata.encodeAsByteArray(notMyKey)).toString() })
         assertRequestContext(result)
     }
 
@@ -579,9 +579,9 @@ class CryptoOpsClientComponentTests {
         val query = assertOperationType<ByIdsRpcQuery>()
         val keyIds = (query.keyIds as ShortHashes).hashes
         assertEquals(3, keyIds.size)
-        assertTrue(keyIds.any { it == publicKeyIdFromBytes(myPublicKeys[0].array()) })
-        assertTrue(keyIds.any { it == publicKeyIdFromBytes(myPublicKeys[1].array()) })
-        assertTrue(keyIds.any { it == publicKeyIdFromBytes(notMyKey.array()) })
+        assertTrue(keyIds.any { it == publicKeyShortHashFromBytes(myPublicKeys[0].array()).toString() })
+        assertTrue(keyIds.any { it == publicKeyShortHashFromBytes(myPublicKeys[1].array()).toString() })
+        assertTrue(keyIds.any { it == publicKeyShortHashFromBytes(notMyKey.array()).toString() })
         assertRequestContext(result)
     }
 

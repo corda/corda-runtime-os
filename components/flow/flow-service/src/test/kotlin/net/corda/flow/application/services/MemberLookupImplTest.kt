@@ -1,6 +1,6 @@
 package net.corda.flow.application.services
 
-import net.corda.crypto.cipher.suite.PublicKeyHash
+import net.corda.crypto.core.publicKeyHashFromBytes
 import net.corda.flow.ALICE_X500_NAME
 import net.corda.flow.application.services.impl.MemberLookupImpl
 import net.corda.v5.membership.MemberInfo
@@ -35,7 +35,7 @@ class MemberLookupImplTest {
             whenever(encoded).thenReturn(ByteArray(32) { 1 })
         }
 
-        val keyHash = PublicKeyHash.calculate(key)
+        val keyHash = publicKeyHashFromBytes(key.encoded)
         val member1 = mock<MemberInfo>()
 
         whenever(membershipGroupReader.lookupByLedgerKey(keyHash)).thenReturn(member1)

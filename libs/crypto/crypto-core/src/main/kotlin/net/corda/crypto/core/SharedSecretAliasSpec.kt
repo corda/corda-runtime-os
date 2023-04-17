@@ -1,5 +1,6 @@
-package net.corda.crypto.cipher.suite
+package net.corda.crypto.core
 
+import net.corda.crypto.cipher.suite.SharedSecretSpec
 import net.corda.crypto.cipher.suite.schemes.KeyScheme
 import java.security.PublicKey
 
@@ -18,5 +19,5 @@ class SharedSecretAliasSpec(
     override val otherPublicKey: PublicKey
 ) : SharedSecretSpec {
     override fun toString(): String =
-        "$keyScheme,hsmAlias=$hsmAlias,otherPublicKey=${otherPublicKey.publicKeyId()}"
+        "$keyScheme,hsmAlias=$hsmAlias,otherPublicKey=${ShortHash.of(otherPublicKey.hexString())}"
 }

@@ -1,7 +1,6 @@
 package net.corda.membership.impl.rest.v1
 
 import net.corda.crypto.cipher.suite.KeyEncodingService
-import net.corda.crypto.cipher.suite.publicKeyId
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.core.CryptoConsts.Categories.SESSION_INIT
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.ALIAS_FILTER
@@ -14,6 +13,7 @@ import net.corda.crypto.core.CryptoTenants.P2P
 import net.corda.crypto.core.InvalidParamsException
 import net.corda.crypto.core.KeyAlreadyExistsException
 import net.corda.crypto.core.ShortHash
+import net.corda.crypto.core.publicKeyShortHashFromBytes
 import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.data.crypto.wire.ops.rpc.queries.CryptoKeyOrderBy
 import net.corda.lifecycle.LifecycleCoordinator
@@ -304,7 +304,7 @@ class KeysRestResourceImplTest {
 
             val id = keysOps.generateKeyPair(tenantId = TENANT_ID, alias = ALIAS, hsmCategory = CATEGORY, scheme = SCHEME)
 
-            assertThat(id).isEqualTo(KeyPairIdentifier(publicKey.publicKeyId()))
+            assertThat(id).isEqualTo(KeyPairIdentifier(publicKeyShortHashFromBytes(publicKey.encoded).toString()))
         }
 
         @Test

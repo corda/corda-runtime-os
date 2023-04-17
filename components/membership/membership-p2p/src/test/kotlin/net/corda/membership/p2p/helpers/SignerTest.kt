@@ -1,10 +1,10 @@
 package net.corda.membership.p2p.helpers
 
 import net.corda.crypto.cipher.suite.SignatureSpecs
-import net.corda.crypto.cipher.suite.publicKeyId
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.core.DigitalSignatureWithKey
 import net.corda.crypto.core.ShortHash
+import net.corda.crypto.core.hexString
 import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.crypto.KeySchemeCodes.RSA_CODE_NAME
@@ -31,7 +31,7 @@ class SignerTest {
         val key = mock<CryptoSigningKey> {
             on { schemeCodeName } doReturn RSA_CODE_NAME
         }
-        whenever(cryptoOpsClient.lookupKeysByIds(tenantId, listOf(ShortHash.of(publicKey.publicKeyId())))).doReturn(listOf(key))
+        whenever(cryptoOpsClient.lookupKeysByIds(tenantId, listOf(ShortHash.of(publicKey.hexString())))).doReturn(listOf(key))
         val signature = mock<DigitalSignatureWithKey>()
         whenever(
             cryptoOpsClient.sign(
@@ -51,7 +51,7 @@ class SignerTest {
         val key = mock<CryptoSigningKey> {
             on { schemeCodeName } doReturn "NOP"
         }
-        whenever(cryptoOpsClient.lookupKeysByIds(tenantId, listOf(ShortHash.of(publicKey.publicKeyId())))).doReturn(listOf(key))
+        whenever(cryptoOpsClient.lookupKeysByIds(tenantId, listOf(ShortHash.of(publicKey.hexString())))).doReturn(listOf(key))
 
         assertThrows<CordaRuntimeException> {
             signer.sign(data)
@@ -61,7 +61,7 @@ class SignerTest {
     @Test
     fun `sign fail if key can not be found`() {
         val data = byteArrayOf(1, 2, 3)
-        whenever(cryptoOpsClient.lookupKeysByIds(tenantId, listOf(ShortHash.of(publicKey.publicKeyId())))).doReturn(emptyList())
+        whenever(cryptoOpsClient.lookupKeysByIds(tenantId, listOf(ShortHash.of(publicKey.hexString())))).doReturn(emptyList())
 
         assertThrows<CordaRuntimeException> {
             signer.sign(data)

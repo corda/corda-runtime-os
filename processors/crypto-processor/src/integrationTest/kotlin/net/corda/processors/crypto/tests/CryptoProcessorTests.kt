@@ -5,16 +5,14 @@ import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.cipher.suite.SignatureSpecImpl
 import net.corda.crypto.cipher.suite.SignatureSpecs
 import net.corda.crypto.cipher.suite.SignatureVerificationService
-import net.corda.crypto.cipher.suite.publicKeyId
-import net.corda.crypto.cipher.suite.sha256Bytes
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.client.hsm.HSMRegistrationClient
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.core.DigitalSignatureWithKey
 import net.corda.crypto.core.SecureHashImpl
-import net.corda.crypto.core.ShortHash
-import net.corda.crypto.core.publicKeyIdFromBytes
+import net.corda.crypto.core.publicKeyShortHashFromBytes
+import net.corda.crypto.core.sha256Bytes
 import net.corda.crypto.flow.CryptoFlowOpsTransformer
 import net.corda.crypto.flow.factory.CryptoFlowOpsTransformerFactory
 import net.corda.crypto.hes.EphemeralKeyPairEncryptor
@@ -72,7 +70,6 @@ import net.corda.test.util.eventually
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256R1_CODE_NAME
-import net.corda.v5.crypto.KeySchemeCodes.X25519_CODE_NAME
 import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
@@ -84,7 +81,6 @@ import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeAll
-import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
@@ -433,7 +429,7 @@ class CryptoProcessorTests {
     ) {
         val found = opsClient.lookupKeysByIds(
             tenantId = tenantId,
-            keyIds = listOf(ShortHash.of(publicKeyIdFromBytes(UUID.randomUUID().toString().toByteArray())))
+            keyIds = listOf(publicKeyShortHashFromBytes(UUID.randomUUID().toString().toByteArray()))
         )
         assertEquals(0, found.size)
     }
@@ -601,10 +597,10 @@ class CryptoProcessorTests {
     ) {
         val found = opsClient.lookupKeysByIds(
             tenantId = tenantId,
-            keyIds = listOf(ShortHash.of(publicKey.publicKeyId()))
+            keyIds = listOf(publicKeyShortHashFromBytes(publicKey.encoded))
         )
         assertEquals(1, found.size)
-        assertEquals(publicKey.publicKeyId(), found[0].id)
+        assertEquals(publicKeyShortHashFromBytes(publicKey.encoded), found[0].id)
         assertEquals(tenantId, found[0].tenantId)
         if (alias.isNullOrBlank()) {
             assertNull(found[0].alias)
@@ -639,7 +635,7 @@ class CryptoProcessorTests {
             )
         )
         assertEquals(1, found.size)
-        assertEquals(publicKey.publicKeyId(), found[0].id)
+        assertEquals(publicKeyShortHashFromBytes(publicKey.encoded), found[0].id)
         assertEquals(tenantId, found[0].tenantId)
         assertEquals(alias, found[0].alias)
         assertEquals(category, found[0].category)
@@ -762,7 +758,7 @@ class CryptoProcessorTests {
             logger.info(
                 "Publishing: createSign({}, {}, {}), request id: $requestId, flow id: $key",
                 tenantId,
-                publicKey.publicKeyId(),
+                publicKeyShortHashFromBytes(publicKey.encoded),
                 spec
             )
             publisher.publish(
@@ -808,7 +804,7 @@ class CryptoProcessorTests {
             logger.info(
                 "Publishing: createSign({}, {}, {})",
                 tenantId,
-                publicKey.publicKeyId(),
+                publicKeyShortHashFromBytes(publicKey.encoded),
                 spec
             )
             publisher.publish(

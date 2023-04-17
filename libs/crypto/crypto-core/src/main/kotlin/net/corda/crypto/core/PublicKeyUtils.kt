@@ -1,22 +1,20 @@
 package net.corda.crypto.core
 
-import java.security.PublicKey
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.cipher.suite.PlatformDigestService
-import net.corda.crypto.cipher.suite.PublicKeyHash
-import net.corda.crypto.cipher.suite.sha256Bytes
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
+import java.security.PublicKey
 
 // TODO we should end up with only having helpers all of them using `DigestService`/ `PlatformDigestService`
 //  as recorded in https://r3-cev.atlassian.net/browse/CORE-10267.
 /**
  * Returns the id as the first 12 characters of an SHA-256 hash of the public key.
  */
-// TODO Should use `digestService`
-fun publicKeyIdFromBytes(publicKey: ByteArray): String =
-    // TODO Need to replace below calculation with using `DigestService` and get short id from its outcome
-    PublicKeyHash.calculate(publicKey).id
+//// TODO Should use `digestService`
+//fun publicKeyIdFromBytes(publicKey: ByteArray): String =
+//    // TODO Need to replace below calculation with using `DigestService` and get short id from its outcome
+//    publicKeyShortHashFromBytes(publicKey).toString()
 
 fun fullPublicKeyIdFromBytes(publicKey: ByteArray, digestService: PlatformDigestService): String =
     // TODO default digest algorithm needs to selected through default digest service

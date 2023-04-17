@@ -4,7 +4,7 @@ import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.crypto.config.impl.createDefaultCryptoConfig
 import net.corda.crypto.config.impl.toCryptoConfig
 import net.corda.crypto.core.CryptoConsts
-import net.corda.crypto.core.publicKeyIdFromBytes
+import net.corda.crypto.core.publicKeyShortHashFromBytes
 import net.corda.crypto.service.impl.infra.TestServicesFactory
 import net.corda.crypto.service.impl.infra.TestServicesFactory.Companion.CTX_TRACKING
 import net.corda.data.KeyValuePair
@@ -193,7 +193,7 @@ class CryptoOpsBusProcessorTests {
 
     @Test
     fun `Should return empty list for unknown key id`() {
-        val keyEnc = publicKeyIdFromBytes(UUID.randomUUID().toString().toByteArray())
+        val keyEnc = publicKeyShortHashFromBytes(UUID.randomUUID().toString().toByteArray()).toString()
         val response = process<CryptoSigningKeys>(ByIdsRpcQuery(ShortHashes(listOf(keyEnc))))
         assertEquals(0, response.keys.size)
     }

@@ -3,14 +3,15 @@ package net.corda.membership.impl.registration.staticnetwork
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.cipher.suite.KeyEncodingService
-import net.corda.crypto.cipher.suite.PublicKeyHash
 import net.corda.crypto.cipher.suite.SignatureSpecs
-import net.corda.crypto.cipher.suite.calculateHash
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.client.hsm.HSMRegistrationClient
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoConsts.Categories.LEDGER
 import net.corda.crypto.core.CryptoConsts.Categories.SESSION_INIT
+import net.corda.crypto.core.SecureHashImpl
+import net.corda.crypto.core.publicKeyHashFromBytes
+import net.corda.crypto.core.sha256Bytes
 import net.corda.crypto.impl.converter.PublicKeyConverter
 import net.corda.crypto.impl.converter.PublicKeyHashConverter
 import net.corda.data.CordaAvroDeserializer
@@ -100,6 +101,7 @@ import net.corda.schema.Schemas.P2P.P2P_HOSTED_IDENTITIES_TOPIC
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.membership.MembershipSchema
 import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.crypto.KeySchemeCodes.RSA_CODE_NAME
 import net.corda.v5.membership.MemberContext
@@ -436,7 +438,7 @@ class StaticMemberRegistrationServiceTest {
             assertEquals(aliceKey, memberPublished.sessionInitiationKeys.first())
             assertEquals(1, memberPublished.ledgerKeys.size)
             assertEquals(1, memberPublished.ledgerKeyHashes.size)
-            assertEquals(aliceKey.calculateHash(), memberPublished.ledgerKeyHashes.first())
+            assertEquals(publicKeyHashFromBytes(aliceKey.sha256Bytes()), memberPublished.ledgerKeyHashes.first())
             assertEquals(MEMBER_STATUS_ACTIVE, memberPublished.status)
             assertEquals(1, memberPublished.endpoints.size)
 
@@ -818,13 +820,14 @@ class StaticMemberRegistrationServiceTest {
                         it.publicKey == defaultKey
                     }
                     .allMatch {
-                        it.publicKeyHash == PublicKeyHash.calculate(defaultKey)
+                        it.publicKeyHash == SecureHashImpl(DigestAlgorithmName.SHA2_256.name, defaultKey.encoded) //publicKeyHashFromBytes(defaultKey.sha256Bytes())
                     }
                     .allMatch {
                         it.spec.signatureName == SignatureSpecs.RSA_SHA512.signatureName
                     }
             }
         }
+
 
         @Test
         fun `registration without notary will not add notary to member info`() {

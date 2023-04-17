@@ -4,13 +4,13 @@ import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.cipher.suite.PlatformDigestService
-import net.corda.crypto.cipher.suite.publicKeyId
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.client.CryptoOpsProxyClient
 import net.corda.crypto.component.impl.AbstractConfigurableComponent
 import net.corda.crypto.component.impl.DependenciesTracker
 import net.corda.crypto.core.DigitalSignatureWithKey
 import net.corda.crypto.core.ShortHash
+import net.corda.crypto.core.publicKeyShortHashFromBytes
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.SecureHashes
 import net.corda.data.crypto.wire.CryptoSignatureSpec
@@ -134,7 +134,7 @@ class CryptoOpsClientComponent @Activate constructor(
     ): DigitalSignatureWithKey {
         val signatureSpec = schemeMetadata.inferSignatureSpec(publicKey, digest)
         require(signatureSpec != null) {
-            "Failed to infer the signature spec for key=${publicKey.publicKeyId()} " +
+            "Failed to infer the signature spec for key=${publicKeyShortHashFromBytes(publicKey.encoded)} " +
                     " (${schemeMetadata.findKeyScheme(publicKey).codeName}:${digest.name})"
         }
         return impl.ops.sign(tenantId, publicKey, signatureSpec, data, context)

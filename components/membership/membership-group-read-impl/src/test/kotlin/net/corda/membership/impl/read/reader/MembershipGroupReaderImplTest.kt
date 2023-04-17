@@ -1,7 +1,7 @@
 package net.corda.membership.impl.read.reader
 
-import net.corda.crypto.cipher.suite.PublicKeyHash
-import net.corda.crypto.cipher.suite.sha256Bytes
+import net.corda.crypto.core.publicKeyHashFromBytes
+import net.corda.crypto.core.sha256Bytes
 import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.data.p2p.app.MembershipStatusFilter.ACTIVE_OR_SUSPENDED_IF_PRESENT_OR_PENDING
 import net.corda.membership.impl.read.TestProperties
@@ -18,6 +18,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.lib.SignedGroupParameters
 import net.corda.membership.lib.UnsignedGroupParameters
 import net.corda.membership.read.GroupParametersReaderService
+import net.corda.v5.crypto.SecureHash
 import net.corda.v5.membership.MGMContext
 import net.corda.v5.membership.MemberContext
 import net.corda.v5.membership.MemberInfo
@@ -54,13 +55,13 @@ class MembershipGroupReaderImplTest {
     }
     private val mockLedgerKey: PublicKey = mock()
     private val mockLedgerKeyAsByteArray = "1234".toByteArray()
-    private val mockLedgerKeyHash = PublicKeyHash.parse(mockLedgerKeyAsByteArray.sha256Bytes())
+    private val mockLedgerKeyHash = publicKeyHashFromBytes(mockLedgerKeyAsByteArray.sha256Bytes())
     private val mockSessionKey: PublicKey = mock()
     private val mockSessionKeyAsByteArray = "5678".toByteArray()
-    private val mockSessionKeyHash = PublicKeyHash.parse(mockSessionKeyAsByteArray.sha256Bytes())
+    private val mockSessionKeyHash = publicKeyHashFromBytes(mockSessionKeyAsByteArray.sha256Bytes())
     private val mockedSuspendedMemberProvidedContext = mock<MemberContext> {
-        on { parseSet(eq(LEDGER_KEY_HASHES), eq(PublicKeyHash::class.java)) } doReturn setOf(mockLedgerKeyHash)
-        on { parseSet(eq(SESSION_KEYS_HASH), eq(PublicKeyHash::class.java)) } doReturn setOf(mockSessionKeyHash)
+        on { parseSet(eq(LEDGER_KEY_HASHES), eq(SecureHash::class.java)) } doReturn setOf(mockLedgerKeyHash)
+        on { parseSet(eq(SESSION_KEYS_HASH), eq(SecureHash::class.java)) } doReturn setOf(mockSessionKeyHash)
     }
     private val mockedSuspendedMgmProvidedContext = mock<MGMContext> {
         on { parse(eq(STATUS), eq(String::class.java)) } doReturn MEMBER_STATUS_SUSPENDED
@@ -82,8 +83,8 @@ class MembershipGroupReaderImplTest {
     }
 
     private val mockedActiveMemberProvidedContext = mock<MemberContext> {
-        on { parseSet(eq(LEDGER_KEY_HASHES), eq(PublicKeyHash::class.java)) } doReturn setOf(mockLedgerKeyHash)
-        on { parseSet(eq(SESSION_KEYS_HASH), eq(PublicKeyHash::class.java)) } doReturn setOf(mockSessionKeyHash)
+        on { parseSet(eq(LEDGER_KEY_HASHES), eq(SecureHash::class.java)) } doReturn setOf(mockLedgerKeyHash)
+        on { parseSet(eq(SESSION_KEYS_HASH), eq(SecureHash::class.java)) } doReturn setOf(mockSessionKeyHash)
         on { parse(eq(STATUS), eq(String::class.java)) } doReturn MEMBER_STATUS_ACTIVE
         on { parseList(SESSION_KEYS, PublicKey::class.java) } doReturn listOf(mockSessionKey)
     }

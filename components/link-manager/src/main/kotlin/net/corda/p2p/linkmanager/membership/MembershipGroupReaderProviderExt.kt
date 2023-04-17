@@ -1,6 +1,6 @@
 package net.corda.p2p.linkmanager.membership
 
-import net.corda.crypto.cipher.suite.PublicKeyHash
+import net.corda.crypto.core.publicKeyHashFromBytes
 import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.virtualnode.HoldingIdentity
@@ -17,4 +17,4 @@ fun MembershipGroupReaderProvider.lookupByKey(
     key: ByteArray,
     filter: MembershipStatusFilter = MembershipStatusFilter.ACTIVE,
 ) = this.getGroupReader(requestingIdentity)
-    .lookupBySessionKey(PublicKeyHash.parse(key), filter)
+    .lookupBySessionKey(publicKeyHashFromBytes(key), filter)

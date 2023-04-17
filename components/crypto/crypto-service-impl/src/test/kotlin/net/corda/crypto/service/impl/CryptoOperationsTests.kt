@@ -4,7 +4,6 @@ import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.cipher.suite.CustomSignatureSpec
 import net.corda.crypto.cipher.suite.SignatureSpecs
 import net.corda.crypto.cipher.suite.SignatureVerificationService
-import net.corda.crypto.cipher.suite.publicKeyId
 import net.corda.crypto.cipher.suite.schemes.KeyScheme
 import net.corda.crypto.cipher.suite.schemes.KeySchemeCapability
 import net.corda.crypto.component.test.utils.generateKeyPair
@@ -12,7 +11,7 @@ import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.ALIAS_FILTER
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.MASTER_KEY_ALIAS_FILTER
 import net.corda.crypto.core.ShortHash
-import net.corda.crypto.core.publicKeyIdFromBytes
+import net.corda.crypto.core.hexString
 import net.corda.crypto.hes.HybridEncryptionParams
 import net.corda.crypto.hes.impl.EphemeralKeyPairEncryptorImpl
 import net.corda.crypto.hes.impl.StableKeyPairDecryptorImpl
@@ -26,6 +25,7 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.test.impl.TestLifecycleCoordinatorFactoryImpl
 import net.corda.test.util.createTestCase
 import net.corda.test.util.eventually
+import net.corda.v5.base.util.ByteArrays.toHexString
 import net.corda.v5.crypto.CompositeKeyNodeAndWeight
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256R1_CODE_NAME
@@ -355,7 +355,7 @@ class CryptoOperationsTests {
         val key2 = signingFreshKeys.values.first().publicKey
         val ourKeys = signingFreshKeys.values.first().signingService.lookupSigningKeysByPublicKeyShortHash(
             tenantId,
-            listOf(ShortHash.of(key1.publicKeyId()), ShortHash.of(key2.publicKeyId()))
+            listOf(ShortHash.of(key1.hexString()), ShortHash.of(key2.hexString()))
         ).toList()
         assertThat(ourKeys).hasSize(1)
         assertTrue(ourKeys.any { it.publicKey.contentEquals(key2.encoded) })
@@ -371,7 +371,7 @@ class CryptoOperationsTests {
         }
         val ourKeys = signingFreshKeys.values.first().signingService.lookupSigningKeysByPublicKeyShortHash(
             tenantId,
-            listOf(ShortHash.of(key1.publicKeyId()), ShortHash.of(key2.publicKeyId()))
+            listOf(ShortHash.of(key1.hexString()), ShortHash.of(key2.hexString()))
         ).toList()
         assertThat(ourKeys).isEmpty()
     }
@@ -385,7 +385,7 @@ class CryptoOperationsTests {
         val returned =
             info.signingService.lookupSigningKeysByPublicKeyShortHash(
                 tenantId,
-                listOf(ShortHash.of(info.publicKey.publicKeyId()))
+                listOf(ShortHash.of(info.publicKey.hexString()))
             )
         assertEquals(1, returned.size)
         verifySigningKeyInfo(info.publicKey, info.alias, scheme, returned.first())
@@ -401,7 +401,7 @@ class CryptoOperationsTests {
         val returned =
             info.signingService.lookupSigningKeysByPublicKeyShortHash(
                 tenantId,
-                listOf(ShortHash.of(info.publicKey.publicKeyId()))
+                listOf(ShortHash.of(info.publicKey.hexString()))
             )
         assertEquals(1, returned.size)
         verifySigningKeyInfo(info.publicKey, null, scheme, returned.first())
@@ -416,7 +416,7 @@ class CryptoOperationsTests {
         val info = signingAliasedKeys.getValue(scheme)
         val returned = info.signingService.lookupSigningKeysByPublicKeyShortHash(
             tenantId,
-            listOf(ShortHash.of(publicKeyIdFromBytes(UUID.randomUUID().toString().toByteArray())))
+            listOf(ShortHash.of(toHexString(UUID.randomUUID().toString().toByteArray())))
         )
         assertEquals(0, returned.size)
     }
@@ -470,7 +470,7 @@ class CryptoOperationsTests {
         val returned =
             info.signingService.lookupSigningKeysByPublicKeyShortHash(
                 tenantId,
-                listOf(ShortHash.of(unknownPublicKey.publicKeyId()))
+                listOf(ShortHash.of(unknownPublicKey.hexString()))
             )
         assertEquals(0, returned.size)
     }

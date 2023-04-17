@@ -1,9 +1,9 @@
 package net.corda.membership.p2p.helpers
 
 import net.corda.crypto.cipher.suite.SignatureSpecs
-import net.corda.crypto.cipher.suite.publicKeyId
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.core.ShortHash
+import net.corda.crypto.core.hexString
 import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256K1_CODE_NAME
@@ -69,7 +69,7 @@ class KeySpecExtractor(
         val keyInfo = cryptoOpsClient.lookupKeysByIds(
             tenantId,
             listOf(
-                ShortHash.of(publicKey.publicKeyId())
+                ShortHash.of(publicKey.hexString())
             ),
         ).firstOrNull() ?: throw CordaRuntimeException("Public key is not owned by $tenantId")
         return keyInfo.spec ?: throw CordaRuntimeException("Can not find spec for ${keyInfo.schemeCodeName}")

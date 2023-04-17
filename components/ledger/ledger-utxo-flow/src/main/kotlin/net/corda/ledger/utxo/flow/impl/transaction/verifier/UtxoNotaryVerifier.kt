@@ -1,6 +1,7 @@
 package net.corda.ledger.utxo.flow.impl.transaction.verifier
 
-import net.corda.crypto.cipher.suite.publicKeyId
+import net.corda.crypto.core.ShortHash
+import net.corda.crypto.core.hexString
 import net.corda.ledger.common.data.transaction.TransactionMetadataInternal
 import net.corda.membership.lib.SignedGroupParameters
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
@@ -28,7 +29,7 @@ fun verifyNotaryAllowed(transaction: UtxoLedgerTransaction, signedGroupParameter
         "Notary of the transaction (${transaction.notaryName}) is not listed in the available notaries."
     }
     check(notaryCandidate.publicKey == transaction.notaryKey) {
-        "Notary key of the transaction (${transaction.notaryKey.publicKeyId()} is not matching against " +
-                "the related notary (${notaryCandidate.publicKey.publicKeyId()} in Signed Group Parameters."
+        "Notary key of the transaction (${ShortHash.of(transaction.notaryKey.hexString())} is not matching against " +
+                "the related notary (${ShortHash.of(notaryCandidate.publicKey.hexString())} in Signed Group Parameters."
     }
 }

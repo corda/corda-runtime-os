@@ -5,7 +5,7 @@ import net.corda.crypto.cipher.suite.CustomSignatureSpec
 import net.corda.crypto.cipher.suite.ParameterizedSignatureSpec
 import net.corda.crypto.cipher.suite.SignatureSpecImpl
 import net.corda.crypto.cipher.suite.schemes.SerializedAlgorithmParameterSpec
-import net.corda.crypto.cipher.suite.sha256Bytes
+import net.corda.crypto.core.sha256Bytes
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureParameterSpec

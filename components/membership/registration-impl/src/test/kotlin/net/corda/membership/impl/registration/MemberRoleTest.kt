@@ -1,7 +1,7 @@
 package net.corda.membership.impl.registration
 
-import net.corda.crypto.cipher.suite.PublicKeyHash
 import net.corda.crypto.cipher.suite.SignatureSpecs
+import net.corda.crypto.core.publicKeyHashFromBytes
 import net.corda.membership.impl.registration.MemberRole.Companion.extractRolesFromContext
 import net.corda.membership.impl.registration.MemberRole.Companion.toMemberInfo
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_KEY_HASH
@@ -151,13 +151,13 @@ class MemberRoleTest {
 
     @Test
     fun `toMemberInfo returns the correct information`() {
-        val key1Hash = PublicKeyHash.calculate("test".toByteArray())
+        val key1Hash = publicKeyHashFromBytes("test".toByteArray())
         val key1 = mock<KeyDetails> {
             on { pem } doReturn "pem1"
             on { hash } doReturn key1Hash
             on { spec } doReturn SignatureSpecs.RSA_SHA256
         }
-        val key2Hash = PublicKeyHash.calculate("test2".toByteArray())
+        val key2Hash = publicKeyHashFromBytes("test2".toByteArray())
         val key2 = mock<KeyDetails> {
             on { pem } doReturn "pem2"
             on { hash } doReturn key2Hash

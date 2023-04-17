@@ -1,8 +1,5 @@
 package net.corda.crypto.service.impl.infra
 
-import java.security.PublicKey
-import java.time.Instant
-import java.util.concurrent.locks.ReentrantLock
 import net.corda.crypto.core.ShortHash
 import net.corda.crypto.core.publicKeyHashFromBytes
 import net.corda.crypto.core.publicKeyShortHashFromBytes
@@ -22,6 +19,9 @@ import net.corda.crypto.softhsm.SigningRepository
 import net.corda.layeredpropertymap.impl.LayeredPropertyMapImpl
 import net.corda.layeredpropertymap.impl.PropertyConverter
 import net.corda.v5.crypto.SecureHash
+import java.security.PublicKey
+import java.time.Instant
+import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
 class TestSigningRepository: SigningRepository {

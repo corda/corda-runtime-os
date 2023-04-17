@@ -1,7 +1,7 @@
 package net.corda.membership.lib
 
-import net.corda.crypto.cipher.suite.PublicKeyHash
 import net.corda.crypto.core.parseSecureHash
+import net.corda.crypto.core.publicKeyHashFromBytes
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.membership.lib.notary.MemberNotaryDetails
 import net.corda.utilities.NetworkHostAndPort
@@ -9,6 +9,7 @@ import net.corda.utilities.parse
 import net.corda.utilities.parseList
 import net.corda.utilities.parseOrNull
 import net.corda.utilities.parseSet
+import net.corda.v5.crypto.SecureHash
 import net.corda.v5.membership.EndpointInfo
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
@@ -192,7 +193,7 @@ class MemberInfoExtension {
 
         /** Collection of ledger key hashes for member's node. */
         @JvmStatic
-        val MemberInfo.ledgerKeyHashes: Collection<PublicKeyHash>
+        val MemberInfo.ledgerKeyHashes: Collection<SecureHash>
             get() = memberProvidedContext.parseSet(LEDGER_KEY_HASHES)
 
         /**
@@ -208,8 +209,8 @@ class MemberInfoExtension {
          * It is preferable to always store this in the member context to avoid the repeated calculation.
          */
         @JvmStatic
-        val MemberInfo.sessionKeysHash: Collection<PublicKeyHash>
-            get() = memberProvidedContext.parseSet<PublicKeyHash>(SESSION_KEYS_HASH).let { storedKeys ->
+        val MemberInfo.sessionKeysHash: Collection<SecureHash>
+            get() = memberProvidedContext.parseSet<SecureHash>(SESSION_KEYS_HASH).let { storedKeys ->
                 if (storedKeys.isNotEmpty()) {
                     storedKeys
                 } else {
@@ -218,7 +219,7 @@ class MemberInfoExtension {
                                 "It is preferable to store this hash in the member context to avoid calculating on each access."
                     )
                     sessionInitiationKeys.map {
-                        PublicKeyHash.calculate(it)
+                        publicKeyHashFromBytes(it.encoded)
                     }
                 }
             }

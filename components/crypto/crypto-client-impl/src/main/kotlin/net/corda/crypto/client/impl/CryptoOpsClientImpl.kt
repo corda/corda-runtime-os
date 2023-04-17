@@ -3,9 +3,6 @@ package net.corda.crypto.client.impl
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.cipher.suite.PlatformDigestService
-import net.corda.crypto.cipher.suite.publicKeyId
-import net.corda.crypto.cipher.suite.sha256Bytes
-import net.corda.crypto.cipher.suite.toStringShort
 import net.corda.crypto.component.impl.retry
 import net.corda.crypto.component.impl.toClientException
 import net.corda.crypto.core.CryptoTenants
@@ -14,7 +11,10 @@ import net.corda.crypto.core.KEY_LOOKUP_INPUT_ITEMS_LIMIT
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.core.ShortHash
 import net.corda.crypto.core.bytes
-import net.corda.crypto.core.publicKeyIdFromBytes
+import net.corda.crypto.core.hexString
+import net.corda.crypto.core.publicKeyShortHashFromBytes
+import net.corda.crypto.core.sha256Bytes
+import net.corda.crypto.core.toStringShort
 import net.corda.crypto.impl.createWireRequestContext
 import net.corda.crypto.impl.toWire
 import net.corda.data.KeyValuePairList
@@ -105,7 +105,7 @@ class CryptoOpsClientImpl(
             } else {
                 ShortHashes(
                     candidateKeys.map {
-                        publicKeyIdFromBytes(schemeMetadata.encodeAsByteArray(it))
+                        publicKeyShortHashFromBytes(schemeMetadata.encodeAsByteArray(it)).toString()
                             .also { shortHash -> keyIdsForLogging.add(shortHash) }
                     }
                 )
@@ -131,7 +131,7 @@ class CryptoOpsClientImpl(
     // This path is not being currently used - consider removing it
     fun filterMyKeysProxy(tenantId: String, candidateKeys: Iterable<ByteBuffer>): CryptoSigningKeys {
         val publicKeyIds = candidateKeys.map {
-            publicKeyIdFromBytes(it.array())
+            publicKeyShortHashFromBytes(it.array()).toString()
         }
         return lookupKeysByIdsProxy(tenantId, ShortHashes(publicKeyIds))
     }
@@ -335,8 +335,8 @@ class CryptoOpsClientImpl(
         logger.info(
             "Sending '{}'(publicKey={},otherPublicKey={})",
             DeriveSharedSecretCommand::class.java.simpleName,
-            publicKey.publicKeyId(),
-            otherPublicKey.publicKeyId()
+            ShortHash.of(publicKey.hexString()),
+            ShortHash.of(otherPublicKey.hexString())
         )
         val request = createRequest(
             tenantId,

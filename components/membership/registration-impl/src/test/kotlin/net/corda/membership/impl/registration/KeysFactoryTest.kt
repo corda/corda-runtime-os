@@ -2,13 +2,13 @@ package net.corda.membership.impl.registration
 
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.cipher.suite.SignatureSpecs
-import net.corda.crypto.cipher.suite.calculateHash
-import net.corda.crypto.cipher.suite.publicKeyId
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.ALIAS_FILTER
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.CATEGORY_FILTER
 import net.corda.crypto.core.KeyAlreadyExistsException
 import net.corda.crypto.core.ShortHash
+import net.corda.crypto.core.hexString
+import net.corda.crypto.core.publicKeyHashFromBytes
 import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256R1_CODE_NAME
 import org.assertj.core.api.Assertions.assertThat
@@ -77,7 +77,7 @@ class KeysFactoryTest {
             )
         } doThrow KeyAlreadyExistsException("", "", "")
         on {
-            lookupKeysByIds(tenantId, listOf(ShortHash.of(publicKey.publicKeyId())))
+            lookupKeysByIds(tenantId, listOf(ShortHash.of(publicKey.hexString())))
         } doReturn listOf(cryptoSigningKey)
     }
 
@@ -143,7 +143,7 @@ class KeysFactoryTest {
             keysFactory
                 .getOrGenerateKeyPair(existingKeyCategory)
                 .hash
-        ).isEqualTo(publicKey.calculateHash())
+        ).isEqualTo(publicKeyHashFromBytes(publicKey.encoded))
     }
 
     @Test

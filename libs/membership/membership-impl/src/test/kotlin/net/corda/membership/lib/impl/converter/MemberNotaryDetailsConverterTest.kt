@@ -1,11 +1,12 @@
 package net.corda.membership.lib.impl.converter
 
 import net.corda.crypto.cipher.suite.KeyEncodingService
-import net.corda.crypto.cipher.suite.PublicKeyHash
 import net.corda.crypto.cipher.suite.SignatureSpecs
+import net.corda.crypto.core.sha256Bytes
 import net.corda.layeredpropertymap.ConversionContext
 import net.corda.v5.base.exceptions.ValueNotFoundException
 import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.base.util.ByteArrays.toHexString
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.SoftAssertions.assertSoftly
 import org.junit.jupiter.api.Test
@@ -32,8 +33,8 @@ class MemberNotaryDetailsConverterTest {
         on { decodePublicKey("PEM1") } doReturn publicKeyOne
         on { decodePublicKey("PEM2") } doReturn publicKeyTwo
     }
-    private val hashOne = PublicKeyHash.calculate(publicKeyOne).value
-    private val hashTwo = PublicKeyHash.calculate(publicKeyTwo).value
+    private val hashOne = toHexString(publicKeyOne.sha256Bytes())
+    private val hashTwo = toHexString(publicKeyTwo.sha256Bytes())
     private val context = mock<ConversionContext> {
         on { value(SERVICE_NAME) } doReturn "O=Service, L=London, C=GB"
         on { value(SERVICE_PROTOCOL) } doReturn "net.corda.membership.Protocol"
@@ -66,10 +67,10 @@ class MemberNotaryDetailsConverterTest {
                     assertThat(it.publicKey).isEqualTo(publicKeyTwo)
                 }
                 .anySatisfy {
-                    assertThat(it.publicKeyHash.value).isEqualTo(hashOne)
+                    assertThat(it.publicKeyHash.toHexString()).isEqualTo(hashOne)
                 }
                 .anySatisfy {
-                    assertThat(it.publicKeyHash.value).isEqualTo(hashTwo)
+                    assertThat(it.publicKeyHash.toHexString()).isEqualTo(hashTwo)
                 }
                 .anySatisfy {
                     assertThat(it.spec.signatureName).isEqualTo(SignatureSpecs.ECDSA_SHA512.signatureName)

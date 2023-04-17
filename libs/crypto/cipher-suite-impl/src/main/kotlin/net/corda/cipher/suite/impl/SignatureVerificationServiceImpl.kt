@@ -4,8 +4,9 @@ import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.cipher.suite.CustomSignatureSpec
 import net.corda.crypto.cipher.suite.SignatureVerificationService
 import net.corda.crypto.cipher.suite.getParamsSafely
-import net.corda.crypto.cipher.suite.publicKeyId
 import net.corda.crypto.cipher.suite.schemes.KeyScheme
+import net.corda.crypto.core.ShortHash
+import net.corda.crypto.core.hexString
 import net.corda.crypto.impl.SignatureInstances
 import net.corda.crypto.impl.getSigningData
 import net.corda.sandbox.type.UsedByFlow
@@ -49,7 +50,7 @@ class SignatureVerificationServiceImpl @Activate constructor(
         signatureSpec: SignatureSpec
     ) {
         logger.debug {
-            "verify(publicKey=${publicKey.publicKeyId()},signatureSpec=${signatureSpec.signatureName})"
+            "verify(publicKey=${ShortHash.of(publicKey.hexString())},signatureSpec=${signatureSpec.signatureName})"
         }
         val result = try {
             !isValid(originalData, signatureData, publicKey, schemeMetadata.findKeyScheme(publicKey), signatureSpec)
@@ -70,11 +71,11 @@ class SignatureVerificationServiceImpl @Activate constructor(
         digest: DigestAlgorithmName
     ) {
         logger.debug {
-            "verify(publicKey=${publicKey.publicKeyId()},digest=${digest.name})"
+            "verify(publicKey=${ShortHash.of(publicKey.hexString())},digest=${digest.name})"
         }
         val signatureSpec = schemeMetadata.inferSignatureSpec(publicKey, digest)
         require(signatureSpec != null) {
-            "Failed to infer the signature spec for key=${publicKey.publicKeyId()} " +
+            "Failed to infer the signature spec for key=${ShortHash.of(publicKey.hexString())} " +
                     " (${schemeMetadata.findKeyScheme(publicKey).codeName}:${digest.name})"
         }
         val result = try {
@@ -96,7 +97,7 @@ class SignatureVerificationServiceImpl @Activate constructor(
         signatureSpec: SignatureSpec
     ): Boolean {
         logger.debug {
-            "isValid(publicKey=${publicKey.publicKeyId()},signatureSpec=${signatureSpec.signatureName})"
+            "isValid(publicKey=${ShortHash.of(publicKey.hexString())},signatureSpec=${signatureSpec.signatureName})"
         }
         return isValid(originalData, signatureData, publicKey, schemeMetadata.findKeyScheme(publicKey), signatureSpec)
     }
@@ -108,11 +109,11 @@ class SignatureVerificationServiceImpl @Activate constructor(
         digest: DigestAlgorithmName
     ): Boolean {
         logger.debug {
-            "isValid(publicKey=${publicKey.publicKeyId()},digest=${digest.name})"
+            "isValid(publicKey=${ShortHash.of(publicKey.hexString())},digest=${digest.name})"
         }
         val signatureSpec = schemeMetadata.inferSignatureSpec(publicKey, digest)
         require(signatureSpec != null) {
-            "Failed to infer the signature spec for key=${publicKey.publicKeyId()} " +
+            "Failed to infer the signature spec for key=${ShortHash.of(publicKey.hexString())} " +
                     " (${schemeMetadata.findKeyScheme(publicKey).codeName}:${digest.name})"
         }
         return isValid(originalData, signatureData, publicKey, schemeMetadata.findKeyScheme(publicKey), signatureSpec)
