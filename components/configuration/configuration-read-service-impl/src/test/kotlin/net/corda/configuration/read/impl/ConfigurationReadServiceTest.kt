@@ -84,7 +84,7 @@ internal class ConfigurationReadServiceTest {
             configReadServiceCoordinator.postEvent(SetupConfigSubscription())
             verifyIsDown<ConfigurationReadService>()
 
-            configReadServiceCoordinator.postEvent(NewConfigReceived(mock(), true))
+            configReadServiceCoordinator.postEvent(InitialConfigRead)
             verifyIsUp<ConfigurationReadService>()
 
             repeat(5) {
@@ -97,7 +97,7 @@ internal class ConfigurationReadServiceTest {
                         verifyIsUp<ConfigurationReadService>()
                     },
                     onUppingDependency = {
-                        configReadServiceCoordinator.postEvent(NewConfigReceived(mock(), true))
+                        configReadServiceCoordinator.postEvent(InitialConfigRead)
                     }
                 )
             }

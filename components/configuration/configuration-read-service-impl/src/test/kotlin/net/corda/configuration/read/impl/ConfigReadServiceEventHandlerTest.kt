@@ -144,7 +144,7 @@ internal class ConfigReadServiceEventHandlerTest {
         verify(coordinator, times(0)).updateStatus(any(), any())
 
         configReadServiceEventHandler.processEvent(
-            NewConfigReceived(mock(), true),
+            InitialConfigRead,
             coordinator
         )
         verify(coordinator).updateStatus(capture(lifecycleStatusCaptor), any())
