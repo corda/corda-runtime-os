@@ -2,6 +2,9 @@ package net.corda.db.admin.impl
 
 import liquibase.Contexts
 import liquibase.Liquibase
+import liquibase.command.CommandArgumentDefinition
+import liquibase.command.CommandScope
+import liquibase.command.core.UpdateCommandStep
 import liquibase.database.Database
 import liquibase.database.DatabaseConnection
 import liquibase.resource.ResourceAccessor
@@ -9,7 +12,9 @@ import net.corda.db.admin.DbChange
 import net.corda.db.admin.LiquibaseSchemaMigrator
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import org.mockito.ArgumentMatchers.anyString
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.check
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
@@ -21,7 +26,11 @@ import java.sql.Connection
 class LiquibaseSchemaMigratorTest {
     private val connection = mock<Connection>()
     private val dbChange = mock<DbChange>()
-    private val lb = mock<Liquibase>()
+    private val lb = mock<Liquibase>() {
+        on { database } doReturn (mock())
+        on { changeLogFile } doReturn ( "changeLog" )
+        on { changeLogParameters } doReturn (mock())
+    }
     private val lbFactory = mock<(String, ResourceAccessor, Database) -> Liquibase> {
         on { invoke(any(), any(), any()) } doReturn (lb)
     }
@@ -32,10 +41,20 @@ class LiquibaseSchemaMigratorTest {
     private val dbFactory = mock<(connection: Connection) -> Database> {
         on { invoke(any()) } doReturn (db)
     }
+    private val commandScope = mock<CommandScope>() { cs ->
+        on { addArgumentValue(anyString(), any()) } doReturn cs
+        on { addArgumentValue(any<CommandArgumentDefinition<Any>>(), anyOrNull()) } doReturn cs
+        on { execute() } doReturn mock()
+
+    }
+
+    private val commandScopeFactory = mock<(commandNames: Array<String>) -> CommandScope> {
+        on { invoke(any()) } doReturn (commandScope)
+    }
     private val writer = mock<Writer>()
 
     private val migrator: LiquibaseSchemaMigrator =
-        LiquibaseSchemaMigratorImpl(lbFactory, dbFactory)
+        LiquibaseSchemaMigratorImpl(lbFactory, dbFactory, commandScopeFactory)
 
     @Test
     fun `when updateDb create LB object`() {
@@ -54,7 +73,7 @@ class LiquibaseSchemaMigratorTest {
     @Test
     fun `when updateDb call Liquibase API`() {
         migrator.updateDb(connection, dbChange)
-        verify(lb).update(any<Contexts>())
+        verify(commandScopeFactory).invoke(UpdateCommandStep.COMMAND_NAME)
     }
 
     @Test

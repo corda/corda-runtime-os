@@ -1,7 +1,15 @@
 package net.corda.db.admin.impl
 
 import liquibase.Contexts
+import liquibase.LabelExpression
 import liquibase.Liquibase
+import liquibase.command.CommandScope
+import liquibase.command.core.RollbackCommandStep
+import liquibase.command.core.TagCommandStep
+import liquibase.command.core.UpdateCommandStep
+import liquibase.command.core.helpers.ChangeExecListenerCommandStep
+import liquibase.command.core.helpers.DatabaseChangelogCommandStep
+import liquibase.command.core.helpers.DbUrlConnectionCommandStep
 import liquibase.database.Database
 import liquibase.database.DatabaseFactory
 import liquibase.database.jvm.JdbcConnection
@@ -12,8 +20,7 @@ import org.osgi.service.component.annotations.Component
 import org.slf4j.LoggerFactory
 import java.io.Writer
 import java.sql.Connection
-import java.util.UUID
-import liquibase.LabelExpression
+import java.util.*
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
@@ -22,14 +29,18 @@ class LiquibaseSchemaMigratorImpl(
     private val liquibaseFactory: (
         changeLogFile: String,
         resourceAccessor: ResourceAccessor,
-        database: Database
+        database: Database,
     ) -> Liquibase = ::Liquibase,
     private val databaseFactory: (connection: Connection) -> Database =
         { connection ->
             DatabaseFactory
                 .getInstance()
                 .findCorrectDatabaseImplementation(JdbcConnection(connection))
-        }
+        },
+    private val commandScopeFactory: (commandNames: Array<String>) -> CommandScope = { commandNames ->
+        @Suppress("SpreadOperator")
+        CommandScope(*commandNames)
+    }
 ) : LiquibaseSchemaMigrator {
     companion object {
         // default schema
@@ -91,7 +102,7 @@ class LiquibaseSchemaMigratorImpl(
         dbChange: DbChange,
         sql: Writer? = null,
         liquibaseSchemaName: String,
-        tag: String? = null
+        tag: String? = null,
     ) {
         liquibaseAccessLock.withLock {
             val database = databaseFactory(datasource)
@@ -104,23 +115,38 @@ class LiquibaseSchemaMigratorImpl(
 
             // use UUID as we want to ensure this is unique and doesn't clash with a user defined changelog file.
             val masterChangeLogFileName = "master-changelog-${UUID.randomUUID()}.xml"
-            val lb = liquibaseFactory(
+            liquibaseFactory(
                 masterChangeLogFileName,
                 StreamResourceAccessor(masterChangeLogFileName, dbChange),
                 database
-            )
-
-            log.info("Updating ${database.databaseProductName} ${database.databaseProductVersion} " +
-                    "DB Schema for ${database.connection.catalog}")
-            if (null == sql) {
-                lb.update(Contexts())
-            } else {
-                lb.update(Contexts(), sql)
+            ).use { lb ->
+                log.info(
+                    "Updating ${database.databaseProductName} ${database.databaseProductVersion} " +
+                            "DB Schema for ${database.connection.catalog}"
+                )
+                if (null == sql) {
+                    val contexts = Contexts()
+                    val labelExpression = LabelExpression()
+                    commandScopeFactory(UpdateCommandStep.COMMAND_NAME)
+                        .addArgumentValue(DbUrlConnectionCommandStep.DATABASE_ARG, lb.database)
+                        .addArgumentValue(UpdateCommandStep.CHANGELOG_FILE_ARG, lb.changeLogFile)
+                        .addArgumentValue(UpdateCommandStep.CONTEXTS_ARG, contexts.toString())
+                        .addArgumentValue(UpdateCommandStep.LABEL_FILTER_ARG, labelExpression.originalString)
+                        .addArgumentValue(ChangeExecListenerCommandStep.CHANGE_EXEC_LISTENER_ARG,
+                            lb.defaultChangeExecListener)
+                        .addArgumentValue(DatabaseChangelogCommandStep.CHANGELOG_PARAMETERS, lb.changeLogParameters)
+                        .execute()
+                } else {
+                    lb.update(Contexts(), sql)
+                }
+                if (tag != null) {
+                    commandScopeFactory(arrayOf("tag"))
+                        .addArgumentValue(DbUrlConnectionCommandStep.DATABASE_ARG, database)
+                        .addArgumentValue(TagCommandStep.TAG_ARG, tag)
+                        .execute()
+                }
+                log.info("${database.connection.catalog} DB schema update complete")
             }
-            if (tag != null) {
-                lb.tag(tag)
-            }
-            log.info("${database.connection.catalog} DB schema update complete")
         }
     }
 
@@ -128,7 +154,7 @@ class LiquibaseSchemaMigratorImpl(
         datasource: Connection,
         dbChange: DbChange,
         liquibaseSchemaName: String,
-        tagToRollbackTo: String
+        tagToRollbackTo: String,
     ) {
         liquibaseAccessLock.withLock {
             val database = databaseFactory(datasource)
@@ -141,14 +167,24 @@ class LiquibaseSchemaMigratorImpl(
 
             // use UUID as we want to ensure this is unique and doesn't clash with a user defined changelog file.
             val masterChangeLogFileName = "master-changelog-${UUID.randomUUID()}.xml"
-            val lb = liquibaseFactory(
+            liquibaseFactory(
                 masterChangeLogFileName,
                 StreamResourceAccessor(masterChangeLogFileName, dbChange),
                 database
-            )
-
-            lb.rollback(tagToRollbackTo, Contexts())
-            log.info("${database.connection.catalog} DB schema rollback complete")
+            ).use { lb ->
+                val contexts = Contexts()
+                val labelExpression = LabelExpression()
+                commandScopeFactory(RollbackCommandStep.COMMAND_NAME)
+                    .addArgumentValue(DbUrlConnectionCommandStep.DATABASE_ARG, lb.database)
+                    .addArgumentValue(DatabaseChangelogCommandStep.CHANGELOG_FILE_ARG, null)
+                    .addArgumentValue(DatabaseChangelogCommandStep.CONTEXTS_ARG, contexts.toString())
+                    .addArgumentValue(DatabaseChangelogCommandStep.LABEL_FILTER_ARG, labelExpression.originalString)
+                    .addArgumentValue(ChangeExecListenerCommandStep.CHANGE_EXEC_LISTENER_ARG, lb.defaultChangeExecListener)
+                    .addArgumentValue(RollbackCommandStep.TAG_ARG, tagToRollbackTo)
+                    .addArgumentValue(RollbackCommandStep.ROLLBACK_SCRIPT_ARG, null)
+                    .execute()
+                log.info("${database.connection.catalog} DB schema rollback complete")
+            }
         }
     }
 }
