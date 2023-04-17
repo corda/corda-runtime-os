@@ -326,7 +326,7 @@ abstract class DeployableContainerBuilder extends DefaultTask {
 
     /**
     * Sets credentials on the base image used in the Jib container builder.
-    * In cases where not valid credentials are provided, the base image will be pulled anonymously.
+    * In cases where no valid credentials are provided, the base image will be pulled anonymously.
     *
     * @param builder The Jib container builder to set credentials on.
     * @return The updated Jib container builder with credentials set if applicable.
