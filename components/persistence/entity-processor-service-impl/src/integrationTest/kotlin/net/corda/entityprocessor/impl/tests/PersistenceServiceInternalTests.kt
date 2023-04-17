@@ -180,7 +180,9 @@ class PersistenceServiceInternalTests {
             )
         )
 
-        lbm.updateDb(dbConnectionManager.getDataSource(animalDbConnection.first).connection, cl)
+        dbConnectionManager.getDataSource(animalDbConnection.first).connection.use {
+            lbm.updateDb(it, cl)
+        }
 
         entityManagerFactory = dbConnectionManager.createEntityManagerFactory(
             animalDbConnection.first,
@@ -247,7 +249,9 @@ class PersistenceServiceInternalTests {
                 ),
             )
         )
-        lbm.updateDb(myDbConnectionManager.getDataSource(animalDbConnection.first).connection, cl)
+        myDbConnectionManager.getDataSource(animalDbConnection.first).connection.use {
+            lbm.updateDb(it, cl)
+        }
 
         // create dog using dog-aware sandbox
         val dog = sandboxOne.createDog("Stray", owner = "Not Known")
