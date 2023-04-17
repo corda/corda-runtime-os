@@ -238,16 +238,15 @@ class LifecycleTest<T : Lifecycle>(
         onDependencyDown: () -> Unit = {},
         onDependencyUp: () -> Unit = {}
     ) {
-        bringDependencyDown(dependency).also {
-            verifyIsDown(dependency)
-            onDependencyDown()
-            verificationWhenDown()
-        }
-        bringDependencyUp(dependency).also {
-            verifyIsUp(dependency)
-            onDependencyUp()
-            verificationWhenUp()
-        }
+        bringDependencyDown(dependency)
+        verifyIsDown(dependency)
+        onDependencyDown()
+        verificationWhenDown()
+        
+        bringDependencyUp(dependency)
+        verifyIsUp(dependency)
+        onDependencyUp()
+        verificationWhenUp()
     }
 
     /**
