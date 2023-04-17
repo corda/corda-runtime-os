@@ -174,6 +174,7 @@ class SessionManagerImpl @Activate constructor(
 
     /**
      * Get any new messages to send from the sendEvents state within [sessionState].
+     * If we're in [SessionStateType.CREATED], only send [SessionInit] events.
      * Send any Acks or Errors regardless of timestamps.
      * Send any other messages with a timestamp less than that of [instantInMillis].
      * Don't send a SessionAck if other events present in the send list as ack info is present at SessionEvent level on all events.
@@ -188,15 +189,13 @@ class SessionManagerImpl @Activate constructor(
         instant: Instant,
         config: SmartConfig,
     ): List<SessionEvent> {
-        val undeliveredMessages = sessionState.sendEventsState.undeliveredMessages
-        if (undeliveredMessages.isEmpty()) return emptyList()
-
-        val sessionEvents = filterSessionEvents(undeliveredMessages, instant, sessionState.status)
+        val sessionEvents = filterSessionEvents(sessionState, instant)
+        if (sessionEvents.isEmpty()) return emptyList()
 
         //update events with the latest ack info from the current state
         sessionEvents.forEach { eventToSend ->
             eventToSend.receivedSequenceNum = sessionState.receivedEventsState.lastProcessedSequenceNum
-            eventToSend.outOfOrderSequenceNums = undeliveredMessages.map { it.sequenceNum }
+            eventToSend.outOfOrderSequenceNums = sessionState.sendEventsState.undeliveredMessages.map { it.sequenceNum }
         }
 
         //remove SessionAcks/SessionErrors and increase timestamp of messages to be sent that are awaiting acknowledgement
@@ -207,28 +206,27 @@ class SessionManagerImpl @Activate constructor(
     }
 
     /**
-     * Filters the undelivered session events based on the given instant and session status.
+     * Filters session events from the given [SessionState] that are ready to be sent based on the given [instant].
+     * Events with a timestamp in the past or any error events are included in the filtered list.
      *
-     * This function retrieves events with a timestamp in the past, as well as any errors, from the given list of undelivered messages.
-     * If the [SessionState.status] is [SessionStateType.CREATED], the function returns only the first [SessionInit] event found, if any.
-     * Otherwise, it returns all past events and errors.
+     * If the [SessionState] status is [SessionStateType.CREATED], only the first [SessionInit] event from the filtered
+     * list is returned (if present), otherwise all events are returned.
      *
-     * @param undeliveredMessages A list of undelivered [SessionEvent] objects.
-     * @param instant The current instant used to filter events based on their timestamp.
-     * @param sessionStatus The status of the session ([SessionStateType]).
-     * @return A filtered list of [SessionEvent] objects to be processed.
+     * @param sessionState the [SessionState] from which to filter session events.
+     * @param instant the [Instant] to use for filtering events based on their timestamp.
+     * @return a list of [SessionEvent] objects that are ready to be sent.
      */
     private fun filterSessionEvents(
-        undeliveredMessages: List<SessionEvent>,
-        instant: Instant,
-        sessionStatus: SessionStateType
+        sessionState: SessionState,
+        instant: Instant
     ): List<SessionEvent> {
-        //get all events with a timestamp in the past, as well as any acks or errors
-        val pastEventsAndErrors = undeliveredMessages.filter {
+        if (sessionState.sendEventsState.undeliveredMessages.isEmpty()) return emptyList()
+
+        val pastEventsAndErrors = sessionState.sendEventsState.undeliveredMessages.filter {
             it.timestamp <= instant || it.payload is SessionError
         }
 
-        return if (sessionStatus == SessionStateType.CREATED) {
+        return if (SessionStateType.CREATED == sessionState.status) {
             pastEventsAndErrors.firstOrNull { it.payload is SessionInit }?.let { listOf(it) } ?: emptyList()
         } else {
             pastEventsAndErrors
