@@ -228,22 +228,26 @@ class LifecycleTest<T : Lifecycle>(
      * @param dependency the coordinator name of the dependency to toggle
      * @param verificationWhenDown can be used to assert expectations for once the dependency is down
      * @param verificationWhenUp can be used to assert expectations for once the dependency is back up
-     * @param onUppingDependency additional actions after [dependency] going up
+     * @param onDependencyDown additional actions after [dependency] going down
+     * @param onDependencyUp additional actions after [dependency] going up
      */
     fun toggleDependency(
         dependency: LifecycleCoordinatorName,
         verificationWhenDown: () -> Unit = {},
         verificationWhenUp: () -> Unit = {},
-        onUppingDependency: () -> Unit = {}
+        onDependencyDown: () -> Unit = {},
+        onDependencyUp: () -> Unit = {}
     ) {
-        bringDependencyDown(dependency)
-        verifyIsDown(dependency)
-        verificationWhenDown.invoke()
+        bringDependencyDown(dependency).also {
+            verifyIsDown(dependency)
+            onDependencyDown()
+            verificationWhenDown()
+        }
         bringDependencyUp(dependency).also {
             verifyIsUp(dependency)
-            onUppingDependency()
+            onDependencyUp()
+            verificationWhenUp()
         }
-        verificationWhenUp.invoke()
     }
 
     /**

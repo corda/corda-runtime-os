@@ -96,7 +96,7 @@ internal class ConfigurationReadServiceTest {
                     verificationWhenUp = {
                         verifyIsUp<ConfigurationReadService>()
                     },
-                    onUppingDependency = {
+                    onDependencyUp = {
                         configReadServiceCoordinator.postEvent(InitialConfigRead)
                     }
                 )
