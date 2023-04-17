@@ -1,6 +1,6 @@
 package net.corda.db.admin.impl
 
-import liquibase.exception.ChangeLogParseException
+import liquibase.exception.CommandExecutionException
 import net.corda.db.core.InMemoryDataSourceFactory
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
@@ -143,9 +143,10 @@ class LiquibaseSchemaMigratorImplTest {
                 )
             )
         )
-        val e = assertThrows<ChangeLogParseException> {
+        val e = assertThrows<CommandExecutionException> {
             lbm.updateDb(ds.connection, cl)
         }
+        assertThat(e).hasMessageContaining("ChangeLogParseException")
         assertThat(e).hasMessageContaining("IllegalArgumentException")
         assertThat(e).hasMessageContaining("mysteryclass")
     }
