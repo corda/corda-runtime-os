@@ -81,6 +81,7 @@ dependencies {
 
     runtimeOnly project(":libs:application:application-impl")
     runtimeOnly project(':libs:crypto:cipher-suite-impl')
+    runtimeOnly project(':libs:db:db-admin-impl')
     runtimeOnly project(':libs:db:db-orm-impl')
     runtimeOnly project(':libs:lifecycle:lifecycle-impl')
     runtimeOnly project(':libs:membership:membership-impl')
@@ -96,7 +97,6 @@ dependencies {
 
     runtimeOnly "com.sun.activation:javax.activation:$activationVersion"
     runtimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
-    runtimeOnly "org.liquibase:liquibase-core:$liquibaseVersion"
     // NOTE: this is needed by Liquibase but for some reason not picked up automatically.
     runtimeOnly "commons-beanutils:commons-beanutils:$beanutilsVersion"
 

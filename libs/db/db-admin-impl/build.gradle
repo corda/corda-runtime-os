@@ -20,6 +20,14 @@ dependencies {
     implementation "org.slf4j:slf4j-api"
     compileOnly "org.osgi:org.osgi.service.component.annotations"
     implementation "org.liquibase:liquibase-core:$liquibaseVersion"
+    constraints {
+        implementation("org.yaml:snakeyaml") {
+            version {
+                strictly("1.33")
+            }
+            because("Required until jackson upgrades to 2.0")
+        }
+    }
 
     api project(":libs:db:db-admin")
 
