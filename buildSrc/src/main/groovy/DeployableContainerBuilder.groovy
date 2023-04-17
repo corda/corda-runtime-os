@@ -71,6 +71,7 @@ abstract class DeployableContainerBuilder extends DefaultTask {
             convention(getProviderFactory().environmentVariable("DOCKER_HUB_USERNAME")
                     .orElse(getProviderFactory().gradleProperty("dockerHubUsername"))
                     .orElse(getProviderFactory().systemProperty("docker.hub.username"))
+                    .orElse("")
             )
 
     @Input
@@ -79,6 +80,7 @@ abstract class DeployableContainerBuilder extends DefaultTask {
             convention(getProviderFactory().environmentVariable("DOCKER_HUB_PASSWORD")
                     .orElse(getProviderFactory().gradleProperty("dockerHubPassword"))
                     .orElse(getProviderFactory().systemProperty("docker.hub.password"))
+                    .orElse("")
             )
 
     @Input
@@ -223,8 +225,8 @@ abstract class DeployableContainerBuilder extends DefaultTask {
         } else {  // CI use case
             logger.info("No daemon available")
             logger.info("Resolving base image ${baseImageName.get()}: ${baseImageTag.get()} from remote repo")
-            builder = (dockerHubUsername.get() != null && !dockerHubUsername.get().isEmpty()) ?  Jib.from(imageName) : setCredentialsOnBaseImage(builder)
-        }
+            builder = setCredentialsOnBaseImage(builder)
+            }
 
         List<Path> jdbcDrivers = jdbcDriverFiles.collect { it.toPath() }
         if (!jdbcDrivers.empty) {
@@ -331,13 +333,14 @@ abstract class DeployableContainerBuilder extends DefaultTask {
             logger.info("Authenticating against Artifactory for base image resolution")
             baseImage.addCredential(registryUsername.get(), registryPassword.get())
             builder = Jib.from(baseImage)
-        }
-        else if ((dockerHubUsername.get() != null && !dockerHubUsername.get().isEmpty()) && (dockerHubPassword.get() != null && !dockerHubPassword.get().isEmpty())){
+        } else if ((dockerHubUsername.get() != null && !dockerHubUsername.get().isEmpty()) && (dockerHubPassword.get() != null && !dockerHubPassword.get().isEmpty())){
             logger.info("Authenticating against Docker Hub for base image resolution")
             baseImage.addCredential(dockerHubUsername.get(), dockerHubPassword.get())
             builder = Jib.from(baseImage)
+        } else {
+            builder = Jib.from(baseImage)
         }
-        builder
+        return builder
     }
 
     private void gitAndVersionTag(JibContainerBuilder builder, String gitRevision) {
