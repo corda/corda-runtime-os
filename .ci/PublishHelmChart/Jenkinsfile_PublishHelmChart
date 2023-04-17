@@ -113,9 +113,9 @@ pipeline {
             post {
                 success {
                     script{
-                        renderWidget("Published Corda helm chart version to Artifactory: ${publishingUtils.getHelmVersionFromYaml()}")
-                        renderWidget("Published Corda helm chart repo name: ${publishingUtils.getHelmRepo()}")
-                        renderWidget("Published Corda helm chart OCI path: oci://$HELM_REGISTRY/${publishingUtils.getHelmRepo()}/corda")
+                        renderWidget("Published Corda helm chart version to Artifactory: ${env.HELM_CHART_VERSION}")
+                        renderWidget("Published Corda helm chart repo name: ${env.HELM_CHART_REPO_NAME}")
+                        renderWidget("Published Corda helm chart OCI path: oci://${env.HELM_REGISTRY}/${env.HELM_CHART_REPO_NAME}/corda")
                     }
                 }
             }
