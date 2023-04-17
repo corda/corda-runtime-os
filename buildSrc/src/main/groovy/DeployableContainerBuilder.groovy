@@ -343,6 +343,7 @@ abstract class DeployableContainerBuilder extends DefaultTask {
             baseImage.addCredential(dockerHubUsername.get(), dockerHubPassword.get())
             builder = Jib.from(baseImage)
         } else {
+            logger.info("Pulling base image from Docker Hub anonymously")
             builder = Jib.from(baseImage)
         }
         return builder
