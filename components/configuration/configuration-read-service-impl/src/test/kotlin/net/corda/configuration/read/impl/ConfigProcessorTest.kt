@@ -53,9 +53,10 @@ class ConfigProcessorTest {
         val config = Configuration(CONFIG_STRING, SOURCE_CONFIG_STRING, 0, schemaVersion)
         val messagingConfig = Configuration(MESSAGING_CONFIG_STRING, MESSAGING_CONFIG_STRING, 0, schemaVersion)
         configProcessor.onSnapshot(mapOf("BAR" to config, MESSAGING_CONFIG to messagingConfig))
-        verify(coordinator).postEvent(capture(eventCaptor))
-        assertThat(eventCaptor.value is NewConfigReceived)
-        assertEquals(CONFIG_STRING.toSmartConfig(), (eventCaptor.value as NewConfigReceived).config["BAR"])
+        verify(coordinator, times(2)).postEvent(capture(eventCaptor))
+        assertThat(eventCaptor.allValues[0] is NewConfigReceived)
+        assertThat(eventCaptor.allValues[1] is InitialConfigRead)
+        assertEquals(CONFIG_STRING.toSmartConfig(), (eventCaptor.allValues[0] as NewConfigReceived).config["BAR"])
     }
 
     @Test
@@ -78,7 +79,7 @@ class ConfigProcessorTest {
         val bootconfig = BOOT_CONFIG_STRING.toSmartConfig()
         val configProcessor = ConfigProcessor(coordinator, smartConfigFactory, bootconfig, configMerger)
         configProcessor.onSnapshot(mapOf())
-        verify(coordinator, times(0)).postEvent(capture(eventCaptor))
+        verify(coordinator, times(1)).postEvent(any())
         verify(configMerger, times(0)).getMessagingConfig(bootconfig, null)
     }
 
@@ -90,7 +91,7 @@ class ConfigProcessorTest {
         val bootconfig = BOOT_CONFIG_STRING.toSmartConfig()
         val configProcessor = ConfigProcessor(coordinator, smartConfigFactory, bootconfig, configMerger)
         configProcessor.onSnapshot(mapOf())
-        verify(coordinator, times(1)).postEvent(capture(eventCaptor))
+        verify(coordinator, times(2)).postEvent(any())
         verify(configMerger, times(0)).getMessagingConfig(bootconfig, null)
         verify(configMerger, times(1)).getDbConfig(any(), anyOrNull())
     }
