@@ -2,8 +2,10 @@ package net.corda.flow.application.services.impl.interop.facade
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize
 import com.fasterxml.jackson.databind.annotation.JsonSerialize
-import org.corda.weft.parameters.TypedParameter
-import org.corda.weft.parameters.TypedParameterValue
+import net.corda.v5.application.interop.facade.FacadeId
+import net.corda.v5.application.interop.facade.FacadeResponse
+import net.corda.v5.application.interop.parameters.ParameterType
+import net.corda.v5.application.interop.parameters.ParameterTypeLabel
 
 /**
  * A [FacadeResponseImpl] is a response to a [FacadeRequest] to invoke a [FacadeMethod] on a [Facade].
@@ -16,10 +18,10 @@ import org.corda.weft.parameters.TypedParameterValue
 data class FacadeResponseImpl(
     val facadeId: FacadeId,
     val methodName: String,
-    val outParameters: List<TypedParameterValue<*>>
+    val outParameters: List<ParameterTypeLabel>
 ) : FacadeResponse {
 
-    private val outParametersByName = outParameters.associateBy { it.parameter.name }
+    private val outParametersByName = outParameters.associateBy { it.typeName }
 
     /**
      * Get the value of an out parameter.
@@ -27,11 +29,11 @@ data class FacadeResponseImpl(
      * @param parameter The parameter to get the value of.
      */
     @Suppress("UNCHECKED_CAST")
-    operator fun <T : Any> get(parameter: TypedParameter<T>): T {
-        val value = outParametersByName[parameter.name]
-            ?: throw IllegalArgumentException("No value for parameter ${parameter.name}")
+    override operator fun <T : Any> get(parameter: ParameterType<T>): Class<*> {
+        val value = outParametersByName[parameter.typeLabel.name]
+            ?: throw IllegalArgumentException("No value for parameter ${parameter.typeLabel}")
 
-        return (value as? TypedParameterValue<T>)?.value
-            ?: throw IllegalArgumentException("Value for parameter ${parameter.name} is of the wrong type")
+        return (value as? ParameterTypeLabel)?.expectedClass
+            ?: throw IllegalArgumentException("Value for parameter ${parameter.typeLabel} is of the wrong type")
     }
 }

@@ -2,8 +2,10 @@ package net.corda.flow.application.services.impl.interop.facade
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize
 import com.fasterxml.jackson.databind.annotation.JsonSerialize
-import org.corda.weft.parameters.TypedParameter
-import org.corda.weft.parameters.TypedParameterValue
+import net.corda.v5.application.interop.facade.FacadeId
+import net.corda.v5.application.interop.facade.FacadeRequest
+import net.corda.v5.application.interop.parameters.ParameterType
+import net.corda.v5.application.interop.parameters.ParameterTypeLabel
 
 /**
  * A [FacadeRequest] is a request to invoke a [FacadeMethod] on a [Facade].
@@ -17,7 +19,7 @@ import org.corda.weft.parameters.TypedParameterValue
 data class FacadeRequestImpl(
     val facadeId: FacadeId,
     val methodName: String,
-    val inParameters: List<TypedParameterValue<*>>
+    val inParameters: List<ParameterTypeLabel>
 ) : FacadeRequest {
 
     private val inParametersByName = inParameters.associateBy { it.parameter.name }
@@ -29,11 +31,11 @@ data class FacadeRequestImpl(
      */
     @Suppress("UNCHECKED_CAST")
     @Override
-    operator fun <T : Any> get(parameter: TypedParameter<T>): T {
+    override operator fun <T : Any> get(parameter: ParameterType<T>): T {
         val value = inParametersByName[parameter.name]
             ?: throw IllegalArgumentException("No value for parameter ${parameter.name}")
 
-        return (value as? TypedParameterValue<T>)?.value
+        return (value as? ParameterTypeLabel)?.value
             ?: throw IllegalArgumentException("Value for parameter ${parameter.name} is of the wrong type")
     }
 }
