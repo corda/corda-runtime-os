@@ -30,11 +30,14 @@ class UtxoFilteredTransactionSerializer @Activate constructor(
         return UtxoFilteredTransactionImpl(serializationService, proxy.filteredTransaction)
     }
 
-    override val proxyType = UtxoFilteredTransactionProxy::class.java
+    override val proxyType
+        get() = UtxoFilteredTransactionProxy::class.java
 
-    override val type = UtxoFilteredTransactionImpl::class.java
+    override val type
+        get() = UtxoFilteredTransactionImpl::class.java
 
-    override val withInheritance = false
+    override val withInheritance
+        get() = false
 }
 
 

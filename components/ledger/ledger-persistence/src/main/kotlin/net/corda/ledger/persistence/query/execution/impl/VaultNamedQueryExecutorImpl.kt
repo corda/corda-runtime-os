@@ -66,9 +66,9 @@ class VaultNamedQueryExecutorImpl(
         // Apply filters and transforming functions (if there's any)
         val filteredAndTransformedResults = contractStateResults.filter {
             vaultNamedQuery.filter?.filter(it, deserializedParams) ?: true
-        }.map {
+        }.mapNotNull { // This has no effect as of now, but we keep it for safety purposes
             vaultNamedQuery.mapper?.transform(it, deserializedParams) ?: it
-        }.filterNotNull() // This has no effect as of now, but we keep it for safety purposes
+        }
 
         // Once filtering and transforming are done collector function can be applied (if present)
         val collectedResults = vaultNamedQuery.collector?.collect(
