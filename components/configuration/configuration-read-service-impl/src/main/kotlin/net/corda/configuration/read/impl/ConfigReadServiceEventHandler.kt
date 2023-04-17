@@ -86,7 +86,7 @@ internal class ConfigReadServiceEventHandler(
                 setupConfigSubscription(coordinator)
             }
 
-            is ConfigOnSnapshotRun -> {
+            is InitialConfigRead -> {
                 // Only set LifecycleStatus.UP for coordinator after the initial config is read from Kafka.
                 // This is to make sure config reconciler will not start reconciling before its
                 // kafka reader (config read service) has read the initial config from Kafka, otherwise

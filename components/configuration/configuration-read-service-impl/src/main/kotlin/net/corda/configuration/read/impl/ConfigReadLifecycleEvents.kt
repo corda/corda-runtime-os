@@ -41,4 +41,4 @@ internal data class ConfigRegistrationAdd(val registration: ConfigurationChangeR
  */
 internal data class ConfigRegistrationRemove(val registration: ConfigurationChangeRegistration) : LifecycleEvent
 
-internal object ConfigOnSnapshotRun : LifecycleEvent
+internal object InitialConfigRead : LifecycleEvent

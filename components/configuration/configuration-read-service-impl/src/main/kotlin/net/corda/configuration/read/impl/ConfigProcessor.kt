@@ -47,7 +47,7 @@ internal class ConfigProcessor(
 
             coordinator.postEvent(NewConfigReceived(config))
         }
-        coordinator.postEvent(ConfigOnSnapshotRun)
+        coordinator.postEvent(InitialConfigRead)
     }
 
     override fun onNext(
