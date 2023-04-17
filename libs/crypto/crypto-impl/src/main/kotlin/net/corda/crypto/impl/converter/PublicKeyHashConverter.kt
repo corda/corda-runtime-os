@@ -8,7 +8,7 @@ import net.corda.v5.crypto.SecureHash
 import org.osgi.service.component.annotations.Component
 
 /**
- * Converter class, converting from String to [PublicKeyHash] object.
+ * Converter class, converting from String to [SecureHash] object.
  */
 @Component(service = [CustomPropertyConverter::class])
 class PublicKeyHashConverter : CustomPropertyConverter<SecureHash> {
