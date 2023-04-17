@@ -195,7 +195,7 @@ class SessionManagerImpl @Activate constructor(
         //update events with the latest ack info from the current state
         sessionEvents.forEach { eventToSend ->
             eventToSend.receivedSequenceNum = sessionState.receivedEventsState.lastProcessedSequenceNum
-            eventToSend.outOfOrderSequenceNums = sessionState.sendEventsState.undeliveredMessages.map { it.sequenceNum }
+            eventToSend.outOfOrderSequenceNums = sessionState.receivedEventsState.undeliveredMessages.map { it.sequenceNum }
         }
 
         //remove SessionAcks/SessionErrors and increase timestamp of messages to be sent that are awaiting acknowledgement
