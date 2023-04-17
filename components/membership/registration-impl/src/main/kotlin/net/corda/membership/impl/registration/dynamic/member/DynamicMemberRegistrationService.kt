@@ -412,7 +412,7 @@ class DynamicMemberRegistrationService @Activate constructor(
             member: HoldingIdentity,
             roles: Collection<MemberRole>,
             notaryKeys: List<KeyDetails>,
-            previousContext: Map<String, String>?,
+            previousRegistrationContext: Map<String, String>?,
         ): Map<String, String> {
             val cpi = virtualNodeInfoReadService.get(member)?.cpiIdentifier
                 ?: throw CordaRuntimeException("Could not find virtual node info for member ${member.shortHash}")
@@ -433,7 +433,7 @@ class DynamicMemberRegistrationService @Activate constructor(
             )
             val roleContext = roles.toMemberInfo { notaryKeys }
             val optionalContext = mapOf(MEMBER_CPI_SIGNER_HASH to cpi.signerSummaryHash.toString())
-            val result = filteredContext +
+            val newRegistrationContext = filteredContext +
                     sessionKeyContext +
                     ledgerKeyContext +
                     additionalContext +
@@ -441,8 +441,8 @@ class DynamicMemberRegistrationService @Activate constructor(
                     optionalContext +
                     tlsSubject
 
-            previousContext?.let { previous ->
-                ((result.entries - previous.entries) + (previous.entries - result.entries)).filterNot {
+            previousRegistrationContext?.let { previous ->
+                ((newRegistrationContext.entries - previous.entries) + (previous.entries - newRegistrationContext.entries)).filterNot {
                     it.key.startsWith(CUSTOM_KEY_PREFIX)
                 }.apply {
                     require(isEmpty()) {
@@ -454,7 +454,7 @@ class DynamicMemberRegistrationService @Activate constructor(
                 }
             }
 
-            return result
+            return newRegistrationContext
         }
 
         private fun getTlsSubject(member: HoldingIdentity) : Map<String, String> {
