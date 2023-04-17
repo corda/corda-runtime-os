@@ -63,6 +63,7 @@ topics:
     producers:
       - membership
       - db
+      - rest
     config:
       cleanup.policy: compact
       segment.ms: 600000
