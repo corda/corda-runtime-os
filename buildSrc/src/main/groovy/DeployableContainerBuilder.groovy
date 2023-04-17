@@ -55,6 +55,7 @@ abstract class DeployableContainerBuilder extends DefaultTask {
             convention(getProviderFactory().environmentVariable("CORDA_ARTIFACTORY_USERNAME")
                     .orElse(getProviderFactory().gradleProperty("cordaArtifactoryUsername"))
                     .orElse(getProviderFactory().systemProperty("corda.artifactory.username"))
+                    .orElse("")
             )
 
     @Input
@@ -63,6 +64,7 @@ abstract class DeployableContainerBuilder extends DefaultTask {
             convention(getProviderFactory().environmentVariable("CORDA_ARTIFACTORY_PASSWORD")
                     .orElse(getProviderFactory().gradleProperty("cordaArtifactoryPassword"))
                     .orElse(getProviderFactory().systemProperty("corda.artifactory.password"))
+                     .orElse("")
             )
 
     @Input
