@@ -49,14 +49,6 @@ pipeline {
 
     stages {
         stage('Prepare Helm charts') {
-            /*
-            * Depending on the situation, Helm charts are published to the following repositories with the given chart version:
-            * See {@link PublishingUtils#getHelmRepo()} for details on how helm chart repo name is generated
-            *
-            * Release tag          corda-os-docker-stable.software.r3.com/helm-charts/<branch-name>      <CHART_VERSION>
-            * Release/main branch  corda-os-docker-unstable.software.r3.com/helm-charts/<branch-name>    <CHART_VERSION>-beta.<TIMESTAMP>
-            * PR / feature branch  corda-os-docker-dev.software.r3.com/helm-charts/<branch-name>         <CHART_VERSION>-alpha.<TIMESTAMP>
-            */
             environment {
                 HELM_CHART_VERSION = publishingUtils.getHelmChartVersion()
                 HELM_CHART_APP_VERSION = getGradleProperty("version")
@@ -97,8 +89,13 @@ pipeline {
             * See {@link PublishingUtils#getHelmRepo()} for details on how helm chart repo name is generated
             *
             * Release tag          corda-os-docker-stable.software.r3.com/helm-charts/<branch-name>      <CHART_VERSION>
+            * e.g.  corda-os-docker-stable.software.r3.com/helm-charts/5.0.0.0-Beta3/corda
+            *
             * Release/main branch  corda-os-docker-unstable.software.r3.com/helm-charts/<branch-name>    <CHART_VERSION>-beta.<TIMESTAMP>
+            * e.g. corda-os-docker-unstable.software.r3.com/helm-charts/release/os/5.0/corda
+            *
             * PR / feature branch  corda-os-docker-dev.software.r3.com/helm-charts/<branch-name>         <CHART_VERSION>-alpha.<TIMESTAMP>
+            * e.g. corda-os-docker-unstable.software.r3.com/helm-charts/PR-223/corda
             */
             environment {
                 HELM_REGISTRY = publishingUtils.getInternalRegistry(false)
