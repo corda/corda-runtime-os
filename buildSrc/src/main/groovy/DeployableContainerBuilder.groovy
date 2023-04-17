@@ -226,7 +226,7 @@ abstract class DeployableContainerBuilder extends DefaultTask {
             logger.info("No daemon available")
             logger.info("Resolving base image ${baseImageName.get()}: ${baseImageTag.get()} from remote repo")
             builder = setCredentialsOnBaseImage(builder)
-            }
+        }
 
         List<Path> jdbcDrivers = jdbcDriverFiles.collect { it.toPath() }
         if (!jdbcDrivers.empty) {
