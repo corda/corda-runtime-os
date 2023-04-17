@@ -471,7 +471,7 @@ interface MGMRestResource : RestResource {
         holdingIdentityShortHash: String,
 
         @ClientRequestBodyParameter(
-            description = "Parameters for activating a suspended member."
+            description = "Parameters for suspending or activating a member."
         )
         activationParams: SuspensionActivationParameters
     )

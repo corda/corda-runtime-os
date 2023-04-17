@@ -5191,7 +5191,7 @@
             "example" : "string"
           }
         },
-        "description" : "Parameters for activating a suspended member."
+        "description" : "Parameters for suspending or activating a member."
       },
       "UpdateConfigParameters" : {
         "required" : [ "config", "schemaVersion", "section", "version" ],
