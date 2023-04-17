@@ -337,7 +337,8 @@ abstract class DeployableContainerBuilder extends DefaultTask {
             logger.info("Authenticating against Artifactory for base image resolution")
             baseImage.addCredential(registryUsername.get(), registryPassword.get())
             builder = Jib.from(baseImage)
-        } else if ((dockerHubUsername.get() != null && !dockerHubUsername.get().isEmpty()) && (dockerHubPassword.get() != null && !dockerHubPassword.get().isEmpty())){
+        } else if ((dockerHubUsername.get() != null && !dockerHubUsername.get().isEmpty()) &&
+                   (dockerHubPassword.get() != null && !dockerHubPassword.get().isEmpty())) {
             logger.info("Authenticating against Docker Hub for base image resolution")
             baseImage.addCredential(dockerHubUsername.get(), dockerHubPassword.get())
             builder = Jib.from(baseImage)
