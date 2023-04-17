@@ -325,8 +325,12 @@ abstract class DeployableContainerBuilder extends DefaultTask {
     }
 
     /**
-     *  Set credentials on the base image we use
-     */
+    * Sets credentials on the base image used in the Jib container builder.
+    * In cases where not valid credentials are provided, the base image will be pulled anonymously.
+    *
+    * @param builder The Jib container builder to set credentials on.
+    * @return The updated Jib container builder with credentials set if applicable.
+    */
     private JibContainerBuilder setCredentialsOnBaseImage(JibContainerBuilder builder) {
         def baseImage = RegistryImage.named("${baseImageName.get()}:${baseImageTag.get()}")
         if ((registryUsername.get() != null && !registryUsername.get().isEmpty()) && baseImageName.get().contains("software.r3.com")) {
