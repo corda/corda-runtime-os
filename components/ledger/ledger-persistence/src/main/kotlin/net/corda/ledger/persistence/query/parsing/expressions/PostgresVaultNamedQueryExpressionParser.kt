@@ -11,6 +11,7 @@ import net.corda.ledger.persistence.query.parsing.IsNotNull
 import net.corda.ledger.persistence.query.parsing.IsNull
 import net.corda.ledger.persistence.query.parsing.JsonArrayOrObjectAsText
 import net.corda.ledger.persistence.query.parsing.JsonCast
+import net.corda.ledger.persistence.query.parsing.JsonField
 import net.corda.ledger.persistence.query.parsing.JsonKeyExists
 import net.corda.ledger.persistence.query.parsing.Keyword
 import net.corda.ledger.persistence.query.parsing.LeftParentheses
@@ -45,7 +46,7 @@ class PostgresVaultNamedQueryExpressionParser : VaultNamedQueryExpressionParser 
 
     @Suppress("MaxLineLength")
     private val opsPattern = Regex(
-        """(?<op>(->>)|[+-/*=?]|<(=)?|>(=)?|==|!(=)?|(?i)\bas\b|(?i)\bfrom\b|(?i)\bselect\b|(?i)\bwhere\b|(?i)\band\b|(?i)\bor\b|(?i)\bis null\b|(?i)\bis not null\b|(?i)\bin\b|(?i)\blike\b)"""
+        """(?<op>(->>)|(->)|[+-/*=?]|<(=)?|>(=)?|==|!(=)?|(?i)\bas\b|(?i)\bfrom\b|(?i)\bselect\b|(?i)\bwhere\b|(?i)\band\b|(?i)\bor\b|(?i)\bis null\b|(?i)\bis not null\b|(?i)\bin\b|(?i)\blike\b)"""
     )
 
     private val jsonCastPattern = Regex("""::(?<cast>.*?)((->>)|[+*=]|&&|\|\||<(=)?|>(=)?|==|!(=)?|\s|$)""")
@@ -147,6 +148,7 @@ class PostgresVaultNamedQueryExpressionParser : VaultNamedQueryExpressionParser 
             "<=" -> LessThanEquals()
             "IS NULL" -> IsNull()
             "IS NOT NULL" -> IsNotNull()
+            "->" -> JsonField()
             "->>" -> JsonArrayOrObjectAsText()
             "AS" -> As()
             "FROM" -> From()
@@ -158,7 +160,7 @@ class PostgresVaultNamedQueryExpressionParser : VaultNamedQueryExpressionParser 
             "IN" -> In()
             "?" -> JsonKeyExists()
             "LIKE" -> Like()
-            else -> throw IllegalArgumentException("Unknown keyword $keyword")
+            else -> throw IllegalArgumentException("Unknown keyword '$keyword'")
         }
     }
 }
