@@ -67,6 +67,7 @@ import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.test.util.time.TestClock
 import net.corda.utilities.time.Clock
 import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toAvro
@@ -699,6 +700,11 @@ class MembershipPersistenceRPCProcessorTest {
     @Test
     fun `suspend member returns success`() {
         whenever(memberEntity.status).doReturn(MEMBER_STATUS_ACTIVE)
+        val memberInfo = mock<MemberInfo> {
+            on { memberProvidedContext } doReturn mock()
+            on { mgmProvidedContext } doReturn mock()
+        }
+        whenever(memberInfoFactory.create(any())).thenReturn(memberInfo)
         whenever(keyValuePairListDeserializer.deserialize(any())).thenReturn(KeyValuePairList(listOf(mock())))
         val rq = MembershipPersistenceRequest(
             rqContext,
@@ -724,6 +730,11 @@ class MembershipPersistenceRPCProcessorTest {
     @Test
     fun `activate member returns success`() {
         whenever(memberEntity.status).doReturn(MEMBER_STATUS_SUSPENDED)
+        val memberInfo = mock<MemberInfo> {
+            on { memberProvidedContext } doReturn mock()
+            on { mgmProvidedContext } doReturn mock()
+        }
+        whenever(memberInfoFactory.create(any())).thenReturn(memberInfo)
         whenever(keyValuePairListDeserializer.deserialize(any())).thenReturn(KeyValuePairList(listOf(mock())))
         val rq = MembershipPersistenceRequest(
             rqContext,

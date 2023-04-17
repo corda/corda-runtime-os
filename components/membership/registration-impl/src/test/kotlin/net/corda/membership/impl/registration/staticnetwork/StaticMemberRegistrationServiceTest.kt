@@ -50,9 +50,9 @@ import net.corda.membership.impl.registration.staticnetwork.TestUtils.Companion.
 import net.corda.membership.impl.registration.staticnetwork.TestUtils.Companion.groupPolicyWithStaticNetworkAndDuplicatedVNodeName
 import net.corda.membership.impl.registration.staticnetwork.TestUtils.Companion.groupPolicyWithoutStaticNetwork
 import net.corda.membership.impl.registration.testCpiSignerSummaryHash
-import net.corda.membership.lib.EPOCH_KEY
 import net.corda.membership.lib.EndpointInfoFactory
 import net.corda.membership.lib.GroupParametersFactory
+import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.EPOCH_KEY
 import net.corda.membership.lib.MemberInfoExtension
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_NAME
