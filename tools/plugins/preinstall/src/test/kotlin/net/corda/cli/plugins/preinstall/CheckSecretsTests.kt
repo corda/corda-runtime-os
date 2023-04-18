@@ -15,7 +15,7 @@ import picocli.CommandLine
 
 
 @CommandLine.Command(name = "sub-command", description = ["Example subcommand."])
-class CheckKafkaTests: PluginContext() {
+class CheckSecretsTests: PluginContext() {
 
     @Nested
     inner class TestSecrets: PluginContext() {
