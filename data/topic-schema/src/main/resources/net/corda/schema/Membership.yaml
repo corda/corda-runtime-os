@@ -87,6 +87,7 @@ topics:
     name: membership.db.rpc.ops
     consumers:
       - db
+      - flow
     producers:
       - link-manager
       - membership
@@ -98,6 +99,7 @@ topics:
       - link-manager
       - membership
       - rest
+      - flow
     producers:
       - db
     config:
