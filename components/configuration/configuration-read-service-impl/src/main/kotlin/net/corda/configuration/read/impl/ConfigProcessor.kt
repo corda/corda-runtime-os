@@ -46,10 +46,9 @@ internal class ConfigProcessor(
 
                 logger.info("onSnapshot - Received configuration for key $configKey")
                 logger.debug {
-                    config[configKey]!!.let {
-                        "$configKey configuration: " +
-                                it.toSafeConfig().root().render(ConfigRenderOptions.concise().setFormatted(true))
-                    }
+                    "$configKey configuration: " +
+                            config[configKey]!!.toSafeConfig().root()
+                                .render(ConfigRenderOptions.concise().setFormatted(true))
                 }
             }
 
