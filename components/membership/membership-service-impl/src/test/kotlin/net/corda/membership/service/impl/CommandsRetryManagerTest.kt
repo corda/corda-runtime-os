@@ -1,8 +1,8 @@
 package net.corda.membership.service.impl
 
+import net.corda.data.KeyValuePairList
 import net.corda.data.membership.async.request.MembershipAsyncRequest
 import net.corda.data.membership.async.request.MembershipAsyncRequestState
-import net.corda.data.membership.async.request.MembershipAsyncRequestStates
 import net.corda.data.membership.async.request.RegistrationAsyncRequest
 import net.corda.data.membership.async.request.RetriableFailure
 import net.corda.data.membership.async.request.SentToMgmWaitingForNetwork
@@ -14,7 +14,6 @@ import net.corda.schema.Schemas.Membership.MEMBERSHIP_ASYNC_REQUEST_TOPIC
 import net.corda.utilities.time.UTCClock
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
-import org.mockito.Mockito.never
 import org.mockito.Mockito.times
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argThat
@@ -45,6 +44,7 @@ class CommandsRetryManagerTest {
     private val clock = mock<UTCClock> {
         on { instant() } doReturn now
     }
+    private val holdingId = "holdingId"
 
     private val manager = CommandsRetryManager(
         publisherFactory,
@@ -75,119 +75,66 @@ class CommandsRetryManagerTest {
 
     @Test
     fun `onPartitionSynced will add a timer for each command`() {
-        val states = (1..3).associate { keyIndex ->
-            "key-$keyIndex" to
-                MembershipAsyncRequestStates(
-                    (1..5).map { requestIndex ->
-                        mockState("$keyIndex-$requestIndex")
-                    },
-                )
+        val requests = (1..3).associate { requestIndex ->
+            "request-$requestIndex" to mockState("request-$requestIndex")
         }
+        val records = argumentCaptor<List<Record<*, *>>>()
+        whenever(publisher.publish(records.capture())).doReturn(emptyList())
 
-        manager.onPartitionSynced(states)
+        manager.onPartitionSynced(requests)
 
         task.allValues.forEach {
             it.run()
         }
 
-        states.forEach { (key, states) ->
-            states.states.forEach { state ->
-                verify(publisher).publish(
-                    listOf(
-                        Record(
-                            MEMBERSHIP_ASYNC_REQUEST_TOPIC,
-                            key,
+        requests.forEach { (_, state) ->
+            verify(publisher).publish(
+                listOf(
+                    Record(
+                        MEMBERSHIP_ASYNC_REQUEST_TOPIC,
+                        holdingId,
+                        MembershipAsyncRequest(
                             state.request,
+                            state,
                         ),
                     ),
-                )
-            }
+                ),
+            )
         }
     }
 
     @Test
     fun `onPartitionLost will cancel the timer for each command`() {
-        val keyCount = 3
-        val requestPerKey = 2
-        val states = (1..keyCount).associate { keyIndex ->
-            "key-$keyIndex" to
-                MembershipAsyncRequestStates(
-                    (1..requestPerKey).map { requestIndex ->
-                        mockState("$keyIndex-$requestIndex")
-                    },
-                )
+        val requests = (1..3).associate { requestIndex ->
+            "request-$requestIndex" to mockState("request-$requestIndex")
         }
-        manager.onPartitionSynced(states)
+        manager.onPartitionSynced(requests)
 
-        manager.onPartitionLost(states)
+        manager.onPartitionLost(requests)
 
-        verify(future, times(keyCount * requestPerKey)).cancel(false)
+        verify(future, times(3)).cancel(false)
     }
 
     @Test
-    fun `onPostCommit will cancel the timers for removed state`() {
-        val startStates = mapOf(
-            "key" to MembershipAsyncRequestStates(
-                listOf(
-                    mockState("requestId"),
-                ),
-            ),
+    fun `onPostCommit will cancel the timers for removed requst`() {
+        val startRequests = mapOf(
+            "requestId" to mockState("requestId"),
         )
-        manager.onPartitionSynced(startStates)
-        val states = mapOf(
-            "key" to null,
+        manager.onPartitionSynced(startRequests)
+        val requests = mapOf(
+            "requestId" to null,
         )
 
-        manager.onPostCommit(states)
+        manager.onPostCommit(requests)
 
         verify(future).cancel(false)
-    }
-
-    @Test
-    fun `onPostCommit will cancel the timers for removed command`() {
-        val startStates = mapOf(
-            "key" to MembershipAsyncRequestStates(
-                listOf(
-                    mockState("requestId"),
-                ),
-            ),
-        )
-        manager.onPartitionSynced(startStates)
-        val states = mapOf(
-            "key" to MembershipAsyncRequestStates(emptyList()),
-        )
-
-        manager.onPostCommit(states)
-
-        verify(future).cancel(false)
-    }
-
-    @Test
-    fun `onPostCommit will not cancel the timers if command is still running`() {
-        val state = mockState("requestId")
-        val startStates = mapOf(
-            "key" to MembershipAsyncRequestStates(
-                listOf(
-                    state,
-                ),
-            ),
-        )
-        manager.onPartitionSynced(startStates)
-        val states = mapOf(
-            "key" to MembershipAsyncRequestStates(listOf(state)),
-        )
-
-        manager.onPostCommit(states)
-
-        verify(future, never()).cancel(false)
     }
 
     @Test
     fun `onPostCommit will create a timer for new commands commands`() {
         val state = mockState("requestId")
         val states = mapOf(
-            "key-1" to null,
-            "key-2" to MembershipAsyncRequestStates(listOf(state)),
+            "requestId" to state,
         )
 
         manager.onPostCommit(states)
@@ -198,14 +145,12 @@ class CommandsRetryManagerTest {
     @Test
     fun `addTimer will use the correct delay after failure`() {
         val state = mockState("id")
-        whenever(state.cause).doReturn(
-            RetriableFailure(
-                5,
-                now.plusSeconds(2),
-            ),
+        state.cause = RetriableFailure(
+            5,
+            now.plusSeconds(2),
         )
         val states = mapOf(
-            "key" to MembershipAsyncRequestStates(listOf(state)),
+            "id" to state,
         )
 
         manager.onPostCommit(states)
@@ -216,14 +161,12 @@ class CommandsRetryManagerTest {
     @Test
     fun `addTimer will publish without waiting if no waiting is needed`() {
         val state = mockState("id")
-        whenever(state.cause).doReturn(
-            RetriableFailure(
-                5,
-                now.minusSeconds(2),
-            ),
+        state.cause = RetriableFailure(
+            5,
+            now.minusSeconds(2),
         )
         val states = mapOf(
-            "key" to MembershipAsyncRequestStates(listOf(state)),
+            "id" to state,
         )
 
         manager.onPostCommit(states)
@@ -234,9 +177,9 @@ class CommandsRetryManagerTest {
     @Test
     fun `addTimer will use the correct delay after sending`() {
         val state = mockState("id")
-        whenever(state.cause).doReturn(SentToMgmWaitingForNetwork())
+        state.cause = SentToMgmWaitingForNetwork()
         val states = mapOf(
-            "key" to MembershipAsyncRequestStates(listOf(state)),
+            "id" to state,
         )
 
         manager.onPostCommit(states)
@@ -250,7 +193,7 @@ class CommandsRetryManagerTest {
         whenever(publisher.publish(records.capture())).doReturn(emptyList())
         val state = mockState("id")
         val states = mapOf(
-            "key" to MembershipAsyncRequestStates(listOf(state)),
+            "id" to state,
         )
         manager.onPostCommit(states)
 
@@ -261,22 +204,26 @@ class CommandsRetryManagerTest {
                 assertThat(it.topic).isEqualTo(MEMBERSHIP_ASYNC_REQUEST_TOPIC)
             }
             .allSatisfy {
-                assertThat(it.key).isEqualTo("key")
+                assertThat(it.key).isEqualTo(holdingId)
             }
             .allSatisfy {
-                assertThat(it.value).isSameAs(state.request)
+                assertThat(it.value).isEqualTo(
+                    MembershipAsyncRequest(
+                        state.request,
+                        state,
+                    ),
+                )
             }
     }
 
     private fun mockState(id: String): MembershipAsyncRequestState {
-        val registrationAsyncRequest = mock<RegistrationAsyncRequest> {
-            on { requestId } doReturn id
-        }
-        val membershipAsyncRequest = mock<MembershipAsyncRequest> {
-            on { request } doReturn registrationAsyncRequest
-        }
-        return mock<MembershipAsyncRequestState> {
-            on { request } doReturn membershipAsyncRequest
-        }
+        return MembershipAsyncRequestState(
+            RegistrationAsyncRequest(
+                holdingId,
+                id,
+                KeyValuePairList(),
+            ),
+            null,
+        )
     }
 }
