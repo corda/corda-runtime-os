@@ -46,7 +46,7 @@ internal class ConfigProcessor(
 
                 logger.info("onSnapshot - Received configuration for key $configKey")
                 logger.debug {
-                    configuration.toSmartConfig().let {
+                    config[configKey]!!.let {
                         "$configKey configuration: " +
                                 it.toSafeConfig().root().render(ConfigRenderOptions.concise().setFormatted(true))
                     }
