@@ -204,9 +204,9 @@ class SessionManagerImpl @Activate constructor(
         updateSessionStateSendEvents(sessionState, instant, messageResendWindow, sessionEvents)
 
         logger.debug {
-            "SessionManagerImpl dispatching events: " +
+            "Dispatching events for session [${sessionState.sessionId}]: " +
             sessionEvents.joinToString {
-                "[Sequence: ${it.sequenceNum}, Class: ${it.payload::class.java}, Resend timestamp: ${it.timestamp}]"
+                "[Sequence: ${it.sequenceNum}, Class: ${it.payload::class.java.simpleName}, Resend timestamp: ${it.timestamp}]"
             }
         }
 
