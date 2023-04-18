@@ -14,6 +14,9 @@ class RunAll : Runnable {
     @CommandLine.Option(names = ["-f", "--file"], description = ["The file location of the truststore for kafka."])
     var truststoreLocation: String? = null
 
+    @CommandLine.Option(names = ["-r", "--replicas"], description = ["The replica count of the Kafka cluster."])
+    var replicaCount: Int? = null
+
     @CommandLine.Option(names = ["-t", "--timeout"], description = ["The timeout in milliseconds for testing the kafka " +
             "connection. Defaults to 3000."])
     var timeout: Int = 3000
@@ -36,14 +39,15 @@ class RunAll : Runnable {
         val postgresArgs = mutableListOf<String>()
         if (verbose) { postgresArgs.add("-v") }
         if (debug) { postgresArgs.add("-d") }
-        namespace?.let{ postgresArgs.add("-n$namespace") }
+        namespace?.let{ postgresArgs.add("-n$it") }
 
         val kafkaCMD = CommandLine(CheckKafka())
         val kafkaArgs = mutableListOf<String>()
         if (verbose) { kafkaArgs.add("-v") }
         if (debug) { kafkaArgs.add("-d") }
-        namespace?.let{ kafkaArgs.add("-n$namespace") }
-        truststoreLocation?.let{ kafkaArgs.add("-f$truststoreLocation") }
+        namespace?.let{ kafkaArgs.add("-n$it") }
+        truststoreLocation?.let{ kafkaArgs.add("-f$it") }
+        replicaCount?.let{ kafkaArgs.add("-f$it") }
         kafkaArgs.add("-t$timeout")
 
         limitsCMD.execute(path, *limitsArgs.toTypedArray())

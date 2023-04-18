@@ -89,13 +89,17 @@ class CheckKafka : Runnable, PluginContext() {
                 .nodes()
                 .get()
             val clusterDescription = admin.describeCluster()
-            if (!nodes.isNullOrEmpty()) {
-                println("[INFO] Kafka client connected to cluster with ID ${clusterDescription.clusterId().get()}.")
-                log("Number of brokers: ${nodes.size}", INFO)
-                replicaCount?.let {
-                    if (nodes.size < it) {
-                        log("Number of brokers (${nodes.size}) is less than the replica count ($it).", WARN)
-                    }
+            if (nodes.isNullOrEmpty()) {
+                log("There are no brokers in the kafka cluster.", ERROR)
+                return
+            }
+
+            println("[INFO] Kafka client connected to cluster with ID ${clusterDescription.clusterId().get()}.")
+
+            log("Number of brokers: ${nodes.size}", INFO)
+            replicaCount?.let {
+                if (nodes.size < it) {
+                    log("Number of brokers (${nodes.size}) is less than the replica count ($it).", WARN)
                 }
             }
         }
