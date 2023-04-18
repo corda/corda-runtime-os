@@ -14,6 +14,9 @@ import java.io.Writer
 import java.sql.Connection
 import java.util.UUID
 import liquibase.LabelExpression
+import liquibase.command.CommandScope
+import liquibase.command.core.TagCommandStep
+import liquibase.command.core.helpers.DbUrlConnectionCommandStep
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
@@ -118,7 +121,10 @@ class LiquibaseSchemaMigratorImpl(
                 lb.update(Contexts(), sql)
             }
             if (tag != null) {
-                lb.tag(tag)
+                CommandScope("tag")
+                    .addArgumentValue(DbUrlConnectionCommandStep.DATABASE_ARG, database)
+                    .addArgumentValue(TagCommandStep.TAG_ARG, tag)
+                    .execute();
             }
             log.info("${database.connection.catalog} DB schema update complete")
         }
