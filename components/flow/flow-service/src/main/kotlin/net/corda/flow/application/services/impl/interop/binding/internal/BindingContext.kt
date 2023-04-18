@@ -2,6 +2,7 @@ package net.corda.flow.application.services.impl.interop.binding.internal
 
 import net.corda.flow.application.services.impl.interop.binding.*
 import net.corda.flow.application.services.impl.interop.facade.FacadeImpl
+import net.corda.flow.application.services.impl.interop.facade.FacadeMethodImpl
 import net.corda.v5.application.interop.binding.*
 import net.corda.v5.application.interop.facade.Facade
 import net.corda.v5.application.interop.facade.FacadeMethod
@@ -125,7 +126,7 @@ internal class InterfaceBindingContext(val facade: FacadeImpl, private val bound
 // BindingContext in which we are binding an interface method to a facade method.
 private class MethodBindingContext(
     val parent: InterfaceBindingContext,
-    val facadeMethod: FacadeMethod,
+    val facadeMethod: FacadeMethodImpl,
     val boundMethod: Method
 ) : BindingContext<FacadeMethodBinding>() {
 

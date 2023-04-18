@@ -5,22 +5,22 @@ import net.corda.v5.application.interop.parameters.ParameterTypeLabel
 import net.corda.v5.application.interop.parameters.TypeQualifier
 
 data class RawParameterType<T>(val typeLabel: ParameterTypeLabel) : ParameterType<T> {
-    val expectedClass: Class<T> get() = typeLabel.expectedClass as Class<T>
+    val expectedType: Class<T> get() = typeLabel.expectedClass as Class<T>
     val isQualified: Boolean = false
     val qualifier: TypeQualifier? = null
     override fun getTypeLabel(): ParameterTypeLabel {
-        TODO("Not yet implemented")
+        return typeLabel
     }
 
     override fun getExpectedType(): Class<T> {
-        TODO("Not yet implemented")
+        return expectedType
     }
 
     override fun isQualified(): Boolean {
-        TODO("Not yet implemented")
+        return isQualified
     }
 
-    override fun getQualifier(): TypeQualifier {
-        TODO("Not yet implemented")
+    override fun getQualifier(): TypeQualifier? {
+        return qualifier
     }
 }

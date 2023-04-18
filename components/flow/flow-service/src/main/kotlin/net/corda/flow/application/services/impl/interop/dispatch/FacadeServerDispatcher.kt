@@ -14,6 +14,7 @@ import net.corda.v5.application.interop.binding.InteropAction
 import net.corda.v5.application.interop.facade.Facade
 import net.corda.v5.application.interop.facade.FacadeRequest
 import net.corda.v5.application.interop.facade.FacadeResponse
+import net.corda.v5.application.interop.parameters.ParameterTypeLabel
 
 object FacadeServerDispatchers {
 
@@ -63,7 +64,7 @@ class FacadeServerDispatcher(
     private fun getOutParameterValues(
         result: Any,
         outParameterBindings: FacadeOutParameterBindings
-    ): List<ParameterTypeLabel<*>> = when (outParameterBindings) {
+    ): List<ParameterTypeLabel> = when (outParameterBindings) {
         FacadeOutParameterBindings.NoOutParameters -> emptyList()
 
         is FacadeOutParameterBindings.SingletonOutParameterBinding -> {

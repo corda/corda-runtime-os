@@ -4,7 +4,10 @@ import com.fasterxml.jackson.core.JsonParser
 import com.fasterxml.jackson.databind.DeserializationContext
 import com.fasterxml.jackson.databind.JsonDeserializer
 import com.fasterxml.jackson.databind.JsonNode
+import net.corda.v5.application.interop.facade.FacadeId
 import net.corda.v5.application.interop.facade.FacadeRequest
+import net.corda.v5.application.interop.parameters.ParameterType
+import net.corda.v5.application.interop.parameters.ParameterTypeLabel
 import java.io.StringWriter
 import java.math.BigDecimal
 import java.nio.ByteBuffer
@@ -16,7 +19,7 @@ import java.util.*
 class FacadeRequestDeserializer : JsonDeserializer<FacadeRequest>() {
 
     override fun deserialize(parser: JsonParser, ctxt: DeserializationContext): FacadeRequest =
-        deserialize(parser, ::FacadeRequest)
+        deserialize(parser, ::FacadeRequestImpl)
 
 }
 
@@ -29,7 +32,7 @@ class FacadeResponseDeserializer : JsonDeserializer<FacadeResponseImpl>() {
 
 private fun <T> deserialize(
     parser: JsonParser,
-    ctor: (FacadeId, String, List<ParameterTypeLabel<*>>) -> T
+    ctor: (FacadeId, String, List<ParameterTypeLabel>) -> T
 ): T {
     val node = parser.codec.readTree<JsonNode>(parser)
     val method = node["method"]?.asText() ?: throw IllegalArgumentException(

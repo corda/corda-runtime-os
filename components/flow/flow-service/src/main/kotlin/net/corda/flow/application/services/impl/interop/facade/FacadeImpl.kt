@@ -4,7 +4,7 @@ import net.corda.v5.application.interop.facade.*
 import net.corda.v5.application.interop.parameters.ParameterTypeLabel
 
 data class FacadeImpl(val facadeId: FacadeId, val methods: List<FacadeMethodImpl>) : Facade {
-    val methodsByName: Map<String, FacadeMethod> = methods.associateBy { it.name }
+    val methodsByName: Map<String, FacadeMethodImpl> = methods.associateBy { it.name }
 
     /**
      * Get the method with the given name.

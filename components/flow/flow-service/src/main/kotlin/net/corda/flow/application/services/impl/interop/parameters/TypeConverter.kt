@@ -1,6 +1,7 @@
 package net.corda.flow.application.services.impl.interop.parameters
 
-import org.corda.weft.api.JsonMarshaller
+import net.corda.v5.application.interop.parameters.ParameterType
+import net.corda.v5.application.interop.parameters.ParameterTypeLabel
 import java.math.BigDecimal
 import java.nio.ByteBuffer
 
@@ -17,7 +18,7 @@ class TypeConverter(private val jsonMarshaller: JsonMarshaller) {
         parameterType: ParameterType<*>,
         parameterValue: Any,
         jvmType: Class<*>): Any = when(parameterType) {
-        ParameterType.DecimalType -> {
+        ParameterTypeLabel.DECIMAL -> {
             parameterValue as? BigDecimal ?: throw IllegalArgumentException(
                     "Parameter value $parameterValue expected to be BigDecimal")
             when (jvmType) {
@@ -30,7 +31,7 @@ class TypeConverter(private val jsonMarshaller: JsonMarshaller) {
                 else -> parameterValue
             }
         }
-        ParameterType.ByteBufferType -> {
+        ParameterTypeLabel.BYTES -> {
             parameterValue as? ByteBuffer ?: throw IllegalArgumentException(
                 "Parameter value $parameterValue expected to be ByteBuffer")
             when (jvmType) {
@@ -38,7 +39,7 @@ class TypeConverter(private val jsonMarshaller: JsonMarshaller) {
                 else -> parameterValue
             }
         }
-        ParameterType.JsonType -> jsonMarshaller.deserialize(parameterValue as String, jvmType)
+        ParameterTypeLabel.JSON -> jsonMarshaller.deserialize(parameterValue as String, jvmType)
         else -> parameterValue
     }
 
@@ -51,17 +52,17 @@ class TypeConverter(private val jsonMarshaller: JsonMarshaller) {
     * Anything at all gets serialised to a JSON blob.
      */
     fun convertJvmToFacade(value: Any, expectedType: ParameterType<*>): Any = when(expectedType) {
-        ParameterType.DecimalType -> when(value) {
+        ParameterTypeLabel.DECIMAL -> when(value) {
             is Int -> BigDecimal(value)
             is Long -> BigDecimal(value)
             is Double -> BigDecimal(value)
             else -> value
         }
-        ParameterType.ByteBufferType -> when(value) {
+        ParameterTypeLabel.BYTES -> when(value) {
             is ByteArray -> ByteBuffer.wrap(value)
             else -> value
         }
-        ParameterType.JsonType -> jsonMarshaller.serialize(value)
+        ParameterTypeLabel.JSON -> jsonMarshaller.serialize(value)
         else -> value
     }
 }
