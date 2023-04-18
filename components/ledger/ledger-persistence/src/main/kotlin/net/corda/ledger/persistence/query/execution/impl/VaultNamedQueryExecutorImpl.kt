@@ -1,24 +1,19 @@
 package net.corda.ledger.persistence.query.execution.impl
 
-import net.corda.crypto.core.parseSecureHash
 import net.corda.data.persistence.EntityResponse
 import net.corda.data.persistence.FindWithNamedQuery
 import net.corda.ledger.persistence.common.ComponentLeafDto
 import net.corda.ledger.persistence.query.data.VaultNamedQuery
 import net.corda.ledger.persistence.query.execution.VaultNamedQueryExecutor
 import net.corda.ledger.persistence.query.registration.VaultNamedQueryRegistry
-import net.corda.ledger.utxo.data.state.StateAndRefImpl
-import net.corda.ledger.utxo.data.state.TransactionStateImpl
-import net.corda.ledger.utxo.data.state.getEncumbranceGroup
 import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
-import net.corda.ledger.utxo.data.transaction.UtxoOutputInfoComponent
+import net.corda.ledger.utxo.data.transaction.UtxoTransactionOutputDto
 import net.corda.orm.utils.transaction
 import net.corda.persistence.common.exceptions.NullParameterException
 import net.corda.utilities.serialization.deserialize
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.StateAndRef
-import net.corda.v5.ledger.utxo.StateRef
 import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
 import javax.persistence.EntityManagerFactory
@@ -138,13 +133,12 @@ class VaultNamedQueryExecutorImpl(
                 "Missing output info at index [${it.leafIndex}] for UTXO transaction with ID [${it.transactionId}]"
             }
 
-            val info = serializationService.deserialize<UtxoOutputInfoComponent>(serializedInfo.data)
-            val contractState = serializationService.deserialize<ContractState>(it.data)
-
-            StateAndRefImpl(
-                state = TransactionStateImpl(contractState, info.notaryName, info.notaryKey, info.getEncumbranceGroup()),
-                ref = StateRef(parseSecureHash(it.transactionId), it.leafIndex)
-            )
+            UtxoTransactionOutputDto(
+                it.transactionId,
+                it.leafIndex,
+                serializedInfo.data,
+                it.data
+            ).toLazyStateAndRefImpl(serializationService)
         } ?: emptyList()
     }
 

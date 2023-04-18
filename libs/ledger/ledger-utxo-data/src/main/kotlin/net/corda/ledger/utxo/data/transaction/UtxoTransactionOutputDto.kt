@@ -1,6 +1,7 @@
 package net.corda.ledger.utxo.data.transaction
 
 import net.corda.crypto.core.parseSecureHash
+import net.corda.ledger.utxo.data.state.LazyStateAndRefImpl
 import net.corda.ledger.utxo.data.state.StateAndRefImpl
 import net.corda.ledger.utxo.data.state.TransactionStateImpl
 import net.corda.ledger.utxo.data.state.getEncumbranceGroup
@@ -47,4 +48,10 @@ data class UtxoTransactionOutputDto(
             ref = StateRef(parseSecureHash(transactionId), leafIndex)
         )
     }
+
+    fun <T : ContractState> toLazyStateAndRefImpl(serializationService: SerializationService): LazyStateAndRefImpl<T> =
+        LazyStateAndRefImpl(
+            this,
+            serializationService
+        )
 }

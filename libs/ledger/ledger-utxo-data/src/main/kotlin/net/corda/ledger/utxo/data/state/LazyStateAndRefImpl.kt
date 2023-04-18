@@ -1,7 +1,5 @@
 package net.corda.ledger.utxo.data.state
 
-import net.corda.crypto.core.bytes
-import net.corda.ledger.common.data.transaction.getRootMerkleTreeDigestProvider
 import net.corda.ledger.utxo.data.transaction.UtxoTransactionOutputDto
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.CordaSerializable
@@ -26,7 +24,7 @@ data class LazyStateAndRefImpl<out T : ContractState>(
     private val serializationService: SerializationService
 ) : StateAndRef<@UnsafeVariance T> {
     private val stateAndRef: StateAndRef<T> by lazy(LazyThreadSafetyMode.PUBLICATION) {
-        serializedStateAndRef.toStateAndRef<T>(serializationService)
+        serializedStateAndRef.toStateAndRef(serializationService)
     }
 
     override fun getState(): TransactionState<@UnsafeVariance T> {

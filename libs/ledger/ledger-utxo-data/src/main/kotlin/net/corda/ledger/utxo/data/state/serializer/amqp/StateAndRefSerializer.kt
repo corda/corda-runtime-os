@@ -9,6 +9,8 @@ import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.TransactionState
 import org.osgi.service.component.annotations.Component
 
+// todo try to remove?
+
 @Component(service = [ InternalCustomSerializer::class ])
 class StateAndRefSerializer : BaseProxySerializer<StateAndRefImpl<ContractState>, StateAndRefProxy>() {
     private companion object {

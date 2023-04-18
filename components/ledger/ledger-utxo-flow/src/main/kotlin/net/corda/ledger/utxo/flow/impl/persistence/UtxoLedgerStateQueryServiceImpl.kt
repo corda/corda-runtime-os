@@ -40,6 +40,7 @@ class UtxoLedgerStateQueryServiceImpl @Activate constructor(
         }.map { it.toStateAndRef(serializationService)}
     }
 
+    @Suspendable
     private fun fetchSerializedStateAndRefs(stateRefs: Iterable<StateRef>): List<UtxoTransactionOutputDto> {
         return wrapWithPersistenceException {
             externalEventExecutor.execute(
@@ -52,15 +53,12 @@ class UtxoLedgerStateQueryServiceImpl @Activate constructor(
     @Suspendable
     override fun lazyResolveStateAndRefs(stateRefs: Iterable<StateRef>): List<LazyStateAndRefImpl<*>> {
         return fetchSerializedStateAndRefs(stateRefs).map {
-            LazyStateAndRefImpl<ContractState>(
-                it,
-                serializationService
-            )
+            it.toLazyStateAndRefImpl<ContractState>(serializationService)
         }
     }
 
     @Suspendable
     override fun resolveStateRefs(stateRefs: Iterable<StateRef>): List<StateAndRef<*>> {
-        return fetchSerializedStateAndRefs(stateRefs).map { it.toStateAndRef<ContractState>(serializationService)}
+        return fetchSerializedStateAndRefs(stateRefs).map { it.toStateAndRef<ContractState>(serializationService) }
     }
 }
