@@ -44,7 +44,7 @@ internal class ConfigProcessor(
             currentData.forEach { (configKey, configuration: Configuration) ->
                 addToCache(configKey, configuration)
 
-                logger.info("onSnapshot - Received configuration for key $configKey")
+                logger.info("Received initial configuration for key $configKey")
                 logger.debug {
                     "$configKey configuration: " +
                             config[configKey]!!.toSafeConfig().root()
@@ -67,7 +67,7 @@ internal class ConfigProcessor(
         if (newConfig != null) {
             val config = mergeConfigs(currentData)
             val newConfigKey = newRecord.key
-            logger.info("onNext - Received configuration for key $newConfigKey")
+            logger.info("Received new configuration for key $newConfigKey")
             logger.debug {
                 "$newConfigKey configuration: " +
                         newConfig.toSafeConfig().root().render(ConfigRenderOptions.concise().setFormatted(true))
