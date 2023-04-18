@@ -59,7 +59,13 @@ internal class MemberOpsAsyncProcessor(
     }
 
     private fun handleRequest(request: MembershipAsyncRequest): Collection<Record<*, *>> {
-        return register(request)
+        logger.info("QQQ got reqeust ${request.request.requestId}")
+        return register(request).also {
+            logger.info("QQQ returning from ${request.request.requestId} - ${it.size}")
+            it.forEach { r ->
+                logger.info("QQQ \t from ${request.request.requestId} - ${r.value?.javaClass}, ${r.topic}, ${r.key}")
+            }
+        }
     }
 
     override val keyClass = String::class.java
@@ -73,7 +79,9 @@ internal class MemberOpsAsyncProcessor(
             MEMBERSHIP_ASYNC_REQUEST_RETRIES_TOPIC,
             requestId,
             null,
-        )
+        ).also {
+            logger.info("QQQ Sending $requestId with null 1")
+        }
 
     private fun persistAndCreateFailureWithoutRetryResponse(
         holdingIdentity: HoldingIdentity,
@@ -99,7 +107,9 @@ internal class MemberOpsAsyncProcessor(
                 requestId,
                 null,
             ),
-        )
+        ).also {
+            logger.info("QQQ sending $requestId with null 2")
+        }
 
     private fun createFailureWithRetryResponse(
         requestId: String,
@@ -115,7 +125,9 @@ internal class MemberOpsAsyncProcessor(
                     RetriableFailure(retries - 1, clock.instant().plusSeconds(WAIT_AFTER_FAILURE_IN_SECONDS)),
                 ),
             ),
-        )
+        ).also {
+            logger.info("QQQ Sending createFailureWithRetryResponse - $requestId")
+        }
     }
 
     private fun createSentToMgmResponse(
