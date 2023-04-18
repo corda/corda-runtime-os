@@ -4,10 +4,10 @@
 
 set -e
 
-./gradlew publishOSGiImage
+#./gradlew publishOSGiImage -PbaseImage=docker-remotes.software.r3.com/azul/zulu-openjdk
 
 # Currently the init containers are not repeatble, so ensure we start from scratch each time
-kubectl delete namespace corda
+kubectl delete namespace corda || echo corda namesapce already deleted?
 kubectl create namespace corda
 
 # Usual prereqs
