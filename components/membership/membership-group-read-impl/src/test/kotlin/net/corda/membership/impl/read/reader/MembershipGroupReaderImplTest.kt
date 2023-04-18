@@ -1,7 +1,7 @@
 package net.corda.membership.impl.read.reader
 
+import net.corda.crypto.cipher.suite.sha256Bytes
 import net.corda.crypto.core.publicKeyHashFromBytes
-import net.corda.crypto.core.sha256Bytes
 import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.data.p2p.app.MembershipStatusFilter.ACTIVE_OR_SUSPENDED_IF_PRESENT_OR_PENDING
 import net.corda.membership.impl.read.TestProperties

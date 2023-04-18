@@ -5,8 +5,8 @@ import net.corda.crypto.cipher.suite.CustomSignatureSpec
 import net.corda.crypto.cipher.suite.SignatureVerificationService
 import net.corda.crypto.cipher.suite.getParamsSafely
 import net.corda.crypto.cipher.suite.schemes.KeyScheme
+import net.corda.crypto.cipher.suite.sha256HexString
 import net.corda.crypto.core.ShortHash
-import net.corda.crypto.core.sha256HexString
 import net.corda.crypto.impl.SignatureInstances
 import net.corda.crypto.impl.getSigningData
 import net.corda.sandbox.type.UsedByFlow

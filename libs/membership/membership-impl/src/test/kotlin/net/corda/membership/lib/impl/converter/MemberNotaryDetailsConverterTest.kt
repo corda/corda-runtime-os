@@ -2,7 +2,7 @@ package net.corda.membership.lib.impl.converter
 
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.cipher.suite.SignatureSpecs
-import net.corda.crypto.core.sha256Bytes
+import net.corda.crypto.cipher.suite.sha256Bytes
 import net.corda.layeredpropertymap.ConversionContext
 import net.corda.v5.base.exceptions.ValueNotFoundException
 import net.corda.v5.base.types.MemberX500Name

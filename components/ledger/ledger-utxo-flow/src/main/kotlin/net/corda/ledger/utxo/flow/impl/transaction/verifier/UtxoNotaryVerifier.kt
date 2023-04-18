@@ -1,7 +1,7 @@
 package net.corda.ledger.utxo.flow.impl.transaction.verifier
 
+import net.corda.crypto.cipher.suite.sha256HexString
 import net.corda.crypto.core.ShortHash
-import net.corda.crypto.core.sha256HexString
 import net.corda.ledger.common.data.transaction.TransactionMetadataInternal
 import net.corda.membership.lib.SignedGroupParameters
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction

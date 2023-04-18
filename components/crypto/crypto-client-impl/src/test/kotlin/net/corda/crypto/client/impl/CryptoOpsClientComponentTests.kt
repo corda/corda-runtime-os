@@ -4,6 +4,8 @@ import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.cipher.suite.CustomSignatureSpec
 import net.corda.crypto.cipher.suite.SignatureSpecs
+import net.corda.crypto.cipher.suite.sha256Bytes
+import net.corda.crypto.cipher.suite.sha256HexString
 import net.corda.crypto.component.impl.exceptionFactories
 import net.corda.crypto.component.test.utils.SendActResult
 import net.corda.crypto.component.test.utils.TestConfigurationReadService
@@ -24,8 +26,6 @@ import net.corda.crypto.core.KEY_LOOKUP_INPUT_ITEMS_LIMIT
 import net.corda.crypto.core.ShortHash
 import net.corda.crypto.core.publicKeyIdFromBytes
 import net.corda.crypto.core.publicKeyShortHashFromBytes
-import net.corda.crypto.core.sha256Bytes
-import net.corda.crypto.core.sha256HexString
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.ShortHashes

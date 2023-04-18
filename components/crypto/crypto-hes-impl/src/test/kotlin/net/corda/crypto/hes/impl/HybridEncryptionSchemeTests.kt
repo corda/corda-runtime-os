@@ -3,8 +3,8 @@ package net.corda.crypto.hes.impl
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.cipher.suite.schemes.KeyScheme
+import net.corda.crypto.cipher.suite.sha256Bytes
 import net.corda.crypto.component.test.utils.generateKeyPair
-import net.corda.crypto.core.sha256Bytes
 import net.corda.crypto.hes.HybridEncryptionParams
 import net.corda.crypto.hes.core.impl.deriveDHSharedSecret
 import net.corda.crypto.hes.impl.infra.TestCryptoOpsClient

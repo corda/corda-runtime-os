@@ -1,6 +1,6 @@
 package net.corda.layeredpropertymap
 
-import net.corda.crypto.core.sha256Bytes
+import net.corda.crypto.cipher.suite.sha256Bytes
 import net.corda.layeredpropertymap.impl.LayeredPropertyMapImpl
 import net.corda.layeredpropertymap.impl.PropertyConverter
 import net.corda.test.util.createTestCase

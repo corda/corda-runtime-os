@@ -9,18 +9,18 @@ import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.cipher.suite.KeyGenerationSpec
 import net.corda.crypto.cipher.suite.KeyMaterialSpec
 import net.corda.crypto.cipher.suite.PlatformDigestService
+import net.corda.crypto.cipher.suite.SharedSecretAliasSpec
+import net.corda.crypto.cipher.suite.SharedSecretWrappedSpec
 import net.corda.crypto.cipher.suite.SigningAliasSpec
 import net.corda.crypto.cipher.suite.SigningWrappedSpec
 import net.corda.crypto.cipher.suite.schemes.KeyScheme
+import net.corda.crypto.cipher.suite.sha256HexString
 import net.corda.crypto.config.impl.CryptoSigningServiceConfig
 import net.corda.crypto.core.DigitalSignatureWithKey
 import net.corda.crypto.core.KEY_LOOKUP_INPUT_ITEMS_LIMIT
 import net.corda.crypto.core.KeyAlreadyExistsException
-import net.corda.crypto.core.SharedSecretAliasSpec
-import net.corda.crypto.core.SharedSecretWrappedSpec
 import net.corda.crypto.core.ShortHash
 import net.corda.crypto.core.fullIdHash
-import net.corda.crypto.core.sha256HexString
 import net.corda.crypto.persistence.SigningKeyInfo
 import net.corda.crypto.persistence.SigningKeyOrderBy
 import net.corda.crypto.persistence.SigningPublicKeySaveContext
@@ -386,10 +386,12 @@ class SigningServiceImpl(
             "The key material is null for public key ${ShortHash.of(publicKey.sha256HexString())} of tenant $tenantId  "
         )
         val masterKeyAlias = record.data.masterKeyAlias ?: throw IllegalStateException(
-            "The master key alias for public key ${ShortHash.of(publicKey.sha256HexString())} of tenant $tenantId must be specified, but is null"
+            "The master key alias for public key ${ShortHash.of(publicKey.sha256HexString())} " +
+                    "of tenant $tenantId must be specified, but is null"
         )
         val encodingVersion = record.data.encodingVersion ?: throw IllegalStateException(
-            "The encoding version for public key ${ShortHash.of(publicKey.sha256HexString())} of tenant $tenantId must be specified, but is null"
+            "The encoding version for public key ${ShortHash.of(publicKey.sha256HexString())} " +
+                    "of tenant $tenantId must be specified, but is null"
         )
         return KeyMaterialSpec(
             keyMaterial = keyMaterial,

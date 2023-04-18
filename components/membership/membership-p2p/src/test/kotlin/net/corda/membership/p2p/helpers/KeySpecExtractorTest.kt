@@ -1,9 +1,9 @@
 package net.corda.membership.p2p.helpers
 
 import net.corda.crypto.cipher.suite.SignatureSpecs
+import net.corda.crypto.cipher.suite.sha256HexString
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.core.ShortHash
-import net.corda.crypto.core.sha256HexString
 import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.membership.p2p.helpers.KeySpecExtractor.Companion.validateSpecName
 import net.corda.v5.base.exceptions.CordaRuntimeException

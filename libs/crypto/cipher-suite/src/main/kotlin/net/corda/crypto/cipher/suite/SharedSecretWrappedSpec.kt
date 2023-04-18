@@ -1,7 +1,5 @@
-package net.corda.crypto.core
+package net.corda.crypto.cipher.suite
 
-import net.corda.crypto.cipher.suite.KeyMaterialSpec
-import net.corda.crypto.cipher.suite.SharedSecretSpec
 import net.corda.crypto.cipher.suite.schemes.KeyScheme
 import java.security.PublicKey
 
@@ -20,5 +18,5 @@ class SharedSecretWrappedSpec(
     override val otherPublicKey: PublicKey
 ) : SharedSecretSpec {
     override fun toString(): String =
-        "$keyScheme,otherPublicKey=${ShortHash.of(otherPublicKey.sha256HexString())},spec=$keyMaterialSpec"
+        "$keyScheme,otherPublicKey=${otherPublicKey.getShortHashString()},spec=$keyMaterialSpec"
 }
