@@ -1,6 +1,7 @@
 package net.corda.db.admin.impl
 
 import liquibase.Contexts
+import liquibase.LabelExpression
 import liquibase.Liquibase
 import liquibase.database.Database
 import liquibase.database.DatabaseFactory
@@ -13,10 +14,6 @@ import org.slf4j.LoggerFactory
 import java.io.Writer
 import java.sql.Connection
 import java.util.UUID
-import liquibase.LabelExpression
-import liquibase.command.CommandScope
-import liquibase.command.core.TagCommandStep
-import liquibase.command.core.helpers.DbUrlConnectionCommandStep
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
@@ -116,15 +113,9 @@ class LiquibaseSchemaMigratorImpl(
             log.info("Updating ${database.databaseProductName} ${database.databaseProductVersion} " +
                     "DB Schema for ${database.connection.catalog}")
             if (null == sql) {
-                lb.update(Contexts())
+                lb.update(tag, Contexts())
             } else {
-                lb.update(Contexts(), sql)
-            }
-            if (tag != null) {
-                CommandScope("tag")
-                    .addArgumentValue(DbUrlConnectionCommandStep.DATABASE_ARG, database)
-                    .addArgumentValue(TagCommandStep.TAG_ARG, tag)
-                    .execute();
+                lb.update(tag, Contexts(), sql)
             }
             log.info("${database.connection.catalog} DB schema update complete")
         }
