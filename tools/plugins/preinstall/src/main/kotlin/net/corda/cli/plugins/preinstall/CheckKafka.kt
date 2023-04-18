@@ -27,6 +27,9 @@ class CheckKafka : Runnable, PluginContext() {
     @Option(names = ["-t", "--timeout"], description = ["The timeout in milliseconds for testing the kafka connection. Defaults to 3000."])
     var timeout: Int = 3000
 
+    @Option(names = ["-r", "--replicas"], description = ["The replica count of the Kafka cluster."])
+    var replicaCount: Int? = null
+
     @Option(names = ["-v", "--verbose"], description = ["Display additional information when checking resources"])
     var verbose: Boolean = false
 
@@ -85,10 +88,16 @@ class CheckKafka : Runnable, PluginContext() {
             val nodes: Collection<Node>? = admin.describeCluster()
                 .nodes()
                 .get()
-            if (!nodes.isNullOrEmpty()) { println("[INFO] Kafka client connected correctly.") }
-
             val clusterDescription = admin.describeCluster()
-            println("Cluster ID: ${clusterDescription.clusterId().get()}") // prints the cluster ID
+            if (!nodes.isNullOrEmpty()) {
+                println("[INFO] Kafka client connected to cluster with ID ${clusterDescription.clusterId().get()}.")
+                log("Number of brokers: ${nodes.size}", INFO)
+                replicaCount?.let {
+                    if (nodes.size < it) {
+                        log("Number of brokers (${nodes.size}) is less than the replica count ($it).", WARN)
+                    }
+                }
+            }
         }
         catch (e: KafkaException){
             log("Failed to create kafka client. ${e.cause?.message}", ERROR)

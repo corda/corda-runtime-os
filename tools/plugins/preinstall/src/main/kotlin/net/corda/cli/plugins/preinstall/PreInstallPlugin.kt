@@ -39,6 +39,7 @@ class PreInstallPlugin(wrapper: PluginWrapper) : Plugin(wrapper) {
         description = ["Preinstall checks for corda."])
     class PreInstallPluginEntry : CordaCliPlugin
 
+    // Common class for plugins to inherit methods from
     open class PluginContext {
         private var verbose = false
         private var debug = false
