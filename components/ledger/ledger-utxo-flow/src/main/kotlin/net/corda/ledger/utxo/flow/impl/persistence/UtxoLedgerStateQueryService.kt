@@ -1,5 +1,6 @@
 package net.corda.ledger.utxo.flow.impl.persistence
 
+import net.corda.ledger.utxo.data.transaction.UtxoTransactionOutputDto
 import net.corda.v5.application.persistence.CordaPersistenceException
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.ledger.utxo.ContractState
@@ -31,4 +32,15 @@ interface UtxoLedgerStateQueryService {
      */
     @Suspendable
     fun resolveStateRefs(stateRefs: Iterable<StateRef>): List<StateAndRef<*>>
+
+    /**
+     * Fetch serialized information from db worker needed to resolve [StateRef]s to [StateAndRef]s
+     *
+     * @param stateRefs The [StateRef]s to be resolved.
+     * @return [UtxoTransactionOutputDto] for each [StateAndRef]s.
+     *
+     * @throws CordaPersistenceException if an error happens during resolve operation.
+     */
+    @Suspendable
+    fun fetchSerializedStateAndRefs(stateRefs: Iterable<StateRef>): List<UtxoTransactionOutputDto>
 }
