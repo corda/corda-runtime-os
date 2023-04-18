@@ -51,7 +51,7 @@ internal class CommandsRetryManager(
     ): StateAndEventProcessor.Response<MembershipAsyncRequestState> {
         logger.info("QQQ in onNext, event: ${event.key}; ${event.value?.request?.requestId}")
         return StateAndEventProcessor.Response(
-            updatedState = state,
+            updatedState = event.value,
             responseEvents = emptyList(),
             markForDLQ = false,
         )
