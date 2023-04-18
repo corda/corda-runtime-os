@@ -393,10 +393,10 @@ a second init container to execute the output SQL to the relevant database
          {{- if eq .name "vnodes" -}} '-a',{{- end -}}
          
          {{- if and (not (eq .name "db")) (not (eq .name "crypto-config")) -}}
-           {{- /* specify DB user - note that the quotes being optional is to preserve output while refactory, we can always safely quote */ -}}
+           {{- /* specify DB user */ -}}
            {{- "'-u'" -}}, '$({{ .environmentVariablePrefix -}}_USERNAME)',
          
-           {{- /* specify DB password - note again that the quotes being optional is to preserve output while refactory, we can always safely quote */ -}}   
+           {{- /* specify DB password */ -}}   
            {{- " '-p'" -}}, '$({{ .environmentVariablePrefix -}}_PASSWORD)',
          {{- end -}}           
          
@@ -408,14 +408,16 @@ a second init container to execute the output SQL to the relevant database
          
          {{- if not (eq .name "rpc") -}}
            {{- if and (((.Values).config).vault).url  (not (eq .name "crypto-config")) -}} 
-             '-t', 'VAULT', '--vault-path', 'dbsecrets', '--key', {{ .name | quote }},
+             '-t', 'VAULT', '--vault-path', 'dbsecrets', '--key', {{ (printf "%s-db-password" .name)| quote }},
            {{- else -}}
+             {{- /* using encryption secrets service, so provide its salt and passphrase */ -}} 
              '--salt', "$(SALT)", '--passphrase', "$(PASSPHRASE)",
            {{- end -}} 
          {{- end -}}
          
          {{- if and (eq .name "crypto-config") (((.Values).config).vault).url  -}}
-            '--vault-path', 'cryptosecrets', '-ks', 'salt', '-kp', 'passphrase',
+            {{- /* when configuring the crypto service and using Vault then specify where to find the wrapping key salt and passphrase in Vault */ -}}
+            '-t', 'VAULT', '--vault-path', 'cryptosecrets', '-ks', 'salt', '-kp', 'passphrase',
          {{- end -}}
          
          {{- " '-l'" -}}, '/tmp/working_dir']
