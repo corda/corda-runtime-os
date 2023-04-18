@@ -10,7 +10,7 @@ import net.corda.v5.application.interop.parameters.TypeQualifier
  * @param name The name of the type, e.g. "platform/tokens/Amount".
  * @param version The version of the type, e.g. "1.0".
  */
-data class FacadeTypeQualifierImpl(val owner: String, val name: List<String>, val version: String): TypeQualifier {
+data class FacadeTypeQualifierImpl(val owner: String, val name: List<String>, val version: String): TypeQualifier(owner, name, version) {
 
     companion object {
 

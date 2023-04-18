@@ -1,12 +1,12 @@
 package net.corda.flow.application.services.impl.interop.binding.internal
 
 import net.corda.flow.application.services.impl.interop.binding.*
-import org.corda.weft.binding.*
-import org.corda.weft.binding.api.*
-import org.corda.weft.facade.*
-import org.corda.weft.parameters.FacadeTypeQualifier
-import org.corda.weft.parameters.ParameterType
-import org.corda.weft.parameters.TypedParameter
+import net.corda.flow.application.services.impl.interop.facade.FacadeImpl
+import net.corda.v5.application.interop.binding.*
+import net.corda.v5.application.interop.facade.Facade
+import net.corda.v5.application.interop.facade.FacadeMethod
+import net.corda.v5.application.interop.parameters.ParameterType
+import net.corda.v5.application.interop.parameters.TypeQualifier
 import java.beans.Introspector
 import java.beans.PropertyDescriptor
 import java.lang.reflect.AnnotatedElement
@@ -65,7 +65,7 @@ internal abstract class BindingContext<T> {
  * @param facade the [Facade] to be bound.
  * @param boundInterface The JVM interface to be bound.
  */
-internal class InterfaceBindingContext(val facade: Facade, private val boundInterface: Class<*>) :
+internal class InterfaceBindingContext(val facade: FacadeImpl, private val boundInterface: Class<*>) :
     BindingContext<FacadeInterfaceBinding>() {
 
     override fun createBinding(): FacadeInterfaceBinding {
@@ -218,8 +218,8 @@ private data class ParameterInfo(
     val nativeName: String,
     val annotatedName: String?,
     val type: Class<*>,
-    val parameterQualifiers: Set<FacadeTypeQualifier>,
-    val typeQualifiers: Set<FacadeTypeQualifier>
+    val parameterQualifiers: Set<TypeQualifier>,
+    val typeQualifiers: Set<TypeQualifier>
 ) {
 
     companion object {
@@ -244,14 +244,14 @@ private data class ParameterInfo(
 
     // Parameter qualifiers must always be a subset of type qualifiers (if the latter is not empty), and the "smaller"
     // set must always be chosen.
-    val qualifiers: Set<FacadeTypeQualifier>
+    val qualifiers: Set<TypeQualifier>
         get() = parameterQualifiers.ifEmpty { typeQualifiers }
 
     override fun toString(): String =
         (nativeName + (annotatedName?.let { "<$it>" } ?: "") + "(#$index) " + parameterQualifiers.showIfNonEmpty() +
                 "of type $type " + typeQualifiers.showIfNonEmpty()).trim()
 
-    private fun Set<FacadeTypeQualifier>.showIfNonEmpty() = if (isNotEmpty()) {
+    private fun Set<TypeQualifier>.showIfNonEmpty() = if (isNotEmpty()) {
         joinToString(", ", "[", "] ")
     } else ""
 }
@@ -454,7 +454,7 @@ private val numberTypes = setOf(
 // The complete set of rules for when a JVM type matches up with a Facade type.
 private fun validateTypeAgreement(
     parameterType: Class<*>,
-    qualifiers: Set<FacadeTypeQualifier>,
+    qualifiers: Set<TypeQualifier>,
     expectedType: ParameterType<*>
 ): Boolean =
     when (expectedType) {

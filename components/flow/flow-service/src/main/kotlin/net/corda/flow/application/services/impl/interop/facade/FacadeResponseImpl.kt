@@ -29,7 +29,7 @@ data class FacadeResponseImpl(
      * @param parameter The parameter to get the value of.
      */
     @Suppress("UNCHECKED_CAST")
-    override operator fun <T : Any> get(parameter: ParameterType<T>): Class<*> {
+    override operator fun <T : Any> get(parameter: ParameterType<T>): T {
         val value = outParametersByName[parameter.typeLabel.name]
             ?: throw IllegalArgumentException("No value for parameter ${parameter.typeLabel}")
 

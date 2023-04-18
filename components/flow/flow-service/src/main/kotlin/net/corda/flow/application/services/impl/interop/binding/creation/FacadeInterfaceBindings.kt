@@ -1,8 +1,8 @@
 package net.corda.flow.application.services.impl.interop.binding.creation
 
-import org.corda.weft.binding.FacadeInterfaceBinding
-import org.corda.weft.binding.internal.InterfaceBindingContext
-import org.corda.weft.facade.Facade
+import net.corda.flow.application.services.impl.interop.binding.FacadeInterfaceBinding
+import net.corda.flow.application.services.impl.interop.binding.internal.InterfaceBindingContext
+import net.corda.v5.application.interop.facade.Facade
 
 /**
  * Public entry-point for binding JVM interfaces to [Facade]s. A Java developer wishing to bind a facade to a JVM

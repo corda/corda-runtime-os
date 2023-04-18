@@ -3,8 +3,8 @@ package net.corda.flow.application.services.impl.interop.facade
 import com.fasterxml.jackson.core.JsonGenerator
 import com.fasterxml.jackson.databind.JsonSerializer
 import com.fasterxml.jackson.databind.SerializerProvider
-import org.corda.weft.parameters.ParameterType
-import org.corda.weft.parameters.TypedParameterValue
+import net.corda.v5.application.interop.facade.FacadeId
+import net.corda.v5.application.interop.facade.FacadeRequest
 import java.math.BigDecimal
 import java.nio.ByteBuffer
 import java.time.ZonedDateTime
@@ -29,7 +29,7 @@ private fun serialize(
     gen: JsonGenerator,
     facadeId: FacadeId,
     methodName: String,
-    parameters: List<TypedParameterValue<*>>
+    parameters: List<ParameterTypeLabel<*>>
 ) {
     gen.writeStartObject()
 

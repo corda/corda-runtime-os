@@ -1,8 +1,7 @@
 package net.corda.flow.application.services.impl.interop.binding
 
-import org.corda.weft.facade.Facade
-import org.corda.weft.facade.FacadeMethod
-import org.corda.weft.parameters.TypedParameter
+import net.corda.v5.application.interop.facade.Facade
+import net.corda.v5.application.interop.facade.FacadeMethod
 import java.lang.reflect.Constructor
 import java.lang.reflect.Method
 import kotlin.reflect.KFunction

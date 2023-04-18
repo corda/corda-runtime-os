@@ -29,8 +29,8 @@ data class FacadeMethodImpl(
      */
     val qualifiedName: String get() = "$facadeId/$name"
 
-    private val inParameterMap = inParameters.associateBy { it.name }
-    private val outParameterMap = outParameters.associateBy { it.name }
+    private val inParameterMap = inParameters.associateBy { it.typeLabel.typeName }
+    private val outParameterMap = outParameters.associateBy { it.typeLabel.typeName }
 
     /**
      * Get the input parameter with the given name.
@@ -52,9 +52,9 @@ data class FacadeMethodImpl(
         val untyped = untypedInParameter(parameterName)
             ?: throw IllegalArgumentException("No such input parameter: $parameterName")
 
-        if (untyped.type.expectedType != expectedType) {
+        if (untyped.expectedType != expectedType) {
             throw IllegalArgumentException(
-                "Parameter $parameterName is of type ${untyped.type.expectedType}, " +
+                "Parameter $parameterName is of type ${untyped.expectedType}, " +
                         "not $expectedType"
             )
         }
@@ -92,9 +92,9 @@ data class FacadeMethodImpl(
         val untyped =
             outParameterMap[parameterName] ?: throw IllegalArgumentException("No such output parameter: $parameterName")
 
-        if (untyped.type.expectedType != expectedType) {
+        if (untyped.expectedType != expectedType) {
             throw IllegalArgumentException(
-                "Parameter $parameterName is of type ${untyped.type.expectedType}, " +
+                "Parameter $parameterName is of type ${untyped.expectedType}, " +
                         "not $expectedType"
             )
         }
@@ -111,10 +111,6 @@ data class FacadeMethodImpl(
         return FacadeRequestImpl(facadeId, name, parameterValues.toList())
     }
 
-    override fun request(parameterValues: MutableList<ParameterTypeLabel>?): FacadeRequest {
-        TODO("Not yet implemented")
-    }
-
     /**
      * Create a [FacadeResponse] for this method.
      *
@@ -122,10 +118,6 @@ data class FacadeMethodImpl(
      */
     override fun response(vararg parameterValues: ParameterTypeLabel): FacadeResponse {
         return FacadeResponseImpl(facadeId, name, parameterValues.toList())
-    }
-
-    override fun response(parameterValues: MutableList<ParameterTypeLabel>?): FacadeResponse {
-        TODO("Not yet implemented")
     }
 
 }

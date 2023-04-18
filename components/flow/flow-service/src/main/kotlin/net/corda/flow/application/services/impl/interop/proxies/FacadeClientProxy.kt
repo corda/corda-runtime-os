@@ -2,16 +2,16 @@ package net.corda.flow.application.services.impl.interop.proxies
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.registerKotlinModule
-import org.corda.weft.api.JsonMarshaller
-import org.corda.weft.binding.FacadeInterfaceBinding
-import org.corda.weft.binding.FacadeMethodBinding
-import org.corda.weft.binding.FacadeOutParameterBindings
-import org.corda.weft.binding.api.InteropAction
-import org.corda.weft.binding.creation.FacadeInterfaceBindings
-import org.corda.weft.facade.*
-import org.corda.weft.parameters.TypedParameter
-import org.corda.weft.parameters.TypedParameterValue
-import org.corda.weft.parameters.TypeConverter
+import net.corda.flow.application.services.impl.interop.binding.FacadeInterfaceBinding
+import net.corda.flow.application.services.impl.interop.binding.FacadeMethodBinding
+import net.corda.flow.application.services.impl.interop.binding.FacadeOutParameterBindings
+import net.corda.flow.application.services.impl.interop.binding.creation.FacadeInterfaceBindings
+import net.corda.flow.application.services.impl.interop.parameters.TypeConverter
+import net.corda.v5.application.interop.binding.InteropAction
+import net.corda.v5.application.interop.facade.Facade
+import net.corda.v5.application.interop.facade.FacadeRequest
+import net.corda.v5.application.interop.facade.FacadeResponse
+import net.corda.v5.application.interop.parameters.ParameterTypeLabel
 import java.lang.reflect.InvocationHandler
 import java.lang.reflect.Method
 import java.lang.reflect.Proxy
@@ -80,7 +80,7 @@ private class FacadeClientProxy(
 
         val parameterValues = args.indices.map { index ->
             val binding = methodBinding.bindingForMethodParameter(index)!!
-            TypedParameterValue(
+            ParameterTypeLabel(
                 binding.facadeParameter as TypedParameter<Any>,
                 typeConverter.convertJvmToFacade(args[index], binding.facadeParameter.type))
         }.toTypedArray()
@@ -115,7 +115,7 @@ private class FacadeClientProxy(
                     "${response.facadeId}/${response.methodName}"
         )
 
-        val receivedParamSet = response.outParameters.asSequence().map(TypedParameterValue<*>::parameter).toSet()
+        val receivedParamSet = response.outParameters.asSequence().map(ParameterTypeLabel<*>::parameter).toSet()
         val expectedParamSet = binding.facadeMethod.outParameters.toSet()
 
         if (receivedParamSet != expectedParamSet) {
@@ -126,7 +126,7 @@ private class FacadeClientProxy(
     }
 
     private fun buildDataClass(
-        outParameters: List<TypedParameterValue<*>>,
+        outParameters: List<ParameterTypeLabel<*>>,
         bindings: FacadeOutParameterBindings.DataClassOutParameterBindings): Any {
         val constructorArgs = Array<Any?>(bindings.bindings.size) { null }
 

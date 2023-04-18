@@ -2,18 +2,18 @@ package net.corda.flow.application.services.impl.interop.dispatch
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.registerKotlinModule
-import org.corda.weft.binding.FacadeMethodBinding
-import org.corda.weft.binding.FacadeOutParameterBindings
-import org.corda.weft.binding.api.BindsFacade
-import org.corda.weft.binding.api.FacadeVersions
-import org.corda.weft.binding.api.InteropAction
-import org.corda.weft.binding.creation.FacadeInterfaceBindings
-import org.corda.weft.facade.*
-import org.corda.weft.parameters.TypedParameter
-import org.corda.weft.parameters.TypedParameterValue
-import org.corda.weft.proxies.FacadeMethodDispatchException
-import org.corda.weft.proxies.JacksonJsonMarshaller
-import org.corda.weft.parameters.TypeConverter
+import net.corda.flow.application.services.impl.interop.binding.FacadeInterfaceBinding
+import net.corda.flow.application.services.impl.interop.binding.FacadeMethodBinding
+import net.corda.flow.application.services.impl.interop.binding.FacadeOutParameterBindings
+import net.corda.flow.application.services.impl.interop.binding.creation.FacadeInterfaceBindings
+import net.corda.flow.application.services.impl.interop.parameters.TypeConverter
+import net.corda.flow.application.services.impl.interop.proxies.FacadeMethodDispatchException
+import net.corda.v5.application.interop.binding.BindsFacade
+import net.corda.v5.application.interop.binding.FacadeVersions
+import net.corda.v5.application.interop.binding.InteropAction
+import net.corda.v5.application.interop.facade.Facade
+import net.corda.v5.application.interop.facade.FacadeRequest
+import net.corda.v5.application.interop.facade.FacadeResponse
 
 object FacadeServerDispatchers {
 
@@ -63,7 +63,7 @@ class FacadeServerDispatcher(
     private fun getOutParameterValues(
         result: Any,
         outParameterBindings: FacadeOutParameterBindings
-    ): List<TypedParameterValue<*>> = when (outParameterBindings) {
+    ): List<ParameterTypeLabel<*>> = when (outParameterBindings) {
         FacadeOutParameterBindings.NoOutParameters -> emptyList()
 
         is FacadeOutParameterBindings.SingletonOutParameterBinding -> {
