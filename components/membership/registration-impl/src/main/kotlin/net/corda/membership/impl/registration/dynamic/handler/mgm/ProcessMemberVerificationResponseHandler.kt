@@ -33,7 +33,6 @@ import net.corda.schema.Schemas.Membership.REGISTRATION_COMMAND_TOPIC
 import net.corda.schema.configuration.MembershipConfig.TtlsConfig.UPDATE_TO_PENDING_AUTO_APPROVAL
 import net.corda.utilities.time.Clock
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.membership.MemberContext
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toCorda
 import org.slf4j.LoggerFactory
@@ -209,6 +208,4 @@ internal class ProcessMemberVerificationResponseHandler(
     }
 
     class InvalidPreAuthTokenException(msg: String) : CordaRuntimeException(msg)
-
-    private fun MemberContext.toMap() = entries.associate { it.key to it.value }
 }

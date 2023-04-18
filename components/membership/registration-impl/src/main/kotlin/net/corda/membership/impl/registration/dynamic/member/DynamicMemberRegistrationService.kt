@@ -26,6 +26,7 @@ import net.corda.data.membership.p2p.MembershipRegistrationRequest
 import net.corda.data.membership.p2p.UnauthenticatedRegistrationRequest
 import net.corda.data.membership.p2p.UnauthenticatedRegistrationRequestHeader
 import net.corda.data.p2p.app.AppMessage
+import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.data.p2p.app.UnauthenticatedMessage
 import net.corda.data.p2p.app.UnauthenticatedMessageHeader
 import net.corda.libs.configuration.helper.getConfig
@@ -45,6 +46,7 @@ import net.corda.membership.impl.registration.MemberRole.Companion.toMemberInfo
 import net.corda.membership.impl.registration.dynamic.verifiers.OrderVerifier
 import net.corda.membership.impl.registration.dynamic.verifiers.P2pEndpointVerifier
 import net.corda.membership.impl.registration.dynamic.verifiers.RegistrationContextCustomFieldsVerifier
+import net.corda.membership.lib.MemberInfoExtension.Companion.CUSTOM_KEY_PREFIX
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEYS
 import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEYS_KEY
@@ -74,6 +76,7 @@ import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2
 import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidationException
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidatorFactory
+import net.corda.membership.lib.toMap
 import net.corda.membership.lib.toWire
 import net.corda.membership.locally.hosted.identities.LocallyHostedIdentitiesService
 import net.corda.membership.p2p.helpers.KeySpecExtractor.Companion.spec
@@ -283,12 +286,15 @@ class DynamicMemberRegistrationService @Activate constructor(
                 val roles = MemberRole.extractRolesFromContext(context)
                 val notaryKeys = generateNotaryKeys(context, member.shortHash.value)
                 logger.debug("Member roles: {}, notary keys: {}", roles, notaryKeys)
+                val groupReader = membershipGroupReaderProvider.getGroupReader(member)
+                val previousInfo = groupReader.lookup(member.x500Name, MembershipStatusFilter.ACTIVE_OR_SUSPENDED)
                 val memberContext = buildMemberContext(
                     context,
                     registrationId,
                     member,
                     roles,
                     notaryKeys,
+                    previousInfo?.memberProvidedContext?.toMap(),
                 ).toSortedMap()
                     .toWire()
                 val serializedMemberContext = keyValuePairListSerializer.serialize(memberContext)
@@ -309,12 +315,11 @@ class DynamicMemberRegistrationService @Activate constructor(
                         ByteBuffer.wrap(it.bytes)
                     )
                 }
-                val groupReader = membershipGroupReaderProvider.getGroupReader(member)
                 val mgm = groupReader.lookup().firstOrNull { it.isMgm }
                     ?: throw IllegalArgumentException("Failed to look up MGM information.")
 
                 val serialInfo = context[SERIAL]?.toLong()
-                    ?: groupReader.lookup(member.x500Name)?.serial
+                    ?: previousInfo?.serial
                     ?: 0
 
                 val message = MembershipRegistrationRequest(
@@ -407,6 +412,7 @@ class DynamicMemberRegistrationService @Activate constructor(
             member: HoldingIdentity,
             roles: Collection<MemberRole>,
             notaryKeys: List<KeyDetails>,
+            previousRegistrationContext: Map<String, String>?,
         ): Map<String, String> {
             val cpi = virtualNodeInfoReadService.get(member)?.cpiIdentifier
                 ?: throw CordaRuntimeException("Could not find virtual node info for member ${member.shortHash}")
@@ -427,7 +433,7 @@ class DynamicMemberRegistrationService @Activate constructor(
             )
             val roleContext = roles.toMemberInfo { notaryKeys }
             val optionalContext = mapOf(MEMBER_CPI_SIGNER_HASH to cpi.signerSummaryHash.toString())
-            return filteredContext +
+            val newRegistrationContext = filteredContext +
                     sessionKeyContext +
                     ledgerKeyContext +
                     additionalContext +
@@ -435,6 +441,20 @@ class DynamicMemberRegistrationService @Activate constructor(
                     optionalContext +
                     tlsSubject
 
+            previousRegistrationContext?.let { previous ->
+                ((newRegistrationContext.entries - previous.entries) + (previous.entries - newRegistrationContext.entries)).filterNot {
+                    it.key.startsWith(CUSTOM_KEY_PREFIX)
+                }.apply {
+                    require(isEmpty()) {
+                        throw InvalidMembershipRegistrationException(
+                            "Registration failed. The registration context is invalid: Only custom fields with the " +
+                                    "'$CUSTOM_KEY_PREFIX' prefix may be updated during re-registration."
+                        )
+                    }
+                }
+            }
+
+            return newRegistrationContext
         }
 
         private fun getTlsSubject(member: HoldingIdentity) : Map<String, String> {
