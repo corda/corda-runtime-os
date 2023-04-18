@@ -1,4 +1,4 @@
-package net.corda.virtualnode.write.db.impl.writer.asyncoperation.exception
+package net.corda.libs.virtualnode.common.exception
 
 import java.lang.Exception
 import net.corda.v5.base.exceptions.CordaRuntimeException
