@@ -36,7 +36,7 @@ interface MGMAdminRestResource : RestResource {
      * @param requestId ID of the registration request.
      */
     @HttpPOST(
-        path = "{holdingIdentityShortHash}/decline",
+        path = "{holdingIdentityShortHash}/force-decline/{requestId}",
         description = "This method enables you to force decline a registration request that may be stuck or " +
                 "displaying some other unexpected behaviour."
     )
@@ -45,7 +45,7 @@ interface MGMAdminRestResource : RestResource {
             description = "The holding identity ID of the MGM of the membership group"
         )
         holdingIdentityShortHash: String,
-        @ClientRequestBodyParameter(
+        @RestPathParameter(
             description = "ID of the registration request"
         )
         requestId: String
