@@ -11,6 +11,7 @@ import net.corda.ledger.persistence.query.parsing.IsNotNull
 import net.corda.ledger.persistence.query.parsing.IsNull
 import net.corda.ledger.persistence.query.parsing.JsonArrayOrObjectAsText
 import net.corda.ledger.persistence.query.parsing.JsonCast
+import net.corda.ledger.persistence.query.parsing.JsonField
 import net.corda.ledger.persistence.query.parsing.JsonKeyExists
 import net.corda.ledger.persistence.query.parsing.LeftParentheses
 import net.corda.ledger.persistence.query.parsing.LessThan
@@ -37,6 +38,7 @@ class PostgresVaultNamedQueryConverter : VaultNamedQueryConverter {
                 is PathReferenceWithSpaces -> output.append(token.ref)
                 is Parameter -> output.append(token.ref)
                 is Number -> output.append(token.ref)
+                is JsonField -> output.append(" -> ")
                 is JsonArrayOrObjectAsText -> output.append(" ->> ")
                 is Select -> output.append(" SELECT ")
                 is As -> output.append(" AS ")
@@ -60,8 +62,8 @@ class PostgresVaultNamedQueryConverter : VaultNamedQueryConverter {
                     }
                     output.append(")")
                 }
-                is JsonKeyExists -> output.append(" ? ")
-                is JsonCast -> output.append("::${token.value}")
+                is JsonKeyExists -> output.append(" \\?\\? ")
+                is JsonCast -> output.append("\\:\\:${token.value}")
                 is Like -> output.append(" LIKE ")
                 is ParameterEnd -> output.append(", ")
                 else -> throw IllegalArgumentException("Invalid token in expression - $token")

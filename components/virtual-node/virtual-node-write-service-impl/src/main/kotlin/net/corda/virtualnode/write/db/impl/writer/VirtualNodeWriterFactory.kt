@@ -82,6 +82,11 @@ internal class VirtualNodeWriterFactory(
         val oldVirtualNodeEntityRepository =
             VirtualNodeEntityRepository(dbConnectionManager.getClusterEntityManagerFactory())
         val migrationUtility = MigrationUtilityImpl(dbConnectionManager, schemaMigrator)
+        val externalMessagingRouteConfigGenerator = ExternalMessagingRouteConfigGeneratorImpl(
+            ExternalMessagingConfigProviderImpl(externalMsgConfig),
+            ExternalMessagingRouteConfigSerializerImpl(),
+            ExternalMessagingChannelConfigSerializerImpl()
+        )
 
         val createVirtualNodeService = CreateVirtualNodeServiceImpl(
             dbConnectionManager,
@@ -100,7 +105,8 @@ internal class VirtualNodeWriterFactory(
                 dbConnectionManager.getClusterEntityManagerFactory(),
                 oldVirtualNodeEntityRepository,
                 publisher,
-                migrationUtility
+                migrationUtility,
+                externalMessagingRouteConfigGenerator = externalMessagingRouteConfigGenerator
             ),
 
             VirtualNodeCreateRequest::class.java to CreateVirtualNodeOperationHandler(
@@ -109,11 +115,7 @@ internal class VirtualNodeWriterFactory(
                 recordFactory,
                 groupPolicyParser,
                 publisher,
-                ExternalMessagingRouteConfigGeneratorImpl(
-                    ExternalMessagingConfigProviderImpl(externalMsgConfig),
-                    ExternalMessagingRouteConfigSerializerImpl(),
-                    ExternalMessagingChannelConfigSerializerImpl()
-                ),
+                externalMessagingRouteConfigGenerator,
                 LoggerFactory.getLogger(CreateVirtualNodeOperationHandler::class.java)
             )
         )

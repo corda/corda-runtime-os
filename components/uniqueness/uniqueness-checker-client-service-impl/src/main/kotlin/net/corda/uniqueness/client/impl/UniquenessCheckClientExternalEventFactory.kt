@@ -41,6 +41,7 @@ class UniquenessCheckExternalEventFactory @Activate constructor():
         checkpoint.holdingIdentity.toAvro(),
         context,
         params.txId,
+        params.originatorX500Name,
         params.inputStates,
         params.referenceStates,
         params.numOutputStates,
@@ -51,6 +52,7 @@ class UniquenessCheckExternalEventFactory @Activate constructor():
 
 data class UniquenessCheckExternalEventParams(
     val txId: String,
+    val originatorX500Name: String,
     val inputStates: List<String>,
     val referenceStates: List<String>,
     val numOutputStates: Int,

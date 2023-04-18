@@ -1,6 +1,7 @@
 package net.corda.crypto.config.impl
 
 import com.typesafe.config.ConfigFactory
+import com.typesafe.config.ConfigObject
 import com.typesafe.config.ConfigRenderOptions
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.secret.EncryptionSecretsServiceFactory
@@ -14,7 +15,6 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import kotlin.test.assertEquals
-import kotlin.test.assertNull
 
 class CryptoConfigUtilsTests {
     companion object {
@@ -42,30 +42,12 @@ class CryptoConfigUtilsTests {
         assertEquals(60, signingService.cache.expireAfterAccessMins)
         assertEquals(10000, signingService.cache.maximumSize)
         val softWorker = config.hsm()
-        assertEquals(20000L, softWorker.retry.attemptTimeoutMills)
-        assertEquals(3, softWorker.retry.maxAttempts)
-        assertThat(softWorker.categories).hasSize(1)
-        assertEquals("*", softWorker.categories[0].category)
-        assertEquals(PrivateKeyPolicy.WRAPPED, softWorker.categories[0].policy)
-        assertEquals(MasterKeyPolicy.UNIQUE, softWorker.masterKeyPolicy)
-        assertNull(softWorker.masterKeyAlias)
-        assertEquals(-1, softWorker.capacity)
-        assertThat(softWorker.supportedSchemes).hasSize(8)
-        assertThat(softWorker.supportedSchemes).contains(
-            "CORDA.RSA",
-            "CORDA.ECDSA.SECP256R1",
-            "CORDA.ECDSA.SECP256K1",
-            "CORDA.EDDSA.ED25519",
-            "CORDA.X25519",
-            "CORDA.SM2",
-            "CORDA.GOST3410.GOST3411",
-            "CORDA.SPHINCS-256"
-        )
-        val hsmCfg = softWorker.cfg
-        val wrappingKey1 = hsmCfg.getConfigList("wrappingKeys")[0]
-        assertEquals("master-salt", wrappingKey1.getString("salt"))
-        assertEquals("master-passphrase", wrappingKey1.getString("passphrase"))
-        assertEquals("root1", wrappingKey1.getString("alias"))
+        assertEquals(20000L, softWorker.retrying.attemptTimeoutMills)
+        assertEquals(3, softWorker.retrying.maxAttempts)
+        val wrappingKey1 = softWorker.wrappingKeys[0] as ConfigObject
+        assertEquals("master-salt", wrappingKey1["salt"]!!.unwrapped())
+        assertEquals("master-passphrase", wrappingKey1["passphrase"]!!.unwrapped())
+        assertEquals("root1", wrappingKey1["alias"]!!.unwrapped())
         val opsBusProcessor = config.opsBusProcessor()
         assertEquals(3, opsBusProcessor.maxAttempts)
         assertEquals(1, opsBusProcessor.waitBetweenMills.size)
@@ -86,7 +68,7 @@ class CryptoConfigUtilsTests {
         val config = createDefaultCryptoConfig("pass", "salt")
         val configJSON = config.root().render(ConfigRenderOptions.defaults())
         assertThat(configJSON.contains("passphrase"))
-        validator.validate(CRYPTO_CONFIG, Version(1, 0), config, false)
+        validator.validate(CRYPTO_CONFIG, Version(1, 0), config, true)
     }
 
     @Test
@@ -96,25 +78,8 @@ class CryptoConfigUtilsTests {
         assertEquals(60, signingService.cache.expireAfterAccessMins)
         assertEquals(10000, signingService.cache.maximumSize)
         val softWorker = config.hsm()
-        assertEquals(20000L, softWorker.retry.attemptTimeoutMills)
-        assertEquals(3, softWorker.retry.maxAttempts)
-        assertThat(softWorker.categories).hasSize(1)
-        assertEquals("*", softWorker.categories[0].category)
-        assertEquals(PrivateKeyPolicy.WRAPPED, softWorker.categories[0].policy)
-        assertEquals(MasterKeyPolicy.UNIQUE, softWorker.masterKeyPolicy)
-        assertNull(softWorker.masterKeyAlias)
-        assertEquals(-1, softWorker.capacity)
-        assertThat(softWorker.supportedSchemes).hasSize(8)
-        assertThat(softWorker.supportedSchemes).contains(
-            "CORDA.RSA",
-            "CORDA.ECDSA.SECP256R1",
-            "CORDA.ECDSA.SECP256K1",
-            "CORDA.EDDSA.ED25519",
-            "CORDA.X25519",
-            "CORDA.SM2",
-            "CORDA.GOST3410.GOST3411",
-            "CORDA.SPHINCS-256"
-        )
+        assertEquals(20000L, softWorker.retrying.attemptTimeoutMills)
+        assertEquals(3, softWorker.retrying.maxAttempts)
         val opsBusProcessor = config.opsBusProcessor()
         assertEquals(3, opsBusProcessor.maxAttempts)
         assertEquals(1, opsBusProcessor.waitBetweenMills.size)
@@ -215,14 +180,7 @@ class CryptoConfigUtilsTests {
     fun `CryptoHSMConfig should throw IllegalStateException when is empty`() {
         val config = CryptoHSMConfig(configFactory.create(ConfigFactory.empty()))
         assertThrows<IllegalStateException> {
-            config.retry
-        }
-        val categoryConfig = CryptoHSMConfig.CategoryConfig(configFactory.create(ConfigFactory.empty()))
-        assertThrows<IllegalStateException> {
-            categoryConfig.category
-        }
-        assertThrows<IllegalStateException> {
-            categoryConfig.policy
+            config.retrying
         }
         val retryConfig = CryptoHSMConfig.RetryConfig(configFactory.create(ConfigFactory.empty()))
         assertThrows<IllegalStateException> {
@@ -232,19 +190,10 @@ class CryptoConfigUtilsTests {
             retryConfig.attemptTimeoutMills
         }
         assertThrows<IllegalStateException> {
-            config.categories
+            config.wrappingKeys
         }
         assertThrows<IllegalStateException> {
-            config.capacity
-        }
-        assertThrows<IllegalStateException> {
-            config.supportedSchemes
-        }
-        assertThrows<IllegalStateException> {
-            config.masterKeyPolicy
-        }
-        assertThrows<IllegalStateException> {
-            config.cfg
+            config.defaultWrappingKey
         }
     }
 

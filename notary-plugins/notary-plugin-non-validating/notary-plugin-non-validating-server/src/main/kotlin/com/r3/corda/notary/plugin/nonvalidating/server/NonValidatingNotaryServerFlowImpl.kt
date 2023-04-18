@@ -81,6 +81,7 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
 
             val uniquenessResult = clientService.requestUniquenessCheck(
                 txDetails.id.toString(),
+                session.counterparty.toString(),
                 txDetails.inputs.map { it.toString() },
                 txDetails.references.map { it.toString() },
                 txDetails.numOutputs,

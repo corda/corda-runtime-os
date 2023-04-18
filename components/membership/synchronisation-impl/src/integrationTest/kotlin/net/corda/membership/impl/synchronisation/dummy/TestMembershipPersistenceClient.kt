@@ -164,7 +164,7 @@ class TestMembershipPersistenceClientImpl @Activate constructor(
 
     override fun suspendMember(
         viewOwningIdentity: HoldingIdentity, memberX500Name: MemberX500Name, serialNumber: Long?, reason: String?
-    ): MembershipPersistenceOperation<PersistentMemberInfo> {
+    ):  MembershipPersistenceOperation<Pair<PersistentMemberInfo, InternalGroupParameters?>> {
         with(UNIMPLEMENTED_FUNCTION) {
             logger.warn(this)
             throw UnsupportedOperationException(this)
@@ -173,7 +173,7 @@ class TestMembershipPersistenceClientImpl @Activate constructor(
 
     override fun activateMember(
         viewOwningIdentity: HoldingIdentity, memberX500Name: MemberX500Name, serialNumber: Long?, reason: String?
-    ): MembershipPersistenceOperation<PersistentMemberInfo> {
+    ): MembershipPersistenceOperation<Pair<PersistentMemberInfo, InternalGroupParameters?>> {
         with(UNIMPLEMENTED_FUNCTION) {
             logger.warn(this)
             throw UnsupportedOperationException(this)

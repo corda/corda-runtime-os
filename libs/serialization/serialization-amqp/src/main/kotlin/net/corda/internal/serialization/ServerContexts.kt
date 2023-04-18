@@ -15,10 +15,10 @@ import net.corda.serialization.SerializationContext
  */
 
 val AMQP_STORAGE_CONTEXT = SerializationContextImpl(
-        amqpMagic,
-        emptyMap(),
-        true,
-        SerializationContext.UseCase.Storage,
-        null,
-        AlwaysAcceptEncodingAllowList
+    preferredSerializationVersion = amqpMagic,
+    properties = emptyMap(),
+    objectReferencesEnabled = false,
+    useCase = SerializationContext.UseCase.Storage,
+    encoding = null,
+    encodingAllowList = AlwaysAcceptEncodingAllowList
 )

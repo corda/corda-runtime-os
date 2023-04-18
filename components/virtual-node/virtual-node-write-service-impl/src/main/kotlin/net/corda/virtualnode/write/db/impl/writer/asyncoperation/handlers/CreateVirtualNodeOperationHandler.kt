@@ -87,7 +87,7 @@ internal class CreateVirtualNodeOperationHandler(
                 }
             }
 
-            val externalMessagingRouteConfig = externalMessagingRouteConfigGenerator.generateConfig(
+            val externalMessagingRouteConfig = externalMessagingRouteConfigGenerator.generateNewConfig(
                 holdingId,
                 cpiMetadata.cpiId,
                 cpiMetadata.cpksMetadata

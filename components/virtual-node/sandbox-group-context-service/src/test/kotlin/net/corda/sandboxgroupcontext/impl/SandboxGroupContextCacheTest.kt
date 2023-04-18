@@ -80,7 +80,10 @@ class SandboxGroupContextCacheTest {
 
         verify(sandboxContext1, never()).close()
         assertThat(cache.evictedContextsToBeClosed).isGreaterThanOrEqualTo(1)
-        verifyCacheMetrics(puts = count + 1, misses = count + 1, evictions = count)
+
+        eventually(duration = ofSeconds(TIMEOUT), waitBetween = ofSeconds(1)) {
+            verifyCacheMetrics(puts = count + 1, misses = count + 1, evictions = count)
+        }
     }
 
     @Test
@@ -135,7 +138,9 @@ class SandboxGroupContextCacheTest {
             verify(sandboxContext1).close()
         }
 
-        verifyCacheMetrics(puts = count + 1 + extraOps, misses = count + 1 + extraOps, evictions = count + extraOps)
+        eventually(duration = ofSeconds(TIMEOUT), waitBetween = ofSeconds(1)) {
+            verifyCacheMetrics(puts = count + 1 + extraOps, misses = count + 1 + extraOps, evictions = count + extraOps)
+        }
     }
 
     @Suppress("unused_value")
@@ -172,7 +177,9 @@ class SandboxGroupContextCacheTest {
 
         verify(sandboxContext1).close()
         verify(sandboxContext2).close()
-        verifyCacheMetrics(puts = 2.0, misses = 2.0)
+        eventually(duration = ofSeconds(TIMEOUT), waitBetween = ofSeconds(1)) {
+            verifyCacheMetrics(puts = 2.0, misses = 2.0)
+        }
     }
 
     @Suppress("unused_value")
@@ -200,14 +207,18 @@ class SandboxGroupContextCacheTest {
         }
 
         verify(sandboxContext1).close()
-        verifyCacheMetrics(puts = 1.0, hits = 1.0, misses = 1.0)
+        eventually(duration = ofSeconds(TIMEOUT), waitBetween = ofSeconds(1)) {
+            verifyCacheMetrics(puts = 1.0, hits = 1.0, misses = 1.0)
+        }
     }
 
     @Test
     fun removingMissingKeyReturnsNull() {
         val cache = SandboxGroupContextCacheImpl(defaultInitialCapacities(10))
         assertThat(cache.remove(vNodeContext1)).isNull()
-        verifyCacheMetrics(misses = 1.0)
+        eventually(duration = ofSeconds(TIMEOUT), waitBetween = ofSeconds(1)) {
+            verifyCacheMetrics(misses = 1.0)
+        }
     }
 
     @Test
@@ -218,7 +229,9 @@ class SandboxGroupContextCacheTest {
 
         assertThat(cache.evictedContextsToBeClosed).isEqualTo(0)
         assertThat(retrievedContext).isSameAs(sandboxContext1)
-        verifyCacheMetrics(puts = 1.0, hits = 1.0, misses = 1.0)
+        eventually(duration = ofSeconds(TIMEOUT), waitBetween = ofSeconds(1)) {
+            verifyCacheMetrics(puts = 1.0, hits = 1.0, misses = 1.0)
+        }
     }
 
     @Test
@@ -242,7 +255,9 @@ class SandboxGroupContextCacheTest {
 
         assertThat(cache.evictedContextsToBeClosed).isEqualTo(0)
         assertThat(retrievedContext).isSameAs(sandboxContext1)
-        verifyCacheMetrics(puts = 1.0, hits = 1.0, misses = 1.0)
+        eventually(duration = ofSeconds(TIMEOUT), waitBetween = ofSeconds(1)) {
+            verifyCacheMetrics(puts = 1.0, hits = 1.0, misses = 1.0)
+        }
     }
 
     @Test
@@ -251,7 +266,9 @@ class SandboxGroupContextCacheTest {
         val completion = cache.flush()
         assertThat(completion.isDone).isTrue
         assertThat(cache.waitFor(completion, ofSeconds(0))).isTrue
-        verifyCacheMetrics()
+        eventually(duration = ofSeconds(TIMEOUT), waitBetween = ofSeconds(1)) {
+            verifyCacheMetrics()
+        }
     }
 
     @Suppress("unused_value")
@@ -299,7 +316,9 @@ class SandboxGroupContextCacheTest {
         verify(sandboxContext1).close()
         verify(sandboxContext2).close()
         verify(sandboxContext3, never()).close()
-        verifyCacheMetrics(puts = 3.0, misses = 3.0)
+        eventually(duration = ofSeconds(TIMEOUT), waitBetween = ofSeconds(1)) {
+            verifyCacheMetrics(puts = 3.0, misses = 3.0)
+        }
     }
 
     @Suppress("unused_value")
@@ -327,7 +346,9 @@ class SandboxGroupContextCacheTest {
         }
         assertThat(sandboxContext1.completion.isCompletedExceptionally).isTrue
         verify(sandboxContext1).close()
-        verifyCacheMetrics(puts = 1.0, misses = 1.0)
+        eventually(duration = ofSeconds(TIMEOUT), waitBetween = ofSeconds(1)) {
+            verifyCacheMetrics(puts = 1.0, misses = 1.0)
+        }
     }
 
     private fun verifyCacheMetrics(

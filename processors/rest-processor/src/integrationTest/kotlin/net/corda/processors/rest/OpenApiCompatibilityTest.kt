@@ -1,4 +1,4 @@
-package net.corda.processors.rpc
+package net.corda.processors.rest
 
 import io.swagger.v3.core.util.Json
 import io.swagger.v3.oas.models.OpenAPI
@@ -23,7 +23,7 @@ import net.corda.membership.rest.v1.MGMRestResource
 import net.corda.membership.rest.v1.MemberLookupRestResource
 import net.corda.membership.rest.v1.MemberRegistrationRestResource
 import net.corda.membership.rest.v1.NetworkRestResource
-import net.corda.processors.rpc.diff.diff
+import net.corda.processors.rest.diff.diff
 import net.corda.utilities.NetworkHostAndPort
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test

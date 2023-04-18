@@ -220,39 +220,17 @@ fun createDefaultCryptoConfig(wrappingKeyPassphrase: Any, wrappingKeySalt: Any):
         .withValue(
             HSM, ConfigValueFactory.fromMap(
                 mapOf(
-                    CryptoHSMConfig::retry.name to mapOf(
+                    CryptoHSMConfig::retrying.name to mapOf(
                         CryptoHSMConfig.RetryConfig::maxAttempts.name to 3,
                         CryptoHSMConfig.RetryConfig::attemptTimeoutMills.name to 20000,
                     ),
-                    CryptoHSMConfig::categories.name to listOf(
-                        mapOf(
-                            CryptoHSMConfig.CategoryConfig::category.name to "*",
-                            CryptoHSMConfig.CategoryConfig::policy.name to PrivateKeyPolicy.WRAPPED.name,
-                        )
-                    ),
-                    CryptoHSMConfig::masterKeyPolicy.name to MasterKeyPolicy.UNIQUE.name,
-                    CryptoHSMConfig::capacity.name to -1,
-                    CryptoHSMConfig::supportedSchemes.name to listOf(
-                        "CORDA.RSA",
-                        "CORDA.ECDSA.SECP256R1",
-                        "CORDA.ECDSA.SECP256K1",
-                        "CORDA.EDDSA.ED25519",
-                        "CORDA.X25519",
-                        "CORDA.SM2",
-                        "CORDA.GOST3410.GOST3411",
-                        "CORDA.SPHINCS-256"
-                    ),
-                    CryptoHSMConfig::cfg.name to ConfigValueFactory.fromMap(
-                        mapOf(
-                            "defaultWrappingKey" to ConfigValueFactory.fromAnyRef("root1"),
-                            "wrappingKeys" to listOf(
-                                ConfigValueFactory.fromAnyRef(
-                                    mapOf(
-                                        "alias" to "root1",
-                                        "salt" to wrappingKeySalt,
-                                        "passphrase" to wrappingKeyPassphrase,
-                                    )
-                                )
+                    CryptoHSMConfig::defaultWrappingKey.name to ConfigValueFactory.fromAnyRef("root1"),
+                    CryptoHSMConfig::wrappingKeys.name to listOf(
+                        ConfigValueFactory.fromAnyRef(
+                            mapOf(
+                                "alias" to "root1",
+                                "salt" to wrappingKeySalt,
+                                "passphrase" to wrappingKeyPassphrase,
                             )
                         )
                     )
