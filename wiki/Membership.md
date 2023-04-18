@@ -46,6 +46,8 @@ The following wiki pages cover the above steps in more detail:
 * [MGM onboarding](https://github.com/corda/corda-runtime-os/wiki/MGM-Onboarding)
 * [Dynamic network member registration](https://github.com/corda/corda-runtime-os/wiki/Member-Onboarding-(Dynamic-Networks))
 
+After a member has been registered, it is possible to temporarily suspend them from the network. See [Member Suspension](https://github.com/corda/corda-runtime-os/wiki/Member-Suspension). 
+
 # Components
 ## Overview
 The membership code contains components intended only for use internally, and components designed for use in areas of the platform which require membership data or functionality. This section covers the module pairs which expose membership data or functionality for use by other non-membership components in corda-runtime-os. Module pairs are comprised of an interface module and an implementation module. These modules are:
