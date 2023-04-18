@@ -1,6 +1,6 @@
 package net.corda.crypto.impl.converter
 
-import net.corda.crypto.core.SecureHashImpl
+import net.corda.crypto.core.parseSecureHash
 import net.corda.layeredpropertymap.ConversionContext
 import net.corda.layeredpropertymap.CustomPropertyConverter
 import net.corda.v5.crypto.DigestAlgorithmName
@@ -17,8 +17,8 @@ class PublicKeyHashConverter : CustomPropertyConverter<SecureHash> {
 
     override fun convert(context: ConversionContext): SecureHash? =
         if (context.value("hash") != null) {
-            context.value("hash")?.let { SecureHashImpl(DigestAlgorithmName.SHA2_256.name, it.toByteArray()) }
+            context.value("hash")?.let { parseSecureHash("${DigestAlgorithmName.SHA2_256.name}${SecureHash.DELIMITER}$it") }
         } else {
-            context.value()?.let { SecureHashImpl(DigestAlgorithmName.SHA2_256.name, it.toByteArray()) }
+            context.value()?.let { parseSecureHash("${DigestAlgorithmName.SHA2_256.name}${SecureHash.DELIMITER}$it") }
         }
 }
