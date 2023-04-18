@@ -1,6 +1,7 @@
 package net.corda.ledger.utxo.flow.impl.persistence
 
 import net.corda.flow.external.events.executor.ExternalEventExecutor
+import net.corda.ledger.utxo.data.state.LazyStateAndRefImpl
 import net.corda.ledger.utxo.data.transaction.UtxoTransactionOutputDto
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindUnconsumedStatesByTypeExternalEventFactory
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindUnconsumedStatesByTypeParameters
@@ -39,12 +40,21 @@ class UtxoLedgerStateQueryServiceImpl @Activate constructor(
         }.map { it.toStateAndRef(serializationService)}
     }
 
-    @Suspendable
-    override fun fetchSerializedStateAndRefs(stateRefs: Iterable<StateRef>): List<UtxoTransactionOutputDto> {
+    private fun fetchSerializedStateAndRefs(stateRefs: Iterable<StateRef>): List<UtxoTransactionOutputDto> {
         return wrapWithPersistenceException {
             externalEventExecutor.execute(
                 ResolveStateRefsExternalEventFactory::class.java,
                 ResolveStateRefsParameters(stateRefs)
+            )
+        }
+    }
+
+    @Suspendable
+    override fun lazyResolveStateAndRefs(stateRefs: Iterable<StateRef>): List<LazyStateAndRefImpl<*>> {
+        return fetchSerializedStateAndRefs(stateRefs).map {
+            LazyStateAndRefImpl<ContractState>(
+                it,
+                serializationService
             )
         }
     }
