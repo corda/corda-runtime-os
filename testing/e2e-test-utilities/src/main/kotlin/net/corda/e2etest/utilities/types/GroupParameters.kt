@@ -6,6 +6,8 @@ import net.corda.e2etest.utilities.parseContextMap
 /**
  * Simple data class representing group parameters returned from a REST API.
  * Includes functions for parsing commonly accessed data for tests.
+ *
+ * @param context the full string-string context map returned by the rest API representing the group parameters
  */
 data class GroupParameters(val context: Map<String, String>) {
     private companion object {
