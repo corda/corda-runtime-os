@@ -46,6 +46,7 @@ class SessionEventHandler @Activate constructor(
 
     private companion object {
         val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        private const val INTEROP_RESPONDER_FLOW = "INTEROP_RESPONDER_FLOW"
     }
 
     override val type = SessionEvent::class.java
@@ -123,7 +124,7 @@ class SessionEventHandler @Activate constructor(
                 }
                 protocolStore.responderForProtocol(requestedProtocolName, initiatorVersionsSupported, context)
             } else {
-                val className = KeyValueStore(sessionInit.contextUserProperties)["flowClassName"]
+                val className = KeyValueStore(sessionInit.contextUserProperties)[INTEROP_RESPONDER_FLOW]
                     ?: throw FlowTransientException("Failed to create the flow sandbox. " +
                             "Missing flowClassName while starting an interoperable flow.")
 

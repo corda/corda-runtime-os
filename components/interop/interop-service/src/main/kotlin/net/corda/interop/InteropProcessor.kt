@@ -49,6 +49,9 @@ class InteropProcessor(
         const val SUBSYSTEM = "interop"
         const val INTEROP_GROUP_ID = "3dfc0aae-be7c-44c2-aa4f-4d0d7145cf08"
         private const val POSTFIX_DENOTING_ALIAS = " Alias"
+        private const val INTEROP_FACADE_ID = "INTEROP_FACADE_ID"
+        private const val INTEROP_FACADE_METHOD = "INTEROP_FACADE_METHOD"
+        private const val INTEROP_RESPONDER_FLOW = "INTEROP_RESPONDER_FLOW"
     }
 
     private val interopAvroDeserializer: CordaAvroDeserializer<InteropMessage> =
@@ -90,10 +93,10 @@ class InteropProcessor(
 
             val sessionPayload = sessionEvent.payload
             val newPayload = if (sessionPayload is SessionInit) {
-                val facadeName = sessionPayload.contextUserProperties.items.find { it.key == "facadeName"}?.value
-                val facadeMethod = sessionPayload.contextUserProperties.items.find { it.key == "methodName"}?.value
-                if (facadeName == null) {
-                    logger.warn("Message without facadeName. Key: ${event.key}.")
+                val facadeId = sessionPayload.contextUserProperties.items.find { it.key == INTEROP_FACADE_ID}?.value
+                val facadeMethod = sessionPayload.contextUserProperties.items.find { it.key == INTEROP_FACADE_METHOD}?.value
+                if (facadeId == null) {
+                    logger.warn("Message without facadeId. Key: ${event.key}.")
                     null
                 } else if (facadeMethod == null) {
                     logger.warn("Message without facadeMethod. Key: ${event.key}.")
@@ -101,16 +104,16 @@ class InteropProcessor(
                 } else {
                     logger.info(
                         "Processing message from flow.interop.event with subsystem $SUBSYSTEM." +
-                                " Key: ${event.key}, facade request: $facadeName/$facadeMethod"
+                                " Key: ${event.key}, facade request: $facadeId/$facadeMethod"
                     )
                     try {
                         val flowName =
-                            facadeToFlowMapperService.getFlowName(realHoldingIdentity, facadeName, facadeMethod)
-                        logger.info("Mapped flowName=$flowName for facade=$facadeName/$facadeMethod")
+                            facadeToFlowMapperService.getFlowName(realHoldingIdentity, facadeId, facadeMethod)
+                        logger.info("Mapped flowName=$flowName for facade=$facadeId/$facadeMethod")
                         sessionPayload.apply {
                             contextUserProperties = KeyValuePairList(
                                 contextUserProperties.items
-                                        + KeyValuePair("flowClassName", flowName)
+                                        + KeyValuePair(INTEROP_RESPONDER_FLOW, flowName)
                             )
                         }
                     } catch (e: IllegalStateException) {

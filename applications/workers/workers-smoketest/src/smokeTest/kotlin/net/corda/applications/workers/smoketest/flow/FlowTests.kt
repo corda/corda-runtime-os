@@ -1178,7 +1178,7 @@ class FlowTests {
         val payload = "Hello world!"
 
         val args = mapOf(
-            "facadeName" to "None",
+            "facadeId" to "None",
             "methodName" to "None",
             "payload" to payload,
             "alias" to charlyX500.replace("$testRunUniqueId", "$testRunUniqueId Alias")
