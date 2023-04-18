@@ -20,6 +20,7 @@ import net.corda.session.manager.SessionManager
 import net.corda.session.manager.impl.factory.SessionEventProcessorFactory
 import net.corda.session.manager.impl.processor.helper.generateErrorEvent
 import net.corda.session.manager.impl.processor.helper.setErrorState
+import net.corda.utilities.debug
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -201,6 +202,13 @@ class SessionManagerImpl @Activate constructor(
         //remove SessionAcks/SessionErrors and increase timestamp of messages to be sent that are awaiting acknowledgement
         val messageResendWindow = config.getLong(SESSION_MESSAGE_RESEND_WINDOW)
         updateSessionStateSendEvents(sessionState, instant, messageResendWindow, sessionEvents)
+
+        logger.debug {
+            "SessionManagerImpl dispatching events: " +
+            sessionEvents.joinToString {
+                "[Sequence: ${it.sequenceNum}, Class: ${it.payload::class.java}, Resend timestamp: ${it.timestamp}]"
+            }
+        }
 
         return sessionEvents
     }
