@@ -18,18 +18,4 @@ fun PublicKey.toStringShort(): String = "DL" + EncodingUtils.toBase58(sha256Byte
 fun PublicKey.sha256HexString(): String = ByteArrays.toHexString(sha256Bytes())
 
 //  This is a helper functions copying the usage of ShortHash.of function to avoid moving ShortHash to cipher suite
-fun PublicKey.getShortHashString(): String {
-    val hexString = sha256HexString()
-    if (hexString.length < 12) {
-        throw ShortHashStringException("Hex string has length of ${hexString.length} but should be at least 12 characters")
-    }
-    if (!isHexString(hexString)) {
-        throw ShortHashStringException("Not a hex string: '$hexString'")
-    }
-    return hexString.substring(0, 12).uppercase()
-}
-private fun isHexString(hexString: String): Boolean =
-    hexString.matches(Regex("[0-9a-fA-F]+"))
-
-/** Exception thrown if creation of a short hash string fails */
-class ShortHashStringException(message: String?, cause: Throwable? = null) : Exception(message, cause)
+fun PublicKey.getShortHashString(): String = sha256HexString().substring(0, 12).uppercase()
