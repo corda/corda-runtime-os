@@ -52,7 +52,7 @@ internal class CommandsRetryManager(
         return StateAndEventProcessor.Response(
             updatedState = state,
             responseEvents = emptyList(),
-            markForDLQ = true,
+            markForDLQ = false,
         )
     }
 
