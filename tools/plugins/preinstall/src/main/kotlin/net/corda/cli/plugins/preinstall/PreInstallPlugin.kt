@@ -17,7 +17,7 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import picocli.CommandLine
 import java.io.File
-import java.util.*
+import java.util.Base64
 
 class PreInstallPlugin(wrapper: PluginWrapper) : Plugin(wrapper) {
 

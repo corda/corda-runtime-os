@@ -11,6 +11,13 @@ class RunAll : Runnable {
     @CommandLine.Option(names = ["-n", "--namespace"], description = ["The namespace in which to look for the secrets"])
     var namespace: String? = null
 
+    @CommandLine.Option(names = ["-f", "--file"], description = ["The file location of the truststore for kafka."])
+    var truststoreLocation: String? = null
+
+    @CommandLine.Option(names = ["-t", "--timeout"], description = ["The timeout in milliseconds for testing the kafka " +
+            "connection. Defaults to 3000."])
+    var timeout: Int = 3000
+
     @CommandLine.Option(names = ["-v", "--verbose"], description = ["Display additional information when checking resources"])
     var verbose: Boolean = false
 
@@ -36,6 +43,8 @@ class RunAll : Runnable {
         if (verbose) { kafkaArgs.add("-v") }
         if (debug) { kafkaArgs.add("-d") }
         namespace?.let{ kafkaArgs.add("-n$namespace") }
+        truststoreLocation?.let{ kafkaArgs.add("-f$truststoreLocation") }
+        kafkaArgs.add("-t$timeout")
 
         limitsCMD.execute(path, *limitsArgs.toTypedArray())
         postgresCMD.execute(path, *postgresArgs.toTypedArray())
