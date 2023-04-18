@@ -7,20 +7,38 @@ import net.corda.rest.annotations.HttpRestResource
 import net.corda.rest.annotations.RestPathParameter
 
 /**
- * TODO
+ * The MGM Admin API consists of endpoints used to carry out administrative tasks on membership groups. A membership
+ * group is a logical grouping of a number of Corda Identities to communicate and transact with one another with a
+ * specific set of CorDapps. The API allows you to perform actions such as force decline registration requests which
+ * may be displaying unexpected behaviour. This API should only be used under exceptional circumstances.
  */
 @HttpRestResource(
     name = "MGM Admin API",
-    description = "",
+    description = "The MGM Admin API consists of endpoints used to carry out administrative tasks on membership " +
+            "groups. A membership group is a logical grouping of a number of Corda Identities to communicate and " +
+            "transact with one another with a specific set of CorDapps. The API allows you to perform actions such as" +
+            " force decline registration requests which may be displaying unexpected behaviour. This API should only " +
+            "be used under exceptional circumstances.",
     path = "admin"
 )
 interface MGMAdminRestResource : RestResource {
     /**
-     * TODO
+     * The [forceDeclineRegistrationRequest] method enables you to force decline a registration request that may be
+     * stuck or displaying some other unexpected behaviour. This method should only be used under exceptional
+     * circumstances.
+     *
+     * Example usage:
+     * ```
+     * mgmOps.forceDeclineRegistrationRequest("58B6030FABDD", "3B9A266F96E2")
+     * ```
+     *
+     * @param holdingIdentityShortHash The holding identity ID of the MGM of the membership group.
+     * @param requestId ID of the registration request.
      */
     @HttpPOST(
         path = "{holdingIdentityShortHash}/decline",
-        description = ""
+        description = "This method enables you to force decline a registration request that may be stuck or " +
+                "displaying some other unexpected behaviour."
     )
     fun forceDeclineRegistrationRequest(
         @RestPathParameter(

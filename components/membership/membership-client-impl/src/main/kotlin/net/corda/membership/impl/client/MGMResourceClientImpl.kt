@@ -91,6 +91,7 @@ class MGMResourceClientImpl @Activate constructor(
         const val FOLLOW_CHANGES_RESOURCE_NAME = "MGMResourceClient.followStatusChangesByName"
         const val WAIT_FOR_CONFIG_RESOURCE_NAME = "MGMResourceClient.registerComponentForUpdates"
         const val PUBLISHER_RESOURCE_NAME = "MGMResourceClient.publisher"
+        const val FORCE_DECLINE_MESSAGE = "Force declined by MGM"
 
         val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         val clock = UTCClock()
@@ -545,15 +546,25 @@ class MGMResourceClientImpl @Activate constructor(
                 "Registration request must be in ${RegistrationStatus.PENDING_MANUAL_APPROVAL} status to perform this action."
             }
             if (approve) {
-                publishApprovalDecision(ApproveRegistration(), holdingIdentityShortHash, requestId.toString())
+                publishRegistrationCommand(ApproveRegistration(), holdingIdentityShortHash, requestId.toString())
             } else {
-                publishApprovalDecision(DeclineRegistration(reason ?: ""), holdingIdentityShortHash, requestId.toString())
+                publishRegistrationCommand(DeclineRegistration(reason ?: ""), holdingIdentityShortHash, requestId.toString())
             }
         }
 
         override fun forceDeclineRegistrationRequest(holdingIdentityShortHash: ShortHash, requestId: UUID) {
-            mgmHoldingIdentity(holdingIdentityShortHash)
-            publishApprovalDecision(DeclineRegistration(""), holdingIdentityShortHash, requestId.toString())
+            val requestStatus = membershipQueryClient.queryRegistrationRequest(
+                mgmHoldingIdentity(holdingIdentityShortHash), requestId.toString()
+            ).getOrThrow()
+                ?: throw IllegalArgumentException("No request with registration request ID '$requestId' was found.")
+
+            logger.info("Force declining registration request with ID='$requestId' and status='${requestStatus.registrationStatus}'.")
+
+            publishRegistrationCommand(
+                DeclineRegistration(FORCE_DECLINE_MESSAGE),
+                holdingIdentityShortHash,
+                requestId.toString()
+            )
         }
 
         override fun suspendMember(
@@ -606,7 +617,7 @@ class MGMResourceClientImpl @Activate constructor(
             }
         }
 
-        private fun publishApprovalDecision(command: Any, holdingIdentityShortHash: ShortHash, requestId: String) {
+        private fun publishRegistrationCommand(command: Any, holdingIdentityShortHash: ShortHash, requestId: String) {
             coordinator.getManagedResource<Publisher>(PUBLISHER_RESOURCE_NAME)?.publish(
                 listOf(
                     Record(
