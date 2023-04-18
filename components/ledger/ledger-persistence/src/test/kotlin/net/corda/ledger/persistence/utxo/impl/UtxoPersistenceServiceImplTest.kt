@@ -82,8 +82,8 @@ class UtxoPersistenceServiceImplTest {
 
     @Test
     fun `Persisting a transaction while JSON parsing fails will result in an empty JSON string being stored`() {
-        val tx = createMockTransaction(listOf(
-            createStateAndRef(InvalidState())
+        val tx = createMockTransaction(mapOf(
+            0 to createStateAndRef(InvalidState())
         ))
 
         persistenceService.persistTransaction(tx)
@@ -123,8 +123,8 @@ class UtxoPersistenceServiceImplTest {
             UTCClock()
         )
 
-        val tx = createMockTransaction(listOf(
-            createStateAndRef(EmptyState())
+        val tx = createMockTransaction(mapOf(
+            0 to createStateAndRef(EmptyState())
         ))
 
         singlePersistenceService.persistTransaction(tx)
@@ -147,8 +147,8 @@ class UtxoPersistenceServiceImplTest {
 
     @Test
     fun `Persisting a transaction with multiple JSON factories will result in a combined JSON string being stored`() {
-        val tx = createMockTransaction(listOf(
-            createStateAndRef(DummyState("DUMMY"))
+        val tx = createMockTransaction(mapOf(
+            0 to createStateAndRef(DummyState("DUMMY"))
         ))
 
         persistenceService.persistTransaction(tx)
@@ -173,8 +173,8 @@ class UtxoPersistenceServiceImplTest {
 
     @Test
     fun `Persisting a transaction while no JSON factory is present for the given type will result in using the ContractState factory`() {
-        val tx = createMockTransaction(listOf(
-            createStateAndRef(ContractState { emptyList() }) // State that has no specific factory
+        val tx = createMockTransaction(mapOf(
+            0 to createStateAndRef(ContractState { emptyList() }) // State that has no specific factory
         ))
 
         persistenceService.persistTransaction(tx)
@@ -205,8 +205,8 @@ class UtxoPersistenceServiceImplTest {
             UTCClock()
         )
 
-        val tx = createMockTransaction(listOf(
-            createStateAndRef(ContractState { emptyList() })
+        val tx = createMockTransaction(mapOf(
+            0 to createStateAndRef(ContractState { emptyList() })
         ))
 
         emptyPersistenceService.persistTransaction(tx)
@@ -217,7 +217,7 @@ class UtxoPersistenceServiceImplTest {
         assertThat(persisted.value.json).isEqualTo("{}")
     }
 
-    private fun createMockTransaction(producedStates: List<StateAndRef<ContractState>>): UtxoTransactionReader {
+    private fun createMockTransaction(producedStates: Map<Int, StateAndRef<ContractState>>): UtxoTransactionReader {
         return mock {
             on { getConsumedStateRefs() } doReturn emptyList()
             on { rawGroupLists } doReturn emptyList()
@@ -227,7 +227,7 @@ class UtxoPersistenceServiceImplTest {
             on { id } doReturn randomSecureHash()
             on { privacySalt } doReturn mockPrivacySalt
             on { account } doReturn ""
-            on { getProducedStates() } doReturn producedStates
+            on { getVisibleStates() } doReturn producedStates
         }
     }
 

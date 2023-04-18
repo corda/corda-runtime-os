@@ -149,12 +149,12 @@ class UtxoPersistenceServiceImpl(
         }
 
         // Insert outputs data
-        transaction.getProducedStates().forEachIndexed { index, stateAndRef ->
+        transaction.getVisibleStates().entries.forEach { (stateIndex, stateAndRef) ->
             repository.persistTransactionOutput(
                 em,
                 transactionIdString,
                 UtxoComponentGroup.OUTPUTS.ordinal,
-                index,
+                stateIndex,
                 stateAndRef.state.contractState::class.java.canonicalName,
                 timestamp = nowUtc
             )
@@ -162,15 +162,21 @@ class UtxoPersistenceServiceImpl(
 
         // Insert relevancy information for outputs
         transaction.visibleStatesIndexes.forEach { visibleStateIndex ->
+
+            val jsonString = transaction.getVisibleStates()[visibleStateIndex]?.let {
+                extractJsonDataFromState(it.state.contractState)
+            } ?: run {
+                log.warn("Could not find visible state with index $visibleStateIndex, defaulting to empty JSON string.")
+                "{}"
+            }
+
             repository.persistTransactionVisibleStates(
                 em,
                 transactionIdString,
                 UtxoComponentGroup.OUTPUTS.ordinal,
                 visibleStateIndex,
                 consumed = false,
-                CustomRepresentation(
-                    extractJsonDataFromState(transaction.getProducedStates()[visibleStateIndex].state.contractState)
-                ),
+                CustomRepresentation(jsonString),
                 nowUtc
             )
         }
