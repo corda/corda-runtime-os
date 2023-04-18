@@ -41,8 +41,16 @@ internal class ConfigProcessor(
         val config = mergeConfigs(currentData)
 
         if (config.values.any { !it.isEmpty }) {
-            currentData.forEach { (configSection, configuration) ->
-                addToCache(configSection, configuration)
+            currentData.forEach { (configKey, configuration: Configuration) ->
+                addToCache(configKey, configuration)
+
+                logger.info("onSnapshot - Received configuration for key $configKey")
+                logger.debug {
+                    configuration.toSmartConfig().let {
+                        "$configKey configuration: " +
+                                it.toSafeConfig().root().render(ConfigRenderOptions.concise().setFormatted(true))
+                    }
+                }
             }
 
             coordinator.postEvent(NewConfigReceived(config))
@@ -60,7 +68,7 @@ internal class ConfigProcessor(
         if (newConfig != null) {
             val config = mergeConfigs(currentData)
             val newConfigKey = newRecord.key
-            logger.debug { "Received configuration for key $newConfigKey" }
+            logger.info("onNext - Received configuration for key $newConfigKey")
             logger.debug {
                 "$newConfigKey configuration: " +
                         newConfig.toSafeConfig().root().render(ConfigRenderOptions.concise().setFormatted(true))
@@ -81,13 +89,7 @@ internal class ConfigProcessor(
 
     private fun mergeConfigs(currentData: Map<String, Configuration>): MutableMap<String, SmartConfig> {
         val config = currentData.mapValues { config ->
-            config.value.toSmartConfig().also { smartConfig ->
-                logger.debug { "Received configuration for key ${config.key}" }
-                logger.debug(
-                    "Received configuration for key ${config.key}: " +
-                            smartConfig.toSafeConfig().root().render(ConfigRenderOptions.concise().setFormatted(true))
-                )
-            }
+            config.value.toSmartConfig()
         }.toMutableMap()
 
         if (currentData.containsKey(MESSAGING_CONFIG)) {
