@@ -61,9 +61,8 @@ class FlowMessagingImpl @Activate constructor(
         payload: String
     ): String {
         // TODO revisit input/results while integrating with CORE-10430
-        // TODO pass payload instead of facadeName as part of CORE-10419
-        val session = createInteropFlowSession(memberName)
-        return session.sendAndReceive(String::class.java, facadeName)
+        val session = createInteropFlowSession(memberName, facadeName, methodName)
+        return session.sendAndReceive(String::class.java, payload)
     }
 
     @Suspendable
@@ -180,10 +179,13 @@ class FlowMessagingImpl @Activate constructor(
     }
 
     @Suspendable
-    private fun createInteropFlowSession(x500Name: MemberX500Name): FlowSession {
+    private fun createInteropFlowSession(x500Name: MemberX500Name, facadeName: String, methodName: String): FlowSession {
         val sessionId = UUID.randomUUID().toString()
         addSessionIdToFlowStackItem(sessionId)
-        return flowSessionFactory.createInitiatingFlowSession(sessionId, x500Name, null, true)
+        return flowSessionFactory.createInitiatingFlowSession(sessionId, x500Name, { flowContextProperties ->
+            flowContextProperties.put("facadeName", facadeName)
+            flowContextProperties.put("methodName", methodName)
+        }, true)
     }
 
     private fun checkFlowCanBeInitiated() {

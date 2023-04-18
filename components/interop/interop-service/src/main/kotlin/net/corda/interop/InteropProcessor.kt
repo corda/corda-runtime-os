@@ -5,10 +5,11 @@ package net.corda.interop
 import net.corda.data.CordaAvroDeserializer
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.CordaAvroSerializer
+import net.corda.data.KeyValuePair
+import net.corda.data.KeyValuePairList
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.mapper.FlowMapperEvent
-import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.interop.InteropMessage
 import net.corda.data.interop.InteropState
@@ -55,6 +56,7 @@ class InteropProcessor(
     private val sessionEventSerializer: CordaAvroSerializer<SessionEvent> =
         cordaAvroSerializationFactory.createAvroSerializer{}
 
+    @Suppress("LongMethod", "NestedBlockDepth")
     override fun onNext(
         state: InteropState?,
         event: Record<String, FlowMapperEvent>
@@ -86,31 +88,39 @@ class InteropProcessor(
                 return StateAndEventProcessor.Response(state, emptyList())
             }
 
-            //TODO payload contains a facadeName, will be change by CORE-10419
-            val facadeName = when (val sessionPayload = sessionEvent.payload) {
-                is SessionInit -> null
-                is SessionData -> {
-                    val payload : ByteBuffer = sessionPayload.payload as ByteBuffer
-                    val message = String(payload.array())
-                    message
+            val sessionPayload = sessionEvent.payload
+            val newPayload = if (sessionPayload is SessionInit) {
+                val facadeName = sessionPayload.contextUserProperties.items.find { it.key == "facadeName"}?.value
+                val facadeMethod = sessionPayload.contextUserProperties.items.find { it.key == "methodName"}?.value
+                if (facadeName == null) {
+                    logger.warn("Message without facadeName. Key: ${event.key}.")
+                    null
+                } else if (facadeMethod == null) {
+                    logger.warn("Message without facadeMethod. Key: ${event.key}.")
+                    null
+                } else {
+                    logger.info(
+                        "Processing message from flow.interop.event with subsystem $SUBSYSTEM." +
+                                " Key: ${event.key}, facade request: $facadeName/$facadeMethod"
+                    )
+                    try {
+                        val flowName =
+                            facadeToFlowMapperService.getFlowName(realHoldingIdentity, facadeName, facadeMethod)
+                        logger.info("Mapped flowName=$flowName for facade=$facadeName/$facadeMethod")
+                        sessionPayload.apply {
+                            contextUserProperties = KeyValuePairList(
+                                contextUserProperties.items
+                                        + KeyValuePair("flowClassName", flowName)
+                            )
+                        }
+                    } catch (e: IllegalStateException) {
+                        logger.warn(e.message)
+                        null
+                    }
                 }
-                else -> null
-            }
-
-            if (facadeName == null) {
-                logger.info("Pass-through event ${sessionEvent.payload::class.java} without FacadeRequest")
             } else {
-                logger.info("Processing message from flow.interop.event with subsystem $SUBSYSTEM." +
-                            " Key: ${event.key}, facade request: $facadeName."
-                )
-                val flowName = try {
-                    facadeToFlowMapperService.getFlowName(realHoldingIdentity, facadeName, "say-hello")
-                } catch (e: IllegalStateException) {
-                    logger.warn(e.message)
-                }
-                //TODO utilise flowName as input to data send to FlowProcessor (for now it's only used by the logger),
-                // this change is required for CORE-10426 Support For Façade Handlers
-                logger.info("Flow name associated with facade request : $flowName")
+                logger.info("Pass-through event ${sessionEvent.payload::class.java} without FacadeRequest")
+                null
             }
 
             return StateAndEventProcessor.Response(
@@ -137,6 +147,9 @@ class InteropProcessor(
                                     x500Name = realHoldingIdentity.x500Name.toString()
                                     groupId = realHoldingIdentity.groupId
                                 }
+                            }
+                            if (newPayload != null) {
+                                payload = newPayload // We could do substitution only for SessionInit though
                             }
                             val (newDest, newSource) = if (isInitiatingIdentityDestination())
                                 Pair(initiatingIdentity, initiatedIdentity)

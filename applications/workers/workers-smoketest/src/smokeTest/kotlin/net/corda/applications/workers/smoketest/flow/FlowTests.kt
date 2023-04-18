@@ -1172,7 +1172,7 @@ class FlowTests {
         assertThat(flowResult.result).isEqualTo(expectedOutputJson)
     }
 
-    @Disabled("Fails in e2e because require a single cluster.") //TODO CORE-12134
+    @Disabled("Fails in e2e because require a single cluster.") //TODO CORE-12469
     @Test
     fun `Interoperability - facade call returns payload back to caller`() {
         val payload = "Hello world!"

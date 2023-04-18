@@ -5,11 +5,11 @@
       "facade-method-mapping": [
         {
           "facade-method": "say-hello",
-          "flow-name": "com.net.corda.flow.SayHelloFlow"
+          "flow-name": "net.cordapp.testing.testflows.FacadeInvocationResponderFlow"
         },
         {
           "facade-method": "get-balance",
-          "flow-name": "com.net.corda.flow.GetBalanceFlow"
+          "flow-name": "net.cordapp.testing.testflows.FacadeInvocationResponderFlow"
         }
       ]
     },
