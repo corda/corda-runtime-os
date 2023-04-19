@@ -581,10 +581,10 @@ class UtxoPersistenceServiceImplTest {
         override val cpkMetadata: List<CordaPackageSummary>
             get() = (transactionContainer.wireTransaction.metadata as TransactionMetadataInternal).getCpkMetadata()
 
-        override fun getProducedStates(): List<StateAndRef<ContractState>> {
-            return listOf(
-                stateAndRef<TestContract>(TestContractState1(), id, 0),
-                stateAndRef<TestContract>(TestContractState2(), id, 1)
+        override fun getVisibleStates(): Map<Int, StateAndRef<ContractState>> {
+            return mapOf(
+                0 to stateAndRef<TestContract>(TestContractState1(), id, 0),
+                1 to stateAndRef<TestContract>(TestContractState2(), id, 1)
             )
         }
 
