@@ -45,7 +45,7 @@ spec:
         {{- include "corda.generateAndExecuteSql" ( dict "name" "rbac" "Values" .Values "Chart" .Chart "Release" .Release "environmentVariablePrefix" "RBAC_DB_USER" "schema" "RBAC" "sequenceNumber" 3) | nindent 8 }}
         {{- include "corda.generateAndExecuteSql" ( dict "name" "vnodes" "longName" "virtual-nodes" "dbName" "rbac" "admin" "true" "Values" .Values "Chart" .Chart "Release" .Release "environmentVariablePrefix" "DB_CLUSTER" "sequenceNumber" 5) | nindent 8 }}
         {{- include "corda.generateAndExecuteSql" ( dict "name" "crypto" "Values" .Values "Chart" .Chart "Release" .Release "environmentVariablePrefix" "CRYPTO_DB_USER"  "schema" "CRYPTO" "sequenceNumber" 7) | nindent 8 }}                
-        {{- include "corda.generateAndExecuteSql" ( dict "name" "rpc"  "Values" .Values "Chart" .Chart "Release" .Release "environmentVariablePrefix" "REST_API_ADMIN"  "schema" "RBAC"  "searchPath" "RBAC" "subCommand" "create-user-config" "namePostfix" "admin" "sqlFile" "rbac-config.sql" "sequenceNumber" 9) | nindent 8 }}
+        {{- include "corda.generateAndExecuteSql" ( dict "name" "rest"  "Values" .Values "Chart" .Chart "Release" .Release "environmentVariablePrefix" "REST_API_ADMIN"  "schema" "RBAC"  "searchPath" "RBAC" "subCommand" "create-user-config" "namePostfix" "admin" "sqlFile" "rbac-config.sql" "sequenceNumber" 9) | nindent 8 }}
         - name: 11-create-db-users-and-grant
           image: {{ include "corda.bootstrapDbClientImage" . }}
           imagePullPolicy: {{ .Values.imagePullPolicy }}
@@ -400,13 +400,13 @@ a second init container to execute the output SQL to the relevant database
            {{- " '-p'" -}}, '$({{ .environmentVariablePrefix -}}_PASSWORD)',
          {{- end -}}           
          
-         {{- if and (not (eq .name "rpc")) (not (eq .subCommand "create-crypto-config")) -}}
+         {{- if and (not (eq .name "rest")) (not (eq .subCommand "create-crypto-config")) -}}
              {{- " '--name'" -}}, 'corda-{{ .longName | default .name }}', 
              {{- " '--jdbc-url'" -}}, 'jdbc:{{ include "corda.clusterDbType" . }}://{{ required "A db host is required" .Values.db.cluster.host }}:{{ include "corda.clusterDbPort" . }}/{{ include "corda.clusterDbName" . }}{{- if .schema }}?currentSchema={{.schema }}{{- end -}}', 
              {{- " '--jdbc-pool-max-size'" -}}, {{ (index .Values.bootstrap.db (.dbName | default .name)).dbConnectionPool.maxSize | quote }}, {{- " " -}}
          {{- end -}}         
          
-         {{- if not (eq .name "rpc") -}}
+         {{- if not (eq .name "rest") -}}
            {{- if and (((.Values).config).vault).url  (not (eq .name "crypto-config")) -}} 
              '-t', 'VAULT', '--vault-path', 'dbsecrets', '--key', {{ (printf "%s-db-password" .name)| quote }},
            {{- else -}}
@@ -431,10 +431,10 @@ a second init container to execute the output SQL to the relevant database
     {{- if eq .name "db" -}}
       {{- include "corda.bootstrapClusterDbEnv" . | nindent 4 }}
     {{- end -}}
-    {{- if or (eq .name "rpc") (eq .name "rbac") (eq .name "vnodes") (eq .name "crypto") -}}
+    {{- if or (eq .name "rest") (eq .name "rbac") (eq .name "vnodes") (eq .name "crypto") -}}
        {{- "\n    " -}} {{- /* legacy whitespace compliance */ -}}
     {{- end -}}
-    {{- if and (not (eq .name "rpc")) (not (eq .name "db")) -}}
+    {{- if and (not (eq .name "rest")) (not (eq .name "db")) -}}
       {{ include "corda.configSaltAndPassphraseEnv" . | nindent 4 -}}
     {{- end -}}
     {{- if or (eq .name "rbac") (eq .name "crypto") (eq .name "vnodes") (eq .name "db") -}}
@@ -450,7 +450,7 @@ a second init container to execute the output SQL to the relevant database
     {{- if eq .name "vnodes" -}}
       {{ include "corda.clusterDbEnv" . | nindent 4 -}}
     {{- end -}}
-    {{- if eq .name "rpc" -}}
+    {{- if eq .name "rest" -}}
       {{- include "corda.restApiAdminSecretEnv" . | nindent 4 }}
     {{- end -}}
     {{- if eq .environmentVariablePrefix "CRYPTO_DB_USER" -}}
