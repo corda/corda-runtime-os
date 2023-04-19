@@ -15,9 +15,9 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.StartEvent
-import net.corda.membership.lib.EPOCH_KEY
+import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.EPOCH_KEY
+import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.MODIFIED_TIME_KEY
 import net.corda.membership.lib.InternalGroupParameters
-import net.corda.membership.lib.MODIFIED_TIME_KEY
 import net.corda.membership.lib.SignedMemberInfo
 import net.corda.membership.lib.approval.ApprovalRuleParams
 import net.corda.membership.lib.registration.RegistrationRequest
@@ -143,11 +143,13 @@ internal class TestMembershipPersistenceClientImpl @Activate constructor(
 
     override fun suspendMember(
         viewOwningIdentity: HoldingIdentity, memberX500Name: MemberX500Name, serialNumber: Long?, reason: String?
-    ): MembershipPersistenceOperation<PersistentMemberInfo> = Operation(MembershipPersistenceResult.Success(PersistentMemberInfo()))
+    ): MembershipPersistenceOperation<Pair<PersistentMemberInfo, InternalGroupParameters?>>
+        = Operation(MembershipPersistenceResult.Success(PersistentMemberInfo() to null))
 
     override fun activateMember(
         viewOwningIdentity: HoldingIdentity, memberX500Name: MemberX500Name, serialNumber: Long?, reason: String?
-    ): MembershipPersistenceOperation<PersistentMemberInfo> = Operation(MembershipPersistenceResult.Success(PersistentMemberInfo()))
+    ): MembershipPersistenceOperation<Pair<PersistentMemberInfo, InternalGroupParameters?>>
+        = Operation(MembershipPersistenceResult.Success(PersistentMemberInfo() to null))
 
     override fun updateStaticNetworkInfo(info: StaticNetworkInfo): MembershipPersistenceOperation<StaticNetworkInfo> {
         return Operation(MembershipPersistenceResult.Success(info))

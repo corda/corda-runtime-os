@@ -32,7 +32,6 @@ class UtxoTransactionBuilderVerifier(
         verifyNoDuplicateInputsOrReferences(transactionBuilder.inputStateRefs, transactionBuilder.referenceStateRefs)
         verifyNoInputAndReferenceOverlap(transactionBuilder.inputStateRefs, transactionBuilder.referenceStateRefs)
         verifyCommands(transactionBuilder.commands)
-        verifyNotaryIsWhitelisted()
     }
 
     private fun verifyNotary() {

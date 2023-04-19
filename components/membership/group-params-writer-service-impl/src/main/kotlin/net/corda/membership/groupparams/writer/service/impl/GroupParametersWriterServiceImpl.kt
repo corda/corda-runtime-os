@@ -4,9 +4,6 @@ import jdk.jshell.spi.ExecutionControl.NotImplementedException
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.cipher.suite.KeyEncodingService
-import net.corda.data.crypto.wire.CryptoSignatureSpec
-import net.corda.data.crypto.wire.CryptoSignatureWithKey
-import net.corda.data.membership.PersistentGroupParameters
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -19,7 +16,7 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.membership.groupparams.writer.service.GroupParametersWriterService
 import net.corda.membership.lib.InternalGroupParameters
-import net.corda.membership.lib.SignedGroupParameters
+import net.corda.membership.lib.toPersistentGroupParameters
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -28,13 +25,10 @@ import net.corda.schema.Schemas.Membership.GROUP_PARAMETERS_TOPIC
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.virtualnode.HoldingIdentity
-import net.corda.virtualnode.toAvro
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
-import java.nio.ByteBuffer
-import net.corda.data.membership.SignedGroupParameters as AvroGroupParameters
 
 @Component(service = [GroupParametersWriterService::class])
 class GroupParametersWriterServiceImpl @Activate constructor(
@@ -115,7 +109,7 @@ class GroupParametersWriterServiceImpl @Activate constructor(
                     Record(
                         GROUP_PARAMETERS_TOPIC,
                         recordKey.shortHash.toString(),
-                        recordValue.toAvro(recordKey)
+                        recordValue.toPersistentGroupParameters(recordKey, keyEncodingService)
                     )
                 )
             ).forEach { it.get() }
@@ -198,24 +192,5 @@ class GroupParametersWriterServiceImpl @Activate constructor(
             event.config.getConfig(MESSAGING_CONFIG)
         ).also { it.start() }
         activate(coordinator)
-    }
-
-    private fun InternalGroupParameters.toAvro(owner: HoldingIdentity): PersistentGroupParameters {
-        val signed = this as? SignedGroupParameters
-        return PersistentGroupParameters(
-            owner.toAvro(),
-            AvroGroupParameters(
-                ByteBuffer.wrap(bytes),
-                signed?.let {
-                    CryptoSignatureWithKey(
-                        ByteBuffer.wrap(keyEncodingService.encodeAsByteArray(it.signature.by)),
-                        ByteBuffer.wrap(it.signature.bytes)
-                    )
-                },
-                signed?.let {
-                    CryptoSignatureSpec(it.signatureSpec.signatureName, null, null)
-                }
-            )
-        )
     }
 }

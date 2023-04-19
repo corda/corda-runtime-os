@@ -11,6 +11,7 @@ import net.corda.ledger.persistence.query.parsing.IsNotNull
 import net.corda.ledger.persistence.query.parsing.IsNull
 import net.corda.ledger.persistence.query.parsing.JsonArrayOrObjectAsText
 import net.corda.ledger.persistence.query.parsing.JsonCast
+import net.corda.ledger.persistence.query.parsing.JsonField
 import net.corda.ledger.persistence.query.parsing.JsonKeyExists
 import net.corda.ledger.persistence.query.parsing.LeftParentheses
 import net.corda.ledger.persistence.query.parsing.LessThan
@@ -67,6 +68,19 @@ class PostgresVaultNamedQueryConverterTest {
         val expression = listOf(Number("1"))
         postgresVaultNamedQueryParser.convert(output, expression)
         assertThat(output.toString()).isEqualTo("1")
+    }
+
+    @Test
+    fun `JsonField is appended to the output with a space on either side`() {
+        val expression =
+            listOf(
+                PATH_REFERENCE,
+                JsonField(),
+                PATH_REFERENCE
+            )
+
+        postgresVaultNamedQueryParser.convert(output, expression)
+        assertThat(output.toString()).isEqualTo("${PATH_REFERENCE.ref} -> ${PATH_REFERENCE.ref}")
     }
 
     @Test
@@ -214,14 +228,14 @@ class PostgresVaultNamedQueryConverterTest {
     fun `JsonCast is appended directly to the output with no spaces`() {
         val expression = listOf(JsonCast("int"))
         postgresVaultNamedQueryParser.convert(output, expression)
-        assertThat(output.toString()).isEqualTo("::int")
+        assertThat(output.toString()).isEqualTo("\\:\\:int")
     }
 
     @Test
     fun `JsonKeyExists is appended to the output with a space on either side`() {
         val expression = listOf(JsonKeyExists())
         postgresVaultNamedQueryParser.convert(output, expression)
-        assertThat(output.toString()).isEqualTo(" ? ")
+        assertThat(output.toString()).isEqualTo(" \\?\\? ")
     }
 
     @Test

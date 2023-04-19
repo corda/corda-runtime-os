@@ -1,9 +1,11 @@
 package net.corda.ledger.persistence.utxo.impl
 
+import net.corda.data.ledger.persistence.FindSignedGroupParameters
 import net.corda.data.ledger.persistence.FindTransaction
 import net.corda.data.ledger.persistence.FindUnconsumedStatesByType
 import net.corda.data.ledger.persistence.LedgerPersistenceRequest
 import net.corda.data.ledger.persistence.LedgerTypes
+import net.corda.data.ledger.persistence.PersistSignedGroupParametersIfDoNotExist
 import net.corda.data.ledger.persistence.PersistTransaction
 import net.corda.data.ledger.persistence.PersistTransactionIfDoesNotExist
 import net.corda.data.ledger.persistence.ResolveStateRefs
@@ -38,6 +40,8 @@ class UtxoRequestHandlerSelectorImpl @Activate constructor(
             sandbox.getEntityManagerFactory(),
             sandbox.getSandboxSingletonService(),
             sandbox.getSerializationService(),
+            sandbox.getSandboxSingletonService(),
+            sandbox.getSandboxSingletonService(),
             sandbox.getSandboxSingletonService(),
             UTCClock()
         )
@@ -113,6 +117,23 @@ class UtxoRequestHandlerSelectorImpl @Activate constructor(
                     externalEventResponseFactory
                 )
             }
+            is FindSignedGroupParameters -> {
+                return UtxoFindSignedGroupParametersRequestHandler(
+                    req,
+                    request.flowExternalEventContext,
+                    persistenceService,
+                    responseFactory
+                )
+            }
+            is PersistSignedGroupParametersIfDoNotExist -> {
+                UtxoPersistSignedGroupParametersIfDoNotExistRequestHandler(
+                    req,
+                    request.flowExternalEventContext,
+                    externalEventResponseFactory,
+                    persistenceService
+                )
+            }
+
             else -> {
                 throw UnsupportedRequestTypeException(LedgerTypes.UTXO, request.request.javaClass)
             }

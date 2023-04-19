@@ -19,6 +19,7 @@ import net.corda.data.membership.p2p.DistributionMetaData
 import net.corda.data.membership.p2p.MembershipPackage
 import net.corda.data.membership.p2p.MembershipSyncRequest
 import net.corda.data.p2p.app.AppMessage
+import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.LifecycleCoordinator
@@ -33,9 +34,11 @@ import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.TimerEvent
 import net.corda.membership.groupparams.writer.service.GroupParametersWriterService
 import net.corda.membership.lib.GroupParametersFactory
+import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_SUSPENDED
 import net.corda.membership.lib.MemberInfoExtension.Companion.id
 import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
 import net.corda.membership.lib.MemberInfoExtension.Companion.sessionInitiationKeys
+import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.toSortedMap
 import net.corda.membership.lib.toWire
@@ -333,9 +336,15 @@ class MemberSynchronisationServiceImpl internal constructor(
                         mgm,
                     )
                 } else {
-                    val knownMembers = groupReader.lookup().filter { !it.isMgm }.associateBy { it.id }
-                    val allMembers = knownMembers + updateMembersInfo
-                    val expectedHash = merkleTreeGenerator.generateTree(allMembers.values).root
+                    val knownMembers = groupReader.lookup(MembershipStatusFilter.ACTIVE_OR_SUSPENDED)
+                        .filter { !it.isMgm }.associateBy { it.id }
+                    val updatedViewOwner = updateMembersInfo[viewOwningMember.shortHash.value]
+                    val expectedHash = if (updatedViewOwner?.status == MEMBER_STATUS_SUSPENDED) {
+                        merkleTreeGenerator.generateTree(listOf(updatedViewOwner)).root
+                    } else {
+                        val allMembers = knownMembers + updateMembersInfo
+                        merkleTreeGenerator.generateTree(allMembers.values).root
+                    }
                     if (packageHash != expectedHash) {
                         persistentMemberInfoRecords + createSynchronisationRequestMessage(
                             groupReader,
@@ -393,7 +402,8 @@ class MemberSynchronisationServiceImpl internal constructor(
         mgm: HoldingIdentity,
     ): Record<String, AppMessage> {
         val member = groupReader.lookup(
-            memberIdentity.x500Name
+            memberIdentity.x500Name,
+            MembershipStatusFilter.ACTIVE_OR_SUSPENDED
         ) ?: throw CordaRuntimeException("Unknown member $memberIdentity")
         val memberHash = merkleTreeGenerator.generateTree(listOf(member))
             .root

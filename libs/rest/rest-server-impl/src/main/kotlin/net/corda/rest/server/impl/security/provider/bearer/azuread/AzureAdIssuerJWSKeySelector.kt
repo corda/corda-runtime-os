@@ -1,8 +1,7 @@
 package net.corda.rest.server.impl.security.provider.bearer.azuread
 
 import com.nimbusds.jose.JWSHeader
-import com.nimbusds.jose.jwk.source.DefaultJWKSetCache
-import com.nimbusds.jose.jwk.source.RemoteJWKSet
+import com.nimbusds.jose.jwk.source.JWKSourceBuilder
 import com.nimbusds.jose.proc.BadJOSEException
 import com.nimbusds.jose.proc.JWSAlgorithmFamilyJWSKeySelector
 import com.nimbusds.jose.proc.JWSKeySelector
@@ -21,8 +20,8 @@ internal class AzureAdIssuerJWSKeySelector(
 ) : JWTClaimsSetAwareJWSKeySelector<SecurityContext> {
     companion object {
         private const val ISS_CLAIM = "iss"
-        private const val DEFAULT_REFRESH_TIME_MINUTES = 5L
-        private val DEFAULT_JWK_SET_CACHE_LIFESPAN = TimeUnit.MINUTES.toMillis(5L)
+        private val DEFAULT_JWK_CACHE_REFRESH = TimeUnit.MINUTES.toMillis(4L)
+        private val DEFAULT_JWK_CACHE_TTL = TimeUnit.MINUTES.toMillis(5L)
 
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
@@ -43,12 +42,10 @@ internal class AzureAdIssuerJWSKeySelector(
             try {
                 val config = AzureAdConfiguration.fromIssuer(issuer, resourceRetriever)
                 val jwksUri = config.jwksUri
-                val jwkSetCache = DefaultJWKSetCache(
-                    DEFAULT_JWK_SET_CACHE_LIFESPAN,
-                    DEFAULT_REFRESH_TIME_MINUTES,
-                    TimeUnit.MILLISECONDS
-                )
-                val keySource = RemoteJWKSet<SecurityContext>(jwksUri.toURL(), resourceRetriever, jwkSetCache)
+                val keySource = JWKSourceBuilder.create<SecurityContext>(jwksUri.toURL(), resourceRetriever)
+                    .cache(DEFAULT_JWK_CACHE_TTL, DEFAULT_JWK_CACHE_REFRESH)
+                    .build()
+
                 JWSAlgorithmFamilyJWSKeySelector.fromJWKSource(keySource)
             } catch (e: Exception) {
                 logger.error("Unexpected error creating JWSKeySelector", e)

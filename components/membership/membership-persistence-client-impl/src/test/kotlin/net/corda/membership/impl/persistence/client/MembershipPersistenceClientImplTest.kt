@@ -1251,8 +1251,8 @@ class MembershipPersistenceClientImplTest {
         fun setUp() = postConfigChangedEvent()
 
         @Test
-        fun `suspendMember returns the correct result`() {
-            mockPersistenceResponse(SuspendMemberResponse(mock()))
+        fun `suspendMember returns the correct result when group parameters not updated`() {
+            mockPersistenceResponse(SuspendMemberResponse(mock(), null))
 
             val result = membershipPersistenceClient.suspendMember(
                 ourHoldingIdentity,
@@ -1260,6 +1260,23 @@ class MembershipPersistenceClientImplTest {
                 null,
                 null
             ).execute()
+            verify(groupParametersFactory, never()).create(any<AvroGroupParameters>())
+
+            assertThat(result).isInstanceOf(MembershipPersistenceResult.Success::class.java)
+        }
+
+        @Test
+        fun `suspendMember returns the correct result when group parameters updated`() {
+            val groupParameters = mock<AvroGroupParameters>()
+            mockPersistenceResponse(SuspendMemberResponse(mock(), groupParameters))
+
+            val result = membershipPersistenceClient.suspendMember(
+                ourHoldingIdentity,
+                bobX500Name,
+                null,
+                null
+            ).execute()
+            verify(groupParametersFactory).create(groupParameters)
 
             assertThat(result).isInstanceOf(MembershipPersistenceResult.Success::class.java)
         }
@@ -1320,8 +1337,8 @@ class MembershipPersistenceClientImplTest {
         fun setUp() = postConfigChangedEvent()
 
         @Test
-        fun `activateMember returns the correct result`() {
-            mockPersistenceResponse(ActivateMemberResponse(mock()))
+        fun `activateMember returns the correct result when group parameters not updated`() {
+            mockPersistenceResponse(ActivateMemberResponse(mock(), null))
 
             val result = membershipPersistenceClient.activateMember(
                 ourHoldingIdentity,
@@ -1329,6 +1346,23 @@ class MembershipPersistenceClientImplTest {
                 null,
                 null
             ).execute()
+            verify(groupParametersFactory, never()).create(any<AvroGroupParameters>())
+
+            assertThat(result).isInstanceOf(MembershipPersistenceResult.Success::class.java)
+        }
+
+        @Test
+        fun `activateMember returns the correct result when group parameters updated`() {
+            val groupParameters = mock<AvroGroupParameters>()
+            mockPersistenceResponse(ActivateMemberResponse(mock(), groupParameters))
+
+            val result = membershipPersistenceClient.activateMember(
+                ourHoldingIdentity,
+                bobX500Name,
+                null,
+                null
+            ).execute()
+            verify(groupParametersFactory).create(groupParameters)
 
             assertThat(result).isInstanceOf(MembershipPersistenceResult.Success::class.java)
         }

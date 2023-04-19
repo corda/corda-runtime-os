@@ -259,6 +259,23 @@ class FlowTests {
     }
 
     @Test
+    fun `Session Error - Closed Or Error sessions throw`() {
+        val requestBody = RpcSmokeTestInput().apply {
+            command = "throw_session_error"
+            data = mapOf("x500" to bobX500)
+        }
+
+        val requestId = startRpcFlow(bobHoldingId, requestBody)
+
+        val result = awaitRpcFlowFinished(bobHoldingId, requestId)
+
+        val flowResult = result.getRpcFlowResult()
+        assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+        assertThat(flowResult.command).isEqualTo("throw_session_error")
+        assertThat(flowResult.result).endsWith("Status is CLOSED")
+    }
+
+    @Test
     fun `error is thrown when flow with invalid constructor is executed`() {
         invalidConstructorFlowNames.forEach {
             val requestID = startRpcFlow(bobHoldingId, mapOf(), it)

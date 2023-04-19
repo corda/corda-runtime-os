@@ -1,5 +1,6 @@
 package net.corda.ledger.persistence.utxo
 
+import net.corda.data.membership.SignedGroupParameters
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.persistence.utxo.impl.UtxoTransactionOutputDto
@@ -19,4 +20,8 @@ interface UtxoPersistenceService {
     fun persistTransactionIfDoesNotExist(transaction: UtxoTransactionReader): Pair<String?, List<CordaPackageSummary>>
 
     fun updateStatus(id: String, transactionStatus: TransactionStatus)
+
+    fun findSignedGroupParameters(hash: String): SignedGroupParameters?
+
+    fun persistSignedGroupParametersIfDoNotExist(signedGroupParameters: SignedGroupParameters)
 }

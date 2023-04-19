@@ -393,6 +393,7 @@ include 'testing:cpbs:mgm'
 include 'testing:cpbs:sandbox-scr-cpk'
 include 'testing:cpbs:sandbox-security-manager-one'
 include 'testing:cpbs:sandbox-security-manager-two'
+include 'testing:cpbs:sandbox-contract-cpk'
 include 'testing:cpbs:sandbox-singletons-cpk'
 include 'testing:cpbs:split-packages:split-packages-one'
 include 'testing:cpbs:split-packages:split-packages-one:library-one'
@@ -478,9 +479,9 @@ if (compositeBuild.toBoolean() && file(cordaApiLocation).exists()) {
 if (compositeBuild.toBoolean() && file(cordaCliHostLocation).exists()) {
     includeBuild(cordaCliHostLocation) {
         dependencySubstitution {
-            substitute module("net.corda.cli.host:corda-cli") with project(":app")
-            substitute module("net.corda.cli.host:api") with project(":api")
-            substitute module("net.corda.cli.host:plugins") with project(":plugins")
+            substitute module("net.corda.cli.host:corda-cli") using project(":app")
+            substitute module("net.corda.cli.host:api") using project(":api")
+            substitute module("net.corda.cli.host:plugins") using project(":plugins")
         }
     }
 }
