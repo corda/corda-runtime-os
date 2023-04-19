@@ -91,7 +91,7 @@ class UtxoTransactionReaderImpl(
             .zip(rawGroupLists[UtxoComponentGroup.OUTPUTS_INFO.ordinal])
             .withIndex()
             .filter { indexed -> visibleStatesSet.contains(indexed.index) }
-            .map { (index, value) ->
+            .associate { (index, value) ->
                 index to UtxoTransactionOutputDto(id.toString(), index, value.second, value.first).toStateAndRef(
                     serializer
                 )
