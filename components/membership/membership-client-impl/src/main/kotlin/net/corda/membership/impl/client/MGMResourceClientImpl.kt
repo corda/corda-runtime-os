@@ -32,6 +32,7 @@ import net.corda.lifecycle.createCoordinator
 import net.corda.membership.client.CouldNotFindMemberException
 import net.corda.membership.client.MGMResourceClient
 import net.corda.membership.client.MemberNotAnMgmException
+import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
 import net.corda.membership.lib.MemberInfoExtension.Companion.id
 import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
 import net.corda.membership.lib.approval.ApprovalRuleParams
@@ -545,16 +546,18 @@ class MGMResourceClientImpl @Activate constructor(
             require(requestStatus.registrationStatus == RegistrationStatus.PENDING_MANUAL_APPROVAL) {
                 "Registration request must be in ${RegistrationStatus.PENDING_MANUAL_APPROVAL} status to perform this action."
             }
+            val memberName = requestStatus.memberProvidedContext.items.first { it.key == PARTY_NAME }.value
             if (approve) {
-                publishRegistrationCommand(ApproveRegistration(), holdingIdentityShortHash, requestId.toString())
+                publishRegistrationCommand(ApproveRegistration(), memberName, mgm.groupId)
             } else {
-                publishRegistrationCommand(DeclineRegistration(reason ?: ""), holdingIdentityShortHash, requestId.toString())
+                publishRegistrationCommand(DeclineRegistration(reason ?: ""), memberName, mgm.groupId)
             }
         }
 
         override fun forceDeclineRegistrationRequest(holdingIdentityShortHash: ShortHash, requestId: UUID) {
+            val mgm = mgmHoldingIdentity(holdingIdentityShortHash)
             val requestStatus = membershipQueryClient.queryRegistrationRequest(
-                mgmHoldingIdentity(holdingIdentityShortHash), requestId.toString()
+                mgm, requestId.toString()
             ).getOrThrow()
                 ?: throw IllegalArgumentException("No request with registration request ID '$requestId' was found.")
 
@@ -562,8 +565,8 @@ class MGMResourceClientImpl @Activate constructor(
 
             publishRegistrationCommand(
                 DeclineRegistration(FORCE_DECLINE_MESSAGE),
-                holdingIdentityShortHash,
-                requestId.toString()
+                requestStatus.memberProvidedContext.items.first { it.key == PARTY_NAME }.value,
+                mgm.groupId
             )
         }
 
@@ -617,12 +620,12 @@ class MGMResourceClientImpl @Activate constructor(
             }
         }
 
-        private fun publishRegistrationCommand(command: Any, holdingIdentityShortHash: ShortHash, requestId: String) {
+        private fun publishRegistrationCommand(command: Any, memberName: String, groupId: String) {
             coordinator.getManagedResource<Publisher>(PUBLISHER_RESOURCE_NAME)?.publish(
                 listOf(
                     Record(
                         REGISTRATION_COMMAND_TOPIC,
-                        "$requestId-${holdingIdentityShortHash}",
+                        "${memberName}-${groupId}",
                         RegistrationCommand(command)
                     )
                 )
