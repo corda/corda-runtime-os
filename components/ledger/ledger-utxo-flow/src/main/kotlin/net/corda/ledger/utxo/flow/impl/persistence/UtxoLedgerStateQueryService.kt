@@ -33,15 +33,4 @@ interface UtxoLedgerStateQueryService {
      */
     @Suspendable
     fun resolveStateRefs(stateRefs: Iterable<StateRef>): List<StateAndRef<*>>
-
-    /**
-     * Fetch serialized information from db worker needed to resolve [StateRef]s to [StateAndRef]s
-     *
-     * @param stateRefs The [StateRef]s to be resolved.
-     * @return [UtxoTransactionOutputDto] for each [StateAndRef]s.
-     *
-     * @throws CordaPersistenceException if an error happens during resolve operation.
-     */
-    @Suspendable
-    fun lazyResolveStateAndRefs(stateRefs: Iterable<StateRef>): List<LazyStateAndRefImpl<*>>
 }

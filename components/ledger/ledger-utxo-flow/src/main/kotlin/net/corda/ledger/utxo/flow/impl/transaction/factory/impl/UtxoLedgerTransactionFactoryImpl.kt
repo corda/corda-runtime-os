@@ -36,7 +36,7 @@ class UtxoLedgerTransactionFactoryImpl @Activate constructor(
                 .distinct()
 
         val stateRefsToStateAndRefs =
-            utxoLedgerStateQueryService.lazyResolveStateAndRefs(allStateRefs).associateBy { it.ref }
+            utxoLedgerStateQueryService.resolveStateRefs(allStateRefs).associateBy { it.ref }
         val inputStateAndRefs =
             wrappedUtxoWireTransaction.inputStateRefs.map {
                 stateRefsToStateAndRefs[it]

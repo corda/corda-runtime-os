@@ -138,7 +138,7 @@ class VaultNamedQueryExecutorImpl(
                 it.leafIndex,
                 serializedInfo.data,
                 it.data
-            ).toLazyStateAndRefImpl(serializationService)
+            ).toStateAndRef(serializationService)
         } ?: emptyList()
     }
 

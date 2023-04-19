@@ -87,7 +87,7 @@ class WrappedUtxoWireTransaction(
                     .getComponentGroupList(UtxoComponentGroup.OUTPUTS_INFO.ordinal)[index],
                 wireTransaction
                     .getComponentGroupList(UtxoComponentGroup.OUTPUTS.ordinal)[index]
-            ).toLazyStateAndRefImpl<ContractState>(serializationService)
+            ).toStateAndRef<ContractState>(serializationService)
         }
     }
 

@@ -1,13 +1,15 @@
 package net.corda.ledger.utxo.data.state
 
+import net.corda.crypto.core.parseSecureHash
+import net.corda.ledger.utxo.data.transaction.UtxoOutputInfoComponent
 import net.corda.ledger.utxo.data.transaction.UtxoTransactionOutputDto
+import net.corda.utilities.serialization.deserialize
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.TransactionState
-import java.util.Objects
 
 /**
  * Lazy [StateRef]. It stores initially the serialized representation of the represented state and ref.
@@ -23,8 +25,8 @@ data class LazyStateAndRefImpl<out T : ContractState>(
     val serializedStateAndRef: UtxoTransactionOutputDto,
     private val serializationService: SerializationService
 ) : StateAndRef<@UnsafeVariance T> {
-    private val stateAndRef: StateAndRef<T> by lazy(LazyThreadSafetyMode.PUBLICATION) {
-        serializedStateAndRef.toStateAndRef(serializationService)
+    private val stateAndRef: StateAndRef<@UnsafeVariance T> by lazy(LazyThreadSafetyMode.PUBLICATION) {
+        serializedStateAndRef.deserializeToStateAndRef(serializationService)
     }
 
     override fun getState(): TransactionState<@UnsafeVariance T> {
@@ -45,8 +47,7 @@ data class LazyStateAndRefImpl<out T : ContractState>(
         return this === other
                 || other != null
                 && other is LazyStateAndRefImpl<*>
-                && other.ref == ref
-                && other.state == state
+                && other.serializedStateAndRef == serializedStateAndRef
     }
 
     /**
@@ -55,6 +56,21 @@ data class LazyStateAndRefImpl<out T : ContractState>(
      * @return Returns a hash code for the current object.
      */
     override fun hashCode(): Int {
-        return Objects.hash(ref, state)
+        return serializedStateAndRef.hashCode()
     }
+}
+
+@Suppress("UNCHECKED_CAST")
+private fun <T : ContractState> UtxoTransactionOutputDto.deserializeToStateAndRef(serializationService: SerializationService): StateAndRef<T> {
+    val info = serializationService.deserialize<UtxoOutputInfoComponent>(info)
+    val contractState = serializationService.deserialize<ContractState>(data)
+    return StateAndRefImpl(
+        state = TransactionStateImpl(
+            contractState as T,
+            info.notaryName,
+            info.notaryKey,
+            info.getEncumbranceGroup()
+        ),
+        ref = StateRef(parseSecureHash(transactionId), leafIndex)
+    )
 }

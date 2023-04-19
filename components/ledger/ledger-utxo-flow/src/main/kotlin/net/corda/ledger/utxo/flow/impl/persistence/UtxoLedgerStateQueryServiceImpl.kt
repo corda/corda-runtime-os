@@ -1,8 +1,6 @@
 package net.corda.ledger.utxo.flow.impl.persistence
 
 import net.corda.flow.external.events.executor.ExternalEventExecutor
-import net.corda.ledger.utxo.data.state.LazyStateAndRefImpl
-import net.corda.ledger.utxo.data.transaction.UtxoTransactionOutputDto
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindUnconsumedStatesByTypeExternalEventFactory
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindUnconsumedStatesByTypeParameters
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.ResolveStateRefsExternalEventFactory
@@ -41,24 +39,12 @@ class UtxoLedgerStateQueryServiceImpl @Activate constructor(
     }
 
     @Suspendable
-    private fun fetchSerializedStateAndRefs(stateRefs: Iterable<StateRef>): List<UtxoTransactionOutputDto> {
+    override fun resolveStateRefs(stateRefs: Iterable<StateRef>): List<StateAndRef<*>> {
         return wrapWithPersistenceException {
             externalEventExecutor.execute(
                 ResolveStateRefsExternalEventFactory::class.java,
                 ResolveStateRefsParameters(stateRefs)
             )
-        }
-    }
-
-    @Suspendable
-    override fun lazyResolveStateAndRefs(stateRefs: Iterable<StateRef>): List<LazyStateAndRefImpl<*>> {
-        return fetchSerializedStateAndRefs(stateRefs).map {
-            it.toLazyStateAndRefImpl<ContractState>(serializationService)
-        }
-    }
-
-    @Suspendable
-    override fun resolveStateRefs(stateRefs: Iterable<StateRef>): List<StateAndRef<*>> {
-        return fetchSerializedStateAndRefs(stateRefs).map { it.toStateAndRef<ContractState>(serializationService) }
+        }.map { it.toStateAndRef<ContractState>(serializationService) }
     }
 }

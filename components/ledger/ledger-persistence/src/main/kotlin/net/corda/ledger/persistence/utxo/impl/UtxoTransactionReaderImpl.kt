@@ -92,7 +92,7 @@ class UtxoTransactionReaderImpl(
             .withIndex()
             .filter { indexed -> visibleStatesSet.contains(indexed.index) }
             .map { (index, value) ->
-                index to UtxoTransactionOutputDto(id.toString(), index, value.second, value.first).toLazyStateAndRefImpl(
+                index to UtxoTransactionOutputDto(id.toString(), index, value.second, value.first).toStateAndRef(
                     serializer
                 )
             }
