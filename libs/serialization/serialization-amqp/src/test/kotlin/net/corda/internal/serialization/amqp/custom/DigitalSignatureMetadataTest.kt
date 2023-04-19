@@ -54,23 +54,23 @@ class DigitalSignatureMetadataTest {
     @Test
     fun `DigitalSignatureMetadata properties round trip serializes deterministically`() {
         val digitalSignatureProperties1 = hashMapOf<String, String>()
-        (0 until 1000).forEach {
-            digitalSignatureProperties1["$it"] = "$it"
+        for (i in 0 until 1000) {
+            digitalSignatureProperties1["$i"] = "$i"
         }
 
         val digitalSignatureProperties2 = hashMapOf<String, String>()
         val addedEntriesKeys = arrayListOf<String>()
         val removedEntriesKeys = arrayListOf<String>()
         val skippedEntriesKeys = arrayListOf<String>()
-        (0 until 1000).forEach {
+        for (i in 0 until 1000) {
             when (Random.nextInt(3)) {
                 ADD -> {
-                    digitalSignatureProperties2["$it"] = "$it"
-                    addedEntriesKeys.add("$it")
+                    digitalSignatureProperties2["$i"] = "$i"
+                    addedEntriesKeys.add("$i")
                 }
 
                 REMOVE -> {
-                    skippedEntriesKeys.add("$it")
+                    skippedEntriesKeys.add("$i")
                     if (addedEntriesKeys.size > 0) {
                         val removedEntry = addedEntriesKeys.removeAt(Random.nextInt(addedEntriesKeys.size))
                         digitalSignatureProperties2.remove(removedEntry)
@@ -80,7 +80,7 @@ class DigitalSignatureMetadataTest {
                 }
 
                 SKIP -> {
-                    skippedEntriesKeys.add("$it")
+                    skippedEntriesKeys.add("$i")
                 }
             }
         }
