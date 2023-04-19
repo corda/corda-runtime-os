@@ -4,9 +4,12 @@
 
 set -e
 
+# minikube users should do:
+#   eval $(minikube docker-env)
+
 ./gradlew publishOSGiImage
 
-# Currently the init containers are not repeatble, so ensure we start from scratch each time
+# Currently the init containers are not repeatable, so ensure we start from scratch each time
 kubectl delete namespace corda || echo corda namesapce already deleted?
 kubectl create namespace corda
 
@@ -15,9 +18,7 @@ helm install prereqs -n corda oci://registry-1.docker.io/corda/corda-dev-prereqs
 
 # Corda
 helm dependency build charts/corda
-helm upgrade --install corda -n corda charts/corda \
-  --values ../corda-runtime-os/values-prereqs.yaml \
-  --wait
+helm install corda -n corda charts/corda --values ./values-prereqs.yaml --wait
 
 # Port forwarding for convenience
 #nc localhost 8888
