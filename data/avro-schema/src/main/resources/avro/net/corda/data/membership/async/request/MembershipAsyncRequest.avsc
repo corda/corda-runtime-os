@@ -8,6 +8,14 @@
       "name": "request",
       "doc": "Request's payload, depends on the requested operation.",
       "type": "RegistrationAsyncRequest"
+    },
+    {
+      "name": "state",
+      "doc": "Request latest state.",
+      "type": [
+        "MembershipAsyncRequestState",
+        "null"
+      ]
     }
   ]
 }

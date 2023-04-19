@@ -141,8 +141,14 @@ topics:
     producers:
       - rest
       - membership
-  MembershipAsyncRequestStateTopic:
-    name: membership.async.request.state
+  MembershipAsyncRequestRetriesTopic:
+    name: membership.async.request.retries
+    consumers:
+      - membership
+    producers:
+      - membership
+  MembershipAsyncRequestRetriesStateTopic:
+    name: membership.async.request.retries.state
     consumers:
       - membership
     producers:
@@ -154,8 +160,8 @@ topics:
       min.compaction.lag.ms: 60000
       max.compaction.lag.ms: 604800000
       min.cleanable.dirty.ratio: 0.5
-  MembershipAsyncRequestDlqTopic:
-    name: membership.async.request.dlq
+  MembershipAsyncRequestRetriesDlqTopic:
+    name: membership.async.request.retries.dlq
     consumers:
       - membership
     producers:
