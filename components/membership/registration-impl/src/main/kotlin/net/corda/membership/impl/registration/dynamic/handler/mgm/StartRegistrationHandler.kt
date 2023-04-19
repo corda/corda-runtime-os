@@ -63,8 +63,7 @@ internal class StartRegistrationHandler(
         cordaAvroSerializationFactory,
         clock,
     ),
-    private val registrationContextCustomFieldsVerifier: RegistrationContextCustomFieldsVerifier =
-        RegistrationContextCustomFieldsVerifier()
+    private val registrationContextCustomFieldsVerifier: RegistrationContextCustomFieldsVerifier = RegistrationContextCustomFieldsVerifier()
 ) : RegistrationHandler<StartRegistration> {
 
     private companion object {
@@ -94,7 +93,7 @@ internal class StartRegistrationHandler(
 
         val outputRecords: MutableList<Record<String, out SpecificRecordBase>> = mutableListOf()
 
-        val (outputCommand, newRecords) = try {
+        val outputCommand = try {
             validateRegistrationRequest(!memberTypeChecker.isMgm(pendingMemberHoldingId)) {
                 "Registration request is registering an MGM holding identity."
             }
@@ -104,10 +103,6 @@ internal class StartRegistrationHandler(
             membershipPersistenceClient
                 .persistRegistrationRequest(mgmHoldingId, registrationRequest)
                 .getOrThrow()
-
-            validateRegistrationRequest(registrationRequest.serial != null) {
-                "Serial on the registration request should not be null."
-            }
 
             logger.info("Registering $pendingMemberHoldingId with MGM for holding identity: $mgmHoldingId")
             val pendingMemberInfo = buildPendingMemberInfo(registrationRequest)
@@ -122,7 +117,13 @@ internal class StartRegistrationHandler(
                         "-${pendingMemberInfo.status}",
                 value = persistentMemberInfo,
             )
+            // Publish pending member record so that we can notify the member of declined registration if failure occurs
+            // after this point
             outputRecords.add(pendingMemberRecord)
+
+            validateRegistrationRequest(registrationRequest.serial != null) {
+                "Serial on the registration request should not be null."
+            }
 
             validatePreAuthTokenUsage(mgmHoldingId, pendingMemberInfo)
             // Parse the registration request and verify contents
@@ -188,17 +189,17 @@ internal class StartRegistrationHandler(
                 ),
                 minutesToWait = 5
             )
+            outputRecords.add(persistMemberStatusMessage)
 
             logger.info("Successful initial validation of registration request with ID ${registrationRequest.registrationId}")
-            Pair(VerifyMember(), listOf(persistMemberStatusMessage))
+            VerifyMember()
         } catch (ex: InvalidRegistrationRequestException) {
             logger.warn("Declined registration.", ex)
-            Pair(DeclineRegistration(ex.originalMessage), emptyList())
+            DeclineRegistration(ex.originalMessage)
         } catch (ex: Exception) {
             logger.warn("Declined registration.", ex)
-            Pair(DeclineRegistration("Failed to verify registration request due to: [${ex.message}]"), emptyList())
+            DeclineRegistration("Failed to verify registration request due to: [${ex.message}]")
         }
-        outputRecords.addAll(newRecords)
         outputRecords.add(Record(REGISTRATION_COMMAND_TOPIC, key, RegistrationCommand(outputCommand)))
 
         return RegistrationHandlerResult(

@@ -58,6 +58,7 @@ import net.corda.v5.membership.MemberInfo
 import net.corda.v5.membership.NotaryInfo
 import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.fail
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -246,12 +247,12 @@ class StartRegistrationHandlerTest {
 
             assertRegistrationStarted()
 
-            val registrationCommand = this.outputStates.first().value as RegistrationCommand
+            val registrationCommand = outputStates.firstNotNullOf { it.value as? RegistrationCommand }
             assertThat(registrationCommand.command).isInstanceOf(VerifyMember::class.java)
 
-            val pendingMemberRecord = this.outputStates[1].value as? PersistentMemberInfo
+            val pendingMemberRecord = outputStates.firstNotNullOf { it.value as? PersistentMemberInfo }
             assertThat(pendingMemberRecord).isNotNull
-            assertThat(pendingMemberRecord!!.viewOwningMember).isEqualTo(mgmHoldingIdentity)
+            assertThat(pendingMemberRecord.viewOwningMember).isEqualTo(mgmHoldingIdentity)
         }
         verifyServices(
             persistRegistrationRequest = true,
@@ -452,7 +453,7 @@ class StartRegistrationHandlerTest {
             assertThat(updatedState).isNotNull
             assertThat(updatedState!!.registrationId).isEqualTo(registrationId)
             assertThat(updatedState!!.registeringMember).isEqualTo(badHoldingIdentity)
-            assertThat(outputStates).isNotEmpty.hasSize(1)
+            assertThat(outputStates).isNotEmpty.hasSize(2)
 
             assertDeclinedRegistration()
         }
@@ -473,7 +474,7 @@ class StartRegistrationHandlerTest {
             assertThat(updatedState).isNotNull
             assertThat(updatedState!!.registrationId).isEqualTo(registrationId)
             assertThat(updatedState!!.registeringMember).isEqualTo(aliceHoldingIdentity)
-            assertThat(outputStates).isNotEmpty.hasSize(1)
+            assertThat(outputStates).isNotEmpty.hasSize(2)
 
             assertDeclinedRegistration()
         }
@@ -504,7 +505,7 @@ class StartRegistrationHandlerTest {
             assertThat(updatedState).isNotNull
             assertThat(updatedState!!.registrationId).isEqualTo(registrationId)
             assertThat(updatedState!!.registeringMember).isEqualTo(aliceHoldingIdentity)
-            assertThat(outputStates).hasSize(1)
+            assertThat(outputStates).hasSize(2)
 
             assertDeclinedRegistration()
         }
@@ -517,7 +518,7 @@ class StartRegistrationHandlerTest {
             assertThat(updatedState).isNotNull
             assertThat(updatedState!!.registrationId).isEqualTo(registrationId)
             assertThat(updatedState!!.registeringMember).isEqualTo(aliceHoldingIdentity)
-            assertThat(outputStates).isNotEmpty.hasSize(1)
+            assertThat(outputStates).isNotEmpty.hasSize(2)
 
             assertDeclinedRegistration()
         }
@@ -547,7 +548,7 @@ class StartRegistrationHandlerTest {
             assertThat(updatedState).isNotNull
             assertThat(updatedState!!.registrationId).isEqualTo(registrationId)
             assertThat(updatedState!!.registeringMember).isEqualTo(aliceHoldingIdentity)
-            assertThat(outputStates).isNotEmpty.hasSize(1)
+            assertThat(outputStates).isNotEmpty.hasSize(2)
 
             assertDeclinedRegistration()
         }
@@ -720,7 +721,7 @@ class StartRegistrationHandlerTest {
             assertThat(updatedState).isNotNull
             assertThat(updatedState!!.registrationId).isEqualTo(registrationId)
             assertThat(updatedState!!.registeringMember).isEqualTo(aliceHoldingIdentity)
-            assertThat(outputStates).isNotEmpty.hasSize(1)
+            assertThat(outputStates).isNotEmpty.hasSize(2)
 
             assertDeclinedRegistration()
         }
@@ -833,13 +834,15 @@ class StartRegistrationHandlerTest {
     }
 
     private fun RegistrationHandlerResult.assertRegistrationStarted() =
-        assertExpectedOutputStates(VerifyMember::class.java)
+        assertExpectedOutputCommand(VerifyMember::class.java)
 
     private fun RegistrationHandlerResult.assertDeclinedRegistration() =
-        assertExpectedOutputStates(DeclineRegistration::class.java)
+        assertExpectedOutputCommand(DeclineRegistration::class.java)
 
-    private fun RegistrationHandlerResult.assertExpectedOutputStates(expectedResultClass: Class<*>) {
-        with(outputStates.first()) {
+    private fun RegistrationHandlerResult.assertExpectedOutputCommand(expectedResultClass: Class<*>) {
+        val outputCommand = outputStates.firstOrNull { it.value is RegistrationCommand }
+            ?: fail("No registration command found.")
+        with(outputCommand) {
             assertThat(topic).isEqualTo(Schemas.Membership.REGISTRATION_COMMAND_TOPIC)
             assertThat(key).isEqualTo(testTopicKey)
             assertThat(value).isInstanceOf(RegistrationCommand::class.java)

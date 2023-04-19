@@ -58,13 +58,9 @@ class SmokeTestWebsocketClient(
 
     private companion object {
         val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
-        val baseWssPath = with(
-            URI(
-                "wss",
-                DEFAULT_CLUSTER.rest.uri.schemeSpecificPart,
-                DEFAULT_CLUSTER.rest.uri.fragment
-            )
-        ) { "${this}/api/v1" }
+        val restUri = DEFAULT_CLUSTER.rest.uri
+        val baseWssUri = URI("wss", restUri.schemeSpecificPart, restUri.fragment)
+        val baseWssPath = "$baseWssUri/api/v1"
     }
 
     private val httpClient = HttpClient(SslContextFactory.Client(true))
