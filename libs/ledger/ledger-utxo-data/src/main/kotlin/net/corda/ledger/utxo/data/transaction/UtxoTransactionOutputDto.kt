@@ -28,8 +28,8 @@ data class UtxoTransactionOutputDto(
 
     override fun hashCode(): Int = Objects.hash(transactionId, leafIndex, info, data)
 
-    fun <T : ContractState> toStateAndRef(serializationService: SerializationService): StateAndRef<T> =
-        LazyStateAndRefImpl(
+    fun <T : ContractState> toStateAndRef(serializationService: SerializationService) =
+        LazyStateAndRefImpl<T>(
             this,
             serializationService
         )
