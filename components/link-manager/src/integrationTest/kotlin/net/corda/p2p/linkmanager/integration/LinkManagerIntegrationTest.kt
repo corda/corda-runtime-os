@@ -5,7 +5,6 @@ import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigRenderOptions
 import com.typesafe.config.ConfigValueFactory
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationSchemaVersion
@@ -22,7 +21,6 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.membership.grouppolicy.GroupPolicyProvider
-import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.read.GroupParametersReaderService
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.publisher.Publisher
@@ -32,6 +30,10 @@ import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.crypto.protocol.api.RevocationCheckMode
 import net.corda.p2p.linkmanager.LinkManager
+import net.corda.p2p.linkmanager.integration.stub.CpiInfoReadServiceStub
+import net.corda.p2p.linkmanager.integration.stub.GroupPolicyProviderStub
+import net.corda.p2p.linkmanager.integration.stub.MembershipQueryClientStub
+import net.corda.p2p.linkmanager.integration.stub.VirtualNodeInfoReadServiceStub
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.BootConfig.BOOT_MAX_ALLOWED_MSG_SIZE
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
@@ -41,14 +43,12 @@ import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
 import net.corda.test.util.eventually
 import net.corda.test.util.lifecycle.usingLifecycle
 import net.corda.utilities.seconds
-import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.extension.ExtendWith
-import org.mockito.Mockito.mock
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
 import org.slf4j.LoggerFactory
@@ -198,12 +198,12 @@ class LinkManagerIntegrationTest {
             lifecycleCoordinatorFactory,
             configReadService,
             bootstrapConfig,
-            mock(GroupPolicyProvider::class.java),
-            mock(VirtualNodeInfoReadService::class.java),
-            mock(CpiInfoReadService::class.java),
+            GroupPolicyProviderStub(),
+            VirtualNodeInfoReadServiceStub(),
+            CpiInfoReadServiceStub(),
             cryptoOpsClient,
             membershipGroupReaderProvider,
-            mock(MembershipQueryClient::class.java),
+            MembershipQueryClientStub(),
             groupParametersReaderService,
         )
 
