@@ -5,7 +5,7 @@ It is not possible to suspend the MGM.
 
 ## Set variables to be used by other commands
 
-Set the `API_URL`, to the URL of the REST worker.
+Set the `API_URL` to the URL of the REST worker.
 This may vary depending on where you have deployed your cluster and how you have forwarded the ports.
 Set `MGM_HOLDING_ID` to the short hash of the MGM's Holding Identity.
 Set `MEMBER_X500_NAME` to the X500 name of the member being suspended or re-activated.
@@ -39,13 +39,15 @@ $AUTH_INFO = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes(("admin:a
 ## Querying for Members
 
 The member lookup REST endpoint can be used to query for all members with a certain status.
+It is possible to query for members with status `ACTIVE` or `SUSPENDED`, by default only `ACTIVE` members are shown.
+Multiple statuses can be queried for together.
 For example to query for all members with status `SUSPENDED`:
 
 <details>
 <summary>Bash</summary>
 
 ```bash
-curl --insecure -u admin:admin -X 'GET' "$API_URL/members/$MGM_HOLDING_ID?statuses=SUSPENDED"
+curl --insecure -u admin:admin "$API_URL/members/$MGM_HOLDING_ID?statuses=SUSPENDED"
 ```
 
 </details>
@@ -61,6 +63,7 @@ Invoke-RestMethod -SkipCertificateCheck  -Headers @{Authorization=("Basic {0}" -
 </details>
 
 From this the serial number of each member's member information can be extracted from the `corda.serial` field inside the `mgmContext`.
+This is used in the following APIs.
 Only the MGM can query for `SUSPENDED` members.
 
 ## Suspending a Member
@@ -87,7 +90,9 @@ Invoke-RestMethod -SkipCertificateCheck  -Headers @{Authorization=("Basic {0}" -
 </details>
 
 Where `<SERIAL NUMBER>` is the current serial number of the member information.
-If the serial number doesn't match, then the REST method will return a 503.
+The `<SERIAL NUMBER>` is optional, if it is not specified, then the latest serial number will be used.
+However, we recommend always specifying the serial number in the request, to avoid suspending a member based on outdated information.
+If the serial number doesn't match, then the REST method will return a 409 CONFLICT.
 This can happen if another process has updated the member information, before the suspension operation.
 The operator can, then re-query the member lookup REST endpoint and decide if they still want to proceed with the operation.
 
@@ -116,6 +121,8 @@ Invoke-RestMethod -SkipCertificateCheck  -Headers @{Authorization=("Basic {0}" -
 </details>
 
 Where `<SERIAL NUMBER>` is the current serial number of the member information.
-If the serial number doesn't match, then the REST method will return a 503.
+The `<SERIAL NUMBER>` is optional, if it is not specified, then the latest serial number will be used.
+However, we recommend always specifying the serial number in the request, to avoid re-activating a member based on outdated information.
+If the serial number doesn't match, then the REST method will return a 409 CONFLICT.
 This works in the same way as for [Suspending a Member](#suspending-a-Member).
 Once a member has been re-activated it flow communication between it and other members can resume.
