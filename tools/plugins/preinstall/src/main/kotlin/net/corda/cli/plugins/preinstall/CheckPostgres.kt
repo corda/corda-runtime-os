@@ -43,9 +43,9 @@ class CheckPostgres : Runnable, PluginContext(){
         }
         catch(e: SQLException) {
             e.cause?.let{
-                log("${e.message} Caused by ${e.cause}", ERROR)
+                log("Postgres DB connection unsuccessful: ${e.message} Caused by ${e.cause}", ERROR)
             } ?: run {
-                log("${e.message}", ERROR)
+                log("Postgres DB connection unsuccessful: ${e.message}", ERROR)
             }
         }
     }

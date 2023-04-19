@@ -41,6 +41,7 @@ class CheckLimits : Runnable, PluginContext() {
             "GI", "GIB" -> 1000L * 1000L * 1000L
             "MI", "MIB" -> 1000L * 1000L
             "KI", "KIB" -> 1000L
+            "B" -> 1L
             else -> if (unit.isEmpty()) 1L else throw IllegalArgumentException("Invalid memory unit: $unit")
         }
 
