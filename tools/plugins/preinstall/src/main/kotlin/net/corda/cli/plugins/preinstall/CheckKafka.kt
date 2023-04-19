@@ -14,26 +14,28 @@ import java.util.concurrent.ExecutionException
 @CommandLine.Command(name = "check-kafka", description = ["Check that Kafka is up and that the credentials work."])
 class CheckKafka : Runnable, PluginContext() {
 
-    @Parameters(index = "0", description = ["The yaml file containing either the username and password value, " +
-            "or valueFrom.secretKeyRef.key fields for Kafka."])
+    @Parameters(index = "0", description = ["The yaml file containing the Kafka, SASL, and TLS configurations"])
     lateinit var path: String
 
-    @Option(names = ["-n", "--namespace"], description = ["The namespace in which to look for the secrets"])
+    @Option(names = ["-n", "--namespace"], description = ["The namespace in which to look for the Kafka secrets if TLS or " +
+            "SASL is enabled"])
     var namespace: String? = null
 
-    @Option(names = ["-f", "--file"], description = ["The file location of the truststore."])
+    @Option(names = ["-f", "--file"], description = ["The file location of the truststore if TLS is enabled"])
     var truststoreLocation: String? = null
 
-    @Option(names = ["-t", "--timeout"], description = ["The timeout in milliseconds for testing the kafka connection. Defaults to 3000."])
+    @Option(names = ["-t", "--timeout"], description = ["The timeout in milliseconds for testing the kafka connection - " +
+            "defaults to 3000"])
     var timeout: Int = 3000
 
-    @Option(names = ["-r", "--replicas"], description = ["The replica count of the Kafka cluster."])
+    @Option(names = ["-r", "--replicas"], description = ["The replica count of the Kafka cluster, if you want to check the " +
+            "number of brokers are correctly configured"])
     var replicaCount: Int? = null
 
     @Option(names = ["-v", "--verbose"], description = ["Display additional information when checking resources"])
     var verbose: Boolean = false
 
-    @Option(names = ["-d", "--debug"], description = ["Show information about limit calculation for debugging purposes"])
+    @Option(names = ["-d", "--debug"], description = ["Show information about kafka config creation for debugging purposes"])
     var debug: Boolean = false
 
     private fun getKafkaProperties(yaml: Kafka, saslUsername: String, saslPassword: String, truststorePassword: String): Properties? {

@@ -8,10 +8,10 @@ import picocli.CommandLine
 import picocli.CommandLine.Parameters
 import picocli.CommandLine.Option
 
-@CommandLine.Command(name = "check-limits", description = ["Check the resource limits have been assigned."])
+@CommandLine.Command(name = "check-limits", description = ["Check the resource limits have been assigned correctly."])
 class CheckLimits : Runnable, PluginContext() {
 
-    @Parameters(index = "0", description = ["The yaml file containing resource limit overrides for the corda install."])
+    @Parameters(index = "0", description = ["The yaml file containing resource limit overrides for the corda install"])
     lateinit var path: String
 
     @Option(names = ["-v", "--verbose"], description = ["Display additional information when checking resources"])

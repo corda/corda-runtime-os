@@ -8,20 +8,20 @@ import java.sql.SQLException
 import net.corda.cli.plugins.preinstall.PreInstallPlugin.DB
 import net.corda.cli.plugins.preinstall.PreInstallPlugin.PluginContext
 
-@CommandLine.Command(name = "check-postgres", description = ["Check that the postgres DB is up and that the credentials work."])
+@CommandLine.Command(name = "check-postgres", description = ["Check that the PostgreSQL DB is up and that the credentials work."])
 class CheckPostgres : Runnable, PluginContext(){
 
     @Parameters(index = "0", description = ["The yaml file containing either the username and password value, " +
-            "or valueFrom.secretKeyRef.key fields for Postgres."])
+            "or valueFrom.secretKeyRef.key fields for Postgres"])
     lateinit var path: String
 
-    @Option(names = ["-n", "--namespace"], description = ["The namespace in which to look for the secrets"])
+    @Option(names = ["-n", "--namespace"], description = ["The namespace in which to look for the secrets if there are any"])
     var namespace: String? = null
 
-    @Option(names = ["-v", "--verbose"], description = ["Display additional information when checking resources"])
+    @Option(names = ["-v", "--verbose"], description = ["Display additional information when connecting to postgres"])
     var verbose: Boolean = false
 
-    @Option(names = ["-d", "--debug"], description = ["Show information about limit calculation for debugging purposes"])
+    @Option(names = ["-d", "--debug"], description = ["Show extra information while connecting to Postgres for debugging purposes"])
     var debug: Boolean = false
 
     override fun run() {

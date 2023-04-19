@@ -1,4 +1,17 @@
+
 # Pre-install Plugin for the Corda CLI
+
+Preinstall checks for corda. To run the plugin using the Corda CLI Plugin Host, first compile the plugin like so:
+
+	./gradlew clean :tools:plugins:preinstall:build
+
+Then copy the build files from `corda-runtime-os` to `corda-cli-plugin-host`:
+
+	cp ./corda-runtime-os/tools/plugins/preinstall/build/libs/preinstall-cli-plugin-*.jar ./corda-cli-plugin-host/build/plugins/ 
+
+Finally, you can run the plugin from the cli plugin host with:
+
+	./gradlew run --args="preinstall \<subcommand\> [options] \<path\>"
 
 ## check-limits
 Check the resource limits have been assigned correctly.
@@ -31,12 +44,12 @@ Check that Kafka is up and that the credentials work.
 
       <path>                  The yaml file containing the Kafka, SASL, and TLS configurations
 	  -d, --debug             Show information about kafka config creation for debugging 
-							  purposes
+                              purposes
 	  -f, --file=<truststoreLocation>
                               The file location of the truststore if TLS is enabled
 	  -n, --namespace=<namespace>
                               The namespace in which to look for the Kafka secrets if TLS or 
-                              SASL is enabled.
+                              SASL is enabled
 	  -r, --replicas=<replicaCount>
                               The replica count of the Kafka cluster, if you want to check the 
                               number of brokers are correctly configured

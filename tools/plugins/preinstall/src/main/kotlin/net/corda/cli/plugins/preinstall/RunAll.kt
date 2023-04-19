@@ -5,26 +5,27 @@ import picocli.CommandLine
 @CommandLine.Command(name = "run-all", description = ["Runs all preinstall checks."])
 class RunAll : Runnable {
 
-    @CommandLine.Parameters(index = "0", description = ["The yaml file to parse."])
+    @CommandLine.Parameters(index = "0", description = ["The yaml file containing all configurations"])
     lateinit var path: String
 
-    @CommandLine.Option(names = ["-n", "--namespace"], description = ["The namespace in which to look for the secrets"])
+    @CommandLine.Option(names = ["-n", "--namespace"], description = ["The namespace in which to look for both the Postgres " +
+            "and Kafka secrets"])
     var namespace: String? = null
 
-    @CommandLine.Option(names = ["-f", "--file"], description = ["The file location of the truststore for kafka."])
+    @CommandLine.Option(names = ["-f", "--file"], description = ["The file location of the truststore for Kafka"])
     var truststoreLocation: String? = null
 
-    @CommandLine.Option(names = ["-r", "--replicas"], description = ["The replica count of the Kafka cluster."])
-    var replicaCount: Int? = null
-
     @CommandLine.Option(names = ["-t", "--timeout"], description = ["The timeout in milliseconds for testing the kafka " +
-            "connection. Defaults to 3000."])
+            "connection - defaults to 3000"])
     var timeout: Int = 3000
 
-    @CommandLine.Option(names = ["-v", "--verbose"], description = ["Display additional information when checking resources"])
+    @CommandLine.Option(names = ["-r", "--replicas"], description = ["The replica count of the Kafka cluster"])
+    var replicaCount: Int? = null
+
+    @CommandLine.Option(names = ["-v", "--verbose"], description = ["Display additional information about the configuration provided"])
     var verbose: Boolean = false
 
-    @CommandLine.Option(names = ["-d", "--debug"], description = ["Show information about limit calculation for debugging purposes"])
+    @CommandLine.Option(names = ["-d", "--debug"], description = ["Show information for debugging purposes"])
     var debug: Boolean = false
 
     // Suppress Detekt's spread operator warning. The array copy here is minor and so performance decrease is negligible.
