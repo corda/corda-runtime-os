@@ -49,7 +49,6 @@ internal class CommandsRetryManager(
         state: MembershipAsyncRequestState?,
         event: Record<String, MembershipAsyncRequestState>,
     ): StateAndEventProcessor.Response<MembershipAsyncRequestState> {
-        logger.info("QQQ in onNext, event: ${event.key}; ${event.value?.request?.requestId}")
         return StateAndEventProcessor.Response(
             updatedState = event.value,
             responseEvents = emptyList(),
@@ -68,17 +67,14 @@ internal class CommandsRetryManager(
     }
 
     override fun onPartitionSynced(states: Map<String, MembershipAsyncRequestState>) {
-        logger.info("QQQ onPartitionSynced ${states.map { it.key to it.value.request.requestId }}")
         states.forEach(::addTimer)
     }
 
     override fun onPartitionLost(states: Map<String, MembershipAsyncRequestState>) {
-        logger.info("QQQ onPartitionLost ${states.map { it.key to it.value.request.requestId }}")
         states.keys.forEach(::cancelTimers)
     }
 
     override fun onPostCommit(updatedStates: Map<String, MembershipAsyncRequestState?>) {
-        logger.info("QQQ onPostCommit ${updatedStates.map { it.key to it.value?.request?.requestId }}")
         updatedStates.forEach { (requestId, state) ->
             if (state == null) {
                 cancelTimers(requestId)
@@ -95,11 +91,9 @@ internal class CommandsRetryManager(
             else -> Duration.ofSeconds(WAIT_AFTER_SENT_TO_MGM_SECONDS)
         }
         if (duration.isNegative) {
-            logger.info("QQQ addTimer negative: ${state.request.requestId} $requestId")
             publishEvent(state.request, state)
         } else {
             logger.debug("Request $requestId will be retried in ${duration.seconds} seconds")
-            logger.info("QQQ addTimer positive: ${state.request.requestId} $requestId")
             timers.compute(requestId) { _, future ->
                 future?.cancel(false)
                 scheduledExecutorService.schedule(
@@ -114,7 +108,6 @@ internal class CommandsRetryManager(
     }
 
     private fun cancelTimers(requestId: String) {
-        logger.info("QQQ cancelTimers  $requestId")
         val future = timers.remove(requestId)
         if (future != null) {
             logger.debug("Request $requestId will not be retried")
@@ -129,7 +122,6 @@ internal class CommandsRetryManager(
         val requestId = request.requestId
         val holdingId = request.holdingIdentityId
         logger.info("Retrying request $requestId")
-        logger.info("QQQ publishEvent  $requestId, $holdingId")
         val event = Record(
             MEMBERSHIP_ASYNC_REQUEST_TOPIC,
             holdingId,
