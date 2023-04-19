@@ -23,5 +23,7 @@ dependencies {
     // Common and API packages pulled in as transitive dependencies through client
     cordapp project(':notary-plugins:notary-plugin-non-validating:notary-plugin-non-validating-client')
     cordapp project(':testing:cpbs:ledger-utxo-demo-contract')
-
+    //cordapp 'org.corda:weft:5.5.4'
+    implementation "com.fasterxml.jackson.module:jackson-module-kotlin:2.12.4"
+    implementation "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.12.5"
 }

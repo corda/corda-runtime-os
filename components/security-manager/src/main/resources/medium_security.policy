@@ -55,7 +55,6 @@ DENY {
 (java.lang.management.ManagementPermission "control" "")
 (java.lang.management.ManagementPermission "monitor" "")
 (java.lang.RuntimePermission "createClassLoader" "")
-(java.lang.RuntimePermission "getClassLoader" "")
 (java.lang.RuntimePermission "setContextClassLoader" "")
 (java.lang.RuntimePermission "enableContextClassLoaderOverride" "")
 (java.lang.RuntimePermission "closeClassLoader" "")
@@ -268,7 +267,6 @@ DENY {
 (java.net.SocketPermission "*:1−" "accept,listen,connect,resolve")
 (java.net.URLPermission "http://*:*" "*:*")
 (java.net.URLPermission "https://*:*" "*:*")
-(java.lang.RuntimePermission "accessDeclaredMembers" "")
 (java.lang.reflect.ReflectPermission "suppressAccessChecks" "")
 (java.lang.reflect.ReflectPermission "newProxyInPackage.*" "")
 

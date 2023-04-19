@@ -1,10 +1,10 @@
 {
   "facade-flow-mapping": [
     {
-      "facade-id": "org.corda.interop/platform/hello-interop/v1.0",
+      "facade-id": "/com/r3/tokens/sample/v1.0",
       "facade-method-mapping": [
         {
-          "facade-method": "say-hello",
+          "facade-method": "hello",
           "flow-name": "net.cordapp.testing.testflows.FacadeInvocationResponderFlow"
         },
         {
