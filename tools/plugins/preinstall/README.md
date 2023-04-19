@@ -11,7 +11,7 @@ Then copy the build files from `corda-runtime-os` to `corda-cli-plugin-host`:
 
 Finally, you can run the plugin from the cli plugin host with:
 
-	./gradlew run --args="preinstall \<subcommand\> [options] \<path\>"
+	./gradlew run --args="preinstall <subcommand> [options] <path>"
 
 ## check-limits
 Check the resource limits have been assigned correctly.
