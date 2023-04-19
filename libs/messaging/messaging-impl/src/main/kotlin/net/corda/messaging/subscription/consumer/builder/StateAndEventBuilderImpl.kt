@@ -88,8 +88,7 @@ class StateAndEventBuilderImpl @Activate constructor(
         if (statePartitions.size != eventPartitions.size) {
             val errorMsg = "Mismatch between state and event partitions."
             log.warn(errorMsg +" state : ${statePartitions.joinToString()}" +
-                        ", event: ${eventPartitions.joinToString()}"
-            )
+                        ", event: ${eventPartitions.joinToString()}")
             throw CordaRuntimeException(errorMsg)
         }
     }
