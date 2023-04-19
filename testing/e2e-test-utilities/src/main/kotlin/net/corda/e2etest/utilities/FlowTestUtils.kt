@@ -42,9 +42,17 @@ fun startRpcFlow(
         requestId
     }
 }
-
-fun startRpcFlow(holdingId: String, args: Map<String, Any>, flowName: String, expectedCode: Int = 202): String {
+fun startRpcFlow(
+    holdingId: String,
+    args: Map<String, Any>,
+    flowName: String,
+    expectedCode: Int = 202,
+    clusterInfo: ClusterInfo? = null,
+): String {
     return cluster {
+        if (clusterInfo != null) {
+            init(clusterInfo)
+        }
         endpoint(
             CLUSTER_URI,
             USERNAME,
@@ -69,8 +77,15 @@ fun startRpcFlow(holdingId: String, args: Map<String, Any>, flowName: String, ex
     }
 }
 
-fun awaitRpcFlowFinished(holdingId: String, requestId: String): FlowStatus {
+fun awaitRpcFlowFinished(
+    holdingId: String,
+    requestId: String,
+    clusterInfo: ClusterInfo? = null,
+): FlowStatus {
     return cluster {
+        if (clusterInfo != null) {
+            init(clusterInfo)
+        }
         endpoint(
             CLUSTER_URI,
             USERNAME,
@@ -92,8 +107,16 @@ fun awaitRpcFlowFinished(holdingId: String, requestId: String): FlowStatus {
     }
 }
 
-fun getFlowStatus(holdingId: String, requestId: String, expectedCode: Int): FlowStatus {
-    return  cluster {
+fun getFlowStatus(
+    holdingId: String,
+    requestId: String,
+    expectedCode: Int,
+    clusterInfo: ClusterInfo? = null,
+): FlowStatus {
+    return cluster {
+        if (clusterInfo != null) {
+            init(clusterInfo)
+        }
         endpoint(
             CLUSTER_URI,
             USERNAME,

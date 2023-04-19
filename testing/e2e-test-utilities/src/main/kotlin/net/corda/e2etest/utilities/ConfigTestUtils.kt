@@ -38,8 +38,11 @@ fun getConfig(section: String): JsonNode {
  * The currently installed schema and configuration versions are automatically obtained from the running system
  * before updating.
  */
-fun updateConfig(config: String, section: String) {
+fun updateConfig(config: String, section: String, clusterInfo: ClusterInfo? = null) {
     return cluster {
+        if (clusterInfo != null) {
+            init(clusterInfo)
+        }
         endpoint(
             CLUSTER_URI,
             USERNAME,
@@ -77,14 +80,19 @@ fun updateConfig(config: String, section: String) {
  * Wait for the REST API on the rest-worker to respond with an updated config value.
  * If [expectServiceToBeDown] is set to true it is expected the config endpoint will go down before coming back up with the new config.
  */
+@Suppress("LongParameterList")
 fun waitForConfigurationChange(
     section: String,
     key: String,
     value: String,
     expectServiceToBeDown: Boolean = true,
-    timeout: Duration = Duration.ofMinutes(1)
+    timeout: Duration = Duration.ofMinutes(1),
+    clusterInfo: ClusterInfo? = null,
 ) {
     cluster {
+        if (clusterInfo != null) {
+            init(clusterInfo)
+        }
         endpoint(
             CLUSTER_URI,
             USERNAME,
@@ -112,4 +120,24 @@ fun waitForConfigurationChange(
             }
         }
     }
+}
+
+fun updateConfigAndWaitForChange(
+    section: String,
+    key: String,
+    value: Any,
+    clusterInfo: ClusterInfo?,
+) {
+    updateConfig(
+        mapOf(key to value).toJsonString(),
+        section,
+        clusterInfo,
+    )
+    waitForConfigurationChange(
+        section,
+        key,
+        value.toString(),
+        expectServiceToBeDown = false,
+        clusterInfo = clusterInfo,
+    )
 }
