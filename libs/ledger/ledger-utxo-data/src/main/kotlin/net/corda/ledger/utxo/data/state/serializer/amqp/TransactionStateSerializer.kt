@@ -10,7 +10,6 @@ import net.corda.v5.ledger.utxo.EncumbranceGroup
 import org.osgi.service.component.annotations.Component
 import java.security.PublicKey
 
-// todo try to remove?
 @Component(service = [ InternalCustomSerializer::class ])
 class TransactionStateSerializer : BaseProxySerializer<TransactionStateImpl<ContractState>, TransactionStateProxy>() {
     private companion object {
