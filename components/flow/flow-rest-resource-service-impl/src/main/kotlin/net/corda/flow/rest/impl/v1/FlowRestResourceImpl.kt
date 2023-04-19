@@ -40,6 +40,7 @@ import net.corda.rest.ws.DuplexChannel
 import net.corda.rest.ws.WebSocketValidationException
 import net.corda.schema.Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC
 import net.corda.schema.Schemas.Flow.FLOW_STATUS_TOPIC
+import net.corda.utilities.MDC_CLIENT_ID
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.read.rest.extensions.getByHoldingIdentityShortHashOrThrow
 import net.corda.virtualnode.toAvro
@@ -166,7 +167,10 @@ class FlowRestResourceImpl @Activate constructor(
 
         // TODO Platform properties to be populated correctly, for now a fixed 'account zero' is the only property
         // This is a placeholder which indicates access to everything, see CORE-6076
-        val flowContextPlatformProperties = mapOf("corda.account" to "account-zero")
+        val flowContextPlatformProperties = mapOf(
+            "corda.account" to "account-zero",
+            MDC_CLIENT_ID to clientRequestId
+        )
         val startEvent =
             messageFactory.createStartFlowEvent(
                 clientRequestId,

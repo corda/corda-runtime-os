@@ -78,7 +78,8 @@ class ExternalEventManagerImpl(
         externalEventResponse: ExternalEventResponse
     ): ExternalEventState {
         val requestId = externalEventResponse.requestId
-        log.debug { "Processing received external event response with id $requestId" }
+        log.info("Processing response for external event with id '{}'", requestId)
+
         if (requestId == externalEventState.requestId) {
             log.debug { "External event response with id $requestId matched last sent request" }
             externalEventState.response = externalEventResponse
@@ -98,6 +99,7 @@ class ExternalEventManagerImpl(
                         }
                         ExternalEventStateStatus(ExternalEventStateType.RETRY, exception)
                     }
+
                     ExternalEventResponseErrorType.PLATFORM -> {
                         log.debug {
                             "Received a platform error in external event response: $exception. Updating external " +
@@ -105,6 +107,7 @@ class ExternalEventManagerImpl(
                         }
                         ExternalEventStateStatus(ExternalEventStateType.PLATFORM_ERROR, exception)
                     }
+
                     ExternalEventResponseErrorType.FATAL -> {
                         log.debug {
                             "Received a fatal error in external event response: $exception. Updating external event " +
@@ -112,6 +115,7 @@ class ExternalEventManagerImpl(
                         }
                         ExternalEventStateStatus(ExternalEventStateType.FATAL_ERROR, exception)
                     }
+
                     else -> throw FlowFatalException(
                         "Unexpected null ${Error::class.java.name} for external event with request id $requestId"
                     )
@@ -154,6 +158,7 @@ class ExternalEventManagerImpl(
                 }
                 getAndUpdateEventToSend(externalEventState, instant, config)
             }
+
             canRetryEvent(externalEventState, instant) -> {
                 log.debug {
                     "Resending external event request ${externalEventState.requestId} which was last sent at " +
@@ -161,6 +166,7 @@ class ExternalEventManagerImpl(
                 }
                 getAndUpdateEventToSend(externalEventState, instant, config)
             }
+
             else -> externalEventState to null
         }
     }
@@ -170,7 +176,11 @@ class ExternalEventManagerImpl(
     }
 
     private fun canRetryEvent(externalEventState: ExternalEventState, instant: Instant): Boolean {
-        return if (externalEventState.status.type !in setOf(ExternalEventStateType.PLATFORM_ERROR, ExternalEventStateType.FATAL_ERROR)) {
+        return if (externalEventState.status.type !in setOf(
+                ExternalEventStateType.PLATFORM_ERROR,
+                ExternalEventStateType.FATAL_ERROR
+            )
+        ) {
             val sendTimestamp = externalEventState.sendTimestamp.truncatedTo(ChronoUnit.MILLIS).toEpochMilli()
             val currentTimestamp = instant.truncatedTo(ChronoUnit.MILLIS).toEpochMilli()
             sendTimestamp < currentTimestamp
@@ -187,6 +197,8 @@ class ExternalEventManagerImpl(
         val eventToSend = externalEventState.eventToSend
         eventToSend.timestamp = instant
         externalEventState.sendTimestamp = instant.plusMillis(config.getLong(FlowConfig.EXTERNAL_EVENT_MESSAGE_RESEND_WINDOW))
+        log.info("Dispatching external event with id '{}' to '{}'", externalEventState.requestId, eventToSend.topic)
+
         return externalEventState to Record(eventToSend.topic, eventToSend.key.array(), eventToSend.payload.array())
     }
 }

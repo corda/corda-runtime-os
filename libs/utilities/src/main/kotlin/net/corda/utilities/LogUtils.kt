@@ -7,6 +7,12 @@ import java.util.Collections
 import org.slf4j.Logger
 import org.slf4j.MDC
 
+/**
+ * Common MDC properties used across corda.
+ */
+const val MDC_CLIENT_ID = "corda.client.id"
+const val MDC_EXTERNAL_EVENT_ID = "corda.external.event.id"
+
 inline fun <T> logElapsedTime(label: String, logger: Logger, body: () -> T): T {
     // Use nanoTime as it's monotonic.
     val now = System.nanoTime()
