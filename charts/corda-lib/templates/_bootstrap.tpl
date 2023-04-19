@@ -379,7 +379,7 @@ a second init container to execute the output SQL to the relevant database
 
 {{- define "corda.generateAndExecuteSql" -}}
 {{- /* define 2 init containers, which run in sequence. First run corda-cli initial-config to generate some SQL, storing in a persistent volume called working-volume. Second is a postgres image which mounts the same persistent volume and executes the SQL. */ -}}  
-- name: {{ printf "%02d" .sequenceNumber }}-create-{{ .name }}
+- name: {{ printf "%02d-create-%s" .sequenceNumber .name }}
   image: {{ include "corda.bootstrapCliImage" . }}
   imagePullPolicy: {{ .Values.imagePullPolicy }}
   {{- include "corda.bootstrapResources" . | nindent 2 }}
@@ -456,7 +456,7 @@ a second init container to execute the output SQL to the relevant database
     {{- if eq .environmentVariablePrefix "CRYPTO_DB_USER" -}}
       {{- include "corda.cryptoDbUserEnv" . | nindent 4 -}}
     {{- end }}
-- name: {{ printf "%02d" (add .sequenceNumber 1)}}-apply-{{ .name }}
+- name: {{ printf "%02d-apply-%s" (add .sequenceNumber 1) .name }}
   image: {{ include "corda.bootstrapDbClientImage" . }}
   imagePullPolicy: {{ .Values.imagePullPolicy }}
   {{- include "corda.bootstrapResources" . | nindent 2 }}
