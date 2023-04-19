@@ -19,7 +19,5 @@ dependencies {
     implementation 'net.corda:corda-base'
     implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation("org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion") {
-        exclude group: 'mockito-core'
-    }
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 }

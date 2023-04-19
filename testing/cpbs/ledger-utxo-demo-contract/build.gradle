@@ -19,7 +19,5 @@ dependencies {
     testImplementation project(":libs:application:application-impl")
     testImplementation project(":libs:sandbox-types")
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation("org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion") {
-        exclude group: 'mockito-core'
-    }
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 }

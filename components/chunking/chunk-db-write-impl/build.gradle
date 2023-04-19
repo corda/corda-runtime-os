@@ -67,9 +67,7 @@ dependencies {
 
     testImplementation "com.google.jimfs:jimfs:$jimfsVersion"
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation("org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion") {
-        exclude group: 'mockito-core'
-    }
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 
     testRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
     testRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"

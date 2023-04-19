@@ -27,9 +27,7 @@ dependencies {
     testImplementation "org.pf4j:pf4j:${pf4jVersion}"
     testImplementation "org.junit.jupiter:junit-jupiter:${junit5Version}"
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation("org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion") {
-        exclude group: 'mockito-core'
-    }
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation "com.github.stefanbirkner:system-lambda:1.2.1"
 }
 
