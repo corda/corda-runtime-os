@@ -42,9 +42,7 @@ dependencies {
     implementation project(':notary-plugins:notary-plugin-common')
 
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation("org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion") {
-        exclude group: 'mockito-core'
-    }
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
 
     testImplementation project(':testing:test-serialization')

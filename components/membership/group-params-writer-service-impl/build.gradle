@@ -23,9 +23,7 @@ dependencies {
     implementation project(':libs:messaging:messaging')
 
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation("org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion") {
-        exclude group: 'mockito-core'
-    }
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation project(':libs:membership:membership-impl')
     testImplementation project(":testing:layered-property-map-testkit")
     testImplementation project(":testing:test-utilities")

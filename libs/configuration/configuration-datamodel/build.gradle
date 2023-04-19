@@ -24,9 +24,7 @@ dependencies {
     integrationTestRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
 
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation("org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion") {
-        exclude group: 'mockito-core'
-    }
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 }
 
 tasks.named('jar', Jar) {
