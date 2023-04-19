@@ -29,7 +29,10 @@ dependencies {
 
     implementation "com.typesafe:config:$typeSafeConfigVersion"
 
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
+    testImplementation("org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion") {
+        exclude group: 'mockito-core'
+    }
     testImplementation project(':components:membership:registration-impl')
     testImplementation project(':components:configuration:configuration-read-service')
     testImplementation project(':libs:messaging:messaging')

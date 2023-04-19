@@ -25,7 +25,10 @@ dependencies {
     implementation "org.slf4j:slf4j-api:$slf4jVersion"
 
     testImplementation "org.assertj:assertj-core:$assertjVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
+    testImplementation("org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion") {
+        exclude group: 'mockito-core'
+    }
 
     testImplementation project(":libs:lifecycle:lifecycle-test-impl")
     testImplementation project(":testing:test-utilities")

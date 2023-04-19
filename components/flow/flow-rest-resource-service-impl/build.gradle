@@ -36,7 +36,10 @@ dependencies {
     implementation "com.google.guava:guava:$guavaVersion"
     implementation "org.apache.commons:commons-lang3:$commonsLangVersion"
 
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
+    testImplementation("org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion") {
+        exclude group: 'mockito-core'
+    }
     testImplementation project(":libs:lifecycle:lifecycle-test-impl")
     testImplementation project(':testing:test-utilities')
 }

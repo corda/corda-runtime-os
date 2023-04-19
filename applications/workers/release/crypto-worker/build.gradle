@@ -33,7 +33,10 @@ dependencies {
 
 
     testRuntimeOnly "org.apache.felix:org.apache.felix.framework:$felixVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
+    testImplementation("org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion") {
+        exclude group: 'mockito-core'
+    }
 
     // This puts the jdbc driver into the docker image in the /opt/jdbc-driver folder
     // this folder can contain many jdbc drivers (and DataSourceFactory provider bundles).

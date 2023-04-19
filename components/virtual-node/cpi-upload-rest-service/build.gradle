@@ -29,7 +29,9 @@ dependencies {
     implementation 'net.corda:corda-topic-schema'
     implementation project(":libs:packaging:packaging")
     implementation project(":libs:utilities")
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
-    testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
+    testImplementation("org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion") {
+        exclude group: 'mockito-core'
+    }
     testImplementation project(':libs:virtual-node:cpi-upload-manager-impl')
 }

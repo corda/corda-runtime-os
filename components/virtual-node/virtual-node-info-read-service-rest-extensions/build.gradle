@@ -16,5 +16,8 @@ dependencies {
     implementation project(":components:virtual-node:virtual-node-info-read-service")
 
     testImplementation project(":testing:test-utilities")
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
+    testImplementation("org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion") {
+        exclude group: 'mockito-core'
+    }
 }

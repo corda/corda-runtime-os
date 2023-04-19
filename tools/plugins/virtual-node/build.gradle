@@ -36,8 +36,10 @@ dependencies {
     runtimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
 
     testImplementation 'org.jetbrains.kotlin:kotlin-stdlib'
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
-    testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
+    testImplementation("org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion") {
+        exclude group: 'mockito-core'
+    }
     testImplementation "org.pf4j:pf4j:$pf4jVersion"
     testCompileOnly "net.corda.cli.host:api:$pluginHostVersion"
 }

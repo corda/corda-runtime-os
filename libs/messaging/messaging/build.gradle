@@ -18,7 +18,10 @@ dependencies {
     implementation project(":libs:messaging:message-bus")
     implementation project(":libs:configuration:configuration-core")
 
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
+    testImplementation("org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion") {
+        exclude group: 'mockito-core'
+    }
 }
 
 description 'Messaging API'

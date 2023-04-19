@@ -27,7 +27,9 @@ dependencies {
     implementation project(':libs:membership:certificates-common')
     implementation project(":libs:rest:rest")
 
-    testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
+    testImplementation("org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion") {
+        exclude group: 'mockito-core'
+    }
     testImplementation project(':testing:test-utilities')
 }

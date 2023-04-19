@@ -22,6 +22,8 @@ dependencies {
     implementation "net.corda:corda-topic-schema"
     implementation 'net.corda:corda-crypto'
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
-    testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
+    testImplementation("org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion") {
+        exclude group: 'mockito-core'
+    }
 }

@@ -13,6 +13,9 @@ dependencies {
     implementation 'net.corda:corda-base'
     implementation project(":libs:messaging:messaging")
 
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
+    testImplementation("org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion") {
+        exclude group: 'mockito-core'
+    }
     testImplementation "net.corda:corda-avro-schema"
 }
