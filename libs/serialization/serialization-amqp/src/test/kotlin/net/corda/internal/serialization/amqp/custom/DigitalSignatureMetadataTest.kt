@@ -7,16 +7,21 @@ import net.corda.internal.serialization.amqp.testutils.serialize
 import net.corda.v5.application.crypto.DigitalSignatureMetadata
 import org.junit.jupiter.api.Test
 import java.time.Instant
+import kotlin.random.Random
 import kotlin.test.assertEquals
 
 class DigitalSignatureMetadataTest {
     companion object {
         const val MAP_CAPACITY = 2
         const val MAP_LOAD_FACTOR = 3.00f
+
+        const val ADD = 0
+        const val REMOVE = 1
+        const val SKIP = 2
     }
 
     @Test
-    fun `DigitalSignatureMetadata serializes deterministically`() {
+    fun `DigitalSignatureMetadata with properties of different order serializes deterministically`() {
         // We are creating below 2 maps with 2 buckets each to easily reproduce equal maps i.e.
         // same elements but different iteration through them and thus different serializations.
 
@@ -43,36 +48,93 @@ class DigitalSignatureMetadataTest {
         // The two maps are equal
         assertEquals(digitalSignatureProperties1, digitalSignatureProperties2)
 
-        val instant = Instant.now()
-        val signatureSpec = SignatureSpecs.RSA_SHA256
-
-        val digitalSignatureMetadata1 =
-            DigitalSignatureMetadata(
-                instant,
-                signatureSpec,
-                digitalSignatureProperties1
-            )
-
-        val digitalSignatureMetadata2 =
-            DigitalSignatureMetadata(
-                instant,
-                signatureSpec,
-                digitalSignatureProperties2
-            )
-
-        // The two maps serializations are different due to the different order their values are iterated through
-        val bytes1 =
-            SerializationOutput(ReusableSerialiseDeserializeAssert.factory)
-                .serialize(digitalSignatureMetadata1)
-
-        val bytes2 =
-            SerializationOutput(ReusableSerialiseDeserializeAssert.factory)
-                .serialize(digitalSignatureMetadata2)
-
-        // With `DigitalSignatureMetadataSerializer` we make their serializations equal by
-        // converting DigitalSignatureMetadata.properties into a sorted map first and then serialize that instead.
-        assertEquals(bytes1, bytes2)
-        ReusableSerialiseDeserializeAssert.serializeDeserializeAssert(digitalSignatureMetadata1)
-        ReusableSerialiseDeserializeAssert.serializeDeserializeAssert(digitalSignatureMetadata2)
+        serDesDigitalSignatureMetadata(digitalSignatureProperties1, digitalSignatureProperties2)
     }
+
+    @Test
+    fun `DigitalSignatureMetadata round trip serializes deterministically`() {
+        val digitalSignatureProperties1 = hashMapOf<String, String>()
+        (0 until 1000).forEach {
+            digitalSignatureProperties1["$it"] = "$it"
+        }
+
+        val digitalSignatureProperties2 = hashMapOf<String, String>()
+        val addedEntriesKeys = arrayListOf<String>()
+        val removedEntriesKeys = arrayListOf<String>()
+        val skippedEntriesKeys = arrayListOf<String>()
+        (0 until 1000).forEach {
+            when (Random.nextInt(3)) {
+                ADD -> {
+                    digitalSignatureProperties2["$it"] = "$it"
+                    addedEntriesKeys.add("$it")
+                }
+
+                REMOVE -> {
+                    skippedEntriesKeys.add("$it")
+                    if (addedEntriesKeys.size > 0) {
+                        val removedEntry = addedEntriesKeys.removeAt(Random.nextInt(addedEntriesKeys.size))
+                        digitalSignatureProperties2.remove(removedEntry)
+                            ?: throw IllegalStateException("Should be able to find key")
+                        removedEntriesKeys.add(removedEntry)
+                    }
+                }
+
+                SKIP -> {
+                    skippedEntriesKeys.add("$it")
+                }
+            }
+        }
+
+        while (removedEntriesKeys.isNotEmpty()) {
+            val removedEntry = removedEntriesKeys.removeAt(Random.nextInt(removedEntriesKeys.size))
+            digitalSignatureProperties2[removedEntry] = removedEntry
+        }
+
+        while (skippedEntriesKeys.isNotEmpty()) {
+            val skippedEntry = skippedEntriesKeys.removeAt(Random.nextInt(skippedEntriesKeys.size))
+            digitalSignatureProperties2[skippedEntry] = skippedEntry
+        }
+
+        // The two maps are equal
+        assertEquals(digitalSignatureProperties1, digitalSignatureProperties2)
+
+        serDesDigitalSignatureMetadata(digitalSignatureProperties1, digitalSignatureProperties2)
+    }
+}
+
+private fun serDesDigitalSignatureMetadata(
+    digitalSignatureProperties1: HashMap<String, String>,
+    digitalSignatureProperties2: HashMap<String, String>
+) {
+    val instant = Instant.now()
+    val signatureSpec = SignatureSpecs.RSA_SHA256
+
+    val digitalSignatureMetadata1 =
+        DigitalSignatureMetadata(
+            instant,
+            signatureSpec,
+            digitalSignatureProperties1
+        )
+
+    val digitalSignatureMetadata2 =
+        DigitalSignatureMetadata(
+            instant,
+            signatureSpec,
+            digitalSignatureProperties2
+        )
+
+    // The two maps serializations are different due to the different order their values are iterated through
+    val bytes1 =
+        SerializationOutput(ReusableSerialiseDeserializeAssert.factory)
+            .serialize(digitalSignatureMetadata1)
+
+    val bytes2 =
+        SerializationOutput(ReusableSerialiseDeserializeAssert.factory)
+            .serialize(digitalSignatureMetadata2)
+
+    // With `DigitalSignatureMetadataSerializer` we make their serializations equal by
+    // converting DigitalSignatureMetadata.properties into a sorted map first and then serialize that instead.
+    assertEquals(bytes1, bytes2)
+    ReusableSerialiseDeserializeAssert.serializeDeserializeAssert(digitalSignatureMetadata1)
+    ReusableSerialiseDeserializeAssert.serializeDeserializeAssert(digitalSignatureMetadata2)
 }
