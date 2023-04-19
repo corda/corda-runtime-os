@@ -52,7 +52,7 @@ class DigitalSignatureMetadataTest {
     }
 
     @Test
-    fun `DigitalSignatureMetadata round trip serializes deterministically`() {
+    fun `DigitalSignatureMetadata properties round trip serializes deterministically`() {
         val digitalSignatureProperties1 = hashMapOf<String, String>()
         (0 until 1000).forEach {
             digitalSignatureProperties1["$it"] = "$it"
