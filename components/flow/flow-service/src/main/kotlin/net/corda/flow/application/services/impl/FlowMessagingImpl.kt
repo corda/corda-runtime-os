@@ -37,6 +37,11 @@ class FlowMessagingImpl @Activate constructor(
     private val serializationService: SerializationServiceInternal
 ) : FlowMessaging, UsedByFlow, SingletonSerializeAsToken {
 
+    companion object {
+        private const val INTEROP_FACADE_ID = "INTEROP_FACADE_ID"
+        private const val INTEROP_FACADE_METHOD = "INTEROP_FACADE_METHOD"
+    }
+
     private val fiber: FlowFiber get() = flowFiberService.getExecutingFiber()
 
     @Suspendable
@@ -56,12 +61,12 @@ class FlowMessagingImpl @Activate constructor(
     @Suspendable
     override fun callFacade(
         memberName: MemberX500Name,
-        facadeName: String,
+        facadeId: String,
         methodName: String,
         payload: String
     ): String {
         // TODO revisit input/results while integrating with CORE-10430
-        val session = createInteropFlowSession(memberName, facadeName, methodName)
+        val session = createInteropFlowSession(memberName, facadeId, methodName)
         return session.sendAndReceive(String::class.java, payload)
     }
 
@@ -179,12 +184,12 @@ class FlowMessagingImpl @Activate constructor(
     }
 
     @Suspendable
-    private fun createInteropFlowSession(x500Name: MemberX500Name, facadeName: String, methodName: String): FlowSession {
+    private fun createInteropFlowSession(x500Name: MemberX500Name, facadeId: String, methodName: String): FlowSession {
         val sessionId = UUID.randomUUID().toString()
         addSessionIdToFlowStackItem(sessionId)
         return flowSessionFactory.createInitiatingFlowSession(sessionId, x500Name, { flowContextProperties ->
-            flowContextProperties.put("facadeName", facadeName)
-            flowContextProperties.put("methodName", methodName)
+            flowContextProperties.put(INTEROP_FACADE_ID, facadeId)
+            flowContextProperties.put(INTEROP_FACADE_METHOD, methodName)
         }, true)
     }
 

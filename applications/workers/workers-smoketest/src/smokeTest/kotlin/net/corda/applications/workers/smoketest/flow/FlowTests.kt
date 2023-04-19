@@ -98,7 +98,6 @@ class FlowTests {
             "net.cordapp.testing.testflows.MessagingFlow",
             "net.cordapp.testing.testflows.PersistenceFlow",
             "net.cordapp.testing.testflows.NonValidatingNotaryTestFlow",
-            "net.cordapp.testing.testflows.FacadeInvocationFlow",
             "net.cordapp.testing.testflows.ledger.TokenSelectionFlow"
         ) + invalidConstructorFlowNames + dependencyInjectionFlowNames
 
@@ -1178,7 +1177,7 @@ class FlowTests {
         val payload = "Hello world!"
 
         val args = mapOf(
-            "facadeName" to "None",
+            "facadeId" to "None",
             "methodName" to "None",
             "payload" to payload,
             "alias" to charlyX500.replace("$testRunUniqueId", "$testRunUniqueId Alias")

@@ -6,7 +6,7 @@ import net.corda.v5.base.types.MemberX500Name
 @CordaSerializable
 data class FacadeInvocation(
     val memberName: MemberX500Name,
-    val facadeName: String,
+    val facadeId: String,
     val methodName: String,
     val payload: String
 )

@@ -32,14 +32,14 @@ class FacadeInvocationFlow : ClientStartableFlow {
 
         val args = requestBody.getRequestBodyAsMap(jsonMarshallingService, String::class.java, String::class.java)
 
-        val facadeName = getArgument(args, "facadeName")
+        val facadeId = getArgument(args, "facadeId")
         val methodName = getArgument(args, "methodName")
         val alias = MemberX500Name.parse(getArgument(args,"alias"))
         val payload = getArgument(args, "payload")
 
-        log.info("Calling facade method '$methodName@$facadeName' with payload '$payload' to $alias")
+        log.info("Calling facade method '$methodName@$facadeId' with payload '$payload' to $alias")
 
-        val response = flowMessaging.callFacade(alias, facadeName, methodName, payload)
+        val response = flowMessaging.callFacade(alias, facadeId, methodName, payload)
 
         log.info("Facade responded with '$response'")
         log.info("FacadeInvocationFlow.call() ending")
