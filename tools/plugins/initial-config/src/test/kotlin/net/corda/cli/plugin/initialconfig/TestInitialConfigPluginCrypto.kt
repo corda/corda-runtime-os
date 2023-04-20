@@ -14,8 +14,11 @@ import net.corda.libs.configuration.secret.EncryptionSecretsServiceFactory
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.parallel.Execution
+import org.junit.jupiter.api.parallel.ExecutionMode
 import picocli.CommandLine
 
+@Execution(ExecutionMode.SAME_THREAD)
 class TestInitialConfigPluginCrypto {
     @Test
     fun `Should output missing options`() {
