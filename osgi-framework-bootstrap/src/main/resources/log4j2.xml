@@ -27,10 +27,37 @@
                 </Delete>
             </DefaultRolloverStrategy>
         </RollingFile>
+
+        <RollingFile name="Ledger-Detailed"
+                     fileName="logs/corda-ledger-detailed.log"
+                     filePattern="logs/corda-ledger-detailed.%d{MM-dd-yyyy}.%i.log"
+                     ignoreExceptions="false">
+            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %-5level %logger{36} %X - %msg%n"/>
+            <Policies>
+                <OnStartupTriggeringPolicy />
+                <TimeBasedTriggeringPolicy />
+                <SizeBasedTriggeringPolicy size="10 MB" />
+            </Policies>
+            <DefaultRolloverStrategy>
+                <Delete basePath="logs/">
+                    <IfFileName glob="logs/corda-ledger-detailed.*.log">
+                        <IfAny>
+                            <IfAccumulatedFileSize exceeds="500 MB" />
+                            <IfAccumulatedFileCount exceeds="10" />
+                        </IfAny>
+                    </IfFileName>
+                    <IfLastModified age="7d" />
+                </Delete>
+            </DefaultRolloverStrategy>
+        </RollingFile>
     </Appenders>
     <Loggers>
         <logger name="Console">
             <AppenderRef ref="Console" level="info"/>
+        </logger>
+
+        <logger name="net.corda.ledger" level="trace" additivity="false">
+            <AppenderRef ref="Ledger-Detailed"/>
         </logger>
 
         <!-- log warn only for these 3rd party libs -->
