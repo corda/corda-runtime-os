@@ -255,8 +255,8 @@ abstract class DeployableContainerBuilder extends DefaultTask {
             builder.setEntrypoint(
                     "/bin/sh",
                     "-c",
-                    "exec java ${javaArgs.join(" ")} -jar " + CONTAINER_LOCATION + entryName + ".jar \$@",
-                    "\$@"
+                    "exec java ${javaArgs.join(" ")} -jar " + CONTAINER_LOCATION + entryName + ".jar \"\$@\"",
+                    "\"\$@\""
             )
         }
         if (!environment.get().empty) {
