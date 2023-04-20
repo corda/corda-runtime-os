@@ -86,13 +86,20 @@ class CryptoOpsClientComponentTests {
         @JvmStatic
         fun knownCordaRPCAPIResponderExceptions(): List<Class<*>> =
             exceptionFactories.keys.map { Class.forName(it) }
-    }
 
-    private lateinit var knownTenantId: String
-    private lateinit var knownAlias: String
-    private lateinit var knownOperationContext: Map<String, String>
-    private lateinit var knownRawOperationContext: KeyValuePairList
-    private lateinit var schemeMetadata: CipherSchemeMetadata
+        private val knownTenantId = toHex(UUID.randomUUID().toString().toByteArray().sha256Bytes()).take(12)
+        private val knownAlias = UUID.randomUUID().toString()
+        private val knownOperationContext = mapOf(
+            UUID.randomUUID().toString() to UUID.randomUUID().toString()
+        )
+        private val knownRawOperationContext = KeyValuePairList(
+            knownOperationContext.map {
+                KeyValuePair(it.key, it.value)
+            }
+        )
+        private val schemeMetadata = CipherSchemeMetadataImpl()
+
+    }
     private lateinit var sender: TestRPCSender<RpcOpsRequest, RpcOpsResponse>
     private lateinit var coordinatorFactory: TestLifecycleCoordinatorFactoryImpl
     private lateinit var configurationReadService: TestConfigurationReadService
@@ -101,17 +108,6 @@ class CryptoOpsClientComponentTests {
 
     @BeforeEach
     fun setup() {
-        knownTenantId = toHex(UUID.randomUUID().toString().toByteArray().sha256Bytes()).take(12)
-        knownAlias = UUID.randomUUID().toString()
-        knownOperationContext = mapOf(
-            UUID.randomUUID().toString() to UUID.randomUUID().toString()
-        )
-        knownRawOperationContext = KeyValuePairList(
-            knownOperationContext.map {
-                KeyValuePair(it.key, it.value)
-            }
-        )
-        schemeMetadata = CipherSchemeMetadataImpl()
         coordinatorFactory = TestLifecycleCoordinatorFactoryImpl()
         sender = TestRPCSender(coordinatorFactory)
         publisherFactory = mock {
