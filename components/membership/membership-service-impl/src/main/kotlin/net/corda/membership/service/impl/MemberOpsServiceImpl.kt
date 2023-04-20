@@ -33,9 +33,10 @@ import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.schema.Schemas
 import net.corda.schema.Schemas.Membership.MEMBERSHIP_ACTIONS_TOPIC
 import net.corda.schema.Schemas.Membership.MEMBERSHIP_ASYNC_REQUEST_TOPIC
+import net.corda.schema.Schemas.Membership.MEMBERSHIP_ASYNC_REQUEST_RETRIES_TOPIC
+import net.corda.schema.Schemas.Membership.MEMBERSHIP_RPC_TOPIC
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MEMBERSHIP_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
@@ -82,7 +83,8 @@ class MemberOpsServiceImpl @Activate constructor(
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         const val RPC_GROUP_NAME = "membership.ops.rpc"
         const val RPC_CLIENT_NAME = "membership.ops.rpc"
-        const val ASYNC_GROUP_NAME = "membership.ops.async"
+        const val ASYNC_COMMANDS_GROUP_NAME = "membership.ops.async.commands"
+        const val ASYNC_RETRIES_GROUP_NAME = "membership.ops.async.retries"
         const val ACTIONS_GROUP_NAME = "membership.ops.actions"
 
         const val SUBSCRIPTION_RESOURCE = "MemberOpsService.SUBSCRIPTION_RESOURCE"
@@ -187,12 +189,12 @@ class MemberOpsServiceImpl @Activate constructor(
 
     private fun recreateSubscription(coordinator: LifecycleCoordinator, messagingConfig: SmartConfig, membershipConfig: SmartConfig) {
         coordinator.createManagedResource(SUBSCRIPTION_RESOURCE) {
-            logger.info("Creating RPC subscription for '{}' topic", Schemas.Membership.MEMBERSHIP_RPC_TOPIC)
+            logger.info("Creating RPC subscription for '{}' topic", MEMBERSHIP_RPC_TOPIC)
             val subscription = subscriptionFactory.createRPCSubscription(
                 rpcConfig = RPCConfig(
                     groupName = RPC_GROUP_NAME,
                     clientName = RPC_CLIENT_NAME,
-                    requestTopic = Schemas.Membership.MEMBERSHIP_RPC_TOPIC,
+                    requestTopic = MEMBERSHIP_RPC_TOPIC,
                     requestType = MembershipRpcRequest::class.java,
                     responseType = MembershipRpcResponse::class.java
                 ),
@@ -214,14 +216,25 @@ class MemberOpsServiceImpl @Activate constructor(
             val retryManager = CommandsRetryManager(
                 messagingConfig = messagingConfig,
                 publisherFactory = publisherFactory,
-                coordinatorFactory = coordinatorFactory,
+                clock = clock,
             )
-            val asyncSubscription = subscriptionFactory.createStateAndEventSubscription(
+            val commandsSubscription = subscriptionFactory.createDurableSubscription(
                 SubscriptionConfig(
-                    ASYNC_GROUP_NAME,
+                    ASYNC_COMMANDS_GROUP_NAME,
                     MEMBERSHIP_ASYNC_REQUEST_TOPIC,
                 ),
                 processor,
+                messagingConfig,
+                null,
+            ).also {
+                it.start()
+            }
+            val retrySubscription = subscriptionFactory.createStateAndEventSubscription(
+                SubscriptionConfig(
+                    ASYNC_RETRIES_GROUP_NAME,
+                    MEMBERSHIP_ASYNC_REQUEST_RETRIES_TOPIC,
+                ),
+                retryManager,
                 messagingConfig,
                 retryManager,
             ).also {
@@ -254,11 +267,19 @@ class MemberOpsServiceImpl @Activate constructor(
             val handle = coordinator.followStatusChangesByName(
                 setOf(
                     subscription.subscriptionName,
-                    asyncSubscription.subscriptionName,
+                    commandsSubscription.subscriptionName,
+                    retrySubscription.subscriptionName,
                     actionsSubscription.subscriptionName
                 )
             )
-            MembershipSubscriptionAndRegistration(subscription, asyncSubscription, actionsSubscription, handle, retryManager)
+            MembershipSubscriptionAndRegistration(
+                subscription,
+                commandsSubscription,
+                retrySubscription,
+                actionsSubscription,
+                handle,
+                retryManager,
+            )
         }
     }
 
@@ -270,7 +291,8 @@ class MemberOpsServiceImpl @Activate constructor(
      */
     private class MembershipSubscriptionAndRegistration(
         val subscription: RPCSubscription<MembershipRpcRequest, MembershipRpcResponse>,
-        val asyncSubscription: Resource,
+        val commandsSubscription: Resource,
+        val retrySubscription: Resource,
         val actionsSubscription: Subscription<String, MembershipActionsRequest>,
         val registrationHandle: RegistrationHandle,
         val retryManager: Resource,
@@ -281,7 +303,8 @@ class MemberOpsServiceImpl @Activate constructor(
             registrationHandle.close()
             subscription.close()
             actionsSubscription.close()
-            asyncSubscription.close()
+            retrySubscription.close()
+            commandsSubscription.close()
             retryManager.close()
         }
     }

@@ -245,7 +245,8 @@ class MemberResourceClientImpl @Activate constructor(
                                     holdingIdentityShortHash.toString(),
                                     requestId,
                                     registrationContext.toWire(),
-                                )
+                                ),
+                                null,
                             )
                         )
                     )

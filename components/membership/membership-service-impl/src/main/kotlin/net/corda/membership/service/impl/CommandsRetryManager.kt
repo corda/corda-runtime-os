@@ -2,33 +2,38 @@ package net.corda.membership.service.impl
 
 import net.corda.data.membership.async.request.MembershipAsyncRequest
 import net.corda.data.membership.async.request.MembershipAsyncRequestState
+import net.corda.data.membership.async.request.RegistrationAsyncRequest
 import net.corda.data.membership.async.request.RetriableFailure
 import net.corda.data.membership.async.request.SentToMgmWaitingForNetwork
 import net.corda.libs.configuration.SmartConfig
-import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.lifecycle.LifecycleEvent
-import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.Resource
-import net.corda.lifecycle.TimerEvent
-import net.corda.lifecycle.createCoordinator
+import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
 import net.corda.schema.Schemas.Membership.MEMBERSHIP_ASYNC_REQUEST_TOPIC
+import net.corda.utilities.time.UTCClock
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.time.Duration
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.Executors
+import java.util.concurrent.ScheduledExecutorService
+import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
 
 internal class CommandsRetryManager(
-    coordinatorFactory: LifecycleCoordinatorFactory,
     publisherFactory: PublisherFactory,
     messagingConfig: SmartConfig,
-) : Resource, StateAndEventListener<String, MembershipAsyncRequestState> {
+    private val clock: UTCClock,
+    private val scheduledExecutorService: ScheduledExecutorService = Executors.newSingleThreadScheduledExecutor(),
+) : Resource,
+    StateAndEventListener<String, MembershipAsyncRequestState>,
+    StateAndEventProcessor<String, MembershipAsyncRequestState, MembershipAsyncRequestState> {
     private companion object {
         const val PUBLISHER_NAME = "MembershipServiceAsyncCommandsRetryManager"
         val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
-        const val WAIT_AFTER_FAILURE_IN_SECONDS = 10L
         const val WAIT_AFTER_SENT_TO_MGM_SECONDS = 40L
     }
     private val publisher = publisherFactory.createPublisher(
@@ -37,35 +42,28 @@ internal class CommandsRetryManager(
     ).also {
         it.start()
     }
-    private val coordinator =
-        coordinatorFactory.createCoordinator<CommandsRetryManager> { event, _ ->
-            eventHandler(event)
-        }.also {
-            it.start()
-            it.updateStatus(LifecycleStatus.UP)
-        }
 
-    private data class RetryEvent(
-        val event: Record<String, MembershipAsyncRequest>,
-        override val key: String,
-    ) : TimerEvent
+    private val timers = ConcurrentHashMap<String, ScheduledFuture<*>>()
 
-    private fun eventHandler(
-        event: LifecycleEvent,
-    ) {
-        if (event is RetryEvent) {
-            logger.info("Retrying request ${event.key}")
-            publisher.publish(
-                listOf(
-                    event.event,
-                ),
-            )
-        }
+    override fun onNext(
+        state: MembershipAsyncRequestState?,
+        event: Record<String, MembershipAsyncRequestState>,
+    ): StateAndEventProcessor.Response<MembershipAsyncRequestState> {
+        return StateAndEventProcessor.Response(
+            updatedState = event.value,
+            responseEvents = emptyList(),
+            markForDLQ = false,
+        )
     }
 
+    override val keyClass = String::class.java
+    override val stateValueClass = MembershipAsyncRequestState::class.java
+    override val eventValueClass = MembershipAsyncRequestState::class.java
+
     override fun close() {
+        scheduledExecutorService.shutdownNow()
+        scheduledExecutorService.awaitTermination(1, TimeUnit.MINUTES)
         publisher.close()
-        coordinator.close()
     }
 
     override fun onPartitionSynced(states: Map<String, MembershipAsyncRequestState>) {
@@ -73,38 +71,70 @@ internal class CommandsRetryManager(
     }
 
     override fun onPartitionLost(states: Map<String, MembershipAsyncRequestState>) {
-        states.keys.forEach(::cancelTimer)
+        states.keys.forEach(::cancelTimers)
     }
 
     override fun onPostCommit(updatedStates: Map<String, MembershipAsyncRequestState?>) {
-        updatedStates.forEach { (key, state) ->
+        updatedStates.forEach { (requestId, state) ->
             if (state == null) {
-                cancelTimer(key)
+                cancelTimers(requestId)
             } else {
-                addTimer(key, state)
+                addTimer(requestId, state)
             }
         }
     }
 
-    private fun addTimer(key: String, state: MembershipAsyncRequestState) {
-        val durationInSeconds = when (state.cause) {
-            is SentToMgmWaitingForNetwork -> WAIT_AFTER_SENT_TO_MGM_SECONDS
-            is RetriableFailure -> WAIT_AFTER_FAILURE_IN_SECONDS
-            else -> WAIT_AFTER_FAILURE_IN_SECONDS
+    private fun addTimer(requestId: String, state: MembershipAsyncRequestState) {
+        val duration = when (val cause = state.cause) {
+            is SentToMgmWaitingForNetwork -> Duration.ofSeconds(WAIT_AFTER_SENT_TO_MGM_SECONDS)
+            is RetriableFailure -> Duration.between(clock.instant(), cause.nextTryAt)
+            else -> Duration.ofSeconds(WAIT_AFTER_SENT_TO_MGM_SECONDS)
         }
-        val event = Record(
-            MEMBERSHIP_ASYNC_REQUEST_TOPIC,
-            key,
-            state.request,
-        )
-        logger.debug("Request $key will be retried in $durationInSeconds seconds")
-        coordinator.setTimer("retry-$key", TimeUnit.SECONDS.toMillis(durationInSeconds)) {
-            RetryEvent(event, it)
+        if (duration.isNegative) {
+            publishEvent(state.request, state)
+        } else {
+            logger.debug("Request $requestId will be retried in ${duration.seconds} seconds")
+            timers.compute(requestId) { _, future ->
+                future?.cancel(false)
+                scheduledExecutorService.schedule(
+                    {
+                        publishEvent(state.request, state)
+                    },
+                    duration.toMillis(),
+                    TimeUnit.MILLISECONDS,
+                )
+            }
         }
     }
 
-    private fun cancelTimer(key: String) {
-        logger.debug("Request $key will not be retried")
-        coordinator.cancelTimer("retry-$key")
+    private fun cancelTimers(requestId: String) {
+        val future = timers.remove(requestId)
+        if (future != null) {
+            logger.debug("Request $requestId will not be retried")
+            future.cancel(false)
+        }
+    }
+
+    private fun publishEvent(
+        request: RegistrationAsyncRequest,
+        state: MembershipAsyncRequestState,
+    ) {
+        val requestId = request.requestId
+        val holdingId = request.holdingIdentityId
+        logger.info("Retrying request $requestId")
+        val event = Record(
+            MEMBERSHIP_ASYNC_REQUEST_TOPIC,
+            holdingId,
+            MembershipAsyncRequest(
+                request,
+                state,
+            ),
+        )
+        publisher.publish(
+            listOf(
+                event,
+            ),
+        )
+        timers.remove(requestId)
     }
 }
