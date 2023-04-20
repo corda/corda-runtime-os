@@ -16,7 +16,7 @@ import net.corda.virtualnode.toCorda
 import javax.persistence.EntityManager
 
 internal class ActivateMemberHandler(
-    private val persistenceHandlerServices: PersistenceHandlerServices
+    persistenceHandlerServices: PersistenceHandlerServices
 ) : BasePersistenceHandler<ActivateMember, ActivateMemberResponse>(persistenceHandlerServices) {
     private val keyValuePairListDeserializer: CordaAvroDeserializer<KeyValuePairList> by lazy {
         cordaAvroSerializationFactory.createAvroDeserializer(
@@ -33,6 +33,7 @@ internal class ActivateMemberHandler(
     }
     private val suspensionActivationEntityOperations =
         SuspensionActivationEntityOperations(clock, keyValuePairListDeserializer, keyValuePairListSerializer)
+    private val notaryHandler = AddNotaryToGroupParametersHandler(persistenceHandlerServices)
 
     override fun invoke(context: MembershipRequestContext, request: ActivateMember): ActivateMemberResponse {
         val (updatedMemberInfo, updatedGroupParameters) = transaction(context.holdingIdentity.toCorda().shortHash) { em ->
@@ -66,7 +67,6 @@ internal class ActivateMemberHandler(
     }
 
     private fun updateGroupParameters(em: EntityManager, memberInfo: PersistentMemberInfo): SignedGroupParameters {
-        val notaryHandler = AddNotaryToGroupParametersHandler(persistenceHandlerServices)
         return notaryHandler.addNotaryToGroupParameters(em, memberInfo)
     }
 }
