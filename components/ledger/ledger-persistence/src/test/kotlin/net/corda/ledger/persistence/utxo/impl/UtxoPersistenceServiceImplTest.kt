@@ -5,7 +5,7 @@ import net.corda.application.impl.services.json.JsonMarshallingServiceImpl
 import net.corda.crypto.testkit.SecureHashUtils.randomSecureHash
 import net.corda.ledger.common.data.transaction.PrivacySalt
 import net.corda.ledger.common.data.transaction.TransactionStatus
-import net.corda.ledger.persistence.json.impl.ContractStateVaultJsonFactoryImpl
+import net.corda.ledger.persistence.json.impl.DefaultContractStateVaultJsonFactoryImpl
 import net.corda.ledger.persistence.json.impl.ContractStateVaultJsonFactoryRegistryImpl
 import net.corda.ledger.persistence.utxo.CustomRepresentation
 import net.corda.ledger.persistence.utxo.UtxoRepository
@@ -54,7 +54,7 @@ class UtxoPersistenceServiceImplTest {
 
     @Suppress("unchecked_cast")
     private val storage = ContractStateVaultJsonFactoryRegistryImpl().apply {
-        registerJsonFactory(ContractStateVaultJsonFactoryImpl())
+        registerJsonFactory(DefaultContractStateVaultJsonFactoryImpl())
         registerJsonFactory(DummyStateJsonFactory() as ContractStateVaultJsonFactory<ContractState>)
         registerJsonFactory(InvalidStateJsonFactory() as ContractStateVaultJsonFactory<ContractState>)
     }
