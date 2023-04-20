@@ -6,6 +6,8 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.exc.ValueInstantiationException
 import com.fasterxml.jackson.dataformat.yaml.YAMLMapper
 import io.fabric8.kubernetes.api.model.Secret
+import io.fabric8.kubernetes.client.ConfigBuilder
+import io.fabric8.kubernetes.client.Config
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.KubernetesClientBuilder
 import io.fabric8.kubernetes.client.KubernetesClientException
@@ -88,7 +90,7 @@ class PreInstallPlugin(wrapper: PluginWrapper) : Plugin(wrapper) {
 
         // get the credentials (.value) or credentials from a secret (.valueFrom.secretKeyRef...) from a SecretValues
         // object, and a namespace (if the credential is in a secret)
-        fun getCredentialOrSecret(values: SecretValues, namespace: String?): String? {
+        fun getCredentialOrSecret(values: SecretValues, namespace: String?, url: String?): String? {
             val secretKey: String? = values.valueFrom?.secretKeyRef?.key
             val secretName: String? = values.valueFrom?.secretKeyRef?.name
             var credential: String? = values.value
@@ -107,7 +109,7 @@ class PreInstallPlugin(wrapper: PluginWrapper) : Plugin(wrapper) {
                     log("Username secret name could not be parsed.", ERROR)
                     return null
                 }
-                val encoded = getSecret(secretName, secretKey, namespace) ?: run{
+                val encoded = getSecret(secretName, secretKey, namespace, url) ?: run{
                     log("Username secret could not be found in namespace $namespace.", ERROR)
                     return null
                 }
@@ -116,9 +118,13 @@ class PreInstallPlugin(wrapper: PluginWrapper) : Plugin(wrapper) {
             return credential
         }
 
-        private fun getSecret(secretName: String, secretKey: String, namespace: String): String? {
+        private fun getSecret(secretName: String, secretKey: String, namespace: String, url: String?): String? {
             return try {
-                val client: KubernetesClient = KubernetesClientBuilder().build()
+                val kubeUrl = url ?: "kubernetes.default.svc"
+                val kubeConfig: Config = ConfigBuilder()
+                    .withMasterUrl(kubeUrl)
+                    .build()
+                val client: KubernetesClient = KubernetesClientBuilder().withConfig(kubeConfig).build()
                 val secret: Secret = client.secrets().inNamespace(namespace).withName(secretName).get()
                 secret.data[secretKey]
             } catch (e: KubernetesClientException) {

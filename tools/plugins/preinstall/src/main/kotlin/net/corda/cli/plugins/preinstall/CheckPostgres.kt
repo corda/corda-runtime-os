@@ -18,6 +18,10 @@ class CheckPostgres : Runnable, PluginContext(){
     @Option(names = ["-n", "--namespace"], description = ["The namespace in which to look for the secrets if there are any"])
     var namespace: String? = null
 
+    @Option(names = ["-u", "--url"], description = ["The kubernetes cluster URL " +
+            "(if the preinstall is being called from outside the cluster)"])
+    var url: String? = null
+
     @Option(names = ["-v", "--verbose"], description = ["Display additional information when connecting to postgres"])
     var verbose: Boolean = false
 
@@ -29,14 +33,14 @@ class CheckPostgres : Runnable, PluginContext(){
 
         val yaml: DB = parseYaml<DB>(path) ?: return
 
-        val username: String = getCredentialOrSecret(yaml.db.cluster.username, namespace) ?: return
-        val password: String = getCredentialOrSecret(yaml.db.cluster.password, namespace) ?: return
+        val username: String = getCredentialOrSecret(yaml.db.cluster.username, namespace, url) ?: return
+        val password: String = getCredentialOrSecret(yaml.db.cluster.password, namespace, url) ?: return
 
-        val url = "jdbc:postgresql://${yaml.db.cluster.host}:${yaml.db.cluster.port}/postgres"
+        val postgresUrl = "jdbc:postgresql://${yaml.db.cluster.host}:${yaml.db.cluster.port}/postgres"
 
         try {
             Class.forName("org.postgresql.Driver")
-            val connection = DriverManager.getConnection(url, username, password)
+            val connection = DriverManager.getConnection(postgresUrl, username, password)
             if (connection.isValid(0)) {
                 println("[INFO] Postgres credentials found and a DB connection was established.")
             }
@@ -49,5 +53,4 @@ class CheckPostgres : Runnable, PluginContext(){
             }
         }
     }
-
 }

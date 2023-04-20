@@ -21,6 +21,10 @@ class CheckKafka : Runnable, PluginContext() {
             "SASL is enabled"])
     var namespace: String? = null
 
+    @Option(names = ["-u", "--url"], description = ["The kubernetes cluster URL " +
+            "(if the preinstall is being called from outside the cluster)"])
+    var url: String? = null
+
     @Option(names = ["-f", "--file"], description = ["The file location of the truststore if TLS is enabled"])
     var truststoreLocation: String? = null
 
@@ -123,26 +127,25 @@ class CheckKafka : Runnable, PluginContext() {
         var truststorePassword = ""
 
         if (yaml.kafka.sasl.enabled) {
-            try {
-                    saslUsername = getCredentialOrSecret(yaml.kafka.sasl.username!!, namespace) ?: return
-                    saslPassword = getCredentialOrSecret(yaml.kafka.sasl.password!!, namespace) ?: return
-
-            } catch (_: NullPointerException) {
+            if (yaml.kafka.sasl.username == null || yaml.kafka.sasl.password == null) {
                 log("If SASL is enabled, you must provide a mechanism, a username, and a password.", ERROR)
                 return
             }
-        }
-        if (yaml.kafka.tls.enabled && yaml.kafka.tls.truststore?.password != null) {
-            try {
-                truststorePassword = getCredentialOrSecret(yaml.kafka.tls.truststore.password, namespace) ?: return
 
-            } catch (_: NullPointerException) {
+            saslUsername = getCredentialOrSecret(yaml.kafka.sasl.username, namespace, url) ?: return
+            saslPassword = getCredentialOrSecret(yaml.kafka.sasl.password, namespace, url) ?: return
+
+        }
+        if (yaml.kafka.tls.enabled) {
+            if (yaml.kafka.tls.truststore?.password == null ) {
                 log(
                     "If TLS is enabled, you must provide a truststore with a secret and a type, and if a password is provided " +
                             "- there must be a corresponding secret.", ERROR
                 )
                 return
             }
+            truststorePassword = getCredentialOrSecret(yaml.kafka.tls.truststore.password, namespace, url) ?: return
+
         }
         val props = getKafkaProperties(yaml, saslUsername,saslPassword,truststorePassword) ?: return
 

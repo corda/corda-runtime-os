@@ -12,6 +12,10 @@ class RunAll : Runnable {
             "and Kafka secrets"])
     var namespace: String? = null
 
+    @CommandLine.Option(names = ["-u", "--url"], description = ["The kubernetes cluster URL " +
+            "(if the preinstall is being called from outside the cluster)"])
+    var url: String? = null
+
     @CommandLine.Option(names = ["-f", "--file"], description = ["The file location of the truststore for Kafka"])
     var truststoreLocation: String? = null
 
@@ -41,12 +45,14 @@ class RunAll : Runnable {
         if (verbose) { postgresArgs.add("-v") }
         if (debug) { postgresArgs.add("-d") }
         namespace?.let{ postgresArgs.add("-n$it") }
+        url?.let{ postgresArgs.add("-n$it") }
 
         val kafkaCMD = CommandLine(CheckKafka())
         val kafkaArgs = mutableListOf<String>()
         if (verbose) { kafkaArgs.add("-v") }
         if (debug) { kafkaArgs.add("-d") }
         namespace?.let{ kafkaArgs.add("-n$it") }
+        url?.let{ kafkaArgs.add("-n$it") }
         truststoreLocation?.let{ kafkaArgs.add("-f$it") }
         replicaCount?.let{ kafkaArgs.add("-f$it") }
         kafkaArgs.add("-t$timeout")
