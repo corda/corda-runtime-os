@@ -21,7 +21,6 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
-import java.util.UUID
 
 @Component(service = [PluggableRestResource::class])
 class MGMAdminRestResourceImpl @Activate constructor(
@@ -111,17 +110,6 @@ class MGMAdminRestResourceImpl @Activate constructor(
                 throw ServiceUnavailableException("Could not perform operation for $holdingIdentityShortHash: Repartition Event!")
             } catch (e: IllegalArgumentException) {
                 throw BadRequestException("${e.message}")
-            }
-        }
-
-        private fun parseRegistrationRequestId(requestId: String): UUID {
-            return try {
-                UUID.fromString(requestId)
-            } catch (e: IllegalArgumentException) {
-                throw InvalidInputDataException(
-                    details = mapOf("registrationRequestId" to requestId),
-                    message = "requestId is not a valid registration request ID."
-                )
             }
         }
     }

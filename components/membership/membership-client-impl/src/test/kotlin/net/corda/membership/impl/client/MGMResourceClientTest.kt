@@ -983,7 +983,7 @@ class MGMResourceClientTest {
         }
 
         @Test
-        fun `forceDeclineRegistrationRequest should fail if the member cannot be found`() {
+        fun `forceDeclineRegistrationRequest should fail if the MGM cannot be found`() {
             mgmResourceClient.start()
             setUpRpcSender(null)
 
@@ -997,7 +997,7 @@ class MGMResourceClientTest {
         }
 
         @Test
-        fun `forceDeclineRegistrationRequest should fail if the member cannot be read`() {
+        fun `forceDeclineRegistrationRequest should fail if the MGM cannot be read`() {
             mgmResourceClient.start()
             setUpRpcSender(null)
             whenever(groupReader.lookup(mgmX500Name)).doReturn(null)
@@ -1012,7 +1012,7 @@ class MGMResourceClientTest {
         }
 
         @Test
-        fun `forceDeclineRegistrationRequest should fail if the member is not the MGM`() {
+        fun `forceDeclineRegistrationRequest should fail if holding identity ID does not belong to the MGM`() {
             mgmResourceClient.start()
             setUpRpcSender(null)
             val mgmContext = mock<MGMContext>()

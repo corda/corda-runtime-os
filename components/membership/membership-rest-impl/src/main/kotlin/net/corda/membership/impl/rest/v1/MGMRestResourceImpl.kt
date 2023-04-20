@@ -660,17 +660,6 @@ class MGMRestResourceImpl internal constructor(
             }
         }
 
-        private fun parseRegistrationRequestId(requestId: String): UUID {
-            return try {
-                UUID.fromString(requestId)
-            } catch (e: IllegalArgumentException) {
-                throw InvalidInputDataException(
-                    details = mapOf("registrationRequestId" to requestId),
-                    message = "requestId is not a valid registration request ID."
-                )
-            }
-        }
-
         private fun parseX500Name(keyName: String, x500Name: String): MemberX500Name {
             return try {
                 MemberX500Name.parse(x500Name)
