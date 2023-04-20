@@ -563,6 +563,10 @@ class MGMResourceClientImpl @Activate constructor(
 
             logger.info("Force declining registration request with ID='$requestId' and status='${requestStatus.registrationStatus}'.")
 
+            require(!setOf(RegistrationStatus.APPROVED, RegistrationStatus.DECLINED).contains(requestStatus.registrationStatus))
+            { "The registration process for request '$requestId' has been completed, so this request cannot be force " +
+                    "declined. Refer to the docs on Member Suspension to suspend approved members." }
+
             publishRegistrationCommand(
                 DeclineRegistration(FORCE_DECLINE_MESSAGE),
                 requestStatus.memberProvidedContext.items.first { it.key == PARTY_NAME }.value,

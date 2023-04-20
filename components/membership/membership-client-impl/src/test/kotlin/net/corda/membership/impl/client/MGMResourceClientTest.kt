@@ -983,6 +983,28 @@ class MGMResourceClientTest {
         }
 
         @Test
+        fun `forceDeclineRegistrationRequest should fail for completed requests`() {
+            val mockStatus = mock<RegistrationRequestDetails> {
+                on { registrationStatus } doReturn RegistrationStatus.APPROVED
+                on { memberProvidedContext } doReturn KeyValuePairList(listOf(KeyValuePair(PARTY_NAME, memberName.toString())))
+            }
+            whenever(membershipQueryClient.queryRegistrationRequest(any(), any())).doReturn(
+                MembershipQueryResult.Success(mockStatus)
+            )
+            mgmResourceClient.start()
+            setUpRpcSender(null)
+
+            assertThrows<IllegalArgumentException> {
+                mgmResourceClient.forceDeclineRegistrationRequest(
+                    shortHash,
+                    REQUEST_ID.uuid(),
+                )
+            }
+            verify(publisher, never()).publish(any())
+            mgmResourceClient.stop()
+        }
+
+        @Test
         fun `forceDeclineRegistrationRequest should fail if the MGM cannot be found`() {
             mgmResourceClient.start()
             setUpRpcSender(null)

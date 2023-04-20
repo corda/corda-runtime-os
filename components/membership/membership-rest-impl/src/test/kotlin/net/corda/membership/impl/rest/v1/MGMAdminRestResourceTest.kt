@@ -129,7 +129,7 @@ class MGMAdminRestResourceTest {
         }
 
         @Test
-        fun `forceDeclineRegistrationRequest throws bad request if request is not found`() {
+        fun `forceDeclineRegistrationRequest throws bad request if request is not found or already completed`() {
             whenever(mgmResourceClient.forceDeclineRegistrationRequest(
                 HOLDING_IDENTITY_ID.shortHash(), REQUEST_ID.uuid()
             )).doThrow(mock<IllegalArgumentException>())
