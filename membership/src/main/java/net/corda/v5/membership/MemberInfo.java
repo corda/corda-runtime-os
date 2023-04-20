@@ -8,8 +8,8 @@ import java.security.PublicKey;
 import java.util.List;
 
 /**
- * <p>The member information consists of two parts; The member provided context which consists of parameters added and
- * signed by member as part of the initial MemberInfo proposal, and the MGM provided context which consists of
+ * <p>The member information consists of two parts; the member provided context which consists of parameters added and
+ * signed by the member as part of the initial MemberInfo proposal, and the MGM provided context which consists of
  * parameters added by MGM as a part of member acceptance.</p>
  *
  * <p>Internally visible properties are accessible via extension properties.</p>
@@ -52,13 +52,13 @@ public interface MemberInfo {
     @NotNull MGMContext getMgmProvidedContext();
 
     /**
-     * @return Member's X500 name. X500 name is unique within the group and cannot be changed while the membership
+     * @return Member's X.500 name. X.500 name is unique within the group and cannot be changed while the membership
      * exists.
      */
     @NotNull MemberX500Name getName();
 
     /**
-     * @return List of current and previous (rotated) ledger keys, which member can still use to sign unspent
+     * @return List of current and previous (rotated) ledger keys, which the member can still use to sign unspent
      * transactions on ledger. The key at index 0 is always the latest added ledger key.
      */
     @NotNull List<PublicKey> getLedgerKeys();
