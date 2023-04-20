@@ -41,6 +41,7 @@ import net.corda.v5.ledger.common.transaction.CordaPackageSummary
 import net.corda.ledger.common.data.transaction.PrivacySalt
 import net.corda.test.util.dsl.entities.cpx.getCpkFileHashes
 import net.corda.ledger.persistence.json.ContractStateVaultJsonFactoryRegistry
+import net.corda.ledger.persistence.json.impl.DefaultContractStateVaultJsonFactoryImpl
 import net.corda.ledger.persistence.utxo.impl.UtxoPersistenceServiceImpl
 import net.corda.v5.ledger.utxo.Contract
 import net.corda.v5.ledger.utxo.ContractState
@@ -146,6 +147,7 @@ class UtxoPersistenceServiceImplTest {
                 serializationService,
                 digestService,
                 factoryRegistry,
+                DefaultContractStateVaultJsonFactoryImpl(),
                 jsonMarshallingService,
                 testClock
             )
