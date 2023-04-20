@@ -32,6 +32,8 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.junit.jupiter.api.parallel.Execution
+import org.junit.jupiter.api.parallel.ExecutionMode
 import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
@@ -42,6 +44,7 @@ data class TestJsonObject(override val escapedJson: String = "") : JsonObject
 /**
  * Tests of [ConfigRestResourceImpl].
  */
+@Execution(ExecutionMode.SAME_THREAD)
 class ConfigRestResourceImplTests {
     companion object {
         private const val actor = "test_principal"
