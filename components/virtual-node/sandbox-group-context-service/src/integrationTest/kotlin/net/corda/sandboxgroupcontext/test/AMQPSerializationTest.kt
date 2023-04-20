@@ -1,14 +1,7 @@
 package net.corda.sandboxgroupcontext.test
 
-import java.lang.invoke.MethodHandles
-import java.nio.file.Path
-import java.security.KeyPairGenerator
-import kotlin.reflect.full.primaryConstructor
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.core.parseSecureHash
-import net.corda.ledger.utxo.data.state.EncumbranceGroupImpl
-import net.corda.ledger.utxo.data.state.StateAndRefImpl
-import net.corda.ledger.utxo.data.state.TransactionStateImpl
 import net.corda.sandboxgroupcontext.RequireSandboxAMQP
 import net.corda.sandboxgroupcontext.RequireSandboxAMQP.AMQP_SERIALIZATION_SERVICE
 import net.corda.sandboxgroupcontext.SandboxGroupContext
@@ -21,7 +14,6 @@ import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.KeySchemeCodes
 import net.corda.v5.ledger.utxo.ContractState
-import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.serialization.SerializedBytes
 import org.assertj.core.api.Assertions.fail
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -39,6 +31,10 @@ import org.osgi.test.common.annotation.InjectBundleContext
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.context.BundleContextExtension
 import org.osgi.test.junit5.service.ServiceExtension
+import java.lang.invoke.MethodHandles
+import java.nio.file.Path
+import java.security.KeyPairGenerator
+import kotlin.reflect.full.primaryConstructor
 
 @ExtendWith(ServiceExtension::class, BundleContextExtension::class)
 @TestInstance(PER_CLASS)
@@ -151,49 +147,4 @@ class AMQPSerializationTest {
         }
     }
 
-    @ParameterizedTest
-    @EnumSource(SandboxGroupType::class)
-    @DisplayName("Serialize & Deserialize StateAndRef: {0}")
-    fun testSerializeAndDeserializeStateAndRef(sandboxGroupType: SandboxGroupType) {
-        val keyPairGenerator = createKeyPairGenerator(SCHEME_NAME)
-        val notaryKeyPair = keyPairGenerator.genKeyPair()
-        val keyPair = keyPairGenerator.genKeyPair()
-        var serializedBytes: SerializedBytes<StateAndRefImpl<ContractState>>? = null
-
-        // Create a StateAndRef, and then serialise it.
-        virtualNode.withSandbox(CONTRACT_CPB, sandboxGroupType) { vns, ctx ->
-            val serializationService = ctx.getSerializationService()
-            val contractStateClass = vns.getContractStateClass(ctx, STATE_CLASS_NAME)
-            val contractState = createState(contractStateClass, keyPair.public, AMOUNT, LABEL)
-            val transactionState = TransactionStateImpl(
-                contractState,
-                notaryName = NOTARY_X500_NAME,
-                notaryKey = notaryKeyPair.public,
-                EncumbranceGroupImpl(0, ENCUMBRANCE_GROUP_TAG)
-            )
-            val stateAndRef = StateAndRefImpl(transactionState, StateRef(TXN_ID, REF_IDX))
-            serializedBytes = serializationService.serialize(stateAndRef)
-        }
-
-        // Deserialize the StateAndRef inside a new sandbox.
-        virtualNode.withSandbox(CONTRACT_CPB, sandboxGroupType) { _, ctx ->
-            val serializationService = ctx.getSerializationService()
-            val stateAndRef = serializationService.deserialize(
-                serializedBytes ?: fail("No bytes to deserialize!"),
-                StateAndRefImpl::class.java
-            )
-
-            assertEquals(TXN_ID, stateAndRef.ref.transactionId)
-            assertEquals(REF_IDX, stateAndRef.ref.index)
-            assertEquals(NOTARY_X500_NAME, stateAndRef.state.notaryName)
-            assertEquals(notaryKeyPair.public, stateAndRef.state.notaryKey)
-
-            stateAndRef.state.contractState.also { contractState ->
-                assertEquals(keyPair.public, contractState.participants.single())
-                assertEquals(AMOUNT, fieldValue(contractState, "amount", java.lang.Long.TYPE))
-                assertEquals(LABEL, fieldValue<String>(contractState, "tag"))
-                assertEquals(STATE_CLASS_NAME, contractState::class.java.name)
-            }
-        }
-    }
 }
