@@ -3,6 +3,7 @@ package net.corda.ledger.utxo.data.state
 import net.corda.crypto.core.parseSecureHash
 import net.corda.ledger.utxo.data.transaction.UtxoOutputInfoComponent
 import net.corda.ledger.utxo.data.transaction.UtxoTransactionOutputDto
+import net.corda.sandbox.SandboxGroup
 import net.corda.utilities.serialization.deserialize
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.CordaSerializable
@@ -26,9 +27,16 @@ import java.lang.Exception
 data class LazyStateAndRefImpl<out T : ContractState>(
     val serializedStateAndRef: UtxoTransactionOutputDto,
     private val serializationService: SerializationService
-) : StateAndRef<@UnsafeVariance T> {
+) : StateAndRefInternal<@UnsafeVariance T> {
     private val stateAndRef: StateAndRef<@UnsafeVariance T> by lazy(LazyThreadSafetyMode.PUBLICATION) {
         serializedStateAndRef.deserializeToStateAndRef(serializationService)
+    }
+
+    override fun toUtxoTransactionOutputDto(
+        serializationService: SerializationService,
+        currentSandboxGroup: SandboxGroup
+    ): UtxoTransactionOutputDto {
+        return serializedStateAndRef
     }
 
     override fun getState(): TransactionState<@UnsafeVariance T> {

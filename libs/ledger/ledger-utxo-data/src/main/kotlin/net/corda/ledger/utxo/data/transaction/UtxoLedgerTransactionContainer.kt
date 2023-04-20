@@ -7,6 +7,6 @@ import net.corda.v5.ledger.utxo.StateAndRef
 @CordaSerializable
 data class UtxoLedgerTransactionContainer(
     val wireTransaction: WireTransaction,
-    val inputStateAndRefs: List<StateAndRef<*>>,
-    val referenceStateAndRefs: List<StateAndRef<*>>
+    val inputStateAndRefs: List<UtxoTransactionOutputDto>,
+    val referenceStateAndRefs: List<UtxoTransactionOutputDto>
 )

@@ -1,5 +1,9 @@
 package net.corda.ledger.utxo.data.state
 
+import net.corda.ledger.utxo.data.transaction.UtxoOutputInfoComponent
+import net.corda.ledger.utxo.data.transaction.UtxoTransactionOutputDto
+import net.corda.sandbox.SandboxGroup
+import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.StateAndRef
@@ -18,7 +22,7 @@ import java.util.Objects
 data class StateAndRefImpl<out T : ContractState>(
     private val state: TransactionState<T>,
     private val ref: StateRef
-) : StateAndRef<@UnsafeVariance T> {
+) : StateAndRefInternal<@UnsafeVariance T> {
 
     override fun getState(): TransactionState<@UnsafeVariance T> {
         return state
@@ -26,6 +30,27 @@ data class StateAndRefImpl<out T : ContractState>(
 
     override fun getRef(): StateRef {
         return ref
+    }
+
+    override fun toUtxoTransactionOutputDto(
+        serializationService: SerializationService,
+        currentSandboxGroup: SandboxGroup
+    ): UtxoTransactionOutputDto {
+        val info = UtxoOutputInfoComponent(
+            state.encumbranceGroup?.tag,
+            state.encumbranceGroup?.size,
+            state.notaryName,
+            state.notaryKey,
+            currentSandboxGroup.getEvolvableTag(state.contractStateType),
+            currentSandboxGroup.getEvolvableTag(state.contractType)
+        )
+
+        return UtxoTransactionOutputDto(
+            ref.transactionId.toString(),
+            ref.index,
+            serializationService.serialize(info).bytes,
+            serializationService.serialize(state.contractState).bytes
+        )
     }
 
     /**
