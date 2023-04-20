@@ -202,7 +202,7 @@ class AMQPwithOSGiSerializationTests {
             val factory = testDefaultFactory(sandboxGroup)
             val context = testSerializationContext.withSandboxGroup(sandboxGroup)
 
-            val mainBundleItemClass = sandboxGroup.loadClassFromMainBundles("net.cordapp.bundle.MainBundleItem")
+            val mainBundleItemClass = sandboxGroup.loadClassFromMainBundles("net.cordapp.bundle.MainBundleItem1")
             val mainBundleItemInstance = mainBundleItemClass.getMethod("newInstance").invoke(null)
 
             assertThrows<SandboxException>(
@@ -214,6 +214,36 @@ class AMQPwithOSGiSerializationTests {
             sandboxFactory.unloadSandboxGroup(sandboxGroup)
         }
     }
+
+    @Test
+    fun `serializer targeting private type will fail at serialization`() {
+        val sandboxGroup = sandboxFactory.loadSandboxGroup("META-INF/TestSerializableCpk-using-lib.cpb")
+        try {
+            val factory = testDefaultFactory(sandboxGroup)
+            val context = testSerializationContext.withSandboxGroup(sandboxGroup)
+
+            val mainBundleItemClass = sandboxGroup.loadClassFromMainBundles("net.cordapp.bundle.MainBundleItem2")
+            val mainBundleItemInstance = mainBundleItemClass.getMethod("newInstance").invoke(null)
+
+            val serializerClass =
+                sandboxGroup.loadClassFromMainBundles("net.cordapp.bundle.MainBundleItem2\$PrivateBundleItemSerializer")
+            val serializer = serializerClass.getConstructor().newInstance() as SerializationCustomSerializer<*, *>
+            factory.registerExternal(serializer, factory)
+
+            assertThrows<SandboxException>(
+                "Attempted to create evolvable class tag for cpk private bundle com.example.serialization.serialization-cpk-library."
+            ) {
+                SerializationOutput(factory).serialize(mainBundleItemInstance, context)
+            }
+        } finally {
+            sandboxFactory.unloadSandboxGroup(sandboxGroup)
+        }
+    }
+
+//    @Test
+//    fun `private properties of public CPK types which are of private CPK types can be serialized through custom serializer`() {
+//
+//    }
 
     @Test
     fun `sandbox external custom serializers targeting platform types are denied`() {
