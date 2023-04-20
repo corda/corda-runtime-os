@@ -18,10 +18,13 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
+import org.junit.jupiter.api.parallel.Execution
+import org.junit.jupiter.api.parallel.ExecutionMode
 import picocli.CommandLine
 import java.io.ByteArrayInputStream
 import java.io.File
 
+@Execution(ExecutionMode.SAME_THREAD)
 class CreateCpiV2Test {
 
     companion object {
