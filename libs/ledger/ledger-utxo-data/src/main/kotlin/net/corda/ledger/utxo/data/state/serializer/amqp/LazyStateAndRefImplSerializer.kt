@@ -2,6 +2,9 @@ package net.corda.ledger.utxo.data.state.serializer.amqp
 
 import net.corda.ledger.utxo.data.state.LazyStateAndRefImpl
 import net.corda.ledger.utxo.data.transaction.UtxoTransactionOutputDto
+import net.corda.sandbox.type.SandboxConstants.CORDA_UNINJECTABLE_SERVICE
+import net.corda.sandbox.type.UsedByFlow
+import net.corda.sandbox.type.UsedByVerification
 import net.corda.serialization.BaseProxySerializer
 import net.corda.serialization.InternalCustomSerializer
 import net.corda.v5.application.serialization.SerializationService
@@ -10,12 +13,17 @@ import net.corda.v5.ledger.utxo.ContractState
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 
-@Component(service = [ InternalCustomSerializer::class ])
+@Component(
+    service = [InternalCustomSerializer::class, UsedByFlow::class, UsedByVerification::class],
+    property = [CORDA_UNINJECTABLE_SERVICE],
+    scope = PROTOTYPE
+)
 class LazyStateAndRefSerializer @Activate constructor(
     @Reference(service = SerializationService::class)
     private val serializationService: SerializationService
-): BaseProxySerializer<LazyStateAndRefImpl<ContractState>, LazyStateAndRefImplProxy>() {
+): BaseProxySerializer<LazyStateAndRefImpl<ContractState>, LazyStateAndRefImplProxy>(), UsedByFlow, UsedByVerification {
     private companion object {
         private const val VERSION_1 = 1
     }
