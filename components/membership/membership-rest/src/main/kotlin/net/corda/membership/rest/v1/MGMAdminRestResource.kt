@@ -18,7 +18,7 @@ import net.corda.rest.annotations.RestPathParameter
             "transact with one another with a specific set of CorDapps. The API allows you to perform actions such as" +
             " force decline registration requests which may be displaying unexpected behaviour. This API should only " +
             "be used under exceptional circumstances.",
-    path = "admin"
+    path = "mgmadmin"
 )
 interface MGMAdminRestResource : RestResource {
     /**
