@@ -1,7 +1,5 @@
 package net.corda.ledger.utxo.flow.impl.persistence
 
-import net.corda.ledger.utxo.data.state.LazyStateAndRefImpl
-import net.corda.ledger.utxo.data.transaction.UtxoTransactionOutputDto
 import net.corda.v5.application.persistence.CordaPersistenceException
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.ledger.utxo.ContractState
