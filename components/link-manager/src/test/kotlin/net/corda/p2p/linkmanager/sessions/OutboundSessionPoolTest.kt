@@ -6,9 +6,14 @@ import net.corda.p2p.linkmanager.utilities.LoggingInterceptor
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.parallel.Execution
+import org.junit.jupiter.api.parallel.ExecutionMode
+import org.junit.jupiter.api.parallel.Isolated
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 
+@Isolated("These tests use logs for behaviour assertion, so can only be run in isolation.")
+@Execution(ExecutionMode.SAME_THREAD)
 class OutboundSessionPoolTest {
 
     companion object {

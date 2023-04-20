@@ -29,6 +29,9 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.junit.jupiter.api.parallel.Execution
+import org.junit.jupiter.api.parallel.ExecutionMode
+import org.junit.jupiter.api.parallel.Isolated
 import org.mockito.Mockito
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
@@ -42,6 +45,8 @@ import org.mockito.kotlin.whenever
 import java.security.KeyPairGenerator
 import java.util.UUID
 
+@Isolated("These tests use logs for behaviour assertion, so can only be run in isolation.")
+@Execution(ExecutionMode.SAME_THREAD)
 class InMemorySessionReplayerTest {
 
     private companion object {

@@ -3,7 +3,7 @@
 #
 MAX_WORKERS=4
 TAG_BENCHMARK="build-benchmark"    # Gradle build scan label prefix - should remain stable
-TAG_EXP="${TAG_BENCHMARK}-0001"    # Gradle build scan label suffix - can be incremented in case we want another set of benchmarks, for example to compare a before/after change
+TAG_EXP="${TAG_BENCHMARK}-0002-dries"    # Gradle build scan label suffix - can be incremented in case we want another set of benchmarks, for example to compare a before/after change
 
 TAG_CACHE="cache"
 TAG_NO_CACHE="no-cache"
@@ -24,21 +24,21 @@ set -x
 
 echo "Using ${MAX_WORKERS} workers"
 
-echo "Building without cache"
-gradle_run "${TAG_EXP}-${TAG_NO_CACHE}-${TAG_CLEAN}" "--no-build-cache clean"
-gradle_run "${TAG_EXP}-${TAG_NO_CACHE}-${TAG_CLEAN}" "--no-build-cache publishOSGiImage -PmultiArchSupport=false"
-gradle_run "${TAG_EXP}-${TAG_NO_CACHE}-${TAG_INCREMENTAL}" "--no-build-cache publishOSGiImage -PmultiArchSupport=false"
-
-echo "Building with cache"
-gradle_run "${TAG_EXP}-${TAG_CACHE}-${TAG_CLEAN}" "--build-cache clean"
-gradle_run "${TAG_EXP}-${TAG_CACHE}-${TAG_CLEAN}" "--build-cache publishOSGiImage -PmultiArchSupport=false"
-gradle_run "${TAG_EXP}-${TAG_CACHE}-${TAG_INCREMENTAL}" "--build-cache publishOSGiImage -PmultiArchSupport=false"
-
-echo "(Incremental) Detekt without cache"
-gradle_run "${TAG_EXP}-${TAG_NO_CACHE}-${TAG_INCREMENTAL}" "--no-build-cache detekt"
+#echo "Building without cache"
+#gradle_run "${TAG_EXP}-${TAG_NO_CACHE}-${TAG_CLEAN}" "--no-build-cache clean"
+#gradle_run "${TAG_EXP}-${TAG_NO_CACHE}-${TAG_CLEAN}" "--no-build-cache publishOSGiImage -PmultiArchSupport=false"
+#gradle_run "${TAG_EXP}-${TAG_NO_CACHE}-${TAG_INCREMENTAL}" "--no-build-cache publishOSGiImage -PmultiArchSupport=false"
+#
+#echo "Building with cache"
+#gradle_run "${TAG_EXP}-${TAG_CACHE}-${TAG_CLEAN}" "--build-cache clean"
+#gradle_run "${TAG_EXP}-${TAG_CACHE}-${TAG_CLEAN}" "--build-cache publishOSGiImage -PmultiArchSupport=false"
+#gradle_run "${TAG_EXP}-${TAG_CACHE}-${TAG_INCREMENTAL}" "--build-cache publishOSGiImage -PmultiArchSupport=false"
+#
+#echo "(Incremental) Detekt without cache"
+#gradle_run "${TAG_EXP}-${TAG_NO_CACHE}-${TAG_INCREMENTAL}" "--no-build-cache detekt"
 
 echo "(Incremental) Testing without cache"
 gradle_run "${TAG_EXP}-${TAG_NO_CACHE}-${TAG_INCREMENTAL}" "--no-build-cache test"
 
-echo "(Incremental) Testing without cache"
-gradle_run "${TAG_EXP}-${TAG_NO_CACHE}-${TAG_INCREMENTAL}" "--no-build-cache integrationTest"
+#echo "(Incremental) Testing without cache"
+#gradle_run "${TAG_EXP}-${TAG_NO_CACHE}-${TAG_INCREMENTAL}" "--no-build-cache integrationTest"

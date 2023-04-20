@@ -76,6 +76,9 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.parallel.Execution
+import org.junit.jupiter.api.parallel.ExecutionMode
+import org.junit.jupiter.api.parallel.Isolated
 import org.mockito.Mockito
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argThat
@@ -99,6 +102,8 @@ import java.time.Instant
 import java.util.Collections
 import java.util.concurrent.CompletableFuture
 
+@Isolated("These tests use logs for behaviour assertion, so can only be run in isolation.")
+@Execution(ExecutionMode.SAME_THREAD)
 class SessionManagerTest {
 
     private companion object {

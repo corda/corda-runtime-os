@@ -49,6 +49,9 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.parallel.Execution
+import org.junit.jupiter.api.parallel.ExecutionMode
+import org.junit.jupiter.api.parallel.Isolated
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.doAnswer
@@ -60,6 +63,8 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 
+@Isolated("These tests use logs for behaviour assertion, so can only be run in isolation.")
+@Execution(ExecutionMode.SAME_THREAD)
 class InboundMessageProcessorTest {
     companion object {
         private const val SESSION_ID = "Session"
