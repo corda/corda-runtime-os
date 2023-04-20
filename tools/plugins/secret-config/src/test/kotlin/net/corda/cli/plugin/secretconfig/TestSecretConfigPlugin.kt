@@ -4,12 +4,15 @@ import com.github.stefanbirkner.systemlambda.SystemLambda
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.parallel.Execution
+import org.junit.jupiter.api.parallel.ExecutionMode
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
 import picocli.CommandLine
 import java.util.stream.Stream
 
+@Execution(ExecutionMode.SAME_THREAD)
 class TestSecretConfigPlugin {
     @Test
     fun `create CORDA type secret Config`() {
