@@ -7,6 +7,9 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.junit.jupiter.api.parallel.Execution
+import org.junit.jupiter.api.parallel.ExecutionMode
+import org.junit.jupiter.api.parallel.Isolated
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
@@ -21,6 +24,8 @@ import java.security.Security
 import java.security.Signature
 import java.security.spec.AlgorithmParameterSpec
 
+@Execution(ExecutionMode.SAME_THREAD)
+@Isolated
 class DelegatedSignatureTest {
     companion object {
         private const val name = "Test-name"
