@@ -443,7 +443,7 @@ class DynamicMemberRegistrationService @Activate constructor(
 
             previousRegistrationContext?.let { previous ->
                 ((newRegistrationContext.entries - previous.entries) + (previous.entries - newRegistrationContext.entries)).filterNot {
-                    it.key.startsWith(CUSTOM_KEY_PREFIX)
+                    it.key.startsWith(CUSTOM_KEY_PREFIX) || it.key == REGISTRATION_ID
                 }.apply {
                     require(isEmpty()) {
                         throw InvalidMembershipRegistrationException(
