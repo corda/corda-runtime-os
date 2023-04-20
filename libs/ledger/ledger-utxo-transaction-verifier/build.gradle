@@ -21,6 +21,7 @@ dependencies {
 
     testImplementation project(':testing:ledger:ledger-utxo-testkit')
 
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
 

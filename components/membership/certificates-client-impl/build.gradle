@@ -27,7 +27,7 @@ dependencies {
     implementation project(':libs:membership:certificates-common')
     implementation project(":libs:rest:rest")
 
-    testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation project(':testing:test-utilities')
 }

@@ -20,6 +20,6 @@ dependencies {
 
     testImplementation project(":testing:test-utilities")
     testImplementation project(":libs:lifecycle:lifecycle-test-impl")
-    testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 }
