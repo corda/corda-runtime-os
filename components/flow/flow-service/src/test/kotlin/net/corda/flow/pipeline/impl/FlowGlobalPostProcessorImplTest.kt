@@ -319,6 +319,7 @@ class FlowGlobalPostProcessorImplTest {
         assertThrows(FlowPlatformException::class.java) {
             flowGlobalPostProcessor.postProcess(testContext)
         }
+        verify(sessionManager, times(1)).errorSession(any())
     }
 
     @Test
@@ -353,6 +354,6 @@ class FlowGlobalPostProcessorImplTest {
             flowGlobalPostProcessor.postProcess(testContext)
         }
 
-        verify(sessionManager, times(1)).errorSession(any())
+        verify(sessionManager, never()).errorSession(any())
     }
 }

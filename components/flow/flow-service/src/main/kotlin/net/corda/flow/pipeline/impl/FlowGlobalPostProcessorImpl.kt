@@ -105,7 +105,7 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
             if (expiryTime < now) {
                 val msg = "[${context.checkpoint.holdingIdentity.x500Name}] has failed to create a flow with counterparty: " +
                         "[${counterparty}] as the recipient doesn't exist in the network."
-                if (!doesCheckpointExist) {
+                if (doesCheckpointExist) {
                     context.checkpoint.putSessionState(sessionManager.errorSession(sessionState))
                     log.debug { "$msg. Throwing FlowPlatformException" }
                     throw FlowPlatformException(msg)
