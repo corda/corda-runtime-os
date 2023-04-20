@@ -172,7 +172,8 @@ class GenerateGroupPolicyTest {
     }
 
     @Test
-    fun `YAML file with 'memberNames' is correctly parsed to generate group policy with specified member information`(@TempDir tempDir: Path) {
+    fun `YAML file with 'memberNames' is correctly parsed to generate group policy with specified member information`(
+        @TempDir tempDir: Path) {
         val app = GenerateGroupPolicy()
         val filePath = Files.createFile(tempDir.resolve("src.yaml"))
         filePath.toFile().writeText(
