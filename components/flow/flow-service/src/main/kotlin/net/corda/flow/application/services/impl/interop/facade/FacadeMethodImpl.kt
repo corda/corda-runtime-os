@@ -120,4 +120,28 @@ data class FacadeMethodImpl(
         return FacadeResponseImpl(facadeId, name, parameterValues.toList())
     }
 
+    override fun getFacadeId(): FacadeId {
+        return facadeId
+    }
+
+    override fun getName(): String {
+        return name
+    }
+
+    override fun getType(): FacadeMethodType {
+        return type
+    }
+
+    override fun getInParameters(): List<ParameterType<*>> {
+        return inParameters
+    }
+
+    override fun getOutParameters(): List<ParameterType<*>> {
+        return outParameters
+    }
+
+    override fun getQualifiedName(): String {
+        return qualifiedName
+    }
+
 }

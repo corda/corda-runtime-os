@@ -115,7 +115,7 @@ private class FacadeClientProxy(
                     "${response.facadeId}/${response.methodName}"
         )
 
-        val receivedParamSet = response.outParameters.asSequence().map(ParameterTypeLabel<*>::parameter).toSet()
+        val receivedParamSet = response.outParameters.asSequence().map(ParameterTypeLabel::parameter).toSet()
         val expectedParamSet = binding.facadeMethod.outParameters.toSet()
 
         if (receivedParamSet != expectedParamSet) {
@@ -126,7 +126,7 @@ private class FacadeClientProxy(
     }
 
     private fun buildDataClass(
-        outParameters: List<ParameterTypeLabel<*>>,
+        outParameters: List<ParameterTypeLabel>,
         bindings: FacadeOutParameterBindings.DataClassOutParameterBindings): Any {
         val constructorArgs = Array<Any?>(bindings.bindings.size) { null }
 

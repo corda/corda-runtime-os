@@ -30,7 +30,7 @@ class JacksonFacadeReader(val deserialiser: (Reader) -> FacadeDefinition) : Faca
 
         return FacadeImpl(
             facadeId,
-            (queries + commands) as List<FacadeMethodImpl>
+            (queries + commands)
         )
     }
 
@@ -54,11 +54,11 @@ class JacksonFacadeReader(val deserialiser: (Reader) -> FacadeDefinition) : Faca
 
 }
 
-internal data class FacadeDefinition(
+data class FacadeDefinition(
     val id: String,
     val aliases: Map<String, String>?,
     val queries: Map<String, FacadeMethodDefinition?>?,
     val commands: Map<String, FacadeMethodDefinition?>?
 )
 
-internal data class FacadeMethodDefinition(val `in`: Map<String, String>?, val out: Map<String, String>?)
+data class FacadeMethodDefinition(val `in`: Map<String, String>?, val out: Map<String, String>?)

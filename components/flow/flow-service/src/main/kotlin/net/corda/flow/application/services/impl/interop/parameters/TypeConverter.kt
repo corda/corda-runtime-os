@@ -1,5 +1,6 @@
 package net.corda.flow.application.services.impl.interop.parameters
 
+import net.corda.flow.application.services.impl.interop.proxies.JsonMarshaller
 import net.corda.v5.application.interop.parameters.ParameterType
 import net.corda.v5.application.interop.parameters.ParameterTypeLabel
 import java.math.BigDecimal

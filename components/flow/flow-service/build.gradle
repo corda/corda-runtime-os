@@ -40,6 +40,7 @@ dependencies {
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
 
+    implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
     implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation "net.corda:corda-application"
     implementation "net.corda:corda-ledger-utxo"

@@ -23,6 +23,17 @@ data class FacadeRequestImpl(
 ) : FacadeRequest {
 
     private val inParametersByName = inParameters.associateBy { it.parameter.name }
+    override fun getFacadeId(): FacadeId {
+        return facadeId
+    }
+
+    override fun getMethodName(): String {
+        return methodName
+    }
+
+    override fun getInParameters(): List<ParameterTypeLabel> {
+        return inParameters
+    }
 
     /**
      * Get the value of a parameter by name.

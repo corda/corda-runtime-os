@@ -8,6 +8,7 @@ import net.corda.flow.application.services.impl.interop.binding.FacadeOutParamet
 import net.corda.flow.application.services.impl.interop.binding.creation.FacadeInterfaceBindings
 import net.corda.flow.application.services.impl.interop.parameters.TypeConverter
 import net.corda.flow.application.services.impl.interop.proxies.FacadeMethodDispatchException
+import net.corda.flow.application.services.impl.interop.proxies.JacksonJsonMarshaller
 import net.corda.v5.application.interop.binding.BindsFacade
 import net.corda.v5.application.interop.binding.FacadeVersions
 import net.corda.v5.application.interop.binding.InteropAction
@@ -38,7 +39,7 @@ fun Any.buildDispatcher(facade: Facade, typeConverter: TypeConverter): FacadeSer
                         facade.facadeId.version in it.getAnnotation(FacadeVersions::class.java).value.toSet())
     } ?: throw FacadeMethodDispatchException("Object $this implements no interface binding ${facade.facadeId}")
 
-    return buildDispatcher(facade, targetInterface as Class<Any>, this, typeConverter)
+    return FacadeServerDispatchers.buildDispatcher(facade, targetInterface as Class<Any>, this, typeConverter)
 }
 
 fun Any.buildDispatcher(facade: Facade): FacadeServerDispatcher =
@@ -90,9 +91,9 @@ class FacadeServerDispatcher(
 
         request.inParameters.forEach { parameterValue ->
             val parameterBinding =
-                boundMethod.bindingForInParameter(parameterValue.parameter.name) ?: throw FacadeMethodDispatchException(
+                boundMethod.bindingForInParameter(parameterValue.name) ?: throw FacadeMethodDispatchException(
                     "Method ${boundMethod.facadeMethod.qualifiedName} does not have a parameter " +
-                            parameterValue.parameter.name
+                            parameterValue.name
                 )
 
             args[parameterBinding.boundParameter.index] = typeConverter.convertFacadeToJvm(

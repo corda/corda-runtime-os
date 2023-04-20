@@ -1,12 +1,13 @@
 package net.corda.flow.application.services.impl.interop.binding.internal
 
 import net.corda.flow.application.services.impl.interop.binding.*
-import net.corda.flow.application.services.impl.interop.facade.FacadeImpl
 import net.corda.flow.application.services.impl.interop.facade.FacadeMethodImpl
+import net.corda.flow.application.services.impl.interop.parameters.QualifiedType
 import net.corda.v5.application.interop.binding.*
 import net.corda.v5.application.interop.facade.Facade
 import net.corda.v5.application.interop.facade.FacadeMethod
 import net.corda.v5.application.interop.parameters.ParameterType
+import net.corda.v5.application.interop.parameters.ParameterTypeLabel
 import net.corda.v5.application.interop.parameters.TypeQualifier
 import java.beans.Introspector
 import java.beans.PropertyDescriptor
@@ -66,7 +67,7 @@ internal abstract class BindingContext<T> {
  * @param facade the [Facade] to be bound.
  * @param boundInterface The JVM interface to be bound.
  */
-internal class InterfaceBindingContext(val facade: FacadeImpl, private val boundInterface: Class<*>) :
+internal class InterfaceBindingContext(val facade: Facade, private val boundInterface: Class<*>) :
     BindingContext<FacadeInterfaceBinding>() {
 
     override fun createBinding(): FacadeInterfaceBinding {
@@ -126,7 +127,7 @@ internal class InterfaceBindingContext(val facade: FacadeImpl, private val bound
 // BindingContext in which we are binding an interface method to a facade method.
 private class MethodBindingContext(
     val parent: InterfaceBindingContext,
-    val facadeMethod: FacadeMethodImpl,
+    val facadeMethod: FacadeMethod,
     val boundMethod: Method
 ) : BindingContext<FacadeMethodBinding>() {
 
@@ -261,12 +262,12 @@ private data class ParameterInfo(
 private class InParameterBindingContext(
     val parent: MethodBindingContext,
     val parameterInfo: ParameterInfo,
-    val facadeParameter: TypedParameter<*>
+    val facadeParameter: ParameterType<*>
 ) : BindingContext<FacadeInParameterBinding>() {
 
     override fun createBinding(): FacadeInParameterBinding {
         // Check the type-compatibility of the interface method parameter type and the facade method parameter type.
-        test(validateTypeAgreement(parameterInfo.type, parameterInfo.qualifiers, facadeParameter.type)) {
+        test(validateTypeAgreement(parameterInfo.type, parameterInfo.qualifiers, facadeParameter.typeLabel)) {
             "Type of parameter is not compatible with facade in-parameter type"
         }
 
@@ -277,8 +278,8 @@ private class InParameterBindingContext(
     }
 
     override fun toString(): String =
-        "$parent, binding method parameter $parameterInfo to facade in-parameter ${facadeParameter.name} " +
-                "of type ${facadeParameter.type}"
+        "$parent, binding method parameter $parameterInfo to facade in-parameter ${facadeParameter.typeName} " +
+                "of type ${facadeParameter.typeLabel}"
 
 
 }
@@ -305,14 +306,14 @@ private class NoOutParametersBindingContext(
 private class SingletonOutParameterBindingContext(
     val parent: MethodBindingContext,
     val wrappedReturnType: Class<*>,
-    val outParameter: TypedParameter<*>
+    val outParameter: ParameterType<*>
 ) : BindingContext<FacadeOutParameterBindings>() {
 
     private val qualifiers = qualifiers(wrappedReturnType)
 
     override fun createBinding(): FacadeOutParameterBindings {
         // Check agreement of the facade and interface types.
-        test(validateTypeAgreement(wrappedReturnType, qualifiers, outParameter.type)) {
+        test(validateTypeAgreement(wrappedReturnType, qualifiers, outParameter.typeLabel)) {
             "Return type is not compatible with facade out-parameter type"
         }
 
@@ -324,7 +325,7 @@ private class SingletonOutParameterBindingContext(
 
     override fun toString(): String = "$parent, binding return value of type ${wrappedReturnType.name} " +
             qualifiers.joinToString(", ", "[", "]") +
-            " to single out-parameter ${outParameter.name} of type ${outParameter.type}"
+            " to single out-parameter ${outParameter.typeName} of type ${outParameter.typeLabel}"
 
 }
 
@@ -332,7 +333,7 @@ private class SingletonOutParameterBindingContext(
 private class DataClassOutParametersBindingContext(
     val parent: MethodBindingContext,
     val wrappedReturnType: Class<*>,
-    val outParameters: List<TypedParameter<*>>
+    val outParameters: List<ParameterType<*>>
 ) : BindingContext<FacadeOutParameterBindings>() {
 
     override fun createBinding(): FacadeOutParameterBindings {
@@ -340,7 +341,7 @@ private class DataClassOutParametersBindingContext(
             "Return type does not have a unique constructor"
         }
 
-        val facadeParametersByName = outParameters.associateBy(TypedParameter<*>::name)
+        val facadeParametersByName = outParameters.associateBy(ParameterType<*>::getTypeName)
         val constructorParameters = constructor.parameters.mapIndexedNotNull(ParameterInfo.Companion::forMethodParameter)
         constructorParameters.forEach {
             test(it.typeQualifiers.isEmpty() || it.typeQualifiers.containsAll(it.parameterQualifiers)) {
@@ -361,8 +362,8 @@ private class DataClassOutParametersBindingContext(
 
         // Check that the types all agree
         outParameters.forEach { outParameter ->
-            val constructorParameter = constructorParametersByName[outParameter.name]!!
-            test(validateTypeAgreement(constructorParameter.type, constructorParameter.qualifiers, outParameter.type)) {
+            val constructorParameter = constructorParametersByName[outParameter.typeName]!!
+            test(validateTypeAgreement(constructorParameter.type, constructorParameter.qualifiers, outParameter.typeLabel)) {
                 "Constructor parameter $constructorParameter does not match type of facade out parameter $outParameter"
             }
         }
@@ -376,8 +377,8 @@ private class DataClassOutParametersBindingContext(
         // There must be properties for every out parameter (we can just check collection sizes here, as names have
         // already been correlated).
         test(properties.size == outParameters.size) {
-            val propertyNames = properties.map { it.facadeOutParameter.name }.toSet()
-            val missingProperties = outParameters.map(TypedParameter<*>::name).toSet() - propertyNames
+            val propertyNames = properties.map { it.facadeOutParameter.typeName }.toSet()
+            val missingProperties = outParameters.map(ParameterType<*>::getTypeName).toSet() - propertyNames
 
             "Cannot find properties with both a constructor parameter and a getter method for out parameters $missingProperties"
         }
@@ -387,7 +388,7 @@ private class DataClassOutParametersBindingContext(
 
     private fun bindDataClassProperty(
         property: PropertyDescriptor,
-        facadeParametersByName: Map<String, TypedParameter<*>>,
+        facadeParametersByName: Map<String, ParameterType<*>>,
         constructorParametersByName: Map<String, ParameterInfo>,
         boundNameLookup: Map<String, String>
     ): DataClassPropertyBinding? {
@@ -431,12 +432,12 @@ developer-defined annotation that is itself annotated with @QualifiedWith - this
 use custom annotations in a similar way to the way aliases are used in the facade YAML file, as a shorthand for common
 types.
  */
-private fun qualifiers(element: AnnotatedElement): Set<FacadeTypeQualifier> =
+private fun qualifiers(element: AnnotatedElement): Set<TypeQualifier> =
     element.readAnnotation<QualifiedWith>()?.run {
-        value.map(FacadeTypeQualifier::of).toSet()
+        value.map(TypeQualifier::of).toSet()
     } ?: element.annotations.asSequence().mapNotNull {
         it.annotationClass.java.readAnnotation<QualifiedWith>()?.run {
-            value.map(FacadeTypeQualifier::of).toSet()
+            value.map(TypeQualifier::of).toSet()
         }
     }.firstOrNull() ?: emptySet()
 
@@ -456,21 +457,21 @@ private val numberTypes = setOf(
 private fun validateTypeAgreement(
     parameterType: Class<*>,
     qualifiers: Set<TypeQualifier>,
-    expectedType: ParameterType<*>
+    expectedType: ParameterTypeLabel
 ): Boolean =
     when (expectedType) {
-        ParameterType.DecimalType -> parameterType in numberTypes
-        ParameterType.StringType -> parameterType == String::class.java
-        ParameterType.BooleanType -> parameterType == Boolean::class.javaPrimitiveType
-        ParameterType.TimestampType -> parameterType == ZonedDateTime::class.java
-        ParameterType.UUIDType -> parameterType == UUID::class.java
-        ParameterType.ByteBufferType -> parameterType == ByteArray::class.javaPrimitiveType ||
+        ParameterTypeLabel.DECIMAL -> parameterType in numberTypes
+        ParameterTypeLabel.STRING -> parameterType == String::class.java
+        ParameterTypeLabel.BOOLEAN -> parameterType == Boolean::class.javaPrimitiveType
+        ParameterTypeLabel.TIMESTAMP -> parameterType == ZonedDateTime::class.java
+        ParameterTypeLabel.UUID -> parameterType == UUID::class.java
+        ParameterTypeLabel.BYTES -> parameterType == ByteArray::class.javaPrimitiveType ||
                 parameterType == ByteBuffer::class.java
 
-        ParameterType.JsonType -> true
-        is ParameterType.QualifiedType ->
+        ParameterTypeLabel.JSON -> true
+        is QualifiedType<*> ->
             (qualifiers.isEmpty() || expectedType.qualifier in qualifiers)
-                    && validateTypeAgreement(parameterType, emptySet(), expectedType.type)
+                    && validateTypeAgreement(parameterType, emptySet(), expectedType)
     }
 
 private val String.kebabCase: String

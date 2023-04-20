@@ -3,8 +3,11 @@ package net.corda.flow.application.services.impl.interop.facade
 import com.fasterxml.jackson.core.JsonGenerator
 import com.fasterxml.jackson.databind.JsonSerializer
 import com.fasterxml.jackson.databind.SerializerProvider
+import net.corda.flow.application.services.impl.interop.parameters.QualifiedType
 import net.corda.v5.application.interop.facade.FacadeId
 import net.corda.v5.application.interop.facade.FacadeRequest
+import net.corda.v5.application.interop.parameters.ParameterType
+import net.corda.v5.application.interop.parameters.ParameterTypeLabel
 import java.math.BigDecimal
 import java.nio.ByteBuffer
 import java.time.ZonedDateTime
@@ -29,7 +32,7 @@ private fun serialize(
     gen: JsonGenerator,
     facadeId: FacadeId,
     methodName: String,
-    parameters: List<ParameterTypeLabel<*>>
+    parameters: List<ParameterTypeLabel>
 ) {
     gen.writeStartObject()
 
@@ -65,5 +68,5 @@ fun ParameterType<*>.writeValue(value: Any, gen: JsonGenerator): Unit = when (th
             )
         )
 
-    is ParameterType.QualifiedType -> type.writeValue(value, gen)
+    is QualifiedType -> type.writeValue(value, gen)
 }
