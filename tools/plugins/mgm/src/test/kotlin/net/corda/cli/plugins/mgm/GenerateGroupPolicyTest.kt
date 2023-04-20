@@ -11,14 +11,14 @@ import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
+import org.junit.jupiter.api.parallel.Execution
+import org.junit.jupiter.api.parallel.ExecutionMode
 import picocli.CommandLine
 import java.nio.file.Files
 import java.nio.file.Path
 
+@Execution(ExecutionMode.SAME_THREAD)
 class GenerateGroupPolicyTest {
-
-    @TempDir
-    lateinit var tempDir: Path
 
     @Test
     fun `command generates and prints GroupPolicy to output as correctly formatted JSON`() {
@@ -105,6 +105,7 @@ class GenerateGroupPolicyTest {
                 "--endpoint-protocol=5"
             )
         }.apply {
+            println(this)
             memberList(this).forEach {
                 assertTrue(it["name"].asText().contains("C=GB, L=London, O=Member"))
                 assertEquals("ACTIVE", it["memberStatus"].asText())
@@ -126,7 +127,7 @@ class GenerateGroupPolicyTest {
     }
 
     @Test
-    fun `if file type is not JSON or YAML (YML), exception is thrown`() {
+    fun `if file type is not JSON or YAML (YML), exception is thrown`(@TempDir tempDir: Path) {
         val app = GenerateGroupPolicy()
         val filePath = Files.createFile(tempDir.resolve("src.txt"))
         tapSystemErrAndOutNormalized {
@@ -137,7 +138,7 @@ class GenerateGroupPolicyTest {
     }
 
     @Test
-    fun `JSON file with 'members' is correctly parsed to generate group policy with specified member information`() {
+    fun `JSON file with 'members' is correctly parsed to generate group policy with specified member information`(@TempDir tempDir: Path) {
         val app = GenerateGroupPolicy()
         val filePath = Files.createFile(tempDir.resolve("src.json"))
         filePath.toFile().writeText(
@@ -169,7 +170,7 @@ class GenerateGroupPolicyTest {
     }
 
     @Test
-    fun `YAML file with 'memberNames' is correctly parsed to generate group policy with specified member information`() {
+    fun `YAML file with 'memberNames' is correctly parsed to generate group policy with specified member information`(@TempDir tempDir: Path) {
         val app = GenerateGroupPolicy()
         val filePath = Files.createFile(tempDir.resolve("src.yaml"))
         filePath.toFile().writeText(
@@ -191,7 +192,7 @@ class GenerateGroupPolicyTest {
     }
 
     @Test
-    fun `exception is thrown when the input file has both 'members' and 'memberNames' blocks`() {
+    fun `exception is thrown when the input file has both 'members' and 'memberNames' blocks`(@TempDir tempDir: Path) {
         val app = GenerateGroupPolicy()
         val filePath = Files.createFile(tempDir.resolve("src.yaml"))
         filePath.toFile().writeText(
@@ -217,7 +218,7 @@ class GenerateGroupPolicyTest {
     }
 
     @Test
-    fun `exception is thrown when the input file is empty`() {
+    fun `exception is thrown when the input file is empty`(@TempDir tempDir: Path) {
         val app = GenerateGroupPolicy()
         val filePath = Files.createFile(tempDir.resolve("src.yaml"))
 
@@ -229,7 +230,7 @@ class GenerateGroupPolicyTest {
     }
 
     @Test
-    fun `exception is thrown if file specifies 'members' or 'memberNames' but no endpoint information`() {
+    fun `exception is thrown if file specifies 'members' or 'memberNames' but no endpoint information`(@TempDir tempDir: Path) {
         val app = GenerateGroupPolicy()
         val filePath1 = Files.createFile(tempDir.resolve("src.yaml"))
         filePath1.toFile().writeText("memberNames: [\"C=GB, L=London, O=Member1\", \"C=GB, L=London, O=Member2\"]")
