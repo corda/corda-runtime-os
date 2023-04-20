@@ -58,7 +58,7 @@ public interface MemberInfo {
     @NotNull MemberX500Name getName();
 
     /**
-     * @return List of current and previous (rotated) ledger keys, which member can still use to sign unspent
+     * @return List of current and previous (rotated) ledger keys, which the member can still use to sign unspent
      * transactions on ledger. The key at index 0 is always the latest added ledger key.
      */
     @NotNull List<PublicKey> getLedgerKeys();
