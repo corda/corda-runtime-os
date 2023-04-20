@@ -1,5 +1,6 @@
 package net.corda.flow.pipeline.impl
 
+import java.time.Instant
 import java.util.stream.Stream
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.event.SessionEvent
@@ -9,8 +10,8 @@ import net.corda.data.flow.state.external.ExternalEventState
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.flow.ALICE_X500_HOLDING_IDENTITY
-import net.corda.flow.BOB_X500_HOLDING_IDENTITY
 import net.corda.flow.ALICE_X500_NAME
+import net.corda.flow.BOB_X500_HOLDING_IDENTITY
 import net.corda.flow.BOB_X500_NAME
 import net.corda.flow.FLOW_ID_1
 import net.corda.flow.REQUEST_ID_1
@@ -27,20 +28,20 @@ import net.corda.session.manager.SessionManager
 import net.corda.virtualnode.HoldingIdentity
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertFalse
-import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Assertions.assertThrows
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.params.provider.Arguments
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-import org.mockito.kotlin.anyOrNull
-import java.time.Instant
 
 class FlowGlobalPostProcessorImplTest {
 
@@ -321,6 +322,24 @@ class FlowGlobalPostProcessorImplTest {
     }
 
     @Test
+    fun `Don't raise a platform error if counterparties cannot be confirmed within timeout window but the checkpoint is already deleted`() {
+        sessionState3.apply {
+            sessionStartTime = Instant.now().minusSeconds(86400)
+            lastReceivedMessageTime = Instant.now().minusSeconds(86400)
+        }
+
+        whenever(checkpoint.doesExist).thenReturn(false)
+        whenever(checkpoint.sessions).thenReturn(listOf(sessionState1, sessionState2, sessionState3))
+        whenever(checkpoint.holdingIdentity).thenReturn(HoldingIdentity(ALICE_X500_NAME, ""))
+
+        assertDoesNotThrow {
+            flowGlobalPostProcessor.postProcess(testContext)
+        }
+
+        verify(sessionManager, never()).errorSession(any())
+    }
+
+    @Test
     fun `Don't raise a platform error if counterparty currently null, but last message was received within timeout window`() {
         sessionState3.apply {
             sessionStartTime = Instant.now().minusSeconds(86400)
@@ -333,5 +352,7 @@ class FlowGlobalPostProcessorImplTest {
         assertDoesNotThrow {
             flowGlobalPostProcessor.postProcess(testContext)
         }
+
+        verify(sessionManager, times(1)).errorSession(any())
     }
 }
