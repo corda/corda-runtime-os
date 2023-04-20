@@ -13,11 +13,13 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 import org.junit.jupiter.api.parallel.Execution
 import org.junit.jupiter.api.parallel.ExecutionMode
+import org.junit.jupiter.api.parallel.Isolated
 import picocli.CommandLine
 import java.nio.file.Files
 import java.nio.file.Path
 
 @Execution(ExecutionMode.SAME_THREAD)
+@Isolated("Tests using tapSystemErrAndOutNormalized cannot run in parallel.")
 class GenerateGroupPolicyTest {
 
     @Test

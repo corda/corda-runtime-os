@@ -16,9 +16,11 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.parallel.Execution
 import org.junit.jupiter.api.parallel.ExecutionMode
+import org.junit.jupiter.api.parallel.Isolated
 import picocli.CommandLine
 
 @Execution(ExecutionMode.SAME_THREAD)
+@Isolated("Tests using tapSystemErrNormalized cannot run in parallel.")
 class TestInitialConfigPluginCrypto {
     @Test
     fun `Should output missing options`() {
