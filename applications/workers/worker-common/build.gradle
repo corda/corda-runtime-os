@@ -31,6 +31,12 @@ dependencies {
     implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation "info.picocli:picocli:$picocliVersion"
     implementation "io.javalin:javalin-osgi:$javalinVersion"
+    constraints {
+        implementation("org.eclipse.jetty:jetty-server:$jettyVersion") {
+            because 'Javalin uses an older version of Jetty which is exposed to CVE-2023-26048 and CVE-2023-26049. ' +
+                    'This might be resolved in the future versions of Javalin.'
+        }
+    }
     implementation "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
     implementation ("io.micrometer:micrometer-core:0.1.0-SNAPSHOT") {
         // we don't need these in classpath, so excluding them to reduce dependencies.
@@ -42,6 +48,7 @@ dependencies {
     runtimeOnly project(':libs:lifecycle:lifecycle-impl')
     runtimeOnly "org.apache.commons:commons-lang3:$commonsLangVersion"
 
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 
     testRuntimeOnly 'org.osgi:osgi.core'

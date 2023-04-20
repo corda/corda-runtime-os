@@ -64,6 +64,7 @@ dependencies {
     runtimeOnly project(':components:membership:locally-hosted-identities-service-impl')
     runtimeOnly project(':components:membership:members-client-certificate-publisher-service-impl')
 
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation project(":testing:test-utilities")
     testImplementation "net.corda:corda-topic-schema"

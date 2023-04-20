@@ -22,7 +22,7 @@ dependencies {
     api project(':libs:db:db-orm')
     api project(':libs:lifecycle:lifecycle')
 
-    testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 
     testRuntimeOnly "org.osgi:osgi.core"

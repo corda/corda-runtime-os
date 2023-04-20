@@ -16,5 +16,6 @@ dependencies {
     implementation project(":libs:permissions:permission-manager")
     implementation project(":libs:permissions:permission-validation")
 
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 }

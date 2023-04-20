@@ -47,6 +47,7 @@ dependencies {
     testCompileOnly 'org.osgi:osgi.core'
     testImplementation "org.assertj:assertj-core:$assertjVersion"
     testImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testRuntimeOnly "org.apache.felix:org.apache.felix.framework:$felixVersion"
     testRuntimeOnly "co.paralleluniverse:quasar-core-osgi:$quasarVersion:framework-extension"
