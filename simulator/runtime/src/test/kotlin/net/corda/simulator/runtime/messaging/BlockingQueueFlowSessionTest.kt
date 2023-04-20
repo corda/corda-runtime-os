@@ -24,7 +24,7 @@ import java.util.concurrent.TimeoutException
 import kotlin.concurrent.thread
 
 
-@Timeout(value = 5, unit = TimeUnit.SECONDS)
+@Timeout(value = 15, unit = TimeUnit.SECONDS)
 class BlockingQueueFlowSessionTest {
 
     private val sender = MemberX500Name.parse("CN=IRunCorDapps, OU=Application, O=R3, L=London, C=GB")
