@@ -252,7 +252,7 @@ class AMQPwithOSGiSerializationTests {
             val mainBundleItemInstance = mainBundleItemClass.getMethod("newInstance").invoke(null)
 
             val serializerClass =
-                sandboxGroup.loadClassFromMainBundles("net.cordapp.bundle.SerializerUsingPrivateProxy")
+                sandboxGroup.loadClassFromMainBundles("net.cordapp.bundle.SerializerUsingPrivateProxyType")
             val serializer = serializerClass.getConstructor().newInstance() as SerializationCustomSerializer<*, *>
             factory.registerExternal(serializer, factory)
 
@@ -277,7 +277,7 @@ class AMQPwithOSGiSerializationTests {
             val mainBundleItemInstance = mainBundleItemClass.getMethod("newInstance").invoke(null)
 
             val serializerClass =
-                sandboxGroup.loadClassFromMainBundles("net.cordapp.bundle.SerializerUsingPublicProxy")
+                sandboxGroup.loadClassFromMainBundles("net.cordapp.bundle.SerializerUsingPublicProxyType")
             val serializer = serializerClass.getConstructor().newInstance() as SerializationCustomSerializer<*, *>
             factory.registerExternal(serializer, factory)
 

@@ -25,8 +25,8 @@ class SerializerTargetingPrivateType :
 }
 
 // Custom serializer to try and serialize MainBundleItem. It should fail because its proxy type references a private CPK type
-class SerializerUsingPrivateProxy :
-    SerializationCustomSerializer<MainBundleItem, SerializerUsingPrivateProxy.MainBundleItemProxy> {
+class SerializerUsingPrivateProxyType :
+    SerializationCustomSerializer<MainBundleItem, SerializerUsingPrivateProxyType.MainBundleItemProxy> {
     override fun toProxy(obj: MainBundleItem): MainBundleItemProxy =
         MainBundleItemProxy(obj.privateBundleItem)
 
@@ -39,8 +39,8 @@ class SerializerUsingPrivateProxy :
 
 // Custom serializer to try and serialize MainBundleItem. This one uses a proxy for private CPK type, so the private CPK type
 // is not actually returned and therefore not exposed to AMQP serialization
-class SerializerUsingPublicProxy :
-    SerializationCustomSerializer<MainBundleItem, SerializerUsingPublicProxy.MainBundleItemProxy> {
+class SerializerUsingPublicProxyType :
+    SerializationCustomSerializer<MainBundleItem, SerializerUsingPublicProxyType.MainBundleItemProxy> {
     override fun toProxy(obj: MainBundleItem): MainBundleItemProxy {
         val privateBundleItem = obj.privateBundleItem
         return MainBundleItemProxy(PrivateBundleItemProxy(privateBundleItem.i))
