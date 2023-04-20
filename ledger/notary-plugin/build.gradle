@@ -1,7 +1,7 @@
 plugins {
     id 'corda-api.common-library'
     id 'corda.common-publishing'
-    id 'org.jetbrains.kotlin.jvm'
+    id 'corda.java-only'
 }
 
 description 'Corda Notary Plugin API and Core'
@@ -9,7 +9,6 @@ description 'Corda Notary Plugin API and Core'
 dependencies {
     api platform(project(':corda-api'))
 
-    api 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     api 'javax.persistence:javax.persistence-api'
     api 'org.slf4j:slf4j-api'
 

@@ -1,13 +1,12 @@
 plugins {
-    id 'org.jetbrains.kotlin.jvm'
-    id 'corda.common-publishing'
     id 'corda-api.common-library'
+    id 'corda.common-publishing'
+    id 'corda.java-only'
 }
 
 description 'Corda Crypto'
 
 dependencies {
-    implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation 'org.slf4j:slf4j-api'
 
     compileOnly 'org.osgi:osgi.annotation'

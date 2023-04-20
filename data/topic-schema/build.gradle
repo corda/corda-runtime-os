@@ -7,7 +7,6 @@ plugins {
 description 'Definition of Topics'
 
 dependencies {
-    implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation platform(project(':corda-api'))
 
     testImplementation "org.assertj:assertj-core:$assertjVersion"
