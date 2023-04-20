@@ -24,21 +24,21 @@ set -x
 
 echo "Using ${MAX_WORKERS} workers"
 
-#echo "Building without cache"
-#gradle_run "${TAG_EXP}-${TAG_NO_CACHE}-${TAG_CLEAN}" "--no-build-cache clean"
-#gradle_run "${TAG_EXP}-${TAG_NO_CACHE}-${TAG_CLEAN}" "--no-build-cache publishOSGiImage -PmultiArchSupport=false"
-#gradle_run "${TAG_EXP}-${TAG_NO_CACHE}-${TAG_INCREMENTAL}" "--no-build-cache publishOSGiImage -PmultiArchSupport=false"
-#
-#echo "Building with cache"
-#gradle_run "${TAG_EXP}-${TAG_CACHE}-${TAG_CLEAN}" "--build-cache clean"
-#gradle_run "${TAG_EXP}-${TAG_CACHE}-${TAG_CLEAN}" "--build-cache publishOSGiImage -PmultiArchSupport=false"
-#gradle_run "${TAG_EXP}-${TAG_CACHE}-${TAG_INCREMENTAL}" "--build-cache publishOSGiImage -PmultiArchSupport=false"
-#
-#echo "(Incremental) Detekt without cache"
-#gradle_run "${TAG_EXP}-${TAG_NO_CACHE}-${TAG_INCREMENTAL}" "--no-build-cache detekt"
+echo "Building without cache"
+gradle_run "${TAG_EXP}-${TAG_NO_CACHE}-${TAG_CLEAN}" "--no-build-cache clean"
+gradle_run "${TAG_EXP}-${TAG_NO_CACHE}-${TAG_CLEAN}" "--no-build-cache publishOSGiImage -PmultiArchSupport=false"
+gradle_run "${TAG_EXP}-${TAG_NO_CACHE}-${TAG_INCREMENTAL}" "--no-build-cache publishOSGiImage -PmultiArchSupport=false"
+
+echo "Building with cache"
+gradle_run "${TAG_EXP}-${TAG_CACHE}-${TAG_CLEAN}" "--build-cache clean"
+gradle_run "${TAG_EXP}-${TAG_CACHE}-${TAG_CLEAN}" "--build-cache publishOSGiImage -PmultiArchSupport=false"
+gradle_run "${TAG_EXP}-${TAG_CACHE}-${TAG_INCREMENTAL}" "--build-cache publishOSGiImage -PmultiArchSupport=false"
+
+echo "(Incremental) Detekt without cache"
+gradle_run "${TAG_EXP}-${TAG_NO_CACHE}-${TAG_INCREMENTAL}" "--no-build-cache detekt"
 
 echo "(Incremental) Testing without cache"
 gradle_run "${TAG_EXP}-${TAG_NO_CACHE}-${TAG_INCREMENTAL}" "--no-build-cache test"
 
-#echo "(Incremental) Testing without cache"
-#gradle_run "${TAG_EXP}-${TAG_NO_CACHE}-${TAG_INCREMENTAL}" "--no-build-cache integrationTest"
+echo "(Incremental) Testing without cache"
+gradle_run "${TAG_EXP}-${TAG_NO_CACHE}-${TAG_INCREMENTAL}" "--no-build-cache integrationTest"
