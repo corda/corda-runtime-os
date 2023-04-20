@@ -2,54 +2,54 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://corda.r3.com/net/corda/schema/configuration/reconciliation/1.0/corda.reconciliation.json",
   "title": "Corda Reconciliation Configuration Schema",
-  "description": "Configuration schema for the reconciliation subsection.",
+  "description": "Configuration schema for the reconciliation section.",
   "type": "object",
   "default": {},
   "properties": {
     "permissionSummaryIntervalMs": {
-      "description": "Interval in ms between permission summary reconciliation rounds.",
+      "description": "The interval in milliseconds between permission summary reconciliation rounds.",
       "type": "integer",
       "minimum": 5000,
       "maximum": 2147483647,
       "default": 30000
     },
     "cpkWriteIntervalMs": {
-      "description": "Interval in ms between aligning Kafka CPKs state with DB CPKs state.",
+      "description": "The interval in milliseconds between aligning the Kafka CPKs state with the DB CPKs state.",
       "type": "integer",
       "minimum": 5000,
       "maximum": 2147483647,
       "default": 10000
     },
     "cpiInfoIntervalMs": {
-      "description": "Interval in ms between aligning Kafka CPI Metadata state with DB CPI Metadata state.",
+      "description": "The interval in milliseconds between aligning the Kafka CPI metadata state with the DB CPI metadata state.",
       "type": "integer",
       "minimum": 5000,
       "maximum": 2147483647,
       "default": 30000
     },
     "vnodeInfoIntervalMs": {
-      "description": "Interval in ms between aligning Kafka Virtual Node Info state with DB Virtual Node Info state.",
+      "description": "The interval in milliseconds between aligning the Kafka virtual node info state with the DB virtual node info state.",
       "type": "integer",
       "minimum": 5000,
       "maximum": 2147483647,
       "default": 30000
     },
     "configIntervalMs": {
-      "description": "Interval in ms between aligning Kafka Configuration Sections state with DB Configuration Sections.",
+      "description": "The interval in milliseconds between aligning the Kafka configuration sections state with the DB configuration sections.",
       "type": "integer",
       "minimum": 5000,
       "maximum": 2147483647,
       "default": 30000
     },
     "groupParamsIntervalMs": {
-      "description": "Interval in ms between aligning Kafka Group Parameters state with DB GroupParameters per virtual node.",
+      "description": "The interval in milliseconds between aligning the Kafka group parameters state with the DB group parameters per virtual node.",
       "type": "integer",
       "minimum": 5000,
       "maximum": 2147483647,
       "default": 120000
     },
     "mtlsMgmAllowedCertificateSubjectsIntervalMs": {
-      "description": "Interval in ms between aligning Kafka MGM allowed client certificate subjects state with DB MGM allowed client certificate subjects state.",
+      "description": "The interval in milliseconds between aligning the Kafka MGM allowed client certificate subjects state with the DB MGM allowed client certificate subjects state.",
       "type": "integer",
       "minimum": 5000,
       "maximum": 2147483647,

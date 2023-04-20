@@ -4,7 +4,7 @@ import net.corda.v5.application.crypto.DigitalSignatureAndMetadata;
 import net.corda.v5.base.annotations.CordaSerializable;
 import net.corda.v5.base.annotations.DoNotImplement;
 import net.corda.v5.base.annotations.Suspendable;
-import net.corda.v5.ledger.common.Party;
+import net.corda.v5.base.types.MemberX500Name;
 import net.corda.v5.ledger.common.transaction.TransactionWithMetadata;
 import net.corda.v5.ledger.utxo.Command;
 import net.corda.v5.ledger.utxo.StateAndRef;
@@ -30,7 +30,7 @@ import java.util.List;
  * <p>
  * {@link UtxoSignedTransaction} is frequently passed around the network and stored. The identity of a transaction is
  * the hash of Merkle root of the wrapped wire representation, therefore if you are storing data keyed by wire
- * representations hash be aware that multiple different {@link UtxoSignedTransaction}s may map to the same key, and
+ * representations hash, be aware that multiple different {@link UtxoSignedTransaction}s may map to the same key, and
  * they could be different in important ways, like validity!
  * <p>
  * The signatures on a {@link UtxoSignedTransaction} might be invalid or missing: the type does not imply validity.
@@ -74,12 +74,20 @@ public interface UtxoSignedTransaction extends TransactionWithMetadata {
     List<StateAndRef<?>> getOutputStateAndRefs();
 
     /**
-     * Gets the notary {@link Party} used for notarizing the current transaction.
+     * Gets the notary service {@link MemberX500Name} used for notarizing the current transaction.
      *
-     * @return Returns the notary {@link Party} used for notarizing the current transaction.
+     * @return Returns the notary service {@link MemberX500Name} used for notarizing the current transaction.
      */
     @NotNull
-    Party getNotary();
+    MemberX500Name getNotaryName();
+
+    /**
+     * Gets the notary service {@link PublicKey} used for notarizing the current transaction.
+     *
+     * @return Returns the notary service {@link PublicKey} used for notarizing the current transaction.
+     */
+    @NotNull
+    PublicKey getNotaryKey();
 
     /**
      * Gets the validity {@link TimeWindow} for notarizing and finalizing the current transaction.

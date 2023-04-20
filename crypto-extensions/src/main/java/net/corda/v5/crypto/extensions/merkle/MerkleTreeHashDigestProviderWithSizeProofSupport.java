@@ -6,7 +6,7 @@ import org.jetbrains.annotations.NotNull;
 import java.util.List;
 
 /**
- * Special Digest provider for supporting size proofs.
+ * Special digest provider for supporting size proofs.
  */
 
 public interface MerkleTreeHashDigestProviderWithSizeProofSupport extends MerkleTreeHashDigestProvider {

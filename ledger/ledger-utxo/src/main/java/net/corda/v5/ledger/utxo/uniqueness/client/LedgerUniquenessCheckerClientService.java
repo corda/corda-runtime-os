@@ -21,6 +21,7 @@ public interface LedgerUniquenessCheckerClientService {
      * Requests a uniqueness check.
      *
      * @param transactionId The ID of the transaction to be processed.
+     * @param originatorX500Name The X500 name of the party that requested (initiated) notarization.
      * @param inputStates A list of the input state refs that belongs to the given transaction.
      * @param referenceStates A list of the reference state refs that belongs to the given transaction.
      * @param numOutputStates The number of output states in the given transaction.
@@ -32,6 +33,7 @@ public interface LedgerUniquenessCheckerClientService {
     @SuppressWarnings("LongParameterList")
     UniquenessCheckResult requestUniquenessCheck(
             @NotNull String transactionId,
+            @NotNull String originatorX500Name,
             @NotNull List<String> inputStates,
             @NotNull List<String> referenceStates,
             int numOutputStates,

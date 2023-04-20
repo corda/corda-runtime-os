@@ -3,7 +3,7 @@ package net.corda.schema.membership;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * A membership related schema.
+ * A membership-related schema.
  */
 public abstract class MembershipSchema {
     private MembershipSchema(String schemaName) {

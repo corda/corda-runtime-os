@@ -30,7 +30,7 @@
     },
     {
       "name": "holdingIdentity",
-      "type": "net.corda.data.identity.HoldingIdentity",
+      "type": ["null","net.corda.data.identity.HoldingIdentity"],
       "doc": "Holding identity of the member for which the request was made."
     }
   ]

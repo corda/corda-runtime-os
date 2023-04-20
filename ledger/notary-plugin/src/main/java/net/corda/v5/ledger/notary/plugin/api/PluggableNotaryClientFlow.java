@@ -9,7 +9,7 @@ import java.util.List;
  * A basic interface that needs to be implemented by the client-side logic of the notary plugin.
  * This interface has a single method called {@link #call} which contains the main logic for the client.
  * The client flow must implement this interface in order for it to be instantiated in the provider.
- * If the client flow doesn't implement this interface the plugin selection will not work. Implementations
+ * If the client flow doesn't implement this interface, the plugin selection will not work. Implementations
  * must:
  * <ul>
  *     <li>
@@ -18,7 +18,7 @@ import java.util.List;
  *     <li>
  *         Provide a constructor which takes exactly two arguments: a
  *        {@link net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction UtxoSignedTransaction}
- *        representing the transaction, and a {@link net.corda.v5.ledger.common.Party Party} which is
+ *        representing the transaction, and a {@link net.corda.v5.base.types.MemberX500Name> MemberX500Name} which is
  *        populated with the notary virtual node representing the notary service.
  *     </li>
  *     <li>
@@ -30,9 +30,9 @@ import java.util.List;
  * The server side will not have an interface like the client, it will only implement the
  * {@link net.corda.v5.application.flows.ResponderFlow ResponderFlow} interface.
  * <p>
- * For an example client and server implementation please refer to the non-validating notary plugin under
+ * For an example client and server implementation, please refer to the non-validating notary plugin under
  * the `notary-plugins/notary-plugin-non-validating` module in the `corda-runtime-os` repository,
- * or the quick start guide.
+ * or to the quick start guide.
  */
 public interface PluggableNotaryClientFlow extends SubFlow<List<DigitalSignatureAndMetadata>> {
 }

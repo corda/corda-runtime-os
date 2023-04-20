@@ -1,12 +1,12 @@
 package net.corda.v5.ledger.utxo.query;
 
-import net.corda.v5.ledger.utxo.ContractState;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Map;
 
 /**
  * Representation of a transformer function that will be applied to the result set returned by the named query.
+ * Null values returned from the transformation will be filtered out.
  * <p>
  * Example usage:
  * <ul>
@@ -28,10 +28,10 @@ import java.util.Map;
  * }
  * }</pre></li></ul>
  *
- * @param <T> Type of the state returned from the database.
- * @param <R> Type that the original state is transformed into.
+ * @param <T> Type of the data returned from the database.
+ * @param <R> Type that the original data is transformed into.
  */
-public interface VaultNamedQueryTransformer<T extends ContractState, R> {
+public interface VaultNamedQueryTransformer<T, R> {
     @NotNull
-    R transform(@NotNull T state, @NotNull Map<String, Object> parameters);
+    R transform(@NotNull T data, @NotNull Map<String, Object> parameters);
 }

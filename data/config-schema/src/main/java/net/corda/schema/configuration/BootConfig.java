@@ -3,7 +3,7 @@ package net.corda.schema.configuration;
 import static net.corda.schema.configuration.MessagingConfig.MAX_ALLOWED_MSG_SIZE;
 
 /**
- * Configuration paths for values used to bootstrap the worker
+ * Configuration paths for values used to bootstrap the worker.
  */
 @SuppressWarnings("unused")
 public final class BootConfig {
@@ -30,6 +30,9 @@ public final class BootConfig {
     public static final String BOOT_REST = "rest";
     public static final String BOOT_REST_TLS_KEYSTORE_FILE_PATH = BOOT_REST + ".tls.keystore.path";
     public static final String BOOT_REST_TLS_KEYSTORE_PASSWORD = BOOT_REST + ".tls.keystore.password";
+    public static final String BOOT_REST_TLS_CRT_PATH = BOOT_REST + ".tls.crt.path";
+    public static final String BOOT_REST_TLS_KEY_PATH = BOOT_REST + ".tls.key.path";
+    public static final String BOOT_REST_TLS_CA_CRT_PATH = BOOT_REST + ".tls.ca.crt.path";
 
     public static final String BOOT_SECRETS = "secrets";
 }

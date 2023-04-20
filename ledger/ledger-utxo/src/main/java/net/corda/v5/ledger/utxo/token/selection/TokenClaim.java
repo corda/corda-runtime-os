@@ -13,12 +13,12 @@ import java.util.List;
  * The claimed {@link ClaimedToken} list is exclusively locked by the flow that made the claim and are
  * unavailable to any other flows.
  * <p>
- * Once a flow has either spent some or all of the claimed tokens it should call {@link TokenClaim#useAndRelease(List)}
+ * Once a flow has either spent some or all of the claimed tokens, it should call {@link TokenClaim#useAndRelease(List)}
  * to notify the cache which tokens were used.
  * <p>
  * Any unused tokens will be released and made available to other flows.
  * <p>
- * If the flow does not call {@link TokenClaim#useAndRelease(List)} the tokens will remain locked until the cache
+ * If the flow does not call {@link TokenClaim#useAndRelease(List)}, the tokens will remain locked until the cache
  * receives a consumed notification from the vault or the claim timeout elapses.
  */
 @DoNotImplement

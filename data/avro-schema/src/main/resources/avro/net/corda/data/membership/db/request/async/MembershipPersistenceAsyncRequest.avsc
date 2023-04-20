@@ -1,0 +1,13 @@
+{
+  "type": "record",
+  "name": "MembershipPersistenceAsyncRequest",
+  "namespace": "net.corda.data.membership.db.request.async",
+  "doc": "Internal request envelope for asynchronous persistence operations.",
+  "fields": [
+    {
+      "name": "request",
+      "type": "net.corda.data.membership.db.request.MembershipPersistenceRequest",
+      "doc": "The persistence request"
+    }
+  ]
+}

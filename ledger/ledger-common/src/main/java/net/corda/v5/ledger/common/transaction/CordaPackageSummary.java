@@ -1,11 +1,13 @@
 package net.corda.v5.ledger.common.transaction;
 
+import net.corda.v5.base.annotations.DoNotImplement;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Defines the summary of the metadata of a Corda package (CPK or CPI).
  */
+@DoNotImplement
 public interface CordaPackageSummary {
 
     /**

@@ -1,5 +1,6 @@
 package net.corda.v5.crypto.merkle;
 
+import net.corda.v5.base.annotations.DoNotImplement;
 import net.corda.v5.crypto.SecureHash;
 import org.jetbrains.annotations.NotNull;
 
@@ -11,6 +12,7 @@ import java.util.List;
  * From {@link MerkleTree}s, we can create {@link MerkleProof}s which let us prove that some particular data is part of the whole
  * tree without revealing the remaining data.
  */
+@DoNotImplement
 public interface MerkleTree {
 
     /**
@@ -24,7 +26,7 @@ public interface MerkleTree {
     /**
      * Return the {@link MerkleTreeHashDigest} used to construct the tree's node and leaf hashes.
      *
-     * @return The digest
+     * @return The digest.
      */
     @NotNull
     MerkleTreeHashDigest getDigest();
@@ -32,7 +34,7 @@ public interface MerkleTree {
     /**
      * Return the root element of the tree which is essentially the fingerprint of the whole tree/data set.
      *
-     * @return The root element hash
+     * @return The root element hash.
      */
     @NotNull
     SecureHash getRoot();

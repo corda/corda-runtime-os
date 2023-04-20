@@ -10,16 +10,16 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
  * This annotation is used to mark a class as having had multiple elements renamed as a container annotation for
  * instances of {@link CordaSerializationTransformRename}, each of which details an individual rename.
  * <p>
- * NOTE: Order is important, new values should always be added before existing
+ * NOTE: Order is important, new values should always be added before existing ones.
  * <p>
- * IMPORTANT - Once added (and in production) do NOT remove old annotations. See documentation for
- * more discussion on this point!.
+ * IMPORTANT: Once added (and in production), do NOT remove old annotations. See documentation for
+ * more information.
  */
 @Target(TYPE)
 @Retention(RUNTIME)
 public @interface CordaSerializationTransformRenames {
     /**
-     * @return value an array of {@link CordaSerializationTransformRename}
+     * @return Value an array of {@link CordaSerializationTransformRename}.
      */
     CordaSerializationTransformRename[] value();
 }

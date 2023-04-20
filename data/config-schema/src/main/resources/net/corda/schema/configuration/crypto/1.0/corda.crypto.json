@@ -1,0 +1,140 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://corda.r3.com/net/corda/schema/configuration/crypto/1.0/corda.crypto.json",
+  "title": "Corda Crypto Library Configuration Schema",
+  "description": "Configuration schema for the crypto library subsection.",
+  "type": "object",
+  "default": {},
+  "properties": {
+    "caching": {
+      "description": "Caching settings",
+      "type": "object",
+      "default": {},
+      "properties": {
+        "expireAfterAccessMins": {
+          "description": "Expiration time in minutes for cached key metadata",
+          "type": "object",
+          "default": {},
+          "properties": {
+            "default": {
+              "type": "integer",
+              "default": 10000
+            }
+          }
+        },
+        "maximumSize": {
+          "description": "Maximum number of cached key metadata",
+          "type": "object",
+          "default": {},
+          "properties": {
+            "default": {
+              "type": "integer",
+              "default": 60
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "retrying": {
+      "description": "Retry settings",
+      "type": "object",
+      "default": {},
+      "properties": {
+        "maxAttempts": {
+          "description": "Maximum attempts to process a message",
+          "type": "object",
+          "properties": {
+            "default": {
+              "type": "integer",
+              "default": 3
+            }
+          }
+        },
+        "waitBetweenMills": {
+          "description": "Time between attempts in milliseconds, if the number of values is less than attempts then the last item is repeated",
+          "type": "object",
+          "properties": {
+            "default": {
+              "type": "array",
+              "items": {
+                "type": "integer"
+              },
+              "minItems": 1,
+              "default": [
+                200
+              ]
+            }
+          }
+        }
+      }
+    },
+    "hsm": {
+      "description": "Settings and capabilities for the HSM",
+      "type": "object",
+      "default": {},
+      "properties": {
+        "retrying": {
+          "description": "Retry settings for the HSM",
+          "type": "object",
+          "default": {},
+          "properties": {
+            "maxAttempts": {
+              "description": "Maximum number of attempts",
+              "type": "integer",
+              "default": 3
+            },
+            "attemptTimeoutMills": {
+              "description": "Wait period in milliseconds between attempts, should be reasonably large as some operations may be long, e.g. RSA key generation by the SOFT HSM may take a few seconds",
+              "type": "integer",
+              "default": 20000
+            }
+          },
+          "additionalProperties": false
+        },
+        "wrappingKeys": {
+          "description" : "Key derivation parameters for wrapping keys supplied in config",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "alias": {
+                "description": "The alias for the wrapping key.",
+                "type": "string"
+              },
+              "algorithm": {
+                "description": "Key derivation function and wrapping key algorithm selection",
+                "type": "string",
+                "default": "PBKDF2WithHmacSHA256"
+              },
+              "salt": {
+                "description": "Salt for the key derivation function",
+                "type": "string"
+              },
+              "passphrase": {
+                "description": "Passphrase for the key derivation function",
+                "type": "string"
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "alias",
+              "salt",
+              "passphrase"
+            ]
+          }
+        },
+        "defaultWrappingKey": {
+          "description": "The default wrapping key, which must be in the wrappingKeys array.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "wrappingKeys",
+        "defaultWrappingKey"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

@@ -78,13 +78,13 @@
       "minimum": 1
     },
     "heartbeatMessagePeriod": {
-      "description": "Heartbeat message period in milliseconds.",
+      "description": "The heartbeat message period in milliseconds.",
       "type": "integer",
       "default": 2000,
       "minimum": 500
     },
     "sessionTimeout": {
-      "description": "Session timeout in milliseconds.",
+      "description": "The session timeout in milliseconds.",
       "type": "integer",
       "default": 10000,
       "minimum": 500
@@ -98,7 +98,7 @@
     "revocationCheck": {
       "type": "object",
       "default": {},
-      "description": "How to check for revocation of the session certificate.",
+      "description": "The type of revocation check for the session certificate.",
       "properties": {
         "mode": {
           "oneOf": [
@@ -108,11 +108,11 @@
             },
             {
               "const": "HARD_FAIL",
-              "title": "Opposite of SOFT_FAIL - i.e. most rigorous check. Among other things, this check requires that CRL checking URL is available on every level of certificate chain."
+              "title": "The opposite of SOFT_FAIL. This is the most rigorous check. Amongst other requirements, this check requires that the CRL checking URL is available on every level of certificate chain."
             },
             {
               "const": "OFF",
-              "title": "Switch CRL check off."
+              "title": "Disables the CRL check."
             }
           ],
           "default": "SOFT_FAIL"
@@ -120,7 +120,7 @@
       }
     },
     "sessionRefreshThreshold": {
-      "description": "Session refresh threshold in seconds. The default is five days.",
+      "description": "The session refresh threshold in seconds. The default value is five days.",
       "type": "integer",
       "default": 432000,
       "maximum": 432000

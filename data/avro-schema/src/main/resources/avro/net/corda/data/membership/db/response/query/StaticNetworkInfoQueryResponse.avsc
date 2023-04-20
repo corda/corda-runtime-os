@@ -1,0 +1,16 @@
+{
+  "type": "record",
+  "name": "StaticNetworkInfoQueryResponse",
+  "namespace": "net.corda.data.membership.db.response.query",
+  "doc": "Response to a query for or persistence of static network information.",
+  "fields": [
+    {
+      "name": "info",
+      "doc": "The static network information if available.",
+      "type": [
+        "null",
+        "net.corda.data.membership.StaticNetworkInfo"
+      ]
+    }
+  ]
+}

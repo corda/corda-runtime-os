@@ -1,0 +1,28 @@
+{
+  "type": "record",
+  "name": "MembershipPersistenceAsyncRequestState",
+  "namespace": "net.corda.data.membership.db.request.async",
+  "doc": "State of failed membership persistence async request.",
+  "fields": [
+    {
+      "name": "request",
+      "doc": "The request.",
+      "type": "MembershipPersistenceAsyncRequest"
+    },
+    {
+      "name": "numberOfRetriesSoFar",
+      "doc": "The number of times this request failed so far.",
+      "type": {
+        "type": "int"
+      }
+    },
+    {
+      "name": "lastFailedOn",
+      "doc": "The time in which the request had last failed.",
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+      }
+    }
+  ]
+}

@@ -1,5 +1,6 @@
 package net.corda.v5.ledger.consensual.transaction;
 
+import net.corda.v5.base.annotations.DoNotImplement;
 import net.corda.v5.base.annotations.Suspendable;
 import net.corda.v5.ledger.common.transaction.TransactionNoAvailableKeysException;
 import net.corda.v5.ledger.consensual.ConsensualState;
@@ -14,6 +15,7 @@ import java.util.List;
  * new states. Once the states have been collected, the builder can be used to obtain a
  * {@link ConsensualSignedTransaction} which can be used to gather signatures from the transaction's participants.
  */
+@DoNotImplement
 public interface ConsensualTransactionBuilder {
 
     /**

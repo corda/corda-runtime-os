@@ -7,7 +7,7 @@
     {
       "name": "groupParameters",
       "doc": "The persisted set of group parameters.",
-      "type": "net.corda.data.KeyValuePairList"
+      "type": "net.corda.data.membership.SignedGroupParameters"
     }
   ]
 }

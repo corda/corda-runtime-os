@@ -13,9 +13,9 @@ public final class CompositeKeyNodeAndWeight {
     private final int weight;
 
     /**
-     * Construct a key
+     * Construct a key.
      *
-     * @param node   A public key
+     * @param node   A public key.
      * @param weight The weight for that key, must be greater than zero.
      */
     public CompositeKeyNodeAndWeight(@NotNull PublicKey node, int weight) {

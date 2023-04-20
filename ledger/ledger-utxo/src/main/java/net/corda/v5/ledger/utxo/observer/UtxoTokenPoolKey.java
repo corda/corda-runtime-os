@@ -10,7 +10,7 @@ import java.util.Objects;
 /**
  * Represents a key for a pool of similar tokens.
  * <p>
- * The full token pool key includes Holding ID, token type, issue, notary and symbol.
+ * The full token pool key includes holding ID, token type, issue, notary and symbol.
  * The platform provides the holding ID, notary and optional token type.
  */
 public final class UtxoTokenPoolKey {
@@ -36,10 +36,10 @@ public final class UtxoTokenPoolKey {
     /**
      * Creates a new instance of the {@link UtxoTokenPoolKey} class.
      *
-     * @param tokenType The type of token within a pool. If nothing is specified the platform will default this to the
+     * @param tokenType The type of token within a pool. If nothing is specified, the platform will default this to the
      * class name of the contact state this key was created from by an implementation of {@link UtxoLedgerTokenStateObserver}.
      * @param issuerHash The SecureHash of the issuer of the tokens in a pool.
-     * @param symbol The user defined symbol of the tokens in a pool.
+     * @param symbol The user-defined symbol of the tokens in a pool.
      */
     public UtxoTokenPoolKey(
             @Nullable final String tokenType,
@@ -54,7 +54,7 @@ public final class UtxoTokenPoolKey {
      * Creates a new instance of the {@link UtxoTokenPoolKey} class.
      *
      * @param issuerHash The SecureHash of the issuer of the tokens in a pool.
-     * @param symbol The user defined symbol of the tokens in a pool.
+     * @param symbol The user-defined symbol of the tokens in a pool.
      */
     public UtxoTokenPoolKey(@NotNull final SecureHash issuerHash, @NotNull final String symbol) {
         this(null, issuerHash, symbol);
@@ -81,9 +81,9 @@ public final class UtxoTokenPoolKey {
     }
 
     /**
-     * Gets the user defined symbol of the tokens in a pool.
+     * Gets the user-defined symbol of the tokens in a pool.
      *
-     * @return Returns the user defined symbol of the tokens in a pool.
+     * @return Returns the user-defined symbol of the tokens in a pool.
      */
     @NotNull
     public String getSymbol() {

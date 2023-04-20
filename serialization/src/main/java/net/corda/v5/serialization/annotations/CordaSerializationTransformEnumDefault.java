@@ -9,11 +9,11 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 /**
  * This annotation is used to mark an enumerated type as having had a new constant appended to it. For
- * each additional constant added a new annotation should be appended to the class. If more than one
- * is required the wrapper annotation {@link CordaSerializationTransformEnumDefaults} should be used to
- * encapsulate them
+ * each additional constant added, a new annotation should be appended to the class. If more than one
+ * is required, the wrapper annotation {@link CordaSerializationTransformEnumDefaults} should be used to
+ * encapsulate them.
  * <p>
- * For Example:<p>
+ * For example:<p>
  * Enum before modification:
  * <pre>
  *  enum class ExampleEnum {
@@ -21,9 +21,9 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
  *  }
  * </pre>
  * <p>
- * Assuming at some point a new constant is added it is required we have some mechanism by which to tell
+ * Assuming at some point a new constant is added, it is required we have some mechanism by which to tell
  * nodes with an older version of the class on their Class Path what to do if they attempt to deserialize
- * an example of the class with that new value
+ * an example of the class with that new value.
  * <pre>
  *  &#64;CordaSerializationTransformEnumDefault(newName = "D", oldName = "C")
  *  enum class ExampleEnum {
@@ -31,9 +31,9 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
  *  }
  * </pre>
  * <p>
- * So, on deserialisation treat any instance of the enum that is encoded as D as C
+ * So, on deserialisation treat any instance of the enum that is encoded as D as C.
  * <p>
- * Adding a second new constant requires the wrapper annotation {@link CordaSerializationTransformEnumDefaults}
+ * Adding a second new constant requires the wrapper annotation {@link CordaSerializationTransformEnumDefaults}.
  * <pre>
  *  &#64;CordaSerializationTransformEnumDefaults(
  *      &#64;CordaSerializationTransformEnumDefault(newName = "E", oldName = "D"),
@@ -46,20 +46,20 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
  *
  * It's fine to assign the second new value a default that may not be present in all versions as in this
  * case it will work down the transform hierarchy until it finds a value it can apply, in this case it would
- * try E -&#62; D -&#62; C (when E -&#62; D fails)
+ * try E -&#62; D -&#62; C (when E -&#62; D fails).
  */
 @Target(TYPE)
 @Retention(RUNTIME)
 @Repeatable(CordaSerializationTransformEnumDefaults.class)
 public @interface CordaSerializationTransformEnumDefault {
     /**
-     *  @return new {@link String} equivalent of the value of the new constant
+     *  @return New {@link String} equivalent of the value of the new constant.
      */
     String newName();
 
     /**
-     * @return old {@link String} equivalent of the value of the existing constant that deserialisers should
-     * favour when de-serialising a value they have no corresponding value for
+     * @return Old {@link String} equivalent of the value of the existing constant that deserialisers should
+     * favour when de-serialising a value they have no corresponding value for.
      */
     String oldName();
 }

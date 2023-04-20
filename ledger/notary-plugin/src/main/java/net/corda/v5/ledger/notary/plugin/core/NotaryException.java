@@ -8,10 +8,8 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  * The base class for all notary errors that can be returned by the notary itself (plugin). Specific notary exceptions
- * must not inherit from this class directly, they should use one of the inner classes. To create a notary exception use
- * @see NotaryExceptionFatal
- * or 
- * @see NotaryExceptionUnknown
+ * must not inherit from this class directly, they should use one of the inner classes. To create a notary exception, use
+ * {@link NotaryExceptionFatal} or {@link NotaryExceptionUnknown}.
  */
 @CordaSerializable
 public abstract class NotaryException extends CordaRuntimeException {
@@ -20,7 +18,7 @@ public abstract class NotaryException extends CordaRuntimeException {
     private final SecureHash txId;
 
     /**
-     * @return the specific error message produced by the notary.
+     * @return Returns the specific error message produced by the notary.
      */
     @NotNull
     public final String getNotaryErrorMessage() {
@@ -28,7 +26,7 @@ public abstract class NotaryException extends CordaRuntimeException {
     }
 
     /**
-     * @return txId Id of the transaction to be notarized. Can be _null_ if an error occurred before the id could be
+     * @return Returns the txId ID of the transaction to be notarized. Can be null if an error occurred before the ID could be
      * resolved.
      */
     @Nullable

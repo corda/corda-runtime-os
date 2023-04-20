@@ -22,21 +22,17 @@
       }
     },
     {
-      "doc": "The session initiation public key (in PEM format)",
-      "name": "sessionPublicKey",
-      "type": "string"
+      "doc": "The preferred session initiation key and certificate",
+      "name": "preferredSessionKeyAndCert",
+      "type": "HostedIdentitySessionKeyAndCert"
     },
     {
-      "doc": "The session certificates (in PEM format)",
-      "name": "sessionCertificates",
-      "type": [
-        "null",
-        {
-          "type": "array",
-          "items": "string"
-        }
-      ],
-      "default": null
-    }
+      "doc": "Alternative session initiation keys and certificates",
+      "name": "alternativeSessionKeysAndCerts",
+       "type": {
+         "type": "array",
+         "items": "HostedIdentitySessionKeyAndCert"
+       }
+     }
   ]
 }

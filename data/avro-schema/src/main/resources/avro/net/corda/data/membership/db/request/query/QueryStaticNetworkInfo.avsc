@@ -1,0 +1,16 @@
+{
+  "type": "record",
+  "name": "QueryStaticNetworkInfo",
+  "namespace": "net.corda.data.membership.db.request.query",
+  "doc": "Query for a group's current static network information.",
+  "fields": [
+    {
+      "name": "groupId",
+      "doc": "The static network group ID.",
+      "type": {
+        "type": "string",
+        "logicalType": "uuid"
+      }
+    }
+  ]
+}

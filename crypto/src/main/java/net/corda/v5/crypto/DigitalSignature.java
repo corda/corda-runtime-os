@@ -1,48 +1,31 @@
 package net.corda.v5.crypto;
 
 import net.corda.v5.base.annotations.CordaSerializable;
-import net.corda.v5.base.types.OpaqueBytes;
+import net.corda.v5.base.annotations.DoNotImplement;
 import org.jetbrains.annotations.NotNull;
-
-import java.security.PublicKey;
 
 /**
  * A wrapper around a digital signature.
  */
+@DoNotImplement
 @CordaSerializable
-public class DigitalSignature extends OpaqueBytes {
-    public DigitalSignature(@NotNull byte[] bytes) {
-        super(bytes);
-    }
+public interface DigitalSignature {
+
+    @NotNull
+    byte[] getBytes();
 
     /**
-     * A digital signature that identifies who the public key is owned by.
+     * A digital signature that identifies who is the owner of the signing key used to create this signature.
      */
-    public static class WithKey extends DigitalSignature {
+    @DoNotImplement
+    interface WithKeyId extends DigitalSignature {
 
         /**
-         * Construct WithKey
-         *
-         * @param by      The public key of the corresponding private key used to sign the data (as if an instance
-         *                of the {@link CompositeKey} is passed to the sign operation it may contain keys which are not actually owned by
-         *                the member).
-         * @param bytes   The signature.
+         * Gets the key ID of the public key (public key hash) whose private key pair was used to sign the data. If the
+         * original key passed in to the sign operation is a {@link CompositeKey} then the key ID, is the ID of the
+         * composite key leaf used to sign.
          */
-        public WithKey(@NotNull PublicKey by, @NotNull byte[] bytes) {
-            super(bytes);
-            this.by = by;
-        }
-
-        /**
-         * Public key which corresponding private key was used to sign the data (as if an instance
-         * of the {@link CompositeKey} is passed to the sign operation it may contain keys which are not actually owned by
-         * the member).
-         */
-        private final PublicKey by;
-
         @NotNull
-        public final PublicKey getBy() {
-            return this.by;
-        }
+        SecureHash getBy();
     }
 }

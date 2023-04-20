@@ -5,7 +5,7 @@ import net.corda.v5.crypto.SecureHash;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Defines metadata properties of transactions common across difference ledger implementations.
+ * Defines metadata properties of transactions common across different ledger implementations.
  */
 @DoNotImplement
 public interface TransactionWithMetadata {

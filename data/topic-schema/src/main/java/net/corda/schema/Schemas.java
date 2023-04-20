@@ -7,9 +7,9 @@ public final class Schemas {
     }
 
     /**
-     * Messaging topic schema
+     * Messaging topic schema.
      * <p>
-     * The following is an example schema for topics.  In this case, for a compacted topic, as defined
+     * The following is an example schema for topics. In this case, for a compacted topic, as defined
      * in the {@code config} section.
      * <pre>{@code
      * topics = [
@@ -30,7 +30,7 @@ public final class Schemas {
      public static final String TOPIC_CONFIG = "config";
 
     /**
-     * @return the state and event dlq topic
+     * @return The state and event dlq topic.
      */
     @NotNull
     public static String getStateAndEventDLQTopic(@NotNull String topic) {
@@ -38,7 +38,7 @@ public final class Schemas {
     }
 
     /**
-     * @return the state and event state topic
+     * @return The state and event state topic.
      */
     @NotNull
     public static String getStateAndEventStateTopic(@NotNull String topic) {
@@ -46,7 +46,7 @@ public final class Schemas {
     }
 
     /**
-     * @return the rpc response topic
+     * @return The RPC response topic.
      */
     @NotNull
     public static String getRPCResponseTopic(@NotNull String topic) {
@@ -54,7 +54,17 @@ public final class Schemas {
     }
 
     /**
-     * Config read topic schema
+     * Avro Schema Repository topic schema
+     */
+    public static final class AvroSchema {
+        private AvroSchema() {
+        }
+
+        public static final String AVRO_SCHEMA_TOPIC = "avro.schema";
+    }
+
+    /**
+     * Config read topic schema.
      */
     public static final class Config {
         private Config() {
@@ -66,7 +76,7 @@ public final class Schemas {
     }
 
     /**
-     * Crypto topic schema
+     * Crypto topic schema.
      */
     public static final class Crypto {
         private Crypto() {
@@ -80,7 +90,7 @@ public final class Schemas {
     }
 
     /**
-     * Flow event topic schema
+     * Flow event topic schema.
      */
     public static final class Flow {
         private Flow() {
@@ -96,7 +106,7 @@ public final class Schemas {
     }
 
     /**
-     * Corda Services topic schema
+     * Corda services topic schema.
      */
     public static final class Services {
         private Services() {
@@ -112,7 +122,7 @@ public final class Schemas {
     }
 
     /**
-     * Membership topic schema
+     * Membership topic schema.
      */
     public static final class Membership {
         private Membership() {
@@ -125,10 +135,16 @@ public final class Schemas {
         public static final String MEMBERSHIP_RPC_RESPONSE_TOPIC = getRPCResponseTopic(MEMBERSHIP_RPC_TOPIC);
         public static final String MEMBERSHIP_DB_RPC_TOPIC = "membership.db.rpc.ops";
         public static final String MEMBERSHIP_DB_RPC_RESPONSE_TOPIC = getRPCResponseTopic(MEMBERSHIP_DB_RPC_TOPIC);
-        public static final String MEMBERSHIP_STATIC_NETWORK_TOPIC = "membership.static.network";
+
+        public static final String MEMBERSHIP_DB_ASYNC_TOPIC = "membership.db.async.ops";
+        public static final String MEMBERSHIP_DB_ASYNC_STATE_TOPIC = getStateAndEventStateTopic(MEMBERSHIP_DB_ASYNC_TOPIC);
+        public static final String MEMBERSHIP_DB_ASYNC_DLQ_TOPIC = getStateAndEventDLQTopic(MEMBERSHIP_DB_ASYNC_TOPIC);
+
         public static final String MEMBERSHIP_ASYNC_REQUEST_TOPIC = "membership.async.request";
-        public static final String MEMBERSHIP_ASYNC_REQUEST_STATE_TOPIC = getStateAndEventStateTopic(MEMBERSHIP_ASYNC_REQUEST_TOPIC);
-        public static final String MEMBERSHIP_ASYNC_REQUEST_DLQ_TOPIC = getStateAndEventDLQTopic(MEMBERSHIP_ASYNC_REQUEST_TOPIC);
+        public static final String MEMBERSHIP_ASYNC_REQUEST_RETRIES_TOPIC = "membership.async.request.retries";
+        public static final String MEMBERSHIP_ASYNC_REQUEST_RETRIES_STATE_TOPIC = getStateAndEventStateTopic(MEMBERSHIP_ASYNC_REQUEST_RETRIES_TOPIC);
+        public static final String MEMBERSHIP_ASYNC_REQUEST_RETRIES_DLQ_TOPIC = getStateAndEventDLQTopic(MEMBERSHIP_ASYNC_REQUEST_RETRIES_TOPIC);
+        public static final String MEMBERSHIP_ACTIONS_TOPIC = "membership.actions";
 
         public static final String EVENT_TOPIC = "membership.event";
 
@@ -148,7 +164,7 @@ public final class Schemas {
     }
 
     /**
-     * P2P topic schema
+     * P2P topic schema.
      */
     public static final class P2P {
         private P2P() {
@@ -173,7 +189,7 @@ public final class Schemas {
     }
 
     /**
-     * Permissions Message schema
+     * Permissions message schema.
      */
     public static final class Permissions {
         private Permissions() {
@@ -183,7 +199,7 @@ public final class Schemas {
     }
 
     /**
-     * Persistence Message schema
+     * Persistence message schema.
      */
     public static final class Persistence {
         private Persistence() {
@@ -194,7 +210,7 @@ public final class Schemas {
     }
 
     /**
-     * Rest Message schema
+     * Rest message schema.
      */
     public static final class Rest {
         private Rest() {
@@ -209,7 +225,7 @@ public final class Schemas {
     }
 
     /**
-     * Uniqueness checker schema
+     * Uniqueness checker schema.
      */
     public static final class UniquenessChecker {
         private UniquenessChecker() {
@@ -219,7 +235,7 @@ public final class Schemas {
     }
 
     /**
-     * Verification Message schema
+     * Verification message schema.
      */
     public static final class Verification {
         private Verification() {
@@ -229,7 +245,7 @@ public final class Schemas {
     }
 
     /**
-     * Virtual Node schema
+     * Virtual node schema.
      */
     public static final class VirtualNode {
         private VirtualNode() {
@@ -237,6 +253,7 @@ public final class Schemas {
 
         public static final String VIRTUAL_NODE_INFO_TOPIC = "virtual.node.info";
         public static final String VIRTUAL_NODE_ASYNC_REQUEST_TOPIC = "virtual.node.async.request";
+        public static final String VIRTUAL_NODE_OPERATION_STATUS_TOPIC = "virtual.node.operation.status";
         public static final String VIRTUAL_NODE_CREATION_REQUEST_TOPIC = "virtual.node.creation.request";
         public static final String VIRTUAL_NODE_CREATION_REQUEST_RESPONSE_TOPIC = getRPCResponseTopic(VIRTUAL_NODE_CREATION_REQUEST_TOPIC);
         public static final String CPI_INFO_TOPIC = "cpi.info";

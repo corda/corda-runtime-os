@@ -3,7 +3,12 @@
                    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
                    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd">
 
-    <changeSet author="R3.Corda" id="ledger-utxo-visible-transaction-state-creation-postgres-v1.0" dbms="postgresql">
+    <property name="json.column.type" value="JSONB" dbms="postgresql"/>
+
+    <!-- Please note that HSQLDB schema is supported for integration test purposes only. -->
+    <property name="json.column.type" value="CLOB" dbms="hsqldb"/>
+
+    <changeSet author="R3.Corda" id="ledger-utxo-visible-transaction-state-creation-v1.0">
 
         <createTable tableName="utxo_visible_transaction_state">
             <column name="transaction_id" type="VARCHAR(160)">
@@ -15,7 +20,7 @@
             <column name="leaf_idx" type="INT">
                 <constraints nullable="false"/>
             </column>
-            <column name="custom_representation" type="JSONB">
+            <column name="custom_representation" type="${json.column.type}">
                 <constraints nullable="false"/>
             </column>
             <column name="created" type="TIMESTAMP">

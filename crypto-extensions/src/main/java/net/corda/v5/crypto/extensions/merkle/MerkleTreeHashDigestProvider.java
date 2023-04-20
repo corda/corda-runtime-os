@@ -8,7 +8,7 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  * Different use cases require different {@link MerkleTree} calculations.
- * {@link MerkleTreeHashDigestProvider}s let us specify the
+ * {@link MerkleTreeHashDigestProvider}s let us specify the following:
  * 
  * <ul>
  * <li> Leaf Nonce </li>
@@ -23,7 +23,7 @@ public interface MerkleTreeHashDigestProvider extends MerkleTreeHashDigest {
      * Calculates the nonce for a leaf.
      *
      * @param index The leaf's index.
-     * @return byte array of the nonce
+     * @return Byte array of the nonce.
      */
     @Nullable
     byte[] leafNonce(int index);

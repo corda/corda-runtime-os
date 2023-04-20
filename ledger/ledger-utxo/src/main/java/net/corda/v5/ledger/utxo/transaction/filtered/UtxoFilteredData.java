@@ -8,12 +8,12 @@ import java.util.Map;
 /**
  * Defines a container for retrieving information from a {@link UtxoFilteredTransaction}.
  * <p>
- * The underlying data in the original transaction is a component group, i.e. a list of entries in a Merkle tree
+ * The underlying data in the original transaction is a component group, that is, a list of entries in a Merkle tree
  * structure. This is what allows us to filter the transaction and still calculate a consistent transaction ID.
  * <p>
  * The component group can be either:
  * - Completely filtered out, where we do not get any information about this data.
- * - A size-only merkle proof, where we can only retrieve the size of the original list.
+ * - A size-only Merkle proof, where we can only retrieve the size of the original list.
  * - An audit proof, where we get access to some or all of the entries of the original list.
  *
  * @param <T> The underlying type of the filtered data.

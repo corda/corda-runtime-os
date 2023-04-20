@@ -5,4 +5,5 @@
     <include file="net/corda/db/schema/config/migration/cpx-creation-v1.0.xml"/>
     <include file="net/corda/db/schema/config/migration/config-creation-v1.0.xml"/>
     <include file="net/corda/db/schema/config/migration/chunking-creation-v1.0.xml"/>
+    <include file="net/corda/db/schema/config/migration/static-network-creation-v1.0.xml"/>
 </databaseChangeLog>

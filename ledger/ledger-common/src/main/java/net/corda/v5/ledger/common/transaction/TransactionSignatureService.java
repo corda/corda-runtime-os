@@ -2,6 +2,7 @@ package net.corda.v5.ledger.common.transaction;
 
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata;
 import net.corda.v5.application.crypto.DigitalSignatureVerificationService;
+import net.corda.v5.base.annotations.DoNotImplement;
 import net.corda.v5.base.annotations.Suspendable;
 import net.corda.v5.crypto.merkle.MerkleProof;
 import org.jetbrains.annotations.NotNull;
@@ -13,10 +14,11 @@ import java.util.List;
  * TransactionSignatureService can be used to sign and verify transaction signatures.
  * It supports both single and batch signatures.
  */
+@DoNotImplement
 public interface TransactionSignatureService {
 
     /**
-     * Signs a transaction id with all the available keys.
+     * Signs a transaction ID with all the available keys.
      *
      * @param transaction The transaction to be signed.
      * @param publicKeys Public keys that correspond to the private keys which should be attempted to sign with.
@@ -57,12 +59,14 @@ public interface TransactionSignatureService {
      * The underlying verification service signals the verification failures with different exceptions.
      * {@link DigitalSignatureVerificationService}
      *
-     * @param transaction The original transaction.
+     * @param transaction           The original transaction.
      * @param signatureWithMetadata The signature to be verified.
+     * @param publicKey             The public key to verify against. It must match with signatureWithMetadata's keyId.
      * @throws RuntimeException if the signature could not be verified.
      */
     void verifySignature(
             @NotNull final TransactionWithMetadata transaction,
-            @NotNull final DigitalSignatureAndMetadata signatureWithMetadata
+            @NotNull final DigitalSignatureAndMetadata signatureWithMetadata,
+            @NotNull final PublicKey publicKey
     );
 }

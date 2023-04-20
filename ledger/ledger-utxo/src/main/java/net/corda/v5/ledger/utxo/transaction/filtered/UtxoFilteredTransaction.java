@@ -3,8 +3,8 @@ package net.corda.v5.ledger.utxo.transaction.filtered;
 import net.corda.v5.base.annotations.CordaSerializable;
 import net.corda.v5.base.annotations.DoNotImplement;
 import net.corda.v5.base.exceptions.CordaRuntimeException;
+import net.corda.v5.base.types.MemberX500Name;
 import net.corda.v5.crypto.SecureHash;
-import net.corda.v5.ledger.common.Party;
 import net.corda.v5.ledger.common.transaction.TransactionMetadata;
 import net.corda.v5.ledger.utxo.Command;
 import net.corda.v5.ledger.utxo.StateAndRef;
@@ -18,10 +18,10 @@ import java.security.PublicKey;
 /**
  * Defines a filtered UTXO transaction.
  * <p>
- * This wraps a signed transaction that has been filtered using merkle proofs. This means that we can still calculate
+ * This wraps a signed transaction that has been filtered using Merkle proofs. This means that we can still calculate
  * and verify the transaction ID as a Merkle hash, but do not have access to all data in the original transaction.
  * <p>
- * For the list based data properties, there are three possibilities:
+ * For the list-based data properties, there are three possibilities:
  * - The whole entry is filtered out - no further information about this data is available.
  * This will be signified by returning an object implementing {@link UtxoFilteredData.Removed}.
  * - Only the number of original entries is revealed, but not the actual data. In this case,
@@ -30,7 +30,7 @@ import java.security.PublicKey;
  * {@link UtxoFilteredData.Audit} is returned.
  * <p>
  * There are a few special cases:
- * - {@link #getId()} and {@link #getMetadata()} cannot be filtered and are always returned
+ * - {@link #getId()} and {@link #getMetadata()} cannot be filtered and are always returned.
  * - {@link #getNotary()} and {@link #getTimeWindow()} are always unique - they are either revealed,
  * or the filtered transaction will return null when accessing them.
  */
@@ -63,12 +63,19 @@ public interface UtxoFilteredTransaction {
     TimeWindow getTimeWindow();
 
     /**
-     * Gets the notary for the current transaction, or null if filtered.
+     * Gets the notary service name for the current transaction, or null if filtered.
      *
-     * @return Returns the notary for the current transaction, or null if filtered.
+     * @return Returns the notary service name for the current transaction, or null if filtered.
      */
     @Nullable
-    Party getNotary();
+    MemberX500Name getNotaryName();
+
+    /**
+     * Gets the notary service key for the current transaction, or null if filtered
+     *
+     * @return Returns the notary service key for the current transaction or null if filtered
+     */
+    PublicKey getNotaryKey();
 
     /**
      * Gets a potentially filtered list of required signatories for the current transaction.

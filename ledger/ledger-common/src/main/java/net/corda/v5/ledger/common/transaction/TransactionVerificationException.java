@@ -27,7 +27,7 @@ public final class TransactionVerificationException extends CordaRuntimeExceptio
     /**
      * Gets the ID of the transaction that has failed verification.
      *
-     * @return the Returns ID of the transaction that has failed verification.
+     * @return Returns the ID of the transaction that has failed verification.
      */
     @NotNull
     public SecureHash getTransactionId() {

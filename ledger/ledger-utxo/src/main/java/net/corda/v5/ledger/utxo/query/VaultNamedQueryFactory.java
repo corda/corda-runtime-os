@@ -1,10 +1,15 @@
 package net.corda.v5.ledger.utxo.query;
 
+import net.corda.v5.ledger.utxo.query.json.ContractStateVaultJsonFactory;
+import net.corda.v5.ledger.utxo.query.registration.VaultNamedQueryBuilderFactory;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * The main interface that needs implemented by the named ledger queries. Implementing this interface will define how
+ * The main interface that needs to be implemented by the named ledger queries. Implementing this interface will define how
  * the named query will be built and stored.
+ *
+ * @see ContractStateVaultJsonFactory to define how a given state type will be represented as a JSON string.
+ *
  * <p>
  * Example usage:
  * <ul>
@@ -46,11 +51,11 @@ import org.jetbrains.annotations.NotNull;
  * }
  * }</pre></li></ul>
  *
- * For more details on how to use filters, mappers and collectors refer to the following documentations:
+ * For more details on how to use filters, mappers and collectors, refer to the following documentation:
  * <ul>
- * <li> For filters see {@link VaultNamedQueryFilter} </li>
- * <li> For mappers see {@link VaultNamedQueryTransformer} </li>
- * <li> For collectors see {@link VaultNamedQueryCollector} </li>
+ * <li> For filters, see {@link VaultNamedQueryFilter}. </li>
+ * <li> For mappers, see {@link VaultNamedQueryTransformer}. </li>
+ * <li> For collectors, see {@link VaultNamedQueryCollector}. </li>
  * </ul>
  */
 public interface VaultNamedQueryFactory {

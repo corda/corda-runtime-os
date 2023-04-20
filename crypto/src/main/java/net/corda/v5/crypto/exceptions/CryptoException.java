@@ -10,7 +10,7 @@ import org.jetbrains.annotations.Nullable;
  * such as {@link IllegalArgumentException}, {@link IllegalStateException} and others as well. This base class is only
  * for the specific cases when a site throwing exception can provide some useful context about the operation.
  * <p>
- * Note that the approach for the Crypto Library is to use the existing exception where appropriate and use
+ * NOTE: The approach for the Crypto Library is to use the existing exception where appropriate and use
  * the specific Crypto Library exceptions only to convey additional context about the conditions which lead to
  * the exception.
  */
@@ -23,7 +23,7 @@ public class CryptoException extends CordaRuntimeException {
     private final boolean isRecoverable;
 
     /**
-     * If the value is true then the error condition is considered transient and the operation which throws such
+     * If the value is true, then the error condition is considered transient and the operation which throws such
      * exceptions can be retried.
      */
     public final boolean isRecoverable() {

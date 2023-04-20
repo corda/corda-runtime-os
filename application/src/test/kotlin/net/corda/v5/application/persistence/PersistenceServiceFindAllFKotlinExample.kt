@@ -22,8 +22,8 @@ val pagedQuery = persistenceService
     .setLimit(100)
     .setOffset(200)
 
-// execute the query and return the results as a List
-val result1: List<Dog> = pagedQuery.execute()
+// execute the query and return the results as a ResultSet then extract the results by calling `results`
+val result1: List<Dog> = pagedQuery.execute().results
 
 // create a named query setting parameters as Map, that returns the second page of up to 100 records
 val paramQuery = persistenceService
@@ -32,8 +32,8 @@ val paramQuery = persistenceService
     .setLimit(100)
     .setOffset(200)
 
-// execute the query and return the results as a List
-val result2: List<Dog> = pagedQuery.execute()
+// execute the query and return the results as a ResultSet then extract the results by calling `results`
+val result2: List<Dog> = pagedQuery.execute().results
 
 // For JPA Entity:
 @CordaSerializable

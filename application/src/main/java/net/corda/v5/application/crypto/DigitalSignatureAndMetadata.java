@@ -1,11 +1,11 @@
 package net.corda.v5.application.crypto;
 
-import java.security.PublicKey;
 import java.util.Objects;
 
 import net.corda.v5.base.annotations.ConstructorForDeserialization;
 import net.corda.v5.base.annotations.CordaSerializable;
 import net.corda.v5.crypto.DigitalSignature;
+import net.corda.v5.crypto.SecureHash;
 import net.corda.v5.crypto.merkle.MerkleProof;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -15,7 +15,7 @@ import org.jetbrains.annotations.Nullable;
  */
 @CordaSerializable
 public final class DigitalSignatureAndMetadata {
-    private final DigitalSignature.WithKey signature;
+    private final DigitalSignature.WithKeyId signature;
     private final DigitalSignatureMetadata metadata;
     private final MerkleProof proof;
 
@@ -32,7 +32,7 @@ public final class DigitalSignatureAndMetadata {
      */
     @ConstructorForDeserialization
     public DigitalSignatureAndMetadata(
-        @NotNull DigitalSignature.WithKey signature,
+        @NotNull DigitalSignature.WithKeyId signature,
         @NotNull DigitalSignatureMetadata metadata,
         @Nullable MerkleProof proof
     ) {
@@ -44,14 +44,14 @@ public final class DigitalSignatureAndMetadata {
     }
 
     public DigitalSignatureAndMetadata(
-        @NotNull DigitalSignature.WithKey signature,
+        @NotNull DigitalSignature.WithKeyId signature,
         @NotNull DigitalSignatureMetadata metadata
     ) {
         this(signature, metadata, null);
     }
 
     @NotNull
-    public DigitalSignature.WithKey getSignature() {
+    public DigitalSignature.WithKeyId getSignature() {
         return signature;
     }
 
@@ -66,10 +66,10 @@ public final class DigitalSignatureAndMetadata {
     }
 
     /**
-     * @return The {@link PublicKey} that created the signature.
+     * @return The key id of the public key, whose private key complement created the signature.
      */
     @NotNull
-    public PublicKey getBy() {
+    public SecureHash getBy() {
         return signature.getBy();
     }
 

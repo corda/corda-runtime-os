@@ -1,0 +1,16 @@
+{
+  "type": "record",
+  "name": "FindSignedGroupParametersResponse",
+  "doc": "Response format for FindSignedGroupParametersResponse",
+  "namespace": "net.corda.data.ledger.persistence",
+  "fields": [
+    {
+      "name": "results",
+      "doc": "0 or 1 SignedGroupParameters depending on the success of the query.",
+      "type": {
+        "type": "array",
+        "items": "net.corda.data.membership.SignedGroupParameters"
+      }
+    }
+  ]
+}

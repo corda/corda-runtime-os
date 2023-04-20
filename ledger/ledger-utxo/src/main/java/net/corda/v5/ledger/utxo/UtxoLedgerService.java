@@ -4,6 +4,7 @@ import net.corda.v5.application.messaging.FlowSession;
 import net.corda.v5.base.annotations.DoNotImplement;
 import net.corda.v5.base.annotations.Suspendable;
 import net.corda.v5.crypto.SecureHash;
+import net.corda.v5.ledger.utxo.query.VaultNamedParameterizedQuery;
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction;
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction;
 import net.corda.v5.ledger.utxo.transaction.UtxoTransactionBuilder;
@@ -22,13 +23,13 @@ import java.util.List;
 public interface UtxoLedgerService {
 
     /**
-     * Gets a UTXO transaction builder
+     * Gets a UTXO transaction builder.
      *
      * @return Returns a new {@link UtxoTransactionBuilder} instance.
      */
     @NotNull
     @Suspendable
-    UtxoTransactionBuilder getTransactionBuilder();
+    UtxoTransactionBuilder createTransactionBuilder();
 
     /**
      * Resolves the specified {@link StateRef} instances into {@link StateAndRef} instances of the specified {@link ContractState} type.
@@ -98,13 +99,14 @@ public interface UtxoLedgerService {
      * Verifies, signs, collects signatures, records and broadcasts a {@link UtxoSignedTransaction} to participants and observers.
      *
      * @param transaction The {@link UtxoSignedTransaction} to verify, finalize and record.
-     * @param sessions The {@link FlowSession} instances of the participants or observers of the transaction.
-     * @return Returns the fully signed {@link UtxoSignedTransaction} that was recorded.
+     * @param sessions    The {@link FlowSession} instances of the participants or observers of the transaction.
+     * @return Returns the {@link FinalizationResult} containing a fully signed {@link UtxoSignedTransaction} that was
+     * recorded.
      * @throws ContractVerificationException if the transaction fails contract verification.
      */
     @NotNull
     @Suspendable
-    UtxoSignedTransaction finalize(
+    FinalizationResult finalize(
             @NotNull UtxoSignedTransaction transaction,
             @NotNull List<FlowSession> sessions
     );
@@ -114,14 +116,15 @@ public interface UtxoLedgerService {
      * <p>
      * This method should be called in response to {@link #finalize(UtxoSignedTransaction, List)}.
      *
-     * @param session The {@link FlowSession} of the counter-party finalizing the {@link UtxoSignedTransaction}.
+     * @param session   The {@link FlowSession} of the counter-party finalizing the {@link UtxoSignedTransaction}.
      * @param validator Validates the received {@link UtxoSignedTransaction}.
-     * @return Returns the fully signed {@link UtxoSignedTransaction} that was received and recorded.
+     * @return Returns the {@link FinalizationResult} containing a fully signed {@link UtxoSignedTransaction} that was
+     * received and recorded.
      * @throws ContractVerificationException if the transaction failed contract verification.
      */
     @NotNull
     @Suspendable
-    UtxoSignedTransaction receiveFinality(
+    FinalizationResult receiveFinality(
             @NotNull FlowSession session,
             @NotNull UtxoTransactionValidator validator
     );
@@ -183,4 +186,53 @@ public interface UtxoLedgerService {
             @NotNull UtxoTransactionBuilder transactionBuilder,
             @NotNull FlowSession session
     );
+
+
+    /**
+     * Creates a query object for a named ledger query with the given name. This query can be executed later.
+     * <p>
+     * Example usage:
+     * <ul>
+     * <li>Kotlin:<pre>{@code
+     * val query = utxoLedgerService.query("FIND_BY_TEST_FIELD", Int::class.java)
+     *     .setParameter("testField", "value")
+     *     .setParameter("participants", listOf("something"))
+     *     .setParameter("contractStateType", ContractState::class.java.name)
+     *     .setParameter("in-memory-filter-parameter", "parameter")
+     *     .setCreatedTimestampLimit(Instant.now())
+     *     .setOffset(0)
+     *     .setLimit(100)
+     * do {
+     *     val resultSet = query.execute()
+     *     processResultsWithApplicationLogic(resultSet.results)
+     *     query.setOffset(query.offset + 100)
+     * } while (resultSet.results.isNotEmpty())
+     * }</pre></li>
+     * <li>Java:<pre>{@code
+     * ParameterizedQuery<Integer> query = utxoLedgerService.query("FIND_BY_TEST_FIELD", Integer.class)
+     *         .setParameter("testField", "value")
+     *         .setParameter("participants", List.of("something"))
+     *         .setParameter("contractStateType", ContractState.class.getName())
+     *         .setParameter("in-memory-filter-parameter", "parameter")
+     *         .setTimestampLimit(Instant.now())
+     *         .setOffset(0)
+     *         .setLimit(100);
+     *
+     * PagedQuery.ResultSet<Integer> resultSet = query.execute();
+     *
+     * processResultsWithApplicationLogic(resultSet.getResults());
+     *
+     * while (!resultSet.results.isEmpty()) {
+     *     resultSet = query.setOffset(query.getOffset() + 100).execute();
+     *     processResultsWithApplicationLogic(resultSet.getResults());
+     * }
+     * }</pre></li>
+     *
+     * @param queryName The name of the named ledger query to use.
+     * @param resultClass Type that the query should return when executed.
+     *
+     * @return A {@link VaultNamedParameterizedQuery} query object that can be executed or modified further on.
+     */
+    @Suspendable
+    @NotNull <R> VaultNamedParameterizedQuery<R> query(@NotNull String queryName, @NotNull Class<R> resultClass);
 }

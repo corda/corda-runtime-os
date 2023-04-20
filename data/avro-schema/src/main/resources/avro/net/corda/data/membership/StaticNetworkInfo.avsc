@@ -1,0 +1,36 @@
+{
+  "type": "record",
+  "name": "StaticNetworkInfo",
+  "namespace": "net.corda.data.membership",
+  "doc": "Avro representation of static group definition.",
+  "fields": [
+    {
+      "name": "groupId",
+      "doc": "Group which the group definition belongs to.",
+      "type": {
+        "type": "string",
+        "logicalType": "uuid"
+      }
+    },
+    {
+      "name": "groupParameters",
+      "doc": "Group Parameters for the group.",
+      "type": "net.corda.data.KeyValuePairList"
+    },
+    {
+      "name": "mgmPublicSigningKey",
+      "doc": "The MGM's public key encoded as a byte array used for MGM signature verification in a static network.",
+      "type": "bytes"
+    },
+    {
+      "name": "mgmPrivateSigningKey",
+      "doc": "The virtual MGM's private key encoded as a byte array used for signing as an MGM in a static network.",
+      "type": "bytes"
+    },
+    {
+      "name": "version",
+      "doc": "The persisted static network information version number.",
+      "type": "int"
+    }
+  ]
+}

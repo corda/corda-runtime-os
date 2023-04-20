@@ -13,8 +13,9 @@ import org.jetbrains.annotations.NotNull;
  * The Corda platform will discover and invoke implementations of this interface for all produced states that match
  * the type specified by {@link UtxoLedgerTokenStateObserver#getStateType()}.
  * <p>
- * Example of use in Java.
- * ```Java
+ * Example usage:
+ * <ul>
+ * <li>Java:<pre>{@code
  * public class ExampleStateJ implements ContractState {
  * public List<PublicKey> participants;
  * public SecureHash issuer;
@@ -26,7 +27,7 @@ import org.jetbrains.annotations.NotNull;
  * return participants;
  * }
  * }
- * <p>
+ *
  * public class UtxoLedgerTokenStateObserverJavaExample implements UtxoLedgerTokenStateObserver<ExampleStateJ> {
  * @NotNull
  * @Override public Class<ExampleStateJ> getStateType() {
@@ -41,20 +42,19 @@ import org.jetbrains.annotations.NotNull;
  * );
  * }
  * }
- * ```
- * Example of use in Kotlin.
- * ```Kotlin
+ * }</pre></li>
+ * <li>Kotlin:<pre>{@code
  * data class ExampleStateK(
  * override val participants: List<PublicKey>,
  * val issuer: SecureHash,
  * val currency: String,
  * val amount: BigDecimal
  * ) : ContractState
- * <p>
+ *
  * class UtxoLedgerTokenStateObserverKotlinExample : UtxoLedgerTokenStateObserver<ExampleStateK> {
- * <p>
+ *
  * override val stateType = ExampleStateK::class.java
- * <p>
+ *
  * override fun onCommit(state: ExampleStateK): UtxoToken {
  * return UtxoToken(
  * UtxoTokenPoolKey(ExampleStateK::class.java.name, state.issuer, state.currency),
@@ -63,7 +63,7 @@ import org.jetbrains.annotations.NotNull;
  * )
  * }
  * }
- * ```
+ * }</pre></li></ul>
  */
 public interface UtxoLedgerTokenStateObserver<T extends ContractState> {
 

@@ -18,6 +18,11 @@
       "type": "string"
     },
     {
+      "name": "originatorX500Name",
+      "type": "string",
+      "doc": "The x500 name of the of the party who initiated a notarization (and by extension, uniqueness check) request"
+    },
+    {
       "name": "inputStates",
       "type": {
         "type": "array",

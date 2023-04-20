@@ -17,4 +17,3 @@ dependencies {
     testApi 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     testImplementation "org.assertj:assertj-core:$assertjVersion"
 }
-

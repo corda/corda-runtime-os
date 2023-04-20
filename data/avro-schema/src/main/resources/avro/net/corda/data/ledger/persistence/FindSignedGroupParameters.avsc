@@ -1,0 +1,13 @@
+{
+  "type": "record",
+  "name": "FindSignedGroupParameters",
+  "doc": "Retrieve the specified signed group parameters, specified by its hash. One of several types of ledger persistence request {@link LedgerPersistenceRequest}",
+  "namespace": "net.corda.data.ledger.persistence",
+  "fields": [
+    {
+      "name": "hash",
+      "type": "string",
+      "doc": "The hash of the group parameters"
+    }
+  ]
+}

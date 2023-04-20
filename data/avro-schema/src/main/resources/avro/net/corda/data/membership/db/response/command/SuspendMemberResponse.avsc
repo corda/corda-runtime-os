@@ -8,6 +8,11 @@
       "name": "memberInfo",
       "doc": "The updated MemberInfo after suspending the member.",
       "type": "net.corda.data.membership.PersistentMemberInfo"
+    },
+    {
+      "name": "groupParameters",
+      "doc": "The persisted set of group parameters, only updated if the member being suspended was a notary.",
+      "type": ["null", "net.corda.data.membership.SignedGroupParameters"]
     }
   ]
 }
