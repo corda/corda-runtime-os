@@ -6,6 +6,8 @@ import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.core.ShortHash
 import net.corda.crypto.impl.converter.PublicKeyConverter
+import net.corda.data.KeyValuePair
+import net.corda.data.KeyValuePairList
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.command.registration.RegistrationCommand
 import net.corda.data.membership.command.registration.mgm.ApproveRegistration
@@ -39,6 +41,7 @@ import net.corda.membership.client.MemberNotAnMgmException
 import net.corda.membership.lib.EndpointInfoFactory
 import net.corda.membership.lib.MemberInfoExtension
 import net.corda.membership.lib.MemberInfoExtension.Companion.IS_MGM
+import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
 import net.corda.membership.lib.MemberInfoExtension.Companion.id
 import net.corda.membership.lib.approval.ApprovalRuleParams
 import net.corda.membership.lib.impl.MemberInfoFactoryImpl
@@ -104,11 +107,12 @@ class MGMResourceClientTest {
         const val REQUEST_ID = "b305129b-8c92-4092-b3a2-e6d452ce2b01"
         const val SERIAL = 1L
         const val REASON = "test"
+        const val GROUP = "DEFAULT_MEMBER_GROUP_ID"
 
         val RULE_TYPE = ApprovalRuleType.STANDARD
         val memberName = MemberX500Name.parse("CN=Bob,O=Bob,OU=Unit1,L=London,ST=State1,C=GB")
         val mgmX500Name = MemberX500Name.parse("CN=Alice,OU=Unit1,O=Alice,L=London,ST=State1,C=GB")
-        val holdingIdentity = createTestHoldingIdentity(mgmX500Name.toString(), "DEFAULT_MEMBER_GROUP_ID")
+        val holdingIdentity = createTestHoldingIdentity(mgmX500Name.toString(), GROUP)
         val shortHash = ShortHash.of(HOLDING_IDENTITY_STRING)
         val clock = TestClock(Instant.ofEpochSecond(100))
 
@@ -164,9 +168,9 @@ class MGMResourceClientTest {
     @Suppress("SpreadOperator")
     private fun createMemberInfo(name: String, isMgm: Boolean = true): MemberInfo = memberInfoFactory.create(
         sortedMapOf(
-            MemberInfoExtension.PARTY_NAME to name,
+            PARTY_NAME to name,
             String.format(MemberInfoExtension.PARTY_SESSION_KEYS, 0) to KNOWN_KEY,
-            MemberInfoExtension.GROUP_ID to "DEFAULT_MEMBER_GROUP_ID",
+            MemberInfoExtension.GROUP_ID to GROUP,
             *convertPublicKeys().toTypedArray(),
             *convertEndpoints().toTypedArray(),
             MemberInfoExtension.SOFTWARE_VERSION to "5.0.0",
@@ -794,6 +798,7 @@ class MGMResourceClientTest {
             whenever(publisher.publish(any())).doReturn(listOf(CompletableFuture.completedFuture(Unit)))
             val mockStatus = mock<RegistrationRequestDetails> {
                 on { registrationStatus } doReturn RegistrationStatus.PENDING_MANUAL_APPROVAL
+                on { memberProvidedContext } doReturn KeyValuePairList(listOf(KeyValuePair(PARTY_NAME, memberName.toString())))
             }
             whenever(membershipQueryClient.queryRegistrationRequest(any(), any())).doReturn(
                 MembershipQueryResult.Success(mockStatus)
@@ -811,7 +816,7 @@ class MGMResourceClientTest {
                 listOf(
                     Record(
                         Schemas.Membership.REGISTRATION_COMMAND_TOPIC,
-                        "$REQUEST_ID-$shortHash",
+                        "$memberName-$GROUP",
                         RegistrationCommand(ApproveRegistration())
                     )
                 )
@@ -825,6 +830,7 @@ class MGMResourceClientTest {
             whenever(publisher.publish(any())).doReturn(listOf(CompletableFuture.completedFuture(Unit)))
             val mockStatus = mock<RegistrationRequestDetails> {
                 on { registrationStatus } doReturn RegistrationStatus.PENDING_MANUAL_APPROVAL
+                on { memberProvidedContext } doReturn KeyValuePairList(listOf(KeyValuePair(PARTY_NAME, memberName.toString())))
             }
             whenever(membershipQueryClient.queryRegistrationRequest(any(), any())).doReturn(
                 MembershipQueryResult.Success(mockStatus)
@@ -844,7 +850,7 @@ class MGMResourceClientTest {
                 listOf(
                     Record(
                         Schemas.Membership.REGISTRATION_COMMAND_TOPIC,
-                        "$REQUEST_ID-$shortHash",
+                        "$memberName-$GROUP",
                         RegistrationCommand(DeclineRegistration(reason))
                     )
                 )
@@ -937,6 +943,127 @@ class MGMResourceClientTest {
                     shortHash,
                     REQUEST_ID.uuid(),
                     true
+                )
+            }
+            mgmResourceClient.stop()
+        }
+    }
+
+    @Nested
+    inner class ForceDeclineRegistrationRequestTests {
+        @Test
+        fun `forceDeclineRegistrationRequest should publish the correct command`() {
+            whenever(coordinator.getManagedResource<Publisher>(any())).doReturn(publisher)
+            whenever(publisher.publish(any())).doReturn(listOf(CompletableFuture.completedFuture(Unit)))
+            val mockStatus = mock<RegistrationRequestDetails> {
+                on { registrationStatus } doReturn RegistrationStatus.PENDING_MEMBER_VERIFICATION
+                on { memberProvidedContext } doReturn KeyValuePairList(listOf(KeyValuePair(PARTY_NAME, memberName.toString())))
+            }
+            whenever(membershipQueryClient.queryRegistrationRequest(any(), any())).doReturn(
+                MembershipQueryResult.Success(mockStatus)
+            )
+            mgmResourceClient.start()
+            setUpRpcSender(null)
+
+            mgmResourceClient.forceDeclineRegistrationRequest(
+                shortHash,
+                REQUEST_ID.uuid(),
+            )
+
+            verify(publisher).publish(
+                listOf(
+                    Record(
+                        Schemas.Membership.REGISTRATION_COMMAND_TOPIC,
+                        "$memberName-$GROUP",
+                        RegistrationCommand(DeclineRegistration("Force declined by MGM"))
+                    )
+                )
+            )
+            mgmResourceClient.stop()
+        }
+
+        @Test
+        fun `forceDeclineRegistrationRequest should fail for completed requests`() {
+            val mockStatus = mock<RegistrationRequestDetails> {
+                on { registrationStatus } doReturn RegistrationStatus.APPROVED
+                on { memberProvidedContext } doReturn KeyValuePairList(listOf(KeyValuePair(PARTY_NAME, memberName.toString())))
+            }
+            whenever(membershipQueryClient.queryRegistrationRequest(any(), any())).doReturn(
+                MembershipQueryResult.Success(mockStatus)
+            )
+            mgmResourceClient.start()
+            setUpRpcSender(null)
+
+            assertThrows<IllegalArgumentException> {
+                mgmResourceClient.forceDeclineRegistrationRequest(
+                    shortHash,
+                    REQUEST_ID.uuid(),
+                )
+            }
+            verify(publisher, never()).publish(any())
+            mgmResourceClient.stop()
+        }
+
+        @Test
+        fun `forceDeclineRegistrationRequest should fail if the MGM cannot be found`() {
+            mgmResourceClient.start()
+            setUpRpcSender(null)
+
+            assertThrows<CouldNotFindMemberException> {
+                mgmResourceClient.forceDeclineRegistrationRequest(
+                    ShortHash.of("000000000000"),
+                    REQUEST_ID.uuid(),
+                )
+            }
+            mgmResourceClient.stop()
+        }
+
+        @Test
+        fun `forceDeclineRegistrationRequest should fail if the MGM cannot be read`() {
+            mgmResourceClient.start()
+            setUpRpcSender(null)
+            whenever(groupReader.lookup(mgmX500Name)).doReturn(null)
+
+            assertThrows<CouldNotFindMemberException> {
+                mgmResourceClient.forceDeclineRegistrationRequest(
+                    shortHash,
+                    REQUEST_ID.uuid(),
+                )
+            }
+            mgmResourceClient.stop()
+        }
+
+        @Test
+        fun `forceDeclineRegistrationRequest should fail if holding identity ID does not belong to the MGM`() {
+            mgmResourceClient.start()
+            setUpRpcSender(null)
+            val mgmContext = mock<MGMContext>()
+            val memberInfo = mock<MemberInfo> {
+                on { mgmProvidedContext } doReturn mgmContext
+            }
+            whenever(groupReader.lookup(mgmX500Name)).doReturn(memberInfo)
+
+            assertThrows<MemberNotAnMgmException> {
+                mgmResourceClient.forceDeclineRegistrationRequest(
+                    shortHash,
+                    REQUEST_ID.uuid(),
+                )
+            }
+            mgmResourceClient.stop()
+        }
+
+        @Test
+        fun `forceDeclineRegistrationRequest should fail if request status cannot be determined`() {
+            mgmResourceClient.start()
+            setUpRpcSender(null)
+            whenever(membershipQueryClient.queryRegistrationRequest(any(), any())).doReturn(
+                MembershipQueryResult.Success(null)
+            )
+
+            assertThrows<IllegalArgumentException> {
+                mgmResourceClient.forceDeclineRegistrationRequest(
+                    shortHash,
+                    REQUEST_ID.uuid(),
                 )
             }
             mgmResourceClient.stop()
