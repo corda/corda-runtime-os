@@ -14,6 +14,9 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.fail
+import org.junit.jupiter.api.parallel.Execution
+import org.junit.jupiter.api.parallel.ExecutionMode
+import org.junit.jupiter.api.parallel.Isolated
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.mock
@@ -26,6 +29,8 @@ import java.util.UUID
 import java.util.concurrent.CompletableFuture
 
 @Suppress("ExplicitGarbageCollectionCall")
+@Execution(ExecutionMode.SAME_THREAD)
+@Isolated
 class SandboxGroupContextCacheTest {
     private companion object {
         private const val TIMEOUT = 60L
