@@ -17,7 +17,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.utilities.serialization.deserialize
 import net.corda.v5.application.serialization.SerializationService
-qimport net.corda.v5.ledger.utxo.ContractState
+import net.corda.v5.ledger.utxo.ContractState
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 

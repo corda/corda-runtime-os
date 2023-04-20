@@ -3,7 +3,6 @@ package net.corda.ledger.utxo.data.transaction
 import net.corda.ledger.utxo.data.state.LazyStateAndRefImpl
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.ledger.utxo.ContractState
-import net.corda.v5.ledger.utxo.StateAndRef
 import java.util.Objects
 
 data class UtxoTransactionOutputDto(

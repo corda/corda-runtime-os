@@ -71,7 +71,9 @@ data class LazyStateAndRefImpl<out T : ContractState>(
 }
 
 @Suppress("UNCHECKED_CAST")
-private fun <T : ContractState> UtxoTransactionOutputDto.deserializeToStateAndRef(serializationService: SerializationService): StateAndRef<T> {
+private fun <T : ContractState> UtxoTransactionOutputDto.deserializeToStateAndRef(
+    serializationService: SerializationService
+): StateAndRef<T> {
     val info = try{
         serializationService.deserialize<UtxoOutputInfoComponent>(info)
     } catch (e: Exception){
