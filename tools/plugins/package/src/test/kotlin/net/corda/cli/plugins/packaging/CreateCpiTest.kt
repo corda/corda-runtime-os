@@ -15,6 +15,8 @@ import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
+import org.junit.jupiter.api.parallel.Execution
+import org.junit.jupiter.api.parallel.ExecutionMode
 import picocli.CommandLine
 import picocli.CommandLine.Help
 import java.io.ByteArrayInputStream
@@ -26,6 +28,7 @@ import java.nio.file.StandardOpenOption
 import java.util.jar.JarEntry
 import java.util.jar.JarInputStream
 
+@Execution(ExecutionMode.SAME_THREAD)
 class CreateCpiTest {
     companion object {
         const val CPI_FILE_NAME = "output.cpi"
