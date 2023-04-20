@@ -4,8 +4,13 @@ import com.github.stefanbirkner.systemlambda.SystemLambda.tapSystemErrNormalized
 import com.github.stefanbirkner.systemlambda.SystemLambda.tapSystemOutNormalized
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.parallel.Execution
+import org.junit.jupiter.api.parallel.ExecutionMode
+import org.junit.jupiter.api.parallel.Isolated
 import picocli.CommandLine
 
+@Execution(ExecutionMode.SAME_THREAD)
+@Isolated("Tests using tapSystemOutNormalized cannot run in parallel.")
 class TestInitialConfigPluginUser {
 
     @Test
