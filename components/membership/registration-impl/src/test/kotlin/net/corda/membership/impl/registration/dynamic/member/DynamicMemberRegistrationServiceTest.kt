@@ -107,6 +107,8 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
+import org.junit.jupiter.api.parallel.Execution
+import org.junit.jupiter.api.parallel.ExecutionMode
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.Mockito
@@ -131,6 +133,7 @@ import java.util.UUID
 import java.util.concurrent.CompletableFuture
 import javax.security.auth.x500.X500Principal
 
+@Execution(ExecutionMode.SAME_THREAD)
 class DynamicMemberRegistrationServiceTest {
     private companion object {
         const val SESSION_KEY = "1234"
