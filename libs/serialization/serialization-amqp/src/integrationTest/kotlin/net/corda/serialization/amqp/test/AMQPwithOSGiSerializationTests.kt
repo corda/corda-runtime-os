@@ -197,7 +197,7 @@ class AMQPwithOSGiSerializationTests {
 
     // Public CPK types (i.e. types defined in CPK main bundle) alone can be AMQP serialized
     @Test
-    fun `serializing private CPK type fails`() {
+    fun `private CPK types are not allowed to be serialized`() {
         val sandboxGroup = sandboxFactory.loadSandboxGroup("META-INF/TestSerializableCpk-using-lib.cpb")
         try {
             val factory = testDefaultFactory(sandboxGroup)
