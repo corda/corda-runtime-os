@@ -6,10 +6,12 @@ import net.corda.ledger.utxo.data.transaction.UtxoTransactionOutputDto
 import net.corda.utilities.serialization.deserialize
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.CordaSerializable
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.TransactionState
+import java.lang.Exception
 
 /**
  * Lazy [StateRef]. It stores initially the serialized representation of the represented state and ref.
@@ -62,8 +64,16 @@ data class LazyStateAndRefImpl<out T : ContractState>(
 
 @Suppress("UNCHECKED_CAST")
 private fun <T : ContractState> UtxoTransactionOutputDto.deserializeToStateAndRef(serializationService: SerializationService): StateAndRef<T> {
-    val info = serializationService.deserialize<UtxoOutputInfoComponent>(info)
-    val contractState = serializationService.deserialize<ContractState>(data)
+    val info = try{
+        serializationService.deserialize<UtxoOutputInfoComponent>(info)
+    } catch (e: Exception){
+        throw CordaRuntimeException("Deserialization of $info into UtxoOutputInfoComponent failed.", e)
+    }
+    val contractState = try{
+        serializationService.deserialize<ContractState>(data)
+    } catch (e: Exception){
+        throw CordaRuntimeException("Deserialization of $data into ContractState failed.", e)
+    }
     return StateAndRefImpl(
         state = TransactionStateImpl(
             contractState as T,
