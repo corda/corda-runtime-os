@@ -56,8 +56,10 @@ data class LazyStateAndRefImpl<out T : ContractState>(
     override fun equals(other: Any?): Boolean {
         return this === other
                 || other != null
-                && other is LazyStateAndRefImpl<*>
-                && other.serializedStateAndRef == serializedStateAndRef
+                && other is StateAndRef<*>
+                && other.ref == ref
+                && other.state == state
+
     }
 
     /**
