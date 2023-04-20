@@ -98,22 +98,8 @@ class CryptoOpsClientComponentTests {
             }
         )
         private val schemeMetadata = CipherSchemeMetadataImpl()
-
-    }
-    private lateinit var sender: TestRPCSender<RpcOpsRequest, RpcOpsResponse>
-    private lateinit var coordinatorFactory: TestLifecycleCoordinatorFactoryImpl
-    private lateinit var configurationReadService: TestConfigurationReadService
-    private lateinit var publisherFactory: PublisherFactory
-    private lateinit var component: CryptoOpsClientComponent
-
-    @BeforeEach
-    fun setup() {
-        coordinatorFactory = TestLifecycleCoordinatorFactoryImpl()
-        sender = TestRPCSender(coordinatorFactory)
-        publisherFactory = mock {
-            on { createRPCSender<RpcOpsRequest, RpcOpsResponse>(any(), any()) } doReturn sender
-        }
-        configurationReadService = TestConfigurationReadService(
+        private val coordinatorFactory = TestLifecycleCoordinatorFactoryImpl()
+        private val configurationReadService: TestConfigurationReadService = TestConfigurationReadService(
             coordinatorFactory
         ).also {
             it.start()
@@ -121,7 +107,19 @@ class CryptoOpsClientComponentTests {
                 assertTrue(it.isRunning)
             }
         }
-        component = CryptoOpsClientComponent(
+        private val sender = TestRPCSender(coordinatorFactory)
+        private val publisherFactory = mock<PublisherFactory> {
+            on { createRPCSender<RpcOpsRequest, RpcOpsResponse>(any(), any()) } doReturn sender
+        }
+        private val configurationReadService = TestConfigurationReadService(
+            coordinatorFactory
+        ).also {
+            it.start()
+            eventually {
+                assertTrue(it.isRunning)
+            }
+        }
+        private val component = CryptoOpsClientComponent(
             coordinatorFactory = coordinatorFactory,
             publisherFactory = publisherFactory,
             schemeMetadata = schemeMetadata,
