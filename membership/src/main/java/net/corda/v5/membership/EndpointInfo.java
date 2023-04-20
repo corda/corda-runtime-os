@@ -4,7 +4,7 @@ import net.corda.v5.base.annotations.CordaSerializable;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * <p>Information about a virtual node's endpoint (e.g. a virtual node's peer-to-peer gateway endpoint).</p>
+ * <p>Information about a virtual node's endpoint (for example a virtual node's peer-to-peer gateway endpoint).</p>
  *
  * <p>Example usages:</p>
  *

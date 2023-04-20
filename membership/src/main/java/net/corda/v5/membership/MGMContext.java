@@ -4,7 +4,7 @@ import net.corda.v5.base.types.LayeredPropertyMap;
 
 /**
  * <p>Part of [MemberInfo], information is provided and added by MGM as part of member acceptance and upon updates
- * (eg. membership group status updates).</p>
+ * (for example membership group status updates).</p>
  *
  * <p>Contains information such as the membership status, modification time, etc.</p>
  *
@@ -30,6 +30,6 @@ import net.corda.v5.base.types.LayeredPropertyMap;
  * <p>Properties are exposed either through properties on interfaces in the public APIs, or internally through extension
  * properties.</p>
  *
- * @see LayeredPropertyMap For further information on the properties and functions.
+ * @see LayeredPropertyMap for further information on the properties and functions.
  */
 public interface MGMContext extends LayeredPropertyMap {}

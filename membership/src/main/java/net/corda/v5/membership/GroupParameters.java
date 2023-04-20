@@ -9,9 +9,9 @@ import java.util.Collection;
 
 /**
  * <p>This interface represents a set of group parameters under which all members of a group are expected to abide by.
- * Parameters are stored as a {@link LayeredPropertyMap} and exposed by get methods.</p>
+ * Parameters are stored as a {@link LayeredPropertyMap} and are exposed by GET methods.</p>
  *
- * <p>Note: any values in the group parameters values map need to be
+ * <p>Note that any values in the group parameters values map need to be
  * a.) serializable for P2P (AMQP) and checkpoints (Kryo)
  * b.) comparable with .equals() </p>
  *
