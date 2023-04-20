@@ -16,7 +16,7 @@ dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
 
     implementation project(':components:db:db-connection-manager')
-    implementation project(':components:virtual-node:cpi-info-read-service')
+    implementation project(":components:virtual-node:cpk-read-service")
     implementation project(':components:virtual-node:sandbox-group-context-service')
     implementation project(':components:virtual-node:virtual-node-info-read-service')
     runtimeOnly project(':components:virtual-node:sandbox-amqp')
@@ -32,5 +32,6 @@ dependencies {
 
     runtimeOnly project(":libs:crypto:crypto-serialization-impl")
 
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 }

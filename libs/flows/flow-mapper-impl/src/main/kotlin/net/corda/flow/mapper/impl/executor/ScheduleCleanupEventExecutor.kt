@@ -24,7 +24,9 @@ class ScheduleCleanupEventExecutor(
             log.debug { "Tried to cleanup mapper state which was already null on key $eventKey" }
             FlowMapperResult(state, emptyList())
         } else {
-            state.status = FlowMapperStateType.CLOSING
+            if (state.status != FlowMapperStateType.ERROR) {
+                state.status = FlowMapperStateType.CLOSING
+            }
             state.expiryTime = scheduleCleanup.expiryTime
             FlowMapperResult(state, emptyList())
         }

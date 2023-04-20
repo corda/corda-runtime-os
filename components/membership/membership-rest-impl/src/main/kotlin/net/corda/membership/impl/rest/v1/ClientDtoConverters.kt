@@ -45,5 +45,6 @@ fun RegistrationStatusDto.fromDto() = when (this) {
     RegistrationStatusDto.PENDING_AUTO_APPROVAL -> RegistrationStatus.PENDING_AUTO_APPROVAL
     RegistrationStatusDto.DECLINED -> RegistrationStatus.DECLINED
     RegistrationStatusDto.INVALID -> RegistrationStatus.INVALID
+    RegistrationStatusDto.FAILED -> RegistrationStatus.FAILED
     RegistrationStatusDto.APPROVED -> RegistrationStatus.APPROVED
 }

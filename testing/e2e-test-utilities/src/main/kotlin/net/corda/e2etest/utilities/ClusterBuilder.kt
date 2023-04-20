@@ -306,7 +306,6 @@ class ClusterBuilder {
 
 fun <T> cluster(initialize: ClusterBuilder.() -> T): T = ClusterBuilder().let(initialize)
 
-fun <T> cluster(
-    clusterInfo: ClusterInfo,
+fun <T> ClusterInfo.cluster(
     initialize: ClusterBuilder.() -> T
-): T = ClusterBuilder().apply { init(clusterInfo) }.let(initialize)
+): T = ClusterBuilder().apply { init(this@cluster) }.let(initialize)

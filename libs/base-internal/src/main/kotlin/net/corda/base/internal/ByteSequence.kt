@@ -1,6 +1,6 @@
 package net.corda.base.internal
 
-import net.corda.v5.base.types.ByteArrays.toHexString
+import net.corda.v5.base.util.ByteArrays.toHexString
 import java.io.ByteArrayInputStream
 import java.io.OutputStream
 import java.nio.ByteBuffer

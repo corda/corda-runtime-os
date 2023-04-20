@@ -1,6 +1,7 @@
 package net.cordapp.testing.smoketests.flow
 
 import net.corda.v5.application.crypto.CompositeKeyGenerator
+import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.application.crypto.DigitalSignatureVerificationService
 import net.corda.v5.application.crypto.SignatureSpecService
 import net.corda.v5.application.crypto.SigningService
@@ -23,6 +24,7 @@ import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.exceptions.CryptoSignatureException
 import net.cordapp.testing.bundles.dogs.Dog
 import net.cordapp.testing.smoketests.flow.context.launchContextPropagationFlows
+import net.cordapp.testing.smoketests.flow.digest.CustomDigestAlgorithm
 import net.cordapp.testing.smoketests.flow.messages.InitiatedSmokeTestMessage
 import net.cordapp.testing.smoketests.flow.messages.JsonSerializationFlowOutput
 import net.cordapp.testing.smoketests.flow.messages.JsonSerializationInput
@@ -32,6 +34,7 @@ import net.cordapp.testing.smoketests.flow.messages.RpcSmokeTestOutput
 import org.slf4j.LoggerFactory
 import java.time.Instant
 import java.util.UUID
+import net.corda.v5.application.messaging.ExternalMessaging
 
 @Suppress("unused", "TooManyFunctions")
 @InitiatingFlow(protocol = "smoke-test-protocol")
@@ -55,7 +58,8 @@ class RpcSmokeTestFlow : ClientStartableFlow {
         "persistence_find_bulk" to this::persistenceFindDogs,
         "persistence_findall" to { persistenceFindAllDogs() },
         "persistence_query" to { persistenceQueryDogs() },
-        "throw_platform_error" to this::throwPlatformError,
+        "throw_platform_error" to { throwPlatformError() },
+        "throw_session_error" to this::closeSessionThenSend,
         "subflow_passed_in_initiated_session" to { createSessionsInInitiatingFlowAndPassToInlineFlow(it, true) },
         "subflow_passed_in_non_initiated_session" to { createSessionsInInitiatingFlowAndPassToInlineFlow(it, false) },
         "flow_messaging_apis" to { createMultipleSessionsSingleFlowAndExerciseFlowMessaging(it) },
@@ -69,7 +73,9 @@ class RpcSmokeTestFlow : ClientStartableFlow {
         "lookup_member_by_x500_name" to this::lookupMember,
         "json_serialization" to this::jsonSerialization,
         "get_cpi_metadata" to { getCpiMetadata() },
-        "crypto_CompositeKeyGenerator_works_in_flows" to this::compositeKeyGeneratorWorksInFlows
+        "crypto_CompositeKeyGenerator_works_in_flows" to this::compositeKeyGeneratorWorksInFlows,
+        "crypto_get_default_digest_algorithm" to this::getDefaultDigestAlgorithm,
+        "crypto_get_supported_digest_algorithms" to this::getSupportedDigestAlgorithms
     )
 
     @CordaInject
@@ -101,6 +107,12 @@ class RpcSmokeTestFlow : ClientStartableFlow {
 
     @CordaInject
     lateinit var compositeKeyGenerator: CompositeKeyGenerator
+
+    @CordaInject
+    lateinit var digestService: DigestService
+
+    @CordaInject
+    lateinit var externalMessaging: ExternalMessaging
 
     @Suspendable
     override fun call(requestBody: ClientRequestBody): String {
@@ -185,7 +197,7 @@ class RpcSmokeTestFlow : ClientStartableFlow {
     @Suspendable
     private fun persistenceFindAllDogs(): String {
         val dogs = persistenceService.findAll(Dog::class.java).execute()
-        return if (dogs.isEmpty()) {
+        return if (dogs.results.isEmpty()) {
             "no dog found"
         } else {
             "found one or more dogs"
@@ -195,7 +207,7 @@ class RpcSmokeTestFlow : ClientStartableFlow {
     @Suspendable
     private fun persistenceQueryDogs(): String {
         val dogs = persistenceService.query("Dog.all", Dog::class.java).execute()
-        return if (dogs.isEmpty()) {
+        return if (dogs.results.isEmpty()) {
             "no dog found"
         } else {
             "found one or more dogs"
@@ -203,7 +215,7 @@ class RpcSmokeTestFlow : ClientStartableFlow {
     }
 
     @Suspendable
-    private fun throwPlatformError(input: RpcSmokeTestInput): String {
+    private fun closeSessionThenSend(input: RpcSmokeTestInput): String {
         val x500 = input.getValue("x500")
         log.info("Creating session for '${x500}'...")
         val session = flowMessaging.initiateFlow(MemberX500Name.parse(x500))
@@ -216,6 +228,18 @@ class RpcSmokeTestFlow : ClientStartableFlow {
             session.send(InitiatedSmokeTestMessage("test 2"))
         } catch (e: Exception) {
             log.info("Caught exception for '${session}'...", e)
+            return e.message ?: "Error with no message"
+        }
+
+        return "No error thrown"
+    }
+
+    @Suspendable
+    private fun throwPlatformError(): String {
+        try {
+            externalMessaging.send("junk", "junk")
+        } catch (e: Exception) {
+            log.info("Caught exception for external Messaging...", e)
             return e.message ?: "Error with no message"
         }
 
@@ -462,6 +486,35 @@ class RpcSmokeTestFlow : ClientStartableFlow {
         } else {
             "FAILURE"
         }
+    }
+
+    @Suppress("unused_parameter")
+    @Suspendable
+    private fun getDefaultDigestAlgorithm(input: RpcSmokeTestInput): String {
+        val defaultDigestAlgorithm = digestService.defaultDigestAlgorithm()
+        return if (defaultDigestAlgorithm == DigestAlgorithmName.SHA2_256) {
+            "SUCCESS"
+        } else
+            "FAILURE"
+    }
+
+    @Suppress("unused_parameter")
+    @Suspendable
+    private fun getSupportedDigestAlgorithms(input: RpcSmokeTestInput): String {
+        val supportedDigestAlgorithms = digestService.supportedDigestAlgorithms()
+        val expectedSupportedDigestAlgorithms = linkedSetOf(
+            DigestAlgorithmName.SHA2_256,
+            DigestAlgorithmName.SHA2_256D,
+            DigestAlgorithmName.SHA2_384,
+            DigestAlgorithmName.SHA2_512
+        ) +
+                // check it picks up custom digest algorithms too
+                setOf(DigestAlgorithmName(CustomDigestAlgorithm.algorithmName))
+
+        return if (expectedSupportedDigestAlgorithms == supportedDigestAlgorithms) {
+            "SUCCESS"
+        } else
+            "FAILURE"
     }
 
     @Suspendable

@@ -55,6 +55,7 @@ abstract class DeployableContainerBuilder extends DefaultTask {
             convention(getProviderFactory().environmentVariable("CORDA_ARTIFACTORY_USERNAME")
                     .orElse(getProviderFactory().gradleProperty("cordaArtifactoryUsername"))
                     .orElse(getProviderFactory().systemProperty("corda.artifactory.username"))
+                    .orElse("")
             )
 
     @Input
@@ -63,6 +64,7 @@ abstract class DeployableContainerBuilder extends DefaultTask {
             convention(getProviderFactory().environmentVariable("CORDA_ARTIFACTORY_PASSWORD")
                     .orElse(getProviderFactory().gradleProperty("cordaArtifactoryPassword"))
                     .orElse(getProviderFactory().systemProperty("corda.artifactory.password"))
+                     .orElse("")
             )
 
     @Input
@@ -71,6 +73,7 @@ abstract class DeployableContainerBuilder extends DefaultTask {
             convention(getProviderFactory().environmentVariable("DOCKER_HUB_USERNAME")
                     .orElse(getProviderFactory().gradleProperty("dockerHubUsername"))
                     .orElse(getProviderFactory().systemProperty("docker.hub.username"))
+                    .orElse("")
             )
 
     @Input
@@ -79,6 +82,7 @@ abstract class DeployableContainerBuilder extends DefaultTask {
             convention(getProviderFactory().environmentVariable("DOCKER_HUB_PASSWORD")
                     .orElse(getProviderFactory().gradleProperty("dockerHubPassword"))
                     .orElse(getProviderFactory().systemProperty("docker.hub.password"))
+                    .orElse("")
             )
 
     @Input
@@ -218,7 +222,7 @@ abstract class DeployableContainerBuilder extends DefaultTask {
                 builder = setCredentialsOnBaseImage(builder)
             } else {
                 logger.info("Resolving base image ${baseImageName.get()}: ${baseImageTag.get()} from remote repo")
-                    builder = Jib.from(imageName)
+                builder = setCredentialsOnBaseImage(builder)
             }
         } else {  // CI use case
             logger.info("No daemon available")
@@ -323,21 +327,28 @@ abstract class DeployableContainerBuilder extends DefaultTask {
     }
 
     /**
-     *  Set credentials on the base image we use
-     */
+    * Sets credentials on the base image used in the Jib container builder.
+    * In cases where no valid credentials are provided, the base image will be pulled anonymously.
+    *
+    * @param builder The Jib container builder to set credentials on.
+    * @return The updated Jib container builder with credentials set if applicable.
+    */
     private JibContainerBuilder setCredentialsOnBaseImage(JibContainerBuilder builder) {
         def baseImage = RegistryImage.named("${baseImageName.get()}:${baseImageTag.get()}")
         if ((registryUsername.get() != null && !registryUsername.get().isEmpty()) && baseImageName.get().contains("software.r3.com")) {
             logger.info("Authenticating against Artifactory for base image resolution")
             baseImage.addCredential(registryUsername.get(), registryPassword.get())
             builder = Jib.from(baseImage)
-        }
-        else if ((dockerHubUsername.get() != null && !dockerHubUsername.get().isEmpty()) && (dockerHubPassword.get() != null && !dockerHubPassword.get().isEmpty())){
+        } else if ((dockerHubUsername.get() != null && !dockerHubUsername.get().isEmpty()) &&
+                   (dockerHubPassword.get() != null && !dockerHubPassword.get().isEmpty())) {
             logger.info("Authenticating against Docker Hub for base image resolution")
             baseImage.addCredential(dockerHubUsername.get(), dockerHubPassword.get())
             builder = Jib.from(baseImage)
+        } else {
+            logger.info("Pulling base image from Docker Hub anonymously")
+            builder = Jib.from(baseImage)
         }
-        builder
+        return builder
     }
 
     private void gitAndVersionTag(JibContainerBuilder builder, String gitRevision) {

@@ -25,7 +25,7 @@ dependencies {
     testImplementation project(':libs:db:db-orm-impl')
     testImplementation project(':testing:db-testkit')
 
-    testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 
     testRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"

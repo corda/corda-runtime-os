@@ -359,7 +359,7 @@ SALT and PASSPHRASE environment variables for decrypting configuration.
     secretKeyRef:
       {{- if .Values.config.encryption.passphrase.valueFrom.secretKeyRef.name }}
       name: {{ .Values.config.encryption.passphrase.valueFrom.secretKeyRef.name | quote }}
-      key: {{ required "Must specify config.encryption.passphrase.valueFrom.secretKeyRef.key" .Values.workers.db.passphrase.valueFrom.secretKeyRef.key | quote }}
+      key: {{ required "Must specify config.encryption.passphrase.valueFrom.secretKeyRef.key" .Values.config.encryption.passphrase.valueFrom.secretKeyRef.key | quote }}
       {{- else }}
       name: {{ (printf "%s-config" (include "corda.fullname" .)) | quote }}
       key: "passphrase"
@@ -513,6 +513,31 @@ data:
 {{- end }}
 {{- end }}
 {{- end }}
+
+{{/*
+Pod Monitor creation
+*/}}
+{{- define "corda.podMonitor" -}}
+{{- if .Values.metrics.podMonitor.enabled }}
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: {{ $.Release.Name }}-{{ include "corda.name" . }}
+  labels:
+  {{- range $k, $v := .Values.metrics.podMonitor.labels }}
+    {{ $k }}: {{ $v | quote }}
+  {{- end }}
+spec:
+  podMetricsEndpoints:
+  - port: monitor
+  jobLabel: {{ $.Release.Name }}-{{ include "corda.name" . }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "corda.name" . }}
+{{- end }}
+{{- end }}
+
 {{/*
 TLS Secret creation
 */}}

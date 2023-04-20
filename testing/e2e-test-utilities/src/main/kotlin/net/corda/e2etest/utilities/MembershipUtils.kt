@@ -1,6 +1,7 @@
 package net.corda.e2etest.utilities
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import net.corda.e2etest.utilities.types.NetworkOnboardingMetadata
 import net.corda.rest.ResponseCode
 import net.corda.utilities.seconds
 import net.corda.v5.base.types.MemberX500Name
@@ -43,8 +44,7 @@ const val DEFAULT_SIGNATURE_SPEC = "SHA256withECDSA"
  *  required if making API calls.
  */
 @Suppress("LongParameterList")
-fun onboardMember(
-    clusterInfo: ClusterInfo,
+fun ClusterInfo.onboardMember(
     cpb: String,
     cpiName: String,
     groupPolicy: String,
@@ -53,7 +53,7 @@ fun onboardMember(
     getAdditionalContext: ((holdingId: String) -> Map<String, String>)? = null
 ): NetworkOnboardingMetadata {
     conditionallyUploadCordaPackage(cpiName, cpb, groupPolicy)
-    val holdingId = getOrCreateVirtualNodeFor(x500Name.toString(), cpiName)
+    val holdingId = getOrCreateVirtualNodeFor(x500Name, cpiName)
 
     addSoftHsmFor(holdingId, CAT_SESSION_INIT)
     val sessionKeyId = createKeyFor(holdingId, "$holdingId$CAT_SESSION_INIT", CAT_SESSION_INIT, DEFAULT_KEY_SCHEME)
@@ -63,25 +63,24 @@ fun onboardMember(
 
     if (!keyExists(TENANT_P2P, "$TENANT_P2P$CAT_TLS", CAT_TLS)) {
         val tlsKeyId = createKeyFor(TENANT_P2P, "$TENANT_P2P$CAT_TLS", CAT_TLS, DEFAULT_KEY_SCHEME)
-        val tlsCsr = generateCsr(clusterInfo, x500Name, tlsKeyId)
-        val tlsCert = File.createTempFile("${clusterInfo.hashCode()}$CAT_TLS", ".pem").also {
+        val tlsCsr = generateCsr(x500Name, tlsKeyId)
+        val tlsCert = File.createTempFile("${this.hashCode()}$CAT_TLS", ".pem").also {
             it.deleteOnExit()
             it.writeBytes(getCa().generateCert(tlsCsr).toByteArray())
         }
-        importCertificate(clusterInfo, tlsCert, CERT_USAGE_P2P, CERT_ALIAS_P2P)
+        importCertificate(tlsCert, CERT_USAGE_P2P, CERT_ALIAS_P2P)
     }
 
     val registrationContext = createRegistrationContext(
-        clusterInfo,
         sessionKeyId,
         ledgerKeyId
     ) + (getAdditionalContext?.let { it(holdingId) } ?: emptyMap())
 
-    configureNetworkParticipant(clusterInfo, holdingId, sessionKeyId)
+    configureNetworkParticipant(holdingId, sessionKeyId)
 
-    val registrationId = register(clusterInfo, holdingId, registrationContext, waitForApproval)
+    val registrationId = register(holdingId, registrationContext, waitForApproval)
 
-    return NetworkOnboardingMetadata(holdingId, x500Name, registrationId, registrationContext)
+    return NetworkOnboardingMetadata(holdingId, x500Name, registrationId, registrationContext, this)
 }
 
 /**
@@ -89,8 +88,7 @@ fun onboardMember(
  * the additional notary specific context.
  */
 @Suppress("LongParameterList")
-fun onboardNotaryMember(
-    clusterInfo: ClusterInfo,
+fun ClusterInfo.onboardNotaryMember(
     resourceName: String,
     cpiName: String,
     groupPolicy: String,
@@ -98,7 +96,6 @@ fun onboardNotaryMember(
     wait: Boolean = true,
     getAdditionalContext: ((holdingId: String) -> Map<String, String>)? = null
 ) = onboardMember(
-    clusterInfo,
     resourceName,
     cpiName,
     groupPolicy,
@@ -121,12 +118,11 @@ fun onboardNotaryMember(
 /**
  * Configure a member to be a network participant.
  */
-fun configureNetworkParticipant(
-    clusterInfo: ClusterInfo,
+fun ClusterInfo.configureNetworkParticipant(
     holdingId: String,
     sessionKeyId: String
 ) {
-    return cluster(clusterInfo) {
+    return cluster {
         assertWithRetry {
             command { configureNetworkParticipant(holdingId, sessionKeyId) }
             condition { it.code == ResponseCode.NO_CONTENT.statusCode }
@@ -140,12 +136,11 @@ fun configureNetworkParticipant(
  * This function can optionally wait for registration to be approved, or else skip that check and return after
  * submitting.
  */
-fun register(
-    clusterInfo: ClusterInfo,
+fun ClusterInfo.register(
     holdingIdentityShortHash: String,
     registrationContext: Map<String, String>,
     waitForApproval: Boolean
-) = cluster(clusterInfo) {
+) = cluster {
 
     val payload = mapOf(
         "context" to registrationContext
@@ -162,7 +157,6 @@ fun register(
 }.also {
     if (waitForApproval) {
         waitForRegistrationStatus(
-            clusterInfo,
             holdingIdentityShortHash,
             it,
             registrationStatus = REGISTRATION_APPROVED
@@ -175,13 +169,12 @@ fun register(
  * provided which has status matching the provided status.
  * Optionally, this can look for a registration by ID.
  */
-fun waitForRegistrationStatus(
-    clusterInfo: ClusterInfo,
+fun ClusterInfo.waitForRegistrationStatus(
     holdingIdentityShortHash: String,
     registrationId: String? = null,
     registrationStatus: String
 ) {
-    cluster(clusterInfo) {
+    cluster {
         assertWithRetry {
             // Use a fairly long timeout here to give plenty of time for the other side to respond. Longer
             // term this should be changed to not use the RPC message pattern and have the information available in a
@@ -244,8 +237,7 @@ fun registerStaticMember(
 /**
  * Create the member context for a member's registration.
  */
-fun createRegistrationContext(
-    clusterInfo: ClusterInfo,
+fun ClusterInfo.createRegistrationContext(
     sessionKeyId: String,
     ledgerKeyId: String
 ) = mapOf(
@@ -253,16 +245,41 @@ fun createRegistrationContext(
     "corda.session.keys.0.signature.spec" to DEFAULT_SIGNATURE_SPEC,
     "corda.ledger.keys.0.id" to ledgerKeyId,
     "corda.ledger.keys.0.signature.spec" to DEFAULT_SIGNATURE_SPEC,
-    "corda.endpoints.0.connectionURL" to clusterInfo.p2p.uri.toString(),
-    "corda.endpoints.0.protocolVersion" to clusterInfo.p2p.protocol
+    "corda.endpoints.0.connectionURL" to p2p.uri.toString(),
+    "corda.endpoints.0.protocolVersion" to p2p.protocol
 )
 
 /**
- * Metadata for a network onboarding attempt.
+ * Look up the current member list as viewed on a specific cluster by a specific holding ID.
+ * This can optionally be filtered by member status.
  */
-data class NetworkOnboardingMetadata(
-    val holdingId: String,
-    val x500Name: String,
-    val registrationId: String,
-    val registrationContext: Map<String, String>
-)
+fun ClusterInfo.lookup(
+    holdingId: String,
+    statuses: List<String> = emptyList()
+) = cluster {
+    assertWithRetry {
+        timeout(15.seconds)
+        interval(1.seconds)
+        command {
+            val additionalQuery = statuses.joinToString(prefix = "?", separator = "&") { "statuses=$it" }
+            get("/api/v1/members/$holdingId$additionalQuery")
+        }
+        condition { it.code == ResponseCode.OK.statusCode }
+    }
+}
+
+/**
+ * Look up the current group parameters as viewed on a specific cluster by a specific holding ID.
+ */
+fun ClusterInfo.lookupGroupParameters(
+    holdingId: String
+) = cluster {
+    assertWithRetry {
+        timeout(15.seconds)
+        interval(1.seconds)
+        command {
+            get("/api/v1/members/$holdingId/group-parameters")
+        }
+        condition { it.code == ResponseCode.OK.statusCode }
+    }
+}

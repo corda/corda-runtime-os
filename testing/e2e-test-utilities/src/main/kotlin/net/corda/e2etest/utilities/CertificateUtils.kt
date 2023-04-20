@@ -40,18 +40,17 @@ fun FileSystemCertificatesAuthority.generateCert(csrPem: String): String {
  * Attempt to generate a CSR for a key. This calls the REST API for a given cluster and returns the generate CSR as a
  * PEM string.
  */
-fun generateCsr(
-    clusterInfo: ClusterInfo,
+fun ClusterInfo.generateCsr(
     x500Name: String,
     keyId: String,
     tenantId: String = "p2p",
     addHostToSubjectAlternativeNames: Boolean = true
-) = cluster(clusterInfo) {
+) = cluster {
     val payload = mutableMapOf<String, Any>(
         "x500Name" to x500Name
     ).apply {
         if (addHostToSubjectAlternativeNames) {
-            put("subjectAlternativeNames", listOf(clusterInfo.p2p.host))
+            put("subjectAlternativeNames", listOf(this@generateCsr.p2p.host))
         }
     }
 
@@ -64,13 +63,12 @@ fun generateCsr(
 /**
  * Imports a certificate to a given Corda cluster from file.
  */
-fun importCertificate(
-    clusterInfo: ClusterInfo,
+fun ClusterInfo.importCertificate(
     file: File,
     usage: String,
     alias: String
 ) {
-    cluster(clusterInfo) {
+    cluster {
         assertWithRetry {
             command { importCertificate(file, usage, alias) }
             condition { it.code == ResponseCode.NO_CONTENT.statusCode }

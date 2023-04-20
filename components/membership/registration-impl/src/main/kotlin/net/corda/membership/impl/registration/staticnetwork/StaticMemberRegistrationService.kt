@@ -215,7 +215,7 @@ class StaticMemberRegistrationService(
         registrationId: UUID,
         member: HoldingIdentity,
         context: Map<String, String>
-    ) {
+    ): Collection<Record<*, *>> {
         if (!isRunning || coordinator.status == LifecycleStatus.DOWN) {
             throw MembershipRegistrationException(
                 "Registration failed. Reason: StaticMemberRegistrationService is not running/down."
@@ -271,6 +271,8 @@ class StaticMemberRegistrationService(
             persistGroupParameters(memberInfo, staticMemberList)
 
             persistRegistrationRequest(registrationId, memberInfo)
+
+            return emptyList()
         } catch (e: InvalidMembershipRegistrationException) {
             logger.warn("Registration failed. Reason:", e)
             throw e

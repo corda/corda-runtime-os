@@ -26,6 +26,7 @@ dependencies {
     testImplementation "net.corda.cli.host:api:$pluginHostVersion"
     testImplementation "org.pf4j:pf4j:${pf4jVersion}"
     testImplementation "org.junit.jupiter:junit-jupiter:${junit5Version}"
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation "com.github.stefanbirkner:system-lambda:1.2.1"
 }

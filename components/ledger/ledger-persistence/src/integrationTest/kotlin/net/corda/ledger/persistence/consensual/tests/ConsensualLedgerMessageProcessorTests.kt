@@ -1,5 +1,6 @@
 package net.corda.ledger.persistence.consensual.tests
 
+import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.data.CordaAvroDeserializer
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePair
@@ -15,11 +16,21 @@ import net.corda.data.persistence.EntityResponse
 import net.corda.db.persistence.testkit.components.VirtualNodeService
 import net.corda.db.persistence.testkit.helpers.Resources
 import net.corda.db.testkit.DbUtils
+import net.corda.flow.utils.keyValuePairListOf
+import net.corda.flow.utils.toKeyValuePairList
+import net.corda.flow.utils.toMap
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
+import net.corda.ledger.common.data.transaction.TransactionMetadataImpl
 import net.corda.ledger.common.data.transaction.TransactionStatus
+import net.corda.ledger.common.data.transaction.WireTransactionDigestSettings
 import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
+import net.corda.ledger.common.testkit.cpiPackageSummaryExample
+import net.corda.ledger.common.testkit.cpkPackageSummaryListExample
 import net.corda.ledger.common.testkit.createExample
 import net.corda.ledger.common.testkit.getSignatureWithMetadataExample
+import net.corda.ledger.consensual.data.transaction.ConsensualLedgerTransactionImpl
+import net.corda.ledger.consensual.data.transaction.TRANSACTION_META_DATA_CONSENSUAL_LEDGER_VERSION
+import net.corda.ledger.consensual.data.transaction.consensualComponentGroupStructure
 import net.corda.ledger.persistence.processor.DelegatedRequestHandlerSelector
 import net.corda.ledger.persistence.processor.PersistenceRequestProcessor
 import net.corda.messaging.api.records.Record
@@ -27,11 +38,13 @@ import net.corda.persistence.common.ResponseFactory
 import net.corda.persistence.common.getSerializationService
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.sandboxgroupcontext.getSandboxSingletonService
+import net.corda.test.util.dsl.entities.cpx.getCpkFileHashes
 import net.corda.testing.sandboxes.SandboxSetup
 import net.corda.testing.sandboxes.fetchService
 import net.corda.testing.sandboxes.lifecycle.EachTestLifecycle
 import net.corda.utilities.debug
 import net.corda.utilities.serialization.deserialize
+import net.corda.v5.application.flows.FlowContextPropertyKeys.CPK_FILE_CHECKSUM
 import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assumptions
@@ -83,6 +96,7 @@ class ConsensualLedgerMessageProcessorTests {
     private lateinit var responseFactory: ResponseFactory
     private lateinit var deserializer: CordaAvroDeserializer<EntityResponse>
     private lateinit var delegatedRequestHandlerSelector: DelegatedRequestHandlerSelector
+    private lateinit var cpiInfoReadService: CpiInfoReadService
 
     @BeforeAll
     fun setup(
@@ -101,6 +115,7 @@ class ConsensualLedgerMessageProcessorTests {
             deserializer = setup.fetchService<CordaAvroSerializationFactory>(TIMEOUT_MILLIS)
                 .createAvroDeserializer({}, EntityResponse::class.java)
             delegatedRequestHandlerSelector = setup.fetchService(TIMEOUT_MILLIS)
+            cpiInfoReadService = setup.fetchService(TIMEOUT_MILLIS)
         }
     }
 
@@ -108,7 +123,8 @@ class ConsensualLedgerMessageProcessorTests {
     fun `persistTransaction for consensual ledger deserialises the transaction and persists`() {
         Assumptions.assumeFalse(DbUtils.isInMemory, "Skipping this test when run against in-memory DB.")
         val virtualNodeInfo = virtualNode.load(Resources.EXTENDABLE_CPB)
-        val ctx = virtualNode.entitySandboxService.get(virtualNodeInfo.holdingIdentity)
+        val cpkFileHashes = cpiInfoReadService.getCpkFileHashes(virtualNodeInfo)
+        val ctx = virtualNode.entitySandboxService.get(virtualNodeInfo.holdingIdentity, cpkFileHashes)
 
         val transaction = createTestTransaction(ctx)
 
@@ -116,7 +132,16 @@ class ConsensualLedgerMessageProcessorTests {
         val serializedTransaction = ctx.serialize(transaction)
         val transactionStatus = TransactionStatus.VERIFIED.value
         val persistTransaction = PersistTransaction(serializedTransaction, transactionStatus, emptyList())
-        val request = createRequest(virtualNodeInfo.holdingIdentity, persistTransaction)
+        val request = createRequest(
+            virtualNodeInfo.holdingIdentity,
+            persistTransaction,
+            EXTERNAL_EVENT_CONTEXT.apply {
+                this.contextProperties = keyValuePairListOf(
+                    this.contextProperties.toMap() +
+                    cpkFileHashes.toKeyValuePairList(CPK_FILE_CHECKSUM).toMap()
+                )
+            }
+        )
 
         // Send request to message processor
         val processor = PersistenceRequestProcessor(
@@ -135,7 +160,13 @@ class ConsensualLedgerMessageProcessorTests {
         // Check that we wrote the expected things to the DB
         val findRequest = createRequest(
             virtualNodeInfo.holdingIdentity,
-            FindTransaction(transaction.id.toString(), TransactionStatus.VERIFIED.value)
+            FindTransaction(transaction.id.toString(), TransactionStatus.VERIFIED.value),
+            EXTERNAL_EVENT_CONTEXT.apply {
+                this.contextProperties = keyValuePairListOf(
+                    this.contextProperties.toMap() +
+                            cpkFileHashes.toKeyValuePairList(CPK_FILE_CHECKSUM).toMap()
+                )
+            }
         )
         responses = assertSuccessResponses(processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), findRequest))))
 
@@ -145,16 +176,28 @@ class ConsensualLedgerMessageProcessorTests {
         assertThat(response.error).isNull()
         val entityResponse = deserializer.deserialize(response.payload.array())!!
         assertThat(entityResponse.results).hasSize(1)
-        assertThat(entityResponse.results.first()).isEqualTo(serializedTransaction)
         val retrievedTransaction = ctx.deserialize<SignedTransactionContainer>(entityResponse.results.first())
         assertThat(retrievedTransaction).isEqualTo(transaction)
+        // todo re-check with CORE-12472
+        assertThat(entityResponse.results.first()).isEqualTo(serializedTransaction)
     }
 
     private fun createTestTransaction(ctx: SandboxGroupContext): SignedTransactionContainer {
         val wireTransactionFactory: WireTransactionFactory = ctx.getSandboxSingletonService()
+        val metadata = TransactionMetadataImpl(mapOf(
+            TransactionMetadataImpl.LEDGER_MODEL_KEY to ConsensualLedgerTransactionImpl::class.java.name,
+            TransactionMetadataImpl.LEDGER_VERSION_KEY to TRANSACTION_META_DATA_CONSENSUAL_LEDGER_VERSION,
+            TransactionMetadataImpl.DIGEST_SETTINGS_KEY to WireTransactionDigestSettings.defaultValues,
+            TransactionMetadataImpl.PLATFORM_VERSION_KEY to 123,
+            TransactionMetadataImpl.CPI_METADATA_KEY to cpiPackageSummaryExample,
+            TransactionMetadataImpl.CPK_METADATA_KEY to cpkPackageSummaryListExample(),
+            TransactionMetadataImpl.SCHEMA_VERSION_KEY to TransactionMetadataImpl.SCHEMA_VERSION,
+            TransactionMetadataImpl.COMPONENT_GROUPS_KEY to consensualComponentGroupStructure
+        ))
         val wireTransaction = wireTransactionFactory.createExample(
             ctx.getSandboxSingletonService(),
-            ctx.getSandboxSingletonService()
+            ctx.getSandboxSingletonService(),
+            metadata = metadata
         )
         return SignedTransactionContainer(
             wireTransaction,

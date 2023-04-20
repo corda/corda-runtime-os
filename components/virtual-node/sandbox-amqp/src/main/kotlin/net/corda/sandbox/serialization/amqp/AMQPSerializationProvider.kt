@@ -1,6 +1,6 @@
 package net.corda.sandbox.serialization.amqp
 
-import net.corda.internal.serialization.AMQP_P2P_CONTEXT
+import net.corda.internal.serialization.AMQP_STORAGE_CONTEXT
 import net.corda.internal.serialization.SerializationServiceImpl
 import net.corda.internal.serialization.amqp.DeserializationInput
 import net.corda.internal.serialization.amqp.SerializationOutput
@@ -77,7 +77,7 @@ class AMQPSerializationProvider @Activate constructor(
         val serializationService = SerializationServiceImpl(
             serializationOutput,
             deserializationInput,
-            AMQP_P2P_CONTEXT.withSandboxGroup(context.sandboxGroup)
+            AMQP_STORAGE_CONTEXT.withSandboxGroup(context.sandboxGroup) //todo double check in CORE-12472
         )
 
         context.putObjectByKey(AMQP_SERIALIZATION_SERVICE, serializationService)

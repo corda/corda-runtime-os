@@ -92,6 +92,8 @@ class UniquenessCheckerImplDBIntegrationTests {
     private val noDbHoldingIdentityDbName =
         VirtualNodeDbType.UNIQUENESS.getSchemaName(noDbHoldingIdentity.shortHash)
 
+    private val originatorX500Name = "C=GB, L=London, O=David"
+
     // We don't use Instant.MAX because this appears to cause a long overflow in Avro
     private val defaultTimeWindowUpperBound: Instant =
         LocalDate.of(2200, 1, 1).atStartOfDay().toInstant(ZoneOffset.UTC)
@@ -109,6 +111,7 @@ class UniquenessCheckerImplDBIntegrationTests {
                 defaultHoldingIdentity.toAvro(),
                 ExternalEventContext(),
                 txId.toString(),
+                originatorX500Name,
                 emptyList(),
                 emptyList(),
                 0,
@@ -886,7 +889,49 @@ class UniquenessCheckerImplDBIntegrationTests {
         }
 
         @Test
-        fun `Single tx with same state used for input and ref state is successful`() {
+        fun `Single tx with same input state specified twice fails`() {
+            val state = generateUnspentStates(1).single()
+
+            processRequests(
+                newRequestBuilder()
+                    .setInputStates(listOf(state, state))
+                    .build()
+            ).let { responses ->
+                assertAll(
+                    { assertThat(responses).hasSize(1) },
+                    {
+                        assertMalformedRequestResponse(
+                            responses[0],
+                            "Duplicate input states detected: ${listOf(state)}"
+                        )
+                    }
+                )
+            }
+        }
+
+        @Test
+        fun `Single tx with same reference state specified twice fails`() {
+            val state = generateUnspentStates(1).single()
+
+            processRequests(
+                newRequestBuilder()
+                    .setReferenceStates(listOf(state, state))
+                    .build()
+            ).let { responses ->
+                assertAll(
+                    { assertThat(responses).hasSize(1) },
+                    {
+                        assertMalformedRequestResponse(
+                            responses[0],
+                            "Duplicate reference states detected: ${listOf(state)}"
+                        )
+                    }
+                )
+            }
+        }
+
+        @Test
+        fun `Single tx with same state used for input and ref state fails`() {
             val state = generateUnspentStates(1)
 
             processRequests(
@@ -897,7 +942,13 @@ class UniquenessCheckerImplDBIntegrationTests {
             ).let { responses ->
                 assertAll(
                     { assertThat(responses).hasSize(1) },
-                    { assertStandardSuccessResponse(responses[0], testClock) }
+                    {
+                        assertMalformedRequestResponse(
+                            responses[0],
+                            "A state cannot be both an input and a reference input in the same " +
+                                    "request. Offending states: $state"
+                        )
+                    }
                 )
             }
         }

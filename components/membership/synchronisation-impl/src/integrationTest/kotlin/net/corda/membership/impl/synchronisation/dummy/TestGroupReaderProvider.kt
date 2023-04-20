@@ -8,10 +8,10 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.StartEvent
-import net.corda.membership.lib.EPOCH_KEY
 import net.corda.membership.lib.GroupParametersFactory
+import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.EPOCH_KEY
+import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.MODIFIED_TIME_KEY
 import net.corda.membership.lib.InternalGroupParameters
-import net.corda.membership.lib.MODIFIED_TIME_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
 import net.corda.membership.lib.SignedGroupParameters
 import net.corda.membership.read.MembershipGroupReader

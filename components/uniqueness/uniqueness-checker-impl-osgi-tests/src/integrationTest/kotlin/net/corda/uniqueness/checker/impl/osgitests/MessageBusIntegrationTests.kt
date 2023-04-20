@@ -46,6 +46,7 @@ import net.corda.uniqueness.checker.UniquenessChecker
 import net.corda.uniqueness.checker.impl.BatchedUniquenessCheckerImpl
 import net.corda.uniqueness.utils.UniquenessAssertions
 import net.corda.uniqueness.utils.UniquenessAssertions.assertUnknownInputStateResponse
+import net.corda.utilities.seconds
 import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro
@@ -163,8 +164,10 @@ class MessageBusIntegrationTests {
 
     private val groupId = UUID.randomUUID().toString()
 
-    private val defaultHoldingIdentity = createTestHoldingIdentity(
-        "C=GB, L=London, O=Alice", groupId).toAvro()
+    private val defaultNotaryVNodeHoldingIdentity = createTestHoldingIdentity(
+        "C=GB, L=London, O=NotaryRep1", groupId).toAvro()
+
+    private val defaultOriginatorX500Name = "C=GB, L=London, O=Alice"
 
     // We don't use Instant.MAX because this appears to cause a long overflow in Avro
     private val defaultTimeWindowUpperBound: Instant =
@@ -178,13 +181,14 @@ class MessageBusIntegrationTests {
             : UniquenessCheckRequestAvro.Builder =
         UniquenessCheckRequestAvro.newBuilder(
             UniquenessCheckRequestAvro(
-                defaultHoldingIdentity,
+                defaultNotaryVNodeHoldingIdentity,
                 ExternalEventContext(
                     UUID.randomUUID().toString(),
                     UUID.randomUUID().toString(),
                     KeyValuePairList(emptyList())
                 ),
                 txId.toString(),
+                defaultOriginatorX500Name,
                 emptyList(),
                 emptyList(),
                 0,
@@ -322,7 +326,7 @@ class MessageBusIntegrationTests {
         externalEventResponseMonitor =
             TestExternalEventResponseMonitor(subscriptionFactory, bootConfig)
 
-        eventually {
+        eventually(15.seconds) {
             logger.info("Waiting for required services to start...")
             assertThat(coordinator.status).isEqualTo(LifecycleStatus.UP)
             logger.info("Required services started.")

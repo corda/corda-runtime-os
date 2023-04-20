@@ -1,9 +1,6 @@
 package net.corda.messaging.integration.subscription
 
 import com.typesafe.config.ConfigValueFactory
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.ThreadLocalRandom
-import java.util.concurrent.TimeUnit
 import net.corda.data.demo.DemoRecord
 import net.corda.db.messagebus.testkit.DBSetup
 import net.corda.libs.configuration.SmartConfig
@@ -54,6 +51,9 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.context.BundleContextExtension
 import org.osgi.test.junit5.service.ServiceExtension
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.ThreadLocalRandom
+import java.util.concurrent.TimeUnit
 
 @ExtendWith(ServiceExtension::class, BundleContextExtension::class, DBSetup::class)
 class DurableSubscriptionIntegrationTest {

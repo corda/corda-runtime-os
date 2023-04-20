@@ -1,8 +1,6 @@
 package net.corda.flow.mapper.integration
 
 import com.typesafe.config.ConfigValueFactory
-import java.nio.ByteBuffer
-import java.time.Instant
 import net.corda.data.flow.FlowInitiatorType
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.FlowStartContext
@@ -14,6 +12,7 @@ import net.corda.data.flow.event.mapper.ExecuteCleanup
 import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.event.mapper.ScheduleCleanup
 import net.corda.data.flow.event.session.SessionData
+import net.corda.data.flow.event.session.SessionError
 import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.mapper.FlowMapperState
 import net.corda.data.flow.state.mapper.FlowMapperStateType
@@ -33,6 +32,8 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.fail
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
+import java.nio.ByteBuffer
+import java.time.Instant
 
 @ExtendWith(ServiceExtension::class)
 class FlowMapperIntegrationTest {
@@ -223,6 +224,57 @@ class FlowMapperIntegrationTest {
 
         val outputEventPayload = outputEvent.value ?: fail("Payload was null")
         val outputFlowEvent = outputEventPayload as FlowEvent
+        assertThat(outputFlowEvent.payload::class.java).isEqualTo(SessionEvent::class.java)
+    }
+
+    @Test
+    fun `Receive SessionError in CLOSING state - ignore and change state to ERROR`() {
+        val inputKey = "sessionId"
+        val sessionEvent =
+            buildSessionEvent(MessageDirection.INBOUND, inputKey, 3, SessionError())
+        val flowMapperEvent = FlowMapperEvent(sessionEvent)
+        val flowMapperState = FlowMapperState("flowKey", null, FlowMapperStateType.CLOSING)
+        val result = onNext(flowMapperState, Record(FLOW_MAPPER_EVENT_TOPIC, inputKey, flowMapperEvent))
+        val outputEvent = result.responseEvents
+
+        val state = result.updatedState
+        assertThat(state?.status).isEqualTo(FlowMapperStateType.ERROR)
+
+        assertThat(outputEvent).isEmpty()
+    }
+
+    @Test
+    fun `Receive SessionError in ERROR state - ignore`() {
+        val inputKey = "sessionId"
+        val sessionEvent =
+            buildSessionEvent(MessageDirection.INBOUND, inputKey, 3, SessionError())
+        val flowMapperEvent = FlowMapperEvent(sessionEvent)
+        val flowMapperState = FlowMapperState("flowKey", null, FlowMapperStateType.ERROR)
+        val result = onNext(flowMapperState, Record(FLOW_MAPPER_EVENT_TOPIC, inputKey, flowMapperEvent))
+        val outputEvent = result.responseEvents
+
+        val state = result.updatedState
+        assertThat(state?.status).isEqualTo(FlowMapperStateType.ERROR)
+
+        assertThat(outputEvent).isEmpty()
+    }
+
+    @Test
+    fun `Receive SessionError in OPEN state - forward and change state to ERROR`() {
+        val inputKey = "sessionId"
+        val sessionEvent =
+            buildSessionEvent(MessageDirection.INBOUND, inputKey, 3, SessionError())
+        val flowMapperEvent = FlowMapperEvent(sessionEvent)
+        val flowMapperState = FlowMapperState("flowKey", null, FlowMapperStateType.OPEN)
+        val result = onNext(flowMapperState, Record(FLOW_MAPPER_EVENT_TOPIC, inputKey, flowMapperEvent))
+        val outputEvent = result.responseEvents.first()
+
+        val outputEventPayload = outputEvent.value ?: fail("Payload was null")
+        val outputFlowEvent = outputEventPayload as FlowEvent
+
+        val state = result.updatedState
+        assertThat(state?.status).isEqualTo(FlowMapperStateType.ERROR)
+
         assertThat(outputFlowEvent.payload::class.java).isEqualTo(SessionEvent::class.java)
     }
 

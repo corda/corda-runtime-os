@@ -208,17 +208,14 @@ data class UtxoSignedTransactionImpl(
             } else {
                 null
             }
-        }
+        }.toSet()
         // If the notary service key (composite key) is provided we need to make sure it contains the key the
         // transaction was signed with. This means it was signed with one of the notary VNodes (worker).
-        if (!KeyUtils.isKeyInSet(
-                notaryKey,
-                notaryPublicKeysWithValidSignatures
-            )
-        ) {
+        if (!KeyUtils.isKeyFulfilledBy(notaryKey, notaryPublicKeysWithValidSignatures)) {
             throw TransactionSignatureException(
                 id,
-                "There are no notary signatures attached to the transaction.",
+                "Notary signing keys $notaryPublicKeysWithValidSignatures did not fulfil " +
+                        "requirements of notary service key $notaryKey",
                 null
             )
         }

@@ -77,6 +77,9 @@ internal class ConfigurationReadServiceTest {
             verifyIsDown(subName)
             verifyIsDown<ConfigurationReadService>()
             bringDependenciesUp()
+            coordinatorFactory.registry.getCoordinator(
+                LifecycleCoordinatorName.forComponent<ConfigurationReadService>()
+            ).postEvent(SetupConfigSubscription())
             verifyIsUp<ConfigurationReadService>()
 
             repeat(5) {

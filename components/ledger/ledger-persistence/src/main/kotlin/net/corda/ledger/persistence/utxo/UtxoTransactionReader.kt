@@ -27,7 +27,7 @@ interface UtxoTransactionReader {
 
     val visibleStatesIndexes: List<Int>
 
-    fun getProducedStates(): List<StateAndRef<ContractState>>
+    fun getVisibleStates(): Map<Int, StateAndRef<ContractState>>
 
     fun getConsumedStates(persistenceService: UtxoPersistenceService): List<StateAndRef<ContractState>>
 

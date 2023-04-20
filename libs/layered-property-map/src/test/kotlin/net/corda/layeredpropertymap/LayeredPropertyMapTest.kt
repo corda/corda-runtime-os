@@ -10,8 +10,8 @@ import net.corda.utilities.parseList
 import net.corda.utilities.parseOrNull
 import net.corda.utilities.parseSet
 import net.corda.v5.base.exceptions.ValueNotFoundException
-import net.corda.v5.base.types.ByteArrays.toHexString
 import net.corda.v5.base.types.LayeredPropertyMap
+import net.corda.v5.base.util.ByteArrays.toHexString
 import org.junit.jupiter.api.Test
 import java.time.Instant
 import java.util.concurrent.ConcurrentHashMap
