@@ -13,7 +13,6 @@ import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 import picocli.CommandLine
@@ -28,11 +27,6 @@ import java.util.jar.JarEntry
 import java.util.jar.JarInputStream
 
 class CreateCpiTest {
-
-    @TempDir
-    lateinit var tempDir: Path
-    private lateinit var testCpb: Path
-
     companion object {
         const val CPI_FILE_NAME = "output.cpi"
 
@@ -43,7 +37,6 @@ class CreateCpiTest {
         private val CPB_SIGNER = net.corda.libs.packaging.testutils.TestUtils.Signer(CPB_SIGNER_NAME, SIGNING_KEY_1)
     }
 
-    private lateinit var app: CreateCpiV2
     private val testGroupPolicy = Path.of(this::class.java.getResource("/TestGroupPolicy.json")?.toURI()
         ?: error("TestGroupPolicy.json not found"))
     private val invalidTestGroupPolicy = Path.of(this::class.java.getResource("/InvalidTestGroupPolicy.json")?.toURI()
@@ -51,13 +44,7 @@ class CreateCpiTest {
     private val testKeyStore = Path.of(this::class.java.getResource("/signingkeys.pfx")?.toURI()
         ?: error("signingkeys.pfx not found"))
 
-    @BeforeEach
-    fun setup() {
-        app = CreateCpiV2()
-        testCpb = createCpb()
-    }
-
-    private fun createCpb(): Path {
+    private fun createCpb(tempDir: Path): Path {
         val cpbFile = Path.of(tempDir.toString(), "test.cpb")
         val cpbStream = TestCpbV2Builder()
             .signers(CPB_SIGNER)
@@ -73,7 +60,7 @@ class CreateCpiTest {
         return cpbFile
     }
 
-    private fun tmpOutputFile() = Path.of(tempDir.toString(), "output.cpi")
+    private fun tmpOutputFile(tempDir: Path) = Path.of(tempDir.toString(), "output.cpi")
 
     private val testCpbExpectedFilenames = setOf(
         "META-INF/CPI-SIG.SF",
@@ -87,8 +74,10 @@ class CreateCpiTest {
     )
 
     @Test
-    fun buildCpiLongParameterNames() {
-        val outputFile = tmpOutputFile()
+    fun buildCpiLongParameterNames(@TempDir tempDir: Path) {
+        val app = CreateCpiV2()
+        val testCpb = createCpb(tempDir)
+        val outputFile = tmpOutputFile(tempDir)
 
         val errText = captureStdErr {
             CommandLine(app).execute(
@@ -111,8 +100,10 @@ class CreateCpiTest {
     }
 
     @Test
-    fun buildCpiShortParameterNames() {
-        val outputFile = tmpOutputFile()
+    fun buildCpiShortParameterNames(@TempDir tempDir: Path) {
+        val app = CreateCpiV2()
+        val testCpb = createCpb(tempDir)
+        val outputFile = tmpOutputFile(tempDir)
 
         val errText = captureStdErr {
             CommandLine(app).execute(
@@ -135,7 +126,9 @@ class CreateCpiTest {
     }
 
     @Test
-    fun buildCpiDefaultOutputFilename() {
+    fun buildCpiDefaultOutputFilename(@TempDir tempDir: Path) {
+        val app = CreateCpiV2()
+        val testCpb = createCpb(tempDir)
         val defaultOutputTestCpb: Path = Path.of(tempDir.toString(), "DefaultOutputFilename.cpb")
         Files.copy(testCpb, defaultOutputTestCpb, StandardCopyOption.COPY_ATTRIBUTES)
 
@@ -170,8 +163,10 @@ class CreateCpiTest {
     }
 
     @Test
-    fun `cpi create tool handles group policy passed through standard input`() {
-        val outputFile = tmpOutputFile()
+    fun `cpi create tool handles group policy passed through standard input`(@TempDir tempDir: Path) {
+        val app = CreateCpiV2()
+        val testCpb = createCpb(tempDir)
+        val outputFile = tmpOutputFile(tempDir)
         val groupPolicyString = File(testGroupPolicy.toString()).readText(Charsets.UTF_8)
 
         val systemIn = System.`in`
@@ -240,7 +235,7 @@ class CreateCpiTest {
     @Test
     @Suppress("MaxLineLength")
     fun testNoOptionError() {
-
+        val app = CreateCpiV2()
         val errText = captureStdErr {
             CommandLine(app)
                 .setColorScheme(Help.defaultColorScheme(Help.Ansi.OFF))
@@ -277,7 +272,9 @@ Creates a CPI v2 from a CPB and GroupPolicy.json file.
     }
 
     @Test
-    fun `cpi create tool aborts if its not a cpb before packing it into a cpi`() {
+    fun `cpi create tool aborts if its not a cpb before packing it into a cpi`(@TempDir tempDir: Path) {
+        val app = CreateCpiV2()
+
         // Attempt to pack a Cpk into a Cpi - should fail since it's not a Cpb
         val cpkBuilder = TestCpkV2Builder()
         val cpkStream = cpkBuilder
@@ -312,7 +309,9 @@ Creates a CPI v2 from a CPB and GroupPolicy.json file.
     }
 
     @Test
-    fun `cpi create tool aborts if its group policy is invalid`() {
+    fun `cpi create tool aborts if its group policy is invalid`(@TempDir tempDir: Path) {
+        val app = CreateCpiV2()
+        val testCpb = createCpb(tempDir)
         val outputFile = Path.of(tempDir.toString(), CPI_FILE_NAME)
 
         val outText = captureStdErr {
