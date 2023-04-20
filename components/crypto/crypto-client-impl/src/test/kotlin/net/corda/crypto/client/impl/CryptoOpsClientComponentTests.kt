@@ -77,9 +77,9 @@ import kotlin.test.assertFalse
 import kotlin.test.assertNotSame
 import kotlin.test.assertTrue
 
+val schemeMetadata = CipherSchemeMetadataImpl()
 
 private class ExecutionContext {
-    val schemeMetadata = CipherSchemeMetadataImpl()
     val coordinatorFactory = TestLifecycleCoordinatorFactoryImpl()
     val configurationReadService: TestConfigurationReadService = TestConfigurationReadService(
         coordinatorFactory
@@ -121,9 +121,7 @@ class CryptoOpsClientComponentTests {
             }
         )
         private val context = ExecutionContext()
-        private val schemeMetadata = context.schemeMetadata
         private val coordinatorFactory = context.coordinatorFactory
-        private val configurationReadService = context.configurationReadService
         private val sender = context.sender
         private val component = context.component
     }
