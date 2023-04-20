@@ -40,7 +40,7 @@
     "description" : "The MGM API consists of a number of endpoints used to manage membership groups. A membership group is a logical grouping of a number of Corda Identities to communicate and transact with one another with a specific set of CorDapps. The API allows you to generate the group policy for a membership group, required for new members to join the group."
   }, {
     "name" : "MGM Admin API",
-    "description" : "The MGM Admin API consists of endpoints used to carry out administrative tasks on membership groups. A membership group is a logical grouping of a number of Corda Identities to communicate and transact with one another with a specific set of CorDapps. The API allows you to perform actions such as force decline registration requests which may be displaying unexpected behaviour. This API should only be used under exceptional circumstances."
+    "description" : "The MGM Admin API consists of endpoints used to carry out administrative tasks on membership groups. A membership group is a logical grouping of a number of Corda Identities to communicate and transact with one another with a specific set of CorDapps. The API allows the MGM to perform actions such as force decline registration requests which may be displaying unexpected behaviour. This API should only be used by the MGM under exceptional circumstances."
   }, {
     "name" : "Member Lookup API",
     "description" : "The Member Lookup API consists of endpoints used to look up information related to membership groups."
@@ -2844,7 +2844,7 @@
     "/mgmadmin/{holdingidentityshorthash}/force-decline/{requestid}" : {
       "post" : {
         "tags" : [ "MGM Admin API" ],
-        "description" : "This method enables you to force decline a registration request that may be stuck or displaying some other unexpected behaviour.",
+        "description" : "This method enables you to force decline an in-progress registration request that may be stuck or displaying some other unexpected behaviour.",
         "operationId" : "post_mgmadmin__holdingidentityshorthash__force_decline__requestid_",
         "parameters" : [ {
           "name" : "holdingidentityshorthash",
