@@ -5,6 +5,8 @@ import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
+import org.junit.jupiter.api.parallel.Execution
+import org.junit.jupiter.api.parallel.ExecutionMode
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.InvalidClassException
@@ -12,6 +14,7 @@ import java.io.ObjectInputStream
 import java.io.ObjectOutputStream
 import java.io.Serializable
 
+@Execution(ExecutionMode.SAME_THREAD)
 class JavaSerialisationTest {
 
     class Superhero(val name: String) : Serializable
