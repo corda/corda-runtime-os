@@ -15,10 +15,10 @@ import net.corda.v5.ledger.utxo.TransactionState
 import java.lang.Exception
 
 /**
- * Lazy [StateRef]. It stores initially the serialized representation of the represented state and ref.
+ * Lazy [StateRef]. It stores initially the serialized form of the represented state and ref.
  * Its purposes are to avoid
- *  - unnecessary deserialization to perform better
- *  - deserialization whose required CPKs are not necessarily available.
+ *  - unnecessary deserializations to perform better
+ *  - deserializations whose required CPKs are not necessarily available.
  *
  * @constructor Creates a new instance of the [LazyStateAndRefImpl] data class.
  * @property serializedStateAndRef A [UtxoTransactionOutputDto] with the serialized information
@@ -28,8 +28,13 @@ data class LazyStateAndRefImpl<out T : ContractState>(
     val serializedStateAndRef: UtxoTransactionOutputDto,
     private val serializationService: SerializationService
 ) : StateAndRefInternal<@UnsafeVariance T> {
-    private val stateAndRef: StateAndRef<@UnsafeVariance T> by lazy(LazyThreadSafetyMode.PUBLICATION) {
-        serializedStateAndRef.deserializeToStateAndRef(serializationService)
+
+    private val representedState: TransactionState<@UnsafeVariance T> by lazy(LazyThreadSafetyMode.PUBLICATION) {
+        serializedStateAndRef.deserializeTransactionState<@UnsafeVariance T>(serializationService)
+    }
+
+    private val representedStateRef:StateRef by lazy(LazyThreadSafetyMode.PUBLICATION) {
+        serializedStateAndRef.getStateRef()
     }
 
     override fun toUtxoTransactionOutputDto(
@@ -40,11 +45,11 @@ data class LazyStateAndRefImpl<out T : ContractState>(
     }
 
     override fun getState(): TransactionState<@UnsafeVariance T> {
-        return stateAndRef.state
+        return representedState
     }
 
     override fun getRef(): StateRef {
-        return stateAndRef.ref
+        return representedStateRef
     }
 
     /**
@@ -73,9 +78,9 @@ data class LazyStateAndRefImpl<out T : ContractState>(
 }
 
 @Suppress("UNCHECKED_CAST")
-private fun <T : ContractState> UtxoTransactionOutputDto.deserializeToStateAndRef(
+private fun <T : ContractState> UtxoTransactionOutputDto.deserializeTransactionState(
     serializationService: SerializationService
-): StateAndRef<T> {
+): TransactionState<T> {
     val info = try{
         serializationService.deserialize<UtxoOutputInfoComponent>(info)
     } catch (e: Exception){
@@ -86,13 +91,13 @@ private fun <T : ContractState> UtxoTransactionOutputDto.deserializeToStateAndRe
     } catch (e: Exception){
         throw CordaRuntimeException("Deserialization of $data into ContractState failed.", e)
     }
-    return StateAndRefImpl(
-        state = TransactionStateImpl(
-            contractState as T,
-            info.notaryName,
-            info.notaryKey,
-            info.getEncumbranceGroup()
-        ),
-        ref = StateRef(parseSecureHash(transactionId), leafIndex)
+    return TransactionStateImpl(
+        contractState as T,
+        info.notaryName,
+        info.notaryKey,
+        info.getEncumbranceGroup()
     )
 }
+
+private fun UtxoTransactionOutputDto.getStateRef(): StateRef =
+    StateRef(parseSecureHash(transactionId), leafIndex)

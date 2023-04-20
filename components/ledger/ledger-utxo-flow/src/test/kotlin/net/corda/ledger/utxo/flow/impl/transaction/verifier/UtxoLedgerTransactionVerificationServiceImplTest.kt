@@ -3,7 +3,6 @@ package net.corda.ledger.utxo.flow.impl.transaction.verifier
 import net.corda.crypto.core.parseSecureHash
 import net.corda.flow.external.events.executor.ExternalEventExecutor
 import net.corda.internal.serialization.SerializedBytesImpl
-import net.corda.kryoserialization.testkit.mockSandboxGroup
 import net.corda.ledger.common.data.transaction.TransactionMetadataInternal
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.testkit.publicKeyExample
@@ -48,14 +47,12 @@ class UtxoLedgerTransactionVerificationServiceImplTest {
     private val mockSignedGroupParameters = mock<SignedGroupParameters>()
     private val notaryInfo = mock<NotaryInfo>()
     private val groupParametersHash = parseSecureHash("algo:1234")
+    private val mockSandboxGroup = mock<SandboxGroup>()
+    private val mockSandboxGroupContext = mock<SandboxGroupContext>()
+    private val mockCurrentSandboxGroupContext = mock<CurrentSandboxGroupContext>()
 
     @BeforeEach
     fun setup() {
-        val mockSandboxGroup = mock<SandboxGroup>()
-        val mockSandboxGroupContext = mock<SandboxGroupContext>()
-        whenever(mockSandboxGroupContext.sandboxGroup).thenReturn(mockSandboxGroup)
-        val mockCurrentSandboxGroupContext = mock<CurrentSandboxGroupContext>()
-        whenever(mockCurrentSandboxGroupContext.get()).thenReturn(mockSandboxGroupContext)
         verificationService = UtxoLedgerTransactionVerificationServiceImpl(
             externalEventExecutor,
             serializationService,
@@ -65,6 +62,8 @@ class UtxoLedgerTransactionVerificationServiceImplTest {
             mockCurrentSandboxGroupContext,
         )
 
+        whenever(mockSandboxGroupContext.sandboxGroup).thenReturn(mockSandboxGroup)
+        whenever(mockCurrentSandboxGroupContext.get()).thenReturn(mockSandboxGroupContext)
         whenever(serializationService.serialize(any<Any>())).thenReturn(serializedBytes)
         whenever(mockUtxoLedgerGroupParametersPersistenceService.find(any())).thenReturn(mockSignedGroupParameters)
         whenever(notaryInfo.name).thenReturn(notaryX500Name)
