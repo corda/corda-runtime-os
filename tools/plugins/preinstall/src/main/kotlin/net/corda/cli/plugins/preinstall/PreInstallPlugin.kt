@@ -97,20 +97,20 @@ class PreInstallPlugin(wrapper: PluginWrapper) : Plugin(wrapper) {
 
             credential = credential ?: run {
                 if (namespace == null) {
-                    log("No namespace has been specified. If the username is supposed to be in a secret, " +
-                            "specify a namespace with -n or --namespace.", ERROR)
+                    log("No namespace has been specified - if the secret exists outside the current default namespace," +
+                            "set it using -n or --namespace.", WARN)
                     return null
                 }
                 if (secretKey == null)  {
-                    log("Username secret key could not be parsed.", ERROR)
+                    log("Credential secret key could not be parsed.", ERROR)
                     return null
                 }
                 if (secretName == null) {
-                    log("Username secret name could not be parsed.", ERROR)
+                    log("Credential secret name could not be parsed.", ERROR)
                     return null
                 }
                 val encoded = getSecret(secretName, secretKey, namespace, url) ?: run{
-                    log("Username secret could not be found in namespace $namespace.", ERROR)
+                    log("Credential secret could not be found in namespace $namespace.", ERROR)
                     return null
                 }
                 String(Base64.getDecoder().decode(encoded))
@@ -118,14 +118,30 @@ class PreInstallPlugin(wrapper: PluginWrapper) : Plugin(wrapper) {
             return credential
         }
 
-        private fun getSecret(secretName: String, secretKey: String, namespace: String, url: String?): String? {
+        private fun getSecret(secretName: String, secretKey: String, namespace: String?, url: String?): String? {
             return try {
-                val kubeUrl = url ?: "kubernetes.default.svc"
-                val kubeConfig: Config = ConfigBuilder()
-                    .withMasterUrl(kubeUrl)
-                    .build()
-                val client: KubernetesClient = KubernetesClientBuilder().withConfig(kubeConfig).build()
-                val secret: Secret = client.secrets().inNamespace(namespace).withName(secretName).get()
+                val client: KubernetesClient = if (url != null) {
+                    val kubeConfig: Config = ConfigBuilder()
+                        .withMasterUrl(url)
+                        .build()
+                    KubernetesClientBuilder().withConfig(kubeConfig).build()
+                } else {
+                    KubernetesClientBuilder().build()
+                }
+
+                // if no namespace is set, will try and use the default. Worst case scenario, if no default is set, it will use "default".
+                val kubeNamespace = namespace ?: run {
+                    client.namespace ?: "default"
+                }
+                log("Using namespace ${client.namespace}", INFO)
+
+                val names = client.namespaces().list().items.map { item -> item.metadata.name}
+                if (!names.contains(kubeNamespace)) {
+                    log("Namespace $kubeNamespace does not exist.", ERROR)
+                    return null
+                }
+
+                val secret: Secret = client.secrets().inNamespace(kubeNamespace).withName(secretName).get()
                 secret.data[secretKey]
             } catch (e: KubernetesClientException) {
                 log("Could not read secret $secretName with key $secretKey.", ERROR)
