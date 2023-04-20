@@ -18,7 +18,9 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.BeforeEach
 import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
@@ -26,110 +28,106 @@ import org.mockito.kotlin.whenever
 import java.util.concurrent.atomic.AtomicReference
 
 class RbacBasicAuthenticationServiceTest {
+    private val passwordService: PasswordService = mock()
 
-    companion object {
-        private val passwordService: PasswordService = mock()
-        private val permissionManagementCache = mock<PermissionManagementCache>()
+    private val virtualNode = "f39d810f-6ee6-4742-ab7c-d1fe274ab85e"
+    private val permissionString = "flow/start/com.myapp.MyFlow"
 
-        private val virtualNode = "f39d810f-6ee6-4742-ab7c-d1fe274ab85e"
-        private val permissionString = "flow/start/com.myapp.MyFlow"
+    private val permission = Permission(
+        "allowPermissionId", 1,
+        ChangeDetails(Instant.now()),
+        virtualNode,
+        PermissionType.ALLOW,
+        permissionString,
+        "group1"
+    )
 
-        private val permission = Permission(
-            "allowPermissionId", 1,
-            ChangeDetails(Instant.now()),
-            virtualNode,
-            PermissionType.ALLOW,
-            permissionString,
-            "group1"
-        )
+    private val permissionDenied = Permission(
+        "denyPermissionId", 1,
+        ChangeDetails(Instant.now()),
+        virtualNode,
+        PermissionType.DENY,
+        permissionString,
+        "group1"
+    )
 
-        private val permissionDenied = Permission(
-            "denyPermissionId", 1,
-            ChangeDetails(Instant.now()),
-            virtualNode,
-            PermissionType.DENY,
-            permissionString,
-            "group1"
-        )
-
-        private val role = Role(
-            "roleId1", 1,
-            ChangeDetails(Instant.now()),
-            "STARTFLOW-MYFLOW",
-            "group1",
-            listOf(
-                PermissionAssociation(
-                    ChangeDetails(Instant.now()),
-                    permission.id
-                )
+    private val role = Role(
+        "roleId1", 1,
+        ChangeDetails(Instant.now()),
+        "STARTFLOW-MYFLOW",
+        "group1",
+        listOf(
+            PermissionAssociation(
+                ChangeDetails(Instant.now()),
+                permission.id
             )
         )
-        private val roleWithPermDenied = Role(
-            "roleId2",
-            1,
-            ChangeDetails(Instant.now()),
-            "STARTFLOW-MYFLOW",
-            "group1",
-            listOf(PermissionAssociation(ChangeDetails(Instant.now()), permissionDenied.id))
-        )
-        private val user = User(
-            "user1",
-            1,
-            ChangeDetails(Instant.now()),
-            "user-login1",
-            "full name",
-            true,
-            "hashedPassword",
-            "saltValue",
-            null,
-            false,
-            null,
-            null,
-            listOf(RoleAssociation(ChangeDetails(Instant.now()), role.id))
-        )
-        private val userWithPermDenied = User(
-            "userWithPermDenied",
-            1,
-            ChangeDetails(Instant.now()),
-            "user-login2",
-            "full name",
-            true,
-            "hashedPassword",
-            "saltValue",
-            null,
-            false,
-            null,
-            null,
-            listOf(RoleAssociation(ChangeDetails(Instant.now()), roleWithPermDenied.id))
-        )
-        private val disabledUser = User(
-            "disabledUser",
-            1,
-            ChangeDetails(Instant.now()),
-            "user-login3",
-            "full name",
-            false,
-            "hashedPassword",
-            "saltValue",
-            null,
-            false,
-            null,
-            null,
-            listOf(RoleAssociation(ChangeDetails(Instant.now()), role.id))
-        )
+    )
+    private val roleWithPermDenied = Role(
+        "roleId2",
+        1,
+        ChangeDetails(Instant.now()),
+        "STARTFLOW-MYFLOW",
+        "group1",
+        listOf(PermissionAssociation(ChangeDetails(Instant.now()), permissionDenied.id))
+    )
+    private val user = User(
+        "user1",
+        1,
+        ChangeDetails(Instant.now()),
+        "user-login1",
+        "full name",
+        true,
+        "hashedPassword",
+        "saltValue",
+        null,
+        false,
+        null,
+        null,
+        listOf(RoleAssociation(ChangeDetails(Instant.now()), role.id))
+    )
+    private val userWithPermDenied = User(
+        "userWithPermDenied",
+        1,
+        ChangeDetails(Instant.now()),
+        "user-login2",
+        "full name",
+        true,
+        "hashedPassword",
+        "saltValue",
+        null,
+        false,
+        null,
+        null,
+        listOf(RoleAssociation(ChangeDetails(Instant.now()), roleWithPermDenied.id))
+    )
+    private val disabledUser = User(
+        "disabledUser",
+        1,
+        ChangeDetails(Instant.now()),
+        "user-login3",
+        "full name",
+        false,
+        "hashedPassword",
+        "saltValue",
+        null,
+        false,
+        null,
+        null,
+        listOf(RoleAssociation(ChangeDetails(Instant.now()), role.id))
+    )
 
-        @JvmStatic
-        @BeforeAll
-        fun setUp() {
-            whenever(permissionManagementCache.getUser(user.loginName)).thenReturn(user)
-            whenever(permissionManagementCache.getUser(userWithPermDenied.loginName)).thenReturn(userWithPermDenied)
-            whenever(permissionManagementCache.getUser(disabledUser.loginName)).thenReturn(disabledUser)
-            whenever(permissionManagementCache.getRole(role.id)).thenReturn(role)
-            whenever(permissionManagementCache.getRole(roleWithPermDenied.id)).thenReturn(roleWithPermDenied)
-            whenever(permissionManagementCache.getPermission(permission.id)).thenReturn(permission)
-            whenever(permissionManagementCache.getPermission(permissionDenied.id)).thenReturn(permissionDenied)
-        }
+
+    private val permissionManagementCache = mock<PermissionManagementCache>() {
+        on { getUser(user.loginName) }.doReturn(user)
+        on { getUser(userWithPermDenied.loginName)}.doReturn(userWithPermDenied)
+        on { getUser(disabledUser.loginName)}.doReturn(disabledUser)
+        on { getRole(role.id)}.doReturn(role)
+        on { getRole(roleWithPermDenied.id)}.doReturn(roleWithPermDenied)
+        on { getPermission(permission.id)}.doReturn(permission)
+        on { getPermission(permissionDenied.id)}.doReturn(permissionDenied)
     }
+
 
     private val rbacBasicAuthenticationService =
         RbacBasicAuthenticationService(AtomicReference(permissionManagementCache), passwordService)
