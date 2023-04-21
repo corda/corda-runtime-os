@@ -70,6 +70,13 @@ allprojects {
                 systemProperty 'java.io.tmpdir', buildDir.absolutePath
                 jvmArgs '--illegal-access=deny'
             }
+
+            systemProperties([
+                    // Configuration parameters to execute top-level classes in parallel but methods in same thread
+                    'junit.jupiter.execution.parallel.enabled': 'true',
+                    'junit.jupiter.execution.parallel.mode.default': 'same_thread',
+                    'junit.jupiter.execution.parallel.mode.classes.default': 'concurrent',
+            ])
         }
     }
 
