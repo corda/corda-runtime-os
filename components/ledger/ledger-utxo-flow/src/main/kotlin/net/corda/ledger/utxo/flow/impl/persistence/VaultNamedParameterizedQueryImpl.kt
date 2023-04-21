@@ -12,6 +12,7 @@ import java.nio.ByteBuffer
 import java.time.Instant
 
 // TODO CORE-12032 use delegation to create this class
+@Suppress("LongParameterList")
 class VaultNamedParameterizedQueryImpl<T>(
     private val queryName: String,
     private val externalEventExecutor: ExternalEventExecutor,
