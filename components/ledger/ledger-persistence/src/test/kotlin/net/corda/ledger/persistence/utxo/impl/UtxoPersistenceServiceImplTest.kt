@@ -273,6 +273,7 @@ class UtxoPersistenceServiceImplTest {
                 "net.corda.ledger.persistence.utxo.impl.ExceptionState" : {
                 },
                 "net.corda.v5.ledger.utxo.ContractState" : {
+                    "stateRef": "hash:0"
                 }
             }
             """.trimIndent(),
