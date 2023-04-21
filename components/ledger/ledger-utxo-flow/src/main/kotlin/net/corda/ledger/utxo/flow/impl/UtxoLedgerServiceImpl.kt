@@ -140,7 +140,15 @@ class UtxoLedgerServiceImpl @Activate constructor(
 
     @Suspendable
     override fun <R> query(queryName: String, resultClass: Class<R>): VaultNamedParameterizedQuery<R> {
-        return VaultNamedParameterizedQueryImpl(queryName, externalEventExecutor, serializationService, resultClass)
+        return VaultNamedParameterizedQueryImpl(
+            queryName,
+            externalEventExecutor,
+            serializationService,
+            parameters = mutableMapOf(),
+            limit = Int.MAX_VALUE,
+            offset = 0,
+            resultClass
+        )
     }
 
     // Retrieve notary client plugin class for specified notary service identity. This is done in
