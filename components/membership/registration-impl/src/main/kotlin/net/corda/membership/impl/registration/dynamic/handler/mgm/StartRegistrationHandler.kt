@@ -10,6 +10,7 @@ import net.corda.data.membership.command.registration.mgm.VerifyMember
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.p2p.SetOwnRegistrationStatus
 import net.corda.data.membership.state.RegistrationState
+import net.corda.data.p2p.app.MembershipStatusFilter.PENDING
 import net.corda.layeredpropertymap.toAvro
 import net.corda.membership.impl.registration.dynamic.handler.MemberTypeChecker
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandler
@@ -187,7 +188,8 @@ internal class StartRegistrationHandler(
                     registrationRequest.registrationId,
                     RegistrationStatus.RECEIVED_BY_MGM,
                 ),
-                minutesToWait = 5
+                minutesToWait = 5,
+                filter = PENDING
             )
             outputRecords.add(persistMemberStatusMessage)
 
