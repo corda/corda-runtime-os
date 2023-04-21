@@ -5,6 +5,7 @@ import net.corda.membership.lib.SignedGroupParameters
 import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.membership.lib.InternalGroupParameters
 import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.crypto.SecureHash
 import net.corda.v5.membership.MemberInfo
 
 /**
@@ -55,7 +56,7 @@ interface MembershipGroupReader {
      * active version.
      */
     fun lookupByLedgerKey(
-        ledgerKeyHash: PublicKeyHash,
+        ledgerKeyHash: SecureHash,
         filter: MembershipStatusFilter = MembershipStatusFilter.ACTIVE
     ): MemberInfo?
 

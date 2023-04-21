@@ -5,12 +5,12 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.cipher.suite.PublicKeyHash
 import net.corda.crypto.cipher.suite.SignatureSpecs
-import net.corda.crypto.cipher.suite.calculateHash
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.client.hsm.HSMRegistrationClient
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoConsts.Categories.LEDGER
 import net.corda.crypto.core.CryptoConsts.Categories.SESSION_INIT
+import net.corda.crypto.core.fullIdHash
 import net.corda.crypto.impl.converter.PublicKeyConverter
 import net.corda.crypto.impl.converter.PublicKeyHashConverter
 import net.corda.data.CordaAvroDeserializer
@@ -436,7 +436,7 @@ class StaticMemberRegistrationServiceTest {
             assertEquals(aliceKey, memberPublished.sessionInitiationKeys.first())
             assertEquals(1, memberPublished.ledgerKeys.size)
             assertEquals(1, memberPublished.ledgerKeyHashes.size)
-            assertEquals(aliceKey.calculateHash(), memberPublished.ledgerKeyHashes.first())
+            assertEquals(aliceKey.fullIdHash(), memberPublished.ledgerKeyHashes.first())
             assertEquals(MEMBER_STATUS_ACTIVE, memberPublished.status)
             assertEquals(1, memberPublished.endpoints.size)
 

@@ -9,6 +9,7 @@ import net.corda.utilities.parse
 import net.corda.utilities.parseList
 import net.corda.utilities.parseOrNull
 import net.corda.utilities.parseSet
+import net.corda.v5.crypto.SecureHash
 import net.corda.v5.membership.EndpointInfo
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
@@ -192,7 +193,7 @@ class MemberInfoExtension {
 
         /** Collection of ledger key hashes for member's node. */
         @JvmStatic
-        val MemberInfo.ledgerKeyHashes: Collection<PublicKeyHash>
+        val MemberInfo.ledgerKeyHashes: Collection<SecureHash>
             get() = memberProvidedContext.parseSet(LEDGER_KEY_HASHES)
 
         /**
