@@ -148,6 +148,7 @@ class DistributeMemberInfoActionHandler(
             source = approvedBy,
             destination = updatedMember,
             content = membersToDistributeToUpdatedMemberPackage,
+            filter = ACTIVE_OR_SUSPENDED
         )
 
         // Send the newly approved member to all other members in the same group over P2P
@@ -167,8 +168,7 @@ class DistributeMemberInfoActionHandler(
                 source = approvedBy,
                 destination = memberToSendUpdateTo.holdingIdentity.toAvro(),
                 content = memberPackage,
-                minutesToWait = membershipConfig.getTtlMinutes(MembershipConfig.TtlsConfig.MEMBERS_PACKAGE_UPDATE),
-                filter = ACTIVE_OR_SUSPENDED
+                minutesToWait = membershipConfig.getTtlMinutes(MembershipConfig.TtlsConfig.MEMBERS_PACKAGE_UPDATE)
             )
         }
 
