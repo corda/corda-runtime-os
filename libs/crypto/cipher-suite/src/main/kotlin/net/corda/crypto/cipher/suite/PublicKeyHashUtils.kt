@@ -15,7 +15,7 @@ fun PublicKey.sha256Bytes(): ByteArray = messageDigestSha256().digest(encoded)
 
 fun PublicKey.toStringShort(): String = "DL" + EncodingUtils.toBase58(sha256Bytes())
 
-// TODO The below needs to reference with `ShortHash` but can't do now because cipher-suite module can't depend
+// TODO The below needs to reference `ShortHash` but can't do now because cipher-suite module can't depend
 //  on crypto-core due to circular dependency issue
 const val SHORT_KEY_ID_LENGTH = 12
 
