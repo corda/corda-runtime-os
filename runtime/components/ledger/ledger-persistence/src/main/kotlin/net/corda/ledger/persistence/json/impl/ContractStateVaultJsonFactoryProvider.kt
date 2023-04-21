@@ -25,19 +25,10 @@ import org.slf4j.LoggerFactory
 class ContractStateVaultJsonFactoryProvider @Activate constructor(
     @Reference(service = ContractStateVaultJsonFactoryRegistry::class)
     private val factoryStorage: ContractStateVaultJsonFactoryRegistry,
-
-    // The default internal implementation of `ContractStateVaultJsonFactory`
-    @Reference(service = ContractStateVaultJsonFactory::class)
-    private val internalFactory: ContractStateVaultJsonFactory<out ContractState>
 ) : UsedByPersistence, CustomMetadataConsumer {
 
     private companion object {
         val logger: Logger = LoggerFactory.getLogger(ContractStateVaultJsonFactoryProvider::class.java)
-    }
-
-    init {
-        logger.debug("Registering internal contract state json factory.")
-        factoryStorage.registerJsonFactory(internalFactory)
     }
 
     @Suspendable

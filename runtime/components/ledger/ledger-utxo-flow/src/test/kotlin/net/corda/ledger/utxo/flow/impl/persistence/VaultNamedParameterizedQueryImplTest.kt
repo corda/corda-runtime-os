@@ -19,50 +19,24 @@ import java.time.Instant
 class VaultNamedParameterizedQueryImplTest {
 
     @Test
-    fun `Vault named parameterized query cannot set the same parameter twice`() {
+    fun `Vault named parameterized query can set parameters multiple times`() {
         val query = createQuery()
-
         query.setParameter("dummy", "dummy")
-
-        val ex = assertThrows<IllegalArgumentException> {
-            query.setParameter("dummy", "dummy")
-        }
-
-        assertThat(ex).hasStackTraceContaining("Parameter with key dummy is already set.")
+        query.setParameter("dummy", "dummy1")
     }
 
     @Test
-    fun `Vault named parameterized query cannot set parameters from map if any of the parameters already set`() {
+    fun `Vault named parameterized query can set parameters using map`() {
         val query = createQuery()
-
         query.setParameter("dummy", "dummy")
-
-        val ex = assertThrows<IllegalArgumentException> {
-            query.setParameters(mapOf("dummy" to "dummy", "dummy2" to "dummy2"))
-        }
-
-        assertThat(ex).hasStackTraceContaining("Parameters with keys: [dummy] are already set.")
-
-        query.setParameter("dummy2", "dummy2")
-
-        val ex2 = assertThrows<IllegalArgumentException> {
-            query.setParameters(mapOf("dummy" to "dummy", "dummy2" to "dummy2"))
-        }
-
-        assertThat(ex2).hasStackTraceContaining("Parameters with keys: [dummy, dummy2] are already set.")
+        query.setParameters(mapOf("dummy" to "dummy1"))
     }
 
     @Test
-    fun `Vault named parameterized query cannot set offset twice`() {
+    fun `Vault named parameterized query can set offset multiple times`() {
         val query = createQuery()
-
         query.setOffset(100)
-
-        val ex = assertThrows<IllegalArgumentException> {
-            query.setOffset(100)
-        }
-
-        assertThat(ex).hasStackTraceContaining("Offset is already set.")
+        query.setOffset(101)
     }
 
     @Test
@@ -74,33 +48,6 @@ class VaultNamedParameterizedQueryImplTest {
         }
 
         assertThat(ex).hasStackTraceContaining("Timestamp limit must not be in the future.")
-    }
-
-    @Test
-    fun `Vault named parameterized query cannot be executed without a valid offset`() {
-        val query = createQuery()
-
-        val ex = assertThrows<IllegalArgumentException> {
-            query.execute()
-        }
-
-        assertThat(ex).hasStackTraceContaining(
-            "Offset needs to be provided and needs to be a positive number to execute the query."
-        )
-    }
-
-    @Test
-    fun `Vault named parameterized query cannot be executed without a valid limit`() {
-        val query = createQuery()
-        query.setOffset(0)
-
-        val ex = assertThrows<IllegalArgumentException> {
-            query.execute()
-        }
-
-        assertThat(ex).hasStackTraceContaining(
-            "Limit needs to be provided and needs to be a positive number to execute the query."
-        )
     }
 
     @Test
@@ -135,6 +82,9 @@ class VaultNamedParameterizedQueryImplTest {
             "DUMMY",
             mockExternalEventExecutor,
             mockSerializationService,
+            parameters = mutableMapOf(),
+            limit = Int.MAX_VALUE,
+            offset = 0,
             String::class.java
         )
     }
