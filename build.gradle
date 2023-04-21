@@ -70,13 +70,6 @@ allprojects {
                 systemProperty 'java.io.tmpdir', buildDir.absolutePath
                 jvmArgs '--illegal-access=deny'
             }
-
-            systemProperties([
-                    // Configuration parameters to execute top-level classes in parallel but methods in same thread
-                    'junit.jupiter.execution.parallel.enabled': 'true',
-                    'junit.jupiter.execution.parallel.mode.default': 'same_thread',
-                    'junit.jupiter.execution.parallel.mode.classes.default': 'concurrent',
-            ])
         }
     }
 
@@ -259,6 +252,15 @@ allprojects {
         }
     }
 
+    tasks.named('test', Test) {
+        systemProperties([
+            // Configuration parameters to execute top-level classes in parallel but methods in same thread
+            'junit.jupiter.execution.parallel.enabled'                 : 'true',
+            'junit.jupiter.execution.parallel.mode.default'            : 'same_thread',
+            'junit.jupiter.execution.parallel.mode.classes.default'    : 'concurrent',
+        ])
+    }
+
     tasks.register('integrationTest', Test) {
         inputs.property('postgresHost', postgresHost)
         inputs.property('postgresDb', postgresDb)
@@ -271,6 +273,8 @@ allprojects {
 
         testClassesDirs = project.sourceSets["integrationTest"].output.classesDirs
         classpath = project.sourceSets["integrationTest"].runtimeClasspath
+
+        systemProperty 'junit.jupiter.execution.parallel.enabled', 'false'
 
         systemProperty 'postgresHost', postgresHost
         systemProperty 'postgresDb', postgresDb
