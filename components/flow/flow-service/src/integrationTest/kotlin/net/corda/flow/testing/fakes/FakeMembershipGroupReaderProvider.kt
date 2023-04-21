@@ -8,6 +8,7 @@ import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.membership.read.NotaryVirtualNodeLookup
 import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.crypto.SecureHash
 import net.corda.v5.membership.MGMContext
 import net.corda.v5.membership.MemberContext
 import net.corda.v5.membership.MemberInfo
@@ -62,7 +63,7 @@ class FakeMembershipGroupReaderProvider : MembershipGroupReaderProvider {
             TODO("Not yet implemented")
         }
 
-        override fun lookupByLedgerKey(ledgerKeyHash: PublicKeyHash, filter: MembershipStatusFilter): MemberInfo? {
+        override fun lookupByLedgerKey(ledgerKeyHash: SecureHash, filter: MembershipStatusFilter): MemberInfo? {
             TODO("Not yet implemented")
         }
 
@@ -70,7 +71,7 @@ class FakeMembershipGroupReaderProvider : MembershipGroupReaderProvider {
             return MemberInfoStub()
         }
 
-        override fun lookupBySessionKey(sessionKeyHash: PublicKeyHash, filter: MembershipStatusFilter): MemberInfo? {
+        override fun lookupBySessionKey(sessionKeyHash: SecureHash, filter: MembershipStatusFilter): MemberInfo? {
             TODO("Not yet implemented")
         }
 

@@ -1,6 +1,5 @@
 package net.corda.membership.read
 
-import net.corda.crypto.cipher.suite.PublicKeyHash
 import net.corda.membership.lib.SignedGroupParameters
 import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.membership.lib.InternalGroupParameters
@@ -85,7 +84,7 @@ interface MembershipGroupReader {
      * active version.
      */
     fun lookupBySessionKey(
-        sessionKeyHash: PublicKeyHash,
+        sessionKeyHash: SecureHash,
         filter: MembershipStatusFilter = MembershipStatusFilter.ACTIVE
     ): MemberInfo?
 

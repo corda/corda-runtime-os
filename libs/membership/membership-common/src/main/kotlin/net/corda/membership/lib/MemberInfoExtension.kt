@@ -1,6 +1,6 @@
 package net.corda.membership.lib
 
-import net.corda.crypto.cipher.suite.PublicKeyHash
+import net.corda.crypto.core.fullIdHash
 import net.corda.crypto.core.parseSecureHash
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.membership.lib.notary.MemberNotaryDetails
@@ -204,13 +204,13 @@ class MemberInfoExtension {
             get() = memberProvidedContext.parseList(SESSION_KEYS)
 
         /**
-         * [PublicKeyHash] for the session initiation key.
+         * [SecureHash] for the session initiation key.
          * The hash value should be stored in the member context, but as a fallback it is calculated if not available.
          * It is preferable to always store this in the member context to avoid the repeated calculation.
          */
         @JvmStatic
-        val MemberInfo.sessionKeysHash: Collection<PublicKeyHash>
-            get() = memberProvidedContext.parseSet<PublicKeyHash>(SESSION_KEYS_HASH).let { storedKeys ->
+        val MemberInfo.sessionKeysHash: Collection<SecureHash>
+            get() = memberProvidedContext.parseSet<SecureHash>(SESSION_KEYS_HASH).let { storedKeys ->
                 if (storedKeys.isNotEmpty()) {
                     storedKeys
                 } else {
@@ -219,7 +219,7 @@ class MemberInfoExtension {
                                 "It is preferable to store this hash in the member context to avoid calculating on each access."
                     )
                     sessionInitiationKeys.map {
-                        PublicKeyHash.calculate(it)
+                        it.fullIdHash()
                     }
                 }
             }

@@ -1,6 +1,5 @@
 package net.corda.membership.impl.read.reader
 
-import net.corda.crypto.cipher.suite.PublicKeyHash
 import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.membership.impl.read.cache.MembershipGroupReadCache
 import net.corda.membership.lib.InternalGroupParameters
@@ -45,7 +44,7 @@ class MembershipGroupReaderImpl(
     override fun lookupByLedgerKey(ledgerKeyHash: SecureHash, filter: MembershipStatusFilter): MemberInfo? =
         memberList.filterBy(filter).singleOrNull { ledgerKeyHash in it.ledgerKeyHashes }
 
-    override fun lookupBySessionKey(sessionKeyHash: PublicKeyHash, filter: MembershipStatusFilter): MemberInfo? =
+    override fun lookupBySessionKey(sessionKeyHash: SecureHash, filter: MembershipStatusFilter): MemberInfo? =
         memberList.filterBy(filter).singleOrNull { it.sessionKeysHash.contains(sessionKeyHash) }
 
     override val notaryVirtualNodeLookup: NotaryVirtualNodeLookup by lazy {

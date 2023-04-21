@@ -96,7 +96,7 @@ class TestGroupReader @Activate constructor() : MembershipGroupReader {
     override fun lookup(name: MemberX500Name, filter: MembershipStatusFilter): MemberInfo? =
         cache.find { it.name == name }
 
-    override fun lookupBySessionKey(sessionKeyHash: PublicKeyHash, filter: MembershipStatusFilter): MemberInfo? {
+    override fun lookupBySessionKey(sessionKeyHash: SecureHash, filter: MembershipStatusFilter): MemberInfo? {
         with(UNIMPLEMENTED_FUNCTION) {
             logger.warn(this)
             throw UnsupportedOperationException(this)
