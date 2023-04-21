@@ -17,7 +17,6 @@ import net.corda.messaging.api.records.Record
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.utilities.serialization.deserialize
 import net.corda.v5.application.serialization.SerializationService
-import net.corda.v5.ledger.utxo.ContractState
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -69,8 +68,8 @@ class VerificationRequestHandlerImpl(private val responseFactory: ExternalEventR
         serializationService.deserialize<UtxoLedgerTransactionContainer>(transaction.array()).run {
             UtxoLedgerTransactionImpl(
                 WrappedUtxoWireTransaction(wireTransaction, serializationService),
-                inputStateAndRefs.map{ it.toStateAndRef<ContractState>(serializationService)},
-                referenceStateAndRefs.map{ it.toStateAndRef<ContractState>(serializationService)}
+                inputStateAndRefs,
+                referenceStateAndRefs
             )
         }
 }

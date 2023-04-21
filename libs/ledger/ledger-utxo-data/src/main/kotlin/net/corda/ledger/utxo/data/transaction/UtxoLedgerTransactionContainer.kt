@@ -6,6 +6,6 @@ import net.corda.v5.base.annotations.CordaSerializable
 @CordaSerializable
 data class UtxoLedgerTransactionContainer(
     val wireTransaction: WireTransaction,
-    val inputStateAndRefs: List<UtxoTransactionOutputDto>,
-    val referenceStateAndRefs: List<UtxoTransactionOutputDto>
+    val inputStateAndRefs: List<StateAndRef<*>>,
+    val referenceStateAndRefs: List<StateAndRef<*>>
 )

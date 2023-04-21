@@ -3,7 +3,6 @@ package net.corda.ledger.utxo.flow.impl.transaction.verifier
 import net.corda.crypto.core.parseSecureHash
 import net.corda.flow.external.events.executor.ExternalEventExecutor
 import net.corda.ledger.common.data.transaction.TransactionMetadataInternal
-import net.corda.ledger.utxo.data.state.StateAndRefInternal
 import net.corda.ledger.utxo.data.transaction.TransactionVerificationStatus
 import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionContainer
 import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionInternal
@@ -15,7 +14,6 @@ import net.corda.ledger.utxo.transaction.verifier.SignedGroupParametersVerifier
 import net.corda.membership.lib.SignedGroupParameters
 import net.corda.sandbox.type.SandboxConstants.CORDA_SYSTEM_SERVICE
 import net.corda.sandbox.type.UsedByFlow
-import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
@@ -42,9 +40,7 @@ class UtxoLedgerTransactionVerificationServiceImpl @Activate constructor(
     @Reference(service = CurrentGroupParametersService::class)
     private val currentGroupParametersService: CurrentGroupParametersService,
     @Reference(service = SignedGroupParametersVerifier::class)
-    private val signedGroupParametersVerifier: SignedGroupParametersVerifier,
-    @Reference(service = CurrentSandboxGroupContext::class)
-    private val currentSandboxGroupContext: CurrentSandboxGroupContext
+    private val signedGroupParametersVerifier: SignedGroupParametersVerifier
 ) : UtxoLedgerTransactionVerificationService, UsedByFlow, SingletonSerializeAsToken {
 
     @Suspendable
@@ -100,12 +96,7 @@ class UtxoLedgerTransactionVerificationServiceImpl @Activate constructor(
 
     private fun UtxoLedgerTransaction.toContainer() =
         (this as UtxoLedgerTransactionInternal).run {
-            val currentSandboxGroup = currentSandboxGroupContext.get().sandboxGroup
-            UtxoLedgerTransactionContainer(wireTransaction, inputStateAndRefs.map {
-                (it as StateAndRefInternal<*>).toUtxoTransactionOutputDto(serializationService, currentSandboxGroup)
-            }, referenceStateAndRefs.map {
-                (it as StateAndRefInternal<*>).toUtxoTransactionOutputDto(serializationService, currentSandboxGroup)
-            })
+            UtxoLedgerTransactionContainer(wireTransaction, inputStateAndRefs, referenceStateAndRefs)
         }
 
     private fun UtxoLedgerTransaction.getCpkMetadata() =

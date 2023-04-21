@@ -15,7 +15,6 @@ dependencies {
     implementation project(':libs:crypto:crypto-core')
     implementation project(':libs:ledger:ledger-common-data')
     implementation project(':libs:sandbox-types')
-    implementation project(':libs:sandbox')
     implementation project(':libs:serialization:serialization-internal')
     implementation project(':libs:utilities')
 
