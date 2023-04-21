@@ -32,7 +32,7 @@ class SessionErrorExecutor(
     }
 
     private val messageDirection = sessionEvent.messageDirection
-    private val outputTopic = getSessionEventOutputTopic(messageDirection)
+    private val outputTopic = getSessionEventOutputTopic(messageDirection, flowMapperState?.isInteropSession ?: false)
 
     private val errorMsg = "Flow mapper received error event from counterparty for session which does not exist. " +
             "Session may have expired. Key: $eventKey, Event: $sessionEvent. "

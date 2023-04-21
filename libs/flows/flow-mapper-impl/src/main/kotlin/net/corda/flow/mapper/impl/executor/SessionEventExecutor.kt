@@ -35,7 +35,6 @@ class SessionEventExecutor(
     }
 
     private val messageDirection = sessionEvent.messageDirection
-    private val outputTopic = getSessionEventOutputTopic(messageDirection)
 
     override fun execute(): FlowMapperResult {
         return if (flowMapperState == null) {
@@ -117,12 +116,17 @@ class SessionEventExecutor(
             }
 
             FlowMapperStateType.OPEN -> {
+                val outputTopic = getSessionEventOutputTopic(messageDirection, flowMapperState.isInteropSession)
                 val outputRecord = if (messageDirection == MessageDirection.OUTBOUND) {
-                    Record(
-                        outputTopic,
-                        sessionEvent.sessionId,
-                        appMessageFactory(sessionEvent, sessionEventSerializer, flowConfig)
-                    )
+                    if (!flowMapperState.isInteropSession) {
+                        Record(
+                            outputTopic,
+                            sessionEvent.sessionId,
+                            appMessageFactory(sessionEvent, sessionEventSerializer, flowConfig)
+                        )
+                    } else {
+                        Record(outputTopic, sessionEvent.sessionId, FlowMapperEvent(sessionEvent))
+                    }
                 } else {
                     Record(outputTopic, flowMapperState.flowId, FlowEvent(flowMapperState.flowId, sessionEvent))
                 }
@@ -135,22 +139,4 @@ class SessionEventExecutor(
             }
         }
     }
-//    private fun processOtherSessionEvents(flowMapperState: FlowMapperState): FlowMapperResult {
-//        val outputTopic = getSessionEventOutputTopic(messageDirection, flowMapperState.isInteropSession)
-//
-//        val outputRecord = if (messageDirection == MessageDirection.OUTBOUND) {
-//            if (!flowMapperState.isInteropSession) {
-//                Record(outputTopic, sessionEvent.sessionId, appMessageFactory(sessionEvent, sessionEventSerializer, flowConfig))
-//            } else {
-//                Record(outputTopic, sessionEvent.sessionId, FlowMapperEvent(sessionEvent))
-//            }
-//        } else {
-//            Record(outputTopic, flowMapperState.flowId, FlowEvent(flowMapperState.flowId, sessionEvent))
-//        }
-//        if (flowMapperState.isInteropSession) {
-//            log.info("INTEROP outputTopic=$outputTopic, direction=$messageDirection, ${sessionEvent.payload::class.java}." +
-//                    "state $flowMapperState")
-//        }
-//        return FlowMapperResult(flowMapperState, listOf(outputRecord))
-//    }
 }
