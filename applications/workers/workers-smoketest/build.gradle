@@ -115,6 +115,8 @@ tasks.register('smokeTest', Test) {
     testClassesDirs = project.sourceSets["smokeTest"].output.classesDirs
     classpath = project.sourceSets["smokeTest"].runtimeClasspath
 
+    systemProperty 'junit.jupiter.execution.parallel.enabled', 'false'
+
     def combinedWorker = project.getProperties().getOrDefault("isCombinedWorker",false)
     systemProperty "restEndpointUrl", project.getProperties().getOrDefault("restEndpointUrl","https://localhost:8888/")
 
