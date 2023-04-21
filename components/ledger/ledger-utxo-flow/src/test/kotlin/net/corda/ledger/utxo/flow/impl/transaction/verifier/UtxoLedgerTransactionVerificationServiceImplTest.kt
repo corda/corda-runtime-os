@@ -14,9 +14,6 @@ import net.corda.ledger.utxo.flow.impl.transaction.verifier.external.events.Tran
 import net.corda.ledger.utxo.test.mockCurrentGroupParametersService
 import net.corda.ledger.utxo.testkit.notaryX500Name
 import net.corda.membership.lib.SignedGroupParameters
-import net.corda.sandbox.SandboxGroup
-import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
-import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.membership.NotaryInfo
@@ -47,9 +44,6 @@ class UtxoLedgerTransactionVerificationServiceImplTest {
     private val mockSignedGroupParameters = mock<SignedGroupParameters>()
     private val notaryInfo = mock<NotaryInfo>()
     private val groupParametersHash = parseSecureHash("algo:1234")
-    private val mockSandboxGroup = mock<SandboxGroup>()
-    private val mockSandboxGroupContext = mock<SandboxGroupContext>()
-    private val mockCurrentSandboxGroupContext = mock<CurrentSandboxGroupContext>()
 
     @BeforeEach
     fun setup() {
@@ -58,12 +52,9 @@ class UtxoLedgerTransactionVerificationServiceImplTest {
             serializationService,
             mockUtxoLedgerGroupParametersPersistenceService,
             mockCurrentGroupParametersService(),
-            mock(),
-            mockCurrentSandboxGroupContext,
+            mock()
         )
 
-        whenever(mockSandboxGroupContext.sandboxGroup).thenReturn(mockSandboxGroup)
-        whenever(mockCurrentSandboxGroupContext.get()).thenReturn(mockSandboxGroupContext)
         whenever(serializationService.serialize(any<Any>())).thenReturn(serializedBytes)
         whenever(mockUtxoLedgerGroupParametersPersistenceService.find(any())).thenReturn(mockSignedGroupParameters)
         whenever(notaryInfo.name).thenReturn(notaryX500Name)

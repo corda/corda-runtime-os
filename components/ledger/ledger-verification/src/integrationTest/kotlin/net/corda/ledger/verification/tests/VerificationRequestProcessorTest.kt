@@ -44,6 +44,7 @@ import net.corda.v5.ledger.utxo.Command
 import net.corda.v5.ledger.utxo.Contract
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.ContractVerificationException
+import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 import net.corda.virtualnode.HoldingIdentity
@@ -270,8 +271,8 @@ class VerificationRequestProcessorTest {
             transactionSubType = "GENERAL",
             memberShipGroupParametersHash = "MEMBERSHIP_GROUP_PARAMETERS_HASH"
         )
-        val inputStateAndRefs: List<UtxoTransactionOutputDto> = listOf()
-        val referenceStateAndRefs: List<UtxoTransactionOutputDto> = listOf()
+        val inputStateAndRefs: List<StateAndRef<*>> = listOf()
+        val referenceStateAndRefs: List<StateAndRef<*>> = listOf()
         return UtxoLedgerTransactionContainer(wireTransaction, inputStateAndRefs, referenceStateAndRefs)
     }
 
