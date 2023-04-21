@@ -15,11 +15,11 @@ fun MembershipGroupReaderProvider.lookup(
 
 fun MembershipGroupReaderProvider.lookupByKey(
     requestingIdentity: HoldingIdentity,
-    keyBytes: ByteArray,
+    keyIdBytes: ByteArray,
     filter: MembershipStatusFilter = MembershipStatusFilter.ACTIVE,
 ) = this.getGroupReader(requestingIdentity)
     .lookupBySessionKey(
-        keyBytes.run {
+        keyIdBytes.run {
             require(this.size == 32) {
                 "Input must be 32 bytes long for SHA-256 hash."
             }
