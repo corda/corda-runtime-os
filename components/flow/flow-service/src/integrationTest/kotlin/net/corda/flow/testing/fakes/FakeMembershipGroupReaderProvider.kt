@@ -1,6 +1,5 @@
 package net.corda.flow.testing.fakes
 
-import net.corda.crypto.cipher.suite.PublicKeyHash
 import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.membership.lib.InternalGroupParameters
 import net.corda.membership.lib.SignedGroupParameters
