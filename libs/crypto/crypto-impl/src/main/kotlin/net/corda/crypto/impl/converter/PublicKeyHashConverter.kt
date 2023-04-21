@@ -1,6 +1,5 @@
 package net.corda.crypto.impl.converter
 
-import net.corda.crypto.cipher.suite.PublicKeyHash
 import net.corda.crypto.core.parseSecureHash
 import net.corda.layeredpropertymap.ConversionContext
 import net.corda.layeredpropertymap.CustomPropertyConverter
@@ -8,7 +7,7 @@ import net.corda.v5.crypto.SecureHash
 import org.osgi.service.component.annotations.Component
 
 /**
- * Converter class, converting from String to [PublicKeyHash] object.
+ * Converter class, converting from String to [SecureHash].
  */
 @Component(service = [CustomPropertyConverter::class])
 class PublicKeyHashConverter : CustomPropertyConverter<SecureHash> {
