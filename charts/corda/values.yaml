@@ -547,7 +547,7 @@ workers:
     # -- flow worker extra annotations
     annotations: {}
     # -- additional Java options for the flow worker
-    javaOptions: "-XX:MaxRAMPercentage=75"
+    javaOptions: "-XX:MaxRAMPercentage=75 --add-opens=java.base/jdk.internal.reflect=ALL-UNNAMED"
     # flow worker debug configuration
     debug:
       # -- run flow worker with debug enabled
