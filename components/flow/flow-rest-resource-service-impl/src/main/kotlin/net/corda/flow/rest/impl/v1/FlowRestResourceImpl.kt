@@ -230,6 +230,7 @@ class FlowRestResourceImpl @Activate constructor(
                     holdingIdentityShortHash, clientRequestId
                 )
             )
+        log.info("getFlowStatus: ${flowStatus}")
         return messageFactory.createFlowStatusResponse(flowStatus)
     }
 

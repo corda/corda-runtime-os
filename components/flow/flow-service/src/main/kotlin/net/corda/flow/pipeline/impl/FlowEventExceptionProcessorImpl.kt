@@ -1,5 +1,6 @@
 package net.corda.flow.pipeline.impl
 
+import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.Wakeup
 import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.event.mapper.ScheduleCleanup
@@ -8,6 +9,7 @@ import net.corda.data.flow.state.checkpoint.Checkpoint
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.data.flow.state.waiting.WaitingFor
+import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.pipeline.events.FlowEventContext
 import net.corda.flow.pipeline.FlowEventExceptionProcessor
 import net.corda.flow.pipeline.converters.FlowEventContextConverter
@@ -116,7 +118,10 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
         }
         log.warn(msg, exception)
 
-        val records = createStatusRecord(context.checkpoint.flowId) {
+        val holdingId = (context.inputEvent.payload as SessionEvent).initiatingIdentity
+        val flowId = context.checkpoint.flowId
+
+        val records = createStatusRecord(flowId, holdingId) {
             flowMessageFactory.createFlowFailedStatusMessage(
                 context.checkpoint,
                 FLOW_FAILED,
@@ -131,9 +136,16 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
         )
     }
 
-    private fun createStatusRecord(id: String, statusGenerator: () -> FlowStatus): List<Record<*, *>> {
+    private fun createStatusRecord(id: String, holdingIdentity: HoldingIdentity? = null, statusGenerator: () -> FlowStatus): List<Record<*, *>> {
         return try {
             val status = statusGenerator()
+
+            if (status.key.identity.x500Name == null) {
+                status.key.identity = holdingIdentity
+            }
+            log.info("logging dodgy holdingId")
+            log.info(status.toString())
+
             listOf(flowRecordFactory.createFlowStatusRecord(status))
         } catch (e: IllegalStateException) {
             // Most errors should happen after a flow has been initialised. However, it is possible for
@@ -145,6 +157,7 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
                 "Could not create a flow status message for a failed flow with ID $id as " +
                         "the flow start context was missing."
             )
+            log.info("createStatusRecord: $e")
             listOf()
         }
     }

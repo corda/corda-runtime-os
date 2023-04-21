@@ -1,10 +1,16 @@
 package net.corda.flow.pipeline.factory.impl
 
 import net.corda.data.ExceptionEnvelope
+import net.corda.data.flow.FlowInitiatorType
+import net.corda.data.flow.FlowKey
+import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.output.FlowStates
 import net.corda.data.flow.output.FlowStatus
+import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.pipeline.factory.FlowMessageFactory
+import net.corda.flow.pipeline.impl.FlowEventExceptionProcessorImpl
 import net.corda.flow.state.FlowCheckpoint
+import net.corda.virtualnode.toAvro
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import java.time.Instant
@@ -50,14 +56,29 @@ class FlowMessageFactoryImpl(private val currentTimeProvider: () -> Instant) : F
     }
 
     private fun getCommonFlowStatus(checkpoint: FlowCheckpoint): FlowStatus {
-        val startContext = checkpoint.flowStartContext
-        return FlowStatus().apply {
-            key = startContext.statusKey
-            initiatorType = startContext.initiatorType
-            flowId = checkpoint.flowId
-            flowClassName = startContext.flowClassName
-            createdTimestamp = startContext.createdTimestamp
-            lastUpdateTimestamp = currentTimeProvider()
+        if(checkpoint.doesExist) {
+            val startContext = checkpoint.flowStartContext
+            return FlowStatus().apply {
+                key = startContext.statusKey
+                initiatorType = startContext.initiatorType
+                flowId = checkpoint.flowId
+                flowClassName = startContext.flowClassName
+                createdTimestamp = startContext.createdTimestamp
+                lastUpdateTimestamp = currentTimeProvider()
+            }
+        } else {
+            val flowKey = FlowKey(
+                checkpoint.flowId,
+                HoldingIdentity()
+            )
+            return FlowStatus().apply {
+                key = flowKey
+                initiatorType = FlowInitiatorType.RPC
+                flowId = checkpoint.flowId
+                flowClassName = "flowClassName"
+                createdTimestamp = Instant.now()
+                lastUpdateTimestamp = Instant.now()
+            }
         }
     }
 }

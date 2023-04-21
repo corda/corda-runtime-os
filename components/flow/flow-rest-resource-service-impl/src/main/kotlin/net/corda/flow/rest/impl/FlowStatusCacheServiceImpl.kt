@@ -117,6 +117,7 @@ class FlowStatusCacheServiceImpl @Activate constructor(
                     it.close("Flow status removed from cache when null flow status received.")
                 }
             } else {
+                log.info("FlowStatusCacheServiceImpl.onNext: $flowStatus")
                 cache[flowKey] = flowStatus
                 updateAllStatusListenersForFlowKey(flowKey, flowStatus)
             }

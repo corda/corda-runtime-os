@@ -104,6 +104,8 @@ class SessionEventHandler @Activate constructor(
         val (requestedProtocolName, initiatorVersionsSupported) = getProtocolInfo(sessionInit, sessionEvent)
         var initiatedFlowNameAndProtocol: FlowAndProtocolVersion? = null
 
+        log.info("requestedProtocolName: $requestedProtocolName, initiatorVersionsSupported: $initiatorVersionsSupported")
+
         checkpointInitializer.initialize(
             context.checkpoint,
             WaitingFor(WaitingForSessionInit(sessionId)),
@@ -121,6 +123,9 @@ class SessionEventHandler @Activate constructor(
                 )
             }
             val flowAndProtocolVersion = protocolStore.responderForProtocol(requestedProtocolName, initiatorVersionsSupported, context)
+
+            log.info("flowAndProtocolVersion: $flowAndProtocolVersion")
+
             initiatedFlowNameAndProtocol = flowAndProtocolVersion
             FlowStartContext.newBuilder()
                 .setStatusKey(FlowKey(sessionId, initiatedIdentity))

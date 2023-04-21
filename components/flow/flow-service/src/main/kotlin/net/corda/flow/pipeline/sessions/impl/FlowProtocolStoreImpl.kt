@@ -4,6 +4,7 @@ import net.corda.flow.pipeline.events.FlowEventContext
 import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.flow.pipeline.sessions.protocol.FlowAndProtocolVersion
 import net.corda.flow.pipeline.sessions.protocol.FlowProtocolStore
+import org.slf4j.LoggerFactory
 
 /**
  * Tracks initiator and responder flows for either side of flow protocols declared in the CPI.
@@ -15,6 +16,10 @@ class FlowProtocolStoreImpl(
     private val protocolToInitiator: Map<FlowProtocol, String>,
     private val protocolToResponder: Map<FlowProtocol, String>
 ) : FlowProtocolStore {
+
+    private companion object {
+        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
+    }
 
     override fun initiatorForProtocol(
         protocolName: String,
@@ -38,10 +43,20 @@ class FlowProtocolStoreImpl(
         context: FlowEventContext<*>
     ): FlowAndProtocolVersion {
         val sortedProtocols = supportedVersions.sortedDescending().map { FlowProtocol(protocolName, it) }
+        log.info("sortedProtocols: $sortedProtocols")
+        log.info("protocolToResponder: $protocolToResponder")
+        log.info("protocolToResponder: ${protocolToResponder.values}")
+        log.info("protocolToResponder: ${protocolToResponder.keys}")
         for (protocol in sortedProtocols) {
             val responder = protocolToResponder[protocol]
             if (responder != null) {
-                return FlowAndProtocolVersion(protocolName, responder, protocol.version)
+
+                val result = FlowAndProtocolVersion(protocolName, responder, protocol.version)
+                log.info("returning result: $result")
+                log.info("returning result.protocol: ${result.protocol}")
+                log.info("returning result.flowClassName: ${result.flowClassName}")
+                log.info("returning result.protocolVersion: ${result.protocolVersion}")
+                return result
             }
         }
         throw FlowFatalException(
