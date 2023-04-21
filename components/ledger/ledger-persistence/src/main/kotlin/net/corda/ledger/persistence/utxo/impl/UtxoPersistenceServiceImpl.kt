@@ -245,10 +245,16 @@ class UtxoPersistenceServiceImpl(
     ): String {
         val jsonMap = factoryStorage.getFactoriesForClass(contractState).associate {
 
-            val jsonToParse = @Suppress("unchecked_cast")
-            (it as ContractStateVaultJsonFactory<ContractState>)
-                .create(contractState, jsonMarshallingService)
-                .ifBlank { "{}" } // Default to "{}" if the provided factory returns empty string to avoid exception
+            val jsonToParse = try {
+                @Suppress("unchecked_cast")
+                (it as ContractStateVaultJsonFactory<ContractState>)
+                    .create(contractState, jsonMarshallingService)
+                    .ifBlank { "{}" } // Default to "{}" if the provided factory returns empty string to avoid exception
+            } catch (e: Exception) {
+                // We can't log the JSON string here because the failed before we have a JSON
+                log.warn("Error while processing factory for class: ${it.stateType.name}. Defaulting to empty JSON.")
+                "{}"
+            }
 
             it.stateType.name to try {
                 jsonMarshallingService.parse(jsonToParse, Any::class.java)

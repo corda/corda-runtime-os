@@ -20,10 +20,12 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertDoesNotThrow
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
+import java.lang.IllegalArgumentException
 import java.security.PublicKey
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
@@ -217,6 +219,47 @@ class UtxoPersistenceServiceImplTest {
         assertThat(persisted.value.json).isEqualTo("{}")
     }
 
+    @Test
+    fun `if an exception is thrown in a json factory, the state should still be persisted and that field should be {}`() {
+
+        val storage = ContractStateVaultJsonFactoryRegistryImpl().apply {
+            registerJsonFactory(ContractStateVaultJsonFactoryImpl()) // Register the default contract state factory
+            registerJsonFactory(ExceptionStateFactory()) // Register the factory that throws an exception
+        }
+
+        val persistenceService = UtxoPersistenceServiceImpl(
+            mockEmFactory,
+            mockRepository,
+            mock(),
+            mock(),
+            storage,
+            JsonMarshallingServiceImpl(),
+            UTCClock()
+        )
+
+        val tx = createMockTransaction(mapOf(
+            0 to createStateAndRef(ExceptionState("a", "b", "c"))
+        ))
+
+        assertDoesNotThrow {
+            persistenceService.persistTransaction(tx)
+        }
+
+        assertThat(persistedJsonStrings).hasSize(1)
+        val persisted = persistedJsonStrings.entries.first()
+
+        assertJsonContentEquals(
+            expected = """
+            {
+                "net.corda.ledger.persistence.utxo.impl.ExceptionState" : {
+                },
+                "net.corda.v5.ledger.utxo.ContractState" : {
+                }
+            }
+            """.trimIndent(),
+            actual = persisted.value.json
+        )
+    }
     private fun createMockTransaction(producedStates: Map<Int, StateAndRef<ContractState>>): UtxoTransactionReader {
         return mock {
             on { getConsumedStateRefs() } doReturn emptyList()
@@ -288,5 +331,21 @@ private class EmptyStateJsonFactory : ContractStateVaultJsonFactory<EmptyState> 
     override fun getStateType(): Class<EmptyState> = EmptyState::class.java
     override fun create(state: EmptyState, jsonMarshallingService: JsonMarshallingService): String {
         return ""
+    }
+}
+
+private class ExceptionState(
+    val dummyString: String,
+    val dummyString2: String,
+    val dummyString3: String
+) : ContractState {
+    override fun getParticipants(): MutableList<PublicKey> = mutableListOf()
+}
+
+private class ExceptionStateFactory : ContractStateVaultJsonFactory<ExceptionState> {
+    override fun getStateType(): Class<ExceptionState> = ExceptionState::class.java
+
+    override fun create(state: ExceptionState, jsonMarshallingService: JsonMarshallingService): String {
+        throw IllegalArgumentException("Creation error!")
     }
 }
