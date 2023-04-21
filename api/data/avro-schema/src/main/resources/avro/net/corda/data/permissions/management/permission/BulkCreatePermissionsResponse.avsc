@@ -1,0 +1,23 @@
+{
+  "type": "record",
+  "name": "BulkCreatePermissionsResponse",
+  "namespace": "net.corda.data.permissions.management.permission",
+  "fields": [
+    {
+      "name": "permissionIds",
+      "type": {
+        "type": "array",
+        "items": "string"
+      },
+      "doc": "A set of IDs of permissions created."
+    },
+    {
+      "name": "roleIds",
+      "type": {
+        "type": "array",
+        "items": "string"
+      },
+      "doc": "Identifiers of the existing roles for permissions to be associated with."
+    }
+  ]
+}

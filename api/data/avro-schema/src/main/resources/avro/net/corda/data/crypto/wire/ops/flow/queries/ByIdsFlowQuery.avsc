@@ -1,0 +1,13 @@
+{
+  "type": "record",
+  "name": "ByIdsFlowQuery",
+  "namespace": "net.corda.data.crypto.wire.ops.flow.queries",
+  "doc": "Request to lookup for keys by their full key ids. The maximum number of items is 20",
+  "fields": [
+    {
+      "name": "fullKeyIds",
+      "type": "net.corda.data.crypto.SecureHashes",
+      "doc": "List of full key ids"
+    }
+  ]
+}

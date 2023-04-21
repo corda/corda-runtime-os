@@ -1,0 +1,364 @@
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+import static org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_11
+import static org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_1_8
+import static org.gradle.api.JavaVersion.VERSION_11
+import static org.gradle.jvm.toolchain.JavaLanguageVersion.of
+import org.jetbrains.dokka.gradle.DokkaTask
+
+buildscript {
+    ext {
+        vcsUrl = System.getenv('GIT_URL') ?: 'https://github.com/corda/corda-api.git'
+    }
+    
+    dependencies {
+        classpath "org.jetbrains.dokka:dokka-core:$dokkaVersion"
+        constraints {
+            classpath("org.jsoup:jsoup:1.15.3") {
+                because "required until dokka plugin updates it's internal version of jsoup, not fixed as of dokka 1.7.10"
+            }
+        }
+    }
+}
+
+plugins {
+    id 'net.corda.cordapp.cordapp-configuration'
+    id 'org.jetbrains.kotlin.jvm' apply false
+    id 'org.jetbrains.kotlin.plugin.allopen' apply false
+    id 'org.jetbrains.kotlin.plugin.jpa' apply false
+    id 'io.gitlab.arturbosch.detekt' apply false
+    id 'io.snyk.gradle.plugin.snykplugin'
+    id 'org.ajoberstar.grgit' // used for GIT interaction (e.g. extract commit hash)
+    id 'corda.root-publish'
+    id 'jacoco' // test coverage
+    id 'com.dorongold.task-tree' // utility to visualise Gradle task DAG
+    id 'org.jetbrains.dokka'
+    id 'com.github.ben-manes.versions' // discover possible dependency version upgrades
+}
+
+snyk {
+    api = project.findProperty("snykApiToken") ?: System.getenv('SNYK_TOKEN')
+    arguments = project.findProperty("snykArguments") ?: '--all-sub-projects'
+    severity = project.findProperty("snykSeverity") ?: 'low'
+    autoDownload = true
+    autoUpdate = true
+}
+
+def revision = {
+    if (System.getenv("CORDA_REVISION")) {
+        return System.getenv("CORDA_REVISION")
+    }
+    try {
+        return "git rev-parse HEAD".execute().text.trim()
+    } catch (Exception error) {
+        logger.warn("git is unavailable in build environment", error)
+        "unknown"
+    }
+}()
+
+// Ensure that we both compile and run using Kotlin OSGi bundles.
+// We must ONLY invoke this for Kotlin's classpath configurations.
+void configureKotlinForOSGi(Configuration configuration) {
+    configuration.resolutionStrategy {
+        dependencySubstitution {
+            substitute module('org.jetbrains.kotlin:kotlin-stdlib-jdk8') using module("org.jetbrains.kotlin:kotlin-osgi-bundle:$kotlinVersion")
+            substitute module('org.jetbrains.kotlin:kotlin-stdlib-jdk7') using module("org.jetbrains.kotlin:kotlin-osgi-bundle:$kotlinVersion")
+            substitute module('org.jetbrains.kotlin:kotlin-stdlib-common') using module("org.jetbrains.kotlin:kotlin-osgi-bundle:$kotlinVersion")
+            substitute module('org.jetbrains.kotlin:kotlin-stdlib') using module("org.jetbrains.kotlin:kotlin-osgi-bundle:$kotlinVersion")
+            substitute module('org.jetbrains.kotlin:kotlin-reflect') using module("org.jetbrains.kotlin:kotlin-osgi-bundle:$kotlinVersion")
+        }
+    }
+}
+
+def releaseType = System.getenv('RELEASE_TYPE') ?: "SNAPSHOT"
+def javaVersion = VERSION_11
+
+logger.quiet("********************** CORDA BUILD **********************")
+if (!JavaVersion.current().isCompatibleWith(javaVersion)) {
+    throw new GradleException("The java version used ${JavaVersion.current()} is not compatible with the expected version ${javaVersion}.")
+}
+logger.quiet("SDK version: {}", JavaVersion.current())
+logger.quiet("JAVA HOME {}", System.getProperty("java.home"))
+def cordaVersion = "$cordaProductVersion.$cordaApiRevision"
+if (System.getenv("RELEASE_VERSION")?.trim()) {
+    version = System.getenv("RELEASE_VERSION")
+} else {
+    def versionSuffix = '-SNAPSHOT'
+    if(project.hasProperty('overridePublishVersionSuffix')) {
+        versionSuffix = project.property('overridePublishVersionSuffix')
+    } else if (System.getenv('VERSION_SUFFIX')) {
+        versionSuffix = System.getenv('VERSION_SUFFIX')
+    }
+    version = "$cordaVersion$versionSuffix"
+}
+
+logger.quiet("Corda release version: {}", version)
+logger.quiet("Corda baseVersion: {}", cordaVersion)
+logger.quiet("Release Type: {}", releaseType)
+
+subprojects {
+    buildscript {
+        configurations.classpath {
+            // FORCE Gradle to use latest SNAPSHOT plugins.
+            resolutionStrategy.cacheChangingModulesFor 0, 'seconds'
+        }
+    }
+
+    ext {
+        releasable = true // all corda-api jars are externally consumable
+    }
+
+    version rootProject.version
+    group 'net.corda'
+
+    pluginManager.withPlugin('java') {
+        java {
+            toolchain {
+                languageVersion = of(javaVersion.majorVersion.toInteger())
+            }
+            withSourcesJar()
+        }
+
+        tasks.withType(JavaCompile).configureEach {
+            options.compilerArgs << '-parameters'
+
+            options.encoding = 'UTF-8'
+        }
+
+        // Added to support junit5 tests
+        tasks.withType(Test).configureEach {
+            useJUnitPlatform {
+                excludeTags project.hasProperty('runUnstableTests') ? 'runAllTestsNoExclusions' : 'Unstable'
+            }
+
+            doFirst {
+                // Create all temporary files within the build directory.
+                systemProperty 'java.io.tmpdir', buildDir.absolutePath
+            }
+
+            retry {
+                if (System.getenv().containsKey("JENKINS_URL")) {
+                    maxRetries = 2
+                    maxFailures = 10
+                }
+            }
+        }
+    }
+
+    pluginManager.withPlugin('org.jetbrains.kotlin.jvm') {
+        apply plugin: 'io.gitlab.arturbosch.detekt'
+        apply plugin: 'jacoco'
+        apply plugin: 'org.jetbrains.dokka'
+
+        // NOTE: question whether it is "ok" to force dependencies on all modules like this
+        //  thinking is that for the test dependencies it's ok as it'll keep things consistent.
+        //  we can add exclusions, or review this if necessary.
+        dependencies {
+            // Test libraries -> keep consistent across modules
+            testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
+            testImplementation "org.mockito:mockito-core:$mockitoVersion"
+            testImplementation("org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion") {
+                // Excluding mockito-core and adding it implicitly above. This is done to allow the use of the latest version of mockito.
+                exclude group: 'mockito-core'
+            }
+
+            testImplementation "org.junit.jupiter:junit-jupiter:$junitVersion"
+
+            // Test runtime libraries -> also keep consistent
+            testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junitVersion"
+
+            detektPlugins "io.gitlab.arturbosch.detekt:detekt-formatting:$detektPluginVersion"
+        }
+
+        // Making all persistence entity open and with an empty constructor to allow Hibernate to work.
+        apply plugin: 'kotlin-allopen'
+        allOpen {
+            annotations(
+                "javax.persistence.Entity",
+                "javax.persistence.Embeddable",
+                "javax.persistence.MappedSuperclass"
+            )
+        }
+        apply plugin: 'kotlin-jpa'
+
+        configurations {
+            [ compileClasspath, testCompileClasspath, runtimeClasspath, testRuntimeClasspath ].forEach { cfg ->
+                configureKotlinForOSGi(cfg)
+            }
+        }
+
+        tasks.withType(KotlinCompile).configureEach {
+            compilerOptions {
+                allWarningsAsErrors = true
+                languageVersion = KOTLIN_1_8
+                apiVersion = KOTLIN_1_8
+                verbose = true
+                jvmTarget = JVM_11
+                javaParameters = true   // Useful for reflection.
+                freeCompilerArgs.addAll([
+                    "-Xjvm-default=all"
+                ])
+            }
+        }
+
+        tasks.named("detekt").configure {
+            if(file("$projectDir/detekt-baseline.xml").exists()){
+                baseline = file("$projectDir/detekt-baseline.xml")
+            }
+            config.setFrom(files("$rootDir/detekt-config.yml"))
+            parallel = true
+            reports {
+                xml{
+                    outputLocation.set(file("$projectDir/build/detekt-report.xml"))
+                }
+                txt.required.set(false)
+                sarif.required.set(false)
+                html.required.set(false)
+            }
+        }
+
+        tasks.named('jacocoTestReport') {
+            def jacocoExecutionDataFiles = fileTree(buildDir).include("/jacoco/*.exec")
+            executionData.setFrom(jacocoExecutionDataFiles)
+
+            dependsOn tasks.named('test') // tests are required to run before generating the report
+
+            reports {
+                xml.enabled true
+                html.enabled true
+            }
+        }
+
+        tasks.register('javadocJar', Jar) {
+            description = 'Create JavaDoc Jar from dokka docs'
+            group = 'documentation'
+
+            dependsOn(dokkaHtml)
+            archiveBaseName = jar.archiveBaseName
+            archiveClassifier.set("javadoc")
+            from(dokkaHtml.outputDirectory)
+        }
+
+        if (project.hasProperty('generateJavaDocWithBuild')) {
+            artifacts {
+                archives javadocJar
+            }
+        }
+
+        tasks.withType(DokkaTask.class).configureEach {
+            moduleVersion.set(System.getenv("RELEASE_VERSION") ?: cordaVersion)
+        }
+    }
+
+    pluginManager.withPlugin('io.gitlab.arturbosch.detekt'){
+        dependencies {
+        detekt "io.gitlab.arturbosch.detekt:detekt-cli:$detektPluginVersion"
+            constraints {
+                detekt("org.yaml:snakeyaml:$snakeyamlVersion") {
+                    because "required until detekt plugin updates it's internal version of snakeYaml, not fixed as of detekt version 1.21"
+                }
+            }
+        }
+    }
+
+    // we do this to allow for Gradle task caching. OSGI attribute Bnd-LastModified breaks gradle caching as it is a timestamp
+    // below block tells Gradle to ignore specifically the Bnd-LastModified attribute of the manifest when checking if
+    // a task is up-to-date, this has no impact on publishing or production of jar.
+    normalization {
+        runtimeClasspath {
+            metaInf {
+                ignoreCompletely()
+            }
+        }
+    }
+
+    // TODO: as above, this may not apply to all modules, so maybe should be moved out
+    tasks.withType(Jar).matching { it.name != 'cpk' && it.name != 'cpb' }.configureEach {
+        manifest {
+            attributes("Corda-Release-Version": project.version)
+            attributes("Corda-Revision": revision)
+            attributes("Automatic-Module-Name": "net.corda.${project.name.replace('-', '.')}")
+            // NOTE: this needs to be reverted to a URL with the version once the URL structure has been defined.
+//                attributes("Corda-Docs-Link": "https://docs.corda.net/docs/corda-os/$cordaVersion")
+            attributes("Corda-Docs-Link": "https://docs.r3.com/")
+        }
+    }
+
+    tasks.register('compileAll') { task ->
+        description = "Compiles all the Kotlin and Java classes, including all of the test classes."
+        group = "verification"
+
+        task.dependsOn tasks.withType(AbstractCompile), tasks.withType(KotlinCompile)
+    }
+
+    tasks.register('allDependencyInsight', DependencyInsightReportTask)
+    tasks.register('allDependencies', DependencyReportTask)
+
+    tasks.register('releasableArtifacts') {
+        description = "Prints a list of all modules which will be released externally"
+        group = "Release"
+        if (project.hasProperty('releasable') && project.releasable.toBoolean()) {
+            logArtifacts(project)
+        }
+    }
+
+    tasks.register('unReleasableArtifacts') {
+        description = "Prints a list of all modules which will not be released externally"
+        group = "Release"
+        if (!project.hasProperty('releasable') || !project.releasable.toBoolean()) {
+            logArtifacts(project)
+        }
+    }
+}
+
+// helper to log artifacts we will or will not publish during a release process
+def logArtifacts(Project project) {
+    project.publishing.publications.each { publication ->
+        logger.quiet("\n${publication.groupId}:${publication.artifactId}:${publication.version} [${project.path}]")
+        publication.artifacts.each { artifact ->
+            logger.quiet(" * ${artifact.file.name}")
+        }
+    }
+}
+
+// report updatable dependencies: gradle dependencyUpdates
+def isNonStable = { String version ->
+    def stableKeyword = ['RELEASE', 'FINAL', 'GA'].any { it -> version.toUpperCase().contains(it) }
+    def regex = /^[0-9,.v-]+(-r)?$/
+    return !stableKeyword && !(version ==~ regex)
+}
+tasks.named("dependencyUpdates").configure {
+    rejectVersionIf {
+        isNonStable(it.candidate.version) && !isNonStable(it.currentVersion)
+    }
+}
+
+wrapper {
+    gradleVersion = '7.6'
+    distributionType = Wrapper.DistributionType.BIN
+}
+
+tasks.register('generateMultiModuleDocs', Zip) {
+    description = 'Create mutli module docs Site Jar'
+    group = 'documentation'
+
+    dependsOn dokkaHtmlMultiModule
+    archiveName "corda-api-docs-${project.version}.zip"-
+    from(dokkaHtmlMultiModule.outputDirectory)
+    destinationDir(file("$buildDir/corda-api-docs"))
+}
+
+if (project.hasProperty('publishMultiModulekDocs')) {
+    publishing {
+        publications {
+            dokkaDocs(MavenPublication) {
+                artifact generateMultiModuleDocs
+                artifactId "corda-api-docs"
+                groupId 'net.corda'
+            }
+        }
+    }
+
+    artifactoryPublish {
+        publications('dokkaDocs')
+    }
+}

@@ -1,0 +1,18 @@
+{
+  "type": "record",
+  "name": "FlowStackItemSession",
+  "namespace": "net.corda.data.flow.state.checkpoint",
+  "doc": "Represents a session in the flow stack.",
+  "fields": [
+    {
+      "name": "sessionId",
+      "type": "string",
+      "doc": "The session ID."
+    },
+    {
+      "name": "initiated",
+      "type": "boolean",
+      "doc": "Flag to show if the session has sent a session init message or was initiated by a peer session."
+    }
+  ]
+}

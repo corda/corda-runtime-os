@@ -1,0 +1,48 @@
+// plugin to cater for R3 vs Non R3 users building code base. R3 employees will leverage internal plugins non
+// R3 users will use standard Maven publishing conventions as provided by the Maven-publish gradle plugin
+if (System.getenv('CORDA_ARTIFACTORY_USERNAME') != null || project.hasProperty('cordaArtifactoryUsername')) {
+    logger.info("Internal R3 user - resolving publication build dependencies from internal plugins")
+    pluginManager.apply('com.r3.internal.gradle.plugins.r3Publish')
+} else {
+    logger.info("External user - using standard maven publishing")
+    pluginManager.apply('maven-publish')
+    pluginManager.withPlugin('java') {
+        publishing {
+            publications {
+                register('maven', MavenPublication) { mvn ->
+                    afterEvaluate {
+                        mvn.artifactId = tasks.named('jar', Jar).flatMap { Jar jar -> jar.archiveBaseName }.get()
+                        mvn.groupId group.toString()
+                        mvn.from components.findByName('cordapp') ?: components.findByName('kotlin') ?: components.java
+
+                        if (mvn.artifacts.matching { MavenArtifact a -> a.classifier == 'sources' }.isEmpty()) {
+                            try {
+                                mvn.artifact tasks.named('sourcesJar', Jar)
+                            } catch (UnknownTaskException ignored) {
+                            }
+                        }
+
+                        if (mvn.artifacts.matching { MavenArtifact a -> a.classifier == 'javadoc' }.isEmpty()) {
+                            try {
+                                mvn.artifact tasks.named('javadocJar', Jar)
+                            } catch (UnknownTaskException ignored) {
+                            }
+                        }
+
+                        mvn.artifacts = mvn.artifacts.findAll { MavenArtifact a ->
+                            a.classifier != 'ignore'
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    tasks.withType(GenerateModuleMetadata).configureEach {
+        enabled = false
+    }
+
+    tasks.register('install') {
+        dependsOn 'publishToMavenLocal'
+    }
+}

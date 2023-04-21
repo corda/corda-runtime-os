@@ -1,0 +1,23 @@
+{
+  "type": "record",
+  "name": "SignedGroupParameters",
+  "namespace": "net.corda.data.membership",
+  "doc": "Group parameters which have been signed by the MGM.",
+  "fields": [
+    {
+      "name": "groupParameters",
+      "doc": "GroupParameters entries serialised from [net.corda.data.KeyValuePairList] to a byte array.",
+      "type": "bytes"
+    },
+    {
+      "name": "mgmSignature",
+      "doc": "MGM signature over the serialised group parameters. The signature could be null only if it's the MGM's view of the group parameters.",
+      "type": ["null", "net.corda.data.crypto.wire.CryptoSignatureWithKey"]
+    },
+    {
+      "name": "mgmSignatureSpec",
+      "type": ["null", "net.corda.data.crypto.wire.CryptoSignatureSpec"],
+      "doc": "Signature spec for the MGM signature."
+    }
+  ]
+}

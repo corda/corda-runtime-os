@@ -1,0 +1,28 @@
+{
+  "type": "record",
+  "name": "UtxoTransactionOutput",
+  "doc": "Transaction output data of signed transaction.",
+  "namespace": "net.corda.data.ledger.persistence",
+  "fields": [
+    {
+      "name": "transactionId",
+      "type": "string",
+      "doc": "The transaction ID, derived from the root hash of its Merkle tree"
+    },
+    {
+      "name": "index",
+      "type": "int",
+      "doc": "The index of the transaction output"
+    },
+    {
+      "name": "info",
+      "type": "bytes",
+      "doc": "Transaction output info"
+    },
+    {
+      "name": "data",
+      "type": "bytes",
+      "doc": "Transaction output data"
+    }
+  ]
+}

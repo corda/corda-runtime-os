@@ -1,0 +1,27 @@
+{
+  "type": "record",
+  "name": "RpcOpsRequest",
+  "namespace": "net.corda.data.crypto.wire.ops.rpc",
+  "doc": "Internal over-the-wire crypto RPC operations request envelope.",
+  "fields": [
+    {
+      "name": "context",
+      "type": "net.corda.data.crypto.wire.CryptoRequestContext",
+      "doc": "Request context, tenant id, timestamp, etc."
+    },
+    {
+      "name": "request",
+      "type": [
+        "net.corda.data.crypto.wire.ops.rpc.commands.DeriveSharedSecretCommand",
+        "net.corda.data.crypto.wire.ops.rpc.commands.GenerateWrappingKeyRpcCommand",
+        "net.corda.data.crypto.wire.ops.rpc.commands.GenerateFreshKeyRpcCommand",
+        "net.corda.data.crypto.wire.ops.rpc.commands.GenerateKeyPairCommand",
+        "net.corda.data.crypto.wire.ops.rpc.commands.SignRpcCommand",
+        "net.corda.data.crypto.wire.ops.rpc.queries.ByIdsRpcQuery",
+        "net.corda.data.crypto.wire.ops.rpc.queries.KeysRpcQuery",
+        "net.corda.data.crypto.wire.ops.rpc.queries.SupportedSchemesRpcQuery"
+      ],
+      "doc": "Request's payload, depends on the requested operation."
+    }
+  ]
+}

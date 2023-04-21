@@ -1,0 +1,207 @@
+<?xml version="1.1" encoding="UTF-8" standalone="no"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd">
+
+    <changeSet author="R3.Corda" id="cpx-creation-v1.0">
+
+        <createTable tableName="cpi">
+            <column name="name" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="version" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="signer_summary_hash" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="file_name" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="file_checksum" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="group_policy" type="TEXT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="group_id" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="file_upload_request_id" type="VARCHAR(255)">
+                <constraints nullable="true"/>
+            </column>
+            <!-- audit -->
+            <column name="entity_version" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="is_deleted" type="BOOLEAN">
+                <constraints nullable="false"/>
+            </column>
+            <column name="insert_ts" type="TIMESTAMP"
+                    defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addPrimaryKey tableName="cpi" columnNames="name, version, signer_summary_hash" constraintName="cpi_pk"/>
+
+        <addUniqueConstraint tableName="cpi" columnNames="file_checksum" constraintName="db_cpi_uc1"/>
+
+        <createTable tableName="cpk_metadata">
+            <column name="cpk_name" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="cpk_version" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="cpk_signer_summary_hash" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="file_checksum" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="format_version" type="VARCHAR(12)">
+                <constraints nullable="false"/>
+            </column>
+            <!-- This could change to JSONB for postgres for easier querying but may not add much benefit -->
+            <column name="metadata" type="TEXT">
+                <constraints nullable="false"/>
+            </column>
+            <!-- audit -->
+            <column name="entity_version" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="is_deleted" type="BOOLEAN">
+                <constraints nullable="false"/>
+            </column>
+            <column name="insert_ts" type="TIMESTAMP"
+                    defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addPrimaryKey tableName="cpk_metadata" columnNames="file_checksum" constraintName="cpk_metadata_pk"/>
+
+        <createTable tableName="cpk_file">
+            <column name="file_checksum" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="data" type="BLOB">
+                <constraints nullable="false"/>
+            </column>
+            <!-- audit -->
+            <column name="entity_version" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="is_deleted" type="BOOLEAN">
+                <constraints nullable="false"/>
+            </column>
+            <column name="insert_ts" type="TIMESTAMP"
+                    defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addPrimaryKey tableName="cpk_file" columnNames="file_checksum" constraintName="cpk_file_pk"/>
+
+        <addForeignKeyConstraint baseTableName="cpk_file" baseColumnNames="file_checksum"
+                                 referencedTableName="cpk_metadata" referencedColumnNames="file_checksum"
+                                 constraintName="FK_cpk_file_cpk_metadata"/>
+
+        <createTable tableName="cpk_db_change_log">
+            <column name="cpk_file_checksum" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="file_path" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="content" type="TEXT">
+                <constraints nullable="false"/>
+            </column>
+            <!-- audit -->
+            <column name="entity_version" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="is_deleted" type="BOOLEAN">
+                <constraints nullable="false"/>
+            </column>
+            <column name="insert_ts" type="TIMESTAMP"
+                    defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addPrimaryKey tableName="cpk_db_change_log" columnNames="cpk_file_checksum, file_path"
+                       constraintName="cpk_db_change_log_pk"/>
+
+        <addForeignKeyConstraint baseTableName="cpk_db_change_log" baseColumnNames="cpk_file_checksum"
+                                 referencedTableName="cpk_metadata" referencedColumnNames="file_checksum"
+                                 constraintName="FK_cpk_db_change_log_cpk_metadata"/>
+        <!-- Append only audit table. Unlike cpk_db_change_logs which will be updated during CPI update process. -->
+        <createTable tableName="cpk_db_change_log_audit">
+            <column name="id" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="cpk_file_checksum" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="file_path" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="content" type="TEXT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="is_deleted" type="BOOLEAN">
+                <constraints nullable="false"/>
+            </column>
+            <column name="insert_ts" type="TIMESTAMP"
+                    defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addPrimaryKey tableName="cpk_db_change_log_audit" columnNames="id"
+                       constraintName="cpk_db_change_log_audit_pk"/>
+
+        <createTable tableName="cpi_cpk">
+            <column name="cpi_name" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="cpi_version" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="cpi_signer_summary_hash" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="cpk_file_checksum" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="cpk_file_name" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <!-- audit -->
+            <column name="entity_version" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="is_deleted" type="BOOLEAN">
+                <constraints nullable="false"/>
+            </column>
+            <column name="insert_ts" type="TIMESTAMP"
+                    defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addPrimaryKey tableName="cpi_cpk" columnNames="cpi_name, cpi_version, cpi_signer_summary_hash, cpk_file_checksum"
+                       constraintName="cpi_cpk_pk"/>
+
+        <addForeignKeyConstraint baseTableName="cpi_cpk" baseColumnNames="cpi_name, cpi_version, cpi_signer_summary_hash"
+                                 referencedTableName="cpi" referencedColumnNames="name, version, signer_summary_hash"
+                                 constraintName="FK_cpi_cpk_cpi"/>
+
+        <addForeignKeyConstraint baseTableName="cpi_cpk" baseColumnNames="cpk_file_checksum"
+                                 referencedTableName="cpk_metadata" referencedColumnNames="file_checksum"
+                                 constraintName="FK_cpi_cpk_cpk_metadata"/>
+
+    </changeSet>
+</databaseChangeLog>

@@ -1,0 +1,33 @@
+{
+  "type": "record",
+  "name": "MembershipSyncRequest",
+  "namespace": "net.corda.data.membership.p2p",
+  "doc": "Membership data synchronization request which will be processed by the MGM.",
+  "fields": [
+    {
+      "name": "distributionMetaData",
+      "doc": "Basic information about the request.",
+      "type": "DistributionMetaData"
+    },
+    {
+      "name": "membersHash",
+      "doc": "Hash value to help validate the member requesting for sync.",
+      "type": "net.corda.data.crypto.SecureHash"
+    },
+    {
+      "name": "bloomFilter",
+      "doc": "Bloom filter to calculate missing MemberInfo entries.",
+      "type": ["null", "net.corda.data.sync.BloomFilter"]
+    },
+    {
+      "name": "groupParametersHash",
+      "doc": "The hash value of the latest GroupParameters the member can see.",
+      "type": "net.corda.data.crypto.SecureHash"
+    },
+    {
+      "name": "cpiAllowlistHash",
+      "doc": "The hash representation of the CpiVersions which are allowed on the member side.",
+      "type": "net.corda.data.crypto.SecureHash"
+    }
+  ]
+}

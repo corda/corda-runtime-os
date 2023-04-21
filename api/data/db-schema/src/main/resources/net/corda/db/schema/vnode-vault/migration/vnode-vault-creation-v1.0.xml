@@ -1,0 +1,188 @@
+<?xml version="1.1" encoding="UTF-8" standalone="no"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd">
+
+    <changeSet author="R3.Corda" id="vnode-vault-creation-v1.0">
+
+        <createTable tableName="vnode_vault">
+            <column name="holding_identity_id" type="VARCHAR(12)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addPrimaryKey columnNames="holding_identity_id" constraintName="vnode_vault_pk" tableName="vnode_vault"/>
+
+        <createTable tableName="vnode_certificate">
+            <column name="alias" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="usage" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="raw_certificate" type="TEXT">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addPrimaryKey columnNames="alias" constraintName="vnode_certificate_pk" tableName="vnode_certificate"/>
+        <createIndex indexName="vnode_certificate_usage" tableName="vnode_certificate">
+            <column name="usage"/>
+        </createIndex>
+
+        <createTable tableName="vnode_mtls_allowed_certificate">
+            <column name="subject" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="is_deleted" type="BOOLEAN">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addPrimaryKey columnNames="subject" constraintName="vnode_mtls_allowed_certificate_pk" tableName="vnode_mtls_allowed_certificate"/>
+
+        <createTable tableName="vnode_pre_auth_tokens">
+            <column name="token_id" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="owner_x500_name" type="NVARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="ttl" type="TIMESTAMP">
+            </column>
+            <column name="status" type="VARCHAR(64)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="creation_remark" type="TEXT">
+            </column>
+            <column name="removal_remark" type="TEXT">
+            </column>
+        </createTable>
+        <addPrimaryKey columnNames="token_id" constraintName="vnode_pre_auth_tokens_pk" tableName="vnode_pre_auth_tokens"/>
+
+        <createTable tableName="vnode_registration_request">
+            <column name="registration_id" type="NVARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="holding_identity_id" type="VARCHAR(12)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="status" type="VARCHAR(64)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="last_modified" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="context" type="VARBINARY(1048576)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="signature_key" type="VARBINARY(1024)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="signature_content" type="VARBINARY(4096)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="signature_spec" type="NVARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="reason" type="NVARCHAR(255)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="serial" type="BIGINT">
+                <constraints nullable="true"/>
+            </column>
+        </createTable>
+        <addPrimaryKey columnNames="registration_id"
+                       constraintName="vnode_registration_request_pk"
+                       tableName="vnode_registration_request"/>
+
+        <createTable tableName="vnode_member_info">
+            <column name="group_id" type="NVARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="member_name" type="NVARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="is_pending" type="BOOLEAN">
+                <constraints nullable="false"/>
+            </column>
+            <column name="status" type="NVARCHAR(64)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="modified_time" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="member_context" type="VARBINARY(1048576)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="member_signature_key" type="VARBINARY(1024)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="member_signature_content" type="VARBINARY(4096)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="member_signature_spec" type="NVARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="mgm_context" type="VARBINARY(1048576)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="serial_number" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addPrimaryKey columnNames="group_id, member_name, is_pending"
+                       constraintName="vnode_member_info_pkey"
+                       tableName="vnode_member_info"/>
+
+        <createTable tableName="vnode_group_policy">
+            <column name="version" type="BIGINT">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column name="created_at" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="properties" type="VARBINARY(1048576)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <createTable tableName="vnode_group_parameters">
+            <column name="epoch" type="INT">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column name="parameters" type="VARBINARY(1048576)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="signature_public_key" type="VARBINARY(1048576)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="signature_content" type="VARBINARY(1048576)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="signature_spec" type="NVARCHAR(255)">
+                <constraints nullable="true"/>
+            </column>
+        </createTable>
+        <createTable tableName="vnode_group_approval_rules">
+            <column name="rule_id" type="NVARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="rule_regex" type="NVARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="rule_type" type="NVARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="rule_label" type="NVARCHAR(255)">
+                <constraints nullable="true"/>
+            </column>
+        </createTable>
+        <createIndex indexName="vnode_group_approval_rules_type" tableName="vnode_group_approval_rules" clustered="false">
+            <column name="rule_type"/>
+        </createIndex>
+        <addPrimaryKey columnNames="rule_id, rule_type"
+                       constraintName="vnode_group_approval_rules_pkey"
+                       tableName="vnode_group_approval_rules"/>
+    </changeSet>
+</databaseChangeLog>

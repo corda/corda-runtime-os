@@ -1,0 +1,52 @@
+{
+  "type": "record",
+  "namespace": "net.corda.data.packaging",
+  "name": "CpkMetadata",
+  "fields": [
+    {
+      "name": "id",
+      "type": "net.corda.data.packaging.CpkIdentifier"
+    },
+    {
+      "name": "manifest",
+      "type": "net.corda.data.packaging.CpkManifest"
+    },
+    {
+      "name": "mainBundle",
+      "type": "string"
+    },
+    {
+      "name": "libraries",
+      "type": { "type": "array", "items": "string" }
+    },
+    {
+      "name": "corDappManifest",
+      "type": "net.corda.data.packaging.CorDappManifest"
+    },
+    {
+      "name": "type",
+      "type": "net.corda.data.packaging.CpkType"
+    },
+    {
+      "name": "hash",
+      "type": "net.corda.data.crypto.SecureHash"
+    },
+    {
+      "name": "corDappCertificates",
+      "type": { "type": "array", "items": "bytes" }
+    },
+    {
+      "name": "timestamp",
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+      },
+      "doc": "Time ([Instant]) in milliseconds when the record was updated or added."
+    },
+    {
+      "name": "externalChannelsConfig",
+      "type": ["null", "string"],
+      "default": null
+    }
+  ]
+}

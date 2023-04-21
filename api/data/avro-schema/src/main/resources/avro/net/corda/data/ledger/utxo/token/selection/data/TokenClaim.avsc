@@ -1,0 +1,21 @@
+{
+  "type": "record",
+  "name": "TokenClaim",
+  "namespace": "net.corda.data.ledger.utxo.token.selection.data",
+  "doc": "The set of tokens claimed by a query",
+  "fields": [
+      {
+        "name": "claimId",
+        "type": "string",
+        "doc": "Unique identifier for the claim"
+      },
+      {
+        "name": "claimedTokenStateRefs",
+        "type": {
+          "type": "array",
+          "items": "string"
+        },
+        "doc": "The List of state refs for the claimed tokens"
+      }
+  ]
+}

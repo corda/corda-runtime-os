@@ -1,0 +1,15 @@
+plugins {
+    id 'corda-api.common-library'
+    id 'corda.common-publishing'
+    id 'corda.java-only'
+}
+
+description 'Corda Crypto Extensions API'
+
+dependencies {
+    compileOnly 'org.osgi:osgi.annotation'
+
+    api platform(project(':corda-api'))
+    api project(':crypto')
+}
+

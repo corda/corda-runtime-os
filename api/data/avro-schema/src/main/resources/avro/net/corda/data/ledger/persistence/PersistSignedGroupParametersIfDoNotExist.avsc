@@ -1,0 +1,13 @@
+{
+  "type": "record",
+  "name": "PersistSignedGroupParametersIfDoNotExist",
+  "doc": "Persist the specified signed group parameters if it does not exist. One of several types of ledger persistence request {@link LedgerPersistenceRequest}.",
+  "namespace": "net.corda.data.ledger.persistence",
+  "fields": [
+    {
+      "name": "signedGroupParameters",
+      "doc": "Signed group parameters",
+      "type": "net.corda.data.membership.SignedGroupParameters"
+    }
+  ]
+}

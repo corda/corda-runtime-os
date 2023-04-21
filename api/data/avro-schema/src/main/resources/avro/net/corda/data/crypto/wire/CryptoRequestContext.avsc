@@ -1,0 +1,36 @@
+{
+  "type": "record",
+  "name": "CryptoRequestContext",
+  "namespace": "net.corda.data.crypto.wire",
+  "doc": "Defines over-the-wire request context such as timestamp, requesting component, correlation, tenant id, and other.",
+  "fields": [
+    {
+      "name": "requestingComponent",
+      "type": "string",
+      "doc": "Name of the component which requested the operation."
+    },
+    {
+      "name": "requestTimestamp",
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+      },
+      "doc": "Time ([Instant]) in milliseconds of the request."
+    },
+    {
+      "name": "requestId",
+      "type": "string",
+      "doc": "Request id which can be used to track the request progress."
+    },
+    {
+      "name": "tenantId",
+      "type": "string",
+      "doc": "Tenant id on which behalf the request is made."
+    },
+    {
+      "name": "other",
+      "type": "net.corda.data.KeyValuePairList",
+      "doc": "Any other list of context's key-values."
+    }
+  ]
+}

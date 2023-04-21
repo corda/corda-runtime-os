@@ -1,0 +1,17 @@
+{
+  "type": "record",
+  "name": "PermissionAssociation",
+  "namespace": "net.corda.data.permissions",
+  "doc": "A permission ID along with the time when the association was created.",
+  "fields": [
+    {
+      "name": "changeDetails",
+      "type": "net.corda.data.permissions.ChangeDetails"
+    },
+    {
+      "name": "permissionId",
+      "type": "string",
+      "doc": "Permission ID of this association."
+    }
+  ]
+}

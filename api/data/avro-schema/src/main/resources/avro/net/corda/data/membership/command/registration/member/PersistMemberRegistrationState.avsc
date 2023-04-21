@@ -1,0 +1,18 @@
+{
+  "type": "record",
+  "name": "PersistMemberRegistrationState",
+  "namespace": "net.corda.data.membership.command.registration.member",
+  "doc": "Command To persist the member own state.",
+  "fields": [
+    {
+      "name": "member",
+      "doc": "The member to persist the state.",
+      "type": "net.corda.data.identity.HoldingIdentity"
+    },
+    {
+      "name": "setStatusRequest",
+      "doc" : "The request to set the status.",
+      "type": "net.corda.data.membership.p2p.SetOwnRegistrationStatus"
+    }
+  ]
+}

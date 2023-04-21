@@ -1,0 +1,11 @@
+{
+  "type": "record",
+  "name": "VirtualNodeOperationStatusRequest",
+  "namespace": "net.corda.data.virtualnode",
+  "fields": [
+    {
+      "name": "requestId",
+      "type": "string"
+    }
+  ]
+}

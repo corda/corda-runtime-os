@@ -1,0 +1,13 @@
+{
+  "type": "record",
+  "name": "QueryApprovalRules",
+  "namespace": "net.corda.data.membership.db.request.query",
+  "doc": "Query for approval rules.",
+  "fields": [
+    {
+      "name": "ruleType",
+      "doc": "The category of rules to query for.",
+      "type": "net.corda.data.membership.common.ApprovalRuleType"
+    }
+  ]
+}

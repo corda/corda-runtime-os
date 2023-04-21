@@ -1,0 +1,67 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://corda.r3.com/net/corda/schema/configuration/rest/1.0/corda.rest.json",
+  "title": "Corda REST Configuration Schema",
+  "description": "Configuration schema for the REST section.",
+  "type": "object",
+  "default": {},
+  "properties": {
+    "address": {
+      "description": "The address at which the REST API is exposed.",
+      "type": "string",
+      "default": "0.0.0.0:8888"
+    },
+    "context": {
+      "description": "Context information to be included in the Open API definition.",
+      "type": "object",
+      "default": {},
+      "properties": {
+        "description": {
+          "description": "The description of the API.",
+          "type": "string",
+          "default": "Exposing REST interfaces as OpenAPI WebServices."
+        },
+        "title": {
+          "description": "The title of the API.",
+          "type": "string",
+          "default": "REST"
+        }
+      }
+    },
+    "maxContentLength": {
+      "description": "The maximum length in bytes that can be sent over HTTP.",
+      "type": "integer",
+      "minimum": 1024,
+      "maximum": 2147483647,
+      "default": 200000000
+    },
+    "endpoint": {
+      "description": "Settings for endpoints.",
+      "type": "object",
+      "default": {},
+      "properties": {
+        "timeoutMs": {
+          "description": "The length of time in milliseconds that the backend message bus waits for a response to a remote operation before timing out the REST call.",
+          "type": "integer",
+          "minimum": 100,
+          "maximum": 2147483647,
+          "default": 12000
+        }
+      }
+    },
+    "websocket": {
+      "description": "Settings for WebSockets.",
+      "type": "object",
+      "default": {},
+      "properties": {
+        "idleTimeoutMs": {
+          "description": "The length of time in milliseconds that a websocket connection can be idle (no messages are either sent or received) before timing out and closing the connection. A value of 0 disables idle checks.",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647,
+          "default": 30000
+        }
+      }
+    }
+  }
+}

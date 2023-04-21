@@ -1,0 +1,16 @@
+{
+  "type": "record",
+  "name": "PersistEntities",
+  "doc": "Persist the specified entities.  See also {@link EntityRequest#request}",
+  "namespace": "net.corda.data.persistence",
+  "fields": [
+    {
+      "name": "entities",
+      "type": {
+        "type" : "array",
+        "items": "bytes"
+      },
+      "doc": "the serialized entities, each on in AMQP format"
+    }
+  ]
+}

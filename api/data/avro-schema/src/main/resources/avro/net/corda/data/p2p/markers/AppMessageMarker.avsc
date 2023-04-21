@@ -1,0 +1,26 @@
+{
+  "type": "record",
+  "name": "AppMessageMarker",
+  "namespace": "net.corda.data.p2p.markers",
+  "fields": [
+    {
+      "name": "marker",
+      "type": [
+        "net.corda.data.p2p.markers.LinkManagerReceivedMarker",
+        "net.corda.data.p2p.markers.LinkManagerSentMarker",
+        "net.corda.data.p2p.markers.ApplicationProcessedMarker",
+        "net.corda.data.p2p.markers.ApplicationRejectedStaleMarker",
+        "net.corda.data.p2p.markers.GatewaySentMarker",
+        "net.corda.data.p2p.markers.LinkManagerProcessedMarker",
+        "net.corda.data.p2p.markers.LinkManagerDiscardedMarker",
+        "net.corda.data.p2p.markers.TtlExpiredMarker"
+      ]
+    },
+    {
+      "name": "timestamp",
+      "type": "long",
+      "doc": "The timestamp when the status change happened."
+    }
+  ],
+  "doc": "Used by the sending side to track the end to end delivery of an {@link net.corda.data.p2p.app.AuthenticatedMessage}. When processing an {@link net.corda.data.p2p.app.AuthenticatedMessage}, a component can persist an AppMessageMarker to communicate the status to other components."
+}

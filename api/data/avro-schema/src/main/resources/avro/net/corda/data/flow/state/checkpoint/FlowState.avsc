@@ -1,0 +1,61 @@
+{
+  "type": "record",
+  "name": "FlowState",
+  "namespace": "net.corda.data.flow.state.checkpoint",
+  "doc": "State used by the flow engine to track the execution progress of the flow",
+  "fields": [
+    {
+      "name": "fiber",
+      "type": "bytes",
+      "doc": "Flow execution state, serialized at the point the flow was suspended."
+    },
+    {
+      "name": "flowStartContext",
+      "type": "net.corda.data.flow.FlowStartContext",
+      "doc": "Context data captured when the flow was started."
+    },
+    {
+      "name": "externalEventState",
+      "type": ["null", "net.corda.data.flow.state.external.ExternalEventState"],
+      "default": null,
+      "doc": "Active external event request. Null if there are no requests in progress."
+    },
+    {
+      "name": "sessions",
+      "type": {
+        "type": "array",
+        "items": "net.corda.data.flow.state.session.SessionState"
+      },
+      "doc": "The current open sessions created by/for the executing flow."
+    },
+    {
+      "name": "flowStackItems",
+      "type": {
+        "type": "array",
+        "items": "net.corda.data.flow.state.checkpoint.FlowStackItem"
+      },
+      "doc": "Used to track calls to sub-flows and their relationship to sessions."
+    },
+    {
+      "name": "waitingFor",
+      "type": [
+        "null",
+        "net.corda.data.flow.state.waiting.WaitingFor"
+      ],
+      "doc": "What this flow requires in order to continue execution. For flows that have not started executing, null."
+    },
+    {
+      "name": "suspendCount",
+      "type": "int",
+      "doc": "Number of times the fiber has suspended."
+    },
+    {
+      "name": "suspendedOn",
+      "type": [
+        "null",
+        "string"
+      ],
+      "doc": "What the previous request was that caused the flow to suspend. Null if no suspension has happened. Used for diagnostic purposes."
+    }
+  ]
+}

@@ -1,0 +1,58 @@
+{
+  "type": "record",
+  "name": "UniquenessCheckRequestAvro",
+  "namespace": "net.corda.data.uniqueness",
+  "fields": [
+    {
+      "name": "holdingIdentity",
+      "type": "net.corda.data.identity.HoldingIdentity",
+      "doc": "The holding identity of the virtual node making the uniqueness check request."
+    },
+    {
+      "name": "flowExternalEventContext",
+      "type": "net.corda.data.flow.event.external.ExternalEventContext",
+      "doc": "The context of the external event that this request was sent from."
+    },
+    {
+      "name": "txId",
+      "type": "string"
+    },
+    {
+      "name": "originatorX500Name",
+      "type": "string",
+      "doc": "The x500 name of the of the party who initiated a notarization (and by extension, uniqueness check) request"
+    },
+    {
+      "name": "inputStates",
+      "type": {
+        "type": "array",
+        "items": "string"
+      }
+    },
+    {
+      "name": "referenceStates",
+      "type": {
+        "type": "array",
+        "items": "string"
+      }
+    },
+    {
+      "name": "numOutputStates",
+      "type": "int"
+    },
+    {
+      "name": "timeWindowLowerBound",
+      "type": ["null", {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+      }]
+    },
+    {
+      "name": "timeWindowUpperBound",
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+      }
+    }
+  ]
+}

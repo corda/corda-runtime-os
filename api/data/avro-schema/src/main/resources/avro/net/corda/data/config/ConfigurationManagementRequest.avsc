@@ -1,0 +1,32 @@
+{
+  "type": "record",
+  "name": "ConfigurationManagementRequest",
+  "namespace": "net.corda.data.config",
+  "fields": [
+    {
+      "name": "section",
+      "type": "string",
+      "doc": "Section of the configuration to update."
+    },
+    {
+      "name": "config",
+      "type": "string",
+      "doc": "Updated configuration in JSON or HOCON format."
+    },
+    {
+      "name": "schemaVersion",
+      "type": "net.corda.data.config.ConfigurationSchemaVersion",
+      "doc": "Schema version of the updated configuration."
+    },
+    {
+      "name": "updateActor",
+      "type": "string",
+      "doc": "ID of RPC user that requested the configuration update."
+    },
+    {
+      "name": "version",
+      "type": "int",
+      "doc": "Version of the configuration for optimistic locking."
+    }
+  ]
+}

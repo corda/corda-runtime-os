@@ -1,0 +1,8 @@
+{
+  "type": "record",
+  "name": "ExecuteCleanup",
+  "docs": "When this event is processed the flow mapper state should be set to null",
+  "namespace": "net.corda.data.flow.event.mapper",
+  "fields": [
+  ]
+}

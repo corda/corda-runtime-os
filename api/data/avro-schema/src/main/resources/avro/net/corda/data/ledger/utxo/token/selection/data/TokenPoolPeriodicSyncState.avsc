@@ -1,0 +1,21 @@
+{
+  "type": "record",
+  "name": "TokenPoolPeriodicSyncState",
+  "namespace": "net.corda.data.ledger.utxo.token.selection.data",
+  "doc": "Represents the current state of the periodic sync check.",
+  "fields": [
+    {
+      "name": "poolKey",
+      "type": "net.corda.data.ledger.utxo.token.selection.key.TokenPoolCacheKey",
+      "doc": "Token cache pool the query is for"
+    },
+    {
+      "name": "nextBlockStartOffset",
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+      },
+      "doc": "The (inclusive) timestamp to start reading the next block of records"
+    }
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "type": "record",
+  "name": "ProcessMembershipUpdates",
+  "namespace": "net.corda.data.membership.command.synchronisation.member",
+  "doc": "Command issued for a member to process the membership updates sent by the MGM.",
+  "fields": [
+    {
+      "name": "synchronisationMetaData",
+      "doc": "Data used for processing synchronisation commands.",
+      "type": "net.corda.data.membership.command.synchronisation.SynchronisationMetaData"
+    },
+    {
+      "name": "membershipPackage",
+      "doc" : "Data package distributed by the MGM containing membership updates.",
+      "type": "net.corda.data.membership.p2p.MembershipPackage"
+    }
+  ]
+}

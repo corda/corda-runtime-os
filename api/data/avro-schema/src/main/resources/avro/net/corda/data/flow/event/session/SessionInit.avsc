@@ -1,0 +1,42 @@
+{
+  "type": "record",
+  "name": "SessionInit",
+  "doc": "Message sent to a counterparty to initiate a session",
+  "namespace": "net.corda.data.flow.event.session",
+  "fields": [
+    {
+      "name": "cpiId",
+      "type": "string"
+    },
+    {
+      "name": "flowId",
+      "type": [
+        "null",
+        "string"
+      ],
+      "doc": "Flow ID of the flow initiating the session. This is only required to inform the Flow Mapper. It should be null when sent to counterparties."
+    },
+    {
+      "name": "contextUserProperties",
+      "type": "net.corda.data.KeyValuePairList",
+      "doc": "A map of context user properties made available to the flow which will also be propagated to sub flows, initiated flows and services"
+    },
+    {
+      "name": "contextPlatformProperties",
+      "type": "net.corda.data.KeyValuePairList",
+      "doc": "A map of context platform properties made available to the flow which will also be propagated to sub flows, initiated flows and services"
+    },
+    {
+      "name": "contextSessionProperties",
+      "type": "net.corda.data.KeyValuePairList",
+      "doc": "A map of context properties to send to a counterparty related to this flow session. This contains information such as protocol name and versions supported."
+    },
+    {
+      "name": "payload",
+      "type": [
+        "null",
+        "bytes"
+      ]
+    }
+  ]
+}

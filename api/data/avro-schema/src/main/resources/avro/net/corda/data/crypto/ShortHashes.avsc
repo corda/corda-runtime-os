@@ -1,0 +1,15 @@
+{
+  "type": "record",
+  "name": "ShortHashes",
+  "doc": "List of short hashes. A short hash is the first 12 characters of the hex string form of the hash. Short hashes should be used with care as it could lead to collisions.",
+  "namespace": "net.corda.data.crypto",
+  "fields": [
+    {
+      "name": "hashes",
+      "type": {
+        "type": "array",
+        "items": "string"
+        }
+    }
+  ]
+}

@@ -1,0 +1,24 @@
+plugins {
+    id 'corda-api.common-library'
+    id 'corda.common-publishing'
+    id 'corda.java-only'
+}
+
+description 'Corda Application'
+
+dependencies {
+    api 'javax.persistence:javax.persistence-api'
+
+    api platform(project(':corda-api'))
+    api project(":base")
+    api project(":crypto")
+    api project(":membership")
+    api project(":serialization")
+
+    compileOnly 'org.jetbrains:annotations'
+    compileOnly 'org.osgi:osgi.annotation'
+    compileOnly 'org.osgi:osgi.core'
+
+    testApi 'org.jetbrains.kotlin:kotlin-osgi-bundle'
+    testImplementation "org.assertj:assertj-core:$assertjVersion"
+}

@@ -1,0 +1,31 @@
+{
+  "type": "record",
+  "name": "TokenClaimRelease",
+  "namespace": "net.corda.data.ledger.utxo.token.selection.data",
+  "doc": "Represents a request to release an existing claim",
+  "fields": [
+      {
+        "name": "requestContext",
+        "type": "net.corda.data.flow.event.external.ExternalEventContext",
+        "doc": "Flow request context data for the original claim query"
+      },
+      {
+        "name": "poolKey",
+        "type": "net.corda.data.ledger.utxo.token.selection.key.TokenPoolCacheKey",
+        "doc": "The key of the cache pool for the existing claim"
+      },
+      {
+       "name": "claimId",
+       "type": "string",
+       "doc": "Unique identifier for the claim"
+      },
+      {
+        "name": "usedTokenStateRefs",
+        "type": {
+          "type": "array",
+          "items": "string"
+        },
+        "doc": "A List of the tokens used by the flow"
+      }
+    ]
+}

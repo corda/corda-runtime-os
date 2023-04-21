@@ -1,0 +1,33 @@
+{
+  "type": "record",
+  "name": "TokenPoolCacheKey",
+  "namespace": "net.corda.data.ledger.utxo.token.selection.key",
+  "doc": "Represents a unique key for a pool of tokens in the cache",
+  "fields": [
+      {
+        "name": "shortHolderId",
+        "type": "string",
+        "doc": "Holding identity of the pool"
+      },
+      {
+        "name": "tokenType",
+        "type": "string",
+        "doc": "Type of tokens in the pool"
+      },
+      {
+        "name": "issuerHash",
+        "type": "string",
+        "doc": "Issuer of the tokens within the pool"
+      },
+      {
+        "name": "notaryX500Name",
+        "type": "string",
+        "doc": "Notary for the tokens in the pool"
+      },
+      {
+        "name": "symbol",
+        "type": "string",
+        "doc": "Symbol of the tokens in the pool"
+      }
+    ]
+}

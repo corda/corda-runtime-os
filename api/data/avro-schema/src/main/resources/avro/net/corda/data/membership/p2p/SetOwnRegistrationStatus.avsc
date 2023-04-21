@@ -1,0 +1,21 @@
+{
+  "type": "record",
+  "name": "SetOwnRegistrationStatus",
+  "namespace": "net.corda.data.membership.p2p",
+  "doc": "Set the member registration status.",
+  "fields": [
+    {
+      "name": "registrationId",
+      "doc": "ID of the registration to set the status.",
+      "type": {
+        "type": "string",
+        "logicalType": "uuid"
+      }
+    },
+    {
+      "name": "newStatus",
+      "doc": "The new registration status.",
+      "type": "net.corda.data.membership.common.RegistrationStatus"
+    }
+  ]
+}

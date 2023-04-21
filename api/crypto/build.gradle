@@ -1,0 +1,22 @@
+plugins {
+    id 'corda-api.common-library'
+    id 'corda.common-publishing'
+    id 'corda.java-only'
+}
+
+description 'Corda Crypto'
+
+dependencies {
+    implementation 'org.slf4j:slf4j-api'
+
+    compileOnly 'org.osgi:osgi.annotation'
+
+    api platform(project(':corda-api'))
+    api project(':base')
+
+    testImplementation "org.bouncycastle:bcprov-jdk18on:$bouncycastleVersion"
+    testImplementation "org.bouncycastle:bcpkix-jdk18on:$bouncycastleVersion"
+    testImplementation "org.assertj:assertj-core:$assertjVersion"
+    testImplementation "org.junit.jupiter:junit-jupiter-api:$junitVersion"
+}
+

@@ -1,0 +1,14 @@
+{
+  "type": "record",
+  "name": "DataMessagePayload",
+  "namespace": "net.corda.data.p2p",
+  "fields": [
+    {
+      "name": "message",
+      "type": [
+        "net.corda.data.p2p.AuthenticatedMessageAndKey",
+        "net.corda.data.p2p.HeartbeatMessage"
+      ]
+    }
+  ]
+}

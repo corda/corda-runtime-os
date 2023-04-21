@@ -1,0 +1,28 @@
+{
+  "type": "record",
+  "name": "Token",
+  "namespace": "net.corda.data.ledger.utxo.token.selection.data",
+  "doc": "Represents a unique token",
+  "fields": [
+      {
+        "name": "stateRef",
+        "type": "string",
+        "doc": "The unique ID of the token state"
+      },
+      {
+        "name": "amount",
+        "type": "net.corda.data.ledger.utxo.token.selection.data.TokenAmount",
+        "doc": "The amount of the token"
+      },
+      {
+        "name": "ownerHash",
+        "type": ["null", "string"],
+        "doc": "Optional owner of the token"
+      },
+      {
+        "name": "tag",
+        "type": ["null", "string"],
+        "doc": "Optional user defined tag of the token"
+      }
+    ]
+}

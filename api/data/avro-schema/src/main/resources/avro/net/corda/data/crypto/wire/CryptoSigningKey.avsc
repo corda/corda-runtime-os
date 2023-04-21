@@ -1,0 +1,78 @@
+{
+  "type": "record",
+  "name": "CryptoSigningKey",
+  "namespace": "net.corda.data.crypto.wire",
+  "doc": "Defines a signing key information.",
+  "fields": [
+    {
+      "name": "id",
+      "type": "string",
+      "doc": "The key's id."
+    },
+    {
+      "name": "tenantId",
+      "type": "string",
+      "doc": "The key owner."
+    },
+    {
+      "name": "category",
+      "type": "string",
+      "doc": "The key's category, such as TLS, LEDGER, etc."
+    },
+    {
+      "name": "alias",
+      "type": [
+        "null",
+        "string"
+      ],
+      "doc": "Key's alias as defined by the tenant, the wrapped keys will have this value as null."
+    },
+    {
+      "name": "hsmAlias",
+      "type": [
+        "null",
+        "string"
+      ],
+      "doc": "Key's alias which is used by the HSM, the wrapped keys will have this value as null."
+    },
+    {
+      "name": "publicKey",
+      "type": "bytes",
+      "doc": "Serialized public key."
+    },
+    {
+      "name": "schemeCodeName",
+      "type": "string",
+      "doc": "The key's signature scheme code."
+    },
+    {
+      "name": "masterKeyAlias",
+      "type": [
+        "null",
+        "string"
+      ],
+      "doc": "For wrapped keys only, the master's key alias."
+    },
+    {
+      "name": "encodingVersion",
+      "type": ["null", "int"],
+      "doc": "Encoding protocol version."
+    },
+    {
+      "name": "externalId",
+      "type": [
+        "null",
+        "string"
+      ],
+      "doc": "External id associated with the key."
+    },
+    {
+      "name": "created",
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+      },
+      "doc": "Time ([Instant]) in milliseconds when the record was created."
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "type": "record",
+  "name": "QueryMemberSignature",
+  "namespace": "net.corda.data.membership.db.request.query",
+  "doc": "Query for one or more member signatures",
+  "fields": [
+    {
+      "name": "queryIdentities",
+      "doc": "Holding identities of the members to retrieve.",
+      "type": {
+        "type": "array",
+        "items": "net.corda.data.identity.HoldingIdentity"
+      }
+    }
+  ]
+}

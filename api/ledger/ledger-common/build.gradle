@@ -1,0 +1,17 @@
+plugins {
+    id 'corda-api.common-library'
+    id 'corda.common-publishing'
+    id 'corda.java-only'
+}
+
+description 'Corda Ledger Common'
+
+dependencies {
+    compileOnly 'org.osgi:osgi.annotation'
+
+    api platform(project(':corda-api'))
+    api project(':application')
+
+    testImplementation project(':crypto')
+    testImplementation "org.assertj:assertj-core:$assertjVersion"
+}

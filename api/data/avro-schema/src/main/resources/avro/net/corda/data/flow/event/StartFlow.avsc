@@ -1,0 +1,18 @@
+{
+  "type": "record",
+  "name": "StartFlow",
+  "namespace": "net.corda.data.flow.event",
+  "doc": "The Start Flow event represents the information needed to initiate a flow.",
+  "fields": [
+    {
+      "name": "startContext",
+      "type": "net.corda.data.flow.FlowStartContext",
+      "doc": "The request ID assigned by the client that created the flow."
+    },
+    {
+      "name": "flowStartArgs",
+      "type": "string",
+      "doc": "A client supplied string, passed to the flow when it is started. This is used by the client to pass data to a flow."
+    }
+  ]
+}

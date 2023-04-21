@@ -1,0 +1,23 @@
+{
+  "type": "record",
+  "name": "ApprovalRuleDetails",
+  "namespace": "net.corda.data.membership.common",
+  "doc": "Approval rule details.",
+  "fields": [
+    {
+      "name": "ruleId",
+      "doc": "ID of the approval rule.",
+      "type": "string"
+    },
+    {
+      "name": "ruleRegex",
+      "doc": "Regular expression associated with the approval rule.",
+      "type": "string"
+    },
+    {
+      "name": "ruleLabel",
+      "doc": "Label describing the approval rule.",
+      "type": ["string", "null"]
+    }
+  ]
+}

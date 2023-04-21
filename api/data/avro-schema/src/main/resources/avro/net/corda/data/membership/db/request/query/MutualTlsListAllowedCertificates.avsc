@@ -1,0 +1,7 @@
+{
+  "type": "record",
+  "name": "MutualTlsListAllowedCertificates",
+  "namespace": "net.corda.data.membership.db.request.query",
+  "doc": "Query for the list of mutual TLS allowed certificate subjects.",
+  "fields": []
+}

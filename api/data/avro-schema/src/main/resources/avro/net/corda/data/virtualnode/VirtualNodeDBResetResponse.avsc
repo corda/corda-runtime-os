@@ -1,0 +1,14 @@
+{
+  "type": "record",
+  "name": "VirtualNodeDBResetResponse",
+  "namespace": "net.corda.data.virtualnode",
+  "fields": [
+    {
+      "name": "holdingIdentityShortHashes",
+      "type": {
+        "type": "array",
+        "items": "string"
+      }
+    }
+  ]
+}

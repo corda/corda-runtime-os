@@ -1,0 +1,17 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://corda.r3.com/net/corda/schema/configuration/security/1.0/corda.security.json",
+  "title": "Corda Security Configuration Schema",
+  "description": "Configuration schema for the security subsection.",
+  "type": "object",
+  "properties": {
+    "policy": {
+      "description": "Security policy",
+      "type": "string"
+    }
+  },
+  "required": [
+    "policy"
+  ],
+  "additionalProperties": false
+}

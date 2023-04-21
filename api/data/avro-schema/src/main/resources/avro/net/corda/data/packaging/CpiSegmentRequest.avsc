@@ -1,0 +1,15 @@
+{
+  "type": "record",
+  "name": "CpiSegmentRequest",
+  "namespace": "net.corda.data.packaging",
+  "fields": [
+    {
+      "name": "identifier",
+      "type": "net.corda.data.packaging.CpiIdentifier"
+    },
+    {
+      "name": "start",
+      "type": "long"
+    }
+  ]
+}

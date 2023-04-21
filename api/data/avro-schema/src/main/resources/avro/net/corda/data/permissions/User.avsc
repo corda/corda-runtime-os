@@ -1,0 +1,72 @@
+{
+  "type": "record",
+  "name": "User",
+  "namespace": "net.corda.data.permissions",
+  "fields": [
+    {
+      "name": "id",
+      "type": "string"
+    },
+    {
+      "name": "version",
+      "type": "int"
+    },
+    {
+      "name": "lastChangeDetails",
+      "type": "net.corda.data.permissions.ChangeDetails"
+    },
+    {
+      "name": "loginName",
+      "type": "string"
+    },
+    {
+      "name": "fullName",
+      "type": "string"
+    },
+    {
+      "name": "enabled",
+      "type": "boolean"
+    },
+    {
+      "name": "hashedPassword",
+      "type": [ "null", "string" ]
+    },
+    {
+      "name": "saltValue",
+      "type": [ "null", "string" ]
+    },
+    {
+      "name": "passwordExpiry",
+      "type": ["null", {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+      }],
+      "doc": "Optional time ([Instant]) in milliseconds when the password expires."
+    },
+    {
+      "name": "ssoAuth",
+      "type": "boolean"
+    },
+    {
+      "name": "parentGroupId",
+      "type": [ "null", "string" ],
+      "doc": "Optional parent group associated with this User."
+    },
+    {
+      "name": "properties",
+      "type": {
+        "type": "array",
+        "items": "net.corda.data.permissions.Property"
+      },
+      "doc": "List of user properties."
+    },
+    {
+      "name": "roleAssociations",
+      "type": {
+        "type": "array",
+        "items": "net.corda.data.permissions.RoleAssociation"
+      },
+      "doc": "List of roles associated with this User."
+    }
+  ]
+}

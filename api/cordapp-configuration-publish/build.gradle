@@ -1,0 +1,129 @@
+import static org.gradle.api.attributes.Category.CATEGORY_ATTRIBUTE
+import static org.gradle.api.attributes.Category.DOCUMENTATION
+import static org.gradle.api.attributes.DocsType.DOCS_TYPE_ATTRIBUTE
+
+plugins {
+    id 'com.jfrog.artifactory'
+    id 'maven-publish'
+    id 'base'
+    id 'corda.s3-publish'
+}
+
+description 'Publishes the cordapp-configuration Gradle plugin.'
+
+ext {
+    pluginGroup = 'net.corda.cordapp'
+    pluginName = 'cordapp-configuration'
+    pluginId = 'net.corda.cordapp.cordapp-configuration'
+}
+
+configurations {
+    gradlePlugin {
+        canBeConsumed = false
+        transitive = false
+    }
+
+    pluginSources {
+        canBeConsumed = false
+        transitive = false
+
+        attributes {
+            attribute(CATEGORY_ATTRIBUTE, objects.named(Category, DOCUMENTATION))
+            attribute(DOCS_TYPE_ATTRIBUTE, objects.named(DocsType, 'sources'))
+        }
+    }
+
+    pluginJavadoc {
+        canBeConsumed = false
+        transitive = false
+
+        attributes {
+            attribute(CATEGORY_ATTRIBUTE, objects.named(Category, DOCUMENTATION))
+            attribute(DOCS_TYPE_ATTRIBUTE, objects.named(DocsType, 'javadoc'))
+        }
+    }
+}
+
+dependencies {
+    gradlePlugin group: pluginGroup, name: pluginName
+    pluginSources group: pluginGroup, name: pluginName
+    pluginJavadoc group: pluginGroup, name: pluginName
+}
+
+tasks.withType(Jar).configureEach {
+    throw new StopExecutionException('This project should not create a jar.')
+}
+
+tasks.register('install') {
+    dependsOn 'publishToMavenLocal'
+}
+
+def cordappConfigProject = gradle.includedBuild('cordapp-configuration')
+
+publishing {
+    publications {
+        configureEach {
+            pom {
+                name = 'Cordapp CPK Configuration'
+                description = 'Configuration properties for cordapp-cpk Gradle plugin.'
+
+                url = vcsUrl - '.git'
+                scm {
+                    url = vcsUrl
+                }
+
+                licenses {
+                    license {
+                        name = licenseName
+                        url = licenseUrl
+                        distribution = 'repo'
+                    }
+                }
+
+                developers {
+                    developer {
+                        id = 'R3'
+                        name = 'R3'
+                        email = 'dev@corda.net'
+                    }
+                }
+            }
+        }
+
+        cordappConfiguration(MavenPublication) {
+            groupId pluginGroup
+            artifactId pluginName
+
+            artifact provider { configurations.gradlePlugin.singleFile }
+            artifact(
+                source: provider { configurations.pluginSources.singleFile },
+                builtBy: cordappConfigProject.task(':sourcesJar'),
+                classifier: 'sources'
+            )
+            artifact(
+                source: provider { configurations.pluginJavadoc.singleFile },
+                builtBy: cordappConfigProject.task(':javadocJar'),
+                classifier: 'javadoc'
+            )
+        }
+
+        pluginMarker(MavenPublication) {
+            groupId pluginId
+            artifactId "${pluginId}.gradle.plugin"
+
+            pom {
+                packaging 'pom'
+                withXml {
+                    def dependency = asNode().appendNode('dependencies').appendNode('dependency')
+                    dependency.appendNode('groupId', pluginGroup)
+                    dependency.appendNode('artifactId', pluginName)
+                    dependency.appendNode('version', project.version)
+                }
+            }
+        }
+    }
+}
+
+artifactoryPublish {
+    publications('cordappConfiguration', 'pluginMarker')
+}

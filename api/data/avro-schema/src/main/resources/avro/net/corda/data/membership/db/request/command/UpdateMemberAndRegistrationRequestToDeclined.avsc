@@ -1,0 +1,21 @@
+{
+  "type": "record",
+  "name": "UpdateMemberAndRegistrationRequestToDeclined",
+  "namespace": "net.corda.data.membership.db.request.command",
+  "doc": "Update member and registration request status to declined.",
+  "fields": [
+    {
+      "name": "member",
+      "type": "net.corda.data.identity.HoldingIdentity",
+      "doc": "Holding identity of the member to update the state."
+    },
+    {
+      "name": "registrationId",
+      "doc": "UUID identifying this registration request",
+      "type": {
+        "type": "string",
+        "logicalType": "uuid"
+      }
+    }
+  ]
+}

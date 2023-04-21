@@ -1,0 +1,23 @@
+{
+  "type": "record",
+  "name": "PersistentMemberInfo",
+  "namespace": "net.corda.data.membership",
+  "doc": "Avro representation of persistent MemberInfo.",
+  "fields": [
+    {
+      "name": "viewOwningMember",
+      "doc": "Holding identity of the member owning the data view.",
+      "type": "net.corda.data.identity.HoldingIdentity"
+    },
+    {
+      "name": "memberContext",
+      "doc": "Member provided data in MemberInfo.",
+      "type": "net.corda.data.KeyValuePairList"
+    },
+    {
+      "name": "mgmContext",
+      "doc": "MGM provided data in MemberInfo.",
+      "type": "net.corda.data.KeyValuePairList"
+    }
+  ]
+}

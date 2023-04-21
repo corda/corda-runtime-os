@@ -1,0 +1,12 @@
+{
+  "type": "record",
+  "name": "SessionError",
+  "doc": "Error message sent to counterparty to indicate a fatal error has occurred and both parties should abort the session",
+  "namespace": "net.corda.data.flow.event.session",
+  "fields": [
+    {
+      "name": "errorMessage",
+      "type": "net.corda.data.ExceptionEnvelope"
+    }
+  ]
+}

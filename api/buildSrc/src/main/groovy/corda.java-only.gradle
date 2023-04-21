@@ -1,0 +1,9 @@
+plugins {
+    id 'org.jetbrains.kotlin.jvm'
+}
+
+tasks.named('compileKotlin') {
+    doFirst {
+        throw new InvalidUserCodeException("Module '${project.path}' should only contain Java classes")
+    }
+}

@@ -1,0 +1,51 @@
+{
+  "type": "record",
+  "name": "VirtualNodeCreateRequest",
+  "namespace": "net.corda.data.virtualnode",
+  "fields": [
+    {
+      "name": "holdingId",
+      "type": "net.corda.data.identity.HoldingIdentity"
+    },
+    {
+      "name": "cpiFileChecksum",
+      "type": "string",
+      "doc": "The checksum of the CPI file."
+    },
+    {
+      "name": "vaultDdlConnection",
+      "type": ["null", "string"],
+      "doc": "Connection details for virtual node Vault DB to be used for DDL operations. If null is passed for both vault connections, cluster DB will be used."
+    },
+    {
+      "name": "vaultDmlConnection",
+      "type": ["null", "string"],
+      "doc": "Connection details for virtual node Vault DB to be used for DML operations. If null is passed for both vault connections, cluster DB will be used."
+    },
+    {
+      "name": "cryptoDdlConnection",
+      "type": ["null", "string"],
+      "doc": "Connection details for virtual node Crypto DB to be used for DDL operations. If null is passed for both crypto connections, cluster DB will be used."
+    },
+    {
+      "name": "cryptoDmlConnection",
+      "type": ["null", "string"],
+      "doc": "Connection details for virtual node Crypto DB to be used for DML operations. If null is passed for both crypto connections, cluster DB will be used."
+    },
+    {
+      "name": "uniquenessDdlConnection",
+      "type": ["null", "string"],
+      "doc": "Connection details for virtual node Uniqueness DB to be used for DDL operations. If null is passed for both uniqueness connections, cluster DB will be used."
+    },
+    {
+      "name": "uniquenessDmlConnection",
+      "type": ["null", "string"],
+      "doc": "Connection details for virtual node Uniqueness DB to be used for DML operations. If null is passed for both uniqueness connections, cluster DB will be used."
+    },
+    {
+      "name": "updateActor",
+      "type": "string",
+      "doc": "ID of RPC user that requested the virtual node creation."
+    }
+  ]
+}

@@ -1,0 +1,31 @@
+{
+  "type": "record",
+  "name": "VirtualNodeStateChangeResponse",
+  "namespace": "net.corda.data.virtualnode",
+  "fields": [
+    {
+      "name": "holdingIdentityShortHash",
+      "type": "string"
+    },
+    {
+      "name": "flowP2pOperationalStatus",
+      "type": "VirtualNodeOperationalState",
+      "doc": "The current flow p2p operational status of virtual node"
+    },
+    {
+      "name": "flowStartOperationalStatus",
+      "type": "VirtualNodeOperationalState",
+      "doc": "The current flow start operational status of virtual node"
+    },
+    {
+      "name": "flowOperationalStatus",
+      "type": "VirtualNodeOperationalState",
+      "doc": "The current flow operational status of virtual node"
+    },
+    {
+      "name": "vaultDbOperationalStatus",
+      "type": "VirtualNodeOperationalState",
+      "doc": "The current vault db operational status of virtual node"
+    }
+  ]
+}

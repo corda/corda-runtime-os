@@ -1,0 +1,16 @@
+{
+  "type": "record",
+  "name": "QueryMemberInfo",
+  "namespace": "net.corda.data.membership.db.request.query",
+  "doc": "Query for one or more member infos",
+  "fields": [
+    {
+      "name": "queryIdentities",
+      "doc": "Holding identities of the members to retrieve.",
+      "type": {
+        "type": "array",
+        "items": "net.corda.data.identity.HoldingIdentity"
+      }
+    }
+  ]
+}

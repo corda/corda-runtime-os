@@ -1,0 +1,11 @@
+{
+  "type": "record",
+  "name": "DemoRecord",
+  "namespace": "net.corda.data.demo",
+  "fields": [
+    {
+      "name": "value",
+      "type": "int"
+    }
+  ]
+}

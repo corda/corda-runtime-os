@@ -1,0 +1,47 @@
+{
+  "type": "record",
+  "name": "MembershipPersistenceRequest",
+  "namespace": "net.corda.data.membership.db.request",
+  "doc": "Internal request envelope for persistence operations over RPC.",
+  "fields": [
+    {
+      "name": "context",
+      "type": "net.corda.data.membership.db.request.MembershipRequestContext",
+      "doc": "Context for the given request"
+    },
+    {
+      "name": "request",
+      "type": [
+        "net.corda.data.membership.db.request.command.PersistRegistrationRequest",
+        "net.corda.data.membership.db.request.command.PersistMemberInfo",
+        "net.corda.data.membership.db.request.command.PersistGroupPolicy",
+        "net.corda.data.membership.db.request.command.PersistGroupParameters",
+        "net.corda.data.membership.db.request.command.PersistGroupParametersInitialSnapshot",
+        "net.corda.data.membership.db.request.command.AddNotaryToGroupParameters",
+        "net.corda.data.membership.db.request.command.UpdateMemberAndRegistrationRequestToApproved",
+        "net.corda.data.membership.db.request.command.UpdateMemberAndRegistrationRequestToDeclined",
+        "net.corda.data.membership.db.request.command.UpdateRegistrationRequestStatus",
+        "net.corda.data.membership.db.request.command.MutualTlsAddToAllowedCertificates",
+        "net.corda.data.membership.db.request.command.MutualTlsRemoveFromAllowedCertificates",
+        "net.corda.data.membership.db.request.command.PersistApprovalRule",
+        "net.corda.data.membership.db.request.command.DeleteApprovalRule",
+        "net.corda.data.membership.db.request.command.AddPreAuthToken",
+        "net.corda.data.membership.db.request.command.ConsumePreAuthToken",
+        "net.corda.data.membership.db.request.command.RevokePreAuthToken",
+        "net.corda.data.membership.db.request.command.SuspendMember",
+        "net.corda.data.membership.db.request.command.ActivateMember",
+        "net.corda.data.membership.db.request.command.UpdateStaticNetworkInfo",
+        "net.corda.data.membership.db.request.query.QueryGroupPolicy",
+        "net.corda.data.membership.db.request.query.QueryMemberInfo",
+        "net.corda.data.membership.db.request.query.QueryMemberSignature",
+        "net.corda.data.membership.db.request.query.QueryRegistrationRequest",
+        "net.corda.data.membership.db.request.query.QueryRegistrationRequests",
+        "net.corda.data.membership.db.request.query.MutualTlsListAllowedCertificates",
+        "net.corda.data.membership.db.request.query.QueryApprovalRules",
+        "net.corda.data.membership.db.request.query.QueryPreAuthToken",
+        "net.corda.data.membership.db.request.query.QueryStaticNetworkInfo"
+      ],
+      "doc": "Request's payload, depends on the requested operation."
+    }
+  ]
+}

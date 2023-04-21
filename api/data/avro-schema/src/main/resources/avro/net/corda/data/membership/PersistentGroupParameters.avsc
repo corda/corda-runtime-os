@@ -1,0 +1,18 @@
+{
+  "type": "record",
+  "name": "PersistentGroupParameters",
+  "namespace": "net.corda.data.membership",
+  "doc": "GroupParameters object for persisting to the message bus which includes reference to the view owner.",
+  "fields": [
+    {
+      "name": "viewOwner",
+      "doc": "The owner of the group parameters view.",
+      "type": "net.corda.data.identity.HoldingIdentity"
+    },
+    {
+      "name": "groupParameters",
+      "doc": "GroupParameters which should be signed by the MGM unless the view owner is an MGM.",
+      "type": "SignedGroupParameters"
+    }
+  ]
+}

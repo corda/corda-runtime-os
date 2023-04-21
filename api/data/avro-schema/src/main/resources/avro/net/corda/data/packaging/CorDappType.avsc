@@ -1,0 +1,6 @@
+{
+  "type": "enum",
+  "name": "CorDappType",
+  "namespace": "net.corda.data.packaging",
+  "symbols": [ "CONTRACT", "WORKFLOW" ]
+}

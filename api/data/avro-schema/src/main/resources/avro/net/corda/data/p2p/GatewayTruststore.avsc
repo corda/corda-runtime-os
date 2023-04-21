@@ -1,0 +1,20 @@
+{
+  "type": "record",
+  "name": "GatewayTruststore",
+  "namespace": "net.corda.data.p2p",
+  "fields": [
+    {
+      "doc": "The source identity (x500 name + group ID)",
+      "name": "sourceIdentity",
+      "type": "net.corda.data.identity.HoldingIdentity"
+    },
+    {
+      "doc": "Collection of certificates in PEM format",
+      "name": "trustedCertificates",
+      "type": {
+        "type": "array",
+        "items": "string"
+      }
+    }
+  ]
+}

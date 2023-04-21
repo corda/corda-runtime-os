@@ -1,0 +1,10 @@
+{
+  "type": "enum",
+  "name": "VirtualNodeOperationalState",
+  "namespace": "net.corda.data.virtualnode",
+  "doc": "Virtual Node state.",
+  "symbols": [
+    "ACTIVE",
+    "INACTIVE"
+  ]
+}

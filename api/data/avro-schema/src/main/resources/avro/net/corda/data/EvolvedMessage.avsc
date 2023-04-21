@@ -1,0 +1,16 @@
+{
+  "type": "record",
+  "name": "EvolvedMessage",
+  "namespace": "net.corda.data.test",
+  "fields": [
+    {
+      "name": "flags",
+      "type": "int"
+    },
+    {
+      "name": "extra_field",
+      "type": "string",
+      "default": "new_string"
+    }
+  ]
+}

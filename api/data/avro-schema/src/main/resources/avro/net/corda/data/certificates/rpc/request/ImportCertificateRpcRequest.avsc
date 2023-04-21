@@ -1,0 +1,18 @@
+{
+  "type": "record",
+  "name": "ImportCertificateRpcRequest",
+  "namespace": "net.corda.data.certificates.rpc.request",
+  "doc": "RPC request to import a certificate chain.",
+  "fields": [
+    {
+      "name": "alias",
+      "doc": "The certificate alias.",
+      "type": "string"
+    },
+    {
+      "name": "certificates",
+      "doc": "The certificates in PEM format.",
+      "type": "string"
+    }
+  ]
+}

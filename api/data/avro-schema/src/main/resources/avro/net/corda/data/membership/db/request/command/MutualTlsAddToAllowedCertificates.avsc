@@ -1,0 +1,13 @@
+{
+  "type": "record",
+  "name": "MutualTlsAddToAllowedCertificates",
+  "namespace": "net.corda.data.membership.db.request.command",
+  "doc": "Add mutual TLS certificate subject to the allowed list.",
+  "fields": [
+    {
+      "name": "subject",
+      "doc": "The certificate subject.",
+      "type":  "string"
+    }
+  ]
+}

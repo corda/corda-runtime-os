@@ -1,0 +1,15 @@
+{
+  "type": "record",
+  "name": "AddPermissionToRoleRequest",
+  "namespace": "net.corda.data.permissions.management.role",
+  "fields": [
+    {
+      "name": "roleId",
+      "type": "string"
+    },
+    {
+      "name": "permissionId",
+      "type": "string"
+    }
+  ]
+}

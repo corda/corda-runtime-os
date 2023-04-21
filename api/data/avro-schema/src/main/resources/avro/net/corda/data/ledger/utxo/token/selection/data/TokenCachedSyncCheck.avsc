@@ -1,0 +1,21 @@
+{
+  "type": "record",
+  "name": "TokenCachedSyncCheck",
+  "namespace": "net.corda.data.ledger.utxo.token.selection.data",
+  "doc": "Represents a set of unspent token refs expected to exist in the cache.",
+  "fields": [
+      {
+        "name": "poolKey",
+        "type": "net.corda.data.ledger.utxo.token.selection.key.TokenPoolCacheKey",
+        "doc": "Key for the pool the tokens refs belong to"
+      },
+      {
+        "name": "tokenRefs",
+        "type": {
+          "type": "array",
+          "items": "string",
+          "doc": "List of unspent token refs"
+         }
+      }
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "type": "record",
+  "name": "CryptoSignature",
+  "namespace": "net.corda.data.crypto.wire",
+  "doc": "Internal over-the-wire digital signature for crypto services",
+  "fields": [
+    {
+      "name": "bytes",
+      "type": "bytes",
+      "doc": "Byte array of the signature, exactly as returned by crypto signing operations"
+    }
+  ]
+}

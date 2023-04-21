@@ -1,0 +1,15 @@
+{
+  "type": "record",
+  "name": "SecureHashes",
+  "doc": "List of secure hashes. For secure hash form see {@link net.corda.data.crypto.SecureHash}",
+  "namespace": "net.corda.data.crypto",
+  "fields": [
+    {
+      "name": "hashes",
+      "type": {
+        "type": "array",
+        "items": "SecureHash"
+      }
+    }
+  ]
+}

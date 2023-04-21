@@ -1,0 +1,17 @@
+{
+  "type": "record",
+  "name": "WaitingFor",
+  "namespace": "net.corda.data.flow.state.waiting",
+  "fields": [
+    {
+      "name": "value",
+      "type": [
+        "net.corda.data.flow.state.waiting.Wakeup",
+        "net.corda.data.flow.state.waiting.CounterPartyFlowInfo",
+        "net.corda.data.flow.state.waiting.SessionConfirmation",
+        "net.corda.data.flow.state.waiting.SessionData",
+        "net.corda.data.flow.state.waiting.external.ExternalEventResponse"
+      ]
+    }
+  ]
+}

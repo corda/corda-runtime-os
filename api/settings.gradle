@@ -1,0 +1,137 @@
+pluginManagement {
+    repositories {
+        def cordaUseCache = System.getenv("CORDA_USE_CACHE")
+        if (cordaUseCache != null) {
+            maven {
+                url = "$artifactoryContextUrl/$cordaUseCache"
+                name = "R3 Maven remote repositories"
+                authentication {
+                    basic(BasicAuthentication)
+                }
+                credentials {
+                    username = settings.ext.find('cordaArtifactoryUsername') ?: System.getenv('CORDA_ARTIFACTORY_USERNAME')
+                    password = settings.ext.find('cordaArtifactoryPassword') ?: System.getenv('CORDA_ARTIFACTORY_PASSWORD')
+                }
+            }
+        } else {
+            maven {
+                url "$artifactoryContextUrl/corda-releases"
+                content {
+                    includeGroupByRegex 'net\\.corda\\.plugins(\\..*)?'
+                }
+            }
+            gradlePluginPortal()
+        }
+
+    }
+
+    plugins {
+        id 'com.gradle.enterprise' version gradleEnterpriseVersion
+        id 'com.gradle.common-custom-user-data-gradle-plugin' version gradleDataPlugin
+        id 'org.jetbrains.kotlin.jvm' version kotlinVersion
+        id 'org.jetbrains.kotlin.plugin.allopen' version kotlinVersion
+        id 'org.jetbrains.kotlin.plugin.jpa' version kotlinVersion
+        id 'io.gitlab.arturbosch.detekt' version detektPluginVersion
+        id 'org.ajoberstar.grgit' version grgitPluginVersion // used for GIT interaction (e.g. extract commit hash)
+        id 'com.dorongold.task-tree' version taskTreePluginVersion // utility to visualise Gradle task DAG
+        id 'biz.aQute.bnd.builder' version bndVersion // used to create OSGi bundles
+        id 'org.jetbrains.dokka' version dokkaVersion
+        id "com.github.davidmc24.gradle.plugin.avro-base" version avroGradlePluginVersion
+        id 'com.github.ben-manes.versions' version dependencyCheckVersion
+        id "com.jfrog.artifactory" version artifactoryPluginVersion
+        id 'io.snyk.gradle.plugin.snykplugin' version snykVersion
+    }
+}
+plugins {
+    id 'com.gradle.common-custom-user-data-gradle-plugin'
+    id 'com.gradle.enterprise'
+}
+dependencyResolutionManagement {
+    repositories {
+        mavenLocal()
+
+        def cordaUseCache = System.getenv("CORDA_USE_CACHE")
+        if (cordaUseCache != null) {
+            maven {
+                url = "$artifactoryContextUrl/$cordaUseCache"
+                name = "R3 Maven remote repositories"
+                authentication {
+                    basic(BasicAuthentication)
+                }
+                credentials {
+                    username = settings.ext.find('cordaArtifactoryUsername') ?: System.getenv('CORDA_ARTIFACTORY_USERNAME')
+                    password = settings.ext.find('cordaArtifactoryPassword') ?: System.getenv('CORDA_ARTIFACTORY_PASSWORD')
+                }
+            }
+        } else {
+            mavenCentral()
+
+            maven {
+                url = "$artifactoryContextUrl/corda-dependencies"
+            }
+
+            maven {
+                url = "$artifactoryContextUrl/${System.getenv('CORDA_CONSUME_REPOSITORY_KEY') ?: 'corda-os-maven'}"
+                credentials {
+                    username = settings.ext.find('cordaArtifactoryUsername') ?: System.getenv('CORDA_ARTIFACTORY_USERNAME')
+                    password = settings.ext.find('cordaArtifactoryPassword') ?: System.getenv('CORDA_ARTIFACTORY_PASSWORD')
+                }
+            }
+        }
+    }
+}
+
+rootProject.name = "corda-api"
+
+includeBuild 'cordapp-configuration'
+include 'application'
+include 'base'
+include 'corda-api'
+include 'cordapp-configuration-publish'
+include 'crypto'
+include 'crypto-extensions'
+include 'data:avro-schema'
+include 'data:config-schema'
+include 'data:db-schema'
+include 'data:membership-schema'
+include 'data:topic-schema'
+include 'data:rbac-schema'
+include 'ledger:ledger-common'
+include 'ledger:ledger-consensual'
+include 'ledger:ledger-utxo'
+include 'ledger:notary-plugin'
+include 'membership'
+include 'serialization'
+
+
+gradleEnterprise {
+    server = gradleEnterpriseUrl
+    allowUntrustedServer = false
+    def apiKey = settings.ext.find('CORDA_GRADLE_SCAN_KEY') ?: System.getenv('CORDA_GRADLE_SCAN_KEY')
+    accessKey = apiKey
+    buildScan {
+        if (apiKey?.trim()) {
+            publishAlways()
+            capture {
+                taskInputFiles = true
+            }
+            uploadInBackground = false
+        }
+    }
+    buildCache {
+        local {
+            enabled = true
+            removeUnusedEntriesAfterDays = 14  // Garbage collect if a cache item is not used in 2 weeks.
+        }
+        remote(gradleEnterprise.buildCache) {
+            // For the remote build cache we will populate cache only from Jenkins, all machines can pull from cache however.
+            if (System.getenv().containsKey("JENKINS_URL")) {
+                push = true
+                enabled = true
+            } else {
+                push = false
+                enabled = apiKey?.trim() ? true : false
+            }
+        }
+    }
+}

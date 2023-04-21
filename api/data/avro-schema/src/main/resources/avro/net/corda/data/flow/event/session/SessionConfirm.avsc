@@ -1,0 +1,13 @@
+{
+  "type": "record",
+  "name": "SessionConfirm",
+  "doc" : "Acknowledge to counterparty that the session has been confirmed and is ready to send and receive messages.",
+  "namespace": "net.corda.data.flow.event.session",
+  "fields": [
+    {
+      "name": "contextSessionProperties",
+      "type": "net.corda.data.KeyValuePairList",
+      "doc": "A map of context properties received from a counterparty related to this flow session. This contains information such as protocol name and version that this flow is running."
+    }
+  ]
+}

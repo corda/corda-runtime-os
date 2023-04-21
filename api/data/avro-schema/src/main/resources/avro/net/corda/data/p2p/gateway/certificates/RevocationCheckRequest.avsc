@@ -1,0 +1,28 @@
+{
+  "type": "record",
+  "name": "RevocationCheckRequest",
+  "namespace": "net.corda.data.p2p.gateway.certificates",
+  "fields": [
+    {
+      "doc": "A list of certificates corresponding to a certificate chain (in PEM format) to check for revocation.",
+      "name": "certificates",
+      "type": {
+        "type": "array",
+        "items": "string"
+      }
+    },
+    {
+      "doc": "A list of trusted certificates (in PEM format).",
+      "name": "trustedCertificates",
+      "type": {
+        "type": "array",
+        "items": "string"
+      }
+    },
+    {
+      "name": "mode",
+      "type": "net.corda.data.p2p.gateway.certificates.RevocationMode",
+      "doc": "How strictly to check for revocation. SOFT_FAIL The revocation check will succeed if the revocation status cannot be determined under certain circumstances. See java.security.cert.PKIXRevocationChecker.Option.SOFT_FAIL java doc for more details. Opposite of SOFT_FAIL - i.e. most rigorous check. Among other things, this check requires that CRL checking URL is available on every level of certificate chain."
+    }
+  ]
+}

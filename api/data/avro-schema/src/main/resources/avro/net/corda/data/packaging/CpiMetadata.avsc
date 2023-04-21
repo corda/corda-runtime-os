@@ -1,0 +1,35 @@
+{
+  "type": "record",
+  "name": "CpiMetadata",
+  "namespace": "net.corda.data.packaging",
+  "fields": [
+    {
+      "name": "id",
+      "type": "net.corda.data.packaging.CpiIdentifier"
+    },
+    {
+      "name": "hash",
+      "type": "net.corda.data.crypto.SecureHash"
+    },
+    {
+      "name": "cpks",
+      "type": { "type": "array", "items": "net.corda.data.packaging.CpkMetadata" }
+    },
+    {
+      "name": "groupPolicy",
+      "type": ["string", "null"]
+    },
+    {
+      "name": "version",
+      "type": "int"
+    },
+    {
+      "name": "timestamp",
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+      },
+      "doc": "Time ([Instant]) in milliseconds when the record was updated or added."
+    }
+  ]
+}

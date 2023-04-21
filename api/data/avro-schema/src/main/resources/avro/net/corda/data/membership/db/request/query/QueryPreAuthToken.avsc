@@ -1,0 +1,26 @@
+{
+  "type": "record",
+  "name": "QueryPreAuthToken",
+  "namespace": "net.corda.data.membership.db.request.query",
+  "doc": "Query for one or more pre auth tokens.",
+  "fields": [
+    {
+      "name": "ownerX500Name",
+      "doc": "X500 name of the owner of the pre auth tokens to retrieve.",
+      "type": ["null", "string"]
+    },
+    {
+      "name": "tokenId",
+      "doc": "Token identifier of the pre auth token to retrieve.",
+      "type": ["null", "string"]
+    },
+    {
+      "name": "statuses",
+      "doc": "Statuses of the pre auth tokens to retrieve.",
+      "type": {
+        "type": "array",
+        "items": "net.corda.data.membership.preauth.PreAuthTokenStatus"
+      }
+    }
+  ]
+}

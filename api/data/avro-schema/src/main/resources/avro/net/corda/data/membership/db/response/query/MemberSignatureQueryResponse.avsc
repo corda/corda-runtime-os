@@ -1,0 +1,16 @@
+{
+  "type": "record",
+  "name": "MemberSignatureQueryResponse",
+  "namespace": "net.corda.data.membership.db.response.query",
+  "doc": "Response to a query for one or more member infos",
+  "fields": [
+    {
+      "name": "membersSignatures",
+      "doc": "Members signatures.",
+      "type": {
+        "type": "array",
+        "items": "net.corda.data.membership.db.response.query.MemberSignature"
+      }
+    }
+  ]
+}

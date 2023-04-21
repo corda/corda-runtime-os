@@ -1,0 +1,13 @@
+{
+  "type": "record",
+  "name": "MGMGroupPolicyResponse",
+  "namespace": "net.corda.data.membership.rpc.response",
+  "doc": "MGM Group Policy Response",
+  "fields": [
+    {
+      "name": "groupPolicy",
+      "doc": "The full group policy JSON string.",
+      "type": "string"
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "type": "record",
+  "name": "UpdateMemberAndRegistrationRequestResponse",
+  "namespace": "net.corda.data.membership.db.response.query",
+  "doc": "Response to a successful update of member and request",
+  "fields": [
+    {
+      "name": "memberInfo",
+      "doc": "Member Info representing the member after the update.",
+      "type": "net.corda.data.membership.PersistentMemberInfo"
+    }
+  ]
+}

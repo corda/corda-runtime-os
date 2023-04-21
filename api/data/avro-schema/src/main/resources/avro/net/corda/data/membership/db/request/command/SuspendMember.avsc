@@ -1,0 +1,23 @@
+{
+  "type": "record",
+  "name": "SuspendMember",
+  "namespace": "net.corda.data.membership.db.request.command",
+  "doc": "",
+  "fields": [
+    {
+      "name": "suspendedMember",
+      "doc": "X500 name of the member being suspended.",
+      "type": "string"
+    },
+    {
+      "name": "serialNumber",
+      "doc": "Serial number of the suspended member's MemberInfo.",
+      "type": ["long", "null"]
+    },
+    {
+      "name": "reason",
+      "doc": "Reason for suspension.",
+      "type": ["string", "null"]
+    }
+  ]
+}

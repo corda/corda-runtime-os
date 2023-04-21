@@ -1,0 +1,103 @@
+plugins {
+    id 'java-platform'
+    id 'maven-publish'
+    id 'com.jfrog.artifactory'
+    id 'corda.s3-publish'
+}
+
+description = 'Declares the Corda API component versions.'
+
+dependencies {
+    constraints {
+        api project(':application')
+        api project(':base')
+        api project(':crypto')
+        api project(':crypto-extensions')
+        api project(':data:avro-schema')
+        api project(':data:config-schema')
+        api project(':data:db-schema')
+        api project(':data:membership-schema')
+        api project(':data:topic-schema')
+        api project(':data:rbac-schema')
+        api project(':ledger:ledger-common')
+        api project(':ledger:ledger-consensual')
+        api project(':ledger:ledger-utxo')
+        api project(':ledger:notary-plugin')
+        api project(':membership')
+        api project(':serialization')
+
+        api('javax.persistence:javax.persistence-api') {
+            version {
+                require javaxPersistenceApiVersion
+            }
+        }
+        api('org.jetbrains.kotlin:kotlin-osgi-bundle') {
+            version {
+                require kotlinVersion
+            }
+        }
+        api('org.jetbrains:annotations') {
+            version {
+                require jetbrainsAnnotationsVersion
+            }
+        }
+        api('org.osgi:osgi.annotation') {
+            version {
+                require osgiVersion
+            }
+        }
+        api('org.osgi:osgi.core') {
+            version {
+                require osgiVersion
+            }
+        }
+        api('org.osgi:org.osgi.service.component.annotations') {
+            version {
+                require osgiScrAnnotationVersion
+            }
+        }
+        api('org.slf4j:slf4j-api') {
+            version {
+                require slf4jVersion
+            }
+        }
+    }
+}
+
+publishing {
+    publications {
+        apiConfiguration(MavenPublication) {
+            from components.javaPlatform
+
+            pom {
+                name = 'Corda API Platform'
+                description = project.description
+
+                url = vcsUrl - '.git'
+                scm {
+                    url = vcsUrl
+                }
+
+                licenses {
+                    license {
+                        name = licenseName
+                        url = licenseUrl
+                        distribution = 'repo'
+                    }
+                }
+
+                developers {
+                    developer {
+                        id = 'R3'
+                        name = 'R3'
+                        email = 'dev@corda.net'
+                    }
+                }
+            }
+        }
+    }
+}
+
+artifactoryPublish {
+    publications('apiConfiguration')
+}

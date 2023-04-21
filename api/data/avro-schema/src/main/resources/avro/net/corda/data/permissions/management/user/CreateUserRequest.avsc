@@ -1,0 +1,42 @@
+{
+  "type": "record",
+  "name": "CreateUserRequest",
+  "namespace": "net.corda.data.permissions.management.user",
+  "fields": [
+    {
+      "name": "fullName",
+      "type": "string"
+    },
+    {
+      "name": "loginName",
+      "type": "string"
+    },
+    {
+      "name": "enabled",
+      "type": "boolean"
+    },
+    {
+      "name": "initialHashedPassword",
+      "type": [ "null", "string" ]
+    },
+    {
+      "name": "saltValue",
+      "type": [ "null", "string" ]
+    },
+    {
+      "name": "passwordExpiry",
+      "type": [
+        "null",
+        {
+          "type": "long",
+          "logicalType": "timestamp-millis"
+        }
+      ],
+      "doc": "Time ([Instant]) in milliseconds when the user's password expires."
+    },
+    {
+      "name": "parentGroupId",
+      "type": [ "null", "string" ]
+    }
+  ]
+}

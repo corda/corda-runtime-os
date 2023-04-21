@@ -1,0 +1,13 @@
+{
+  "type": "record",
+  "name": "MgmOnboarded",
+  "namespace": "net.corda.data.membership.event.registration",
+  "doc": "Event for when processing of a registration for an MGM has finished.",
+  "fields": [
+    {
+      "name": "onboardedMgm",
+      "doc": "Holding identity of the mgm who was onboarded.",
+      "type": "net.corda.data.identity.HoldingIdentity"
+    }
+  ]
+}

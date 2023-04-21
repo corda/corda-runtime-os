@@ -1,0 +1,13 @@
+{
+  "type": "record",
+  "name": "RevokePreAuthTokenResponse",
+  "namespace": "net.corda.data.membership.db.response.command",
+  "doc": "Response to revoking a pre auth token.",
+  "fields": [
+    {
+      "name": "preAuthToken",
+      "doc": "The revoked preAuthToken.",
+      "type": "net.corda.data.membership.preauth.PreAuthToken"
+    }
+  ]
+}

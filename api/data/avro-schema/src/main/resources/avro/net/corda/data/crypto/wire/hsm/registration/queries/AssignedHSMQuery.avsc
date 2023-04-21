@@ -1,0 +1,13 @@
+{
+  "type": "record",
+  "name": "AssignedHSMQuery",
+  "namespace": "net.corda.data.crypto.wire.hsm.registration.queries",
+  "doc": "Request to get assigned to a tenant HSM.",
+  "fields": [
+    {
+      "name": "category",
+      "type": "string",
+      "doc": "Category like TLS, LEDGER, etc."
+    }
+  ]
+}

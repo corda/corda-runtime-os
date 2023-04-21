@@ -1,0 +1,383 @@
+<?xml version="1.1" encoding="UTF-8" standalone="no"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd">
+
+    <property name="now" value="now()" dbms="hsqldb"/>
+    <property name="now" value="now()" dbms="postgresql"/>
+
+    <changeSet author="R3.Corda" id="config-creation-v1.0">
+
+        <createTable tableName="config">
+            <column name="section" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="config" type="TEXT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="schema_version_major" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="schema_version_minor" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="version" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="is_deleted" type="BOOLEAN">
+                <constraints nullable="false"/>
+            </column>
+            <column name="update_ts" type="DATETIME">
+                <constraints nullable="false"/>
+            </column>
+            <column name="update_actor" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addPrimaryKey columnNames="section" constraintName="config_pk" tableName="config"/>
+
+        <insert tableName="config">
+            <column name="section" value="corda.reconciliation"/>
+            <column name="config" value=""/>
+            <column name="schema_version_major" value="1"/>
+            <column name="schema_version_minor" value="0"/>
+            <column name="version" value="0"/>
+            <column name="is_deleted" value="false"/>
+            <column name="update_ts" valueDate="${now}"/>
+            <column name="update_actor" value="admin"/>
+        </insert>
+
+        <insert tableName="config">
+            <column name="section" value="corda.p2p.linkManager"/>
+            <column name="config" value=""/>
+            <column name="schema_version_major" value="1"/>
+            <column name="schema_version_minor" value="0"/>
+            <column name="version" value="0"/>
+            <column name="is_deleted" value="false"/>
+            <column name="update_ts" valueDate="${now}"/>
+            <column name="update_actor" value="admin"/>
+        </insert>
+
+        <insert tableName="config">
+            <column name="section" value="corda.p2p.gateway"/>
+            <column name="config" value=""/>
+            <column name="schema_version_major" value="1"/>
+            <column name="schema_version_minor" value="0"/>
+            <column name="version" value="0"/>
+            <column name="is_deleted" value="false"/>
+            <column name="update_ts" valueDate="${now}"/>
+            <column name="update_actor" value="admin"/>
+        </insert>
+
+        <insert tableName="config">
+            <column name="section" value="corda.membership"/>
+            <column name="config" value=""/>
+            <column name="schema_version_major" value="1"/>
+            <column name="schema_version_minor" value="0"/>
+            <column name="version" value="0"/>
+            <column name="is_deleted" value="false"/>
+            <column name="update_ts" valueDate="${now}"/>
+            <column name="update_actor" value="admin"/>
+        </insert>
+
+        <insert tableName="config">
+            <column name="section" value="corda.rest"/>
+            <column name="config" value=""/>
+            <column name="schema_version_major" value="1"/>
+            <column name="schema_version_minor" value="0"/>
+            <column name="version" value="0"/>
+            <column name="is_deleted" value="false"/>
+            <column name="update_ts" valueDate="${now}"/>
+            <column name="update_actor" value="admin"/>
+        </insert>
+
+        <insert tableName="config">
+            <column name="section" value="corda.messaging"/>
+            <column name="config" value=""/>
+            <column name="schema_version_major" value="1"/>
+            <column name="schema_version_minor" value="0"/>
+            <column name="version" value="0"/>
+            <column name="is_deleted" value="false"/>
+            <column name="update_ts" valueDate="${now}"/>
+            <column name="update_actor" value="admin"/>
+        </insert>
+
+        <insert tableName="config">
+            <column name="section" value="corda.externalMessaging"/>
+            <column name="config" value=""/>
+            <column name="schema_version_major" value="1"/>
+            <column name="schema_version_minor" value="0"/>
+            <column name="version" value="0"/>
+            <column name="is_deleted" value="false"/>
+            <column name="update_ts" valueDate="${now}"/>
+            <column name="update_actor" value="admin"/>
+        </insert>
+
+        <insert tableName="config">
+            <column name="section" value="corda.flow"/>
+            <column name="config" value=""/>
+            <column name="schema_version_major" value="1"/>
+            <column name="schema_version_minor" value="0"/>
+            <column name="version" value="0"/>
+            <column name="is_deleted" value="false"/>
+            <column name="update_ts" valueDate="${now}"/>
+            <column name="update_actor" value="admin"/>
+        </insert>
+
+        <insert tableName="config">
+            <column name="section" value="corda.sandbox"/>
+            <column name="config" value=""/>
+            <column name="schema_version_major" value="1"/>
+            <column name="schema_version_minor" value="0"/>
+            <column name="version" value="0"/>
+            <column name="is_deleted" value="false"/>
+            <column name="update_ts" valueDate="${now}"/>
+            <column name="update_actor" value="admin"/>
+        </insert>
+
+        <createTable tableName="config_audit">
+            <column name="change_number" type="SERIAL">
+                <constraints nullable="false"/>
+            </column>
+            <column name="section" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="config" type="TEXT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="config_version" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="update_ts" type="DATETIME">
+                <constraints nullable="false"/>
+            </column>
+            <column name="update_actor" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addPrimaryKey columnNames="change_number" constraintName="config_audit_pk" tableName="config_audit"/>
+        <createSequence sequenceName="config_audit_id_seq"/>
+
+        <!-- db connections -->
+        <createTable tableName="db_connection">
+            <column name="connection_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="connection_name" type="VARCHAR(64)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="privilege" type="VARCHAR(3)">
+                <!-- DDL or DML -->
+                <constraints nullable="false"  />
+            </column>
+            <column name="version" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="update_ts" type="DATETIME">
+                <constraints nullable="false"/>
+            </column>
+            <column name="update_actor" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="description" type="VARCHAR(255)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="config" type="TEXT">
+                <constraints nullable="false"  />
+            </column>
+        </createTable>
+        <addPrimaryKey tableName="db_connection" columnNames="connection_id" constraintName="db_connection_pk"/>
+        <addUniqueConstraint tableName="db_connection" columnNames="connection_name, privilege" constraintName="db_connection_uc1"/>
+
+        <createTable tableName="db_connection_audit">
+            <column name="change_number" type="SERIAL">
+                <constraints nullable="false"/>
+            </column>
+            <column name="connection_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="connection_name" type="VARCHAR(64)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="privilege" type="VARCHAR(3)">
+                <!-- DDL or DML -->
+                <constraints nullable="false"  />
+            </column>
+            <column name="update_ts" type="DATETIME">
+                <constraints nullable="false"/>
+            </column>
+            <column name="update_actor" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="description" type="VARCHAR(255)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="config" type="TEXT">
+                <constraints nullable="false"  />
+            </column>
+        </createTable>
+        <addPrimaryKey tableName="db_connection_audit" columnNames="change_number" constraintName="db_connection_audit_pk"/>
+        <createSequence sequenceName="db_connection_audit_id_seq"/>
+
+        <!-- virtual nodes -->
+        <createTable tableName="holding_identity">
+            <column name="holding_identity_id" type="VARCHAR(12)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="holding_identity_full_hash" type="VARCHAR(64)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="x500_name" type="VARCHAR(512)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="mgm_group_id" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="hsm_connection_id" type="UUID">
+                <constraints nullable="true"/>
+            </column>
+        </createTable>
+        <addPrimaryKey columnNames="holding_identity_id" constraintName="holding_identity_pk" tableName="holding_identity"/>
+
+        <createTable tableName="virtual_node_operation">
+            <column name="id" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="request_id" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="data" type="TEXT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="request_timestamp" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="latest_update_timestamp" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="true"/>
+            </column>
+            <column name="heartbeat_timestamp" type="TIMESTAMP">
+                <constraints nullable="true"/>
+            </column>
+            <column name="state" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="operation_type" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="errors" type="TEXT">
+                <constraints nullable="true"/>
+            </column>
+            <column name="entity_version" type="INT">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addPrimaryKey columnNames="id" constraintName="virtual_node_operation_pk" tableName="virtual_node_operation"/>
+        <createIndex indexName="virtual_node_operation_request_id" tableName="virtual_node_operation">
+            <column name="request_id"/>
+        </createIndex>
+
+        <createTable tableName="virtual_node">
+            <column name="holding_identity_id" type="VARCHAR(12)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="cpi_name" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="cpi_version" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="cpi_signer_summary_hash" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name = "flow_p2p_operational_status" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name = "flow_start_operational_status" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name = "flow_operational_status" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name = "vault_db_operational_status" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="vault_ddl_connection_id" type="UUID">
+                <constraints nullable="true"/>
+            </column>
+            <column name="vault_dml_connection_id" type="UUID">
+                <constraints nullable="true"/>
+            </column>
+            <column name="crypto_ddl_connection_id" type="UUID">
+                <constraints nullable="true"/>
+            </column>
+            <column name="crypto_dml_connection_id" type="UUID">
+                <constraints nullable="true"/>
+            </column>
+            <column name="uniqueness_ddl_connection_id" type="UUID">
+                <constraints nullable="true"/>
+            </column>
+            <column name="uniqueness_dml_connection_id" type="UUID">
+                <constraints nullable="true"/>
+            </column>
+            <column name="operation_in_progress" type="VARCHAR(255)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="external_messaging_route_config" type="TEXT">
+                <constraints nullable="true"/>
+            </column>
+            <!-- audit -->
+            <column name="entity_version" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="is_deleted" type="BOOLEAN">
+                <constraints nullable="false"/>
+            </column>
+            <column name="insert_ts" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addPrimaryKey tableName="virtual_node" columnNames="holding_identity_id"
+                       constraintName="virtual_node_pk"/>
+
+        <addForeignKeyConstraint baseTableName="virtual_node" baseColumnNames="cpi_name, cpi_version, cpi_signer_summary_hash"
+                                 referencedTableName="cpi" referencedColumnNames="name, version, signer_summary_hash"
+                                 constraintName="FK_virtual_node_cpi"/>
+        <addForeignKeyConstraint baseTableName="virtual_node" baseColumnNames="vault_ddl_connection_id"
+                                 referencedTableName="db_connection" referencedColumnNames="connection_id"
+                                 constraintName="FK__virtual_node__vault_ddl_connection_id"/>
+        <addForeignKeyConstraint baseTableName="virtual_node" baseColumnNames="vault_dml_connection_id"
+                                 referencedTableName="db_connection" referencedColumnNames="connection_id"
+                                 constraintName="FK__virtual_node__vault_dml_connection_id"/>
+        <addForeignKeyConstraint baseTableName="virtual_node" baseColumnNames="crypto_ddl_connection_id"
+                                 referencedTableName="db_connection" referencedColumnNames="connection_id"
+                                 constraintName="FK__virtual_node__crypto_ddl_connection_id"/>
+        <addForeignKeyConstraint baseTableName="virtual_node" baseColumnNames="crypto_dml_connection_id"
+                                 referencedTableName="db_connection" referencedColumnNames="connection_id"
+                                 constraintName="FK__virtual_node__crypto_dml_connection_id"/>
+        <addForeignKeyConstraint baseTableName="virtual_node" baseColumnNames="uniqueness_ddl_connection_id"
+                                 referencedTableName="db_connection" referencedColumnNames="connection_id"
+                                 constraintName="FK__virtual_node__uniqueness_ddl_connection_id"/>
+        <addForeignKeyConstraint baseTableName="virtual_node" baseColumnNames="uniqueness_dml_connection_id"
+                                 referencedTableName="db_connection" referencedColumnNames="connection_id"
+                                 constraintName="FK__virtual_node__uniqueness_dml_connection_id"/>
+        <addForeignKeyConstraint baseTableName="virtual_node" baseColumnNames="operation_in_progress"
+                                 referencedTableName="virtual_node_operation" referencedColumnNames="id"
+                                 constraintName="FK__virtual_node_operation"/>
+        <createTable tableName="cluster_certificate">
+            <column name="alias" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="usage" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="raw_certificate" type="TEXT">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addPrimaryKey tableName="cluster_certificate" columnNames="alias" constraintName="certificate_pk"/>
+        <createIndex indexName="cluster_certificate_usage" tableName="cluster_certificate">
+            <column name="usage"/>
+        </createIndex>
+    </changeSet>
+</databaseChangeLog>

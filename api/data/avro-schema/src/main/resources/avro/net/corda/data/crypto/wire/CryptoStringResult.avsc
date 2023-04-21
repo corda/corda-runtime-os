@@ -1,0 +1,13 @@
+{
+  "type": "record",
+  "name": "CryptoStringResult",
+  "namespace": "net.corda.data.crypto.wire",
+  "doc": "Defines over-the-wire response for operation which return only single string value",
+  "fields": [
+    {
+      "name": "value",
+      "type": "string",
+      "doc": "The result's value"
+    }
+  ]
+}

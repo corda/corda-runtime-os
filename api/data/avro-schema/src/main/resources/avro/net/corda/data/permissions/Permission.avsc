@@ -1,0 +1,35 @@
+{
+  "type": "record",
+  "name": "Permission",
+  "namespace": "net.corda.data.permissions",
+  "fields": [
+    {
+      "name": "id",
+      "type": "string"
+    },
+    {
+      "name": "version",
+      "type": "int"
+    },
+    {
+      "name": "lastChangeDetails",
+      "type": "net.corda.data.permissions.ChangeDetails"
+    },
+    {
+      "name": "virtualNode",
+      "type": [ "null", "string" ]
+    },
+    {
+      "name": "permissionType",
+      "type": "net.corda.data.permissions.PermissionType"
+    },
+    {
+      "name": "permissionString",
+      "type": "string"
+    },
+    {
+      "name": "groupVisibility",
+      "type": [ "null", "string" ]
+    }
+  ]
+}

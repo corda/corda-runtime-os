@@ -1,0 +1,38 @@
+{
+  "type": "record",
+  "name": "HSMAssociationInfo",
+  "namespace": "net.corda.data.crypto.wire.hsm",
+  "doc": "Defines information for HSM association.",
+  "fields": [
+    {
+      "name": "id",
+      "type": "string",
+      "doc": "Association id."
+    },
+    {
+      "name": "tenantId",
+      "type": "string",
+      "doc": "Association tenant id."
+    },
+    {
+      "name": "hsmId",
+      "type": "string",
+      "doc": "HSM id which handles the keys for this association."
+    },
+    {
+      "name": "category",
+      "type": "string",
+      "doc": "The category, like TLS, LEDGER, etc., which assignment was made for."
+    },
+    {
+      "name": "masterKeyAlias",
+      "type": ["null", "string"],
+      "doc": "The master key alias which is used for the keys."
+    },
+    {
+      "name": "deprecatedAt",
+      "type": "long",
+      "doc": "If greater than 0 - when the association was deprecated."
+    }
+  ]
+}

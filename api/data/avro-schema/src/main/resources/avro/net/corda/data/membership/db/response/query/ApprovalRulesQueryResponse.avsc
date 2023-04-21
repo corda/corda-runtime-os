@@ -1,0 +1,16 @@
+{
+  "type": "record",
+  "name": "ApprovalRulesQueryResponse",
+  "namespace": "net.corda.data.membership.db.response.query",
+  "doc": "Response to a query for the approval rules",
+  "fields": [
+    {
+      "name": "rules",
+      "doc": "Approval rules.",
+      "type": {
+        "type": "array",
+        "items": "net.corda.data.membership.common.ApprovalRuleDetails"
+      }
+    }
+  ]
+}

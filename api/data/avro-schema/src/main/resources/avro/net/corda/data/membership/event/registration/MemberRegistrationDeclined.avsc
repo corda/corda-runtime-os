@@ -1,0 +1,13 @@
+{
+  "type": "record",
+  "name": "MemberRegistrationDeclined",
+  "namespace": "net.corda.data.membership.event.registration",
+  "doc": "Event for when processing of a registration has finished and the member has been denied access in the group.",
+  "fields": [
+    {
+      "name": "declinedMember",
+      "doc": "Holding identity of the member who was declined. Note: Holding identity was provided by member and maybe not be valid.",
+      "type": "net.corda.data.identity.HoldingIdentity"
+    }
+  ]
+}

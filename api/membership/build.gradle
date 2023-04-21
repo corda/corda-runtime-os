@@ -1,0 +1,19 @@
+plugins {
+    id 'corda-api.common-library'
+    id 'corda.common-publishing'
+    id 'corda.java-only'
+}
+
+description 'Corda Membership'
+
+dependencies {
+    api platform(project(':corda-api'))
+
+    compileOnly 'org.jetbrains:annotations'
+    compileOnly 'org.osgi:osgi.annotation'
+
+    api project(':base')
+
+    testImplementation "org.assertj:assertj-core:$assertjVersion"
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
+}

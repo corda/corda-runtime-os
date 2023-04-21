@@ -1,0 +1,23 @@
+{
+  "type": "record",
+  "name": "PersistentSignedMemberInfo",
+  "namespace": "net.corda.data.membership",
+  "doc": "Avro representation of a member's signature and persistent MemberInfo.",
+  "fields": [
+    {
+      "name": "persistentMemberInfo",
+      "doc": "Persistent member info for the member.",
+      "type": "net.corda.data.membership.PersistentMemberInfo"
+    },
+    {
+      "name": "memberSignature",
+      "doc": "Signature of the member over the memberContext.",
+      "type": "net.corda.data.crypto.wire.CryptoSignatureWithKey"
+    },
+    {
+      "name": "memberSignatureSpec",
+      "doc": "Signature spec of member signature.",
+      "type": "net.corda.data.crypto.wire.CryptoSignatureSpec"
+    }
+  ]
+}

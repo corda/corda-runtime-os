@@ -1,0 +1,27 @@
+{
+  "type": "record",
+  "name": "PermissionSummary",
+  "namespace": "net.corda.data.permissions.summary",
+  "fields": [
+    {
+      "name": "id",
+      "type": "string"
+    },
+    {
+      "name": "groupVisibility",
+      "type": [ "null", "string" ]
+    },
+    {
+      "name": "virtualNode",
+      "type": [ "null", "string" ]
+    },
+    {
+      "name": "permissionString",
+      "type": "string"
+    },
+    {
+      "name": "permissionType",
+      "type": "net.corda.data.permissions.PermissionType"
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "type": "record",
+  "name": "ExternalEventResponse",
+  "namespace": "net.corda.data.flow.state.waiting.external",
+  "doc": "ExternalEventResponse details that a flow is waiting to receive an external event response and the expected request id.",
+  "fields": [
+    {
+    "name": "requestId",
+    "type": "string",
+    "doc": "The requestId of the response the flow is waiting for."
+    }
+  ]
+}

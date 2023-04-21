@@ -1,0 +1,51 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://corda.r3.com/net/corda/schema/membership/member/static/registration/1.0/corda.member.static.registration.json",
+  "title": "Corda static member registration context schema",
+  "description": "Definition of the registration context required for registering a member in a static group.",
+  "type": "object",
+  "patternProperties": {
+    "^corda.roles.[0-9]+$": {
+      "description": "The member roles. Can be multiple specified by index.",
+      "type": "string",
+      "enum": ["notary"],
+      "examples": [
+        "notary"
+      ]
+    },
+    "^corda.notary.service.flow.protocol.version.[0-9]+$": {
+      "description": "Version supported for the flow protocol used by the notary service. Valid only when one of the roles is notary.",
+      "type": "integer",
+      "minimum": 1
+    }
+  },
+  "properties": {
+    "corda.key.scheme": {
+      "description": "The key scheme to use when generating keys for a static member. Available key schemes are obtainable through the Keys HTTP API.",
+      "type": "string",
+      "examples": [
+        "CORDA.ECDSA.SECP256R1"
+      ]
+    },
+    "corda.notary.service.name": {
+      "description": "The notary service X500 name. Valid only when one of the roles is notary.",
+      "type": "string",
+      "minLength": 3,
+      "examples": [
+        "O=NotaryService, L=London, C=GB"
+      ]
+    },
+    "corda.notary.service.flow.protocol.name": {
+      "description": "Name of the flow protocol used by the notary service. Valid only when one of the roles is notary.",
+      "type": "string",
+      "maxLength": 255,
+      "examples": [
+        "net.corda.notary.MyNotaryService"
+      ]
+    }
+  },
+  "required": [
+    "corda.key.scheme"
+  ],
+  "additionalProperties": false
+}

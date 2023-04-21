@@ -1,0 +1,53 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://corda.r3.com/net/corda/schema/configuration/ledger/utxo/1.0/corda.ledger.utxo.json",
+  "title": "Corda UTXO ledger Configuration Schema",
+  "description": "Configuration schema for the UTXO ledger.",
+  "type": "object",
+  "default": {},
+  "properties": {
+    "tokens": {
+      "description": "Settings for token selection",
+      "type": "object",
+      "default": {},
+      "properties": {
+        "minDelayBeforeNextFullSync": {
+          "description": "The minimum amount of time the platform waits before a starting another full token cache synchronization, in seconds.",
+          "type": "integer",
+          "minimum": 0,
+          "default": 300
+        },
+        "minDelayBeforeNextPeriodicSync": {
+          "description": "The minimum amount of time the platform waits before a starting another periodic cache synchronization, in seconds.",
+          "type": "integer",
+          "minimum": 0,
+          "default": 30
+        },
+        "fullSyncBlockSize": {
+          "description": "The number of records per synchronization message during a full token cache synchronization",
+          "type": "integer",
+          "minimum": 100,
+          "default": 1000
+        },
+        "periodCheckBlockSize": {
+          "description": "The number of state references per synchronization message during a periodic token cache synchronization check",
+          "type": "integer",
+          "minimum": 100,
+          "default": 5000
+        },
+        "sendWakeUpMaxRetryAttempts": {
+          "description": "The max number of attempts to send the synchronization wake-up messages on component start.",
+          "type": "integer",
+          "minimum": 0,
+          "default": 6
+        },
+        "sendWakeUpMaxRetryDelay": {
+          "description": "The maximum delay before a retry is scheduled, in seconds",
+          "type": "integer",
+          "minimum": 1,
+          "default": 10
+        }
+      }
+    }
+  }
+}

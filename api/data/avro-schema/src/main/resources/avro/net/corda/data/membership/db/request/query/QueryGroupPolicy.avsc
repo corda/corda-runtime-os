@@ -1,0 +1,7 @@
+{
+  "type": "record",
+  "name": "QueryGroupPolicy",
+  "namespace": "net.corda.data.membership.db.request.query",
+  "doc": "Query for latest group policy",
+  "fields": []
+}

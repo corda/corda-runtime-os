@@ -1,0 +1,16 @@
+{
+  "type": "record",
+  "name": "UtxoTransactionOutputs",
+  "doc": "Transaction outputs ({@link UtxoTransactionOutput}) of signed transaction.",
+  "namespace": "net.corda.data.ledger.persistence",
+  "fields": [
+    {
+      "name": "transactionOutputs",
+      "doc": "Transaction outputs of signed transaction",
+      "type": {
+        "type" : "array",
+        "items": "net.corda.data.ledger.persistence.UtxoTransactionOutput"
+      }
+    }
+  ]
+}

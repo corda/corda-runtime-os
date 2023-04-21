@@ -1,0 +1,13 @@
+{
+  "type": "record",
+  "name": "AssignSoftHSMCommand",
+  "namespace": "net.corda.data.crypto.wire.hsm.registration.commands",
+  "doc": "Request to assign the Soft HSM to a tenant.",
+  "fields": [
+    {
+      "name": "category",
+      "type": "string",
+      "doc": "The category, like TLS, LEDGER, etc., which needs assignment."
+    }
+  ]
+}

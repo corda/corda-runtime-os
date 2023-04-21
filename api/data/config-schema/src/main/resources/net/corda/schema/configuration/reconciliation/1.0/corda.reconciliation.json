@@ -1,0 +1,59 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://corda.r3.com/net/corda/schema/configuration/reconciliation/1.0/corda.reconciliation.json",
+  "title": "Corda Reconciliation Configuration Schema",
+  "description": "Configuration schema for the reconciliation section.",
+  "type": "object",
+  "default": {},
+  "properties": {
+    "permissionSummaryIntervalMs": {
+      "description": "The interval in milliseconds between permission summary reconciliation rounds.",
+      "type": "integer",
+      "minimum": 5000,
+      "maximum": 2147483647,
+      "default": 30000
+    },
+    "cpkWriteIntervalMs": {
+      "description": "The interval in milliseconds between aligning the Kafka CPKs state with the DB CPKs state.",
+      "type": "integer",
+      "minimum": 5000,
+      "maximum": 2147483647,
+      "default": 10000
+    },
+    "cpiInfoIntervalMs": {
+      "description": "The interval in milliseconds between aligning the Kafka CPI metadata state with the DB CPI metadata state.",
+      "type": "integer",
+      "minimum": 5000,
+      "maximum": 2147483647,
+      "default": 30000
+    },
+    "vnodeInfoIntervalMs": {
+      "description": "The interval in milliseconds between aligning the Kafka virtual node info state with the DB virtual node info state.",
+      "type": "integer",
+      "minimum": 5000,
+      "maximum": 2147483647,
+      "default": 30000
+    },
+    "configIntervalMs": {
+      "description": "The interval in milliseconds between aligning the Kafka configuration sections state with the DB configuration sections.",
+      "type": "integer",
+      "minimum": 5000,
+      "maximum": 2147483647,
+      "default": 30000
+    },
+    "groupParamsIntervalMs": {
+      "description": "The interval in milliseconds between aligning the Kafka group parameters state with the DB group parameters per virtual node.",
+      "type": "integer",
+      "minimum": 5000,
+      "maximum": 2147483647,
+      "default": 120000
+    },
+    "mtlsMgmAllowedCertificateSubjectsIntervalMs": {
+      "description": "The interval in milliseconds between aligning the Kafka MGM allowed client certificate subjects state with the DB MGM allowed client certificate subjects state.",
+      "type": "integer",
+      "minimum": 5000,
+      "maximum": 2147483647,
+      "default": 120000
+    }
+  }
+}

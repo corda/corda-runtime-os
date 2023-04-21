@@ -1,0 +1,18 @@
+{
+  "type": "record",
+  "name": "TransactionVerificationResponse",
+  "doc": "The response to an {@link TransactionVerificationRequest}.",
+  "namespace": "net.corda.ledger.utxo.verification",
+  "fields": [
+    {
+      "name": "verificationStatus",
+      "type": "net.corda.ledger.utxo.verification.TransactionVerificationStatus",
+      "doc": "Transaction verification status, see {@link TransactionVerificationStatus}."
+    },
+    {
+      "name": "verificationFailure",
+      "type": ["null", "net.corda.data.ExceptionEnvelope"],
+      "doc": "Transaction verification failure if verification wasn't successful see {@link TransactionVerificationFailure}."
+    }
+  ]
+}

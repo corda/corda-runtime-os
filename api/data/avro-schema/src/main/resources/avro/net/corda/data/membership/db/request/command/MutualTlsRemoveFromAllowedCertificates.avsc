@@ -1,0 +1,13 @@
+{
+  "type": "record",
+  "name": "MutualTlsRemoveFromAllowedCertificates",
+  "namespace": "net.corda.data.membership.db.request.command",
+  "doc": "Remove mutual TLS certificate subject from the allowed list.",
+  "fields": [
+    {
+      "name": "subject",
+      "doc": "The certificate subject.",
+      "type":  "string"
+    }
+  ]
+}

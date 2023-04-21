@@ -1,0 +1,18 @@
+{
+    "type": "record",
+    "name": "CpkChunkId",
+    "namespace": "net.corda.data.chunking",
+    "doc": "Identifies a CPK chunk uniquely having as key the CPK checksum and the chunk part",
+    "fields": [
+        {
+            "name": "cpkChecksum",
+            "type": "net.corda.data.crypto.SecureHash",
+            "doc": "CPK's checksum to which this chunk belongs to"
+        },
+        {
+            "name": "cpkChunkPartNumber",
+            "type": "int",
+            "doc": "number of CPK chunk"
+        }
+    ]
+}

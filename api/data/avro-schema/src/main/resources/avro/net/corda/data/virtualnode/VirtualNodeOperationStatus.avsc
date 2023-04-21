@@ -1,0 +1,53 @@
+{
+  "type": "record",
+  "name": "VirtualNodeOperationStatus",
+  "namespace": "net.corda.data.virtualnode",
+  "fields": [
+    {
+      "name": "requestId",
+      "type": "string",
+      "doc": "ID of this Virtual Node CPI upgrade request."
+    },
+    {
+      "name": "requestData",
+      "doc": "The operation specific request data.",
+      "type": "string"
+    },
+    {
+      "name": "requestTimestamp",
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+      },
+      "doc": "Time ([Instant]) in milliseconds of the request."
+    },
+    {
+      "name": "latestUpdateTimestamp",
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+      },
+      "doc": "Time ([Instant]) in milliseconds of the latest update to the request."
+    },
+    {
+      "name": "heartbeatTimestamp",
+      "type": [
+        "null",
+        {
+          "type": "long",
+          "logicalType": "timestamp-millis"
+        }
+      ],
+      "doc": "Time ([Instant]) in milliseconds of the latest heartbeat."
+    },
+    {
+      "name": "state",
+      "type": "string"
+    },
+    {
+      "name": "errors",
+      "type": [ "null", "string" ],
+      "doc": "Errors recorded in the upgrade process"
+    }
+  ]
+}

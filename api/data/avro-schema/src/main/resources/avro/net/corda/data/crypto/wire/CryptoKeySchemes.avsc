@@ -1,0 +1,16 @@
+{
+  "type": "record",
+  "name": "CryptoKeySchemes",
+  "namespace": "net.corda.data.crypto.wire",
+  "doc": "Internal over-the-wire collection of key scheme code names for crypto services",
+  "fields": [
+    {
+      "name": "codes",
+      "type": {
+        "type": "array",
+        "items": "string"
+      },
+      "doc": "Collection of [KeyScheme].codeName(s)"
+    }
+  ]
+}

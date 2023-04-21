@@ -1,0 +1,16 @@
+{
+  "type": "record",
+  "name": "EntityResponse",
+  "doc": "The response to an {@link EntityRequest}.",
+  "namespace": "net.corda.data.persistence",
+  "fields": [
+    {
+      "name": "results",
+      "doc": "Result of request, as a list of AMQP-formatted user defined objects, which may be empty or have 1 element for certain persistence operations",
+      "type": {
+        "type" : "array",
+        "items": "bytes"
+      }
+    }
+  ]
+}

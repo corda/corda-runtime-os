@@ -1,0 +1,36 @@
+{
+  "type": "record",
+  "name": "FlowStackItem",
+  "namespace": "net.corda.data.flow.state.checkpoint",
+  "doc": "Represents an item on the flow stack.",
+  "fields": [
+    {
+      "name": "flowName",
+      "type": "string",
+      "doc": "Class name of the flow."
+    },
+    {
+      "name": "isInitiatingFlow",
+      "type": "boolean",
+      "doc": "Flag to show if the flow is an initiating flow type."
+    },
+    {
+      "name": "sessions",
+      "type": {
+        "type": "array",
+        "items": "net.corda.data.flow.state.checkpoint.FlowStackItemSession"
+      },
+      "doc": "List of any session associated with this flow or subFlow."
+    },
+    {
+      "name": "contextUserProperties",
+      "type": "net.corda.data.KeyValuePairList",
+      "doc": "The context user properties associated with this level in the Flow stack."
+    },
+    {
+      "name": "contextPlatformProperties",
+      "type": "net.corda.data.KeyValuePairList",
+      "doc": "The context platform properties associated with this level in the Flow stack."
+    }
+  ]
+}

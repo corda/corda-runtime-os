@@ -1,0 +1,7 @@
+{
+  "type": "record",
+  "name": "SessionClose",
+  "doc": "Sent to a counterparty to indicate that this party is ready to close the session.",
+  "namespace": "net.corda.data.flow.event.session",
+  "fields": []
+}

@@ -1,0 +1,26 @@
+{
+  "type": "record",
+  "name": "UpdateRegistrationRequestStatus",
+  "namespace": "net.corda.data.membership.db.request.command",
+  "doc": "Update registration request status.",
+  "fields": [
+    {
+      "name": "registrationId",
+      "doc": "UUID identifying this registration request.",
+      "type": {
+        "type": "string",
+        "logicalType": "uuid"
+      }
+    },
+    {
+      "name": "registrationStatus",
+      "doc": "The new status for this registration request.",
+      "type": "net.corda.data.membership.common.RegistrationStatus"
+    },
+    {
+      "name": "reason",
+      "doc": "Reason for the new status for this registration request.",
+      "type": ["string", "null"]
+    }
+  ]
+}

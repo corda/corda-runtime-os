@@ -1,0 +1,115 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://corda.r3.com/net/corda/schema/configuration/messaging/1.0/corda.messaging.json",
+  "title": "Corda Messaging Configuration Schema",
+  "description": "Configuration schema for the messaging section. This configures the interactions of the workers with the underlying message bus.",
+  "type": "object",
+  "properties": {
+    "bus": {
+      "description": "Settings for the underlying bus implementation. Sets up connection details and how underlying bus objects behave.",
+      "type": "object",
+      "properties": {
+        "busType": {
+          "description": "The type of bus implementation.",
+          "enum": [
+            "KAFKA",
+            "DATABASE",
+            "INMEMORY"
+          ]
+        },
+        "additionalProperties": false
+      },
+      "$comment": "Polymorphic bus connection configuration. The valid section depends on which bus implementation is in use.",
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "busType": {
+                "const": "KAFKA"
+              }
+            },
+            "required": ["busType"]
+          },
+          "then": {
+            "properties": {
+              "kafkaProperties": {
+                "description": "Settings to connect to the broker in a KAFKA bus implementation.",
+                "$ref": "kafka-properties.json"
+              }
+            },
+            "required": ["busType","kafkaProperties"]
+          }
+        },
+        {
+          "if": {
+            "properties": {"busType": {"const": "DATABASE"}},
+            "required": ["busType"]
+          },
+          "then": {
+            "properties": {
+              "dbProperties": {
+                "type": "object",
+                "properties": {
+                  "consumer": {
+                    "type": "object",
+                    "properties": {
+                      "maxPollRecords": {
+                        "description": "The maximum number of records to poll from the database in a single poll.",
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 100000,
+                        "default": 100
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  "jdbcUrl": {
+                    "description": "The JDBC database URL.",
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "user": {
+                    "description": "The cluster admin username to connect to the database with.",
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "pass": {
+                    "description": "The cluster admin password to connect to the database with.",
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                },
+                "additionalProperties": false
+              }
+            },
+            "required": ["busType","dbProperties"]
+          }
+        }
+      ]
+    },
+    "subscription": {
+      "description": "Settings for subscriptions that process messages on the underlying bus.",
+      "$ref": "subscription.json",
+      "default": {}
+    },
+    "publisher": {
+      "description": "Settings for publishers that write messages to the underlying bus.",
+      "$ref": "publisher.json",
+      "default": {}
+    },
+    "maxAllowedMessageSize": {
+      "description": "The maximum size, in bytes, for messages. Corda breaks messages exceeding this size into smaller messages before sending. This value must be lower than the maximum message size configured on the message bus itself. If the Corda configuration value is set to a value higher than that of the message bus, messages will not be sent.",
+      "type": "integer",
+      "default": 972800,
+      "minimum": 512000,
+      "maximum": 8388608
+    }
+  },
+  "additionalProperties": false
+}

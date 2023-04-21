@@ -1,0 +1,13 @@
+{
+  "type": "record",
+  "name": "VirtualNodeManagementResponseFailure",
+  "doc": "The response when an {@link VirtualNodeManagementRequest} has failed. See also: {@link VirtualNodeManagementResponseSuccess}",
+  "namespace": "net.corda.data.virtualnode",
+  "fields": [
+    {
+      "name": "exception",
+      "doc": "Exception information",
+      "type": "net.corda.data.ExceptionEnvelope"
+    }
+  ]
+}

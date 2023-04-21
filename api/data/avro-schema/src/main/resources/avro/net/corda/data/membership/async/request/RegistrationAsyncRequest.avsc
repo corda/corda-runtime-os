@@ -1,0 +1,26 @@
+{
+  "type": "record",
+  "name": "RegistrationAsyncRequest",
+  "namespace": "net.corda.data.membership.async.request",
+  "doc": "Request to start the registration process.",
+  "fields": [
+    {
+      "name": "holdingIdentityId",
+      "doc": "ID of the holding identity applying for registration.",
+      "type": "string"
+    },
+    {
+      "name": "requestId",
+      "doc": "ID of the request.",
+      "type": {
+        "type": "string",
+        "logicalType": "uuid"
+      }
+    },
+    {
+      "name": "context",
+      "doc": "The member or MGM context required for on-boarding within a group.",
+      "type": "net.corda.data.KeyValuePairList"
+    }
+  ]
+}

@@ -1,0 +1,31 @@
+{
+  "type": "record",
+  "name": "ExternalEventStateStatus",
+  "namespace": "net.corda.data.flow.state.external",
+  "doc": "The status of the {@link ExternalEventState}.",
+  "fields": [
+    {
+      "name": "type",
+      "doc": "Status of the state.",
+      "type": {
+        "name": "ExternalEventStateType",
+        "type": "enum",
+        "doc": "OK: The state is ok.\nRETRY: The state received a transient error.\nPLATFORM_ERROR: The state received an error that should be propagated to the calling flow.\nFATAL_ERROR: The state received a fatal error.",
+        "symbols": [
+          "OK",
+          "RETRY",
+          "PLATFORM_ERROR",
+          "FATAL_ERROR"
+        ]
+      }
+    },
+    {
+      "name": "exception",
+      "doc": "Exception information",
+      "type": [
+        "null",
+        "net.corda.data.ExceptionEnvelope"
+      ]
+    }
+  ]
+}

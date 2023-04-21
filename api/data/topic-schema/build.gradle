@@ -1,0 +1,18 @@
+plugins {
+    id 'corda-api.common-library'
+    id 'corda.common-publishing'
+    id 'corda.java-only'
+}
+
+description 'Definition of Topics'
+
+dependencies {
+    implementation platform(project(':corda-api'))
+
+    testImplementation "org.assertj:assertj-core:$assertjVersion"
+    testImplementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
+    testImplementation "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:$jacksonVersion"
+
+    compileOnly 'org.osgi:osgi.annotation'
+}
+

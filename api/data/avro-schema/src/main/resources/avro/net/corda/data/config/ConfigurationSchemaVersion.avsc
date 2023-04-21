@@ -1,0 +1,18 @@
+{
+  "type": "record",
+  "name": "ConfigurationSchemaVersion",
+  "namespace": "net.corda.data.config",
+  "doc": "Schema version number for a configuration section",
+  "fields": [
+    {
+      "name": "majorVersion",
+      "type": "int",
+      "doc": "The major version number for the schema"
+    },
+    {
+      "name": "minorVersion",
+      "type": "int",
+      "doc": "The minor version number for the schema"
+    }
+  ]
+}

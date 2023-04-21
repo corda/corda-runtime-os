@@ -1,0 +1,42 @@
+// This plugin is for providing the standard set of gradle used for all libraries
+
+plugins {
+    id 'java-library'
+    id 'biz.aQute.bnd.builder'
+}
+
+pluginManager.withPlugin('net.corda.plugins.cordapp-cpk') {
+    throw new StopExecutionException('corda-api.common-library plugin is incompatible with building CPKs and CPBs')
+}
+pluginManager.withPlugin('net.corda.plugins.cordapp-cpk2') {
+    throw new StopExecutionException('corda-api.common-library plugin is incompatible with building CPKs and CPBs')
+}
+
+configurations {
+    testArtifacts {
+        canBeResolved = false
+    }
+    testCompileOnly.extendsFrom compileOnly
+
+    integrationTestApi.extendsFrom testApi
+    integrationTestCompileOnly.extendsFrom testCompileOnly
+    integrationTestImplementation.extendsFrom testImplementation
+}
+
+
+dependencies {
+    compileOnly "org.jetbrains:annotations:$jetbrainsAnnotationsVersion"
+    testImplementation "org.junit.jupiter:junit-jupiter-api:$junitVersion"
+    testImplementation "org.junit.jupiter:junit-jupiter-params:$junitVersion"
+    testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junitVersion"
+}
+
+tasks.named('jar', Jar) {
+    archiveBaseName = "corda-" + project.name
+    bundle {
+        bnd '''\
+Bundle-Name: \${project.description}
+Bundle-SymbolicName: \${project.group}.\${project.name}
+'''
+    }
+}

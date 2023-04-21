@@ -1,0 +1,53 @@
+{
+  "type": "record",
+  "name": "ExternalEventState",
+  "namespace": "net.corda.data.flow.state.external",
+  "doc": "ExternalEventState contains the information required to send an external event and receive a response.",
+  "fields": [
+    {
+      "name": "requestId",
+      "type": "string",
+      "doc": "Unique ID of a single request. The ID remains the same for each resend."
+    },
+    {
+      "name": "status",
+      "doc": "Status of the state.",
+      "type": "net.corda.data.flow.state.external.ExternalEventStateStatus"
+    },
+    {
+      "name": "eventToSend",
+      "type": "net.corda.data.flow.event.external.ExternalEvent",
+      "doc": "The event to send"
+    },
+    {
+      "name": "retries",
+      "doc": "The amount of times the request has been sent.",
+      "type": "int",
+      "default": 0
+    },
+    {
+      "name": "factoryClassName",
+      "type": "string",
+      "doc": "The name of the factory to use when resuming the flow."
+    },
+    {
+      "name": "sendTimestamp",
+      "type": [
+        "null",
+        {
+          "type": "long",
+          "logicalType": "timestamp-millis"
+        }
+      ],
+      "doc": "Timestamp of when to send a message. If this time is in the past, then the message needs to be (re)sent."
+    },
+    {
+      "name": "response",
+      "doc": "The response received from the external worker.",
+      "type": [
+        "null",
+        "net.corda.data.flow.event.external.ExternalEventResponse"
+      ]
+    }
+  ]
+}

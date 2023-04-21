@@ -1,0 +1,16 @@
+{
+  "type": "record",
+  "name": "FlowMapperEvent",
+  "namespace": "net.corda.data.flow.event.mapper",
+  "fields": [
+    {
+      "name": "payload",
+      "type": [
+        "net.corda.data.flow.event.StartFlow",
+        "net.corda.data.flow.event.SessionEvent",
+        "net.corda.data.flow.event.mapper.ScheduleCleanup",
+        "net.corda.data.flow.event.mapper.ExecuteCleanup"
+      ]
+    }
+  ]
+}

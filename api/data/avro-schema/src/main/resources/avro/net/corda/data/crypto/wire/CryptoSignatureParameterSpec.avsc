@@ -1,0 +1,18 @@
+{
+  "type": "record",
+  "name": "CryptoSignatureParameterSpec",
+  "namespace": "net.corda.data.crypto.wire",
+  "doc": "Internal over-the-wire signature spec for crypto services",
+  "fields": [
+    {
+      "name": "className",
+      "type": "string",
+      "doc": "A fully qualified parameter class name, like java.security.spec.PSSParameterSpec."
+    },
+    {
+      "name": "bytes",
+      "type": "bytes",
+      "doc": "Serialized parameters."
+    }
+  ]
+}

@@ -1,0 +1,29 @@
+{
+  "type": "record",
+  "name": "TokenLedgerChange",
+  "namespace": "net.corda.data.ledger.utxo.token.selection.data",
+  "doc": "The changes in state due to a ledger transaction",
+  "fields": [
+      {
+        "name": "poolKey",
+        "type": "net.corda.data.ledger.utxo.token.selection.key.TokenPoolCacheKey",
+        "doc": "Token cache pool the change is for"
+      },
+      {
+        "name": "consumedTokens",
+        "type": {
+          "type": "array",
+          "items": "net.corda.data.ledger.utxo.token.selection.data.Token"
+        },
+        "doc": "List of tokens consumed by the transaction"
+      },
+      {
+        "name": "producedTokens",
+        "type": {
+          "type": "array",
+          "items": "net.corda.data.ledger.utxo.token.selection.data.Token"
+        },
+        "doc": "List of tokens produced by the transaction"
+      }
+    ]
+}

@@ -1,0 +1,42 @@
+{
+  "type": "record",
+  "name": "TokenFullSyncState",
+  "namespace": "net.corda.data.ledger.utxo.token.selection.data",
+  "doc": "The state of a full synchronization process",
+  "fields": [
+    {
+      "name": "startedTimestamp",
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+      },
+      "doc": "The date and time the last full synchronization completed."
+    },
+    {
+      "name": "lastBlockCompletedTimestamp",
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+      },
+      "doc": "The date and time the last full synchronization completed."
+    },
+    {
+      "name": "blocksCompleted",
+      "type": "int",
+      "doc": "The number of blocks completed"
+    },
+    {
+      "name": "recordsCompleted",
+      "type": "int",
+      "doc": "The number of records completed"
+    },
+    {
+      "name": "nextBlockStartOffset",
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+      },
+      "doc": "The (inclusive) timestamp to start reading the next block of records"
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "type": "record",
+  "name": "UniquenessCheckResultUnhandledExceptionAvro",
+  "namespace": "net.corda.data.uniqueness",
+  "fields": [
+    {
+      "name": "exception",
+      "type": "net.corda.data.ExceptionEnvelope"
+    }
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "type": "record",
+  "name": "FlowEvent",
+  "namespace": "net.corda.data.flow.event",
+  "fields": [
+    {
+      "name": "flowId",
+      "type": "string"
+    },
+    {
+      "name": "payload",
+      "type": [
+        "net.corda.data.flow.event.StartFlow",
+        "net.corda.data.flow.event.Wakeup",
+        "net.corda.data.flow.output.FlowStatus",
+        "net.corda.data.flow.event.SessionEvent",
+        "net.corda.data.flow.event.external.ExternalEventResponse"
+      ]
+    }
+  ]
+}

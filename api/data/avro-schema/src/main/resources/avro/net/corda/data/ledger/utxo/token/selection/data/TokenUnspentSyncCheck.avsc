@@ -1,0 +1,16 @@
+{
+  "type": "record",
+  "name": "TokenUnspentSyncCheck",
+  "namespace": "net.corda.data.ledger.utxo.token.selection.data",
+  "doc": "Represents a check for cached tokens to see if they are still unspent.",
+  "fields": [
+    {
+      "name": "tokenRefs",
+      "type": {
+        "type": "array",
+        "items": "string",
+        "doc": "List of cached token refs"
+      }
+    }
+  ]
+}
