@@ -28,13 +28,8 @@ data class LazyStateAndRefImpl<out T : ContractState>(
     val serializedStateAndRef: UtxoTransactionOutputDto,
     private val serializationService: SerializationService
 ) : StateAndRefInternal<@UnsafeVariance T> {
-
-    private val representedState: TransactionState<@UnsafeVariance T> by lazy(LazyThreadSafetyMode.PUBLICATION) {
-        serializedStateAndRef.deserializeTransactionState<@UnsafeVariance T>(serializationService)
-    }
-
-    private val representedStateRef:StateRef by lazy(LazyThreadSafetyMode.PUBLICATION) {
-        serializedStateAndRef.getStateRef()
+    private val stateAndRef: StateAndRef<@UnsafeVariance T> by lazy(LazyThreadSafetyMode.PUBLICATION) {
+        serializedStateAndRef.deserializeToStateAndRef(serializationService)
     }
 
     override fun toUtxoTransactionOutputDto(
@@ -45,11 +40,11 @@ data class LazyStateAndRefImpl<out T : ContractState>(
     }
 
     override fun getState(): TransactionState<@UnsafeVariance T> {
-        return representedState
+        return stateAndRef.state
     }
 
     override fun getRef(): StateRef {
-        return representedStateRef
+        return stateAndRef.ref
     }
 
     /**
@@ -78,9 +73,9 @@ data class LazyStateAndRefImpl<out T : ContractState>(
 }
 
 @Suppress("UNCHECKED_CAST")
-private fun <T : ContractState> UtxoTransactionOutputDto.deserializeTransactionState(
+private fun <T : ContractState> UtxoTransactionOutputDto.deserializeToStateAndRef(
     serializationService: SerializationService
-): TransactionState<T> {
+): StateAndRef<T> {
     val info = try{
         serializationService.deserialize<UtxoOutputInfoComponent>(info)
     } catch (e: Exception){
@@ -91,13 +86,13 @@ private fun <T : ContractState> UtxoTransactionOutputDto.deserializeTransactionS
     } catch (e: Exception){
         throw CordaRuntimeException("Deserialization of $data into ContractState failed.", e)
     }
-    return TransactionStateImpl(
-        contractState as T,
-        info.notaryName,
-        info.notaryKey,
-        info.getEncumbranceGroup()
+    return StateAndRefImpl(
+        state = TransactionStateImpl(
+            contractState as T,
+            info.notaryName,
+            info.notaryKey,
+            info.getEncumbranceGroup()
+        ),
+        ref = StateRef(parseSecureHash(transactionId), leafIndex)
     )
 }
-
-private fun UtxoTransactionOutputDto.getStateRef(): StateRef =
-    StateRef(parseSecureHash(transactionId), leafIndex)
