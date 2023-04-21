@@ -15,8 +15,8 @@ import org.corda.weft.parameters.ParameterType
 import org.corda.weft.parameters.TypedParameter
 import org.corda.weft.proxies.getClientProxy
 
-@InitiatedBy(protocol = "invoke_facade_method")
-class FacadeInvocationResponderFlow : ResponderFlow , SampleTokensFacade {
+@InitiatedBy(protocol = "proxy1")
+class ProxyResponderFlow : ResponderFlow , SampleTokensFacade {
     private companion object {
         private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
@@ -26,7 +26,7 @@ class FacadeInvocationResponderFlow : ResponderFlow , SampleTokensFacade {
         val request = session.receive(String::class.java)
         //val response = "$request:Bye"
         val facadeRequest = FacadeRequest(FacadeId("", mutableListOf("com", "r3", "tokens", "sample"), "v1.0"),
-            "hello",  listOf(TypedParameterValue(TypedParameter("greeting", ParameterType.StringType), request)))
+            "get-balance",  listOf(TypedParameterValue(TypedParameter("greeting", ParameterType.StringType), request)))
         val facade = FacadeReaders.JSON.read(
             """{ "id": "/com/r3/tokens/sample/v1.0",
                   "commands": { 

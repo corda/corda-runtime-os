@@ -57,7 +57,15 @@ class FacadeInvocationFlow : ClientStartableFlow {
                         "out": {
                             "greeting": "string"
                             }
-                        } 
+                        },
+                    "get-balance": {
+                        "in": {
+                            "greeting": "string"
+                            },
+                        "out": {
+                            "greeting": "string"
+                            }
+                        }
                     }
                 }""".trimIndent()
         )

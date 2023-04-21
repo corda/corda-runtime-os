@@ -12,4 +12,6 @@ interface SampleTokensFacade {
     @BindsFacadeMethod("hello")
     fun getHello(greeting: String): @QualifiedWith("greeting") InteropAction<String>
 
+    @BindsFacadeMethod("get-balance")
+    fun getBalance(greeting: String): @QualifiedWith("greeting") InteropAction<String>
 }

@@ -9,7 +9,7 @@
         },
         {
           "facade-method": "get-balance",
-          "flow-name": "net.cordapp.testing.testflows.FacadeInvocationResponderFlow"
+          "flow-name": "net.cordapp.testing.testflows.ProxyResponderFlow"
         }
       ]
     },

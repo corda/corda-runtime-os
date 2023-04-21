@@ -13,7 +13,7 @@ typealias HierarchicalName = List<String>
  * @param name The name of the facade, e.g. "platform/tokens", expressed as a [HierarchicalName].
  * @param version The version identifier of the facade, e.g. "1.0".
  */
-data class FacadeId(val owner: String, val name: HierarchicalName, val version: String) {
+data class FacadeId(val owner: String, val name: List<String> = emptyList(), val version: String) {
 
     companion object {
 
