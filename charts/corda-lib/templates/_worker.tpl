@@ -236,6 +236,8 @@ spec:
         {{- include "corda.clusterDbEnv" $ | nindent 10 }}
         {{- end }}
         args:
+          - "--workspace-dir=/work"
+          - "--temp-dir=/tmp"
           - "-mbootstrap.servers={{ include "corda.kafkaBootstrapServers" $ }}"
           {{- if $.Values.kafka.sasl.enabled }}
           - "-msasl.jaas.config=org.apache.kafka.common.security.{{- if eq $.Values.kafka.sasl.mechanism "PLAIN" }}plain.PlainLoginModule{{- else }}scram.ScramLoginModule{{- end }} required username=\"$(SASL_USERNAME)\" password=\"$(SASL_PASSWORD)\";"
@@ -276,6 +278,9 @@ spec:
         volumeMounts:
           - mountPath: "/tmp"
             name: "tmp"
+            readOnly: false
+          - mountPath: "/work"
+            name: "work"
             readOnly: false
           {{- if and $.Values.kafka.tls.enabled $.Values.kafka.tls.truststore.valueFrom.secretKeyRef.name }}
           - mountPath: "/certs"
@@ -334,6 +339,8 @@ spec:
         {{- end }}
       volumes:
         - name: tmp
+          emptyDir: {}
+        - name: work
           emptyDir: {}
         {{- if and $.Values.kafka.tls.enabled $.Values.kafka.tls.truststore.valueFrom.secretKeyRef.name }}
         - name: certs
