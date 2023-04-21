@@ -5,15 +5,18 @@ import net.corda.application.impl.services.json.JsonMarshallingServiceImpl
 import net.corda.crypto.testkit.SecureHashUtils.randomSecureHash
 import net.corda.ledger.common.data.transaction.PrivacySalt
 import net.corda.ledger.common.data.transaction.TransactionStatus
-import net.corda.ledger.persistence.json.impl.ContractStateVaultJsonFactoryImpl
+import net.corda.ledger.persistence.json.DefaultContractStateVaultJsonFactory
+import net.corda.ledger.persistence.json.impl.DefaultContractStateVaultJsonFactoryImpl
 import net.corda.ledger.persistence.json.impl.ContractStateVaultJsonFactoryRegistryImpl
 import net.corda.ledger.persistence.utxo.CustomRepresentation
 import net.corda.ledger.persistence.utxo.UtxoRepository
 import net.corda.ledger.persistence.utxo.UtxoTransactionReader
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.application.marshalling.JsonMarshallingService
+import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.StateAndRef
+import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.TransactionState
 import net.corda.v5.ledger.utxo.query.json.ContractStateVaultJsonFactory
 import org.assertj.core.api.Assertions.assertThat
@@ -25,6 +28,7 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.whenever
 import java.lang.IllegalArgumentException
 import java.security.PublicKey
 import javax.persistence.EntityManager
@@ -54,7 +58,6 @@ class UtxoPersistenceServiceImplTest {
 
     @Suppress("unchecked_cast")
     private val storage = ContractStateVaultJsonFactoryRegistryImpl().apply {
-        registerJsonFactory(ContractStateVaultJsonFactoryImpl())
         registerJsonFactory(DummyStateJsonFactory() as ContractStateVaultJsonFactory<ContractState>)
         registerJsonFactory(InvalidStateJsonFactory() as ContractStateVaultJsonFactory<ContractState>)
     }
@@ -73,6 +76,7 @@ class UtxoPersistenceServiceImplTest {
         mock(),
         mock(),
         storage,
+        DefaultContractStateVaultJsonFactoryImpl(),
         JsonMarshallingServiceImpl(), // We could mock this but this is basically just a layer on top of Jackson
         UTCClock()
     )
@@ -101,7 +105,7 @@ class UtxoPersistenceServiceImplTest {
                     
                     },
                     "net.corda.v5.ledger.utxo.ContractState" : {
-                    
+                        "stateRef": "hash:0"
                     }
                 }
             """.trimIndent(),
@@ -114,6 +118,8 @@ class UtxoPersistenceServiceImplTest {
         val storage = ContractStateVaultJsonFactoryRegistryImpl().apply {
             registerJsonFactory(EmptyStateJsonFactory()) // Register the factory that returns empty string
         }
+        val emptyDefaultContractStateVaultJsonFactory = mock<DefaultContractStateVaultJsonFactory>()
+        whenever(emptyDefaultContractStateVaultJsonFactory.create(any(), any())).thenReturn("")
 
         val singlePersistenceService = UtxoPersistenceServiceImpl(
             mockEmFactory,
@@ -121,6 +127,7 @@ class UtxoPersistenceServiceImplTest {
             mock(),
             mock(),
             storage,
+            emptyDefaultContractStateVaultJsonFactory,
             JsonMarshallingServiceImpl(),
             UTCClock()
         )
@@ -162,6 +169,7 @@ class UtxoPersistenceServiceImplTest {
             expected = """
             {
               "net.corda.v5.ledger.utxo.ContractState" : {
+                "stateRef": "hash:0"
               },
               "net.corda.ledger.persistence.utxo.impl.DummyState" : {
                 "dummyField" : "DUMMY",
@@ -174,7 +182,7 @@ class UtxoPersistenceServiceImplTest {
     }
 
     @Test
-    fun `Persisting a transaction while no JSON factory is present for the given type will result in using the ContractState factory`() {
+    fun `Persisting a transaction while no JSON factory is present for the given type willstore the default state json`() {
         val tx = createMockTransaction(mapOf(
             0 to createStateAndRef(ContractState { emptyList() }) // State that has no specific factory
         ))
@@ -188,6 +196,7 @@ class UtxoPersistenceServiceImplTest {
             expected = """
             {
                 "net.corda.v5.ledger.utxo.ContractState" : {
+                    "stateRef": "hash:0"
                 }
             }
             """.trimIndent(),
@@ -196,13 +205,14 @@ class UtxoPersistenceServiceImplTest {
     }
 
     @Test
-    fun `Persisting a transaction while zero JSON factory is registered will result in an empty JSON string being stored`() {
+    fun `Persisting a transaction while zero JSON factories are registered will result still store the default state json`() {
         val emptyPersistenceService = UtxoPersistenceServiceImpl(
             mockEmFactory,
             mockRepository,
             mock(),
             mock(),
             ContractStateVaultJsonFactoryRegistryImpl(), // Empty storage
+            DefaultContractStateVaultJsonFactoryImpl(),
             JsonMarshallingServiceImpl(),
             UTCClock()
         )
@@ -216,14 +226,22 @@ class UtxoPersistenceServiceImplTest {
         assertThat(persistedJsonStrings).hasSize(1)
         val persisted = persistedJsonStrings.entries.first()
 
-        assertThat(persisted.value.json).isEqualTo("{}")
+        assertJsonContentEquals(
+            expected = """
+            {
+                "net.corda.v5.ledger.utxo.ContractState" : {
+                    "stateRef": "hash:0"
+                }
+            }
+            """.trimIndent(),
+            actual = persisted.value.json
+        )
     }
 
     @Test
     fun `if an exception is thrown in a json factory, the state should still be persisted and that field should be {}`() {
 
         val storage = ContractStateVaultJsonFactoryRegistryImpl().apply {
-            registerJsonFactory(ContractStateVaultJsonFactoryImpl()) // Register the default contract state factory
             registerJsonFactory(ExceptionStateFactory()) // Register the factory that throws an exception
         }
 
@@ -233,6 +251,7 @@ class UtxoPersistenceServiceImplTest {
             mock(),
             mock(),
             storage,
+            DefaultContractStateVaultJsonFactoryImpl(),
             JsonMarshallingServiceImpl(),
             UTCClock()
         )
@@ -254,6 +273,7 @@ class UtxoPersistenceServiceImplTest {
                 "net.corda.ledger.persistence.utxo.impl.ExceptionState" : {
                 },
                 "net.corda.v5.ledger.utxo.ContractState" : {
+                    "stateRef": "hash:0"
                 }
             }
             """.trimIndent(),
@@ -278,8 +298,12 @@ class UtxoPersistenceServiceImplTest {
         val txState = mock<TransactionState<T>> {
             on { contractState } doReturn returnState
         }
+        val secureHash = mock<SecureHash> {
+            on { toString() } doReturn "hash"
+        }
         return mock {
             on { state } doReturn txState
+            on { ref } doReturn StateRef(secureHash, 0)
         }
     }
 

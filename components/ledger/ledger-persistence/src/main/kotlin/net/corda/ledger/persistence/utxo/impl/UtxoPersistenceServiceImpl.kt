@@ -6,6 +6,7 @@ import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.persistence.common.InconsistentLedgerStateException
 import net.corda.ledger.persistence.json.ContractStateVaultJsonFactoryRegistry
+import net.corda.ledger.persistence.json.DefaultContractStateVaultJsonFactory
 import net.corda.ledger.persistence.utxo.CustomRepresentation
 import net.corda.ledger.persistence.utxo.UtxoPersistenceService
 import net.corda.ledger.persistence.utxo.UtxoRepository
@@ -22,6 +23,7 @@ import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.ledger.common.transaction.CordaPackageSummary
 import net.corda.v5.ledger.utxo.ContractState
+import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.query.json.ContractStateVaultJsonFactory
 import org.slf4j.LoggerFactory
@@ -35,6 +37,7 @@ class UtxoPersistenceServiceImpl(
     private val serializationService: SerializationService,
     private val sandboxDigestService: DigestService,
     private val factoryStorage: ContractStateVaultJsonFactoryRegistry,
+    private val defaultContractStateVaultJsonFactory: DefaultContractStateVaultJsonFactory,
     private val jsonMarshallingService: JsonMarshallingService,
     private val utcClock: Clock
 ) : UtxoPersistenceService {
@@ -165,7 +168,7 @@ class UtxoPersistenceServiceImpl(
         transaction.visibleStatesIndexes.forEach { visibleStateIndex ->
 
             val jsonString = transaction.getVisibleStates()[visibleStateIndex]?.let {
-                extractJsonDataFromState(it.state.contractState)
+                extractJsonDataFromState(it)
             } ?: run {
                 log.warn("Could not find visible state with index $visibleStateIndex, defaulting to empty JSON string.")
                 "{}"
@@ -241,9 +244,8 @@ class UtxoPersistenceServiceImpl(
         }
     }
 
-    private fun extractJsonDataFromState(
-        contractState: ContractState
-    ): String {
+    private fun extractJsonDataFromState(stateAndRef: StateAndRef<*>): String {
+        val contractState = stateAndRef.state.contractState
         val jsonMap = factoryStorage.getFactoriesForClass(contractState).associate {
 
             val jsonToParse = try {
@@ -264,6 +266,16 @@ class UtxoPersistenceServiceImpl(
                         "JSON that could not be processed: $jsonToParse. Defaulting to empty JSON.")
                 jsonMarshallingService.parse("{}", Any::class.java)
             }
+        }.toMutableMap()
+
+        try {
+            jsonMap[ContractState::class.java.name] = jsonMarshallingService.parse(
+                defaultContractStateVaultJsonFactory.create(stateAndRef, jsonMarshallingService),
+                Any::class.java
+            )
+        } catch (e: Exception) {
+            log.warn("Error while processing factory for class: ${ContractState::class.java.name}. Defaulting to empty JSON.")
+            jsonMarshallingService.parse("{}", Any::class.java)
         }
 
         return try {

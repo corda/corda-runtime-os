@@ -14,6 +14,7 @@ import net.corda.data.persistence.FindWithNamedQuery
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
 import net.corda.ledger.persistence.common.RequestHandler
 import net.corda.ledger.persistence.common.UnsupportedRequestTypeException
+import net.corda.ledger.persistence.json.impl.DefaultContractStateVaultJsonFactoryImpl
 import net.corda.ledger.persistence.query.execution.impl.VaultNamedQueryExecutorImpl
 import net.corda.ledger.persistence.utxo.UtxoRequestHandlerSelector
 import net.corda.persistence.common.ResponseFactory
@@ -37,12 +38,13 @@ class UtxoRequestHandlerSelectorImpl @Activate constructor(
 
     override fun selectHandler(sandbox: SandboxGroupContext, request: LedgerPersistenceRequest): RequestHandler {
         val persistenceService = UtxoPersistenceServiceImpl(
-            sandbox.getEntityManagerFactory(),
-            sandbox.getSandboxSingletonService(),
-            sandbox.getSerializationService(),
-            sandbox.getSandboxSingletonService(),
-            sandbox.getSandboxSingletonService(),
-            sandbox.getSandboxSingletonService(),
+            entityManagerFactory = sandbox.getEntityManagerFactory(),
+            repository = sandbox.getSandboxSingletonService(),
+            serializationService = sandbox.getSerializationService(),
+            sandboxDigestService = sandbox.getSandboxSingletonService(),
+            factoryStorage = sandbox.getSandboxSingletonService(),
+            defaultContractStateVaultJsonFactory = DefaultContractStateVaultJsonFactoryImpl(),
+            jsonMarshallingService = sandbox.getSandboxSingletonService(),
             UTCClock()
         )
 
