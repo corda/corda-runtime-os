@@ -5,13 +5,13 @@ import net.corda.configuration.read.ConfigurationGetService
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.cipher.suite.SignatureSpecImpl
-import net.corda.crypto.cipher.suite.calculateHash
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.core.CryptoConsts.Categories.LEDGER
 import net.corda.crypto.core.CryptoConsts.Categories.NOTARY
 import net.corda.crypto.core.CryptoConsts.Categories.SESSION_INIT
 import net.corda.crypto.core.ShortHash
 import net.corda.crypto.core.ShortHashException
+import net.corda.crypto.core.fullId
 import net.corda.crypto.core.fullIdHash
 import net.corda.crypto.core.toByteArray
 import net.corda.crypto.hes.EphemeralKeyPairEncryptor
@@ -560,7 +560,7 @@ class DynamicMemberRegistrationService @Activate constructor(
             }.flatMapIndexed { index, ledgerKey ->
                 listOf(
                     String.format(LEDGER_KEYS_KEY, index) to keyEncodingService.encodeAsString(ledgerKey),
-                    String.format(LEDGER_KEY_HASHES_KEY, index) to ledgerKey.calculateHash().value,
+                    String.format(LEDGER_KEY_HASHES_KEY, index) to ledgerKey.fullId(),
                     String.format(LEDGER_KEY_SIGNATURE_SPEC, index) to getSignatureSpec(
                         ledgerKeys[index],
                         context[String.format(LEDGER_KEY_SIGNATURE_SPEC, index)]
@@ -584,7 +584,7 @@ class DynamicMemberRegistrationService @Activate constructor(
                 val spec = context[specKey]
                 listOf(
                     String.format(PARTY_SESSION_KEYS_PEM, index) to keyEncodingService.encodeAsString(sessionPublicKey),
-                    String.format(SESSION_KEYS_HASH, index) to sessionPublicKey.calculateHash().value,
+                    String.format(SESSION_KEYS_HASH, index) to sessionPublicKey.fullId(),
                     specKey to getSignatureSpec(
                         sessionKey,
                         spec,

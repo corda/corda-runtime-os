@@ -3,7 +3,6 @@ package net.corda.membership.impl.registration.staticnetwork
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.cipher.suite.KeyEncodingService
-import net.corda.crypto.cipher.suite.PublicKeyHash
 import net.corda.crypto.cipher.suite.SignatureSpecs
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.client.hsm.HSMRegistrationClient
@@ -818,7 +817,7 @@ class StaticMemberRegistrationServiceTest {
                         it.publicKey == defaultKey
                     }
                     .allMatch {
-                        it.publicKeyHash == PublicKeyHash.calculate(defaultKey)
+                        it.publicKeyHash == defaultKey.fullIdHash()
                     }
                     .allMatch {
                         it.spec.signatureName == SignatureSpecs.RSA_SHA512.signatureName
