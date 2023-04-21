@@ -105,6 +105,7 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.slf4j.LoggerFactory
 import java.io.StringWriter
+import java.net.ServerSocket
 import java.net.URL
 import java.nio.ByteBuffer
 import java.security.Key
@@ -159,7 +160,6 @@ class P2PLayerEndToEndTest {
         Host(
             listOf(aliceId),
             "www.alice.net",
-            10500,
             Certificates.truststoreCertificatePem,
             bootstrapConfig,
             false,
@@ -168,7 +168,6 @@ class P2PLayerEndToEndTest {
             Host(
                 listOf(chipId),
                 "chip.net",
-                10501,
                 Certificates.truststoreCertificatePem,
                 bootstrapConfig,
                 false,
@@ -211,7 +210,6 @@ class P2PLayerEndToEndTest {
         Host(
             listOf(receiverId),
             "www.receiver.net",
-            10502,
             Certificates.ecTrustStorePem,
             bootstrapConfig,
             false,
@@ -220,7 +218,6 @@ class P2PLayerEndToEndTest {
             Host(
                 listOf(senderId),
                 "www.sender.net",
-                10503,
                 Certificates.ecTrustStorePem,
                 bootstrapConfig,
                 false,
@@ -262,7 +259,6 @@ class P2PLayerEndToEndTest {
         Host(
             listOf(receiverId, senderId),
             "www.alice.net",
-            10500,
             Certificates.truststoreCertificatePem,
             bootstrapConfig,
             false,
@@ -296,7 +292,6 @@ class P2PLayerEndToEndTest {
         Host(
             listOf(aliceId),
             "www.alice.net",
-            10500,
             Certificates.truststoreCertificatePem,
             bootstrapConfig,
             false,
@@ -305,7 +300,6 @@ class P2PLayerEndToEndTest {
             Host(
                 listOf(chipId),
                 "chip.net",
-                10501,
                 Certificates.truststoreCertificatePem,
                 bootstrapConfig,
                 false,
@@ -479,12 +473,16 @@ class P2PLayerEndToEndTest {
     private class Host(
         ourIdentities: List<Identity>,
         p2pAddress: String,
-        p2pPort: Int,
         trustStoreURL: URL,
         private val bootstrapConfig: SmartConfig,
         checkRevocation: Boolean,
         keyTemplate: KeySchemeTemplate,
     ) : AutoCloseable {
+        private val p2pPort by lazy {
+            ServerSocket(0).use {
+                it.localPort
+            }
+        }
         private val endpointInfo = object: EndpointInfo {
             override fun getProtocolVersion() = ProtocolConstants.PROTOCOL_VERSION
             override fun getUrl() = "https://$p2pAddress:$p2pPort$URL_PATH"
