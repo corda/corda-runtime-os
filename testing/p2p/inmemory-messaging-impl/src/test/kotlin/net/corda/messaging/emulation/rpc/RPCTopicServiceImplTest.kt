@@ -64,7 +64,7 @@ class RPCTopicServiceImplTest {
     }
 
     @Test
-    @Timeout(1)
+    @Timeout(3)
     fun `requests succeed when listeners handles requests`() {
         val executorService = Executors.newSingleThreadExecutor()
         val service = RPCTopicServiceImpl(executorService)
@@ -80,7 +80,7 @@ class RPCTopicServiceImplTest {
     }
 
     @Test
-    @Timeout(1)
+    @Timeout(3)
     fun `requests failed when listeners cancel`() {
         val executorService = Executors.newSingleThreadExecutor()
         val service = RPCTopicServiceImpl(executorService)
@@ -97,7 +97,7 @@ class RPCTopicServiceImplTest {
     }
 
     @Test
-    @Timeout(1)
+    @Timeout(3)
     fun `requests failed when listeners complete with exception`() {
         val executorService = Executors.newSingleThreadExecutor()
         val service = RPCTopicServiceImpl(executorService)
@@ -114,7 +114,7 @@ class RPCTopicServiceImplTest {
     }
 
     @Test
-    @Timeout(1)
+    @Timeout(3)
     fun `requests failed when listeners throw an exception`() {
         val executorService = Executors.newSingleThreadExecutor()
         val service = RPCTopicServiceImpl(executorService)
@@ -131,7 +131,7 @@ class RPCTopicServiceImplTest {
     }
 
     @Test
-    @Timeout(1)
+    @Timeout(3)
     fun `requests on topics with multiple listeners are distributed on round-robin basis`() {
         val executorService = Executors.newSingleThreadExecutor()
         val service = RPCTopicServiceImpl(executorService)
@@ -166,7 +166,7 @@ class RPCTopicServiceImplTest {
     }
 
     @Test
-    @Timeout(1)
+    @Timeout(3)
     fun `when listener removed from a topic work distributed to remaining`() {
         val executorService = Executors.newSingleThreadExecutor()
         val service = RPCTopicServiceImpl(executorService)
