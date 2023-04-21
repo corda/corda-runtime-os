@@ -8,8 +8,10 @@ import org.hamcrest.MatcherAssert.assertThat
 import org.hamcrest.Matchers.instanceOf
 import org.hamcrest.Matchers.`is`
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.parallel.Isolated
 import java.security.PublicKey
 
+@Isolated
 class BaseSerializationServiceTest {
 
     companion object {
