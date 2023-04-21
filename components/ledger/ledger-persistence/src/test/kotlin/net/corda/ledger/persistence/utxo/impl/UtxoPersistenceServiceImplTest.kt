@@ -242,7 +242,6 @@ class UtxoPersistenceServiceImplTest {
     fun `if an exception is thrown in a json factory, the state should still be persisted and that field should be {}`() {
 
         val storage = ContractStateVaultJsonFactoryRegistryImpl().apply {
-            registerJsonFactory(ContractStateVaultJsonFactoryImpl()) // Register the default contract state factory
             registerJsonFactory(ExceptionStateFactory()) // Register the factory that throws an exception
         }
 
@@ -252,6 +251,7 @@ class UtxoPersistenceServiceImplTest {
             mock(),
             mock(),
             storage,
+            DefaultContractStateVaultJsonFactoryImpl(),
             JsonMarshallingServiceImpl(),
             UTCClock()
         )
