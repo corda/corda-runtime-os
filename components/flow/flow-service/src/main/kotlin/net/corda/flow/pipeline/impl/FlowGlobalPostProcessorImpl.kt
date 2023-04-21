@@ -13,6 +13,7 @@ import net.corda.flow.pipeline.events.FlowEventContext
 import net.corda.flow.pipeline.exceptions.FlowPlatformException
 import net.corda.flow.pipeline.factory.FlowMessageFactory
 import net.corda.flow.pipeline.factory.FlowRecordFactory
+import net.corda.flow.state.FlowCheckpoint
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.records.Record
 import net.corda.schema.configuration.FlowConfig.SESSION_FLOW_CLEANUP_TIME
@@ -61,9 +62,6 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
         val doesCheckpointExist = checkpoint.doesExist
 
         return checkpoint.sessions
-            .filter {
-                verifyCounterparty(context, it, now, doesCheckpointExist)
-            }
             .map { sessionState ->
                 sessionManager.getMessagesToSend(
                     sessionState,
@@ -71,6 +69,9 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
                     context.config,
                     checkpoint.flowKey.identity
                 )
+            }
+            .filter { (sessionState, _) ->
+                verifyCounterparty(context, sessionState, now, checkpoint)
             }
             .onEach { (updatedSessionState, _) ->
                 if (doesCheckpointExist) {
@@ -85,8 +86,10 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
         context: FlowEventContext<Any>,
         sessionState: SessionState,
         now: Instant,
-        doesCheckpointExist: Boolean,
+        checkpoint: FlowCheckpoint,
     ): Boolean {
+        val doesCheckpointExist = checkpoint.doesExist
+        val pendingPlatformError = checkpoint.pendingPlatformError != null
         val counterparty: MemberX500Name = MemberX500Name.parse(sessionState.counterpartyIdentity.x500Name!!)
         val groupReader = membershipGroupReaderProvider.getGroupReader(context.checkpoint.holdingIdentity)
         val counterpartyExists: Boolean = null != groupReader.lookup(counterparty)
@@ -105,9 +108,10 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
             if (expiryTime < now) {
                 val msg = "[${context.checkpoint.holdingIdentity.x500Name}] has failed to create a flow with counterparty: " +
                         "[${counterparty}] as the recipient doesn't exist in the network."
-                if (doesCheckpointExist) {
-                    context.checkpoint.putSessionState(sessionManager.errorSession(sessionState))
+                sessionManager.errorSession(sessionState)
+                if (doesCheckpointExist && !pendingPlatformError) {
                     log.debug { "$msg. Throwing FlowPlatformException" }
+                    checkpoint.putSessionState(sessionState)
                     throw FlowPlatformException(msg)
                 } else {
                     log.debug { "$msg. Checkpoint is already marked for deletion." }
