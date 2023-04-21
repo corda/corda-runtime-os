@@ -206,11 +206,11 @@ allprojects {
             exclusiveContent {
                 forRepository {
                     maven {
-                        url "$artifactoryContextUrl/corda-dependencies-dev"
+                        url "$artifactoryContextUrl/corda-dependencies"
                     }
                 }
                 filter {
-                    includeGroup 'io.micrometer'
+                    includeGroup 'net.corda.micrometer'
                 }
             }
         }
