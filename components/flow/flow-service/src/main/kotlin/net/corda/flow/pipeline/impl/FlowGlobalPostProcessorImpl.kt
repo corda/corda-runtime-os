@@ -13,7 +13,6 @@ import net.corda.flow.pipeline.events.FlowEventContext
 import net.corda.flow.pipeline.exceptions.FlowPlatformException
 import net.corda.flow.pipeline.factory.FlowMessageFactory
 import net.corda.flow.pipeline.factory.FlowRecordFactory
-import net.corda.flow.state.FlowCheckpoint
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.records.Record
 import net.corda.schema.configuration.FlowConfig.SESSION_FLOW_CLEANUP_TIME
@@ -71,7 +70,7 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
                 )
             }
             .filter { (sessionState, _) ->
-                verifyCounterparty(context, sessionState, now, checkpoint)
+                verifyCounterparty(context, sessionState, now)
             }
             .onEach { (updatedSessionState, _) ->
                 if (doesCheckpointExist) {
@@ -85,11 +84,10 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
     private fun verifyCounterparty(
         context: FlowEventContext<Any>,
         sessionState: SessionState,
-        now: Instant,
-        checkpoint: FlowCheckpoint,
+        now: Instant
     ): Boolean {
+        val checkpoint = context.checkpoint
         val doesCheckpointExist = checkpoint.doesExist
-        val pendingPlatformError = checkpoint.pendingPlatformError != null
         val counterparty: MemberX500Name = MemberX500Name.parse(sessionState.counterpartyIdentity.x500Name!!)
         val groupReader = membershipGroupReaderProvider.getGroupReader(context.checkpoint.holdingIdentity)
         val counterpartyExists: Boolean = null != groupReader.lookup(counterparty)
@@ -109,7 +107,7 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
                 val msg = "[${context.checkpoint.holdingIdentity.x500Name}] has failed to create a flow with counterparty: " +
                         "[${counterparty}] as the recipient doesn't exist in the network."
                 sessionManager.errorSession(sessionState)
-                if (doesCheckpointExist && !pendingPlatformError) {
+                if (doesCheckpointExist) {
                     log.debug { "$msg. Throwing FlowPlatformException" }
                     checkpoint.putSessionState(sessionState)
                     throw FlowPlatformException(msg)

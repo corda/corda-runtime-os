@@ -2,7 +2,6 @@ package net.corda.flow.pipeline.impl
 
 import java.time.Instant
 import java.util.stream.Stream
-import net.corda.data.ExceptionEnvelope
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.mapper.FlowMapperEvent
@@ -341,26 +340,6 @@ class FlowGlobalPostProcessorImplTest {
             lastReceivedMessageTime = Instant.now().minusSeconds(86400)
         }
 
-        whenever(checkpoint.doesExist).thenReturn(false)
-        whenever(checkpoint.sessions).thenReturn(listOf(sessionState1, sessionState2, sessionState3))
-        whenever(checkpoint.holdingIdentity).thenReturn(HoldingIdentity(ALICE_X500_NAME, ""))
-
-        assertDoesNotThrow {
-            flowGlobalPostProcessor.postProcess(testContext)
-        }
-
-        verify(sessionManager, times(1)).errorSession(any())
-        verify(checkpoint, times(0)).putSessionState(any())
-    }
-
-    @Test
-    fun `Don't raise a error if counterparties cannot be confirmed within timeout window but there is already a pending platform error`() {
-        sessionState3.apply {
-            sessionStartTime = Instant.now().minusSeconds(86400)
-            lastReceivedMessageTime = Instant.now().minusSeconds(86400)
-        }
-
-        whenever(checkpoint.pendingPlatformError).thenReturn(ExceptionEnvelope())
         whenever(checkpoint.doesExist).thenReturn(false)
         whenever(checkpoint.sessions).thenReturn(listOf(sessionState1, sessionState2, sessionState3))
         whenever(checkpoint.holdingIdentity).thenReturn(HoldingIdentity(ALICE_X500_NAME, ""))
