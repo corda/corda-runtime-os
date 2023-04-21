@@ -11,12 +11,6 @@ fun PublicKey.calculateHash() =
     PublicKeyHash.calculate(this)
 
 /**
- * Returns the id as the first 12 characters of an SHA-256 hash from a given [PublicKey].
- */
-fun PublicKey.publicKeyId(): String =
-    PublicKeyHash.calculate(this).id
-
-/**
  * Container for a public key hash value.
  * Provides utilities for generating a public key hash by calculating it from a given [PublicKey], or by parsing a given
  * [String] or [ByteArray] input.
