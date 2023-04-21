@@ -1,0 +1,178 @@
+import static org.gradle.api.JavaVersion.VERSION_11
+import static org.gradle.jvm.toolchain.JavaLanguageVersion.of
+import static org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_11
+import static org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_1_8
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+
+plugins {
+    id 'org.jetbrains.kotlin.jvm' apply false
+    id 'base'
+    id 'io.gitlab.arturbosch.detekt' apply false
+    id 'jacoco' // test coverage
+    id 'corda.root-publish'
+    id 'io.snyk.gradle.plugin.snykplugin'
+    id 'com.github.ben-manes.versions' // discover possible dependency version upgrades
+}
+
+snyk {
+    api = project.findProperty("snykApiToken") ?: System.getenv('SNYK_TOKEN')
+    arguments = project.findProperty("snykArguments") ?: '--all-sub-projects'
+    severity = project.findProperty("snykSeverity") ?: 'low'
+    autoDownload = true
+    autoUpdate = true
+}
+
+ext.pluginsDir = "$buildDir/plugins"
+
+if (System.getenv("RELEASE_VERSION")?.trim()) {
+    version = System.getenv("RELEASE_VERSION")
+} else {
+    def versionSuffix = '-SNAPSHOT'
+    if (System.getenv('VERSION_SUFFIX')) {
+        versionSuffix = System.getenv('VERSION_SUFFIX')
+    }
+    version = "$cliHostVersion$versionSuffix"
+}
+
+subprojects {
+
+    group = 'net.corda.cli'
+    version rootProject.version
+
+    pluginManager.withPlugin('org.jetbrains.kotlin.jvm'){
+        apply plugin: 'io.gitlab.arturbosch.detekt'
+
+        kotlin {
+            jvmToolchain {
+                languageVersion = of(11)
+            }
+        }
+
+        dependencies {
+            detektPlugins "io.gitlab.arturbosch.detekt:detekt-formatting:$detektPluginVersion"
+        }
+    }
+
+    pluginManager.withPlugin('io.gitlab.arturbosch.detekt'){
+        dependencies {
+            detekt "io.gitlab.arturbosch.detekt:detekt-cli:$detektPluginVersion"
+            constraints {
+                detekt("org.yaml:snakeyaml:$snakeyamlVersion") {
+                    because "required until detekt plugin updates it's internal version of snakeYaml, not fixed as of detekt version 1.21"
+                }
+            }
+        }
+    }
+
+    tasks.withType(KotlinCompile).configureEach {
+        compilerOptions {
+            languageVersion = KOTLIN_1_8
+            apiVersion = KOTLIN_1_8
+            jvmTarget = JVM_11
+            verbose = true
+            javaParameters = true
+            freeCompilerArgs.addAll([
+                "-Xjvm-default=all"
+            ])
+        }
+    }
+
+    tasks.withType(GenerateModuleMetadata).configureEach {
+        enabled = false
+    }
+
+    tasks.register('compileAll') { task ->
+        description = "Compiles all the Kotlin and Java classes, including all of the test classes."
+        group = "verification"
+        task.dependsOn tasks.withType(AbstractCompile), tasks.withType(KotlinCompile)
+    }
+
+    apply plugin: 'io.gitlab.arturbosch.detekt'
+    apply plugin: 'jacoco'
+    apply plugin: 'maven-publish'
+
+    tasks.named("detekt").configure {
+        if(file("$projectDir/detekt-baseline.xml").exists()){
+            baseline = file("$projectDir/detekt-baseline.xml")
+        }
+        ignoreFailures = true
+        config.setFrom(files("$rootDir/detekt-config.yml"))
+        parallel = true
+        reports {
+            xml{
+                outputLocation.set(file("$projectDir/build/detekt-report.xml"))
+            }
+            txt.required.set(false)
+            sarif.required.set(false)
+            html.required.set(false)
+        }
+    }
+
+    tasks.register('releasableArtifacts') {
+        description = "Prints a list of all modules which will be released externally"
+        group = "Release"
+        if (project.hasProperty('releasable') && project.releasable.toBoolean()) {
+            logArtifacts(project)
+        }
+    }
+
+    tasks.register('unReleasableArtifacts') {
+        description = "Prints a list of all modules which will not be released externally"
+        group = "Release"
+        if (!project.hasProperty('releasable') || !project.releasable.toBoolean()) {
+            logArtifacts(project)
+        }
+    }
+
+}
+
+wrapper {
+    gradleVersion = '7.6'
+    distributionType = Wrapper.DistributionType.BIN
+}
+
+tasks.register("generateVersionedScripts"){
+    description 'Wrapper task to ensure we have the correct version specified in provided scripts'
+    dependsOn cleanDir, copyScripts
+}
+
+
+tasks.register("cleanDir", Delete){
+    description 'Removes any previously generated scripts'
+    delete 'build/generatedScripts' 
+}
+
+tasks.register("copyScripts", Copy){
+    mustRunAfter cleanDir
+    description 'Copy corda-cli scripts to a location in build dir and update to use correct version'
+
+    from 'templateScripts'
+    into 'build/generatedScripts' 
+    filter {
+            String line -> line.replaceAll("corda-cli-.(.)*.jar", "corda-cli-${version}.jar")
+        }
+}
+
+def isNonStable = { String version ->
+    def stableKeyword = ['RELEASE', 'FINAL', 'GA'].any { it -> version.toUpperCase().contains(it) }
+    def regex = /^[0-9,.v-]+(-r)?$/
+    return !stableKeyword && !(version ==~ regex)
+}
+tasks.named("dependencyUpdates").configure {
+    rejectVersionIf {
+        isNonStable(it.candidate.version) && !isNonStable(it.currentVersion)
+    }
+}
+
+// Automatically ran as part of build process
+assemble.finalizedBy(generateVersionedScripts)
+
+// helper to log artifacts we will or will not publish during a release process
+def logArtifacts(Project project) {
+    project.publishing.publications.each { publication ->
+        logger.quiet("\n${publication.groupId}:${publication.artifactId}:${publication.version} [${project.path}]")
+        publication.artifacts.each { artifact ->
+            logger.quiet(" * ${artifact.file.name}")
+        }
+    }
+}

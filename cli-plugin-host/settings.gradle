@@ -1,0 +1,152 @@
+pluginManagement {
+    repositories {
+        mavenLocal()
+        gradlePluginPortal()
+        mavenCentral()
+        def cordaUseCache = System.getenv("CORDA_USE_CACHE")
+        if (cordaUseCache != null) {
+            maven {
+                url = "${artifactoryContextUrl}/${cordaUseCache}"
+                name = "R3 Maven remote repositories"
+                authentication {
+                    basic(BasicAuthentication)
+                }
+                credentials {
+                    username = settings.ext.find('cordaArtifactoryUsername') ?: System.getenv('CORDA_ARTIFACTORY_USERNAME')
+                    password = settings.ext.find('cordaArtifactoryPassword') ?: System.getenv('CORDA_ARTIFACTORY_PASSWORD')
+                }
+            }
+        } else {
+            maven {
+                url "${artifactoryContextUrl}/corda-releases"
+                content {
+                    includeGroupByRegex 'net\\.corda\\.plugins(\\..*)?'
+                }
+            }
+            maven {
+                url "${artifactoryContextUrl}/corda-os-maven"
+                content {
+                    includeGroupByRegex 'net\\.corda\\.cordapp(\\..*)?'
+                }
+                authentication {
+                    basic(BasicAuthentication)
+                }
+                credentials {
+                    username = settings.ext.find('cordaArtifactoryUsername') ?: System.getenv('CORDA_ARTIFACTORY_USERNAME')
+                    password = settings.ext.find('cordaArtifactoryPassword') ?: System.getenv('CORDA_ARTIFACTORY_PASSWORD')
+                }
+            }
+            gradlePluginPortal()
+            maven {
+                url "${artifactoryContextUrl}/engineering-tools-maven"
+                authentication {
+                    basic(BasicAuthentication)
+                }
+                credentials {
+                    username = settings.ext.find('cordaArtifactoryUsername') ?: System.getenv('CORDA_ARTIFACTORY_USERNAME')
+                    password = settings.ext.find('cordaArtifactoryPassword') ?: System.getenv('CORDA_ARTIFACTORY_PASSWORD')
+                }
+            }
+        }
+    }
+
+    plugins {
+        id 'org.jetbrains.kotlin.jvm' version kotlinVersion
+        id 'io.gitlab.arturbosch.detekt' version detektPluginVersion
+        id 'com.r3.internal.gradle.plugins.r3ArtifactoryPublish' version internalPublishVersion
+        id 'com.gradle.enterprise' version gradleEnterpriseVersion
+        id 'com.gradle.common-custom-user-data-gradle-plugin' version gradleDataPlugin
+        id "com.jfrog.artifactory" version artifactoryPluginVersion
+        id 'io.snyk.gradle.plugin.snykplugin' version snykVersion
+        id 'com.github.ben-manes.versions' version dependencyCheckVersion
+    }
+}
+
+plugins {
+    id 'com.gradle.common-custom-user-data-gradle-plugin'
+    id 'com.gradle.enterprise'
+}
+
+dependencyResolutionManagement {
+    repositories {
+        mavenCentral()
+
+        def cordaUseCache = System.getenv("CORDA_USE_CACHE")
+        if (cordaUseCache != null) {
+            maven {
+                url = "$artifactoryContextUrl/$cordaUseCache"
+                name = "R3 Maven remote repositories"
+                authentication {
+                    basic(BasicAuthentication)
+                }
+                credentials {
+                    username = System.getenv('CORDA_ARTIFACTORY_USERNAME')
+                    password = System.getenv('CORDA_ARTIFACTORY_PASSWORD')
+                }
+            }
+        } else {
+            mavenCentral()
+
+            maven {
+                url = "$artifactoryContextUrl/corda-dependencies"
+            }
+            maven {
+                url = "$artifactoryContextUrl/${System.getenv('CORDA_CONSUME_REPOSITORY_KEY') ?: 'corda-os-maven'}"
+                credentials {
+                    username = settings.ext.find('cordaArtifactoryUsername') ?: System.getenv('CORDA_ARTIFACTORY_USERNAME')
+                    password = settings.ext.find('cordaArtifactoryPassword') ?: System.getenv('CORDA_ARTIFACTORY_PASSWORD')
+                }
+            }
+            maven {
+                url "${artifactoryContextUrl}/corda-enterprise"
+                authentication {
+                    basic(BasicAuthentication)
+                }
+                credentials {
+                    username = settings.ext.find('cordaArtifactoryUsername') ?: System.getenv('CORDA_ARTIFACTORY_USERNAME')
+                    password = settings.ext.find('cordaArtifactoryPassword') ?: System.getenv('CORDA_ARTIFACTORY_PASSWORD')
+                }
+            }
+        }
+    }
+}
+
+rootProject.name = "corda-cli-plugin-host"
+
+include 'api'
+include 'app'
+include 'plugins'
+include 'plugins:example'
+
+gradleEnterprise {
+    server = gradleEnterpriseUrl
+    allowUntrustedServer = false
+    def apiKey = settings.ext.find('CORDA_GRADLE_SCAN_KEY') ?: System.getenv('CORDA_GRADLE_SCAN_KEY')
+    accessKey = apiKey
+    buildScan {
+        if (apiKey?.trim()) {
+            publishAlways()
+            capture {
+                taskInputFiles = true
+            }
+            uploadInBackground = false
+        }
+    }
+    buildCache {
+        local {
+            enabled = true
+            removeUnusedEntriesAfterDays = 14  // Garbage collect if a cache item is not used in 2 weeks.
+        }
+        remote(gradleEnterprise.buildCache) {
+            // For the remote build cache we will populate cache only from Jenkins, all machines can pull from cache however.
+            if (System.getenv().containsKey("JENKINS_URL")) {
+                push = true
+                enabled = true
+            } else {
+                push = false
+                enabled = apiKey?.trim() ? true : false
+            }
+        }
+    }
+}
+

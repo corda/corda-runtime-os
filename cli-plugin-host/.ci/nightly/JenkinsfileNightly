@@ -1,0 +1,10 @@
+@Library('corda-shared-build-pipeline-steps@5.0.1') _
+
+cordaPipelineKubernetesAgent(
+    nexusAppId: 'net.corda-api-5.0',
+    runIntegrationTests: false,
+    dailyBuildCron: 'H 02 * * *',
+    publishOSGiImage: true,
+    gradleAdditionalArgs: '-Dscan.tag.Nightly-Build',
+    generateSbom: true
+    )

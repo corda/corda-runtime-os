@@ -1,0 +1,224 @@
+build:
+  maxIssues: 0
+  weights:
+  # complexity: 2
+  # LongParameterList: 1
+  # style: 1
+  # comments: 1
+
+complexity:
+  active: true
+  ComplexCondition:
+    active: true
+    excludes: "**/buildSrc/**"
+    threshold: 4
+  ComplexMethod:
+    active: true
+    excludes: "**/buildSrc/**"
+    threshold: 10
+    ignoreSingleWhenExpression: true
+  LargeClass:
+    active: true
+    excludes: "**/test/**,**/integration-test/**,**/*Test.kt,**/*Tests.kt,**/buildSrc/**"
+    threshold: 600
+  LongMethod:
+    active: true
+    excludes: "**/test/**,**/integration-test/**,**/*Test.kt,**/*Tests.kt,**/buildSrc/**"
+    threshold: 120
+  LongParameterList:
+    active: true
+    excludes: "**/buildSrc/**"
+    constructorThreshold: 6
+    functionThreshold: 6
+    ignoreDefaultParameters: false
+  NestedBlockDepth:
+    active: true
+    excludes: "**/buildSrc/**"
+    threshold: 4
+  TooManyFunctions:
+    active: true
+    excludes: "**/test/**,**/integration-test/**,**/*Test.kt,**/*Tests.kt,**/buildSrc/**"
+    thresholdInFiles: 15
+    thresholdInClasses: 15
+    thresholdInInterfaces: 15
+    thresholdInObjects: 15
+    thresholdInEnums: 15
+
+empty-blocks:
+  active: true
+  EmptyCatchBlock:
+    active: true
+    allowedExceptionNameRegex: "^(_|(ignore|expected).*)"
+    excludes: "**/buildSrc/**"
+  EmptyClassBlock:
+    active: true
+    excludes: "**/buildSrc/**"
+  EmptyDefaultConstructor:
+    active: true
+    excludes: "**/buildSrc/**"
+  EmptyDoWhileBlock:
+    active: true
+    excludes: "**/buildSrc/**"
+  EmptyElseBlock:
+    active: true
+    excludes: "**/buildSrc/**"
+  EmptyFinallyBlock:
+    active: true
+    excludes: "**/buildSrc/**"
+  EmptyForBlock:
+    active: true
+    excludes: "**/buildSrc/**"
+  EmptyIfBlock:
+    active: true
+    excludes: "**/buildSrc/**"
+  EmptyInitBlock:
+    active: true
+    excludes: "**/buildSrc/**"
+  EmptyKtFile:
+    active: true
+    excludes: "**/buildSrc/**"
+  EmptySecondaryConstructor:
+    active: true
+    excludes: "**/buildSrc/**"
+  EmptyWhenBlock:
+    active: true
+    excludes: "**/buildSrc/**"
+  EmptyWhileBlock:
+    active: true
+    excludes: "**/buildSrc/**"
+
+exceptions:
+  active: true
+  TooGenericExceptionCaught:
+    active: true
+    exceptionNames:
+      - ArrayIndexOutOfBoundsException
+      - Error
+      - Exception
+      - IllegalMonitorStateException
+      - NullPointerException
+      - IndexOutOfBoundsException
+      - RuntimeException
+      - Throwable
+    excludes: "**/buildSrc/**"
+  TooGenericExceptionThrown:
+    active: true
+    exceptionNames:
+      - Error
+      - Exception
+      - Throwable
+      - RuntimeException
+    excludes: "**/buildSrc/**"
+
+naming:
+  active: true
+  ClassNaming:
+    active: true
+    classPattern: '[A-Z$][a-zA-Z0-9$]*'
+    excludes: "**/buildSrc/**"
+  EnumNaming:
+    active: true
+    enumEntryPattern: '^[A-Z][_a-zA-Z0-9]*'
+    excludes: "**/buildSrc/**"
+  FunctionNaming:
+    active: true
+    functionPattern: '^([a-z$][a-zA-Z$0-9]*)|(`.*`)$'
+    excludeClassPattern: '$^'
+    excludes: "**/buildSrc/**"
+    ignoreOverridden: true
+  MatchingDeclarationName:
+    active: true
+    excludes: "**/buildSrc/**"
+  ObjectPropertyNaming:
+    active: true
+    constantPattern: '[A-Za-z][_A-Za-z0-9]*'
+    excludes: "**/buildSrc/**"
+    propertyPattern: '[A-Za-z][_A-Za-z0-9]*'
+    privatePropertyPattern: '(_)?[A-Za-z][_A-Za-z0-9]*'
+  PackageNaming:
+    active: true
+    excludes: "**/buildSrc/**"
+    packagePattern: '^[a-z]+(\.[a-z][A-Za-z0-9]*)*$'
+  TopLevelPropertyNaming:
+    active: true
+    constantPattern: '[A-Z][_A-Z0-9]*'
+    excludes: "**/buildSrc/**"
+    propertyPattern: '[A-Za-z][_A-Za-z0-9]*'
+    privatePropertyPattern: '_?[A-Za-z][_A-Za-z0-9]*'
+  VariableNaming:
+    active: true
+    excludes: "**/buildSrc/**"
+    variablePattern: '[a-z][A-Za-z0-9]*'
+    privateVariablePattern: '(_)?[A-Za-z][_A-Za-z0-9]*'
+    excludeClassPattern: '$^'
+    ignoreOverridden: true
+
+performance:
+  active: true
+  ForEachOnRange:
+    active: true
+    excludes: "**/buildSrc/**"
+  SpreadOperator:
+    active: true
+    excludes: "**/buildSrc/**"
+  UnnecessaryTemporaryInstantiation:
+    active: true
+    excludes: "**/buildSrc/**"
+
+potential-bugs:
+  active: true
+  DuplicateCaseInWhenExpression:
+    active: true
+    excludes: "**/buildSrc/**"
+  EqualsWithHashCodeExist:
+    active: true
+    excludes: "**/buildSrc/**"
+  ExplicitGarbageCollectionCall:
+    active: true
+    excludes: "**/buildSrc/**"
+  UnreachableCode:
+    active: true
+    excludes: "**/buildSrc/**"
+
+style:
+  active: true
+  ForbiddenComment:
+    active: true
+    excludes: "**/buildSrc/**"
+    values: 'TODO:,FIXME:,STOPSHIP:'
+  MagicNumber:
+    active: false
+    excludes: "**/test/**,**/integration-test/**,**/*Test.kt,**/*Tests.kt,**/buildSrc/**"
+    ignoreNumbers: '-1,0,1,2'
+    ignoreHashCodeFunction: true
+    ignorePropertyDeclaration: false
+    ignoreConstantDeclaration: true
+    ignoreCompanionObjectPropertyDeclaration: true
+    ignoreAnnotation: false
+    ignoreNamedArgument: true
+    ignoreEnums: true
+  MaxLineLength:
+    active: false
+    excludes: "**/buildSrc/**"
+    maxLineLength: 140
+    excludePackageStatements: true
+    excludeImportStatements: true
+  ModifierOrder:
+    active: true
+    excludes: "**/buildSrc/**"
+  OptionalAbstractKeyword:
+    active: true
+    excludes: "**/buildSrc/**"
+  SafeCast:
+    active: true
+    excludes: "**/buildSrc/**"
+  ThrowsCount:
+    active: true
+    excludes: "**/buildSrc/**"
+    max: 2
+  WildcardImport:
+    active: true
+    excludes: "**/buildSrc/**"
+    excludeImports: 'java.util.*,kotlinx.android.synthetic.*'
+  UnusedImports:
+    active: true

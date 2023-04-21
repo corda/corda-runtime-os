@@ -1,0 +1,172 @@
+plugins {
+    id 'org.jetbrains.kotlin.jvm'
+    id 'application'
+    id 'corda.common-publishing'
+}
+
+dependencies {
+    implementation project(":api")
+
+    implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion"
+
+    implementation "org.apache.logging.log4j:log4j-api:$log4jVersion"
+    implementation "org.apache.logging.log4j:log4j-core:$log4jVersion"
+    implementation "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
+
+    // removes jacksons large libs from plugins
+    implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
+    implementation "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:$jacksonVersion"
+    implementation "com.fasterxml.jackson.core:jackson-core:$jacksonVersion"
+
+    // removes the kafka clients large size from any plugins requiring it (topic config etc)
+    implementation "org.apache.servicemix.bundles:org.apache.servicemix.bundles.kafka-clients:$kafkaClientVersion"
+
+    implementation "org.slf4j:slf4j-api:$slf4jVersion"
+    implementation "org.pf4j:pf4j:${pf4jVersion}"
+    implementation "org.apache.commons:commons-lang3:${commonsLangVersion}"
+    implementation "org.yaml:snakeyaml:${snakeyamlVersion}"
+    implementation "com.github.kittinunf.fuel:fuel:${fuelVersion}"
+    implementation "com.github.kittinunf.fuel:fuel-json:${fuelVersion}"
+
+    api "info.picocli:picocli:${picoCliVersion}"
+
+    testImplementation "org.junit.jupiter:junit-jupiter:5.8.2"
+    testImplementation "com.github.stefanbirkner:system-lambda:1.2.1"
+}
+
+version rootProject.version
+group = "net.corda.cli.host"
+
+test {
+    useJUnitPlatform()
+}
+
+def appMainClass = "net.corda.cli.application.BootKt"
+def vcsUrl = System.getenv('GIT_URL') ?: 'https://github.com/corda/corda-cli-plugin-host.git'
+
+application {
+    mainClass = appMainClass
+}
+
+tasks.named("run") {
+    doFirst {
+        systemProperty "pf4j.pluginsDir", file(pluginsDir).absolutePath
+    }
+}
+
+def cordaCLi = tasks.named('jar', Jar) {
+    duplicatesStrategy = DuplicatesStrategy.INCLUDE
+
+    from (sourceSets.main.output)
+    from { configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) } } {
+        exclude "META-INF/*.SF"
+        exclude "META-INF/*.DSA"
+        exclude "META-INF/*.RSA"
+        exclude "META-INF/*.EC"
+        exclude "META-INF/INDEX.LIST"
+        exclude "META-INF/versions/*/module-info.class"
+        exclude "module-info.class"
+    }
+
+    manifest {
+        attributes["Main-Class"] = appMainClass
+        attributes["Multi-Release"] = true
+    }
+
+    archiveBaseName = 'corda-cli'
+    archiveVersion = project.version
+}
+
+tasks.register('publishOSGiImage', DeployableContainerBuilder) {
+    sourceTasks = Arrays.asList(cordaCLi.get())
+    dependsOn(cordaCLi)
+    overrideEntryName = 'cli'
+    overrideContainerName = 'cli'
+    arguments = Arrays.asList("-Dpf4j.pluginsDir=/opt/override/plugins")
+    if (project.hasProperty('jibRemotePublish')) {
+        remotePublish = jibRemotePublish.toBoolean()
+    }
+    if (project.hasProperty('baseImage')) {
+        baseImageName = baseImage
+    }
+    if (project.hasProperty('doDockerHubPublish')) {
+        dockerHubPublish = doDockerHubPublish.toBoolean()
+    }
+    if (project.hasProperty('useDockerDaemon')) {
+        useDaemon = useDockerDaemon.toBoolean()
+    }
+    if (project.hasProperty('isNightly')) {
+        nightlyBuild = isNightly.toBoolean()
+    }
+    if (project.hasProperty('workerBaseImageTag')) {
+        baseImageTag = workerBaseImageTag
+    }
+    environment = Map.of(
+            "CORDA_CLI_HOME_DIR", "/opt/override/home"
+    )
+    if (project.hasProperty('multiArchSupport')) {
+        multiArch = multiArchSupport.toBoolean()
+    }
+    if (project.hasProperty('targetPlatform')) {
+        targetPlatform = project.property('targetPlatform').toString()
+    }
+
+    setEntry = true
+}
+
+artifacts {
+    archives cordaCLi
+}
+
+// required as cordaCLi artifact not handled by r3Publish
+publishing {
+    publications {
+        configureEach {
+            pom {
+                name = 'corda-cli'
+                url = vcsUrl - '.git'
+                scm {
+                    url = vcsUrl
+                }
+
+                if ((project.hasProperty("licenseName")) && (project.hasProperty("licenseUrl"))) {
+                    licenses {
+                        license {
+                            name = licenseName
+                            url = licenseUrl
+                            distribution = licenseUrl
+                        }
+                    }
+                }
+
+                developers {
+                    developer {
+                        id = 'R3'
+                        name = 'R3'
+                        email = 'dev@corda.net'
+                    }
+                }
+            }
+        }
+
+        mavenCordaCLi(MavenPublication) {
+            artifact cordaCLi
+            artifactId = "corda-cli"
+            version = project.version
+        }
+    }
+    
+    if (project.hasProperty('maven.repo.s3') && project.hasProperty('releasable')) {
+            repositories {
+                maven {
+                    name = 'AWS'
+                    url = project.findProperty('maven.repo.s3')
+                    credentials(AwsCredentials) {
+                        accessKey "${System.getenv('AWS_ACCESS_KEY_ID')}"
+                        secretKey "${System.getenv('AWS_SECRET_ACCESS_KEY')}"
+                        sessionToken "${System.getenv('AWS_SESSION_TOKEN')}"
+                    }
+                }
+            }
+    }
+}
