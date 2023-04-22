@@ -12,6 +12,8 @@ import java.util.concurrent.ConcurrentHashMap
 /**
  * An implementation of [Sandbox].
  *
+ * @param id A unique identifier for this sandbox.
+ * @param publicBundles The set of [Bundle]s exposed to other sandboxes.
  * @param privateBundles The set of non-public [Bundle]s in this sandbox
  */
 internal open class SandboxImpl(
@@ -19,6 +21,9 @@ internal open class SandboxImpl(
     final override val publicBundles: Set<Bundle>,
     final override val privateBundles: Set<Bundle>
 ) : Sandbox {
+    constructor(publicBundles: Set<Bundle>, privateBundles: Set<Bundle>)
+        : this(UUID.randomUUID(), publicBundles, privateBundles)
+
     private val logger = LoggerFactory.getLogger(this::class.java)
 
     // The other sandboxes whose services, bundles and events this sandbox can receive.

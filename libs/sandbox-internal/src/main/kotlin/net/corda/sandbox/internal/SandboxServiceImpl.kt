@@ -1,8 +1,8 @@
-@file:JvmName("SandboxServiceUtils")
 package net.corda.sandbox.internal
 
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.libs.packaging.Cpk
+import net.corda.libs.packaging.core.CpkType
 import net.corda.sandbox.RequireSandboxHooks
 import net.corda.sandbox.SandboxContextService
 import net.corda.sandbox.SandboxCreationService
@@ -21,9 +21,11 @@ import org.osgi.framework.Bundle.RESOLVED
 import org.osgi.framework.BundleContext
 import org.osgi.framework.BundleException
 import org.osgi.framework.Constants.SYSTEM_BUNDLE_ID
+import org.osgi.framework.ServiceReference
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.osgi.service.component.runtime.ServiceComponentRuntime
 import org.slf4j.LoggerFactory
 import java.io.InputStream
 import java.security.AccessController.doPrivileged
@@ -41,18 +43,20 @@ import kotlin.streams.asSequence
 internal class SandboxServiceImpl @Activate constructor(
     @Reference
     private val bundleUtils: BundleUtils,
+    @Reference
+    serviceComponentRuntimeRef: ServiceReference<ServiceComponentRuntime>,
     private val bundleContext: BundleContext
 ) : SandboxCreationService, SandboxContextService, SingletonSerializeAsToken {
-    private val serviceComponentRuntimeBundleId = bundleUtils.getServiceRuntimeComponentBundle()?.bundleId
-        ?: throw SandboxException(
-            "The sandbox service cannot run without the Service Component Runtime bundle installed."
-        )
+    private val serviceComponentRuntimeBundleId = serviceComponentRuntimeRef.bundle.bundleId
 
     // Maps each bundle ID to the sandbox that the bundle is part of.
     private val bundleIdToSandbox = mutableMapOf<Long, Sandbox>()
 
     // Maps each bundle ID to the sandbox group that the bundle is part of.
     private val bundleIdToSandboxGroup = mutableMapOf<Long, SandboxGroup>()
+
+    // Optional public sandboxes keyed by the common symbolic name of their bundles.
+    private val optionalPublicSandboxes = mutableMapOf<String, Sandbox>()
 
     // The public sandboxes that have been created.
     private val publicSandboxes = mutableSetOf<Sandbox>()
@@ -65,23 +69,41 @@ internal class SandboxServiceImpl @Activate constructor(
 
     private val logger = LoggerFactory.getLogger(this::class.java)
 
-    override fun createPublicSandbox(publicBundles: Iterable<Bundle>, privateBundles: Iterable<Bundle>) {
+    override fun createPublicSandboxes(
+        mandatoryPublicBundles: Set<Bundle>,
+        optionalPublicBundles: Set<Bundle>,
+        privateBundles: Set<Bundle>
+    ) {
         if (publicSandboxes.isNotEmpty()) {
-            val publicSandbox = publicSandboxes.first()
-            check(publicBundles.toSet() == publicSandbox.publicBundles
-                    && privateBundles.toSet() == publicSandbox.privateBundles) {
-                "Public sandbox was already created with different bundles"
+            val mandatoryPublicSandbox = publicSandboxes.first()
+            check(mandatoryPublicBundles == mandatoryPublicSandbox.publicBundles
+                    && privateBundles == mandatoryPublicSandbox.privateBundles) {
+                "Mandatory public sandbox was already created with different bundles"
             }
-            logger.warn("Public sandbox was already created")
+            logger.warn("Mandatory public sandbox was already created")
+        } else {
+            // The first public sandbox is the mandatory one.
+            addPublicSandbox(SandboxImpl(mandatoryPublicBundles, privateBundles - mandatoryPublicBundles))
         }
-        val publicSandbox = SandboxImpl(UUID.randomUUID(), publicBundles.toSet(), privateBundles.toSet())
-        publicSandbox.allBundles.forEach { bundle ->
-            bundleIdToSandbox[bundle.bundleId] = publicSandbox
+
+        // All subsequent public sandboxes are optional.
+        optionalPublicBundles.groupBy(Bundle::getSymbolicName).forEach { (symbolicName, optionals) ->
+            if (optionals.none(::isSandboxed)) {
+                val sandbox = SandboxImpl(optionals.toSet(), emptySet())
+                optionalPublicSandboxes[symbolicName] = sandbox
+                addPublicSandbox(sandbox)
+            }
         }
-        publicSandbox.publicBundles.forEach { bundle ->
+    }
+
+    private fun addPublicSandbox(sandbox: SandboxImpl) {
+        sandbox.allBundles.forEach { bundle ->
+            bundleIdToSandbox.putIfAbsent(bundle.bundleId, sandbox)
+        }
+        sandbox.publicBundles.forEach { bundle ->
             publicSymbolicNames.add(bundle.symbolicName)
         }
-        publicSandboxes.add(publicSandbox)
+        publicSandboxes.add(sandbox)
     }
 
     override fun createSandboxGroup(cpks: Iterable<Cpk>, securityDomain: String) =
@@ -172,13 +194,21 @@ internal class SandboxServiceImpl @Activate constructor(
         }
 
         // Verify that CPK files were not tampered with
-        // TODO there is a small time window between verification and installation during which CPK files might still be modified
+        // TODO there is a small time-window between verification and installation during which CPK files might still be modified
         verifyCpks(cpks)
 
         // We track the bundles that are being created, so that we can start them all at once at the end if needed.
         val bundles = mutableSetOf<Bundle>()
+        val syntheticSymbolicNames = mutableSetOf<String>()
 
-        val newSandboxes = cpks.map { cpk ->
+        val newSandboxes = cpks.onEach { cpk ->
+            val symbolicName = cpk.metadata.cordappManifest.bundleSymbolicName
+            if (cpk.metadata.type == CpkType.SYNTHETIC) {
+                syntheticSymbolicNames += symbolicName
+            } else {
+                validateSymbolicName(symbolicName)
+            }
+        }.map { cpk ->
             val sandboxId = UUID.randomUUID()
 
             val mainBundle = installBundle(
@@ -192,13 +222,15 @@ internal class SandboxServiceImpl @Activate constructor(
                 "CPK main bundle $mainBundle cannot be a fragment"
             }
 
-            val libraryBundles = cpk.metadata.libraries.mapTo(LinkedHashSet()) { libraryJar ->
+            val libraryBundles = cpk.metadata.libraries.mapTo(linkedSetOf()) { libraryJar ->
                 installBundle(
                     "${cpk.metadata.cpkId.name}-${cpk.metadata.cpkId.version}/$libraryJar",
                     cpk.getResourceAsStream(libraryJar),
                     sandboxId,
                     securityDomain
-                )
+                ).also { bundle ->
+                    validateSymbolicName(bundle.symbolicName)
+                }
             }
 
             bundles.addAll(libraryBundles)
@@ -250,7 +282,7 @@ internal class SandboxServiceImpl @Activate constructor(
         val sandboxGroup = SandboxGroupImpl(
             id = UUID.randomUUID(),
             cpkSandboxes = newSandboxes,
-            publicSandboxes,
+            publicSandboxes = getPublicSandboxesWithout(syntheticSymbolicNames),
             ClassTagFactoryImpl(),
             bundleUtils
         )
@@ -260,6 +292,24 @@ internal class SandboxServiceImpl @Activate constructor(
         }
 
         return sandboxGroup
+    }
+
+    /**
+     * Get the platform's public sandboxes, excluding any optional
+     * sandboxes whose bundles will be replaced by a synthetic CPK.
+     */
+    private fun getPublicSandboxesWithout(exclusions: Set<String>): Set<Sandbox> {
+        return if (exclusions.isNotEmpty()) {
+            publicSandboxes - optionalPublicSandboxes.filterKeys(exclusions::contains).values.toSet()
+        } else {
+            publicSandboxes
+        }
+    }
+
+    private fun validateSymbolicName(symbolicName: String) {
+        sandboxForbidsThat(symbolicName in publicSymbolicNames) {
+            "Bundle $symbolicName shadows a Corda platform bundle."
+        }
     }
 
     /**
@@ -314,7 +364,7 @@ internal class SandboxServiceImpl @Activate constructor(
                 bundleContext.installBundle(sandboxLocation.toString(), it)
             }
         } catch (e: BundleException) {
-            if (bundleUtils.allBundles.none { bundle -> bundle.symbolicName == SANDBOX_HOOKS_BUNDLE }) {
+            if (bundleContext.bundles.none { bundle -> bundle.symbolicName == SANDBOX_HOOKS_BUNDLE }) {
                 logger.warn(
                     "The \"$SANDBOX_HOOKS_BUNDLE\" bundle is not installed. This can cause failures when installing " +
                             "sandbox bundles."
@@ -325,9 +375,6 @@ internal class SandboxServiceImpl @Activate constructor(
 
         sandboxForbidsThat(bundle.symbolicName == null) {
             "Bundle at $bundleSource does not have a symbolic name, which would prevent serialisation."
-        }
-        sandboxForbidsThat(bundle.symbolicName in publicSymbolicNames) {
-            "Bundle ${bundle.symbolicName} shadows a Corda platform bundle."
         }
         return bundle
     }
@@ -348,15 +395,15 @@ internal class SandboxServiceImpl @Activate constructor(
             }
         }
     }
-}
 
-// "Syntactic sugar" around throwing a SandboxException, just to shut Detekt up.
-private inline fun sandboxForbidsThat(condition: Boolean, message: () -> String) {
-    if (condition) {
-        throw SandboxException(message())
+    // "Syntactic sugar" around throwing a SandboxException, just to shut Detekt up.
+    private inline fun sandboxForbidsThat(condition: Boolean, message: () -> String) {
+        if (condition) {
+            throw SandboxException(message())
+        }
     }
-}
 
-// "Syntactic sugar" around throwing a SandboxException, just to shut Detekt up.
-private inline fun sandboxRequiresThat(condition: Boolean, message: () -> String)
-    = sandboxForbidsThat(!condition, message)
+    // "Syntactic sugar" around throwing a SandboxException, just to shut Detekt up.
+    private inline fun sandboxRequiresThat(condition: Boolean, message: () -> String)
+        = sandboxForbidsThat(!condition, message)
+}

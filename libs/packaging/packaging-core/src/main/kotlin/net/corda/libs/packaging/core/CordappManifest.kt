@@ -1,10 +1,11 @@
 package net.corda.libs.packaging.core
 
+import net.corda.data.packaging.CorDappManifest as CorDappManifestAvro
 import net.corda.libs.packaging.core.exception.CordappManifestException
-import org.osgi.framework.Constants
+import org.osgi.framework.Constants.BUNDLE_SYMBOLICNAME
+import org.osgi.framework.Constants.BUNDLE_VERSION
 import java.util.jar.Attributes
 import java.util.jar.Manifest
-import net.corda.data.packaging.CorDappManifest as CorDappManifestAvro
 
 /** A parsed CorDapp JAR [Manifest] providing access to CorDapp-specific attributes. */
 @Suppress("LongParameterList")
@@ -61,8 +62,8 @@ data class CordappManifest(
         private operator fun Manifest.get(key: String): String? = mainAttributes.getValue(key)
 
         private val DEFAULT_ATTRIBUTES = setOf(
-            MIN_PLATFORM_VERSION, TARGET_PLATFORM_VERSION, Constants.BUNDLE_SYMBOLICNAME,
-            Constants.BUNDLE_VERSION, CORDAPP_CONTRACT_NAME, CORDAPP_CONTRACT_VENDOR, CORDAPP_CONTRACT_VERSION,
+            MIN_PLATFORM_VERSION, TARGET_PLATFORM_VERSION, BUNDLE_SYMBOLICNAME,
+            BUNDLE_VERSION, CORDAPP_CONTRACT_NAME, CORDAPP_CONTRACT_VENDOR, CORDAPP_CONTRACT_VERSION,
             CORDAPP_CONTRACT_LICENCE, CORDAPP_WORKFLOW_NAME, CORDAPP_WORKFLOW_VENDOR, CORDAPP_WORKFLOW_VERSION,
             CORDAPP_WORKFLOW_LICENCE
         )
@@ -80,6 +81,30 @@ data class CordappManifest(
             other.attributes
         )
 
+        fun generateContractManifest(manifest: Manifest): CordappManifest {
+            val manifestAttributes = manifest.mainAttributes
+            val minPlatformVersion = manifestAttributes.parseInt(MIN_PLATFORM_VERSION) ?: DEFAULT_MIN_PLATFORM_VERSION
+            val bundleSymbolicName = manifestAttributes.getMandatoryValue(BUNDLE_SYMBOLICNAME)
+            val bundleVersion = manifestAttributes.getMandatoryValue(BUNDLE_VERSION)
+            return CordappManifest(
+                bundleSymbolicName = bundleSymbolicName,
+                bundleVersion = bundleVersion,
+                minPlatformVersion = minPlatformVersion,
+                targetPlatformVersion = minPlatformVersion,
+                type = CordappType.CONTRACT,
+                shortName = "<unknown>",
+                vendor = "<unknown>",
+                versionId = 1,
+                licence = "<unknown>",
+                attributes = mapOf(
+                    BUNDLE_SYMBOLICNAME to bundleSymbolicName,
+                    BUNDLE_VERSION to bundleVersion,
+                    MIN_PLATFORM_VERSION to minPlatformVersion.toString(),
+                    TARGET_PLATFORM_VERSION to minPlatformVersion.toString()
+                )
+            )
+        }
+
         /**
          * Parses the [manifest] to extract specific standard attributes.
          *
@@ -90,8 +115,8 @@ data class CordappManifest(
             val manifestAttributes = manifest.mainAttributes
 
             val minPlatformVersion = manifestAttributes.parseInt(MIN_PLATFORM_VERSION) ?: DEFAULT_MIN_PLATFORM_VERSION
-            val bundleSymbolicName = manifestAttributes.getMandatoryValue(Constants.BUNDLE_SYMBOLICNAME)
-            val bundleVersion = manifestAttributes.getMandatoryValue(Constants.BUNDLE_VERSION)
+            val bundleSymbolicName = manifestAttributes.getMandatoryValue(BUNDLE_SYMBOLICNAME)
+            val bundleVersion = manifestAttributes.getMandatoryValue(BUNDLE_VERSION)
 
             val attributes = manifestAttributes
                 .map { (key, value) -> key.toString() to value.toString() }
@@ -203,4 +228,3 @@ data class CordappManifest(
             attributes
         )
 }
-

@@ -1,10 +1,12 @@
 package net.corda.libs.packaging.internal.v2
 
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.libs.packaging.Cpk
 import net.corda.libs.packaging.PackagingConstants.CPK_FORMAT_VERSION2_MAINBUNDLE_PLACEHOLDER
 import net.corda.libs.packaging.PackagingConstants.CPK_LIB_FOLDER_V2
 import net.corda.libs.packaging.PackagingConstants.CPK_NAME_ATTRIBUTE
 import net.corda.libs.packaging.core.CordappManifest
+import net.corda.libs.packaging.core.CpkFormatVersion
 import net.corda.libs.packaging.core.CpkIdentifier
 import net.corda.libs.packaging.core.CpkManifest
 import net.corda.libs.packaging.core.CpkMetadata
@@ -37,6 +39,7 @@ import java.util.Collections
 import java.util.function.Consumer
 import java.util.jar.JarInputStream
 import java.util.jar.Manifest
+import java.util.zip.ZipEntry
 
 internal const val CPK_TYPE = "Corda-CPK-Type"
 
@@ -47,18 +50,20 @@ class CpkLoaderV2(
     private companion object {
         private val CPK_DIRECTORY_PERMISSIONS = asFileAttribute(setOf(OWNER_READ, OWNER_WRITE, OWNER_EXECUTE))
         private val CPK_FILE_PERMISSIONS = asFileAttribute(setOf(OWNER_READ, OWNER_WRITE))
+        private val UNSIGNED = SecureHashImpl("", ByteArray(8))
+        private val VERSION_2 = CpkFormatVersion(2, 0)
     }
 
     private fun writeAtomically(target: Path, writer: Consumer<SeekableByteChannel>): Path {
         val directory = target.parent
         @Suppress("SpreadOperator")
-        Files.createTempFile(directory, ".cpk-", "", *directory.posixOptional(CPK_FILE_PERMISSIONS)).also { tempFile ->
+        return Files.createTempFile(directory, ".cpk-", "", *directory.posixOptional(CPK_FILE_PERMISSIONS)).let { tempFile ->
             try {
                 Files.newByteChannel(tempFile, WRITE).use(writer::accept)
                 setReadOnly(tempFile)
 
                 // Rename our temporary file as the final step.
-                return Files.move(tempFile, target, ATOMIC_MOVE)
+                Files.move(tempFile, target, ATOMIC_MOVE)
             } catch (e: Exception) {
                 Files.delete(tempFile)
                 throw e
@@ -87,6 +92,62 @@ class CpkLoaderV2(
         }
     }
 
+    fun loadAsSyntheticContract(
+        source: ByteArray,
+        cacheDir: Path?,
+        cpkFileName: String?
+    ): Cpk {
+        val cpkFile = createCpkFile(source, cacheDir)
+        return CpkImpl(
+            metadata = generateContractMetadata(source),
+            jarFile = cpkFile.toFile(),
+            verifySignature = true,
+            path = cpkFile,
+            originalFileName = cpkFileName
+        )
+    }
+
+    private fun parseCPK(cpkBytes: ByteArray): Pair<Manifest, List<JarEntryAndBytes>> {
+        return JarInputStream(cpkBytes.inputStream(), true).use { jar ->
+            val manifest = jar.manifest ?: throw CordappManifestException("manifest must not be null")
+            val jarEntries = readJar(jar)
+            Pair(manifest, jarEntries)
+        }
+    }
+
+    private fun generateContractMetadata(cpkBytes: ByteArray): CpkMetadata {
+        val (manifest, cpkEntries) = parseCPK(cpkBytes)
+        val cordappManifest = CordappManifest.generateContractManifest(manifest)
+
+        // Calculate file hash
+        val fileChecksum = calculateFileHash(cpkBytes)
+
+        // Get code signers
+        val cordappCertificates = readCodeSigners(cpkEntries)
+        val signerSummaryHash = if (cordappCertificates.isEmpty()) {
+            UNSIGNED
+        } else {
+            cordappCertificates.signerSummaryHashForRequiredSigners()
+        }
+
+        return CpkMetadata(
+            cpkId = CpkIdentifier(
+                cordappManifest.bundleSymbolicName,
+                cordappManifest.bundleVersion,
+                signerSummaryHash
+            ),
+            manifest = CpkManifest(VERSION_2),
+            mainBundle = CPK_FORMAT_VERSION2_MAINBUNDLE_PLACEHOLDER,
+            fileChecksum = fileChecksum,
+            type = CpkType.SYNTHETIC,
+            cordappManifest = cordappManifest,
+            cordappCertificates = cordappCertificates,
+            libraries = emptyList(),
+            timestamp = clock.instant(),
+            externalChannelsConfig = null
+        )
+    }
+
     override fun loadCPK(
         source: ByteArray,
         cacheDir: Path?,
@@ -108,17 +169,12 @@ class CpkLoaderV2(
         readCpkMetadata(source)
 
     private fun readCpkMetadata(cpkBytes: ByteArray): CpkMetadata {
-
-        val (manifest, cpkEntries) = JarInputStream(cpkBytes.inputStream(), true).use {
-            val manifest = it.manifest ?: throw CordappManifestException("manifest must not be null")
-            val jarEntries = readJar(it).toList()
-            Pair(manifest, jarEntries)
-        }
+        val (manifest, cpkEntries) = parseCPK(cpkBytes)
 
         // Read manifest
         val cordappManifest = CordappManifest.fromManifest(manifest)
         val cpkManifest = CpkManifest(FormatVersionReader.readCpkFormatVersion(Manifest(manifest)))
-        val cpkType = manifest.mainAttributes.getValue(CPK_TYPE)?.let { CpkType.parse(it) } ?: CpkType.UNKNOWN
+        val cpkType = manifest.mainAttributes.getValue(CPK_TYPE)?.let(CpkType::parse) ?: CpkType.UNKNOWN
 
         // Calculate file hash
         val fileChecksum = calculateFileHash(cpkBytes)
@@ -159,18 +215,17 @@ class CpkLoaderV2(
     private fun readLibNames(jarEntryAndBytes: List<JarEntryAndBytes>) =
         jarEntryAndBytes
             .asSequence()
-            .map { it.entry }
+            .map(JarEntryAndBytes::entry)
             .filter { it.name.startsWith(CPK_LIB_FOLDER_V2) }
-            .map { it.name }
+            .map(ZipEntry::getName)
             .toList()
 
     private fun readCodeSigners(jarEntryAndBytes: List<JarEntryAndBytes>): Set<Certificate> =
         jarEntryAndBytes
             .asSequence()
-            .map { it.entry }
-            .first { SignatureCollector.isSignable(it) }
+            .map(JarEntryAndBytes::entry)
+            .first(SignatureCollector::isSignable)
             .codeSigners
-            ?.map { it.signerCertPath.certificates.first() }
-            ?.toSet()
+            ?.mapTo(linkedSetOf()) { it.signerCertPath.certificates.first() }
             ?: emptySet()
 }

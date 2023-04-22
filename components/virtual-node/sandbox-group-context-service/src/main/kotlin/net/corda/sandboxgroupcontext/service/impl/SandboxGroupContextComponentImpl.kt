@@ -32,7 +32,7 @@ import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.runtime.ServiceComponentRuntime
 import org.slf4j.LoggerFactory
 import java.time.Duration
-import java.util.Collections.unmodifiableList
+import java.util.Collections.unmodifiableSet
 import java.util.concurrent.CompletableFuture
 
 /**
@@ -57,30 +57,30 @@ class SandboxGroupContextComponentImpl @Activate constructor(
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
-        private val PLATFORM_PUBLIC_BUNDLE_NAMES: List<String> = unmodifiableList(
-            listOf(
-                "co.paralleluniverse.quasar-core.framework.extension",
-                "com.esotericsoftware.reflectasm",
-                "javax.persistence-api",
-                "jcl.over.slf4j",
-                "net.corda.application",
-                "net.corda.base",
-                "net.corda.crypto",
-                "net.corda.crypto-extensions",
-                "net.corda.ledger-common",
-                "net.corda.ledger-consensual",
-                "net.corda.ledger-utxo",
-                "net.corda.membership",
-                "net.corda.notary-plugin",
-                "net.corda.persistence",
-                "net.corda.serialization",
-                "org.apache.aries.spifly.dynamic.framework.extension",
-                "org.apache.felix.framework",
-                "org.hibernate.orm.core",
-                "org.jetbrains.kotlin.osgi-bundle",
-                "slf4j.api"
-            )
-        )
+        private val MANDATORY_PUBLIC_BUNDLE_NAMES: Set<String> = unmodifiableSet(setOf(
+            "co.paralleluniverse.quasar-core.framework.extension",
+            "com.esotericsoftware.reflectasm",
+            "javax.persistence-api",
+            "jcl.over.slf4j",
+            "net.corda.application",
+            "net.corda.base",
+            "net.corda.crypto",
+            "net.corda.crypto-extensions",
+            "net.corda.ledger-common",
+            "net.corda.ledger-consensual",
+            "net.corda.ledger-utxo",
+            "net.corda.membership",
+            "net.corda.notary-plugin",
+            "net.corda.persistence",
+            "net.corda.serialization",
+            "org.apache.aries.spifly.dynamic.framework.extension",
+            "org.apache.felix.framework",
+            "org.hibernate.orm.core",
+            "slf4j.api"
+        ))
+        private val OPTIONAL_PUBLIC_BUNDLE_NAMES = unmodifiableSet(setOf(
+            "org.jetbrains.kotlin.osgi-bundle"
+        ))
 
         // TODO - this isn't a sensible production default
         //  when configuration default handling is complete (CORE-3780), this should be moved
@@ -165,10 +165,20 @@ class SandboxGroupContextComponentImpl @Activate constructor(
     }
 
     private fun initialiseSandboxContext(allBundles: Array<Bundle>) {
-        val (publicBundles, privateBundles) = allBundles.partition { bundle ->
-            bundle.symbolicName in PLATFORM_PUBLIC_BUNDLE_NAMES
+        val mandatoryPublicBundles = linkedSetOf<Bundle>()
+        val optionalPublicBundles = linkedSetOf<Bundle>()
+        val privateBundles = linkedSetOf<Bundle>()
+        allBundles.forEach { bundle ->
+            when (bundle.symbolicName) {
+                in MANDATORY_PUBLIC_BUNDLE_NAMES ->
+                    mandatoryPublicBundles += bundle
+                in OPTIONAL_PUBLIC_BUNDLE_NAMES ->
+                    optionalPublicBundles += bundle
+                else ->
+                    privateBundles += bundle
+            }
         }
-        sandboxCreationService.createPublicSandbox(publicBundles, privateBundles)
+        sandboxCreationService.createPublicSandboxes(mandatoryPublicBundles, optionalPublicBundles, privateBundles)
     }
 
     override fun flushCache(): CompletableFuture<*> {

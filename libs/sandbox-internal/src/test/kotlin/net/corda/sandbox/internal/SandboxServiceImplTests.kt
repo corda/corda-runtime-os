@@ -20,6 +20,7 @@ import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Assertions.fail
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
@@ -30,6 +31,8 @@ import org.mockito.kotlin.whenever
 import org.osgi.framework.Bundle
 import org.osgi.framework.BundleContext
 import org.osgi.framework.BundleException
+import org.osgi.framework.ServiceReference
+import org.osgi.service.component.runtime.ServiceComponentRuntime
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.InputStream
@@ -43,9 +46,13 @@ import kotlin.random.Random.Default.nextBytes
 
 /** Tests of [SandboxServiceImpl]. */
 class SandboxServiceImplTests {
+    private val allActiveBundles = mutableListOf<Bundle>()
+
     private val frameworkBundle = mockBundle("org.apache.felix.framework")
     private val scrBundle = mockBundle("org.apache.felix.scr")
-    private val bundleContext = mock<BundleContext>()
+    private val bundleContext = mock<BundleContext>().apply {
+        whenever(bundles).thenReturn(allActiveBundles.toTypedArray())
+    }
 
     private val cpkAndContentsOne = CpkAndContents(String::class.java, Boolean::class.java)
     private val cpkOne = cpkAndContentsOne.cpk
@@ -53,22 +60,36 @@ class SandboxServiceImplTests {
     private val cpkAndContentsTwo = CpkAndContents(List::class.java, Set::class.java)
     private val cpkTwo = cpkAndContentsTwo.cpk
 
+    private val serviceComponentRuntimeRef = mock<ServiceReference<ServiceComponentRuntime>>().apply {
+        whenever(bundle).thenReturn(scrBundle)
+    }
     private val sandboxService = createSandboxService(setOf(cpkAndContentsOne, cpkAndContentsTwo))
 
     // Lists that are mutated to track which bundles have been started and uninstalled so far.
     private val startedBundles = mutableListOf<Bundle>()
     private val uninstalledBundles = mutableListOf<Bundle>()
 
+    @BeforeEach
+    fun setupBundles() {
+        allActiveBundles.add(frameworkBundle)
+        allActiveBundles.add(scrBundle)
+    }
+
     @AfterEach
-    fun clearBundles() = setOf(startedBundles, uninstalledBundles).forEach(MutableList<Bundle>::clear)
+    fun clearBundles() {
+        allActiveBundles.clear()
+        startedBundles.clear()
+        uninstalledBundles.clear()
+    }
 
     /**
      * Creates a [SandboxServiceImpl].
      *
      * @param cpksAndContents Used to set up the mock [BundleUtils] that back the sandbox service
      */
-    private fun createSandboxService(cpksAndContents: Collection<CpkAndContents>) =
-        SandboxServiceImpl(mockBundleUtils(cpksAndContents), bundleContext)
+    private fun createSandboxService(cpksAndContents: Collection<CpkAndContents>) = SandboxServiceImpl(
+        mockBundleUtils(cpksAndContents), serviceComponentRuntimeRef , bundleContext
+    )
 
     /** Mocks a [BundleUtils] that tracks which bundles have been started and uninstalled so far. */
     private fun mockBundleUtils(
@@ -78,8 +99,7 @@ class SandboxServiceImplTests {
         notUninstallableBundles: Collection<String> = emptySet()
     ) = mock<BundleUtils>().apply {
 
-        whenever(getServiceRuntimeComponentBundle()).thenReturn(scrBundle)
-        whenever(allBundles).thenReturn(listOf(frameworkBundle, scrBundle))
+        whenever(allBundles).thenReturn(allActiveBundles)
         whenever(resolveBundles(any())).thenReturn(true)
 
         cpksAndContents.forEach { contents ->
@@ -101,10 +121,12 @@ class SandboxServiceImplTests {
                 whenever(bundle.headers).thenReturn(Hashtable())
                 whenever(bundle.start()).then {
                     if (bundleName in notStartableBundles) throw BundleException("Start")
+                    allActiveBundles.add(bundle)
                     startedBundles.add(bundle)
                 }
                 whenever(bundle.uninstall()).then {
                     if (bundleName in notUninstallableBundles) throw BundleException("Uninstall")
+                    allActiveBundles.remove(bundle)
                     uninstalledBundles.add(bundle)
                 }
 
@@ -165,7 +187,7 @@ class SandboxServiceImplTests {
         val mockBundleUtils = mockBundleUtils(
             setOf(cpkAndContentsOne)
         )
-        val sandboxService = SandboxServiceImpl(mockBundleUtils, bundleContext)
+        val sandboxService = SandboxServiceImpl(mockBundleUtils, serviceComponentRuntimeRef, bundleContext)
 
         val e = assertThrows<SandboxException> {
             sandboxService.createSandboxGroup(setOf(cpkAndContentsOne.cpk))
@@ -179,7 +201,7 @@ class SandboxServiceImplTests {
             setOf(cpkAndContentsOne),
             notInstallableBundles = setOf(cpkAndContentsOne.mainBundleName!!)
         )
-        val sandboxService = SandboxServiceImpl(mockBundleUtils, bundleContext)
+        val sandboxService = SandboxServiceImpl(mockBundleUtils, serviceComponentRuntimeRef, bundleContext)
 
         val e = assertThrows<SandboxException> {
             sandboxService.createSandboxGroup(setOf(cpkOne))
@@ -192,6 +214,7 @@ class SandboxServiceImplTests {
         val cpkAndContentsWithBadMainBundle = cpkAndContentsOne.copy(mainBundleName = null)
         val sandboxService = SandboxServiceImpl(
             mockBundleUtils(setOf(cpkAndContentsWithBadMainBundle)),
+            serviceComponentRuntimeRef,
             bundleContext
         )
 
@@ -206,6 +229,7 @@ class SandboxServiceImplTests {
         val cpkAndContentsWithBadLibraryBundle = cpkAndContentsOne.copy(libraryBundleName = null)
         val sandboxService = SandboxServiceImpl(
             mockBundleUtils(setOf(cpkAndContentsWithBadLibraryBundle)),
+            serviceComponentRuntimeRef,
             bundleContext
         )
 
@@ -221,7 +245,7 @@ class SandboxServiceImplTests {
             setOf(cpkAndContentsOne),
             notStartableBundles = setOf(cpkAndContentsOne.mainBundleName!!)
         )
-        val sandboxService = SandboxServiceImpl(mockBundleUtils, bundleContext)
+        val sandboxService = SandboxServiceImpl(mockBundleUtils, serviceComponentRuntimeRef, bundleContext)
 
         val e = assertThrows<SandboxException> {
             sandboxService.createSandboxGroup(setOf(cpkOne))
@@ -235,7 +259,7 @@ class SandboxServiceImplTests {
             setOf(cpkAndContentsOne),
             notStartableBundles = setOf(cpkAndContentsOne.libraryBundleName!!)
         )
-        val sandboxService = SandboxServiceImpl(mockBundleUtils, bundleContext)
+        val sandboxService = SandboxServiceImpl(mockBundleUtils, serviceComponentRuntimeRef, bundleContext)
 
         val e = assertThrows<SandboxException> {
             sandboxService.createSandboxGroup(setOf(cpkOne))
@@ -337,27 +361,27 @@ class SandboxServiceImplTests {
         val sandboxService = createSandboxService(setOf(cpkAndContentsOne, cpkAndContentsTwo))
         val publicBundles = setOf(mockBundle())
         val privateBundles = setOf(mockBundle())
-        sandboxService.createPublicSandbox(publicBundles, privateBundles)
+        sandboxService.createPublicSandboxes(publicBundles, emptySet(), privateBundles)
         assertDoesNotThrow {
-            sandboxService.createPublicSandbox(publicBundles, privateBundles)
+            sandboxService.createPublicSandboxes(publicBundles, emptySet(), privateBundles)
         }
     }
 
     @Test
     fun `a public sandbox can't be created multiple times with different sets of bundles`() {
         val sandboxService = createSandboxService(setOf(cpkAndContentsOne, cpkAndContentsTwo))
-        sandboxService.createPublicSandbox(setOf(mockBundle()), setOf(mockBundle()))
+        sandboxService.createPublicSandboxes(setOf(mockBundle()), emptySet(), setOf(mockBundle()))
         val e = assertThrows<IllegalStateException> {
-            sandboxService.createPublicSandbox(setOf(mockBundle()), setOf(mockBundle()))
+            sandboxService.createPublicSandboxes(setOf(mockBundle()), emptySet(), setOf(mockBundle()))
         }
-        assertEquals("Public sandbox was already created with different bundles", e.message)
+        assertEquals("Mandatory public sandbox was already created with different bundles", e.message)
     }
 
     @Test
     fun `a bundle only has visibility of public bundles in public sandboxes`() {
         val publicPlatformBundle = mockBundle("public-platform-bundle")
         val privatePlatformBundle = mockBundle("private-platform-bundle")
-        sandboxService.createPublicSandbox(setOf(publicPlatformBundle), setOf(privatePlatformBundle))
+        sandboxService.createPublicSandboxes(setOf(publicPlatformBundle), emptySet(), setOf(privatePlatformBundle))
 
         val sandboxGroup = sandboxService.createSandboxGroup(setOf(cpkTwo))
         val sandbox = (sandboxGroup as SandboxGroupInternal).cpkSandboxes.single() as SandboxImpl
@@ -372,25 +396,10 @@ class SandboxServiceImplTests {
     }
 
     @Test
-    fun `throws if Felix SCR bundle is not installed`() {
-        val mockBundleUtils = mock<BundleUtils>().apply {
-            whenever(allBundles).thenReturn(listOf(frameworkBundle))
-        }
-
-        val e = assertThrows<SandboxException> { SandboxServiceImpl(mockBundleUtils, bundleContext) }
-        assertEquals(
-            "The sandbox service cannot run without the Service Component Runtime bundle installed.",
-            e.message
-        )
-    }
-
-    @Test
     fun `can retrieve calling sandbox group`() {
-        val mockBundleUtils = mockBundleUtils(setOf(cpkAndContentsOne)).apply {
-            whenever(getServiceRuntimeComponentBundle()).thenReturn(scrBundle)
-        }
+        val mockBundleUtils = mockBundleUtils(setOf(cpkAndContentsOne))
 
-        val sandboxService = SandboxServiceImpl(mockBundleUtils, bundleContext)
+        val sandboxService = SandboxServiceImpl(mockBundleUtils, serviceComponentRuntimeRef, bundleContext)
         val sandboxGroup = sandboxService.createSandboxGroup(setOf(cpkOne))
         val sandboxMainBundle = (sandboxGroup as SandboxGroupInternal).cpkSandboxes.single().mainBundle
 
@@ -405,7 +414,7 @@ class SandboxServiceImplTests {
             whenever(getBundle(any())).thenReturn(mock())
         }
 
-        val sandboxService = SandboxServiceImpl(mockBundleUtils, bundleContext)
+        val sandboxService = SandboxServiceImpl(mockBundleUtils, serviceComponentRuntimeRef, bundleContext)
         sandboxService.createSandboxGroup(setOf(cpkOne))
 
         assertNull(sandboxService.getCallingSandboxGroup())
@@ -433,6 +442,7 @@ class SandboxServiceImplTests {
                 setOf(cpkAndContentsOne),
                 notUninstallableBundles = setOf(cpkAndContentsOne.mainBundleName!!)
             ),
+            serviceComponentRuntimeRef,
             bundleContext
         )
 
@@ -449,6 +459,7 @@ class SandboxServiceImplTests {
                 setOf(cpkAndContentsOne),
                 notUninstallableBundles = setOf(cpkAndContentsOne.mainBundleName!!)
             ),
+            serviceComponentRuntimeRef,
             bundleContext
         )
 

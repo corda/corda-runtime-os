@@ -12,16 +12,10 @@ import org.osgi.framework.wiring.BundleWiring
 import org.osgi.framework.wiring.FrameworkWiring
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
-import org.osgi.service.component.annotations.Reference
-import org.osgi.service.component.runtime.ServiceComponentRuntime
 
 /** Handles bundle operations for the `SandboxCreationService` and the `SandboxContextService`. */
 @Component(service = [BundleUtils::class])
-internal class BundleUtils @Activate constructor(
-    @Reference
-    private val serviceComponentRuntime: ServiceComponentRuntime,
-    private val bundleContext: BundleContext
-) {
+internal class BundleUtils @Activate constructor(private val bundleContext: BundleContext) {
     private val systemBundle = bundleContext.getBundle(SYSTEM_BUNDLE_ID)
     private val arrayType = "\\[++(([BCDFIJSZ])|L([^;]++);)".toRegex()
 
@@ -82,14 +76,6 @@ internal class BundleUtils @Activate constructor(
             throw ClassNotFoundException(className)
         }
     }
-
-    /**
-     * Returns the bundle from which [serviceComponentRuntime] is loaded, or null if there is no such bundle.
-     *
-     * This exists to simplify mocking - we can provide one mock for recovering the `ServiceComponentRuntime` bundle
-     * during `SandboxServiceImpl` initialisation, and another mock for general retrieval of bundles based on classes.
-     */
-    fun getServiceRuntimeComponentBundle(): Bundle? = FrameworkUtil.getBundle(serviceComponentRuntime::class.java)
 
     /** Returns the list of all installed bundles. */
     val allBundles get() = bundleContext.bundles.toList()

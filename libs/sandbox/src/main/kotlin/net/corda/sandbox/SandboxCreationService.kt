@@ -10,8 +10,15 @@ import org.osgi.framework.Bundle
  * * CPK sandboxes are created from previously-installed CPKs
  */
 interface SandboxCreationService {
-    /** Creates a new public sandbox, containing the given [publicBundles] and [privateBundles]. */
-    fun createPublicSandbox(publicBundles: Iterable<Bundle>, privateBundles: Iterable<Bundle>)
+    /**
+     * Creates a new public sandbox, containing the given [mandatoryPublicBundles],
+     * [optionalPublicBundles] and [privateBundles].
+     */
+    fun createPublicSandboxes(
+        mandatoryPublicBundles: Set<Bundle>,
+        optionalPublicBundles: Set<Bundle>,
+        privateBundles: Set<Bundle>
+    )
 
     /**
      * Creates a new [SandboxGroup] in the [securityDomain] containing a sandbox for each of the [cpks].

@@ -5,6 +5,7 @@ import net.corda.sandbox.SandboxCreationService
 import net.corda.testing.sandboxes.CpiLoader
 import net.corda.testing.sandboxes.SandboxSetup
 import net.corda.testing.sandboxes.impl.SandboxSetupImpl.Companion.INSTALLER_NAME
+import org.osgi.framework.Bundle
 import org.osgi.framework.BundleContext
 import org.osgi.service.cm.ConfigurationAdmin
 import org.osgi.service.component.ComponentContext
@@ -43,7 +44,7 @@ class SandboxSetupImpl @Activate constructor(
         private const val WAIT_MILLIS = 100L
 
         // The names of the bundles to place as public bundles in the sandbox service's platform sandbox.
-        private val PLATFORM_PUBLIC_BUNDLE_NAMES: Set<String> = unmodifiableSet(setOf(
+        private val MANDATORY_PUBLIC_BUNDLE_NAMES: Set<String> = unmodifiableSet(setOf(
             "co.paralleluniverse.quasar-core.framework.extension",
             "com.esotericsoftware.reflectasm",
             "javax.persistence-api",
@@ -62,8 +63,10 @@ class SandboxSetupImpl @Activate constructor(
             "org.apache.felix.framework",
             "org.apache.felix.scr",
             "org.hibernate.orm.core",
-            "org.jetbrains.kotlin.osgi-bundle",
             "slf4j.api"
+        ))
+        private val OPTIONAL_PUBLIC_BUNDLE_NAMES = unmodifiableSet(setOf(
+            "org.jetbrains.kotlin.osgi-bundle"
         ))
 
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -85,10 +88,20 @@ class SandboxSetupImpl @Activate constructor(
             config.update(properties)
         }
 
-        val (publicBundles, privateBundles) = bundleContext.bundles.partition { bundle ->
-            bundle.symbolicName in PLATFORM_PUBLIC_BUNDLE_NAMES
+        val mandatoryPublicBundles = linkedSetOf<Bundle>()
+        val optionalPublicBundles = linkedSetOf<Bundle>()
+        val privateBundles = linkedSetOf<Bundle>()
+        bundleContext.bundles.forEach { bundle ->
+            when (bundle.symbolicName) {
+                in MANDATORY_PUBLIC_BUNDLE_NAMES ->
+                    mandatoryPublicBundles += bundle
+                in OPTIONAL_PUBLIC_BUNDLE_NAMES ->
+                    optionalPublicBundles += bundle
+                else ->
+                    privateBundles += bundle
+            }
         }
-        sandboxCreator.createPublicSandbox(publicBundles, privateBundles)
+        sandboxCreator.createPublicSandboxes(mandatoryPublicBundles, optionalPublicBundles, privateBundles)
     }
 
     /**

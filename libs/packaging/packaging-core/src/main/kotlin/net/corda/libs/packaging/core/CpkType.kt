@@ -8,11 +8,17 @@ import net.corda.data.packaging.CpkType as CpkTypeAvro
  * of the Corda runtime itself (and don't need to be resolved during dependency resolution)
  * and those that are not
  */
-enum class CpkType constructor(private val text : String?) : Comparable<CpkType> {
-    CORDA_API("corda-api"), UNKNOWN(null);
+enum class CpkType(private val text: String?) : Comparable<CpkType> {
+    CORDA_API("corda-api"), UNKNOWN(null), SYNTHETIC(null);
 
     companion object{
-        private val map = values().associateBy(CpkType::text)
+        private val map = buildMap {
+            for (cpkType in values()) {
+                cpkType.text?.also { text ->
+                    this[text] = cpkType
+                }
+            }
+        }
 
         /**
          * Parses [CpkType] from a [String], if the [String] cannot be parsed this function returns [CpkType.UNKNOWN]
@@ -31,5 +37,6 @@ enum class CpkType constructor(private val text : String?) : Comparable<CpkType>
     fun toAvro(): CpkTypeAvro = when (this) {
         UNKNOWN -> CpkTypeAvro.UNKNOWN
         CORDA_API -> CpkTypeAvro.CORDA_API
+        SYNTHETIC -> CpkTypeAvro.UNKNOWN
     }
 }
