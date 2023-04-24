@@ -1,6 +1,5 @@
 package net.corda.flow.pipeline.handlers.requests
 
-import net.corda.data.flow.event.mapper.ScheduleCleanup
 import net.corda.data.flow.output.FlowStates
 import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.flow.fiber.FlowIORequest
@@ -45,10 +44,9 @@ class FlowFinishedRequestHandler @Activate constructor(
         val status = flowMessageFactory.createFlowCompleteStatusMessage(checkpoint, request.result)
 
         val flowCleanupTime = context.config.getLong(PROCESSING_FLOW_CLEANUP_TIME)
-        val expiryTime = Instant.now().plusMillis(flowCleanupTime).toEpochMilli()
+        Instant.now().plusMillis(flowCleanupTime).toEpochMilli()
         val records = listOf(
             flowRecordFactory.createFlowStatusRecord(status),
-            flowRecordFactory.createFlowMapperEventRecord(checkpoint.flowKey.toString(), ScheduleCleanup(expiryTime))
         )
 
         context.checkpoint.markDeleted()

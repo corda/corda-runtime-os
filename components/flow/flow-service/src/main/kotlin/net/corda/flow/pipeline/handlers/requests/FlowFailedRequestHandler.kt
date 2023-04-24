@@ -1,7 +1,5 @@
 package net.corda.flow.pipeline.handlers.requests
 
-import java.time.Instant
-import net.corda.data.flow.event.mapper.ScheduleCleanup
 import net.corda.data.flow.output.FlowStates
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.data.flow.state.waiting.WaitingFor
@@ -19,6 +17,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
+import java.time.Instant
 
 @Suppress("Unused")
 @Component(service = [FlowRequestHandler::class])
@@ -68,10 +67,9 @@ class FlowFailedRequestHandler @Activate constructor(
             request.exception.message ?: request.exception.javaClass.name
         )
         val flowCleanupTime = context.config.getLong(PROCESSING_FLOW_CLEANUP_TIME)
-        val expiryTime = Instant.now().plusMillis(flowCleanupTime).toEpochMilli()
+        Instant.now().plusMillis(flowCleanupTime).toEpochMilli()
         val records = listOf(
             flowRecordFactory.createFlowStatusRecord(status),
-            flowRecordFactory.createFlowMapperEventRecord(checkpoint.flowKey.toString(), ScheduleCleanup(expiryTime))
         )
         log.info("Flow [${checkpoint.flowId}] failed")
         checkpoint.markDeleted()
