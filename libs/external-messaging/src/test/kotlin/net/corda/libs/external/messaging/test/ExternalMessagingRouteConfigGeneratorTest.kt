@@ -83,7 +83,7 @@ class ExternalMessagingRouteConfigGeneratorTest {
                 mainBundle = "main-bundle",
                 libraries = emptyList(),
                 cordappManifest = CordappManifest(
-                    "net.cordapp.Bundle",
+                    "com.r3.corda.Bundle",
                     "1.2.3",
                     12,
                     34,
