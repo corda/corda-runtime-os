@@ -37,7 +37,7 @@ class SessionInitExecutor(
         } else {
             //duplicate
             log.debug { "Duplicate SessionInit event received. Key: $eventKey, Event: $sessionEvent" }
-            FlowMapperResult(flowMapperState, emptyList())
+            FlowMapperResult(flowMapperState, listOf(Record(outputTopic, sessionEvent, sessionInit)))
         }
     }
 
