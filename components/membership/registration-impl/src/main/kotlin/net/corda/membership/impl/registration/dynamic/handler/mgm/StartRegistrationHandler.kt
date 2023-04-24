@@ -272,14 +272,7 @@ internal class StartRegistrationHandler(
     private fun checkAgainstExistingNotaryServices(
         mgmHoldingId: HoldingIdentity, notary: MemberNotaryDetails?, registeringMemberName: String
     ) {
-        val statuses = listOf(
-            RegistrationStatus.STARTED_PROCESSING_BY_MGM,
-            RegistrationStatus.PENDING_MEMBER_VERIFICATION,
-            RegistrationStatus.PENDING_MANUAL_APPROVAL,
-            RegistrationStatus.PENDING_AUTO_APPROVAL,
-            RegistrationStatus.APPROVED,
-        )
-        membershipQueryClient.queryRegistrationRequests(mgmHoldingId, statuses = statuses).getOrThrow()
+        membershipQueryClient.queryRegistrationRequests(mgmHoldingId, statuses = listOf(RegistrationStatus.APPROVED)).getOrThrow()
             .forEach { request ->
                 val context = request.memberProvidedContext.items
                 context.firstOrNull { it.key == NOTARY_SERVICE_NAME }?.let { existingServiceName ->
