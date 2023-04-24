@@ -41,7 +41,7 @@ class FlowFinishedRequestHandlerTest {
     }
 
     @Test
-    fun `post processing publishes status update and schedules flow cleanup`() {
+    fun `post processing publishes status update and does not schedule flow cleanup`() {
         val statusRecord = Record("", FLOW_KEY, FlowStatus())
         val cleanupRecord = Record("", FLOW_KEY.toString(), FlowMapperEvent())
         val flowStatus = FlowStatus()
@@ -59,6 +59,6 @@ class FlowFinishedRequestHandlerTest {
         whenever(testContext.flowCheckpoint.flowKey).thenReturn(FLOW_KEY)
 
         val outputContext = handler.postProcess(testContext.flowEventContext, ioRequest)
-        assertThat(outputContext.outputRecords).containsOnly(statusRecord, cleanupRecord)
+        assertThat(outputContext.outputRecords).containsOnly(statusRecord)
     }
 }
