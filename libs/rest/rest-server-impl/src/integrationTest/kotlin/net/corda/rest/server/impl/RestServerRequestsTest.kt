@@ -722,7 +722,7 @@ class RestServerRequestsTest : RestServerTestBase() {
     @Test
     fun `Call echo on test entity`() {
 
-        val jsonBody = """{ "content" : { "id": "myId", "name": "TestName", "amount" : 20 } }"""
+        val jsonBody = """{"content":{"nested":{"id":"myId","name":"TestName","amount":20}}}"""
         val csvBody = """{"content":"aVery,Long,String"}"""
 
         listOf(csvBody, jsonBody).forEach { testBody ->

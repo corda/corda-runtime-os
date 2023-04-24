@@ -7,8 +7,6 @@ import com.fasterxml.jackson.databind.BeanProperty
 import com.fasterxml.jackson.databind.DeserializationContext
 import com.fasterxml.jackson.databind.JavaType
 import com.fasterxml.jackson.databind.JsonDeserializer
-import com.fasterxml.jackson.databind.JsonSerializer
-import com.fasterxml.jackson.databind.SerializerProvider
 import com.fasterxml.jackson.databind.deser.ContextualDeserializer
 import com.fasterxml.jackson.databind.module.SimpleModule
 import net.corda.common.json.serialization.jacksonObjectMapper
@@ -16,6 +14,7 @@ import net.corda.crypto.core.parseSecureHash
 import net.corda.rest.JsonObject
 import net.corda.rest.durablestream.DurableCursorTransferObject
 import net.corda.rest.durablestream.api.Cursor
+import net.corda.rest.json.JsonObjectSerializer
 import net.corda.utilities.trace
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SecureHash
@@ -84,11 +83,5 @@ internal object MemberX500NameDeserializer : JsonDeserializer<MemberX500Name>() 
                 throw JsonParseException(parser, it, e)
             }
         }.also { log.trace { "Deserialize completed." } }
-    }
-}
-
-internal object JsonObjectSerializer : JsonSerializer<JsonObject>() {
-    override fun serialize(obj: JsonObject, generator: JsonGenerator, provider: SerializerProvider) {
-        generator.writeString(obj.escapedJson)
     }
 }
