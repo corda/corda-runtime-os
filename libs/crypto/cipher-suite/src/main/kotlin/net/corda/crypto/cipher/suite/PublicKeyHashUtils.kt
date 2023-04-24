@@ -20,7 +20,7 @@ fun PublicKey.toStringShort(): String = "DL" + EncodingUtils.toBase58(sha256Byte
 const val SHORT_KEY_ID_LENGTH = 12
 
 /**
- * Returns the id as the first 12 characters of an SHA-256 hash from a given [PublicKey].
+ * Returns the short id of a [PublicKey] (i.e. the first 12 characters of an SHA-256 hash of [PublicKey.getEncoded]).
  */
 fun PublicKey.publicKeyId(): String  {
     val fullKeyIdHex = ByteArrays.toHexString(sha256Bytes())
