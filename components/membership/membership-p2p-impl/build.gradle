@@ -28,8 +28,8 @@ dependencies {
     implementation project(':components:membership:membership-group-read')
     implementation project(':components:membership:membership-p2p')
 
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
-    testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"
     testImplementation "org.assertj:assertj-core:$assertjVersion"
     testImplementation project(':testing:test-utilities')
 

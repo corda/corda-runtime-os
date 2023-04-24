@@ -35,7 +35,7 @@ class UtxoCustomQueryDemoFlow : ClientStartableFlow {
         )
 
         val resultSet = utxoLedgerService.query(DUMMY_QUERY_NAME, String::class.java)
-           .setParameter("testField", "{}")
+           .setParameter("testField", "dummy")
            .setOffset(request.offset)
            .setLimit(request.limit)
            .execute()

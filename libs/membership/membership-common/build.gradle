@@ -21,7 +21,7 @@ dependencies {
     implementation project(":libs:utilities")
     implementation project(':libs:configuration:configuration-core')
 
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
-    testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"
     testImplementation project(":testing:test-utilities")
 }

@@ -32,12 +32,14 @@ import kotlin.concurrent.withLock
  * and a response is sent back to the client. The response body is empty unless it follows a session handshake request,
  * in which case the body will contain additional information.
  */
+@Suppress("LongParameterList")
 internal class HttpServer(
     private val eventListener: RequestListener,
     private val maxRequestSize: Long,
     private val serverConfiguration: GatewayServerConfiguration,
     private val keyStore: KeyStoreWithPassword,
     private val serverTrustManager: X509ExtendedTrustManager?,
+    private val groupFactory: (Int) -> NioEventLoopGroup = { NioEventLoopGroup(it) },
 ) : Resource,
     HttpServerListener,
     HttpWriter {
@@ -140,13 +142,13 @@ internal class HttpServer(
         lock.withLock {
             if (shutdownSequence.isEmpty()) {
                 logger.info("Starting HTTP Server")
-                val bossGroup = NioEventLoopGroup(1).also {
+                val bossGroup = groupFactory(1).also {
                     shutdownSequence.addFirst {
                         it.shutdownGracefully()
                         it.terminationFuture().sync()
                     }
                 }
-                val workerGroup = NioEventLoopGroup(NUM_SERVER_THREADS).also {
+                val workerGroup = groupFactory(NUM_SERVER_THREADS).also {
                     shutdownSequence.addFirst {
                         it.shutdownGracefully()
                         it.terminationFuture().sync()
