@@ -334,6 +334,30 @@ class FlowGlobalPostProcessorImplTest {
     }
 
     @Test
+    fun `Don't check counterparty for sessions already terminated `() {
+        sessionState3.apply {
+            sessionStartTime = Instant.now().minusSeconds(86400)
+            lastReceivedMessageTime = Instant.now().minusSeconds(86400)
+            status = SessionStateType.CLOSED
+        }
+
+        sessionState2.apply {
+            sessionStartTime = Instant.now().minusSeconds(86400)
+            lastReceivedMessageTime = Instant.now().minusSeconds(86400)
+            status = SessionStateType.ERROR
+        }
+
+        whenever(checkpoint.sessions).thenReturn(listOf(sessionState1, sessionState2, sessionState3))
+        whenever(checkpoint.holdingIdentity).thenReturn(HoldingIdentity(ALICE_X500_NAME, ""))
+
+        assertThrows(FlowPlatformException::class.java) {
+            flowGlobalPostProcessor.postProcess(testContext)
+        }
+        verify(sessionManager, times(0)).errorSession(any())
+        verify(checkpoint, times(1)).putSessionState(any())
+    }
+
+    @Test
     fun `Don't raise a platform error if counterparties cannot be confirmed within timeout window but the checkpoint is already deleted`() {
         sessionState3.apply {
             sessionStartTime = Instant.now().minusSeconds(86400)

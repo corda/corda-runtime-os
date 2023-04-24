@@ -61,6 +61,9 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
         val doesCheckpointExist = checkpoint.doesExist
 
         return checkpoint.sessions
+            .filter {
+                verifyCounterparty(context, it, now)
+            }
             .map { sessionState ->
                 sessionManager.getMessagesToSend(
                     sessionState,
@@ -68,9 +71,6 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
                     context.config,
                     checkpoint.flowKey.identity
                 )
-            }
-            .filter { (sessionState, _) ->
-                verifyCounterparty(context, sessionState, now)
             }
             .onEach { (updatedSessionState, _) ->
                 if (doesCheckpointExist) {
@@ -86,6 +86,10 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
         sessionState: SessionState,
         now: Instant
     ): Boolean {
+        if (sessionState.status == SessionStateType.CLOSED || sessionState.status == SessionStateType.ERROR) {
+            //we dont need to verify that a counterparty exists if the session is already terminated.
+            return true
+        }
         val checkpoint = context.checkpoint
         val doesCheckpointExist = checkpoint.doesExist
         val counterparty: MemberX500Name = MemberX500Name.parse(sessionState.counterpartyIdentity.x500Name!!)
