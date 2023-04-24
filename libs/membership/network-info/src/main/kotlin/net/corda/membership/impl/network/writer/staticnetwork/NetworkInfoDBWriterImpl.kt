@@ -3,7 +3,7 @@ package net.corda.membership.impl.network.writer.staticnetwork
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.node.ObjectNode
 import net.corda.crypto.cipher.suite.KeyEncodingService
-import net.corda.crypto.cipher.suite.calculateHash
+import net.corda.crypto.core.fullId
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
@@ -149,7 +149,7 @@ class NetworkInfoDBWriterImpl(
             val staticMgmInfo = mapOf(
                 PARTY_NAME to "O=Corda-Static-Network-MGM, L=London, C=GB",
                 PARTY_SESSION_KEYS.format(0) to keyEncodingService.encodeAsString(mgmSessionKey),
-                SESSION_KEYS_HASH.format(0) to mgmSessionKey.calculateHash().value,
+                SESSION_KEYS_HASH.format(0) to mgmSessionKey.fullId(),
                 SESSION_KEYS_SIGNATURE_SPEC.format(0) to mgmSignatureSpec.signatureName,
                 URL_KEY.format(0) to "https://localhost:8080",
                 PROTOCOL_VERSION.format(0) to "1",
