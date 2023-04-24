@@ -168,7 +168,7 @@ class DistributeMemberInfoActionHandler(
                 source = approvedBy,
                 destination = memberToSendUpdateTo.holdingIdentity.toAvro(),
                 content = memberPackage,
-                minutesToWait = membershipConfig.getTtlMinutes(MembershipConfig.TtlsConfig.MEMBERS_PACKAGE_UPDATE)
+                minutesToWait = membershipConfig.getTtlMinutes(MembershipConfig.TtlsConfig.MEMBERS_PACKAGE_UPDATE),
             )
         }
 

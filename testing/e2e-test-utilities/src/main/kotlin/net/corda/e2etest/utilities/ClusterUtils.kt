@@ -157,7 +157,10 @@ fun ClusterInfo.createKeyFor(
 ): String = cluster {
     val keyId = assertWithRetry {
         command { createKey(tenantId, alias, category, scheme) }
-        condition { it.code == 200 }
+        condition {
+            // Allow 409 also in case an error occurred when creating but creation was successful.
+            it.code == 200 || it.code == 409
+        }
         failMessage("Failed to create key for holding id '$tenantId'")
     }.toJson()
     assertWithRetry {
