@@ -123,6 +123,7 @@ import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
@@ -764,6 +765,7 @@ class MembershipPersistenceTest {
     }
 
     @Test
+    @Disabled("Until support is added for multiple notary virtual nodes per notary service")
     fun `addNotaryToGroupParameters can persist notary to existing notary service over RPC topic`() {
         val groupId = randomUUID().toString()
         val memberx500Name = MemberX500Name.parse("O=Notary, C=GB, L=London")
@@ -856,6 +858,7 @@ class MembershipPersistenceTest {
     }
 
     @Test
+    @Disabled("Until support is added for multiple notary virtual nodes per notary service")
     fun `addNotaryToGroupParameters can persist notary with rotated keys over RPC topic`() {
         val keyGenerator = KeyPairGenerator.getInstance("RSA", BouncyCastleProvider())
         val groupId = randomUUID().toString()

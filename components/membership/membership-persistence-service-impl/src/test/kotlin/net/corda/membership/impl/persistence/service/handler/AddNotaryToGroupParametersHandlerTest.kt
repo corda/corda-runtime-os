@@ -42,6 +42,7 @@ import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
@@ -281,6 +282,7 @@ class AddNotaryToGroupParametersHandlerTest {
     }
 
     @Test
+    @Disabled("Until support is added for multiple notary virtual nodes per notary service")
     fun `invoke with notary keys adds keys to existing notary service`() {
         mockExistingNotary()
 
@@ -315,6 +317,7 @@ class AddNotaryToGroupParametersHandlerTest {
     }
 
     @Test
+    @Disabled("Until support is added for multiple notary virtual nodes per notary service")
     fun `invoke sets notary protocol versions to intersection of protocol versions of individual notary vnodes`() {
         mockExistingNotary()
 
@@ -327,6 +330,7 @@ class AddNotaryToGroupParametersHandlerTest {
     }
 
     @Test
+    @Disabled("Until support is added for multiple notary virtual nodes per notary service")
     fun `invoke with nothing to add does nothing`() {
         mockExistingNotary()
         val mockGroupParameters = KeyValuePairList(
@@ -358,6 +362,7 @@ class AddNotaryToGroupParametersHandlerTest {
     }
 
     @Test
+    @Disabled("Until support is added for multiple notary virtual nodes per notary service")
     fun `notary protocol must match that of existing notary service`() {
         mockExistingNotary()
         whenever(notaryDetails.serviceProtocol).doReturn("incorrect.plugin.type")

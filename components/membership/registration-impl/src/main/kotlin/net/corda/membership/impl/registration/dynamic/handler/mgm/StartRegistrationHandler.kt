@@ -238,7 +238,8 @@ internal class StartRegistrationHandler(
 
     private fun validateRoleInformation(mgmHoldingId: HoldingIdentity, member: MemberInfo) {
         // If role is set to notary, notary details are specified
-        member.notaryDetails?.let { notary ->
+        val notaryDetails = member.notaryDetails
+        notaryDetails?.let { notary ->
             validateRegistrationRequest(
                 notary.keys.isNotEmpty()
             ) { "Registering member has role set to 'notary', but has missing notary key details." }
@@ -260,7 +261,7 @@ internal class StartRegistrationHandler(
                 ).getOrThrow().firstOrNull() == null
             ) { "There is a virtual node having the same name as the notary service ${notary.serviceName}." }
         }
-        checkAgainstExistingNotaryServices(mgmHoldingId, member.notaryDetails, member.name.toString())
+        checkAgainstExistingNotaryServices(mgmHoldingId, notaryDetails, member.name.toString())
     }
 
     /**
@@ -282,7 +283,7 @@ internal class StartRegistrationHandler(
             .forEach { request ->
                 val context = request.memberProvidedContext.items
                 context.firstOrNull { it.key == NOTARY_SERVICE_NAME }?.let { existingServiceName ->
-                    val memberName = context.first { it.key == PARTY_NAME }.value
+                    val memberName = notary?.let { context.first { it.key == PARTY_NAME }.value }
                     if (existingServiceName.value == notary?.serviceName.toString() && memberName != registeringMemberName) {
                         throw InvalidRegistrationRequestException("Notary service '${notary?.serviceName}' already exists.")
                     }

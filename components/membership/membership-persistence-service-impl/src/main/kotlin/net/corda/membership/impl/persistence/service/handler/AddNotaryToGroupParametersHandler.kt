@@ -78,6 +78,15 @@ internal class AddNotaryToGroupParametersHandler(
                 notaryServiceRegex.find(key)?.groups?.get(1)?.value?.toIntOrNull()
             }
             val (epoch, groupParameters) = if (notaryServiceNumber != null) {
+                // Enforces a single virtual node under a notary service, until support for multiple virtual nodes per
+                // notary service is added.
+                // There is also a check in StartRegistrationHandler, this additional check prevents race
+                // conditions between manual and automatic registration approvals.
+                require(false) {
+                    throw MembershipPersistenceException(
+                        "Cannot add notary to group parameters - notary service '$notaryServiceName' already exists."
+                    )
+                }
                 // Add notary to existing notary service, or update notary with rotated keys
                 val memberQueryBuilder = criteriaBuilder.createQuery(MemberInfoEntity::class.java)
                 val memberQuery = memberQueryBuilder.select(memberQueryBuilder.from(MemberInfoEntity::class.java))
