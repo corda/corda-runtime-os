@@ -288,8 +288,8 @@ class SandboxServiceImplTests {
         val sandboxOne = (sandboxGroupOne as SandboxGroupInternal).cpkSandboxes.single()
         val sandboxTwo = (sandboxGroupTwo as SandboxGroupInternal).cpkSandboxes.single()
 
-        val sandboxOneBundles = startedBundles.filter { bundle -> sandboxOne.containsBundle(bundle) }
-        val sandboxTwoBundles = startedBundles.filter { bundle -> sandboxTwo.containsBundle(bundle) }
+        val sandboxOneBundles = startedBundles.filter(sandboxOne::containsBundle)
+        val sandboxTwoBundles = startedBundles.filter(sandboxTwo::containsBundle)
 
         sandboxOneBundles.forEach { sandboxOneBundle ->
             sandboxTwoBundles.forEach { sandboxTwoBundle ->
@@ -305,8 +305,8 @@ class SandboxServiceImplTests {
         val sandboxOne = sandboxes[0] as SandboxImpl
         val sandboxTwo = sandboxes[1] as SandboxImpl
 
-        val sandboxOneBundles = startedBundles.filter { bundle -> sandboxOne.containsBundle(bundle) }
-        val sandboxTwoBundles = startedBundles.filter { bundle -> sandboxTwo.containsBundle(bundle) }
+        val sandboxOneBundles = startedBundles.filter(sandboxOne::containsBundle)
+        val sandboxTwoBundles = startedBundles.filter(sandboxTwo::containsBundle)
         val sandboxTwoPublicBundles = sandboxTwoBundles.filterTo(HashSet()) { bundle -> bundle in sandboxTwo.publicBundles }
         val sandboxTwoPrivateBundles = sandboxTwoBundles - sandboxTwoPublicBundles
 
@@ -327,8 +327,8 @@ class SandboxServiceImplTests {
         val sandboxOne = sandboxes[0] as CpkSandboxImpl
         val sandboxTwo = sandboxes[1] as CpkSandboxImpl
 
-        val sandboxOneBundles = startedBundles.filter { bundle -> sandboxOne.containsBundle(bundle) }
-        val sandboxTwoBundles = startedBundles.filter { bundle -> sandboxTwo.containsBundle(bundle) }
+        val sandboxOneBundles = startedBundles.filter(sandboxOne::containsBundle)
+        val sandboxTwoBundles = startedBundles.filter(sandboxTwo::containsBundle)
         val sandboxTwoMainBundle = sandboxTwo.mainBundle
         val sandboxTwoLibraryBundles = sandboxTwoBundles - sandboxTwoMainBundle
 
@@ -363,17 +363,19 @@ class SandboxServiceImplTests {
 
     @Test
     fun `a bundle only has visibility of public bundles in public sandboxes`() {
-        val publicMockBundle = mockBundle()
-        val privateMockBundle = mockBundle()
-        sandboxService.createPublicSandbox(setOf(publicMockBundle), setOf(privateMockBundle))
+        val publicPlatformBundle = mockBundle("public-platform-bundle")
+        val privatePlatformBundle = mockBundle("private-platform-bundle")
+        sandboxService.createPublicSandbox(setOf(publicPlatformBundle), setOf(privatePlatformBundle))
 
         val sandboxGroup = sandboxService.createSandboxGroup(setOf(cpkTwo))
         val sandbox = (sandboxGroup as SandboxGroupInternal).cpkSandboxes.single() as SandboxImpl
-        val sandboxBundles = startedBundles.filter { bundle -> sandbox.containsBundle(bundle) }
+        val sandboxBundles = startedBundles.filter(sandbox::containsBundle)
 
         sandboxBundles.forEach { sandboxOneBundle ->
-            assertTrue(sandboxService.hasVisibility(sandboxOneBundle, publicMockBundle))
-            assertFalse(sandboxService.hasVisibility(sandboxOneBundle, privateMockBundle))
+            assertTrue(sandboxService.hasVisibility(sandboxOneBundle, publicPlatformBundle))
+            assertFalse(sandboxService.hasVisibility(sandboxOneBundle, privatePlatformBundle))
+            assertFalse(sandboxService.hasVisibility(publicPlatformBundle, sandboxOneBundle))
+            assertFalse(sandboxService.hasVisibility(privatePlatformBundle, sandboxOneBundle))
         }
     }
 
