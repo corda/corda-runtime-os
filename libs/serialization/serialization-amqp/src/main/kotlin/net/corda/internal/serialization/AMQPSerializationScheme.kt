@@ -16,6 +16,7 @@ import net.corda.internal.serialization.amqp.custom.CertPathSerializer
 import net.corda.internal.serialization.amqp.custom.ClassSerializer
 import net.corda.internal.serialization.amqp.custom.CurrencySerializer
 import net.corda.internal.serialization.amqp.custom.DayOfWeekSerializer
+import net.corda.internal.serialization.amqp.custom.DigitalSignatureMetadataSerializer
 import net.corda.internal.serialization.amqp.custom.DurationSerializer
 import net.corda.internal.serialization.amqp.custom.EnumSetSerializer
 import net.corda.internal.serialization.amqp.custom.InputStreamSerializer
@@ -149,5 +150,6 @@ fun registerCustomSerializers(factory: SerializerFactory) {
         register(AlgorithmParameterSpecSerializer(), this)
         register(PSSParameterSpecSerializer(), this)
         register(MGF1ParameterSpecSerializer(), this)
+        register(DigitalSignatureMetadataSerializer(), this)
     }
 }

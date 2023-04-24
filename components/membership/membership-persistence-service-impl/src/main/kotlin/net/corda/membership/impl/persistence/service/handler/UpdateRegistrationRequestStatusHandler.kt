@@ -3,9 +3,9 @@ package net.corda.membership.impl.persistence.service.handler
 import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.data.membership.db.request.command.UpdateRegistrationRequestStatus
 import net.corda.membership.datamodel.RegistrationRequestEntity
-import net.corda.membership.impl.persistence.service.handler.RegistrationStatusHelper.canMoveToStatus
 import net.corda.membership.impl.persistence.service.handler.RegistrationStatusHelper.toStatus
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
+import net.corda.membership.lib.registration.RegistrationStatusExt.canMoveToStatus
 import net.corda.virtualnode.toCorda
 import javax.persistence.LockModeType
 
@@ -26,6 +26,10 @@ internal class UpdateRegistrationRequestStatusHandler(
                         "${request.registrationStatus}, will ignore the update"
                 )
             } else {
+                logger.info(
+                    "Updating registration request ${request.registrationId} status from $currentStatus" +
+                        " to ${request.registrationStatus}",
+                )
                 registrationRequest.status = request.registrationStatus.name
                 registrationRequest.lastModified = clock.instant()
                 registrationRequest.reason = request.reason

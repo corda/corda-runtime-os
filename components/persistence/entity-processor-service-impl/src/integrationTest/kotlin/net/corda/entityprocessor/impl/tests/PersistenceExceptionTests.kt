@@ -1,7 +1,9 @@
 package net.corda.entityprocessor.impl.tests
 
 import net.corda.cpiinfo.read.CpiInfoReadService
+import net.corda.cpk.read.CpkReadService
 import net.corda.data.ExceptionEnvelope
+import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.external.ExternalEventContext
@@ -17,18 +19,22 @@ import net.corda.db.persistence.testkit.helpers.SandboxHelper.createDog
 import net.corda.entityprocessor.impl.internal.EntityMessageProcessor
 import net.corda.flow.external.events.responses.exceptions.CpkNotAvailableException
 import net.corda.flow.external.events.responses.exceptions.VirtualNodeException
-import net.corda.libs.packaging.core.CpiIdentifier
-import net.corda.libs.packaging.core.CpiMetadata
+import net.corda.flow.utils.toKeyValuePairList
 import net.corda.messaging.api.records.Record
 import net.corda.persistence.common.EntitySandboxServiceFactory
 import net.corda.persistence.common.ResponseFactory
 import net.corda.persistence.common.getSerializationService
+import net.corda.test.util.dsl.entities.cpx.getCpkFileHashes
 import net.corda.testing.sandboxes.SandboxSetup
 import net.corda.testing.sandboxes.fetchService
 import net.corda.testing.sandboxes.lifecycle.EachTestLifecycle
+import net.corda.v5.application.flows.FlowContextPropertyKeys.CPK_FILE_CHECKSUM
 import net.corda.v5.base.exceptions.CordaRuntimeException
+import net.corda.virtualnode.HoldingIdentity
+import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toAvro
+import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
@@ -64,6 +70,7 @@ class PersistenceExceptionTests {
 
     private lateinit var virtualNode: VirtualNodeService
     private lateinit var cpiInfoReadService: CpiInfoReadService
+    private lateinit var cpkReadService: CpkReadService
     private lateinit var virtualNodeInfoReadService: VirtualNodeInfoReadService
     private lateinit var responseFactory: ResponseFactory
 
@@ -81,6 +88,7 @@ class PersistenceExceptionTests {
         lifecycle.accept(sandboxSetup) { setup ->
             virtualNode = setup.fetchService(timeout = 5000)
             cpiInfoReadService = setup.fetchService(timeout = 5000)
+            cpkReadService = setup.fetchService(timeout = 5000)
             virtualNodeInfoReadService = setup.fetchService(timeout = 5000)
             responseFactory = setup.fetchService(timeout = 5000)
         }
@@ -90,24 +98,23 @@ class PersistenceExceptionTests {
     fun `exception raised when cpks not present`() {
         val (dbConnectionManager, ignoredRequest) = setupExceptionHandlingTests()
 
-        // But we need a "broken" service to throw the exception to trigger the new handler.
-        // Emulate the throw that occurs if we don't have the cpks
-        val brokenCpiInfoReadService = object : CpiInfoReadService by cpiInfoReadService {
-            override fun get(identifier: CpiIdentifier): CpiMetadata? {
-                throw CpkNotAvailableException("Not ready!")
-            }
-        }
-
-        val brokenEntitySandboxService =
+        val entitySandboxService =
             EntitySandboxServiceFactory().create(
                 virtualNode.sandboxGroupContextComponent,
-                brokenCpiInfoReadService,
+                cpkReadService,
                 virtualNodeInfoReadService,
                 dbConnectionManager
             )
 
         val processor =
-            EntityMessageProcessor(brokenEntitySandboxService, responseFactory, this::noOpPayloadCheck)
+            EntityMessageProcessor(entitySandboxService, responseFactory, this::noOpPayloadCheck)
+
+        // Insert some non-existent CPK hashes to our external event to trigger CPK not available error
+        ignoredRequest.flowExternalEventContext.contextProperties = KeyValuePairList(
+            mutableListOf(
+                KeyValuePair("$CPK_FILE_CHECKSUM.0", "SHA-256:DEADBEEF")
+            )
+        )
 
         // Now "send" the request for processing and "receive" the responses.
         val responses = processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), ignoredRequest)))
@@ -115,7 +122,7 @@ class PersistenceExceptionTests {
         assertThat(responses.size).isEqualTo(1)
         val flowEvent = responses.first().value as FlowEvent
         val response = flowEvent.payload as ExternalEventResponse
-        assertThat(response.error).isNotNull()
+        assertThat(response.error).isNotNull
         // The failure is correctly categorised.
         assertThat(response.error.errorType).isEqualTo(ExternalEventResponseErrorType.TRANSIENT)
         // The failure also captures the exception name.
@@ -127,11 +134,9 @@ class PersistenceExceptionTests {
     @Test
     fun `exception raised when vnode cannot be found`() {
         val (dbConnectionManager, ignoredRequest) = setupExceptionHandlingTests()
-
-        // But we need a "broken" service to throw the exception to trigger the new handler.
-        // Emulate the throw that occurs if we don't have the cpks
-        val brokenCpiInfoReadService = object : CpiInfoReadService by cpiInfoReadService {
-            override fun get(identifier: CpiIdentifier): CpiMetadata? {
+        val brokenVirtualNodeInfoReadService = object :
+            VirtualNodeInfoReadService by virtualNodeInfoReadService {
+            override fun get(holdingIdentity: HoldingIdentity): VirtualNodeInfo? {
                 throw VirtualNodeException("Placeholder")
             }
         }
@@ -139,8 +144,8 @@ class PersistenceExceptionTests {
         val brokenEntitySandboxService =
             EntitySandboxServiceFactory().create(
                 virtualNode.sandboxGroupContextComponent,
-                brokenCpiInfoReadService,
-                virtualNodeInfoReadService,
+                cpkReadService,
+                brokenVirtualNodeInfoReadService,
                 dbConnectionManager
             )
 
@@ -153,7 +158,7 @@ class PersistenceExceptionTests {
         assertThat(responses.size).isEqualTo(1)
         val flowEvent = responses.first().value as FlowEvent
         val response = flowEvent.payload as ExternalEventResponse
-        assertThat(response.error).isNotNull()
+        assertThat(response.error).isNotNull
         // The failure is correctly categorised.
         assertThat(response.error.errorType).isEqualTo(ExternalEventResponseErrorType.TRANSIENT)
         // The failure also captures the exception name.
@@ -166,17 +171,25 @@ class PersistenceExceptionTests {
     fun `exception raised when sent a missing command`() {
         val (dbConnectionManager, oldRequest) = setupExceptionHandlingTests()
         val unknownCommand = ExceptionEnvelope("", "") // Any Avro object, or null works here.
+
+        val vNodeInfo = virtualNodeInfoReadService.get(oldRequest.holdingIdentity.toCorda())!!
+        val cpkFileHashes = cpiInfoReadService.getCpkFileHashes(vNodeInfo)
+
         val badRequest =
             EntityRequest(
                 oldRequest.holdingIdentity,
                 unknownCommand,
-                ExternalEventContext("request id", "flow id", KeyValuePairList(emptyList()))
+                ExternalEventContext(
+                    "request id",
+                    "flow id",
+                    cpkFileHashes.toKeyValuePairList(CPK_FILE_CHECKSUM)
+                )
             )
 
         val entitySandboxService =
             EntitySandboxServiceFactory().create(
                 virtualNode.sandboxGroupContextComponent,
-                cpiInfoReadService,
+                cpkReadService,
                 virtualNodeInfoReadService,
                 dbConnectionManager
             )
@@ -187,10 +200,11 @@ class PersistenceExceptionTests {
         // Now "send" the request for processing and "receive" the responses.
         val responses = processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), badRequest)))
 
+
         assertThat(responses.size).isEqualTo(1)
         val flowEvent = responses.first().value as FlowEvent
         val response = flowEvent.payload as ExternalEventResponse
-        assertThat(response.error).isNotNull()
+        assertThat(response.error).isNotNull
         // The failure is correctly categorised.
         assertThat(response.error.errorType).isEqualTo(ExternalEventResponseErrorType.FATAL)
         // The failure also captures the exception name.
@@ -216,12 +230,13 @@ class PersistenceExceptionTests {
         val entitySandboxService =
             EntitySandboxServiceFactory().create(
                 virtualNode.sandboxGroupContextComponent,
-                cpiInfoReadService,
+                cpkReadService,
                 virtualNodeInfoReadService,
                 dbConnectionManager
             )
 
-        val sandboxOne = entitySandboxService.get(virtualNodeInfoOne.holdingIdentity)
+        val cpkFileHashes = cpiInfoReadService.getCpkFileHashes(virtualNodeInfoOne)
+        val sandboxOne = entitySandboxService.get(virtualNodeInfoOne.holdingIdentity, cpkFileHashes)
 
         // create dog using dog-aware sandbox
         val dog = sandboxOne.createDog("Stray", owner = "Not Known")

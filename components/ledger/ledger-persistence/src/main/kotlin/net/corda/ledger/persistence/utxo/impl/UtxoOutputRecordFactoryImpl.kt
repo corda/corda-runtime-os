@@ -12,6 +12,7 @@ import net.corda.data.ledger.utxo.token.selection.key.TokenPoolCacheKey
 import net.corda.data.persistence.EntityResponse
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.persistence.utxo.UtxoOutputRecordFactory
+import net.corda.ledger.utxo.data.transaction.UtxoTransactionOutputDto
 import net.corda.messaging.api.records.Record
 import net.corda.persistence.common.ResponseFactory
 import net.corda.schema.Schemas.Services.TOKEN_CACHE_EVENT

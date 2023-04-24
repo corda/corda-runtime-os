@@ -20,7 +20,8 @@ import java.util.UUID
 
 /**
  * Interface to be implemented by the service which requires membership persistence outside of the DB worker.
- * This client handles persistence over RPC.
+ * This client handles persistence either over RPC or by creating records that can be posted to the
+ * message bus to be handled eventually.
  */
 @Suppress("TooManyFunctions")
 interface MembershipPersistenceClient : Lifecycle {
@@ -31,13 +32,12 @@ interface MembershipPersistenceClient : Lifecycle {
      * @param viewOwningIdentity The holding identity of the owner of the view of data.
      * @param memberInfos The list of member information to persist.
      *
-     * @return membership persistence result to indicate the result of the persistence operation.
-     *  No payload is returned in the case of success.
+     * @return membership persistence operation.
      */
     fun persistMemberInfo(
         viewOwningIdentity: HoldingIdentity,
         memberInfos: Collection<SignedMemberInfo>
-    ): MembershipPersistenceResult<Unit>
+    ): MembershipPersistenceOperation<Unit>
 
     /**
      * Persist a new version of the group policy.
@@ -46,14 +46,14 @@ interface MembershipPersistenceClient : Lifecycle {
      * @param groupPolicy The group policy.
      * @param version The version of the group policy to persist.
      *
-     * @return membership persistence result to indicate the result of the persistence operation.
+     * @return membership persistence operation.
      *  In the case of success the payload will include the newly created version number.
      */
     fun persistGroupPolicy(
         viewOwningIdentity: HoldingIdentity,
         groupPolicy: LayeredPropertyMap,
         version: Long
-    ): MembershipPersistenceResult<Unit>
+    ): MembershipPersistenceOperation<Unit>
 
     /**
      * Create and persist the first version of group parameters. This method is expected to be used by an MGM to persist
@@ -64,12 +64,12 @@ interface MembershipPersistenceClient : Lifecycle {
      *
      * @param viewOwningIdentity The holding identity of the owner of the view of data.
      *
-     * @return Membership persistence result to indicate the result of the operation. In the case of success, the
+     * @return Membership persistence operation. In the case of success, the
      * payload will include a [InternalGroupParameters] of the newly persisted group parameters.
      */
     fun persistGroupParametersInitialSnapshot(
         viewOwningIdentity: HoldingIdentity
-    ): MembershipPersistenceResult<InternalGroupParameters>
+    ): MembershipPersistenceOperation<InternalGroupParameters>
 
     /**
      * Persists a set of group parameters. This method is expected to be used by members to persist group parameters
@@ -83,12 +83,12 @@ interface MembershipPersistenceClient : Lifecycle {
      * @param viewOwningIdentity The holding identity owning this view of the group parameters.
      * @param groupParameters The group parameters to persist.
      *
-     * @return The latest group parameters for that holding identity.
+     * @return Operation with the latest group parameters for that holding identity.
      */
     fun persistGroupParameters(
         viewOwningIdentity: HoldingIdentity,
         groupParameters: InternalGroupParameters
-    ): MembershipPersistenceResult<InternalGroupParameters>
+    ): MembershipPersistenceOperation<InternalGroupParameters>
 
     /**
      * Adds notary information to an existing set of group parameters. This method is expected to be used by an MGM to
@@ -104,13 +104,13 @@ interface MembershipPersistenceClient : Lifecycle {
      * @param viewOwningIdentity The holding identity owning this view of the group parameters.
      * @param notary [MemberInfo] of the notary to be added.
      *
-     * @return Membership persistence result to indicate the result of the operation. In the case of success, the
+     * @return Membership persistence operation. In the case of success, the
      * payload will include a [InternalGroupParameters] of the newly persisted group parameters.
      */
     fun addNotaryToGroupParameters(
         viewOwningIdentity: HoldingIdentity,
         notary: MemberInfo
-    ): MembershipPersistenceResult<InternalGroupParameters>
+    ): MembershipPersistenceOperation<InternalGroupParameters>
 
     /**
      * Persists a registration request record as viewed by a specific holding identity.
@@ -119,13 +119,13 @@ interface MembershipPersistenceClient : Lifecycle {
      * @param viewOwningIdentity The holding identity of the owner of the view of data.
      * @param registrationRequest The registration request to persist.
      *
-     * @return membership persistence result to indicate the result of the persistence operation.
+     * @return membership persistence operation.
      *  No payload is returned in the case of success.
      */
     fun persistRegistrationRequest(
         viewOwningIdentity: HoldingIdentity,
         registrationRequest: RegistrationRequest
-    ): MembershipPersistenceResult<Unit>
+    ): MembershipPersistenceOperation<Unit>
 
     /**
      * Set a member and registration request as approved
@@ -134,14 +134,13 @@ interface MembershipPersistenceClient : Lifecycle {
      * @param approvedMember The member that had been approved
      * @param registrationRequestId The ID of the registration request
      *
-     * @return membership persistence result with the persisted member information
-     *  indicate the result of the persistence operation.
+     * @return membership persistence operation.
      */
     fun setMemberAndRegistrationRequestAsApproved(
         viewOwningIdentity: HoldingIdentity,
         approvedMember: HoldingIdentity,
         registrationRequestId: String,
-    ): MembershipPersistenceResult<MemberInfo>
+    ): MembershipPersistenceOperation<MemberInfo>
 
     /**
      * Set the status of an existing registration request.
@@ -151,7 +150,7 @@ interface MembershipPersistenceClient : Lifecycle {
      * @param registrationRequestStatus The new status of the registration request.
      * @param reason Reason why the status specified by [registrationRequestStatus] is being set.
      *
-     * @return membership persistence result to indicate the result of the persistence operation.
+     * @return membership persistence operation.
      *  No payload is returned in the case of success.
      */
     fun setRegistrationRequestStatus(
@@ -159,7 +158,7 @@ interface MembershipPersistenceClient : Lifecycle {
         registrationId: String,
         registrationRequestStatus: RegistrationStatus,
         reason: String? = null,
-    ): MembershipPersistenceResult<Unit>
+    ): MembershipPersistenceOperation<Unit>
 
     /**
      * Add mutual TLS client certificate subject to the allowed list.
@@ -167,13 +166,13 @@ interface MembershipPersistenceClient : Lifecycle {
      * @param mgmHoldingIdentity The holding identity of the MGM.
      * @param subject The client certificate subject.
      *
-     * @return membership persistence result to indicate the result of the persistence operation.
+     * @return membership persistence operation.
      *  No payload is returned in the case of success.
      */
     fun mutualTlsAddCertificateToAllowedList(
         mgmHoldingIdentity: HoldingIdentity,
         subject: String,
-    ): MembershipPersistenceResult<Unit>
+    ): MembershipPersistenceOperation<Unit>
 
     /**
      * Remove mutual TLS client certificate subject from the allowed list.
@@ -181,13 +180,13 @@ interface MembershipPersistenceClient : Lifecycle {
      * @param mgmHoldingIdentity The holding identity of the MGM.
      * @param subject The client certificate subject.
      *
-     * @return membership persistence result to indicate the result of the persistence operation.
+     * @return membership persistence operation.
      *  No payload is returned in the case of success.
      */
     fun mutualTlsRemoveCertificateFromAllowedList(
         mgmHoldingIdentity: HoldingIdentity,
         subject: String,
-    ): MembershipPersistenceResult<Unit>
+    ): MembershipPersistenceOperation<Unit>
 
     /**
      * Adds a new pre auth token to the database.
@@ -198,7 +197,7 @@ interface MembershipPersistenceClient : Lifecycle {
      * @param ttl A timestamp for when the pre auth token expires. If null the token never expires.
      * @param remarks An optional remark added when the token was created.
      *
-     * @return membership persistence result to indicate the result of the persistence operation.
+     * @return membership persistence operation.
      *  No payload is returned in the case of success.
      */
     fun generatePreAuthToken(
@@ -207,23 +206,24 @@ interface MembershipPersistenceClient : Lifecycle {
         ownerX500Name: MemberX500Name,
         ttl: Instant?,
         remarks: String?
-    ): MembershipPersistenceResult<Unit>
+    ): MembershipPersistenceOperation<Unit>
 
     /**
-     * Consumes a pre-auth token provided it exists for the member. If the token was successfully consumed, this method
-     * returns [MembershipPersistenceResult.Success]. Otherwise, it will return [MembershipPersistenceResult.Failure].
+     * Consumes a pre-auth token provided it exists for the member. If the token is successfully consumed, the returned
+     * operation will return upon execution [MembershipPersistenceResult.Success]. Otherwise, it will return
+     * [MembershipPersistenceResult.Failure].
      *
      * @param mgmHoldingIdentity The holding identity of the mgm.
      * @param preAuthTokenId A unique token identifier of the pre-auth token.
      * @param ownerX500Name The X500 name of the owner of the pre-auth token.
      *
-     * @return membership persistence result to indicate the result of the persistence operation.
+     * @return membership persistence operation.
      */
     fun consumePreAuthToken(
         mgmHoldingIdentity: HoldingIdentity,
         ownerX500Name: MemberX500Name,
         preAuthTokenId: UUID
-    ): MembershipPersistenceResult<Unit>
+    ): MembershipPersistenceOperation<Unit>
 
     /**
      * Revoke an existing pre auth token in the database.
@@ -232,13 +232,13 @@ interface MembershipPersistenceClient : Lifecycle {
      * @param preAuthTokenId The unique token identifier of the pre auth token being revoked.
      * @param remarks An optional remark about why the token was revoked.
      *
-     * @return membership persistence result with the updated token.
+     * @return membership persistence operation with the updated token.
      */
     fun revokePreAuthToken(
         mgmHoldingIdentity: HoldingIdentity,
         preAuthTokenId: UUID,
         remarks: String?
-    ): MembershipPersistenceResult<PreAuthToken>
+    ): MembershipPersistenceOperation<PreAuthToken>
 
     /**
      * Persists the specified approval rule.
@@ -246,12 +246,12 @@ interface MembershipPersistenceClient : Lifecycle {
      * @param viewOwningIdentity The holding identity of the owner of the view of data.
      * @param ruleParams Parameters of the rule to be added, represented by [ApprovalRuleParams].
      *
-     * @return Membership persistence result with the details of the newly added rule.
+     * @return Membership persistence operation with the details of the newly added rule.
      */
     fun addApprovalRule(
         viewOwningIdentity: HoldingIdentity,
         ruleParams: ApprovalRuleParams
-    ): MembershipPersistenceResult<ApprovalRuleDetails>
+    ): MembershipPersistenceOperation<ApprovalRuleDetails>
 
     /**
      * Deletes a previously persisted approval rule.
@@ -259,14 +259,14 @@ interface MembershipPersistenceClient : Lifecycle {
      * @param viewOwningIdentity The holding identity of the owner of the view of data.
      * @param ruleId ID of the group approval rule to be deleted.
      *
-     * @return Membership persistence result to indicate the result of the persistence operation.
+     * @return Membership persistence operation.
      *  No payload is returned in the case of success.
      */
     fun deleteApprovalRule(
         viewOwningIdentity: HoldingIdentity,
         ruleId: String,
         ruleType: ApprovalRuleType
-    ): MembershipPersistenceResult<Unit>
+    ): MembershipPersistenceOperation<Unit>
 
     /**
      * Suspends a member.
@@ -276,14 +276,15 @@ interface MembershipPersistenceClient : Lifecycle {
      * @param serialNumber Serial number of the member's [MemberInfo].
      * @param reason Reason for suspension.
      *
-     * @return Membership persistence result with the updated [MemberInfo].
+     * @return Membership persistence operation with the updated [MemberInfo] and the updated [InternalGroupParameters] (or null if not
+     * updated).
      */
     fun suspendMember(
         viewOwningIdentity: HoldingIdentity,
         memberX500Name: MemberX500Name,
         serialNumber: Long?,
         reason: String?,
-    ): MembershipPersistenceResult<PersistentMemberInfo>
+    ): MembershipPersistenceOperation<Pair<PersistentMemberInfo, InternalGroupParameters?>>
 
     /**
      * Activates a previously suspended member.
@@ -293,14 +294,15 @@ interface MembershipPersistenceClient : Lifecycle {
      * @param serialNumber Serial number of the member's [MemberInfo].
      * @param reason Reason for activation.
      *
-     * @return Membership persistence result with the updated [MemberInfo].
+     * @return Membership persistence operation with the updated [MemberInfo] and the updated [InternalGroupParameters] (or null if not
+     * updated).
      */
     fun activateMember(
         viewOwningIdentity: HoldingIdentity,
         memberX500Name: MemberX500Name,
         serialNumber: Long?,
         reason: String?,
-    ): MembershipPersistenceResult<PersistentMemberInfo>
+    ): MembershipPersistenceOperation<Pair<PersistentMemberInfo, InternalGroupParameters?>>
 
     /**
      * Update an existing static network info configuration in the cluster DB. The initial snapshot for a static
@@ -313,5 +315,5 @@ interface MembershipPersistenceClient : Lifecycle {
      */
     fun updateStaticNetworkInfo(
         info: StaticNetworkInfo
-    ): MembershipPersistenceResult<StaticNetworkInfo>
+    ): MembershipPersistenceOperation<StaticNetworkInfo>
 }

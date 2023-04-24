@@ -38,17 +38,18 @@ import net.corda.membership.lib.GroupParametersFactory
 import net.corda.membership.lib.MemberInfoExtension
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.IS_MGM
+import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_SUSPENDED
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
 import net.corda.membership.lib.MemberInfoExtension.Companion.SESSION_KEYS
 import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
 import net.corda.membership.lib.MemberInfoExtension.Companion.id
+import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.SignedGroupParameters
 import net.corda.membership.p2p.helpers.MerkleTreeGenerator
 import net.corda.membership.p2p.helpers.P2pRecordsFactory
 import net.corda.membership.p2p.helpers.Verifier
 import net.corda.membership.persistence.client.MembershipPersistenceClient
-import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.publisher.Publisher
@@ -275,8 +276,12 @@ class MemberSynchronisationServiceImplTest {
     private val clock = TestClock(Instant.ofEpochSecond(100))
     private val verifier = mock<Verifier>()
     private val persistenceClient = mock<MembershipPersistenceClient> {
-        on { persistGroupParameters(any(), any()) } doAnswer {
-            MembershipPersistenceResult.Success(it.getArgument<SignedGroupParameters>(1))
+        on { persistGroupParameters(any(), any()) } doAnswer { invocation ->
+            mock {
+                on {
+                    getOrThrow()
+                } doReturn invocation.getArgument(1)
+            }
         }
     }
     private val groupParameters = mock<SignedGroupParameters>()
@@ -391,7 +396,7 @@ class MemberSynchronisationServiceImplTest {
                 any(),
                 capturedPersistedGroupParameters.capture()
             )
-        ).thenReturn(MembershipPersistenceResult.Success(mock()))
+        ).thenReturn(mock())
 
         synchronisationService.processMembershipUpdates(updates)
 
@@ -614,7 +619,7 @@ class MemberSynchronisationServiceImplTest {
             on { memberProvidedContext } doReturn memberContext
             on { name } doReturn MemberX500Name("Member", "London", "GB")
         }
-        whenever(groupReader.lookup()).doReturn(
+        whenever(groupReader.lookup(filter = MembershipStatusFilter.ACTIVE_OR_SUSPENDED)).doReturn(
             listOf(
                 mgmInfo,
                 memberInfo,
@@ -629,6 +634,22 @@ class MemberSynchronisationServiceImplTest {
             argThat {
                 this.contains(memberInfo) && this.contains(participant) && !this.contains(mgmInfo)
             }
+        )
+    }
+
+    @Test
+    fun `processMembershipUpdates hashes the correct members if the viewOwningMember is suspended`() {
+        postConfigChangedEvent()
+        synchronisationService.start()
+        whenever(participant.status).doReturn(MEMBER_STATUS_SUSPENDED)
+        whenever(participant.name).doReturn(member.x500Name)
+
+        synchronisationService.processMembershipUpdates(updates)
+
+        verify(
+            merkleTreeGenerator
+        ).generateTree(
+            listOf(participant)
         )
     }
 

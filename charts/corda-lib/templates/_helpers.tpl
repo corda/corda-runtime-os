@@ -71,6 +71,10 @@ securityContext:
   runAsUser: 10001
   runAsGroup: 10002
   allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop:
+      - "ALL"
 {{- end }}
 {{- end }}
 
@@ -359,7 +363,7 @@ SALT and PASSPHRASE environment variables for decrypting configuration.
     secretKeyRef:
       {{- if .Values.config.encryption.passphrase.valueFrom.secretKeyRef.name }}
       name: {{ .Values.config.encryption.passphrase.valueFrom.secretKeyRef.name | quote }}
-      key: {{ required "Must specify config.encryption.passphrase.valueFrom.secretKeyRef.key" .Values.workers.db.passphrase.valueFrom.secretKeyRef.key | quote }}
+      key: {{ required "Must specify config.encryption.passphrase.valueFrom.secretKeyRef.key" .Values.config.encryption.passphrase.valueFrom.secretKeyRef.key | quote }}
       {{- else }}
       name: {{ (printf "%s-config" (include "corda.fullname" .)) | quote }}
       key: "passphrase"

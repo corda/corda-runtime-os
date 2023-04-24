@@ -85,6 +85,7 @@ import net.corda.utilities.seconds
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.membership.EndpointInfo
+import net.corda.v5.membership.MGMContext
 import net.corda.v5.membership.MemberContext
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
@@ -104,6 +105,7 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.slf4j.LoggerFactory
 import java.io.StringWriter
+import java.net.ServerSocket
 import java.net.URL
 import java.nio.ByteBuffer
 import java.security.Key
@@ -158,7 +160,6 @@ class P2PLayerEndToEndTest {
         Host(
             listOf(aliceId),
             "www.alice.net",
-            10500,
             Certificates.truststoreCertificatePem,
             bootstrapConfig,
             false,
@@ -167,7 +168,6 @@ class P2PLayerEndToEndTest {
             Host(
                 listOf(chipId),
                 "chip.net",
-                10501,
                 Certificates.truststoreCertificatePem,
                 bootstrapConfig,
                 false,
@@ -210,7 +210,6 @@ class P2PLayerEndToEndTest {
         Host(
             listOf(receiverId),
             "www.receiver.net",
-            10502,
             Certificates.ecTrustStorePem,
             bootstrapConfig,
             false,
@@ -219,7 +218,6 @@ class P2PLayerEndToEndTest {
             Host(
                 listOf(senderId),
                 "www.sender.net",
-                10503,
                 Certificates.ecTrustStorePem,
                 bootstrapConfig,
                 false,
@@ -261,7 +259,6 @@ class P2PLayerEndToEndTest {
         Host(
             listOf(receiverId, senderId),
             "www.alice.net",
-            10500,
             Certificates.truststoreCertificatePem,
             bootstrapConfig,
             false,
@@ -295,7 +292,6 @@ class P2PLayerEndToEndTest {
         Host(
             listOf(aliceId),
             "www.alice.net",
-            10500,
             Certificates.truststoreCertificatePem,
             bootstrapConfig,
             false,
@@ -304,7 +300,6 @@ class P2PLayerEndToEndTest {
             Host(
                 listOf(chipId),
                 "chip.net",
-                10501,
                 Certificates.truststoreCertificatePem,
                 bootstrapConfig,
                 false,
@@ -458,14 +453,19 @@ class P2PLayerEndToEndTest {
         }
 
         fun createMemberInfo(endpointInfo: EndpointInfo) : MemberInfo {
-            val context = mock<MemberContext> {
+            val memberContext = mock<MemberContext> {
                 on { parseList(ENDPOINTS, EndpointInfo::class.java) } doReturn listOf(endpointInfo)
                 on { parse(MemberInfoExtension.GROUP_ID, String::class.java) } doReturn identity.groupId
                 on { parseList(SESSION_KEYS, PublicKey::class.java) } doReturn listOf(keyPair.public)
             }
+            val mgmContext = mock<MGMContext> {
+                on { parse(MemberInfoExtension.IS_MGM, Boolean::class.java) } doReturn false
+            }
             return mock {
                 on { name } doReturn identity.name
-                on { memberProvidedContext } doReturn context
+                on { isActive } doReturn true
+                on { memberProvidedContext } doReturn memberContext
+                on { mgmProvidedContext } doReturn mgmContext
             }
         }
     }
@@ -473,12 +473,16 @@ class P2PLayerEndToEndTest {
     private class Host(
         ourIdentities: List<Identity>,
         p2pAddress: String,
-        p2pPort: Int,
         trustStoreURL: URL,
         private val bootstrapConfig: SmartConfig,
         checkRevocation: Boolean,
         keyTemplate: KeySchemeTemplate,
     ) : AutoCloseable {
+        private val p2pPort by lazy {
+            ServerSocket(0).use {
+                it.localPort
+            }
+        }
         private val endpointInfo = object: EndpointInfo {
             override fun getProtocolVersion() = ProtocolConstants.PROTOCOL_VERSION
             override fun getUrl() = "https://$p2pAddress:$p2pPort$URL_PATH"
@@ -680,10 +684,10 @@ class P2PLayerEndToEndTest {
             configPublisher.publishConfig(ConfigKeys.P2P_LINK_MANAGER_CONFIG, linkManagerConfig)
         }
 
-        private fun publishNetworkMapAndIdentityKeys(otherHost: Host? = null) {
-            otherHost?.localInfos?.forEach { info ->
+        private fun publishNetworkMapAndIdentityKeys(host: Host? = null) {
+            host?.localInfos?.forEach { info ->
                 val identity = info.identity
-                val memberInfo = info.createMemberInfo(otherHost.endpointInfo)
+                val memberInfo = info.createMemberInfo(host.endpointInfo)
 
                 val keyHash = PublicKeyHash.calculate(info.keyPair.public)
 
@@ -725,6 +729,7 @@ class P2PLayerEndToEndTest {
             gateway.start()
 
             publishConfig()
+            publishNetworkMapAndIdentityKeys(this)
             publishNetworkMapAndIdentityKeys(otherHost)
 
             eventually(20.seconds) {

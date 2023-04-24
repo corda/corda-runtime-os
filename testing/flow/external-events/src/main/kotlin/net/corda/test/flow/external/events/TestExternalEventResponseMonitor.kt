@@ -37,7 +37,7 @@ class TestExternalEventResponseMonitor(
      */
     fun getResponses(
         requestIds: Collection<String>,
-        timeout: Duration = Duration.ofSeconds(10)
+        timeout: Duration = Duration.ofSeconds(15)
     ) : Map<String, ExternalEventResponse> {
 
         val responses = requestIds.associateWith { CompletableFuture<ExternalEventResponse>() }

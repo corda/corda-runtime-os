@@ -24,6 +24,7 @@ class LedgerUniquenessCheckerClientServiceImplTest {
 
     private companion object {
         val dummyTxId = SecureHashUtils.randomSecureHash()
+        val originatorX500Name = "C=GB, L=London, O=Alice"
     }
 
     private val argumentCaptor = argumentCaptor<Class<out UniquenessCheckExternalEventFactory>>()
@@ -34,6 +35,7 @@ class LedgerUniquenessCheckerClientServiceImplTest {
             uniquenessCheckResult = UniquenessCheckResultSuccessImpl(Instant.now())
         ).requestUniquenessCheck(
             dummyTxId.toString(),
+            originatorX500Name,
             emptyList(),
             emptyList(),
             5,
@@ -53,6 +55,7 @@ class LedgerUniquenessCheckerClientServiceImplTest {
             )
         ).requestUniquenessCheck(
             dummyTxId.toString(),
+            originatorX500Name,
             emptyList(),
             emptyList(),
             5,

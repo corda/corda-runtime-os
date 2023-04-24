@@ -4,7 +4,6 @@ import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import net.corda.applications.workers.smoketest.TEST_CPB_LOCATION
 import net.corda.applications.workers.smoketest.TEST_CPI_NAME
-import net.corda.crypto.core.CryptoConsts.Categories.LEDGER
 import net.corda.e2etest.utilities.FlowStatus
 import net.corda.e2etest.utilities.GROUP_ID
 import net.corda.e2etest.utilities.RPC_FLOW_STATUS_FAILED
@@ -15,7 +14,6 @@ import net.corda.e2etest.utilities.TEST_NOTARY_CPI_NAME
 import net.corda.e2etest.utilities.awaitRpcFlowFinished
 import net.corda.e2etest.utilities.conditionallyUploadCordaPackage
 import net.corda.e2etest.utilities.configWithDefaultsNode
-import net.corda.e2etest.utilities.createKeyFor
 import net.corda.e2etest.utilities.getConfig
 import net.corda.e2etest.utilities.getFlowClasses
 import net.corda.e2etest.utilities.getHoldingIdShortHash
@@ -40,8 +38,6 @@ import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle
 import org.junit.jupiter.api.TestMethodOrder
 import java.util.UUID
-import net.corda.v5.application.flows.FlowContextPropertyKeys
-import net.corda.v5.crypto.KeySchemeCodes.RSA_CODE_NAME
 import kotlin.text.Typography.quote
 
 @Suppress("Unused", "FunctionName")
@@ -260,6 +256,23 @@ class FlowTests {
         assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
         assertThat(flowResult.command).isEqualTo("throw_platform_error")
         assertThat(flowResult.result).startsWith("Type='PLATFORM_ERROR'")
+    }
+
+    @Test
+    fun `Session Error - Closed Or Error sessions throw`() {
+        val requestBody = RpcSmokeTestInput().apply {
+            command = "throw_session_error"
+            data = mapOf("x500" to bobX500)
+        }
+
+        val requestId = startRpcFlow(bobHoldingId, requestBody)
+
+        val result = awaitRpcFlowFinished(bobHoldingId, requestId)
+
+        val flowResult = result.getRpcFlowResult()
+        assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+        assertThat(flowResult.command).isEqualTo("throw_session_error")
+        assertThat(flowResult.result).endsWith("Status is CLOSED")
     }
 
     @Test
@@ -707,6 +720,32 @@ class FlowTests {
         assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
         assertThat(result.flowResult).isNotNull
         assertThat(flowResult.command).isEqualTo("crypto_CompositeKeyGenerator_works_in_flows")
+        assertThat(flowResult.result).isEqualTo("SUCCESS")
+    }
+
+    @Test
+    fun `Crypto - Get default digest algorithm`() {
+        val requestBody = RpcSmokeTestInput()
+        requestBody.command = "crypto_get_default_digest_algorithm"
+        val requestId = startRpcFlow(bobHoldingId, requestBody)
+        val result = awaitRpcFlowFinished(bobHoldingId, requestId)
+        val flowResult = result.getRpcFlowResult()
+        assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+        assertThat(result.flowResult).isNotNull
+        assertThat(flowResult.command).isEqualTo("crypto_get_default_digest_algorithm")
+        assertThat(flowResult.result).isEqualTo("SUCCESS")
+    }
+
+    @Test
+    fun `Crypto - Get supported digest algorithms`() {
+        val requestBody = RpcSmokeTestInput()
+        requestBody.command = "crypto_get_supported_digest_algorithms"
+        val requestId = startRpcFlow(bobHoldingId, requestBody)
+        val result = awaitRpcFlowFinished(bobHoldingId, requestId)
+        val flowResult = result.getRpcFlowResult()
+        assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+        assertThat(result.flowResult).isNotNull
+        assertThat(flowResult.command).isEqualTo("crypto_get_supported_digest_algorithms")
         assertThat(flowResult.result).isEqualTo("SUCCESS")
     }
 

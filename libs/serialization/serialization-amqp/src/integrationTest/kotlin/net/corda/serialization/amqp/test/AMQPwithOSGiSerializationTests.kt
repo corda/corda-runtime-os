@@ -195,8 +195,9 @@ class AMQPwithOSGiSerializationTests {
         }
     }
 
+    // Public CPK types (i.e. types defined in CPK main bundle) alone can be AMQP serialized
     @Test
-    fun `amqp to be serialized objects can only live in cpk's main bundle`() {
+    fun `private CPK types serialization fails`() {
         val sandboxGroup = sandboxFactory.loadSandboxGroup("META-INF/TestSerializableCpk-using-lib.cpb")
         try {
             val factory = testDefaultFactory(sandboxGroup)
@@ -210,6 +211,79 @@ class AMQPwithOSGiSerializationTests {
             ) {
                 SerializationOutput(factory).serialize(mainBundleItemInstance, context)
             }
+        } finally {
+            sandboxFactory.unloadSandboxGroup(sandboxGroup)
+        }
+    }
+
+    @Test
+    fun `CPK custom serializer targeting private CPK type fails`() {
+        val sandboxGroup = sandboxFactory.loadSandboxGroup("META-INF/TestSerializableCpk-using-lib.cpb")
+        try {
+            val factory = testDefaultFactory(sandboxGroup)
+            val context = testSerializationContext.withSandboxGroup(sandboxGroup)
+
+            val mainBundleItemClass = sandboxGroup.loadClassFromMainBundles("net.cordapp.bundle.MainBundleItem")
+            val mainBundleItemInstance = mainBundleItemClass.getMethod("newInstance").invoke(null)
+
+            val serializerClass =
+                sandboxGroup.loadClassFromMainBundles("net.cordapp.bundle.SerializerTargetingPrivateType")
+            val serializer = serializerClass.getConstructor().newInstance() as SerializationCustomSerializer<*, *>
+            factory.registerExternal(serializer, factory)
+
+            assertThrows<SandboxException>(
+                "Attempted to create evolvable class tag for cpk private bundle com.example.serialization.serialization-cpk-library."
+            ) {
+                SerializationOutput(factory).serialize(mainBundleItemInstance, context)
+            }
+        } finally {
+            sandboxFactory.unloadSandboxGroup(sandboxGroup)
+        }
+    }
+
+    @Test
+    fun `CPK custom serializer targeting public CPK type whose proxy references private CPK type fails`() {
+        val sandboxGroup = sandboxFactory.loadSandboxGroup("META-INF/TestSerializableCpk-using-lib.cpb")
+        try {
+            val factory = testDefaultFactory(sandboxGroup)
+            val context = testSerializationContext.withSandboxGroup(sandboxGroup)
+
+            val mainBundleItemClass = sandboxGroup.loadClassFromMainBundles("net.cordapp.bundle.MainBundleItem")
+            val mainBundleItemInstance = mainBundleItemClass.getMethod("newInstance").invoke(null)
+
+            val serializerClass =
+                sandboxGroup.loadClassFromMainBundles("net.cordapp.bundle.SerializerUsingPrivateProxyType")
+            val serializer = serializerClass.getConstructor().newInstance() as SerializationCustomSerializer<*, *>
+            factory.registerExternal(serializer, factory)
+
+            assertThrows<SandboxException>(
+                "Attempted to create evolvable class tag for cpk private bundle com.example.serialization.serialization-cpk-library."
+            ) {
+                SerializationOutput(factory).serialize(mainBundleItemInstance, context)
+            }
+        } finally {
+            sandboxFactory.unloadSandboxGroup(sandboxGroup)
+        }
+    }
+
+    @Test
+    fun `public CPK types referencing private CPK types can be serialized through CPK custom serializer`() {
+        val sandboxGroup = sandboxFactory.loadSandboxGroup("META-INF/TestSerializableCpk-using-lib.cpb")
+        try {
+            val factory = testDefaultFactory(sandboxGroup)
+            val context = testSerializationContext.withSandboxGroup(sandboxGroup)
+
+            val mainBundleItemClass = sandboxGroup.loadClassFromMainBundles("net.cordapp.bundle.MainBundleItem")
+            val mainBundleItemInstance = mainBundleItemClass.getMethod("newInstance").invoke(null)
+
+            val serializerClass =
+                sandboxGroup.loadClassFromMainBundles("net.cordapp.bundle.SerializerUsingPublicProxyType")
+            val serializer = serializerClass.getConstructor().newInstance() as SerializationCustomSerializer<*, *>
+            factory.registerExternal(serializer, factory)
+
+            val serialized = SerializationOutput(factory).serialize(mainBundleItemInstance, context)
+            val deserializedObj = DeserializationInput(factory).deserialize(serialized, context)
+            assertEquals(mainBundleItemInstance, deserializedObj)
         } finally {
             sandboxFactory.unloadSandboxGroup(sandboxGroup)
         }

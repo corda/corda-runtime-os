@@ -99,7 +99,7 @@ internal fun Type.componentType(): Type {
 
 internal fun Class<*>.asParameterizedType(sandboxGroup: SandboxGroup): ParameterizedType =
     TypeIdentifier.Erased(this.name, this.typeParameters.size)
-            .toParameterized(this.typeParameters.map { TypeIdentifier.forGenericType(it) })
+            .toParameterized(this.typeParameters.map(TypeIdentifier::forGenericType))
             .getLocalType(sandboxGroup) as ParameterizedType
 
 internal fun Type.asParameterizedType(sandboxGroup: SandboxGroup): ParameterizedType {

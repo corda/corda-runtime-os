@@ -1,5 +1,4 @@
-package net.corda.processors.rpc
-
+package net.corda.processors.rest
 
 import net.corda.rest.security.AuthServiceId
 import net.corda.rest.security.AuthorizingSubject
