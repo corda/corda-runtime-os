@@ -3,18 +3,16 @@ package net.corda.ledger.persistence.utxo.impl
 import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.ledger.persistence.PersistTransaction
 import net.corda.data.ledger.persistence.PersistTransactionIfDoesNotExist
+import net.corda.ledger.common.data.transaction.PrivacySalt
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.TransactionMetadataInternal
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.data.transaction.TransactionStatus.Companion.toTransactionStatus
 import net.corda.ledger.persistence.utxo.UtxoPersistenceService
 import net.corda.ledger.persistence.utxo.UtxoTransactionReader
-import net.corda.ledger.utxo.data.state.StateAndRefImpl
-import net.corda.ledger.utxo.data.state.TransactionStateImpl
 import net.corda.ledger.utxo.data.state.cast
-import net.corda.ledger.utxo.data.state.getEncumbranceGroup
 import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
-import net.corda.ledger.utxo.data.transaction.UtxoOutputInfoComponent
+import net.corda.ledger.utxo.data.transaction.UtxoTransactionOutputDto
 import net.corda.ledger.utxo.data.transaction.WrappedUtxoWireTransaction
 import net.corda.persistence.common.exceptions.NullParameterException
 import net.corda.persistence.common.getSerializationService
@@ -23,7 +21,6 @@ import net.corda.utilities.serialization.deserialize
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.transaction.CordaPackageSummary
-import net.corda.ledger.common.data.transaction.PrivacySalt
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.StateRef
@@ -94,16 +91,9 @@ class UtxoTransactionReaderImpl(
             .zip(rawGroupLists[UtxoComponentGroup.OUTPUTS_INFO.ordinal])
             .withIndex()
             .filter { indexed -> visibleStatesSet.contains(indexed.index) }
-            .map { (index, value) ->
-                Triple(
-                    index,
-                    serializer.deserialize<ContractState>(value.first),
-                    serializer.deserialize<UtxoOutputInfoComponent>(value.second)
-                )
-            }.associate { (index, state, info) ->
-                index to StateAndRefImpl(
-                    state = TransactionStateImpl(state, info.notaryName, info.notaryKey, info.getEncumbranceGroup()),
-                    ref = StateRef(id, index)
+            .associate { (index, value) ->
+                index to UtxoTransactionOutputDto(id.toString(), index, value.second, value.first).toStateAndRef(
+                    serializer
                 )
             }
     }

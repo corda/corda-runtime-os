@@ -1,6 +1,6 @@
 package net.corda.crypto.impl.converter
 
-import net.corda.crypto.cipher.suite.PublicKeyHash
+import net.corda.crypto.core.parseSecureHash
 import net.corda.layeredpropertymap.testkit.LayeredPropertyMapMocks
 import net.corda.v5.base.types.LayeredPropertyMap
 import org.junit.jupiter.api.Test
@@ -9,8 +9,8 @@ import kotlin.test.assertNull
 
 class PublicKeyHashConverterTest {
     companion object {
-        private const val LEDGER_KEY_HASH = "BA7816BF8F01CFEA414140DE5DAE2223B00361A396177A9CB410FF61F20015AD"
-        private val ledgerKeyHash = PublicKeyHash.parse(LEDGER_KEY_HASH)
+        private const val LEDGER_KEY_HASH = "SHA-256:BA7816BF8F01CFEA414140DE5DAE2223B00361A396177A9CB410FF61F20015AD"
+        private val ledgerKeyHash = parseSecureHash(LEDGER_KEY_HASH)
         private val converters = listOf(PublicKeyHashConverter())
     }
 

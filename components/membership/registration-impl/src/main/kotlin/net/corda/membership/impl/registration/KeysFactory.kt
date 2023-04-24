@@ -1,11 +1,11 @@
 package net.corda.membership.impl.registration
 
 import net.corda.crypto.cipher.suite.KeyEncodingService
-import net.corda.crypto.cipher.suite.calculateHash
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.ALIAS_FILTER
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.CATEGORY_FILTER
 import net.corda.crypto.core.KeyAlreadyExistsException
+import net.corda.crypto.core.fullIdHash
 import net.corda.data.crypto.wire.ops.rpc.queries.CryptoKeyOrderBy
 import net.corda.membership.p2p.helpers.KeySpecExtractor
 import java.security.PublicKey
@@ -53,7 +53,7 @@ internal class KeysFactory(
             keyEncodingService.encodeAsString(publicKey)
         }
         override val hash by lazy {
-            publicKey.calculateHash()
+            publicKey.fullIdHash()
         }
         override val spec by lazy {
             keySpecExtractor.getSpec(publicKey)

@@ -1,12 +1,12 @@
 package net.corda.membership.impl.registration.dynamic.mgm
 
 import net.corda.crypto.cipher.suite.KeyEncodingService
-import net.corda.crypto.cipher.suite.calculateHash
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.core.CryptoConsts.Categories.PRE_AUTH
 import net.corda.crypto.core.CryptoConsts.Categories.SESSION_INIT
 import net.corda.crypto.core.ShortHash
 import net.corda.crypto.core.ShortHashException
+import net.corda.crypto.core.fullId
 import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.libs.platform.PlatformInfoProvider
@@ -142,7 +142,7 @@ internal class MGMRegistrationMemberInfoHandler(
             }.flatMapIndexed { index, sessionKey ->
                 listOf(
                     String.format(PARTY_SESSION_KEYS_PEM, index) to sessionKey.toPem(),
-                    String.format(SESSION_KEYS_HASH, index) to sessionKey.calculateHash().value,
+                    String.format(SESSION_KEYS_HASH, index) to sessionKey.fullId(),
                 )
             }
         val memberContext = context.filterKeys { key ->

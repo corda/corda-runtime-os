@@ -29,6 +29,7 @@ import java.nio.ByteBuffer
     property = [CORDA_SYSTEM_SERVICE],
     scope = PROTOTYPE
 )
+@Suppress("LongParameterList")
 class UtxoLedgerTransactionVerificationServiceImpl @Activate constructor(
     @Reference(service = ExternalEventExecutor::class)
     private val externalEventExecutor: ExternalEventExecutor,
