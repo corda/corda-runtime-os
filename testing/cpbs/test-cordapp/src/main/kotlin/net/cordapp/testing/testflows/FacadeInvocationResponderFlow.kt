@@ -1,5 +1,8 @@
 package net.cordapp.testing.testflows
 
+import com.fasterxml.jackson.core.JsonParser
+import com.fasterxml.jackson.databind.DeserializationContext
+import com.fasterxml.jackson.databind.JsonDeserializer
 import com.fasterxml.jackson.databind.ObjectMapper
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.InitiatedBy
@@ -35,13 +38,13 @@ class FacadeInvocationResponderFlow : ResponderFlow , SampleTokensFacade {
         //om.registerSubtypes(FacadeRequest::class.java)
         //val facadeRequest : FacadeRequest = om.readValue(request, FacadeRequest::class.java)
 
-        val facadeRequest  = jsonMarshallingService.parse(request, FacadeRequest::class.java)
+       // val facadeRequest  = jsonMarshallingService.parse(request, FacadeRequest::class.java)
        //  com.fasterxml.jackson.databind.exc.InvalidDefinitionException: Cannot construct instance of `org.corda.weft.parameters.ParameterType` (no Creators, like default constructor, exist): abstract types either need to be mapped to concrete types, have custom deserializer, or contain additional type information
 
-        log.info("FacadeInvocationResponderFlow with proxy and serilizer 3 .call() parsed : $facadeRequest")
+        //log.info("FacadeInvocationResponderFlow with proxy and serilizer 3 .call() parsed : $facadeRequest")
         //val response = "$request:Bye"
-        //val facadeRequest = FacadeRequest(FacadeId3("", mutableListOf("com", "r3", "tokens", "sample").joinToString("/"), "v1.0"),
-        //    "hello", listOf(TypedParameterValue(TypedParameter("greeting", ParameterType.StringType), request)))
+        val facadeRequest = FacadeRequest(FacadeId3("", mutableListOf("com", "r3", "tokens", "sample").joinToString("/"), "v1.0"),
+            "hello", listOf(TypedParameterValue(TypedParameter("greeting", ParameterType.StringType), request)))
         val facade = FacadeReaders.JSON.read(
             """{ "id": "/com/r3/tokens/sample/v1.0",
                   "commands": { 
@@ -79,4 +82,11 @@ class FacadeInvocationResponderFlow : ResponderFlow , SampleTokensFacade {
     override fun getBalance(greeting: String): InteropAction<String> {
         return InteropAction.ServerResponse("100")
     }
+}
+
+class ParameterTypeDeserializer : JsonDeserializer<org.corda.weft.parameters.ParameterType<Any>>() {
+
+    override fun deserialize(parser: JsonParser, ctxt: DeserializationContext): org.corda.weft.parameters.ParameterType<Any> =
+         ParameterType.StringType as ParameterType<Any>
+
 }
