@@ -83,13 +83,15 @@ class RecreateBinaryTest {
         val chunkSize = loremIpsum.length / divisor
 
         val chunks = mutableListOf<Chunk>()
-        val writer = ChunkWriterFactory.create(chunkSize + APP_LEVEL_CHUNK_MESSAGE_OVERHEAD).apply {
+        val properties= mutableMapOf<String,String?>()
+        properties[CHUNK_FILENAME_KEY] = someFile
+        val writer = ChunkWriterFactory.create(chunkSize + APP_LEVEL_CHUNK_MESSAGE_OVERHEAD, properties).apply {
             onChunk { chunks.add(it) }
         }
         // end of setup...
 
         // This is what we'd write in one of our components
-        writer.write(someFile, Files.newInputStream(tempFile))
+        writer.write(Files.newInputStream(tempFile))
         return chunks
     }
 

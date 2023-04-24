@@ -5,7 +5,6 @@ import net.corda.chunking.ChunkBuilderService
 import net.corda.chunking.ChunkWriteCallback
 import net.corda.chunking.ChunkWriter
 import net.corda.chunking.Constants.Companion.APP_LEVEL_CHUNK_MESSAGE_OVERHEAD
-import net.corda.chunking.Constants.Companion.CHUNK_FILENAME_KEY
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
@@ -39,14 +38,9 @@ internal class ChunkWriterImpl(
     //add extra overhead to avoid message bus level chunking
     val chunkSize = maxAllowedMessageSize - APP_LEVEL_CHUNK_MESSAGE_OVERHEAD
 
-    override fun write(fileName: String?, inputStream: InputStream): ChunkWriter.Request {
+    override fun write(inputStream: InputStream): ChunkWriter.Request {
         if (chunkWriteCallback == null) {
             throw CordaRuntimeException("Chunk write callback not set")
-        }
-
-        fileName?.let{
-            properties = properties ?: mutableMapOf()
-            properties!![CHUNK_FILENAME_KEY] = it
         }
 
         var chunkNumber = 0

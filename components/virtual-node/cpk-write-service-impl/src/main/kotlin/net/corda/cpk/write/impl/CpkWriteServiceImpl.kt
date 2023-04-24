@@ -1,6 +1,7 @@
 package net.corda.cpk.write.impl
 
 import net.corda.chunking.ChunkWriterFactory
+import net.corda.chunking.Constants.Companion.CHUNK_FILENAME_KEY
 import net.corda.crypto.core.toAvro
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
@@ -226,16 +227,18 @@ class CpkWriteServiceImpl @Activate constructor(
     private fun CpkChunksPublisher.chunkAndPublishCpk(cpkFile: CpkFile) {
         logger.debug { "Publishing CPK ${cpkFile.fileChecksum}" }
         val cpkChecksum = cpkFile.fileChecksum
+        val properties= mutableMapOf<String,String?>()
+        properties[CHUNK_FILENAME_KEY] = cpkChecksum.toFileName()
         val cpkData = cpkFile.data
         val chunkWriter = maxAllowedKafkaMsgSize?.let {
-            ChunkWriterFactory.create(it)
+            ChunkWriterFactory.create(it, properties)
         } ?: throw CordaRuntimeException("maxAllowedKafkaMsgSize is not set")
 
         chunkWriter.onChunk { chunk ->
             val cpkChunkId = CpkChunkId(cpkChecksum.toAvro(), chunk.partNumber)
             put(cpkChunkId, chunk)
         }
-        chunkWriter.write(cpkChecksum.toFileName(), ByteArrayInputStream(cpkData))
+        chunkWriter.write(ByteArrayInputStream(cpkData))
     }
 
     override val isRunning: Boolean

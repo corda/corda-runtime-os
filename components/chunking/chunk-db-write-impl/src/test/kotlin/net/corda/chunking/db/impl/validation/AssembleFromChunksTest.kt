@@ -29,12 +29,12 @@ internal class AssembleFromChunksTest {
         const val expectedFileName = "some.cpi"
 
     }
-    private var properties: MutableMap<String, String?>? = null
+    private lateinit var properties: MutableMap<String, String?>
     @BeforeEach
     fun beforeEach() {
         fs = Jimfs.newFileSystem()
         properties = mutableMapOf()
-        properties!![CHUNK_FILENAME_KEY] = expectedFileName
+        properties[CHUNK_FILENAME_KEY] = expectedFileName
     }
 
     @AfterEach

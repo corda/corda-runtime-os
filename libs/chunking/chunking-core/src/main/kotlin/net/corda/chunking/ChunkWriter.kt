@@ -12,13 +12,11 @@ interface ChunkWriter {
 
     /**
      * Break up an [InputStream] into chunks of some unspecified size (smaller than the default Kafka message size).
-     * The given [fileName] will be returned via the [ChunkReader] and the [ChunksCombined] callback.
      *
-     * @param fileName the filename, if any, of the binary we are chunking
      * @param inputStream a stream containing the binary - the caller should `close()` the stream
      * @return the [Request] information for this write.
      */
-    fun write(fileName: String?, inputStream: InputStream) : Request
+    fun write(inputStream: InputStream) : Request
 
     /**
      * When a chunk is created, it is passed to the [ChunkWriteCallback], it is up to the implementer to write the

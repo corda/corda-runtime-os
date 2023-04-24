@@ -50,6 +50,9 @@ class ChunkReadingTest {
 
     @Test
     fun `can read in order chunks`() {
+        val ourFileName = randomFileName()
+        val properties= mutableMapOf<String,String?>()
+        properties[CHUNK_FILENAME_KEY] = ourFileName
         var actualFileName: String? = null
         var actualPath: Path? = null
         val reader = chunkReaderFactory.create(Files.createDirectory(fs.getPath("temp"))).apply {
@@ -59,13 +62,12 @@ class ChunkReadingTest {
             }
         }
 
-        val writer = ChunkWriterFactory.create(1 * MB).apply {
+        val writer = ChunkWriterFactory.create(1 * MB, properties).apply {
             onChunk(reader::read)
         }
 
         val path = createEmptyFile((2 * MB).toLong())
-        val ourFileName = randomFileName()
-        writer.write(ourFileName, Files.newInputStream(path))
+        writer.write(Files.newInputStream(path))
 
         assertThat(ourFileName).isEqualTo(actualFileName.toString())
         assertThat(Files.size(path)).isEqualTo(Files.size(actualPath!!))
@@ -88,8 +90,7 @@ class ChunkReadingTest {
         }
 
         val path = createEmptyFile((chunkCount * writer.chunkSize).toLong())
-        val ourFileName = randomFileName()
-        writer.write(ourFileName, Files.newInputStream(path))
+        writer.write(Files.newInputStream(path))
         assertThat(chunks.size).isGreaterThan(2)
 
         // Now replay first and last chunks, but not the rest.
@@ -103,8 +104,12 @@ class ChunkReadingTest {
 
     @Test
     fun `can read out of order chunks`() {
+        val ourFileName = randomFileName()
+        val properties= mutableMapOf<String,String?>()
+        properties[CHUNK_FILENAME_KEY] = ourFileName
+
         val chunks = mutableListOf<Chunk>()
-        val writer = ChunkWriterImpl(32 + APP_LEVEL_CHUNK_MESSAGE_OVERHEAD, chunkBuilderService).apply {
+        val writer = ChunkWriterImpl(32 + APP_LEVEL_CHUNK_MESSAGE_OVERHEAD, chunkBuilderService, properties).apply {
             onChunk(chunks::add)
         }
 
@@ -121,8 +126,7 @@ class ChunkReadingTest {
 
         val chunkCount = 5
         val path = createEmptyFile((chunkCount * writer.chunkSize).toLong())
-        val ourFileName = randomFileName()
-        writer.write(ourFileName, Files.newInputStream(path))
+        writer.write(Files.newInputStream(path))
 
         // Guaranteed to be in order in this test
         // Now replay two chunks
@@ -164,8 +168,7 @@ class ChunkReadingTest {
             val chunkCount = (1..6).random()
             expectedNonZeroChunkCount += chunkCount
             val path = createEmptyFile((chunkCount * writer.chunkSize).toLong())
-            val ourFileName = randomFileName()
-            writer.write(ourFileName, Files.newInputStream(path))
+            writer.write(Files.newInputStream(path))
         }
 
         // non-zero chunks plus  one zero chunk per file
@@ -192,6 +195,10 @@ class ChunkReadingTest {
             finibus. 
         """.trimIndent()
 
+        val ourFileName = randomFileName()
+        val properties= mutableMapOf<String,String?>()
+        properties[CHUNK_FILENAME_KEY] = ourFileName
+
         val expectedPath = fs.getPath(randomFileName())
         Files.newBufferedWriter(expectedPath, StandardOpenOption.WRITE, StandardOpenOption.CREATE_NEW).use {
             it.write(loremIpsum)
@@ -204,12 +211,11 @@ class ChunkReadingTest {
             .isNotEqualTo(loremIpsum.length)
 
         val chunks = mutableListOf<Chunk>()
-        val writer = ChunkWriterImpl(chunkSize, chunkBuilderService).apply {
+        val writer = ChunkWriterImpl(chunkSize, chunkBuilderService, properties).apply {
             onChunk(chunks::add)
         }
 
-        val ourFileName = randomFileName()
-        writer.write(ourFileName, Files.newInputStream(expectedPath))
+        writer.write(Files.newInputStream(expectedPath))
 
         lateinit var actualPath: Path
         var actualFileName: String? = null
@@ -244,13 +250,12 @@ class ChunkReadingTest {
     fun `zero sized file`() {
         // Should never get a zero sized file and just the terminating chunk, but who knows?
         val path = createEmptyFile(0)
-        val ourFileName = randomFileName()
         val chunks = mutableListOf<Chunk>()
         val chunkSize = 32 + APP_LEVEL_CHUNK_MESSAGE_OVERHEAD //bytes
         val writer = ChunkWriterImpl(chunkSize, chunkBuilderService).apply {
             onChunk(chunks::add)
         }
-        writer.write(ourFileName, Files.newInputStream(path))
+        writer.write(Files.newInputStream(path))
 
         assertThat(chunks.size).isEqualTo(1)
         assertThat(chunks.last().data.limit()).isEqualTo(0)
