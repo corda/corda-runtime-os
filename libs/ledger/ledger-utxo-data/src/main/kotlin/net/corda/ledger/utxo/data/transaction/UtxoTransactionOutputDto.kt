@@ -30,6 +30,7 @@ data class UtxoTransactionOutputDto(
     fun <T : ContractState> toStateAndRef(serializationService: SerializationService) =
         LazyStateAndRefImpl<T>(
             this,
+            null,
             serializationService
         )
 }

@@ -25,10 +25,12 @@ import java.lang.Exception
 @CordaSerializable
 data class LazyStateAndRefImpl<out T : ContractState>(
     val serializedStateAndRef: UtxoTransactionOutputDto,
+    val deserializedStateAndRef: StateAndRef<@UnsafeVariance T>?,
     private val serializationService: SerializationService
 ) : StateAndRef<@UnsafeVariance T> {
-    private val stateAndRef: StateAndRef<@UnsafeVariance T> by lazy(LazyThreadSafetyMode.PUBLICATION) {
-        serializedStateAndRef.deserializeToStateAndRef(serializationService)
+
+    val stateAndRef: StateAndRef<@UnsafeVariance T> by lazy(LazyThreadSafetyMode.PUBLICATION) {
+        deserializedStateAndRef ?: serializedStateAndRef.deserializeToStateAndRef<T>(serializationService)
     }
 
     override fun getState(): TransactionState<@UnsafeVariance T> {
