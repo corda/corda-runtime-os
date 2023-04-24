@@ -11,7 +11,6 @@ import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.async.request.MembershipAsyncRequest
-import net.corda.data.membership.async.request.RegistrationAsyncRequest
 import net.corda.data.membership.common.RegistrationRequestDetails
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.libs.configuration.SmartConfig
@@ -35,6 +34,7 @@ import net.corda.membership.client.dto.SubmittedRegistrationStatus
 import net.corda.membership.lib.MemberInfoExtension
 import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.persistence.client.MembershipPersistenceClient
+import net.corda.membership.persistence.client.MembershipPersistenceOperation
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.persistence.client.MembershipQueryResult
@@ -120,8 +120,11 @@ class MemberResourceClientTest {
     private val configurationReadService: ConfigurationReadService = mock {
         on { registerComponentForUpdates(any(), any()) } doReturn configHandle
     }
+    private val operation = mock<MembershipPersistenceOperation<Unit>> {
+        on { execute() } doReturn MembershipPersistenceResult.success()
+    }
     private val membershipPersistenceClient = mock<MembershipPersistenceClient> {
-        on { persistRegistrationRequest(any(), any()) } doReturn MembershipPersistenceResult.success()
+        on { persistRegistrationRequest(any(), any()) } doReturn operation
     }
     private val signatureWithKey: CryptoSignatureWithKey = mock()
     private val signatureSpec: CryptoSignatureSpec = mock()
@@ -534,7 +537,7 @@ class MemberResourceClientTest {
                 assertThat(record.topic).isEqualTo(MEMBERSHIP_ASYNC_REQUEST_TOPIC)
                 assertThat(record.key.toString()).isEqualTo(HOLDING_IDENTITY_ID)
                 val value = record.value as? MembershipAsyncRequest
-                val request = value?.request as? RegistrationAsyncRequest
+                val request = value?.request
                 assertThat(request?.holdingIdentityId).isEqualTo(HOLDING_IDENTITY_ID)
                 assertThat(request?.context).isEqualTo(mapOf("property" to "test").toWire())
             }
@@ -597,8 +600,8 @@ class MemberResourceClientTest {
 
     @Test
     fun `startRegistration will be successful if persistence failed`() {
-        whenever(membershipPersistenceClient.persistRegistrationRequest(any(), any()))
-            .doReturn(MembershipPersistenceResult.Failure("Ooops"))
+        whenever(operation.execute())
+            .doReturn(MembershipPersistenceResult.Failure("Oops"))
         memberOpsClient.start()
         setUpConfig()
 
@@ -606,6 +609,24 @@ class MemberResourceClientTest {
 
         assertThat(result.registrationStatus).isEqualTo(SubmittedRegistrationStatus.SUBMITTED)
         assertThat(result.availableNow).isEqualTo(false)
+    }
+
+    @Test
+    fun `startRegistration will try to post async command to persistence layer if sync command failed`() {
+        val record = Record(
+            "topic",
+            "key",
+            4
+        )
+        whenever(operation.execute())
+            .doReturn(MembershipPersistenceResult.Failure("Oops"))
+        whenever(operation.createAsyncCommands()).doReturn(listOf(record))
+        memberOpsClient.start()
+        setUpConfig()
+
+        memberOpsClient.startRegistration(holdingIdentityId, context)
+
+        verify(asyncPublisher).publish(listOf(record))
     }
 
     @Test

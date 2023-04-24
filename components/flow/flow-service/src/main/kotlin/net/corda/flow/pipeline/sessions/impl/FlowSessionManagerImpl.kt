@@ -201,6 +201,17 @@ class FlowSessionManagerImpl @Activate constructor(
             .filter { sessionState -> sessionState.status == status }
     }
 
+    override fun getSessionsWithStatuses(
+        checkpoint: FlowCheckpoint,
+        sessionIds: List<String>,
+        statuses: Set<SessionStateType>
+    ): List<SessionState> {
+        val matchedSessions = statuses.map {
+            getSessionsWithStatus(checkpoint, sessionIds, it)
+        }.flatten()
+        return matchedSessions
+    }
+
     override fun doAllSessionsHaveStatusIn(
         checkpoint: FlowCheckpoint,
         sessionIds: List<String>,

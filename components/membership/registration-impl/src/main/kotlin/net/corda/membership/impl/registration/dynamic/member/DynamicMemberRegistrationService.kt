@@ -26,6 +26,7 @@ import net.corda.data.membership.p2p.MembershipRegistrationRequest
 import net.corda.data.membership.p2p.UnauthenticatedRegistrationRequest
 import net.corda.data.membership.p2p.UnauthenticatedRegistrationRequestHeader
 import net.corda.data.p2p.app.AppMessage
+import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.data.p2p.app.UnauthenticatedMessage
 import net.corda.data.p2p.app.UnauthenticatedMessageHeader
 import net.corda.libs.configuration.helper.getConfig
@@ -108,7 +109,6 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
 import java.util.UUID
-import java.util.concurrent.TimeUnit
 
 @Suppress("LongParameterList")
 @Component(service = [MemberRegistrationService::class])
@@ -150,7 +150,7 @@ class DynamicMemberRegistrationService @Activate constructor(
             registrationId: UUID,
             member: HoldingIdentity,
             context: Map<String, String>
-        )
+        ): Collection<Record<*, *>>
     }
 
     private companion object {
@@ -235,7 +235,7 @@ class DynamicMemberRegistrationService @Activate constructor(
             registrationId: UUID,
             member: HoldingIdentity,
             context: Map<String, String>
-        ) {
+        ): Collection<Record<*, *>> {
             logger.warn("DynamicMemberRegistrationService is currently inactive.")
             throw NotReadyMembershipRegistrationException(
                 "Registration failed. Reason: DynamicMemberRegistrationService is not running."
@@ -251,7 +251,7 @@ class DynamicMemberRegistrationService @Activate constructor(
             registrationId: UUID,
             member: HoldingIdentity,
             context: Map<String, String>,
-        ) {
+        ): Collection<Record<*, *>> {
             try {
                 membershipSchemaValidatorFactory
                     .createValidator()
@@ -276,10 +276,10 @@ class DynamicMemberRegistrationService @Activate constructor(
             }
             val customFieldsValid = registrationContextCustomFieldsVerifier.verify(context)
             if (customFieldsValid is RegistrationContextCustomFieldsVerifier.Result.Failure)  {
-                    logger.info(customFieldsValid.reason)
-                    throw InvalidMembershipRegistrationException("Registration failed. ${customFieldsValid.reason}")
+                logger.info(customFieldsValid.reason)
+                throw InvalidMembershipRegistrationException("Registration failed. ${customFieldsValid.reason}")
             }
-            try {
+            return try {
                 val roles = MemberRole.extractRolesFromContext(context)
                 val notaryKeys = generateNotaryKeys(context, member.shortHash.value)
                 logger.debug("Member roles: {}, notary keys: {}", roles, notaryKeys)
@@ -313,8 +313,13 @@ class DynamicMemberRegistrationService @Activate constructor(
                 val mgm = groupReader.lookup().firstOrNull { it.isMgm }
                     ?: throw IllegalArgumentException("Failed to look up MGM information.")
 
+                val currentInfo = groupReader.lookup(member.x500Name, MembershipStatusFilter.ACTIVE_OR_SUSPENDED)
+                require(currentInfo == null) {
+                    "Re-registration is not supported."
+                }
+
                 val serialInfo = context[SERIAL]?.toLong()
-                    ?: groupReader.lookup(member.x500Name)?.serial
+                    ?: currentInfo?.serial
                     ?: 0
 
                 val message = MembershipRegistrationRequest(
@@ -362,7 +367,7 @@ class DynamicMemberRegistrationService @Activate constructor(
                     member.shortHash.value
                 )
 
-                membershipPersistenceClient.persistRegistrationRequest(
+                val commands = membershipPersistenceClient.persistRegistrationRequest(
                     viewOwningIdentity = member,
                     registrationRequest = RegistrationRequest(
                         status = RegistrationStatus.SENT_TO_MGM,
@@ -373,9 +378,9 @@ class DynamicMemberRegistrationService @Activate constructor(
                         signatureSpec = CryptoSignatureSpec(signatureSpec, null, null),
                         serial = serialInfo,
                     )
-                ).getOrThrow()
+                ).createAsyncCommands()
 
-                publisher.publish(listOf(record)).first().get(PUBLICATION_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+                listOf(record) + commands
             } catch (e: InvalidMembershipRegistrationException) {
                 logger.warn("Registration failed.", e)
                 throw e
@@ -462,11 +467,12 @@ class DynamicMemberRegistrationService @Activate constructor(
                 require(orderVerifier.isOrdered(this, 3)) { "Provided session key IDs are incorrectly numbered." }
             }
             p2pEndpointVerifier.verifyContext(context)
+            val isNotary = context.entries.any { it.key.startsWith(ROLES_PREFIX) && it.value == NOTARY_ROLE }
             context.keys.filter { ledgerIdRegex.matches(it) }.apply {
-                require(isNotEmpty()) { "No ledger key ID was provided." }
+                if (!isNotary) require(isNotEmpty()) { "No ledger key ID was provided." }
                 require(orderVerifier.isOrdered(this, 3)) { "Provided ledger key IDs are incorrectly numbered." }
             }
-            if (context.entries.any { it.key.startsWith(ROLES_PREFIX) && it.value == NOTARY_ROLE }) {
+            if (isNotary) {
                 context.keys.filter { notaryIdRegex.matches(it) }.apply {
                     require(isNotEmpty()) { "No notary key ID was provided." }
                     require(orderVerifier.isOrdered(this, 3)) { "Provided notary key IDs are incorrectly numbered." }

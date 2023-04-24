@@ -28,11 +28,15 @@ class FilteredTransactionSerializer @Activate constructor(
     private val merkleTreeProvider: MerkleTreeProvider
 ) : BaseProxySerializer<FilteredTransaction, FilteredTransactionProxy>(), UsedByFlow {
 
-    override val proxyType = FilteredTransactionProxy::class.java
+    override val proxyType
+        get() = FilteredTransactionProxy::class.java
 
-    override val type = FilteredTransaction::class.java
+    override val type
+        get() = FilteredTransaction::class.java
 
-    override val withInheritance = true
+    override val withInheritance
+        // FilteredTransaction is an interface.
+        get() = true
 
     override fun toProxy(obj: FilteredTransaction): FilteredTransactionProxy {
         return FilteredTransactionProxy(obj.id, obj.topLevelMerkleProof, obj.filteredComponentGroups)

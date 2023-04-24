@@ -2,6 +2,7 @@ package net.corda.simulator.runtime.persistence
 
 import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
+import net.corda.flow.persistence.ResultSetImpl
 import net.corda.simulator.runtime.utils.sandboxName
 import net.corda.v5.application.persistence.CordaPersistenceException
 import net.corda.v5.application.persistence.PagedQuery
@@ -141,12 +142,19 @@ class DbPersistenceService(member : MemberX500Name) : CloseablePersistenceServic
                 mapOf()
             )
         ) : ParameterizedQuery<T> {
-            override fun execute(): List<T> {
+            override fun execute(): PagedQuery.ResultSet<T> {
                 return emf.transaction { em ->
                     val query = em.createNamedQuery(queryName, entityClass)
                         .setFirstResult(context.offset)
                         .setMaxResults(context.limit)
-                    context.parameters.entries.fold(query) { q, (key, value) -> q.setParameter(key, value) }.resultList
+                    ResultSetImpl(
+                        context.parameters.entries.fold(query) { q, (key, value) ->
+                            q.setParameter(
+                                key,
+                                value
+                            )
+                        }.resultList
+                    )
                 }
             }
 
@@ -184,15 +192,17 @@ class DbPersistenceService(member : MemberX500Name) : CloseablePersistenceServic
             private val entityClass: Class<T>,
             private val context: QueryContext = QueryContext(0, Int.MAX_VALUE, mapOf())
         ) : PagedQuery<T> {
-            override fun execute(): List<T> {
+            override fun execute(): PagedQuery.ResultSet<T> {
                 try {
-                    return emf.guard {
-                        val query = it.createQuery("FROM ${entityClass.simpleName} e")
-                            .setFirstResult(context.offset)
-                            .setMaxResults(context.limit)
-                        @Suppress("UNCHECKED_CAST")
-                        query.resultList as List<T>
-                    }
+                    return ResultSetImpl(
+                        emf.guard {
+                            val query = it.createQuery("FROM ${entityClass.simpleName} e")
+                                .setFirstResult(context.offset)
+                                .setMaxResults(context.limit)
+                            @Suppress("UNCHECKED_CAST")
+                            query.resultList as List<T>
+                        }
+                    )
                 } catch (e: ClassCastException) {
                     throw CordaPersistenceException("The result of the query was not an $entityClass", e)
                 }

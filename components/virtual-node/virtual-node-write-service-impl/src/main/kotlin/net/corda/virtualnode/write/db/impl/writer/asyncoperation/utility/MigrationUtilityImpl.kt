@@ -1,17 +1,17 @@
 package net.corda.virtualnode.write.db.impl.writer.asyncoperation.utility
 
 import net.corda.crypto.core.ShortHash
-import java.util.UUID
 import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.core.CloseableDataSource
 import net.corda.libs.cpi.datamodel.CpkDbChangeLog
+import net.corda.libs.virtualnode.common.exception.LiquibaseDiffCheckFailedException
 import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.write.db.VirtualNodeWriteServiceException
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeDbChangeLog
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.MigrationUtility
-import net.corda.virtualnode.write.db.impl.writer.asyncoperation.exception.LiquibaseDiffCheckFailedException
 import org.slf4j.LoggerFactory
+import java.util.UUID
 
 internal class MigrationUtilityImpl(
     private val dbConnectionManager: DbConnectionManager,

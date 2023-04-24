@@ -19,6 +19,7 @@ dependencies {
     api "com.zaxxer:HikariCP:$hikariCpVersion"
 
     testImplementation "org.assertj:assertj-core:$assertjVersion"
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 
     integrationTestRuntimeOnly 'org.osgi:osgi.core'

@@ -36,7 +36,7 @@ class UtxoPersistTransactionRequestHandler @Suppress("LongParameterList") constr
         val outputTokenRecords = if (isTransactionVerified) {
             utxoOutputRecordFactory.getTokenCacheChangeEventRecords(
                 holdingIdentity,
-                transaction.getProducedStates().toTokens(tokenObservers),
+                transaction.getVisibleStates().values.toList().toTokens(tokenObservers),
                 transaction.getConsumedStates(persistenceService).toTokens(tokenObservers)
             )
         } else {

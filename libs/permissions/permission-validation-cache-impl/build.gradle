@@ -18,5 +18,6 @@ dependencies {
     implementation project(":libs:permissions:permission-validation-cache")
     implementation project(":libs:permissions:permission-cache-common")
 
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 }

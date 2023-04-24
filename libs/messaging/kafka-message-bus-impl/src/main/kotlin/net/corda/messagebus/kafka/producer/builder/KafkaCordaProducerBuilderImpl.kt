@@ -1,5 +1,6 @@
 package net.corda.messagebus.kafka.producer.builder
 
+import io.micrometer.core.instrument.binder.kafka.KafkaClientMetrics
 import java.util.Properties
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messagebus.api.configuration.ProducerConfig
@@ -13,9 +14,9 @@ import net.corda.messaging.api.chunking.MessagingChunkFactory
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.schema.configuration.MessagingConfig
 import net.corda.schema.registry.AvroSchemaRegistry
-import net.corda.utilities.classload.OsgiDelegatedClassLoader
 import org.apache.kafka.clients.producer.KafkaProducer
 import org.osgi.framework.FrameworkUtil
+import org.osgi.framework.wiring.BundleWiring
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -52,7 +53,12 @@ class KafkaCordaProducerBuilderImpl @Activate constructor(
                 val producer = createKafkaProducer(kafkaProperties)
                 val maxAllowedMessageSize = messageBusConfig.getLong(MessagingConfig.MAX_ALLOWED_MSG_SIZE)
                 val producerChunkService = messagingChunkFactory.createChunkSerializerService(maxAllowedMessageSize)
-                CordaKafkaProducerImpl(resolvedConfig, producer, producerChunkService)
+                CordaKafkaProducerImpl(
+                    resolvedConfig,
+                    producer,
+                    producerChunkService,
+                    KafkaClientMetrics(producer)
+                )
             },
             errorMessage = { "SubscriptionProducerBuilderImpl failed to producer with clientId ${producerConfig.clientId}, " +
                     "with configuration: $messageBusConfig" },
@@ -66,7 +72,7 @@ class KafkaCordaProducerBuilderImpl @Activate constructor(
 
         return try {
             if (currentBundle != null) {
-                Thread.currentThread().contextClassLoader = OsgiDelegatedClassLoader(currentBundle)
+                Thread.currentThread().contextClassLoader = currentBundle.adapt(BundleWiring::class.java).classLoader
             }
             KafkaProducer(
                 kafkaProperties,

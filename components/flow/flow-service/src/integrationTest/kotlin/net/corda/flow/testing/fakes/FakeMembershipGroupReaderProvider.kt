@@ -8,11 +8,13 @@ import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.membership.read.NotaryVirtualNodeLookup
 import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.membership.MGMContext
+import net.corda.v5.membership.MemberContext
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
-import org.mockito.Mockito.mock
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.propertytypes.ServiceRanking
+import java.security.PublicKey
 
 @ServiceRanking(Int.MAX_VALUE)
 @Component(service = [MembershipGroupReaderProvider::class, FakeMembershipGroupReaderProvider::class])
@@ -65,7 +67,7 @@ class FakeMembershipGroupReaderProvider : MembershipGroupReaderProvider {
         }
 
         override fun lookup(name: MemberX500Name, filter: MembershipStatusFilter): MemberInfo? {
-            return mock()
+            return MemberInfoStub()
         }
 
         override fun lookupBySessionKey(sessionKeyHash: PublicKeyHash, filter: MembershipStatusFilter): MemberInfo? {
@@ -74,5 +76,37 @@ class FakeMembershipGroupReaderProvider : MembershipGroupReaderProvider {
 
         override val notaryVirtualNodeLookup: NotaryVirtualNodeLookup
             get() = TODO("Not yet implemented")
+    }
+
+    // mockito doesn't play nicely with OSGi, so creating stub manually.
+    private class MemberInfoStub : MemberInfo {
+        override fun getMemberProvidedContext(): MemberContext {
+            TODO("Not yet implemented")
+        }
+
+        override fun getMgmProvidedContext(): MGMContext {
+            TODO("Not yet implemented")
+        }
+
+        override fun getName(): MemberX500Name {
+            TODO("Not yet implemented")
+        }
+
+        override fun getLedgerKeys(): MutableList<PublicKey> {
+            TODO("Not yet implemented")
+        }
+
+        override fun getPlatformVersion(): Int {
+            TODO("Not yet implemented")
+        }
+
+        override fun getSerial(): Long {
+            TODO("Not yet implemented")
+        }
+
+        override fun isActive(): Boolean {
+            TODO("Not yet implemented")
+        }
+
     }
 }

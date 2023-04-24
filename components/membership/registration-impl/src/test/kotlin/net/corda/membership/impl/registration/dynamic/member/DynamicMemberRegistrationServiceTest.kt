@@ -78,7 +78,7 @@ import net.corda.membership.lib.toMap
 import net.corda.membership.locally.hosted.identities.IdentityInfo
 import net.corda.membership.locally.hosted.identities.LocallyHostedIdentitiesService
 import net.corda.membership.persistence.client.MembershipPersistenceClient
-import net.corda.membership.persistence.client.MembershipPersistenceResult
+import net.corda.membership.persistence.client.MembershipPersistenceOperation
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.membership.registration.InvalidMembershipRegistrationException
@@ -102,6 +102,7 @@ import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.SoftAssertions
 import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
@@ -285,13 +286,21 @@ class DynamicMemberRegistrationServiceTest {
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider = mock {
         on { getGroupReader(any()) } doReturn groupReader
     }
+    private val command = Record(
+        "topic",
+        "key",
+        "value"
+    )
+    private val persistenceOperation = mock<MembershipPersistenceOperation<Unit>> {
+        on { createAsyncCommands() } doReturn listOf(command)
+    }
     private val membershipPersistenceClient = mock<MembershipPersistenceClient> {
         on {
             persistRegistrationRequest(
                 any(),
                 any(),
             )
-        } doReturn MembershipPersistenceResult.success()
+        } doReturn persistenceOperation
     }
     private val membershipSchemaValidator: MembershipSchemaValidator = mock()
     private val membershipSchemaValidatorFactory: MembershipSchemaValidatorFactory = mock {
@@ -392,12 +401,12 @@ class DynamicMemberRegistrationServiceTest {
         fun `registration successfully builds unauthenticated message and publishes it`() {
             postConfigChangedEvent()
             registrationService.start()
-            val capturedPublishedList = argumentCaptor<List<Record<String, Any>>>()
-            registrationService.register(registrationResultId, member, context)
-            verify(mockPublisher, times(1)).publish(capturedPublishedList.capture())
-            val publishedMessageList = capturedPublishedList.firstValue
+            val publishedMessageList = registrationService.register(registrationResultId, member, context)
+
             SoftAssertions.assertSoftly {
-                it.assertThat(publishedMessageList.size).isEqualTo(1)
+                it.assertThat(publishedMessageList)
+                    .contains(command)
+                    .hasSize(2)
                 val publishedMessage = publishedMessageList.first()
                 it.assertThat(publishedMessage.topic).isEqualTo(Schemas.P2P.P2P_OUT_TOPIC)
                 it.assertThat(publishedMessage.key).isEqualTo(memberId.value)
@@ -425,6 +434,7 @@ class DynamicMemberRegistrationServiceTest {
             }
         }
 
+        @Disabled
         @Test
         fun `registration request contains current serial for re-registration`() {
             postConfigChangedEvent()
@@ -486,7 +496,7 @@ class DynamicMemberRegistrationServiceTest {
                     status.capture()
                 )
             ).doReturn(
-                MembershipPersistenceResult.success()
+                persistenceOperation
             )
 
             registrationService.register(registrationResultId, member, context)
@@ -617,6 +627,17 @@ class DynamicMemberRegistrationServiceTest {
 
     @Nested
     inner class FailedRegistrationTests {
+        @Test
+        fun `re-registration is not supported yet`() {
+            postConfigChangedEvent()
+            registrationService.start()
+            whenever(groupReader.lookup(eq(memberName), any())).doReturn(mock())
+            val exception = assertThrows<InvalidMembershipRegistrationException> {
+                registrationService.register(registrationResultId, member, context)
+            }
+            assertThat(exception).hasMessageContaining("Re-registration is not supported.")
+        }
+
         @Test
         fun `registration fails when coordinator is not running`() {
             val exception = assertThrows<NotReadyMembershipRegistrationException> {
@@ -1025,6 +1046,22 @@ class DynamicMemberRegistrationServiceTest {
             registrationService.start()
 
             assertThrows<InvalidMembershipRegistrationException> {
+                registrationService.register(registrationResultId, member, testProperties)
+            }
+        }
+
+        @Test
+        fun `ledger keys are optional when notary role is set`() {
+            postConfigChangedEvent()
+            val testProperties =
+                context.filterNot { it.key.startsWith("corda.ledger") } + mapOf(
+                    String.format(ROLES_PREFIX, 0) to "notary",
+                    NOTARY_SERVICE_NAME to "O=MyNotaryService, L=London, C=GB",
+                    "corda.notary.keys.0.id" to NOTARY_KEY_ID,
+                )
+            registrationService.start()
+
+            assertDoesNotThrow {
                 registrationService.register(registrationResultId, member, testProperties)
             }
         }

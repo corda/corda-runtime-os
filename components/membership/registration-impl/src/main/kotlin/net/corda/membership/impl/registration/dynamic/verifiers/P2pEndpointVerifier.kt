@@ -24,10 +24,15 @@ internal class P2pEndpointVerifier(
     }
 
     private fun verifyP2pUrl(url: String) {
-        val uri = URI.create(url)
-        require(uri.scheme == "https") { "Endpoint URL must be https" }
-        require(uri.port > 0) { "Endpoint URL must have an explicit port" }
-        require(uri.host != null) { "Endpoint URL must have an explicit host" }
-        require(uri.userInfo == null) { "Endpoint URL must not have an authentication info" }
+        val uri = try {
+            URI.create(url)
+        } catch (e: java.lang.IllegalArgumentException) {
+            throw IllegalArgumentException("Endpoint URL ('$url') is not a valid URL.")
+        }
+
+        require(uri.scheme == "https") { "The scheme of the endpoint URL ('$url') was not https." }
+        require(uri.host != null) { "The host of the endpoint URL ('$url') was not specified or had an invalid value." }
+        require(uri.port > 0) { "The port of the endpoint URL ('$url') was not specified or had an invalid value." }
+        require(uri.userInfo == null) { "Endpoint URL ('$url') had user info specified, which must not be specified." }
     }
 }

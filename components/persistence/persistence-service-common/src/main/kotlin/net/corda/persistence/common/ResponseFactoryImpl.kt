@@ -14,6 +14,7 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
 import java.io.NotSerializableException
+import javax.persistence.PersistenceException
 
 @Component(service = [ResponseFactory::class])
 class ResponseFactoryImpl @Activate constructor(
@@ -39,7 +40,10 @@ class ResponseFactoryImpl @Activate constructor(
             platformErrorResponse(externalEventContext, exception)
         is KafkaMessageSizeException, is NullParameterException ->
             fatalErrorResponse(externalEventContext, exception)
-        else -> transientErrorResponse(externalEventContext, exception)
+        is PersistenceException ->
+            transientErrorResponse(externalEventContext, exception)
+        else ->
+            platformErrorResponse(externalEventContext, exception)
     }
 
     override fun transientErrorResponse(

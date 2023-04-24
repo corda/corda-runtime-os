@@ -1,15 +1,22 @@
 package net.corda.ledger.utxo.flow.impl.transaction.verifier
 
+import net.corda.crypto.core.parseSecureHash
 import net.corda.flow.external.events.executor.ExternalEventExecutor
 import net.corda.internal.serialization.SerializedBytesImpl
 import net.corda.ledger.common.data.transaction.TransactionMetadataInternal
 import net.corda.ledger.common.data.transaction.WireTransaction
+import net.corda.ledger.common.testkit.publicKeyExample
 import net.corda.ledger.utxo.data.transaction.TransactionVerificationResult
 import net.corda.ledger.utxo.data.transaction.TransactionVerificationStatus
 import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionInternal
+import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerGroupParametersPersistenceService
 import net.corda.ledger.utxo.flow.impl.transaction.verifier.external.events.TransactionVerificationExternalEventFactory
+import net.corda.ledger.utxo.test.mockCurrentGroupParametersService
+import net.corda.ledger.utxo.testkit.notaryX500Name
+import net.corda.membership.lib.SignedGroupParameters
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.crypto.SecureHash
+import net.corda.v5.membership.NotaryInfo
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -33,15 +40,27 @@ class UtxoLedgerTransactionVerificationServiceImplTest {
     private val serializationService = mock<SerializationService>()
     private lateinit var verificationService: UtxoLedgerTransactionVerificationServiceImpl
     private val argumentCaptor = argumentCaptor<Class<TransactionVerificationExternalEventFactory>>()
+    private val mockUtxoLedgerGroupParametersPersistenceService = mock<UtxoLedgerGroupParametersPersistenceService>()
+    private val mockSignedGroupParameters = mock<SignedGroupParameters>()
+    private val notaryInfo = mock<NotaryInfo>()
+    private val groupParametersHash = parseSecureHash("algo:1234")
 
     @BeforeEach
     fun setup() {
         verificationService = UtxoLedgerTransactionVerificationServiceImpl(
             externalEventExecutor,
-            serializationService
+            serializationService,
+            mockUtxoLedgerGroupParametersPersistenceService,
+            mockCurrentGroupParametersService(),
+            mock()
         )
 
         whenever(serializationService.serialize(any<Any>())).thenReturn(serializedBytes)
+        whenever(mockUtxoLedgerGroupParametersPersistenceService.find(any())).thenReturn(mockSignedGroupParameters)
+        whenever(notaryInfo.name).thenReturn(notaryX500Name)
+        whenever(notaryInfo.publicKey).thenReturn(publicKeyExample)
+        whenever(mockSignedGroupParameters.notaries).thenReturn(listOf(notaryInfo))
+        whenever(mockSignedGroupParameters.hash).thenReturn(groupParametersHash)
     }
 
     @Test
@@ -62,8 +81,12 @@ class UtxoLedgerTransactionVerificationServiceImplTest {
         val wireTransaction = mock<WireTransaction>()
         val transactionMetadata = mock<TransactionMetadataInternal>()
         whenever(transaction.wireTransaction).thenReturn(wireTransaction)
+        whenever(transaction.metadata).thenReturn(transactionMetadata)
+        whenever(transaction.notaryKey).thenReturn(publicKeyExample)
+        whenever(transaction.notaryName).thenReturn(notaryX500Name)
         whenever(wireTransaction.metadata).thenReturn(transactionMetadata)
         whenever(transactionMetadata.getCpkMetadata()).thenReturn(listOf(mock()))
+        whenever(transactionMetadata.getMembershipGroupParametersHash()).thenReturn(groupParametersHash.toString())
 
         assertDoesNotThrow {
             verificationService.verify(transaction)
@@ -93,8 +116,12 @@ class UtxoLedgerTransactionVerificationServiceImplTest {
         val transactionMetadata = mock<TransactionMetadataInternal>()
         whenever(transaction.id).thenReturn(transactionId)
         whenever(transaction.wireTransaction).thenReturn(wireTransaction)
+        whenever(transaction.metadata).thenReturn(transactionMetadata)
+        whenever(transaction.notaryKey).thenReturn(publicKeyExample)
+        whenever(transaction.notaryName).thenReturn(notaryX500Name)
         whenever(wireTransaction.metadata).thenReturn(transactionMetadata)
         whenever(transactionMetadata.getCpkMetadata()).thenReturn(listOf(mock()))
+        whenever(transactionMetadata.getMembershipGroupParametersHash()).thenReturn(groupParametersHash.toString())
 
         val exception = assertThrows<TransactionVerificationException> {
             verificationService.verify(transaction)

@@ -88,7 +88,7 @@ class UtxoTransactionReaderImpl(
     override val cpkMetadata: List<CordaPackageSummary>
         get() = (signedTransaction.wireTransaction.metadata as TransactionMetadataInternal).getCpkMetadata()
 
-    override fun getProducedStates(): List<StateAndRef<ContractState>> {
+    override fun getVisibleStates(): Map<Int, StateAndRef<ContractState>> {
         val visibleStatesSet = visibleStatesIndexes.toSet()
         return rawGroupLists[UtxoComponentGroup.OUTPUTS.ordinal]
             .zip(rawGroupLists[UtxoComponentGroup.OUTPUTS_INFO.ordinal])
@@ -100,9 +100,8 @@ class UtxoTransactionReaderImpl(
                     serializer.deserialize<ContractState>(value.first),
                     serializer.deserialize<UtxoOutputInfoComponent>(value.second)
                 )
-            }
-            .map { (index, state, info) ->
-                StateAndRefImpl(
+            }.associate { (index, state, info) ->
+                index to StateAndRefImpl(
                     state = TransactionStateImpl(state, info.notaryName, info.notaryKey, info.getEncumbranceGroup()),
                     ref = StateRef(id, index)
                 )

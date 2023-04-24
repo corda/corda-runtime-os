@@ -6,8 +6,6 @@ plugins {
 }
 
 ext {
-    releasable = true
-
     // Use db message bus emulation by default, but allow switching to kafka without manually updating the build file
     if (!project.hasProperty('busImpl')) {
         busImplementation = 'db-message-bus-impl'

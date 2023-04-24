@@ -2,8 +2,11 @@ package net.corda.membership.impl.client
 
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.core.ShortHash
 import net.corda.data.membership.PersistentMemberInfo
+import net.corda.data.membership.actions.request.DistributeMemberInfo
+import net.corda.data.membership.actions.request.MembershipActionsRequest
 import net.corda.data.membership.command.registration.RegistrationCommand
 import net.corda.data.membership.command.registration.mgm.ApproveRegistration
 import net.corda.data.membership.command.registration.mgm.DeclineRegistration
@@ -32,9 +35,12 @@ import net.corda.lifecycle.createCoordinator
 import net.corda.membership.client.CouldNotFindMemberException
 import net.corda.membership.client.MGMResourceClient
 import net.corda.membership.client.MemberNotAnMgmException
+import net.corda.membership.lib.InternalGroupParameters
 import net.corda.membership.lib.MemberInfoExtension.Companion.id
 import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
+import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.approval.ApprovalRuleParams
+import net.corda.membership.lib.toPersistentGroupParameters
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.read.MembershipGroupReaderProvider
@@ -46,6 +52,8 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.schema.Schemas
+import net.corda.schema.Schemas.Membership.GROUP_PARAMETERS_TOPIC
+import net.corda.schema.Schemas.Membership.MEMBERSHIP_ACTIONS_TOPIC
 import net.corda.schema.Schemas.Membership.MEMBER_LIST_TOPIC
 import net.corda.schema.Schemas.Membership.REGISTRATION_COMMAND_TOPIC
 import net.corda.schema.configuration.ConfigKeys
@@ -57,6 +65,7 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
+import net.corda.virtualnode.toAvro
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -82,6 +91,10 @@ class MGMResourceClientImpl @Activate constructor(
     private val membershipPersistenceClient: MembershipPersistenceClient,
     @Reference(service = MembershipQueryClient::class)
     private val membershipQueryClient: MembershipQueryClient,
+    @Reference(service = MemberInfoFactory::class)
+    val memberInfoFactory: MemberInfoFactory,
+    @Reference(service = KeyEncodingService::class)
+    private val keyEncodingService: KeyEncodingService,
 ) : MGMResourceClient {
 
     private companion object {
@@ -543,22 +556,24 @@ class MGMResourceClientImpl @Activate constructor(
             holdingIdentityShortHash: ShortHash, memberX500Name: MemberX500Name, serialNumber: Long?, reason: String?
         ) {
             val (mgm, memberShortHash) = validateSuspensionActivationRequest(holdingIdentityShortHash, memberX500Name)
-            val updatedMemberInfo = membershipPersistenceClient.suspendMember(
+            val (updatedMemberInfo, updatedGroupParameters) = membershipPersistenceClient.suspendMember(
                 mgm, memberX500Name, serialNumber, reason
             ).getOrThrow()
-
-            publishMemberInfo(updatedMemberInfo, holdingIdentityShortHash.value, memberShortHash)
+            publishSuspensionActivationRecords(
+                updatedMemberInfo, updatedGroupParameters, memberX500Name, memberShortHash, mgm, holdingIdentityShortHash.value
+            )
         }
 
         override fun activateMember(
             holdingIdentityShortHash: ShortHash, memberX500Name: MemberX500Name, serialNumber: Long?, reason: String?
         ) {
             val (mgm, memberShortHash) = validateSuspensionActivationRequest(holdingIdentityShortHash, memberX500Name)
-            val updatedMemberInfo = membershipPersistenceClient.activateMember(
+            val (updatedMemberInfo, updatedGroupParameters) = membershipPersistenceClient.activateMember(
                 mgm, memberX500Name, serialNumber, reason
             ).getOrThrow()
-
-            publishMemberInfo(updatedMemberInfo, holdingIdentityShortHash.value, memberShortHash)
+            publishSuspensionActivationRecords(
+                updatedMemberInfo, updatedGroupParameters, memberX500Name, memberShortHash, mgm, holdingIdentityShortHash.value
+            )
         }
 
         private fun validateSuspensionActivationRequest(
@@ -573,17 +588,41 @@ class MGMResourceClientImpl @Activate constructor(
             return mgm to memberShortHash
         }
 
-        private fun publishMemberInfo(memberInfo: PersistentMemberInfo, mgm: String, member: String) {
+        /**
+         * Publish the updated member info and request distribution via the message bus. Also, optionally publish the updated group
+         * parameters.
+         */
+        private fun publishSuspensionActivationRecords(
+            memberInfo: PersistentMemberInfo,
+            groupParameters: InternalGroupParameters?,
+            memberX500Name: MemberX500Name,
+            memberShortHash: String,
+            mgmHoldingIdentity: HoldingIdentity,
+            mgmShortHash: String,
+        ) {
+            val serialNumber = memberInfoFactory.create(memberInfo).serial
+            val publisher = coordinator.getManagedResource<Publisher>(PUBLISHER_RESOURCE_NAME)
+            val recordForGroupParameters = groupParameters?.let {
+                listOf(Record(
+                    GROUP_PARAMETERS_TOPIC,
+                    mgmHoldingIdentity.shortHash.toString(),
+                    it.toPersistentGroupParameters(mgmHoldingIdentity, keyEncodingService)
+                ))} ?: emptyList()
+            val distributionRequest = MembershipActionsRequest(DistributeMemberInfo(
+                mgmHoldingIdentity.toAvro(),
+                HoldingIdentity(memberX500Name, mgmHoldingIdentity.groupId).toAvro(),
+                groupParameters?.epoch,
+                serialNumber
+            ))
             try {
-                coordinator.getManagedResource<Publisher>(PUBLISHER_RESOURCE_NAME)?.publish(
-                    listOf(
-                        Record(
-                            topic = MEMBER_LIST_TOPIC,
-                            key = "${mgm}-${member}",
-                            value = memberInfo,
-                        )
+                publisher?.publish(listOf(
+                    Record(topic = MEMBER_LIST_TOPIC, key = "${mgmShortHash}-${memberShortHash}", value = memberInfo),
+                    Record(
+                        topic = MEMBERSHIP_ACTIONS_TOPIC,
+                        key = "${memberX500Name}-${mgmHoldingIdentity.groupId}",
+                        value = distributionRequest
                     )
-                )
+                ) + recordForGroupParameters)
             } catch (e: CordaMessageAPIIntermittentException) {
                 // As long as the database update was successful, ignore any failures while publishing to Kafka.
             }

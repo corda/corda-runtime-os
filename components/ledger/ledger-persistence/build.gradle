@@ -30,11 +30,12 @@ dependencies {
 
     implementation project(':libs:crypto:cipher-suite')
     implementation project(':libs:flows:external-event-responses')
+    implementation project(':libs:flows:utils')
     implementation project(':libs:ledger:ledger-common-data')
     implementation project(':libs:ledger:ledger-consensual-data')
     implementation project(':libs:ledger:ledger-utxo-data')
     implementation project(':libs:messaging:messaging')
-    implementation project(":libs:serialization:json-validator")
+    implementation project(':libs:serialization:json-validator')
     implementation project(':libs:utilities')
     implementation project(':libs:virtual-node:sandbox-group-context')
 
@@ -59,6 +60,8 @@ dependencies {
     testImplementation project(":libs:lifecycle:lifecycle-test-impl")
     testImplementation project(":libs:lifecycle:lifecycle-impl")
     testImplementation project(":libs:lifecycle:registry")
+    testImplementation project(":testing:crypto-testkit")
+    testImplementation project(":libs:application:application-impl")
 
     testRuntimeOnly "org.ops4j.pax.jdbc:pax-jdbc-hsqldb:$paxJdbcVersion"
     testRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"

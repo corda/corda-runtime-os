@@ -25,10 +25,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * This class tests the {@link OSGiFrameworkWrap} class.
- *
+ * <p>
  * The {@code framework-app-tester} module applies the **Common App** plugin to build a test application (used in future tests),
  * a test OSGi bundle JAR, the {code application_bundles} and {@code system_packages_extra} files to use in the tests of this class.
- *
+ * <p>
  * The Gradle task {@code test} in this module is overridden to build first the OSGi bundle from the {@code framework-app-tester}
  * module, and to compile the `application_bundles` list.
  * The {@code system_packages_extra} is provided in the {@code test/resources} directory of the module.

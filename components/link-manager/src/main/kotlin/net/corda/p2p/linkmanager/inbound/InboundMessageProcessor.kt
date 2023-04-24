@@ -27,22 +27,27 @@ import net.corda.p2p.crypto.protocol.api.Session
 import net.corda.p2p.linkmanager.LinkManager
 import net.corda.p2p.linkmanager.common.AvroSealedClasses
 import net.corda.p2p.linkmanager.common.MessageConverter
+import net.corda.p2p.linkmanager.membership.NetworkMessagingValidator
 import net.corda.p2p.linkmanager.sessions.SessionManager
 import net.corda.data.p2p.markers.AppMessageMarker
 import net.corda.data.p2p.markers.LinkManagerReceivedMarker
 import net.corda.metrics.CordaMetrics
 import net.corda.schema.Schemas
+import net.corda.utilities.Either
 import net.corda.utilities.debug
 import net.corda.utilities.time.Clock
 import net.corda.virtualnode.toCorda
 import org.slf4j.LoggerFactory
 
+@Suppress("LongParameterList")
 internal class InboundMessageProcessor(
     private val sessionManager: SessionManager,
     private val groupPolicyProvider: GroupPolicyProvider,
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
     private val inboundAssignmentListener: InboundAssignmentListener,
-    private val clock: Clock
+    private val clock: Clock,
+    private val networkMessagingValidator: NetworkMessagingValidator =
+        NetworkMessagingValidator(membershipGroupReaderProvider),
 ) :
     EventLogProcessor<String, LinkInMessage> {
 
@@ -73,7 +78,26 @@ internal class InboundMessageProcessor(
                         "Processing unauthenticated message ${payload.header.messageId}"
                     )
                     recordInboundMessagesMetric(payload)
-                    listOf(Record(Schemas.P2P.P2P_IN_TOPIC, LinkManager.generateKey(), AppMessage(payload)))
+                    val validationResult = networkMessagingValidator.validateInbound(
+                        payload.header.source.toCorda(),
+                        payload.header.destination.toCorda()
+                    )
+                    when(validationResult) {
+                        is Either.Left -> {
+                            listOf(
+                                Record(
+                                    Schemas.P2P.P2P_IN_TOPIC,
+                                    LinkManager.generateKey(),
+                                    AppMessage(payload)
+                                )
+                            )
+                        }
+                        is Either.Right -> {
+                            logger.warn("Dropped unauthenticated message. Network membership is not valid for " +
+                                    "messaging because ${validationResult.b}")
+                            emptyList()
+                        }
+                    }
                 }
                 else -> {
                     logger.error("Received unknown payload type ${message.payload::class.java.simpleName}. The message was discarded.")
@@ -122,33 +146,37 @@ internal class InboundMessageProcessor(
         val messages = mutableListOf<Record<*, *>>()
         when (val sessionDirection = sessionManager.getSessionById(sessionId)) {
             is SessionManager.SessionDirection.Inbound -> {
-                messages.addAll(
-                    processLinkManagerPayload(
-                        sessionDirection.counterparties,
-                        sessionDirection.session,
-                        sessionId,
-                        message
+                checkAllowedCommunication(sessionDirection.counterparties) {
+                    messages.addAll(
+                        processLinkManagerPayload(
+                            sessionDirection.counterparties,
+                            sessionDirection.session,
+                            sessionId,
+                            message
+                        )
                     )
-                )
+                }
             }
             is SessionManager.SessionDirection.Outbound -> {
-                MessageConverter.extractPayload(
-                    sessionDirection.session,
-                    sessionId,
-                    message,
-                    MessageAck::fromByteBuffer
-                )?.let {
-                    when (val ack = it.ack) {
-                        is AuthenticatedMessageAck -> {
-                            logger.debug { "Processing ack for message ${ack.messageId} from session $sessionId." }
-                            sessionManager.messageAcknowledged(sessionId)
-                            messages.add(makeMarkerForAckMessage(ack))
+                checkAllowedCommunication(sessionDirection.counterparties) {
+                    MessageConverter.extractPayload(
+                        sessionDirection.session,
+                        sessionId,
+                        message,
+                        MessageAck::fromByteBuffer
+                    )?.let {
+                        when (val ack = it.ack) {
+                            is AuthenticatedMessageAck -> {
+                                logger.debug { "Processing ack for message ${ack.messageId} from session $sessionId." }
+                                sessionManager.messageAcknowledged(sessionId)
+                                messages.add(makeMarkerForAckMessage(ack))
+                            }
+                            is HeartbeatMessageAck -> {
+                                logger.debug { "Processing heartbeat ack from session $sessionId." }
+                                sessionManager.messageAcknowledged(sessionId)
+                            }
+                            else -> logger.warn("Received an inbound message with unexpected type for SessionId = $sessionId.")
                         }
-                        is HeartbeatMessageAck -> {
-                            logger.debug { "Processing heartbeat ack from session $sessionId." }
-                            sessionManager.messageAcknowledged(sessionId)
-                        }
-                        else -> logger.warn("Received an inbound message with unexpected type for SessionId = $sessionId.")
                     }
                 }
             }
@@ -297,6 +325,16 @@ internal class InboundMessageProcessor(
             .withTag(CordaMetrics.Tag.MessageType, messageType)
             .build().increment()
     }
+
+    private fun <T> checkAllowedCommunication(
+        counterparties: SessionManager.Counterparties,
+        func: () -> T
+    ) = networkMessagingValidator.invokeIfValidInbound(
+        counterparties.counterpartyId,
+        counterparties.ourId,
+        func
+    )
+
 
     override val keyClass = String::class.java
     override val valueClass = LinkInMessage::class.java

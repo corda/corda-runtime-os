@@ -10,10 +10,13 @@ import net.corda.data.membership.actions.request.DistributeMemberInfo
 import net.corda.data.membership.actions.request.MembershipActionsRequest
 import net.corda.data.membership.p2p.DistributionType
 import net.corda.data.membership.p2p.MembershipPackage
+import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.libs.configuration.SmartConfig
 import net.corda.membership.lib.InternalGroupParameters
+import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_SUSPENDED
 import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
 import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
+import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.locally.hosted.identities.LocallyHostedIdentitiesService
 import net.corda.membership.p2p.helpers.MembershipPackageFactory
 import net.corda.membership.p2p.helpers.MerkleTreeGenerator
@@ -73,11 +76,8 @@ class DistributeMemberInfoActionHandler(
         val updatedMember = request.updatedMember
 
         val groupReader = groupReaderProvider.getGroupReader(approvedBy.toCorda())
-
-        val allActiveMembers = groupReader.lookup()
-        val allActiveMembersExcludingMgm = allActiveMembers.filterNot { it.isMgm }
-        val updatedMemberInfo = allActiveMembersExcludingMgm.firstOrNull { it.name.toString() == updatedMember.x500Name }
-            ?: return recordToRequeueDistribution(key, request) {
+        val updatedMemberInfo = groupReader.lookup(filter = MembershipStatusFilter.ACTIVE_OR_SUSPENDED)
+            .firstOrNull { it.name.toString() == updatedMember.x500Name } ?: return recordToRequeueDistribution(key, request) {
                 logger.info("The MemberInfo retrieved from the message bus for ${updatedMember.x500Name} is not present yet. " +
                     "Republishing the distribute command to be processed later when the MemberInfo is available.")
             }
@@ -110,12 +110,20 @@ class DistributeMemberInfoActionHandler(
             }
         }
 
+        val allActiveMembers = groupReader.lookup()
+        val allActiveMembersExcludingMgm = allActiveMembers.filterNot { it.isMgm }
+        //If the updated member is suspended then we only send its own member info to itself (so it can tell it has been suspended).
+        val membersToDistributeToUpdatedMember = if (updatedMemberInfo.status == MEMBER_STATUS_SUSPENDED) {
+            listOf(updatedMemberInfo)
+        } else {
+            allActiveMembersExcludingMgm
+        }
 
         val mgm = allActiveMembers.first { it.isMgm }
 
         val membersSignaturesQuery = membershipQueryClient.queryMembersSignatures(
             mgm.holdingIdentity,
-            allActiveMembersExcludingMgm.map { it.holdingIdentity }
+            membersToDistributeToUpdatedMember.map { it.holdingIdentity }
         )
         val membersSignatures = when (membersSignaturesQuery) {
             is MembershipQueryResult.Success -> membersSignaturesQuery.payload
@@ -124,11 +132,11 @@ class DistributeMemberInfoActionHandler(
                         "will be reattempted.")
             }
         }
-        val membershipPackageFactory = createMembershipPackageFactory(mgm, allActiveMembersExcludingMgm, membersSignatures)
+        val membershipPackageFactory = createMembershipPackageFactory(mgm, membersToDistributeToUpdatedMember, membersSignatures)
 
         // Send all approved members from the same group to the newly approved member over P2P
-        val allMembersExcludingMgmPackage = try {
-            membershipPackageFactory(allActiveMembersExcludingMgm, groupParameters)
+        val membersToDistributeToUpdatedMemberPackage = try {
+            membershipPackageFactory(membersToDistributeToUpdatedMember, groupParameters)
         } catch (except: CordaRuntimeException) {
             return recordToRequeueDistribution(key, request) {
                 logger.warn("Failed to create membership package for distribution to $updatedMember. Distributing the member info will " +
@@ -139,7 +147,7 @@ class DistributeMemberInfoActionHandler(
         val allMembersToUpdatedMember = p2pRecordsFactory.createAuthenticatedMessageRecord(
             source = approvedBy,
             destination = updatedMember,
-            content = allMembersExcludingMgmPackage,
+            content = membersToDistributeToUpdatedMemberPackage,
         )
 
         // Send the newly approved member to all other members in the same group over P2P

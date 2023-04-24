@@ -87,19 +87,21 @@ class JPABackingStoreImplIntegrationTests {
     private val defaultTimeWindowUpperBound = LocalDate.of(2200, 1, 1).atStartOfDay().toInstant(ZoneOffset.UTC)
 
     private val groupId = UUID.randomUUID().toString()
-    private val aliceIdentity = createTestHoldingIdentity("C=GB, L=London, O=Alice", groupId)
-    private val aliceIdentityDbName = VirtualNodeDbType.UNIQUENESS.getSchemaName(aliceIdentity.shortHash)
-    private val dbConfig = DbUtils.getEntityManagerConfiguration(aliceIdentityDbName)
+    private val notaryVNodeIdentity = createTestHoldingIdentity("C=GB, L=London, O=NotaryRep1", groupId)
+    private val notaryVNodeIdentityDbName = VirtualNodeDbType.UNIQUENESS.getSchemaName(notaryVNodeIdentity.shortHash)
+    private val dbConfig = DbUtils.getEntityManagerConfiguration(notaryVNodeIdentityDbName)
     private val databaseInstaller = DatabaseInstaller(
         EntityManagerFactoryFactoryImpl(),
         LiquibaseSchemaMigratorImpl(),
         JpaEntitiesRegistryImpl()
     )
-    private val aliceEmFactory: EntityManagerFactory = databaseInstaller.setupDatabase(
-        TestDbInfo(name = "unique_test_default", schemaName = aliceIdentityDbName, rewriteBatchedInserts = true),
+    private val notaryVNodeEmFactory: EntityManagerFactory = databaseInstaller.setupDatabase(
+        TestDbInfo(name = "unique_test_default", schemaName = notaryVNodeIdentityDbName, rewriteBatchedInserts = true),
         "vnode-uniqueness",
         JPABackingStoreEntities.classes
     )
+
+    private val originatorX500Name = "C=GB, L=London, O=Alice"
 
     companion object {
         private const val MAX_ATTEMPTS = 10
@@ -111,6 +113,7 @@ class JPABackingStoreImplIntegrationTests {
         UniquenessCheckRequestInternal(
             txId,
             txId.toString(),
+            originatorX500Name,
             emptyList(),
             emptyList(),
             0,
@@ -125,7 +128,7 @@ class JPABackingStoreImplIntegrationTests {
             whenever(createCoordinator(any(), any())) doReturn lifecycleCoordinator
         }
 
-        backingStoreImpl = createBackingStoreImpl(aliceEmFactory)
+        backingStoreImpl = createBackingStoreImpl(notaryVNodeEmFactory)
         backingStoreImpl.eventHandler(RegistrationStatusChangeEvent(mock(), LifecycleStatus.UP), mock())
 
         testClock = AutoTickTestClock(baseTime, Duration.ofSeconds(1))
@@ -152,7 +155,7 @@ class JPABackingStoreImplIntegrationTests {
         fun `Executing transaction retries upon expected exceptions`() {
             var execCounter = 0
             assertThrows<IllegalStateException> {
-                backingStoreImpl.session(aliceIdentity) { session ->
+                backingStoreImpl.session(notaryVNodeIdentity) { session ->
                     session.executeTransaction { _, _ ->
                         execCounter++
                         throw EntityExistsException()
@@ -166,7 +169,7 @@ class JPABackingStoreImplIntegrationTests {
         fun `Executing transaction does not retry upon unexpected exception`() {
             var execCounter = 0
             assertThrows<DummyException> {
-                backingStoreImpl.session(aliceIdentity) { session ->
+                backingStoreImpl.session(notaryVNodeIdentity) { session ->
                     session.executeTransaction { _, _ ->
                         execCounter++
                         throw DummyException("dummy exception")
@@ -181,7 +184,7 @@ class JPABackingStoreImplIntegrationTests {
             val retryCnt = 3
             var execCounter = 0
             assertDoesNotThrow {
-                backingStoreImpl.session(aliceIdentity) { session ->
+                backingStoreImpl.session(notaryVNodeIdentity) { session ->
                     session.executeTransaction { _, _ ->
                         execCounter++
                         if (execCounter < retryCnt)
@@ -203,12 +206,12 @@ class JPABackingStoreImplIntegrationTests {
                 Pair(generateRequestInternal(txId), UniquenessCheckResultSuccessImpl(testClock.instant()))
             )
 
-            backingStoreImpl.session(aliceIdentity) { session ->
+            backingStoreImpl.session(notaryVNodeIdentity) { session ->
                 session.executeTransaction { _, txnOps -> txnOps.commitTransactions(txns) }
             }
 
             val txnDetails = mutableMapOf<SecureHash, UniquenessCheckTransactionDetailsInternal>()
-            backingStoreImpl.session(aliceIdentity) { session ->
+            backingStoreImpl.session(notaryVNodeIdentity) { session ->
                 txnDetails.putAll(session.getTransactionDetails(txIds))
             }
 
@@ -230,12 +233,12 @@ class JPABackingStoreImplIntegrationTests {
                 )
             )
 
-            backingStoreImpl.session(aliceIdentity) { session ->
+            backingStoreImpl.session(notaryVNodeIdentity) { session ->
                 session.executeTransaction { _, txnOps -> txnOps.commitTransactions(txns) }
             }
 
             val txnDetails = mutableMapOf<SecureHash, UniquenessCheckTransactionDetailsInternal>()
-            backingStoreImpl.session(aliceIdentity) { session ->
+            backingStoreImpl.session(notaryVNodeIdentity) { session ->
                 txnDetails.putAll(session.getTransactionDetails(txIds))
             }
 
@@ -267,12 +270,12 @@ class JPABackingStoreImplIntegrationTests {
                 )
             )
 
-            backingStoreImpl.session(aliceIdentity) { session ->
+            backingStoreImpl.session(notaryVNodeIdentity) { session ->
                 session.executeTransaction { _, txnOps -> txnOps.commitTransactions(txns) }
             }
 
             val txnDetails = mutableMapOf<SecureHash, UniquenessCheckTransactionDetailsInternal>()
-            backingStoreImpl.session(aliceIdentity) { session ->
+            backingStoreImpl.session(notaryVNodeIdentity) { session ->
                 txnDetails.putAll(session.getTransactionDetails(txIds))
             }
 
@@ -302,12 +305,12 @@ class JPABackingStoreImplIntegrationTests {
                 )
             )
 
-            backingStoreImpl.session(aliceIdentity) { session ->
+            backingStoreImpl.session(notaryVNodeIdentity) { session ->
                 session.executeTransaction { _, txnOps -> txnOps.commitTransactions(txns) }
             }
 
             val txnDetails = mutableMapOf<SecureHash, UniquenessCheckTransactionDetailsInternal>()
-            backingStoreImpl.session(aliceIdentity) { session ->
+            backingStoreImpl.session(notaryVNodeIdentity) { session ->
                 txnDetails.putAll(session.getTransactionDetails(txIds))
             }
 
@@ -332,12 +335,12 @@ class JPABackingStoreImplIntegrationTests {
                 )
             )
 
-            backingStoreImpl.session(aliceIdentity) { session ->
+            backingStoreImpl.session(notaryVNodeIdentity) { session ->
                 session.executeTransaction { _, txnOps -> txnOps.commitTransactions(txns) }
             }
 
             val txnDetails = mutableMapOf<SecureHash, UniquenessCheckTransactionDetailsInternal>()
-            backingStoreImpl.session(aliceIdentity) { session ->
+            backingStoreImpl.session(notaryVNodeIdentity) { session ->
                 txnDetails.putAll(session.getTransactionDetails(txIds))
             }
 
@@ -369,12 +372,12 @@ class JPABackingStoreImplIntegrationTests {
                 )
             )
 
-            backingStoreImpl.session(aliceIdentity) { session ->
+            backingStoreImpl.session(notaryVNodeIdentity) { session ->
                 session.executeTransaction { _, txnOps -> txnOps.commitTransactions(txns) }
             }
 
             val txnDetails = mutableMapOf<SecureHash, UniquenessCheckTransactionDetailsInternal>()
-            backingStoreImpl.session(aliceIdentity) { session ->
+            backingStoreImpl.session(notaryVNodeIdentity) { session ->
                 txnDetails.putAll(session.getTransactionDetails(txIds))
             }
 
@@ -397,7 +400,7 @@ class JPABackingStoreImplIntegrationTests {
 
             val validErrorMessage = "e".repeat(maxErrMsgLength)
             assertDoesNotThrow {
-                backingStoreImpl.session(aliceIdentity) { session ->
+                backingStoreImpl.session(notaryVNodeIdentity) { session ->
                     session.executeTransaction { _, txnOps ->
                         txnOps.commitTransactions(
                             listOf(
@@ -417,7 +420,7 @@ class JPABackingStoreImplIntegrationTests {
             // Persisting this error should throw because its size if bigger than 1024.
             val invalidErrorMessage = "e".repeat(maxErrMsgLength + 1)
             assertThrows<IllegalArgumentException> {
-                backingStoreImpl.session(aliceIdentity) { session ->
+                backingStoreImpl.session(notaryVNodeIdentity) { session ->
                     session.executeTransaction { _, txnOps ->
                         txnOps.commitTransactions(
                             listOf(
@@ -448,12 +451,12 @@ class JPABackingStoreImplIntegrationTests {
                 )
             )
 
-            backingStoreImpl.session(aliceIdentity) { session ->
+            backingStoreImpl.session(notaryVNodeIdentity) { session ->
                 session.executeTransaction { _, txnOps -> txnOps.commitTransactions(txns) }
             }
 
             val txnDetails = mutableMapOf<SecureHash, UniquenessCheckTransactionDetailsInternal>()
-            backingStoreImpl.session(aliceIdentity) { session ->
+            backingStoreImpl.session(notaryVNodeIdentity) { session ->
                 txnDetails.putAll(session.getTransactionDetails(txIds))
             }
 
@@ -469,12 +472,12 @@ class JPABackingStoreImplIntegrationTests {
             val secureHashes = List(3) { SecureHashUtils.randomSecureHash() }
             val stateRefs = secureHashes.map { UniquenessCheckStateRefImpl(it, 0) }
 
-            backingStoreImpl.session(aliceIdentity) { session ->
+            backingStoreImpl.session(notaryVNodeIdentity) { session ->
                 session.executeTransaction { _, txnOps -> txnOps.createUnconsumedStates(stateRefs) }
             }
 
             val stateDetails = mutableMapOf<UniquenessCheckStateRef, UniquenessCheckStateDetails>()
-            backingStoreImpl.session(aliceIdentity) { session ->
+            backingStoreImpl.session(notaryVNodeIdentity) { session ->
                 stateDetails.putAll(session.getStateDetails(stateRefs))
             }
 
@@ -491,14 +494,14 @@ class JPABackingStoreImplIntegrationTests {
             val stateRefs = List(2) { UniquenessCheckStateRefImpl(SecureHashUtils.randomSecureHash(), 0) }
 
             // Generate unconsumed states in DB.
-            backingStoreImpl.session(aliceIdentity) { session ->
+            backingStoreImpl.session(notaryVNodeIdentity) { session ->
                 session.executeTransaction { _, txnOps -> txnOps.createUnconsumedStates(stateRefs) }
             }
 
             // Consume one of unconsumed states in DB.
             val consumingTxId = SecureHashUtils.randomSecureHash()
             val consumingStateRef = stateRefs[0] // Consume the first out of two items.
-            backingStoreImpl.session(aliceIdentity) { session ->
+            backingStoreImpl.session(notaryVNodeIdentity) { session ->
                 session.executeTransaction { _, txnOps ->
                     txnOps.consumeStates(consumingTxId, listOf(consumingStateRef))
                 }
@@ -506,7 +509,7 @@ class JPABackingStoreImplIntegrationTests {
 
             // Verify if the target state has been correctly updated.
             val stateDetails = mutableMapOf<UniquenessCheckStateRef, UniquenessCheckStateDetails>()
-            backingStoreImpl.session(aliceIdentity) { session ->
+            backingStoreImpl.session(notaryVNodeIdentity) { session ->
                 stateDetails.putAll(session.getStateDetails(stateRefs))
             }
 
@@ -527,14 +530,14 @@ class JPABackingStoreImplIntegrationTests {
             val stateRefs = List(1) { UniquenessCheckStateRefImpl(SecureHashUtils.randomSecureHash(), 0) }
 
             // Generate an unconsumed state in DB.
-            backingStoreImpl.session(aliceIdentity) { session ->
+            backingStoreImpl.session(notaryVNodeIdentity) { session ->
                 session.executeTransaction { _, txnOps -> txnOps.createUnconsumedStates(stateRefs) }
             }
 
             val consumingStateRefs = listOf<UniquenessCheckStateRef>(stateRefs[0])
 
             assertDoesNotThrow {
-                backingStoreImpl.session(aliceIdentity) { session ->
+                backingStoreImpl.session(notaryVNodeIdentity) { session ->
                     session.executeTransaction { _, txnOps ->
                         txnOps.consumeStates(SecureHashUtils.randomSecureHash(), consumingStateRefs) }
                 }
@@ -542,7 +545,7 @@ class JPABackingStoreImplIntegrationTests {
 
             // An attempt to spend an already spent state should fail.
             assertThrows<IllegalStateException> {
-                backingStoreImpl.session(aliceIdentity) { session ->
+                backingStoreImpl.session(notaryVNodeIdentity) { session ->
                     session.executeTransaction { _, txnOps ->
                         txnOps.consumeStates(SecureHashUtils.randomSecureHash(), consumingStateRefs) }
                 }
@@ -554,13 +557,13 @@ class JPABackingStoreImplIntegrationTests {
             val stateRefs = List(1) { UniquenessCheckStateRefImpl(SecureHashUtils.randomSecureHash(), 0) }
 
             // Generate an unconsumed state in DB.
-            backingStoreImpl.session(aliceIdentity) { session ->
+            backingStoreImpl.session(notaryVNodeIdentity) { session ->
                 session.executeTransaction { _, txnOps -> txnOps.createUnconsumedStates(stateRefs) }
             }
 
             val consumingStateRefs = listOf<UniquenessCheckStateRef>(stateRefs[0])
             assertThrows<IllegalStateException> {
-                backingStoreImpl.session(aliceIdentity) { session ->
+                backingStoreImpl.session(notaryVNodeIdentity) { session ->
                     session.executeTransaction { _, txnOps ->
                         // Attempt a double-spend.
                         txnOps.consumeStates(SecureHashUtils.randomSecureHash(), consumingStateRefs)
@@ -576,7 +579,7 @@ class JPABackingStoreImplIntegrationTests {
             val consumingStateRefs = listOf<UniquenessCheckStateRef>(UniquenessCheckStateRefImpl(consumingTxId, 0))
 
             assertThrows<IllegalStateException> {
-                backingStoreImpl.session(aliceIdentity) { session ->
+                backingStoreImpl.session(notaryVNodeIdentity) { session ->
                     session.executeTransaction { _, txnOps ->
                         txnOps.consumeStates(consumingTxId, consumingStateRefs)
                     }
@@ -604,7 +607,7 @@ class JPABackingStoreImplIntegrationTests {
             storeImpl.eventHandler(RegistrationStatusChangeEvent(mock(), LifecycleStatus.UP), mock())
 
             assertThrows<EntityExistsException> {
-                storeImpl.session(aliceIdentity) { session ->
+                storeImpl.session(notaryVNodeIdentity) { session ->
                     val txIds = listOf(SecureHashUtils.randomSecureHash())
                     session.getTransactionDetails(txIds)
                 }
@@ -626,7 +629,7 @@ class JPABackingStoreImplIntegrationTests {
             val secureHashes = listOf(SecureHashUtils.randomSecureHash())
             val stateRefs = secureHashes.map { UniquenessCheckStateRefImpl(it, 0) }
             assertThrows<IllegalStateException> {
-                storeImpl.session(aliceIdentity) { session ->
+                storeImpl.session(notaryVNodeIdentity) { session ->
                     session.executeTransaction { _, txnOps -> txnOps.createUnconsumedStates(stateRefs) }
                 }
             }
@@ -645,7 +648,7 @@ class JPABackingStoreImplIntegrationTests {
             storeImpl.eventHandler(RegistrationStatusChangeEvent(mock(), LifecycleStatus.UP), mock())
 
             assertThrows<DummyException> {
-                storeImpl.session(aliceIdentity) { session ->
+                storeImpl.session(notaryVNodeIdentity) { session ->
                     session.executeTransaction { _, _ -> throw DummyException("dummy exception") }
                 }
             }
@@ -664,7 +667,7 @@ class JPABackingStoreImplIntegrationTests {
 
         val sessionInvokeCnt = 3
         repeat(sessionInvokeCnt) {
-            storeImpl.session(aliceIdentity) { session ->
+            storeImpl.session(notaryVNodeIdentity) { session ->
                 session.executeTransaction { _, _ -> }
             }
         }
@@ -688,7 +691,7 @@ class JPABackingStoreImplIntegrationTests {
 
         try {
             val stateRefs = List(1) { UniquenessCheckStateRefImpl(SecureHashUtils.randomSecureHash(), 0) }
-            storeImpl.session(aliceIdentity) { session ->
+            storeImpl.session(notaryVNodeIdentity) { session ->
                 session.executeTransaction { _, txnOps -> txnOps.createUnconsumedStates(stateRefs) }
             }
             Assertions.fail("The test failed if it reaches here. An exception must be thrown.")

@@ -164,7 +164,7 @@ class SessionEventHandler @Activate constructor(
                         "missing from SessionInit"
             )
         }
-        return Pair(requestedProtocolName, initiatorVersionsSupportedProp.split(",").map { it.toInt() })
+        return Pair(requestedProtocolName, initiatorVersionsSupportedProp.split(",").map { it.trim().toInt() })
     }
 
     private fun sendConfirmMessage(

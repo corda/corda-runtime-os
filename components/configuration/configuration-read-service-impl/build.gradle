@@ -29,8 +29,8 @@ dependencies {
 
     testImplementation project(":libs:lifecycle:lifecycle-impl")
     testImplementation project(":libs:lifecycle:lifecycle-test-impl")
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
-    testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"
 
     integrationTestImplementation project(":testing:db-message-bus-testkit")
     integrationTestImplementation project(":testing:test-utilities")
