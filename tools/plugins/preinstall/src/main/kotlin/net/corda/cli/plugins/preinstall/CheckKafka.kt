@@ -42,7 +42,31 @@ class CheckKafka : Runnable, PluginContext() {
     @Option(names = ["-d", "--debug"], description = ["Show information about kafka config creation for debugging purposes"])
     var debug: Boolean = false
 
-    private fun getKafkaProperties(yaml: Kafka, saslUsername: String, saslPassword: String, truststorePassword: String): Properties? {
+    open class KafkaAdmin(props: Properties) {
+        private val admin: AdminClient?
+
+        init {
+            admin = AdminClient.create(props)
+        }
+
+        open fun getNodes(): Collection<Node>? {
+            return admin?.describeCluster()
+                ?.nodes()
+                ?.get()
+        }
+
+        open fun getDescriptionID(): String? {
+            return admin?.describeCluster()?.clusterId()?.get()
+        }
+    }
+
+    fun getKafkaProperties(
+        yaml: Kafka,
+        saslUsername: String,
+        saslPassword: String,
+        truststorePassword: String,
+        truststore: String?
+    ): Properties? {
         val props = Properties()
         props["bootstrap.servers"] = yaml.kafka.bootstrapServers
         props["request.timeout.ms"] = timeout
@@ -60,14 +84,14 @@ class CheckKafka : Runnable, PluginContext() {
                                 "\"$saslUsername\" password=\"$saslPassword\" ;"
                 } else {
                     props["sasl.jaas.config"] =
-                        "org.apache.kafka.common.security.plain.ScramLoginModule required username=" +
+                        "org.apache.kafka.common.security.scram.ScramLoginModule required username=" +
                                 "\"$saslUsername\" password=\"$saslPassword\" ;"
                 }
             } else {
                 props["security.protocol"] = "SSL"
             }
             yaml.kafka.tls.truststore?.valueFrom?.secretKeyRef?.name?.let {
-                props["ssl.truststore.location"] = truststoreLocation ?: run {
+                props["ssl.truststore.location"] = truststore ?: run {
                     log("If SSL is enabled, you must provide the location of the truststore file with -f.", ERROR)
                     return null
                 }
@@ -88,32 +112,22 @@ class CheckKafka : Runnable, PluginContext() {
     }
 
     // Connect to kafka using the properties assembled earlier
-    private fun connect(props: Properties) {
-        try {
-            val admin = AdminClient.create(props)
-            val nodes: Collection<Node>? = admin.describeCluster()
-                .nodes()
-                .get()
-            val clusterDescription = admin.describeCluster()
-            if (nodes.isNullOrEmpty()) {
-                log("There are no brokers in the kafka cluster.", ERROR)
-                return
-            }
+    fun connect(client: KafkaAdmin) {
+        val nodes: Collection<Node>? = client.getNodes()
+        val clusterID = client.getDescriptionID()
 
-            println("[INFO] Kafka client connected to cluster with ID ${clusterDescription.clusterId().get()}.")
+        if (nodes.isNullOrEmpty()) {
+            log("There are no brokers in the kafka cluster.", ERROR)
+            return
+        }
 
-            log("Number of brokers: ${nodes.size}", INFO)
-            replicaCount?.let {
-                if (nodes.size < it) {
-                    log("Number of brokers (${nodes.size}) is less than the replica count ($it).", WARN)
-                }
+        println("[INFO] Kafka client connected to cluster with ID ${clusterID}.")
+
+        log("Number of brokers: ${nodes.size}", INFO)
+        replicaCount?.let {
+            if (nodes.size < it) {
+                log("Number of brokers (${nodes.size}) is less than the replica count ($it).", WARN)
             }
-        }
-        catch (e: KafkaException){
-            log("Failed to create kafka client. ${e.cause?.message}", ERROR)
-        }
-        catch (e: ExecutionException){
-            log("Connection to cluster timed out. ${e.cause?.message}", ERROR)
         }
     }
 
@@ -147,8 +161,16 @@ class CheckKafka : Runnable, PluginContext() {
             truststorePassword = getCredentialOrSecret(yaml.kafka.tls.truststore.password, namespace, url) ?: return
 
         }
-        val props = getKafkaProperties(yaml, saslUsername,saslPassword,truststorePassword) ?: return
+        val props = getKafkaProperties(yaml, saslUsername, saslPassword, truststorePassword, truststoreLocation) ?: return
 
-        connect(props)
+        try {
+            connect(KafkaAdmin(props))
+        }
+        catch (e: KafkaException){
+            log("Failed to create kafka client. ${e.cause?.message}", ERROR)
+        }
+        catch (e: ExecutionException){
+            log("Connection to cluster timed out. ${e.cause?.message}", ERROR)
+        }
     }
 }

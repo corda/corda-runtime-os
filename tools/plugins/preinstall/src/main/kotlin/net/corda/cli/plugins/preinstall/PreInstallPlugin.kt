@@ -130,9 +130,8 @@ class PreInstallPlugin(wrapper: PluginWrapper) : Plugin(wrapper) {
                 }
 
                 // if no namespace is set, will try and use the default. Worst case scenario, if no default is set, it will use "default".
-                val kubeNamespace = namespace ?: run {
-                    client.namespace ?: "default"
-                }
+                val kubeNamespace = namespace ?: client.namespace ?: "default"
+
                 log("Using namespace ${client.namespace}", INFO)
 
                 val names = client.namespaces().list().items.map { item -> item.metadata.name}

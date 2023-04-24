@@ -18,8 +18,9 @@ dependencies {
 
     testImplementation "org.pf4j:pf4j:$pf4jVersion"
     testCompileOnly "net.corda.cli.host:api:$pluginHostVersion"
-    testImplementation "com.github.stefanbirkner:system-lambda:1.2.1"
+    testImplementation "com.github.stefanbirkner:system-lambda:$systemLambdaVersion"
     testImplementation "info.picocli:picocli:$picocliVersion"
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 
     implementation "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:$jacksonVersion"
     implementation "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
