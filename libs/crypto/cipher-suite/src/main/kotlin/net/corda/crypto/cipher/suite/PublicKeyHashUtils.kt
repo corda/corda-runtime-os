@@ -1,7 +1,6 @@
 package net.corda.crypto.cipher.suite
 
 import net.corda.v5.base.util.ByteArrays
-import net.corda.v5.base.util.EncodingUtils
 import net.corda.v5.crypto.DigestAlgorithmName
 import java.security.MessageDigest
 import java.security.PublicKey
