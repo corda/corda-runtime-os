@@ -1,6 +1,5 @@
 package com.r3.corda.testing.smoketests.virtualnode
 
-import com.r3.corda.testing.smoketests.virtualnode.Dog
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.ClientRequestBody
 import net.corda.v5.application.flows.ClientStartableFlow
