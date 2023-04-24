@@ -350,11 +350,9 @@ class FlowGlobalPostProcessorImplTest {
         whenever(checkpoint.sessions).thenReturn(listOf(sessionState1, sessionState2, sessionState3))
         whenever(checkpoint.holdingIdentity).thenReturn(HoldingIdentity(ALICE_X500_NAME, ""))
 
-        assertThrows(FlowPlatformException::class.java) {
-            flowGlobalPostProcessor.postProcess(testContext)
-        }
+        flowGlobalPostProcessor.postProcess(testContext)
         verify(sessionManager, times(0)).errorSession(any())
-        verify(checkpoint, times(1)).putSessionState(any())
+        verify(checkpoint, times(3)).putSessionState(any())
     }
 
     @Test
