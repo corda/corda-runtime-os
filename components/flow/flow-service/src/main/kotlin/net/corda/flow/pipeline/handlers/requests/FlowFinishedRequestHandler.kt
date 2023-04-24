@@ -1,5 +1,7 @@
 package net.corda.flow.pipeline.handlers.requests
 
+import net.corda.data.flow.FlowInitiatorType
+import net.corda.data.flow.event.mapper.ScheduleCleanup
 import net.corda.data.flow.output.FlowStates
 import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.flow.fiber.FlowIORequest
@@ -38,17 +40,23 @@ class FlowFinishedRequestHandler @Activate constructor(
         request: FlowIORequest.FlowFinished
     ): FlowEventContext<Any> {
         val checkpoint = context.checkpoint
-        log.info("Flow [${checkpoint.flowId}] completed successfully")
         recordFlowRuntimeMetric(checkpoint, FlowStates.COMPLETED.toString())
-
         val status = flowMessageFactory.createFlowCompleteStatusMessage(checkpoint, request.result)
 
-        val flowCleanupTime = context.config.getLong(PROCESSING_FLOW_CLEANUP_TIME)
-        Instant.now().plusMillis(flowCleanupTime).toEpochMilli()
-        val records = listOf(
-            flowRecordFactory.createFlowStatusRecord(status),
-        )
-
+        //When a flow is started by the REST api, a FlowKey is sent to the Flow mapper, so we send a cleanup event for this key.
+        //Flows triggered by SessionInit don't have this FlowKey, so we do not send a cleanup event.
+        val records = if (checkpoint.flowStartContext.initiatorType == FlowInitiatorType.RPC) {
+            val flowCleanupTime = context.config.getLong(PROCESSING_FLOW_CLEANUP_TIME)
+            val expiryTime = Instant.now().plusMillis(flowCleanupTime).toEpochMilli()
+            Instant.now().plusMillis(flowCleanupTime).toEpochMilli()
+            listOf(
+                flowRecordFactory.createFlowStatusRecord(status),
+                flowRecordFactory.createFlowMapperEventRecord(checkpoint.flowKey.toString(), ScheduleCleanup(expiryTime))
+            )
+        } else {
+            listOf(flowRecordFactory.createFlowStatusRecord(status))
+        }
+        log.info("Flow [${checkpoint.flowId}] completed successfully")
         context.checkpoint.markDeleted()
         return context.copy(outputRecords = context.outputRecords + records)
     }

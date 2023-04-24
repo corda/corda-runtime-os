@@ -1,5 +1,7 @@
 package net.corda.flow.pipeline.handlers.requests
 
+import net.corda.data.flow.FlowInitiatorType
+import net.corda.data.flow.event.mapper.ScheduleCleanup
 import net.corda.data.flow.output.FlowStates
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.data.flow.state.waiting.WaitingFor
@@ -66,11 +68,25 @@ class FlowFailedRequestHandler @Activate constructor(
             FLOW_FAILED,
             request.exception.message ?: request.exception.javaClass.name
         )
-        val flowCleanupTime = context.config.getLong(PROCESSING_FLOW_CLEANUP_TIME)
-        Instant.now().plusMillis(flowCleanupTime).toEpochMilli()
-        val records = listOf(
-            flowRecordFactory.createFlowStatusRecord(status),
-        )
+
+        //When a flow is started by the REST api, a FlowKey is sent to the Flow mapper, so we send a cleanup event for this key.
+        //Flows triggered by SessionInit don't have this FlowKey, so we do not send a cleanup event.
+        val records = if (checkpoint.flowStartContext.initiatorType == FlowInitiatorType.RPC) {
+            val flowCleanupTime = context.config.getLong(PROCESSING_FLOW_CLEANUP_TIME)
+            Instant.now().plusMillis(flowCleanupTime).toEpochMilli()
+            val expiryTime = Instant.now().plusMillis(flowCleanupTime).toEpochMilli()
+            listOf(
+                flowRecordFactory.createFlowStatusRecord(status),
+                flowRecordFactory.createFlowMapperEventRecord(
+                    checkpoint.flowKey.toString(),
+                    ScheduleCleanup(expiryTime)
+                )
+            )
+        } else {
+            listOf(
+                flowRecordFactory.createFlowStatusRecord(status)
+            )
+        }
         log.info("Flow [${checkpoint.flowId}] failed")
         checkpoint.markDeleted()
         return context.copy(outputRecords = context.outputRecords + records)
