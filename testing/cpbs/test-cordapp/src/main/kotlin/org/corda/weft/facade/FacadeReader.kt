@@ -62,7 +62,7 @@ internal class JacksonFacadeReader(val deserialiser: (Reader) -> FacadeDefinitio
     override fun read(reader: Reader): Facade {
         val facadeJson = deserialiser(reader)
 
-        val facadeId = FacadeId.of(facadeJson.id)
+        val facadeId = FacadeId3.of(facadeJson.id)
         val aliases = facadeJson.aliases?.mapValues { (_, v) -> ParameterType.of<Any>(v) }
             ?: emptyMap()
 
@@ -81,7 +81,7 @@ internal class JacksonFacadeReader(val deserialiser: (Reader) -> FacadeDefinitio
     }
 
     private fun parseFacadeMethod(
-        facadeId: FacadeId,
+        facadeId: FacadeId3,
         id: String,
         methodType: FacadeMethodType,
         aliases: Map<String, ParameterType<Any>>,

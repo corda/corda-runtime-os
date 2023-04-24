@@ -1,7 +1,6 @@
 package org.corda.weft.proxies
 
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.module.kotlin.registerKotlinModule
+import net.corda.v5.application.marshalling.JsonMarshallingService
 import org.corda.weft.api.JsonMarshaller
 import org.corda.weft.binding.FacadeInterfaceBinding
 import org.corda.weft.binding.FacadeMethodBinding
@@ -45,9 +44,9 @@ object FacadeProxies {
 /**
  * Kotlin convenience method for creating a client proxy with a default [JsonMarshaller].
  */
-inline fun <reified T : Any> Facade.getClientProxy(noinline requestProcessor: (FacadeRequest) -> FacadeResponse) =
+inline fun <reified T : Any> Facade.getClientProxy(serializer: JsonMarshallingService, noinline requestProcessor: (FacadeRequest) -> FacadeResponse) =
     getClientProxy<T>(
-        JacksonJsonMarshaller(ObjectMapper().registerKotlinModule()),
+        JacksonJsonMarshaller(serializer),
         requestProcessor)
 
 /**

@@ -6,13 +6,13 @@ import org.corda.weft.parameters.TypedParameterValue
 /**
  * A [FacadeMethod] is a method of a [Facade].
  *
- * @param facadeId The [FacadeId] of the owning facade.
+ * @param facadeId The [FacadeId3] of the owning facade.
  * @param name The name of the method
  * @param inParameters the input parameters of the method.
  * @param outParameters the output parameters of the method.
  */
 data class FacadeMethod(
-    val facadeId: FacadeId,
+    val facadeId: FacadeId3,
     val name: String,
     val type: FacadeMethodType,
     val inParameters: List<TypedParameter<*>>,

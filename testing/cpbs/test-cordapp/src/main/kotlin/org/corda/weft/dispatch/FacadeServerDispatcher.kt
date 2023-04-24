@@ -2,6 +2,7 @@ package org.corda.weft.dispatch
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.registerKotlinModule
+import net.corda.v5.application.marshalling.JsonMarshallingService
 import org.corda.weft.binding.FacadeInterfaceBinding
 import org.corda.weft.binding.FacadeMethodBinding
 import org.corda.weft.binding.FacadeOutParameterBindings
@@ -40,8 +41,8 @@ fun Any.buildDispatcher(facade: Facade, typeConverter: TypeConverter): FacadeSer
     return FacadeServerDispatchers.buildDispatcher(facade, targetInterface as Class<Any>, this, typeConverter)
 }
 
-fun Any.buildDispatcher(facade: Facade): FacadeServerDispatcher =
-buildDispatcher(facade, TypeConverter(JacksonJsonMarshaller(ObjectMapper().registerKotlinModule())))
+fun Any.buildDispatcher(facade: Facade, marshaller: JsonMarshallingService): FacadeServerDispatcher =
+buildDispatcher(facade, TypeConverter(JacksonJsonMarshaller(marshaller)))
 
 @Suppress("unchecked")
 class FacadeServerDispatcher(

@@ -27,7 +27,7 @@ class FacadeResponseSerializer : JsonSerializer<FacadeResponse>() {
 
 private fun serialize(
     gen: JsonGenerator,
-    facadeId: FacadeId,
+    facadeId: FacadeId3,
     methodName: String,
     parameters: List<TypedParameterValue<*>>
 ) {

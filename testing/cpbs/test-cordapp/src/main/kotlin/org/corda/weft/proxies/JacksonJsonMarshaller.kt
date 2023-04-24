@@ -1,11 +1,11 @@
 package org.corda.weft.proxies
 
-import com.fasterxml.jackson.databind.ObjectMapper
+import net.corda.v5.application.marshalling.JsonMarshallingService
 import org.corda.weft.api.JsonMarshaller
 
-class JacksonJsonMarshaller(private val objectMapper: ObjectMapper) : JsonMarshaller {
-    override fun serialize(value: Any): String = objectMapper.writeValueAsString(value)
+class JacksonJsonMarshaller(private val serializer: JsonMarshallingService) : JsonMarshaller {
+    override fun serialize(value: Any): String = serializer.format(value)
 
-    override fun <T : Any> deserialize(value: String, type: Class<T>): T = objectMapper.readValue(value, type)
+    override fun <T : Any> deserialize(value: String, type: Class<T>): T = serializer.parse(value, type)
 
 }

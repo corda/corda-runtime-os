@@ -31,7 +31,7 @@ class FacadeResponseDeserializer : JsonDeserializer<FacadeResponse>() {
 
 private fun <T> deserialize(
     parser: JsonParser,
-    ctor: (FacadeId, String, List<TypedParameterValue<*>>) -> T
+    ctor: (FacadeId3, String, List<TypedParameterValue<*>>) -> T
 ): T {
     val node = parser.codec.readTree<JsonNode>(parser)
     val method = node["method"]?.asText() ?: throw IllegalArgumentException(
@@ -39,7 +39,7 @@ private fun <T> deserialize(
     )
 
     val facadeId = try {
-        FacadeId.of(method.substringBeforeLast("/"))
+        FacadeId3.of(method.substringBeforeLast("/"))
     } catch (_: IllegalArgumentException) {
         throw IllegalArgumentException(
             "Invalid method id '$method' in ${node.toPrettyString()}"

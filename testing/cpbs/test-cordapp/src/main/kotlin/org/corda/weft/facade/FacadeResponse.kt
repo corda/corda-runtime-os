@@ -14,7 +14,7 @@ import org.corda.weft.parameters.TypedParameterValue
 @JsonSerialize(using = FacadeResponseSerializer::class)
 @JsonDeserialize(using = FacadeResponseDeserializer::class)
 data class FacadeResponse(
-    val facadeId: FacadeId,
+    val facadeId: FacadeId3,
     val methodName: String,
     val outParameters: List<TypedParameterValue<*>>
 ) {
