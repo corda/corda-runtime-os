@@ -20,11 +20,13 @@ import net.corda.data.p2p.app.AuthenticatedMessageHeader
 import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.interop.InteropAliasProcessor.Companion.addAliasSubstringToOrganisationName
 import net.corda.interop.service.InteropFacadeToFlowMapperService
+import net.corda.libs.configuration.SmartConfig
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC
 import net.corda.schema.Schemas.P2P.P2P_OUT_TOPIC
+import net.corda.schema.configuration.FlowConfig
 import net.corda.session.manager.Constants
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.HoldingIdentity
@@ -37,7 +39,8 @@ import java.util.UUID
 class InteropProcessor(
     cordaAvroSerializationFactory: CordaAvroSerializationFactory,
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
-    private val facadeToFlowMapperService: InteropFacadeToFlowMapperService
+    private val facadeToFlowMapperService: InteropFacadeToFlowMapperService,
+    private val flowConfig: SmartConfig
 ) : StateAndEventProcessor<String, InteropState, FlowMapperEvent> {
 
     override val keyClass = String::class.java
@@ -194,10 +197,8 @@ class InteropProcessor(
                                 AuthenticatedMessageHeader(
                                     translatedDestination,
                                     translatedSource,
-                                    //TODO CORE-12208 adding FLOW_CONFIG to InteropService breaks InteropDataSetupIntegrationTest,
-                                    // use hardcoded 500000 for now
-                                    Instant.ofEpochMilli(sessionEvent.timestamp.toEpochMilli() + 500000),
-                                    //+ config.getLong(FlowConfig.SESSION_P2P_TTL)),
+                                    Instant.ofEpochMilli(
+                                        sessionEvent.timestamp.toEpochMilli() + flowConfig.getLong(FlowConfig.SESSION_P2P_TTL)),
                                     sessionEvent.sessionId + "-" + UUID.randomUUID(),
                                     "",
                                     SUBSYSTEM,
