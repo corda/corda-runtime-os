@@ -1,4 +1,4 @@
-package net.corda.rest.json
+package net.corda.rest.json.serialization
 
 import com.fasterxml.jackson.core.JsonGenerator
 import com.fasterxml.jackson.core.JsonParser
@@ -7,16 +7,15 @@ import com.fasterxml.jackson.databind.DeserializationContext
 import com.fasterxml.jackson.databind.JsonDeserializer
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.JsonSerializer
-import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.SerializerProvider
 import com.fasterxml.jackson.databind.node.ValueNode
 import net.corda.rest.JsonObject
-import net.corda.rest.json.impl.JsonObjectAsString
+import net.corda.rest.json.serialization.impl.JsonObjectAsString
 
 
 object JsonObjectSerializer : JsonSerializer<JsonObject>() {
 
-    private val mapper = ObjectMapper()
+    private val mapper = jacksonObjectMapper()
     override fun serialize(obj: JsonObject, generator: JsonGenerator, provider: SerializerProvider) {
 
         // Check if `escapedJson` is a valid JSON content

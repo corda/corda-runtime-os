@@ -1,4 +1,4 @@
-package net.corda.rest.json.impl
+package net.corda.rest.json.serialization.impl
 
 import net.corda.rest.JsonObject
 

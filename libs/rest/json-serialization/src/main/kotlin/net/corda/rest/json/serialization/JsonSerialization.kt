@@ -1,4 +1,4 @@
-package net.corda.common.json.serialization
+package net.corda.rest.json.serialization
 
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.MapperFeature
