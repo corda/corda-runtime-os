@@ -12,6 +12,7 @@ import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.KubernetesClientBuilder
 import io.fabric8.kubernetes.client.KubernetesClientException
 import net.corda.cli.api.CordaCliPlugin
+import org.apache.kafka.common.protocol.types.Field.Bool
 import org.pf4j.Extension
 import org.pf4j.Plugin
 import org.pf4j.PluginWrapper
@@ -149,6 +150,39 @@ class PreInstallPlugin(wrapper: PluginWrapper) : Plugin(wrapper) {
                 log("Could not read secret $secretName with key $secretKey.", ERROR)
                 null
             }
+        }
+    }
+
+    class Report (private var report: MutableList<Pair<String, Boolean>> = mutableListOf()) {
+        private fun getEntries(): MutableList<Pair<String, Boolean>> {
+            return report
+        }
+
+        fun addEntry(entry: Pair<String, Boolean>) {
+            report.add(entry)
+        }
+
+        fun addEntries(entries: List<Pair<String, Boolean>>) {
+            report.addAll(entries)
+        }
+
+        fun addEntries(reportEntries: Report) {
+            report.addAll(reportEntries.getEntries())
+        }
+
+        // Fails (returns 1) if any of the report entries have failed. If no entries are found, the report passes.
+        fun testsPassed(): Int {
+            val result = report.reduceOrNull { acc, pair -> Pair("", acc.second && pair.second) } ?: return 0
+
+            return if (result.second) 0 else 1
+        }
+
+        override fun toString(): String {
+            var acc = ""
+            for (entry in report) {
+                acc += "${entry.first}: ${if (entry.second) "PASSED" else "FAILED"}\n"
+            }
+            return acc
         }
     }
 
