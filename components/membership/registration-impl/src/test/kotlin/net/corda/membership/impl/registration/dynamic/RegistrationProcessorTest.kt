@@ -217,6 +217,11 @@ class  RegistrationProcessorTest {
                     eq(1),
                 )
             } doReturn MembershipQueryResult.Success(listOf(registrationRequestDetails))
+            on {
+                queryRegistrationRequests(
+                    eq(mgmHoldingIdentity.toCorda()), eq(null), any(), eq(null)
+                )
+            } doReturn MembershipQueryResult.Success(emptyList())
         }
 
         processor = RegistrationProcessor(

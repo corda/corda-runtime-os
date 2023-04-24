@@ -71,7 +71,6 @@ class RegistrationProcessor(
             memberTypeChecker,
             membershipPersistenceClient,
             membershipQueryClient,
-            membershipGroupReaderProvider,
         ),
         ApproveRegistration::class.java to ApproveRegistrationHandler(
             membershipPersistenceClient,

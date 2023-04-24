@@ -19,7 +19,6 @@ import net.corda.membership.impl.registration.dynamic.handler.MissingRegistratio
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandler
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandlerResult
 import net.corda.membership.impl.registration.dynamic.verifiers.RegistrationContextCustomFieldsVerifier
-import net.corda.membership.lib.InternalGroupParameters
 import net.corda.membership.lib.MemberInfoExtension.Companion.CUSTOM_KEY_PREFIX
 import net.corda.membership.lib.MemberInfoExtension.Companion.ENDPOINTS
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
@@ -27,21 +26,20 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.IS_MGM
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_PENDING
 import net.corda.membership.lib.MemberInfoExtension.Companion.MODIFIED_TIME
+import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_NAME
+import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
 import net.corda.membership.lib.MemberInfoExtension.Companion.PRE_AUTH_TOKEN
 import net.corda.membership.lib.MemberInfoExtension.Companion.ROLES_PREFIX
 import net.corda.membership.lib.MemberInfoExtension.Companion.SERIAL
 import net.corda.membership.lib.MemberInfoExtension.Companion.endpoints
 import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.lib.MemberInfoFactory
-import net.corda.membership.lib.NOTARY_SERVICE_NAME_KEY
 import net.corda.membership.lib.notary.MemberNotaryDetails
 import net.corda.membership.lib.toMap
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.persistence.client.MembershipQueryResult
-import net.corda.membership.read.MembershipGroupReader
-import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
 import net.corda.test.util.time.TestClock
@@ -51,7 +49,6 @@ import net.corda.v5.membership.EndpointInfo
 import net.corda.v5.membership.MGMContext
 import net.corda.v5.membership.MemberContext
 import net.corda.v5.membership.MemberInfo
-import net.corda.v5.membership.NotaryInfo
 import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -158,15 +155,7 @@ class StartRegistrationHandlerTest {
     private val memberTypeChecker = mock<MemberTypeChecker> {
         on { getMgmMemberInfo(mgmHoldingIdentity.toCorda()) } doReturn mgmMemberInfo
     }
-    private val mockGroupParameters = mock<InternalGroupParameters> {
-        on { entries } doReturn mapOf(String.format(NOTARY_SERVICE_NAME_KEY, 0) to notaryX500Name.toString()).entries
-    }
-    private val groupReader = mock<MembershipGroupReader> {
-        on { groupParameters } doReturn mockGroupParameters
-    }
-    private val membershipGroupReaderProvider = mock<MembershipGroupReaderProvider> {
-        on { getGroupReader(mgmHoldingIdentity.toCorda()) } doReturn groupReader
-    }
+
     private val registrationContextCustomFieldsVerifier = mock<RegistrationContextCustomFieldsVerifier> {
         on { verify(any()) } doReturn RegistrationContextCustomFieldsVerifier.Result.Success
     }
@@ -213,6 +202,11 @@ class StartRegistrationHandlerTest {
             on {
                 queryRegistrationRequest(eq(mgmHoldingIdentity.toCorda()), eq(registrationId))
             } doReturn MembershipQueryResult.Success(registrationRequest)
+            on {
+                queryRegistrationRequests(
+                    eq(mgmHoldingIdentity.toCorda()), eq(null), any(), eq(null)
+                )
+            } doReturn MembershipQueryResult.Success(emptyList())
         }
 
         handler = StartRegistrationHandler(
@@ -221,7 +215,6 @@ class StartRegistrationHandlerTest {
             memberTypeChecker,
             membershipPersistenceClient,
             membershipQueryClient,
-            membershipGroupReaderProvider,
             registrationContextCustomFieldsVerifier
         )
     }
@@ -562,23 +555,21 @@ class StartRegistrationHandlerTest {
 
     @Test
     fun `declined if registering member's name is the same as an existing notary's service name`() {
-        val notaryDetails = MemberNotaryDetails(
-            notaryX500Name,
-            "pluginType",
-            listOf(1),
-            listOf(mock())
+        val mockMemberContext = KeyValuePairList(
+            listOf(
+                KeyValuePair(NOTARY_SERVICE_NAME, aliceX500Name.toString()),
+                KeyValuePair(PARTY_NAME, bobX500Name.toString()),
+            )
         )
-        whenever(memberMemberContext.parse<MemberNotaryDetails>("corda.notary")).thenReturn(notaryDetails)
+        whenever(
+            membershipQueryClient.queryRegistrationRequests(
+                eq(mgmHoldingIdentity.toCorda()), eq(null), any(), eq(null)
+            )
+        ).thenReturn(MembershipQueryResult.Success(listOf(createRegistrationRequest(mockMemberContext))))
 
-        val notaryResult = handler.invoke(registrationState, Record(testTopic, testTopicKey, startRegistrationCommand))
-        notaryResult.assertRegistrationStarted()
+        val result = handler.invoke(registrationState, Record(testTopic, testTopicKey, startRegistrationCommand))
 
-        val memberStartRegistrationCommand = startRegistrationCommand
-        val memberResult = handler.invoke(
-            RegistrationState(registrationId, HoldingIdentity(notaryX500Name.toString(), groupId), mgmHoldingIdentity),
-            Record(testTopic, testTopicKey, memberStartRegistrationCommand)
-        )
-        memberResult.assertDeclinedRegistration()
+        result.assertDeclinedRegistration()
     }
 
     @Test
@@ -589,11 +580,13 @@ class StartRegistrationHandlerTest {
             listOf(1),
             listOf(mock())
         )
-        val mockNotary = mock<NotaryInfo> {
-            on { name } doReturn notaryX500Name
-        }
+        val mockMemberContext = KeyValuePairList(listOf(KeyValuePair(NOTARY_SERVICE_NAME, notaryX500Name.toString())))
+        whenever(
+            membershipQueryClient.queryRegistrationRequests(
+                eq(mgmHoldingIdentity.toCorda()), eq(null), any(), eq(null)
+            )
+        ).thenReturn(MembershipQueryResult.Success(listOf(createRegistrationRequest(mockMemberContext))))
         whenever(memberMemberContext.parse<MemberNotaryDetails>("corda.notary")).thenReturn(notaryDetails)
-        whenever(mockGroupParameters.notaries).thenReturn(listOf(mockNotary))
 
         val result = handler.invoke(registrationState, Record(testTopic, testTopicKey, startRegistrationCommand))
 
@@ -601,7 +594,7 @@ class StartRegistrationHandlerTest {
     }
 
     @Test
-    fun `declined if role is set to notary and group parameters cannot be read`() {
+    fun `declined if role is set to notary and registration requests cannot be retrieved`() {
         val notaryDetails = MemberNotaryDetails(
             notaryX500Name,
             "Notary Plugin A",
@@ -609,7 +602,11 @@ class StartRegistrationHandlerTest {
             listOf(mock())
         )
         whenever(memberMemberContext.parse<MemberNotaryDetails>("corda.notary")).thenReturn(notaryDetails)
-        whenever(groupReader.groupParameters).thenReturn(null)
+        whenever(
+            membershipQueryClient.queryRegistrationRequests(
+                eq(mgmHoldingIdentity.toCorda()), eq(null), any(), eq(null)
+            )
+        ).thenReturn(MembershipQueryResult.Failure("error"))
 
         val result = handler.invoke(registrationState, Record(testTopic, testTopicKey, startRegistrationCommand))
         result.assertDeclinedRegistration()
@@ -764,6 +761,32 @@ class StartRegistrationHandlerTest {
         whenever(membershipQueryClient.queryRegistrationRequest(eq(mgmHoldingIdentity.toCorda()), eq(registrationId)))
             .doReturn(MembershipQueryResult.Success(createRegistrationRequest(serial = 2L)))
         val result = handler.invoke(registrationState, Record(testTopic, testTopicKey, startRegistrationCommand))
+        result.assertRegistrationStarted()
+    }
+
+    @Test
+    fun `allows notary virtual node re-registration`() {
+        val notaryDetails = MemberNotaryDetails(
+            notaryX500Name,
+            "Notary Protocol A",
+            listOf(1),
+            listOf(mock())
+        )
+        whenever(memberMemberContext.parse<MemberNotaryDetails>("corda.notary")).thenReturn(notaryDetails)
+        val mockMemberContext = KeyValuePairList(
+            listOf(
+                KeyValuePair(NOTARY_SERVICE_NAME, notaryX500Name.toString()),
+                KeyValuePair(PARTY_NAME, aliceX500Name.toString()),
+            )
+        )
+        whenever(
+            membershipQueryClient.queryRegistrationRequests(
+                eq(mgmHoldingIdentity.toCorda()), eq(null), any(), eq(null)
+            )
+        ).thenReturn(MembershipQueryResult.Success(listOf(createRegistrationRequest(mockMemberContext))))
+
+        val result = handler.invoke(registrationState, Record(testTopic, testTopicKey, startRegistrationCommand))
+
         result.assertRegistrationStarted()
     }
 
