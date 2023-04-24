@@ -95,13 +95,11 @@ class VaultNamedQueryExecutorImpl(
                             "$UTXO_TX_COMPONENT_TABLE AS tc " +
                             "JOIN $UTXO_VISIBLE_TX_TABLE AS visible_states " +
                                 "ON visible_states.transaction_id = tc.transaction_id " +
+                                "AND visible_states.leaf_idx = tc.leaf_idx " +
                             "$whereJson " +
                             "AND tc.group_idx IN (:groupIndices) " +
                             "AND visible_states.created <= :$TIMESTAMP_LIMIT_PARAM_NAME",
                     Tuple::class.java
-                ).setParameter("groupIndices", listOf(
-                    UtxoComponentGroup.OUTPUTS.ordinal,
-                    UtxoComponentGroup.OUTPUTS_INFO.ordinal)
                 )
 
                 request.parameters.filter { it.value != null }.forEach { rec ->
@@ -109,6 +107,14 @@ class VaultNamedQueryExecutorImpl(
                     query.setParameter(rec.key, serializationService.deserialize(bytes))
                 }
 
+            // Setting the parameter here prevents them from being set by CorDapp code.
+            query.setParameter(
+                "groupIndices",
+                listOf(
+                    UtxoComponentGroup.OUTPUTS.ordinal,
+                    UtxoComponentGroup.OUTPUTS_INFO.ordinal
+                )
+            )
                 query.firstResult = request.offset
                 query.maxResults = request.limit
 
