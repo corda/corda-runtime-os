@@ -8,8 +8,9 @@ import net.corda.data.virtualnode.VirtualNodeUpgradeRequest
 import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.cpi.datamodel.repository.impl.CpiMetadataRepositoryImpl
 import net.corda.libs.cpi.datamodel.repository.CpkDbChangeLogRepository
-import net.corda.libs.cpi.datamodel.repository.CpkDbChangeLogRepositoryImpl
+import net.corda.libs.cpi.datamodel.repository.impl.CpkDbChangeLogRepositoryImpl
 import net.corda.libs.external.messaging.ExternalMessagingConfigProviderImpl
 import net.corda.libs.external.messaging.ExternalMessagingRouteConfigGeneratorImpl
 import net.corda.libs.external.messaging.serialization.ExternalMessagingChannelConfigSerializerImpl
@@ -80,7 +81,7 @@ internal class VirtualNodeWriterFactory(
     ): Subscription<String, VirtualNodeAsynchronousRequest> {
         val subscriptionConfig = SubscriptionConfig(ASYNC_OPERATION_GROUP, VIRTUAL_NODE_ASYNC_REQUEST_TOPIC)
         val oldVirtualNodeEntityRepository =
-            VirtualNodeEntityRepository(dbConnectionManager.getClusterEntityManagerFactory())
+            VirtualNodeEntityRepository(dbConnectionManager.getClusterEntityManagerFactory(), CpiMetadataRepositoryImpl())
         val migrationUtility = MigrationUtilityImpl(dbConnectionManager, schemaMigrator)
         val externalMessagingRouteConfigGenerator = ExternalMessagingRouteConfigGeneratorImpl(
             ExternalMessagingConfigProviderImpl(externalMsgConfig),
@@ -158,7 +159,7 @@ internal class VirtualNodeWriterFactory(
             VirtualNodeManagementResponse::class.java,
         )
         val virtualNodeEntityRepository =
-            VirtualNodeEntityRepository(dbConnectionManager.getClusterEntityManagerFactory())
+            VirtualNodeEntityRepository(dbConnectionManager.getClusterEntityManagerFactory(), CpiMetadataRepositoryImpl())
 
         val virtualNodeRepository: VirtualNodeRepository = VirtualNodeRepositoryImpl()
         val virtualNodeOperationStatusHandler =

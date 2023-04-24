@@ -1,5 +1,9 @@
 package net.corda.libs.configuration.datamodel.tests
 
+import java.time.Instant
+import java.util.*
+import javax.persistence.EntityManagerFactory
+import kotlin.random.Random
 import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.admin.impl.ClassloaderChangeLog.ChangeLogResourceFiles
 import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
@@ -7,11 +11,13 @@ import net.corda.db.schema.DbSchema
 import net.corda.db.testkit.DbUtils
 import net.corda.libs.configuration.datamodel.ConfigurationEntities
 import net.corda.libs.cpi.datamodel.CpiEntities
-import net.corda.libs.virtualnode.datamodel.entities.HoldingIdentityEntity
+import net.corda.libs.cpi.datamodel.repository.impl.CpiMetadataRepositoryImpl
 import net.corda.libs.virtualnode.datamodel.VirtualNodeEntities
+import net.corda.libs.virtualnode.datamodel.entities.HoldingIdentityEntity
+import net.corda.libs.virtualnode.datamodel.entities.OperationType
+import net.corda.libs.virtualnode.datamodel.entities.VirtualNodeEntity
 import net.corda.libs.virtualnode.datamodel.entities.VirtualNodeOperationEntity
 import net.corda.libs.virtualnode.datamodel.entities.VirtualNodeOperationState
-import net.corda.libs.virtualnode.datamodel.entities.VirtualNodeEntity
 import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
 import net.corda.orm.utils.transaction
 import net.corda.test.util.TestRandom
@@ -20,11 +26,6 @@ import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
-import java.time.Instant
-import java.util.*
-import javax.persistence.EntityManagerFactory
-import kotlin.random.Random
-import net.corda.libs.virtualnode.datamodel.entities.OperationType
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class VirtualNodeEntitiesIntegrationTest {
@@ -95,7 +96,7 @@ class VirtualNodeEntitiesIntegrationTest {
         val version = "1.0-${Instant.now().toEpochMilli()}"
         val cpiSignerSummaryHash = TestRandom.secureHash()
 
-        val vnodeEntity = VNodeTestUtils.newVNode(entityManagerFactory, name, version, cpiSignerSummaryHash, externalMessagingRouteConfig = null)
+        val vnodeEntity = VNodeTestUtils.newVNode(entityManagerFactory, name, version, cpiSignerSummaryHash, externalMessagingRouteConfig = null, cpiMetadataRepository = CpiMetadataRepositoryImpl())
 
         assertThat(entityManagerFactory.createEntityManager().find(VirtualNodeEntity::class.java, vnodeEntity.holdingIdentityId))
             .isEqualTo(vnodeEntity)
@@ -114,7 +115,7 @@ class VirtualNodeEntitiesIntegrationTest {
             em.persist(holdingIdentityEntity)
         }
 
-        val vnodeEntity = VNodeTestUtils.newVNode(entityManagerFactory, name, version, cpiSignerSummaryHash, holdingIdentityEntity = holdingIdentityEntity, externalMessagingRouteConfig = null)
+        val vnodeEntity = VNodeTestUtils.newVNode(entityManagerFactory, name, version, cpiSignerSummaryHash, holdingIdentityEntity = holdingIdentityEntity, externalMessagingRouteConfig = null, cpiMetadataRepository = CpiMetadataRepositoryImpl())
 
         assertThat(entityManagerFactory.createEntityManager().find(VirtualNodeEntity::class.java, vnodeEntity.holdingIdentityId))
             .isEqualTo(vnodeEntity)
@@ -135,7 +136,7 @@ class VirtualNodeEntitiesIntegrationTest {
             OperationType.UPGRADE,
             Instant.now()
         )
-        val vnodeEntity = VNodeTestUtils.newVNode(entityManagerFactory, name, version, cpiSignerSummaryHash, virtualNodeOperationEntity, externalMessagingRouteConfig = null)
+        val vnodeEntity = VNodeTestUtils.newVNode(entityManagerFactory, name, version, cpiSignerSummaryHash, virtualNodeOperationEntity, externalMessagingRouteConfig = null, cpiMetadataRepository = CpiMetadataRepositoryImpl())
 
         val foundEntity = entityManagerFactory.createEntityManager().find(VirtualNodeEntity::class.java, vnodeEntity.holdingIdentityId)
         val operationEntity =

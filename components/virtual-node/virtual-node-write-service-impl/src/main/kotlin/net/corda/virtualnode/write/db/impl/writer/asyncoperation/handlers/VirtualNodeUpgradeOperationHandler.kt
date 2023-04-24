@@ -4,7 +4,7 @@ import net.corda.crypto.core.ShortHash
 import net.corda.data.virtualnode.VirtualNodeUpgradeRequest
 import net.corda.libs.cpi.datamodel.CpkDbChangeLog
 import net.corda.libs.cpi.datamodel.repository.CpkDbChangeLogRepository
-import net.corda.libs.cpi.datamodel.repository.CpkDbChangeLogRepositoryImpl
+import net.corda.libs.cpi.datamodel.repository.impl.CpkDbChangeLogRepositoryImpl
 import net.corda.libs.external.messaging.ExternalMessagingRouteConfigGenerator
 import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.libs.virtualnode.common.exception.LiquibaseDiffCheckFailedException

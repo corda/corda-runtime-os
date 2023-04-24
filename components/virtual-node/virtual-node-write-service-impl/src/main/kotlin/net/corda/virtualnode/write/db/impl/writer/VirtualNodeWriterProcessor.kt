@@ -18,7 +18,7 @@ import net.corda.db.core.CloseableDataSource
 import net.corda.libs.cpi.datamodel.CpkDbChangeLog
 import net.corda.libs.cpi.datamodel.CpkDbChangeLogIdentifier
 import net.corda.libs.cpi.datamodel.repository.CpkDbChangeLogRepository
-import net.corda.libs.cpi.datamodel.repository.CpkDbChangeLogRepositoryImpl
+import net.corda.libs.cpi.datamodel.repository.impl.CpkDbChangeLogRepositoryImpl
 import net.corda.libs.virtualnode.common.exception.InvalidStateChangeRuntimeException
 import net.corda.libs.virtualnode.common.exception.VirtualNodeNotFoundException
 import net.corda.libs.virtualnode.common.exception.VirtualNodeOperationBadRequestException

@@ -9,7 +9,7 @@ import net.corda.db.schema.DbSchema
 import net.corda.db.testkit.DbUtils
 import net.corda.libs.configuration.datamodel.ConfigurationEntities
 import net.corda.libs.cpi.datamodel.CpiEntities
-import net.corda.libs.cpi.datamodel.entities.CpiMetadataEntity
+import net.corda.libs.cpi.datamodel.repository.impl.CpiMetadataRepositoryImpl
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.libs.virtualnode.datamodel.VirtualNodeEntities
@@ -26,6 +26,7 @@ internal class VirtualNodeEntityRepositoryTest {
     private val emConfig = DbUtils.getEntityManagerConfiguration("chunking_db_for_test")
     private val entityManagerFactory: EntityManagerFactory
     private val repository: VirtualNodeEntityRepository
+    private val cpiMetadataRepository = CpiMetadataRepositoryImpl()
 
     companion object {
         private const val MIGRATION_FILE_LOCATION = "net/corda/db/schema/config/db.changelog-master.xml"
@@ -53,7 +54,7 @@ internal class VirtualNodeEntityRepositoryTest {
             VirtualNodeEntities.classes.toList() + ConfigurationEntities.classes.toList() + CpiEntities.classes.toList(),
             emConfig
         )
-        repository = VirtualNodeEntityRepository(entityManagerFactory)
+        repository = VirtualNodeEntityRepository(entityManagerFactory, CpiMetadataRepositoryImpl())
     }
 
     @Suppress("Unused")
@@ -77,22 +78,17 @@ internal class VirtualNodeEntityRepositoryTest {
                 Instant.now()
         )
 
-        val cpiMetadataEntity = with(expectedCpiMetadata) {
-            CpiMetadataEntity(
-                cpiId.name,
-                cpiId.version,
-                signerSummaryHash,
+        entityManagerFactory.transaction { em ->
+            cpiMetadataRepository.put(
+                em,
+                expectedCpiMetadata.cpiId.copy(signerSummaryHash = parseSecureHash(signerSummaryHash)),
                 "TestFile",
-                fileChecksum,
-                "Test Group Policy",
+                parseSecureHash(fileChecksum),
                 "Test Group ID",
+                "Test Group Policy",
                 "Request ID",
                 emptySet()
             )
-        }
-
-        entityManagerFactory.transaction {
-            it.persist(cpiMetadataEntity)
         }
 
         // Search by full file checksum
@@ -143,22 +139,17 @@ internal class VirtualNodeEntityRepositoryTest {
         val groupPolicy = "Test Group Policy 2"
         val expectedCpiMetadata = CpiMetadata(cpiId, parseSecureHash(fileChecksum), emptySet(), groupPolicy, 0, Instant.now())
 
-        val cpiMetadataEntity = with(expectedCpiMetadata) {
-            CpiMetadataEntity(
-                cpiId.name,
-                cpiId.version,
-                signerSummaryHash,
+        entityManagerFactory.transaction {em ->
+            cpiMetadataRepository.put(
+                em,
+                expectedCpiMetadata.cpiId.copy(signerSummaryHash = parseSecureHash(signerSummaryHash)),
                 "TestFile",
-                fileChecksum,
-                groupPolicy,
+                parseSecureHash(fileChecksum),
                 mgmGroupId,
+                groupPolicy,
                 "Request ID",
-                emptySet(),
+                emptySet()
             )
-        }
-
-        entityManagerFactory.transaction {
-            it.persist(cpiMetadataEntity)
         }
 
         Assertions.assertThat(repository.getCpiMetadataByChecksum("")).isNull()

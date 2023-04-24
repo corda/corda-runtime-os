@@ -7,7 +7,7 @@ import net.corda.db.schema.DbSchema
 import net.corda.db.testkit.DbUtils
 import net.corda.libs.cpi.datamodel.CpiEntities
 import net.corda.libs.cpi.datamodel.entities.internal.CpkFileEntity
-import net.corda.libs.cpi.datamodel.repository.CpkFileRepositoryImpl
+import net.corda.libs.cpi.datamodel.repository.impl.CpkFileRepositoryImpl
 import net.corda.orm.EntityManagerConfiguration
 import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
 import net.corda.orm.utils.transaction

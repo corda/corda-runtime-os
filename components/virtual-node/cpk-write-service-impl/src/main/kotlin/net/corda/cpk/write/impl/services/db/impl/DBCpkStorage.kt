@@ -2,7 +2,7 @@ package net.corda.cpk.write.impl.services.db.impl
 
 import net.corda.cpk.write.impl.services.db.CpkStorage
 import net.corda.libs.cpi.datamodel.CpkFile
-import net.corda.libs.cpi.datamodel.repository.CpkFileRepositoryImpl
+import net.corda.libs.cpi.datamodel.repository.impl.CpkFileRepositoryImpl
 import net.corda.orm.utils.transaction
 import net.corda.v5.crypto.SecureHash
 import org.slf4j.LoggerFactory

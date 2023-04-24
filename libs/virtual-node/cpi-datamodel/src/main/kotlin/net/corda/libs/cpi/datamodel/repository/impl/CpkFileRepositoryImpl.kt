@@ -1,11 +1,12 @@
-package net.corda.libs.cpi.datamodel.repository
+package net.corda.libs.cpi.datamodel.repository.impl
 
+import javax.persistence.EntityManager
+import javax.persistence.NonUniqueResultException
 import net.corda.crypto.core.parseSecureHash
 import net.corda.libs.cpi.datamodel.CpkFile
 import net.corda.libs.cpi.datamodel.entities.internal.CpkFileEntity
+import net.corda.libs.cpi.datamodel.repository.CpkFileRepository
 import net.corda.v5.crypto.SecureHash
-import javax.persistence.EntityManager
-import javax.persistence.NonUniqueResultException
 
 class CpkFileRepositoryImpl: CpkFileRepository {
     override fun exists(em: EntityManager, cpkChecksum: SecureHash): Boolean {
