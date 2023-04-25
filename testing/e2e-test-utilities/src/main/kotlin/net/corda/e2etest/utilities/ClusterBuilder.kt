@@ -152,13 +152,12 @@ class ClusterBuilder {
     private fun registerMemberBody() =
         """{ "context": { "corda.key.scheme" : "CORDA.ECDSA.SECP256R1" } }""".trimMargin()
 
-    // TODO CORE-7248 Review once plugin loading logic is added
-    private fun registerNotaryBody() =
+    private fun registerNotaryBody(holdingIdShortHash: String) =
         """{ 
             |  "context": { 
             |    "corda.key.scheme" : "CORDA.ECDSA.SECP256R1", 
             |    "corda.roles.0" : "notary",
-            |    "corda.notary.service.name" : "O=MyNotaryService, L=London, C=GB",
+            |    "corda.notary.service.name" : "O=MyNotaryService-${holdingIdShortHash}, L=London, C=GB",
             |    "corda.notary.service.flow.protocol.name" : "com.r3.corda.notary.plugin.nonvalidating",
             |    "corda.notary.service.flow.protocol.version.0" : "1"
             |   } 
@@ -184,12 +183,16 @@ class ClusterBuilder {
     fun getVNodeStatus(requestId: String) = client!!.get("/api/v1/virtualnode/status/$requestId")
 
     /**
-     * Register a member to the network
+     * Register a member to the network.
+     *
+     * KNOWN LIMITATION: Registering a notary static member will currently always provision a new
+     * notary service. This is fine for now as we only support a 1-1 mapping from notary service to
+     * notary vnode. It will need revisiting when 1-* is supported.
      */
     fun registerStaticMember(holdingIdShortHash: String, isNotary: Boolean = false) =
         register(
             holdingIdShortHash,
-            if (isNotary) registerNotaryBody() else registerMemberBody()
+            if (isNotary) registerNotaryBody(holdingIdShortHash) else registerMemberBody()
         )
 
     fun register(holdingIdShortHash: String, registrationContext: String) =

@@ -8,7 +8,6 @@ import net.corda.applications.workers.smoketest.websocket.client.useWebsocketCon
 import net.corda.e2etest.utilities.CODE_SIGNER_CERT
 import net.corda.e2etest.utilities.CODE_SIGNER_CERT_ALIAS
 import net.corda.e2etest.utilities.CODE_SIGNER_CERT_USAGE
-import net.corda.e2etest.utilities.GROUP_ID
 import net.corda.e2etest.utilities.RpcSmokeTestInput
 import net.corda.e2etest.utilities.SMOKE_TEST_CLASS_NAME
 import net.corda.e2etest.utilities.assertWithRetry
@@ -36,9 +35,10 @@ class FlowStatusFeedSmokeTest {
 
     private companion object {
         private val testRunUniqueId = UUID.randomUUID()
+        private val groupId = UUID.randomUUID().toString()
         private val cpiName = "${TEST_CPI_NAME}_$testRunUniqueId"
         private val bobX500 = "CN=Bob-$testRunUniqueId, OU=Application, O=R3, L=London, C=GB"
-        private var bobHoldingId: String = getHoldingIdShortHash(bobX500, GROUP_ID)
+        private var bobHoldingId: String = getHoldingIdShortHash(bobX500, groupId)
         private val staticMemberList = listOf(
             bobX500,
         )
@@ -60,7 +60,7 @@ class FlowStatusFeedSmokeTest {
             conditionallyUploadCordaPackage(
                 cpiName,
                 TEST_CPB_LOCATION,
-                GROUP_ID,
+                groupId,
                 staticMemberList
             )
 

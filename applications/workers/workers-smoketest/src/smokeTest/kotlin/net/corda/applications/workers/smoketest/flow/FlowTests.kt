@@ -5,7 +5,6 @@ import com.fasterxml.jackson.module.kotlin.readValue
 import net.corda.applications.workers.smoketest.TEST_CPB_LOCATION
 import net.corda.applications.workers.smoketest.TEST_CPI_NAME
 import net.corda.e2etest.utilities.FlowStatus
-import net.corda.e2etest.utilities.GROUP_ID
 import net.corda.e2etest.utilities.RPC_FLOW_STATUS_FAILED
 import net.corda.e2etest.utilities.RPC_FLOW_STATUS_SUCCESS
 import net.corda.e2etest.utilities.RpcSmokeTestInput
@@ -51,18 +50,19 @@ class FlowTests {
 
     companion object {
         private val testRunUniqueId = UUID.randomUUID()
+        private val groupId = UUID.randomUUID().toString()
         private val applicationCpiName = "${TEST_CPI_NAME}_$testRunUniqueId"
         private val notaryCpiName = "${TEST_NOTARY_CPI_NAME}_$testRunUniqueId"
         private val aliceX500 = "CN=Alice-$testRunUniqueId, OU=Application, O=R3, L=London, C=GB"
-        private val aliceHoldingId: String = getHoldingIdShortHash(aliceX500, GROUP_ID)
+        private val aliceHoldingId: String = getHoldingIdShortHash(aliceX500, groupId)
         private val bobX500 = "CN=Bob-$testRunUniqueId, OU=Application, O=R3, L=London, C=GB"
-        private var bobHoldingId: String = getHoldingIdShortHash(bobX500, GROUP_ID)
+        private var bobHoldingId: String = getHoldingIdShortHash(bobX500, groupId)
         private val davidX500 = "CN=David-$testRunUniqueId, OU=Application, O=R3, L=London, C=GB"
-        private var davidHoldingId: String = getHoldingIdShortHash(davidX500, GROUP_ID)
+        private var davidHoldingId: String = getHoldingIdShortHash(davidX500, groupId)
         private val charlyX500 = "CN=Charley-$testRunUniqueId, OU=Application, O=R3, L=London, C=GB"
-        private var charlieHoldingId: String = getHoldingIdShortHash(charlyX500, GROUP_ID)
+        private var charlieHoldingId: String = getHoldingIdShortHash(charlyX500, groupId)
         private val notaryX500 = "CN=Notary-$testRunUniqueId, OU=Application, O=R3, L=London, C=GB"
-        private val notaryHoldingId: String = getHoldingIdShortHash(notaryX500, GROUP_ID)
+        private val notaryHoldingId: String = getHoldingIdShortHash(notaryX500, groupId)
         private val staticMemberList = listOf(
             aliceX500,
             bobX500,
@@ -103,13 +103,13 @@ class FlowTests {
         internal fun beforeAll() {
             // Upload test flows if not already uploaded
             conditionallyUploadCordaPackage(
-                applicationCpiName, TEST_CPB_LOCATION, GROUP_ID, staticMemberList
+                applicationCpiName, TEST_CPB_LOCATION, groupId, staticMemberList
             )
             // Upload notary server CPB
             conditionallyUploadCordaPackage(
                 notaryCpiName,
                 TEST_NOTARY_CPB_LOCATION,
-                GROUP_ID,
+                groupId,
                 staticMemberList
             )
 

@@ -10,7 +10,6 @@ import net.corda.e2etest.utilities.CODE_SIGNER_CERT
 import net.corda.e2etest.utilities.CODE_SIGNER_CERT_ALIAS
 import net.corda.e2etest.utilities.CODE_SIGNER_CERT_USAGE
 import net.corda.e2etest.utilities.ClusterBuilder
-import net.corda.e2etest.utilities.GROUP_ID
 import net.corda.e2etest.utilities.assertWithRetry
 import net.corda.e2etest.utilities.awaitRpcFlowFinished
 import net.corda.e2etest.utilities.awaitVirtualNodeOperationStatusCheck
@@ -53,10 +52,11 @@ class VirtualNodeRpcTest {
         private const val EXPECTED_ERROR_CPB_INSTEAD_OF_CPI = "Invalid CPI.  Unknown Corda-CPI-Format - \"1.0\""
 
         private val testRunUniqueId = UUID.randomUUID()
+        private val groupId = UUID.randomUUID().toString()
         private val aliceX500 = "CN=Alice-$testRunUniqueId, OU=Application, O=R3, L=London, C=GB"
         private val bobX500 = "CN=Bob-$testRunUniqueId, OU=Application, O=R3, L=London, C=GB"
-        private val aliceHoldingId: String = getHoldingIdShortHash(aliceX500, GROUP_ID)
-        private val bobHoldingId: String = getHoldingIdShortHash(bobX500, GROUP_ID)
+        private val aliceHoldingId: String = getHoldingIdShortHash(aliceX500, groupId)
+        private val bobHoldingId: String = getHoldingIdShortHash(bobX500, groupId)
         private val staticMemberList = listOf(
             aliceX500,
             bobX500
@@ -113,7 +113,7 @@ class VirtualNodeRpcTest {
         cpiName: String,
         cpiVersion: String = "1.0.0.0-SNAPSHOT"
     ): String {
-        val requestId = cpiUpload(cpbLocation, GROUP_ID, staticMemberList, cpiName, cpiVersion)
+        val requestId = cpiUpload(cpbLocation, groupId, staticMemberList, cpiName, cpiVersion)
             .let { it.toJson()["id"].textValue() }
         assertThat(requestId).withFailMessage(ERROR_IS_CLUSTER_RUNNING).isNotEmpty
 
@@ -206,7 +206,7 @@ class VirtualNodeRpcTest {
             val cpiJson = json["cpis"].first { it["id"]["cpiName"].textValue() == cpiName }
 
             val groupPolicyJson = cpiJson["groupPolicy"].textValue().toJson()
-            assertThat(groupPolicyJson["groupId"].textValue()).isEqualTo(GROUP_ID)
+            assertThat(groupPolicyJson["groupId"].textValue()).isEqualTo(groupId)
         }
     }
 
@@ -358,7 +358,7 @@ class VirtualNodeRpcTest {
 
             val requestId = forceCpiUpload(
                 TEST_CPB_LOCATION,
-                GROUP_ID,
+                groupId,
                 staticMemberList,
                 cpiName
             ).let { it.toJson()["id"].textValue() }
