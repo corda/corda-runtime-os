@@ -36,8 +36,9 @@ data class FacadeMethodImpl(
      *
      * @param parameterName The name of the input parameter.
      */
-    override inline fun <reified T : Any> inParameter(parameterName: String): ParameterType<T> {
-        return inParameter(parameterName, T::class.java)
+    override inline fun <T: Any> inParameter(parameterName: String): ParameterType<T> {
+        TODO("This method is not needed as is replaced by one with expectedType parameter")
+        //return inParameter(parameterName, T::class.java)
     }
 
     /**
@@ -76,8 +77,9 @@ data class FacadeMethodImpl(
      *
      * @param parameterName The name of the output parameter.
      */
-    override inline fun <reified T : Any> outParameter(parameterName: String): ParameterType<T> {
-        return outParameter(parameterName, T::class.java)
+    override fun <T : Any> outParameter(parameterName: String): ParameterType<T> {
+        TODO("This method is not needed as is replaced by one with expectedType parameter")
+        //return outParameter(parameterName, T::class.java)
     }
 
     /**
