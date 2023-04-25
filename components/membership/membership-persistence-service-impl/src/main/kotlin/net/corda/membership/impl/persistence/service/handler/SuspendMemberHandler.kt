@@ -23,6 +23,8 @@ import net.corda.membership.lib.toSortedMap
 import net.corda.virtualnode.toCorda
 import javax.persistence.EntityManager
 import javax.persistence.LockModeType
+import net.corda.utilities.mapNotNull
+import kotlin.streams.toList
 
 internal class SuspendMemberHandler(
     persistenceHandlerServices: PersistenceHandlerServices
@@ -124,7 +126,7 @@ internal class SuspendMemberHandler(
                 criteriaBuilder.notEqual(memberRoot.get<String>("memberX500Name"), notaryInfo.name.toString()))
         val otherMembers = em.createQuery(memberQuery)
             .setLockMode(LockModeType.PESSIMISTIC_WRITE)
-            .resultList.map {
+            .resultStream.map {
                 memberInfoFactory.create(
                     keyValuePairListDeserializer.deserializeKeyValuePairList(it.memberContext).toSortedMap(),
                     keyValuePairListDeserializer.deserializeKeyValuePairList(it.mgmContext).toSortedMap(),
@@ -132,7 +134,7 @@ internal class SuspendMemberHandler(
             }
         val otherMembersOfSameNotaryService = otherMembers.filter { otherMemberInfo ->
             otherMemberInfo.notaryDetails?.serviceName.toString() == notaryServiceName
-        }.mapNotNull { it.notaryDetails }
+        }.mapNotNull { it.notaryDetails }.toList()
 
         val (epoch, groupParameters) = if (otherMembersOfSameNotaryService.isEmpty()) {
             notaryUpdater.removeNotaryService(parametersMap, notaryServiceNumber)

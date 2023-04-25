@@ -20,6 +20,7 @@ import net.corda.membership.lib.toSortedMap
 import net.corda.virtualnode.toCorda
 import javax.persistence.EntityManager
 import javax.persistence.LockModeType
+import kotlin.streams.toList
 
 internal class AddNotaryToGroupParametersHandler(
     persistenceHandlerServices: PersistenceHandlerServices
@@ -95,7 +96,7 @@ internal class AddNotaryToGroupParametersHandler(
                     criteriaBuilder.notEqual(memberRoot.get<String>("memberX500Name"), notaryInfo.name.toString()))
             val otherMembers = em.createQuery(memberQuery)
                 .setLockMode(LockModeType.PESSIMISTIC_WRITE)
-                .resultList.map {
+                .resultStream.map {
                     memberInfoFactory.create(
                         deserializer.deserializeKeyValuePairList(it.memberContext).toSortedMap(),
                         deserializer.deserializeKeyValuePairList(it.mgmContext).toSortedMap(),
@@ -105,7 +106,7 @@ internal class AddNotaryToGroupParametersHandler(
                 it.notaryDetails?.serviceName.toString() == notaryServiceName
             }.map {
                 it.notaryDetails!!.serviceProtocolVersions.toHashSet()
-            }.reduceOrNull { acc, it -> acc.apply { retainAll(it) } } ?: emptySet()
+            }.toList().reduceOrNull { acc, it -> acc.apply { retainAll(it) } } ?: emptySet()
 
             notaryUpdater.updateExistingNotaryService(parametersMap, notary, notaryServiceNumber, currentProtocolVersions).apply {
                 first ?: return previous.singleResult.toAvro()

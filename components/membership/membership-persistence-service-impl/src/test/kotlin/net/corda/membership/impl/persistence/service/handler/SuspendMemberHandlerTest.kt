@@ -1,5 +1,6 @@
 package net.corda.membership.impl.persistence.service.handler
 
+import java.nio.ByteBuffer
 import net.corda.data.CordaAvroDeserializer
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.CordaAvroSerializer
@@ -51,11 +52,14 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_SUSP
 import net.corda.membership.lib.MemberInfoExtension.Companion.notaryDetails
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.membership.lib.notary.MemberNotaryDetails
+import net.corda.membership.lib.toSortedMap
 import net.corda.v5.membership.MemberContext
+import net.corda.v5.membership.NotaryInfo
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.assertThrows
 import org.mockito.Mockito
 import org.mockito.kotlin.doAnswer
+import org.mockito.kotlin.verify
 
 class SuspendMemberHandlerTest {
 
@@ -65,6 +69,7 @@ class SuspendMemberHandlerTest {
         const val EPOCH = 6
         const val KNOWN_NOTARY_SERVICE = "O=NotaryA, L=LDN, C=GB"
         const val KNOWN_NOTARY_PROTOCOL = "net.corda.notary.MyNotaryService"
+        const val NOTARY_SERVICE_NUMBER = 5
     }
 
     private val knownGroupId = UUID(0, 1).toString()
@@ -170,10 +175,10 @@ class SuspendMemberHandlerTest {
     }
     private val groupParametersWithNotary = KeyValuePairList(listOf(
         KeyValuePair(GroupParametersNotaryUpdater.EPOCH_KEY, EPOCH.toString()),
-        KeyValuePair(String.format(GroupParametersNotaryUpdater.NOTARY_SERVICE_NAME_KEY, 5), KNOWN_NOTARY_SERVICE),
-        KeyValuePair(String.format(GroupParametersNotaryUpdater.NOTARY_SERVICE_PROTOCOL_KEY, 5), KNOWN_NOTARY_PROTOCOL),
-        KeyValuePair(String.format(GroupParametersNotaryUpdater.NOTARY_SERVICE_PROTOCOL_VERSIONS_KEY, 5, 0), "1"),
-        KeyValuePair(String.format(GroupParametersNotaryUpdater.NOTARY_SERVICE_KEYS_KEY, 5, 0), "existing-test-key"),
+        KeyValuePair(String.format(GroupParametersNotaryUpdater.NOTARY_SERVICE_NAME_KEY, NOTARY_SERVICE_NUMBER), KNOWN_NOTARY_SERVICE),
+        KeyValuePair(String.format(GroupParametersNotaryUpdater.NOTARY_SERVICE_PROTOCOL_KEY, NOTARY_SERVICE_NUMBER), KNOWN_NOTARY_PROTOCOL),
+        KeyValuePair(String.format(GroupParametersNotaryUpdater.NOTARY_SERVICE_PROTOCOL_VERSIONS_KEY, NOTARY_SERVICE_NUMBER, 0), "1"),
+        KeyValuePair(String.format(GroupParametersNotaryUpdater.NOTARY_SERVICE_KEYS_KEY, NOTARY_SERVICE_NUMBER, 0), "existing-test-key"),
     ))
     private val keyValuePairListDeserializer = mock<CordaAvroDeserializer<KeyValuePairList>>() {
         on { deserialize(serializedMgmContext) } doReturn mgmContext
@@ -205,8 +210,8 @@ class SuspendMemberHandlerTest {
         on { memberInfoFactory } doReturn memberInfoFactory
         on { keyEncodingService } doReturn mock()
     }
-    private val handler: SuspendMemberHandler = SuspendMemberHandler(persistenceHandlerServices)
     private val notaryUpdater = Mockito.mockConstruction(GroupParametersNotaryUpdater::class.java)
+    private val handler: SuspendMemberHandler = SuspendMemberHandler(persistenceHandlerServices)
     private val context = MembershipRequestContext(
         clock.instant(),
         UUID(0, 1).toString(),
@@ -255,12 +260,144 @@ class SuspendMemberHandlerTest {
         whenever(keyValuePairListSerializer.serialize(updatedSerializedGroupParameters)).doReturn(serializedGroupParameters)
         whenever(notaryUpdater.constructed().last().removeNotaryService(any(), any()))
             .doReturn(10 to updatedSerializedGroupParameters)
-        val groupParameters = mock<SignedGroupParameters>()
 
         val result = invokeTestFunction()
 
         assertThat(result.memberInfo).isEqualTo(persistentMemberInfo)
-        assertThat(result.groupParameters).isEqualTo(groupParameters)
+        with(result.groupParameters) {
+            assertThat(this.groupParameters).isEqualTo(ByteBuffer.wrap(serializedGroupParameters))
+            assertThat(this.mgmSignature).isNull()
+            assertThat(this.mgmSignatureSpec).isNull()
+        }
+    }
+
+    @Test
+    fun `invoke updates the group parameters when member is a notary`() {
+        val newEpoch = 10
+        val mockMemberContext = mock<MemberContext> {
+            on { entries } doReturn mapOf(
+                "${MemberInfoExtension.ROLES_PREFIX}.0" to MemberInfoExtension.NOTARY_ROLE,
+            ).entries
+        }
+        val memberNotaryDetails = mock<MemberNotaryDetails> {
+            on { serviceName } doReturn MemberX500Name.parse(KNOWN_NOTARY_SERVICE)
+            on { serviceProtocol } doReturn  "Protocol"
+            on { serviceProtocolVersions } doReturn listOf(1, 2, 3)
+        }
+        val mockMemberInfo = mock<MemberInfo> {
+            on { memberProvidedContext } doReturn mockMemberContext
+            on { notaryDetails } doReturn memberNotaryDetails
+            on { name } doReturn knownX500Name
+        }
+        whenever(memberInfoFactory.create(persistentMemberInfo)).thenReturn(mockMemberInfo)
+        val updatedSerializedGroupParameters = mock<KeyValuePairList>()
+        val serializedGroupParameters = "101112".toByteArray()
+        whenever(keyValuePairListSerializer.serialize(updatedSerializedGroupParameters)).doReturn(serializedGroupParameters)
+        whenever(notaryUpdater.constructed().last().removeNotaryService(any(), any()))
+            .doReturn(newEpoch to updatedSerializedGroupParameters)
+
+        invokeTestFunction()
+        verify(em).persist(GroupParametersEntity(newEpoch, serializedGroupParameters, null, null, null))
+    }
+
+    @Test
+    fun `invoke returns the correct data when member is a member of a notary service`() {
+        val mockMemberContext = mock<MemberContext> {
+            on { entries } doReturn mapOf(
+                "${MemberInfoExtension.ROLES_PREFIX}.0" to MemberInfoExtension.NOTARY_ROLE,
+            ).entries
+        }
+        val memberNotaryDetails = mock<MemberNotaryDetails> {
+            on { serviceName } doReturn MemberX500Name.parse(KNOWN_NOTARY_SERVICE)
+            on { serviceProtocol } doReturn  "Protocol"
+            on { serviceProtocolVersions } doReturn listOf(1, 2, 3)
+        }
+        val mockMemberInfo = mock<MemberInfo> {
+            on { memberProvidedContext } doReturn mockMemberContext
+            on { notaryDetails } doReturn memberNotaryDetails
+            on { name } doReturn knownX500Name
+        }
+        whenever(memberInfoFactory.create(persistentMemberInfo)).thenReturn(mockMemberInfo)
+
+        val otherNotaryMemberContext = "OtherNotaryMemberContext".toByteArray()
+        val otherNotaryMgmContext = "OtherNotaryMgmContext".toByteArray()
+        val otherMemberOfNotaryService = mock<MemberInfoEntity> {
+            on { memberContext } doReturn otherNotaryMemberContext
+            on { mgmContext } doReturn otherNotaryMgmContext
+        }
+        val deserializedOtherNotaryMemberContext = mock<KeyValuePairList>()
+        val deserializedOtherNotaryMgmContext = mock<KeyValuePairList>()
+        whenever(keyValuePairListDeserializer.deserialize(otherNotaryMemberContext)).doReturn(deserializedOtherNotaryMemberContext)
+        whenever(keyValuePairListDeserializer.deserialize(otherNotaryMgmContext)).doReturn(deserializedOtherNotaryMgmContext)
+        whenever(membersQuery.resultStream).doAnswer { listOf(otherMemberOfNotaryService).stream() }
+        whenever(memberInfoFactory.create(
+            deserializedOtherNotaryMemberContext.toSortedMap(),
+            deserializedOtherNotaryMgmContext.toSortedMap())
+        ).thenReturn(mockMemberInfo)
+
+        val updatedSerializedGroupParameters = mock<KeyValuePairList>()
+        val serializedGroupParameters = "101112".toByteArray()
+        whenever(keyValuePairListSerializer.serialize(updatedSerializedGroupParameters)).doReturn(serializedGroupParameters)
+        whenever(notaryUpdater.constructed().last()
+            .removeNotaryFromExistingNotaryService(any(), any(), eq(NOTARY_SERVICE_NUMBER), eq(listOf(memberNotaryDetails))))
+            .doReturn(10 to updatedSerializedGroupParameters)
+
+        val result = invokeTestFunction()
+
+        assertThat(result.memberInfo).isEqualTo(persistentMemberInfo)
+        with(result.groupParameters) {
+            assertThat(this.groupParameters).isEqualTo(ByteBuffer.wrap(serializedGroupParameters))
+            assertThat(this.mgmSignature).isNull()
+            assertThat(this.mgmSignatureSpec).isNull()
+        }
+    }
+
+    @Test
+    fun `invoke updates the group parameters when member is a member of a notary service`() {
+        val newEpoch = 10
+        val mockMemberContext = mock<MemberContext> {
+            on { entries } doReturn mapOf(
+                "${MemberInfoExtension.ROLES_PREFIX}.0" to MemberInfoExtension.NOTARY_ROLE,
+            ).entries
+        }
+        val memberNotaryDetails = mock<MemberNotaryDetails> {
+            on { serviceName } doReturn MemberX500Name.parse(KNOWN_NOTARY_SERVICE)
+            on { serviceProtocol } doReturn  "Protocol"
+            on { serviceProtocolVersions } doReturn listOf(1, 2, 3)
+        }
+        val mockMemberInfo = mock<MemberInfo> {
+            on { memberProvidedContext } doReturn mockMemberContext
+            on { notaryDetails } doReturn memberNotaryDetails
+            on { name } doReturn knownX500Name
+        }
+        whenever(memberInfoFactory.create(persistentMemberInfo)).thenReturn(mockMemberInfo)
+
+        val otherNotaryMemberContext = "OtherNotaryMemberContext".toByteArray()
+        val otherNotaryMgmContext = "OtherNotaryMgmContext".toByteArray()
+        val otherMemberOfNotaryService = mock<MemberInfoEntity> {
+            on { memberContext } doReturn otherNotaryMemberContext
+            on { mgmContext } doReturn otherNotaryMgmContext
+        }
+        val deserializedOtherNotaryMemberContext = mock<KeyValuePairList>()
+        val deserializedOtherNotaryMgmContext = mock<KeyValuePairList>()
+        whenever(keyValuePairListDeserializer.deserialize(otherNotaryMemberContext)).doReturn(deserializedOtherNotaryMemberContext)
+        whenever(keyValuePairListDeserializer.deserialize(otherNotaryMgmContext)).doReturn(deserializedOtherNotaryMgmContext)
+        whenever(membersQuery.resultStream).doAnswer { listOf(otherMemberOfNotaryService).stream() }
+        whenever(memberInfoFactory.create(
+            deserializedOtherNotaryMemberContext.toSortedMap(),
+            deserializedOtherNotaryMgmContext.toSortedMap())
+        ).thenReturn(mockMemberInfo)
+
+        val updatedSerializedGroupParameters = mock<KeyValuePairList>()
+        val serializedGroupParameters = "101112".toByteArray()
+        whenever(keyValuePairListSerializer.serialize(updatedSerializedGroupParameters)).doReturn(serializedGroupParameters)
+        whenever(notaryUpdater.constructed().last()
+            .removeNotaryFromExistingNotaryService(any(), any(), eq(NOTARY_SERVICE_NUMBER), eq(listOf(memberNotaryDetails))))
+            .doReturn(newEpoch to updatedSerializedGroupParameters)
+
+        invokeTestFunction()
+
+        verify(em).persist(GroupParametersEntity(newEpoch, serializedGroupParameters, null, null, null))
     }
 
     @Test

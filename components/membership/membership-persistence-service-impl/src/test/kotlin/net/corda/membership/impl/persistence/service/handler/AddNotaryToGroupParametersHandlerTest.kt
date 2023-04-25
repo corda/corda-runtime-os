@@ -248,7 +248,7 @@ class AddNotaryToGroupParametersHandlerTest {
             on { name } doReturn MemberX500Name.parse("O=Bob,L=London,C=GB")
         }
         whenever(memberInfoFactory.create(any(), any<SortedMap<String, String?>>())).doReturn(otherNotary)
-        whenever(membersQuery.resultList).doReturn(listOf(otherNotaryEntity))
+        whenever(membersQuery.resultStream).doReturn(listOf(otherNotaryEntity).stream())
         whenever(keyValuePairListDeserializer.deserialize(any())).doReturn(
             KeyValuePairList(listOf(
                 KeyValuePair(EPOCH_KEY, EPOCH.toString()),
