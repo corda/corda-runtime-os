@@ -79,11 +79,13 @@ inline fun <reified T> Iterable<T>.toKeyValuePairList(prefix: String? = null): K
 class KeyValueStore(private val backingList: KeyValuePairList = mutableKeyValuePairList()) {
 
     private fun KeyValuePairList.setValue(key: String, value: String) {
-        items.find { it.key == key }?.let {
-            it.value = value
-        } ?: run {
-            items.add(KeyValuePair(key, value))
+        for (item in items) {
+            if (item.key == key) {
+                item.value = value
+                return
+            }
         }
+        items.add(KeyValuePair(key, value))
     }
 
     operator fun set(key: String, value: String) = backingList.setValue(key, value)
