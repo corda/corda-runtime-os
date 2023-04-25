@@ -164,12 +164,11 @@ internal class AvroSchemaRegistryImplTest {
         val unknownClassTypeSchema = Schema.Parser()
             .parse(
                 "{\"type\":\"record\"," +
-                        "\"name\":\"AvroMessageWeHaveNoClassFor\"," +
-                        "\"namespace\":\"net.corda.data.test\"," +
-                        "\"fields\":[{\"name\":\"flags\",\"type\":\"int\"}]}"
+                    "\"name\":\"AvroMessageWeHaveNoClassFor\"," +
+                    "\"namespace\":\"net.corda.data.test\"," +
+                    "\"fields\":[{\"name\":\"flags\",\"type\":\"int\"}]}"
             )
-
-        registry.addSchemaOnly(unknownClassTypeSchema)
+        
         assertDoesNotThrow { registry.addSchemaOnly(unknownClassTypeSchema) }
     }
 
