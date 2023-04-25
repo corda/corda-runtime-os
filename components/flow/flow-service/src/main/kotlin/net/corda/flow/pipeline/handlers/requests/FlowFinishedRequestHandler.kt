@@ -48,7 +48,6 @@ class FlowFinishedRequestHandler @Activate constructor(
         val records = if (checkpoint.flowStartContext.initiatorType == FlowInitiatorType.RPC) {
             val flowCleanupTime = context.config.getLong(PROCESSING_FLOW_CLEANUP_TIME)
             val expiryTime = Instant.now().plusMillis(flowCleanupTime).toEpochMilli()
-            Instant.now().plusMillis(flowCleanupTime).toEpochMilli()
             listOf(
                 flowRecordFactory.createFlowStatusRecord(status),
                 flowRecordFactory.createFlowMapperEventRecord(checkpoint.flowKey.toString(), ScheduleCleanup(expiryTime))

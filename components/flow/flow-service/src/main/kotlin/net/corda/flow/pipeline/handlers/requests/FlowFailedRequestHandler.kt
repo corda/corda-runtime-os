@@ -73,7 +73,6 @@ class FlowFailedRequestHandler @Activate constructor(
         //Flows triggered by SessionInit don't have this FlowKey, so we do not send a cleanup event.
         val records = if (checkpoint.flowStartContext.initiatorType == FlowInitiatorType.RPC) {
             val flowCleanupTime = context.config.getLong(PROCESSING_FLOW_CLEANUP_TIME)
-            Instant.now().plusMillis(flowCleanupTime).toEpochMilli()
             val expiryTime = Instant.now().plusMillis(flowCleanupTime).toEpochMilli()
             listOf(
                 flowRecordFactory.createFlowStatusRecord(status),
