@@ -18,7 +18,6 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Deactivate
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
-import java.lang.ClassCastException
 import java.util.UUID
 import java.util.concurrent.ExecutorService
 
@@ -75,15 +74,7 @@ class FlowFiberFactoryImpl @Activate constructor(
         val cachedFiber: FlowFiberImpl? = try {
             flowFiberCache.get(
                 FlowFiberCacheKey(flowFiberExecutionContext.flowCheckpoint.holdingIdentity, flowFiberExecutionContext.flowCheckpoint.flowId)
-            ) as FlowFiberImpl?
-        } catch (e: ClassCastException) {
-            // shouldn't really be possible to get in here
-            logger.warn("Failure casting flow fiber from checkpoint for flow ${flowFiberExecutionContext.flowCheckpoint.flowId}. " +
-                    "Removing and skipping cache.")
-            flowFiberCache.remove(
-                FlowFiberCacheKey(flowFiberExecutionContext.flowCheckpoint.holdingIdentity, flowFiberExecutionContext.flowCheckpoint.flowId)
             )
-            null
         } catch (e: Exception) {
             logger.warn("Exception when getting from flow fiber cache.", e)
             null
