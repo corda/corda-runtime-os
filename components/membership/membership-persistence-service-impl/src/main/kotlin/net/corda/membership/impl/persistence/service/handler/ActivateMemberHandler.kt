@@ -56,8 +56,10 @@ internal class ActivateMemberHandler(
                 MEMBER_STATUS_ACTIVE
             )
             val updatedGroupParameters = if (memberInfoFactory.create(updatedMemberInfo).isNotary()) {
+                logger.info("Activating notary member ${context.holdingIdentity}.")
                 updateGroupParameters(em, updatedMemberInfo)
             } else {
+                logger.info("Activating member ${context.holdingIdentity}.")
                 null
             }
 

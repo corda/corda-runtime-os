@@ -75,8 +75,10 @@ internal class SuspendMemberHandler(
                 MEMBER_STATUS_SUSPENDED
             )
             val updatedGroupParameters = if (memberInfoFactory.create(updatedMemberInfo).isNotary()) {
+                logger.info("Suspending notary member ${context.holdingIdentity}.")
                 updateGroupParameters(em, updatedMemberInfo, HoldingIdentity(request.suspendedMember, context.holdingIdentity.groupId))
             } else {
+                logger.info("Suspending member ${context.holdingIdentity}.")
                 null
             }
 
