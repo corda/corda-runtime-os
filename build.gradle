@@ -201,16 +201,16 @@ allprojects {
                 }
             }
 
-            // NOTE: this needs to be removed once Micrometer contains OSGi metadata
-            //   https://github.com/micrometer-metrics/micrometer/pull/3457
+            // NOTE: this block needs to be removed once Micrometer release 1.11.0 
+            // and code in this project is updated to use this version rather than the forked version.
             exclusiveContent {
                 forRepository {
                     maven {
-                        url "$artifactoryContextUrl/corda-dependencies-dev"
+                        url "$artifactoryContextUrl/corda-dependencies"
                     }
                 }
                 filter {
-                    includeGroup 'io.micrometer'
+                    includeGroup 'net.corda.micrometer'
                 }
             }
         }
