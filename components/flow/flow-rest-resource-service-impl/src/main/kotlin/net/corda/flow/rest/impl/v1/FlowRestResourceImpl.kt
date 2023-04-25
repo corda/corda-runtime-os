@@ -188,7 +188,7 @@ class FlowRestResourceImpl @Activate constructor(
                 "Publishing start flow events",
                 untranslatedExceptions = setOf(CordaMessageAPIFatalException::class.java)
             ) {
-                publisher!!.publish(records)
+                listOf(publisher!!.publishBatch(records))
             }
         } catch (ex: CordaMessageAPIFatalException) {
             throw markFatalAndReturnFailureException(ex)

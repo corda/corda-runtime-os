@@ -16,7 +16,10 @@ import net.corda.utilities.debug
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
+import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.locks.ReentrantLock
+import kotlin.concurrent.withLock
 
 /**
  * Publisher will use a [CordaProducer] to communicate with the message bus. Failed producers are closed and recreated.
@@ -38,6 +41,9 @@ internal class CordaPublisherImpl(
 
     private var cordaProducer = cordaProducerBuilder.createProducer(producerConfig, config.messageBusConfig)
 
+    private val lock = ReentrantLock()
+    private val queue = ArrayBlockingQueue<Batch>(200)
+
     /**
      * Publish a record.
      * Records are published via transactions if an [transactionalId] is configured
@@ -58,6 +64,22 @@ internal class CordaPublisherImpl(
         }
 
         return futures
+    }
+
+    private data class Batch(val records: List<Record<*, *>>, val future: CompletableFuture<Unit>)
+
+    override fun publishBatch(records: List<Record<*, *>>) : CompletableFuture<Unit> {
+        val batch = Batch(records, CompletableFuture())
+        queue.add(batch)
+        lock.withLock {
+            val drainedRecords = mutableListOf<Batch>()
+            queue.drainTo(drainedRecords)
+            val future = publishTransaction(drainedRecords.flatMap { it.records })
+            future.whenComplete { _, _ ->
+                drainedRecords.forEach { it.future.complete(Unit) }
+            }
+        }
+        return batch.future
     }
 
     override fun publishToPartition(records: List<Pair<Int, Record<*, *>>>): List<CompletableFuture<Unit>> {

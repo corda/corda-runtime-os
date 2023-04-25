@@ -40,4 +40,6 @@ interface Publisher : Resource {
      * @throws CordaMessageAPIFatalException if record is of the wrong type for this Publisher
      */
     fun publish(records: List<Record<*, *>>): List<CompletableFuture<Unit>>
+
+    fun publishBatch(records: List<Record<*, *>>): CompletableFuture<Unit>
 }
