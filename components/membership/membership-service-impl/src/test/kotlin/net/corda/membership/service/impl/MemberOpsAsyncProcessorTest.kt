@@ -18,8 +18,8 @@ import net.corda.membership.persistence.client.MembershipQueryResult
 import net.corda.membership.registration.InvalidMembershipRegistrationException
 import net.corda.membership.registration.NotReadyMembershipRegistrationException
 import net.corda.membership.registration.RegistrationProxy
-import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
+import net.corda.schema.Schemas.Membership.MEMBERSHIP_ASYNC_REQUEST_RETRIES_TOPIC
 import net.corda.schema.configuration.MembershipConfig.TtlsConfig.TTLS
 import net.corda.schema.configuration.MembershipConfig.TtlsConfig.WAIT_FOR_MGM_SESSION
 import net.corda.test.util.time.TestClock
@@ -56,8 +56,8 @@ class MemberOpsAsyncProcessorTest {
         Record(
             "topic1",
             "key1",
-            551
-        )
+            551,
+        ),
     )
     private val registrationProxy = mock<RegistrationProxy> {
         on { register(any(), any(), any()) } doReturn registerCommands
@@ -69,8 +69,8 @@ class MemberOpsAsyncProcessorTest {
         Record(
             "topic2",
             "key2",
-            552
-        )
+            552,
+        ),
     )
     private val operation = mock<MembershipPersistenceOperation<Unit>> {
         on { createAsyncCommands() } doReturn setStatusCommands
@@ -81,7 +81,7 @@ class MemberOpsAsyncProcessorTest {
                 any(),
                 any(),
                 any(),
-                anyOrNull()
+                anyOrNull(),
             )
         } doReturn operation
     }
@@ -94,9 +94,9 @@ class MemberOpsAsyncProcessorTest {
         } doReturn MembershipQueryResult.Success(null)
     }
     private val clock = TestClock(
-        Instant.ofEpochMilli(4000)
+        Instant.ofEpochMilli(4000),
     )
-    private val membershipConfig =  mock<SmartConfig> {
+    private val membershipConfig = mock<SmartConfig> {
         on { getLong("$TTLS.$WAIT_FOR_MGM_SESSION") } doReturn 10
     }
 
@@ -114,138 +114,149 @@ class MemberOpsAsyncProcessorTest {
         @Test
         fun `it with successful registration will keep the state to check if P2P passed`() {
             val id = UUID(0, 1)
+            val request = RegistrationAsyncRequest(
+                shortHash.value,
+                id.toString(),
+                KeyValuePairList(
+                    listOf(
+                        KeyValuePair(
+                            "key",
+                            "value",
+                        ),
+                    ),
+                ),
+            )
             val command = MembershipAsyncRequest(
-                RegistrationAsyncRequest(
-                    shortHash.value,
-                    id.toString(),
-                    KeyValuePairList(
-                        listOf(
-                            KeyValuePair(
-                                "key",
-                                "value"
-                            )
-                        )
-                    )
-                )
+                request,
+                null,
             )
             val reply = processor.onNext(
-                null,
-                Record(
-                    "topic",
-                    "key",
-                    command,
-                )
-            )
-
-            assertThat(reply).isEqualTo(
-                StateAndEventProcessor.Response(
-                    updatedState = MembershipAsyncRequestState(
+                listOf(
+                    Record(
+                        "topic",
+                        "key",
                         command,
-                        SentToMgmWaitingForNetwork(clock.instant().plusSeconds(10 * 60)),
                     ),
-                    markForDLQ = false,
-                    responseEvents = registerCommands,
-                )
-
+                ),
             )
+
+            assertThat(reply)
+                .containsAll(registerCommands)
+                .contains(
+                    Record(
+                        MEMBERSHIP_ASYNC_REQUEST_RETRIES_TOPIC,
+                        request.requestId,
+                        MembershipAsyncRequestState(
+                            request,
+                            SentToMgmWaitingForNetwork(clock.instant().plusSeconds(10 * 60)),
+                        ),
+                    ),
+                )
         }
 
         @Test
         fun `it with successful registration will keep waiting for P2P communication`() {
             val id = UUID(0, 1)
-            val command = MembershipAsyncRequest(
-                RegistrationAsyncRequest(
-                    shortHash.value,
-                    id.toString(),
-                    KeyValuePairList(
-                        listOf(
-                            KeyValuePair(
-                                "key",
-                                "value"
-                            )
-                        )
-                    )
-                )
+            val request = RegistrationAsyncRequest(
+                shortHash.value,
+                id.toString(),
+                KeyValuePairList(
+                    listOf(
+                        KeyValuePair(
+                            "key",
+                            "value",
+                        ),
+                    ),
+                ),
             )
             val state = MembershipAsyncRequestState(
-                command,
+                request,
                 SentToMgmWaitingForNetwork(clock.instant().plusSeconds(7 * 60)),
             )
-            val reply = processor.onNext(
+            val command = MembershipAsyncRequest(
+                request,
                 state,
-                Record(
-                    "topic",
-                    "key",
-                    command,
-                )
+            )
+            val reply = processor.onNext(
+                listOf(
+                    Record(
+                        "topic",
+                        "key",
+                        command,
+                    ),
+                ),
             )
 
-            assertThat(reply).isEqualTo(
-                StateAndEventProcessor.Response(
-                    updatedState = state,
-                    markForDLQ = false,
-                    responseEvents = registerCommands,
+            assertThat(reply)
+                .containsAll(
+                    registerCommands,
+                ).contains(
+                    Record(
+                        MEMBERSHIP_ASYNC_REQUEST_RETRIES_TOPIC,
+                        request.requestId,
+                        state,
+                    ),
                 )
-            )
         }
 
         @Test
         fun `it will stop waiting for P2P communication after a while`() {
             val id = UUID(0, 1)
-            val command = MembershipAsyncRequest(
-                RegistrationAsyncRequest(
-                    shortHash.value,
-                    id.toString(),
-                    KeyValuePairList(
-                        listOf(
-                            KeyValuePair(
-                                "key",
-                                "value"
-                            )
-                        )
-                    )
-                )
+            val request = RegistrationAsyncRequest(
+                shortHash.value,
+                id.toString(),
+                KeyValuePairList(
+                    listOf(
+                        KeyValuePair(
+                            "key",
+                            "value",
+                        ),
+                    ),
+                ),
             )
             val state = MembershipAsyncRequestState(
-                command,
+                request,
                 SentToMgmWaitingForNetwork(clock.instant().minusSeconds(5)),
             )
-            val reply = processor.onNext(
+            val command = MembershipAsyncRequest(
+                request,
                 state,
-                Record(
-                    "topic",
-                    "key",
-                    command,
-                )
+            )
+            val reply = processor.onNext(
+                listOf(
+                    Record(
+                        "topic",
+                        "key",
+                        command,
+                    ),
+                ),
             )
 
-            assertThat(reply).isEqualTo(
-                StateAndEventProcessor.Response(
-                    updatedState = null,
-                    markForDLQ = true,
-                    responseEvents = setStatusCommands,
+            assertThat(reply)
+                .doesNotContainAnyElementsOf(
+                    registerCommands,
+                ).contains(
+                    Record(
+                        MEMBERSHIP_ASYNC_REQUEST_RETRIES_TOPIC,
+                        request.requestId,
+                        null,
+                    ),
                 )
-            )
         }
 
         @Test
-        fun `it with a command that can not be replayed will raise the DLQ flag`() {
+        fun `it with a command that can not be replayed will not raise the DLQ flag`() {
             val reply = processor.onNext(
-                null,
-                Record(
-                    "topic",
-                    "key",
-                    MembershipAsyncRequest(null),
-                )
+                listOf(
+                    Record(
+                        "topic",
+                        "key",
+                        null,
+                    ),
+                ),
             )
 
-            assertThat(reply).isEqualTo(
-                StateAndEventProcessor.Response(
-                    updatedState = null,
-                    responseEvents = emptyList(),
-                    markForDLQ = true,
-                )
-            )
+            assertThat(reply).isEmpty()
         }
 
         @Test
@@ -253,40 +264,45 @@ class MemberOpsAsyncProcessorTest {
             val id = UUID(0, 1)
             whenever(registrationProxy.register(any(), any(), any()))
                 .doThrow(NotReadyMembershipRegistrationException(FAILURE_REASON))
+            val request = RegistrationAsyncRequest(
+                shortHash.value,
+                id.toString(),
+                KeyValuePairList(
+                    listOf(
+                        KeyValuePair(
+                            "key",
+                            "value",
+                        ),
+                    ),
+                ),
+            )
             val command = MembershipAsyncRequest(
-                RegistrationAsyncRequest(
-                    shortHash.value,
-                    id.toString(),
-                    KeyValuePairList(
-                        listOf(
-                            KeyValuePair(
-                                "key",
-                                "value"
-                            )
-                        )
-                    )
-                )
+                request,
+                null,
             )
 
             val reply = processor.onNext(
-                null,
-                Record(
-                    "topic",
-                    "key",
-                    command,
-                )
+                listOf(
+                    Record(
+                        "topic",
+                        "key",
+                        command,
+                    ),
+                ),
             )
 
-            assertThat(reply).isEqualTo(
-                StateAndEventProcessor.Response(
-                    updatedState = MembershipAsyncRequestState(
-                        command,
-                        RetriableFailure(9),
+            assertThat(reply)
+                .doesNotContainAnyElementsOf(registerCommands)
+                .contains(
+                    Record(
+                        MEMBERSHIP_ASYNC_REQUEST_RETRIES_TOPIC,
+                        request.requestId,
+                        MembershipAsyncRequestState(
+                            request,
+                            RetriableFailure(9, Instant.ofEpochMilli(14000)),
+                        ),
                     ),
-                    responseEvents = emptyList(),
-                    markForDLQ = false,
                 )
-            )
         }
 
         @Test
@@ -294,43 +310,48 @@ class MemberOpsAsyncProcessorTest {
             val id = UUID(0, 1)
             whenever(registrationProxy.register(any(), any(), any()))
                 .doThrow(NotReadyMembershipRegistrationException(FAILURE_REASON))
+            val request = RegistrationAsyncRequest(
+                shortHash.value,
+                id.toString(),
+                KeyValuePairList(
+                    listOf(
+                        KeyValuePair(
+                            "key",
+                            "value",
+                        ),
+                    ),
+                ),
+            )
             val command = MembershipAsyncRequest(
-                RegistrationAsyncRequest(
-                    shortHash.value,
-                    id.toString(),
-                    KeyValuePairList(
-                        listOf(
-                            KeyValuePair(
-                                "key",
-                                "value"
-                            )
-                        )
-                    )
-                )
+                request,
+                MembershipAsyncRequestState(
+                    request,
+                    RetriableFailure(6, Instant.ofEpochMilli(3000)),
+                ),
             )
 
             val reply = processor.onNext(
-                MembershipAsyncRequestState(
-                    command,
-                    RetriableFailure(6),
+                listOf(
+                    Record(
+                        "topic",
+                        "key",
+                        command,
+                    ),
                 ),
-                Record(
-                    "topic",
-                    "key",
-                    command,
-                )
             )
 
-            assertThat(reply).isEqualTo(
-                StateAndEventProcessor.Response(
-                    updatedState = MembershipAsyncRequestState(
-                        command,
-                        RetriableFailure(5),
+            assertThat(reply)
+                .doesNotContainAnyElementsOf(registerCommands)
+                .contains(
+                    Record(
+                        MEMBERSHIP_ASYNC_REQUEST_RETRIES_TOPIC,
+                        request.requestId,
+                        MembershipAsyncRequestState(
+                            request,
+                            RetriableFailure(5, Instant.ofEpochMilli(14000)),
+                        ),
                     ),
-                    responseEvents = emptyList(),
-                    markForDLQ = false,
                 )
-            )
         }
 
         @Test
@@ -338,40 +359,47 @@ class MemberOpsAsyncProcessorTest {
             val id = UUID(0, 1)
             whenever(registrationProxy.register(any(), any(), any()))
                 .doThrow(NotReadyMembershipRegistrationException(FAILURE_REASON))
+            val request = RegistrationAsyncRequest(
+                shortHash.value,
+                id.toString(),
+                KeyValuePairList(
+                    listOf(
+                        KeyValuePair(
+                            "key",
+                            "value",
+                        ),
+                    ),
+                ),
+            )
+            val state = MembershipAsyncRequestState(
+                request,
+                RetriableFailure(0, Instant.ofEpochMilli(4000)),
+            )
             val command = MembershipAsyncRequest(
-                RegistrationAsyncRequest(
-                    shortHash.value,
-                    id.toString(),
-                    KeyValuePairList(
-                        listOf(
-                            KeyValuePair(
-                                "key",
-                                "value"
-                            )
-                        )
-                    )
-                )
+                request,
+                state,
             )
 
             val reply = processor.onNext(
-                MembershipAsyncRequestState(
-                    command,
-                    RetriableFailure(0),
+                listOf(
+                    Record(
+                        "topic",
+                        "key",
+                        command,
+                    ),
                 ),
-                Record(
-                    "topic",
-                    "key",
-                    command,
-                )
             )
 
-            assertThat(reply).isEqualTo(
-                StateAndEventProcessor.Response(
-                    updatedState = null,
-                    responseEvents = setStatusCommands,
-                    markForDLQ = true,
+            assertThat(reply)
+                .doesNotContainAnyElementsOf(registerCommands)
+                .containsAll(setStatusCommands)
+                .contains(
+                    Record(
+                        MEMBERSHIP_ASYNC_REQUEST_RETRIES_TOPIC,
+                        request.requestId,
+                        null,
+                    ),
                 )
-            )
         }
 
         @Test
@@ -379,31 +407,35 @@ class MemberOpsAsyncProcessorTest {
             val id = UUID(0, 1)
             whenever(registrationProxy.register(any(), any(), any()))
                 .doThrow(NotReadyMembershipRegistrationException(FAILURE_REASON))
+            val request = RegistrationAsyncRequest(
+                shortHash.value,
+                id.toString(),
+                KeyValuePairList(
+                    listOf(
+                        KeyValuePair(
+                            "key",
+                            "value",
+                        ),
+                    ),
+                ),
+            )
+            val state = MembershipAsyncRequestState(
+                request,
+                RetriableFailure(0, Instant.ofEpochMilli(4000)),
+            )
             val command = MembershipAsyncRequest(
-                RegistrationAsyncRequest(
-                    shortHash.value,
-                    id.toString(),
-                    KeyValuePairList(
-                        listOf(
-                            KeyValuePair(
-                                "key",
-                                "value"
-                            )
-                        )
-                    )
-                )
+                request,
+                state,
             )
 
             processor.onNext(
-                MembershipAsyncRequestState(
-                    command,
-                    RetriableFailure(0),
+                listOf(
+                    Record(
+                        "topic",
+                        "key",
+                        command,
+                    ),
                 ),
-                Record(
-                    "topic",
-                    "key",
-                    command,
-                )
             )
 
             verify(membershipPersistenceClient).setRegistrationRequestStatus(
@@ -421,25 +453,27 @@ class MemberOpsAsyncProcessorTest {
         fun `it should call the registration proxy`() {
             val id = UUID(0, 1)
             processor.onNext(
-                null,
-                Record(
-                    "topic",
-                    "key",
-                    MembershipAsyncRequest(
-                        RegistrationAsyncRequest(
-                            shortHash.value,
-                            id.toString(),
-                            KeyValuePairList(
-                                listOf(
-                                    KeyValuePair(
-                                        "key",
-                                        "value"
-                                    )
-                                )
-                            )
-                        )
+                listOf(
+                    Record(
+                        "topic",
+                        "key",
+                        MembershipAsyncRequest(
+                            RegistrationAsyncRequest(
+                                shortHash.value,
+                                id.toString(),
+                                KeyValuePairList(
+                                    listOf(
+                                        KeyValuePair(
+                                            "key",
+                                            "value",
+                                        ),
+                                    ),
+                                ),
+                            ),
+                            null,
+                        ),
                     ),
-                )
+                ),
             )
 
             verify(registrationProxy).register(id, identity, mapOf("key" to "value"))
@@ -449,126 +483,160 @@ class MemberOpsAsyncProcessorTest {
         fun `it should retry if the node was not loaded yet`() {
             val id = UUID(0, 1)
             val reply = processor.onNext(
-                null,
-                Record(
-                    "topic",
-                    "key",
-                    MembershipAsyncRequest(
-                        RegistrationAsyncRequest(
-                            "223123123123",
-                            id.toString(),
-                            KeyValuePairList(
-                                listOf(
-                                    KeyValuePair(
-                                        "key",
-                                        "value"
-                                    )
-                                )
-                            )
-                        )
+                listOf(
+                    Record(
+                        "topic",
+                        "key",
+                        MembershipAsyncRequest(
+                            RegistrationAsyncRequest(
+                                "223123123123",
+                                id.toString(),
+                                KeyValuePairList(
+                                    listOf(
+                                        KeyValuePair(
+                                            "key",
+                                            "value",
+                                        ),
+                                    ),
+                                ),
+                            ),
+                            null,
+                        ),
                     ),
-                )
+                ),
             )
 
-            assertThat(reply.updatedState).isNotNull
+            assertThat(
+                reply.filter {
+                    it.topic == MEMBERSHIP_ASYNC_REQUEST_RETRIES_TOPIC
+                }.mapNotNull {
+                    it.value
+                },
+            ).hasSize(1)
         }
-
 
         @Test
         fun `it should not retry if the node was not loaded for too long`() {
             val id = UUID(0, 1)
-            val command = MembershipAsyncRequest(
-                RegistrationAsyncRequest(
-                    "223123123123",
-                    id.toString(),
-                    KeyValuePairList(
-                        listOf(
-                            KeyValuePair(
-                                "key",
-                                "value"
-                            )
-                        )
-                    )
-                )
+            val request = RegistrationAsyncRequest(
+                "223123123123",
+                id.toString(),
+                KeyValuePairList(
+                    listOf(
+                        KeyValuePair(
+                            "key",
+                            "value",
+                        ),
+                    ),
+                ),
             )
             val state = MembershipAsyncRequestState(
-                command,
-                RetriableFailure(0),
+                request,
+                RetriableFailure(0, Instant.ofEpochMilli(4000)),
+            )
+            val command = MembershipAsyncRequest(
+                request,
+                state,
             )
             val reply = processor.onNext(
-                state,
-                Record(
-                    "topic",
-                    "key",
-                    command,
-                )
+                listOf(
+                    Record(
+                        "topic",
+                        "key",
+                        command,
+                    ),
+                ),
             )
 
-            assertThat(reply.updatedState).isNull()
+            assertThat(
+                reply.filter {
+                    it.topic == MEMBERSHIP_ASYNC_REQUEST_RETRIES_TOPIC
+                }.map {
+                    it.value
+                }.firstOrNull(),
+            ).isNull()
         }
 
         @Test
         fun `it should not retry if the request id is not UUID`() {
             val reply = processor.onNext(
-                null,
-                Record(
-                    "topic",
-                    "key",
-                    MembershipAsyncRequest(
-                        RegistrationAsyncRequest(
-                            shortHash.value,
-                            "nop",
-                            KeyValuePairList(
-                                listOf(
-                                    KeyValuePair(
-                                        "key",
-                                        "value"
-                                    )
-                                )
-                            )
-                        )
+                listOf(
+                    Record(
+                        "topic",
+                        "key",
+                        MembershipAsyncRequest(
+                            RegistrationAsyncRequest(
+                                shortHash.value,
+                                "nop",
+                                KeyValuePairList(
+                                    listOf(
+                                        KeyValuePair(
+                                            "key",
+                                            "value",
+                                        ),
+                                    ),
+                                ),
+                            ),
+                            null,
+                        ),
                     ),
-                )
+                ),
             )
 
-            assertThat(reply.markForDLQ).isTrue
+            assertThat(reply).hasSize(1)
+                .contains(
+                    Record(
+                        MEMBERSHIP_ASYNC_REQUEST_RETRIES_TOPIC,
+                        "nop",
+                        null,
+                    ),
+
+                )
         }
 
         @Test
         fun `it should retry if the current status is not available`() {
             whenever(membershipQueryClient.queryRegistrationRequest(any(), any())).doReturn(
                 MembershipQueryResult.Failure(
-                    FAILURE_REASON
-                )
+                    FAILURE_REASON,
+                ),
             )
             val id = UUID(0, 1)
             val reply = processor.onNext(
-                null,
-                Record(
-                    "topic",
-                    "key",
-                    MembershipAsyncRequest(
-                        RegistrationAsyncRequest(
-                            shortHash.value,
-                            id.toString(),
-                            KeyValuePairList(
-                                listOf(
-                                    KeyValuePair(
-                                        "key",
-                                        "value"
-                                    )
-                                )
-                            )
-                        )
+                listOf(
+                    Record(
+                        "topic",
+                        "key",
+                        MembershipAsyncRequest(
+                            RegistrationAsyncRequest(
+                                shortHash.value,
+                                id.toString(),
+                                KeyValuePairList(
+                                    listOf(
+                                        KeyValuePair(
+                                            "key",
+                                            "value",
+                                        ),
+                                    ),
+                                ),
+                            ),
+                            null,
+                        ),
                     ),
-                )
+                ),
             )
 
-            assertThat(reply.updatedState).isNotNull
+            assertThat(
+                reply.filter {
+                    it.topic == MEMBERSHIP_ASYNC_REQUEST_RETRIES_TOPIC
+                }.map {
+                    it.value
+                }.firstOrNull(),
+            ).isNotNull()
         }
 
         @Test
-        fun `it should retry do nothing if the status is not new any more`() {
+        fun `it should do nothing if the status is not new any more`() {
             whenever(membershipQueryClient.queryRegistrationRequest(any(), any())).doReturn(
                 MembershipQueryResult.Success(
                     RegistrationRequestDetails(
@@ -582,34 +650,41 @@ class MemberOpsAsyncProcessorTest {
                         mock(),
                         null,
                         SERIAL,
-                    )
-                )
+                    ),
+                ),
             )
             val id = UUID(0, 1)
             val reply = processor.onNext(
-                null,
-                Record(
-                    "topic",
-                    "key",
-                    MembershipAsyncRequest(
-                        RegistrationAsyncRequest(
-                            shortHash.value,
-                            id.toString(),
-                            KeyValuePairList(
-                                listOf(
-                                    KeyValuePair(
-                                        "key",
-                                        "value"
-                                    )
-                                )
-                            )
-                        )
+                listOf(
+                    Record(
+                        "topic",
+                        "key",
+                        MembershipAsyncRequest(
+                            RegistrationAsyncRequest(
+                                shortHash.value,
+                                id.toString(),
+                                KeyValuePairList(
+                                    listOf(
+                                        KeyValuePair(
+                                            "key",
+                                            "value",
+                                        ),
+                                    ),
+                                ),
+                            ),
+                            null,
+                        ),
                     ),
-                )
+                ),
             )
 
-            assertThat(reply.updatedState).isNull()
-            assertThat(reply.markForDLQ).isFalse
+            assertThat(
+                reply.filter {
+                    it.topic == MEMBERSHIP_ASYNC_REQUEST_RETRIES_TOPIC
+                }.map {
+                    it.value
+                }.firstOrNull(),
+            ).isNull()
             verifyNoInteractions(registrationProxy)
         }
 
@@ -628,30 +703,32 @@ class MemberOpsAsyncProcessorTest {
                         mock(),
                         null,
                         SERIAL,
-                    )
-                )
+                    ),
+                ),
             )
             val id = UUID(0, 1)
             processor.onNext(
-                null,
-                Record(
-                    "topic",
-                    "key",
-                    MembershipAsyncRequest(
-                        RegistrationAsyncRequest(
-                            shortHash.value,
-                            id.toString(),
-                            KeyValuePairList(
-                                listOf(
-                                    KeyValuePair(
-                                        "key",
-                                        "value"
-                                    )
-                                )
-                            )
-                        )
+                listOf(
+                    Record(
+                        "topic",
+                        "key",
+                        MembershipAsyncRequest(
+                            RegistrationAsyncRequest(
+                                shortHash.value,
+                                id.toString(),
+                                KeyValuePairList(
+                                    listOf(
+                                        KeyValuePair(
+                                            "key",
+                                            "value",
+                                        ),
+                                    ),
+                                ),
+                            ),
+                            null,
+                        ),
                     ),
-                )
+                ),
             )
 
             verify(registrationProxy).register(id, identity, mapOf("key" to "value"))
@@ -673,33 +750,37 @@ class MemberOpsAsyncProcessorTest {
                         null,
                         SERIAL,
                     ),
-                )
+                ),
             )
             val id = UUID(0, 1)
-            val request = MembershipAsyncRequest(
-                RegistrationAsyncRequest(
-                    shortHash.value,
-                    id.toString(),
-                    KeyValuePairList(
-                        listOf(
-                            KeyValuePair(
-                                "key",
-                                "value"
-                            )
-                        )
-                    )
-                )
+            val request = RegistrationAsyncRequest(
+                shortHash.value,
+                id.toString(),
+                KeyValuePairList(
+                    listOf(
+                        KeyValuePair(
+                            "key",
+                            "value",
+                        ),
+                    ),
+                ),
+            )
+            val state = MembershipAsyncRequestState(
+                request,
+                SentToMgmWaitingForNetwork(clock.instant().plusSeconds(4)),
+            )
+            val command = MembershipAsyncRequest(
+                request,
+                state,
             )
             processor.onNext(
-                MembershipAsyncRequestState(
-                    request,
-                    SentToMgmWaitingForNetwork(clock.instant().plusSeconds(4)),
+                listOf(
+                    Record(
+                        "topic",
+                        "key",
+                        command,
+                    ),
                 ),
-                Record(
-                    "topic",
-                    "key",
-                    request,
-                )
             )
 
             verify(registrationProxy, never()).register(any(), any(), any())
@@ -720,34 +801,38 @@ class MemberOpsAsyncProcessorTest {
                         mock(),
                         null,
                         SERIAL,
-                    )
-                )
+                    ),
+                ),
             )
             val id = UUID(0, 1)
-            val request = MembershipAsyncRequest(
-                RegistrationAsyncRequest(
-                    shortHash.value,
-                    id.toString(),
-                    KeyValuePairList(
-                        listOf(
-                            KeyValuePair(
-                                "key",
-                                "value"
-                            )
-                        )
-                    )
-                )
+            val request = RegistrationAsyncRequest(
+                shortHash.value,
+                id.toString(),
+                KeyValuePairList(
+                    listOf(
+                        KeyValuePair(
+                            "key",
+                            "value",
+                        ),
+                    ),
+                ),
+            )
+            val state = MembershipAsyncRequestState(
+                request,
+                null,
+            )
+            val command = MembershipAsyncRequest(
+                request,
+                state,
             )
             processor.onNext(
-                MembershipAsyncRequestState(
-                    request,
-                    null,
+                listOf(
+                    Record(
+                        "topic",
+                        "key",
+                        command,
+                    ),
                 ),
-                Record(
-                    "topic",
-                    "key",
-                    request,
-                )
             )
 
             verify(registrationProxy).register(id, identity, mapOf("key" to "value"))
@@ -768,34 +853,39 @@ class MemberOpsAsyncProcessorTest {
                         mock(),
                         null,
                         SERIAL,
-                    )
-                )
+                    ),
+                ),
             )
             val id = UUID(0, 1)
-            val request = MembershipAsyncRequest(
-                RegistrationAsyncRequest(
-                    shortHash.value,
-                    id.toString(),
-                    KeyValuePairList(
-                        listOf(
-                            KeyValuePair(
-                                "key",
-                                "value"
-                            )
-                        )
-                    )
-                )
-            )
-            processor.onNext(
-                MembershipAsyncRequestState(
-                    request,
-                    null,
+            val request = RegistrationAsyncRequest(
+                shortHash.value,
+                id.toString(),
+                KeyValuePairList(
+                    listOf(
+                        KeyValuePair(
+                            "key",
+                            "value",
+                        ),
+                    ),
                 ),
-                Record(
-                    "topic",
-                    "key",
-                    request,
-                )
+            )
+            val state = MembershipAsyncRequestState(
+                request,
+                null,
+            )
+            val command = MembershipAsyncRequest(
+                request,
+                state,
+            )
+
+            processor.onNext(
+                listOf(
+                    Record(
+                        "topic",
+                        "key",
+                        command,
+                    ),
+                ),
             )
 
             verify(registrationProxy).register(id, identity, mapOf("key" to "value"))
@@ -805,34 +895,39 @@ class MemberOpsAsyncProcessorTest {
         fun `it should retry if status was not persisted`() {
             whenever(membershipQueryClient.queryRegistrationRequest(any(), any())).doReturn(
                 MembershipQueryResult.Success(
-                    null
-                )
-            )
-            val id = UUID(0, 1)
-            val request = MembershipAsyncRequest(
-                RegistrationAsyncRequest(
-                    shortHash.value,
-                    id.toString(),
-                    KeyValuePairList(
-                        listOf(
-                            KeyValuePair(
-                                "key",
-                                "value"
-                            )
-                        )
-                    )
-                )
-            )
-            processor.onNext(
-                MembershipAsyncRequestState(
-                    request,
                     null,
                 ),
-                Record(
-                    "topic",
-                    "key",
-                    request,
-                )
+            )
+            val id = UUID(0, 1)
+            val request = RegistrationAsyncRequest(
+                shortHash.value,
+                id.toString(),
+                KeyValuePairList(
+                    listOf(
+                        KeyValuePair(
+                            "key",
+                            "value",
+                        ),
+                    ),
+                ),
+            )
+            val state = MembershipAsyncRequestState(
+                request,
+                null,
+            )
+            val command = MembershipAsyncRequest(
+                request,
+                state,
+            )
+
+            processor.onNext(
+                listOf(
+                    Record(
+                        "topic",
+                        "key",
+                        command,
+                    ),
+                ),
             )
 
             verify(registrationProxy).register(id, identity, mapOf("key" to "value"))
@@ -844,28 +939,36 @@ class MemberOpsAsyncProcessorTest {
             whenever(registrationProxy.register(any(), any(), any()))
                 .doThrow(InvalidMembershipRegistrationException(FAILURE_REASON))
             val reply = processor.onNext(
-                null,
-                Record(
-                    "topic",
-                    "key",
-                    MembershipAsyncRequest(
-                        RegistrationAsyncRequest(
-                            shortHash.value,
-                            id.toString(),
-                            KeyValuePairList(
-                                listOf(
-                                    KeyValuePair(
-                                        "key",
-                                        "value"
-                                    )
-                                )
-                            )
-                        )
+                listOf(
+                    Record(
+                        "topic",
+                        "key",
+                        MembershipAsyncRequest(
+                            RegistrationAsyncRequest(
+                                shortHash.value,
+                                id.toString(),
+                                KeyValuePairList(
+                                    listOf(
+                                        KeyValuePair(
+                                            "key",
+                                            "value",
+                                        ),
+                                    ),
+                                ),
+                            ),
+                            null,
+                        ),
                     ),
-                )
+                ),
             )
 
-            assertThat(reply.markForDLQ).isTrue
+            assertThat(
+                reply.filter {
+                    it.topic == MEMBERSHIP_ASYNC_REQUEST_RETRIES_TOPIC
+                }.map {
+                    it.value
+                }.firstOrNull(),
+            ).isNull()
         }
 
         @Test
@@ -874,25 +977,27 @@ class MemberOpsAsyncProcessorTest {
             whenever(registrationProxy.register(any(), any(), any()))
                 .doThrow(InvalidMembershipRegistrationException(FAILURE_REASON))
             processor.onNext(
-                null,
-                Record(
-                    "topic",
-                    "key",
-                    MembershipAsyncRequest(
-                        RegistrationAsyncRequest(
-                            shortHash.value,
-                            id.toString(),
-                            KeyValuePairList(
-                                listOf(
-                                    KeyValuePair(
-                                        "key",
-                                        "value"
-                                    )
-                                )
-                            )
-                        )
+                listOf(
+                    Record(
+                        "topic",
+                        "key",
+                        MembershipAsyncRequest(
+                            RegistrationAsyncRequest(
+                                shortHash.value,
+                                id.toString(),
+                                KeyValuePairList(
+                                    listOf(
+                                        KeyValuePair(
+                                            "key",
+                                            "value",
+                                        ),
+                                    ),
+                                ),
+                            ),
+                            null,
+                        ),
                     ),
-                )
+                ),
             )
 
             verify(membershipPersistenceClient).setRegistrationRequestStatus(

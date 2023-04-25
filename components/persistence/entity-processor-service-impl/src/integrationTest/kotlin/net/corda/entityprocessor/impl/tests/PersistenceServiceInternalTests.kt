@@ -25,7 +25,6 @@ import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.messagebus.testkit.DBSetup
 import net.corda.db.persistence.testkit.components.VirtualNodeService
 import net.corda.db.persistence.testkit.fake.FakeDbConnectionManager
-import net.corda.db.persistence.testkit.helpers.BasicMocks
 import net.corda.db.persistence.testkit.helpers.Resources
 import net.corda.db.persistence.testkit.helpers.SandboxHelper.CAT_CLASS_NAME
 import net.corda.db.persistence.testkit.helpers.SandboxHelper.DOG_CLASS_NAME
@@ -67,7 +66,6 @@ import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.RegisterExtension
 import org.junit.jupiter.api.io.TempDir
-import org.mockito.Mockito
 import org.osgi.framework.BundleContext
 import org.osgi.test.common.annotation.InjectBundleContext
 import org.osgi.test.common.annotation.InjectService
@@ -206,13 +204,14 @@ class PersistenceServiceInternalTests {
     @Test
     fun `persist`() {
         val persistenceService = PersistenceServiceInternal(sandbox::getClass, this::noOpPayloadCheck)
-        val payload = PersistEntities(listOf(sandbox.serialize(sandbox.createDog("Rover").instance)))
+        val dog = sandbox.createDog("Rover").instance
+        val payload = PersistEntities(listOf(sandbox.serialize(dog)))
 
-        val entityManager = BasicMocks.entityManager()
+        val entityManager = Stubs.EntityManagerStub()
 
         persistenceService.persist(sandbox.getSerializationService(), entityManager, payload)
 
-        Mockito.verify(entityManager).persist(Mockito.any())
+        assertThat(entityManager.persisted).contains(dog)
     }
 
     @Test
@@ -741,7 +740,7 @@ class PersistenceServiceInternalTests {
     }
 
 
-    private fun createEntitySandbox(dbConnectionManager: DbConnectionManager = BasicMocks.dbConnectionManager()) =
+    private fun createEntitySandbox(dbConnectionManager: DbConnectionManager) =
         EntitySandboxServiceFactory().create(
             virtualNode.sandboxGroupContextComponent,
             cpkReadService,

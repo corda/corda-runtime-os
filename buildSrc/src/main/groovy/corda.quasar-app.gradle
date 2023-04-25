@@ -17,7 +17,7 @@ quasar {
         'com.networknt.schema**',
         'com.typesafe.**',
         'de.javakaffee.kryoserializers**',
-        'io.micrometer.**',
+        'net.corda.micrometer.**',
         'javax.**',
         'kotlin**',
         'org.apache.**',

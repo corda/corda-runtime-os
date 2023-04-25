@@ -37,7 +37,7 @@ data class StateAndRefImpl<out T : ContractState>(
     override fun equals(other: Any?): Boolean {
         return this === other
                 || other != null
-                && other is StateAndRefImpl<*>
+                && other is StateAndRef<*>
                 && other.ref == ref
                 && other.state == state
     }

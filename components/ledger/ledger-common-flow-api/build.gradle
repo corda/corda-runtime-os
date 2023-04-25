@@ -8,8 +8,9 @@ description 'Corda ledger common - flow api'
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
 
-    implementation platform("net.corda:corda-api:$cordaApiVersion")
-    implementation 'net.corda:corda-ledger-common'
-    implementation 'net.corda:corda-crypto'
-    implementation project(':libs:ledger:ledger-common-data')
+    api platform("net.corda:corda-api:$cordaApiVersion")
+    api 'org.jetbrains.kotlin:kotlin-osgi-bundle'
+    api 'net.corda:corda-ledger-common'
+    api 'net.corda:corda-crypto'
+    api project(':libs:ledger:ledger-common-data')
 }

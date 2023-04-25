@@ -34,9 +34,9 @@ dependencies {
     implementation project(':libs:utilities')
 
     testImplementation "org.apache.commons:commons-text:$commonsTextVersion"
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
-    testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"
     testImplementation project(':components:crypto:crypto-hes')
     testImplementation project(":libs:membership:membership-impl")
     testImplementation project(':testing:layered-property-map-testkit')
