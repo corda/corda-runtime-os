@@ -5,6 +5,7 @@ import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.db.persistence.testkit.components.VirtualNodeService
 import net.corda.db.testkit.DbUtils
+import net.corda.ledger.common.data.transaction.PrivacySalt
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.TransactionMetadataInternal
 import net.corda.ledger.common.data.transaction.TransactionStatus
@@ -15,6 +16,8 @@ import net.corda.ledger.common.testkit.getPrivacySalt
 import net.corda.ledger.common.testkit.getSignatureWithMetadataExample
 import net.corda.ledger.common.testkit.transactionMetadataExample
 import net.corda.ledger.persistence.consensual.tests.datamodel.field
+import net.corda.ledger.persistence.json.ContractStateVaultJsonFactoryRegistry
+import net.corda.ledger.persistence.json.impl.DefaultContractStateVaultJsonFactoryImpl
 import net.corda.ledger.persistence.utxo.CustomRepresentation
 import net.corda.ledger.persistence.utxo.UtxoPersistenceService
 import net.corda.ledger.persistence.utxo.UtxoRepository
@@ -28,6 +31,7 @@ import net.corda.orm.utils.transaction
 import net.corda.persistence.common.getEntityManagerFactory
 import net.corda.persistence.common.getSerializationService
 import net.corda.sandboxgroupcontext.getSandboxSingletonService
+import net.corda.test.util.dsl.entities.cpx.getCpkFileHashes
 import net.corda.test.util.time.AutoTickTestClock
 import net.corda.testing.sandboxes.SandboxSetup
 import net.corda.testing.sandboxes.fetchService
@@ -39,8 +43,6 @@ import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.transaction.CordaPackageSummary
-import net.corda.ledger.common.data.transaction.PrivacySalt
-import net.corda.test.util.dsl.entities.cpx.getCpkFileHashes
 import net.corda.v5.ledger.utxo.Contract
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.EncumbranceGroup
@@ -92,6 +94,7 @@ class UtxoPersistenceServiceImplTest {
     private lateinit var entityManagerFactory: EntityManagerFactory
     private lateinit var repository: UtxoRepository
     private lateinit var cpiInfoReadService: CpiInfoReadService
+    private lateinit var factoryRegistry: ContractStateVaultJsonFactoryRegistry
     private val emConfig = DbUtils.getEntityManagerConfiguration("ledger_db_for_test")
 
     companion object {
@@ -136,11 +139,16 @@ class UtxoPersistenceServiceImplTest {
             serializationService = ctx.getSerializationService()
             entityManagerFactory = ctx.getEntityManagerFactory()
             repository = ctx.getSandboxSingletonService()
+            factoryRegistry = ctx.getSandboxSingletonService()
+
             persistenceService = UtxoPersistenceServiceImpl(
                 entityManagerFactory,
                 repository,
                 serializationService,
                 digestService,
+                factoryRegistry,
+                DefaultContractStateVaultJsonFactoryImpl(),
+                jsonMarshallingService,
                 testClock
             )
         }
@@ -403,7 +411,8 @@ class UtxoPersistenceServiceImplTest {
                 .forEach { (dbRelevancy, visibleStateIndex) ->
                     assertThat(dbRelevancy.field<Int>("groupIndex")).isEqualTo(UtxoComponentGroup.OUTPUTS.ordinal)
                     assertThat(dbRelevancy.field<Int>("leafIndex")).isEqualTo(visibleStateIndex)
-                    assertThat(dbRelevancy.field<String>("customRepresentation")).isEqualTo("{\"temp\": \"value\"}")
+                    assertThat(dbRelevancy.field<String>("customRepresentation"))
+                        .isEqualTo("{\"net.corda.v5.ledger.utxo.ContractState\": {\"stateRef\": \"${signedTransaction.id}:0\"}}")
                     assertThat(dbRelevancy.field<Instant>("consumed")).isNull()
                 }
 
@@ -525,8 +534,7 @@ class UtxoPersistenceServiceImplTest {
         seed: String = seedSequence.incrementAndGet().toString()
     ): SignedTransactionContainer {
         val transactionMetadata = transactionMetadataExample(
-            cpkPackageSeed = seed,
-            numberOfComponentGroups = UtxoComponentGroup.values().size
+            cpkPackageSeed = seed
         )
         val componentGroupLists: List<List<ByteArray>> = listOf(
             listOf(jsonValidator.canonicalize(jsonMarshallingService.format(transactionMetadata)).toByteArray()),
@@ -576,10 +584,10 @@ class UtxoPersistenceServiceImplTest {
         override val cpkMetadata: List<CordaPackageSummary>
             get() = (transactionContainer.wireTransaction.metadata as TransactionMetadataInternal).getCpkMetadata()
 
-        override fun getProducedStates(): List<StateAndRef<ContractState>> {
-            return listOf(
-                stateAndRef<TestContract>(TestContractState1(), id, 0),
-                stateAndRef<TestContract>(TestContractState2(), id, 1)
+        override fun getVisibleStates(): Map<Int, StateAndRef<ContractState>> {
+            return mapOf(
+                0 to stateAndRef<TestContract>(TestContractState1(), id, 0),
+                1 to stateAndRef<TestContract>(TestContractState2(), id, 1)
             )
         }
 

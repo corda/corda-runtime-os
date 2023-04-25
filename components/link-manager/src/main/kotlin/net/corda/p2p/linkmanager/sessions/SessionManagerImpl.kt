@@ -693,7 +693,7 @@ internal class SessionManagerImpl(
             val peerMemberInfo = membershipGroupReaderProvider.lookupByKey(
                 localIdentity,
                 message.source.initiatorPublicKeyHash.array(),
-                MembershipStatusFilter.ACTIVE_IF_PRESENT_OR_PENDING
+                MembershipStatusFilter.ACTIVE_OR_SUSPENDED_IF_PRESENT_OR_PENDING
             )
             if (peerMemberInfo == null) {
                 null
@@ -758,7 +758,7 @@ internal class SessionManagerImpl(
                     .lookupByKey(
                         hostedIdentityInSameGroup,
                         initiatorIdentityData.initiatorPublicKeyHash.array(),
-                        MembershipStatusFilter.ACTIVE_IF_PRESENT_OR_PENDING,
+                        MembershipStatusFilter.ACTIVE_OR_SUSPENDED_IF_PRESENT_OR_PENDING,
                     )
             }
         if (peer == null) {

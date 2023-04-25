@@ -20,6 +20,7 @@ import net.corda.libs.configuration.helper.getConfig
 import net.corda.libs.external.messaging.serialization.ExternalMessagingRouteConfigSerializerImpl
 import net.corda.libs.virtualnode.common.constant.VirtualNodeStateTransitions
 import net.corda.libs.virtualnode.common.exception.InvalidStateChangeRuntimeException
+import net.corda.libs.virtualnode.common.exception.LiquibaseDiffCheckFailedException
 import net.corda.libs.virtualnode.common.exception.VirtualNodeOperationBadRequestException
 import net.corda.libs.virtualnode.common.exception.VirtualNodeOperationNotFoundException
 import net.corda.libs.virtualnode.endpoints.v1.VirtualNodeRestResource
@@ -455,7 +456,8 @@ internal class VirtualNodeRestResourceImpl(
         return when (exception.errorType) {
             InvalidStateChangeRuntimeException::class.java.name -> InvalidStateChangeException(exception.errorMessage)
             VirtualNodeOperationNotFoundException::class.java.name -> ResourceNotFoundException(exception.errorMessage)
-            VirtualNodeOperationBadRequestException::class.java.name -> BadRequestException(exception.errorMessage)
+            VirtualNodeOperationBadRequestException::class.java.name, LiquibaseDiffCheckFailedException::class.java.name ->
+                BadRequestException(exception.errorMessage)
             else -> InternalServerException(exception.errorMessage)
         }
     }

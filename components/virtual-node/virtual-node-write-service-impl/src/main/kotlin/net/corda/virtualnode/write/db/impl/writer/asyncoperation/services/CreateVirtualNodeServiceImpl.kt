@@ -12,6 +12,7 @@ import net.corda.db.core.DbPrivilege.DML
 import net.corda.libs.cpi.datamodel.CpkDbChangeLog
 import net.corda.libs.cpi.datamodel.repository.CpkDbChangeLogRepository
 import net.corda.libs.packaging.core.CpiIdentifier
+import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.libs.virtualnode.common.exception.CpiNotFoundException
 import net.corda.libs.virtualnode.common.exception.VirtualNodeAlreadyExistsException
 import net.corda.libs.virtualnode.datamodel.repository.HoldingIdentityRepository
@@ -24,7 +25,6 @@ import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toCorda
 import net.corda.virtualnode.write.db.VirtualNodeWriteServiceException
 import net.corda.virtualnode.write.db.impl.writer.CpiEntityRepository
-import net.corda.virtualnode.write.db.impl.writer.CpiMetadataLite
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeDb
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeDbChangeLog
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeDbConnections
@@ -89,19 +89,19 @@ internal class CreateVirtualNodeServiceImpl(
         }
     }
 
-    override fun getCpiMetaData(cpiFileChecksum: String): CpiMetadataLite {
+    override fun getCpiMetaData(cpiFileChecksum: String): CpiMetadata {
         return cpiEntityRepository.getCpiMetadataByChecksum(cpiFileChecksum)
             ?: throw  CpiNotFoundException("CPI with file checksum ${cpiFileChecksum} was not found.")
     }
 
     override fun runCpiMigrations(
-        cpiMetadata: CpiMetadataLite,
+        cpiMetadata: CpiMetadata,
         vaultDb: VirtualNodeDb,
         holdingIdentity: HoldingIdentity
     ) {
         dbConnectionManager.getClusterEntityManagerFactory().createEntityManager().transaction { em ->
 
-            val changelogsPerCpk = cpkDbChangeLogRepository.findByCpiId(em, cpiMetadata.id)
+            val changelogsPerCpk = cpkDbChangeLogRepository.findByCpiId(em, cpiMetadata.cpiId)
                 .groupBy { it.id.cpkFileChecksum }
 
             changelogsPerCpk.forEach { (cpkFileChecksum, changeLogs) ->

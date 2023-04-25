@@ -28,8 +28,8 @@ dependencies {
     implementation project(":components:virtual-node:virtual-node-info-read-service")
     implementation project(":components:crypto:crypto-client")
 
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
-    testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
     testImplementation "org.assertj:assertj-core:$assertjVersion"
     testImplementation project(":testing:test-utilities")

@@ -25,6 +25,7 @@ import net.corda.schema.configuration.ConfigKeys
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
@@ -38,9 +39,13 @@ class MemberOpsServiceTest {
     private val publisherFactory = mock<PublisherFactory> {
         on { createPublisher(any(), any()) } doReturn mock()
     }
-    private val asyncSubName = LifecycleCoordinatorName("ASYNC_SUBSCRIPTION")
-    private val asyncSubscription: StateAndEventSubscription<String, MembershipAsyncRequestState, MembershipAsyncRequest> = mock {
-        on { subscriptionName } doReturn asyncSubName
+    private val asyncRetrySubName = LifecycleCoordinatorName("ASYNC_RETRY_SUBSCRIPTION")
+    private val retrySubscription: StateAndEventSubscription<String, MembershipAsyncRequestState, MembershipAsyncRequestState> = mock {
+        on { subscriptionName } doReturn asyncRetrySubName
+    }
+    private val asyncCommandSubName = LifecycleCoordinatorName("ASYNC_COMMAND_SUBSCRIPTION")
+    private val commandsSubscription = mock<Subscription<String, MembershipAsyncRequest>> {
+        on { subscriptionName } doReturn asyncCommandSubName
     }
     private val actionsSubName = LifecycleCoordinatorName("ACTIONS_SUBSCRIPTION")
     private val actionsSubscription = mock<Subscription<String, MembershipActionsRequest>> {
@@ -54,11 +59,11 @@ class MemberOpsServiceTest {
         on {
             createStateAndEventSubscription(
                 any(),
-                any<MemberOpsAsyncProcessor>(),
+                any<CommandsRetryManager>(),
                 any(),
                 any<CommandsRetryManager>(),
             )
-        } doReturn asyncSubscription
+        } doReturn retrySubscription
         on {
             createDurableSubscription(
                 any(),
@@ -67,6 +72,14 @@ class MemberOpsServiceTest {
                 eq(null)
             )
         } doReturn actionsSubscription
+        on {
+            createDurableSubscription(
+                any(),
+                any<MemberOpsAsyncProcessor>(),
+                any(),
+                anyOrNull(),
+            )
+        } doReturn commandsSubscription
     }
 
     private val registrationProxy: RegistrationProxy = mock()
@@ -180,7 +193,8 @@ class MemberOpsServiceTest {
 
     private fun getMemberOpsServiceTestContext(): LifecycleTest<MemberOpsService> {
         return LifecycleTest {
-            addDependency(asyncSubName)
+            addDependency(asyncRetrySubName)
+            addDependency(asyncCommandSubName)
             addDependency(rpcSubName)
             addDependency(actionsSubName)
             addDependency<ConfigurationReadService>()

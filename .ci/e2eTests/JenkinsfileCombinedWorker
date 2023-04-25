@@ -1,6 +1,8 @@
 @Library('corda-shared-build-pipeline-steps@5.0.1') _
 
 import groovy.transform.Field
+import com.r3.build.utils.PipelineUtils
+import com.r3.build.utils.GitUtils
 
 @Field
 String postgresHost = 'localhost'
@@ -11,19 +13,11 @@ String postgresCredentialsId = 'e2e-postgresql-credentials'
 @Field
 String postgresDb = "test_${UUID.randomUUID().toString().replace("-", "")}"
 
-def checkConnection(){
-    def status = null
-    sleep(time: 30, unit: "SECONDS") 
+@Field
+PipelineUtils pipelineUtils = new PipelineUtils(this)
 
-    while (status != "200"){
-        sleep(time: 3, unit: "SECONDS")
-        try{
-            status = sh(script: 'curl -s -o /dev/null -I -w "%{http_code}" http://localhost:7004/status', returnStdout: true)
-        }catch(error){
-            echo "can't connect, retrying..."
-        }
-    }
-}
+@Field
+GitUtils gitUtils = new GitUtils(this)
 
 pipeline {
     agent {
@@ -70,52 +64,17 @@ pipeline {
         stage('check out') {
             steps {
                 script {
-                    if (params.COMMIT_TO_CHECKOUT && env.CHANGE_ID == null && env.TAG_NAME == null ) { // CHANGE_ID only populated in PRs
-                        echo "Checking out commit ID from upstream job ${params.COMMIT_TO_CHECKOUT}"
-                        sh 'git checkout "$COMMIT_TO_CHECKOUT"'
-                    } else {
-                        if (env.CHANGE_ID) {
-                            echo "Checking out head revision of ${env.BRANCH_NAME} and merging into ${env.CHANGE_TARGET}"
-                        } else {
-                            echo "Checking out head revision of ${env.BRANCH_NAME}"
-                        }
-                    }
+                    gitUtils.checkoutGitRevisionOfTriggeringJob(params.COMMIT_TO_CHECKOUT)
                 }
             }
         }
-		  
-        //stage create DB - see shared pipline
         stage('create DBs') {
             environment {
                 KUBECONFIG = credentials('e2e-tests-credentials')
             }
             steps {
-                // port forwarding from K8s
-                withEnv(["PGPORT=${postgresPort}"]) {
-                    sh 'nohup kubectl port-forward --namespace postgres svc/postgres-postgresql "${PGPORT}":"${PGPORT}" > forward.txt 2>&1 &'
-                }
-                // create new DB
-                withEnv([
-                        "PGHOST=${postgresHost}",
-                        "PGPORT=${postgresPort}",
-                        "DATABASE=${postgresDb}"
-                ]) {
-                    withCredentials([usernamePassword(credentialsId: postgresCredentialsId,
-                            passwordVariable: 'PGPASSWORD',
-                            usernameVariable: 'PGUSER')]) {
-                        script {
-                            try {
-                                sh 'psql --quiet --tuples-only -c \'select \''
-                            } catch (error) {
-                                echo "${error.getMessage()}\nPort forwarding Postgres has not been set up yet, retrying"
-                                retry(5) {
-                                    sleep(time: 5, unit: "SECONDS")
-                                    sh 'psql --quiet --tuples-only -c \'select \''
-                                }
-                            }
-                            sh 'createdb -w "${DATABASE}"'
-                        }
-                    }
+                script {
+                    pipelineUtils.createPostgresDatabase(postgresPort, postgresHost, postgresDb, postgresCredentialsId)
                 }
             }
         }
@@ -143,16 +102,8 @@ pipeline {
         }
         stage('connect to combined worker') {
             steps {
-                script{
-                    try {
-                       timeout(time: 3, unit: 'MINUTES') {
-                            checkConnection()
-                       }
-                    } catch(err) {
-                        // If a timeout is reached fail the build as we want the calling job to result in a failure
-                        // without this the calling job will result in a aborted status
-                        error 'Could not connect to the Combined Worker in a 3 minute window'
-                    }
+                script {
+                    pipelineUtils.waitForServiceToBeUp('http://localhost:7004/status', 20, 3)
                 }
             }
         }
@@ -172,22 +123,12 @@ pipeline {
     }
     post {
         always {
-            
             script {      
                     findBuildScans()
                     splunkLogGenerator()
-                    sh '''
-                        for pod in $(kubectl -n postgres get pods -o name); do kubectl -n postgres logs --all-containers --prefix $pod 2>&1 >> podLogs.txt; done
-                    '''     
-                    withCredentials([usernamePassword(credentialsId: postgresCredentialsId,
-                            passwordVariable: 'PGPASSWORD',
-                            usernameVariable: 'PGUSER')]) {
-
-                        sh 'dropdb -w "${postgresDb}" || true'
-                        
-                    }
+                    pipelineUtils.getPodLogs("postgres")
+                    pipelineUtils.dropPostgresDB(postgresCredentialsId, env.CORDA_DEV_CLUSTER_DB_NAME)
             }
-
             archiveArtifacts artifacts: 'forward.txt, workerLogs.txt, podLogs.txt', allowEmptyArchive: true
             sh 'rm -f forward.txt workerLogs.txt podLogs.txt'
         }

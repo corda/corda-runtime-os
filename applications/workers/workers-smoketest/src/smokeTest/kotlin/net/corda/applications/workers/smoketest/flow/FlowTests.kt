@@ -4,7 +4,6 @@ import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import net.corda.applications.workers.smoketest.TEST_CPB_LOCATION
 import net.corda.applications.workers.smoketest.TEST_CPI_NAME
-import net.corda.crypto.core.CryptoConsts.Categories.LEDGER
 import net.corda.e2etest.utilities.FlowStatus
 import net.corda.e2etest.utilities.GROUP_ID
 import net.corda.e2etest.utilities.RPC_FLOW_STATUS_FAILED
@@ -15,7 +14,6 @@ import net.corda.e2etest.utilities.TEST_NOTARY_CPI_NAME
 import net.corda.e2etest.utilities.awaitRpcFlowFinished
 import net.corda.e2etest.utilities.conditionallyUploadCordaPackage
 import net.corda.e2etest.utilities.configWithDefaultsNode
-import net.corda.e2etest.utilities.createKeyFor
 import net.corda.e2etest.utilities.getConfig
 import net.corda.e2etest.utilities.getFlowClasses
 import net.corda.e2etest.utilities.getHoldingIdShortHash
@@ -40,8 +38,6 @@ import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle
 import org.junit.jupiter.api.TestMethodOrder
 import java.util.UUID
-import net.corda.v5.application.flows.FlowContextPropertyKeys
-import net.corda.v5.crypto.KeySchemeCodes.RSA_CODE_NAME
 import kotlin.text.Typography.quote
 
 @Suppress("Unused", "FunctionName")
@@ -76,28 +72,28 @@ class FlowTests {
         )
 
         val invalidConstructorFlowNames = listOf(
-            "net.cordapp.testing.smoketests.flow.errors.PrivateConstructorFlow",
-            "net.cordapp.testing.smoketests.flow.errors.PrivateConstructorJavaFlow",
-            "net.cordapp.testing.smoketests.flow.errors.NoDefaultConstructorFlow",
-            "net.cordapp.testing.smoketests.flow.errors.NoDefaultConstructorJavaFlow",
+            "com.r3.corda.testing.smoketests.flow.errors.PrivateConstructorFlow",
+            "com.r3.corda.testing.smoketests.flow.errors.PrivateConstructorJavaFlow",
+            "com.r3.corda.testing.smoketests.flow.errors.NoDefaultConstructorFlow",
+            "com.r3.corda.testing.smoketests.flow.errors.NoDefaultConstructorJavaFlow",
         )
 
         val dependencyInjectionFlowNames = listOf(
-            "net.cordapp.testing.smoketests.flow.DependencyInjectionTestFlow",
-            "net.cordapp.testing.smoketests.flow.inheritance.DependencyInjectionTestJavaFlow",
+            "com.r3.corda.testing.smoketests.flow.DependencyInjectionTestFlow",
+            "com.r3.corda.testing.smoketests.flow.inheritance.DependencyInjectionTestJavaFlow",
         )
 
         val expectedFlows = listOf(
-            "net.cordapp.testing.smoketests.virtualnode.ReturnAStringFlow",
-            "net.cordapp.testing.smoketests.virtualnode.SimplePersistenceCheckFlow",
-            "net.cordapp.testing.smoketests.flow.AmqpSerializationTestFlow",
-            "net.cordapp.testing.smoketests.flow.RpcSmokeTestFlow",
-            "net.cordapp.testing.testflows.TestFlow",
-            "net.cordapp.testing.testflows.BrokenProtocolFlow",
-            "net.cordapp.testing.testflows.MessagingFlow",
-            "net.cordapp.testing.testflows.PersistenceFlow",
-            "net.cordapp.testing.testflows.NonValidatingNotaryTestFlow",
-            "net.cordapp.testing.testflows.ledger.TokenSelectionFlow"
+            "com.r3.corda.testing.smoketests.virtualnode.ReturnAStringFlow",
+            "com.r3.corda.testing.smoketests.virtualnode.SimplePersistenceCheckFlow",
+            "com.r3.corda.testing.smoketests.flow.AmqpSerializationTestFlow",
+            "com.r3.corda.testing.smoketests.flow.RpcSmokeTestFlow",
+            "com.r3.corda.testing.testflows.TestFlow",
+            "com.r3.corda.testing.testflows.BrokenProtocolFlow",
+            "com.r3.corda.testing.testflows.MessagingFlow",
+            "com.r3.corda.testing.testflows.PersistenceFlow",
+            "com.r3.corda.testing.testflows.NonValidatingNotaryTestFlow",
+            "com.r3.corda.testing.testflows.ledger.TokenSelectionFlow"
         ) + invalidConstructorFlowNames + dependencyInjectionFlowNames
 
         val jacksonObjectMapper = jacksonObjectMapper()
@@ -260,6 +256,23 @@ class FlowTests {
         assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
         assertThat(flowResult.command).isEqualTo("throw_platform_error")
         assertThat(flowResult.result).startsWith("Type='PLATFORM_ERROR'")
+    }
+
+    @Test
+    fun `Session Error - Closed Or Error sessions throw`() {
+        val requestBody = RpcSmokeTestInput().apply {
+            command = "throw_session_error"
+            data = mapOf("x500" to bobX500)
+        }
+
+        val requestId = startRpcFlow(bobHoldingId, requestBody)
+
+        val result = awaitRpcFlowFinished(bobHoldingId, requestId)
+
+        val flowResult = result.getRpcFlowResult()
+        assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+        assertThat(flowResult.command).isEqualTo("throw_session_error")
+        assertThat(flowResult.result).endsWith("Status is CLOSED")
     }
 
     @Test
@@ -707,6 +720,32 @@ class FlowTests {
         assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
         assertThat(result.flowResult).isNotNull
         assertThat(flowResult.command).isEqualTo("crypto_CompositeKeyGenerator_works_in_flows")
+        assertThat(flowResult.result).isEqualTo("SUCCESS")
+    }
+
+    @Test
+    fun `Crypto - Get default digest algorithm`() {
+        val requestBody = RpcSmokeTestInput()
+        requestBody.command = "crypto_get_default_digest_algorithm"
+        val requestId = startRpcFlow(bobHoldingId, requestBody)
+        val result = awaitRpcFlowFinished(bobHoldingId, requestId)
+        val flowResult = result.getRpcFlowResult()
+        assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+        assertThat(result.flowResult).isNotNull
+        assertThat(flowResult.command).isEqualTo("crypto_get_default_digest_algorithm")
+        assertThat(flowResult.result).isEqualTo("SUCCESS")
+    }
+
+    @Test
+    fun `Crypto - Get supported digest algorithms`() {
+        val requestBody = RpcSmokeTestInput()
+        requestBody.command = "crypto_get_supported_digest_algorithms"
+        val requestId = startRpcFlow(bobHoldingId, requestBody)
+        val result = awaitRpcFlowFinished(bobHoldingId, requestId)
+        val flowResult = result.getRpcFlowResult()
+        assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+        assertThat(result.flowResult).isNotNull
+        assertThat(flowResult.command).isEqualTo("crypto_get_supported_digest_algorithms")
         assertThat(flowResult.result).isEqualTo("SUCCESS")
     }
 
@@ -1193,7 +1232,7 @@ class FlowTests {
         val issuanceRequestID = startRpcFlow(
             bobHoldingId,
             paramMap,
-            "net.cordapp.testing.testflows.NonValidatingNotaryTestFlow"
+            "com.r3.corda.testing.testflows.NonValidatingNotaryTestFlow"
         )
 
         val issuanceResult = awaitRpcFlowFinished(bobHoldingId, issuanceRequestID)
@@ -1216,7 +1255,7 @@ class FlowTests {
                 "inputStateRefs" to jacksonObjectMapper.writeValueAsString(inputStates),
                 "referenceStateRefs" to jacksonObjectMapper.writeValueAsString(refStates)
             ),
-            "net.cordapp.testing.testflows.NonValidatingNotaryTestFlow"
+            "com.r3.corda.testing.testflows.NonValidatingNotaryTestFlow"
         )
 
         val consumeResult = awaitRpcFlowFinished(bobHoldingId, consumeRequestID)

@@ -43,6 +43,21 @@ object CordaMetrics {
         object MessageProcessorTime : Metric<Timer>("messaging.processor.time", CordaMetrics::timer)
 
         /**
+         * The size of batches of messages received in a poll from the message bus.
+         */
+        object MessageBatchSize : Metric<DistributionSummary>("messaging.batch.size", Metrics::summary)
+
+        /**
+         * The time taken to commit a processed batch of messages back to the bus.
+         */
+        object MessageCommitTime : Metric<Timer>("messaging.commit.time", CordaMetrics::timer)
+
+        /**
+         * The time blocking inside a poll call waiting for messages from the bus.
+         */
+        object MessagePollTime : Metric<Timer>("messaging.poll.time", CordaMetrics::timer)
+
+        /**
          * Time it took for a flow to complete sucessfully or to error.
          */
         object FlowRunTime : Metric<Timer>("flow.run.time", CordaMetrics::timer)

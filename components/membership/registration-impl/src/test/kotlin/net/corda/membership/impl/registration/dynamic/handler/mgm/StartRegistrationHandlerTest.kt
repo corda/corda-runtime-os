@@ -12,12 +12,17 @@ import net.corda.data.membership.command.registration.RegistrationCommand
 import net.corda.data.membership.command.registration.mgm.DeclineRegistration
 import net.corda.data.membership.command.registration.mgm.StartRegistration
 import net.corda.data.membership.command.registration.mgm.VerifyMember
+import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.p2p.MembershipRegistrationRequest
+import net.corda.data.membership.p2p.SetOwnRegistrationStatus
 import net.corda.data.membership.preauth.PreAuthToken
+import net.corda.data.membership.state.RegistrationState
+import net.corda.data.p2p.app.AppMessage
 import net.corda.membership.impl.registration.dynamic.handler.MemberTypeChecker
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandler
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandlerResult
 import net.corda.membership.impl.registration.dynamic.verifiers.RegistrationContextCustomFieldsVerifier
+import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.NOTARY_SERVICE_NAME_KEY
 import net.corda.membership.lib.InternalGroupParameters
 import net.corda.membership.lib.MemberInfoExtension.Companion.ENDPOINTS
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
@@ -31,8 +36,8 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.SERIAL
 import net.corda.membership.lib.MemberInfoExtension.Companion.endpoints
 import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.lib.MemberInfoFactory
-import net.corda.membership.lib.NOTARY_SERVICE_NAME_KEY
 import net.corda.membership.lib.notary.MemberNotaryDetails
+import net.corda.membership.p2p.helpers.P2pRecordsFactory
 import net.corda.membership.lib.toMap
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceOperation
@@ -57,6 +62,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
@@ -65,6 +71,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 import java.time.Instant
@@ -154,6 +161,12 @@ class StartRegistrationHandlerTest {
         on { status } doReturn MEMBER_STATUS_ACTIVE
         on { serial } doReturn 1L
     }
+    private val authenticatedMessageRecord = mock<Record<String, AppMessage>>()
+    private val p2pRecordsFactory = mock<P2pRecordsFactory> {
+        on {
+            createAuthenticatedMessageRecord(any(), any(), any(), anyOrNull(), any(), any())
+        } doReturn authenticatedMessageRecord
+    }
 
     private val mgmMemberContext: MemberContext = mock {
         on { parse(eq(GROUP_ID), eq(String::class.java)) } doReturn groupId
@@ -218,7 +231,8 @@ class StartRegistrationHandlerTest {
             membershipQueryClient,
             membershipGroupReaderProvider,
             cordaAvroSerializationFactory,
-            registrationContextCustomFieldsVerifier
+            p2pRecordsFactory,
+            registrationContextCustomFieldsVerifier,
         )
     }
 
@@ -228,7 +242,7 @@ class StartRegistrationHandlerTest {
             assertThat(updatedState).isNotNull
             assertThat(updatedState!!.registrationId).isEqualTo(registrationId)
             assertThat(updatedState!!.registeringMember).isEqualTo(aliceHoldingIdentity)
-            assertThat(outputStates).hasSize(2)
+            assertThat(outputStates).hasSize(3)
 
             assertRegistrationStarted()
 
@@ -245,6 +259,50 @@ class StartRegistrationHandlerTest {
             verifyCustomFields = true,
             queryMemberInfo = true,
             persistMemberInfo = true
+        )
+    }
+
+    @Test
+    fun `invoke send the pending member a set status request`() {
+        val result = handler.invoke(null, Record(testTopic, testTopicKey, startRegistrationCommand))
+
+        assertThat(result.outputStates)
+            .contains(authenticatedMessageRecord)
+    }
+
+    @Test
+    fun `invoke ignores the request if the state had been set`() {
+        handler.invoke(RegistrationState(), Record(testTopic, testTopicKey, startRegistrationCommand))
+
+        verifyNoInteractions(memberTypeChecker)
+        verifyNoInteractions(membershipPersistenceClient)
+    }
+
+    @Test
+    fun `invoke with a state returns the state and no messages`() {
+        val state = RegistrationState()
+        val response = handler.invoke(state, Record(testTopic, testTopicKey, startRegistrationCommand))
+
+        assertThat(response.outputStates).isEmpty()
+        assertThat(response.updatedState).isSameAs(state)
+    }
+
+    @Test
+    fun `invoke creates the correct command to the pending member`() {
+        handler.invoke(null, Record(testTopic, testTopicKey, startRegistrationCommand))
+
+        verify(p2pRecordsFactory).createAuthenticatedMessageRecord(
+            eq(mgmHoldingIdentity),
+            eq(aliceHoldingIdentity),
+            eq(
+                SetOwnRegistrationStatus(
+                    registrationId,
+                    RegistrationStatus.RECEIVED_BY_MGM,
+                )
+            ),
+            eq(5),
+            any(),
+            any(),
         )
     }
 

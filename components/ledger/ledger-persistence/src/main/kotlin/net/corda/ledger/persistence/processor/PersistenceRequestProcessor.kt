@@ -58,7 +58,6 @@ class PersistenceRequestProcessor(
                                 is InconsistentLedgerStateException -> {
                                     responseFactory.fatalErrorResponse(request.flowExternalEventContext, e)
                                 }
-
                                 else -> {
                                     responseFactory.errorResponse(request.flowExternalEventContext, e)
                                 }

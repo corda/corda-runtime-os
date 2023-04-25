@@ -241,6 +241,27 @@ class SessionManagerImplTest {
     }
 
     @Test
+    fun `If we have an undelivered SessionInit, we should send only that`() {
+        val instant = Instant.now()
+        val sessionState = buildSessionState(
+            SessionStateType.CREATED,
+            0,
+            listOf(),
+            4,
+            listOf(
+                buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", 2, SessionData(), 0, emptyList(), instant.minusMillis(100)),
+                buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", 3, SessionData(), 0, emptyList(), instant.minusMillis(100)),
+                buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", 4, SessionInit(), 0, emptyList(), instant.minusMillis(50)),
+            ),
+        )
+
+        // Ensure that only the SessionInit event is returned
+        val (_, messagesToSend) = sessionManager.getMessagesToSend(sessionState, instant, testSmartConfig, testIdentity)
+        assertThat(messagesToSend.size).isEqualTo(1)
+        assertThat(messagesToSend.first().payload is SessionInit).isTrue
+    }
+
+    @Test
     fun `CREATED state, ack received for init message sent, state moves to CONFIRMED`() {
         val init = buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", 1, SessionInit())
         val sessionState = buildSessionState(

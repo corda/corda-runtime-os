@@ -5,10 +5,6 @@ plugins {
     id 'corda.javadoc-generation'
 }
 
-ext {
-    releasable = true
-}
-
 description 'Corda Non-Validating Notary Plugin Server'
 
 group 'com.r3.corda.notary.plugin.nonvalidating'
@@ -37,6 +33,7 @@ dependencies {
     cordapp project(":notary-plugins:notary-plugin-non-validating:notary-plugin-non-validating-api")
 
     testImplementation "org.assertj:assertj-core:$assertjVersion"
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 
     testImplementation project(":libs:crypto:crypto-core")

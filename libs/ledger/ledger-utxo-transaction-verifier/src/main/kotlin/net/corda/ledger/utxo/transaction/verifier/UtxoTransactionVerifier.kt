@@ -41,14 +41,9 @@ abstract class UtxoTransactionVerifier {
         }
     }
 
-
     protected fun verifyCommands(commands: List<Command>) {
         check(commands.isNotEmpty()) {
             "At least one command must be applied to the current $subjectClass."
         }
-    }
-
-    protected fun verifyNotaryIsWhitelisted() {
-        // TODO CORE-8956 Check the notary is in the group parameters whitelist
     }
 }

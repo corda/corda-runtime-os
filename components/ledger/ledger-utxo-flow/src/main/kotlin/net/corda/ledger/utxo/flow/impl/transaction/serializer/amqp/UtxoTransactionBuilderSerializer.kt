@@ -3,7 +3,6 @@ package net.corda.ledger.utxo.flow.impl.transaction.serializer.amqp
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoTransactionBuilderInternal
 import net.corda.sandbox.type.SandboxConstants.CORDA_UNINJECTABLE_SERVICE
 import net.corda.sandbox.type.UsedByFlow
-import net.corda.sandbox.type.UsedByVerification
 import net.corda.serialization.BaseProxySerializer
 import net.corda.serialization.InternalCustomSerializer
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -17,21 +16,23 @@ import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
     scope = PROTOTYPE
 )
 class UtxoTransactionBuilderSerializer :
-    BaseProxySerializer<UtxoTransactionBuilderInternal, UtxoTransactionBuilderProxy>(),
-    UsedByFlow, UsedByVerification {
+    BaseProxySerializer<UtxoTransactionBuilderInternal, UtxoTransactionBuilderProxy>(), UsedByFlow {
 
-    override val type = UtxoTransactionBuilderInternal::class.java
+    override val type
+        get() = UtxoTransactionBuilderInternal::class.java
 
-    override val proxyType = UtxoTransactionBuilderProxy::class.java
+    override val proxyType
+        get() = UtxoTransactionBuilderProxy::class.java
 
-    override val withInheritance = true
+    override val withInheritance
+        get() = true
 
     override fun toProxy(obj: UtxoTransactionBuilderInternal): UtxoTransactionBuilderProxy {
         throw CordaRuntimeException("${UtxoTransactionBuilder::class.java.name} cannot be AMQP serialized and sent to peers")
     }
 
     override fun fromProxy(proxy: UtxoTransactionBuilderProxy): UtxoTransactionBuilderInternal {
-        throw CordaRuntimeException("${UtxoTransactionBuilder::class.java.name} cannot be AMQP serialized and received from peers")
+        throw CordaRuntimeException("${UtxoTransactionBuilder::class.java.name} cannot be AMQP received and deserialized from peers")
     }
 }
 

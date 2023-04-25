@@ -1,9 +1,6 @@
 package net.corda.ledger.utxo.data.transaction
 
 import net.corda.ledger.common.data.transaction.WireTransaction
-import net.corda.ledger.utxo.data.state.StateAndRefImpl
-import net.corda.ledger.utxo.data.state.TransactionStateImpl
-import net.corda.ledger.utxo.data.state.getEncumbranceGroup
 import net.corda.ledger.utxo.data.transaction.verifier.verifyMetadata
 import net.corda.utilities.serialization.deserialize
 import net.corda.v5.application.serialization.SerializationService
@@ -80,24 +77,18 @@ class WrappedUtxoWireTransaction(
     }
 
     val outputStateAndRefs: List<StateAndRef<*>> by lazy(LazyThreadSafetyMode.PUBLICATION) {
-        wireTransaction
-            .getComponentGroupList(UtxoComponentGroup.OUTPUTS.ordinal)
-            .mapIndexed { index, state ->
-                val contractState: ContractState = serializationService.deserialize(state)
-                val stateRef = StateRef(id, index)
-                val outputInfo = outputsInfo[index]
-                val transactionState = TransactionStateImpl(
-                    contractState,
-                    outputInfo.notaryName,
-                    outputInfo.notaryKey,
-                    outputInfo.getEncumbranceGroup()
-                )
-                StateAndRefImpl(transactionState, stateRef)
-            }
-    }
-
-    private val outputsInfo: List<UtxoOutputInfoComponent> by lazy(LazyThreadSafetyMode.PUBLICATION) {
-        deserialize(UtxoComponentGroup.OUTPUTS_INFO)
+        List(
+            wireTransaction
+                .getComponentGroupList(UtxoComponentGroup.OUTPUTS.ordinal).size
+        ) { index ->
+            UtxoTransactionOutputDto(
+                id.toString(), index,
+                wireTransaction
+                    .getComponentGroupList(UtxoComponentGroup.OUTPUTS_INFO.ordinal)[index],
+                wireTransaction
+                    .getComponentGroupList(UtxoComponentGroup.OUTPUTS.ordinal)[index]
+            ).toStateAndRef<ContractState>(serializationService)
+        }
     }
 
     private inline fun <reified T> deserialize(group: UtxoComponentGroup): List<T> {

@@ -18,11 +18,6 @@ dependencies {
     implementation project(":components:reconciliation:reconciliation")
 
     implementation "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:$jacksonVersion"
-    constraints {
-        implementation("org.yaml:snakeyaml:$snakeyamlVersion") {
-            because 'Required until jackson-dataformat-yaml use snake yaml 1.32 internally '
-        }
-    }
     implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
     implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion"
 

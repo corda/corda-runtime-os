@@ -1,5 +1,6 @@
 package net.corda.ledger.common.data.transaction
 
+import com.fasterxml.jackson.annotation.JsonIgnore
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.ledger.common.transaction.CordaPackageSummary
@@ -21,8 +22,9 @@ class TransactionMetadataImpl(private val properties: Map<String, Any>) : Transa
         const val PLATFORM_VERSION_KEY = "platformVersion"
         const val CPI_METADATA_KEY = "cpiMetadata"
         const val CPK_METADATA_KEY = "cpkMetadata"
-        const val NUMBER_OF_COMPONENT_GROUPS = "numberOfComponentGroups"
+        const val COMPONENT_GROUPS_KEY = "componentGroups"
         const val SCHEMA_VERSION_KEY = "schemaVersion"
+        const val MEMBERSHIP_GROUP_PARAMETERS_HASH_KEY = "membershipGroupParametersHash"
     }
 
     override fun equals(other: Any?): Boolean {
@@ -59,11 +61,17 @@ class TransactionMetadataImpl(private val properties: Map<String, Any>) : Transa
         }
     }
 
-    override fun getNumberOfComponentGroups(): Int {
-        val value = this[NUMBER_OF_COMPONENT_GROUPS]
-        return value as? Int ?: throw CordaRuntimeException(
-            "Transaction metadata representation error: expected int representing the number of component groups but found [$value]"
+    override fun getComponentGroups(): List<List<String>> {
+        val value = this[COMPONENT_GROUPS_KEY]
+        @Suppress("UNCHECKED_CAST")
+        return value as? List<List<String>> ?: throw CordaRuntimeException(
+            "Transaction metadata representation error: expected List<List<String>> representing the component groups but found [$value]"
         )
+    }
+
+    @JsonIgnore
+    override fun getNumberOfComponentGroups(): Int {
+        return getComponentGroups().size
     }
 
     override fun getDigestSettings(): Map<String, String> {
@@ -81,6 +89,8 @@ class TransactionMetadataImpl(private val properties: Map<String, Any>) : Transa
                 "Transaction metadata representation error: JSON schema version should be an integer but could not be parsed: $version")
         }
     }
+
+    override fun getMembershipGroupParametersHash(): String? = this[MEMBERSHIP_GROUP_PARAMETERS_HASH_KEY]?.toString()
 
     override fun getPlatformVersion(): Int {
         val version = this[PLATFORM_VERSION_KEY].toString()

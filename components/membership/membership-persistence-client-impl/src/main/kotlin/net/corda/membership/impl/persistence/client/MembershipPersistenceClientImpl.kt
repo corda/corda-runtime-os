@@ -391,30 +391,30 @@ class MembershipPersistenceClientImpl(
 
     override fun suspendMember(
         viewOwningIdentity: HoldingIdentity, memberX500Name: MemberX500Name, serialNumber: Long?, reason: String?
-    ): MembershipPersistenceOperation<PersistentMemberInfo> {
+    ): MembershipPersistenceOperation<Pair<PersistentMemberInfo, InternalGroupParameters?>> {
         val request = MembershipPersistenceRequest(
             buildMembershipRequestContext(viewOwningIdentity.toAvro()),
             SuspendMember(memberX500Name.toString(), serialNumber, reason)
         )
 
         return request.operation { payload ->
-            dataToResultConvertor<SuspendMemberResponse, PersistentMemberInfo>(payload) {
-                it.memberInfo
+            dataToResultConvertor<SuspendMemberResponse, Pair<PersistentMemberInfo, InternalGroupParameters?>>(payload) {
+                it.memberInfo to it.groupParameters?.let { groupParameters -> groupParametersFactory.create(groupParameters) }
             }
         }
     }
 
     override fun activateMember(
         viewOwningIdentity: HoldingIdentity, memberX500Name: MemberX500Name, serialNumber: Long?, reason: String?
-    ): MembershipPersistenceOperation<PersistentMemberInfo> {
+    ): MembershipPersistenceOperation<Pair<PersistentMemberInfo, InternalGroupParameters?>> {
         val request = MembershipPersistenceRequest(
             buildMembershipRequestContext(viewOwningIdentity.toAvro()),
             ActivateMember(memberX500Name.toString(), serialNumber, reason)
         )
 
         return request.operation { payload ->
-            dataToResultConvertor<ActivateMemberResponse, PersistentMemberInfo>(payload) {
-                it.memberInfo
+            dataToResultConvertor<ActivateMemberResponse, Pair<PersistentMemberInfo, InternalGroupParameters?>>(payload) {
+                it.memberInfo to it.groupParameters?.let { groupParameters -> groupParametersFactory.create(groupParameters) }
             }
         }
     }

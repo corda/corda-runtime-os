@@ -5,6 +5,7 @@ import net.corda.flow.application.serialization.DeserializedWrongAMQPObjectExcep
 import net.corda.flow.application.serialization.SerializationServiceInternal
 import net.corda.flow.application.sessions.FlowSessionInternal
 import net.corda.flow.application.sessions.SessionInfo
+import net.corda.flow.application.sessions.utils.SessionUtils.verifySessionStatusNotErrorOrClose
 import net.corda.flow.fiber.FlowFiber
 import net.corda.flow.fiber.FlowFiberService
 import net.corda.flow.fiber.FlowIORequest
@@ -36,6 +37,7 @@ class FlowSessionImpl(
     }
 
     override fun getCounterparty(): MemberX500Name = counterparty
+
     @Suspendable
     override fun getCounterpartyFlowInfo(): FlowInfo {
         val counterPartyFlowInfo = getCounterpartySessionContext()
@@ -46,8 +48,10 @@ class FlowSessionImpl(
             fiber.suspend(request)
             //If we are able to receive counterparty info this means the session initiation has been completed.
             setSessionConfirmed()
-            getCounterpartySessionContext() ?: throw CordaRuntimeException("Failed to get counterparties flow info. Session is in an " +
-                    "invalid state")
+            getCounterpartySessionContext() ?: throw CordaRuntimeException(
+                "Failed to get counterparties flow info. Session is in an " +
+                        "invalid state"
+            )
         }
     }
 
@@ -95,6 +99,7 @@ class FlowSessionImpl(
 
     @Suspendable
     override fun <R : Any> sendAndReceive(receiveType: Class<R>, payload: Any): R {
+        verifySessionStatusNotErrorOrClose(sourceSessionId, flowFiberService)
         requireBoxedType(receiveType)
         val request = FlowIORequest.SendAndReceive(mapOf(getSessionInfo() to serialize(payload)))
         val received = fiber.suspend(request)
@@ -104,15 +109,16 @@ class FlowSessionImpl(
 
     @Suspendable
     override fun <R : Any> receive(receiveType: Class<R>): R {
+        verifySessionStatusNotErrorOrClose(sourceSessionId, flowFiberService)
         requireBoxedType(receiveType)
         val request = FlowIORequest.Receive(setOf(getSessionInfo()))
         val received = fiber.suspend(request)
         setSessionConfirmed()
         return deserializeReceivedPayload(received, receiveType)
     }
-
     @Suspendable
     override fun send(payload: Any) {
+        verifySessionStatusNotErrorOrClose(sourceSessionId, flowFiberService)
         val request =
             FlowIORequest.Send(mapOf(getSessionInfo() to serialize(payload)))
         fiber.suspend(request)

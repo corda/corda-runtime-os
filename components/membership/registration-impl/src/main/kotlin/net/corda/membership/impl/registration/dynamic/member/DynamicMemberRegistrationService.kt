@@ -5,13 +5,14 @@ import net.corda.configuration.read.ConfigurationGetService
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.cipher.suite.SignatureSpecImpl
-import net.corda.crypto.cipher.suite.calculateHash
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.core.CryptoConsts.Categories.LEDGER
 import net.corda.crypto.core.CryptoConsts.Categories.NOTARY
 import net.corda.crypto.core.CryptoConsts.Categories.SESSION_INIT
 import net.corda.crypto.core.ShortHash
 import net.corda.crypto.core.ShortHashException
+import net.corda.crypto.core.fullId
+import net.corda.crypto.core.fullIdHash
 import net.corda.crypto.core.toByteArray
 import net.corda.crypto.hes.EphemeralKeyPairEncryptor
 import net.corda.crypto.hes.HybridEncryptionParams
@@ -467,11 +468,12 @@ class DynamicMemberRegistrationService @Activate constructor(
                 require(orderVerifier.isOrdered(this, 3)) { "Provided session key IDs are incorrectly numbered." }
             }
             p2pEndpointVerifier.verifyContext(context)
+            val isNotary = context.entries.any { it.key.startsWith(ROLES_PREFIX) && it.value == NOTARY_ROLE }
             context.keys.filter { ledgerIdRegex.matches(it) }.apply {
-                require(isNotEmpty()) { "No ledger key ID was provided." }
+                if (!isNotary) require(isNotEmpty()) { "No ledger key ID was provided." }
                 require(orderVerifier.isOrdered(this, 3)) { "Provided ledger key IDs are incorrectly numbered." }
             }
-            if (context.entries.any { it.key.startsWith(ROLES_PREFIX) && it.value == NOTARY_ROLE }) {
+            if (isNotary) {
                 context.keys.filter { notaryIdRegex.matches(it) }.apply {
                     require(isNotEmpty()) { "No notary key ID was provided." }
                     require(orderVerifier.isOrdered(this, 3)) { "Provided notary key IDs are incorrectly numbered." }
@@ -537,7 +539,7 @@ class DynamicMemberRegistrationService @Activate constructor(
                 keyEncodingService.encodeAsString(publicKey)
             }
             override val hash by lazy {
-                publicKey.calculateHash()
+                publicKey.fullIdHash()
             }
             override val spec by lazy {
                 getSignatureSpec(key, defaultSpec)
@@ -558,7 +560,7 @@ class DynamicMemberRegistrationService @Activate constructor(
             }.flatMapIndexed { index, ledgerKey ->
                 listOf(
                     String.format(LEDGER_KEYS_KEY, index) to keyEncodingService.encodeAsString(ledgerKey),
-                    String.format(LEDGER_KEY_HASHES_KEY, index) to ledgerKey.calculateHash().value,
+                    String.format(LEDGER_KEY_HASHES_KEY, index) to ledgerKey.fullId(),
                     String.format(LEDGER_KEY_SIGNATURE_SPEC, index) to getSignatureSpec(
                         ledgerKeys[index],
                         context[String.format(LEDGER_KEY_SIGNATURE_SPEC, index)]
@@ -582,7 +584,7 @@ class DynamicMemberRegistrationService @Activate constructor(
                 val spec = context[specKey]
                 listOf(
                     String.format(PARTY_SESSION_KEYS_PEM, index) to keyEncodingService.encodeAsString(sessionPublicKey),
-                    String.format(SESSION_KEYS_HASH, index) to sessionPublicKey.calculateHash().value,
+                    String.format(SESSION_KEYS_HASH, index) to sessionPublicKey.fullId(),
                     specKey to getSignatureSpec(
                         sessionKey,
                         spec,
