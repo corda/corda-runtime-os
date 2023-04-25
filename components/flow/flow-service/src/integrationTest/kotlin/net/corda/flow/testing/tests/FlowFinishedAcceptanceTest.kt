@@ -1,6 +1,5 @@
 package net.corda.flow.testing.tests
 
-import net.corda.data.flow.FlowKey
 import net.corda.data.flow.output.FlowStates
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.testing.context.FlowServiceTestBase
@@ -48,7 +47,6 @@ class FlowFinishedAcceptanceTest : FlowServiceTestBase() {
             expectOutputForFlow(FLOW_ID1) {
                 nullStateRecord()
                 flowStatus(FlowStates.COMPLETED, result = DONE)
-                scheduleFlowMapperCleanupEvents(FlowKey(REQUEST_ID1, ALICE_HOLDING_IDENTITY).toString())
             }
         }
     }
@@ -82,7 +80,6 @@ class FlowFinishedAcceptanceTest : FlowServiceTestBase() {
             expectOutputForFlow(FLOW_ID1) {
                 nullStateRecord()
                 flowStatus(FlowStates.COMPLETED, result = DONE)
-                scheduleFlowMapperCleanupEvents(FlowKey(REQUEST_ID1, CHARLIE_HOLDING_IDENTITY).toString())
             }
         }
     }
@@ -98,7 +95,6 @@ class FlowFinishedAcceptanceTest : FlowServiceTestBase() {
             expectOutputForFlow(FLOW_ID1) {
                 nullStateRecord()
                 flowStatus(FlowStates.COMPLETED, result = DONE)
-                scheduleFlowMapperCleanupEvents(FlowKey(INITIATED_SESSION_ID_1, BOB_HOLDING_IDENTITY).toString())
             }
         }
     }
@@ -124,7 +120,6 @@ class FlowFinishedAcceptanceTest : FlowServiceTestBase() {
             expectOutputForFlow(FLOW_ID1) {
                 nullStateRecord()
                 flowStatus(FlowStates.COMPLETED, result = DONE)
-                scheduleFlowMapperCleanupEvents(FlowKey(REQUEST_ID1, ALICE_HOLDING_IDENTITY).toString(), SESSION_ID_1)
             }
         }
     }
