@@ -1,4 +1,4 @@
-package net.corda.common.json.serialization
+package net.corda.rest.json.serialization
 import com.fasterxml.jackson.module.kotlin.readValue
 import net.corda.v5.base.types.MemberX500Name
 import org.junit.jupiter.api.Test
