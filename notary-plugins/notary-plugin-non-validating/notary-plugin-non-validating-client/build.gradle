@@ -34,6 +34,7 @@ dependencies {
     cordapp project(":notary-plugins:notary-plugin-non-validating:notary-plugin-non-validating-api")
 
     testImplementation "org.assertj:assertj-core:$assertjVersion"
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 
     testImplementation project(':libs:serialization:serialization-amqp')

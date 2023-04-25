@@ -2,6 +2,7 @@ package net.corda.membership.registration
 
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorName
+import net.corda.messaging.api.records.Record
 import net.corda.virtualnode.HoldingIdentity
 import java.util.UUID
 
@@ -35,5 +36,5 @@ interface MemberRegistrationService : Lifecycle {
         registrationId: UUID,
         member: HoldingIdentity,
         context: Map<String, String>
-    )
+    ): Collection<Record<*, *>>
 }

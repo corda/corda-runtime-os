@@ -7,6 +7,6 @@ interface InteropFacadeToFlowMapperService {
     fun getFlowName(
         destinationIdentity: HoldingIdentity,
         facadeId: String,
-        facadeName: String
+        methodName: String
     ): String?
 }

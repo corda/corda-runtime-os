@@ -57,3 +57,10 @@ fun getHoldingIdShortHash(x500Name: String, groupId: String): String {
         .joinToString("") { byte -> "%02x".format(byte).uppercase() }
         .substring(0, 12)
 }
+
+/**
+ * Transform a string-string context map object represented as a [JsonNode] to a [Map].
+ */
+fun JsonNode.parseContextMap(): Map<String, String> = fields().asSequence().map {
+    it.key to it.value.textValue()
+}.toMap()

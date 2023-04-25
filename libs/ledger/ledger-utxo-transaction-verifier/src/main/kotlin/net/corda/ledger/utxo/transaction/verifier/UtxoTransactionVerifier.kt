@@ -23,13 +23,27 @@ abstract class UtxoTransactionVerifier {
         }
     }
 
+    protected fun verifyNoDuplicateInputsOrReferences(inputStateRefs: List<StateRef>, referenceStateRefs: List<StateRef>) {
+        val duplicateInputs = inputStateRefs.groupingBy { it }.eachCount().filter { it.value > 1 }
+
+        check(duplicateInputs.isEmpty()) { "Duplicate input states detected: ${duplicateInputs.keys}" }
+
+        val duplicateReferences = referenceStateRefs.groupingBy { it }.eachCount().filter { it.value > 1 }
+
+        check(duplicateReferences.isEmpty()) { "Duplicate reference states detected: ${duplicateReferences.keys}" }
+    }
+
+    protected fun verifyNoInputAndReferenceOverlap(inputStateRefs: List<StateRef>, referenceStateRefs: List<StateRef>) {
+        val intersection = inputStateRefs intersect referenceStateRefs.toSet()
+        check(intersection.isEmpty()) {
+            "A state cannot be both an input and a reference input in the same transaction. Offending " +
+                    "states: $intersection"
+        }
+    }
+
     protected fun verifyCommands(commands: List<Command>) {
         check(commands.isNotEmpty()) {
             "At least one command must be applied to the current $subjectClass."
         }
-    }
-
-    protected fun verifyNotaryIsWhitelisted() {
-        // TODO CORE-8956 Check the notary is in the group parameters whitelist
     }
 }

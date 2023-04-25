@@ -2,6 +2,8 @@ package net.corda.flow.application.services
 
 import net.corda.data.flow.state.checkpoint.FlowStackItem
 import net.corda.data.flow.state.checkpoint.FlowStackItemSession
+import net.corda.data.flow.state.session.SessionState
+import net.corda.data.flow.state.session.SessionStateType
 import net.corda.flow.ALICE_X500_NAME
 import net.corda.flow.application.serialization.SerializationServiceInternal
 import net.corda.flow.application.services.impl.FlowMessagingImpl
@@ -22,6 +24,8 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.EnumSource
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.eq
@@ -82,13 +86,25 @@ class FlowMessagingImplTest {
 
     private val flowMessaging = FlowMessagingImpl(mockFlowFiberService, flowSessionFactory, serializationService)
 
+    private val sessionState = mock<SessionState>()
+
     @BeforeEach
     fun beforeEach() {
-        whenever(serializationService.deserializeAndCheckType(SERIALIZED_PAYLOAD_ONE, Any::class.java)).thenReturn(PAYLOAD_ONE)
-        whenever(serializationService.deserializeAndCheckType(SERIALIZED_PAYLOAD_TWO, Any::class.java)).thenReturn(PAYLOAD_TWO)
-        whenever(serializationService.deserializeAndCheckType(SERIALIZED_PAYLOAD_THREE, Any::class.java)).thenReturn(PAYLOAD_THREE)
-        whenever(serializationService.deserializeAndCheckType(SERIALIZED_PAYLOAD_FOUR, Any::class.java)).thenReturn(PAYLOAD_FOUR)
-        whenever(serializationService.deserializeAndCheckType(SERIALIZED_PAYLOAD_FIVE, Any::class.java)).thenReturn(PAYLOAD_FIVE)
+        whenever(serializationService.deserializeAndCheckType(SERIALIZED_PAYLOAD_ONE, Any::class.java)).thenReturn(
+            PAYLOAD_ONE
+        )
+        whenever(serializationService.deserializeAndCheckType(SERIALIZED_PAYLOAD_TWO, Any::class.java)).thenReturn(
+            PAYLOAD_TWO
+        )
+        whenever(serializationService.deserializeAndCheckType(SERIALIZED_PAYLOAD_THREE, Any::class.java)).thenReturn(
+            PAYLOAD_THREE
+        )
+        whenever(serializationService.deserializeAndCheckType(SERIALIZED_PAYLOAD_FOUR, Any::class.java)).thenReturn(
+            PAYLOAD_FOUR
+        )
+        whenever(serializationService.deserializeAndCheckType(SERIALIZED_PAYLOAD_FIVE, Any::class.java)).thenReturn(
+            PAYLOAD_FIVE
+        )
 
         whenever(serializationService.serialize(PAYLOAD_ONE)).thenReturn(SerializedBytesImpl(SERIALIZED_PAYLOAD_ONE))
         whenever(serializationService.serialize(PAYLOAD_TWO)).thenReturn(SerializedBytesImpl(SERIALIZED_PAYLOAD_TWO))
@@ -204,9 +220,14 @@ class FlowMessagingImplTest {
 
     @Test
     fun `receiveAll with only version receiving sessions that have not received their initial payloads does not suspend the flow and returns the initial payloads`() {
-        whenever(versionReceivingSessionOne.getInitialPayloadIfNotAlreadyReceived(Any::class.java)).thenReturn(PAYLOAD_ONE)
-        whenever(versionReceivingSessionTwo.getInitialPayloadIfNotAlreadyReceived(Any::class.java)).thenReturn(PAYLOAD_TWO)
-        val results = flowMessaging.receiveAll(Any::class.java, setOf(versionReceivingSessionOne, versionReceivingSessionTwo))
+        whenever(versionReceivingSessionOne.getInitialPayloadIfNotAlreadyReceived(Any::class.java)).thenReturn(
+            PAYLOAD_ONE
+        )
+        whenever(versionReceivingSessionTwo.getInitialPayloadIfNotAlreadyReceived(Any::class.java)).thenReturn(
+            PAYLOAD_TWO
+        )
+        val results =
+            flowMessaging.receiveAll(Any::class.java, setOf(versionReceivingSessionOne, versionReceivingSessionTwo))
         assertThat(results).isEqualTo(listOf(PAYLOAD_ONE, PAYLOAD_TWO))
         verify(mockFlowFiberService.flowFiber, never()).suspend(any<FlowIORequest.Receive>())
     }
@@ -221,7 +242,8 @@ class FlowMessagingImplTest {
         )
         whenever(versionReceivingSessionOne.getInitialPayloadIfNotAlreadyReceived(Any::class.java)).thenReturn(null)
         whenever(versionReceivingSessionTwo.getInitialPayloadIfNotAlreadyReceived(Any::class.java)).thenReturn(null)
-        val results = flowMessaging.receiveAll(Any::class.java, setOf(versionReceivingSessionOne, versionReceivingSessionTwo))
+        val results =
+            flowMessaging.receiveAll(Any::class.java, setOf(versionReceivingSessionOne, versionReceivingSessionTwo))
         assertThat(results).isEqualTo(listOf(PAYLOAD_FOUR, PAYLOAD_FIVE))
         verify(mockFlowFiberService.flowFiber).suspend(any<FlowIORequest.Receive>())
     }
@@ -234,8 +256,12 @@ class FlowMessagingImplTest {
                 SESSION_ID_TWO to SERIALIZED_PAYLOAD_TWO
             )
         )
-        whenever(versionReceivingSessionOne.getInitialPayloadIfNotAlreadyReceived(Any::class.java)).thenReturn(PAYLOAD_FOUR)
-        whenever(versionReceivingSessionTwo.getInitialPayloadIfNotAlreadyReceived(Any::class.java)).thenReturn(PAYLOAD_FIVE)
+        whenever(versionReceivingSessionOne.getInitialPayloadIfNotAlreadyReceived(Any::class.java)).thenReturn(
+            PAYLOAD_FOUR
+        )
+        whenever(versionReceivingSessionTwo.getInitialPayloadIfNotAlreadyReceived(Any::class.java)).thenReturn(
+            PAYLOAD_FIVE
+        )
         val results = flowMessaging.receiveAll(
             Any::class.java,
             setOf(normalSessionOne, versionSendingSessionOne, versionReceivingSessionOne, versionReceivingSessionTwo)
@@ -280,8 +306,12 @@ class FlowMessagingImplTest {
 
     @Test
     fun `receiveAll with only version sending sessions that have not sent their initial payloads suspends the flow with an extra send`() {
-        whenever(versionSendingSessionOne.getVersioningPayloadToSend()).thenReturn(SERIALIZED_AGREED_VERSION_AND_PAYLOAD_ONE)
-        whenever(versionSendingSessionTwo.getVersioningPayloadToSend()).thenReturn(SERIALIZED_AGREED_VERSION_AND_PAYLOAD_TWO)
+        whenever(versionSendingSessionOne.getVersioningPayloadToSend()).thenReturn(
+            SERIALIZED_AGREED_VERSION_AND_PAYLOAD_ONE
+        )
+        whenever(versionSendingSessionTwo.getVersioningPayloadToSend()).thenReturn(
+            SERIALIZED_AGREED_VERSION_AND_PAYLOAD_TWO
+        )
         whenever(mockFlowFiberService.flowFiber.suspend(multiUseCaptor.capture())).thenReturn(
             Unit,
             mapOf(
@@ -289,7 +319,8 @@ class FlowMessagingImplTest {
                 SESSION_ID_THREE to SERIALIZED_PAYLOAD_TWO
             )
         )
-        val results = flowMessaging.receiveAll(Any::class.java, setOf(versionSendingSessionOne, versionSendingSessionTwo))
+        val results =
+            flowMessaging.receiveAll(Any::class.java, setOf(versionSendingSessionOne, versionSendingSessionTwo))
         assertThat(results).isEqualTo(listOf(PAYLOAD_ONE, PAYLOAD_TWO))
         verify(mockFlowFiberService.flowFiber).suspend(any<FlowIORequest.Send>())
         assertThat(multiUseCaptor.firstValue).isExactlyInstanceOf(FlowIORequest.Send::class.java)
@@ -311,17 +342,24 @@ class FlowMessagingImplTest {
                 SESSION_ID_THREE to SERIALIZED_PAYLOAD_TWO
             )
         )
-        val results = flowMessaging.receiveAll(Any::class.java, setOf(versionSendingSessionOne, versionSendingSessionTwo))
+        val results =
+            flowMessaging.receiveAll(Any::class.java, setOf(versionSendingSessionOne, versionSendingSessionTwo))
         assertThat(results).isEqualTo(listOf(PAYLOAD_ONE, PAYLOAD_TWO))
         verify(mockFlowFiberService.flowFiber, never()).suspend(any<FlowIORequest.Send>())
     }
 
     @Test
     fun `receiveAll with non-version sending sessions and version sending sessions that have not sent their initial payloads suspends the flow with an extra send`() {
-        whenever(versionSendingSessionOne.getVersioningPayloadToSend()).thenReturn(SERIALIZED_AGREED_VERSION_AND_PAYLOAD_ONE)
-        whenever(versionSendingSessionTwo.getVersioningPayloadToSend()).thenReturn(SERIALIZED_AGREED_VERSION_AND_PAYLOAD_TWO)
+        whenever(versionSendingSessionOne.getVersioningPayloadToSend()).thenReturn(
+            SERIALIZED_AGREED_VERSION_AND_PAYLOAD_ONE
+        )
+        whenever(versionSendingSessionTwo.getVersioningPayloadToSend()).thenReturn(
+            SERIALIZED_AGREED_VERSION_AND_PAYLOAD_TWO
+        )
         whenever(versionReceivingSessionOne.getInitialPayloadIfNotAlreadyReceived(Any::class.java)).thenReturn(null)
-        whenever(versionReceivingSessionTwo.getInitialPayloadIfNotAlreadyReceived(Any::class.java)).thenReturn(PAYLOAD_FIVE)
+        whenever(versionReceivingSessionTwo.getInitialPayloadIfNotAlreadyReceived(Any::class.java)).thenReturn(
+            PAYLOAD_FIVE
+        )
         whenever(mockFlowFiberService.flowFiber.suspend(multiUseCaptor.capture())).thenReturn(
             Unit,
             mapOf(
@@ -373,18 +411,37 @@ class FlowMessagingImplTest {
                 SESSION_ID_TWO to SERIALIZED_PAYLOAD_TWO
             )
         )
-        val results = flowMessaging.receiveAllMap(mapOf(normalSessionOne to Any::class.java, versionSendingSessionOne to Any::class.java))
+        val results = flowMessaging.receiveAllMap(
+            mapOf(
+                normalSessionOne to Any::class.java,
+                versionSendingSessionOne to Any::class.java
+            )
+        )
         assertThat(results).isEqualTo(mapOf(normalSessionOne to PAYLOAD_ONE, versionSendingSessionOne to PAYLOAD_TWO))
         verify(mockFlowFiberService.flowFiber).suspend(any<FlowIORequest.Receive>())
     }
 
     @Test
     fun `receiveAllMap with only version receiving sessions that have not received their initial payloads does not suspend the flow and returns the initial payloads`() {
-        whenever(versionReceivingSessionOne.getInitialPayloadIfNotAlreadyReceived(Any::class.java)).thenReturn(PAYLOAD_ONE)
-        whenever(versionReceivingSessionTwo.getInitialPayloadIfNotAlreadyReceived(Any::class.java)).thenReturn(PAYLOAD_TWO)
+        whenever(versionReceivingSessionOne.getInitialPayloadIfNotAlreadyReceived(Any::class.java)).thenReturn(
+            PAYLOAD_ONE
+        )
+        whenever(versionReceivingSessionTwo.getInitialPayloadIfNotAlreadyReceived(Any::class.java)).thenReturn(
+            PAYLOAD_TWO
+        )
         val results =
-            flowMessaging.receiveAllMap(mapOf(versionReceivingSessionOne to Any::class.java, versionReceivingSessionTwo to Any::class.java))
-        assertThat(results).isEqualTo(mapOf(versionReceivingSessionOne to PAYLOAD_ONE, versionReceivingSessionTwo to PAYLOAD_TWO))
+            flowMessaging.receiveAllMap(
+                mapOf(
+                    versionReceivingSessionOne to Any::class.java,
+                    versionReceivingSessionTwo to Any::class.java
+                )
+            )
+        assertThat(results).isEqualTo(
+            mapOf(
+                versionReceivingSessionOne to PAYLOAD_ONE,
+                versionReceivingSessionTwo to PAYLOAD_TWO
+            )
+        )
         verify(mockFlowFiberService.flowFiber, never()).suspend(any<FlowIORequest.Receive>())
     }
 
@@ -399,8 +456,18 @@ class FlowMessagingImplTest {
         whenever(versionReceivingSessionOne.getInitialPayloadIfNotAlreadyReceived(Any::class.java)).thenReturn(null)
         whenever(versionReceivingSessionTwo.getInitialPayloadIfNotAlreadyReceived(Any::class.java)).thenReturn(null)
         val results =
-            flowMessaging.receiveAllMap(mapOf(versionReceivingSessionOne to Any::class.java, versionReceivingSessionTwo to Any::class.java))
-        assertThat(results).isEqualTo(mapOf(versionReceivingSessionOne to PAYLOAD_FOUR, versionReceivingSessionTwo to PAYLOAD_FIVE))
+            flowMessaging.receiveAllMap(
+                mapOf(
+                    versionReceivingSessionOne to Any::class.java,
+                    versionReceivingSessionTwo to Any::class.java
+                )
+            )
+        assertThat(results).isEqualTo(
+            mapOf(
+                versionReceivingSessionOne to PAYLOAD_FOUR,
+                versionReceivingSessionTwo to PAYLOAD_FIVE
+            )
+        )
         verify(mockFlowFiberService.flowFiber).suspend(any<FlowIORequest.Receive>())
     }
 
@@ -412,8 +479,12 @@ class FlowMessagingImplTest {
                 SESSION_ID_TWO to SERIALIZED_PAYLOAD_TWO
             )
         )
-        whenever(versionReceivingSessionOne.getInitialPayloadIfNotAlreadyReceived(Any::class.java)).thenReturn(PAYLOAD_FOUR)
-        whenever(versionReceivingSessionTwo.getInitialPayloadIfNotAlreadyReceived(Any::class.java)).thenReturn(PAYLOAD_FIVE)
+        whenever(versionReceivingSessionOne.getInitialPayloadIfNotAlreadyReceived(Any::class.java)).thenReturn(
+            PAYLOAD_FOUR
+        )
+        whenever(versionReceivingSessionTwo.getInitialPayloadIfNotAlreadyReceived(Any::class.java)).thenReturn(
+            PAYLOAD_FIVE
+        )
         val results = flowMessaging.receiveAllMap(
             mapOf(
                 normalSessionOne to Any::class.java,
@@ -480,8 +551,12 @@ class FlowMessagingImplTest {
 
     @Test
     fun `receiveAllMap with only version sending sessions that have not sent their initial payloads suspends the flow with an extra send`() {
-        whenever(versionSendingSessionOne.getVersioningPayloadToSend()).thenReturn(SERIALIZED_AGREED_VERSION_AND_PAYLOAD_ONE)
-        whenever(versionSendingSessionTwo.getVersioningPayloadToSend()).thenReturn(SERIALIZED_AGREED_VERSION_AND_PAYLOAD_TWO)
+        whenever(versionSendingSessionOne.getVersioningPayloadToSend()).thenReturn(
+            SERIALIZED_AGREED_VERSION_AND_PAYLOAD_ONE
+        )
+        whenever(versionSendingSessionTwo.getVersioningPayloadToSend()).thenReturn(
+            SERIALIZED_AGREED_VERSION_AND_PAYLOAD_TWO
+        )
         whenever(mockFlowFiberService.flowFiber.suspend(multiUseCaptor.capture())).thenReturn(
             Unit,
             mapOf(
@@ -495,7 +570,12 @@ class FlowMessagingImplTest {
                 versionSendingSessionTwo to Any::class.java
             )
         )
-        assertThat(results).isEqualTo(mapOf(versionSendingSessionOne to PAYLOAD_ONE, versionSendingSessionTwo to PAYLOAD_TWO))
+        assertThat(results).isEqualTo(
+            mapOf(
+                versionSendingSessionOne to PAYLOAD_ONE,
+                versionSendingSessionTwo to PAYLOAD_TWO
+            )
+        )
         verify(mockFlowFiberService.flowFiber).suspend(any<FlowIORequest.Send>())
         assertThat(multiUseCaptor.firstValue).isExactlyInstanceOf(FlowIORequest.Send::class.java)
         assertThat((multiUseCaptor.firstValue as FlowIORequest.Send).sessionPayloads).containsExactlyEntriesOf(
@@ -522,16 +602,27 @@ class FlowMessagingImplTest {
                 versionSendingSessionTwo to Any::class.java
             )
         )
-        assertThat(results).isEqualTo(mapOf(versionSendingSessionOne to PAYLOAD_ONE, versionSendingSessionTwo to PAYLOAD_TWO))
+        assertThat(results).isEqualTo(
+            mapOf(
+                versionSendingSessionOne to PAYLOAD_ONE,
+                versionSendingSessionTwo to PAYLOAD_TWO
+            )
+        )
         verify(mockFlowFiberService.flowFiber, never()).suspend(any<FlowIORequest.Send>())
     }
 
     @Test
     fun `receiveAllMap with non-version sending sessions and version sending sessions that have not sent their initial payloads suspends the flow with an extra send`() {
-        whenever(versionSendingSessionOne.getVersioningPayloadToSend()).thenReturn(SERIALIZED_AGREED_VERSION_AND_PAYLOAD_ONE)
-        whenever(versionSendingSessionTwo.getVersioningPayloadToSend()).thenReturn(SERIALIZED_AGREED_VERSION_AND_PAYLOAD_TWO)
+        whenever(versionSendingSessionOne.getVersioningPayloadToSend()).thenReturn(
+            SERIALIZED_AGREED_VERSION_AND_PAYLOAD_ONE
+        )
+        whenever(versionSendingSessionTwo.getVersioningPayloadToSend()).thenReturn(
+            SERIALIZED_AGREED_VERSION_AND_PAYLOAD_TWO
+        )
         whenever(versionReceivingSessionOne.getInitialPayloadIfNotAlreadyReceived(Any::class.java)).thenReturn(null)
-        whenever(versionReceivingSessionTwo.getInitialPayloadIfNotAlreadyReceived(Any::class.java)).thenReturn(PAYLOAD_FIVE)
+        whenever(versionReceivingSessionTwo.getInitialPayloadIfNotAlreadyReceived(Any::class.java)).thenReturn(
+            PAYLOAD_FIVE
+        )
         whenever(mockFlowFiberService.flowFiber.suspend(multiUseCaptor.capture())).thenReturn(
             Unit,
             mapOf(
@@ -583,7 +674,12 @@ class FlowMessagingImplTest {
                 versionReceivingSessionOne to Any::class.java
             )
         )
-        assertThat(results).isEqualTo(mapOf(normalSessionOne to PAYLOAD_ONE, versionReceivingSessionOne to PAYLOAD_FOUR))
+        assertThat(results).isEqualTo(
+            mapOf(
+                normalSessionOne to PAYLOAD_ONE,
+                versionReceivingSessionOne to PAYLOAD_FOUR
+            )
+        )
         verify(mockFlowFiberService.flowFiber, never()).suspend(any<FlowIORequest.Send>())
     }
 
@@ -603,8 +699,12 @@ class FlowMessagingImplTest {
     @Test
     fun `sendAll with only version sending sessions that have not sent their initial payloads suspends the flow to send the input payloads and additional versioning information`() {
         whenever(mockFlowFiberService.flowFiber.suspend(sendSuspendCaptor.capture())).thenReturn(Unit)
-        whenever(versionSendingSessionOne.getPayloadToSend(SERIALIZED_PAYLOAD_ONE)).thenReturn(SERIALIZED_AGREED_VERSION_AND_PAYLOAD_ONE)
-        whenever(versionSendingSessionTwo.getPayloadToSend(SERIALIZED_PAYLOAD_ONE)).thenReturn(SERIALIZED_AGREED_VERSION_AND_PAYLOAD_TWO)
+        whenever(versionSendingSessionOne.getPayloadToSend(SERIALIZED_PAYLOAD_ONE)).thenReturn(
+            SERIALIZED_AGREED_VERSION_AND_PAYLOAD_ONE
+        )
+        whenever(versionSendingSessionTwo.getPayloadToSend(SERIALIZED_PAYLOAD_ONE)).thenReturn(
+            SERIALIZED_AGREED_VERSION_AND_PAYLOAD_TWO
+        )
         flowMessaging.sendAll(PAYLOAD_ONE, setOf(versionSendingSessionOne, versionSendingSessionTwo))
         verify(mockFlowFiberService.flowFiber).suspend(any<FlowIORequest.Send>())
         assertThat(sendSuspendCaptor.firstValue.sessionPayloads).containsExactlyEntriesOf(
@@ -633,9 +733,16 @@ class FlowMessagingImplTest {
     @Test
     fun `sendAll with non-version sending sessions and version sending sessions that have not sent their initial payloads suspends the flow to send the input payload for the non-version sending sessions and additional versioning information for the version sending sessions`() {
         whenever(mockFlowFiberService.flowFiber.suspend(sendSuspendCaptor.capture())).thenReturn(Unit)
-        whenever(versionSendingSessionOne.getPayloadToSend(SERIALIZED_PAYLOAD_ONE)).thenReturn(SERIALIZED_AGREED_VERSION_AND_PAYLOAD_ONE)
-        whenever(versionSendingSessionTwo.getPayloadToSend(SERIALIZED_PAYLOAD_ONE)).thenReturn(SERIALIZED_AGREED_VERSION_AND_PAYLOAD_TWO)
-        flowMessaging.sendAll(PAYLOAD_ONE, setOf(normalSessionOne, versionReceivingSessionOne, versionSendingSessionOne, versionSendingSessionTwo))
+        whenever(versionSendingSessionOne.getPayloadToSend(SERIALIZED_PAYLOAD_ONE)).thenReturn(
+            SERIALIZED_AGREED_VERSION_AND_PAYLOAD_ONE
+        )
+        whenever(versionSendingSessionTwo.getPayloadToSend(SERIALIZED_PAYLOAD_ONE)).thenReturn(
+            SERIALIZED_AGREED_VERSION_AND_PAYLOAD_TWO
+        )
+        flowMessaging.sendAll(
+            PAYLOAD_ONE,
+            setOf(normalSessionOne, versionReceivingSessionOne, versionSendingSessionOne, versionSendingSessionTwo)
+        )
         verify(mockFlowFiberService.flowFiber).suspend(any<FlowIORequest.Send>())
         assertThat(sendSuspendCaptor.firstValue.sessionPayloads).containsExactlyEntriesOf(
             mapOf(
@@ -652,7 +759,10 @@ class FlowMessagingImplTest {
         whenever(mockFlowFiberService.flowFiber.suspend(sendSuspendCaptor.capture())).thenReturn(Unit)
         whenever(versionSendingSessionOne.getPayloadToSend(SERIALIZED_PAYLOAD_ONE)).thenReturn(SERIALIZED_PAYLOAD_ONE)
         whenever(versionSendingSessionTwo.getPayloadToSend(SERIALIZED_PAYLOAD_ONE)).thenReturn(SERIALIZED_PAYLOAD_ONE)
-        flowMessaging.sendAll(PAYLOAD_ONE, setOf(normalSessionOne, versionReceivingSessionOne, versionSendingSessionOne, versionSendingSessionTwo))
+        flowMessaging.sendAll(
+            PAYLOAD_ONE,
+            setOf(normalSessionOne, versionReceivingSessionOne, versionSendingSessionOne, versionSendingSessionTwo)
+        )
         verify(mockFlowFiberService.flowFiber).suspend(any<FlowIORequest.Send>())
         assertThat(sendSuspendCaptor.firstValue.sessionPayloads).containsExactlyEntriesOf(
             mapOf(
@@ -686,9 +796,18 @@ class FlowMessagingImplTest {
     @Test
     fun `sendAllMap with only version sending sessions that have not sent their initial payloads suspends the flow to send the input payloads and additional versioning information`() {
         whenever(mockFlowFiberService.flowFiber.suspend(sendSuspendCaptor.capture())).thenReturn(Unit)
-        whenever(versionSendingSessionOne.getPayloadToSend(SERIALIZED_PAYLOAD_ONE)).thenReturn(SERIALIZED_AGREED_VERSION_AND_PAYLOAD_ONE)
-        whenever(versionSendingSessionTwo.getPayloadToSend(SERIALIZED_PAYLOAD_TWO)).thenReturn(SERIALIZED_AGREED_VERSION_AND_PAYLOAD_TWO)
-        flowMessaging.sendAllMap(mapOf(versionSendingSessionOne to PAYLOAD_ONE, versionSendingSessionTwo to PAYLOAD_TWO))
+        whenever(versionSendingSessionOne.getPayloadToSend(SERIALIZED_PAYLOAD_ONE)).thenReturn(
+            SERIALIZED_AGREED_VERSION_AND_PAYLOAD_ONE
+        )
+        whenever(versionSendingSessionTwo.getPayloadToSend(SERIALIZED_PAYLOAD_TWO)).thenReturn(
+            SERIALIZED_AGREED_VERSION_AND_PAYLOAD_TWO
+        )
+        flowMessaging.sendAllMap(
+            mapOf(
+                versionSendingSessionOne to PAYLOAD_ONE,
+                versionSendingSessionTwo to PAYLOAD_TWO
+            )
+        )
         verify(mockFlowFiberService.flowFiber).suspend(any<FlowIORequest.Send>())
         assertThat(sendSuspendCaptor.firstValue.sessionPayloads).containsExactlyEntriesOf(
             mapOf(
@@ -703,7 +822,12 @@ class FlowMessagingImplTest {
         whenever(mockFlowFiberService.flowFiber.suspend(sendSuspendCaptor.capture())).thenReturn(Unit)
         whenever(versionSendingSessionOne.getPayloadToSend(SERIALIZED_PAYLOAD_ONE)).thenReturn(SERIALIZED_PAYLOAD_ONE)
         whenever(versionSendingSessionTwo.getPayloadToSend(SERIALIZED_PAYLOAD_TWO)).thenReturn(SERIALIZED_PAYLOAD_TWO)
-        flowMessaging.sendAllMap(mapOf(versionSendingSessionOne to PAYLOAD_ONE, versionSendingSessionTwo to PAYLOAD_TWO))
+        flowMessaging.sendAllMap(
+            mapOf(
+                versionSendingSessionOne to PAYLOAD_ONE,
+                versionSendingSessionTwo to PAYLOAD_TWO
+            )
+        )
         verify(mockFlowFiberService.flowFiber).suspend(any<FlowIORequest.Send>())
         assertThat(sendSuspendCaptor.firstValue.sessionPayloads).containsExactlyEntriesOf(
             mapOf(
@@ -716,8 +840,12 @@ class FlowMessagingImplTest {
     @Test
     fun `sendAllMap with non-version sending sessions and version sending sessions that have not sent their initial payloads suspends the flow to send the inputs payload for the non-version sending sessions and additional versioning information for the version sending sessions`() {
         whenever(mockFlowFiberService.flowFiber.suspend(sendSuspendCaptor.capture())).thenReturn(Unit)
-        whenever(versionSendingSessionOne.getPayloadToSend(SERIALIZED_PAYLOAD_TWO)).thenReturn(SERIALIZED_AGREED_VERSION_AND_PAYLOAD_ONE)
-        whenever(versionSendingSessionTwo.getPayloadToSend(SERIALIZED_PAYLOAD_THREE)).thenReturn(SERIALIZED_AGREED_VERSION_AND_PAYLOAD_TWO)
+        whenever(versionSendingSessionOne.getPayloadToSend(SERIALIZED_PAYLOAD_TWO)).thenReturn(
+            SERIALIZED_AGREED_VERSION_AND_PAYLOAD_ONE
+        )
+        whenever(versionSendingSessionTwo.getPayloadToSend(SERIALIZED_PAYLOAD_THREE)).thenReturn(
+            SERIALIZED_AGREED_VERSION_AND_PAYLOAD_TWO
+        )
         flowMessaging.sendAllMap(
             mapOf(
                 normalSessionOne to PAYLOAD_ONE,
@@ -741,7 +869,9 @@ class FlowMessagingImplTest {
     fun `sendAllMap with non-version sending sessions and version sending sessions that have sent their initial payloads suspends the flow to send the input payloads for all sessions`() {
         whenever(mockFlowFiberService.flowFiber.suspend(sendSuspendCaptor.capture())).thenReturn(Unit)
         whenever(versionSendingSessionOne.getPayloadToSend(SERIALIZED_PAYLOAD_TWO)).thenReturn(SERIALIZED_PAYLOAD_TWO)
-        whenever(versionSendingSessionTwo.getPayloadToSend(SERIALIZED_PAYLOAD_THREE)).thenReturn(SERIALIZED_PAYLOAD_THREE)
+        whenever(versionSendingSessionTwo.getPayloadToSend(SERIALIZED_PAYLOAD_THREE)).thenReturn(
+            SERIALIZED_PAYLOAD_THREE
+        )
         flowMessaging.sendAllMap(
             mapOf(
                 normalSessionOne to PAYLOAD_ONE,
@@ -765,5 +895,69 @@ class FlowMessagingImplTest {
     fun `sendAllMap with no sessions does not suspend the flow`() {
         flowMessaging.sendAllMap(emptyMap())
         verify(mockFlowFiberService.flowFiber, never()).suspend(any<FlowIORequest.Send>())
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = SessionStateType::class, names = ["CLOSED", "ERROR"])
+    fun `sendAll will throw if a session is in Error or Closed`(sessionStateType: SessionStateType) {
+
+        val checkpoint = mockFlowFiberService.flowCheckpoint
+
+        whenever(checkpoint.getSessionState(normalSessionOne.getSessionId())).thenReturn(sessionState)
+        whenever(sessionState.status).thenReturn(sessionStateType)
+
+        assertThrows<CordaRuntimeException> {
+            flowMessaging.sendAll(PAYLOAD_ONE, setOf(normalSessionOne, versionReceivingSessionOne))
+        }
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = SessionStateType::class, names = ["CLOSED", "ERROR"])
+    fun `sendAllMap will throw if a session is in Error or Closed`(sessionStateType: SessionStateType) {
+
+        val checkpoint = mockFlowFiberService.flowCheckpoint
+
+        whenever(checkpoint.getSessionState(normalSessionOne.getSessionId())).thenReturn(sessionState)
+        whenever(sessionState.status).thenReturn(sessionStateType)
+
+        assertThrows<CordaRuntimeException> {
+            flowMessaging.sendAllMap( mapOf(
+                normalSessionOne to PAYLOAD_ONE,
+                versionReceivingSessionOne to PAYLOAD_TWO)
+            )
+        }
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = SessionStateType::class, names = ["CLOSED", "ERROR"])
+    fun `receiveAll will throw if a session is in Error or Closed`(sessionStateType: SessionStateType) {
+
+        val checkpoint = mockFlowFiberService.flowCheckpoint
+
+        whenever(checkpoint.getSessionState(normalSessionOne.getSessionId())).thenReturn(sessionState)
+        whenever(sessionState.status).thenReturn(sessionStateType)
+
+        assertThrows<CordaRuntimeException> {
+            flowMessaging.receiveAll(Any::class.java, setOf(normalSessionOne, versionSendingSessionOne))
+        }
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = SessionStateType::class, names = ["CLOSED", "ERROR"])
+    fun `receiveAllMap will throw if a session is in Error or Closed`(sessionStateType: SessionStateType) {
+
+        val checkpoint = mockFlowFiberService.flowCheckpoint
+
+        whenever(checkpoint.getSessionState(normalSessionOne.getSessionId())).thenReturn(sessionState)
+        whenever(sessionState.status).thenReturn(sessionStateType)
+
+        assertThrows<CordaRuntimeException> {
+            flowMessaging.receiveAllMap(
+                mapOf(
+                    normalSessionOne to Any::class.java,
+                    versionSendingSessionOne to Any::class.java
+                )
+            )
+        }
     }
 }

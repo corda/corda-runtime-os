@@ -15,6 +15,7 @@ import java.time.Instant
 data class UniquenessCheckRequestInternal constructor(
     val txId: SecureHash,
     val rawTxId: String,
+    val originatorX500Name: String,
     val inputStates: List<UniquenessCheckStateRef>,
     val referenceStates: List<UniquenessCheckStateRef>,
     val numOutputStates: Int,
@@ -23,14 +24,29 @@ data class UniquenessCheckRequestInternal constructor(
 ) {
     companion object {
         fun create(externalRequest: UniquenessCheckRequestAvro): UniquenessCheckRequestInternal {
-            if (externalRequest.numOutputStates < 0) {
-                throw IllegalArgumentException("Number of output states cannot be less than 0.")
-            }
 
             with (externalRequest) {
+                require(numOutputStates >= 0) { "Number of output states cannot be less than 0." }
+
+                val duplicateInputs = inputStates.groupingBy { it }.eachCount().filter { it.value > 1 }
+
+                require(duplicateInputs.isEmpty()) { "Duplicate input states detected: ${duplicateInputs.keys}" }
+
+                val duplicateReferences = referenceStates.groupingBy { it }.eachCount().filter { it.value > 1 }
+
+                require(duplicateReferences.isEmpty()) { "Duplicate reference states detected: ${duplicateReferences.keys}" }
+
+                val intersection = inputStates intersect referenceStates.toSet()
+
+                require(intersection.isEmpty()) {
+                    "A state cannot be both an input and a reference input in the same request. Offending " +
+                            "states: $intersection"
+                }
+
                 return UniquenessCheckRequestInternal(
                     parseSecureHash(txId),
                     txId,
+                    originatorX500Name,
                     inputStates?.map { it.toStateRef() } ?: emptyList(),
                     referenceStates?.map { it.toStateRef() } ?: emptyList(),
                     numOutputStates,

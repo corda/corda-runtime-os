@@ -26,7 +26,7 @@ import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 )
 class DigestAlgorithmFactoryProviderImpl @Activate constructor()
     : DigestAlgorithmFactoryProvider, UsedByFlow, UsedByPersistence, UsedByVerification, CustomMetadataConsumer {
-    private val provider = mutableMapOf<String, DigestAlgorithmFactory>()
+    private val provider = linkedMapOf<String, DigestAlgorithmFactory>()
 
     override fun accept(context: MutableSandboxGroupContext) {
         context.getMetadataServices<DigestAlgorithmFactory>().forEach { factory ->
@@ -37,4 +37,9 @@ class DigestAlgorithmFactoryProviderImpl @Activate constructor()
     override fun get(algorithmName: String): DigestAlgorithmFactory? {
         return provider[algorithmName]
     }
+
+    override fun getAllDigestAlgorithmNames(): Set<String> =
+        provider.mapTo(linkedSetOf()) {
+            it.key
+        }
 }

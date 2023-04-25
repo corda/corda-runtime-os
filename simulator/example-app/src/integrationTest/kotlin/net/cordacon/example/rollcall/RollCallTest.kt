@@ -75,7 +75,7 @@ class RollCallTest {
         // Then persisted
         val persistence = truantAuthVNode.getPersistenceService()
         val absenceResponses = persistence.findAll(TruancyEntity::class.java)
-        assertThat(absenceResponses.execute().map { it.name },
+        assertThat(absenceResponses.execute().results.map { it.name },
             `is`(listOf("CN=Bueller, OU=Economics, O=Glenbrook North High School, L=Chicago, C=US")))
 
         simulator.close()

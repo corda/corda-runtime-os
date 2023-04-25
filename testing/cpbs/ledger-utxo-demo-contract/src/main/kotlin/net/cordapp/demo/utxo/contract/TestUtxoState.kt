@@ -6,11 +6,15 @@ import java.security.PublicKey
 
 @BelongsToContract(TestContract::class)
 class TestUtxoState(
+    val identifier: Int,
     val testField: String,
     private val participants: List<PublicKey>,
     val participantNames: List<String>
 ) : ContractState {
 
+    constructor(testField: String,
+                participants: List<PublicKey>,
+                participantNames: List<String>) : this(2, testField, participants, participantNames)
     override fun getParticipants(): List<PublicKey> {
         return participants
     }

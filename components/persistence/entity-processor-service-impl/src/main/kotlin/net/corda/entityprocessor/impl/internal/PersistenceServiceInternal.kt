@@ -49,7 +49,7 @@ import javax.persistence.criteria.Selection
  * to the given [HoldingIdentity]
  * */
 class PersistenceServiceInternal(
-    private val classProvider: (holdingIdentity: HoldingIdentity, fullyQualifiedClassName: String) -> Class<*>,
+    private val classProvider: (fullyQualifiedClassName: String) -> Class<*>,
     private val payloadCheck: (bytes: ByteBuffer) -> ByteBuffer
 ) {
     companion object {
@@ -71,10 +71,9 @@ class PersistenceServiceInternal(
     fun find(
         serializationService: SerializationService,
         entityManager: EntityManager,
-        payload: FindEntities,
-        holdingIdentity: HoldingIdentity
+        payload: FindEntities
     ): EntityResponse {
-        val clazz = classProvider(holdingIdentity, payload.entityClassName)
+        val clazz = classProvider(payload.entityClassName)
         val results = payload.ids.mapNotNull { serializedId ->
             val id = serializationService.deserialize(serializedId.array(), Any::class.java)
             entityManager.find(clazz, id)?.let { entity -> payloadCheck(serializationService.toBytes(entity)) }
@@ -113,12 +112,11 @@ class PersistenceServiceInternal(
     fun deleteEntitiesByIds(
         serializationService: SerializationService,
         entityManager: EntityManager,
-        payload: DeleteEntitiesById,
-        holdingIdentity: HoldingIdentity
+        payload: DeleteEntitiesById
     ): EntityResponse {
         payload.ids.map {
             val id = serializationService.deserialize(it.array(), Any::class.java)
-            val clazz = classProvider(holdingIdentity, payload.entityClassName)
+            val clazz = classProvider(payload.entityClassName)
             logger.info("Deleting $id")
             val entity = entityManager.find(clazz, id)
             if (entity != null) {
@@ -137,10 +135,9 @@ class PersistenceServiceInternal(
     fun findAll(
         serializationService: SerializationService,
         entityManager: EntityManager,
-        payload: FindAll,
-        holdingIdentity: HoldingIdentity
+        payload: FindAll
     ): EntityResponse {
-        val clazz = classProvider(holdingIdentity, payload.entityClassName)
+        val clazz = classProvider(payload.entityClassName)
         val cb = entityManager.criteriaBuilder
         val cq = cb.createQuery(clazz)
         val rootEntity = cq.from(clazz)

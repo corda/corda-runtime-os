@@ -1,7 +1,7 @@
 @file:JvmName("PublicKeyUtils")
 package net.corda.crypto.cipher.suite
 
-import net.corda.v5.base.types.ByteArrays.toHexString
+import net.corda.v5.base.util.ByteArrays.toHexString
 import java.security.PublicKey
 
 /**

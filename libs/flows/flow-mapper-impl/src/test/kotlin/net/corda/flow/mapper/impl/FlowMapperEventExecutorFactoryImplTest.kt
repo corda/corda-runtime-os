@@ -1,16 +1,18 @@
 package net.corda.flow.mapper.impl
 
-import java.time.Instant
 import net.corda.data.CordaAvroSerializationFactory
+import net.corda.data.ExceptionEnvelope
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.StartFlow
 import net.corda.data.flow.event.mapper.ExecuteCleanup
 import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.event.mapper.ScheduleCleanup
+import net.corda.data.flow.event.session.SessionError
 import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.mapper.impl.executor.ExecuteCleanupEventExecutor
 import net.corda.flow.mapper.impl.executor.ScheduleCleanupEventExecutor
+import net.corda.flow.mapper.impl.executor.SessionErrorExecutor
 import net.corda.flow.mapper.impl.executor.SessionEventExecutor
 import net.corda.flow.mapper.impl.executor.StartFlowExecutor
 import net.corda.libs.configuration.SmartConfigImpl
@@ -20,6 +22,7 @@ import org.junit.jupiter.api.Test
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
+import java.time.Instant
 
 class FlowMapperEventExecutorFactoryImplTest {
 
@@ -49,6 +52,30 @@ class FlowMapperEventExecutorFactoryImplTest {
             Instant.now()
         )
         assertThat(executor::class).isEqualTo(SessionEventExecutor::class)
+    }
+
+    @Test
+    fun testSessionErrorExecutor() {
+        val executor = executorFactoryImpl.create(
+            "",
+            FlowMapperEvent(SessionEvent(
+                MessageDirection.INBOUND,
+                Instant.now(), "", 1,
+                HoldingIdentity(),
+                HoldingIdentity(),
+                0,
+                listOf(),
+                SessionError(
+                    ExceptionEnvelope(
+                        "FlowMapper-SessionError",
+                        "Received SessionError with sessionId 1"
+                    )
+                ))),
+            null,
+            SmartConfigImpl.empty(),
+            Instant.now()
+        )
+        assertThat(executor::class).isEqualTo(SessionErrorExecutor::class)
     }
 
     @Test

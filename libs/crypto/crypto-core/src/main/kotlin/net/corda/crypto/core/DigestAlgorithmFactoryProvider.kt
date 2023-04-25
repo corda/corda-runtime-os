@@ -10,4 +10,6 @@ interface DigestAlgorithmFactoryProvider {
      * Get the [DigestAlgorithmFactory] for the given [algorithmName]
      */
     fun get(algorithmName: String): DigestAlgorithmFactory?
+
+    fun getAllDigestAlgorithmNames(): Set<String>
 }

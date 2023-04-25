@@ -1,18 +1,18 @@
 package net.corda.virtualnode.write.db.impl.writer.asyncoperation.handlers
 
 import net.corda.crypto.core.ShortHash
-import java.time.Instant
-import java.util.UUID
-import javax.persistence.EntityManager
-import javax.persistence.EntityManagerFactory
 import net.corda.data.virtualnode.VirtualNodeUpgradeRequest
 import net.corda.libs.cpi.datamodel.CpkDbChangeLog
 import net.corda.libs.cpi.datamodel.repository.CpkDbChangeLogRepository
 import net.corda.libs.cpi.datamodel.repository.CpkDbChangeLogRepositoryImpl
+import net.corda.libs.external.messaging.ExternalMessagingRouteConfigGenerator
+import net.corda.libs.packaging.core.CpiMetadata
+import net.corda.libs.virtualnode.common.exception.LiquibaseDiffCheckFailedException
 import net.corda.libs.virtualnode.datamodel.dto.VirtualNodeOperationStateDto
 import net.corda.libs.virtualnode.datamodel.dto.VirtualNodeOperationType
 import net.corda.libs.virtualnode.datamodel.repository.VirtualNodeRepository
 import net.corda.libs.virtualnode.datamodel.repository.VirtualNodeRepositoryImpl
+import net.corda.membership.lib.grouppolicy.GroupPolicyParser
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
 import net.corda.orm.utils.transaction
@@ -21,14 +21,16 @@ import net.corda.virtualnode.OperationalStatus
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.toAvro
 import net.corda.virtualnode.write.db.VirtualNodeWriteServiceException
-import net.corda.virtualnode.write.db.impl.writer.CpiMetadataLite
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeEntityRepository
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.MigrationUtility
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.VirtualNodeAsyncOperationHandler
-import net.corda.virtualnode.write.db.impl.writer.asyncoperation.exception.LiquibaseDiffCheckFailedException
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.exception.MigrationsFailedException
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.exception.VirtualNodeUpgradeRejectedException
 import org.slf4j.LoggerFactory
+import java.time.Instant
+import java.util.UUID
+import javax.persistence.EntityManager
+import javax.persistence.EntityManagerFactory
 
 @Suppress("LongParameterList")
 internal class VirtualNodeUpgradeOperationHandler(
@@ -37,7 +39,8 @@ internal class VirtualNodeUpgradeOperationHandler(
     private val virtualNodeInfoPublisher: Publisher,
     private val migrationUtility: MigrationUtility,
     private val cpkDbChangeLogRepository: CpkDbChangeLogRepository = CpkDbChangeLogRepositoryImpl(),
-    private val virtualNodeRepository: VirtualNodeRepository = VirtualNodeRepositoryImpl()
+    private val virtualNodeRepository: VirtualNodeRepository = VirtualNodeRepositoryImpl(),
+    private val externalMessagingRouteConfigGenerator: ExternalMessagingRouteConfigGenerator
 ) : VirtualNodeAsyncOperationHandler<VirtualNodeUpgradeRequest> {
 
     private companion object {
@@ -94,8 +97,15 @@ internal class VirtualNodeUpgradeOperationHandler(
         request: VirtualNodeUpgradeRequest
     ) {
         val (upgradedVNodeInfo, cpkChangelogs) = entityManagerFactory.createEntityManager().transaction { em ->
-            val targetCpi = validateUpgradeRequest(em, request, requestId)
-            upgradeVirtualNodeEntity(em, request, requestId, requestTimestamp, targetCpi)
+            val (virtualNode, targetCpi) = validateUpgradeRequest(em, request, requestId)
+
+            val externalMessagingRouteConfig = externalMessagingRouteConfigGenerator.generateUpgradeConfig(
+                virtualNode,
+                targetCpi.cpiId,
+                targetCpi.cpksMetadata
+            )
+
+            upgradeVirtualNodeEntity(em, request, requestId, requestTimestamp, targetCpi, externalMessagingRouteConfig)
         }
 
         publishVirtualNodeInfo(upgradedVNodeInfo)
@@ -133,12 +143,22 @@ internal class VirtualNodeUpgradeOperationHandler(
     }
 
     @Suppress("ThrowsCount")
-    private fun validateUpgradeRequest(em: EntityManager, request: VirtualNodeUpgradeRequest, requestId: String): CpiMetadataLite {
+    private fun validateUpgradeRequest(
+        em: EntityManager,
+        request: VirtualNodeUpgradeRequest,
+        requestId: String
+    ): Pair<VirtualNodeInfo, CpiMetadata> {
         val currentVirtualNode = virtualNodeRepository.find(em, ShortHash.Companion.of(request.virtualNodeShortHash))
-            ?: throw VirtualNodeUpgradeRejectedException("Holding identity ${request.virtualNodeShortHash} not found", requestId)
+            ?: throw VirtualNodeUpgradeRejectedException(
+                "Holding identity ${request.virtualNodeShortHash} not found",
+                requestId
+            )
 
         if (currentVirtualNode.operationInProgress != null) {
-            throw VirtualNodeUpgradeRejectedException("Operation ${currentVirtualNode.operationInProgress} already in progress", requestId)
+            throw VirtualNodeUpgradeRejectedException(
+                "Operation ${currentVirtualNode.operationInProgress} already in progress",
+                requestId
+            )
         }
 
         if (currentVirtualNode.vaultDbOperationalStatus != OperationalStatus.INACTIVE) {
@@ -146,7 +166,10 @@ internal class VirtualNodeUpgradeOperationHandler(
         }
 
         val targetCpiMetadata = oldVirtualNodeEntityRepository.getCpiMetadataByChecksum(request.cpiFileChecksum)
-            ?: throw VirtualNodeUpgradeRejectedException("CPI with file checksum ${request.cpiFileChecksum} was not found", requestId)
+            ?: throw VirtualNodeUpgradeRejectedException(
+                "CPI with file checksum ${request.cpiFileChecksum} was not found",
+                requestId
+            )
 
         val originalCpiMetadata = oldVirtualNodeEntityRepository.getCPIMetadataById(
             em,
@@ -156,13 +179,15 @@ internal class VirtualNodeUpgradeOperationHandler(
             requestId
         )
 
-        if (originalCpiMetadata.mgmGroupId != targetCpiMetadata.mgmGroupId) {
+        val originalMgmGroupId = GroupPolicyParser.groupIdFromJson(originalCpiMetadata.groupPolicy!!)
+        val targetMgmGroupId = GroupPolicyParser.groupIdFromJson(targetCpiMetadata.groupPolicy!!)
+        if (originalMgmGroupId != targetMgmGroupId) {
             throw VirtualNodeUpgradeRejectedException(
-                "Expected MGM GroupId ${originalCpiMetadata.mgmGroupId} but was ${targetCpiMetadata.mgmGroupId} in CPI", requestId
+                "Expected MGM GroupId $originalMgmGroupId but was $targetMgmGroupId in CPI", requestId
             )
         }
 
-        return targetCpiMetadata
+        return Pair(currentVirtualNode, targetCpiMetadata)
     }
 
     private fun upgradeVirtualNodeEntity(
@@ -170,16 +195,23 @@ internal class VirtualNodeUpgradeOperationHandler(
         request: VirtualNodeUpgradeRequest,
         requestId: String,
         requestTimestamp: Instant,
-        targetCpiMetadata: CpiMetadataLite
+        targetCpiMetadata: CpiMetadata,
+        externalMessagingRouteConfig: String?
     ): UpgradeTransactionCompleted {
         val upgradedVnodeInfo = virtualNodeRepository.upgradeVirtualNodeCpi(
             em,
             request.virtualNodeShortHash,
-            targetCpiMetadata.id.name, targetCpiMetadata.id.version, targetCpiMetadata.id.signerSummaryHash.toString(),
-            requestId, requestTimestamp, request.toString()
+            targetCpiMetadata.cpiId.name,
+            targetCpiMetadata.cpiId.version,
+            targetCpiMetadata.cpiId.signerSummaryHash.toString(),
+            externalMessagingRouteConfig,
+            requestId,
+            requestTimestamp,
+            request.toString()
         )
 
-        val migrationChangelogs: List<CpkDbChangeLog> = cpkDbChangeLogRepository.findByCpiId(em, targetCpiMetadata.id)
+        val migrationChangelogs: List<CpkDbChangeLog> =
+            cpkDbChangeLogRepository.findByCpiId(em, targetCpiMetadata.cpiId)
 
         return UpgradeTransactionCompleted(
             upgradedVnodeInfo,
@@ -226,7 +258,12 @@ internal class VirtualNodeUpgradeOperationHandler(
         }
     }
 
-    private fun handleUpgradeException(e: Exception, requestId: String, request: VirtualNodeUpgradeRequest, requestTimestamp: Instant) {
+    private fun handleUpgradeException(
+        e: Exception,
+        requestId: String,
+        request: VirtualNodeUpgradeRequest,
+        requestTimestamp: Instant
+    ) {
         when (e) {
             is VirtualNodeUpgradeRejectedException -> {
                 logger.info("Virtual node upgrade (request $requestId) validation failed: ${e.message}")
@@ -247,7 +284,11 @@ internal class VirtualNodeUpgradeOperationHandler(
             is LiquibaseDiffCheckFailedException -> {
                 logger.warn("Unable to determine if vault for virtual node ${request.virtualNodeShortHash} is in sync with CPI.")
                 val vNodeInfo = writeFailedOperationEntity(
-                    request, requestId, requestTimestamp, VirtualNodeOperationStateDto.LIQUIBASE_DIFF_CHECK_FAILED, e.reason
+                    request,
+                    requestId,
+                    requestTimestamp,
+                    VirtualNodeOperationStateDto.LIQUIBASE_DIFF_CHECK_FAILED,
+                    e.reason
                 )
                 publishVirtualNodeInfo(vNodeInfo)
             }
@@ -269,7 +310,11 @@ internal class VirtualNodeUpgradeOperationHandler(
     private fun publishVirtualNodeInfo(virtualNodeInfo: VirtualNodeInfo) {
         virtualNodeInfoPublisher.publish(
             listOf(
-                Record(Schemas.VirtualNode.VIRTUAL_NODE_INFO_TOPIC, virtualNodeInfo.holdingIdentity.toAvro(), virtualNodeInfo.toAvro())
+                Record(
+                    Schemas.VirtualNode.VIRTUAL_NODE_INFO_TOPIC,
+                    virtualNodeInfo.holdingIdentity.toAvro(),
+                    virtualNodeInfo.toAvro()
+                )
             )
         )
     }

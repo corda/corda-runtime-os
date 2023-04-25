@@ -9,9 +9,9 @@ import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.layeredpropertymap.LayeredPropertyMapFactory
-import net.corda.membership.lib.EPOCH_KEY
+import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.EPOCH_KEY
+import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.MODIFIED_TIME_KEY
 import net.corda.membership.lib.InternalGroupParameters
-import net.corda.membership.lib.MODIFIED_TIME_KEY
 import net.corda.membership.lib.SignedGroupParameters
 import net.corda.membership.lib.UnsignedGroupParameters
 import net.corda.test.util.time.TestClock

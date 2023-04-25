@@ -35,6 +35,7 @@ class LedgerUniquenessCheckerClientServiceImpl @Activate constructor(
     @Suspendable
     override fun requestUniquenessCheck(
         txId: String,
+        originatorX500Name: String,
         inputStates: List<String>,
         referenceStates: List<String>,
         numOutputStates: Int,
@@ -49,6 +50,7 @@ class LedgerUniquenessCheckerClientServiceImpl @Activate constructor(
             UniquenessCheckExternalEventFactory::class.java,
             UniquenessCheckExternalEventParams(
                 txId,
+                originatorX500Name,
                 inputStates,
                 referenceStates,
                 numOutputStates,

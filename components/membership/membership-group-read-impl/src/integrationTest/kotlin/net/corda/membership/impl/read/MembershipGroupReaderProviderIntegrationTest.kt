@@ -207,7 +207,7 @@ class MembershipGroupReaderProviderIntegrationTest {
 
     private fun MembershipGroupReaderProvider.getAliceGroupReader(): MembershipGroupReader {
         logger.info("Getting group reader for test.")
-        return eventually(duration = 10.seconds) {
+        return eventually(duration = 15.seconds) {
             assertDoesNotThrow {
                 getGroupReader(aliceHoldingIdentity)
             }

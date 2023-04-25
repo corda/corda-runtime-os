@@ -25,6 +25,12 @@ class WireTransaction(
     private val metadata: TransactionMetadata
 ) : TransactionWithMetadata {
 
+    init{
+        check((metadata as TransactionMetadataInternal).getNumberOfComponentGroups() == componentGroupLists.size) {
+            "Number of component groups in metadata structure description does not match with the real number!"
+        }
+    }
+
     fun getComponentGroupList(componentGroupId: Int): List<ByteArray> =
         componentGroupLists[componentGroupId]
 

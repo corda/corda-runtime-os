@@ -56,6 +56,7 @@ import net.corda.membership.datamodel.GroupPolicyEntity
 import net.corda.membership.datamodel.MemberInfoEntity
 import net.corda.membership.datamodel.PreAuthTokenEntity
 import net.corda.membership.datamodel.RegistrationRequestEntity
+import net.corda.membership.impl.persistence.service.handler.HandlerFactories
 import net.corda.membership.datamodel.StaticNetworkInfoEntity
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_SUSPENDED
@@ -66,6 +67,7 @@ import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.test.util.time.TestClock
 import net.corda.utilities.time.Clock
 import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toAvro
@@ -280,15 +282,17 @@ class MembershipPersistenceRPCProcessorTest {
     @BeforeEach
     fun setUp() {
         processor = MembershipPersistenceRPCProcessor(
-            clock,
-            dbConnectionManager,
-            jpaEntitiesRegistry,
-            memberInfoFactory,
-            cordaAvroSerializationFactory,
-            virtualNodeInfoReadService,
-            keyEncodingService,
-            platformInfoProvider,
-            mock(),
+            HandlerFactories(
+                clock,
+                dbConnectionManager,
+                jpaEntitiesRegistry,
+                memberInfoFactory,
+                cordaAvroSerializationFactory,
+                virtualNodeInfoReadService,
+                keyEncodingService,
+                platformInfoProvider,
+                mock(),
+            )
         )
         responseFuture = CompletableFuture()
         rqContext = MembershipRequestContext(
@@ -696,6 +700,11 @@ class MembershipPersistenceRPCProcessorTest {
     @Test
     fun `suspend member returns success`() {
         whenever(memberEntity.status).doReturn(MEMBER_STATUS_ACTIVE)
+        val memberInfo = mock<MemberInfo> {
+            on { memberProvidedContext } doReturn mock()
+            on { mgmProvidedContext } doReturn mock()
+        }
+        whenever(memberInfoFactory.create(any())).thenReturn(memberInfo)
         whenever(keyValuePairListDeserializer.deserialize(any())).thenReturn(KeyValuePairList(listOf(mock())))
         val rq = MembershipPersistenceRequest(
             rqContext,
@@ -721,6 +730,11 @@ class MembershipPersistenceRPCProcessorTest {
     @Test
     fun `activate member returns success`() {
         whenever(memberEntity.status).doReturn(MEMBER_STATUS_SUSPENDED)
+        val memberInfo = mock<MemberInfo> {
+            on { memberProvidedContext } doReturn mock()
+            on { mgmProvidedContext } doReturn mock()
+        }
+        whenever(memberInfoFactory.create(any())).thenReturn(memberInfo)
         whenever(keyValuePairListDeserializer.deserialize(any())).thenReturn(KeyValuePairList(listOf(mock())))
         val rq = MembershipPersistenceRequest(
             rqContext,

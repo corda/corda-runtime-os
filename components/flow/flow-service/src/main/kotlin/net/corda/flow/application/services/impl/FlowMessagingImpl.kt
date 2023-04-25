@@ -25,9 +25,10 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 import java.util.UUID
+import net.corda.flow.application.sessions.utils.SessionUtils.verifySessionStatusNotErrorOrClose
 
 @Suppress("TooManyFunctions")
-@Component(service = [ FlowMessaging::class, UsedByFlow::class ], scope = PROTOTYPE)
+@Component(service = [FlowMessaging::class, UsedByFlow::class], scope = PROTOTYPE)
 class FlowMessagingImpl @Activate constructor(
     @Reference(service = FlowFiberService::class)
     private val flowFiberService: FlowFiberService,
@@ -36,6 +37,11 @@ class FlowMessagingImpl @Activate constructor(
     @Reference(service = SerializationServiceInternal::class)
     private val serializationService: SerializationServiceInternal
 ) : FlowMessaging, UsedByFlow, SingletonSerializeAsToken {
+
+    companion object {
+        private const val INTEROP_FACADE_ID = "INTEROP_FACADE_ID"
+        private const val INTEROP_FACADE_METHOD = "INTEROP_FACADE_METHOD"
+    }
 
     private val fiber: FlowFiber get() = flowFiberService.getExecutingFiber()
 
@@ -56,23 +62,28 @@ class FlowMessagingImpl @Activate constructor(
     @Suspendable
     override fun callFacade(
         memberName: MemberX500Name,
-        facadeName: String,
+        facadeId: String,
         methodName: String,
         payload: String
     ): String {
         // TODO revisit input/results while integrating with CORE-10430
-        val session = createInteropFlowSession(memberName, facadeName, methodName)
+        val session = createInteropFlowSession(memberName, facadeId, methodName)
         return session.sendAndReceive(String::class.java, payload)
     }
 
     @Suspendable
-    override fun <R: Any> receiveAll(receiveType: Class<out R>, sessions: Set<FlowSession>): List<R> {
+    override fun <R : Any> receiveAll(receiveType: Class<out R>, sessions: Set<FlowSession>): List<R> {
         requireBoxedType(receiveType)
 
         @Suppress("unchecked_cast")
         val flowSessionInternals = sessions as Set<FlowSessionInternal>
 
-        val versionReceivingFlowSessionPayloads = getVersionReceivingFlowSessionPayloads(receiveType, flowSessionInternals)
+        flowSessionInternals.forEach { session ->
+            verifySessionStatusNotErrorOrClose(session.getSessionId(), flowFiberService)
+        }
+
+        val versionReceivingFlowSessionPayloads =
+            getVersionReceivingFlowSessionPayloads(receiveType, flowSessionInternals)
 
         if (flowSessionInternals == versionReceivingFlowSessionPayloads.keys) {
             return versionReceivingFlowSessionPayloads.values.toList()
@@ -97,6 +108,10 @@ class FlowMessagingImpl @Activate constructor(
         val flowSessionInternals = sessions.mapKeys {
             requireBoxedType(it.value)
             it.key as FlowSessionInternal
+        }
+
+        flowSessionInternals.forEach { session ->
+            verifySessionStatusNotErrorOrClose(session.key.getSessionId(), flowFiberService)
         }
 
         val versionReceivingFlowSessionPayloads = getVersionReceivingFlowSessionPayloads(flowSessionInternals)
@@ -136,11 +151,12 @@ class FlowMessagingImpl @Activate constructor(
         val flowSessionInternals = sessions as Set<FlowSessionInternal>
         val serializedPayload = serialize(payload)
         val sessionToPayload = flowSessionInternals.associate { session ->
-                session.getSessionInfo() to when (session) {
-                    is VersionSendingFlowSession -> session.getPayloadToSend(serializedPayload)
-                    else -> serializedPayload
-                }
+            verifySessionStatusNotErrorOrClose(session.getSessionId(), flowFiberService)
+            session.getSessionInfo() to when (session) {
+                is VersionSendingFlowSession -> session.getPayloadToSend(serializedPayload)
+                else -> serializedPayload
             }
+        }
         fiber.suspend(FlowIORequest.Send(sessionToPayload))
         setSessionsAsConfirmed(flowSessionInternals)
     }
@@ -153,6 +169,7 @@ class FlowMessagingImpl @Activate constructor(
         val sessionPayload = payloadsPerSession.map { (session, payload) ->
             requireBoxedType(payload::class.java)
             val flowSessionInternal = session as FlowSessionInternal
+            verifySessionStatusNotErrorOrClose(session.getSessionId(), flowFiberService)
             flowSessionInternal.getSessionInfo() to when (session) {
                 is VersionSendingFlowSession -> session.getPayloadToSend(serialize(payload))
                 else -> serialize(payload)
@@ -179,12 +196,12 @@ class FlowMessagingImpl @Activate constructor(
     }
 
     @Suspendable
-    private fun createInteropFlowSession(x500Name: MemberX500Name, facadeName: String, methodName: String): FlowSession {
+    private fun createInteropFlowSession(x500Name: MemberX500Name, facadeId: String, methodName: String): FlowSession {
         val sessionId = UUID.randomUUID().toString()
         addSessionIdToFlowStackItem(sessionId)
         return flowSessionFactory.createInitiatingFlowSession(sessionId, x500Name, { flowContextProperties ->
-            flowContextProperties.put("facadeName", facadeName)
-            flowContextProperties.put("methodName", methodName)
+            flowContextProperties.put(INTEROP_FACADE_ID, facadeId)
+            flowContextProperties.put(INTEROP_FACADE_METHOD, methodName)
         }, true)
     }
 
@@ -242,7 +259,8 @@ class FlowMessagingImpl @Activate constructor(
         @Suppress("unchecked_cast")
         return receiveType.mapValues {
             val sessionId = it.key.getSessionId()
-            val bytes = received[sessionId] ?: throw CordaRuntimeException("Unexpected error. $sessionId not found in received data.")
+            val bytes = received[sessionId]
+                ?: throw CordaRuntimeException("Unexpected error. $sessionId not found in received data.")
             deserializeReceivedPayload(sessionId, bytes, it.value)
         } as Map<FlowSession, Any>
     }

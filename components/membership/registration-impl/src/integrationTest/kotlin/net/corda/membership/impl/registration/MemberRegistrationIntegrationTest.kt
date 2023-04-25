@@ -47,7 +47,6 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEYS
 import net.corda.membership.lib.MemberInfoExtension.Companion.PLATFORM_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.PROTOCOL_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.REGISTRATION_ID
-import net.corda.membership.lib.MemberInfoExtension.Companion.SERIAL
 import net.corda.membership.lib.MemberInfoExtension.Companion.SESSION_KEYS_HASH
 import net.corda.membership.lib.MemberInfoExtension.Companion.SOFTWARE_VERSION
 import net.corda.membership.lib.MemberInfoFactory
@@ -229,7 +228,7 @@ class MemberRegistrationIntegrationTest {
                 )
             )
 
-            eventually(10.seconds) {
+            eventually(15.seconds) {
                 logger.info("Waiting for required services to start...")
                 assertThat(coordinator.status).isEqualTo(LifecycleStatus.UP)
                 logger.info("Required services started.")
@@ -273,7 +272,7 @@ class MemberRegistrationIntegrationTest {
 
         val member = HoldingIdentity(memberName, groupId)
         val context = buildTestContext(member)
-        membershipGroupReaderProvider.loadMembers(member, createMemberList(context))
+        membershipGroupReaderProvider.loadMembers(member, createMemberList())
         val completableResult = CompletableFuture<Pair<String, AppMessage>>()
         // Set up subscription to gather results of processing p2p message
         val registrationRequestSubscription = subscriptionFactory.createPubSubSubscription(
@@ -284,8 +283,13 @@ class MemberRegistrationIntegrationTest {
             messagingConfig = bootConfig
         ).also { it.start() }
 
-        registrationProxy.usingLifecycle {
+        val messages = registrationProxy.usingLifecycle {
             it.register(UUID.randomUUID(), member, context)
+        }
+        publisherFactory.createPublisher(PublisherConfig("clientId"), bootConfig).use {
+            it.publish(messages.toList()).forEach {
+                it.join()
+            }
         }
 
         // Wait for latch to countdown, so we know when processing has completed and results have been collected
@@ -317,7 +321,6 @@ class MemberRegistrationIntegrationTest {
                 val deserializedContext =
                     deserializedPayload.run { keyValuePairListDeserializer.deserialize(memberContext.array())!! }
 
-                assertThat(deserializedPayload.serial).isEqualTo(12)
                 with(deserializedContext.items) {
                     fun getValue(key: String) = first { pair -> pair.key == key }.value
 
@@ -348,7 +351,7 @@ class MemberRegistrationIntegrationTest {
         }
     }
 
-    private fun createMemberList(memberContext: Map<String, String>): List<MemberInfo> {
+    private fun createMemberList(): List<MemberInfo> {
         val mgmName = MemberX500Name("Corda MGM", "London", "GB")
         val mgmId = HoldingIdentity(mgmName, groupId).shortHash.value
         val ecdhKey = cryptoOpsClient.generateKeyPair(
@@ -371,16 +374,6 @@ class MemberRegistrationIntegrationTest {
                 sortedMapOf(
                     IS_MGM to "true",
                 )
-            ),
-            memberInfoFactory.create(
-                memberContext = (memberContext +
-                        mapOf(
-                            PARTY_NAME to memberName.toString(),
-                            PLATFORM_VERSION to "5000",
-                            SOFTWARE_VERSION to "5.0.0.0",
-                        )
-                        ).toSortedMap(),
-                mgmContext = sortedMapOf(SERIAL to "12")
             )
         )
     }

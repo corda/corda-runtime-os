@@ -9,8 +9,8 @@ import net.corda.data.membership.StaticNetworkInfo
 import net.corda.data.membership.db.request.command.UpdateStaticNetworkInfo
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.membership.datamodel.StaticNetworkInfoEntity
-import net.corda.membership.lib.EPOCH_KEY
-import net.corda.membership.lib.MODIFIED_TIME_KEY
+import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.EPOCH_KEY
+import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.MODIFIED_TIME_KEY
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.test.util.time.TestClock
 import org.assertj.core.api.Assertions.assertThat

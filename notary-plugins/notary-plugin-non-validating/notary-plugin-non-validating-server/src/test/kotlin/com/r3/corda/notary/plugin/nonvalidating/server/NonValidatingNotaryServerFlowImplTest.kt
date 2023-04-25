@@ -1,33 +1,21 @@
 package com.r3.corda.notary.plugin.nonvalidating.server
 
-import com.r3.corda.notary.plugin.common.NotarizationRequestSignature
 import com.r3.corda.notary.plugin.common.NotarizationResponse
 import com.r3.corda.notary.plugin.common.NotaryExceptionGeneral
 import com.r3.corda.notary.plugin.common.NotaryExceptionReferenceStateUnknown
 import com.r3.corda.notary.plugin.nonvalidating.api.NonValidatingNotarizationPayload
-import net.corda.crypto.cipher.suite.SignatureSpecs
-import net.corda.crypto.cipher.suite.sha256Bytes
-import net.corda.crypto.core.DigitalSignatureWithKeyId
-import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.core.fullIdHash
 import net.corda.crypto.testkit.SecureHashUtils.randomSecureHash
-import net.corda.internal.serialization.SerializedBytesImpl
 import net.corda.ledger.common.testkit.getSignatureWithMetadataExample
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorReferenceStateUnknownImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorUnhandledExceptionImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckResultFailureImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckResultSuccessImpl
-import net.corda.v5.application.crypto.DigestService
-import net.corda.v5.application.crypto.DigitalSignatureVerificationService
-import net.corda.v5.application.crypto.SignatureSpecService
-import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowSession
-import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.application.uniqueness.model.UniquenessCheckError
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResult
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.CompositeKey
-import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
 import net.corda.v5.ledger.common.transaction.TransactionNoAvailableKeysException
 import net.corda.v5.ledger.common.transaction.TransactionSignatureService
@@ -37,14 +25,12 @@ import net.corda.v5.ledger.utxo.TimeWindow
 import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredData
 import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredTransaction
 import net.corda.v5.ledger.utxo.uniqueness.client.LedgerUniquenessCheckerClientService
-import net.corda.v5.membership.MemberInfo
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.mockito.kotlin.any
-import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
@@ -57,8 +43,6 @@ import java.time.Instant
 class NonValidatingNotaryServerFlowImplTest {
 
     private companion object {
-        const val DUMMY_PLATFORM_VERSION = 9001
-
         /* Cache for storing response from server */
         val responseFromServer = mutableListOf<NotarizationResponse>()
 
@@ -73,26 +57,10 @@ class NonValidatingNotaryServerFlowImplTest {
 
         val notaryServiceName = MemberX500Name.parse("O=MyNotaryService, L=London, C=GB")
 
-        /* Member - The client that initiated the session with the notary server */
-        val memberCharlieKey = mock<PublicKey>().also { whenever(it.encoded).thenReturn(byteArrayOf(0x03))}
-
         // The client that initiated the session with the notary server
         val memberCharlieName = MemberX500Name.parse("O=MemberCharlie, L=London, C=GB")
 
-        val memberCharlieMemberInfo = mock<MemberInfo> {
-            on { name } doReturn memberCharlieName
-            on { ledgerKeys } doReturn listOf(memberCharlieKey)
-        }
-
-        // Default signature verifier, no verification
-        val mockSigVerifier = mock<DigitalSignatureVerificationService> {
-            // Do nothing
-            on { verify(any(), any<ByteArray>(), any(), any()) } doAnswer { }
-        }
-
         val mockTransactionSignatureService = mock<TransactionSignatureService>()
-
-        val mockSignatureSpecService = mock<SignatureSpecService>()
     }
 
     @BeforeEach
@@ -146,11 +114,7 @@ class NonValidatingNotaryServerFlowImplTest {
 
     @Test
     fun `Non-validating notary plugin server should respond with error if request signature is invalid`() {
-        val mockSigVerifierError = mock<DigitalSignatureVerificationService> {
-            on { verify(any(), any<ByteArray>(), any(), any()) } doThrow IllegalArgumentException("Sig error")
-        }
-
-        createAndCallServer(mockSuccessfulUniquenessClientService(), sigVerifier = mockSigVerifierError) {
+        createAndCallServer(mockSuccessfulUniquenessClientService()) {
             assertThat(responseFromServer).hasSize(1)
 
             val responseError = responseFromServer.first().error
@@ -332,7 +296,6 @@ class NonValidatingNotaryServerFlowImplTest {
         clientService: LedgerUniquenessCheckerClientService,
         notaryServiceKey: PublicKey = notaryServiceCompositeKey,
         filteredTxContents: Map<String, Any?> = emptyMap(),
-        sigVerifier: DigitalSignatureVerificationService = mockSigVerifier,
         flowSession: FlowSession? = null,
         txVerificationLogic: () -> Unit = {},
         extractData: (sigs: List<NotarizationResponse>) -> Unit
@@ -411,20 +374,10 @@ class NonValidatingNotaryServerFlowImplTest {
             on { id } doReturn txId
         }
 
-
-        val charlieKeyId = memberCharlieKey.fullIdHash()
         // 3. Mock the receive and send from the counterparty session, unless it is overwritten
         val paramOrDefaultSession = flowSession ?: mock {
             on { receive(NonValidatingNotarizationPayload::class.java) } doReturn NonValidatingNotarizationPayload(
                 filteredTx,
-                NotarizationRequestSignature(
-                    DigitalSignatureWithKeyId(
-                        charlieKeyId,
-                        "ABC".toByteArray()
-                    ),
-                    SignatureSpecs.RSA_SHA256,
-                    DUMMY_PLATFORM_VERSION
-                ),
                 notaryServiceKey
             )
             on { send(any()) } doAnswer {
@@ -434,38 +387,9 @@ class NonValidatingNotaryServerFlowImplTest {
             on { counterparty } doReturn memberCharlieName
         }
 
-        // 4. Mock my member info to always return a platform version, and make sure we get the right party when
-        // we lookup the counterparty
-        val mockMemberInfo = mock<MemberInfo> {
-            on { platformVersion } doReturn DUMMY_PLATFORM_VERSION
-        }
-        val mockMemberLookup = mock<MemberLookup> {
-            on { lookup(memberCharlieName) } doReturn memberCharlieMemberInfo
-            on { myInfo() } doReturn mockMemberInfo
-        }
-
-        // 5. Serialization service has no part in this testing so just returning a dummy
-        val mockSerializationService = mock<SerializationService> {
-            on { serialize(any<Any>()) } doReturn SerializedBytesImpl("ABC".toByteArray())
-        }
-
-        val mockDigestService = mock<DigestService>().also {
-            val keyBytesCaptor = argumentCaptor<ByteArray>()
-            whenever(it.hash(keyBytesCaptor.capture(), any()))
-                .thenAnswer {
-                    val bytes = keyBytesCaptor.firstValue
-                    SecureHashImpl(DigestAlgorithmName.SHA2_256.name, bytes.sha256Bytes())
-                }
-        }
-
         val server = NonValidatingNotaryServerFlowImpl(
             clientService,
-            mockSerializationService,
-            sigVerifier,
-            mockMemberLookup,
-            mockTransactionSignatureService,
-            mockDigestService,
-            mockSignatureSpecService
+            mockTransactionSignatureService
         )
 
         server.call(paramOrDefaultSession)
@@ -489,11 +413,11 @@ class NonValidatingNotaryServerFlowImplTest {
     }
 
     private fun mockThrowErrorUniquenessCheckClientService() = mock<LedgerUniquenessCheckerClientService> {
-        on { requestUniquenessCheck(any(), any(), any(), any(), any(), any()) } doThrow
+        on { requestUniquenessCheck(any(), any(), any(), any(), any(), any(), any()) } doThrow
                 IllegalArgumentException("Uniqueness checker cannot be reached")
     }
 
     private fun mockUniquenessClientService(response: UniquenessCheckResult) = mock<LedgerUniquenessCheckerClientService> {
-        on { requestUniquenessCheck(any(), any(), any(), any(), any(), any()) } doReturn response
+        on { requestUniquenessCheck(any(), any(), any(), any(), any(), any(), any()) } doReturn response
     }
 }
