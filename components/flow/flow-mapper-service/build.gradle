@@ -33,7 +33,7 @@ dependencies {
     testImplementation project(":testing:flow:flow-utilities")
 
     integrationTestImplementation project(":testing:db-message-bus-testkit")
-    integrationTestImplementation project(":libs:flows:utils")
+    integrationTestImplementation project(":libs:flows:flow-utils")
 
     integrationTestRuntimeOnly project(":libs:crypto:cipher-suite-impl")
     integrationTestRuntimeOnly project(":libs:lifecycle:lifecycle-impl")
