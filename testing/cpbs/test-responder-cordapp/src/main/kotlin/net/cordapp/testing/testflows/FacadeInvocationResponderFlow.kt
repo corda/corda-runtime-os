@@ -72,8 +72,8 @@ class FacadeInvocationResponderFlow : ResponderFlow , SampleTokensFacade {
         session.send(response)
     }
 
-    override fun getHello(greeting: String): InteropAction<String> {
-        return InteropAction.ServerResponse("$greeting -> Bye from proxy1")
+    override fun processHello(greeting: String): InteropAction<String> {
+        return InteropAction.ServerResponse("$greeting -> Bye")
     }
 
     override fun getBalance(greeting: String): InteropAction<String> {
