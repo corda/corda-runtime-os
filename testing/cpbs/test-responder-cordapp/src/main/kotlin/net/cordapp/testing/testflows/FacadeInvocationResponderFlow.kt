@@ -1,9 +1,5 @@
 package net.cordapp.testing.testflows
 
-import com.fasterxml.jackson.core.JsonParser
-import com.fasterxml.jackson.databind.DeserializationContext
-import com.fasterxml.jackson.databind.JsonDeserializer
-import com.fasterxml.jackson.databind.ObjectMapper
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.InitiatedBy
 import net.corda.v5.application.flows.ResponderFlow
@@ -17,7 +13,6 @@ import org.corda.weft.facade.FacadeRequest
 import org.corda.weft.parameters.TypedParameterValue
 import org.slf4j.LoggerFactory
 import org.corda.weft.dispatch.buildDispatcher
-import org.corda.weft.facade.FacadeRequestDeserializer
 import org.corda.weft.parameters.ParameterType
 import org.corda.weft.parameters.TypedParameter
 
@@ -84,11 +79,4 @@ class FacadeInvocationResponderFlow : ResponderFlow , SampleTokensFacade {
     override fun getBalance(greeting: String): InteropAction<String> {
         return InteropAction.ServerResponse("100")
     }
-}
-
-class ParameterTypeDeserializer : JsonDeserializer<org.corda.weft.parameters.ParameterType<Any>>() {
-
-    override fun deserialize(parser: JsonParser, ctxt: DeserializationContext): org.corda.weft.parameters.ParameterType<Any> =
-         ParameterType.StringType as ParameterType<Any>
-
 }

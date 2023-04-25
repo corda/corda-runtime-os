@@ -1,6 +1,5 @@
 package net.cordapp.testing.testflows
 
-import com.fasterxml.jackson.databind.ObjectMapper
 import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.InitiatingFlow
@@ -45,7 +44,7 @@ class FacadeInvocationFlow : ClientStartableFlow {
         val alias = MemberX500Name.parse(getArgument(args, "alias"))
         val payload = getArgument(args, "payload")
 
-        log.info("Calling facade method '$methodName@$facadeName' with payload '$payload' to $alias")
+        log.info("Calling facade method '$methodName@$facadeId' with payload '$payload' to $alias")
         val facade = FacadeReaders.JSON.read(
             """{ "id": "/com/r3/tokens/sample/v1.0",
                   "commands": { 
