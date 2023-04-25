@@ -1263,5 +1263,5 @@ class FlowTests {
         validateResult(consumeResult)
     }
 
-    private fun FlowStatus.mapFlowJsonResult() = jacksonObjectMapper.readValue<Map<String, Any>>(this.flowResult!!)
+    private fun FlowStatus.mapFlowJsonResult() = flowResult!!.traverse(jacksonObjectMapper).readValueAs(Map::class.java)
 }
