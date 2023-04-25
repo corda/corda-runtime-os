@@ -84,7 +84,7 @@ class FlowRestResourceImpl @Activate constructor(
     override fun initialise(config: SmartConfig, onFatalError: () -> Unit) {
         this.onFatalError = onFatalError
         publisher?.close()
-        publisher = publisherFactory.createPublisher(PublisherConfig("FlowRestResource", false), config)
+        publisher = publisherFactory.createPublisher(PublisherConfig("FlowRestResource"), config)
     }
 
     private fun regexMatch(input: String, regex: String): Boolean {
