@@ -60,7 +60,7 @@ class AmqpSerializationTests {
         assertAll(
             { assertThat(result.flowError).isNull() },
             { assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS) },
-            { assertThat(flowResult).isEqualTo("SerializableClass(pair=(A, B))") },
+            { assertThat(flowResult!!.textValue()).isEqualTo("SerializableClass(pair=(A, B))") },
         )
     }
 }
