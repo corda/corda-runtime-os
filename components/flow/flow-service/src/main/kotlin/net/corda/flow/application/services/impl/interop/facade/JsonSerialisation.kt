@@ -32,7 +32,7 @@ private fun serialize(
     gen: JsonGenerator,
     facadeId: FacadeId,
     methodName: String,
-    parameters: List<ParameterTypeLabel>
+    parameters: List<ParameterType<*>>
 ) {
     gen.writeStartObject()
 

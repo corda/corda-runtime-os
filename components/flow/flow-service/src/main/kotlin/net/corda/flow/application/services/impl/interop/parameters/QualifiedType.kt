@@ -4,7 +4,7 @@ import net.corda.v5.application.interop.parameters.ParameterType
 import net.corda.v5.application.interop.parameters.ParameterTypeLabel
 import net.corda.v5.application.interop.parameters.TypeQualifier
 
-data class QualifiedType<T>(val rawParameterType: RawParameterType<T>, val qualifier: TypeQualifier) : ParameterType<T> {
+data class QualifiedType<T>(val rawParameterType: ParameterType<T>, val qualifier: TypeQualifier) : ParameterType<T> {
     val expectedRawClass: Class<T> get() = rawParameterType.expectedType
     val expectedClass: Class<T> get() = typeLabel.expectedClass as Class<T>
     val isQualified: Boolean = true
@@ -23,6 +23,10 @@ data class QualifiedType<T>(val rawParameterType: RawParameterType<T>, val quali
 
     override fun getQualifier(): TypeQualifier {
         return qualifier
+    }
+
+    override fun getRawParameterType(): ParameterType<T> {
+        return rawParameterType
     }
 
     fun getExpectedRawClass(): Class<T> {

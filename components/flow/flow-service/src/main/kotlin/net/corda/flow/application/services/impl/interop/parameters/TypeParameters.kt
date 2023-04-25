@@ -9,9 +9,9 @@ import java.util.*
  * A [TypeParameters] is the type of a [TypedParameter]. It is always one of a small set of primitive types, or
  * a [QualifiedType] qualifying a primitive type with a [FacadeTypeQualifier] which identifies a more complex type.
  */
-final class TypeParameters<T> {
+class TypeParameters<T> {
 
-    companion object {
+//    companion object {
 
         /**
          * This pattern matches (after a whitespace prefix of any length) either a single non-whitespace string, e.g.
@@ -29,7 +29,7 @@ final class TypeParameters<T> {
          *
          * @param typeString The string to parse.
          */
-        @JvmStatic
+//        @JvmStatic
         fun <T : Any> of(typeString: String): ParameterType<T> = of(typeString, emptyMap())
 
         /**
@@ -41,9 +41,9 @@ final class TypeParameters<T> {
          * @param typeString The string to parse.
          * @param aliases A map of type aliases.
          */
-        @JvmStatic
+//        @JvmStatic
         @Suppress("UNCHECKED_CAST")
-        fun <T : Any> of(typeString: String, aliases: Map<String, TypeParameters<*>>): ParameterType<T> {
+        fun <T : Any> of(typeString: String, aliases: Map<String, ParameterType<*>>): ParameterType<T> {
             val typeMatch = facadeTypeRegex.matchEntire(typeString)
                 ?: throw IllegalArgumentException("Invalid parameter type: $typeString")
 
@@ -57,13 +57,13 @@ final class TypeParameters<T> {
                 return aliased as ParameterType<T>
             }
 
-            val rawType = parseRawParameterType(rawTypeName)
+            val rawType = parseRawParameterType<T>(rawTypeName)
             return if (qualifierString == null) rawType
-            else QualifiedType(rawType, TypeQualifier.of(qualifierString))
+            else QualifiedType(rawType.rawParameterType, TypeQualifier.of(qualifierString))
         }
 
-        private fun parseRawParameterType(typeName: String): ParameterType<*>? {
-            return ParameterTypeLabel.parse(typeName).expectedClass
+        private fun <T : Any> parseRawParameterType(typeName: String): ParameterType<T> {
+            return ParameterTypeLabel.parse(typeName).expectedClass as ParameterType<T>
         }
 
 //        /**
@@ -75,5 +75,5 @@ final class TypeParameters<T> {
 //                val superclass = this::class.java.genericSuperclass as ParameterizedType
 //                return superclass.actualTypeArguments[0] as Class<T>
 //            }
-    }
+//    }
 }

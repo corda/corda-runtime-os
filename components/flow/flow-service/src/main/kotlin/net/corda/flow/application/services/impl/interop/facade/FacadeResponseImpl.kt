@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize
 import net.corda.v5.application.interop.facade.FacadeId
 import net.corda.v5.application.interop.facade.FacadeResponse
 import net.corda.v5.application.interop.parameters.ParameterType
-import net.corda.v5.application.interop.parameters.ParameterTypeLabel
 
 /**
  * A [FacadeResponseImpl] is a response to a [FacadeRequest] to invoke a [FacadeMethod] on a [Facade].
@@ -18,10 +17,21 @@ import net.corda.v5.application.interop.parameters.ParameterTypeLabel
 data class FacadeResponseImpl(
     val facadeId: FacadeId,
     val methodName: String,
-    val outParameters: List<ParameterTypeLabel>
+    val outParameters: List<ParameterType<*>>
 ) : FacadeResponse {
 
     private val outParametersByName = outParameters.associateBy { it.typeName }
+    override fun getFacadeId(): FacadeId {
+        return facadeId
+    }
+
+    override fun getMethodName(): String {
+        return methodName
+    }
+
+    override fun getOutParameters(): List<ParameterType<*>> {
+        return outParameters
+    }
 
     /**
      * Get the value of an out parameter.
@@ -33,7 +43,7 @@ data class FacadeResponseImpl(
         val value = outParametersByName[parameter.typeLabel.name]
             ?: throw IllegalArgumentException("No value for parameter ${parameter.typeLabel}")
 
-        return (value as? ParameterTypeLabel)?.expectedClass
+        return (value as? T)
             ?: throw IllegalArgumentException("Value for parameter ${parameter.typeLabel} is of the wrong type")
     }
 }

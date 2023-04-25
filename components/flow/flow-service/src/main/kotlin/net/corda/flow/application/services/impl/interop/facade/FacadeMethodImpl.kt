@@ -6,7 +6,6 @@ import net.corda.v5.application.interop.facade.FacadeMethodType
 import net.corda.v5.application.interop.facade.FacadeRequest
 import net.corda.v5.application.interop.facade.FacadeResponse
 import net.corda.v5.application.interop.parameters.ParameterType
-import net.corda.v5.application.interop.parameters.ParameterTypeLabel
 
 /**
  * A [FacadeMethod] is a method of a [Facade].
@@ -107,7 +106,7 @@ data class FacadeMethodImpl(
      *
      * @param parameterValues The parameter values to pass to the method.
      */
-    override fun request(vararg parameterValues: ParameterTypeLabel): FacadeRequest {
+    override fun request(vararg parameterValues: ParameterType<*>): FacadeRequest {
         return FacadeRequestImpl(facadeId, name, parameterValues.toList())
     }
 
@@ -116,7 +115,7 @@ data class FacadeMethodImpl(
      *
      * @param parameterValues The parameter values to return from the method.
      */
-    override fun response(vararg parameterValues: ParameterTypeLabel): FacadeResponse {
+    override fun response(vararg parameterValues: ParameterType<*>): FacadeResponse {
         return FacadeResponseImpl(facadeId, name, parameterValues.toList())
     }
 

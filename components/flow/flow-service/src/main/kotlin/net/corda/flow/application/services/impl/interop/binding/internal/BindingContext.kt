@@ -1,12 +1,11 @@
 package net.corda.flow.application.services.impl.interop.binding.internal
 
 import net.corda.flow.application.services.impl.interop.binding.*
-import net.corda.flow.application.services.impl.interop.facade.FacadeMethodImpl
-import net.corda.flow.application.services.impl.interop.parameters.QualifiedType
 import net.corda.v5.application.interop.binding.*
 import net.corda.v5.application.interop.facade.Facade
 import net.corda.v5.application.interop.facade.FacadeMethod
 import net.corda.v5.application.interop.parameters.ParameterType
+import net.corda.v5.application.interop.parameters.ParameterType.*
 import net.corda.v5.application.interop.parameters.ParameterTypeLabel
 import net.corda.v5.application.interop.parameters.TypeQualifier
 import java.beans.Introspector
@@ -19,6 +18,7 @@ import java.math.BigDecimal
 import java.nio.ByteBuffer
 import java.time.ZonedDateTime
 import java.util.*
+import java.util.UUID
 
 class FacadeInterfaceBindingException(message: String) : RuntimeException(message)
 
@@ -267,7 +267,7 @@ private class InParameterBindingContext(
 
     override fun createBinding(): FacadeInParameterBinding {
         // Check the type-compatibility of the interface method parameter type and the facade method parameter type.
-        test(validateTypeAgreement(parameterInfo.type, parameterInfo.qualifiers, facadeParameter.typeLabel)) {
+        test(validateTypeAgreement(parameterInfo.type, parameterInfo.qualifiers, facadeParameter)) {
             "Type of parameter is not compatible with facade in-parameter type"
         }
 
@@ -313,7 +313,7 @@ private class SingletonOutParameterBindingContext(
 
     override fun createBinding(): FacadeOutParameterBindings {
         // Check agreement of the facade and interface types.
-        test(validateTypeAgreement(wrappedReturnType, qualifiers, outParameter.typeLabel)) {
+        test(validateTypeAgreement(wrappedReturnType, qualifiers, outParameter)) {
             "Return type is not compatible with facade out-parameter type"
         }
 
@@ -342,7 +342,8 @@ private class DataClassOutParametersBindingContext(
         }
 
         val facadeParametersByName = outParameters.associateBy(ParameterType<*>::getTypeName)
-        val constructorParameters = constructor.parameters.mapIndexedNotNull(ParameterInfo.Companion::forMethodParameter)
+        val constructorParameters =
+            constructor.parameters.mapIndexedNotNull(ParameterInfo.Companion::forMethodParameter)
         constructorParameters.forEach {
             test(it.typeQualifiers.isEmpty() || it.typeQualifiers.containsAll(it.parameterQualifiers)) {
                 "Parameter qualification mismatch: parameter $it has a type with qualifiers ${it.typeQualifiers}, " +
@@ -363,7 +364,13 @@ private class DataClassOutParametersBindingContext(
         // Check that the types all agree
         outParameters.forEach { outParameter ->
             val constructorParameter = constructorParametersByName[outParameter.typeName]!!
-            test(validateTypeAgreement(constructorParameter.type, constructorParameter.qualifiers, outParameter.typeLabel)) {
+            test(
+                validateTypeAgreement(
+                    constructorParameter.type,
+                    constructorParameter.qualifiers,
+                    outParameter
+                )
+            ) {
                 "Constructor parameter $constructorParameter does not match type of facade out parameter $outParameter"
             }
         }
@@ -457,21 +464,23 @@ private val numberTypes = setOf(
 private fun validateTypeAgreement(
     parameterType: Class<*>,
     qualifiers: Set<TypeQualifier>,
-    expectedType: ParameterTypeLabel
+    expectedType: ParameterType<*>
 ): Boolean =
-    when (expectedType) {
-        ParameterTypeLabel.DECIMAL -> parameterType in numberTypes
-        ParameterTypeLabel.STRING -> parameterType == String::class.java
-        ParameterTypeLabel.BOOLEAN -> parameterType == Boolean::class.javaPrimitiveType
-        ParameterTypeLabel.TIMESTAMP -> parameterType == ZonedDateTime::class.java
-        ParameterTypeLabel.UUID -> parameterType == UUID::class.java
-        ParameterTypeLabel.BYTES -> parameterType == ByteArray::class.javaPrimitiveType ||
-                parameterType == ByteBuffer::class.java
+    if (expectedType.isQualified) {
+        (qualifiers.isEmpty() || expectedType.qualifier in qualifiers)
+                && validateTypeAgreement(parameterType, emptySet(), expectedType.rawParameterType)
+    } else {
+        when (expectedType.typeLabel) {
+            ParameterTypeLabel.DECIMAL -> parameterType in numberTypes
+            ParameterTypeLabel.STRING -> parameterType == String::class.java
+            ParameterTypeLabel.BOOLEAN -> parameterType == Boolean::class.javaPrimitiveType
+            ParameterTypeLabel.TIMESTAMP -> parameterType == ZonedDateTime::class.java
+            ParameterTypeLabel.UUID -> parameterType == UUID::class.java
+            ParameterTypeLabel.BYTES -> parameterType == ByteArray::class.javaPrimitiveType ||
+                    parameterType == ByteBuffer::class.java
 
-        ParameterTypeLabel.JSON -> true
-        is QualifiedType<*> ->
-            (qualifiers.isEmpty() || expectedType.qualifier in qualifiers)
-                    && validateTypeAgreement(parameterType, emptySet(), expectedType)
+            ParameterTypeLabel.JSON -> true
+        }
     }
 
 private val String.kebabCase: String

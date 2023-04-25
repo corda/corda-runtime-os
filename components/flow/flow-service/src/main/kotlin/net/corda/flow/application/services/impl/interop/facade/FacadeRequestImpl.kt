@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize
 import net.corda.v5.application.interop.facade.FacadeId
 import net.corda.v5.application.interop.facade.FacadeRequest
 import net.corda.v5.application.interop.parameters.ParameterType
-import net.corda.v5.application.interop.parameters.ParameterTypeLabel
 
 /**
  * A [FacadeRequest] is a request to invoke a [FacadeMethod] on a [Facade].
@@ -19,10 +18,10 @@ import net.corda.v5.application.interop.parameters.ParameterTypeLabel
 data class FacadeRequestImpl(
     val facadeId: FacadeId,
     val methodName: String,
-    val inParameters: List<ParameterTypeLabel>
+    val inParameters: List<ParameterType<*>>
 ) : FacadeRequest {
 
-    private val inParametersByName = inParameters.associateBy { it.parameter.name }
+    private val inParametersByName = inParameters.associateBy { it.typeName }
     override fun getFacadeId(): FacadeId {
         return facadeId
     }
@@ -31,7 +30,7 @@ data class FacadeRequestImpl(
         return methodName
     }
 
-    override fun getInParameters(): List<ParameterTypeLabel> {
+    override fun getInParameters(): List<ParameterType<*>> {
         return inParameters
     }
 
@@ -43,10 +42,10 @@ data class FacadeRequestImpl(
     @Suppress("UNCHECKED_CAST")
     @Override
     override operator fun <T : Any> get(parameter: ParameterType<T>): T {
-        val value = inParametersByName[parameter.name]
-            ?: throw IllegalArgumentException("No value for parameter ${parameter.name}")
+        val value = inParametersByName[parameter.typeName]
+            ?: throw IllegalArgumentException("No value for parameter ${parameter.typeName}")
 
-        return (value as? ParameterTypeLabel)?.value
-            ?: throw IllegalArgumentException("Value for parameter ${parameter.name} is of the wrong type")
+        return (value as? T)
+            ?: throw IllegalArgumentException("Value for parameter ${parameter.typeName} is of the wrong type")
     }
 }

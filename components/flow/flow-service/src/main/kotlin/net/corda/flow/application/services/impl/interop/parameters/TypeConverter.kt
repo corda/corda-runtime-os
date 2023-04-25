@@ -2,7 +2,6 @@ package net.corda.flow.application.services.impl.interop.parameters
 
 import net.corda.flow.application.services.impl.interop.proxies.JsonMarshaller
 import net.corda.v5.application.interop.parameters.ParameterType
-import net.corda.v5.application.interop.parameters.ParameterTypeLabel
 import java.math.BigDecimal
 import java.nio.ByteBuffer
 
@@ -16,10 +15,10 @@ class TypeConverter(private val jsonMarshaller: JsonMarshaller) {
      * @param jvmType The target JVM type
      */
     fun convertFacadeToJvm(
-        parameterType: ParameterType<*>,
+        parameterType: ParameterType.ParameterTypeLabel,
         parameterValue: Any,
         jvmType: Class<*>): Any = when(parameterType) {
-        ParameterTypeLabel.DECIMAL -> {
+        ParameterType.ParameterTypeLabel.DECIMAL -> {
             parameterValue as? BigDecimal ?: throw IllegalArgumentException(
                     "Parameter value $parameterValue expected to be BigDecimal")
             when (jvmType) {
@@ -32,7 +31,7 @@ class TypeConverter(private val jsonMarshaller: JsonMarshaller) {
                 else -> parameterValue
             }
         }
-        ParameterTypeLabel.BYTES -> {
+        ParameterType.ParameterTypeLabel.BYTES -> {
             parameterValue as? ByteBuffer ?: throw IllegalArgumentException(
                 "Parameter value $parameterValue expected to be ByteBuffer")
             when (jvmType) {
@@ -40,7 +39,7 @@ class TypeConverter(private val jsonMarshaller: JsonMarshaller) {
                 else -> parameterValue
             }
         }
-        ParameterTypeLabel.JSON -> jsonMarshaller.deserialize(parameterValue as String, jvmType)
+        ParameterType.ParameterTypeLabel.JSON -> jsonMarshaller.deserialize(parameterValue as String, jvmType)
         else -> parameterValue
     }
 
@@ -52,18 +51,18 @@ class TypeConverter(private val jsonMarshaller: JsonMarshaller) {
     * ByteArrays get automatically wrapped as ByteBuffers.
     * Anything at all gets serialised to a JSON blob.
      */
-    fun convertJvmToFacade(value: Any, expectedType: ParameterType<*>): Any = when(expectedType) {
-        ParameterTypeLabel.DECIMAL -> when(value) {
+    fun convertJvmToFacade(value: Any, expectedType: ParameterType.ParameterTypeLabel): Any = when(expectedType) {
+        ParameterType.ParameterTypeLabel.DECIMAL -> when(value) {
             is Int -> BigDecimal(value)
             is Long -> BigDecimal(value)
             is Double -> BigDecimal(value)
             else -> value
         }
-        ParameterTypeLabel.BYTES -> when(value) {
+        ParameterType.ParameterTypeLabel.BYTES -> when(value) {
             is ByteArray -> ByteBuffer.wrap(value)
             else -> value
         }
-        ParameterTypeLabel.JSON -> jsonMarshaller.serialize(value)
+        ParameterType.ParameterTypeLabel.JSON -> jsonMarshaller.serialize(value)
         else -> value
     }
 }

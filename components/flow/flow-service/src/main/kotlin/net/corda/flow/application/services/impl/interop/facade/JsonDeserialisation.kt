@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonParser
 import com.fasterxml.jackson.databind.DeserializationContext
 import com.fasterxml.jackson.databind.JsonDeserializer
 import com.fasterxml.jackson.databind.JsonNode
+import net.corda.flow.application.services.impl.interop.parameters.QualifiedType
 import net.corda.v5.application.interop.facade.FacadeId
 import net.corda.v5.application.interop.facade.FacadeRequest
 import net.corda.v5.application.interop.parameters.ParameterType
@@ -104,5 +105,5 @@ fun ParameterType<*>.readValue(name: String, node: JsonNode, parser: JsonParser)
         writer.toString()
     }
 
-    is ParameterType.QualifiedType -> type.readValue(name, node, parser)
+    is QualifiedType -> type.readValue(name, node, parser)
 }

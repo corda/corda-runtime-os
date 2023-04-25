@@ -23,4 +23,8 @@ data class RawParameterType<T>(val typeLabel: ParameterTypeLabel) : ParameterTyp
     override fun getQualifier(): TypeQualifier? {
         return qualifier
     }
+
+    override fun getRawParameterType(): ParameterType<T> {
+        return expectedType as ParameterType<T>
+    }
 }
