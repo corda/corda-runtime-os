@@ -1,5 +1,8 @@
-package net.corda.ledger.persistence.utxo.impl
+package net.corda.ledger.utxo.data.transaction
 
+import net.corda.ledger.utxo.data.state.LazyStateAndRefImpl
+import net.corda.v5.application.serialization.SerializationService
+import net.corda.v5.ledger.utxo.ContractState
 import java.util.Objects
 
 data class UtxoTransactionOutputDto(
@@ -23,4 +26,11 @@ data class UtxoTransactionOutputDto(
     }
 
     override fun hashCode(): Int = Objects.hash(transactionId, leafIndex, info, data)
+
+    fun <T : ContractState> toStateAndRef(serializationService: SerializationService) =
+        LazyStateAndRefImpl<T>(
+            this,
+            null,
+            serializationService
+        )
 }

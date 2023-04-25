@@ -55,14 +55,25 @@ allprojects {
 
             withSourcesJar()
         }
+
+        tasks.withType(JavaCompile).configureEach {
+            options.encoding = 'UTF-8'
+            options.compilerArgs += [ '-XDenableSunApiLintControl', '-parameters' ]
+        }
+
+        tasks.withType(Test).configureEach {
+            useJUnitPlatform(){
+                excludeTags project.hasProperty('runUnstableTests') ? 'runAllTestsNoExclusions' : 'Unstable'
+            }
+
+            doFirst {
+                systemProperty 'java.io.tmpdir', buildDir.absolutePath
+                jvmArgs '--illegal-access=deny'
+            }
+        }
     }
 
     apply plugin: 'org.jetbrains.kotlin.jvm'
-
-    tasks.withType(JavaCompile).configureEach {
-        options.encoding = 'UTF-8'
-        options.compilerArgs += [ '-XDenableSunApiLintControl', '-parameters' ]
-    }
 
     tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
         compilerOptions {
@@ -80,17 +91,6 @@ allprojects {
     configurations {
         [ compileClasspath, testCompileClasspath, runtimeClasspath, testRuntimeClasspath ].forEach { cfg ->
             configureKotlinForOSGi(cfg)
-        }
-    }
-
-    tasks.withType(Test).configureEach {
-        useJUnitPlatform(){
-            excludeTags project.hasProperty('runUnstableTests') ? 'runAllTestsNoExclusions' : 'Unstable'
-        }
-
-        doFirst {
-            systemProperty 'java.io.tmpdir', buildDir.absolutePath
-            jvmArgs '--illegal-access=deny'
         }
     }
 

@@ -1,4 +1,5 @@
 plugins {
+    id 'org.jetbrains.kotlin.jvm'
     id 'net.corda.plugins.cordapp-cpb2'
 }
 
@@ -14,5 +15,6 @@ cordapp {
 
 dependencies {
     cordaProvided platform("net.corda:corda-api:$cordaApiVersion")
+    cordaProvided 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     cordaProvided 'net.corda:corda-notary-plugin'
 }
