@@ -296,7 +296,7 @@ class VirtualNodeRpcTest {
 
             eventuallyUpdateVirtualNodeState(vnodeId, newState, "INACTIVE")
 
-            val className = "net.cordapp.testing.smoketests.virtualnode.ReturnAStringFlow"
+            val className = "com.r3.corda.testing.smoketests.virtualnode.ReturnAStringFlow"
             val requestId = startRpcFlow(aliceHoldingId, emptyMap(), className, 405)
             getFlowStatus(aliceHoldingId, requestId, 404)
 
@@ -497,7 +497,7 @@ class VirtualNodeRpcTest {
     }
 
     private fun runReturnAStringFlow(expectedResult: String, holdingId: String = aliceHoldingId) {
-        val className = "net.cordapp.testing.smoketests.virtualnode.ReturnAStringFlow"
+        val className = "com.r3.corda.testing.smoketests.virtualnode.ReturnAStringFlow"
 
         val requestId = startRpcFlow(holdingId, emptyMap(), className)
 
@@ -507,7 +507,7 @@ class VirtualNodeRpcTest {
     }
 
     private fun runSimplePersistenceCheckFlow(expectedResult: String, holdingId: String = aliceHoldingId) {
-        val className = "net.cordapp.testing.smoketests.virtualnode.SimplePersistenceCheckFlow"
+        val className = "com.r3.corda.testing.smoketests.virtualnode.SimplePersistenceCheckFlow"
 
         val requestId = startRpcFlow(holdingId, emptyMap(), className)
 

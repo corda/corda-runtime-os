@@ -13,9 +13,9 @@ import java.util.UUID
  * twice, with a separate class loader.
  */
 object SandboxHelper {
-    const val DOG_CLASS_NAME = "net.cordapp.testing.bundles.dogs.Dog"
-    const val CAT_CLASS_NAME = "net.cordapp.testing.bundles.cats.Cat"
-    const val CAT_KEY_CLASS_NAME = "net.cordapp.testing.bundles.cats.CatKey"
+    const val DOG_CLASS_NAME = "com.r3.corda.testing.bundles.dogs.Dog"
+    const val CAT_CLASS_NAME = "com.r3.corda.testing.bundles.cats.Cat"
+    const val CAT_KEY_CLASS_NAME = "com.r3.corda.testing.bundles.cats.CatKey"
 
 
     fun SandboxGroup.getDogClass(): Class<*> {
@@ -31,7 +31,7 @@ object SandboxHelper {
     }
 
     fun SandboxGroup.getOwnerClass(): Class<*> {
-        return this.loadClassFromMainBundles("net.cordapp.testing.bundles.cats.Owner")
+        return this.loadClassFromMainBundles("com.r3.corda.testing.bundles.cats.Owner")
     }
 
     data class Box(val instance: Any, val id: UUID)

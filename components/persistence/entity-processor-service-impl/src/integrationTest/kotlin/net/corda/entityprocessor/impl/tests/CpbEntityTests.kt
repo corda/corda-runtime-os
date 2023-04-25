@@ -58,7 +58,7 @@ class CpbEntityTests {
 
         // does contain packages from cpks
         assertThat(entities).containsAll(
-            listOf("net.cordapp.testing.bundles.dogs.Dog", "net.cordapp.testing.bundles.cats.Cat", "net.cordapp.testing.bundles.cats.Owner")
+            listOf("com.r3.corda.testing.bundles.dogs.Dog", "com.r3.corda.testing.bundles.cats.Cat", "com.r3.corda.testing.bundles.cats.Owner")
         )
     }
 }

@@ -6,7 +6,7 @@ import org.apache.commons.text.StringEscapeUtils.escapeJson
 import java.time.Duration
 import java.util.UUID
 
-const val SMOKE_TEST_CLASS_NAME = "net.cordapp.testing.smoketests.flow.RpcSmokeTestFlow"
+const val SMOKE_TEST_CLASS_NAME = "com.r3.corda.testing.smoketests.flow.RpcSmokeTestFlow"
 const val RPC_FLOW_STATUS_SUCCESS = "COMPLETED"
 const val RPC_FLOW_STATUS_FAILED = "FAILED"
 

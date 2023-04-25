@@ -19,7 +19,7 @@ import java.util.UUID
 class AmqpSerializationTests {
 
     companion object {
-        private const val AmqpSerializationTestFlow = "net.cordapp.testing.smoketests.flow.AmqpSerializationTestFlow"
+        private const val AmqpSerializationTestFlow = "com.r3.corda.testing.smoketests.flow.AmqpSerializationTestFlow"
 
         private val testRunUniqueId = UUID.randomUUID()
         private val cpiName = "${TEST_CPI_NAME}_$testRunUniqueId"
