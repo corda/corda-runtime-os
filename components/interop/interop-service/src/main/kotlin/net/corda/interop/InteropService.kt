@@ -82,7 +82,7 @@ class InteropService @Activate constructor(
                     coordinator.createManagedResource(CONFIG_HANDLE) {
                         configurationReadService.registerComponentForUpdates(
                             coordinator,
-                            setOf(MESSAGING_CONFIG)//, FLOW_CONFIG)
+                            setOf(FLOW_CONFIG, MESSAGING_CONFIG)
                         )
                     }
                 } else {
