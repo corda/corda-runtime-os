@@ -96,7 +96,7 @@ interface FlowIORequest<out R> {
     data class FlowSuspended<SUSPENDRETURN>(
         val fiber: ByteBuffer,
         val output: FlowIORequest<SUSPENDRETURN>,
-        val cacheableFiber: Any? = null
+        val cacheableFiber: FlowFiberImpl? = null
     ) : FlowIORequest<Unit>
 
     data class ExternalEvent(

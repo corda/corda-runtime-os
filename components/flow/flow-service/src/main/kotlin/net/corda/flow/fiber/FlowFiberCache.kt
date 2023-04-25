@@ -17,12 +17,12 @@ interface FlowFiberCache {
     /**
      * Put a flow fiber into the cache keyed by the given flowId.
      */
-    fun put(key: FlowFiberCacheKey, fiber: Any)
+    fun put(key: FlowFiberCacheKey, fiber: FlowFiberImpl)
 
     /**
      * Get a flow fiber from the cache with the given flowId, or else return null.
      */
-    fun get(key: FlowFiberCacheKey): Any?
+    fun get(key: FlowFiberCacheKey): FlowFiberImpl?
 
     /**
      * Invalidate and remove a flow fiber from the cache with the give flow identifier.

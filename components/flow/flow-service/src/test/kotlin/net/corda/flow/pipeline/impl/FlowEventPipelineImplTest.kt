@@ -177,8 +177,7 @@ class FlowEventPipelineImplTest {
     fun `runOrContinue runs a flow with suspend result`(outcome: FlowContinuation) {
         val flowResult = FlowIORequest.SubFlowFinished(emptyList())
         val expectedFiber = ByteBuffer.wrap(byteArrayOf(1))
-        val cacheableFiber = mock<Any>()
-        val suspendRequest = FlowIORequest.FlowSuspended(expectedFiber, flowResult, cacheableFiber)
+        val suspendRequest = FlowIORequest.FlowSuspended(expectedFiber, flowResult)
 
         whenever(flowWaitingForHandler.runOrContinue(eq(inputContext), any())).thenReturn(outcome)
         whenever(runFlowFiberFuture.future.get(RUN_OR_CONTINUE_TIMEOUT, TimeUnit.MILLISECONDS)).thenReturn(
@@ -191,7 +190,6 @@ class FlowEventPipelineImplTest {
         verify(flowRunner).runFlow(pipeline.context, outcome)
         verify(flowWaitingForHandler).runOrContinue(inputContext, WakeUpWaitingFor())
         verify(checkpoint).serializedFiber = expectedFiber
-        verify(flowFiberCache).put(eq(FlowFiberCacheKey(mockHoldingIdentity, mockFlowId)), eq(cacheableFiber))
     }
 
     @ParameterizedTest(name = "runOrContinue runs a flow when {0} is returned by the FlowWaitingForHandler with flow completion result")
@@ -209,7 +207,6 @@ class FlowEventPipelineImplTest {
         verify(flowRunner).runFlow(pipeline.context, outcome)
         verify(flowWaitingForHandler).runOrContinue(inputContext, waitingForWakeup.value)
         verify(checkpoint).serializedFiber = expectedFiber
-        verify(flowFiberCache).remove(eq(FlowFiberCacheKey(mockHoldingIdentity, mockFlowId)))
     }
 
     @Test
