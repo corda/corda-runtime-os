@@ -11,6 +11,7 @@ import net.corda.v5.application.interop.binding.InteropAction
 import net.corda.v5.application.interop.facade.Facade
 import net.corda.v5.application.interop.facade.FacadeRequest
 import net.corda.v5.application.interop.facade.FacadeResponse
+import net.corda.v5.application.interop.parameters.ParameterType
 import net.corda.v5.application.interop.parameters.ParameterTypeLabel
 import java.lang.reflect.InvocationHandler
 import java.lang.reflect.Method
@@ -97,8 +98,8 @@ private class FacadeClientProxy(
             is FacadeOutParameterBindings.NoOutParameters -> null
             is FacadeOutParameterBindings.SingletonOutParameterBinding ->
                 typeConverter.convertFacadeToJvm(
-                    bindings.outParameter.type,
-                    response[bindings.outParameter as TypedParameter<Any>],
+                    bindings.outParameter.typeLabel,
+                    response[bindings.outParameter as ParameterType<Any>],
                     bindings.returnType
                 )
 
@@ -115,7 +116,7 @@ private class FacadeClientProxy(
                     "${response.facadeId}/${response.methodName}"
         )
 
-        val receivedParamSet = response.outParameters.asSequence().map(ParameterTypeLabel::parameter).toSet()
+        val receivedParamSet = response.outParameters.asSequence().map(ParameterType<Any>::getTypeLabel).toSet()
         val expectedParamSet = binding.facadeMethod.outParameters.toSet()
 
         if (receivedParamSet != expectedParamSet) {
@@ -126,16 +127,16 @@ private class FacadeClientProxy(
     }
 
     private fun buildDataClass(
-        outParameters: List<ParameterTypeLabel>,
+        outParameters: List<ParameterType<Any>>,
         bindings: FacadeOutParameterBindings.DataClassOutParameterBindings): Any {
         val constructorArgs = Array<Any?>(bindings.bindings.size) { null }
 
         outParameters.forEach { outParameter ->
-            val binding = bindings.bindingFor(outParameter.parameter)!!
+            val binding = bindings.bindingFor(outParameter)!!
 
             constructorArgs[binding.constructorParameter.index] = typeConverter.convertFacadeToJvm(
-                outParameter.parameter.type,
-                outParameter.value,
+                outParameter.typeLabel,
+                outParameter.rawParameterType,
                 binding.constructorParameter.type)
         }
 
