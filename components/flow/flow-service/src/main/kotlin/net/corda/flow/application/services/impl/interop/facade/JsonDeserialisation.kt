@@ -4,7 +4,6 @@ import com.fasterxml.jackson.core.JsonParser
 import com.fasterxml.jackson.databind.DeserializationContext
 import com.fasterxml.jackson.databind.JsonDeserializer
 import com.fasterxml.jackson.databind.JsonNode
-import net.corda.flow.application.services.impl.interop.parameters.QualifiedType
 import net.corda.v5.application.interop.facade.FacadeId
 import net.corda.v5.application.interop.facade.FacadeRequest
 import net.corda.v5.application.interop.parameters.ParameterType
@@ -65,45 +64,51 @@ private fun <T> deserialize(
     return ctor(facadeId, methodName, parameterValues)
 }
 
-fun ParameterType<*>.readValue(name: String, node: JsonNode, parser: JsonParser): Any = when (this) {
-    is ParameterType.BooleanType -> if (node.isBoolean) node.asBoolean() else throw IllegalArgumentException(
-        "Parameter $name expected to have a boolean value, but was ${node.toPrettyString()}"
-    )
-    is ParameterType.StringType -> node.asText()
-    is ParameterType.DecimalType -> try {
-        BigDecimal(node.asText())
-    } catch (_: NumberFormatException) {
-        throw IllegalArgumentException(
-            "Parameter $name expected to have a decimal value, but was ${node.toPrettyString()}"
-        )
-    }
-    is ParameterType.UUIDType -> try {
-        UUID.fromString(node.asText())
-    } catch (_ : IllegalArgumentException) {
-        throw IllegalArgumentException("Parameter $name expected to have a UUID value, but was ${node.toPrettyString()}")
-    }
-    is ParameterType.TimestampType -> try {
-        ZonedDateTime.parse(node.asText(), DateTimeFormatter.ISO_DATE_TIME)
-    } catch (_: DateTimeParseException) {
-        throw IllegalArgumentException("Parameter $name expected to have a timestamp value in ISO_DATE_TIME format " +
-                "but was ${node.toPrettyString()}")
-    }
-    is ParameterType.ByteBufferType -> ByteBuffer.wrap(
-        try {
-            Base64.getDecoder().decode(node.asText())
-        } catch (_: IllegalArgumentException) {
-            throw IllegalArgumentException("Parameter $name expected to have a Base64-encoded byte blob value, but was " +
-                    node.toPrettyString()
+fun ParameterType<*>.readValue(name: String, node: JsonNode, parser: JsonParser): Any =
+    if (this.isQualified) {
+        this.readValue(name, node, parser)
+    } else {
+        when (this.typeLabel) {
+            ParameterTypeLabel.BOOLEAN -> if (node.isBoolean) node.asBoolean() else throw IllegalArgumentException(
+                "Parameter $name expected to have a boolean value, but was ${node.toPrettyString()}"
             )
+            ParameterTypeLabel.STRING -> node.asText()
+            ParameterTypeLabel.DECIMAL -> try {
+                BigDecimal(node.asText())
+            } catch (_: NumberFormatException) {
+                throw IllegalArgumentException(
+                    "Parameter $name expected to have a decimal value, but was ${node.toPrettyString()}"
+                )
+            }
+            ParameterTypeLabel.UUID -> try {
+                UUID.fromString(node.asText())
+            } catch (_: IllegalArgumentException) {
+                throw IllegalArgumentException("Parameter $name expected to have a UUID value, but was ${node.toPrettyString()}")
+            }
+            ParameterTypeLabel.TIMESTAMP -> try {
+                ZonedDateTime.parse(node.asText(), DateTimeFormatter.ISO_DATE_TIME)
+            } catch (_: DateTimeParseException) {
+                throw IllegalArgumentException(
+                    "Parameter $name expected to have a timestamp value in ISO_DATE_TIME format " +
+                            "but was ${node.toPrettyString()}"
+                )
+            }
+            ParameterTypeLabel.BYTES -> ByteBuffer.wrap(
+                try {
+                    Base64.getDecoder().decode(node.asText())
+                } catch (_: IllegalArgumentException) {
+                    throw IllegalArgumentException(
+                        "Parameter $name expected to have a Base64-encoded byte blob value, but was " +
+                                node.toPrettyString()
+                    )
+                }
+            )
+
+            ParameterTypeLabel.JSON -> {
+                val writer = StringWriter()
+                parser.codec.factory.createGenerator(writer).writeTree(node)
+                writer.flush()
+                writer.toString()
+            }
         }
-    )
-
-    is ParameterType.JsonType -> {
-        val writer = StringWriter()
-        parser.codec.factory.createGenerator(writer).writeTree(node)
-        writer.flush()
-        writer.toString()
     }
-
-    is QualifiedType -> type.readValue(name, node, parser)
-}

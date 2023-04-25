@@ -3,7 +3,6 @@ package net.corda.flow.application.services.impl.interop.facade
 import com.fasterxml.jackson.core.JsonGenerator
 import com.fasterxml.jackson.databind.JsonSerializer
 import com.fasterxml.jackson.databind.SerializerProvider
-import net.corda.flow.application.services.impl.interop.parameters.QualifiedType
 import net.corda.v5.application.interop.facade.FacadeId
 import net.corda.v5.application.interop.facade.FacadeRequest
 import net.corda.v5.application.interop.parameters.ParameterType
@@ -51,22 +50,25 @@ private fun serialize(
     gen.writeEndObject()
 }
 
-fun ParameterType<*>.writeValue(value: Any, gen: JsonGenerator): Unit = when (this) {
-    is ParameterType.BooleanType -> gen.writeBoolean(value as Boolean)
-    is ParameterType.StringType -> gen.writeString(value as String)
-    is ParameterType.DecimalType -> gen.writeNumber(value as BigDecimal)
-    is ParameterType.UUIDType -> gen.writeString(value.toString())
-    is ParameterType.TimestampType -> gen.writeString((value as ZonedDateTime).format(DateTimeFormatter.ISO_DATE_TIME))
-    is ParameterType.ByteBufferType -> gen.writeString(
-        Base64.getEncoder().encodeToString((value as ByteBuffer).array())
-    )
-
-    is ParameterType.JsonType ->
-        gen.writeTree(
-            gen.codec.readTree(
-                gen.codec.factory.createParser(value as String)
+fun ParameterType<*>.writeValue(value: Any, gen: JsonGenerator): Unit =
+    if (this.isQualified) {
+        this.writeValue(value, gen)
+    } else {
+        when (this.typeLabel) {
+            ParameterTypeLabel.BOOLEAN -> gen.writeBoolean(value as Boolean)
+            ParameterTypeLabel.STRING -> gen.writeString(value as String)
+            ParameterTypeLabel.DECIMAL -> gen.writeNumber(value as BigDecimal)
+            ParameterTypeLabel.UUID -> gen.writeString(value.toString())
+            ParameterTypeLabel.TIMESTAMP -> gen.writeString((value as ZonedDateTime).format(DateTimeFormatter.ISO_DATE_TIME))
+            ParameterTypeLabel.BYTES -> gen.writeString(
+                Base64.getEncoder().encodeToString((value as ByteBuffer).array())
             )
-        )
 
-    is QualifiedType -> type.writeValue(value, gen)
-}
+            ParameterTypeLabel.JSON ->
+                gen.writeTree(
+                    gen.codec.readTree(
+                        gen.codec.factory.createParser(value as String)
+                    )
+                )
+        }
+    }

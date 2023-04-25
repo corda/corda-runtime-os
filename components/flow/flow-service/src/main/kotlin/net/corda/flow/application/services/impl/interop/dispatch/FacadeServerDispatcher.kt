@@ -73,13 +73,13 @@ class FacadeServerDispatcher(
             val parameter = outParameterBindings.outParameter as ParameterType<Any>
             val value = typeConverter.convertJvmToFacade(result, parameter.typeLabel)
 
-            listOf((parameter as TypeParameters<Any>).of(value as String))
+            listOf((parameter as TypeParameters<*>).of(value as String))
         }
 
         is FacadeOutParameterBindings.DataClassOutParameterBindings -> {
             outParameterBindings.bindings.map { binding ->
                 val propertyValue = binding.readMethod.invoke(result)
-                (binding.facadeOutParameter as TypeParameters<Any>).of(propertyValue as String)
+                (binding.facadeOutParameter as TypeParameters<*>).of(propertyValue as String)
             }
         }
     }
