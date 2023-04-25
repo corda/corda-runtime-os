@@ -104,24 +104,24 @@ class AMQPwithOSGiSerializationTests {
             val testSerializationContext = testSerializationContext.withSandboxGroup(sandboxGroup)
 
             // Serialise our object
-            val cashClass = sandboxGroup.loadClassFromMainBundles("net.cordapp.bundle1.Cash")
+            val cashClass = sandboxGroup.loadClassFromMainBundles("com.r3.corda.testing.bundle1.Cash")
             val cashInstance = cashClass.getConstructor(Int::class.java).newInstance(100)
 
-            val obligationClass = sandboxGroup.loadClassFromMainBundles("net.cordapp.bundle3.Obligation")
+            val obligationClass = sandboxGroup.loadClassFromMainBundles("com.r3.corda.testing.bundle3.Obligation")
 
             val obligationInstance = obligationClass.getConstructor(
                 cashInstance.javaClass
             ).newInstance(cashInstance)
 
-            val documentClass = sandboxGroup.loadClassFromMainBundles("net.cordapp.bundle2.Document")
+            val documentClass = sandboxGroup.loadClassFromMainBundles("com.r3.corda.testing.bundle2.Document")
             val content = "This is a transfer document"
             val documentInstance = documentClass.getConstructor(String::class.java).newInstance(content)
 
             // Container is used to test amqp serialization works for OSGi bundled generic types.
-            val containerClass = sandboxGroup.loadClassFromMainBundles("net.cordapp.bundle5.Container")
+            val containerClass = sandboxGroup.loadClassFromMainBundles("com.r3.corda.testing.bundle5.Container")
             val containerInstance = containerClass.getConstructor(Object::class.java).newInstance(5)
 
-            val transferClass = sandboxGroup.loadClassFromMainBundles("net.cordapp.bundle4.Transfer")
+            val transferClass = sandboxGroup.loadClassFromMainBundles("com.r3.corda.testing.bundle4.Transfer")
 
             val transferInstance = transferClass.getConstructor(
                 obligationInstance.javaClass, documentInstance.javaClass, containerInstance.javaClass
@@ -133,7 +133,7 @@ class AMQPwithOSGiSerializationTests {
             val deserialised =
                 DeserializationInput(factory2).deserializeAndReturnEnvelope(serialised, testSerializationContext)
 
-            assertThat(deserialised.obj.javaClass.name).isEqualTo("net.cordapp.bundle4.Transfer")
+            assertThat(deserialised.obj.javaClass.name).isEqualTo("com.r3.corda.testing.bundle4.Transfer")
             assertThat(deserialised.obj.javaClass.declaredFields.map { it.name }.toList()).contains("document")
 
             val document = deserialised.obj.javaClass.getDeclaredField("document").also { it.trySetAccessible() }
@@ -145,11 +145,11 @@ class AMQPwithOSGiSerializationTests {
             assertThat(deserialisedValue).isEqualTo(content)
 
             assertThat(deserialised.envelope.metadata.values).hasSize(5)
-            assertThat(deserialised.envelope.metadata.values).containsKey("net.cordapp.bundle1.Cash")
-            assertThat(deserialised.envelope.metadata.values).containsKey("net.cordapp.bundle2.Document")
-            assertThat(deserialised.envelope.metadata.values).containsKey("net.cordapp.bundle3.Obligation")
-            assertThat(deserialised.envelope.metadata.values).containsKey("net.cordapp.bundle5.Container")
-            assertThat(deserialised.envelope.metadata.values).containsKey("net.cordapp.bundle4.Transfer")
+            assertThat(deserialised.envelope.metadata.values).containsKey("com.r3.corda.testing.bundle1.Cash")
+            assertThat(deserialised.envelope.metadata.values).containsKey("com.r3.corda.testing.bundle2.Document")
+            assertThat(deserialised.envelope.metadata.values).containsKey("com.r3.corda.testing.bundle3.Obligation")
+            assertThat(deserialised.envelope.metadata.values).containsKey("com.r3.corda.testing.bundle5.Container")
+            assertThat(deserialised.envelope.metadata.values).containsKey("com.r3.corda.testing.bundle4.Transfer")
         } finally {
             sandboxFactory.unloadSandboxGroup(sandboxGroup)
         }
@@ -170,7 +170,7 @@ class AMQPwithOSGiSerializationTests {
             val testSerializationContext2 = testSerializationContext.withSandboxGroup(sandboxGroup2)
 
             // Serialise our object using `sandboxGroup1` context
-            val cashClass = sandboxGroup1.loadClassFromMainBundles("net.cordapp.bundle1.Cash")
+            val cashClass = sandboxGroup1.loadClassFromMainBundles("com.r3.corda.testing.bundle1.Cash")
             val cashInstance = cashClass.getConstructor(Int::class.java).newInstance(100)
             val serialised = SerializationOutput(factory1).serialize(cashInstance, testSerializationContext1)
 
@@ -180,7 +180,7 @@ class AMQPwithOSGiSerializationTests {
             val deserialised2 =
                 DeserializationInput(factory2).deserializeAndReturnEnvelope(serialised, testSerializationContext2)
 
-            val expectedClass2 = sandboxGroup2.loadClassFromMainBundles("net.cordapp.bundle1.Cash")
+            val expectedClass2 = sandboxGroup2.loadClassFromMainBundles("com.r3.corda.testing.bundle1.Cash")
             val deserialisedClass1 = deserialised1.obj::class.java
             val deserialisedClass2 = deserialised2.obj::class.java
             val classLoader1 = deserialisedClass1.classLoader
@@ -203,7 +203,7 @@ class AMQPwithOSGiSerializationTests {
             val factory = testDefaultFactory(sandboxGroup)
             val context = testSerializationContext.withSandboxGroup(sandboxGroup)
 
-            val mainBundleItemClass = sandboxGroup.loadClassFromMainBundles("net.cordapp.bundle.MainBundleItem")
+            val mainBundleItemClass = sandboxGroup.loadClassFromMainBundles("com.r3.corda.testing.bundle.MainBundleItem")
             val mainBundleItemInstance = mainBundleItemClass.getMethod("newInstance").invoke(null)
 
             assertThrows<SandboxException>(
@@ -223,11 +223,11 @@ class AMQPwithOSGiSerializationTests {
             val factory = testDefaultFactory(sandboxGroup)
             val context = testSerializationContext.withSandboxGroup(sandboxGroup)
 
-            val mainBundleItemClass = sandboxGroup.loadClassFromMainBundles("net.cordapp.bundle.MainBundleItem")
+            val mainBundleItemClass = sandboxGroup.loadClassFromMainBundles("com.r3.corda.testing.bundle.MainBundleItem")
             val mainBundleItemInstance = mainBundleItemClass.getMethod("newInstance").invoke(null)
 
             val serializerClass =
-                sandboxGroup.loadClassFromMainBundles("net.cordapp.bundle.SerializerTargetingPrivateType")
+                sandboxGroup.loadClassFromMainBundles("com.r3.corda.testing.bundle.SerializerTargetingPrivateType")
             val serializer = serializerClass.getConstructor().newInstance() as SerializationCustomSerializer<*, *>
             factory.registerExternal(serializer, factory)
 
@@ -248,11 +248,11 @@ class AMQPwithOSGiSerializationTests {
             val factory = testDefaultFactory(sandboxGroup)
             val context = testSerializationContext.withSandboxGroup(sandboxGroup)
 
-            val mainBundleItemClass = sandboxGroup.loadClassFromMainBundles("net.cordapp.bundle.MainBundleItem")
+            val mainBundleItemClass = sandboxGroup.loadClassFromMainBundles("com.r3.corda.testing.bundle.MainBundleItem")
             val mainBundleItemInstance = mainBundleItemClass.getMethod("newInstance").invoke(null)
 
             val serializerClass =
-                sandboxGroup.loadClassFromMainBundles("net.cordapp.bundle.SerializerUsingPrivateProxyType")
+                sandboxGroup.loadClassFromMainBundles("com.r3.corda.testing.bundle.SerializerUsingPrivateProxyType")
             val serializer = serializerClass.getConstructor().newInstance() as SerializationCustomSerializer<*, *>
             factory.registerExternal(serializer, factory)
 
@@ -273,11 +273,11 @@ class AMQPwithOSGiSerializationTests {
             val factory = testDefaultFactory(sandboxGroup)
             val context = testSerializationContext.withSandboxGroup(sandboxGroup)
 
-            val mainBundleItemClass = sandboxGroup.loadClassFromMainBundles("net.cordapp.bundle.MainBundleItem")
+            val mainBundleItemClass = sandboxGroup.loadClassFromMainBundles("com.r3.corda.testing.bundle.MainBundleItem")
             val mainBundleItemInstance = mainBundleItemClass.getMethod("newInstance").invoke(null)
 
             val serializerClass =
-                sandboxGroup.loadClassFromMainBundles("net.cordapp.bundle.SerializerUsingPublicProxyType")
+                sandboxGroup.loadClassFromMainBundles("com.r3.corda.testing.bundle.SerializerUsingPublicProxyType")
             val serializer = serializerClass.getConstructor().newInstance() as SerializationCustomSerializer<*, *>
             factory.registerExternal(serializer, factory)
 
@@ -297,40 +297,40 @@ class AMQPwithOSGiSerializationTests {
             val factory = testDefaultFactory(sandboxGroup)
             val serializer =
                 sandboxGroup
-                    .loadClassFromMainBundles("net.cordapp.bundle.VersionSerializer")
+                    .loadClassFromMainBundles("com.r3.corda.testing.bundle.VersionSerializer")
                     .getConstructor()
                     .newInstance() as SerializationCustomSerializer<*, *>
             val exception = assertThrows<IllegalCustomSerializerException> {
                 factory.registerExternal(serializer, factory)
             }
-            assertEquals("Custom serializer net.cordapp.bundle.VersionSerializer to serialize " +
-                    "non-custom-serializable type class net.cordapp.bundle.VersionSerializer", exception.message)
+            assertEquals("Custom serializer com.r3.corda.testing.bundle.VersionSerializer to serialize " +
+                    "non-custom-serializable type class com.r3.corda.testing.bundle.VersionSerializer", exception.message)
 
             // JDK type custom serializer
             val factory1 = testDefaultFactory(sandboxGroup)
             val serializer1 =
                 sandboxGroup
-                    .loadClassFromMainBundles("net.cordapp.bundle.ThreadSerializer")
+                    .loadClassFromMainBundles("com.r3.corda.testing.bundle.ThreadSerializer")
                     .getConstructor()
                     .newInstance() as SerializationCustomSerializer<*, *>
             val exception1 = assertThrows<IllegalCustomSerializerException> {
                 factory1.registerExternal(serializer1, factory1)
             }
-            assertEquals("Custom serializer net.cordapp.bundle.ThreadSerializer to serialize " +
-                    "non-custom-serializable type class net.cordapp.bundle.ThreadSerializer", exception1.message)
+            assertEquals("Custom serializer com.r3.corda.testing.bundle.ThreadSerializer to serialize " +
+                    "non-custom-serializable type class com.r3.corda.testing.bundle.ThreadSerializer", exception1.message)
 
             // CordaSerializable annotated Corda platform type custom serializer
             val factory2 = testDefaultFactory(sandboxGroup)
             val serializer2 =
                 sandboxGroup
-                    .loadClassFromMainBundles("net.cordapp.bundle.MemberX500NameSerializer")
+                    .loadClassFromMainBundles("com.r3.corda.testing.bundle.MemberX500NameSerializer")
                     .getConstructor()
                     .newInstance() as SerializationCustomSerializer<*, *>
             val exception2 = assertThrows<IllegalCustomSerializerException> {
                 factory2.registerExternal(serializer2, factory2)
             }
-            assertEquals("Custom serializer net.cordapp.bundle.MemberX500NameSerializer to serialize " +
-                    "non-custom-serializable type class net.cordapp.bundle.MemberX500NameSerializer", exception2.message)
+            assertEquals("Custom serializer com.r3.corda.testing.bundle.MemberX500NameSerializer to serialize " +
+                    "non-custom-serializable type class com.r3.corda.testing.bundle.MemberX500NameSerializer", exception2.message)
         } finally {
             sandboxFactory.unloadSandboxGroup(sandboxGroup)
         }
@@ -343,7 +343,7 @@ class AMQPwithOSGiSerializationTests {
             val factory = testDefaultFactory(sandboxGroup)
             val serializer =
                 sandboxGroup
-                    .loadClassFromMainBundles("net.cordapp.bundle.SandboxTypeSerializer")
+                    .loadClassFromMainBundles("com.r3.corda.testing.bundle.SandboxTypeSerializer")
                     .getConstructor()
                     .newInstance() as SerializationCustomSerializer<*, *>
             factory.registerExternal(serializer, factory)
@@ -428,7 +428,7 @@ class AMQPwithOSGiSerializationTests {
             val uuid = UUID.fromString("8a1a7d89-20b1-412e-bba2-c8612210284f")
             // Uncomment to rebuild resource file + also uncomment older version of SerializableStateToNewerVersion class
             // and the version number in serializable-cpk-evolution-newer/build.gradle
-//            val originalStateClass = sandboxGroup.loadClassFromMainBundles("net.cordapp.bundle.evolution.newer.SerializableStateToNewerVersion")
+//            val originalStateClass = sandboxGroup.loadClassFromMainBundles("com.r3.corda.testing.bundle.evolution.newer.SerializableStateToNewerVersion")
 //            val originalStateInstance = originalStateClass.getConstructor(UUID::class.java).newInstance(uuid)
 //            val serialize = SerializationOutput(factory).serialize(originalStateInstance, context)
 //            writeIntegrationTestResource(serialize, testResourceName)
@@ -465,7 +465,7 @@ class AMQPwithOSGiSerializationTests {
             val uuid = UUID.fromString("8a1a7d89-20b1-412e-bba2-c8612210284f")
             // Uncomment to rebuild resource file + also uncomment newer version of SerializableStateToOlderVersion class
             // and the version number in serializable-cpk-evolution-older/build.gradle
-//            val originalStateClass = sandboxGroup.loadClassFromMainBundles("net.cordapp.bundle.evolution.older.SerializableStateToOlderVersion")
+//            val originalStateClass = sandboxGroup.loadClassFromMainBundles("com.r3.corda.testing.bundle.evolution.older.SerializableStateToOlderVersion")
 //            val originalStateInstance = originalStateClass.getConstructor(UUID::class.java, String::class.java).newInstance(uuid, "TEST")
 //            val serialize = SerializationOutput(factory).serialize(originalStateInstance, context)
 //            writeIntegrationTestResource(serialize, testResourceName)
@@ -496,7 +496,7 @@ class AMQPwithOSGiSerializationTests {
             val originalContext = testSerializationContext.withSandboxGroup(originalSandboxGroup)
 
             val originalStateClass =
-                originalSandboxGroup.loadClassFromMainBundles("net.cordapp.bundle.evolution.different.SerializableStateForDifferentCpk")
+                originalSandboxGroup.loadClassFromMainBundles("com.r3.corda.testing.bundle.evolution.different.SerializableStateForDifferentCpk")
             val originalStateInstance =
                 originalStateClass.getConstructor(UUID::class.java).newInstance(UUID.randomUUID())
             SerializationOutput(originalFactory).serialize(originalStateInstance, originalContext)

@@ -86,7 +86,7 @@ class ConsensualLedgerTests {
         val consensualFlowRequestId = startRpcFlow(
             aliceHoldingId,
             mapOf("input" to input, "members" to listOf(bobX500, charlieX500)),
-            "net.cordapp.demo.consensual.ConsensualDemoFlow"
+            "com.r3.corda.demo.consensual.ConsensualDemoFlow"
         )
         val consensualFlowResult = awaitRpcFlowFinished(aliceHoldingId, consensualFlowRequestId)
         assertThat(consensualFlowResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
@@ -96,7 +96,7 @@ class ConsensualLedgerTests {
             val findTransactionFlowRequestId = startRpcFlow(
                 holdingId,
                 mapOf("transactionId" to consensualFlowResult.flowResult!!),
-                "net.cordapp.demo.consensual.FindTransactionFlow"
+                "com.r3.corda.demo.consensual.FindTransactionFlow"
             )
             val transactionResult = awaitRpcFlowFinished(holdingId, findTransactionFlowRequestId)
             assertThat(transactionResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
@@ -120,7 +120,7 @@ class ConsensualLedgerTests {
         val consensualFlowRequestId = startRpcFlow(
             aliceHoldingId,
             mapOf("input" to "fail", "members" to listOf(bobX500, charlieX500)),
-            "net.cordapp.demo.consensual.ConsensualDemoFlow"
+            "com.r3.corda.demo.consensual.ConsensualDemoFlow"
         )
         val consensualFlowResult = awaitRpcFlowFinished(aliceHoldingId, consensualFlowRequestId)
         assertThat(consensualFlowResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
