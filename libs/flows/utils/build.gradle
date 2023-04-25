@@ -5,6 +5,7 @@ plugins {
 
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
+    compileOnly "co.paralleluniverse:quasar-osgi-annotations:$quasarVersion"
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
@@ -13,13 +14,3 @@ dependencies {
 }
 
 description 'Flow related utilities'
-
-def jar = tasks.named('jar', Jar) {
-    bundle {
-        bnd """\
-Import-Package:\
-    org.apache.avro.specific,\
-    *
-"""
-    }
-}
