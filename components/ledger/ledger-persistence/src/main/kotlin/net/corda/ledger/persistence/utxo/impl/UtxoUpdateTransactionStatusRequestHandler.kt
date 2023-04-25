@@ -1,5 +1,6 @@
 package net.corda.ledger.persistence.utxo.impl
 
+import net.corda.data.KeyValuePairList
 import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.ledger.persistence.UpdateTransactionStatus
 import net.corda.data.persistence.EntityResponse
@@ -18,6 +19,6 @@ class UtxoUpdateTransactionStatusRequestHandler(
 
     override fun execute(): List<Record<*, *>> {
         persistenceService.updateStatus(request.id, request.transactionStatus.toTransactionStatus())
-        return listOf(externalEventResponseFactory.success(externalEventContext, EntityResponse(emptyList())))
+        return listOf(externalEventResponseFactory.success(externalEventContext, EntityResponse(emptyList(), KeyValuePairList(emptyList()))))
     }
 }

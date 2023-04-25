@@ -1,5 +1,6 @@
 package net.corda.ledger.persistence.consensual.impl
 
+import net.corda.data.KeyValuePairList
 import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.ledger.persistence.FindTransaction
 import net.corda.data.persistence.EntityResponse
@@ -28,7 +29,8 @@ class ConsensualFindTransactionRequestHandler(
                 externalEventContext,
                 EntityResponse(
                     listOfNotNull(transactionContainer)
-                        .map { ByteBuffer.wrap(serializationService.serialize(it).bytes) }
+                        .map { ByteBuffer.wrap(serializationService.serialize(it).bytes) },
+                    KeyValuePairList(emptyList())
                 )
             )
         )

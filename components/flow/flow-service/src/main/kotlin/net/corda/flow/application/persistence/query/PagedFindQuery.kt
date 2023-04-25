@@ -1,10 +1,6 @@
 package net.corda.flow.application.persistence.query
 
-import net.corda.flow.application.persistence.external.events.FindAllExternalEventFactory
-import net.corda.flow.application.persistence.external.events.FindAllParameters
-import net.corda.flow.application.persistence.wrapWithPersistenceException
 import net.corda.flow.external.events.executor.ExternalEventExecutor
-import net.corda.flow.persistence.ResultSetImpl
 import net.corda.v5.application.persistence.PagedQuery
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
@@ -34,13 +30,14 @@ class PagedFindQuery<R : Any>(
 
     @Suspendable
     override fun execute(): PagedQuery.ResultSet<R> {
-        val deserialized = wrapWithPersistenceException {
-            externalEventExecutor.execute(
-                FindAllExternalEventFactory::class.java,
-                FindAllParameters(entityClass, offset, limit)
-            )
-        }.map { serializationService.deserialize(it.array(), entityClass) }
-
-        return ResultSetImpl(deserialized)
+        val resultSet = FindAllResultSetImpl(
+            externalEventExecutor,
+            serializationService,
+            limit,
+            offset,
+            entityClass
+        )
+        resultSet.next()
+        return resultSet
     }
 }

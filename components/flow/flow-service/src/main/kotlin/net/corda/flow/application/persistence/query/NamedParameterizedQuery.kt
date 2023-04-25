@@ -1,11 +1,6 @@
 package net.corda.flow.application.persistence.query
 
-import java.nio.ByteBuffer
-import net.corda.flow.application.persistence.external.events.NamedQueryExternalEventFactory
-import net.corda.flow.application.persistence.external.events.NamedQueryParameters
-import net.corda.flow.application.persistence.wrapWithPersistenceException
 import net.corda.flow.external.events.executor.ExternalEventExecutor
-import net.corda.flow.persistence.ResultSetImpl
 import net.corda.v5.application.persistence.PagedQuery
 import net.corda.v5.application.persistence.ParameterizedQuery
 import net.corda.v5.application.serialization.SerializationService
@@ -49,19 +44,16 @@ class NamedParameterizedQuery<R : Any>(
 
     @Suspendable
     override fun execute(): PagedQuery.ResultSet<R> {
-        val deserialized = wrapWithPersistenceException {
-            externalEventExecutor.execute(
-                NamedQueryExternalEventFactory::class.java,
-                NamedQueryParameters(queryName, getSerializedParameters(parameters), offset, limit)
-            )
-        }.map { serializationService.deserialize(it.array(), expectedClass) }
-
-        return ResultSetImpl(deserialized)
-    }
-
-    private fun getSerializedParameters(parameters: Map<String, Any>) : Map<String, ByteBuffer> {
-        return parameters.mapValues {
-            ByteBuffer.wrap(serializationService.serialize(it.value).bytes)
-        }
+        val resultSet = EntityResultSetImpl(
+            queryName,
+            externalEventExecutor,
+            serializationService,
+            parameters,
+            limit,
+            offset,
+            expectedClass
+        )
+        resultSet.next()
+        return resultSet
     }
 }

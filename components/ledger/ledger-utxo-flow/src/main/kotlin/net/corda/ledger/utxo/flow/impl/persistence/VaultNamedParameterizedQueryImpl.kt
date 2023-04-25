@@ -1,9 +1,6 @@
 package net.corda.ledger.utxo.flow.impl.persistence
 
 import net.corda.flow.external.events.executor.ExternalEventExecutor
-import net.corda.flow.persistence.ResultSetImpl
-import net.corda.ledger.utxo.flow.impl.persistence.external.events.VaultNamedQueryEventParams
-import net.corda.ledger.utxo.flow.impl.persistence.external.events.VaultNamedQueryExternalEventFactory
 import net.corda.v5.application.persistence.PagedQuery
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
@@ -51,23 +48,23 @@ class VaultNamedParameterizedQueryImpl<T>(
 
     @Suspendable
     override fun execute(): PagedQuery.ResultSet<T> {
-        val offsetValue = offset
-        val limitValue = limit
-
         getCreatedTimestampLimit()?.let {
             require(it <= Instant.now()) {
                 "Timestamp limit must not be in the future."
             }
         } ?: setCreatedTimestampLimit(Instant.now())
 
-        val results = externalEventExecutor.execute(
-            VaultNamedQueryExternalEventFactory::class.java,
-            VaultNamedQueryEventParams(queryName, getSerializedParameters(parameters), offsetValue, limitValue)
+        val resultSet = VaultResultSetImpl(
+            queryName,
+            externalEventExecutor,
+            serializationService,
+            parameters,
+            limit,
+            offset,
+            resultClass
         )
-
-        return ResultSetImpl(
-            results.map { serializationService.deserialize(it.array(), resultClass) }
-        )
+        resultSet.next()
+        return resultSet
     }
 
     override fun setCreatedTimestampLimit(timestampLimit: Instant): VaultNamedParameterizedQuery<T> {
@@ -78,10 +75,4 @@ class VaultNamedParameterizedQueryImpl<T>(
     }
 
     private fun getCreatedTimestampLimit() = parameters[TIMESTAMP_LIMIT_PARAM_NAME] as? Instant
-
-    private fun getSerializedParameters(parameters: Map<String, Any>) : Map<String, ByteBuffer> {
-        return parameters.mapValues {
-            ByteBuffer.wrap(serializationService.serialize(it.value).bytes)
-        }
-    }
 }
