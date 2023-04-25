@@ -1,8 +1,8 @@
 package net.corda.membership.lib.impl.converter
 
 import net.corda.crypto.cipher.suite.KeyEncodingService
-import net.corda.crypto.cipher.suite.PublicKeyHash
 import net.corda.crypto.cipher.suite.SignatureSpecImpl
+import net.corda.crypto.core.parseSecureHash
 import net.corda.layeredpropertymap.ConversionContext
 import net.corda.layeredpropertymap.CustomPropertyConverter
 import net.corda.membership.lib.notary.MemberNotaryDetails
@@ -57,7 +57,7 @@ class MemberNotaryDetailsConverter @Activate constructor(
             if ((hash != null) && (pem != null) && (signatureName != null)) {
                 MemberNotaryKey(
                     publicKey = keyEncodingService.decodePublicKey(pem),
-                    publicKeyHash = PublicKeyHash.parse(hash),
+                    publicKeyHash = parseSecureHash(hash),
                     spec = SignatureSpecImpl(signatureName)
                 )
             } else {

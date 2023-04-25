@@ -4,8 +4,8 @@ import com.typesafe.config.ConfigFactory
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.cipher.suite.SignatureSpecs.RSA_SHA256
-import net.corda.crypto.cipher.suite.calculateHash
 import net.corda.crypto.core.DigitalSignatureWithKey
+import net.corda.crypto.core.fullIdHash
 import net.corda.data.CordaAvroDeserializer
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.CordaAvroSerializer
@@ -1574,7 +1574,7 @@ class MembershipPersistenceTest {
         notaryKey: PublicKey,
         notaryProtocolVersions: List<String> = listOf("1")
     ): KeyValuePairList {
-        val notaryKeyHash = notaryKey.calculateHash()
+        val notaryKeyHash = notaryKey.fullIdHash()
         return KeyValuePairList(
             (listOf(
                 KeyValuePair(String.format(URL_KEY, "0"), endpointUrl),
@@ -1589,7 +1589,7 @@ class MembershipPersistenceTest {
                 KeyValuePair("${ROLES_PREFIX}.0", "notary"),
                 KeyValuePair(String.format(NOTARY_KEY_PEM, 0), keyEncodingService.encodeAsString(notaryKey)),
                 KeyValuePair(String.format(NOTARY_KEY_SPEC, 0), "SHA512withECDSA"),
-                KeyValuePair(String.format(NOTARY_KEY_HASH, 0), notaryKeyHash.value),
+                KeyValuePair(String.format(NOTARY_KEY_HASH, 0), notaryKeyHash.toString()),
             ) + notaryProtocolVersions.mapIndexed { i, version ->
                 KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS, i), version)
             } ).sorted()

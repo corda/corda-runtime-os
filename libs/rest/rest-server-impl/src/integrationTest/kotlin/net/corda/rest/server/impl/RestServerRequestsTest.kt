@@ -718,4 +718,26 @@ class RestServerRequestsTest : RestServerTestBase() {
         assertEquals(HttpStatus.SC_OK, helloResponse.responseStatus)
         assertEquals("""{"str":null}""", helloResponse.body)
     }
+
+    @Test
+    fun `Call echo on test entity`() {
+
+        val jsonBody = """{"content":{"nested":{"id":"myId","name":"TestName","amount":20}}}"""
+        val csvBody = """{"content":"aVery,Long,String"}"""
+
+        listOf(csvBody, jsonBody).forEach { testBody ->
+            val createEntityResponse = client.call(
+                PUT,
+                WebRequest<Any>(
+                    "testentity/inputecho",
+                    testBody
+                ),
+                userName,
+                password
+            )
+
+            assertEquals(HttpStatus.SC_OK, createEntityResponse.responseStatus, "for $testBody")
+            assertEquals(testBody, createEntityResponse.body, "for $testBody")
+        }
+    }
 }

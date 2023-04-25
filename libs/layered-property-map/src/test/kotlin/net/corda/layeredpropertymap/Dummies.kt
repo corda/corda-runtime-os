@@ -1,6 +1,7 @@
 package net.corda.layeredpropertymap
 
-import net.corda.crypto.cipher.suite.PublicKeyHash
+import net.corda.crypto.core.parseSecureHash
+import net.corda.v5.crypto.SecureHash
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
@@ -46,16 +47,16 @@ class DummyEndpointInfoConverter : CustomPropertyConverter<DummyEndpointInfo> {
     }
 }
 
-class DummyPublicKeyHashConverter : CustomPropertyConverter<PublicKeyHash> {
-    override val type: Class<PublicKeyHash>
-        get() = PublicKeyHash::class.java
+class DummyPublicKeyHashConverter : CustomPropertyConverter<SecureHash> {
+    override val type: Class<SecureHash>
+        get() = SecureHash::class.java
 
-    override fun convert(context: ConversionContext): PublicKeyHash? {
+    override fun convert(context: ConversionContext): SecureHash? {
         if(context.key.isEmpty()) {
             assertTrue(context.isListItem)
         } else {
             assertFalse(context.isListItem)
         }
-        return context.value()?.let { PublicKeyHash.parse(it) }
+        return context.value()?.let { parseSecureHash(it) }
     }
 }
