@@ -253,7 +253,7 @@ class MgmSynchronisationServiceImplTest {
                 eq(membershipPackage1),
                 any(),
                 any(),
-                eq(MembershipStatusFilter.ACTIVE),
+                eq(MembershipStatusFilter.ACTIVE_OR_SUSPENDED),
             )
         } doReturn record1
         on {
@@ -263,7 +263,7 @@ class MgmSynchronisationServiceImplTest {
                 eq(membershipPackage2),
                 any(),
                 any(),
-                eq(MembershipStatusFilter.ACTIVE),
+                eq(MembershipStatusFilter.ACTIVE_OR_SUSPENDED),
             )
         } doReturn record2
     }
