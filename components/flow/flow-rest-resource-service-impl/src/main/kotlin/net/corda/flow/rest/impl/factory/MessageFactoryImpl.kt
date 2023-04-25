@@ -51,11 +51,13 @@ class MessageFactoryImpl : MessageFactory {
             flowStatus.key.id,
             flowStatus.flowId,
             flowStatus.flowStatus.toString(),
-            JsonObjectAsString(flowStatus.result),
-            if (flowStatus.error != null) FlowStateErrorResponse(
-                flowStatus.error.errorType,
-                flowStatus.error.errorMessage
-            ) else null,
+            flowStatus.result?.let { JsonObjectAsString(it) },
+            flowStatus.error?.let {
+                FlowStateErrorResponse(
+                    it.errorType,
+                    it.errorMessage
+                )
+            },
             flowStatus.lastUpdateTimestamp
         )
     }

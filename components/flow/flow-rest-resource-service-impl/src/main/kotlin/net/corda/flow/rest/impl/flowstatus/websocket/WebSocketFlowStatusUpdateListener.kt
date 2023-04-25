@@ -100,11 +100,13 @@ class WebSocketFlowStatusUpdateListener(
             key.id,
             flowId,
             flowStatus.toString(),
-            JsonObjectAsString(result),
-            if (error != null) FlowStateErrorResponse(
-                error.errorType,
-                error.errorMessage
-            ) else null,
+            result?.let { JsonObjectAsString(it) },
+            error?.let {
+                FlowStateErrorResponse(
+                    it.errorType,
+                    it.errorMessage
+                )
+            },
             Instant.now()
         )
     }
