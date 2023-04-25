@@ -8,7 +8,6 @@ import com.fasterxml.jackson.databind.SerializerProvider
 import com.fasterxml.jackson.databind.module.SimpleModule
 import com.fasterxml.jackson.module.kotlin.KotlinModule
 import net.corda.crypto.core.parseSecureHash
-import net.corda.e2etest.utilities.GROUP_ID
 import net.corda.e2etest.utilities.RPC_FLOW_STATUS_SUCCESS
 import net.corda.e2etest.utilities.awaitRpcFlowFinished
 import net.corda.e2etest.utilities.conditionallyUploadCordaPackage
@@ -42,15 +41,16 @@ class ConsensualLedgerTests {
     }
 
     private val testRunUniqueId = UUID.randomUUID()
+    private val groupId = UUID.randomUUID().toString()
     private val cpiName = "${TEST_CPI_NAME}_$testRunUniqueId"
 
     private val aliceX500 = "CN=Alice-${testRunUniqueId}, OU=Application, O=R3, L=London, C=GB"
     private val bobX500 = "CN=Bob-${testRunUniqueId}, OU=Application, O=R3, L=London, C=GB"
     private val charlieX500 = "CN=Charlie-${testRunUniqueId}, OU=Application, O=R3, L=London, C=GB"
 
-    private val aliceHoldingId: String = getHoldingIdShortHash(aliceX500, GROUP_ID)
-    private val bobHoldingId: String = getHoldingIdShortHash(bobX500, GROUP_ID)
-    private val charlieHoldingId: String = getHoldingIdShortHash(charlieX500, GROUP_ID)
+    private val aliceHoldingId: String = getHoldingIdShortHash(aliceX500, groupId)
+    private val bobHoldingId: String = getHoldingIdShortHash(bobX500, groupId)
+    private val charlieHoldingId: String = getHoldingIdShortHash(charlieX500, groupId)
 
     private val staticMemberList = listOf(
         aliceX500,
@@ -63,7 +63,7 @@ class ConsensualLedgerTests {
         conditionallyUploadCordaPackage(
             cpiName,
             TEST_CPB_LOCATION,
-            GROUP_ID,
+            groupId,
             staticMemberList
         )
 
