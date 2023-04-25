@@ -158,8 +158,8 @@ class FlowFiberImpl(
         }
     }
 
-    private fun Fiber<*>.prepareForCaching() {
-        (this as FlowFiberImpl).apply {
+    private fun Fiber<*>.prepareForCaching(): FlowFiberImpl {
+        return (this as FlowFiberImpl).apply {
             flowFiberExecutionContext = null
             suspensionOutcome = null
         }
