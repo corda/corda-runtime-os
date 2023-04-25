@@ -1,5 +1,6 @@
 package net.corda.flow.rest.v1.types.response
 
+import net.corda.rest.JsonObject
 import java.time.Instant
 
 /**
@@ -20,7 +21,7 @@ data class FlowStatusResponse(
     val clientRequestId: String?,
     val flowId: String?,
     val flowStatus: String,
-    val flowResult: String?,
+    val flowResult: JsonObject?,
     val flowError: FlowStateErrorResponse?,
     val timestamp: Instant
 )

@@ -12,6 +12,7 @@ import net.corda.flow.rest.factory.MessageFactory
 import net.corda.flow.rest.v1.types.response.FlowStateErrorResponse
 import net.corda.flow.rest.v1.types.response.FlowStatusResponse
 import net.corda.flow.utils.keyValuePairListOf
+import net.corda.rest.json.serialization.JsonObjectAsString
 import net.corda.virtualnode.toCorda
 import org.osgi.service.component.annotations.Component
 import java.time.Instant
@@ -50,7 +51,7 @@ class MessageFactoryImpl : MessageFactory {
             flowStatus.key.id,
             flowStatus.flowId,
             flowStatus.flowStatus.toString(),
-            flowStatus.result,
+            JsonObjectAsString(flowStatus.result),
             if (flowStatus.error != null) FlowStateErrorResponse(
                 flowStatus.error.errorType,
                 flowStatus.error.errorMessage

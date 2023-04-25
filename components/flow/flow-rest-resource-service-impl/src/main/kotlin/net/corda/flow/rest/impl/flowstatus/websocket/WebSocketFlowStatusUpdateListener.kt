@@ -6,6 +6,7 @@ import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.rest.flowstatus.FlowStatusUpdateListener
 import net.corda.flow.rest.v1.types.response.FlowStateErrorResponse
 import net.corda.flow.rest.v1.types.response.FlowStatusResponse
+import net.corda.rest.json.serialization.JsonObjectAsString
 import net.corda.rest.ws.DuplexChannel
 import net.corda.rest.ws.WebSocketProtocolViolationException
 import net.corda.utilities.debug
@@ -99,7 +100,7 @@ class WebSocketFlowStatusUpdateListener(
             key.id,
             flowId,
             flowStatus.toString(),
-            result,
+            JsonObjectAsString(result),
             if (error != null) FlowStateErrorResponse(
                 error.errorType,
                 error.errorMessage
