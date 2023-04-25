@@ -72,28 +72,28 @@ class FlowTests {
         )
 
         val invalidConstructorFlowNames = listOf(
-            "net.cordapp.testing.smoketests.flow.errors.PrivateConstructorFlow",
-            "net.cordapp.testing.smoketests.flow.errors.PrivateConstructorJavaFlow",
-            "net.cordapp.testing.smoketests.flow.errors.NoDefaultConstructorFlow",
-            "net.cordapp.testing.smoketests.flow.errors.NoDefaultConstructorJavaFlow",
+            "com.r3.corda.testing.smoketests.flow.errors.PrivateConstructorFlow",
+            "com.r3.corda.testing.smoketests.flow.errors.PrivateConstructorJavaFlow",
+            "com.r3.corda.testing.smoketests.flow.errors.NoDefaultConstructorFlow",
+            "com.r3.corda.testing.smoketests.flow.errors.NoDefaultConstructorJavaFlow",
         )
 
         val dependencyInjectionFlowNames = listOf(
-            "net.cordapp.testing.smoketests.flow.DependencyInjectionTestFlow",
-            "net.cordapp.testing.smoketests.flow.inheritance.DependencyInjectionTestJavaFlow",
+            "com.r3.corda.testing.smoketests.flow.DependencyInjectionTestFlow",
+            "com.r3.corda.testing.smoketests.flow.inheritance.DependencyInjectionTestJavaFlow",
         )
 
         val expectedFlows = listOf(
-            "net.cordapp.testing.smoketests.virtualnode.ReturnAStringFlow",
-            "net.cordapp.testing.smoketests.virtualnode.SimplePersistenceCheckFlow",
-            "net.cordapp.testing.smoketests.flow.AmqpSerializationTestFlow",
-            "net.cordapp.testing.smoketests.flow.RpcSmokeTestFlow",
-            "net.cordapp.testing.testflows.TestFlow",
-            "net.cordapp.testing.testflows.BrokenProtocolFlow",
-            "net.cordapp.testing.testflows.MessagingFlow",
-            "net.cordapp.testing.testflows.PersistenceFlow",
-            "net.cordapp.testing.testflows.NonValidatingNotaryTestFlow",
-            "net.cordapp.testing.testflows.ledger.TokenSelectionFlow"
+            "com.r3.corda.testing.smoketests.virtualnode.ReturnAStringFlow",
+            "com.r3.corda.testing.smoketests.virtualnode.SimplePersistenceCheckFlow",
+            "com.r3.corda.testing.smoketests.flow.AmqpSerializationTestFlow",
+            "com.r3.corda.testing.smoketests.flow.RpcSmokeTestFlow",
+            "com.r3.corda.testing.testflows.TestFlow",
+            "com.r3.corda.testing.testflows.BrokenProtocolFlow",
+            "com.r3.corda.testing.testflows.MessagingFlow",
+            "com.r3.corda.testing.testflows.PersistenceFlow",
+            "com.r3.corda.testing.testflows.NonValidatingNotaryTestFlow",
+            "com.r3.corda.testing.testflows.ledger.TokenSelectionFlow"
         ) + invalidConstructorFlowNames + dependencyInjectionFlowNames
 
         val jacksonObjectMapper = jacksonObjectMapper()
@@ -1232,7 +1232,7 @@ class FlowTests {
         val issuanceRequestID = startRpcFlow(
             bobHoldingId,
             paramMap,
-            "net.cordapp.testing.testflows.NonValidatingNotaryTestFlow"
+            "com.r3.corda.testing.testflows.NonValidatingNotaryTestFlow"
         )
 
         val issuanceResult = awaitRpcFlowFinished(bobHoldingId, issuanceRequestID)
@@ -1255,7 +1255,7 @@ class FlowTests {
                 "inputStateRefs" to jacksonObjectMapper.writeValueAsString(inputStates),
                 "referenceStateRefs" to jacksonObjectMapper.writeValueAsString(refStates)
             ),
-            "net.cordapp.testing.testflows.NonValidatingNotaryTestFlow"
+            "com.r3.corda.testing.testflows.NonValidatingNotaryTestFlow"
         )
 
         val consumeResult = awaitRpcFlowFinished(bobHoldingId, consumeRequestID)

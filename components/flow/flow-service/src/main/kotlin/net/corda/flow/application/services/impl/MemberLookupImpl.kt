@@ -1,6 +1,6 @@
 package net.corda.flow.application.services.impl
 
-import net.corda.crypto.cipher.suite.calculateHash
+import net.corda.crypto.core.fullIdHash
 import net.corda.flow.fiber.FlowFiberService
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.sandbox.type.UsedByFlow
@@ -29,7 +29,7 @@ class MemberLookupImpl @Activate constructor(
 
     @Suspendable
     override fun lookup(key: PublicKey): MemberInfo? {
-        return getGroupReader().lookupByLedgerKey(key.calculateHash())
+        return getGroupReader().lookupByLedgerKey(key.fullIdHash())
     }
 
     @Suspendable

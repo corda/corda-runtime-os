@@ -38,12 +38,12 @@ dependencies {
         }
     }
     implementation "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
-    implementation ("io.micrometer:micrometer-core:0.1.0-SNAPSHOT") {
+    implementation ("net.corda.micrometer:micrometer-core:$micrometerVersion") {
         // we don't need these in classpath, so excluding them to reduce dependencies.
         exclude group: 'org.hdrhistogram', module: 'HdrHistogram'
         exclude group: 'org.latencyutils', module: 'LatencyUtils'
     }
-    implementation "io.micrometer:micrometer-registry-prometheus:0.1.0-SNAPSHOT"
+    implementation "net.corda.micrometer:micrometer-registry-prometheus:$micrometerVersion"
 
     runtimeOnly project(':libs:lifecycle:lifecycle-impl')
     runtimeOnly "org.apache.commons:commons-lang3:$commonsLangVersion"

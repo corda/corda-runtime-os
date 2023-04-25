@@ -41,7 +41,7 @@ class CpiInfoDbReconcilerReaderTest {
         "mainBundle.jar",
         listOf("library.jar"),
         CordappManifest(
-            "net.cordapp.Bundle",
+            "com.r3.corda.Bundle",
             "1.2.3",
             12,
             34,

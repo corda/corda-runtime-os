@@ -102,7 +102,7 @@ class UtxoLedgerTests {
             val flowId = startRpcFlow(
                 aliceHoldingId,
                 mapOf("input" to input, "members" to listOf(bobX500, charlieX500), "notary" to notaryX500),
-                "net.cordapp.demo.utxo.UtxoDemoFlow"
+                "com.r3.corda.demo.utxo.UtxoDemoFlow"
             )
 
             val flowResult = awaitRpcFlowFinished(aliceHoldingId, flowId)
@@ -117,7 +117,7 @@ class UtxoLedgerTests {
                 "offset" to 0,
                 "limit" to 100
             ),
-            "net.cordapp.demo.utxo.UtxoCustomQueryDemoFlow"
+            "com.r3.corda.demo.utxo.UtxoCustomQueryDemoFlow"
         )
 
         val customQueryFlowResult = awaitRpcFlowFinished(aliceHoldingId, customQueryFlowId)
@@ -139,7 +139,7 @@ class UtxoLedgerTests {
         val utxoFlowRequestId = startRpcFlow(
             aliceHoldingId,
             mapOf("input" to input, "members" to listOf(bobX500, charlieX500), "notary" to notaryX500),
-            "net.cordapp.demo.utxo.UtxoDemoFlow"
+            "com.r3.corda.demo.utxo.UtxoDemoFlow"
         )
         val utxoFlowResult = awaitRpcFlowFinished(aliceHoldingId, utxoFlowRequestId)
         assertThat(utxoFlowResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
@@ -149,7 +149,7 @@ class UtxoLedgerTests {
             val findTransactionFlowRequestId = startRpcFlow(
                 holdingId,
                 mapOf("transactionId" to utxoFlowResult.flowResult!!),
-                "net.cordapp.demo.utxo.FindTransactionFlow"
+                "com.r3.corda.demo.utxo.FindTransactionFlow"
             )
             val transactionResult = awaitRpcFlowFinished(holdingId, findTransactionFlowRequestId)
             assertThat(transactionResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
@@ -171,7 +171,7 @@ class UtxoLedgerTests {
         val evolveRequestId = startRpcFlow(
             bobHoldingId,
             mapOf("update" to evolvedMessage, "transactionId" to utxoFlowResult.flowResult!!, "index" to "0"),
-            "net.cordapp.demo.utxo.UtxoDemoEvolveFlow"
+            "com.r3.corda.demo.utxo.UtxoDemoEvolveFlow"
         )
         val evolveFlowResult = awaitRpcFlowFinished(bobHoldingId, evolveRequestId)
 
@@ -186,7 +186,7 @@ class UtxoLedgerTests {
         val peekFlowId =  startRpcFlow(
             bobHoldingId,
             mapOf("transactionId" to parsedEvolveFlowResult.transactionId!!),
-            "net.cordapp.demo.utxo.PeekTransactionFlow")
+            "com.r3.corda.demo.utxo.PeekTransactionFlow")
 
         val peekFlowResult = awaitRpcFlowFinished(bobHoldingId, peekFlowId)
         assertThat(peekFlowResult.flowError).isNull()
@@ -206,7 +206,7 @@ class UtxoLedgerTests {
         val utxoFlowRequestId = startRpcFlow(
             aliceHoldingId,
             mapOf("input" to "fail", "members" to listOf(bobX500, charlieX500), "notary" to notaryX500),
-            "net.cordapp.demo.utxo.UtxoDemoFlow"
+            "com.r3.corda.demo.utxo.UtxoDemoFlow"
         )
         val utxoFlowResult = awaitRpcFlowFinished(aliceHoldingId, utxoFlowRequestId)
         assertThat(utxoFlowResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)

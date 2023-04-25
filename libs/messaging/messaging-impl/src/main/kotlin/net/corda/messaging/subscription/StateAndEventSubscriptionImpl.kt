@@ -17,6 +17,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.StateAndEventSubscription
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
 import net.corda.messaging.config.ResolvedSubscriptionConfig
+import net.corda.messaging.constants.MetricsConstants
 import net.corda.messaging.subscription.consumer.StateAndEventConsumer
 import net.corda.messaging.subscription.consumer.builder.StateAndEventBuilder
 import net.corda.messaging.subscription.consumer.listener.StateAndEventConsumerRebalanceListener
@@ -77,9 +78,19 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
             "producerClientId ${config.clientId}."
 
     private val processorMeter = CordaMetrics.Metric.MessageProcessorTime.builder()
-        .withTag(CordaMetrics.Tag.MessagePatternType, "StateAndEvent")
+        .withTag(CordaMetrics.Tag.MessagePatternType, MetricsConstants.STATE_AND_EVENT_PATTERN_TYPE)
         .withTag(CordaMetrics.Tag.MessagePatternClientId, config.clientId)
-        .withTag(CordaMetrics.Tag.OperationName, "onNext")
+        .withTag(CordaMetrics.Tag.OperationName, MetricsConstants.ON_NEXT_OPERATION)
+        .build()
+
+    private val batchSizeHistogram = CordaMetrics.Metric.MessageBatchSize.builder()
+        .withTag(CordaMetrics.Tag.MessagePatternType, MetricsConstants.STATE_AND_EVENT_PATTERN_TYPE)
+        .withTag(CordaMetrics.Tag.MessagePatternClientId, config.clientId)
+        .build()
+
+    private val commitTimer = CordaMetrics.Metric.MessageCommitTime.builder()
+        .withTag(CordaMetrics.Tag.MessagePatternType, MetricsConstants.STATE_AND_EVENT_PATTERN_TYPE)
+        .withTag(CordaMetrics.Tag.MessagePatternClientId, config.clientId)
         .build()
 
     /**
@@ -180,7 +191,9 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                 var rebalanceOccurred = false
                 val batches = getEventsByBatch(stateAndEventConsumer.pollEvents()).iterator()
                 while (!rebalanceOccurred && batches.hasNext()) {
-                    rebalanceOccurred = tryProcessBatchOfEvents(batches.next())
+                    val batch = batches.next()
+                    batchSizeHistogram.record(batch.size.toDouble())
+                    rebalanceOccurred = tryProcessBatchOfEvents(batch)
                 }
                 keepProcessing = false // We only want to do one batch at a time
             } catch (ex: Exception) {
@@ -223,20 +236,22 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
             }
         }
 
-        producer.beginTransaction()
-        producer.sendRecords(outputRecords.toCordaProducerRecords())
-        if (deadLetterRecords.isNotEmpty()) {
-            producer.sendRecords(deadLetterRecords.map {
-                CordaProducerRecord(
-                    getStateAndEventDLQTopic(eventTopic),
-                    UUID.randomUUID().toString(),
-                    it
-                )
-            })
-            deadLetterRecords.clear()
+        commitTimer.recordCallable {
+            producer.beginTransaction()
+            producer.sendRecords(outputRecords.toCordaProducerRecords())
+            if (deadLetterRecords.isNotEmpty()) {
+                producer.sendRecords(deadLetterRecords.map {
+                    CordaProducerRecord(
+                        getStateAndEventDLQTopic(eventTopic),
+                        UUID.randomUUID().toString(),
+                        it
+                    )
+                })
+                deadLetterRecords.clear()
+            }
+            producer.sendRecordOffsetsToTransaction(eventConsumer, events.map { it })
+            producer.commitTransaction()
         }
-        producer.sendRecordOffsetsToTransaction(eventConsumer, events.map { it })
-        producer.commitTransaction()
         log.debug { "Processing events(keys: ${events.joinToString { it.key.toString() }}, size: ${events.size}) complete." }
 
         stateAndEventConsumer.updateInMemoryStatePostCommit(updatedStates, clock)
