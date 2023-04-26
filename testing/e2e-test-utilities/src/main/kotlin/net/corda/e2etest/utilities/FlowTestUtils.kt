@@ -91,8 +91,11 @@ fun awaitRpcFlowFinished(holdingId: String, requestId: String): FlowStatus {
                 }
             }.body)
 
-        FlowStatus(jsonNode["flowStatus"]?.textValue(), jsonNode["flowResult"]?.handlingNulls(),
-            jsonNode["flowError"]?.handlingNulls()?.asFlowError())
+        FlowStatus(
+            jsonNode[FlowStatus::flowStatus.name]?.textValue(),
+            jsonNode[FlowStatus::flowResult.name]?.handlingNulls(),
+            jsonNode[FlowStatus::flowError.name]?.handlingNulls()?.asFlowError()
+        )
     }
 }
 
@@ -121,8 +124,11 @@ fun getFlowStatus(holdingId: String, requestId: String, expectedCode: Int): Flow
             }.body
         )
 
-        FlowStatus(jsonNode["flowStatus"]?.textValue(), jsonNode["flowResult"]?.handlingNulls(),
-            jsonNode["flowError"]?.handlingNulls()?.asFlowError())
+        FlowStatus(
+            jsonNode[FlowStatus::flowStatus.name]?.textValue(),
+            jsonNode[FlowStatus::flowResult.name]?.handlingNulls(),
+            jsonNode[FlowStatus::flowError.name]?.handlingNulls()?.asFlowError()
+        )
     }
 }
 
