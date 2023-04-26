@@ -26,8 +26,8 @@ dependencies {
     compileOnly "org.apache.servicemix.bundles:org.apache.servicemix.bundles.kafka-clients:$kafkaClientVersion"
 
     testImplementation 'org.jetbrains.kotlin:kotlin-stdlib'
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
-    testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"
     testImplementation "org.pf4j:pf4j:$pf4jVersion"
     testImplementation "net.corda.cli.host:api:$pluginHostVersion"
     testImplementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"

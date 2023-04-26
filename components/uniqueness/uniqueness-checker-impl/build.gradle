@@ -30,6 +30,7 @@ dependencies {
     implementation project(":libs:utilities")
 
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 
     testImplementation project(":libs:virtual-node:virtual-node-info")

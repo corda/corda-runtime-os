@@ -1,13 +1,10 @@
 package net.corda.flow.mapper.impl.executor
 
 import net.corda.data.CordaAvroSerializer
-import net.corda.data.KeyValuePair
-import net.corda.data.KeyValuePairList
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.mapper.FlowMapperEvent
-import net.corda.data.flow.event.session.SessionConfirm
 import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.mapper.FlowMapperState
 import net.corda.data.flow.state.mapper.FlowMapperStateType
@@ -15,11 +12,9 @@ import net.corda.flow.mapper.FlowMapperResult
 import net.corda.flow.mapper.executor.FlowMapperEventExecutor
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.records.Record
-import net.corda.schema.Schemas
 import net.corda.session.manager.Constants
 import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
-import java.time.Instant
 
 @Suppress("LongParameterList")
 class SessionInitExecutor(
@@ -53,7 +48,6 @@ class SessionInitExecutor(
         }
     }
 
-    @Suppress("ForbiddenComment")
     private fun processSessionInit(sessionEvent: SessionEvent, sessionInit: SessionInit): FlowMapperResult {
         val (flowKey, outputRecordKey, outputRecordValue) =
             getSessionInitOutputs(
@@ -62,35 +56,10 @@ class SessionInitExecutor(
                 sessionInit
             )
 
-        // Send a session confirm message in response to the session init.
-        // TODO: Temporary hack for CORE-10465. Remove as part of CORE-10420.
-        if (isInteropSessionInit) {
-            val hackyConfirm = Record(
-                Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC,
-                sessionEvent.sessionId,
-                FlowMapperEvent(
-                    SessionEvent(
-                        MessageDirection.INBOUND,
-                        Instant.now(),
-                        sessionEvent.sessionId,
-                        1,
-                        sessionEvent.initiatingIdentity,
-                        sessionEvent.initiatedIdentity,
-                        0,
-                        emptyList(),
-                        SessionConfirm(KeyValuePairList(listOf(KeyValuePair(Constants.FLOW_SESSION_IS_INTEROP, "true"))))
-                    )
-                )
-            )
-
-            return FlowMapperResult(
-                FlowMapperState(flowKey, null, FlowMapperStateType.OPEN, true),
-                listOf(hackyConfirm)
-            )
-        }
-
+        log.info("outputTopic=$outputTopic, isInterop=$isInteropSessionInit, " +
+                "direction=$messageDirection, sessionInit")
         return FlowMapperResult(
-            FlowMapperState(flowKey, null, FlowMapperStateType.OPEN, false),
+            FlowMapperState(flowKey, null, FlowMapperStateType.OPEN, isInteropSessionInit),
             listOf(Record(outputTopic, outputRecordKey, outputRecordValue))
         )
     }
@@ -120,7 +89,11 @@ class SessionInitExecutor(
             SessionInitOutputs(
                 tmpFLowEventKey,
                 sessionEvent.sessionId,
-                generateAppMessage(sessionEvent, sessionEventSerializer, flowConfig)
+                if (!isInteropSessionInit) {
+                    generateAppMessage(sessionEvent, sessionEventSerializer, flowConfig)
+                } else {
+                    FlowMapperEvent(sessionEvent)
+                }
             )
         }
     }

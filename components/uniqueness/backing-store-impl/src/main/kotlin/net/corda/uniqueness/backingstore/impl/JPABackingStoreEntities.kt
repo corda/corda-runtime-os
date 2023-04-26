@@ -1,5 +1,6 @@
 package net.corda.uniqueness.backingstore.impl
 
+import net.corda.uniqueness.datamodel.common.UniquenessConstants.ORIGINATOR_X500_NAME_LENGTH
 import net.corda.uniqueness.datamodel.common.UniquenessConstants.TRANSACTION_ID_ALGO_LENGTH
 import net.corda.uniqueness.datamodel.common.UniquenessConstants.TRANSACTION_ID_LENGTH
 import net.corda.uniqueness.datamodel.common.UniquenessConstants.REJECTED_TRANSACTION_ERROR_DETAILS_LENGTH
@@ -156,6 +157,7 @@ internal class UniquenessStateDetailEntity(
 )
 
 @IdClass(UniquenessTxAlgoIdKey::class)
+@Suppress("LongParameterList")
 internal class UniquenessTransactionDetailEntity(
     @Id
     @Column(name = "tx_id_algo", length = TRANSACTION_ID_ALGO_LENGTH, nullable = false)
@@ -164,6 +166,9 @@ internal class UniquenessTransactionDetailEntity(
     @Id
     @Column(name = "tx_id", length = TRANSACTION_ID_LENGTH, nullable = false)
     val txId: ByteArray,
+
+    @Column(name = "originator_x500_name", length = ORIGINATOR_X500_NAME_LENGTH, nullable = false)
+    val originatorX500Name: String,
 
     @Column(name = "expiry_datetime", nullable = false)
     val expiryDateTime: Instant,
@@ -180,6 +185,7 @@ internal class UniquenessTransactionDetailEntity(
 
         if (txIdAlgo != other.txIdAlgo) return false
         if (!txId.contentEquals(other.txId)) return false
+        if (originatorX500Name != other.originatorX500Name) return false
         if (expiryDateTime != other.expiryDateTime) return false
         if (result != other.result) return false
 

@@ -3,11 +3,11 @@ package net.corda.libs.messaging.topic.factory
 import net.corda.libs.messaging.topic.KafkaTopicUtils
 import net.corda.libs.messaging.topic.utils.TopicUtils
 import net.corda.libs.messaging.topic.utils.factory.TopicUtilsFactory
-import net.corda.utilities.classload.OsgiDelegatedClassLoader
 import org.apache.kafka.clients.admin.AdminClient
 import org.osgi.framework.FrameworkUtil
+import org.osgi.framework.wiring.BundleWiring
 import org.osgi.service.component.annotations.Component
-import java.util.*
+import java.util.Properties
 
 /**
  * Kafka implementation of [TopicUtilsFactory]
@@ -22,7 +22,7 @@ class KafkaTopicUtilsFactory : TopicUtilsFactory {
 
         return if (currentBundle != null) {
             try {
-                Thread.currentThread().contextClassLoader = OsgiDelegatedClassLoader(currentBundle)
+                Thread.currentThread().contextClassLoader = currentBundle.adapt(BundleWiring::class.java).classLoader
                 KafkaTopicUtils(AdminClient.create(props))
             } finally {
                 Thread.currentThread().contextClassLoader = contextClassLoader

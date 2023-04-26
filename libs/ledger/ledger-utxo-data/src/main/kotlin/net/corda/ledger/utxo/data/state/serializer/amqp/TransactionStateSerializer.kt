@@ -1,38 +1,34 @@
 package net.corda.ledger.utxo.data.state.serializer.amqp
 
 import net.corda.ledger.utxo.data.state.TransactionStateImpl
-import net.corda.sandbox.type.SandboxConstants.CORDA_UNINJECTABLE_SERVICE
-import net.corda.sandbox.type.UsedByFlow
-import net.corda.sandbox.type.UsedByVerification
 import net.corda.serialization.BaseProxySerializer
 import net.corda.serialization.InternalCustomSerializer
-import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.EncumbranceGroup
-import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
-import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 import java.security.PublicKey
 
-@Component(
-    service = [InternalCustomSerializer::class, UsedByFlow::class, UsedByVerification::class],
-    property = [CORDA_UNINJECTABLE_SERVICE],
-    scope = PROTOTYPE
-)
-class TransactionStateSerializer @Activate constructor() :
-    BaseProxySerializer<TransactionStateImpl<ContractState>, TransactionStateProxy>(), UsedByFlow, UsedByVerification {
+@Component(service = [ InternalCustomSerializer::class ])
+class TransactionStateSerializer : BaseProxySerializer<TransactionStateImpl<ContractState>, TransactionStateProxy>() {
+    private companion object {
+        private const val VERSION_1 = 1
+    }
 
-    override val type = TransactionStateImpl::class.java
+    override val type
+        get() = TransactionStateImpl::class.java
 
-    override val proxyType = TransactionStateProxy::class.java
+    override val proxyType
+        get() = TransactionStateProxy::class.java
 
-    override val withInheritance = true
+    override val withInheritance
+        // TransactionStateImpl is a final class.
+        get() = false
 
     override fun toProxy(obj: TransactionStateImpl<ContractState>): TransactionStateProxy {
         return TransactionStateProxy(
-            TransactionStateVersion.VERSION_1,
+            VERSION_1,
             obj.contractState,
             obj.notaryName,
             obj.notaryKey,
@@ -41,15 +37,17 @@ class TransactionStateSerializer @Activate constructor() :
     }
 
     override fun fromProxy(proxy: TransactionStateProxy): TransactionStateImpl<ContractState> {
-        if (proxy.version == TransactionStateVersion.VERSION_1) {
-            return TransactionStateImpl(
-                proxy.contractState,
-                proxy.notaryName,
-                proxy.notaryKey,
-                proxy.encumbrance
-            )
+        return when(proxy.version) {
+            VERSION_1 ->
+                TransactionStateImpl(
+                    proxy.contractState,
+                    proxy.notaryName,
+                    proxy.notaryKey,
+                    proxy.encumbrance
+                )
+            else ->
+                throw CordaRuntimeException("Unable to create TransactionStateImpl with Version='${proxy.version}'")
         }
-        throw CordaRuntimeException("Unable to create TransactionStateImpl with Version='${proxy.version}'")
     }
 }
 
@@ -60,7 +58,7 @@ data class TransactionStateProxy(
     /**
      * Version of container.
      */
-    val version: TransactionStateVersion,
+    val version: Int,
 
     /**
      * Properties for transaction state serialisation.
@@ -70,11 +68,3 @@ data class TransactionStateProxy(
     val notaryKey: PublicKey,
     val encumbrance: EncumbranceGroup?,
 )
-
-/**
- * Enumeration for transaction state version.
- */
-@CordaSerializable
-enum class TransactionStateVersion {
-    VERSION_1
-}

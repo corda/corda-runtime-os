@@ -99,6 +99,7 @@ include 'components:crypto:crypto-softhsm-impl'
 include 'components:db:db-connection-manager'
 include 'components:db:db-connection-manager-impl'
 include 'components:domino-logic'
+include 'components:external-messaging-services'
 include 'components:flow:flow-mapper-service'
 include 'components:flow:flow-p2p-filter-service'
 include 'components:flow:flow-rest-resource-service'
@@ -389,11 +390,14 @@ include 'testing:cpbs:ledger-utxo-demo-app'
 include 'testing:cpbs:ledger-utxo-demo-contract'
 include 'testing:cpbs:extendable-cpb'
 include 'testing:cpbs:test-cordapp'
+include 'testing:cpbs:test-invocation-cordapp'
+include 'testing:cpbs:test-responder-cordapp'
 include 'testing:cpbs:mandelbrot'
 include 'testing:cpbs:mgm'
 include 'testing:cpbs:sandbox-scr-cpk'
 include 'testing:cpbs:sandbox-security-manager-one'
 include 'testing:cpbs:sandbox-security-manager-two'
+include 'testing:cpbs:sandbox-contract-cpk'
 include 'testing:cpbs:sandbox-singletons-cpk'
 include 'testing:cpbs:split-packages:split-packages-one'
 include 'testing:cpbs:split-packages:split-packages-one:library-one'
@@ -401,8 +405,6 @@ include 'testing:cpbs:split-packages:split-packages-two'
 include 'testing:cpbs:split-packages:split-packages-two:library-two'
 include 'testing:cpbs:test-cordapp-for-vnode-upgrade-testing-v1'
 include 'testing:cpbs:test-cordapp-for-vnode-upgrade-testing-v2'
-include 'testing:cpbs:test-cordapp-for-vnode-upgrade-testing-v3'
-include 'testing:cpbs:test-cordapp-for-vnode-upgrade-testing-v4'
 include 'testing:cpbs:packaging-verification-app-v1'
 include 'testing:cpbs:packaging-verification-contract-v1'
 include 'testing:crypto-testkit'
@@ -479,9 +481,9 @@ if (compositeBuild.toBoolean() && file(cordaApiLocation).exists()) {
 if (compositeBuild.toBoolean() && file(cordaCliHostLocation).exists()) {
     includeBuild(cordaCliHostLocation) {
         dependencySubstitution {
-            substitute module("net.corda.cli.host:corda-cli") with project(":app")
-            substitute module("net.corda.cli.host:api") with project(":api")
-            substitute module("net.corda.cli.host:plugins") with project(":plugins")
+            substitute module("net.corda.cli.host:corda-cli") using project(":app")
+            substitute module("net.corda.cli.host:api") using project(":api")
+            substitute module("net.corda.cli.host:plugins") using project(":plugins")
         }
     }
 }

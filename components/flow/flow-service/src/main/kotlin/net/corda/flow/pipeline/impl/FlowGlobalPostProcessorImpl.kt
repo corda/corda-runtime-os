@@ -1,5 +1,6 @@
 package net.corda.flow.pipeline.impl
 
+import java.time.Instant
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.event.mapper.ScheduleCleanup
@@ -7,8 +8,8 @@ import net.corda.data.flow.output.FlowStatus
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.flow.external.events.impl.ExternalEventManager
-import net.corda.flow.pipeline.events.FlowEventContext
 import net.corda.flow.pipeline.FlowGlobalPostProcessor
+import net.corda.flow.pipeline.events.FlowEventContext
 import net.corda.flow.pipeline.exceptions.FlowPlatformException
 import net.corda.flow.pipeline.factory.FlowMessageFactory
 import net.corda.flow.pipeline.factory.FlowRecordFactory
@@ -17,12 +18,12 @@ import net.corda.messaging.api.records.Record
 import net.corda.schema.configuration.FlowConfig.SESSION_FLOW_CLEANUP_TIME
 import net.corda.schema.configuration.FlowConfig.SESSION_MISSING_COUNTERPARTY_TIMEOUT_WINDOW
 import net.corda.session.manager.SessionManager
+import net.corda.utilities.debug
 import net.corda.v5.base.types.MemberX500Name
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
-import java.time.Instant
 
 @Component(service = [FlowGlobalPostProcessor::class])
 class FlowGlobalPostProcessorImpl @Activate constructor(
@@ -80,7 +81,17 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
             .map { event -> flowRecordFactory.createFlowMapperEventRecord(event.sessionId, event) }
     }
 
-    private fun verifyCounterparty(context: FlowEventContext<Any>, sessionState: SessionState, now: Instant): Boolean {
+    private fun verifyCounterparty(
+        context: FlowEventContext<Any>,
+        sessionState: SessionState,
+        now: Instant
+    ): Boolean {
+        if (sessionState.status == SessionStateType.CLOSED || sessionState.status == SessionStateType.ERROR) {
+            //we dont need to verify that a counterparty exists if the session is already terminated.
+            return true
+        }
+        val checkpoint = context.checkpoint
+        val doesCheckpointExist = checkpoint.doesExist
         val counterparty: MemberX500Name = MemberX500Name.parse(sessionState.counterpartyIdentity.x500Name!!)
         val groupReader = membershipGroupReaderProvider.getGroupReader(context.checkpoint.holdingIdentity)
         val counterpartyExists: Boolean = null != groupReader.lookup(counterparty)
@@ -100,8 +111,14 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
             if (expiryTime < now) {
                 val msg = "[${context.checkpoint.holdingIdentity.x500Name}] has failed to create a flow with counterparty: " +
                         "[${counterparty}] as the recipient doesn't exist in the network."
-                log.debug(msg)
-                throw FlowPlatformException(msg)
+                sessionManager.errorSession(sessionState)
+                if (doesCheckpointExist) {
+                    log.debug { "$msg. Throwing FlowPlatformException" }
+                    checkpoint.putSessionState(sessionState)
+                    throw FlowPlatformException(msg)
+                } else {
+                    log.debug { "$msg. Checkpoint is already marked for deletion." }
+                }
             }
 
             return false
@@ -112,7 +129,7 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
 
     private fun getFlowMapperSessionCleanupEvents(
         context: FlowEventContext<Any>,
-        now: Instant
+        now: Instant,
     ): List<Record<*, FlowMapperEvent>> {
         val flowCleanupTime = context.config.getLong(SESSION_FLOW_CLEANUP_TIME)
         val expiryTime = now.plusMillis(flowCleanupTime).toEpochMilli()

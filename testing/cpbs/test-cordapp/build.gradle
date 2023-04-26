@@ -1,4 +1,5 @@
 plugins {
+    id 'org.jetbrains.kotlin.jvm'
     id 'net.corda.plugins.cordapp-cpb2'
 }
 
@@ -15,8 +16,10 @@ cordapp {
 dependencies {
     cordaProvided platform("net.corda:corda-api:$cordaApiVersion")
     cordaProvided 'net.corda:corda-application'
+    cordaProvided 'net.corda:corda-crypto-extensions'
     cordaProvided 'net.corda:corda-ledger-utxo'
     cordaProvided 'net.corda:corda-notary-plugin'
+
 
     cordapp project(':testing:bundles:testing-dogs')
     cordapp project(':testing:bundles:cpk-for-duplicate-changelog-testing')

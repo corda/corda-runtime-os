@@ -1,0 +1,20 @@
+plugins {
+    id 'org.jetbrains.kotlin.jvm'
+    id 'net.corda.plugins.cordapp-cpb2'
+}
+
+cordapp {
+    targetPlatformVersion = platformVersion.toInteger()
+    minimumPlatformVersion = platformVersion.toInteger()
+    workflow {
+        name "Flow Worker Development"
+        versionId 1
+        vendor "R3"
+    }
+}
+
+dependencies {
+    cordaProvided platform("net.corda:corda-api:$cordaApiVersion")
+    cordaProvided 'org.jetbrains.kotlin:kotlin-osgi-bundle'
+    cordaProvided 'net.corda:corda-notary-plugin'
+}

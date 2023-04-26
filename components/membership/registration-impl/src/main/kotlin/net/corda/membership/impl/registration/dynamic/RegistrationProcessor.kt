@@ -112,7 +112,7 @@ class RegistrationProcessor(
         state: RegistrationState?,
         event: Record<String, RegistrationCommand>
     ): StateAndEventProcessor.Response<RegistrationState> {
-        logger.info("Processing registration command.")
+        logger.info("Processing registration command for registration ID ${event.key}.")
         val result = try {
             when (val command = event.value?.command) {
                 is StartRegistration -> {

@@ -10,9 +10,11 @@ import net.corda.db.admin.LiquibaseSchemaMigrator
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argThat
 import org.mockito.kotlin.check
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
+import org.mockito.kotlin.isNull
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import java.io.Writer
@@ -53,8 +55,8 @@ class LiquibaseSchemaMigratorTest {
 
     @Test
     fun `when updateDb call Liquibase API`() {
-        migrator.updateDb(connection, dbChange)
-        verify(lb).update(any<Contexts>())
+        migrator.updateDb(connection, dbChange, tag = "taggetytagtag")
+        verify(lb).update(argThat { this == "taggetytagtag" } ,any<Contexts>())
     }
 
     @Test
@@ -74,7 +76,7 @@ class LiquibaseSchemaMigratorTest {
     @Test
     fun `when createUpdateSql call Liquibase API`() {
         migrator.createUpdateSql(connection, dbChange, writer)
-        verify(lb).update(any<Contexts>(), eq(writer))
+        verify(lb).update(isNull(), any<Contexts>(), eq(writer))
     }
 
     @Test

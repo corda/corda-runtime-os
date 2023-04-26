@@ -1,13 +1,9 @@
 package net.corda.session.mapper.service.executor
 
-import java.time.Instant
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.event.SessionEvent
-import net.corda.data.flow.event.mapper.ExecuteCleanup
 import net.corda.data.flow.event.mapper.FlowMapperEvent
-import net.corda.data.flow.event.mapper.ScheduleCleanup
 import net.corda.data.flow.state.mapper.FlowMapperState
-import net.corda.data.flow.state.mapper.FlowMapperStateType
 import net.corda.flow.mapper.factory.FlowMapperEventExecutorFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.processor.StateAndEventProcessor
@@ -16,6 +12,7 @@ import net.corda.schema.configuration.FlowConfig
 import net.corda.utilities.debug
 import net.corda.utilities.trace
 import org.slf4j.LoggerFactory
+import java.time.Instant
 
 /**
  * The [FlowMapperMessageProcessor] receives states and events that are keyed by strings. These strings can be either:
@@ -34,38 +31,26 @@ class FlowMapperMessageProcessor(
 
     private val sessionP2PTtl = flowConfig.getLong(FlowConfig.SESSION_P2P_TTL)
 
+    private val errorMsg = "This event is expired and will be %. Event: % State: %"
+
     override fun onNext(
         state: FlowMapperState?,
         event: Record<String, FlowMapperEvent>
     ): StateAndEventProcessor.Response<FlowMapperState> {
         val key = event.key
-        logger.trace { "Received event: key: $key event: ${event.value}" }
+        logger.trace { "Received event. Key: $key Event: ${event.value}" }
         val value = event.value ?: return StateAndEventProcessor.Response(state, emptyList())
 
-        return if (!isExpiredSessionEvent(value) && isValidState(state, value)) {
+        return if (!isExpiredSessionEvent(value)) {
             val executor = flowMapperEventExecutorFactory.create(key, value, state, flowConfig)
             val result = executor.execute()
             StateAndEventProcessor.Response(result.flowMapperState, result.outputEvents)
         } else {
-            logger.debug { "Ignoring event (isExpiredSessionEvent: ${isExpiredSessionEvent(value)}, " +
-                    "isValidState: ${isValidState(state, value)})" }
+            logger.debug {
+                errorMsg.format("ignored", event, state)
+            }
             StateAndEventProcessor.Response(state, emptyList())
         }
-    }
-
-    /**
-     * Only allow events to be processed when one of the following criteria is met:
-     * - the messages are for a new state.
-     * - the state is set to [FlowMapperStateType.OPEN],
-     * - it is a cleanup event
-     * @param state the current state for this mapper event
-     * @param mapperEvent the mapper event
-     * @return true if mapper state is valid for processing flow events or if it is a cleanup event. False otherwise.
-     * a [SessionEvent]
-     */
-    private fun isValidState(state: FlowMapperState?, mapperEvent: FlowMapperEvent): Boolean {
-        return state == null || state.status == FlowMapperStateType.OPEN
-                || mapperEvent.payload is ExecuteCleanup || mapperEvent.payload is ScheduleCleanup
     }
 
     /**

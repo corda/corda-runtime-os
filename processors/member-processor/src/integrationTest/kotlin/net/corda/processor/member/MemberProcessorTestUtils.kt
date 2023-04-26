@@ -3,10 +3,10 @@ package net.corda.processor.member
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.cpiinfo.read.CpiInfoReadService
-import net.corda.crypto.cipher.suite.calculateHash
 import net.corda.crypto.config.impl.createCryptoBootstrapParamsMap
 import net.corda.crypto.config.impl.createDefaultCryptoConfig
 import net.corda.crypto.core.CryptoConsts
+import net.corda.crypto.core.fullIdHash
 import net.corda.crypto.core.parseSecureHash
 import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationSchemaVersion
@@ -234,7 +234,7 @@ class MemberProcessorTestUtils {
 
         fun lookUpBySessionKey(groupReader: MembershipGroupReader, member: MemberInfo?) = eventually {
             val result = member?.let {
-                groupReader.lookupBySessionKey(it.sessionInitiationKeys.first().calculateHash())
+                groupReader.lookupBySessionKey(it.sessionInitiationKeys.first().fullIdHash())
             }
             assertNotNull(result)
             result!!

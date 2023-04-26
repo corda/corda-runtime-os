@@ -69,7 +69,8 @@ class UtxoDemoEvolveFlow : ClientStartableFlow {
                 TestUtxoState(
                     request.update,
                     inputState.participants,
-                    inputState.participantNames)
+                    inputState.participantNames
+                )
 
             val members = output.participantNames.map { x500 ->
                 requireNotNull(memberLookup.lookup(MemberX500Name.parse(x500))) {

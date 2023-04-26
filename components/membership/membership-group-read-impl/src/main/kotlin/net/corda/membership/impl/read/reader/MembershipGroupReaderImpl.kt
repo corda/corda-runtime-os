@@ -1,6 +1,5 @@
 package net.corda.membership.impl.read.reader
 
-import net.corda.crypto.cipher.suite.PublicKeyHash
 import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.membership.impl.read.cache.MembershipGroupReadCache
 import net.corda.membership.lib.InternalGroupParameters
@@ -15,6 +14,7 @@ import net.corda.membership.read.GroupParametersReaderService
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.NotaryVirtualNodeLookup
 import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.crypto.SecureHash
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 
@@ -41,10 +41,10 @@ class MembershipGroupReaderImpl(
     override fun lookup(filter: MembershipStatusFilter): Collection<MemberInfo> =
         memberList.filterBy(filter)
 
-    override fun lookupByLedgerKey(ledgerKeyHash: PublicKeyHash, filter: MembershipStatusFilter): MemberInfo? =
+    override fun lookupByLedgerKey(ledgerKeyHash: SecureHash, filter: MembershipStatusFilter): MemberInfo? =
         memberList.filterBy(filter).singleOrNull { ledgerKeyHash in it.ledgerKeyHashes }
 
-    override fun lookupBySessionKey(sessionKeyHash: PublicKeyHash, filter: MembershipStatusFilter): MemberInfo? =
+    override fun lookupBySessionKey(sessionKeyHash: SecureHash, filter: MembershipStatusFilter): MemberInfo? =
         memberList.filterBy(filter).singleOrNull { it.sessionKeysHash.contains(sessionKeyHash) }
 
     override val notaryVirtualNodeLookup: NotaryVirtualNodeLookup by lazy {
@@ -64,6 +64,11 @@ class MembershipGroupReaderImpl(
                         memberEntry.value.filterBy(MembershipStatusFilter.PENDING)
                     }
                 }
+            MembershipStatusFilter.ACTIVE_OR_SUSPENDED_IF_PRESENT_OR_PENDING -> groupBy { it.name }.flatMap {
+                it.value.filterBy(MembershipStatusFilter.ACTIVE_OR_SUSPENDED).ifEmpty {
+                    it.value.filterBy(MembershipStatusFilter.PENDING)
+                }
+            }
             else -> this.filter { it.status == MEMBER_STATUS_ACTIVE || it.status == MEMBER_STATUS_SUSPENDED }
         }
     }

@@ -2,6 +2,7 @@ package net.corda.simulator.runtime.ledger.utxo
 
 import net.corda.crypto.core.bytes
 import net.corda.crypto.core.parseSecureHash
+import net.corda.flow.persistence.ResultSetImpl
 import net.corda.simulator.SimulatorConfiguration
 import net.corda.simulator.entities.UtxoTransactionEntity
 import net.corda.simulator.entities.UtxoTransactionOutputEntity
@@ -134,7 +135,7 @@ class SimUtxoLedgerServiceTest {
             2,
             false
         )
-        val utxoOutputQueryResult = listOf(utxoTxOutputEntity)
+        val utxoOutputQueryResult = ResultSetImpl(listOf(utxoTxOutputEntity))
 
         val utxoOutputQuery = mock<ParameterizedQuery<UtxoTransactionOutputEntity>>()
         whenever(persistenceService.query(eq("UtxoTransactionOutputEntity.findUnconsumedStatesByType"),

@@ -14,6 +14,7 @@ import net.corda.membership.p2p.helpers.P2pRecordsFactory
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.messaging.api.records.Record
 import net.corda.data.p2p.app.AppMessage
+import net.corda.membership.persistence.client.MembershipPersistenceOperation
 import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.test.util.time.TestClock
@@ -49,7 +50,23 @@ class ProcessMemberVerificationRequestHandlerTest {
 
     private val response = argumentCaptor<VerificationResponse>()
     private val cordaAvroSerializationFactory = mock<CordaAvroSerializationFactory>()
-    private val membershipPersistenceClient = mock<MembershipPersistenceClient>()
+    private val records = Record(
+        "topic",
+        "key",
+        false,
+    )
+    private val operation = mock<MembershipPersistenceOperation<Unit>> {
+        on { createAsyncCommands() } doReturn listOf(records)
+    }
+    private val membershipPersistenceClient = mock<MembershipPersistenceClient> {
+        on {
+            setRegistrationRequestStatus(
+                member.toCorda(),
+                REGISTRATION_ID,
+                RegistrationStatus.PENDING_MEMBER_VERIFICATION,
+            )
+        } doReturn operation
+    }
     private val memberTypeChecker = mock<MemberTypeChecker>()
     private val p2pMessage = mock<Record<String, AppMessage>>()
     private val p2pRecordsFactory = mock<P2pRecordsFactory> {
@@ -85,8 +102,9 @@ class ProcessMemberVerificationRequestHandlerTest {
                 )
             )
         )
-        assertThat(result.outputStates).hasSize(1)
+        assertThat(result.outputStates).hasSize(2)
             .contains(p2pMessage)
+            .contains(records)
         assertThat(result.updatedState).isNull()
         with(response.firstValue) {
             assertThat(this.registrationId).isEqualTo(REGISTRATION_ID)

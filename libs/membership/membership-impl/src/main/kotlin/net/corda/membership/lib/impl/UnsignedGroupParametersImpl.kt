@@ -1,9 +1,9 @@
 package net.corda.membership.lib.impl
 
 import net.corda.libs.packaging.hash
-import net.corda.membership.lib.EPOCH_KEY
-import net.corda.membership.lib.MODIFIED_TIME_KEY
-import net.corda.membership.lib.NOTARIES_KEY
+import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.EPOCH_KEY
+import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.MODIFIED_TIME_KEY
+import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.NOTARIES_KEY
 import net.corda.membership.lib.UnsignedGroupParameters
 import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.crypto.DigestAlgorithmName

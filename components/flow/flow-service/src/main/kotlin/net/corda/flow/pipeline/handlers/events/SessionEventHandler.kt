@@ -46,6 +46,7 @@ class SessionEventHandler @Activate constructor(
 
     private companion object {
         val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        private const val INTEROP_RESPONDER_FLOW = "INTEROP_RESPONDER_FLOW"
     }
 
     override val type = SessionEvent::class.java
@@ -109,22 +110,31 @@ class SessionEventHandler @Activate constructor(
             WaitingFor(WaitingForSessionInit(sessionId)),
             holdingIdentity
         ) {
-            val protocolStore = try {
-                flowSandboxService.get(holdingIdentity, it).protocolStore
-            } catch (e: Exception) {
-                // We assume that all sandbox creation failures are transient. This likely isn't true, but to handle
-                // it properly will need some changes to the exception handling to get the context elsewhere. Transient here
-                // will get the right failure eventually, so this is fine for now.
-                throw FlowTransientException(
-                    "Failed to create the flow sandbox: ${e.message ?: "No exception message provided."}",
-                    e
-                )
+            val flowAndProtocolVersion = if (!initialSessionState.isInteropSession) {
+                val protocolStore = try {
+                    flowSandboxService.get(holdingIdentity, it).protocolStore
+                } catch (e: Exception) {
+                    // We assume that all sandbox creation failures are transient. This likely isn't true, but to handle
+                    // it properly will need some changes to the exception handling to get the context elsewhere. Transient here
+                    // will get the right failure eventually, so this is fine for now.
+                    throw FlowTransientException(
+                        "Failed to create the flow sandbox: ${e.message ?: "No exception message provided."}",
+                        e
+                    )
+                }
+                protocolStore.responderForProtocol(requestedProtocolName, initiatorVersionsSupported, context)
+            } else {
+                val className = KeyValueStore(sessionInit.contextUserProperties)[INTEROP_RESPONDER_FLOW]
+                    ?: throw FlowTransientException("Failed to create the flow sandbox. " +
+                            "Missing flowClassName while starting an interoperable flow.")
+
+                log.info("Starting interoperable flow $className.")
+                FlowAndProtocolVersion("", className)
             }
-            val flowAndProtocolVersion = protocolStore.responderForProtocol(requestedProtocolName, initiatorVersionsSupported, context)
             initiatedFlowNameAndProtocol = flowAndProtocolVersion
             FlowStartContext.newBuilder()
                 .setStatusKey(FlowKey(sessionId, initiatedIdentity))
-                .setInitiatorType(FlowInitiatorType.P2P)
+                .setInitiatorType(if (initialSessionState.isInteropSession) FlowInitiatorType.INTEROP else FlowInitiatorType.P2P)
                 .setRequestId(sessionId)
                 .setIdentity(initiatedIdentity)
                 .setCpiId(sessionInit.cpiId)
@@ -154,7 +164,7 @@ class SessionEventHandler @Activate constructor(
                         "missing from SessionInit"
             )
         }
-        return Pair(requestedProtocolName, initiatorVersionsSupportedProp.split(",").map { it.toInt() })
+        return Pair(requestedProtocolName, initiatorVersionsSupportedProp.split(",").map { it.trim().toInt() })
     }
 
     private fun sendConfirmMessage(

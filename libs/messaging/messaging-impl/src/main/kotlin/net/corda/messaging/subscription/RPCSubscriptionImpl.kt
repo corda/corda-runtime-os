@@ -27,6 +27,7 @@ import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.messaging.api.subscription.RPCSubscription
 import net.corda.messaging.config.ResolvedSubscriptionConfig
+import net.corda.messaging.constants.MetricsConstants
 import net.corda.metrics.CordaMetrics
 import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
@@ -50,9 +51,9 @@ internal class RPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
     private val errorMsg = "Failed to read records from group ${config.group}, topic ${config.topic}"
 
     private val processorMeter = CordaMetrics.Metric.MessageProcessorTime.builder()
-        .withTag(CordaMetrics.Tag.MessagePatternType, "RPC")
+        .withTag(CordaMetrics.Tag.MessagePatternType, MetricsConstants.RPC_PATTERN_TYPE)
         .withTag(CordaMetrics.Tag.MessagePatternClientId, config.clientId)
-        .withTag(CordaMetrics.Tag.OperationName, "rpcResponder")
+        .withTag(CordaMetrics.Tag.OperationName, MetricsConstants.RPC_RESPONDER_OPERATION)
         .build()
 
     val isRunning: Boolean

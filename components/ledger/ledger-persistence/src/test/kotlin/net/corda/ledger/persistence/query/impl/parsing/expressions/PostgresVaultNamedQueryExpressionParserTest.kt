@@ -1,31 +1,33 @@
 package net.corda.ledger.persistence.query.impl.parsing.expressions
 
-import net.corda.ledger.persistence.query.impl.parsing.And
-import net.corda.ledger.persistence.query.impl.parsing.As
-import net.corda.ledger.persistence.query.impl.parsing.Equals
-import net.corda.ledger.persistence.query.impl.parsing.From
-import net.corda.ledger.persistence.query.impl.parsing.GreaterThan
-import net.corda.ledger.persistence.query.impl.parsing.GreaterThanEquals
-import net.corda.ledger.persistence.query.impl.parsing.In
-import net.corda.ledger.persistence.query.impl.parsing.IsNotNull
-import net.corda.ledger.persistence.query.impl.parsing.IsNull
-import net.corda.ledger.persistence.query.impl.parsing.JsonArrayOrObjectAsText
-import net.corda.ledger.persistence.query.impl.parsing.JsonCast
-import net.corda.ledger.persistence.query.impl.parsing.JsonKeyExists
-import net.corda.ledger.persistence.query.impl.parsing.LeftParentheses
-import net.corda.ledger.persistence.query.impl.parsing.LessThan
-import net.corda.ledger.persistence.query.impl.parsing.LessThanEquals
-import net.corda.ledger.persistence.query.impl.parsing.Like
-import net.corda.ledger.persistence.query.impl.parsing.NotEquals
-import net.corda.ledger.persistence.query.impl.parsing.Number
-import net.corda.ledger.persistence.query.impl.parsing.Or
-import net.corda.ledger.persistence.query.impl.parsing.Parameter
-import net.corda.ledger.persistence.query.impl.parsing.ParameterEnd
-import net.corda.ledger.persistence.query.impl.parsing.PathReference
-import net.corda.ledger.persistence.query.impl.parsing.PathReferenceWithSpaces
-import net.corda.ledger.persistence.query.impl.parsing.RightParentheses
-import net.corda.ledger.persistence.query.impl.parsing.Select
-import net.corda.ledger.persistence.query.impl.parsing.Where
+import net.corda.ledger.persistence.query.parsing.And
+import net.corda.ledger.persistence.query.parsing.As
+import net.corda.ledger.persistence.query.parsing.Equals
+import net.corda.ledger.persistence.query.parsing.From
+import net.corda.ledger.persistence.query.parsing.GreaterThan
+import net.corda.ledger.persistence.query.parsing.GreaterThanEquals
+import net.corda.ledger.persistence.query.parsing.In
+import net.corda.ledger.persistence.query.parsing.IsNotNull
+import net.corda.ledger.persistence.query.parsing.IsNull
+import net.corda.ledger.persistence.query.parsing.JsonArrayOrObjectAsText
+import net.corda.ledger.persistence.query.parsing.JsonCast
+import net.corda.ledger.persistence.query.parsing.JsonField
+import net.corda.ledger.persistence.query.parsing.JsonKeyExists
+import net.corda.ledger.persistence.query.parsing.LeftParentheses
+import net.corda.ledger.persistence.query.parsing.LessThan
+import net.corda.ledger.persistence.query.parsing.LessThanEquals
+import net.corda.ledger.persistence.query.parsing.Like
+import net.corda.ledger.persistence.query.parsing.NotEquals
+import net.corda.ledger.persistence.query.parsing.Number
+import net.corda.ledger.persistence.query.parsing.Or
+import net.corda.ledger.persistence.query.parsing.Parameter
+import net.corda.ledger.persistence.query.parsing.ParameterEnd
+import net.corda.ledger.persistence.query.parsing.PathReference
+import net.corda.ledger.persistence.query.parsing.PathReferenceWithSpaces
+import net.corda.ledger.persistence.query.parsing.RightParentheses
+import net.corda.ledger.persistence.query.parsing.Select
+import net.corda.ledger.persistence.query.parsing.Where
+import net.corda.ledger.persistence.query.parsing.expressions.PostgresVaultNamedQueryExpressionParser
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.assertj.core.data.Index
@@ -129,6 +131,18 @@ class PostgresVaultNamedQueryExpressionParserTest {
             .contains(Number("1.0"), Index.atIndex(0))
             .contains(Number("23.456"), Index.atIndex(1))
             .contains(Number("78910.00000001"), Index.atIndex(4))
+    }
+
+    /**
+     * JSON field operator
+     */
+    @Test
+    fun `json field is parsed as JsonArrayOrObjectAsText`() {
+        val expression = expressionParser.parse("these ARE -> field nAmEs != ->> -> is null is not null")
+        assertThat(expression.filterIsInstance<JsonField>()).hasSize(2)
+        assertThat(expression)
+            .contains(JsonField(), Index.atIndex(2))
+            .contains(JsonField(), Index.atIndex(7))
     }
 
     /**

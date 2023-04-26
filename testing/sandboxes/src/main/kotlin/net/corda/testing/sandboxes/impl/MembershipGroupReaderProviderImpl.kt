@@ -1,6 +1,5 @@
 package net.corda.testing.sandboxes.impl
 
-import net.corda.crypto.cipher.suite.PublicKeyHash
 import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.membership.lib.InternalGroupParameters
 import net.corda.membership.lib.SignedGroupParameters
@@ -9,6 +8,7 @@ import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.membership.read.NotaryVirtualNodeLookup
 import net.corda.testing.sandboxes.SandboxSetup
 import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.crypto.SecureHash
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import org.osgi.service.component.annotations.Component
@@ -50,7 +50,7 @@ class MembershipGroupReaderProviderImpl : MembershipGroupReaderProvider {
             throw IllegalStateException("TEST MODULE: Membership not supported")
         }
 
-        override fun lookupByLedgerKey(ledgerKeyHash: PublicKeyHash, filter: MembershipStatusFilter): MemberInfo? {
+        override fun lookupByLedgerKey(ledgerKeyHash: SecureHash, filter: MembershipStatusFilter): MemberInfo? {
             return null
         }
 
@@ -58,7 +58,7 @@ class MembershipGroupReaderProviderImpl : MembershipGroupReaderProvider {
             return null
         }
 
-        override fun lookupBySessionKey(sessionKeyHash: PublicKeyHash, filter: MembershipStatusFilter): MemberInfo? {
+        override fun lookupBySessionKey(sessionKeyHash: SecureHash, filter: MembershipStatusFilter): MemberInfo? {
             return null
         }
 

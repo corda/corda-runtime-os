@@ -1,6 +1,6 @@
 package net.corda.p2p.linkmanager.utilities
 
-import net.corda.crypto.cipher.suite.PublicKeyHash
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.lib.MemberInfoExtension.Companion.ENDPOINTS
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
@@ -12,6 +12,7 @@ import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.p2p.crypto.protocol.ProtocolConstants
 import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.crypto.SecureHash
 import net.corda.v5.membership.EndpointInfo
 import net.corda.v5.membership.MemberContext
 import net.corda.v5.membership.MemberInfo
@@ -73,8 +74,8 @@ fun mockMembers(members: Collection<HoldingIdentity>, serialNumber: Long = 1,): 
         this.update(data)
         return digest()
     }
-    val hashToInfo = identities.values.associateBy {
-        val publicKeyHash = PublicKeyHash.parse(messageDigest.hash(it.sessionInitiationKeys.first().encoded))
+    val hashToInfo = identities.values.associateBy<MemberInfo, SecureHash> {
+        val publicKeyHash = SecureHashImpl("SHA-256", messageDigest.hash(it.sessionInitiationKeys.first().encoded))
         publicKeyHash
     }
     return object : MembershipGroupReaderProvider {
@@ -85,7 +86,7 @@ fun mockMembers(members: Collection<HoldingIdentity>, serialNumber: Long = 1,): 
                     identities[HoldingIdentity(name, holdingIdentity.groupId)]
                 }
                 on { lookupBySessionKey(sessionKeyHash = any(), filter = any()) } doAnswer {
-                    val key = it.arguments[0] as PublicKeyHash
+                    val key = it.arguments[0] as SecureHash
                     hashToInfo[key]
                 }
             }

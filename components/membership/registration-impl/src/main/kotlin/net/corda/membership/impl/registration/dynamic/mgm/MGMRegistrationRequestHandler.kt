@@ -51,7 +51,7 @@ internal class MGMRegistrationRequestHandler (
                 signatureSpec = mgmInfo.memberSignatureSpec,
                 serial = 0L,
             )
-        )
+        ).execute()
         if (registrationRequestPersistenceResult is MembershipPersistenceResult.Failure) {
             throw InvalidMembershipRegistrationException(
                 "Registration failed, persistence error. Reason: ${registrationRequestPersistenceResult.errorMsg}"

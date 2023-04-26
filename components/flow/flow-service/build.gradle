@@ -12,6 +12,7 @@ dependencies {
     compileOnly 'org.osgi:osgi.annotation'
 
     implementation project(":components:configuration:configuration-read-service")
+    implementation project(":components:external-messaging-services")
     implementation project(":components:membership:membership-group-read")
     implementation project(":components:virtual-node:virtual-node-info-read-service")
     implementation project(":components:virtual-node:cpi-info-read-service")
@@ -23,6 +24,7 @@ dependencies {
     implementation project(":libs:configuration:configuration-core")
     implementation project(":libs:crypto:crypto-core")
     implementation project(":libs:crypto:crypto-flow")
+    implementation project(":libs:external-messaging")
     implementation project(':libs:flows:flow-api')
     implementation project(':libs:flows:session-manager')
     implementation project(":libs:flows:utils")

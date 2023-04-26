@@ -1,6 +1,6 @@
 package net.corda.base.internal
 
-import net.corda.v5.base.types.ByteArrays.toHexString
+import net.corda.v5.base.util.ByteArrays.toHexString
 import org.assertj.core.api.Assertions.catchThrowable
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertSame

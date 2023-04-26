@@ -10,9 +10,11 @@ import net.corda.data.membership.actions.request.DistributeMemberInfo
 import net.corda.data.membership.actions.request.MembershipActionsRequest
 import net.corda.data.membership.p2p.MembershipPackage
 import net.corda.data.p2p.app.AppMessage
+import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.libs.configuration.SmartConfig
 import net.corda.membership.lib.InternalGroupParameters
 import net.corda.membership.lib.MemberInfoExtension
+import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_SUSPENDED
 import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
 import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
 import net.corda.membership.lib.notary.MemberNotaryDetails
@@ -103,12 +105,16 @@ class DistributeMemberInfoActionHandlerTest {
 
     private val owner = createHoldingIdentity("owner")
     private val member = createHoldingIdentity("member")
+    private val suspendMember = createHoldingIdentity("suspended")
     private val action = DistributeMemberInfo(owner.toAvro(), member.toAvro(), null, null)
-    private val memberInfo = mockMemberInfo(member)
-    private val inactiveMember = mockMemberInfo(
-        createHoldingIdentity("inactive"),
-        status = MemberInfoExtension.MEMBER_STATUS_SUSPENDED
+    private val distributeSuspendedMemberAction = DistributeMemberInfo(
+        owner.toAvro(),
+        suspendMember.toAvro(),
+        null,
+        null
     )
+    private val memberInfo = mockMemberInfo(member)
+    private val suspendedMemberInfo = mockMemberInfo(suspendMember, status = MEMBER_STATUS_SUSPENDED)
     private val mgm = mockMemberInfo(
         createHoldingIdentity("mgm"),
         isMgm = true,
@@ -124,8 +130,15 @@ class DistributeMemberInfoActionHandlerTest {
             ByteBuffer.wrap("sig-$name".toByteArray())
         ) to CryptoSignatureSpec("dummy", null, null))
     }
+    private val suspendMemberSignature = listOf(suspendedMemberInfo).associate {
+        val name = it.name.toString()
+        it.holdingIdentity to (CryptoSignatureWithKey(
+            ByteBuffer.wrap("pk-$name".toByteArray()),
+            ByteBuffer.wrap("sig-$name".toByteArray())
+        ) to CryptoSignatureSpec("dummy", null, null))
+    }
     private val membershipQueryClient = mock<MembershipQueryClient> {
-        on { queryMemberInfo(owner) } doReturn MembershipQueryResult.Success(allActiveMembers + inactiveMember)
+        on { queryMemberInfo(owner) } doReturn MembershipQueryResult.Success(allActiveMembers + suspendedMemberInfo)
         on {
             queryMembersSignatures(
                 mgm.holdingIdentity,
@@ -133,6 +146,14 @@ class DistributeMemberInfoActionHandlerTest {
             )
         } doReturn MembershipQueryResult.Success(
             signatures
+        )
+        on {
+            queryMembersSignatures(
+                mgm.holdingIdentity,
+                listOf(suspendedMemberInfo.holdingIdentity),
+            )
+        } doReturn MembershipQueryResult.Success(
+            suspendMemberSignature
         )
     }
     private val cipherSchemeMetadata = mock<CipherSchemeMetadata>()
@@ -184,6 +205,7 @@ class DistributeMemberInfoActionHandlerTest {
     private val groupReader: MembershipGroupReader = mock {
         on { groupParameters } doReturn groupParameters
         on { lookup() } doReturn allActiveMembers
+        on { lookup(MembershipStatusFilter.ACTIVE_OR_SUSPENDED)} doReturn allActiveMembers + suspendedMemberInfo
     }
     private val groupReaderProvider: MembershipGroupReaderProvider = mock {
         on { getGroupReader(any()) } doReturn groupReader
@@ -206,7 +228,7 @@ class DistributeMemberInfoActionHandlerTest {
     )
 
     @Test
-    fun `process returns all approved members over P2P`() {
+    fun `process sends all approved members over P2P`() {
         val allMembershipPackage = mock<MembershipPackage>()
         whenever(
             membershipPackageFactory.createMembershipPackage(
@@ -232,6 +254,35 @@ class DistributeMemberInfoActionHandlerTest {
         val reply = handler.process(KEY, action)
 
         assertThat(reply).contains(allMemberPackage)
+    }
+
+    @Test
+    fun `process sends only own member info to suspended member over P2P`() {
+        val onlyOwnMembershipPackage = mock<MembershipPackage>()
+        whenever(
+            membershipPackageFactory.createMembershipPackage(
+                signer,
+                suspendMemberSignature,
+                listOf(suspendedMemberInfo),
+                checkHash,
+                groupParameters,
+            )
+        ).doReturn(onlyOwnMembershipPackage)
+        val onlyOwnMemberPackage = mock<Record<String, AppMessage>>()
+        whenever(
+            p2pRecordsFactory.createAuthenticatedMessageRecord(
+                eq(owner.toAvro()),
+                eq(member.toAvro()),
+                eq(onlyOwnMembershipPackage),
+                anyOrNull(),
+                any(),
+                any(),
+            )
+        ).doReturn(onlyOwnMemberPackage)
+
+        val reply = handler.process(KEY, distributeSuspendedMemberAction)
+
+        assertThat(reply).contains(onlyOwnMemberPackage)
     }
 
     @Test
@@ -272,7 +323,7 @@ class DistributeMemberInfoActionHandlerTest {
 
     @Test
     fun `process republishes the distribute command if no member info is available via the group reader`() {
-        whenever(groupReader.lookup()).thenReturn(setOf(mgm))
+        whenever(groupReader.lookup(MembershipStatusFilter.ACTIVE_OR_SUSPENDED)).thenReturn(setOf(mgm))
 
         val reply = handler.process(KEY, action)
 
