@@ -56,7 +56,16 @@ interface RecordFactory {
         externalEventRequestId: String
     ): Record<String, FlowEvent>
 
-    // Todo: Add a comment
+    /**
+     * Creates a balance response record
+     *
+     * @param flowId The unique identifier of the flow that requested the balance
+     * @param externalEventRequestId The unique ID of the flow request event of the balance query
+     * @param poolKey The unique key of the pool of tokens which the balance was calculated from
+     * @param tokenBalance The balance of the pool of tokens
+     *
+     * @return A [FlowEvent] response record for a balance query
+     */
     fun getBalanceResponse(
         flowId: String,
         externalEventRequestId: String,
