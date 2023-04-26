@@ -72,7 +72,13 @@ class FlowFailedRequestHandlerTest {
 
     @Test
     fun `post processing marks context as deleted`() {
+        val flowStatus = FlowStatus()
         whenever(testContext.flowCheckpoint.flowKey).thenReturn(FLOW_KEY)
+        whenever(testContext.flowMessageFactory.createFlowFailedStatusMessage(
+            testContext.flowCheckpoint,
+            FLOW_FAILED,
+            "error message"
+        )).thenReturn(flowStatus)
         handler.postProcess(testContext.flowEventContext, ioRequest)
         verify(testContext.flowCheckpoint).markDeleted()
     }
