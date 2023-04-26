@@ -8,12 +8,7 @@ kafka:
         secretKeyRef:
           name: "kafka-truststore-file"
           key: "kafka-truststore-file"
-      password:
-        valueFrom:
-          secretKeyRef:
-            name: "kafka-truststore-password"
-            key: "kafka-truststore-password"
-      type: "JKS"
+      type: "PEM"
   sasl:
     mechanism: "PLAIN"
     enabled: true
