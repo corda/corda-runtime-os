@@ -63,7 +63,7 @@ class CpiUploadRestResourceImplTest {
             parseSecureHash("FOO:123456789012")
         )
 
-        whenever(cpiUploadManager.uploadCpi(any(), eq(cpiContent), eq(null))).thenReturn(cpiUploadRequestId)
+        whenever(cpiUploadManager.uploadCpi(eq(cpiContent), eq(null))).thenReturn(cpiUploadRequestId)
 
         val httpResponse = cpiUploadRestResourceImpl.cpi(HttpFileUpload(cpiContent, DUMMY_FILE_NAME))
         assertNotNull(httpResponse)
