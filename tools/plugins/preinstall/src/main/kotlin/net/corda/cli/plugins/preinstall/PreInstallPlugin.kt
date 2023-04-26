@@ -235,6 +235,24 @@ class PreInstallPlugin(wrapper: PluginWrapper) : Plugin(wrapper) {
         val password: SecretValues?
     )
 
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    data class Bootstrap(
+        @JsonProperty("bootstrap")
+        val bootstrap: KafkaBootstrap?
+    )
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    data class KafkaBootstrap(
+        @JsonProperty("kafka")
+        val kafka: KafkaBootstrapConfiguration?
+    )
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    data class KafkaBootstrapConfiguration(
+        @JsonProperty("replicas")
+        val replicas: Int?
+    )
+
     //DB Secrets
     @JsonIgnoreProperties(ignoreUnknown = true)
     data class DB(

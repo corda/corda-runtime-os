@@ -3,6 +3,7 @@ package net.corda.cli.plugins.preinstall
 import net.corda.cli.plugins.preinstall.PreInstallPlugin.PluginContext
 import net.corda.cli.plugins.preinstall.PreInstallPlugin.Kafka
 import net.corda.cli.plugins.preinstall.PreInstallPlugin.ReportEntry
+import net.corda.cli.plugins.preinstall.PreInstallPlugin.Bootstrap
 import net.corda.cli.plugins.preinstall.CheckKafka.KafkaProperties.TruststoreNotFoundException
 import org.apache.kafka.clients.admin.AdminClient
 import org.apache.kafka.common.KafkaException
@@ -54,12 +55,6 @@ class CheckKafka : Callable<Int>, PluginContext() {
     var maxIdleMs: Int = 5000
 
     @Option(
-        names = ["-r", "--replicas"],
-        description = ["The replica count of the Kafka cluster"]
-    )
-    var replicaCount: Int? = null
-
-    @Option(
         names = ["-v", "--verbose"],
         description = ["Display additional information about the configuration provided"]
     )
@@ -72,6 +67,7 @@ class CheckKafka : Callable<Int>, PluginContext() {
     var debug: Boolean = false
 
     class SASLCredentialException(message: String) : Exception(message)
+    class BrokerException(message: String) : Exception(message)
 
     open class KafkaAdmin(props: Properties) {
         private val admin: AdminClient?
@@ -155,7 +151,7 @@ class CheckKafka : Callable<Int>, PluginContext() {
     }
 
     // Connect to kafka using the properties assembled earlier
-    fun connect(client: KafkaAdmin) {
+    fun connect(client: KafkaAdmin, replicas: Int?) {
         val nodes: Collection<Node>? = client.getNodes()
         val clusterID = client.getDescriptionID()
 
@@ -168,9 +164,9 @@ class CheckKafka : Callable<Int>, PluginContext() {
 
         log("Kafka client connected to cluster with ID ${clusterID}.", INFO)
         log("Number of brokers: ${nodes.size}", INFO)
-        replicaCount?.let {
+        replicas?.let {
             if (nodes.size < it) {
-                log("Number of brokers (${nodes.size}) is less than the replica count ($it).", WARN)
+                throw BrokerException("Number of brokers (${nodes.size}) is less than replica count.")
             }
         }
     }
@@ -257,12 +253,24 @@ class CheckKafka : Callable<Int>, PluginContext() {
             return 1
         }
 
+        val bootstrapYaml: Bootstrap
         try {
-            connect(KafkaAdmin(props))
-        } catch (e: KafkaException){
+            bootstrapYaml = parseYaml<Bootstrap>(path)
+            report.addEntry(ReportEntry("Parse Bootstrap Kafka properties from YAML", true))
+        } catch (e: Exception) {
+            report.addEntry(ReportEntry("Parse Bootstrap Kafka properties from YAML", false, e))
+            log(report.failingTests(), ERROR)
+            return 1
+        }
+
+        try {
+            connect(KafkaAdmin(props), bootstrapYaml.bootstrap?.kafka?.replicas)
+        } catch (e: KafkaException) {
             report.addEntry(ReportEntry("Create Kafka client", false, e))
-        } catch (e: ExecutionException){
+        } catch (e: ExecutionException) {
             report.addEntry(ReportEntry("Connect to Kafka cluster using client", false, e))
+        } catch (e: BrokerException) {
+            report.addEntry(ReportEntry("Kafka replica count is less than the broker count", false, e))
         }
 
         if (report.testsPassed() == 0) {

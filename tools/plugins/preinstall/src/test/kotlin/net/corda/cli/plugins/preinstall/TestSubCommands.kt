@@ -142,7 +142,7 @@ class TestSubCommands {
 
             val ck = CheckKafka()
             ck.register(verbose=true, debug=false)
-            val outText = tapSystemOutNormalized { ck.connect(mockAdmin) }
+            val outText = tapSystemOutNormalized { ck.connect(mockAdmin, 2) }
             assertTrue( outText.contains("[INFO] Kafka client connected to cluster with ID ClusterID.") )
             assertTrue( outText.contains("[INFO] Number of brokers: 2") )
         }

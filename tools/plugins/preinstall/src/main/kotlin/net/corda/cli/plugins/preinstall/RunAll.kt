@@ -43,12 +43,6 @@ class RunAll : Callable<Int> {
     var maxIdleMs: Int = 5000
 
     @CommandLine.Option(
-        names = ["-r", "--replicas"],
-        description = ["The replica count of the Kafka cluster"]
-    )
-    var replicaCount: Int? = null
-
-    @CommandLine.Option(
         names = ["-v", "--verbose"],
         description = ["Display additional information about the configuration provided"]
     )
@@ -84,7 +78,6 @@ class RunAll : Callable<Int> {
         namespace?.let{ kafkaArgs.add("-n$it") }
         url?.let{ kafkaArgs.add("-n$it") }
         truststoreLocation?.let{ kafkaArgs.add("-f$it") }
-        replicaCount?.let{ kafkaArgs.add("-f$it") }
         kafkaArgs.add("-t$timeout")
         kafkaArgs.add("-m$maxIdleMs")
 
