@@ -17,7 +17,9 @@ import net.corda.v5.ledger.utxo.query.registration.VaultNamedQueryBuilderFactory
 class DummyUtxoVaultNamedQueryFactory : VaultNamedQueryFactory {
     override fun create(vaultNamedQueryBuilderFactory: VaultNamedQueryBuilderFactory) {
         vaultNamedQueryBuilderFactory.create("UTXO_DUMMY_QUERY")
-            .whereJson("WHERE visible_states.custom_representation ->> 'net.corda.v5.ledger.utxo.ContractState' = :testField")
+            .whereJson(
+                "WHERE visible_states.custom_representation -> 'net.cordapp.demo.utxo.contract.TestUtxoState' ->> 'whatever' = :testField"
+            )
             .filter(DummyUtxoVaultNamedQueryFilter())
             .map(DummyUtxoVaultNamedQueryTransformer())
             .register()

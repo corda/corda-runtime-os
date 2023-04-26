@@ -3,6 +3,7 @@ package net.corda.ledger.utxo.flow.impl.groupparameters
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEYS
+import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEYS_PEM
 import net.corda.membership.lib.SignedGroupParameters
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.sandbox.type.UsedByFlow
@@ -42,7 +43,8 @@ class CurrentGroupParametersServiceImpl @Activate constructor(
         requireNotNull(groupPolicy) { "Group policy not found for holding identity $holdingIdentity" }
         val mgmInfo = groupPolicy.mgmInfo
         requireNotNull(mgmInfo) { "MGM info is not available in Group policy." }
-        val currentMGMKeyEncoded = mgmInfo[PARTY_SESSION_KEYS.format(0)]
+        val currentMGMKeyEncoded = mgmInfo[PARTY_SESSION_KEYS_PEM.format(0)] ?:
+            mgmInfo[PARTY_SESSION_KEYS.format(0)]
         requireNotNull(currentMGMKeyEncoded) { "MGM info does not have first key." }
         val currentMGMKey = keyEncodingService.decodePublicKey(currentMGMKeyEncoded)
         return listOf(currentMGMKey)

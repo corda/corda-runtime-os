@@ -25,6 +25,7 @@ dependencies {
 
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
     testImplementation "net.corda:corda-crypto"
+    testImplementation project(':libs:crypto:crypto-core')
     testImplementation project(":testing:test-utilities")
 
     integrationTestImplementation project(":libs:layered-property-map:layered-property-map-test-converter")
