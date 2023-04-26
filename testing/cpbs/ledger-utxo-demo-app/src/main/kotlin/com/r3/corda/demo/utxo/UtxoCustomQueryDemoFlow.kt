@@ -13,7 +13,8 @@ class UtxoCustomQueryDemoFlow : ClientStartableFlow {
 
     data class CustomQueryFlowRequest(
         val offset: Int,
-        val limit: Int
+        val limit: Int,
+        val testField: String
     )
     data class CustomQueryFlowResponse(val results: List<String>)
 
@@ -35,7 +36,7 @@ class UtxoCustomQueryDemoFlow : ClientStartableFlow {
         )
 
         val resultSet = utxoLedgerService.query(DUMMY_QUERY_NAME, String::class.java)
-           .setParameter("testField", "dummy")
+           .setParameter("testField", request.testField)
            .setOffset(request.offset)
            .setLimit(request.limit)
            .execute()

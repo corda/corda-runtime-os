@@ -18,6 +18,7 @@ import org.assertj.core.api.Assertions.assertThatExceptionOfType
 import org.assertj.core.api.SoftAssertions
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
@@ -155,6 +156,20 @@ internal class AvroSchemaRegistryImplTest {
 
         val decoded = registry.deserialize<TestMessage>(encoded)
         assertThat(nonAvroMessage).isEqualTo(decoded)
+    }
+
+    @Test
+    fun `schema for class which is unknown at compile time is safely ignored without error`() {
+        val registry = AvroSchemaRegistryImpl()
+        val unknownClassTypeSchema = Schema.Parser()
+            .parse(
+                "{\"type\":\"record\"," +
+                    "\"name\":\"AvroMessageWeHaveNoClassFor\"," +
+                    "\"namespace\":\"net.corda.data.test\"," +
+                    "\"fields\":[{\"name\":\"flags\",\"type\":\"int\"}]}"
+            )
+        
+        assertDoesNotThrow { registry.addSchemaOnly(unknownClassTypeSchema) }
     }
 
     @Test
