@@ -1,7 +1,7 @@
 package net.corda.ledger.utxo.token.cache.entities
 
-import net.corda.data.ledger.utxo.token.selection.data.Token
 import java.math.BigDecimal
+import net.corda.data.ledger.utxo.token.selection.data.Token
 
 /**
  * The [CachedToken] represents a token stored in the cache
@@ -27,4 +27,3 @@ interface CachedToken {
      */
     fun toAvro(): Token
 }
-

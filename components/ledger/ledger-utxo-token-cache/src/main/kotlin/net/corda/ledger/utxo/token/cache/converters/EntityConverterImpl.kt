@@ -1,12 +1,16 @@
 package net.corda.ledger.utxo.token.cache.converters
 
+import java.math.BigDecimal
+import java.math.BigInteger
 import net.corda.data.ledger.utxo.token.selection.data.Token
 import net.corda.data.ledger.utxo.token.selection.data.TokenAmount
+import net.corda.data.ledger.utxo.token.selection.data.TokenBalanceQuery
 import net.corda.data.ledger.utxo.token.selection.data.TokenClaimQuery
 import net.corda.data.ledger.utxo.token.selection.data.TokenClaimRelease
 import net.corda.data.ledger.utxo.token.selection.data.TokenLedgerChange
 import net.corda.data.ledger.utxo.token.selection.key.TokenPoolCacheKey
 import net.corda.data.ledger.utxo.token.selection.state.TokenPoolCacheState
+import net.corda.ledger.utxo.token.cache.entities.BalanceQuery
 import net.corda.ledger.utxo.token.cache.entities.CachedToken
 import net.corda.ledger.utxo.token.cache.entities.CachedTokenImpl
 import net.corda.ledger.utxo.token.cache.entities.ClaimQuery
@@ -16,8 +20,6 @@ import net.corda.ledger.utxo.token.cache.entities.PoolCacheState
 import net.corda.ledger.utxo.token.cache.entities.PoolCacheStateImpl
 import net.corda.ledger.utxo.token.cache.entities.TokenCache
 import net.corda.ledger.utxo.token.cache.entities.TokenCacheImpl
-import java.math.BigDecimal
-import java.math.BigInteger
 
 class EntityConverterImpl : EntityConverter {
     override fun toCachedToken(avroToken: Token): CachedToken {
@@ -49,6 +51,14 @@ class EntityConverterImpl : EntityConverter {
             tokenClaimRelease.requestContext.requestId,
             tokenClaimRelease.requestContext.flowId,
             tokenClaimRelease.usedTokenStateRefs.toSet(),
+            avroPoolKey
+        )
+    }
+
+    override fun toBalanceQuery(avroPoolKey: TokenPoolCacheKey, tokenBalanceQuery: TokenBalanceQuery): BalanceQuery {
+        return BalanceQuery(
+            tokenBalanceQuery.requestContext.requestId,
+            tokenBalanceQuery.requestContext.flowId,
             avroPoolKey
         )
     }

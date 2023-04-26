@@ -1,9 +1,10 @@
 package net.corda.ledger.utxo.token.cache.factories
 
+import java.math.BigDecimal
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.ledger.utxo.token.selection.key.TokenPoolCacheKey
-import net.corda.messaging.api.records.Record
 import net.corda.ledger.utxo.token.cache.entities.CachedToken
+import net.corda.messaging.api.records.Record
 
 /**
  * The [RecordFactory] creates instances of [Record]
@@ -53,6 +54,14 @@ interface RecordFactory {
     fun getClaimReleaseAck(
         flowId: String,
         externalEventRequestId: String
+    ): Record<String, FlowEvent>
+
+    // Todo: Add a comment
+    fun getBalanceResponse(
+        flowId: String,
+        externalEventRequestId: String,
+        poolKey: TokenPoolCacheKey,
+        tokenBalance: BigDecimal
     ): Record<String, FlowEvent>
 }
 
