@@ -40,6 +40,7 @@ import net.corda.virtualnode.read.rest.extensions.createKeyIdOrHttpThrow
 import net.corda.virtualnode.read.rest.extensions.getByHoldingIdentityShortHashOrThrow
 import net.corda.virtualnode.read.rest.extensions.ofOrThrow
 import net.corda.virtualnode.read.rest.extensions.parseOrThrow
+import org.apache.commons.validator.routines.DomainValidator
 import org.apache.commons.validator.routines.InetAddressValidator
 import org.bouncycastle.asn1.pkcs.PKCSObjectIdentifiers.pkcs_9_at_extensionRequest
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier
@@ -144,10 +145,16 @@ class CertificatesRestResourceImpl @Activate constructor(
                 val altName = GeneralName(iPAddress, name)
                 val subjectAltName = GeneralNames(altName)
                 extensionsGenerator.addExtension(subjectAlternativeName, true, subjectAltName)
-            } else {
+            } else if (DomainValidator.getInstance(true).isValid(name)){
                 val altName = GeneralName(dNSName, name)
                 val subjectAltName = GeneralNames(altName)
                 extensionsGenerator.addExtension(subjectAlternativeName, true, subjectAltName)
+            } else {
+                val message = "$name is not a valid domain name or IP address"
+                throw InvalidInputDataException(
+                    message = message,
+                    details = mapOf("subjectAlternativeNames" to message),
+                )
             }
         }
         val signatureSpec = contextMap?.get(SIGNATURE_SPEC)

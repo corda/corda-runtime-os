@@ -303,6 +303,19 @@ class CertificatesRestResourceImplTest {
         }
 
         @Test
+        fun `it throw an exception if the subject alternative name is invalid`() {
+            assertThrows<InvalidInputDataException> {
+                certificatesOps.generateCsr(
+                    holdingIdentityShortHash,
+                    keyId,
+                    x500Name,
+                    listOf("10.101.100"),
+                    null,
+                )
+            }
+        }
+
+        @Test
         fun `it will use the correct x500 name`() {
             val pem = certificatesOps.generateCsr(
                 holdingIdentityShortHash,
