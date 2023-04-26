@@ -7,6 +7,7 @@ import net.corda.v5.application.interop.facade.FacadeId
 import net.corda.v5.application.interop.facade.FacadeRequest
 import net.corda.v5.application.interop.parameters.ParameterType
 import net.corda.v5.application.interop.parameters.ParameterTypeLabel
+import net.corda.v5.application.interop.parameters.TypedParameter
 import net.corda.v5.application.interop.parameters.TypedParameterValue
 import java.math.BigDecimal
 import java.nio.ByteBuffer
@@ -39,7 +40,9 @@ private fun serialize(
     gen.writeStringField("method", "$facadeId/$methodName")
 
     gen.writeObjectFieldStart("parameters")
-    parameters.forEach { (parameter, parameterValue) ->
+    parameters.forEach {
+        val parameter = it.parameter
+        val parameterValue = it.value
         gen.writeObjectFieldStart(parameter.name)
         gen.writeStringField("type", parameter.type.toString())
         gen.writeFieldName("value")

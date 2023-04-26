@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonParser
 import com.fasterxml.jackson.databind.DeserializationContext
 import com.fasterxml.jackson.databind.JsonDeserializer
 import com.fasterxml.jackson.databind.JsonNode
+import net.corda.flow.application.services.impl.interop.parameters.TypeParameters
 import net.corda.flow.application.services.impl.interop.parameters.TypedParameterImpl
 import net.corda.flow.application.services.impl.interop.parameters.TypedParameterValueImpl
 import net.corda.v5.application.interop.facade.FacadeId
@@ -56,7 +57,7 @@ private fun <T> deserialize(
         val typeName = parameterValue["type"]?.asText() ?: throw IllegalArgumentException(
             "No parameter type given for parameter $name in ${node.toPrettyString()}"
         )
-        val type = ParameterType.of<Any>(typeName)
+        val type = TypeParameters<Any>().of<Any>(typeName)
         val value = parameterValue["value"] ?: throw IllegalArgumentException(
             "No parameter value given for parameter $name in ${node.toPrettyString()}"
         )
