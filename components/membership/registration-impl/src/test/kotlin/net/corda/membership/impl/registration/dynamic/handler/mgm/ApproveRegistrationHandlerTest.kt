@@ -31,6 +31,7 @@ import net.corda.schema.Schemas.Membership.MEMBERSHIP_ACTIONS_TOPIC
 import net.corda.schema.Schemas.Membership.MEMBER_LIST_TOPIC
 import net.corda.schema.Schemas.Membership.REGISTRATION_COMMAND_TOPIC
 import net.corda.test.util.time.TestClock
+import net.corda.v5.membership.NotaryInfo
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
@@ -200,7 +201,6 @@ class ApproveRegistrationHandlerTest {
             viewOwningIdentity = mgm.holdingIdentity,
             notary = notaryInfo,
         )
-        verify(groupReaderProvider, never()).getGroupReader(any())
         assertThat(results.outputStates)
             .hasSize(4)
 
@@ -299,5 +299,27 @@ class ApproveRegistrationHandlerTest {
         assertThrows<MissingRegistrationStateException> {
             handler.invoke(null, key, command)
         }
+    }
+
+    @Test
+    fun `fails when member name is already in use as notary service name`() {
+        val state = RegistrationState(registrationId, member.toAvro(), owner.toAvro())
+        val mockNotary = mock<NotaryInfo> {
+            on { name } doReturn member.x500Name
+        }
+        whenever(mockGroupParameters.notaries).doReturn(setOf(mockNotary))
+
+        val results = handler.invoke(state, key, command)
+
+        assertThat(results.outputStates)
+            .hasSize(1)
+            .allSatisfy {
+                assertThat(it.topic).isEqualTo(REGISTRATION_COMMAND_TOPIC)
+                val value = (it.value as? RegistrationCommand)?.command
+                assertThat(value)
+                    .isNotNull
+                    .isInstanceOf(DeclineRegistration::class.java)
+                assertThat((value as? DeclineRegistration)?.reason).isNotBlank()
+            }
     }
 }

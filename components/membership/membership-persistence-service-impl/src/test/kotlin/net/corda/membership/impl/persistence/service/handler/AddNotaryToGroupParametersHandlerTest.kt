@@ -186,6 +186,8 @@ class AddNotaryToGroupParametersHandlerTest {
     private val notaryInRequest: MemberInfo = mock {
         on { memberProvidedContext } doReturn notaryMemberContext
         on { mgmProvidedContext } doReturn notaryMgmContext
+        on { name } doReturn MemberX500Name.parse(knownIdentity.x500Name)
+        on { serial } doReturn 2L
     }
     private val memberInfoFactory = mock<MemberInfoFactory> {
         on { create(any()) } doReturn notaryInRequest
@@ -234,7 +236,8 @@ class AddNotaryToGroupParametersHandlerTest {
         otherNotary = mock {
             on { memberProvidedContext } doReturn otherNotaryContext
             on { mgmProvidedContext } doReturn notaryMgmContext
-            on { name } doReturn MemberX500Name.parse("O=Bob,L=London,C=GB")
+            on { name } doReturn MemberX500Name.parse(knownIdentity.x500Name)
+            on { serial } doReturn 1L
         }
         whenever(memberInfoFactory.create(any(), any<SortedMap<String, String?>>())).doReturn(otherNotary)
         whenever(membersQuery.resultList).doReturn(listOf(otherNotaryEntity))
@@ -282,8 +285,7 @@ class AddNotaryToGroupParametersHandlerTest {
     }
 
     @Test
-    @Disabled("Until support is added for multiple notary virtual nodes per notary service")
-    fun `invoke with notary keys adds keys to existing notary service`() {
+    fun `invoke as re-registration with notary keys adds keys to existing notary service`() {
         mockExistingNotary()
 
         handler.invoke(requestContext, request)
@@ -302,6 +304,7 @@ class AddNotaryToGroupParametersHandlerTest {
                     KeyValuePair(MODIFIED_TIME_KEY, clock.instant().toString()),
                     KeyValuePair(String.format(NOTARY_SERVICE_KEYS_KEY, 5, 1), "test-key"),
                     KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS_KEY, 5, 0), "1"),
+                    KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS_KEY, 5, 1), "3"),
                 )
             )
         )
@@ -317,7 +320,25 @@ class AddNotaryToGroupParametersHandlerTest {
     }
 
     @Test
-    @Disabled("Until support is added for multiple notary virtual nodes per notary service")
+    fun `existing notary service can only be updated in case of re-registration`() {
+        mockExistingNotary()
+        whenever(otherNotary.name).doReturn(MemberX500Name.parse("O=New Name,L=London,C=GB"))
+
+        val ex = assertFailsWith<MembershipPersistenceException> { handler.invoke(requestContext, request) }
+        assertThat(ex.message).contains("already exists")
+    }
+
+    @Test
+    fun `notary to be added cannot have same service name as an existing virtual node`() {
+        mockExistingNotary()
+        whenever(notaryDetails.serviceName).doReturn(MemberX500Name.parse(knownIdentity.x500Name))
+
+        val ex = assertFailsWith<MembershipPersistenceException> { handler.invoke(requestContext, request) }
+        assertThat(ex.message).contains("virtual node having the same name")
+    }
+
+    @Test
+    @Disabled("Until CORE-12934 adds support for multiple notary virtual nodes per notary service")
     fun `invoke sets notary protocol versions to intersection of protocol versions of individual notary vnodes`() {
         mockExistingNotary()
 
@@ -330,8 +351,7 @@ class AddNotaryToGroupParametersHandlerTest {
     }
 
     @Test
-    @Disabled("Until support is added for multiple notary virtual nodes per notary service")
-    fun `invoke with nothing to add does nothing`() {
+    fun `invoke as re-registration with nothing to add does nothing`() {
         mockExistingNotary()
         val mockGroupParameters = KeyValuePairList(
             listOf(
@@ -362,7 +382,6 @@ class AddNotaryToGroupParametersHandlerTest {
     }
 
     @Test
-    @Disabled("Until support is added for multiple notary virtual nodes per notary service")
     fun `notary protocol must match that of existing notary service`() {
         mockExistingNotary()
         whenever(notaryDetails.serviceProtocol).doReturn("incorrect.plugin.type")

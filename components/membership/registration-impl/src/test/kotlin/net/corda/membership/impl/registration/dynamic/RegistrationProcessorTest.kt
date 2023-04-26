@@ -178,6 +178,7 @@ class  RegistrationProcessorTest {
         }
         membershipGroupReader = mock {
             on { lookup(eq(mgmX500Name), any()) } doReturn mgmMemberInfo
+            on { groupParameters } doReturn mock()
         }
         membershipGroupReaderProvider = mock {
             on { getGroupReader(eq(mgmHoldingIdentity.toCorda())) } doReturn membershipGroupReader
@@ -217,11 +218,6 @@ class  RegistrationProcessorTest {
                     eq(1),
                 )
             } doReturn MembershipQueryResult.Success(listOf(registrationRequestDetails))
-            on {
-                queryRegistrationRequests(
-                    eq(mgmHoldingIdentity.toCorda()), eq(null), any(), eq(null)
-                )
-            } doReturn MembershipQueryResult.Success(emptyList())
         }
 
         processor = RegistrationProcessor(

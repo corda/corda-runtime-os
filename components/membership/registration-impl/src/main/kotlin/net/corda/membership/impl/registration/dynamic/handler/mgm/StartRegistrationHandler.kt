@@ -21,8 +21,6 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_PEND
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_SUSPENDED
 import net.corda.membership.lib.MemberInfoExtension.Companion.MODIFIED_TIME
 import net.corda.membership.lib.MemberInfoExtension.Companion.REGISTRATION_ID
-import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_NAME
-import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
 import net.corda.membership.lib.MemberInfoExtension.Companion.SERIAL
 import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.lib.MemberInfoExtension.Companion.endpoints
@@ -33,12 +31,13 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.preAuthToken
 import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.SignedMemberInfo
-import net.corda.membership.lib.notary.MemberNotaryDetails
 import net.corda.membership.lib.toMap
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.persistence.client.MembershipQueryResult
+import net.corda.membership.read.MembershipGroupReaderProvider
+import net.corda.membership.registration.MembershipRegistrationException
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
 import net.corda.schema.Schemas.Membership.REGISTRATION_COMMAND_TOPIC
@@ -58,6 +57,7 @@ internal class StartRegistrationHandler(
     private val memberTypeChecker: MemberTypeChecker,
     private val membershipPersistenceClient: MembershipPersistenceClient,
     private val membershipQueryClient: MembershipQueryClient,
+    private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
     private val registrationContextCustomFieldsVerifier: RegistrationContextCustomFieldsVerifier = RegistrationContextCustomFieldsVerifier()
 ) : RegistrationHandler<StartRegistration> {
 
@@ -237,9 +237,11 @@ internal class StartRegistrationHandler(
     }
 
     private fun validateRoleInformation(mgmHoldingId: HoldingIdentity, member: MemberInfo) {
+        val groupReader = membershipGroupReaderProvider.getGroupReader(mgmHoldingId)
+        val groupParameters = groupReader.groupParameters
+            ?: throw MembershipRegistrationException("Could not read group parameters of the membership group '${member.groupId}'.")
         // If role is set to notary, notary details are specified
-        val notaryDetails = member.notaryDetails
-        notaryDetails?.let { notary ->
+        member.notaryDetails?.let { notary ->
             validateRegistrationRequest(
                 notary.keys.isNotEmpty()
             ) { "Registering member has role set to 'notary', but has missing notary key details." }
@@ -260,33 +262,16 @@ internal class StartRegistrationHandler(
                     listOf(HoldingIdentity(notary.serviceName, member.groupId))
                 ).getOrThrow().firstOrNull() == null
             ) { "There is a virtual node having the same name as the notary service ${notary.serviceName}." }
-        }
-        checkAgainstExistingNotaryServices(mgmHoldingId, notaryDetails, member.name.toString())
-    }
-
-    /**
-     * Check for name clashes with existing notary services, to ensure that a registering member's name is not
-     * already in use as a notary service name, and that a particular notary service may have only a single virtual
-     * node listed under it (while allowing re-registrations).
-     */
-    private fun checkAgainstExistingNotaryServices(
-        mgmHoldingId: HoldingIdentity, notary: MemberNotaryDetails?, registeringMemberName: String
-    ) {
-        membershipQueryClient.queryRegistrationRequests(mgmHoldingId, statuses = listOf(RegistrationStatus.APPROVED)).getOrThrow()
-            .forEach { request ->
-                val context = request.memberProvidedContext.items
-                context.firstOrNull { it.key == NOTARY_SERVICE_NAME }?.let { existingServiceName ->
-                    val memberName = notary?.let { context.first { it.key == PARTY_NAME }.value }
-                    if (existingServiceName.value == notary?.serviceName.toString() && memberName != registeringMemberName) {
-                        throw InvalidRegistrationRequestException("Notary service '${notary?.serviceName}' already exists.")
-                    }
-                    if (existingServiceName.value == registeringMemberName) {
-                        throw InvalidRegistrationRequestException(
-                            "Registering member's name '$registeringMemberName' is already in use as a notary service name."
-                        )
-                    }
+            validateRegistrationRequest(
+                groupReader.lookup().none {
+                    it.notaryDetails?.serviceName == notary.serviceName && it.name != member.name
                 }
-            }
+            ) { "Notary service '${notary.serviceName}' already exists." }
+        }
+
+        validateRegistrationRequest(groupParameters.notaries.none { it.name == member.name }) {
+            "Registering member's name '${member.name}' is already in use as a notary service name."
+        }
     }
 
     /**
