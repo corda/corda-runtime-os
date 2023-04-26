@@ -52,6 +52,13 @@ internal class MembershipPersistenceAsyncProcessor(
                 numberOfRetriesSoFar,
                 request,
             )
+        } catch (e: RecoverableException) {
+            retry(
+                event.key,
+                e,
+                numberOfRetriesSoFar,
+                request,
+            )
         } catch (e: Exception) {
             error(event.key, e)
         }

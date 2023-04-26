@@ -18,6 +18,7 @@ import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.membership.datamodel.MemberInfoEntity
 import net.corda.membership.datamodel.MemberInfoEntityPrimaryKey
 import net.corda.membership.datamodel.RegistrationRequestEntity
+import net.corda.membership.impl.persistence.service.RecoverableException
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_PENDING
 import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
@@ -167,12 +168,15 @@ class UpdateMemberAndRegistrationRequestToApprovedHandlerTest {
 
     @Test
     fun `invoke throws exception if request can not be found`() {
+        whenever(keyValuePairListDeserializer.deserialize(mgmContextBytes)).doReturn(
+            KeyValuePairList(listOf(KeyValuePair(STATUS, MEMBER_STATUS_PENDING))),
+        )
         mockMemberInfoEntity()
         mockRegistrationRequestEntity(null)
-        val context = MembershipRequestContext(clock.instant(), requestId, member,)
-        val request = UpdateMemberAndRegistrationRequestToApproved(member, requestId,)
+        val context = MembershipRequestContext(clock.instant(), requestId, member)
+        val request = UpdateMemberAndRegistrationRequestToApproved(member, requestId)
 
-        assertThrows<MembershipPersistenceException> {
+        assertThrows<RecoverableException> {
             handler.invoke(context, request)
         }
     }

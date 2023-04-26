@@ -12,6 +12,7 @@ import net.corda.data.membership.db.response.query.UpdateMemberAndRegistrationRe
 import net.corda.membership.datamodel.MemberInfoEntity
 import net.corda.membership.datamodel.MemberInfoEntityPrimaryKey
 import net.corda.membership.datamodel.RegistrationRequestEntity
+import net.corda.membership.impl.persistence.service.RecoverableException
 import net.corda.membership.impl.persistence.service.handler.RegistrationStatusHelper.toStatus
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
@@ -90,7 +91,7 @@ internal class UpdateMemberAndRegistrationRequestToApprovedHandler(
                 RegistrationRequestEntity::class.java,
                 request.registrationId,
                 LockModeType.PESSIMISTIC_WRITE,
-            ) ?: throw MembershipPersistenceException("Could not find registration request: ${request.registrationId}")
+            ) ?: throw RecoverableException("Could not find registration request: ${request.registrationId}")
             if(!registrationRequest.status.toStatus().canMoveToStatus(RegistrationStatus.APPROVED)) {
                 throw MembershipPersistenceException(
                     "Registration request ${request.registrationId} has status ${registrationRequest.status} and can not be approved"
