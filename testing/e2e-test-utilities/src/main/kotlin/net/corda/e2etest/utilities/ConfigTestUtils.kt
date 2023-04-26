@@ -38,17 +38,8 @@ fun getConfig(section: String): JsonNode {
  * The currently installed schema and configuration versions are automatically obtained from the running system
  * before updating.
  */
-fun updateConfig(config: String, section: String, clusterInfo: ClusterInfo? = null) {
-    return cluster {
-        if (clusterInfo != null) {
-            init(clusterInfo)
-        }
-        endpoint(
-            CLUSTER_URI,
-            USERNAME,
-            PASSWORD
-        )
-
+fun updateConfig(config: String, section: String, clusterInfo: ClusterInfo = ClusterBInfo) {
+    return clusterInfo.cluster {
         val currentConfig = getConfig(section).body.toJson()
         val currentSchemaVersion = currentConfig["schemaVersion"]
 
@@ -87,18 +78,9 @@ fun waitForConfigurationChange(
     value: String,
     expectServiceToBeDown: Boolean = true,
     timeout: Duration = Duration.ofMinutes(1),
-    clusterInfo: ClusterInfo? = null,
+    clusterInfo: ClusterInfo = ClusterBInfo,
 ) {
-    cluster {
-        if (clusterInfo != null) {
-            init(clusterInfo)
-        }
-        endpoint(
-            CLUSTER_URI,
-            USERNAME,
-            PASSWORD
-        )
-
+    clusterInfo.cluster {
         if (expectServiceToBeDown) {
             // Wait for the service to become unavailable
             eventually(timeout) {
@@ -126,7 +108,7 @@ fun updateConfigAndWaitForChange(
     section: String,
     key: String,
     value: Any,
-    clusterInfo: ClusterInfo?,
+    clusterInfo: ClusterInfo,
 ) {
     updateConfig(
         mapOf(key to value).toJsonString(),

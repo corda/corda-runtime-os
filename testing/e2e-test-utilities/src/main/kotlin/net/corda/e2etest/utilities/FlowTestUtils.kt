@@ -47,18 +47,9 @@ fun startRpcFlow(
     args: Map<String, Any>,
     flowName: String,
     expectedCode: Int = 202,
-    clusterInfo: ClusterInfo? = null,
+    clusterInfo: ClusterInfo = ClusterBInfo,
 ): String {
-    return cluster {
-        if (clusterInfo != null) {
-            init(clusterInfo)
-        }
-        endpoint(
-            CLUSTER_URI,
-            USERNAME,
-            PASSWORD
-        )
-
+    return clusterInfo.cluster {
         val requestId = UUID.randomUUID().toString()
 
         assertWithRetry {
@@ -80,18 +71,9 @@ fun startRpcFlow(
 fun awaitRpcFlowFinished(
     holdingId: String,
     requestId: String,
-    clusterInfo: ClusterInfo? = null,
+    clusterInfo: ClusterInfo = ClusterBInfo,
 ): FlowStatus {
-    return cluster {
-        if (clusterInfo != null) {
-            init(clusterInfo)
-        }
-        endpoint(
-            CLUSTER_URI,
-            USERNAME,
-            PASSWORD
-        )
-
+    return clusterInfo.cluster {
         ObjectMapper().readValue(
             assertWithRetry {
                 command { flowStatus(holdingId, requestId) }
@@ -111,18 +93,9 @@ fun getFlowStatus(
     holdingId: String,
     requestId: String,
     expectedCode: Int,
-    clusterInfo: ClusterInfo? = null,
+    clusterInfo: ClusterInfo = ClusterBInfo,
 ): FlowStatus {
-    return cluster {
-        if (clusterInfo != null) {
-            init(clusterInfo)
-        }
-        endpoint(
-            CLUSTER_URI,
-            USERNAME,
-            PASSWORD
-        )
-
+    return clusterInfo.cluster {
         ObjectMapper().readValue(
             assertWithRetry {
                 command { flowStatus(holdingId, requestId) }
