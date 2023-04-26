@@ -18,7 +18,8 @@ class DummyUtxoVaultNamedQueryFactory : VaultNamedQueryFactory {
     override fun create(vaultNamedQueryBuilderFactory: VaultNamedQueryBuilderFactory) {
         vaultNamedQueryBuilderFactory.create("UTXO_DUMMY_QUERY")
             .whereJson(
-                "WHERE visible_states.custom_representation -> 'com.r3.corda.demo.utxo.contract.TestUtxoState' ->> 'whatever' = :testField"
+                "WHERE visible_states.custom_representation -> 'com.r3.corda.demo.utxo.contract.TestUtxoState' " +
+                        "->> 'testField' = :testField"
             )
             .filter(DummyUtxoVaultNamedQueryFilter())
             .map(DummyUtxoVaultNamedQueryTransformer())
