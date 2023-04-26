@@ -822,7 +822,7 @@ class FlowTests {
 
             assertThat(result.flowError).isNull()
             assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
-            assertThat(result.flowResult).isEqualTo(charlyX500)
+            assertThat(result.flowResult!!.textValue()).isEqualTo(charlyX500)
         }
     }
 

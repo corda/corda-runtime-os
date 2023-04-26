@@ -146,7 +146,7 @@ class UtxoLedgerTests {
         for (holdingId in listOf(aliceHoldingId, bobHoldingId, charlieHoldingId)) {
             val findTransactionFlowRequestId = startRpcFlow(
                 holdingId,
-                mapOf("transactionId" to utxoFlowResult.flowResult!!.toString()),
+                mapOf("transactionId" to utxoFlowResult.flowResult!!.textValue()),
                 "com.r3.corda.demo.utxo.FindTransactionFlow"
             )
             val transactionResult = awaitRpcFlowFinished(holdingId, findTransactionFlowRequestId)
