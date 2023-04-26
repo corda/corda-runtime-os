@@ -40,4 +40,22 @@ interface Publisher : Resource {
      * @throws CordaMessageAPIFatalException if record is of the wrong type for this Publisher
      */
     fun publish(records: List<Record<*, *>>): List<CompletableFuture<Unit>>
+
+    /**
+     * Publish a list of records as part of a batch.
+     *
+     * This API should be used for transactional publishers that are heavily contended across multiple threads. The API
+     * will attempt to group the supplied records with other lists of records provided by other threads, and commit them
+     * within a single Kafka transaction. This improves performance by reducing the number of transactions a thread has
+     * to wait for before its records get committed.
+     *
+     * The supplied records are guaranteed to be published in the same transaction provided that the underlying
+     * publisher is transactional.
+     *
+     * @param records The records to publish
+     * @return A future that is completed when the records are published. If the publish fails, then a
+     * [CordaMessageAPIFatalException] will be thrown and the publisher will be closed. If the publisher is not
+     * transactional, then a [CordaMessageAPIFatalException] will also be thrown.
+     */
+    fun batchPublish(records: List<Record<*, *>>): CompletableFuture<Unit>
 }

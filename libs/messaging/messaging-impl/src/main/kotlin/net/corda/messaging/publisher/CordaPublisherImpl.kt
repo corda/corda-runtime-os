@@ -16,7 +16,10 @@ import net.corda.utilities.debug
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
+import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.locks.ReentrantLock
+import kotlin.concurrent.withLock
 
 /**
  * Publisher will use a [CordaProducer] to communicate with the message bus. Failed producers are closed and recreated.
@@ -34,9 +37,15 @@ internal class CordaPublisherImpl(
 
     private companion object {
         private val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+
+        private const val QUEUE_SIZE = 200
     }
 
     private var cordaProducer = cordaProducerBuilder.createProducer(producerConfig, config.messageBusConfig)
+
+    private data class Batch(val records: List<Record<*, *>>, val future: CompletableFuture<Unit>)
+    private val queue = ArrayBlockingQueue<Batch>(QUEUE_SIZE)
+    private val lock = ReentrantLock()
 
     /**
      * Publish a record.
@@ -71,6 +80,30 @@ internal class CordaPublisherImpl(
         }
 
         return futures
+    }
+
+    override fun batchPublish(records: List<Record<*, *>>): CompletableFuture<Unit> {
+        val batch = Batch(records, CompletableFuture())
+        queue.add(batch)
+        lock.withLock {
+            val batches = mutableListOf<Batch>()
+            queue.drainTo(batches)
+            // Ensure we only go to Kafka if there are records to publish, as empty transactions incur a performance
+            // cost.
+            if (batches.isNotEmpty()) {
+                val future = publishTransaction(batches.flatMap { it.records })
+                future.whenComplete { _, throwable ->
+                    batches.forEach {
+                        if (throwable != null) {
+                            it.future.completeExceptionally(throwable)
+                        } else {
+                            it.future.complete(Unit)
+                        }
+                    }
+                }
+            }
+        }
+        return batch.future
     }
 
     /**
