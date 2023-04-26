@@ -51,12 +51,12 @@ class ChunkReadingTest {
     @Test
     fun `can read in order chunks`() {
         val ourFileName = randomFileName()
-        val properties= mutableMapOf<String,String?>()
+        val properties = mutableMapOf<String, String?>()
         properties[CHUNK_FILENAME_KEY] = ourFileName
         var actualFileName: String? = null
         var actualPath: Path? = null
         val reader = chunkReaderFactory.create(Files.createDirectory(fs.getPath("temp"))).apply {
-            onComplete {tempBinaryPath, _, properties ->
+            onComplete { tempBinaryPath, _, properties ->
                 actualFileName = properties?.get(CHUNK_FILENAME_KEY)
                 actualPath = tempBinaryPath
             }
@@ -105,7 +105,7 @@ class ChunkReadingTest {
     @Test
     fun `can read out of order chunks`() {
         val ourFileName = randomFileName()
-        val properties= mutableMapOf<String,String?>()
+        val properties = mutableMapOf<String, String?>()
         properties[CHUNK_FILENAME_KEY] = ourFileName
 
         val chunks = mutableListOf<Chunk>()
@@ -117,7 +117,7 @@ class ChunkReadingTest {
         var actualPath: Path? = null
         var readCompleted = false
         val reader = chunkReaderFactory.create(Files.createDirectory(fs.getPath("temp"))).apply {
-            onComplete {tempBinaryPath, _, properties ->
+            onComplete { tempBinaryPath, _, properties ->
                 actualFileName = properties?.get(CHUNK_FILENAME_KEY)
                 actualPath = tempBinaryPath
                 readCompleted = true
@@ -159,7 +159,7 @@ class ChunkReadingTest {
         var completionCount = 0
 
         val reader = ChunkReaderImpl(Files.createDirectory(fs.getPath("temp"))).apply {
-            onComplete { _, _, _-> completionCount++ }
+            onComplete { _, _, _ -> completionCount++ }
         }
 
         val fileCount = 5
@@ -196,7 +196,7 @@ class ChunkReadingTest {
         """.trimIndent()
 
         val ourFileName = randomFileName()
-        val properties= mutableMapOf<String,String?>()
+        val properties = mutableMapOf<String, String?>()
         properties[CHUNK_FILENAME_KEY] = ourFileName
 
         val expectedPath = fs.getPath(randomFileName())
@@ -220,7 +220,7 @@ class ChunkReadingTest {
         lateinit var actualPath: Path
         var actualFileName: String? = null
         val reader = ChunkReaderImpl(Files.createDirectory(fs.getPath("temp"))).apply {
-            onComplete {tempPathOfBinary, _, properties ->
+            onComplete { tempPathOfBinary, _, properties ->
                 actualPath = tempPathOfBinary
                 actualFileName = properties?.get(CHUNK_FILENAME_KEY)
             }

@@ -76,12 +76,15 @@ class ChunkWritingTest {
     @Test
     fun `chunk file name is set correctly`() {
         val fileName = randomFileName()
-        val properties= mutableMapOf<String,String?>()
+        val properties = mutableMapOf<String, String?>()
         properties[CHUNK_FILENAME_KEY] = fileName
         val writer = ChunkWriterFactory.create(1 * MB, properties)
         writer.apply {
-            this.onChunk { chunk -> assertThat(chunk.properties.items.find
-            { it.key == CHUNK_FILENAME_KEY }?.value).isEqualTo(fileName) }
+            this.onChunk { chunk ->
+                assertThat(chunk.properties.items.find
+                { it.key == CHUNK_FILENAME_KEY }?.value
+                ).isEqualTo(fileName)
+            }
         }
 
         val path = createFile((32 * KB).toLong())

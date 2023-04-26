@@ -1,5 +1,6 @@
 package net.corda.cpi.upload.endpoints.v1
 
+import net.corda.chunking.Constants.Companion.CHUNK_FILENAME_KEY
 import net.corda.crypto.core.toCorda
 import net.corda.cpi.upload.endpoints.common.CpiUploadRestResourceHandler
 import net.corda.cpi.upload.endpoints.service.CpiUploadService
@@ -57,10 +58,12 @@ class CpiUploadRestResourceImpl @Activate constructor(
 
     override fun cpi(upload: HttpFileUpload): CpiUploadRestResource.CpiUploadResponse {
         val opName = "Uploading CPI: ${upload.fileName}"
+        val properties = mutableMapOf<String, String?>()
+        properties[CHUNK_FILENAME_KEY] = upload.fileName
         logger.info(opName)
         requireRunning()
         val cpiUploadRequestId = tryWithExceptionHandling(logger, opName) {
-            cpiUploadManager.uploadCpi(upload.fileName, upload.content)
+            cpiUploadManager.uploadCpi(upload.content, properties)
         }
         logger.info("Request ID for uploading CPI ${upload.fileName} is $cpiUploadRequestId")
         return CpiUploadRestResource.CpiUploadResponse(cpiUploadRequestId.requestId)

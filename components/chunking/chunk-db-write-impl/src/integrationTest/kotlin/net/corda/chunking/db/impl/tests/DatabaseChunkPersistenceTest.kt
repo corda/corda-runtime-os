@@ -27,7 +27,6 @@ import net.corda.db.testkit.DbUtils
 import net.corda.libs.cpi.datamodel.CpiEntities
 import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
 import net.corda.orm.utils.transaction
-import net.corda.v5.crypto.SecureHash
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.AfterEach
@@ -139,7 +138,7 @@ internal class DatabaseChunkPersistenceTest {
             it.write(mockCpkContent)
         }
 
-        val properties= mutableMapOf<String,String?>()
+        val properties = mutableMapOf<String, String?>()
         properties[Constants.CHUNK_FILENAME_KEY] = someFile
         val divisor = 10
         val chunkSize = mockCpkContent.length / divisor
