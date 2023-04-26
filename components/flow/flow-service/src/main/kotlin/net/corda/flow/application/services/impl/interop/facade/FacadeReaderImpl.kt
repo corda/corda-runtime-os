@@ -1,11 +1,29 @@
 package net.corda.flow.application.services.impl.interop.facade
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import net.corda.flow.application.services.impl.interop.parameters.TypeParameters
 import net.corda.flow.application.services.impl.interop.parameters.TypedParameterImpl
 import net.corda.v5.application.interop.facade.*
 import java.io.Reader
 import net.corda.v5.application.interop.parameters.ParameterType
+
+/**
+ * Provides [FacadeReader]s from various formats. (This is a lie: it only does JSON).
+ */
+object FacadeReaders {
+
+    /**
+     * A [FacadeReader] that reads JSON.
+     */
+    @JvmStatic
+    val JSON: FacadeReader
+        get() = JacksonFacadeReader {
+            ObjectMapper().registerKotlinModule().readValue(it, FacadeDefinition::class.java)
+        }
+
+}
+
 
 /**
  * A [JacksonFacadeReader] reads a [Facade] from a JSON input source, using Jackson.

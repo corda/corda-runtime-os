@@ -3,6 +3,7 @@ plugins {
     id 'corda.osgi-test-conventions'
     id 'corda.common-library'
 }
+version = '5.5.4'
 
 description "Flow service"
 
@@ -63,6 +64,8 @@ dependencies {
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation "org.apache.felix:org.apache.felix.framework:$felixVersion"
     testImplementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
+    testImplementation "io.kotest:kotest-runner-junit5:$version"
+    testImplementation "io.kotest:kotest-assertions-core:$version"
 
     testImplementation project(":libs:flows:session-manager-impl")
     testImplementation project(":libs:lifecycle:lifecycle-test-impl")
