@@ -17,14 +17,19 @@ class UtxoPersistSignedGroupParametersIfDoNotExistRequestHandler(
 ) : RequestHandler {
 
     override fun execute(): List<Record<*, *>> {
-        requireNotNull(persistSignedGroupParametersIfDoNotExist.signedGroupParameters.mgmSignature){
+        requireNotNull(persistSignedGroupParametersIfDoNotExist.signedGroupParameters.mgmSignature) {
             "SignedGroupParameters needs to be signed."
         }
-        requireNotNull(persistSignedGroupParametersIfDoNotExist.signedGroupParameters.mgmSignatureSpec){
+        requireNotNull(persistSignedGroupParametersIfDoNotExist.signedGroupParameters.mgmSignatureSpec) {
             "SignedGroupParameters needs a signature specification."
         }
         persistenceService.persistSignedGroupParametersIfDoNotExist(persistSignedGroupParametersIfDoNotExist.signedGroupParameters)
 
-        return listOf(externalEventResponseFactory.success(externalEventContext, EntityResponse(emptyList(), KeyValuePairList(emptyList()))))
+        return listOf(
+            externalEventResponseFactory.success(
+                externalEventContext,
+                EntityResponse(emptyList(), KeyValuePairList(emptyList()))
+            )
+        )
     }
 }

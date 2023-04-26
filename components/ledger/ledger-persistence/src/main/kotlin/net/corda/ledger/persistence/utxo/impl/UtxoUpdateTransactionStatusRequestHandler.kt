@@ -19,6 +19,11 @@ class UtxoUpdateTransactionStatusRequestHandler(
 
     override fun execute(): List<Record<*, *>> {
         persistenceService.updateStatus(request.id, request.transactionStatus.toTransactionStatus())
-        return listOf(externalEventResponseFactory.success(externalEventContext, EntityResponse(emptyList(), KeyValuePairList(emptyList()))))
+        return listOf(
+            externalEventResponseFactory.success(
+                externalEventContext,
+                EntityResponse(emptyList(), KeyValuePairList(emptyList()))
+            )
+        )
     }
 }
