@@ -28,6 +28,9 @@ data class ResultSetImpl<R> internal constructor(
 
     @Suspendable
     override fun next(): List<R> {
+        if (!hasNext()) {
+            throw NoSuchElementException("The result set has no more pages to query")
+        }
         val (serializedResults, numberOfRowsFromQuery) = resultSetExecutor.execute(serializedParameters, offset)
         this.numberOfRowsFromQuery = numberOfRowsFromQuery
         this.offset += limit
