@@ -1,11 +1,12 @@
 package net.corda.ledger.utxo.flow.impl.persistence
 
 import net.corda.flow.external.events.executor.ExternalEventExecutor
+import net.corda.flow.persistence.query.ResultSetFactory
+import net.corda.ledger.utxo.flow.impl.persistence.external.events.VaultNamedQueryEventParams
+import net.corda.ledger.utxo.flow.impl.persistence.external.events.VaultNamedQueryExternalEventFactory
 import net.corda.v5.application.persistence.PagedQuery
-import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.ledger.utxo.query.VaultNamedParameterizedQuery
-import java.nio.ByteBuffer
 import java.time.Instant
 
 // TODO CORE-12032 use delegation to create this class
@@ -13,7 +14,7 @@ import java.time.Instant
 class VaultNamedParameterizedQueryImpl<T>(
     private val queryName: String,
     private val externalEventExecutor: ExternalEventExecutor,
-    private val serializationService: SerializationService,
+    private val resultSetFactory: ResultSetFactory,
     private var parameters: MutableMap<String, Any>,
     private var limit: Int,
     private var offset: Int,
@@ -54,15 +55,19 @@ class VaultNamedParameterizedQueryImpl<T>(
             }
         } ?: setCreatedTimestampLimit(Instant.now())
 
-        val resultSet = VaultResultSetImpl(
-            queryName,
-            externalEventExecutor,
-            serializationService,
+        val resultSet = resultSetFactory.create(
             parameters,
             limit,
             offset,
             resultClass
-        )
+        ) @Suspendable { serializedParameters, offset ->
+            wrapWithPersistenceException {
+                externalEventExecutor.execute(
+                    VaultNamedQueryExternalEventFactory::class.java,
+                    VaultNamedQueryEventParams(queryName, serializedParameters, offset, limit)
+                )
+            }
+        }
         resultSet.next()
         return resultSet
     }

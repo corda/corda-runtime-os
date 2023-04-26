@@ -2,7 +2,7 @@ package net.corda.simulator.runtime.persistence
 
 import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
-import net.corda.flow.persistence.ResultSetImpl
+import net.corda.flow.persistence.query.ResultSetImpl
 import net.corda.simulator.runtime.utils.sandboxName
 import net.corda.v5.application.persistence.CordaPersistenceException
 import net.corda.v5.application.persistence.PagedQuery

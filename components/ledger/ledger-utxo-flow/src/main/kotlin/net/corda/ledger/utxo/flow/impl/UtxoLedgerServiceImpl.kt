@@ -1,6 +1,7 @@
 package net.corda.ledger.utxo.flow.impl
 
 import net.corda.flow.external.events.executor.ExternalEventExecutor
+import net.corda.flow.persistence.query.ResultSetFactory
 import net.corda.flow.pipeline.sessions.protocol.FlowProtocolStore
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.utxo.flow.impl.flows.finality.UtxoFinalityFlow
@@ -61,7 +62,7 @@ class UtxoLedgerServiceImpl @Activate constructor(
     @Reference(service = CurrentSandboxGroupContext::class) private val currentSandboxGroupContext: CurrentSandboxGroupContext,
     @Reference(service = NotaryLookup::class) private val notaryLookup: NotaryLookup,
     @Reference(service = ExternalEventExecutor::class) private val externalEventExecutor: ExternalEventExecutor,
-    @Reference(service = SerializationService::class) private val serializationService: SerializationService
+    @Reference(service = ResultSetFactory::class) private val resultSetFactory: ResultSetFactory
 ) : UtxoLedgerService, UsedByFlow, SingletonSerializeAsToken {
 
     @Suspendable
@@ -143,7 +144,7 @@ class UtxoLedgerServiceImpl @Activate constructor(
         return VaultNamedParameterizedQueryImpl(
             queryName,
             externalEventExecutor,
-            serializationService,
+            resultSetFactory,
             parameters = mutableMapOf(),
             limit = Int.MAX_VALUE,
             offset = 0,

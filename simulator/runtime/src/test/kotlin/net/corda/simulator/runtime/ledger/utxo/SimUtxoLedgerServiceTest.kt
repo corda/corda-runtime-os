@@ -2,7 +2,7 @@ package net.corda.simulator.runtime.ledger.utxo
 
 import net.corda.crypto.core.bytes
 import net.corda.crypto.core.parseSecureHash
-import net.corda.flow.persistence.ResultSetImpl
+import net.corda.flow.persistence.query.ResultSetImpl
 import net.corda.simulator.SimulatorConfiguration
 import net.corda.simulator.entities.UtxoTransactionEntity
 import net.corda.simulator.entities.UtxoTransactionOutputEntity
