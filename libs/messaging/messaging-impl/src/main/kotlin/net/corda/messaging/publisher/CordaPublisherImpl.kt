@@ -45,7 +45,7 @@ internal class CordaPublisherImpl(
 
     private data class Batch(val records: List<Record<*, *>>, val future: CompletableFuture<Unit>)
     private val queue = ArrayBlockingQueue<Batch>(QUEUE_SIZE)
-    private val lock = ReentrantLock()
+    private val lock = ReentrantLock(true)
 
     /**
      * Publish a record.
@@ -83,6 +83,11 @@ internal class CordaPublisherImpl(
     }
 
     override fun batchPublish(records: List<Record<*, *>>): CompletableFuture<Unit> {
+        if (!config.transactional) {
+            throw CordaMessageAPIFatalException(
+                "Cannot use the batch publish API unless the publisher is transactional. Client id: ${config.clientId}"
+            )
+        }
         val batch = Batch(records, CompletableFuture())
         queue.add(batch)
         lock.withLock {

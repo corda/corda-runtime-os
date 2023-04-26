@@ -19,6 +19,7 @@ import org.junit.jupiter.api.function.Executable
 import org.mockito.ArgumentCaptor
 import org.mockito.Captor
 import org.mockito.kotlin.any
+import org.mockito.kotlin.atMost
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
@@ -228,6 +229,43 @@ class CordaPublisherImplTest {
         verify(producer, times(1)).commitTransaction()
         verify(producer, times(1)).close()
         verify(producerBuilder, times(2)).createProducer(any(), any())
+    }
+
+    @Test
+    fun testBatchPublish() {
+        val publisher = createPublisher(true)
+        publisher.batchPublish(listOf(record))
+        verify(producer).sendRecords(any())
+        verify(producer).beginTransaction()
+        verify(producer).commitTransaction()
+    }
+
+    @Test
+    fun testBatchPublishFailsIfNotTransactional() {
+        val publisher = createPublisher(false)
+        assertThrows(CordaMessageAPIFatalException::class.java) {
+            publisher.batchPublish(listOf(record))
+        }
+    }
+
+    @Test
+    fun testBatchPublishWithMultipleThreads() {
+        val publisher = createPublisher(true)
+        val numThreads = 100
+        val barrier = CyclicBarrier(numThreads + 1)
+        val threads = (0..numThreads).map {
+            Thread {
+                barrier.await()
+                publisher.batchPublish(listOf(record, record, record))
+                barrier.await()
+            }
+        }
+        threads.forEach { it.start() }
+        barrier.await()
+        barrier.await()
+        verify(producer, atMost(numThreads)).sendRecords(any())
+        verify(producer, atMost(numThreads)).beginTransaction()
+        verify(producer, atMost(numThreads)).commitTransaction()
     }
 
     @Test
