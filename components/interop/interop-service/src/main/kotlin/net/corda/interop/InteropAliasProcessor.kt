@@ -113,6 +113,14 @@ class InteropAliasProcessor(
             )
             return Record(Schemas.P2P.P2P_HOSTED_IDENTITIES_TOPIC, holdingIdentity.shortHash.value, hostedIdentity)
         }
+
+        fun commonNameOrUnitStartsWith(name: MemberX500Name, letters: List<String>): Boolean {
+            val commonName = name.commonName
+            return letters.any {
+                (commonName != null && (commonName.startsWith(it, ignoreCase = true))
+                        || (name.organization.startsWith(it, ignoreCase = true)))
+            }
+        }
     }
 
     override fun onNext(
@@ -141,6 +149,10 @@ class InteropAliasProcessor(
 
     private fun addEntry(entry: HostedIdentityEntry) {
         val info = entry.holdingIdentity.toCorda()
+        if (commonNameOrUnitStartsWith(info.x500Name, listOf("D", "E", "F"))) {
+            logger.info("Skipped adding alias for=${info.x500Name}")
+            return
+        }
         identityMappingCache[entry.holdingIdentity.x500Name.toString()] = info
         val newIdentity = entry
         val holdIdentity = newIdentity.holdingIdentity.toCorda()
