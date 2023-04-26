@@ -7,6 +7,8 @@ import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.flow.FLOW_ID_1
 import net.corda.flow.fiber.FiberFuture
 import net.corda.flow.fiber.FlowContinuation
+import net.corda.flow.fiber.FlowFiberCache
+import net.corda.flow.fiber.FlowFiberCacheKey
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.fiber.Interruptable
 import net.corda.flow.pipeline.FlowGlobalPostProcessor
@@ -57,10 +59,12 @@ class FlowEventPipelineImplTest {
     }
 
     private val mockHoldingIdentity = mock<HoldingIdentity>()
+    private val mockFlowId = "flow_id_111"
     private val checkpoint = mock<FlowCheckpoint>().apply {
         whenever(waitingFor).thenReturn(waitingForWakeup)
         whenever(inRetryState).thenReturn(false)
         whenever(holdingIdentity).thenReturn(mockHoldingIdentity)
+        whenever(flowId).thenReturn(mockFlowId)
     }
 
     private val inputContext = buildFlowEventContext<Any>(checkpoint, wakeUpEvent)
@@ -101,6 +105,8 @@ class FlowEventPipelineImplTest {
         whenever(get(any())).thenReturn(virtualNodeInfo)
     }
 
+    private val flowFiberCache = mock<FlowFiberCache>()
+
     private fun buildPipeline(output: FlowIORequest<*>? = null): FlowEventPipelineImpl {
         return FlowEventPipelineImpl(
             mapOf(Wakeup::class.java to wakeUpFlowEventHandler, StartFlow::class.java to startFlowEventHandler),
@@ -110,6 +116,7 @@ class FlowEventPipelineImplTest {
             flowGlobalPostProcessor,
             inputContext,
             virtualNodeInfoReadService,
+            flowFiberCache,
             output
         )
     }
@@ -152,7 +159,8 @@ class FlowEventPipelineImplTest {
         val mockContext = mock<FlowEventContext<Any>> {
             whenever(it.checkpoint).thenReturn(mockCheckpoint)
         }
-        val pipeline = FlowEventPipelineImpl(mapOf(), mapOf(), mapOf(), mock(), mock(), mockContext, virtualNodeInfoReadService)
+        val pipeline =
+            FlowEventPipelineImpl(mapOf(), mapOf(), mapOf(), mock(), mock(), mockContext, virtualNodeInfoReadService, flowFiberCache)
 
         val mockVirtualNode = mock<VirtualNodeInfo> {
             whenever(it.flowOperationalStatus).thenReturn(OperationalStatus.INACTIVE)
@@ -215,6 +223,7 @@ class FlowEventPipelineImplTest {
         pipeline.runOrContinue(RUN_OR_CONTINUE_TIMEOUT)
         verify(flowRunner).runFlow(any(), any())
         verify(flowWaitingForHandler).runOrContinue(inputContext, WakeUpWaitingFor())
+        verify(flowFiberCache).remove(eq(FlowFiberCacheKey(mockHoldingIdentity, mockFlowId)))
     }
 
     @Test
@@ -240,6 +249,7 @@ class FlowEventPipelineImplTest {
         verify(flowRunner).runFlow(any(), any())
         verify(runFlowFiberFuture.future).get(RUN_OR_CONTINUE_TIMEOUT, TimeUnit.MILLISECONDS)
         verify(checkpoint, never()).serializedFiber
+        verify(flowFiberCache).remove(eq(FlowFiberCacheKey(mockHoldingIdentity, mockFlowId)))
     }
 
     @Test
@@ -257,6 +267,7 @@ class FlowEventPipelineImplTest {
         verify(runFlowFiberFuture.future).get(RUN_OR_CONTINUE_TIMEOUT, TimeUnit.MILLISECONDS)
         verify(runFlowFiberFuture.interruptable).attemptInterrupt()
         verify(checkpoint, never()).serializedFiber
+        verify(flowFiberCache).remove(eq(FlowFiberCacheKey(mockHoldingIdentity, mockFlowId)))
     }
 
     @Test

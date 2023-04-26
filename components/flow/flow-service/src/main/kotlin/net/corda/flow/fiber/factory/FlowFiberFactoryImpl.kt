@@ -9,16 +9,28 @@ import net.corda.flow.fiber.FlowFiberExecutionContext
 import net.corda.flow.fiber.FlowFiberImpl
 import net.corda.flow.fiber.FlowLogicAndArgs
 import net.corda.flow.fiber.FiberExceptionConstants
+import net.corda.flow.fiber.FlowFiberCache
+import net.corda.flow.fiber.FlowFiberCacheKey
 import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.metrics.CordaMetrics
+import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Deactivate
+import org.osgi.service.component.annotations.Reference
+import org.slf4j.LoggerFactory
 import java.util.UUID
 import java.util.concurrent.ExecutorService
 
 @Component
 @Suppress("Unused")
-class FlowFiberFactoryImpl : FlowFiberFactory {
+class FlowFiberFactoryImpl @Activate constructor(
+    @Reference(service = FlowFiberCache::class)
+    private val flowFiberCache: FlowFiberCache
+) : FlowFiberFactory {
+
+    private companion object {
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+    }
 
     private val currentScheduler: FiberScheduler = FiberExecutorScheduler(
         "Same thread scheduler",
@@ -52,13 +64,25 @@ class FlowFiberFactoryImpl : FlowFiberFactory {
             .withTag(CordaMetrics.Tag.FlowClass, flowFiberExecutionContext.flowCheckpoint.flowStartContext.flowClassName)
             .build()
             .recordCallable {
-                flowFiberExecutionContext.sandboxGroupContext.checkpointSerializer.deserialize(
-                    flowFiberExecutionContext.flowCheckpoint.serializedFiber.array(),
-                    FlowFiberImpl::class.java
-                )
+                getFromCacheOrDeserialize(flowFiberExecutionContext)
             }!!
 
         return FiberFuture(fiber, fiber.resume(flowFiberExecutionContext, suspensionOutcome, currentScheduler))
+    }
+
+    private fun getFromCacheOrDeserialize(flowFiberExecutionContext: FlowFiberExecutionContext): FlowFiberImpl {
+        val cachedFiber: FlowFiberImpl? = try {
+            flowFiberCache.get(
+                FlowFiberCacheKey(flowFiberExecutionContext.flowCheckpoint.holdingIdentity, flowFiberExecutionContext.flowCheckpoint.flowId)
+            )
+        } catch (e: Exception) {
+            logger.warn("Exception when getting from flow fiber cache.", e)
+            null
+        }
+        return cachedFiber ?: flowFiberExecutionContext.sandboxGroupContext.checkpointSerializer.deserialize(
+            flowFiberExecutionContext.flowCheckpoint.serializedFiber.array(),
+            FlowFiberImpl::class.java
+        )
     }
 
     @Deactivate

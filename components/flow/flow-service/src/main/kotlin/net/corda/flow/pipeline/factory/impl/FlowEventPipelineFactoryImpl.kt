@@ -2,6 +2,7 @@ package net.corda.flow.pipeline.factory.impl
 
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.state.checkpoint.Checkpoint
+import net.corda.flow.fiber.FlowFiberCache
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.pipeline.events.FlowEventContext
 import net.corda.flow.pipeline.FlowEventPipeline
@@ -28,6 +29,7 @@ class FlowEventPipelineFactoryImpl(
     private val flowGlobalPostProcessor: FlowGlobalPostProcessor,
     private val flowCheckpointFactory: FlowCheckpointFactory,
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
+    private val flowFiberCache: FlowFiberCache,
     flowEventHandlers: List<FlowEventHandler<out Any>>,
     flowWaitingForHandlers: List<FlowWaitingForHandler<out Any>>,
     flowRequestHandlers: List<FlowRequestHandler<out FlowIORequest<*>>>
@@ -67,11 +69,14 @@ class FlowEventPipelineFactoryImpl(
         flowCheckpointFactory: FlowCheckpointFactory,
         @Reference(service = VirtualNodeInfoReadService::class)
         virtualNodeInfoReadService: VirtualNodeInfoReadService,
+        @Reference(service = FlowFiberCache::class)
+        flowFiberCache: FlowFiberCache,
     ) : this(
         flowRunner,
         flowGlobalPostProcessor,
         flowCheckpointFactory,
         virtualNodeInfoReadService,
+        flowFiberCache,
         mutableListOf(),
         mutableListOf(),
         mutableListOf()
@@ -98,7 +103,8 @@ class FlowEventPipelineFactoryImpl(
             flowRunner,
             flowGlobalPostProcessor,
             context,
-            virtualNodeInfoReadService
+            virtualNodeInfoReadService,
+            flowFiberCache
         )
     }
 }
