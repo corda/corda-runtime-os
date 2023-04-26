@@ -469,6 +469,7 @@ Secret creation
 {{- $path := index . 2 }}
 {{- $secretName := index . 3 }}
 {{- $fields := index . 4 }}
+{{- $options := (index . 5) | default (dict) }}
 {{- with $context }}
 {{- $create := false }}
 {{- range $k, $v := $fields }}
@@ -491,6 +492,9 @@ metadata:
   annotations:
     "helm.sh/hook-weight": "-1"
     "helm.sh/hook": pre-install
+{{- if $options.cleanup | default false }}   
+    "helm.sh/hook-delete-policy": hook-succeeded
+{{- end }}
   labels:
     {{- include "corda.labels" $ | nindent 4 }}
 type: Opaque
