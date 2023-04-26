@@ -7,12 +7,13 @@ import net.corda.flow.application.services.impl.interop.binding.FacadeMethodBind
 import net.corda.flow.application.services.impl.interop.binding.FacadeOutParameterBindings
 import net.corda.flow.application.services.impl.interop.binding.creation.FacadeInterfaceBindings
 import net.corda.flow.application.services.impl.interop.parameters.TypeConverter
+import net.corda.flow.application.services.impl.interop.parameters.TypedParameterValueImpl
 import net.corda.v5.application.interop.binding.InteropAction
 import net.corda.v5.application.interop.facade.Facade
 import net.corda.v5.application.interop.facade.FacadeRequest
 import net.corda.v5.application.interop.facade.FacadeResponse
-import net.corda.v5.application.interop.parameters.ParameterType
-import net.corda.v5.application.interop.parameters.ParameterTypeLabel
+import net.corda.v5.application.interop.parameters.TypedParameter
+import net.corda.v5.application.interop.parameters.TypedParameterValue
 import java.lang.reflect.InvocationHandler
 import java.lang.reflect.Method
 import java.lang.reflect.Proxy
@@ -81,9 +82,9 @@ private class FacadeClientProxy(
 
         val parameterValues = args.indices.map { index ->
             val binding = methodBinding.bindingForMethodParameter(index)!!
-            ParameterTypeLabel(
+            TypedParameterValueImpl(
                 binding.facadeParameter as TypedParameter<Any>,
-                typeConverter.convertJvmToFacade(args[index], binding.facadeParameter.type))
+                typeConverter.convertJvmToFacade(args[index], binding.facadeParameter.type.typeLabel))
         }.toTypedArray()
 
         val request = methodBinding.facadeMethod.request(*parameterValues)
@@ -98,8 +99,8 @@ private class FacadeClientProxy(
             is FacadeOutParameterBindings.NoOutParameters -> null
             is FacadeOutParameterBindings.SingletonOutParameterBinding ->
                 typeConverter.convertFacadeToJvm(
-                    bindings.outParameter.typeLabel,
-                    response[bindings.outParameter as ParameterType<Any>],
+                    bindings.outParameter.type.typeLabel,
+                    response[bindings.outParameter as TypedParameter<Any>],
                     bindings.returnType
                 )
 
@@ -116,7 +117,7 @@ private class FacadeClientProxy(
                     "${response.facadeId}/${response.methodName}"
         )
 
-        val receivedParamSet = response.outParameters.asSequence().map(ParameterType<Any>::getTypeLabel).toSet()
+        val receivedParamSet = response.outParameters.asSequence().map(TypedParameterValue<*>::getParameter).toSet()
         val expectedParamSet = binding.facadeMethod.outParameters.toSet()
 
         if (receivedParamSet != expectedParamSet) {
@@ -127,16 +128,16 @@ private class FacadeClientProxy(
     }
 
     private fun buildDataClass(
-        outParameters: List<ParameterType<Any>>,
+        outParameters: List<TypedParameterValue<*>>,
         bindings: FacadeOutParameterBindings.DataClassOutParameterBindings): Any {
         val constructorArgs = Array<Any?>(bindings.bindings.size) { null }
 
         outParameters.forEach { outParameter ->
-            val binding = bindings.bindingFor(outParameter)!!
+            val binding = bindings.bindingFor(outParameter.parameter)!!
 
             constructorArgs[binding.constructorParameter.index] = typeConverter.convertFacadeToJvm(
-                outParameter.typeLabel,
-                outParameter.rawParameterType,
+                outParameter.parameter.type.typeLabel,
+                outParameter.value,
                 binding.constructorParameter.type)
         }
 
