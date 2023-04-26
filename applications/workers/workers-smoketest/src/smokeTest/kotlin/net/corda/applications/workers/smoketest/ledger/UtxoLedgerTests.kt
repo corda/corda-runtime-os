@@ -115,7 +115,8 @@ class UtxoLedgerTests {
             aliceHoldingId,
             mapOf(
                 "offset" to 0,
-                "limit" to 100
+                "limit" to 100,
+                "testField" to input
             ),
             "com.r3.corda.demo.utxo.UtxoCustomQueryDemoFlow"
         )
