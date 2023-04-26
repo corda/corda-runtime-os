@@ -7,11 +7,12 @@ import net.corda.cli.plugins.preinstall.PreInstallPlugin.PluginContext
 import picocli.CommandLine
 import picocli.CommandLine.Parameters
 import picocli.CommandLine.Option
+import java.util.concurrent.Callable
 
 @CommandLine.Command(name = "check-limits", description = ["Check the resource limits have been assigned correctly."])
-class CheckLimits : Runnable, PluginContext() {
+class CheckLimits : Callable<Int>, PluginContext() {
 
-    @Parameters(index = "0", description = ["The yaml file containing resource limit overrides for the corda install"])
+    @Parameters(index = "0", description = ["YAML file containing resource limit overrides for the corda install"])
     lateinit var path: String
 
     @Option(names = ["-v", "--verbose"], description = ["Display additional information when checking resources"])
@@ -60,7 +61,7 @@ class CheckLimits : Runnable, PluginContext() {
             request = parseResourceString(requestString)
         }
         catch(e: IllegalArgumentException) {
-            log(e.message!!, ERROR)
+            report.addEntry(PreInstallPlugin.ReportEntry("Parse resource strings", false, e))
             return false
         }
 
@@ -68,7 +69,7 @@ class CheckLimits : Runnable, PluginContext() {
     }
 
     // use the checkResource function to check each individual resource
-    private fun checkResources(resources: ResourceConfig, name: String): Boolean {
+    private fun checkResources(resources: ResourceConfig, name: String) {
         val requests: ResourceValues = resources.requests
         val limits: ResourceValues = resources.limits
 
@@ -79,30 +80,42 @@ class CheckLimits : Runnable, PluginContext() {
         val check = checkResource(requests.memory, limits.memory) and checkResource(requests.cpu, limits.cpu)
 
         if (check) {
-            log("Resource requests for $name are appropriate and are under the set limits\n", INFO)
+            report.addEntry(PreInstallPlugin.ReportEntry("$name requests do not exceed limits", true))
         }
         else {
-            log("Resource requests for $name have been exceeded!\n", ERROR)
+            report.addEntry(PreInstallPlugin.ReportEntry("$name requests do not exceed limits", false))
         }
-
-        return check
     }
 
-    override fun run() {
+    override fun call(): Int {
         register(verbose, debug)
 
-        val yaml: Configurations = parseYaml<Configurations>(path) ?: return
+        val yaml: Configurations
+        try {
+            yaml = parseYaml<Configurations>(path)
+            report.addEntry(PreInstallPlugin.ReportEntry("Parse resource properties from YAML", true))
+        } catch (e: Exception) {
+            report.addEntry(PreInstallPlugin.ReportEntry("Parse resource properties from YAML", false, e))
+            log(report.failingTests(), ERROR)
+            return 1
+        }
 
-        var check: Boolean = checkResources(yaml.resources, "resources")
+        checkResources(yaml.resources, "resources")
 
-        yaml.bootstrap?.let { check = check && checkResources(it.resources, "bootstrap") }
-        yaml.workers?.db?.let { check = check && checkResources(it.resources, "DB") }
-        yaml.workers?.flow?.let { check = check && checkResources(it.resources, "flow") }
-        yaml.workers?.membership?.let { check = check && checkResources(it.resources, "membership") }
-        yaml.workers?.rest?.let { check = check && checkResources(it.resources, "rest") }
-        yaml.workers?.p2pLinkManager?.let { check = check && checkResources(it.resources, "P2P link manager") }
-        yaml.workers?.p2pGateway?.let { check = check && checkResources(it.resources, "P2P gateway") }
+        yaml.bootstrap?.let { checkResources(it.resources, "bootstrap") }
+        yaml.workers?.db?.let { checkResources(it.resources, "DB") }
+        yaml.workers?.flow?.let { checkResources(it.resources, "flow") }
+        yaml.workers?.membership?.let { checkResources(it.resources, "membership") }
+        yaml.workers?.rest?.let { checkResources(it.resources, "rest") }
+        yaml.workers?.p2pLinkManager?.let { checkResources(it.resources, "P2P link manager") }
+        yaml.workers?.p2pGateway?.let { checkResources(it.resources, "P2P gateway") }
 
-        if (check) {println("[INFO] All resource requests are appropriate and are under the set limits.")}
+        if (report.testsPassed() == 0) {
+            log(report.toString(), INFO)
+        } else {
+            log(report.failingTests(), ERROR)
+        }
+
+        return report.testsPassed()
     }
 }

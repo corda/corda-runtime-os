@@ -7,34 +7,66 @@ import java.sql.DriverManager
 import java.sql.SQLException
 import net.corda.cli.plugins.preinstall.PreInstallPlugin.DB
 import net.corda.cli.plugins.preinstall.PreInstallPlugin.PluginContext
+import java.util.concurrent.Callable
 
-@CommandLine.Command(name = "check-postgres", description = ["Check that the PostgreSQL DB is up and that the credentials work."])
-class CheckPostgres : Runnable, PluginContext(){
+@CommandLine.Command(name = "check-postgres", description = ["Check that the PostgreSQL DB is up and that the credentials work."]
+)
+class CheckPostgres : Callable<Int>, PluginContext(){
 
-    @Parameters(index = "0", description = ["The yaml file containing either the username and password value, " +
-            "or valueFrom.secretKeyRef.key fields for Postgres"])
+    @Parameters(
+        index = "0",
+        description = ["YAML file containing either the username and password value, or valueFrom.secretKeyRef.key fields for PostgreSQL"]
+    )
     lateinit var path: String
 
-    @Option(names = ["-n", "--namespace"], description = ["The namespace in which to look for the secrets if there are any"])
+    @Option(
+        names = ["-n", "--namespace"],
+        description = ["The namespace in which to look for the secrets if there are any"]
+    )
     var namespace: String? = null
 
-    @Option(names = ["-u", "--url"], description = ["The kubernetes cluster URL " +
-            "(if the preinstall is being called from outside the cluster)"])
+    @Option(
+        names = ["-u", "--url"],
+        description = ["The kubernetes cluster URL (if the preinstall is being called from outside the cluster)"]
+    )
     var url: String? = null
 
-    @Option(names = ["-v", "--verbose"], description = ["Display additional information when connecting to postgres"])
+    @Option(
+        names = ["-v", "--verbose"],
+        description = ["Display additional information when connecting to postgres"]
+    )
     var verbose: Boolean = false
 
-    @Option(names = ["-d", "--debug"], description = ["Show extra information while connecting to Postgres for debugging purposes"])
+    @Option(
+        names = ["-d", "--debug"],
+        description = ["Show extra information while connecting to PostgreSQL for debugging purposes"]
+    )
     var debug: Boolean = false
 
-    override fun run() {
+    override fun call(): Int {
         register(verbose, debug)
 
-        val yaml: DB = parseYaml<DB>(path) ?: return
+        val yaml: DB
+        try {
+            yaml = parseYaml<DB>(path)
+            report.addEntry(PreInstallPlugin.ReportEntry("Parse PostgreSQL properties from YAML", true))
+        } catch (e: Exception) {
+            report.addEntry(PreInstallPlugin.ReportEntry("Parse resource properties from YAML", false, e))
+            log(report.failingTests(), ERROR)
+            return 1
+        }
 
-        val username: String = getCredentialOrSecret(yaml.db.cluster.username, namespace, url) ?: return
-        val password: String = getCredentialOrSecret(yaml.db.cluster.password, namespace, url) ?: return
+        val username: String
+        val password: String
+
+        try {
+            username = getCredentialOrSecret(yaml.db.cluster.username, namespace, url)
+            password = getCredentialOrSecret(yaml.db.cluster.password, namespace, url)
+        } catch (e: Exception) {
+            report.addEntry(PreInstallPlugin.ReportEntry("Get PostgreSQL credentials", false, e))
+            log(report.failingTests(), ERROR)
+            return 1
+        }
 
         val postgresUrl = "jdbc:postgresql://${yaml.db.cluster.host}:${yaml.db.cluster.port}/postgres"
 
@@ -42,15 +74,19 @@ class CheckPostgres : Runnable, PluginContext(){
             Class.forName("org.postgresql.Driver")
             val connection = DriverManager.getConnection(postgresUrl, username, password)
             if (connection.isValid(0)) {
-                println("[INFO] Postgres credentials found and a DB connection was established.")
+                report.addEntry(PreInstallPlugin.ReportEntry("Connect to PostgreSQL", true))
             }
         }
         catch(e: SQLException) {
-            e.cause?.let{
-                log("Postgres DB connection unsuccessful: ${e.message} Caused by ${e.cause}", ERROR)
-            } ?: run {
-                log("Postgres DB connection unsuccessful: ${e.message}", ERROR)
-            }
+            report.addEntry(PreInstallPlugin.ReportEntry("Connect to PostgreSQL", false, e))
         }
+
+        if (report.testsPassed() == 0) {
+            log(report.toString(), INFO)
+        } else {
+            log(report.failingTests(), ERROR)
+        }
+
+        return report.testsPassed()
     }
 }

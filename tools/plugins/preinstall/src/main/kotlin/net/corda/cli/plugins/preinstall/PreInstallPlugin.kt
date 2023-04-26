@@ -3,7 +3,6 @@ package net.corda.cli.plugins.preinstall
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.databind.exc.ValueInstantiationException
 import com.fasterxml.jackson.dataformat.yaml.YAMLMapper
 import io.fabric8.kubernetes.api.model.Secret
 import io.fabric8.kubernetes.client.ConfigBuilder
@@ -12,7 +11,6 @@ import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.KubernetesClientBuilder
 import io.fabric8.kubernetes.client.KubernetesClientException
 import net.corda.cli.api.CordaCliPlugin
-import org.apache.kafka.common.protocol.types.Field.Bool
 import org.pf4j.Extension
 import org.pf4j.Plugin
 import org.pf4j.PluginWrapper
@@ -20,6 +18,7 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import picocli.CommandLine
 import java.io.File
+import java.io.FileNotFoundException
 import java.util.Base64
 
 class PreInstallPlugin(wrapper: PluginWrapper) : Plugin(wrapper) {
@@ -29,11 +28,11 @@ class PreInstallPlugin(wrapper: PluginWrapper) : Plugin(wrapper) {
     }
 
     override fun start() {
-        logger.info("starting preinstall plugin")
+        logger.debug("starting preinstall plugin")
     }
 
     override fun stop() {
-        logger.info("stopping preinstall plugin")
+        logger.debug("stopping preinstall plugin")
     }
 
     @Extension
@@ -46,6 +45,12 @@ class PreInstallPlugin(wrapper: PluginWrapper) : Plugin(wrapper) {
     open class PluginContext {
         private var verbose = false
         private var debug = false
+
+        var report = Report()
+        class SecretException: Exception {
+            constructor (message: String?) : super(message)
+            constructor (message: String?, cause: Throwable?) : super(message, cause)
+        }
 
         companion object LogLevel {
             const val ERROR: Int = 0
@@ -70,49 +75,32 @@ class PreInstallPlugin(wrapper: PluginWrapper) : Plugin(wrapper) {
         }
 
         // parse a yaml file, and return an object of type T or null if there was an error
-        inline fun <reified T> parseYaml(path: String): T? {
+        inline fun <reified T> parseYaml(path: String): T {
             log("Working Directory = ${System.getProperty("user.dir")}\n", INFO)
 
             val file = File(path)
 
             if(!file.isFile) {
-                log("File does not exist", ERROR)
-                return null
+                throw FileNotFoundException("Could not read file at $path.")
             }
 
-            return try {
-                val mapper: ObjectMapper = YAMLMapper()
-                mapper.readValue(file, T::class.java)
-            } catch ( e: ValueInstantiationException) {
-                log("Could not parse the YAML file at $path: ${e.message}", ERROR)
-                null
-            }
+            val mapper: ObjectMapper = YAMLMapper()
+            return mapper.readValue(file, T::class.java)
         }
 
         // get the credentials (.value) or credentials from a secret (.valueFrom.secretKeyRef...) from a SecretValues
         // object, and a namespace (if the credential is in a secret)
-        fun getCredentialOrSecret(values: SecretValues, namespace: String?, url: String?): String? {
+        fun getCredentialOrSecret(values: SecretValues, namespace: String?, url: String?): String {
             val secretKey: String? = values.valueFrom?.secretKeyRef?.key
             val secretName: String? = values.valueFrom?.secretKeyRef?.name
             var credential: String? = values.value
 
             credential = credential ?: run {
-                if (namespace == null) {
-                    log("No namespace has been specified - if the secret exists outside the current default namespace," +
-                            "set it using -n or --namespace.", WARN)
-                    return null
+                if (secretKey == null || secretName == null)  {
+                    throw SecretException("Credential secret $secretName with key $secretKey could not be parsed.")
                 }
-                if (secretKey == null)  {
-                    log("Credential secret key could not be parsed.", ERROR)
-                    return null
-                }
-                if (secretName == null) {
-                    log("Credential secret name could not be parsed.", ERROR)
-                    return null
-                }
-                val encoded = getSecret(secretName, secretKey, namespace, url) ?: run{
-                    log("Credential secret could not be found in namespace $namespace.", ERROR)
-                    return null
+                val encoded = getSecret(secretName, secretKey, namespace, url) ?: run {
+                    throw SecretException("Secret $secretName has no key $secretKey.")
                 }
                 String(Base64.getDecoder().decode(encoded))
             }
@@ -130,39 +118,39 @@ class PreInstallPlugin(wrapper: PluginWrapper) : Plugin(wrapper) {
                     KubernetesClientBuilder().build()
                 }
 
-                // if no namespace is set, will try and use the default. Worst case scenario, if no default is set, it will use "default".
-                val kubeNamespace = namespace ?: client.namespace ?: "default"
-
-                log("Using namespace ${client.namespace}", INFO)
-
-                val names = client.namespaces().list().items.map { item -> item.metadata.name}
-                if (!names.contains(kubeNamespace)) {
-                    log("Namespace $kubeNamespace does not exist.", ERROR)
-                    return null
+                val secret: Secret = if (namespace != null) {
+                    val names = client.namespaces().list().items.map { item -> item.metadata.name}
+                    if (!names.contains(namespace)) {
+                        throw SecretException("Namespace $namespace does not exist.")
+                    }
+                    client.secrets().inNamespace(namespace).withName(secretName).get()
+                } else {
+                    client.secrets().withName(secretName).get()
                 }
-
-                val secret: Secret = client.secrets().inNamespace(kubeNamespace).withName(secretName).get()
                 secret.data[secretKey]
             } catch (e: KubernetesClientException) {
-                log("Could not read secret $secretName with key $secretKey.", ERROR)
-                null
-            } catch (e: NullPointerException) {
-                log("Could not read secret $secretName with key $secretKey.", ERROR)
-                null
+                throw SecretException("Could not read secret $secretName with key $secretKey.", e)
             }
         }
     }
 
-    class Report (private var report: MutableList<Pair<String, Boolean>> = mutableListOf()) {
-        private fun getEntries(): MutableList<Pair<String, Boolean>> {
+    class ReportEntry(private var check: String, var result: Boolean, var reason: Exception? = null) {
+        override fun toString(): String {
+            return "$check: ${if (result) "PASSED" else "FAILED"}"
+        }
+    }
+
+    class Report (private var report: MutableList<ReportEntry> = mutableListOf()) {
+        private fun getEntries(): MutableList<ReportEntry> {
             return report
         }
 
-        fun addEntry(entry: Pair<String, Boolean>) {
+        fun addEntry(entry: ReportEntry) {
             report.add(entry)
+            if (!entry.result) { this.failingTests() }
         }
 
-        fun addEntries(entries: List<Pair<String, Boolean>>) {
+        fun addEntries(entries: List<ReportEntry>) {
             report.addAll(entries)
         }
 
@@ -172,15 +160,27 @@ class PreInstallPlugin(wrapper: PluginWrapper) : Plugin(wrapper) {
 
         // Fails (returns 1) if any of the report entries have failed. If no entries are found, the report passes.
         fun testsPassed(): Int {
-            val result = report.reduceOrNull { acc, pair -> Pair("", acc.second && pair.second) } ?: return 0
+            val result = report.reduceOrNull { acc, entry -> ReportEntry("", acc.result && entry.result) } ?: return 0
 
-            return if (result.second) 0 else 1
+            return if (result.result) 0 else 1
+        }
+
+        fun failingTests(): String {
+            var acc = ""
+            for(entry in report) {
+                if (!entry.result) {
+                    val message = entry.reason?.message ?: "(No message provided)"
+                    val cause = entry.reason?.cause ?: "(No cause provided)"
+                    acc += "$entry \n\t - $message \n\t - $cause \n"
+                }
+            }
+            return acc
         }
 
         override fun toString(): String {
             var acc = ""
             for (entry in report) {
-                acc += "${entry.first}: ${if (entry.second) "PASSED" else "FAILED"}\n"
+                acc += "$entry\n"
             }
             return acc
         }
@@ -216,7 +216,7 @@ class PreInstallPlugin(wrapper: PluginWrapper) : Plugin(wrapper) {
     @JsonIgnoreProperties(ignoreUnknown = true)
     data class Truststore(
         @JsonProperty("valueFrom")
-        val valueFrom: SecretValues,
+        val valueFrom: SecretValues?,
         @JsonProperty("type")
         val type: String,
         @JsonProperty("password")
