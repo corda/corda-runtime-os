@@ -74,6 +74,9 @@ internal class CordaPublisherImpl(
         lock.withLock {
             val drainedRecords = mutableListOf<Batch>()
             queue.drainTo(drainedRecords)
+            if (drainedRecords.isEmpty()) {
+                return batch.future
+            }
             val future = publishTransaction(drainedRecords.flatMap { it.records })
             future.whenComplete { _, _ ->
                 drainedRecords.forEach { it.future.complete(Unit) }
