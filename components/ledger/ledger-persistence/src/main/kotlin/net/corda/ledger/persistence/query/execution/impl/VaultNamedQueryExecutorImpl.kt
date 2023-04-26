@@ -98,7 +98,8 @@ class VaultNamedQueryExecutorImpl(
                                 "AND visible_states.leaf_idx = tc.leaf_idx " +
                             "$whereJson " +
                             "AND tc.group_idx IN (:groupIndices) " +
-                            "AND visible_states.created <= :$TIMESTAMP_LIMIT_PARAM_NAME",
+                            "AND visible_states.created <= :$TIMESTAMP_LIMIT_PARAM_NAME " +
+                            "ORDER BY tc.created, tc.transaction_id, tc.leaf_idx, tc.group_idx",
                     Tuple::class.java
                 )
 
@@ -115,8 +116,9 @@ class VaultNamedQueryExecutorImpl(
                     UtxoComponentGroup.OUTPUTS_INFO.ordinal
                 )
             )
-                query.firstResult = request.offset
-                query.maxResults = request.limit
+                // Each transaction will have two rows: outputs/outputs info so we need to multiply offset/result by 2
+                query.firstResult = request.offset * 2
+                query.maxResults = request.limit * 2
 
                 query.resultList as List<Tuple>
             }.map { t ->
