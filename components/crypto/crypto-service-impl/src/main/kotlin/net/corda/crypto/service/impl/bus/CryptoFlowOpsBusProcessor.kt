@@ -104,6 +104,14 @@ class CryptoFlowOpsBusProcessor(
     }
 
     private fun handleRequest(request: Any, context: CryptoRequestContext): Any {
+        // What about if cryptoOpsClient has gone to DOWN or ERROR out at this point? 
+        // Then CryptoOpsClientComponent will throw AbstractComponentNotReadyFunction, and the retry logic
+        // will keep repeating it until timeout or the cryptoOpsClient potentially comes back. 
+
+        // For example, if we get an UnknownHostException from Kafka client code then the crypto ops client
+        // will be marked as DOWN or ERROR (depending on what catches it; certainly if it made it to the top of the
+        // TreadLooper it will cause the status to go to ERROR)
+
         return when (request) {
             is FilterMyKeysFlowQuery ->
                 cryptoOpsClient.filterMyKeysProxy(
