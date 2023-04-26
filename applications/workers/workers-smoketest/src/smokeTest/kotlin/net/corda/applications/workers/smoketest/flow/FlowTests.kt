@@ -5,7 +5,6 @@ import com.fasterxml.jackson.module.kotlin.readValue
 import net.corda.applications.workers.smoketest.TEST_CPB_LOCATION
 import net.corda.applications.workers.smoketest.TEST_CPI_NAME
 import net.corda.e2etest.utilities.FlowStatus
-import net.corda.e2etest.utilities.GROUP_ID
 import net.corda.e2etest.utilities.RPC_FLOW_STATUS_FAILED
 import net.corda.e2etest.utilities.RPC_FLOW_STATUS_SUCCESS
 import net.corda.e2etest.utilities.RpcSmokeTestInput
@@ -51,18 +50,19 @@ class FlowTests {
 
     companion object {
         private val testRunUniqueId = UUID.randomUUID()
+        private val groupId = UUID.randomUUID().toString()
         private val applicationCpiName = "${TEST_CPI_NAME}_$testRunUniqueId"
         private val notaryCpiName = "${TEST_NOTARY_CPI_NAME}_$testRunUniqueId"
         private val aliceX500 = "CN=Alice-$testRunUniqueId, OU=Application, O=R3, L=London, C=GB"
-        private val aliceHoldingId: String = getHoldingIdShortHash(aliceX500, GROUP_ID)
+        private val aliceHoldingId: String = getHoldingIdShortHash(aliceX500, groupId)
         private val bobX500 = "CN=Bob-$testRunUniqueId, OU=Application, O=R3, L=London, C=GB"
-        private var bobHoldingId: String = getHoldingIdShortHash(bobX500, GROUP_ID)
+        private var bobHoldingId: String = getHoldingIdShortHash(bobX500, groupId)
         private val davidX500 = "CN=David-$testRunUniqueId, OU=Application, O=R3, L=London, C=GB"
-        private var davidHoldingId: String = getHoldingIdShortHash(davidX500, GROUP_ID)
+        private var davidHoldingId: String = getHoldingIdShortHash(davidX500, groupId)
         private val charlyX500 = "CN=Charley-$testRunUniqueId, OU=Application, O=R3, L=London, C=GB"
-        private var charlieHoldingId: String = getHoldingIdShortHash(charlyX500, GROUP_ID)
+        private var charlieHoldingId: String = getHoldingIdShortHash(charlyX500, groupId)
         private val notaryX500 = "CN=Notary-$testRunUniqueId, OU=Application, O=R3, L=London, C=GB"
-        private val notaryHoldingId: String = getHoldingIdShortHash(notaryX500, GROUP_ID)
+        private val notaryHoldingId: String = getHoldingIdShortHash(notaryX500, groupId)
         private val staticMemberList = listOf(
             aliceX500,
             bobX500,
@@ -72,28 +72,28 @@ class FlowTests {
         )
 
         val invalidConstructorFlowNames = listOf(
-            "net.cordapp.testing.smoketests.flow.errors.PrivateConstructorFlow",
-            "net.cordapp.testing.smoketests.flow.errors.PrivateConstructorJavaFlow",
-            "net.cordapp.testing.smoketests.flow.errors.NoDefaultConstructorFlow",
-            "net.cordapp.testing.smoketests.flow.errors.NoDefaultConstructorJavaFlow",
+            "com.r3.corda.testing.smoketests.flow.errors.PrivateConstructorFlow",
+            "com.r3.corda.testing.smoketests.flow.errors.PrivateConstructorJavaFlow",
+            "com.r3.corda.testing.smoketests.flow.errors.NoDefaultConstructorFlow",
+            "com.r3.corda.testing.smoketests.flow.errors.NoDefaultConstructorJavaFlow",
         )
 
         val dependencyInjectionFlowNames = listOf(
-            "net.cordapp.testing.smoketests.flow.DependencyInjectionTestFlow",
-            "net.cordapp.testing.smoketests.flow.inheritance.DependencyInjectionTestJavaFlow",
+            "com.r3.corda.testing.smoketests.flow.DependencyInjectionTestFlow",
+            "com.r3.corda.testing.smoketests.flow.inheritance.DependencyInjectionTestJavaFlow",
         )
 
         val expectedFlows = listOf(
-            "net.cordapp.testing.smoketests.virtualnode.ReturnAStringFlow",
-            "net.cordapp.testing.smoketests.virtualnode.SimplePersistenceCheckFlow",
-            "net.cordapp.testing.smoketests.flow.AmqpSerializationTestFlow",
-            "net.cordapp.testing.smoketests.flow.RpcSmokeTestFlow",
-            "net.cordapp.testing.testflows.TestFlow",
-            "net.cordapp.testing.testflows.BrokenProtocolFlow",
-            "net.cordapp.testing.testflows.MessagingFlow",
-            "net.cordapp.testing.testflows.PersistenceFlow",
-            "net.cordapp.testing.testflows.NonValidatingNotaryTestFlow",
-            "net.cordapp.testing.testflows.ledger.TokenSelectionFlow"
+            "com.r3.corda.testing.smoketests.virtualnode.ReturnAStringFlow",
+            "com.r3.corda.testing.smoketests.virtualnode.SimplePersistenceCheckFlow",
+            "com.r3.corda.testing.smoketests.flow.AmqpSerializationTestFlow",
+            "com.r3.corda.testing.smoketests.flow.RpcSmokeTestFlow",
+            "com.r3.corda.testing.testflows.TestFlow",
+            "com.r3.corda.testing.testflows.BrokenProtocolFlow",
+            "com.r3.corda.testing.testflows.MessagingFlow",
+            "com.r3.corda.testing.testflows.PersistenceFlow",
+            "com.r3.corda.testing.testflows.NonValidatingNotaryTestFlow",
+            "com.r3.corda.testing.testflows.ledger.TokenSelectionFlow"
         ) + invalidConstructorFlowNames + dependencyInjectionFlowNames
 
         val jacksonObjectMapper = jacksonObjectMapper()
@@ -103,13 +103,13 @@ class FlowTests {
         internal fun beforeAll() {
             // Upload test flows if not already uploaded
             conditionallyUploadCordaPackage(
-                applicationCpiName, TEST_CPB_LOCATION, GROUP_ID, staticMemberList
+                applicationCpiName, TEST_CPB_LOCATION, groupId, staticMemberList
             )
             // Upload notary server CPB
             conditionallyUploadCordaPackage(
                 notaryCpiName,
                 TEST_NOTARY_CPB_LOCATION,
-                GROUP_ID,
+                groupId,
                 staticMemberList
             )
 
@@ -1232,7 +1232,7 @@ class FlowTests {
         val issuanceRequestID = startRpcFlow(
             bobHoldingId,
             paramMap,
-            "net.cordapp.testing.testflows.NonValidatingNotaryTestFlow"
+            "com.r3.corda.testing.testflows.NonValidatingNotaryTestFlow"
         )
 
         val issuanceResult = awaitRpcFlowFinished(bobHoldingId, issuanceRequestID)
@@ -1255,7 +1255,7 @@ class FlowTests {
                 "inputStateRefs" to jacksonObjectMapper.writeValueAsString(inputStates),
                 "referenceStateRefs" to jacksonObjectMapper.writeValueAsString(refStates)
             ),
-            "net.cordapp.testing.testflows.NonValidatingNotaryTestFlow"
+            "com.r3.corda.testing.testflows.NonValidatingNotaryTestFlow"
         )
 
         val consumeResult = awaitRpcFlowFinished(bobHoldingId, consumeRequestID)

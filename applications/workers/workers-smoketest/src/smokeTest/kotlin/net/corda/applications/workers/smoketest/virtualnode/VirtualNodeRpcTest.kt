@@ -9,7 +9,6 @@ import net.corda.applications.workers.smoketest.VNODE_UPGRADE_TEST_CPI_V2
 import net.corda.e2etest.utilities.CLUSTER_URI
 import net.corda.e2etest.utilities.CODE_SIGNER_CERT
 import net.corda.e2etest.utilities.ClusterBuilder
-import net.corda.e2etest.utilities.GROUP_ID
 import net.corda.e2etest.utilities.PASSWORD
 import net.corda.e2etest.utilities.USERNAME
 import net.corda.e2etest.utilities.assertWithRetry
@@ -54,10 +53,11 @@ class VirtualNodeRpcTest {
         private const val EXPECTED_ERROR_CPB_INSTEAD_OF_CPI = "Invalid CPI.  Unknown Corda-CPI-Format - \"1.0\""
 
         private val testRunUniqueId = UUID.randomUUID()
+        private val groupId = UUID.randomUUID().toString()
         private val aliceX500 = "CN=Alice-$testRunUniqueId, OU=Application, O=R3, L=London, C=GB"
         private val bobX500 = "CN=Bob-$testRunUniqueId, OU=Application, O=R3, L=London, C=GB"
-        private val aliceHoldingId: String = getHoldingIdShortHash(aliceX500, GROUP_ID)
-        private val bobHoldingId: String = getHoldingIdShortHash(bobX500, GROUP_ID)
+        private val aliceHoldingId: String = getHoldingIdShortHash(aliceX500, groupId)
+        private val bobHoldingId: String = getHoldingIdShortHash(bobX500, groupId)
         private val staticMemberList = listOf(
             aliceX500,
             bobX500
@@ -125,7 +125,7 @@ class VirtualNodeRpcTest {
         cpiName: String,
         cpiVersion: String = "1.0.0.0-SNAPSHOT"
     ): String {
-        val requestId = cpiUpload(cpbLocation, GROUP_ID, staticMemberList, cpiName, cpiVersion)
+        val requestId = cpiUpload(cpbLocation, groupId, staticMemberList, cpiName, cpiVersion)
             .let { it.toJson()["id"].textValue() }
         assertThat(requestId).withFailMessage(ERROR_IS_CLUSTER_RUNNING).isNotEmpty
 
@@ -235,7 +235,7 @@ class VirtualNodeRpcTest {
             val cpiJson = json["cpis"].first { it["id"]["cpiName"].textValue() == cpiName }
 
             val groupPolicyJson = cpiJson["groupPolicy"].textValue().toJson()
-            assertThat(groupPolicyJson["groupId"].textValue()).isEqualTo(GROUP_ID)
+            assertThat(groupPolicyJson["groupId"].textValue()).isEqualTo(groupId)
         }
     }
 
@@ -344,7 +344,7 @@ class VirtualNodeRpcTest {
 
             eventuallyUpdateVirtualNodeState(vnodeId, newState, "INACTIVE")
 
-            val className = "net.cordapp.testing.smoketests.virtualnode.ReturnAStringFlow"
+            val className = "com.r3.corda.testing.smoketests.virtualnode.ReturnAStringFlow"
             val requestId = startRpcFlow(aliceHoldingId, emptyMap(), className, 405)
             getFlowStatus(aliceHoldingId, requestId, 404)
 
@@ -417,7 +417,7 @@ class VirtualNodeRpcTest {
 
             val requestId = forceCpiUpload(
                 TEST_CPB_LOCATION,
-                GROUP_ID,
+                groupId,
                 staticMemberList,
                 cpiName
             ).let { it.toJson()["id"].textValue() }
@@ -576,7 +576,7 @@ class VirtualNodeRpcTest {
     }
 
     private fun runReturnAStringFlow(expectedResult: String, holdingId: String = aliceHoldingId) {
-        val className = "net.cordapp.testing.smoketests.virtualnode.ReturnAStringFlow"
+        val className = "com.r3.corda.testing.smoketests.virtualnode.ReturnAStringFlow"
 
         val requestId = startRpcFlow(holdingId, emptyMap(), className)
 
@@ -586,7 +586,7 @@ class VirtualNodeRpcTest {
     }
 
     private fun runSimplePersistenceCheckFlow(expectedResult: String, holdingId: String = aliceHoldingId) {
-        val className = "net.cordapp.testing.smoketests.virtualnode.SimplePersistenceCheckFlow"
+        val className = "com.r3.corda.testing.smoketests.virtualnode.SimplePersistenceCheckFlow"
 
         val requestId = startRpcFlow(holdingId, emptyMap(), className)
 

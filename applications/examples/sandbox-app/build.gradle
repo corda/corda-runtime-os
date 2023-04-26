@@ -31,7 +31,7 @@ dependencies {
     compileOnly "co.paralleluniverse:quasar-core-osgi:$quasarVersion:framework-extension"
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
-    implementation "net.corda:corda-config-schema"
+    implementation 'net.corda:corda-config-schema'
     implementation 'net.corda:corda-topic-schema'
     implementation 'net.corda:corda-serialization'
     implementation project(":libs:packaging:packaging")
@@ -41,14 +41,14 @@ dependencies {
     implementation 'org.slf4j:slf4j-api'
 
     implementation project(':testing:sandboxes')
-    implementation project(":libs:configuration:configuration-core")
+    implementation project(':libs:configuration:configuration-core')
+    implementation project(':libs:crypto:crypto-core')
     implementation project(':libs:messaging:messaging')
     implementation project(':libs:virtual-node:sandbox-group-context')
-    implementation project(':libs:flows:utils')
+    implementation project(':libs:flows:flow-utils')
     implementation project(':components:flow:flow-service')
-    implementation project(":components:membership:membership-group-read")
+    implementation project(':components:membership:membership-group-read')
     implementation project(':components:virtual-node:sandbox-group-context-service')
-    implementation project(":libs:crypto:crypto-core")
 
     runtimeOnly "org.apache.felix:org.apache.felix.scr:$felixScrVersion"
     runtimeOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
@@ -56,7 +56,7 @@ dependencies {
     runtimeOnly "org.osgi:org.osgi.util.function:$osgiUtilFunctionVersion"
     runtimeOnly "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"
 
-    runtimeOnly project(":components:membership:membership-group-read-impl")
+    runtimeOnly project(':components:membership:membership-group-read-impl')
     runtimeOnly project(':libs:application:application-impl')
     runtimeOnly project(':libs:crypto:cipher-suite-impl')
     runtimeOnly project(':libs:flows:session-manager-impl')
