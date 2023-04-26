@@ -27,7 +27,7 @@ class FacadeClientProxySpec : DescribeSpec({
                 request.methodName shouldBe getBalance.name
                 request[denomination] shouldBe "USD"
 
-                facade.response("get-balance", balance of 1000)
+                facade.response("get-balance", balance.of(BigDecimal(1000)))
             }
 
             proxy.getBalance("USD").result shouldBeExactly 1000.0
@@ -53,8 +53,8 @@ class FacadeClientProxySpec : DescribeSpec({
                 request[timeToLive] shouldBe BigDecimal(5000)
 
                 facade.response("reserve-tokens",
-                    reservationRef of ref,
-                    expirationTimestamp of expiration)
+                    reservationRef.of(ref),
+                    expirationTimestamp.of(expiration))
             }
 
             proxy.reserveTokensV2("USD", BigDecimal(1000), 5000L).result shouldBe

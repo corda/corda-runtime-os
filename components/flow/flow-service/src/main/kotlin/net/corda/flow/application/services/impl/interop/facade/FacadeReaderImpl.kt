@@ -4,7 +4,11 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import net.corda.flow.application.services.impl.interop.parameters.TypeParameters
 import net.corda.flow.application.services.impl.interop.parameters.TypedParameterImpl
-import net.corda.v5.application.interop.facade.*
+import net.corda.v5.application.interop.facade.Facade
+import net.corda.v5.application.interop.facade.FacadeId
+import net.corda.v5.application.interop.facade.FacadeMethod
+import net.corda.v5.application.interop.facade.FacadeMethodType
+import net.corda.v5.application.interop.facade.FacadeReader
 import java.io.Reader
 import net.corda.v5.application.interop.parameters.ParameterType
 

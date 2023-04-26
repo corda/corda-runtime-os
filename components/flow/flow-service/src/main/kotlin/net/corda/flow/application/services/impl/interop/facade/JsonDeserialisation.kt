@@ -34,6 +34,7 @@ class FacadeResponseDeserializer : JsonDeserializer<FacadeResponseImpl>() {
 
 }
 
+@Suppress("ThrowsCount")
 private fun <T> deserialize(
     parser: JsonParser,
     ctor: (FacadeId, String, List<TypedParameterValue<*>>) -> T

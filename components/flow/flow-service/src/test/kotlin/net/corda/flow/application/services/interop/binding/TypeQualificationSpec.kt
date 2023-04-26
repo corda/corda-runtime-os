@@ -3,6 +3,7 @@ package net.corda.flow.application.services.interop.binding
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.DescribeSpec
 import io.kotest.matchers.string.shouldContain
+import net.corda.flow.application.services.impl.interop.binding.creation.bindTo
 import net.corda.flow.application.services.impl.interop.binding.internal.FacadeInterfaceBindingException
 import net.corda.flow.application.services.impl.interop.facade.FacadeReaders
 import net.corda.v5.application.interop.binding.BindsFacade

@@ -1,6 +1,7 @@
 package net.corda.flow.application.services.interop.binding
 
 import io.kotest.core.spec.style.DescribeSpec
+import net.corda.flow.application.services.impl.interop.facade.FacadeReaders
 import net.corda.v5.application.interop.binding.BindsFacade
 import net.corda.v5.application.interop.binding.BindsFacadeMethod
 import net.corda.v5.application.interop.binding.InteropAction

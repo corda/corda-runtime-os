@@ -5,6 +5,7 @@ import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
 import net.corda.flow.application.services.impl.interop.binding.BoundParameter
+import net.corda.flow.application.services.impl.interop.binding.creation.bindTo
 import net.corda.flow.application.services.impl.interop.facade.FacadeReaders
 import net.corda.flow.application.services.interop.example.TokensFacade
 import net.corda.v5.application.interop.binding.BindsFacade

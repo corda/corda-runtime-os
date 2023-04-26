@@ -8,10 +8,11 @@ import io.kotest.core.spec.style.DescribeSpec
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
 import net.corda.flow.application.services.impl.interop.facade.FacadeReaders
+import net.corda.flow.application.services.impl.interop.parameters.TypeParameters
+import net.corda.flow.application.services.impl.interop.parameters.TypedParameterImpl
 import net.corda.v5.application.interop.facade.FacadeId
 import net.corda.v5.application.interop.facade.FacadeMethodType
-import net.corda.v5.application.interop.parameters.ParameterType
-import net.corda.v5.application.interop.parameters.TypedParameter
+import net.corda.v5.application.interop.parameters.ParameterTypeLabel
 import java.math.BigDecimal
 
 class FacadeSpec : DescribeSpec({
@@ -32,14 +33,14 @@ class FacadeSpec : DescribeSpec({
                 it.type shouldBe FacadeMethodType.QUERY
             }
 
-            denomination shouldBe TypedParameter(
+            denomination shouldBe TypedParameterImpl(
                 "denomination",
-                ParameterType.of("string (org.corda.interop/platform/tokens/types/denomination/1.0) ")
+                TypeParameters<Any>().of("string (org.corda.interop/platform/tokens/types/denomination/1.0) ")
             )
 
-            balance shouldBe TypedParameter(
+            balance shouldBe TypedParameterImpl(
                 "balance",
-                ParameterType.DecimalType
+                TypeParameters<Any>().of(ParameterTypeLabel.DECIMAL.name)
             )
         }
 
@@ -55,7 +56,7 @@ class FacadeSpec : DescribeSpec({
         }
 
         it("can create a facade request") {
-            val request = getBalance.request(denomination of "USD")
+            val request = getBalance.request(denomination.of("USD"))
 
             request should {
                 it.facadeId shouldBe facade.facadeId
@@ -68,7 +69,7 @@ class FacadeSpec : DescribeSpec({
         }
 
         it("can create a facade response") {
-            val response = getBalance.response(balance of BigDecimal("100.00"))
+            val response = getBalance.response(balance.of(BigDecimal("100.00")))
 
             response.should {
                 it.facadeId shouldBe facade.facadeId

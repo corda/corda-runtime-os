@@ -7,6 +7,7 @@ import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
 import net.corda.flow.application.services.impl.interop.binding.BoundParameter
 import net.corda.flow.application.services.impl.interop.binding.FacadeOutParameterBindings
+import net.corda.flow.application.services.impl.interop.binding.creation.bindTo
 import net.corda.flow.application.services.impl.interop.facade.FacadeReaders
 import net.corda.flow.application.services.interop.example.TokenReservation
 import net.corda.flow.application.services.interop.example.TokensFacade

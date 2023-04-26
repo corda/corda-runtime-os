@@ -41,8 +41,8 @@ class JsonSerialisationSpec : DescribeSpec({
                 update("Goodbyte, cruel world!".toByteArray())
             }.digest()
 
-            val request = exchangeBytes.request(bytesIn of "Hello, world!".toByteArray())
-            val response = exchangeBytes.response(bytesOut of digest)
+            val request = exchangeBytes.request(bytesIn.of(ByteBuffer.wrap("Hello, world!".toByteArray())))
+            val response = exchangeBytes.response(bytesOut.of(ByteBuffer.wrap(digest)))
 
             assertRoundtripsCorrectly(request)
             assertRoundtripsCorrectly(response)
@@ -53,15 +53,16 @@ class JsonSerialisationSpec : DescribeSpec({
             val jsonIn = exchangeJson.inParameter<String>("json")
             val jsonOut = exchangeJson.outParameter<String>("json")
 
-            val request = exchangeJson.request(jsonIn of mapper.writeValueAsString(listOf(1, 2, 3)))
+            val request = exchangeJson.request(jsonIn.of(mapper.writeValueAsString(listOf(1, 2, 3))))
             val response = exchangeJson.response(
-                jsonOut of mapper.writeValueAsString(
+                jsonOut.of(mapper.writeValueAsString(
                     mapOf(
                         "a" to "apple",
                         "c" to "carrot",
                         "b" to "banana"
                     )
                 )
+            )
             )
 
             assertRoundtripsCorrectly(request)
@@ -73,8 +74,8 @@ class JsonSerialisationSpec : DescribeSpec({
             val timestampIn = exchangeTimestamp.inParameter<ZonedDateTime>("timestamp")
             val timestampOut = exchangeTimestamp.outParameter<ZonedDateTime>("timestamp")
 
-            val request = exchangeTimestamp.request(timestampIn of ZonedDateTime.now())
-            val response = exchangeTimestamp.response(timestampOut of ZonedDateTime.now())
+            val request = exchangeTimestamp.request(timestampIn.of(ZonedDateTime.now()))
+            val response = exchangeTimestamp.response(timestampOut.of(ZonedDateTime.now()))
 
             assertRoundtripsCorrectly(request)
             assertRoundtripsCorrectly(response)

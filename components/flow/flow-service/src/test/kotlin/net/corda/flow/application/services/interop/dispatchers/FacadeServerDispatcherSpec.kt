@@ -37,7 +37,7 @@ class FacadeServerDispatcherSpec : DescribeSpec({
             val releaseReservedTokens = facadeV1.method("release-reserved-tokens")
             val reservationRefParam = releaseReservedTokens.inParameter<UUID>("reservation-ref")
 
-            val request = releaseReservedTokens.request(reservationRefParam of reservationRef)
+            val request = releaseReservedTokens.request(reservationRefParam.of(reservationRef))
             val response = v1Dispatcher(request)
 
             verify(mockServer).releaseReservedTokens(reservationRef)
@@ -56,9 +56,9 @@ class FacadeServerDispatcherSpec : DescribeSpec({
 
             // Construct a request the hard way
             val request = reserveTokensV2.request(
-                denominationIn of "USD",
-                amountIn of 1000,
-                ttlMsIn of 100
+                denominationIn.of("USD"),
+                amountIn.of(BigDecimal(1000)),
+                ttlMsIn.of(BigDecimal(100))
             )
 
             // Dispatch it to a server object to get a response

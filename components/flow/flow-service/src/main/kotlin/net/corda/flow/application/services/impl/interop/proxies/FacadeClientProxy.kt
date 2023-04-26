@@ -74,7 +74,7 @@ private class FacadeClientProxy(
     val typeConverter: TypeConverter,
     val requestProcessor: (FacadeRequest) -> FacadeResponse) : InvocationHandler {
 
-    @Suppress("UNCHECKED_CAST")
+    @Suppress("UNCHECKED_CAST", "SpreadOperator")
     override fun invoke(proxy: Any, method: Method, args: Array<out Any>): Any {
         val methodBinding = binding.bindingFor(method) ?: throw FacadeMethodDispatchException(
             "Binding of ${binding.boundInterface} to facade ${binding.facade.facadeId} has no binding for method " +
@@ -127,6 +127,7 @@ private class FacadeClientProxy(
         }
     }
 
+    @Suppress("SpreadOperator")
     private fun buildDataClass(
         outParameters: List<TypedParameterValue<*>>,
         bindings: FacadeOutParameterBindings.DataClassOutParameterBindings): Any {

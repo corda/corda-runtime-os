@@ -1,7 +1,10 @@
 package net.corda.flow.application.services.impl.interop.facade
 
-import net.corda.v5.application.interop.facade.*
-import net.corda.v5.application.interop.parameters.ParameterType
+import net.corda.v5.application.interop.facade.Facade
+import net.corda.v5.application.interop.facade.FacadeId
+import net.corda.v5.application.interop.facade.FacadeMethod
+import net.corda.v5.application.interop.facade.FacadeRequest
+import net.corda.v5.application.interop.facade.FacadeResponse
 import net.corda.v5.application.interop.parameters.TypedParameterValue
 
 data class FacadeImpl(val facadeId: FacadeId, val methods: List<FacadeMethod>) : Facade {

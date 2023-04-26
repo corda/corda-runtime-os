@@ -1,6 +1,11 @@
 package net.corda.flow.application.services.interop.example
 
-import net.corda.v5.application.interop.binding.*
+import net.corda.v5.application.interop.binding.BindsFacade
+import net.corda.v5.application.interop.binding.BindsFacadeMethod
+import net.corda.v5.application.interop.binding.BindsFacadeParameter
+import net.corda.v5.application.interop.binding.FacadeVersions
+import net.corda.v5.application.interop.binding.InteropAction
+import net.corda.v5.application.interop.binding.QualifiedWith
 import java.math.BigDecimal
 import java.time.ZonedDateTime
 import java.util.*
@@ -8,7 +13,7 @@ import java.util.*
 @Retention(AnnotationRetention.RUNTIME)
 @Target(AnnotationTarget.VALUE_PARAMETER)
 @QualifiedWith("org.corda.interop/platform/tokens/types/denomination/1.0")
-annotation class Denomination()
+annotation class Denomination
 
 data class TokenReservation(
     val reservationRef: UUID,

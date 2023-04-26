@@ -2,7 +2,9 @@ package net.corda.flow.application.services.interop.binding
 
 import io.kotest.core.spec.style.DescribeSpec
 import io.kotest.matchers.shouldBe
+import net.corda.flow.application.services.impl.interop.binding.creation.bindTo
 import net.corda.flow.application.services.impl.interop.facade.FacadeReaders
+import net.corda.flow.application.services.interop.JavaTokensFacade
 import net.corda.v5.application.interop.binding.BindsFacade
 import net.corda.v5.application.interop.binding.FacadeVersions
 import java.util.*
