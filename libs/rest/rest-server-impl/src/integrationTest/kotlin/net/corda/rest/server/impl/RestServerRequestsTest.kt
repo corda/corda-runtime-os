@@ -8,7 +8,18 @@ import io.javalin.core.util.Header.WWW_AUTHENTICATE
 import net.corda.rest.server.apigen.test.TestJavaPrimitivesRestResourceImpl
 import net.corda.rest.server.config.models.RestServerSettings
 import net.corda.rest.server.impl.apigen.processing.openapi.schema.toExample
-import net.corda.rest.test.*
+import net.corda.rest.test.CustomNonSerializableString
+import net.corda.rest.test.CustomSerializationAPIImpl
+import net.corda.rest.test.CustomUnsafeString
+import net.corda.rest.test.TestEntityRestResourceImpl
+import net.corda.rest.test.TestFileUploadImpl
+import net.corda.rest.test.TestHealthCheckAPIImpl
+import net.corda.rest.test.utils.ChecksumUtil
+import net.corda.rest.test.utils.TestClientFileUpload
+import net.corda.rest.test.utils.TestHttpClientUnirestImpl
+import net.corda.rest.test.utils.WebRequest
+import net.corda.rest.test.utils.WebResponse
+import net.corda.rest.test.utils.multipartDir
 import net.corda.rest.tools.HttpVerb.DELETE
 import net.corda.rest.tools.HttpVerb.GET
 import net.corda.rest.tools.HttpVerb.POST
@@ -23,12 +34,6 @@ import org.junit.jupiter.api.Test
 import java.time.Instant
 import java.time.ZonedDateTime
 import kotlin.test.assertEquals
-import net.corda.rest.test.utils.ChecksumUtil
-import net.corda.rest.test.utils.TestClientFileUpload
-import net.corda.rest.test.utils.TestHttpClientUnirestImpl
-import net.corda.rest.test.utils.WebRequest
-import net.corda.rest.test.utils.WebResponse
-import net.corda.rest.test.utils.multipartDir
 
 class RestServerRequestsTest : RestServerTestBase() {
     companion object {
@@ -360,7 +365,7 @@ class RestServerRequestsTest : RestServerTestBase() {
         val timeCallResponse = client.call(POST, WebRequest<Any>("health/timecall", """ { "time": { "time": "$time" } } """), userName, password)
 
         assertEquals(HttpStatus.SC_OK, timeCallResponse.responseStatus)
-        assertEquals("2020-01-01T11:00Z[UTC]", timeCallResponse.body)
+        assertEquals("2020-01-01T11:00Z", timeCallResponse.body)
     }
 
     @Test
