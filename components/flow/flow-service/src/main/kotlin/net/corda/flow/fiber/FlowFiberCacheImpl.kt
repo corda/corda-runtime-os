@@ -18,7 +18,6 @@ class FlowFiberCacheImpl @Activate constructor() : FlowFiberCache {
         "flow-fiber-cache",
         Caffeine.newBuilder()
             .maximumSize(maximumSize)
-            .weakValues()
             .expireAfterWrite(Duration.ofSeconds(expireAfterWriteSeconds))
     )
 
