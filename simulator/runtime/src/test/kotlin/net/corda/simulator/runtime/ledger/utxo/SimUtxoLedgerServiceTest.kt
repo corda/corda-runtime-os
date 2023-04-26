@@ -2,7 +2,6 @@ package net.corda.simulator.runtime.ledger.utxo
 
 import net.corda.crypto.core.bytes
 import net.corda.crypto.core.parseSecureHash
-import net.corda.flow.persistence.query.ResultSetImpl
 import net.corda.simulator.SimulatorConfiguration
 import net.corda.simulator.entities.UtxoTransactionEntity
 import net.corda.simulator.entities.UtxoTransactionOutputEntity
@@ -15,6 +14,7 @@ import net.corda.simulator.runtime.serialization.BaseSerializationService
 import net.corda.simulator.runtime.testutils.generateKey
 import net.corda.simulator.runtime.testutils.generateKeys
 import net.corda.v5.application.crypto.SigningService
+import net.corda.v5.application.persistence.PagedQuery.ResultSet
 import net.corda.v5.application.persistence.ParameterizedQuery
 import net.corda.v5.application.persistence.PersistenceService
 import net.corda.v5.base.types.MemberX500Name
@@ -135,7 +135,18 @@ class SimUtxoLedgerServiceTest {
             2,
             false
         )
-        val utxoOutputQueryResult = ResultSetImpl(listOf(utxoTxOutputEntity))
+
+        val utxoOutputQueryResult = object : ResultSet<UtxoTransactionOutputEntity> {
+            override fun getResults(): List<UtxoTransactionOutputEntity> {
+                return next()
+            }
+            override fun hasNext(): Boolean {
+                throw IllegalStateException("Unused")
+            }
+            override fun next(): List<UtxoTransactionOutputEntity> {
+                return listOf(utxoTxOutputEntity)
+            }
+        }
 
         val utxoOutputQuery = mock<ParameterizedQuery<UtxoTransactionOutputEntity>>()
         whenever(persistenceService.query(eq("UtxoTransactionOutputEntity.findUnconsumedStatesByType"),
