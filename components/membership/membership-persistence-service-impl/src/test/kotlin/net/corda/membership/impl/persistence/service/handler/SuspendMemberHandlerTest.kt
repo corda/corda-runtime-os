@@ -44,7 +44,6 @@ import javax.persistence.criteria.Path
 import javax.persistence.criteria.Predicate
 import javax.persistence.criteria.Root
 import net.corda.crypto.cipher.suite.SignatureSpecs
-import net.corda.data.membership.SignedGroupParameters
 import net.corda.membership.datamodel.GroupParametersEntity
 import net.corda.membership.lib.GroupParametersNotaryUpdater
 import net.corda.membership.lib.MemberInfoExtension
@@ -54,7 +53,6 @@ import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.membership.lib.notary.MemberNotaryDetails
 import net.corda.membership.lib.toSortedMap
 import net.corda.v5.membership.MemberContext
-import net.corda.v5.membership.NotaryInfo
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.assertThrows
 import org.mockito.Mockito
@@ -167,7 +165,14 @@ class SuspendMemberHandlerTest {
                 mock.findMember(em, holdingIdentity.x500Name.toString(), holdingIdentity.groupId, SERIAL_NUMBER, MEMBER_STATUS_ACTIVE)
             ).doReturn(memberInfoEntity)
             whenever(
-                mock.updateStatus(em, holdingIdentity.x500Name.toString(), holdingIdentity.toAvro(), memberInfoEntity, mgmContext, MEMBER_STATUS_SUSPENDED)
+                mock.updateStatus(
+                    em,
+                    holdingIdentity.x500Name.toString(),
+                    holdingIdentity.toAvro(),
+                    memberInfoEntity,
+                    mgmContext,
+                    MEMBER_STATUS_SUSPENDED
+                )
             ).doReturn(persistentMemberInfo)
         }
     private val keyValuePairListSerializer = mock<CordaAvroSerializer<KeyValuePairList>> {

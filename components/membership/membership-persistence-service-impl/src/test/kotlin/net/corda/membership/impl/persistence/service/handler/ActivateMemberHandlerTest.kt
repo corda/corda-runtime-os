@@ -39,7 +39,6 @@ import net.corda.data.membership.SignedGroupParameters
 import net.corda.membership.lib.MemberInfoExtension
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
-import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.membership.MemberContext
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.assertThrows
@@ -93,7 +92,14 @@ class ActivateMemberHandlerTest {
                 mock.findMember(em, holdingIdentity.x500Name.toString(), holdingIdentity.groupId, SERIAL_NUMBER, MEMBER_STATUS_SUSPENDED)
             ).doReturn(memberInfoEntity)
             whenever(
-                mock.updateStatus(em, holdingIdentity.x500Name.toString(), holdingIdentity.toAvro(), memberInfoEntity, mgmContext, MEMBER_STATUS_ACTIVE)
+                mock.updateStatus(
+                    em,
+                    holdingIdentity.x500Name.toString(),
+                    holdingIdentity.toAvro(),
+                    memberInfoEntity,
+                    mgmContext,
+                    MEMBER_STATUS_ACTIVE
+                )
             ).doReturn(persistentMemberInfo)
         }
     private val keyValuePairListSerializer = mock<CordaAvroSerializer<KeyValuePairList>> {
