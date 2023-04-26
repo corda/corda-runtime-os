@@ -2,6 +2,7 @@ package net.corda.flow.application.services.impl.interop.facade
 
 import net.corda.v5.application.interop.facade.*
 import net.corda.v5.application.interop.parameters.ParameterType
+import net.corda.v5.application.interop.parameters.TypedParameterValue
 
 data class FacadeImpl(val facadeId: FacadeId, val methods: List<FacadeMethod>) : Facade {
     val methodsByName: Map<String, FacadeMethod> = methods.associateBy { it.name }
@@ -31,7 +32,7 @@ data class FacadeImpl(val facadeId: FacadeId, val methods: List<FacadeMethod>) :
      * @param methodName The name of the method to invoke.
      * @param inParameters The parameter values to pass to the method.
      */
-    override fun request(methodName: String?, vararg inParameters: ParameterType<*>?): FacadeRequest {
+    override fun request(methodName: String?, vararg inParameters: TypedParameterValue<*>?): FacadeRequest {
         //TODO address !!
         return method(methodName!!).request(*inParameters)
     }
@@ -42,7 +43,7 @@ data class FacadeImpl(val facadeId: FacadeId, val methods: List<FacadeMethod>) :
      * @param methodName The name of the method that was invoked.
      * @param outParameters The values of the out parameters of the method.
      */
-    override fun response(methodName: String?, vararg outParameters: ParameterType<*>?): FacadeResponse {
+    override fun response(methodName: String?, vararg outParameters: TypedParameterValue<*>?): FacadeResponse {
         //TODO address !!
         return method(methodName!!).response(*outParameters)
     }

@@ -6,12 +6,10 @@ import net.corda.v5.application.interop.parameters.TypeQualifier
 import java.util.*
 
 /**
- * A [TypeParameters] is the type of a [TypedParameter]. It is always one of a small set of primitive types, or
+ * A [TypeParameters] is the type of a [TypedParameterImpl]. It is always one of a small set of primitive types, or
  * a [QualifiedType] qualifying a primitive type with a [FacadeTypeQualifier] which identifies a more complex type.
  */
 class TypeParameters<T> {
-
-//    companion object {
 
         /**
          * This pattern matches (after a whitespace prefix of any length) either a single non-whitespace string, e.g.
@@ -29,7 +27,6 @@ class TypeParameters<T> {
          *
          * @param typeString The string to parse.
          */
-//        @JvmStatic
         fun <T : Any> of(typeString: String): ParameterType<T> = of(typeString, emptyMap())
 
         /**
@@ -41,7 +38,6 @@ class TypeParameters<T> {
          * @param typeString The string to parse.
          * @param aliases A map of type aliases.
          */
-//        @JvmStatic
         @Suppress("UNCHECKED_CAST")
         fun <T : Any> of(typeString: String, aliases: Map<String, ParameterType<*>>): ParameterType<T> {
             val typeMatch = facadeTypeRegex.matchEntire(typeString)

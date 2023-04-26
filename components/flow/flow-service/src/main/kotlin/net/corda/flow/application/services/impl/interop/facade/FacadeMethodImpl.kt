@@ -5,7 +5,8 @@ import net.corda.v5.application.interop.facade.FacadeMethod
 import net.corda.v5.application.interop.facade.FacadeMethodType
 import net.corda.v5.application.interop.facade.FacadeRequest
 import net.corda.v5.application.interop.facade.FacadeResponse
-import net.corda.v5.application.interop.parameters.ParameterType
+import net.corda.v5.application.interop.parameters.TypedParameter
+import net.corda.v5.application.interop.parameters.TypedParameterValue
 
 /**
  * A [FacadeMethod] is a method of a [Facade].
@@ -19,8 +20,8 @@ data class FacadeMethodImpl(
     val facadeId: FacadeId,
     val name: String,
     val type: FacadeMethodType,
-    val inParameters: List<ParameterType<*>>,
-    val outParameters: List<ParameterType<*>>
+    val inParameters: List<TypedParameter<*>>,
+    val outParameters: List<TypedParameter<*>>
 ) : FacadeMethod {
 
     /**
@@ -28,15 +29,15 @@ data class FacadeMethodImpl(
      */
     val qualifiedName: String get() = "$facadeId/$name"
 
-    private val inParameterMap = inParameters.associateBy { it.typeLabel.typeName }
-    private val outParameterMap = outParameters.associateBy { it.typeLabel.typeName }
+    private val inParameterMap = inParameters.associateBy { it.name }
+    private val outParameterMap = outParameters.associateBy { it.name }
 
     /**
      * Get the input parameter with the given name.
      *
      * @param parameterName The name of the input parameter.
      */
-    override inline fun <T: Any> inParameter(parameterName: String): ParameterType<T> {
+    override inline fun <T: Any> inParameter(parameterName: String): TypedParameter<T> {
         TODO("This method is not needed as is replaced by one with expectedType parameter")
         //return inParameter(parameterName, T::class.java)
     }
@@ -48,18 +49,18 @@ data class FacadeMethodImpl(
      * @param expectedType The expected type of the parameter.
      */
     @Suppress("UNCHECKED_CAST")
-    override fun <T : Any> inParameter(parameterName: String, expectedType: Class<T>): ParameterType<T> {
+    override fun <T : Any> inParameter(parameterName: String, expectedType: Class<T>): TypedParameter<T> {
         val untyped = untypedInParameter(parameterName)
             ?: throw IllegalArgumentException("No such input parameter: $parameterName")
 
-        if (untyped.expectedType != expectedType) {
+        if (untyped.type.expectedType != expectedType) {
             throw IllegalArgumentException(
-                "Parameter $parameterName is of type ${untyped.expectedType}, " +
+                "Parameter $parameterName is of type ${untyped.type.expectedType}, " +
                         "not $expectedType"
             )
         }
 
-        return untyped as ParameterType<T>
+        return untyped as TypedParameter<T>
     }
 
 
@@ -68,7 +69,7 @@ data class FacadeMethodImpl(
      *
      * @param parameterName: The name of the parameter to obtain.
      */
-    override fun untypedInParameter(parameterName: String): ParameterType<*>? {
+    override fun untypedInParameter(parameterName: String): TypedParameter<*>? {
         return inParameterMap[parameterName]
     }
 
@@ -77,7 +78,7 @@ data class FacadeMethodImpl(
      *
      * @param parameterName The name of the output parameter.
      */
-    override fun <T : Any> outParameter(parameterName: String): ParameterType<T> {
+    override fun <T : Any> outParameter(parameterName: String): TypedParameter<T> {
         TODO("This method is not needed as is replaced by one with expectedType parameter")
         //return outParameter(parameterName, T::class.java)
     }
@@ -89,18 +90,18 @@ data class FacadeMethodImpl(
      * @param expectedType The expected type of the parameter.
      */
     @Suppress("UNCHECKED_CAST")
-    override fun <T : Any> outParameter(parameterName: String, expectedType: Class<T>): ParameterType<T> {
+    override fun <T : Any> outParameter(parameterName: String, expectedType: Class<T>): TypedParameter<T> {
         val untyped =
             outParameterMap[parameterName] ?: throw IllegalArgumentException("No such output parameter: $parameterName")
 
-        if (untyped.expectedType != expectedType) {
+        if (untyped.type.expectedType != expectedType) {
             throw IllegalArgumentException(
-                "Parameter $parameterName is of type ${untyped.expectedType}, " +
+                "Parameter $parameterName is of type ${untyped.type.expectedType}, " +
                         "not $expectedType"
             )
         }
 
-        return untyped as ParameterType<T>
+        return untyped as TypedParameter<T>
     }
 
     /**
@@ -108,7 +109,7 @@ data class FacadeMethodImpl(
      *
      * @param parameterValues The parameter values to pass to the method.
      */
-    override fun request(vararg parameterValues: ParameterType<*>): FacadeRequest {
+    override fun request(vararg parameterValues: TypedParameterValue<*>): FacadeRequest {
         return FacadeRequestImpl(facadeId, name, parameterValues.toList())
     }
 
@@ -117,7 +118,7 @@ data class FacadeMethodImpl(
      *
      * @param parameterValues The parameter values to return from the method.
      */
-    override fun response(vararg parameterValues: ParameterType<*>): FacadeResponse {
+    override fun response(vararg parameterValues: TypedParameterValue<*>): FacadeResponse {
         return FacadeResponseImpl(facadeId, name, parameterValues.toList())
     }
 
@@ -133,11 +134,11 @@ data class FacadeMethodImpl(
         return type
     }
 
-    override fun getInParameters(): List<ParameterType<*>> {
+    override fun getInParameters(): List<TypedParameter<*>> {
         return inParameters
     }
 
-    override fun getOutParameters(): List<ParameterType<*>> {
+    override fun getOutParameters(): List<TypedParameter<*>> {
         return outParameters
     }
 

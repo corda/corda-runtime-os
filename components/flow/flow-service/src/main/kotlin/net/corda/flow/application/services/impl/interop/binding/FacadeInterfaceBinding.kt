@@ -2,7 +2,7 @@ package net.corda.flow.application.services.impl.interop.binding
 
 import net.corda.v5.application.interop.facade.Facade
 import net.corda.v5.application.interop.facade.FacadeMethod
-import net.corda.v5.application.interop.parameters.ParameterType
+import net.corda.v5.application.interop.parameters.TypedParameter
 import java.lang.reflect.Constructor
 import java.lang.reflect.Method
 import kotlin.reflect.KFunction
@@ -58,7 +58,7 @@ data class FacadeMethodBinding(
     val outParameterBindings: FacadeOutParameterBindings
 ) {
 
-    private val inParameterBindingsByName = inParameterBindings.associateBy { it.facadeParameter.typeName }
+    private val inParameterBindingsByName = inParameterBindings.associateBy { it.facadeParameter.name }
 
     /**
      * Obtain the [FacadeInParameterBinding] for the method parameter at the given index
@@ -79,7 +79,7 @@ data class FacadeMethodBinding(
  * @param boundParameter The bound method parameter
  */
 data class FacadeInParameterBinding(
-    val facadeParameter: ParameterType<*>,
+    val facadeParameter: TypedParameter<*>,
     val boundParameter: BoundParameter
 )
 
@@ -111,15 +111,15 @@ sealed class FacadeOutParameterBindings {
 
     object NoOutParameters : FacadeOutParameterBindings()
 
-    data class SingletonOutParameterBinding(val outParameter: ParameterType<*>, val returnType: Class<*>)
+    data class SingletonOutParameterBinding(val outParameter: TypedParameter<*>, val returnType: Class<*>)
         : FacadeOutParameterBindings()
 
     data class DataClassOutParameterBindings(val constructor: Constructor<*>, val bindings: List<DataClassPropertyBinding>)
         : FacadeOutParameterBindings() {
 
-        private val bindingsByParameterName = bindings.associateBy { it.facadeOutParameter.typeName }
+        private val bindingsByParameterName = bindings.associateBy { it.facadeOutParameter.name }
 
-        fun bindingFor(parameter: ParameterType<*>): DataClassPropertyBinding? = bindingsByParameterName[parameter.typeName]
+        fun bindingFor(parameter: TypedParameter<*>): DataClassPropertyBinding? = bindingsByParameterName[parameter.name]
     }
 }
 
@@ -132,6 +132,6 @@ sealed class FacadeOutParameterBindings {
  * a set of out-parameter values
  */
 data class DataClassPropertyBinding(
-    val facadeOutParameter: ParameterType<*>,
+    val facadeOutParameter: TypedParameter<*>,
     val constructorParameter: BoundParameter,
     val readMethod: Method)

@@ -7,7 +7,6 @@ import net.corda.flow.application.services.impl.interop.binding.FacadeMethodBind
 import net.corda.flow.application.services.impl.interop.binding.FacadeOutParameterBindings
 import net.corda.flow.application.services.impl.interop.binding.creation.FacadeInterfaceBindings
 import net.corda.flow.application.services.impl.interop.parameters.TypeConverter
-import net.corda.flow.application.services.impl.interop.parameters.TypeParameters
 import net.corda.flow.application.services.impl.interop.proxies.FacadeMethodDispatchException
 import net.corda.flow.application.services.impl.interop.proxies.JacksonJsonMarshaller
 import net.corda.v5.application.interop.binding.BindsFacade
@@ -16,7 +15,8 @@ import net.corda.v5.application.interop.binding.InteropAction
 import net.corda.v5.application.interop.facade.Facade
 import net.corda.v5.application.interop.facade.FacadeRequest
 import net.corda.v5.application.interop.facade.FacadeResponse
-import net.corda.v5.application.interop.parameters.ParameterType
+import net.corda.v5.application.interop.parameters.TypedParameter
+import net.corda.v5.application.interop.parameters.TypedParameterValue
 
 object FacadeServerDispatchers {
 
@@ -66,20 +66,20 @@ class FacadeServerDispatcher(
     private fun getOutParameterValues(
         result: Any,
         outParameterBindings: FacadeOutParameterBindings
-    ): List<ParameterType<*>> = when (outParameterBindings) {
+    ): List<TypedParameterValue<*>> = when (outParameterBindings) {
         FacadeOutParameterBindings.NoOutParameters -> emptyList()
 
         is FacadeOutParameterBindings.SingletonOutParameterBinding -> {
-            val parameter = outParameterBindings.outParameter as ParameterType<Any>
-            val value = typeConverter.convertJvmToFacade(result, parameter.typeLabel)
+            val parameter = outParameterBindings.outParameter as TypedParameter<Any>
+            val value = typeConverter.convertJvmToFacade(result, parameter.type.typeLabel)
 
-            listOf((parameter as TypeParameters<*>).of(value as String))
+            listOf(parameter.of(value))
         }
 
         is FacadeOutParameterBindings.DataClassOutParameterBindings -> {
             outParameterBindings.bindings.map { binding ->
                 val propertyValue = binding.readMethod.invoke(result)
-                (binding.facadeOutParameter as TypeParameters<*>).of(propertyValue as String)
+                (binding.facadeOutParameter as TypedParameter<Any>).of(propertyValue as String)
             }
         }
     }
@@ -92,14 +92,14 @@ class FacadeServerDispatcher(
 
         request.inParameters.forEach { parameterValue ->
             val parameterBinding =
-                boundMethod.bindingForInParameter(parameterValue.typeName) ?: throw FacadeMethodDispatchException(
+                boundMethod.bindingForInParameter(parameterValue.parameter.name) ?: throw FacadeMethodDispatchException(
                     "Method ${boundMethod.facadeMethod.qualifiedName} does not have a parameter " +
-                            parameterValue.typeName
+                            parameterValue.parameter.name
                 )
 
             args[parameterBinding.boundParameter.index] = typeConverter.convertFacadeToJvm(
-                parameterValue.rawParameterType,
-                parameterValue.typeLabel,
+                parameterValue.parameter.type.typeLabel,
+                parameterValue.value,
                 parameterBinding.boundParameter.type
             )
         }
