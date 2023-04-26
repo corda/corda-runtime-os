@@ -6,14 +6,14 @@ import net.corda.data.persistence.EntityResponse
 import net.corda.data.persistence.FindAll
 import net.corda.flow.external.events.factory.ExternalEventFactory
 import net.corda.flow.external.events.factory.ExternalEventRecord
+import net.corda.flow.persistence.query.ResultSetExecutor
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.schema.Schemas
 import net.corda.virtualnode.toAvro
 import org.osgi.service.component.annotations.Component
-import java.nio.ByteBuffer
 
 @Component(service = [ExternalEventFactory::class])
-class FindAllExternalEventFactory: ExternalEventFactory<FindAllParameters, EntityResponse, Pair<List<ByteBuffer>, Int>> {
+class FindAllExternalEventFactory: ExternalEventFactory<FindAllParameters, EntityResponse, ResultSetExecutor.Results> {
 
     override val responseType = EntityResponse::class.java
 
@@ -32,8 +32,11 @@ class FindAllExternalEventFactory: ExternalEventFactory<FindAllParameters, Entit
         )
     }
 
-    override fun resumeWith(checkpoint: FlowCheckpoint, response: EntityResponse): Pair<List<ByteBuffer>, Int> {
-        return response.results to response.metadata.items.single { it.key == "numberOfRowsFromQuery" }.value.toInt()
+    override fun resumeWith(checkpoint: FlowCheckpoint, response: EntityResponse): ResultSetExecutor.Results {
+        return ResultSetExecutor.Results(
+            serializedResults = response.results,
+            numberOfRowsFromQuery = response.metadata.items.single { it.key == "numberOfRowsFromQuery" }.value.toInt()
+        )
     }
 }
 

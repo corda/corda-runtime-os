@@ -7,10 +7,10 @@ import net.corda.data.persistence.EntityResponse
 import net.corda.data.persistence.FindWithNamedQuery
 import net.corda.flow.external.events.factory.ExternalEventFactory
 import net.corda.flow.external.events.factory.ExternalEventRecord
+import net.corda.flow.persistence.query.ResultSetExecutor
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.schema.Schemas
 import net.corda.virtualnode.toAvro
-import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import java.nio.ByteBuffer
 import java.time.Clock
@@ -18,7 +18,7 @@ import java.time.Clock
 @Component(service = [ExternalEventFactory::class])
 class VaultNamedQueryExternalEventFactory(
     private val clock: Clock = Clock.systemUTC()
-) : ExternalEventFactory<VaultNamedQueryEventParams, EntityResponse, Pair<List<ByteBuffer>, Int>> {
+) : ExternalEventFactory<VaultNamedQueryEventParams, EntityResponse, ResultSetExecutor.Results> {
 
     override val responseType = EntityResponse::class.java
 
@@ -46,8 +46,11 @@ class VaultNamedQueryExternalEventFactory(
         )
     }
 
-    override fun resumeWith(checkpoint: FlowCheckpoint, response: EntityResponse): Pair<List<ByteBuffer>, Int> {
-        return response.results to response.metadata.items.single { it.key == "numberOfRowsFromQuery" }.value.toInt()
+    override fun resumeWith(checkpoint: FlowCheckpoint, response: EntityResponse): ResultSetExecutor.Results {
+        return ResultSetExecutor.Results(
+            serializedResults = response.results,
+            numberOfRowsFromQuery = response.metadata.items.single { it.key == "numberOfRowsFromQuery" }.value.toInt()
+        )
     }
 }
 
