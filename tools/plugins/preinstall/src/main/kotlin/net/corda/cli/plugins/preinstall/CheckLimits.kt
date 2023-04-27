@@ -21,9 +21,13 @@ class CheckLimits : Callable<Int>, PluginContext() {
     @Option(names = ["-d", "--debug"], description = ["Show information about limit calculation for debugging purposes"])
     var debug: Boolean = false
 
+    class ResourceLimitsExceededException(message: String) : Exception(message)
+
+    private var hasCheckedLimits = false
+
     // split resource into a digit portion and a unit portion
     private fun parseResourceString(resourceString: String): Long {
-        val regex = Regex("(\\d+)([EPTGMK]i?[Bb]?)?")
+        val regex = Regex("(\\d+)([EPTGMK]?i?[Bb]?)?")
 
         val (value, unit) = regex.matchEntire(resourceString)?.destructured
             ?: throw IllegalArgumentException("Invalid memory string format: $resourceString")
@@ -52,24 +56,18 @@ class CheckLimits : Callable<Int>, PluginContext() {
     }
 
     // check the individual resource limits supplied
-    private fun checkResource(requestString: String, limitString: String): Boolean {
-        val limit: Long
-        val request: Long
+    private fun checkResource(requestString: String, limitString: String) {
+        val limit: Long = parseResourceString(limitString)
+        val request: Long = parseResourceString(requestString)
 
-        try {
-            limit = parseResourceString(limitString)
-            request = parseResourceString(requestString)
+        if (limit < request) {
+            throw ResourceLimitsExceededException("Request ($requestString) is greater than it's limit ($limitString)")
         }
-        catch(e: IllegalArgumentException) {
-            report.addEntry(PreInstallPlugin.ReportEntry("Parse resource strings", false, e))
-            return false
-        }
-
-        return limit >= request
     }
 
     // use the checkResource function to check each individual resource
     private fun checkResources(resources: ResourceConfig, name: String) {
+        hasCheckedLimits = true
         val requests: ResourceValues = resources.requests
         val limits: ResourceValues = resources.limits
 
@@ -77,14 +75,17 @@ class CheckLimits : Callable<Int>, PluginContext() {
         log("Requests: \n\t memory - ${requests.memory}\n\t cpu - ${requests.cpu}", INFO)
         log("Limits: \n\t memory - ${limits.memory}\n\t cpu - ${limits.cpu}", INFO)
 
-        val check = checkResource(requests.memory, limits.memory) and checkResource(requests.cpu, limits.cpu)
-
-        if (check) {
-            report.addEntry(PreInstallPlugin.ReportEntry("$name requests do not exceed limits", true))
+        try {
+            checkResource(requests.memory, limits.memory)
+            checkResource(requests.cpu, limits.cpu)
+        } catch(e: IllegalArgumentException) {
+            report.addEntry(PreInstallPlugin.ReportEntry("Parse resource strings", false, e))
+            return
+        } catch (e: ResourceLimitsExceededException) {
+            report.addEntry(PreInstallPlugin.ReportEntry("$name requests do not exceed limits", false, e))
+            return
         }
-        else {
-            report.addEntry(PreInstallPlugin.ReportEntry("$name requests do not exceed limits", false))
-        }
+        report.addEntry(PreInstallPlugin.ReportEntry("$name requests do not exceed limits", true))
     }
 
     override fun call(): Int {
@@ -100,8 +101,7 @@ class CheckLimits : Callable<Int>, PluginContext() {
             return 1
         }
 
-        checkResources(yaml.resources, "resources")
-
+        yaml.resources?.let { checkResources(it, "resources") }
         yaml.bootstrap?.let { checkResources(it.resources, "bootstrap") }
         yaml.workers?.db?.let { checkResources(it.resources, "DB") }
         yaml.workers?.flow?.let { checkResources(it.resources, "flow") }
@@ -114,6 +114,10 @@ class CheckLimits : Callable<Int>, PluginContext() {
             log(report.toString(), INFO)
         } else {
             log(report.failingTests(), ERROR)
+        }
+
+        if (!hasCheckedLimits) {
+            log("No resource requests or limits were found.", INFO)
         }
 
         return report.testsPassed()

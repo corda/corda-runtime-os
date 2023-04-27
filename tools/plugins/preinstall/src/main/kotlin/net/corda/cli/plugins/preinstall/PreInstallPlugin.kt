@@ -192,7 +192,9 @@ class PreInstallPlugin(wrapper: PluginWrapper) : Plugin(wrapper) {
     @JsonIgnoreProperties(ignoreUnknown = true)
     data class Kafka(
         @JsonProperty("kafka")
-        val kafka: KafkaConfiguration
+        val kafka: KafkaConfiguration,
+        @JsonProperty("bootstrap")
+        val bootstrap: KafkaBootstrap?
     )
 
     @JsonIgnoreProperties(ignoreUnknown = true)
@@ -233,12 +235,6 @@ class PreInstallPlugin(wrapper: PluginWrapper) : Plugin(wrapper) {
         val username: SecretValues?,
         @JsonProperty("password")
         val password: SecretValues?
-    )
-
-    @JsonIgnoreProperties(ignoreUnknown = true)
-    data class Bootstrap(
-        @JsonProperty("bootstrap")
-        val bootstrap: KafkaBootstrap?
     )
 
     @JsonIgnoreProperties(ignoreUnknown = true)
@@ -299,7 +295,7 @@ class PreInstallPlugin(wrapper: PluginWrapper) : Plugin(wrapper) {
         @JsonProperty("workers")
         val workers: Workers?,
         @JsonProperty("resources")
-        val resources: ResourceConfig
+        val resources: ResourceConfig?
     )
 
     @JsonIgnoreProperties(ignoreUnknown = true)

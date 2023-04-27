@@ -3,7 +3,6 @@ package net.corda.cli.plugins.preinstall
 import net.corda.cli.plugins.preinstall.PreInstallPlugin.PluginContext
 import net.corda.cli.plugins.preinstall.PreInstallPlugin.Kafka
 import net.corda.cli.plugins.preinstall.PreInstallPlugin.ReportEntry
-import net.corda.cli.plugins.preinstall.PreInstallPlugin.Bootstrap
 import net.corda.cli.plugins.preinstall.CheckKafka.KafkaProperties.TruststoreNotFoundException
 import org.apache.kafka.clients.admin.AdminClient
 import org.apache.kafka.common.KafkaException
@@ -253,18 +252,8 @@ class CheckKafka : Callable<Int>, PluginContext() {
             return 1
         }
 
-        val bootstrapYaml: Bootstrap
         try {
-            bootstrapYaml = parseYaml<Bootstrap>(path)
-            report.addEntry(ReportEntry("Parse Bootstrap Kafka properties from YAML", true))
-        } catch (e: Exception) {
-            report.addEntry(ReportEntry("Parse Bootstrap Kafka properties from YAML", false, e))
-            log(report.failingTests(), ERROR)
-            return 1
-        }
-
-        try {
-            connect(KafkaAdmin(props), bootstrapYaml.bootstrap?.kafka?.replicas)
+            connect(KafkaAdmin(props), yaml.bootstrap?.kafka?.replicas)
         } catch (e: KafkaException) {
             report.addEntry(ReportEntry("Create Kafka client", false, e))
         } catch (e: ExecutionException) {

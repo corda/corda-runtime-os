@@ -56,7 +56,7 @@ class TestSubCommands {
         limits = CheckLimits()
         result = CommandLine(limits).execute(path)
 
-        assertTrue(limits.report.toString().contains("resources requests do not exceed limits: FAILED"))
+        assertTrue(limits.report.toString().contains("Parse resource strings: FAILED"))
         assertEquals(1, result)
     }
 
