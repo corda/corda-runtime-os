@@ -475,6 +475,20 @@ internal class SessionManagerImpl(
                 "${sessionCounterparties.counterpartyId}"
         )
 
+        val responderMemberInfo = membershipGroupReaderProvider.lookup(
+            sessionCounterparties.ourId,
+            sessionCounterparties.counterpartyId,
+            filter
+        )
+        if (responderMemberInfo != null && responderMemberInfo.serial > sessionCounterparties.serial) {
+            logger.warn(
+                "Attempted to start session negotiation with peer ${sessionCounterparties.counterpartyId} which is " +
+                        "in ${sessionCounterparties.ourId}'s members map but the serial number has progressed beyond " +
+                        "the requested serial number. The sessionInit message was not sent and will not be retried."
+            )
+            return null
+        }
+
         for (message in messages) {
             sessionReplayer.addMessageForReplay(
                 initiatorHelloUniqueId(message.first.sessionId),
@@ -488,14 +502,20 @@ internal class SessionManagerImpl(
             )
         }
 
-        val responderMemberInfo = membershipGroupReaderProvider.lookup(
-            sessionCounterparties.ourId,
-            sessionCounterparties.counterpartyId,
-            filter
-        )
         if (responderMemberInfo == null) {
-            logger.warn("Attempted to start session negotiation with peer ${sessionCounterparties.counterpartyId} which is not in " +
-                "${sessionCounterparties.ourId}'s members map. Filter was $filter. The sessionInit message was not sent.")
+            logger.warn(
+                "Attempted to start session negotiation with peer ${sessionCounterparties.counterpartyId} which is " +
+                        "not in ${sessionCounterparties.ourId}'s members map. Filter was $filter. The sessionInit " +
+                        "message was not sent. Message will be retried."
+            )
+            return null
+        } else if (responderMemberInfo.serial < sessionCounterparties.serial) {
+            logger.warn(
+                "Attempted to start session negotiation with peer ${sessionCounterparties.counterpartyId} which is " +
+                        "not in ${sessionCounterparties.ourId}'s members map with serial " +
+                        "${sessionCounterparties.serial}. Filter was $filter and serial found was " +
+                        "${responderMemberInfo.serial}. The sessionInit message was not sent. Message will be retried."
+            )
             return null
         }
 
