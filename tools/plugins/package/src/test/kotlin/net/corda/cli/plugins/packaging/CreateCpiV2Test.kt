@@ -12,6 +12,7 @@ import net.corda.cli.plugins.packaging.TestUtils.jarEntriesExistInCpx
 import net.corda.libs.packaging.testutils.cpb.TestCpbV2Builder
 import net.corda.libs.packaging.testutils.cpk.TestCpkV2Builder
 import net.corda.utilities.exists
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -243,13 +244,7 @@ class CreateCpiV2Test {
         }
 
         assertFalse(cpiOutputFile.exists())
-        assertTrue(outText.contains("java.lang.IllegalArgumentException: Cpb is invalid"))
-        assertTrue(
-            outText.contains(
-                "net.corda.libs.packaging.core.exception.CordappManifestException: " +
-                        "Manifest has invalid attribute \"Corda-CPB-Format\" value \"null\""
-            )
-        )
+        assertThat(outText).contains("Error verifying CPB: Manifest has invalid attribute \"Corda-CPB-Format\" value \"null\"")
     }
 
     @Test

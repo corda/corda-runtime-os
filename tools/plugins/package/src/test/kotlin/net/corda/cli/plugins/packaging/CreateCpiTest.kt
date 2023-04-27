@@ -306,9 +306,7 @@ Creates a CPI v2 from a CPB and GroupPolicy.json file.
         }
 
         assertFalse(cpiOutputFile.exists())
-        assertThat(outText).contains("java.lang.IllegalArgumentException: Cpb is invalid")
-        assertThat(outText).contains("net.corda.libs.packaging.core.exception.CordappManifestException: " +
-                "Manifest has invalid attribute \"Corda-CPB-Format\" value \"null\"")
+        assertThat(outText).contains("Error verifying CPB: Manifest has invalid attribute \"Corda-CPB-Format\" value \"null\"")
     }
 
     @Test
