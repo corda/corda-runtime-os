@@ -241,8 +241,8 @@ class InMemorySessionReplayerTest {
         replayCallback(messageReplay, "foo-bar")
 
         loggingInterceptor.assertSingleWarning("Attempted to replay a session negotiation message (type " +
-            "${InitiatorHelloMessage::class.java.simpleName}) for session with ID $id between $US and peer $COUNTER_PARTY with status ACTIVE which is not" +
-                " in the members map. The message was not replayed.")
+            "${InitiatorHelloMessage::class.java.simpleName}) for session with ID $id between $US and peer " +
+                "$COUNTER_PARTY with status ACTIVE which is not in the members map. The message was not replayed.")
     }
 
     @Test
