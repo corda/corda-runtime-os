@@ -1,7 +1,5 @@
 package net.corda.interop
 
-//TODO CORE-12208 import commented out - see TODO adding FLOW_CONFIG below:
-//import net.corda.schema.configuration.FlowConfig
 import net.corda.data.CordaAvroDeserializer
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.CordaAvroSerializer
