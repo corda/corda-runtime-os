@@ -1,4 +1,4 @@
-package net.corda.flow.application.persistence.query.impl
+package net.corda.flow.application.persistence.query
 
 import net.corda.flow.persistence.query.ResultSetExecutor
 import net.corda.v5.application.persistence.PagedQuery
@@ -34,7 +34,7 @@ data class ResultSetImpl<R> internal constructor(
         }
         val (serializedResults, numberOfRowsFromQuery) = resultSetExecutor.execute(serializedParameters, offset)
         this.numberOfRowsFromQuery = numberOfRowsFromQuery
-        this.hasNext = numberOfRowsFromQuery == limit
+        this.hasNext = numberOfRowsFromQuery >= limit
         this.offset += limit
         this.results = serializedResults.map { serializationService.deserialize(it.array(), resultClass) }
         return this.results

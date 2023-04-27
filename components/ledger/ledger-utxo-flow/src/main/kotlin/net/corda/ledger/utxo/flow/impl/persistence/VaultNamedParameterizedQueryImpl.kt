@@ -4,6 +4,7 @@ import net.corda.flow.external.events.executor.ExternalEventExecutor
 import net.corda.flow.persistence.query.ResultSetFactory
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.VaultNamedQueryEventParams
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.VaultNamedQueryExternalEventFactory
+import net.corda.utilities.time.Clock
 import net.corda.v5.application.persistence.PagedQuery
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.ledger.utxo.query.VaultNamedParameterizedQuery
@@ -18,7 +19,8 @@ class VaultNamedParameterizedQueryImpl<T>(
     private var parameters: MutableMap<String, Any>,
     private var limit: Int,
     private var offset: Int,
-    private val resultClass: Class<T>
+    private val resultClass: Class<T>,
+    private val clock: Clock
 ) : VaultNamedParameterizedQuery<T> {
 
     private companion object {
@@ -42,18 +44,22 @@ class VaultNamedParameterizedQueryImpl<T>(
         return this
     }
 
-    override fun setParameters(parameters: MutableMap<String, Any>): VaultNamedParameterizedQuery<T> {
+    override fun setParameters(parameters: Map<String, Any>): VaultNamedParameterizedQuery<T> {
+        val timestampLimit = parameters[TIMESTAMP_LIMIT_PARAM_NAME]
         this.parameters = parameters.toMutableMap()
+        if (timestampLimit != null) {
+            this.parameters[TIMESTAMP_LIMIT_PARAM_NAME] = timestampLimit
+        }
         return this
     }
 
     @Suspendable
     override fun execute(): PagedQuery.ResultSet<T> {
         getCreatedTimestampLimit()?.let {
-            require(it <= Instant.now()) {
+            require(it <= clock.instant()) {
                 "Timestamp limit must not be in the future."
             }
-        } ?: setCreatedTimestampLimit(Instant.now())
+        } ?: setCreatedTimestampLimit(clock.instant())
 
         val resultSet = resultSetFactory.create(
             parameters,

@@ -1,4 +1,4 @@
-package net.corda.flow.application.persistence.query.impl
+package net.corda.flow.application.persistence.query
 
 import net.corda.flow.persistence.query.ResultSetExecutor
 import net.corda.flow.persistence.query.ResultSetFactory

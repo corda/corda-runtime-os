@@ -21,6 +21,7 @@ import net.corda.ledger.utxo.flow.impl.transaction.filtered.factory.UtxoFiltered
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.sandboxgroupcontext.getObjectByKey
+import net.corda.utilities.time.UTCClock
 import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.annotations.Suspendable
@@ -63,6 +64,10 @@ class UtxoLedgerServiceImpl @Activate constructor(
     @Reference(service = ExternalEventExecutor::class) private val externalEventExecutor: ExternalEventExecutor,
     @Reference(service = ResultSetFactory::class) private val resultSetFactory: ResultSetFactory
 ) : UtxoLedgerService, UsedByFlow, SingletonSerializeAsToken {
+
+    private companion object {
+        val clock = UTCClock()
+    }
 
     @Suspendable
     override fun createTransactionBuilder() =
@@ -147,7 +152,8 @@ class UtxoLedgerServiceImpl @Activate constructor(
             parameters = mutableMapOf(),
             limit = Int.MAX_VALUE,
             offset = 0,
-            resultClass
+            resultClass,
+            clock
         )
     }
 

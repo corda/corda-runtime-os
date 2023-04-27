@@ -1,6 +1,7 @@
 package net.corda.ledger.utxo.test
 
 import net.corda.flow.external.events.executor.ExternalEventExecutor
+import net.corda.flow.persistence.query.ResultSetFactory
 import net.corda.flow.pipeline.sandbox.FlowSandboxService
 import net.corda.ledger.common.flow.impl.transaction.filtered.factory.FilteredTransactionFactoryImpl
 import net.corda.ledger.common.test.CommonLedgerTest
@@ -39,8 +40,8 @@ abstract class UtxoLedgerTest : CommonLedgerTest() {
     val mockUtxoLedgerStateQueryService = mock<UtxoLedgerStateQueryService>()
     val mockCurrentSandboxGroupContext = mock<CurrentSandboxGroupContext>()
     val mockFlowSandboxService = mock<FlowSandboxService>()
-    val mockExternalEventExecutor = mock<ExternalEventExecutor>()
-    val mockSerializationService = mock<SerializationService>()
+    private val mockExternalEventExecutor = mock<ExternalEventExecutor>()
+    private val mockResultSetFactory = mock<ResultSetFactory>()
 
     val mockNotaryLookup = mock<NotaryLookup>().also{
         val notaryExampleInfo = mock<NotaryInfo>().also {
@@ -91,7 +92,7 @@ abstract class UtxoLedgerTest : CommonLedgerTest() {
         mockCurrentSandboxGroupContext,
         mockNotaryLookup,
         mockExternalEventExecutor,
-        mockSerializationService
+        mockResultSetFactory
     )
     val utxoSignedTransactionKryoSerializer = UtxoSignedTransactionKryoSerializer(
         serializationServiceWithWireTx,
