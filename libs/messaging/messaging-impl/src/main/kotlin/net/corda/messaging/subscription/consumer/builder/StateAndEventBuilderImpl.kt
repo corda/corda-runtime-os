@@ -34,9 +34,9 @@ class StateAndEventBuilderImpl @Activate constructor(
 
     private val log = LoggerFactory.getLogger(this::class.java)
 
-    override fun createProducer(config: ResolvedSubscriptionConfig): CordaProducer {
+    override fun createProducer(config: ResolvedSubscriptionConfig, onSerializationError: ((ByteArray) -> Unit)?): CordaProducer {
         val producerConfig = ProducerConfig(config.clientId, config.instanceId, true, ProducerRoles.SAE_PRODUCER)
-        return cordaProducerBuilder.createProducer(producerConfig, config.messageBusConfig)
+        return cordaProducerBuilder.createProducer(producerConfig, config.messageBusConfig, onSerializationError)
     }
 
     override fun <K : Any, S : Any, E : Any> createStateEventConsumerAndRebalanceListener(

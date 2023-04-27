@@ -46,7 +46,11 @@ class DBCordaProducerBuilderImpl @Activate constructor(
         return writeOffsets ?: throw CordaMessageAPIFatalException("Write Offsets member should never be null.")
     }
 
-    override fun createProducer(producerConfig: ProducerConfig, messageBusConfig: SmartConfig): CordaProducer {
+    override fun createProducer(
+        producerConfig: ProducerConfig,
+        messageBusConfig: SmartConfig,
+        onSerializationError: ((ByteArray) -> Unit)?
+    ): CordaProducer {
         val isTransactional = producerConfig.transactional
         val resolver = MessageBusConfigResolver(messageBusConfig.factory)
         val resolvedConfig = resolver.resolve(messageBusConfig, producerConfig)

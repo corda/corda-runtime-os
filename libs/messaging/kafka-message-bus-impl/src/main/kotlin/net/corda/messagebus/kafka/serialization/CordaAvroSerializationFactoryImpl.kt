@@ -31,6 +31,6 @@ class CordaAvroSerializationFactoryImpl @Activate constructor(
     override fun <T: Any> createAvroSerializer(
         onError: Consumer<ByteArray>
     ): CordaAvroSerializer<T> {
-        return CordaAvroSerializerImpl(avroSchemaRegistry)
+        return CordaAvroSerializerImpl(avroSchemaRegistry, onError)
     }
 }
