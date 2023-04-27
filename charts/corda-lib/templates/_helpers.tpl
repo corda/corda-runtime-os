@@ -469,7 +469,8 @@ Secret creation
 {{- $path := index . 2 }}
 {{- $secretName := index . 3 }}
 {{- $fields := index . 4 }}
-{{- $options := (index . 5) | default (dict) }}
+{{- $options := dict }}
+{{- if gt (len .) 5 }}{{ $options = (index . 5) | default (dict) }}{{ end }}
 {{- with $context }}
 {{- $create := false }}
 {{- range $k, $v := $fields }}
