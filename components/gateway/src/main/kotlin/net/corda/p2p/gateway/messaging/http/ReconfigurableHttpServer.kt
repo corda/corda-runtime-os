@@ -7,7 +7,6 @@ import net.corda.lifecycle.domino.logic.ConfigurationChangeHandler
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.p2p.gateway.messaging.GatewayConfiguration
-import net.corda.p2p.gateway.messaging.GatewayServerConfiguration
 import net.corda.p2p.gateway.messaging.http.DynamicX509ExtendedTrustManager.Companion.createTrustManagerIfNeeded
 import net.corda.p2p.gateway.messaging.internal.CommonComponents
 import net.corda.p2p.gateway.messaging.internal.RequestListener
@@ -27,14 +26,19 @@ internal class ReconfigurableHttpServer(
     private val dynamicCertificateSubjectStore: DynamicCertificateSubjectStore,
 ) : LifecycleWithDominoTile {
 
+    private data class ServerKey(
+        val hostAddress: String,
+        val hostPort: Int,
+    )
+
     // Map from the server configuration to a server
-    private val httpServers = ConcurrentHashMap<GatewayServerConfiguration, HttpServer>()
+    private val httpServers = ConcurrentHashMap<ServerKey, HttpServer>()
 
     override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,
         lifecycleCoordinatorFactory,
         configurationChangeHandler = ReconfigurableHttpServerConfigChangeHandler(),
-        dependentChildren = listOf(commonComponents.dominoTile.coordinatorName)
+        dependentChildren = listOf(commonComponents.dominoTile.coordinatorName),
     )
 
     companion object {
@@ -44,7 +48,7 @@ internal class ReconfigurableHttpServer(
     inner class ReconfigurableHttpServerConfigChangeHandler : ConfigurationChangeHandler<GatewayConfiguration>(
         configurationReaderService,
         ConfigKeys.P2P_GATEWAY_CONFIG,
-        { it.toGatewayConfiguration() }
+        { it.toGatewayConfiguration() },
     ) {
         override fun applyNewConfiguration(
             newConfiguration: GatewayConfiguration,
@@ -61,22 +65,21 @@ internal class ReconfigurableHttpServer(
             @Suppress("TooGenericExceptionCaught")
             try {
                 val newServersConfiguration = newConfiguration.serversConfiguration.groupBy {
-                    it.hostAddress to it.hostPort
-                }.values
-                    .map {
-                        val first = it.first()
-                        val others = it.drop(1)
-                            .map { config ->
-                                config.urlPath
-                            }
-                        if (others.isNotEmpty()) {
-                            logger.warn(
-                                "Can not define two servers on ${first.hostAddress}:${first.hostPort}." +
-                                    " Will ignore $others and use only ${first.urlPath}"
-                            )
+                    ServerKey(it.hostAddress, it.hostPort)
+                }.mapValues { (_, configurations) ->
+                    val first = configurations.first()
+                    val others = configurations.drop(1)
+                        .map { config ->
+                            config.urlPath
                         }
-                        first
+                    if (others.isNotEmpty()) {
+                        logger.warn(
+                            "Can not define two servers on ${first.hostAddress}:${first.hostPort}." +
+                                " Will ignore $others and use only ${first.urlPath}",
+                        )
                     }
+                    first
+                }
                 if (newServersConfiguration.isEmpty()) {
                     throw IllegalArgumentException("No servers defined!")
                 }
@@ -86,16 +89,16 @@ internal class ReconfigurableHttpServer(
                     dynamicCertificateSubjectStore,
                 )
                 val serversToStop = httpServers.filterKeys { configuration ->
-                    !newServersConfiguration.contains(configuration)
+                    !newServersConfiguration.containsKey(configuration)
                 }
                 httpServers.keys -= serversToStop.keys
                 try {
-                    newServersConfiguration.forEach { serverConfiguration ->
-                        httpServers.compute(serverConfiguration) { _, oldServer ->
+                    newServersConfiguration.forEach { (key, serverConfiguration) ->
+                        httpServers.compute(key) { _, oldServer ->
                             oldServer?.close()
                             logger.info(
                                 "New server configuration, ${dominoTile.coordinatorName} will be connected to " +
-                                    "${serverConfiguration.hostAddress}:${serverConfiguration.hostPort}${serverConfiguration.urlPath}"
+                                    "${serverConfiguration.hostAddress}:${serverConfiguration.hostPort}${serverConfiguration.urlPath}",
                             )
                             HttpServer(
                                 listener,

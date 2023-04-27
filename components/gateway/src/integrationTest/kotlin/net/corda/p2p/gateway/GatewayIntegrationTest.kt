@@ -429,6 +429,112 @@ class GatewayIntegrationTest : TestBase() {
 
         @Test
         @Timeout(30)
+        fun `http client to gateway after changing URL`() {
+            alice.publish(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1))))
+            val serverConfigurationOne = GatewayServerConfiguration(
+                "www.alice.net",
+                getOpenPort(),
+                "/url/one",
+            )
+            val serverConfigurationTwo = serverConfigurationOne.copy(urlPath = "/url/two")
+            val linkInMessageOne = LinkInMessage(authenticatedP2PMessage("one"))
+            val messageOne = GatewayMessage("one", linkInMessageOne.payload)
+            val linkInMessageTwo = LinkInMessage(authenticatedP2PMessage("two"))
+            val messageTwo = GatewayMessage("two", linkInMessageTwo.payload)
+            val configPublisher = ConfigPublisher()
+            configPublisher.publishConfig(
+                GatewayConfiguration(
+                    listOf(serverConfigurationOne),
+                    aliceSslConfig,
+                    MAX_REQUEST_SIZE,
+                ),
+            )
+            Gateway(
+                configPublisher.readerService,
+                alice.subscriptionFactory,
+                alice.publisherFactory,
+                alice.lifecycleCoordinatorFactory,
+                messagingConfig.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())),
+                alice.cryptoOpsClient,
+                avroSchemaRegistry,
+            ).usingLifecycle {
+                alice.publishKeyStoreCertificatesAndKeys(aliceKeyStore, aliceHoldingIdentity)
+                it.startAndWaitForStarted()
+                val serverAddress = URI.create(
+                    "https://${serverConfigurationOne.hostAddress}:" +
+                        serverConfigurationOne.hostPort +
+                        serverConfigurationOne.urlPath,
+                )
+                val serverInfo = DestinationInfo(serverAddress, aliceSNI[0], null, truststoreKeyStore, null)
+                HttpClient(
+                    serverInfo,
+                    bobSslConfig,
+                    NioEventLoopGroup(1),
+                    NioEventLoopGroup(1),
+                    ConnectionConfiguration(),
+                ).use { client ->
+                    client.start()
+                    val httpResponse = client.write(avroSchemaRegistry.serialize(messageOne).array()).get()
+                    assertThat(httpResponse.statusCode).isEqualTo(HttpResponseStatus.OK)
+                    assertThat(httpResponse.payload).isNotNull
+                    val gatewayResponse =
+                        avroSchemaRegistry.deserialize<GatewayResponse>(ByteBuffer.wrap(httpResponse.payload))
+                    assertThat(gatewayResponse.id).isEqualTo(messageOne.id)
+                }
+
+                configPublisher.publishConfig(
+                    GatewayConfiguration(
+                        listOf(serverConfigurationTwo),
+                        aliceSslConfig,
+                        MAX_REQUEST_SIZE,
+                    ),
+                )
+
+                eventually(
+                    duration = 20.seconds,
+                    retryAllExceptions = true,
+                ) {
+                    val serverTwoAddress = URI.create(
+                        "https://${serverConfigurationTwo.hostAddress}:" +
+                            serverConfigurationTwo.hostPort +
+                            serverConfigurationTwo.urlPath,
+                    )
+                    val serverTwoInfo = DestinationInfo(serverTwoAddress, aliceSNI[0], null, truststoreKeyStore, null)
+                    HttpClient(
+                        serverTwoInfo,
+                        bobSslConfig,
+                        NioEventLoopGroup(1),
+                        NioEventLoopGroup(1),
+                        ConnectionConfiguration(),
+                    ).use { client ->
+                        client.start()
+                        val httpResponse = client.write(avroSchemaRegistry.serialize(messageTwo).array()).get()
+                        assertThat(httpResponse.statusCode).isEqualTo(HttpResponseStatus.OK)
+                        assertThat(httpResponse.payload).isNotNull
+                        val gatewayResponse =
+                            avroSchemaRegistry.deserialize<GatewayResponse>(ByteBuffer.wrap(httpResponse.payload))
+                        assertThat(gatewayResponse.id).isEqualTo(messageTwo.id)
+                    }
+                }
+            }
+
+            // Verify Gateway has successfully forwarded the messages to the P2P_IN topic
+            val publishedRecords = alice.getRecords(LINK_IN_TOPIC, 2).mapNotNull {
+                it.value as? LinkInMessage
+            }.mapNotNull {
+                it.payload as? AuthenticatedDataMessage
+            }.map {
+                it.payload
+            }.map {
+                String(it.array())
+            }
+            assertThat(publishedRecords)
+                .hasSize(2)
+                .contains(messageTwo.id, messageOne.id)
+        }
+
+        @Test
+        @Timeout(30)
         fun `requests with extremely large payloads are rejected`() {
             alice.publish(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1))))
             val port = getOpenPort()
