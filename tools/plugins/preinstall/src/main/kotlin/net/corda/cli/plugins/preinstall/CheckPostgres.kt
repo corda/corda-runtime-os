@@ -11,7 +11,7 @@ import java.util.concurrent.Callable
 
 @CommandLine.Command(name = "check-postgres", description = ["Check that the PostgreSQL DB is up and that the credentials work."]
 )
-class CheckPostgres : Callable<Int>, PluginContext(){
+class CheckPostgres : Callable<Int>, PluginContext() {
 
     @Parameters(
         index = "0",
@@ -51,7 +51,7 @@ class CheckPostgres : Callable<Int>, PluginContext(){
             yaml = parseYaml<DB>(path)
             report.addEntry(PreInstallPlugin.ReportEntry("Parse PostgreSQL properties from YAML", true))
         } catch (e: Exception) {
-            report.addEntry(PreInstallPlugin.ReportEntry("Parse resource properties from YAML", false, e))
+            report.addEntry(PreInstallPlugin.ReportEntry("Parse PostgreSQL properties from YAML", false, e))
             log(report.failingTests(), ERROR)
             return 1
         }
@@ -76,8 +76,7 @@ class CheckPostgres : Callable<Int>, PluginContext(){
             if (connection.isValid(0)) {
                 report.addEntry(PreInstallPlugin.ReportEntry("Connect to PostgreSQL", true))
             }
-        }
-        catch(e: SQLException) {
+        } catch(e: SQLException) {
             report.addEntry(PreInstallPlugin.ReportEntry("Connect to PostgreSQL", false, e))
         }
 

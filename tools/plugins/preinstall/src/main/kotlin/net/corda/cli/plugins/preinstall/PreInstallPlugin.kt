@@ -80,7 +80,7 @@ class PreInstallPlugin(wrapper: PluginWrapper) : Plugin(wrapper) {
 
             val file = File(path)
 
-            if(!file.isFile) {
+            if (!file.isFile) {
                 throw FileNotFoundException("Could not read file at $path.")
             }
 
