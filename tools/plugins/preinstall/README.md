@@ -33,6 +33,8 @@ Check that the PostgreSQL DB is up and that the credentials work.
                     purposes
 	  -n, --namespace=<namespace>
                     The namespace in which to look for Postgres secrets if there are any
+      -u, --url=<url>         The kubernetes cluster URL (if the preinstall is being called from 
+                              outside the cluster)
 	  -v, --verbose Display additional information when connecting to Postgres
 
 ## check-kafka
@@ -47,14 +49,16 @@ Check that Kafka is up and that the credentials work.
                               purposes
 	  -f, --file=<truststoreLocation>
                               The file location of the truststore if TLS is enabled
+      -m, --max-idle=<maxIdleMs>
+                              The maximum ms a connection can be idle for while testing the 
+                              kafka connection - defaults to 5000
 	  -n, --namespace=<namespace>
                               The namespace in which to look for the Kafka secrets if TLS or 
                               SASL is enabled
-	  -r, --replicas=<replicaCount>
-                              The replica count of the Kafka cluster, if you want to check the 
-                              number of brokers are correctly configured
 	  -t, --timeout=<timeout> The timeout in milliseconds for testing the kafka
                               connection - defaults to 3000
+      -u, --url=<url>         The kubernetes cluster URL (if the preinstall is being called from 
+                              outside the cluster)
 	  -v, --verbose           Display additional information when connecting to Kafka
 
 ## run-all
@@ -67,10 +71,13 @@ Runs all preinstall checks.
 	  -d, --debug             Show information for debugging purposes
 	  -f, --file=<truststoreLocation>
                               The file location of the truststore for Kafka
+      -m, --max-idle=<maxIdleMs>
+                              The maximum ms a connection can be idle for while testing the 
+                              kafka connection - defaults to 5000
 	  -n, --namespace=<namespace>
                               The namespace in which to look for both the Postgres and Kafka secrets
-	  -r, --replicas=<replicaCount>
-                              The replica count of the Kafka cluster
 	  -t, --timeout=<timeout> The timeout in milliseconds for testing the kafka
                               connection - defaults to 3000
+      -u, --url=<url>         The kubernetes cluster URL (if the preinstall is being called from 
+                              outside the cluster)
 	  -v, --verbose           Display additional information about the configuration provided
