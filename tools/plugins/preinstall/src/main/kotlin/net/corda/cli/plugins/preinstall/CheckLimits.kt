@@ -50,7 +50,7 @@ class CheckLimits : Callable<Int>, PluginContext() {
             else -> if (unit.isEmpty()) 1L else throw IllegalArgumentException("Invalid memory unit: $unit")
         }
 
-        log("$resourceString -> $value x $multiplier = ${value.toLong() * multiplier} bytes", DEBUG)
+        getLogger().debug("$resourceString -> $value x $multiplier = ${value.toLong() * multiplier} bytes")
 
         return (value.toLong() * multiplier)
     }
@@ -71,9 +71,9 @@ class CheckLimits : Callable<Int>, PluginContext() {
         val requests: ResourceValues = resources.requests
         val limits: ResourceValues = resources.limits
 
-        log("${name.uppercase()}:", INFO)
-        log("Requests: \n\t memory - ${requests.memory}\n\t cpu - ${requests.cpu}", INFO)
-        log("Limits: \n\t memory - ${limits.memory}\n\t cpu - ${limits.cpu}", INFO)
+        getLogger().info("${name.uppercase()}:")
+        getLogger().info("Requests: \n\t memory - ${requests.memory}\n\t cpu - ${requests.cpu}")
+        getLogger().info("Limits: \n\t memory - ${limits.memory}\n\t cpu - ${limits.cpu}")
 
         try {
             checkResource(requests.memory, limits.memory)
@@ -97,7 +97,7 @@ class CheckLimits : Callable<Int>, PluginContext() {
             report.addEntry(PreInstallPlugin.ReportEntry("Parse resource properties from YAML", true))
         } catch (e: Exception) {
             report.addEntry(PreInstallPlugin.ReportEntry("Parse resource properties from YAML", false, e))
-            log(report.failingTests(), ERROR)
+            getLogger().error(report.failingTests())
             return 1
         }
 
@@ -111,13 +111,13 @@ class CheckLimits : Callable<Int>, PluginContext() {
         yaml.workers?.p2pGateway?.let { checkResources(it.resources, "P2P gateway") }
 
         if (report.testsPassed() == 0) {
-            log(report.toString(), INFO)
+            getLogger().info(report.toString())
         } else {
-            log(report.failingTests(), ERROR)
+            getLogger().error(report.failingTests())
         }
 
         if (!hasCheckedLimits) {
-            log("No resource requests or limits were found.", INFO)
+            getLogger().info("No resource requests or limits were found.")
         }
 
         return report.testsPassed()

@@ -161,8 +161,8 @@ class CheckKafka : Callable<Int>, PluginContext() {
             return
         }
 
-        log("Kafka client connected to cluster with ID ${clusterID}.", INFO)
-        log("Number of brokers: ${nodes.size}", INFO)
+        getLogger().info("Kafka client connected to cluster with ID ${clusterID}.")
+        getLogger().info("Number of brokers: ${nodes.size}")
         replicas?.let {
             if (nodes.size < it) {
                 throw BrokerException("Number of brokers (${nodes.size}) is less than replica count.")
@@ -179,7 +179,7 @@ class CheckKafka : Callable<Int>, PluginContext() {
             report.addEntry(ReportEntry("Parse Kafka properties from YAML", true))
         } catch (e: Exception) {
             report.addEntry(ReportEntry("Parse Kafka properties from YAML", false, e))
-            log(report.failingTests(), ERROR)
+            getLogger().error(report.failingTests())
             return 1
         }
 
@@ -193,7 +193,7 @@ class CheckKafka : Callable<Int>, PluginContext() {
                 report.addEntry(ReportEntry("Create Kafka client properties",
                     false,
                     SASLCredentialException("If SASL is enabled, you must provide a mechanism, a username, and a password.")))
-                log(report.failingTests(), ERROR)
+                getLogger().error(report.failingTests())
                 return 1
             }
             try {
@@ -201,7 +201,7 @@ class CheckKafka : Callable<Int>, PluginContext() {
                 saslPassword = getCredentialOrSecret(yaml.kafka.sasl.password, namespace, url)
             } catch (e: Exception) {
                 report.addEntry(ReportEntry("Get SASL credentials", false, e))
-                log(report.failingTests(), ERROR)
+                getLogger().error(report.failingTests())
                 return 1
             }
         }
@@ -211,7 +211,7 @@ class CheckKafka : Callable<Int>, PluginContext() {
                 report.addEntry(ReportEntry("Parse Kafka properties from YAML",
                     false,
                     TruststoreNotFoundException("If SSL is enabled, you must provide entries for kafka.tls.truststore.")))
-                log(report.failingTests(), ERROR)
+                getLogger().error(report.failingTests())
                 return 1
             }
 
@@ -220,7 +220,7 @@ class CheckKafka : Callable<Int>, PluginContext() {
                     truststorePassword = getCredentialOrSecret(yaml.kafka.tls.truststore.password, namespace, url)
                 } catch (e: Exception) {
                     report.addEntry(ReportEntry("Get TLS truststore password", false, e))
-                    log(report.failingTests(), ERROR)
+                    getLogger().error(report.failingTests())
                     return 1
                 }
             } else if (yaml.kafka.tls.truststore.valueFrom?.secretKeyRef?.name != null ) {
@@ -229,7 +229,7 @@ class CheckKafka : Callable<Int>, PluginContext() {
                     truststoreFile = getCredentialOrSecret(secret, namespace, url)
                 } catch (e: Exception) {
                     report.addEntry(ReportEntry("Get TLS truststore certificate", false, e))
-                    log(report.failingTests(), ERROR)
+                    getLogger().error(report.failingTests())
                     return 1
                 }
             }
@@ -248,7 +248,7 @@ class CheckKafka : Callable<Int>, PluginContext() {
             props = creds.getKafkaProperties()
         } catch (e: TruststoreNotFoundException) {
             report.addEntry(ReportEntry("Create Kafka client properties", false, e))
-            log(report.failingTests(), ERROR)
+            getLogger().error(report.failingTests())
             return 1
         }
 
@@ -263,9 +263,9 @@ class CheckKafka : Callable<Int>, PluginContext() {
         }
 
         if (report.testsPassed() == 0) {
-            log(report.toString(), INFO)
+            getLogger().error(report.toString())
         } else {
-            log(report.failingTests(), ERROR)
+            getLogger().error(report.failingTests())
         }
 
         return report.testsPassed()

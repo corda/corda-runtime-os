@@ -1,6 +1,5 @@
 package net.corda.cli.plugins.preinstall
 
-import com.github.stefanbirkner.systemlambda.SystemLambda.tapSystemOutNormalized
 import net.corda.cli.plugins.preinstall.PreInstallPlugin.ReportEntry
 import net.corda.cli.plugins.preinstall.PreInstallPlugin.Report
 import org.apache.kafka.common.Node
@@ -24,8 +23,13 @@ class TestSubCommands {
 
         assertTrue(limits.report.toString().contains("Parse resource properties from YAML: PASSED"))
 
-        // TODO Postgres
-        //val postgresCMD = CommandLine(CheckPostgres())
+        path = "./src/test/resources/PostgresTest.yaml"
+        val postgres = CheckPostgres()
+        CommandLine(postgres).execute(path)
+
+        println(postgres.report)
+
+        assertTrue(postgres.report.toString().contains("Parse PostgreSQL properties from YAML: PASSED"))
 
         path = "./src/test/resources/KafkaTestSasl.yaml"
         val kafka = CheckKafka()
@@ -142,9 +146,9 @@ class TestSubCommands {
 
             val ck = CheckKafka()
             ck.register(verbose=true, debug=false)
-            val outText = tapSystemOutNormalized { ck.connect(mockAdmin, 2) }
-            assertTrue( outText.contains("[INFO] Kafka client connected to cluster with ID ClusterID.") )
-            assertTrue( outText.contains("[INFO] Number of brokers: 2") )
+            ck.connect(mockAdmin, 2)
+
+            assertTrue( ck.report.toString().contains("Connect to Kafka cluster using client: PASSED") )
         }
     }
 

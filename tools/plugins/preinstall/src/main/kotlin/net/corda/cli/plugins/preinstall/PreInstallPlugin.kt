@@ -52,11 +52,8 @@ class PreInstallPlugin(wrapper: PluginWrapper) : Plugin(wrapper) {
             constructor (message: String?, cause: Throwable?) : super(message, cause)
         }
 
-        companion object LogLevel {
-            const val ERROR: Int = 0
-            const val INFO: Int = 1
-            const val DEBUG: Int = 2
-            const val WARN: Int = 3
+        fun getLogger(): Logger {
+            return logger
         }
 
         fun register(verbose: Boolean, debug: Boolean) {
@@ -64,20 +61,8 @@ class PreInstallPlugin(wrapper: PluginWrapper) : Plugin(wrapper) {
             this.debug = debug
         }
 
-        // used for logging
-        fun log(s: String, level: Int) {
-            when (level) {
-                ERROR -> println("[ERROR] $s")
-                INFO -> if (verbose) println("[INFO] $s")
-                DEBUG -> if (debug) println("[DEBUG] $s")
-                WARN -> println("[WARN] $s")
-            }
-        }
-
         // parse a yaml file, and return an object of type T or null if there was an error
         inline fun <reified T> parseYaml(path: String): T {
-            log("Working Directory = ${System.getProperty("user.dir")}\n", INFO)
-
             val file = File(path)
 
             if (!file.isFile) {

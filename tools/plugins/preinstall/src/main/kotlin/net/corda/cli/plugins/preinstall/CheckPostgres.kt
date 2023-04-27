@@ -52,7 +52,7 @@ class CheckPostgres : Callable<Int>, PluginContext() {
             report.addEntry(PreInstallPlugin.ReportEntry("Parse PostgreSQL properties from YAML", true))
         } catch (e: Exception) {
             report.addEntry(PreInstallPlugin.ReportEntry("Parse PostgreSQL properties from YAML", false, e))
-            log(report.failingTests(), ERROR)
+            getLogger().error(report.failingTests())
             return 1
         }
 
@@ -64,7 +64,7 @@ class CheckPostgres : Callable<Int>, PluginContext() {
             password = getCredentialOrSecret(yaml.db.cluster.password, namespace, url)
         } catch (e: Exception) {
             report.addEntry(PreInstallPlugin.ReportEntry("Get PostgreSQL credentials", false, e))
-            log(report.failingTests(), ERROR)
+            getLogger().error(report.failingTests())
             return 1
         }
 
@@ -81,9 +81,9 @@ class CheckPostgres : Callable<Int>, PluginContext() {
         }
 
         if (report.testsPassed() == 0) {
-            log(report.toString(), INFO)
+            getLogger().info(report.toString())
         } else {
-            log(report.failingTests(), ERROR)
+            getLogger().error(report.failingTests())
         }
 
         return report.testsPassed()
