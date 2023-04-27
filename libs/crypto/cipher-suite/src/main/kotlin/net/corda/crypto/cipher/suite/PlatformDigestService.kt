@@ -38,6 +38,9 @@ interface PlatformDigestService {
      * @param algoNameAndHexString The algorithm name followed by the hex string form of the digest,
      *                             separated by colon (':')
      *                             e.g. SHA-256:98AF8725385586B41FEFF205B4E05A000823F78B5F8F5C02439CE8F67A781D90.
+     *
+     * @throws IllegalArgumentException if the digest algorithm is not supported or if the hex string length does not
+     *                                  meet the algorithm's digest length.
      */
     fun parseSecureHash(algoNameAndHexString: String): SecureHash
 
