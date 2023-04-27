@@ -36,7 +36,7 @@ internal class ReplayScheduler<K: SessionManager.BaseCounterparties, M>(
     coordinatorFactory: LifecycleCoordinatorFactory,
     private val configReadService: ConfigurationReadService,
     private val limitTotalReplays: Boolean,
-    private val replayMessage: (message: M) -> Unit,
+    private val replayMessage: (message: M, messageId: MessageId) -> Unit,
     executorServiceFactory: () -> ScheduledExecutorService = { Executors.newSingleThreadScheduledExecutor() },
     private val clock: Clock
     ) : LifecycleWithDominoTile {
@@ -275,7 +275,7 @@ internal class ReplayScheduler<K: SessionManager.BaseCounterparties, M>(
     private fun replay(message: M, messageId: MessageId) {
         val sentReplay = try {
             if (dominoTile.isRunning) {
-                replayMessage(message)
+                replayMessage(message, messageId)
                 true
             } else {
                 false

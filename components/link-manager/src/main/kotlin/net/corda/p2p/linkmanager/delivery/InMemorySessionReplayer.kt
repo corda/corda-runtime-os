@@ -96,6 +96,7 @@ internal class InMemorySessionReplayer(
 
     private fun replayMessage(
         messageReplay: SessionMessageReplay,
+        messageId: MessageId
     ) {
         val destinationMemberInfo = membershipGroupReaderProvider.lookup(
             messageReplay.sessionCounterparties.ourId,
@@ -127,6 +128,15 @@ internal class InMemorySessionReplayer(
                         "${destinationMemberInfo.serial}. " +
                         "The message was not replayed."
             )
+            if(destinationMemberInfo.serial > messageReplay.sessionCounterparties.serial) {
+                logger.warn(
+                    "Replay message is attempting to use ${messageReplay.sessionCounterparties.counterpartyId}" +
+                            " with serial number ${messageReplay.sessionCounterparties.serial}, but the current serial " +
+                            "number ${destinationMemberInfo.serial} is higher so message will never send. " +
+                            "Dropping message replay."
+                )
+                removeMessageFromReplay(messageId, messageReplay.sessionCounterparties)
+            }
             return
         }
 

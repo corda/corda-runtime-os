@@ -85,10 +85,10 @@ class InMemorySessionReplayerTest {
         whenever(mock.dominoTile).thenReturn(mockDominoTile)
     }
 
-    private lateinit var replayCallback: (message: InMemorySessionReplayer.SessionMessageReplay) -> Unit
+    private lateinit var replayCallback: (message: InMemorySessionReplayer.SessionMessageReplay, messageId: String) -> Unit
     private val replayScheduler = Mockito.mockConstruction(ReplayScheduler::class.java) { mock, context ->
         @Suppress("UNCHECKED_CAST")
-        replayCallback = context.arguments()[3] as (message: InMemorySessionReplayer.SessionMessageReplay) -> Unit
+        replayCallback = context.arguments()[3] as (message: InMemorySessionReplayer.SessionMessageReplay, messageId: String) -> Unit
         val mockDominoTile = mock<ComplexDominoTile> {
             whenever(it.coordinatorName).doReturn(LifecycleCoordinatorName("", ""))
         }
@@ -166,7 +166,7 @@ class InMemorySessionReplayerTest {
             counterparties = key
             sessionId = callbackId
         }
-        replayCallback(messageReplay)
+        replayCallback(messageReplay, "foo-bar")
 
         val recordsCapture = argumentCaptor<List<Record<*, *>>>()
         verify(publisherWithDominoLogic.constructed().last()).publish(recordsCapture.capture())
@@ -202,7 +202,7 @@ class InMemorySessionReplayerTest {
 
         setRunning()
         val messageReplay = InMemorySessionReplayer.SessionMessageReplay(helloMessage, id, SESSION_COUNTERPARTIES) { _,_ -> }
-        replayCallback(messageReplay)
+        replayCallback(messageReplay, "foo-bar")
 
         loggingInterceptor.assertSingleWarning("Attempted to replay a session negotiation message (type " +
             "${InitiatorHelloMessage::class.java.simpleName}) but could not find the network type in the GroupPolicyProvider for" +
@@ -238,7 +238,7 @@ class InMemorySessionReplayerTest {
 
         setRunning()
         val messageReplay = InMemorySessionReplayer.SessionMessageReplay(helloMessage, id, SESSION_COUNTERPARTIES) { _,_ -> }
-        replayCallback(messageReplay)
+        replayCallback(messageReplay, "foo-bar")
 
         loggingInterceptor.assertSingleWarning("Attempted to replay a session negotiation message (type " +
             "${InitiatorHelloMessage::class.java.simpleName}) for session with ID $id between $US and peer $COUNTER_PARTY with status ACTIVE which is not" +
@@ -268,11 +268,23 @@ class InMemorySessionReplayerTest {
 
         setRunning()
         val messageReplay = InMemorySessionReplayer.SessionMessageReplay(helloMessage, id, SESSION_COUNTERPARTIES) { _,_ -> }
-        replayCallback(messageReplay)
+        replayCallback(messageReplay, "foo-bar")
 
-        loggingInterceptor.assertSingleWarning("Attempted to replay a session negotiation message (type " +
-                "${InitiatorHelloMessage::class.java.simpleName}) for session with ID $id between $US and peer $COUNTER_PARTY with serial $SERIAL which " +
-                "is not in the members map. Member was found but with serial ${SERIAL + 1}. The message was not replayed.")
+        loggingInterceptor.assertWarnings(
+            listOf(
+                "Attempted to replay a session negotiation message (type " +
+                "${InitiatorHelloMessage::class.java.simpleName}) for session with ID $id between $US and peer " +
+                        "$COUNTER_PARTY with serial $SERIAL which is not in the members map. Member was found but " +
+                        "with serial ${SERIAL + 1}. The message was not replayed.",
+                "Replay message is attempting to use $COUNTER_PARTY with serial number $SERIAL, but the current " +
+                        "serial number ${SERIAL + 1} is higher so message will never send. Dropping message replay."
+            )
+        )
+
+        @Suppress("UNCHECKED_CAST")
+        verify(replayScheduler.constructed().last()
+                as ReplayScheduler<SessionManager.SessionCounterparties, InMemorySessionReplayer.SessionMessageReplay>)
+            .removeFromReplay(eq("foo-bar"), eq(SESSION_COUNTERPARTIES))
     }
 
     @Test
