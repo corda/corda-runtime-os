@@ -40,7 +40,6 @@ import net.corda.virtualnode.read.rest.extensions.createKeyIdOrHttpThrow
 import net.corda.virtualnode.read.rest.extensions.getByHoldingIdentityShortHashOrThrow
 import net.corda.virtualnode.read.rest.extensions.ofOrThrow
 import net.corda.virtualnode.read.rest.extensions.parseOrThrow
-import org.apache.commons.validator.routines.DomainValidator
 import org.apache.commons.validator.routines.InetAddressValidator
 import org.bouncycastle.asn1.pkcs.PKCSObjectIdentifiers.pkcs_9_at_extensionRequest
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier
@@ -62,6 +61,8 @@ import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
 import java.io.ByteArrayOutputStream
 import java.io.StringWriter
+import java.net.URI
+import java.net.URISyntaxException
 import java.security.PublicKey
 import java.security.cert.CertificateFactory
 import java.security.cert.X509Certificate
@@ -145,7 +146,7 @@ class CertificatesRestResourceImpl @Activate constructor(
                 val altName = GeneralName(iPAddress, name)
                 val subjectAltName = GeneralNames(altName)
                 extensionsGenerator.addExtension(subjectAlternativeName, true, subjectAltName)
-            } else if (DomainValidator.getInstance(true).isValid(name)){
+            } else if (validateHostname(name)){
                 val altName = GeneralName(dNSName, name)
                 val subjectAltName = GeneralNames(altName)
                 extensionsGenerator.addExtension(subjectAlternativeName, true, subjectAltName)
@@ -450,6 +451,15 @@ class CertificatesRestResourceImpl @Activate constructor(
                 "Provided tenantId ($tenantId) was not valid. " +
                         "It needs to be either a cluster tenant ($P2P or $REST) or a valid holding identity ID."
             )
+        }
+    }
+
+    private fun validateHostname(hostname: String): Boolean {
+        return try {
+            // Using URI parsing instead of DomainValidator because DomainValidator will fail for k8s type host names
+            URI("https://$hostname:4994/nop").host == hostname
+        } catch (e: URISyntaxException) {
+            false
         }
     }
 }

@@ -316,6 +316,32 @@ class CertificatesRestResourceImplTest {
         }
 
         @Test
+        fun `it throw an exception if the subject alternative name is empty`() {
+            assertThrows<InvalidInputDataException> {
+                certificatesOps.generateCsr(
+                    holdingIdentityShortHash,
+                    keyId,
+                    x500Name,
+                    listOf(""),
+                    null,
+                )
+            }
+        }
+
+        @Test
+        fun `it throw an exception if the subject alternative name is not a domain name`() {
+            assertThrows<InvalidInputDataException> {
+                certificatesOps.generateCsr(
+                    holdingIdentityShortHash,
+                    keyId,
+                    x500Name,
+                    listOf("hello world"),
+                    null,
+                )
+            }
+        }
+
+        @Test
         fun `it will use the correct x500 name`() {
             val pem = certificatesOps.generateCsr(
                 holdingIdentityShortHash,
