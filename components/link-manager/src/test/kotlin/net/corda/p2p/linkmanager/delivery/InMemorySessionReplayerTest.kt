@@ -241,13 +241,13 @@ class InMemorySessionReplayerTest {
         replayCallback(messageReplay)
 
         loggingInterceptor.assertSingleWarning("Attempted to replay a session negotiation message (type " +
-            "${InitiatorHelloMessage::class.java.simpleName}) with peer $COUNTER_PARTY with serial $SERIAL which is not" +
+            "${InitiatorHelloMessage::class.java.simpleName}) between $US and peer $COUNTER_PARTY with status ACTIVE which is not" +
                 " in the members map. The message was not replayed.")
     }
 
     @Test
     fun `The replaySchedular callback logs a warning when the responder is not in the network map with the required serial`() {
-        val membershipGroupReaderProvider = mockMembers(listOf(COUNTER_PARTY), 2)
+        val membershipGroupReaderProvider = mockMembers(listOf(COUNTER_PARTY), SERIAL + 1)
         InMemorySessionReplayer(
             mock(),
             mock(),
@@ -271,8 +271,8 @@ class InMemorySessionReplayerTest {
         replayCallback(messageReplay)
 
         loggingInterceptor.assertSingleWarning("Attempted to replay a session negotiation message (type " +
-                "${InitiatorHelloMessage::class.java.simpleName}) with peer $COUNTER_PARTY with serial $SERIAL which " +
-                "is not in the members map. The message was not replayed.")
+                "${InitiatorHelloMessage::class.java.simpleName}) between $US and peer $COUNTER_PARTY with serial $SERIAL which " +
+                "is not in the members map. Member was found but with serial ${SERIAL + 1}. The message was not replayed.")
     }
 
     @Test

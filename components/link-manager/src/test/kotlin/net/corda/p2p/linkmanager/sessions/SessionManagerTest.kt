@@ -453,7 +453,7 @@ class SessionManagerTest {
 
         loggingInterceptor.assertSingleWarning("Attempted to start session negotiation with peer $PEER_PARTY " +
                 "which is not in ${OUR_PARTY}'s members map. Filter was ${MembershipStatusFilter.ACTIVE}. " +
-                "The sessionInit message was not sent.")
+                "The sessionInit message was not sent. Message will be retried.")
     }
 
     @Test

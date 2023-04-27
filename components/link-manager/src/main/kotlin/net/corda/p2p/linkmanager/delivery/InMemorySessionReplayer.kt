@@ -106,8 +106,8 @@ internal class InMemorySessionReplayer(
             logger.warn(
                 "Attempted to replay a session negotiation message (type " +
                         "${messageReplay.message::class.java.simpleName})" +
-                        " from ${messageReplay.sessionCounterparties.ourId}" +
-                        " with peer ${messageReplay.sessionCounterparties.counterpartyId} with " +
+                        " between ${messageReplay.sessionCounterparties.ourId}" +
+                        " and peer ${messageReplay.sessionCounterparties.counterpartyId} with " +
                         "status ${messageReplay.sessionCounterparties.status} " +
                         "which is not in the members map. The message was not replayed."
             )
@@ -118,8 +118,8 @@ internal class InMemorySessionReplayer(
             logger.warn(
                 "Attempted to replay a session negotiation message (type " +
                         "${messageReplay.message::class.java.simpleName})" +
-                        " from ${messageReplay.sessionCounterparties.ourId}" +
-                        " with peer ${messageReplay.sessionCounterparties.counterpartyId} with " +
+                        " between ${messageReplay.sessionCounterparties.ourId}" +
+                        " and peer ${messageReplay.sessionCounterparties.counterpartyId} with " +
                         "serial ${messageReplay.sessionCounterparties.serial} " +
                         "which is not in the members map. Member was found but with serial " +
                         "${destinationMemberInfo.serial}. " +
