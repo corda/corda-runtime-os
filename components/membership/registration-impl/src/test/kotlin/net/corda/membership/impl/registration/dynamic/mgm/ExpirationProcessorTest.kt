@@ -17,8 +17,14 @@ import net.corda.lifecycle.Resource
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.TimerEvent
+import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
+import net.corda.membership.lib.MemberInfoExtension.Companion.IS_MGM
+import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
+import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.persistence.client.MembershipQueryResult
+import net.corda.membership.read.MembershipGroupReader
+import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
@@ -28,6 +34,9 @@ import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.test.util.time.TestClock
 import net.corda.utilities.hours
 import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.membership.MGMContext
+import net.corda.v5.membership.MemberContext
+import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
@@ -52,11 +61,16 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.time.Instant
 import java.util.UUID
+import kotlin.test.assertTrue
 
 class ExpirationProcessorTest {
     private val groupId = UUID(100 ,30).toString()
-    private val mgm = HoldingIdentity(
-        MemberX500Name("Corda MGM", "London", "GB"),
+    private val mgmOne = HoldingIdentity(
+        MemberX500Name("Corda MGM One", "London", "GB"),
+        groupId
+    )
+    private val mgmTwo = HoldingIdentity(
+        MemberX500Name("Corda MGM Two", "London", "GB"),
         groupId
     )
     private val alice = HoldingIdentity(
@@ -104,17 +118,51 @@ class ExpirationProcessorTest {
     private val configurationReadService: ConfigurationReadService = mock()
     private val membershipQueryClient: MembershipQueryClient = mock {
         on {
-            queryRegistrationRequests(eq(mgm), eq(null), eq(listOf(PENDING_MEMBER_VERIFICATION)), eq(null))
+            queryRegistrationRequests(eq(mgmOne), eq(null), eq(listOf(PENDING_MEMBER_VERIFICATION)), eq(null))
         } doReturn MembershipQueryResult.Success(
             listOf(notExpiredRegistrationRequest, expiredRegistrationRequest)
         )
     }
 
-    private val virtualNodeInfo: VirtualNodeInfo = mock {
+    private val mgmVirtualNodeInfo: VirtualNodeInfo = mock {
+        on { holdingIdentity } doReturn mgmTwo
+    }
+    private val bobVirtualNodeInfo: VirtualNodeInfo = mock {
         on { holdingIdentity } doReturn bob
     }
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService = mock {
-        on { getByHoldingIdentityShortHash(bob.shortHash) } doReturn virtualNodeInfo
+        on { getByHoldingIdentityShortHash(bob.shortHash) } doReturn bobVirtualNodeInfo
+        on { getAll() } doReturn listOf(mgmVirtualNodeInfo)
+    }
+    val mgmTrueContext: MGMContext = mock {
+        on { parseOrNull(IS_MGM, Boolean::class.java) } doReturn true
+    }
+    val memberContext: MemberContext = mock {
+        on { parse(GROUP_ID, String::class.java) } doReturn groupId
+        on { parse(PARTY_NAME, MemberX500Name::class.java) } doReturn mgmOne.x500Name
+    }
+    val mgmFalseContext: MGMContext = mock {
+        on { parseOrNull(IS_MGM, Boolean::class.java) } doReturn false
+    }
+    val mgmInfo: MemberInfo = mock {
+        on { mgmProvidedContext } doReturn mgmTrueContext
+        on { memberProvidedContext } doReturn memberContext
+        on { isMgm } doReturn true
+        on { name } doReturn mgmTwo.x500Name
+    }
+    val aliceInfo: MemberInfo = mock {
+        on { mgmProvidedContext } doReturn mgmFalseContext
+        on { memberProvidedContext } doReturn mock()
+    }
+    val bobInfo: MemberInfo = mock {
+        on { mgmProvidedContext } doReturn mgmFalseContext
+        on { memberProvidedContext } doReturn mock()
+    }
+    private val membershipGroupReader: MembershipGroupReader = mock {
+        on { lookup() } doReturn listOf(mgmInfo, aliceInfo, bobInfo)
+    }
+    private val membershipGroupReaderProvider: MembershipGroupReaderProvider = mock {
+        on { getGroupReader(mgmTwo) } doReturn membershipGroupReader
     }
 
     private val expirationProcessor = ExpirationProcessorImpl(
@@ -123,6 +171,7 @@ class ExpirationProcessorTest {
         coordinatorFactory,
         membershipQueryClient,
         virtualNodeInfoReadService,
+        membershipGroupReaderProvider,
         clock
     )
 
@@ -137,6 +186,7 @@ class ExpirationProcessorTest {
                     LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
                     LifecycleCoordinatorName.forComponent<MembershipQueryClient>(),
                     LifecycleCoordinatorName.forComponent<VirtualNodeInfoReadService>(),
+                    LifecycleCoordinatorName.forComponent<MembershipGroupReaderProvider>(),
                 )
             )
         }
@@ -241,7 +291,7 @@ class ExpirationProcessorTest {
         fun `processing fails - when persistence failure happens`() {
             whenever(
                 membershipQueryClient.queryRegistrationRequests(
-                    eq(mgm), eq(null), eq(listOf(PENDING_MEMBER_VERIFICATION)), eq(null)
+                    eq(mgmOne), eq(null), eq(listOf(PENDING_MEMBER_VERIFICATION)), eq(null)
                 )
             ).thenReturn(MembershipQueryResult.Failure("error"))
             triggerEvent()
@@ -264,7 +314,7 @@ class ExpirationProcessorTest {
         private fun triggerEvent() {
             val eventCaptor = argumentCaptor<(String) -> TimerEvent>()
             doNothing().whenever(coordinator).setTimer(any(), any(), eventCaptor.capture())
-            expirationProcessor.scheduleProcessingOfExpiredRequests(mgm)
+            expirationProcessor.scheduleProcessingOfExpiredRequests(mgmOne)
             // trigger the event manually, because we don't want to wait for 3 hours
             handler.firstValue.processEvent(eventCaptor.firstValue.invoke(""), coordinator)
         }
@@ -281,7 +331,7 @@ class ExpirationProcessorTest {
         fun `schedule the next clean-up for stuck registration requests`() {
             val timerDuration = argumentCaptor<Long>()
             doNothing().whenever(coordinator).setTimer(any(), timerDuration.capture(), any())
-            expirationProcessor.scheduleProcessingOfExpiredRequests(mgm)
+            expirationProcessor.scheduleProcessingOfExpiredRequests(mgmOne)
 
             assertThat(timerDuration.firstValue)
                 .isLessThanOrEqualTo(3.hours.toMillis())
@@ -292,11 +342,12 @@ class ExpirationProcessorTest {
         fun `processor after deactivation will not execute any previously scheduled clean-up and cancels the timer`() {
             val eventCaptor = argumentCaptor<(String) -> TimerEvent>()
             doNothing().whenever(coordinator).setTimer(any(), any(), eventCaptor.capture())
-            expirationProcessor.scheduleProcessingOfExpiredRequests(mgm)
+            expirationProcessor.scheduleProcessingOfExpiredRequests(mgmOne)
             handler.firstValue.processEvent(StopEvent(), coordinator)
             handler.firstValue.processEvent(eventCaptor.firstValue.invoke(""), coordinator)
 
-            verify(coordinator).cancelTimer(any())
+            // cancels for mgmOne and mgmTwo
+            verify(coordinator, times(2)).cancelTimer(any())
             verify(membershipQueryClient, never()).queryRegistrationRequests(any(), anyOrNull(), any(), anyOrNull())
             verify(virtualNodeInfoReadService, never()).getByHoldingIdentityShortHash(any())
             verify(publisher, never()).publish(any())
@@ -304,15 +355,26 @@ class ExpirationProcessorTest {
 
         @Test
         fun `processor after deactivation and activation sets the timer again`() {
-            expirationProcessor.scheduleProcessingOfExpiredRequests(mgm)
+            expirationProcessor.scheduleProcessingOfExpiredRequests(mgmOne)
 
             handler.firstValue.processEvent(StopEvent(), coordinator)
-            verify(coordinator).cancelTimer(any())
+            // cancels for mgmOne and mgmTwo
+            verify(coordinator, times(2)).cancelTimer(any())
 
             handler.firstValue.processEvent(configChangedEvent, coordinator)
             val keyCaptor = argumentCaptor<String>()
-            verify(coordinator, times(2)).setTimer(keyCaptor.capture(), any(), any())
-            assertThat(keyCaptor.firstValue).contains(mgm.shortHash.value)
+            verify(coordinator, times(4)).setTimer(keyCaptor.capture(), any(), any())
+            keyCaptor.allValues.forEach {
+                assertTrue(it.contains(mgmOne.shortHash.value) || it.contains(mgmTwo.shortHash.value))
+            }
+        }
+
+        @Test
+        fun `mgms are loaded during activation`() {
+            val keyCaptor = argumentCaptor<String>()
+            verify(coordinator, times(1)).setTimer(keyCaptor.capture(), any(), any())
+            verify(virtualNodeInfoReadService).getAll()
+            assertThat(keyCaptor.firstValue).contains(mgmTwo.shortHash.value)
         }
 
         @AfterEach

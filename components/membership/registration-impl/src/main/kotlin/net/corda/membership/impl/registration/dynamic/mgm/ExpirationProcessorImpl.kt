@@ -16,7 +16,10 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.TimerEvent
+import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
+import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
 import net.corda.membership.persistence.client.MembershipQueryClient
+import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.membership.registration.ExpirationProcessor
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
@@ -46,6 +49,7 @@ internal class ExpirationProcessorImpl internal constructor(
     coordinatorFactory: LifecycleCoordinatorFactory,
     private val membershipQueryClient: MembershipQueryClient,
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
+    private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
     private val clock: Clock,
 ) : ExpirationProcessor {
     @Activate
@@ -60,13 +64,16 @@ internal class ExpirationProcessorImpl internal constructor(
         membershipQueryClient: MembershipQueryClient,
         @Reference(service = VirtualNodeInfoReadService::class)
         virtualNodeInfoReadService: VirtualNodeInfoReadService,
+        @Reference(service = MembershipGroupReaderProvider::class)
+        membershipGroupReaderProvider: MembershipGroupReaderProvider,
     ) : this (
         publisherFactory,
         configurationReadService,
         coordinatorFactory,
         membershipQueryClient,
         virtualNodeInfoReadService,
-        UTCClock()
+        membershipGroupReaderProvider,
+        UTCClock(),
     )
     private companion object {
         val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -85,8 +92,6 @@ internal class ExpirationProcessorImpl internal constructor(
     private val coordinatorName = LifecycleCoordinatorName.forComponent<ExpirationProcessor>()
     // Component lifecycle coordinator
     private val coordinator = coordinatorFactory.createCoordinator(coordinatorName, ::handleEvent)
-
-    //private val clock: Clock = UTCClock()
 
     private var impl: InnerExpirationProcessor = InactiveImpl()
 
@@ -107,6 +112,23 @@ internal class ExpirationProcessorImpl internal constructor(
         impl.cancelOrScheduleProcessingOfExpiredRequests(mgm)
     }
 
+    private fun loadMgms() {
+        mgms.addAll(
+            virtualNodeInfoReadService.getAll().map {
+                it.holdingIdentity
+            }.flatMap { holdingIdentity ->
+                membershipGroupReaderProvider
+                    .getGroupReader(holdingIdentity)
+                    .lookup()
+                    .filter {
+                        it.isMgm
+                    }.map {
+                        it.holdingIdentity
+                    }
+            }
+        )
+    }
+
     /**
      * Private interface used for implementation swapping in response to lifecycle events.
      */
@@ -122,7 +144,7 @@ internal class ExpirationProcessorImpl internal constructor(
 
     private inner class ActiveImpl : InnerExpirationProcessor {
         override fun cancelOrScheduleProcessingOfExpiredRequests(mgm: HoldingIdentity): Boolean {
-            if(!mgms.contains(mgm)) mgms.add(mgm)
+            mgms.add(mgm)
             coordinator.setTimer(
                 key = "DeclineExpiredRegistrationRequests-${mgm.shortHash}",
                 // Add noise to prevent all the MGMs to ask for clean-up at the same time (in case of service re-start)
@@ -143,6 +165,7 @@ internal class ExpirationProcessorImpl internal constructor(
 
     private fun activate() {
         impl = ActiveImpl()
+        loadMgms()
         mgms.forEach {
             impl.cancelOrScheduleProcessingOfExpiredRequests(it)
         }
@@ -172,6 +195,7 @@ internal class ExpirationProcessorImpl internal constructor(
                     LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
                     LifecycleCoordinatorName.forComponent<MembershipQueryClient>(),
                     LifecycleCoordinatorName.forComponent<VirtualNodeInfoReadService>(),
+                    LifecycleCoordinatorName.forComponent<MembershipGroupReaderProvider>(),
                 )
             )
         }
