@@ -5,7 +5,9 @@ import net.corda.crypto.cipher.suite.schemes.DigestScheme
 import net.corda.crypto.core.bytes
 import net.corda.crypto.core.parseSecureHash
 import net.corda.crypto.impl.DoubleSHA256Digest
+import net.corda.v5.base.util.ByteArrays
 import net.corda.v5.crypto.DigestAlgorithmName
+import net.corda.v5.crypto.SecureHash.DELIMITER
 import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Assumptions.assumeTrue
@@ -18,6 +20,7 @@ import java.io.ByteArrayInputStream
 import java.security.MessageDigest
 import kotlin.random.Random
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 
 class PlatformDigestServiceImplTest {
 
@@ -323,6 +326,41 @@ class PlatformDigestServiceImplTest {
 
             private val currentVersion: String = System.getProperty("java.specification.version") ?:
             throw IllegalStateException("Unable to retrieve system property java.specification.version")
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("digests")
+    fun `parses valid secure hashes string forms for platform digests`(digestScheme: DigestScheme) {
+        val algoName = digestScheme.algorithmName
+        val digestLength = digestService.digestLength(DigestAlgorithmName(algoName))
+        val bytes = Random.nextBytes(digestLength)
+        val hexValue = ByteArrays.toHexString(bytes)
+        val algoNameAndHexString = "$algoName$DELIMITER$hexValue"
+        digestService.parseSecureHash(algoNameAndHexString)
+    }
+
+    @Test
+    fun `fails to parse secure hash of unknown algorithm`() {
+        val algoName = "UNKNOWN_ALGO"
+        val bytes = Random.nextBytes(32)
+        val hexValue = ByteArrays.toHexString(bytes)
+        val algoNameAndHexString = "$algoName$DELIMITER$hexValue"
+        assertFailsWith<IllegalArgumentException>(message = "Unknown hash algorithm UNKNOWN_ALGO") {
+            digestService.parseSecureHash(algoNameAndHexString)
+        }
+    }
+
+    @Test
+    fun `fails to parse secure hash of erroneous length`() {
+        val algoName = DigestAlgorithmName.SHA2_256
+        val bytes = Random.nextBytes(64) // Should have been 32 to be correct
+        val hexValue = ByteArrays.toHexString(bytes)
+        val algoNameAndHexString = "$algoName$DELIMITER$hexValue"
+        assertFailsWith<IllegalArgumentException>(
+            "Required hex string length: 64 for algo: \"$algoName\" is not met by the provided hex string: \"$hexValue\""
+        ) {
+            digestService.parseSecureHash(algoNameAndHexString)
         }
     }
 }

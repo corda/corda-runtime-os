@@ -3,6 +3,8 @@ package net.corda.cipher.suite.impl
 import net.corda.crypto.cipher.suite.PlatformDigestService
 import net.corda.crypto.core.DigestAlgorithmFactoryProvider
 import net.corda.crypto.core.SecureHashImpl
+import net.corda.crypto.core.parseDigestAlgoName
+import net.corda.crypto.core.parseSecureHash
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.sandbox.type.UsedByPersistence
 import net.corda.sandbox.type.UsedByVerification
@@ -57,7 +59,15 @@ class DigestServiceImpl @Activate constructor(
         }
 
     override fun parseSecureHash(algoNameAndHexString: String) =
-        net.corda.crypto.core.parseSecureHash(algoNameAndHexString)
+        try {
+            platformDigestService.parseSecureHash(algoNameAndHexString)
+        } catch (e: IllegalArgumentException) {
+            val digestName = parseDigestAlgoName(algoNameAndHexString)
+            lookForCustomAlgorithm(DigestAlgorithmName(digestName))?.let {
+                val digestHexStringLength = it.digestLength * 2
+                parseSecureHash(algoNameAndHexString, digestHexStringLength)
+            } ?: throw e
+        }
 
     override fun digestLength(digestName: DigestAlgorithmName): Int =
         try {
@@ -71,7 +81,7 @@ class DigestServiceImpl @Activate constructor(
     private fun lookForCustomAlgorithm(digestAlgorithmName: DigestAlgorithmName): DigestAlgorithm? =
         // Check any custom registered versions.
         customFactoriesProvider?.get(digestAlgorithmName.name)
-            ?.getInstance()
+            ?.instance
 
     override fun defaultDigestAlgorithm(): DigestAlgorithmName =
         platformDigestService.defaultDigestAlgorithm()
