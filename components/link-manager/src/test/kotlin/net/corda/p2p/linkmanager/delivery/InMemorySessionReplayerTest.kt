@@ -241,7 +241,7 @@ class InMemorySessionReplayerTest {
         replayCallback(messageReplay)
 
         loggingInterceptor.assertSingleWarning("Attempted to replay a session negotiation message (type " +
-            "${InitiatorHelloMessage::class.java.simpleName}) between $US and peer $COUNTER_PARTY with status ACTIVE which is not" +
+            "${InitiatorHelloMessage::class.java.simpleName}) for session with ID $id between $US and peer $COUNTER_PARTY with status ACTIVE which is not" +
                 " in the members map. The message was not replayed.")
     }
 
@@ -271,7 +271,7 @@ class InMemorySessionReplayerTest {
         replayCallback(messageReplay)
 
         loggingInterceptor.assertSingleWarning("Attempted to replay a session negotiation message (type " +
-                "${InitiatorHelloMessage::class.java.simpleName}) between $US and peer $COUNTER_PARTY with serial $SERIAL which " +
+                "${InitiatorHelloMessage::class.java.simpleName}) for session with ID $id between $US and peer $COUNTER_PARTY with serial $SERIAL which " +
                 "is not in the members map. Member was found but with serial ${SERIAL + 1}. The message was not replayed.")
     }
 
