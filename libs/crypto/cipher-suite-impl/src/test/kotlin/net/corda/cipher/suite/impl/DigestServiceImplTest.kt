@@ -30,7 +30,7 @@ class DigestServiceImplTest {
         val DUMMY_BYTES = byteArrayOf(0x01, 0x02, 0x03)
     }
 
-    private val digestService = mock<PlatformDigestService>().also {
+    private val platformDigestService = mock<PlatformDigestService>().also {
         // DigestService throwing to impersonate digest algorithm not found in platform digest algorithms
         whenever(it.hash(any<InputStream>(), any())).thenThrow(IllegalArgumentException())
         whenever(it.hash(any<ByteArray>(), any())).thenThrow(IllegalArgumentException())
@@ -39,24 +39,24 @@ class DigestServiceImplTest {
     }
 
     private lateinit var customFactoriesProvider: DigestAlgorithmFactoryProvider
-    private lateinit var digestServiceImpl: DigestServiceImpl
+    private lateinit var digestService: DigestServiceImpl
 
     @BeforeEach
     fun setUp() {
         customFactoriesProvider = mock()
-        digestServiceImpl = DigestServiceImpl(digestService, customFactoriesProvider)
+        digestService = DigestServiceImpl(platformDigestService, customFactoriesProvider)
     }
 
     @Test
     fun `throws IllegalArgumentException, if digest algorithm not found`() {
         assertThrows<IllegalArgumentException> {
-            digestServiceImpl.hash(DUMMY_BYTES, DigestAlgorithmName(DUMMY_DIGEST))
+            digestService.hash(DUMMY_BYTES, DigestAlgorithmName(DUMMY_DIGEST))
         }
         assertThrows<IllegalArgumentException> {
-            digestServiceImpl.hash(DUMMY_BYTES.inputStream(), DigestAlgorithmName(DUMMY_DIGEST))
+            digestService.hash(DUMMY_BYTES.inputStream(), DigestAlgorithmName(DUMMY_DIGEST))
         }
         assertThrows<IllegalArgumentException> {
-            digestServiceImpl.digestLength(DigestAlgorithmName(DUMMY_DIGEST))
+            digestService.digestLength(DigestAlgorithmName(DUMMY_DIGEST))
         }
     }
 
@@ -74,9 +74,9 @@ class DigestServiceImplTest {
         }
         whenever(customFactoriesProvider.get(DUMMY_DIGEST)).thenReturn(digestAlgorithmFactory)
 
-        val hash0 = digestServiceImpl.hash(DUMMY_BYTES, DigestAlgorithmName(DUMMY_DIGEST))
-        val hash1 = digestServiceImpl.hash(DUMMY_BYTES.inputStream(), DigestAlgorithmName(DUMMY_DIGEST))
-        val hashLength = digestServiceImpl.digestLength(DigestAlgorithmName(DUMMY_DIGEST))
+        val hash0 = digestService.hash(DUMMY_BYTES, DigestAlgorithmName(DUMMY_DIGEST))
+        val hash1 = digestService.hash(DUMMY_BYTES.inputStream(), DigestAlgorithmName(DUMMY_DIGEST))
+        val hashLength = digestService.digestLength(DigestAlgorithmName(DUMMY_DIGEST))
 
         val expectedDummySecureHash = SecureHashImpl(DUMMY_DIGEST, DUMMY_BYTES)
         assertEquals(expectedDummySecureHash, hash0)
@@ -100,7 +100,7 @@ class DigestServiceImplTest {
 
         val hashBytes = Random.nextBytes(64)
         val algoNameAndHexString = "CUSTOM_DIGEST${SecureHash.DELIMITER}${ByteArrays.toHexString(hashBytes)}"
-        val secureHash = digestServiceImpl.parseSecureHash(algoNameAndHexString)
+        val secureHash = digestService.parseSecureHash(algoNameAndHexString)
         assertEquals("CUSTOM_DIGEST", secureHash.algorithm)
         assertTrue(hashBytes.contentEquals(secureHash.bytes))
     }
