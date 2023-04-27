@@ -91,6 +91,9 @@ internal class CordaPublisherImpl(
         val batch = Batch(records, CompletableFuture())
         queue.add(batch)
         lock.withLock {
+            if (batch.future.isDone) {
+                return batch.future
+            }
             val batches = mutableListOf<Batch>()
             queue.drainTo(batches)
             // Ensure we only go to Kafka if there are records to publish, as empty transactions incur a performance
