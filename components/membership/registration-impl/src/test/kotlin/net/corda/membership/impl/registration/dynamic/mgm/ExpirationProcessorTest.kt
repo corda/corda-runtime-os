@@ -18,8 +18,6 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.TimerEvent
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
-import net.corda.membership.lib.MemberInfoExtension.Companion.IS_MGM
-import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
 import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.persistence.client.MembershipQueryResult
@@ -34,7 +32,6 @@ import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.test.util.time.TestClock
 import net.corda.utilities.hours
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.membership.MGMContext
 import net.corda.v5.membership.MemberContext
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
@@ -134,28 +131,21 @@ class ExpirationProcessorTest {
         on { getByHoldingIdentityShortHash(bob.shortHash) } doReturn bobVirtualNodeInfo
         on { getAll() } doReturn listOf(mgmVirtualNodeInfo)
     }
-    val mgmTrueContext: MGMContext = mock {
-        on { parseOrNull(IS_MGM, Boolean::class.java) } doReturn true
-    }
-    val memberContext: MemberContext = mock {
+    private val memberContext: MemberContext = mock {
         on { parse(GROUP_ID, String::class.java) } doReturn groupId
-        on { parse(PARTY_NAME, MemberX500Name::class.java) } doReturn mgmOne.x500Name
     }
-    val mgmFalseContext: MGMContext = mock {
-        on { parseOrNull(IS_MGM, Boolean::class.java) } doReturn false
-    }
-    val mgmInfo: MemberInfo = mock {
-        on { mgmProvidedContext } doReturn mgmTrueContext
+    private val mgmInfo: MemberInfo = mock {
+        on { mgmProvidedContext } doReturn mock()
         on { memberProvidedContext } doReturn memberContext
         on { isMgm } doReturn true
         on { name } doReturn mgmTwo.x500Name
     }
-    val aliceInfo: MemberInfo = mock {
-        on { mgmProvidedContext } doReturn mgmFalseContext
+    private val aliceInfo: MemberInfo = mock {
+        on { mgmProvidedContext } doReturn mock()
         on { memberProvidedContext } doReturn mock()
     }
-    val bobInfo: MemberInfo = mock {
-        on { mgmProvidedContext } doReturn mgmFalseContext
+    private val bobInfo: MemberInfo = mock {
+        on { mgmProvidedContext } doReturn mock()
         on { memberProvidedContext } doReturn mock()
     }
     private val membershipGroupReader: MembershipGroupReader = mock {
