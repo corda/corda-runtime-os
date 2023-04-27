@@ -106,6 +106,7 @@ internal class InMemorySessionReplayer(
             logger.warn(
                 "Attempted to replay a session negotiation message (type " +
                         "${messageReplay.message::class.java.simpleName})" +
+                        "for session with ID ${messageReplay.sessionId}" +
                         " between ${messageReplay.sessionCounterparties.ourId}" +
                         " and peer ${messageReplay.sessionCounterparties.counterpartyId} with " +
                         "status ${messageReplay.sessionCounterparties.status} " +
@@ -118,6 +119,7 @@ internal class InMemorySessionReplayer(
             logger.warn(
                 "Attempted to replay a session negotiation message (type " +
                         "${messageReplay.message::class.java.simpleName})" +
+                        "for session with ID ${messageReplay.sessionId}" +
                         " between ${messageReplay.sessionCounterparties.ourId}" +
                         " and peer ${messageReplay.sessionCounterparties.counterpartyId} with " +
                         "serial ${messageReplay.sessionCounterparties.serial} " +
