@@ -1,4 +1,4 @@
-@Library('corda-shared-build-pipeline-steps@5.0.1') _
+@Library('corda-shared-build-pipeline-steps@vkolomeyko/CORE-12906-serverUpFix') _
 
 import groovy.transform.Field
 import com.r3.build.utils.PipelineUtils
@@ -18,48 +18,6 @@ PipelineUtils pipelineUtils = new PipelineUtils(this)
 
 @Field
 GitUtils gitUtils = new GitUtils(this)
-
-class MyPipelineUtils implements Serializable {
-
-    def steps
-
-    MyPipelineUtils(steps) {
-        this.steps = steps
-    }
-
-    void waitForServiceToBeUp(String serviceUrl, int maxRetries, int retryIntervalSeconds, int initialWaitIntervalSeconds) {
-        int retries = 0
-        String status = "500"
-
-        steps.sleep(time: initialWaitIntervalSeconds, unit: "SECONDS")
-
-        while (status != "200" && retries < maxRetries) {
-            if (retries != 0) {
-                steps.sleep(time: retryIntervalSeconds, unit: "SECONDS")
-            }
-            try {
-                steps.withEnv([
-                    "URL=${serviceUrl}"
-                ]) {
-                    status = steps.sh(script: 'curl -s -o /dev/null -w "%{http_code}" "${URL}"', returnStdout: true)
-                }
-            } catch (error) {
-                steps.echo "Failed to connect to ${serviceUrl}, retrying..."
-            }
-            retries++
-            steps.echo("Try number: ${retries}, status: ${status}")
-        }
-
-        if (status != "200") {
-           steps.error("Service at ${serviceUrl} failed to start up after ${maxRetries} retries, status code: ${status}")
-        } else {
-            steps.echo "Service at ${serviceUrl} is up and running."
-        }
-    }
-}
-
-@Field
-MyPipelineUtils myPipelineUtils = new MyPipelineUtils(this)
 
 pipeline {
     agent {
@@ -145,7 +103,7 @@ pipeline {
         stage('connect to combined worker') {
             steps {
                 script {
-                    myPipelineUtils.waitForServiceToBeUp('http://localhost:7004/status', 20, 3, 90)
+                    pipelineUtils.waitForServiceToBeUp('http://localhost:7004/status', 20, 3)
                 }
             }
         }
