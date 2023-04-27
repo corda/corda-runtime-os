@@ -4,10 +4,6 @@ plugins {
     id 'corda.javadoc-generation'
 }
 
-ext {
-    releasable = true
-}
-
 description 'Corda Serialization encoding'
 
 configurations {
