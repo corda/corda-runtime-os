@@ -38,8 +38,8 @@ repositories {
                 password = findProperty('cordaArtifactoryPassword') ?: System.getenv('CORDA_ARTIFACTORY_PASSWORD')
             }
             metadataSources {
-                      mavenPom() //use maven pom
-      artifact() //look directly for the artifact
+                mavenPom()
+                artifact()
                 ignoreGradleMetadataRedirection()
             }
         }
