@@ -54,7 +54,7 @@ import java.time.Instant
 import java.util.UUID
 
 class ExpirationProcessorTest {
-    private val groupId = UUID.randomUUID().toString()
+    private val groupId = UUID(100 ,30).toString()
     private val mgm = HoldingIdentity(
         MemberX500Name("Corda MGM", "London", "GB"),
         groupId
@@ -68,7 +68,7 @@ class ExpirationProcessorTest {
         groupId
     )
 
-    private val clock = TestClock(Instant.now())
+    private val clock = TestClock(Instant.ofEpochMilli(100))
 
     private val messagingConfig = mock<SmartConfig>()
     private val configChangedEvent = mock<ConfigChangedEvent> {
@@ -94,12 +94,12 @@ class ExpirationProcessorTest {
     private val notExpiredRegistrationRequest: RegistrationRequestDetails = mock {
         on { holdingIdentityId } doReturn alice.shortHash.value
         on { registrationLastModified } doReturn clock.instant()
-        on { registrationId } doReturn UUID.randomUUID().toString()
+        on { registrationId } doReturn UUID(100 ,30).toString()
     }
     private val expiredRegistrationRequest: RegistrationRequestDetails = mock {
         on { holdingIdentityId } doReturn bob.shortHash.value
         on { registrationLastModified } doReturn clock.instant().minusMillis(6.hours.toMillis())
-        on { registrationId } doReturn UUID.randomUUID().toString()
+        on { registrationId } doReturn UUID(100 ,30).toString()
     }
     private val configurationReadService: ConfigurationReadService = mock()
     private val membershipQueryClient: MembershipQueryClient = mock {
@@ -118,7 +118,12 @@ class ExpirationProcessorTest {
     }
 
     private val expirationProcessor = ExpirationProcessorImpl(
-        publisherFactory, configurationReadService, coordinatorFactory, membershipQueryClient, virtualNodeInfoReadService
+        publisherFactory,
+        configurationReadService,
+        coordinatorFactory,
+        membershipQueryClient,
+        virtualNodeInfoReadService,
+        clock
     )
 
     @Nested
@@ -142,7 +147,7 @@ class ExpirationProcessorTest {
 
             verify(coordinator).closeManagedResources(
                 argThat {
-                    size == 2
+                    size == 3
                 }
             )
 
@@ -176,7 +181,7 @@ class ExpirationProcessorTest {
             )
 
             verify(coordinator).updateStatus(LifecycleStatus.DOWN)
-            verify(coordinator).closeManagedResources(argThat { size == 1 })
+            verify(coordinator).closeManagedResources(argThat { size == 2 })
         }
 
         @Test

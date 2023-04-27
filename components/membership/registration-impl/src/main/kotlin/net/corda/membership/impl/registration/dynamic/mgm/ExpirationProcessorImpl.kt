@@ -25,7 +25,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.Membership.REGISTRATION_COMMAND_TOPIC
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
-import net.corda.utilities.hours
+import net.corda.utilities.minutes
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
 import net.corda.virtualnode.HoldingIdentity
@@ -36,21 +36,38 @@ import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.time.Instant
-import java.util.*
+import java.util.concurrent.ConcurrentHashMap
+import kotlin.random.Random
 
 @Component(service = [ExpirationProcessor::class])
-class ExpirationProcessorImpl @Activate constructor(
-    @Reference(service = PublisherFactory::class)
+internal class ExpirationProcessorImpl internal constructor(
     private val publisherFactory: PublisherFactory,
-    @Reference(service = ConfigurationReadService::class)
     private val configurationReadService: ConfigurationReadService,
-    @Reference(service = LifecycleCoordinatorFactory::class)
     coordinatorFactory: LifecycleCoordinatorFactory,
-    @Reference(service = MembershipQueryClient::class)
     private val membershipQueryClient: MembershipQueryClient,
-    @Reference(service = VirtualNodeInfoReadService::class)
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
+    private val clock: Clock,
 ) : ExpirationProcessor {
+    @Activate
+    constructor(
+        @Reference(service = PublisherFactory::class)
+        publisherFactory: PublisherFactory,
+        @Reference(service = ConfigurationReadService::class)
+        configurationReadService: ConfigurationReadService,
+        @Reference(service = LifecycleCoordinatorFactory::class)
+        coordinatorFactory: LifecycleCoordinatorFactory,
+        @Reference(service = MembershipQueryClient::class)
+        membershipQueryClient: MembershipQueryClient,
+        @Reference(service = VirtualNodeInfoReadService::class)
+        virtualNodeInfoReadService: VirtualNodeInfoReadService,
+    ) : this (
+        publisherFactory,
+        configurationReadService,
+        coordinatorFactory,
+        membershipQueryClient,
+        virtualNodeInfoReadService,
+        UTCClock()
+    )
     private companion object {
         val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
@@ -60,20 +77,20 @@ class ExpirationProcessorImpl @Activate constructor(
         const val PUBLISHER_RESOURCE_NAME = "ExpirationProcessor.publisher"
         const val PUBLISHER_CLIENT_ID = "expiration-processor"
 
-        val expirationDate = 5.hours.toMillis()
-        val timeframe = 3.hours.toMillis()
-        val random = Random()
+        val expirationDate = 300.minutes.toMillis()
+        val timeframe = 180.minutes.toMillis()
+        val maxNoise = (0.1 * timeframe).toInt()
     }
 
     private val coordinatorName = LifecycleCoordinatorName.forComponent<ExpirationProcessor>()
     // Component lifecycle coordinator
     private val coordinator = coordinatorFactory.createCoordinator(coordinatorName, ::handleEvent)
 
-    private val clock: Clock = UTCClock()
+    //private val clock: Clock = UTCClock()
 
     private var impl: InnerExpirationProcessor = InactiveImpl()
 
-    private val mgms = Collections.synchronizedList(mutableListOf<HoldingIdentity>())
+    private val mgms = ConcurrentHashMap.newKeySet<HoldingIdentity>()
 
     override val isRunning: Boolean
         get() = coordinator.status == LifecycleStatus.UP
@@ -93,7 +110,7 @@ class ExpirationProcessorImpl @Activate constructor(
     /**
      * Private interface used for implementation swapping in response to lifecycle events.
      */
-    private interface InnerExpirationProcessor : AutoCloseable {
+    private interface InnerExpirationProcessor {
         // scheduled task to query for stuck requests and move them to declined state
         fun cancelOrScheduleProcessingOfExpiredRequests(mgm: HoldingIdentity): Boolean
     }
@@ -105,20 +122,16 @@ class ExpirationProcessorImpl @Activate constructor(
 
     private inner class ActiveImpl : InnerExpirationProcessor {
         override fun cancelOrScheduleProcessingOfExpiredRequests(mgm: HoldingIdentity): Boolean {
-            synchronized(mgms) {
-                if(!mgms.contains(mgm)) mgms.add(mgm)
-            }
+            if(!mgms.contains(mgm)) mgms.add(mgm)
             coordinator.setTimer(
                 key = "DeclineExpiredRegistrationRequests-${mgm.shortHash}",
                 // Add noise to prevent all the MGMs to ask for clean-up at the same time (in case of service re-start)
-                delay = timeframe - (random.nextDouble() * 0.1 * timeframe).toLong()
+                delay = timeframe - Random.nextInt(maxNoise)
             ) {
                 DeclineExpiredRegistrationRequests(mgm, it)
             }
             return true
         }
-
-        override fun close() = Unit
     }
 
     private inner class InactiveImpl : InnerExpirationProcessor {
@@ -126,26 +139,19 @@ class ExpirationProcessorImpl @Activate constructor(
             logger.warn("$SERVICE is currently inactive.")
             return false
         }
-
-        override fun close() = Unit
     }
 
     private fun activate() {
         impl = ActiveImpl()
-        synchronized(mgms) {
-            mgms.forEach {
-                impl.cancelOrScheduleProcessingOfExpiredRequests(it)
-            }
+        mgms.forEach {
+            impl.cancelOrScheduleProcessingOfExpiredRequests(it)
         }
     }
 
     private fun deactivate() {
-        impl.close()
         impl = InactiveImpl()
-        synchronized(mgms) {
-            mgms.forEach {
-                coordinator.cancelTimer("DeclineExpiredRegistrationRequests-${it.shortHash}")
-            }
+        mgms.forEach {
+            coordinator.cancelTimer("DeclineExpiredRegistrationRequests-${it.shortHash}")
         }
     }
 
@@ -177,6 +183,7 @@ class ExpirationProcessorImpl @Activate constructor(
             setOf(
                 FOLLOW_CHANGES_RESOURCE_NAME,
                 WAIT_FOR_CONFIG_RESOURCE_NAME,
+                PUBLISHER_RESOURCE_NAME,
             )
         )
         coordinator.updateStatus(LifecycleStatus.DOWN)
@@ -194,7 +201,7 @@ class ExpirationProcessorImpl @Activate constructor(
                 )
             }
         } else {
-            coordinator.closeManagedResources(setOf(WAIT_FOR_CONFIG_RESOURCE_NAME))
+            coordinator.closeManagedResources(setOf(WAIT_FOR_CONFIG_RESOURCE_NAME, PUBLISHER_RESOURCE_NAME))
             deactivate()
             coordinator.updateStatus(LifecycleStatus.DOWN)
         }
@@ -227,8 +234,7 @@ class ExpirationProcessorImpl @Activate constructor(
                 statuses = listOf(PENDING_MEMBER_VERIFICATION)
             ).getOrThrow()
             val now = clock.instant()
-            val records = mutableListOf<Record<String, RegistrationCommand>>()
-            requests.forEach {
+            val records = requests.mapNotNull {
                 if(now.minusMillis(it.registrationLastModified.toEpochMilli()) > Instant.ofEpochMilli(expirationDate)) {
                     logger.info("Registration request with ID '${it.registrationId}' expired. Declining request.")
                     val id = virtualNodeInfoReadService
@@ -236,17 +242,17 @@ class ExpirationProcessorImpl @Activate constructor(
                         ?.holdingIdentity
                         ?: throw IllegalArgumentException("Cannot find information for " +
                                 "holding identity with ID '${it.holdingIdentityId}'.")
-                    records.add(
-                        Record(
-                            topic = REGISTRATION_COMMAND_TOPIC,
-                            key = "${id.x500Name}-${id.groupId}",
-                            value = RegistrationCommand(
-                                DeclineRegistration(
-                                    "Registration request stuck and expired."
-                                )
-                            ),
+                    Record(
+                        topic = REGISTRATION_COMMAND_TOPIC,
+                        key = "${id.x500Name}-${id.groupId}",
+                        value = RegistrationCommand(
+                            DeclineRegistration(
+                                "Registration request stuck and expired."
+                            )
                         )
                     )
+                } else {
+                    null
                 }
             }
             publishRecords(records)
