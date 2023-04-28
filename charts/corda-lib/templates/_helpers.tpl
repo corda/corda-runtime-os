@@ -493,7 +493,7 @@ metadata:
   annotations:
     "helm.sh/hook-weight": "-1"
     "helm.sh/hook": pre-install
-{{- if $options.cleanup | default false }}   
+{{- if $options.cleanup }}   
     "helm.sh/hook-delete-policy": hook-succeeded
 {{- end }}
   labels:
