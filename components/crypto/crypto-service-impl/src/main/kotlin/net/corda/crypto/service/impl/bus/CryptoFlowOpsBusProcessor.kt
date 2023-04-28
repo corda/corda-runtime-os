@@ -122,7 +122,6 @@ class CryptoFlowOpsBusProcessor(
                     tenantId = context.tenantId,
                     candidateKeys = request.keys
                 )
-
             is SignFlowCommand ->
                 cryptoOpsClient.signProxy(
                     tenantId = context.tenantId,
@@ -131,10 +130,8 @@ class CryptoFlowOpsBusProcessor(
                     data = request.bytes,
                     context = request.context
                 )
-
             is ByIdsFlowQuery ->
                 cryptoOpsClient.lookupKeysByFullIdsProxy(context.tenantId, request.fullKeyIds)
-
             else ->
                 throw IllegalArgumentException("Unknown request type ${request::class.java.name}")
         }
