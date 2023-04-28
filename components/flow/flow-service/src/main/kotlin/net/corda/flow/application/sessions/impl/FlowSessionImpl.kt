@@ -100,7 +100,6 @@ class FlowSessionImpl(
     @Suspendable
     override fun <R : Any> sendAndReceive(receiveType: Class<R>, payload: Any): R {
         verifySessionStatusNotErrorOrClose(sourceSessionId, flowFiberService)
-        requireBoxedType(receiveType)
         val request = FlowIORequest.SendAndReceive(mapOf(getSessionInfo() to serialize(payload)))
         val received = fiber.suspend(request)
         setSessionConfirmed()
@@ -110,7 +109,6 @@ class FlowSessionImpl(
     @Suspendable
     override fun <R : Any> receive(receiveType: Class<R>): R {
         verifySessionStatusNotErrorOrClose(sourceSessionId, flowFiberService)
-        requireBoxedType(receiveType)
         val request = FlowIORequest.Receive(setOf(getSessionInfo()))
         val received = fiber.suspend(request)
         setSessionConfirmed()
@@ -133,13 +131,6 @@ class FlowSessionImpl(
         } else {
             log.debug { "Ignoring close on uninitiated session: $sourceSessionId" }
         }
-    }
-
-    /**
-     * Required to prevent class cast exceptions during AMQP serialization of primitive types.
-     */
-    private fun requireBoxedType(type: Class<*>) {
-        require(!type.isPrimitive) { "Cannot receive primitive type $type" }
     }
 
     private fun serialize(payload: Any): ByteArray {
