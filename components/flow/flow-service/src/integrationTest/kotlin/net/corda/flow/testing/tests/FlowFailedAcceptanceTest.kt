@@ -65,6 +65,7 @@ class FlowFailedAcceptanceTest : FlowServiceTestBase() {
             expectOutputForFlow(FLOW_ID1) {
                 nullStateRecord()
                 flowStatus(FlowStates.FAILED, errorType = FLOW_FAILED, errorMessage = EXCEPTION.message)
+                scheduleFlowMapperCleanupEvents(INITIATED_SESSION_ID_1)
             }
         }
     }
@@ -90,6 +91,7 @@ class FlowFailedAcceptanceTest : FlowServiceTestBase() {
             expectOutputForFlow(FLOW_ID1) {
                 nullStateRecord()
                 flowStatus(FlowStates.FAILED, errorType = FLOW_FAILED, errorMessage = EXCEPTION.message)
+                scheduleFlowMapperCleanupEvents(FlowKey(REQUEST_ID1, ALICE_HOLDING_IDENTITY).toString(), SESSION_ID_1)
             }
         }
     }
