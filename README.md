@@ -27,3 +27,4 @@ The best way to stay up-to-date with Corda is to monitor the following resources
 <h2>Getting Started</h2>
 
 See [github.com/corda/corda-runtime-os/wiki/Quick-Start-Guide](https://github.com/corda/corda-runtime-os/wiki/Quick-Start-Guide)
+
