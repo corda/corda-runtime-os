@@ -210,7 +210,7 @@ class MemberInfoExtension {
          */
         @JvmStatic
         val MemberInfo.sessionKeysHash: Collection<SecureHash>
-            get() = memberProvidedContext.parseSet<SecureHash>(SESSION_KEYS_HASH).let { storedKeys ->
+            get() = memberProvidedContext.parseSet<SecureHash>(SESSION_KEYS).let { storedKeys ->
                 if (storedKeys.isNotEmpty()) {
                     storedKeys
                 } else {
