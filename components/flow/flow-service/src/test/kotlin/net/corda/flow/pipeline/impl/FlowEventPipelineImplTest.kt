@@ -7,8 +7,6 @@ import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.flow.FLOW_ID_1
 import net.corda.flow.fiber.FiberFuture
 import net.corda.flow.fiber.FlowContinuation
-import net.corda.flow.fiber.FlowFiberCache
-import net.corda.flow.fiber.FlowFiberCacheKey
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.fiber.Interruptable
 import net.corda.flow.pipeline.FlowGlobalPostProcessor
@@ -37,6 +35,8 @@ import java.util.concurrent.Future
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
 import java.util.stream.Stream
+import net.corda.flow.fiber.cache.FlowFiberCache
+import net.corda.flow.fiber.cache.FlowFiberCacheKey
 import net.corda.flow.pipeline.events.FlowEventContext
 import net.corda.flow.pipeline.exceptions.FlowMarkedForKillException
 import net.corda.virtualnode.HoldingIdentity

@@ -3,8 +3,6 @@ package net.corda.flow.pipeline.impl
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.Wakeup
 import net.corda.flow.fiber.FlowContinuation
-import net.corda.flow.fiber.FlowFiberCache
-import net.corda.flow.fiber.FlowFiberCacheKey
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.pipeline.events.FlowEventContext
 import net.corda.flow.pipeline.FlowEventPipeline
@@ -23,6 +21,8 @@ import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
+import net.corda.flow.fiber.cache.FlowFiberCache
+import net.corda.flow.fiber.cache.FlowFiberCacheKey
 
 /**
  * [FlowEventPipelineImpl] encapsulates the pipeline steps that are executed when a [FlowEvent] is received by a [FlowEventProcessor].
