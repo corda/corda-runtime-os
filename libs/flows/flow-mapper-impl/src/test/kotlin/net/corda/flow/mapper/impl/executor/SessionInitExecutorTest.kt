@@ -100,4 +100,46 @@ class SessionInitExecutorTest {
         assertThat(state).isNotNull
         assertThat(outboundEvents).isEmpty()
     }
+
+    @Test
+    fun `Subsequent OUTBOUND SessionInit messages get passed through if no ACK received from first message`(){
+        val retrySessionInit = SessionInit("info", "1", emptyKeyValuePairList(), emptyKeyValuePairList(), emptyKeyValuePairList(), null)
+
+        val payload = buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", 1, retrySessionInit)
+
+        val flowMapperState = FlowMapperState()
+        flowMapperState.setStatus(FlowMapperStateType.OPEN)
+
+        val resultOutbound = SessionInitExecutor(
+            "sessionId",
+            payload,
+            retrySessionInit,
+            flowMapperState,
+            sessionEventSerializer,
+            flowConfig
+        ).execute()
+
+        assertThat(resultOutbound.outputEvents).isNotEmpty
+    }
+
+    @Test
+    fun `Duplicate INBOUND SessionInit messages are ignored`() {
+        val retrySessionInit = SessionInit("info", "1", emptyKeyValuePairList(), emptyKeyValuePairList(), emptyKeyValuePairList(), null)
+
+        val payload = buildSessionEvent(MessageDirection. INBOUND, "sessionId", 1, retrySessionInit)
+
+        val flowMapperState = FlowMapperState()
+        flowMapperState.setStatus(FlowMapperStateType.OPEN)
+
+        val resultOutbound = SessionInitExecutor(
+            "sessionId",
+            payload,
+            retrySessionInit,
+            flowMapperState,
+            sessionEventSerializer,
+            flowConfig
+        ).execute()
+
+        assertThat(resultOutbound.outputEvents).isEmpty()
+    }
 }
