@@ -88,7 +88,7 @@ class FlowFinishedAcceptanceTest : FlowServiceTestBase() {
     }
 
     @Test
-    fun `An initiated flow finishing removes the flow's checkpoint publishes a completed flow status and schedules flow cleanup`() {
+    fun `An initiated flow finishing removes the flow's checkpoint publishes a completed flow status and schedules session cleanup`() {
         `when` {
             sessionInitEventReceived(FLOW_ID1, INITIATED_SESSION_ID_1, CPI1, PROTOCOL)
                 .suspendsWith(FlowIORequest.FlowFinished(DONE))
@@ -98,7 +98,7 @@ class FlowFinishedAcceptanceTest : FlowServiceTestBase() {
             expectOutputForFlow(FLOW_ID1) {
                 nullStateRecord()
                 flowStatus(FlowStates.COMPLETED, result = DONE)
-                scheduleFlowMapperCleanupEvents(net.corda.flow.testing.tests.SESSION_ID_1(REQUEST_ID1, CHARLIE_HOLDING_IDENTITY).toString())
+                scheduleFlowMapperCleanupEvents(SESSION_ID_1)
             }
         }
     }
@@ -122,6 +122,7 @@ class FlowFinishedAcceptanceTest : FlowServiceTestBase() {
             expectOutputForFlow(FLOW_ID1) {
                 nullStateRecord()
                 flowStatus(FlowStates.COMPLETED, result = DONE)
+                scheduleFlowMapperCleanupEvents(FlowKey(REQUEST_ID1, ALICE_HOLDING_IDENTITY).toString(), SESSION_ID_1)
             }
         }
     }
