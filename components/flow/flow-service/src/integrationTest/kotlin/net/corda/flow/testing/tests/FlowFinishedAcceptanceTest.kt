@@ -88,7 +88,7 @@ class FlowFinishedAcceptanceTest : FlowServiceTestBase() {
     }
 
     @Test
-    fun `An initiated flow finishing removes the flow's checkpoint publishes a completed flow status and schedules session cleanup`() {
+    fun `An initiated flow finishing removes the flow's checkpoint publishes a completed flow status`() {
         `when` {
             sessionInitEventReceived(FLOW_ID1, INITIATED_SESSION_ID_1, CPI1, PROTOCOL)
                 .suspendsWith(FlowIORequest.FlowFinished(DONE))
@@ -98,7 +98,6 @@ class FlowFinishedAcceptanceTest : FlowServiceTestBase() {
             expectOutputForFlow(FLOW_ID1) {
                 nullStateRecord()
                 flowStatus(FlowStates.COMPLETED, result = DONE)
-                scheduleFlowMapperCleanupEvents(SESSION_ID_1)
             }
         }
     }
