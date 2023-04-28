@@ -362,32 +362,6 @@ class AddNotaryToGroupParametersHandlerTest {
     }
 
     @Test
-    fun `notary protocol must be specified to add new notary service`() {
-        whenever(notaryDetails.serviceProtocol).doReturn(null)
-
-        val ex = assertFailsWith<MembershipPersistenceException> { handler.invoke(requestContext, request) }
-        assertThat(ex.message).contains("protocol must be specified")
-    }
-
-    @Test
-    fun `notary protocol must match that of existing notary service`() {
-        mockExistingNotary()
-        whenever(notaryDetails.serviceProtocol).doReturn("incorrect.plugin.type")
-
-        val ex = assertFailsWith<MembershipPersistenceException> { handler.invoke(requestContext, request) }
-        assertThat(ex.message).contains("protocols do not match")
-    }
-
-    @Test
-    fun `exception is thrown if notary protocol is specified but versions are missing`() {
-        whenever(notaryDetails.serviceProtocol).doReturn(KNOWN_NOTARY_PROTOCOL)
-        whenever(notaryDetails.serviceProtocolVersions).doReturn(emptySet())
-
-        val ex = assertFailsWith<MembershipPersistenceException> { handler.invoke(requestContext, request) }
-        assertThat(ex.message).contains("protocol versions are missing")
-    }
-
-    @Test
     fun `exception is thrown when there is no group parameters data in the database`() {
         whenever(previousEntry.resultList).doReturn(emptyList())
 

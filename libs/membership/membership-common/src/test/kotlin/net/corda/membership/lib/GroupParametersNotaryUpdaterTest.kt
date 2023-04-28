@@ -22,6 +22,8 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import java.security.PublicKey
 import java.time.Instant
+import net.corda.membership.lib.exceptions.MembershipPersistenceException
+import org.junit.jupiter.api.assertThrows
 
 class GroupParametersNotaryUpdaterTest {
     private companion object {
@@ -73,6 +75,26 @@ class GroupParametersNotaryUpdaterTest {
     }
 
     @Test
+    fun `notary protocol must be specified to add new notary service`() {
+        val publicKey = mock<PublicKey>()
+        val notaryKey = MemberNotaryKey(publicKey, mock(), mock())
+        val notaryToAdd = MemberNotaryDetails(notaryAx500Name, null, setOf(1, 3), listOf(notaryKey))
+
+        val ex = assertThrows<MembershipPersistenceException> { notaryUpdater.addNewNotaryService(originalGroupParameters, notaryToAdd) }
+        assertThat(ex.message).contains("protocol must be specified")
+    }
+
+    @Test
+    fun `exception is thrown when adding new notary if notary protocol is specified but versions are missing`() {
+        val publicKey = mock<PublicKey>()
+        val notaryKey = MemberNotaryKey(publicKey, mock(), mock())
+        val notaryToAdd = MemberNotaryDetails(notaryAx500Name, NOTARY_PROTOCOL_A, emptySet(), listOf(notaryKey))
+
+        val ex = assertThrows<MembershipPersistenceException> { notaryUpdater.addNewNotaryService(originalGroupParameters, notaryToAdd) }
+        assertThat(ex.message).contains("protocol versions are missing")
+    }
+
+    @Test
     fun `can add a notary to an existing notary service`() {
         val currentGroupParameters = originalGroupParameters + mapOf(
             String.format(NOTARY_SERVICE_KEYS_KEY, 5, 0) to NOTARY_KEY_A,
@@ -106,7 +128,6 @@ class GroupParametersNotaryUpdaterTest {
         )
     }
 
-    //Todo test exceptions.
     @Test
     fun `adding a notary to existing notary service sets protocol versions to intersection of versions of individual notary vnodes`() {
         val currentGroupParameters = originalGroupParameters + mapOf(
@@ -139,6 +160,71 @@ class GroupParametersNotaryUpdaterTest {
             KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS_KEY, 5, 0), "1"),
             KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS_KEY, 5, 1), "3"),
         )
+    }
+
+    @Test
+    fun `notary protocol must match that of existing notary service`() {
+        val currentGroupParameters = originalGroupParameters + mapOf(
+            String.format(NOTARY_SERVICE_KEYS_KEY, 5, 0) to NOTARY_KEY_A,
+            String.format(NOTARY_SERVICE_NAME_KEY, 5) to NOTARY_SERVICE_A,
+            String.format(NOTARY_SERVICE_PROTOCOL_KEY, 5) to NOTARY_PROTOCOL_A,
+            String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS_KEY, 5, 0) to "1",
+            String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS_KEY, 5, 1) to "3",
+        )
+        val publicKey = mock<PublicKey>()
+        val notaryKey = MemberNotaryKey(publicKey, mock(), mock())
+        val notaryDetails = MemberNotaryDetails(notaryAx500Name, "incorrect.plugin.type", emptySet(), listOf(notaryKey))
+
+        val ex = assertThrows<MembershipPersistenceException> { notaryUpdater.updateExistingNotaryService(
+            currentGroupParameters,
+            notaryDetails,
+            5,
+            setOf(1, 3)
+        )}
+        assertThat(ex.message).contains("protocols do not match")
+    }
+
+    @Test
+    fun `exception is thrown when updating notary service if notary protocol is specified but versions are missing`() {
+        val currentGroupParameters = originalGroupParameters + mapOf(
+            String.format(NOTARY_SERVICE_KEYS_KEY, 5, 0) to NOTARY_KEY_A,
+            String.format(NOTARY_SERVICE_NAME_KEY, 5) to NOTARY_SERVICE_A,
+            String.format(NOTARY_SERVICE_PROTOCOL_KEY, 5) to NOTARY_PROTOCOL_A,
+            String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS_KEY, 5, 0) to "1",
+            String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS_KEY, 5, 1) to "3",
+        )
+        val publicKey = mock<PublicKey>()
+        val notaryKey = MemberNotaryKey(publicKey, mock(), mock())
+        val notaryDetails = MemberNotaryDetails(notaryAx500Name, NOTARY_PROTOCOL_A, emptySet(), listOf(notaryKey))
+
+        val ex = assertThrows<MembershipPersistenceException> { notaryUpdater.updateExistingNotaryService(
+            currentGroupParameters,
+            notaryDetails,
+            5,
+            setOf(1, 3)
+        )}
+        assertThat(ex.message).contains("versions are missing")
+    }
+
+    @Test
+    fun `if no keys are in the notary details service then the updated group parameters are null`() {
+        val currentGroupParameters = originalGroupParameters + mapOf(
+            String.format(NOTARY_SERVICE_KEYS_KEY, 5, 0) to NOTARY_KEY_A,
+            String.format(NOTARY_SERVICE_NAME_KEY, 5) to NOTARY_SERVICE_A,
+            String.format(NOTARY_SERVICE_PROTOCOL_KEY, 5) to NOTARY_PROTOCOL_A,
+            String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS_KEY, 5, 0) to "1",
+            String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS_KEY, 5, 1) to "3",
+        )
+        val notaryDetails = MemberNotaryDetails(notaryAx500Name, NOTARY_PROTOCOL_A, setOf(1, 2, 3), emptyList())
+
+        val (epoch, updatedGroupParameters) = notaryUpdater.updateExistingNotaryService(
+            currentGroupParameters,
+            notaryDetails,
+            5,
+            setOf(1, 3)
+        )
+        assertThat(epoch).isNull()
+        assertThat(updatedGroupParameters).isNull()
     }
 
     @Test
@@ -249,5 +335,53 @@ class GroupParametersNotaryUpdaterTest {
             KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS_KEY, 5, 1), "2"),
             KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS_KEY, 5, 2), "3"),
         )
+    }
+
+    @Test
+    fun `cannot remove a notary from an existing notary service if protocols don't match`() {
+        val currentGroupParameters = originalGroupParameters + mapOf(
+            "key" to "value",
+            String.format(NOTARY_SERVICE_NAME_KEY, 5) to NOTARY_SERVICE_A,
+            String.format(NOTARY_SERVICE_PROTOCOL_KEY, 5) to NOTARY_PROTOCOL_A
+        )
+        val notaryToRemovePublicKey = mock<PublicKey>()
+        val notaryToRemoveKey = MemberNotaryKey(notaryToRemovePublicKey, mock(), mock())
+        val otherPublicKey = mock<PublicKey>()
+        val notaryKey = MemberNotaryKey(otherPublicKey, mock(), mock())
+        val notaryToRemove = MemberNotaryDetails(notaryAx500Name, NOTARY_PROTOCOL_B, setOf(1, 3), listOf(notaryToRemoveKey))
+        val otherNotary1 = MemberNotaryDetails(notaryBx500Name, NOTARY_PROTOCOL_A, setOf(1), listOf(notaryKey))
+        val otherNotary2 = MemberNotaryDetails(notaryCx500Name, NOTARY_PROTOCOL_A, setOf(1), listOf(notaryKey))
+
+        val ex = assertThrows<MembershipPersistenceException> { notaryUpdater.removeNotaryFromExistingNotaryService(
+            currentGroupParameters,
+            notaryToRemove,
+            5,
+            listOf(otherNotary1, otherNotary2),
+        )}
+        assertThat(ex.message).contains("protocols do not match")
+    }
+
+    @Test
+    fun `cannot remove a notary from an existing notary service if versions are missing`() {
+        val currentGroupParameters = originalGroupParameters + mapOf(
+            "key" to "value",
+            String.format(NOTARY_SERVICE_NAME_KEY, 5) to NOTARY_SERVICE_A,
+            String.format(NOTARY_SERVICE_PROTOCOL_KEY, 5) to NOTARY_PROTOCOL_A
+        )
+        val notaryToRemovePublicKey = mock<PublicKey>()
+        val notaryToRemoveKey = MemberNotaryKey(notaryToRemovePublicKey, mock(), mock())
+        val otherPublicKey = mock<PublicKey>()
+        val notaryKey = MemberNotaryKey(otherPublicKey, mock(), mock())
+        val notaryToRemove = MemberNotaryDetails(notaryAx500Name, NOTARY_PROTOCOL_A, emptySet(), listOf(notaryToRemoveKey))
+        val otherNotary1 = MemberNotaryDetails(notaryBx500Name, NOTARY_PROTOCOL_A, setOf(1), listOf(notaryKey))
+        val otherNotary2 = MemberNotaryDetails(notaryCx500Name, NOTARY_PROTOCOL_A, setOf(1), listOf(notaryKey))
+
+        val ex = assertThrows<MembershipPersistenceException> { notaryUpdater.removeNotaryFromExistingNotaryService(
+            currentGroupParameters,
+            notaryToRemove,
+            5,
+            listOf(otherNotary1, otherNotary2),
+        )}
+        assertThat(ex.message).contains("versions are missing.")
     }
 }
