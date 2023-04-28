@@ -72,7 +72,7 @@ class CryptoFlowOpsBusProcessor(
 
             try {
                 if (Instant.now() >= expireAt) {
-                    logger.warn("Event ${request.request::class.java} for tenant ${request.context.tenantId} " +
+                    logger.warn("Event ${request.request::class.java.name} for tenant ${request.context.tenantId} " +
                             "is no longer valid, expired at $expireAt")
                     externalEventResponseFactory.transientError(
                         request.flowExternalEventContext,
@@ -84,7 +84,7 @@ class CryptoFlowOpsBusProcessor(
                     }
 
                     if (Instant.now() >= expireAt) {
-                        logger.warn("Event ${request.request::class.java} for tenant ${request.context.tenantId} " +
+                        logger.warn("Event ${request.request::class.java.name} for tenant ${request.context.tenantId} " +
                                 "is no longer valid, expired at $expireAt")
                         externalEventResponseFactory.transientError(
                             request.flowExternalEventContext,
@@ -99,7 +99,7 @@ class CryptoFlowOpsBusProcessor(
                 }
             } catch (throwable: Throwable) {
                 logger.error(
-                    "Failed to handle ${request.request::class.java} for tenant ${request.context.tenantId}",
+                    "Failed to handle ${request.request::class.java.name} for tenant ${request.context.tenantId}",
                     throwable
                 )
                 externalEventResponseFactory.platformError(request.flowExternalEventContext, throwable)
