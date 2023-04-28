@@ -4,11 +4,11 @@ zipdir=$(dirname $0)
 
 cliHome=~/.corda/cli/
 
+echo "Removing previous cli version if exists"
+rm -rf $cliHome
+
 echo "Creating corda-cli dir at cliHome"
 mkdir -p $cliHome
-
-echo "Removing previous cli version if exists"
-rm $cliHome/plugins/*.jar
 
 echo "Copying files and plugins"
 cp -R $zipdir/* $cliHome

@@ -9,7 +9,7 @@ class TestUtxoStateJsonFactory : ContractStateVaultJsonFactory<TestUtxoState> {
     override fun create(state: TestUtxoState, jsonMarshallingService: JsonMarshallingService): String {
         return """
             {
-                "whatever": "dummy"
+                "testField": "${state.testField}"
             }
         """.trimIndent()
     }

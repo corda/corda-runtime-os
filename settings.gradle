@@ -1,6 +1,7 @@
 pluginManagement {
     repositories {
         mavenLocal()
+        mavenCentral()
         def cordaUseCache = System.getenv("CORDA_USE_CACHE")
         if (cordaUseCache != null) {
             maven {

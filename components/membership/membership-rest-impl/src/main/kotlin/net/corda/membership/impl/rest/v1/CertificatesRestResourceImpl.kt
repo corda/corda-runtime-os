@@ -61,6 +61,8 @@ import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
 import java.io.ByteArrayOutputStream
 import java.io.StringWriter
+import java.net.URI
+import java.net.URISyntaxException
 import java.security.PublicKey
 import java.security.cert.CertificateFactory
 import java.security.cert.X509Certificate
@@ -144,10 +146,16 @@ class CertificatesRestResourceImpl @Activate constructor(
                 val altName = GeneralName(iPAddress, name)
                 val subjectAltName = GeneralNames(altName)
                 extensionsGenerator.addExtension(subjectAlternativeName, true, subjectAltName)
-            } else {
+            } else if (validateHostname(name)){
                 val altName = GeneralName(dNSName, name)
                 val subjectAltName = GeneralNames(altName)
                 extensionsGenerator.addExtension(subjectAlternativeName, true, subjectAltName)
+            } else {
+                val message = "$name is not a valid domain name or IP address"
+                throw InvalidInputDataException(
+                    message = message,
+                    details = mapOf("subjectAlternativeNames" to message),
+                )
             }
         }
         val signatureSpec = contextMap?.get(SIGNATURE_SPEC)
@@ -443,6 +451,15 @@ class CertificatesRestResourceImpl @Activate constructor(
                 "Provided tenantId ($tenantId) was not valid. " +
                         "It needs to be either a cluster tenant ($P2P or $REST) or a valid holding identity ID."
             )
+        }
+    }
+
+    private fun validateHostname(hostname: String): Boolean {
+        return try {
+            // Using URI parsing instead of DomainValidator because DomainValidator will fail for k8s type host names
+            URI("https://$hostname:4994/nop").host == hostname
+        } catch (e: URISyntaxException) {
+            false
         }
     }
 }
