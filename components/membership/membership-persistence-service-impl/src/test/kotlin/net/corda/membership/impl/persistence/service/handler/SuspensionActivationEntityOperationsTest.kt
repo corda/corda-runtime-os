@@ -4,7 +4,6 @@ import net.corda.data.CordaAvroDeserializer
 import net.corda.data.CordaAvroSerializer
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
-import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.membership.datamodel.MemberInfoEntity
 import net.corda.membership.datamodel.MemberInfoEntityPrimaryKey
@@ -25,6 +24,7 @@ import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
@@ -33,6 +33,7 @@ import java.util.UUID
 import javax.persistence.EntityManager
 import javax.persistence.EntityTransaction
 import javax.persistence.LockModeType
+import javax.persistence.PessimisticLockException
 import net.corda.data.identity.HoldingIdentity as AvroHoldingIdentity
 
 class SuspensionActivationEntityOperationsTest {
@@ -70,19 +71,6 @@ class SuspensionActivationEntityOperationsTest {
         UUID(0, 1).toString(),
         holdingIdentity.toAvro()
     )
-
-    private fun invokeTestFunctionWithError(
-        testFunction: () -> PersistentMemberInfo,
-        errorMsg: String,
-        type: Class<*> = MembershipPersistenceException::class.java
-    ) {
-        assertThrows<Exception> {
-            testFunction.invoke()
-        }.apply {
-            assertThat(this).isInstanceOf(type)
-            assertThat(message).contains(errorMsg)
-        }
-    }
 
     @Suppress("LongParameterList")
     private fun mockMemberInfoEntity(
@@ -270,6 +258,33 @@ class SuspensionActivationEntityOperationsTest {
             handler.updateStatus(em, knownX500Name.toString(), mock { on {groupId} doReturn knownGroupId }, mockEntity, mock(), "")
         }.apply {
             assertThat(this.message).contains("Failed to deserialize")
+        }
+    }
+
+    @Test
+    fun `updateStatus throws InvalidEntityUpdateException if PessimisticLockException is thrown`() {
+        val mgmHoldingIdentity = AvroHoldingIdentity("MGM", knownGroupId)
+        val entity = mock<MemberInfoEntity> {
+            on { serialNumber } doReturn 1
+            on { memberSignatureKey } doReturn signatureKey
+            on { memberContext } doReturn byteArrayOf()
+            on { memberSignatureContent } doReturn signatureContent
+            on { memberSignatureSpec } doReturn SIGNATURE_SPEC
+        }
+        val mgmContext = KeyValuePairList(
+            emptyList(),
+        )
+        whenever(em.merge(any<MemberInfoEntity>())).doThrow(PessimisticLockException(""))
+
+        assertThrows<InvalidEntityUpdateException> {
+            handler.updateStatus(
+                em,
+                knownX500Name.toString(),
+                mgmHoldingIdentity,
+                entity,
+                mgmContext,
+                "newStatus",
+            )
         }
     }
 }

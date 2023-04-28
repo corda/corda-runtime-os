@@ -16,6 +16,7 @@ import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.utilities.time.Clock
 import javax.persistence.EntityManager
 import javax.persistence.LockModeType
+import javax.persistence.PessimisticLockException
 
 internal class SuspensionActivationEntityOperations(
     private val clock: Clock,
@@ -47,7 +48,7 @@ internal class SuspensionActivationEntityOperations(
         return member
     }
 
-    @Suppress("LongParameterList")
+    @Suppress("LongParameterList", "ThrowsCount")
     fun updateStatus(
         em: EntityManager,
         memberName: String,
@@ -69,21 +70,27 @@ internal class SuspensionActivationEntityOperations(
         val serializedMgmContext = keyValuePairListSerializer.serialize(mgmContext)
             ?: throw MembershipPersistenceException("Failed to serialize the MGM-provided context.")
 
-        em.merge(
-            MemberInfoEntity(
-                mgmHoldingIdentity.groupId,
-                memberName,
-                false,
-                newStatus,
-                now,
-                currentMemberInfo.memberContext,
-                currentMemberInfo.memberSignatureKey,
-                currentMemberInfo.memberSignatureContent,
-                currentMemberInfo.memberSignatureSpec,
-                serializedMgmContext,
-                updatedSerial
+        try {
+            em.merge(
+                MemberInfoEntity(
+                    mgmHoldingIdentity.groupId,
+                    memberName,
+                    false,
+                    newStatus,
+                    now,
+                    currentMemberInfo.memberContext,
+                    currentMemberInfo.memberSignatureKey,
+                    currentMemberInfo.memberSignatureContent,
+                    currentMemberInfo.memberSignatureSpec,
+                    serializedMgmContext,
+                    updatedSerial,
+                ),
             )
-        )
+        } catch (e: PessimisticLockException) {
+            throw InvalidEntityUpdateException(
+                "Could not update member '$memberName' to serial number: $updatedSerial: ${e.message}",
+            )
+        }
 
         val memberContext = keyValuePairListDeserializer.deserialize(currentMemberInfo.memberContext)
             ?: throw MembershipPersistenceException("Failed to deserialize the member provided context.")
