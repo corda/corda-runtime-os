@@ -11,7 +11,13 @@ dependencies {
     compileOnly "org.osgi:osgi.annotation"
     implementation "org.slf4j:slf4j-api"
     compileOnly "org.osgi:org.osgi.service.component.annotations"
+
     implementation "org.liquibase:liquibase-core:$liquibaseVersion"
+    constraints {
+        implementation("org.yaml:snakeyaml:$snakeyamlVersion") {
+            because "required until liquibase-core updates it's internal version of snakeYaml, currently using 1.33 which has CVE-2022-1471"
+        }
+    }
 
     api project(":libs:db:db-admin")
 
