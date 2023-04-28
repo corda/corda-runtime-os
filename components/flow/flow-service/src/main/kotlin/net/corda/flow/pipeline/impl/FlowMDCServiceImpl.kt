@@ -10,6 +10,9 @@ import net.corda.data.flow.state.external.ExternalEventStateType
 import net.corda.flow.pipeline.FlowMDCService
 import net.corda.utilities.MDC_CLIENT_ID
 import net.corda.utilities.MDC_EXTERNAL_EVENT_ID
+import net.corda.utilities.MDC_FLOW_ID
+import net.corda.utilities.MDC_SESSION_EVENT_ID
+import net.corda.utilities.MDC_VNODE_ID
 import net.corda.virtualnode.toCorda
 import org.osgi.service.component.annotations.Component
 import org.slf4j.LoggerFactory
@@ -18,9 +21,6 @@ import org.slf4j.LoggerFactory
 class FlowMDCServiceImpl : FlowMDCService {
     
     companion object {
-        const val MDC_FLOW_ID = "flow.id"
-        const val MDC_VNODE_ID = "vnode.id"
-        const val MDC_SESSION_EVENT_ID = "session.event.id"
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
     

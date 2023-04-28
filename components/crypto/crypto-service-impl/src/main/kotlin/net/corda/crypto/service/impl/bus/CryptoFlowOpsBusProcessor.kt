@@ -22,7 +22,8 @@ import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.utilities.MDC_CLIENT_ID
 import net.corda.utilities.MDC_EXTERNAL_EVENT_ID
-import net.corda.utilities.debug
+import net.corda.utilities.MDC_FLOW_ID
+import net.corda.utilities.trace
 import net.corda.utilities.withMDC
 import org.slf4j.LoggerFactory
 import java.time.Instant
@@ -46,8 +47,10 @@ class CryptoFlowOpsBusProcessor(
         BackoffStrategy.createBackoff(config.maxAttempts, config.waitBetweenMills)
     )
 
-    override fun onNext(events: List<Record<String, FlowOpsRequest>>): List<Record<*, *>> =
-        events.mapNotNull { onNext(it) }
+    override fun onNext(events: List<Record<String, FlowOpsRequest>>): List<Record<*, *>> {
+        logger.trace { "onNext processing messages ${events.joinToString(",") { it.key }}" }
+        return events.mapNotNull { onNext(it) }
+    }
 
     private fun onNext(event: Record<String, FlowOpsRequest>): Record<*, *>? {
         val request = event.value
@@ -56,65 +59,50 @@ class CryptoFlowOpsBusProcessor(
             return null // cannot send any error back as have no idea where to send to
         }
 
-        val expireAt = getRequestExpireAt(request)
-        val flowId = request.flowExternalEventContext.flowId
-        val requestId = request.flowExternalEventContext.requestId
-        val clientRequestId = request.flowExternalEventContext.contextProperties.toMap()[MDC_CLIENT_ID] ?: ""
+        logger.info("Handling ${request.request::class.java.name} for tenant ${request.context.tenantId}")
 
+        val expireAt = getRequestExpireAt(request)
+        val clientRequestId = request.flowExternalEventContext.contextProperties.toMap()[MDC_CLIENT_ID] ?: ""
         val mdc = mapOf(
+            MDC_FLOW_ID to request.flowExternalEventContext.flowId,
             MDC_CLIENT_ID to clientRequestId,
-            MDC_EXTERNAL_EVENT_ID to requestId
+            MDC_EXTERNAL_EVENT_ID to request.flowExternalEventContext.requestId
         )
 
         return withMDC(mdc) {
-            if (Instant.now() >= expireAt) {
-                logger.warn(
-                    "Event ${request.request::class.java} for tenant ${request.context.tenantId} is no longer valid, " +
-                            "expired at $expireAt { requestId: $requestId, key: $flowId }"
-                )
-
-                return@withMDC externalEventResponseFactory.transientError(
-                    request.flowExternalEventContext,
-                    ExceptionEnvelope("Expired", "Expired at $expireAt")
-                )
-            }
-
             try {
-                logger.info(
-                    "Handling ${request.request::class.java.name} for tenant ${request.context.tenantId} " +
-                            "{ requestId: $requestId, key: $flowId }"
-                )
-                val response = executor.executeWithRetry {
-                    handleRequest(request.request, request.context)
-                }
                 if (Instant.now() >= expireAt) {
-                    logger.error(
-                        "Event ${request.request::class.java} for tenant ${request.context.tenantId} is no longer valid, " +
-                                "expired at $expireAt { requestId: $requestId, key: $flowId }"
-                    )
-
-                    return@withMDC externalEventResponseFactory.transientError(
+                    logger.warn("Event ${request.request::class.java} for tenant ${request.context.tenantId} " +
+                            "is no longer valid, expired at $expireAt")
+                    externalEventResponseFactory.transientError(
                         request.flowExternalEventContext,
                         ExceptionEnvelope("Expired", "Expired at $expireAt")
                     )
-                }
-                val result = externalEventResponseFactory.success(
-                    request.flowExternalEventContext,
-                    FlowOpsResponse(createResponseContext(request), response, null)
-                )
-                logger.debug {
-                    "Handled ${request.request::class.java.name} for tenant ${request.context.tenantId} " +
-                            "{ requestId: $requestId, key: $flowId }"
-                }
-                result
-            } catch (t: Throwable) {
-                logger.error(
-                    "Failed to handle ${request.request::class.java} for tenant ${request.context.tenantId} " +
-                            "{ requestId: $requestId, key: $flowId }",
-                    t
-                )
+                } else {
+                    val response = executor.executeWithRetry {
+                        handleRequest(request.request, request.context)
+                    }
 
-                return@withMDC externalEventResponseFactory.platformError(request.flowExternalEventContext, t)
+                    if (Instant.now() >= expireAt) {
+                        logger.warn("Event ${request.request::class.java} for tenant ${request.context.tenantId} " +
+                                "is no longer valid, expired at $expireAt")
+                        externalEventResponseFactory.transientError(
+                            request.flowExternalEventContext,
+                            ExceptionEnvelope("Expired", "Expired at $expireAt")
+                        )
+                    } else {
+                        externalEventResponseFactory.success(
+                            request.flowExternalEventContext,
+                            FlowOpsResponse(createResponseContext(request), response, null)
+                        )
+                    }
+                }
+            } catch (throwable: Throwable) {
+                logger.error(
+                    "Failed to handle ${request.request::class.java} for tenant ${request.context.tenantId}",
+                    throwable
+                )
+                externalEventResponseFactory.platformError(request.flowExternalEventContext, throwable)
             }
         }
     }

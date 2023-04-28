@@ -19,11 +19,11 @@ import net.corda.test.flow.util.buildSessionEvent
 import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
-import net.corda.flow.pipeline.impl.FlowMDCServiceImpl.Companion.MDC_FLOW_ID
-import net.corda.flow.pipeline.impl.FlowMDCServiceImpl.Companion.MDC_VNODE_ID
-import net.corda.flow.pipeline.impl.FlowMDCServiceImpl.Companion.MDC_SESSION_EVENT_ID
 import net.corda.utilities.MDC_CLIENT_ID
 import net.corda.utilities.MDC_EXTERNAL_EVENT_ID
+import net.corda.utilities.MDC_FLOW_ID
+import net.corda.utilities.MDC_SESSION_EVENT_ID
+import net.corda.utilities.MDC_VNODE_ID
 
 class FlowMDCServiceImplTest {
     private val flowMDCService = FlowMDCServiceImpl()
