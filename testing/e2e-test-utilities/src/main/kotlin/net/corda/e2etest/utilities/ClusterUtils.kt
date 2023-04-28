@@ -13,11 +13,11 @@ import java.time.Duration
  * the resulting CPI to the system if it doesn't already exist.
  */
 fun ClusterInfo.conditionallyUploadCordaPackage(
-    name: String,
-    cpb: String,
+    cpiName: String,
+    cpbResourceName: String?,
     groupPolicy: String
-) = conditionallyUploadCordaPackage(name) {
-    cpiUpload(cpb, groupPolicy, name)
+) = conditionallyUploadCordaPackage(cpiName) {
+    cpiUpload(cpbResourceName, groupPolicy, cpiName)
 }
 
 fun ClusterInfo.conditionallyUploadCpiSigningCertificate() = cluster {
@@ -44,12 +44,12 @@ fun conditionallyUploadCordaPackage(
 ) = DEFAULT_CLUSTER.conditionallyUploadCordaPackage(name, cpb, groupId, staticMemberNames)
 
 fun ClusterInfo.conditionallyUploadCordaPackage(
-    name: String,
-    cpb: String,
+    cpiName: String,
+    cpbResourceName: String,
     groupId: String,
     staticMemberNames: List<String>
-) = conditionallyUploadCordaPackage(name) {
-    cpiUpload(cpb, groupId, staticMemberNames, name)
+) = conditionallyUploadCordaPackage(cpiName) {
+    cpiUpload(cpbResourceName, groupId, staticMemberNames, cpiName)
 }
 
 fun ClusterInfo.conditionallyUploadCordaPackage(
