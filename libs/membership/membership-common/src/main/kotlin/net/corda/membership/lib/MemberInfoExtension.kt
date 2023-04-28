@@ -28,7 +28,6 @@ class MemberInfoExtension {
         const val LEDGER_KEYS_KEY = "corda.ledger.keys.%s.pem"
 
         /** Key name for ledger key hashes property. */
-        const val LEDGER_KEY_HASHES = "corda.ledger.keys"
         const val LEDGER_KEY_HASHES_KEY = "corda.ledger.keys.%s.hash"
 
         /** Key name for ledger key signature spec property. */
@@ -194,7 +193,7 @@ class MemberInfoExtension {
         /** Collection of ledger key hashes for member's node. */
         @JvmStatic
         val MemberInfo.ledgerKeyHashes: Collection<SecureHash>
-            get() = memberProvidedContext.parseSet(LEDGER_KEY_HASHES)
+            get() = memberProvidedContext.parseSet(LEDGER_KEYS)
 
         /**
          * The member session initiation keys
@@ -209,7 +208,7 @@ class MemberInfoExtension {
          * It is preferable to always store this in the member context to avoid the repeated calculation.
          */
         @JvmStatic
-        val MemberInfo.sessionKeysHash: Collection<SecureHash>
+        val MemberInfo.sessionKeyHashes: Collection<SecureHash>
             get() = memberProvidedContext.parseSet<SecureHash>(SESSION_KEYS).let { storedKeys ->
                 if (storedKeys.isNotEmpty()) {
                     storedKeys
