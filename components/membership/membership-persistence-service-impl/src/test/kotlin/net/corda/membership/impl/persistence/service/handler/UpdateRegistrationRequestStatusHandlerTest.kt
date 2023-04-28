@@ -12,8 +12,8 @@ import net.corda.db.schema.CordaDb
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.membership.datamodel.RegistrationRequestEntity
+import net.corda.membership.impl.persistence.service.RecoverableException
 import net.corda.membership.lib.MemberInfoFactory
-import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.test.util.TestRandom
 import net.corda.test.util.time.TestClock
@@ -125,7 +125,7 @@ class UpdateRegistrationRequestStatusHandlerTest {
         ).doReturn(null)
         val context = MembershipRequestContext(clock.instant(), "ID", ourHoldingIdentity.toAvro())
         val statusUpdate = UpdateRegistrationRequestStatus(registrationId, RegistrationStatus.PENDING_AUTO_APPROVAL, REASON)
-        assertThrows<MembershipPersistenceException> {
+        assertThrows<RecoverableException> {
             updateRegistrationRequestStatusHandler.invoke(context, statusUpdate)
         }
     }
