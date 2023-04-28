@@ -1,6 +1,13 @@
 package net.corda.flow.application.persistence
 
-import net.corda.flow.application.persistence.external.events.*
+import net.corda.flow.application.persistence.external.events.FindExternalEventFactory
+import net.corda.flow.application.persistence.external.events.FindParameters
+import net.corda.flow.application.persistence.external.events.MergeExternalEventFactory
+import net.corda.flow.application.persistence.external.events.MergeParameters
+import net.corda.flow.application.persistence.external.events.PersistExternalEventFactory
+import net.corda.flow.application.persistence.external.events.PersistParameters
+import net.corda.flow.application.persistence.external.events.RemoveExternalEventFactory
+import net.corda.flow.application.persistence.external.events.RemoveParameters
 import net.corda.flow.application.persistence.query.PagedQueryFactory
 import net.corda.flow.external.events.executor.ExternalEventExecutor
 import net.corda.sandbox.type.UsedByFlow
