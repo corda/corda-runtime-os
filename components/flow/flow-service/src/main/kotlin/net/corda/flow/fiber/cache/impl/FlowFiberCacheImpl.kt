@@ -1,4 +1,4 @@
-package net.corda.flow.fiber
+package net.corda.flow.fiber.cache.impl
 
 import com.github.benmanes.caffeine.cache.Cache
 import com.github.benmanes.caffeine.cache.Caffeine
@@ -6,6 +6,10 @@ import net.corda.cache.caffeine.CacheFactoryImpl
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import java.time.Duration
+import net.corda.flow.fiber.FlowFiberImpl
+import net.corda.flow.fiber.cache.FlowFiberCache
+import net.corda.flow.fiber.cache.FlowFiberCacheKey
+import net.corda.virtualnode.HoldingIdentity
 
 @Suppress("unused")
 @Component(service = [FlowFiberCache::class])
@@ -31,5 +35,11 @@ class FlowFiberCacheImpl @Activate constructor() : FlowFiberCache {
 
     override fun remove(key: FlowFiberCacheKey) {
         cache.invalidate(key)
+    }
+
+    override fun remove(holdingIdentities: Set<HoldingIdentity>) {
+        val keysToInvalidate = cache.asMap().keys.filter { holdingIdentities.contains(it.holdingIdentity) }
+        cache.invalidateAll(keysToInvalidate)
+        cache.cleanUp()
     }
 }

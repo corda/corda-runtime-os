@@ -9,8 +9,6 @@ import net.corda.flow.fiber.FlowFiberExecutionContext
 import net.corda.flow.fiber.FlowFiberImpl
 import net.corda.flow.fiber.FlowLogicAndArgs
 import net.corda.flow.fiber.FiberExceptionConstants
-import net.corda.flow.fiber.FlowFiberCache
-import net.corda.flow.fiber.FlowFiberCacheKey
 import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.metrics.CordaMetrics
 import org.osgi.service.component.annotations.Activate
@@ -20,6 +18,8 @@ import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
 import java.util.UUID
 import java.util.concurrent.ExecutorService
+import net.corda.flow.fiber.cache.FlowFiberCache
+import net.corda.flow.fiber.cache.FlowFiberCacheKey
 
 @Component
 @Suppress("Unused")
