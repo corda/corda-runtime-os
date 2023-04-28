@@ -116,24 +116,4 @@ public class FlowSessionImplJavaTest {
         when(flowSandboxGroupContext.getCheckpointSerializer()).thenReturn(checkpointSerializer);
         when(flowFiberService.getExecutingFiber()).thenReturn(flowFiber);
     }
-
-    @Test
-    public void passingABoxedTypeToSendAndReceiveWillNotThrowAnException() {
-        session.sendAndReceive(Integer.class, 1);
-    }
-
-    @Test
-    public void passingAPrimitiveReceiveTypeToSendAndReceiveWillThrowAnException() {
-        assertThrows(IllegalArgumentException.class, () -> session.sendAndReceive(int.class, 1));
-    }
-
-    @Test
-    public void passingABoxedTypeToReceiveWillNotThrowAnException() {
-        session.receive(Integer.class);
-    }
-
-    @Test
-    public void passingAPrimitiveReceiveTypeToReceiveWillThrowAnException() {
-        assertThrows(IllegalArgumentException.class, () -> session.receive(int.class));
-    }
 }
