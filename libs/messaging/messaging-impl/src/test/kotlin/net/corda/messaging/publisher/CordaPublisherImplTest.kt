@@ -12,9 +12,11 @@ import net.corda.messaging.api.exception.CordaMessageAPIProducerRequiresReset
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.config.ResolvedPublisherConfig
 import net.corda.messaging.utils.toCordaProducerRecord
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.function.Executable
 import org.mockito.ArgumentCaptor
 import org.mockito.Captor
@@ -234,10 +236,11 @@ class CordaPublisherImplTest {
     @Test
     fun testBatchPublish() {
         val publisher = createPublisher(true)
-        publisher.batchPublish(listOf(record))
+        val future = publisher.batchPublish(listOf(record))
         verify(producer).sendRecords(any())
         verify(producer).beginTransaction()
         verify(producer).commitTransaction()
+        assertEquals(Unit, future.get())
     }
 
     @Test
@@ -252,17 +255,50 @@ class CordaPublisherImplTest {
     fun testBatchPublishWithMultipleThreads() {
         val publisher = createPublisher(true)
         val numThreads = 100
-        val barrier = CyclicBarrier(numThreads + 1)
-        val threads = (0..numThreads).map {
+        val futures = (0..numThreads).map { CompletableFuture<Unit>() }
+        val threads = futures.map {
             Thread {
-                barrier.await()
-                publisher.batchPublish(listOf(record, record, record))
-                barrier.await()
+                publisher.batchPublish(listOf(record, record, record)).whenComplete { _, throwable ->
+                    if (throwable != null) {
+                        it.completeExceptionally(throwable)
+                    } else {
+                        it.complete(Unit)
+                    }
+                }
             }
         }
         threads.forEach { it.start() }
-        barrier.await()
-        barrier.await()
+        futures.forEach {
+            assertEquals(Unit, it.get())
+        }
+        verify(producer, atMost(numThreads)).sendRecords(any())
+        verify(producer, atMost(numThreads)).beginTransaction()
+        verify(producer, atMost(numThreads)).commitTransaction()
+    }
+
+    @Test
+    fun `testBatchPublishFailsAllThreadsIfPublishFails`() {
+        val publisher = createPublisher(true)
+        whenever(producer.sendRecords(any())).thenThrow(CordaMessageAPIFatalException(""))
+        val numThreads = 100
+        val futures = (0..numThreads).map { CompletableFuture<Unit>() }
+        val threads = futures.map {
+            Thread {
+                publisher.batchPublish(listOf(record, record, record)).whenComplete { _, throwable ->
+                    if (throwable != null) {
+                        it.completeExceptionally(throwable)
+                    } else {
+                        it.complete(Unit)
+                    }
+                }
+            }
+        }
+        threads.forEach { it.start() }
+        futures.forEach {
+            assertThrows<ExecutionException> {
+                it.get()
+            }
+        }
         verify(producer, atMost(numThreads)).sendRecords(any())
         verify(producer, atMost(numThreads)).beginTransaction()
         verify(producer, atMost(numThreads)).commitTransaction()

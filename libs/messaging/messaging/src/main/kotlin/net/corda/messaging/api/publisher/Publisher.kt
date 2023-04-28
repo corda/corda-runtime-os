@@ -49,8 +49,7 @@ interface Publisher : Resource {
      * within a single Kafka transaction. This improves performance by reducing the number of transactions a thread has
      * to wait for before its records get committed.
      *
-     * The supplied records are guaranteed to be published in the same transaction provided that the underlying
-     * publisher is transactional.
+     * The supplied records are guaranteed to be published in the same transaction.
      *
      * @param records The records to publish
      * @return A future that is completed when the records are published. If the publish fails, then a
