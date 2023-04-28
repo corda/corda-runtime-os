@@ -1,4 +1,4 @@
-A CPI is a CPB bundled with network information. This network information comes in the form of a JSON file called `GroupPolicy.json`. It may be created via the `corda-cli` tooling, or for members joining a group, it would be exported from the MGM. To understand the basic concept behind the dynamic and static network, see the  [Membership](../wiki/Membership) wiki.
+A CPI is a container for network information, and optionally a CorDapp. The network information comes in the form of a JSON file called `GroupPolicy.json`. It may be created via the `corda-cli` tooling, or for members joining a group, it would be exported from the MGM. To understand the basic concept behind the dynamic and static network, see the  [Membership](../wiki/Membership) wiki.
 
 # Usages
 

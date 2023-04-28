@@ -155,7 +155,7 @@ Create a GroupPolicy.json by exporting it using the MGM. Copy this file into the
 curl --insecure -u admin:admin -X GET $MGM_API_URL/mgm/$MGM_HOLDING_ID/info > $WORK_DIR/GroupPolicy.json
 ```
 
-Build the CPI using the corda-cli packaging plugin, and pass in the Member CPB, and group policy. See this [CorDapp Packaging](https://github.com/corda/corda-runtime-os/wiki/CorDapp-Packaging) for more details. Be sure to use the above group policy and the CPB you require when following that wiki instructions.
+Build the CPI using the corda-cli packaging plugin, and pass in the selected CPB for the member, and the group policy exported from the MGM. See this [CorDapp Packaging](https://github.com/corda/corda-runtime-os/wiki/CorDapp-Packaging) for more details. Be sure to use the above group policy and the CPB you require when following that wiki instructions.
 
 Upload the CPI.
 <details>

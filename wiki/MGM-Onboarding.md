@@ -116,14 +116,9 @@ If you have created the CA previously, there is no need to repeat this each time
 
 ## Build and upload a CPI
 
-For an MGM, the CPI only needs the `GroupPolicy` file, so only an empty CPB is necessary. For this you can use the MGM test CPB.
-``` bash
-cd "$RUNTIME_OS"
-./gradlew testing:cpbs:mgm:build
-cp testing/cpbs/mgm/build/libs/mgm-5.0.0.0-SNAPSHOT-package.cpb "$WORK_DIR"
-```
+For an MGM, the CPI only needs the `GroupPolicy` file, so no CPB is necessary. 
 
-Create GroupPolicy.json in this directory. This is the group policy file specifically for the MGM. It's a bootstrapping policy file that tells the virtual node how it syncs and is on board and that it should generate a new group ID when installed.
+Create GroupPolicy.json in your working directory. This is the group policy file specifically for the MGM. It's a bootstrapping policy file that tells the virtual node how it syncs and onboards, and that it should generate a new group ID when installed.
 <details>
 <summary>Bash</summary>
 
@@ -151,7 +146,7 @@ Add-Content $WORK_DIR/GroupPolicy.json @"
 ```
 </details>
 
-Build the CPI using the `corda-cli` packaging plugin, and pass in the MGM CPB, and group policy. See this [CorDapp Packaging](../wiki/CorDapp-Packaging) for more details. Be sure to use the above group policy and the MGM CPB when following that wiki instructions.
+Build the CPI using the `corda-cli` packaging plugin, and pass in the group policy. The CPB option can be ignored and left out. See this [CorDapp Packaging](../wiki/CorDapp-Packaging) for more details. Be sure to use the above group policy when following that wiki instructions.
 
 Upload the CPI.
 <details>
