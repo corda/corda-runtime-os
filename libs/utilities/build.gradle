@@ -1,13 +1,9 @@
 plugins {
     id 'corda.common-publishing'
     id 'corda.common-library'
-    id 'corda.javadoc-generation'
 }
 description 'Utilities'
 
-ext {
-    releasable = true
-}
 
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
