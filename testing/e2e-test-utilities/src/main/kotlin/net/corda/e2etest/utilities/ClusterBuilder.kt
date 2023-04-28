@@ -38,13 +38,14 @@ class ClusterBuilder {
 
     private fun uploadCpiResource(
         cmd: String,
-        cpbResourceName: String?,
+        resourceName: String,
         groupPolicy: String,
         cpiName: String,
         cpiVersion: String
     ): SimpleResponse {
-        return CpiLoader.get(cpbResourceName, groupPolicy, cpiName, cpiVersion).use {
-            client!!.postMultiPart(cmd, emptyMap(), mapOf("upload" to HttpsClientFileUpload(it, cpiName)))
+        val fileName = Paths.get(resourceName).fileName.toString()
+        return CpiLoader.get(resourceName, groupPolicy, cpiName, cpiVersion).use {
+            client!!.postMultiPart(cmd, emptyMap(), mapOf("upload" to HttpsClientFileUpload(it, fileName)))
         }
     }
 
@@ -97,31 +98,31 @@ class ClusterBuilder {
 
     /** Assumes the resource is a CPB and converts it to CPI by adding a group policy file */
     fun cpiUpload(
-        cpbResourceName: String,
+        resourceName: String,
         groupId: String,
         staticMemberNames: List<String>,
         cpiName: String,
         cpiVersion: String = "1.0.0.0-SNAPSHOT"
     ) = cpiUpload(
-        cpbResourceName,
+        resourceName,
         getDefaultStaticNetworkGroupPolicy(groupId, staticMemberNames),
         cpiName,
         cpiVersion
     )
 
     fun cpiUpload(
-        cpbResourceName: String?,
+        resourceName: String,
         groupPolicy: String,
         cpiName: String,
         cpiVersion: String = "1.0.0.0-SNAPSHOT"
-    ) = uploadCpiResource("/api/v1/cpi/", cpbResourceName, groupPolicy, cpiName, cpiVersion)
+    ) = uploadCpiResource("/api/v1/cpi/", resourceName, groupPolicy, cpiName, cpiVersion)
 
     fun updateVirtualNodeState(holdingIdHash: String, newState: String) =
         put("/api/v1/virtualnode/$holdingIdHash/state/$newState", "")
 
     /** Assumes the resource is a CPB and converts it to CPI by adding a group policy file */
     fun forceCpiUpload(
-        cpbResourceName: String?,
+        resourceName: String,
         groupId: String,
         staticMemberNames: List<String>,
         cpiName: String,
@@ -129,7 +130,7 @@ class ClusterBuilder {
     ) =
         uploadCpiResource(
             "/api/v1/maintenance/virtualnode/forcecpiupload/",
-            cpbResourceName,
+            resourceName,
             getDefaultStaticNetworkGroupPolicy(groupId, staticMemberNames),
             cpiName,
             cpiVersion

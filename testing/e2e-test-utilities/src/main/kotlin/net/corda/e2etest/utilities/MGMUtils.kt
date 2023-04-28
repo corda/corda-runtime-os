@@ -16,12 +16,13 @@ import java.time.Duration
  * Calls the necessary endpoints to create a vnode, and onboard the MGM to that vnode.
  */
 fun ClusterInfo.onboardMgm(
+    resourceName: String,
     mgmName: String = "O=Mgm, L=London, C=GB, OU=$testRunUniqueId",
     groupPolicyConfig: GroupPolicyConfig = GroupPolicyConfig()
 ): NetworkOnboardingMetadata {
-    val mgmCpiName = "mgm.cpi"
+    val mgmCpiName = "mgm_$testRunUniqueId.cpi"
     conditionallyUploadCpiSigningCertificate()
-    conditionallyUploadCordaPackage(mgmCpiName, null, getMgmGroupPolicy())
+    conditionallyUploadCordaPackage(mgmCpiName, resourceName, getMgmGroupPolicy())
     val mgmHoldingId = getOrCreateVirtualNodeFor(mgmName, mgmCpiName)
 
     addSoftHsmFor(mgmHoldingId, CAT_SESSION_INIT)

@@ -17,7 +17,7 @@ object CpiLoader {
     }
 
     fun get(
-        cpbResourceName: String?,
+        resourceName: String,
         groupPolicy: String,
         cpiName: String,
         cpiVersion: String,
@@ -26,7 +26,7 @@ object CpiLoader {
             keyAlias = "cordacodesign",
             keyStorePassword = "cordacadevpass"
         )
-    ) = cpbToCpi(cpbResourceName?.let { getInputStream(it) }, groupPolicy, cpiName, cpiVersion, signOptions)
+    ) = cpbToCpi(getInputStream(resourceName), groupPolicy, cpiName, cpiVersion, signOptions)
 
     fun getRawResource(resourceName: String) = getInputStream(resourceName)
 
@@ -35,7 +35,7 @@ object CpiLoader {
      * Don't use this method when we have actual CPIs
      */
     fun cpbToCpi(
-        inputStream: InputStream?,
+        inputStream: InputStream,
         networkPolicy: String,
         cpiNameValue: String,
         cpiVersionValue: String,
@@ -44,13 +44,10 @@ object CpiLoader {
 
         val tempDirectory = createTempDirectory()
         try {
-            val cpbPath = inputStream?.let { input ->
-                // Save CPB to disk
-                val cpbPath = tempDirectory.resolve("cpb.cpb")
-                Files.newOutputStream(cpbPath, StandardOpenOption.WRITE, StandardOpenOption.CREATE_NEW).use {
-                    input.copyTo(it)
-                }
-                cpbPath
+            // Save CPB to disk
+            val cpbPath = tempDirectory.resolve("cpb.cpb")
+            Files.newOutputStream(cpbPath, StandardOpenOption.WRITE, StandardOpenOption.CREATE_NEW).use {
+                inputStream.copyTo(it)
             }
 
             // Save group policy to disk
@@ -68,9 +65,7 @@ object CpiLoader {
             // Create CPI
             val cpiPath = tempDirectory.resolve("cpi")
             CreateCpiV2().apply {
-                cpbPath?.let {
-                    cpbFileName = it.toString()
-                }
+                cpbFileName = cpbPath.toString()
                 cpiName = cpiNameValue
                 cpiVersion = cpiVersionValue
                 cpiUpgrade = false
