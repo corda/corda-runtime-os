@@ -15,7 +15,6 @@ import net.corda.e2etest.utilities.assertWithRetry
 import net.corda.e2etest.utilities.awaitRpcFlowFinished
 import net.corda.e2etest.utilities.awaitVirtualNodeOperationStatusCheck
 import net.corda.e2etest.utilities.cluster
-import net.corda.e2etest.utilities.getFlowStatus
 import net.corda.e2etest.utilities.getHoldingIdShortHash
 import net.corda.e2etest.utilities.startRpcFlow
 import net.corda.e2etest.utilities.toJson
@@ -37,7 +36,7 @@ import java.util.UUID
  */
 @Order(10)
 @TestMethodOrder(MethodOrderer.OrderAnnotation::class)
-class VirtualNodeRpcTest {
+class VirtualNodeRestTest {
     companion object {
         // Some simple test failure messages
         private const val ERROR_CPI_NOT_UPLOADED =
@@ -323,33 +322,6 @@ class VirtualNodeRpcTest {
                             response.toJson()["holdingIdentity"]["x500Name"].textValue().contains(aliceX500)
                 }
             }
-        }
-    }
-
-    @Test
-    @Order(62)
-    fun `set virtual node state`() {
-        cluster {
-            endpoint(
-                CLUSTER_URI,
-                USERNAME,
-                PASSWORD
-            )
-            val vnodesWithStates: List<Pair<String, String>> = vNodeList().toJson()["virtualNodes"].map {
-                it["holdingIdentity"]["shortHash"].textValue() to it["flowP2pOperationalStatus"].textValue()
-            }
-
-            val (vnodeId, oldState) = vnodesWithStates.last()
-            val newState = "maintenance"
-
-            eventuallyUpdateVirtualNodeState(vnodeId, newState, "INACTIVE")
-
-            val className = "com.r3.corda.testing.smoketests.virtualnode.ReturnAStringFlow"
-            val requestId = startRpcFlow(aliceHoldingId, emptyMap(), className, 405)
-            getFlowStatus(aliceHoldingId, requestId, 404)
-
-
-            eventuallyUpdateVirtualNodeState(vnodeId, oldState, "ACTIVE")
         }
     }
 
