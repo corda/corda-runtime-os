@@ -17,8 +17,11 @@ internal class UpdateRegistrationRequestStatusHandler(
             val registrationRequest = em.find(
                 RegistrationRequestEntity::class.java,
                 request.registrationId,
-                LockModeType.PESSIMISTIC_WRITE
-            ) ?: throw RecoverableException("Could not find registration request: ${request.registrationId}")
+                LockModeType.PESSIMISTIC_WRITE,
+            ) ?: // Throwing RecoverableException to allow the request to be retried if the registration
+                // request was not found. As the request can be persistent asynchronously, we can get the
+                // update state request before the first persistence request.
+                throw RecoverableException("Could not find registration request: ${request.registrationId}")
             val currentStatus = registrationRequest.status.toStatus()
             if (!currentStatus.canMoveToStatus(request.registrationStatus)) {
                 logger.info(

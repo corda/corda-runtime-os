@@ -18,7 +18,6 @@ import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.membership.datamodel.MemberInfoEntity
 import net.corda.membership.datamodel.MemberInfoEntityPrimaryKey
 import net.corda.membership.datamodel.RegistrationRequestEntity
-import net.corda.membership.impl.persistence.service.RecoverableException
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_PENDING
 import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
@@ -176,7 +175,7 @@ class UpdateMemberAndRegistrationRequestToApprovedHandlerTest {
         val context = MembershipRequestContext(clock.instant(), requestId, member)
         val request = UpdateMemberAndRegistrationRequestToApproved(member, requestId)
 
-        assertThrows<RecoverableException> {
+        assertThrows<MembershipPersistenceException> {
             handler.invoke(context, request)
         }
     }
