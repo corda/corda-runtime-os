@@ -362,19 +362,19 @@ class MembershipPersistenceTest {
 
             override fun suspendMember(
                 viewOwningIdentity: HoldingIdentity, memberX500Name: MemberX500Name, serialNumber: Long?, reason: String?
-            ) /*= safeCall {*/
-              =  membershipPersistenceClient.suspendMember(
+            ) = safeCall {
+                membershipPersistenceClient.suspendMember(
                     viewOwningIdentity, memberX500Name, serialNumber, reason
                 )
-            //}
+            }
 
             override fun activateMember(
                 viewOwningIdentity: HoldingIdentity, memberX500Name: MemberX500Name, serialNumber: Long?, reason: String?
-            ) /*= safeCall {*/
-              =  membershipPersistenceClient.activateMember(
+            ) = safeCall {
+                membershipPersistenceClient.activateMember(
                     viewOwningIdentity, memberX500Name, serialNumber, reason
                 )
-           // }
+            }
 
             override fun updateStaticNetworkInfo(
                 info: StaticNetworkInfo
