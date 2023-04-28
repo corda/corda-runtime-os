@@ -6,7 +6,7 @@ import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.pipeline.events.FlowEventContext
 import net.corda.flow.pipeline.factory.FlowMessageFactory
 import net.corda.flow.pipeline.factory.FlowRecordFactory
-import net.corda.flow.pipeline.handlers.requests.helper.FlowRecords
+import net.corda.flow.pipeline.handlers.requests.helper.getRecords
 import net.corda.flow.pipeline.handlers.requests.helper.recordFlowRuntimeMetric
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -40,8 +40,7 @@ class FlowFinishedRequestHandler @Activate constructor(
         recordFlowRuntimeMetric(checkpoint, FlowStates.COMPLETED.toString())
 
         val status = flowMessageFactory.createFlowCompleteStatusMessage(checkpoint, request.result)
-        val flowRecords = FlowRecords()
-        val records = flowRecords.getRecords(flowRecordFactory, context, status)
+        val records = getRecords(flowRecordFactory, context, status)
 
         log.info("Flow [${checkpoint.flowId}] completed successfully")
         checkpoint.markDeleted()

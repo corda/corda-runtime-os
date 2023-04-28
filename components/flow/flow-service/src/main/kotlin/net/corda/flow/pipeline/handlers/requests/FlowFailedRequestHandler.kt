@@ -9,7 +9,7 @@ import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.flow.pipeline.exceptions.FlowProcessingExceptionTypes.FLOW_FAILED
 import net.corda.flow.pipeline.factory.FlowMessageFactory
 import net.corda.flow.pipeline.factory.FlowRecordFactory
-import net.corda.flow.pipeline.handlers.requests.helper.FlowRecords
+import net.corda.flow.pipeline.handlers.requests.helper.getRecords
 import net.corda.flow.pipeline.handlers.requests.helper.recordFlowRuntimeMetric
 import net.corda.flow.pipeline.sessions.FlowSessionManager
 import net.corda.flow.pipeline.sessions.FlowSessionStateException
@@ -66,8 +66,7 @@ class FlowFailedRequestHandler @Activate constructor(
             FLOW_FAILED,
             request.exception.message ?: request.exception.javaClass.name
         )
-        val flowRecords = FlowRecords()
-        val records = flowRecords.getRecords(flowRecordFactory, context, status)
+        val records = getRecords(flowRecordFactory, context, status)
 
         log.info("Flow [${checkpoint.flowId}] failed")
         checkpoint.markDeleted()

@@ -5,7 +5,7 @@
 -runtrace: true
 
 # Enable debugging.
-#-runjdb: 5005
+-runjdb: 5005
 
 -runvm: \
     -Djava.util.logging.config.file=${.}/logging.properties,\

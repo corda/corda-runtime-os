@@ -82,6 +82,7 @@ class FlowFinishedAcceptanceTest : FlowServiceTestBase() {
             expectOutputForFlow(FLOW_ID1) {
                 nullStateRecord()
                 flowStatus(FlowStates.COMPLETED, result = DONE)
+                scheduleFlowMapperCleanupEvents(FlowKey(REQUEST_ID1, CHARLIE_HOLDING_IDENTITY).toString())
             }
         }
     }
@@ -97,6 +98,7 @@ class FlowFinishedAcceptanceTest : FlowServiceTestBase() {
             expectOutputForFlow(FLOW_ID1) {
                 nullStateRecord()
                 flowStatus(FlowStates.COMPLETED, result = DONE)
+                scheduleFlowMapperCleanupEvents(net.corda.flow.testing.tests.SESSION_ID_1(REQUEST_ID1, CHARLIE_HOLDING_IDENTITY).toString())
             }
         }
     }
@@ -115,8 +117,6 @@ class FlowFinishedAcceptanceTest : FlowServiceTestBase() {
             sessionAckEventReceived(FLOW_ID1, SESSION_ID_1, receivedSequenceNum = 3)
                 .suspendsWith(FlowIORequest.FlowFinished(DONE))
         }
-
-
 
         then {
             expectOutputForFlow(FLOW_ID1) {

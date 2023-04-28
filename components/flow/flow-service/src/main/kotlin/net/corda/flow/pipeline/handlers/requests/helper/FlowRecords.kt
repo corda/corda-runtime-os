@@ -10,7 +10,6 @@ import net.corda.schema.configuration.FlowConfig
 import org.apache.avro.specific.SpecificRecordBase
 import java.time.Instant
 
-class FlowRecords {
     /**
      * When a flow is started by the REST api, a FlowKey is sent to the Flow mapper, so we send a cleanup event for this key.
      *
@@ -38,4 +37,3 @@ class FlowRecords {
         return records
     }
 
-}
