@@ -38,7 +38,10 @@ interface MethodReturnTypeIsIncorrectlyScalar {
     fun reserveTokens(denomination: String, amount: BigDecimal, ttlMs: Long): InteropAction<UUID>
 }
 
-class DataClassMissingGetters(@Suppress("UNUSED_PARAMETER") reservationRef: UUID, @Suppress("UNUSED_PARAMETER") expirationTimestamp: ZonedDateTime)
+class DataClassMissingGetters(
+    @Suppress("UNUSED_PARAMETER") reservationRef: UUID,
+    @Suppress("UNUSED_PARAMETER") expirationTimestamp: ZonedDateTime
+)
 
 // Binding will fail because the return type is not a well-formed data class (no getters corresponding to constructor args)
 @BindsFacade("org.corda.interop/platform/tokens")
