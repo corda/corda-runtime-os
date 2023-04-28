@@ -7,11 +7,6 @@ import static com.gradle.enterprise.gradleplugin.test.JUnitXmlDialect.GENERIC
 plugins {
     id 'corda.common-publishing'
     id 'biz.aQute.bnd.builder'
-    id 'corda.javadoc-generation'
-}
-
-ext {
-    releasable = true
 }
 
 description "Bare bones Kotlin reflection within an OSGi framework."
