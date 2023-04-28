@@ -4,10 +4,11 @@ import net.corda.v5.application.interop.parameters.ParameterType
 import net.corda.v5.application.interop.parameters.ParameterTypeLabel
 import net.corda.v5.application.interop.parameters.TypeQualifier
 
-data class QualifiedType<T>(val rawParameterType: ParameterType<T>, val qualifier: TypeQualifier) : ParameterType<T> {
-    val expectedRawClass: Class<T> get() = rawParameterType.expectedType
-    val expectedClass: Class<T> get() = typeLabel.expectedClass as Class<T>
-    val isQualified: Boolean = true
+@Suppress("UNCHECKED_CAST")
+data class QualifiedType<T>(private val rawParameterType: ParameterType<T>, private val qualifier: TypeQualifier) : ParameterType<T> {
+    private val expectedRawClass: Class<T> = rawParameterType.expectedType
+    private val expectedClass: Class<T> = typeLabel.expectedClass as Class<T>
+    private val isQualified: Boolean = true
 
     override fun getTypeLabel(): ParameterTypeLabel {
         return typeLabel

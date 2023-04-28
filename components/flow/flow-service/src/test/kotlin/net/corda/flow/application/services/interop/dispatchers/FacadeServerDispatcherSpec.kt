@@ -35,7 +35,7 @@ class FacadeServerDispatcherSpec : DescribeSpec({
     describe("A facade server dispatcher") {
         it("should dispatch a request to the matching method on the server object") {
             val releaseReservedTokens = facadeV1.method("release-reserved-tokens")
-            val reservationRefParam = releaseReservedTokens.inParameter<UUID>("reservation-ref")
+            val reservationRefParam = releaseReservedTokens.inParameter("reservation-ref", UUID::class.java)
 
             val request = releaseReservedTokens.request(reservationRefParam.of(reservationRef))
             val response = v1Dispatcher(request)
@@ -47,12 +47,12 @@ class FacadeServerDispatcherSpec : DescribeSpec({
 
         it("should map data class return values to out parameters") {
             val reserveTokensV2 = facadeV2.method("reserve-tokens")
-            val denominationIn = reserveTokensV2.inParameter<String>("denomination")
-            val amountIn = reserveTokensV2.inParameter<BigDecimal>("amount")
-            val ttlMsIn = reserveTokensV2.inParameter<BigDecimal>("ttl-ms")
+            val denominationIn = reserveTokensV2.inParameter("denomination", String::class.java)
+            val amountIn = reserveTokensV2.inParameter("amount", BigDecimal::class.java)
+            val ttlMsIn = reserveTokensV2.inParameter("ttl-ms", BigDecimal::class.java)
 
-            val reservationRefOut = reserveTokensV2.outParameter<UUID>("reservation-ref")
-            val expirationTimestampOut = reserveTokensV2.outParameter<ZonedDateTime>("expiration-timestamp")
+            val reservationRefOut = reserveTokensV2.outParameter("reservation-ref", UUID::class.java)
+            val expirationTimestampOut = reserveTokensV2.outParameter("expiration-timestamp", ZonedDateTime::class.java)
 
             // Construct a request the hard way
             val request = reserveTokensV2.request(

@@ -4,7 +4,7 @@ import net.corda.v5.application.interop.parameters.ParameterType
 import net.corda.v5.application.interop.parameters.TypedParameter
 import net.corda.v5.application.interop.parameters.TypedParameterValue
 
-data class TypedParameterImpl<T : Any>(val name: String, val type: ParameterType<T>): TypedParameter<T> {
+data class TypedParameterImpl<T : Any>(private val name: String, private val type: ParameterType<T>): TypedParameter<T> {
     override fun getName(): String {
         return name
     }

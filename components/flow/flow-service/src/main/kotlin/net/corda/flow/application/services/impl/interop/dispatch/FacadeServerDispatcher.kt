@@ -32,6 +32,7 @@ object FacadeServerDispatchers {
     }
 }
 
+@Suppress("UNCHECKED_CAST")
 fun Any.buildDispatcher(facade: Facade, typeConverter: TypeConverter): FacadeServerDispatcher {
     val targetInterface = this.javaClass.interfaces.find {
         it.isAnnotationPresent(BindsFacade::class.java) &&
@@ -51,7 +52,7 @@ class FacadeServerDispatcher(
     val binding: FacadeInterfaceBinding,
     val target: Any
 ) : (FacadeRequest) -> FacadeResponse {
-    @Suppress("SpreadOperator")
+    @Suppress("SpreadOperator", "UNCHECKED_CAST")
     override fun invoke(request: FacadeRequest): FacadeResponse {
         val boundMethod = binding.bindingFor(request.methodName) ?: throw FacadeMethodDispatchException(
             "No method on ${target.javaClass} is bound to request method ${request.methodName}"
@@ -64,6 +65,7 @@ class FacadeServerDispatcher(
         return binding.facade.response(boundMethod.facadeMethod.name, *outParameterValues.toTypedArray())
     }
 
+    @Suppress("UNCHECKED_CAST")
     private fun getOutParameterValues(
         result: Any,
         outParameterBindings: FacadeOutParameterBindings

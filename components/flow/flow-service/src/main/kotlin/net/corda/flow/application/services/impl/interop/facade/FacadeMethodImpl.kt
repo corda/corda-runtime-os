@@ -17,30 +17,20 @@ import net.corda.v5.application.interop.parameters.TypedParameterValue
  * @param outParameters the output parameters of the method.
  */
 data class FacadeMethodImpl(
-    val facadeId: FacadeId,
-    val name: String,
-    val type: FacadeMethodType,
-    val inParameters: List<TypedParameter<*>>,
-    val outParameters: List<TypedParameter<*>>
+    private val facadeId: FacadeId,
+    private val name: String,
+    private val type: FacadeMethodType,
+    private val inParameters: List<TypedParameter<*>>,
+    private val outParameters: List<TypedParameter<*>>
 ) : FacadeMethod {
 
     /**
      * The qualified name of the method, which is the name of the facade followed by the name of the method.
      */
-    val qualifiedName: String get() = "$facadeId/$name"
+    private val qualifiedName: String = "$facadeId/$name"
 
     private val inParameterMap = inParameters.associateBy { it.name }
     private val outParameterMap = outParameters.associateBy { it.name }
-
-    /**
-     * Get the input parameter with the given name.
-     *
-     * @param parameterName The name of the input parameter.
-     */
-    override inline fun <T: Any> inParameter(parameterName: String): TypedParameter<T> {
-        TODO("This method is not needed as is replaced by one with expectedType parameter")
-        //return inParameter(parameterName, T::class.java)
-    }
 
     /**
      * Obtain the in parameter with the given name.
@@ -71,16 +61,6 @@ data class FacadeMethodImpl(
      */
     override fun untypedInParameter(parameterName: String): TypedParameter<*>? {
         return inParameterMap[parameterName]
-    }
-
-    /**
-     * Get the output parameter with the given name.
-     *
-     * @param parameterName The name of the output parameter.
-     */
-    override fun <T : Any> outParameter(parameterName: String): TypedParameter<T> {
-        TODO("This method is not needed as is replaced by one with expectedType parameter")
-        //return outParameter(parameterName, T::class.java)
     }
 
     /**

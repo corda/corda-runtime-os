@@ -21,8 +21,8 @@ class FacadeSpec : DescribeSpec({
 
         val facade = FacadeReaders.JSON.read(this::class.java.getResourceAsStream("/tokens-facade.json")!!)
         val getBalance = facade.method("get-balance")
-        val denomination = getBalance.inParameter<String>("denomination")
-        val balance = getBalance.outParameter<BigDecimal>("balance")
+        val denomination = getBalance.inParameter("denomination", String::class.java)
+        val balance = getBalance.outParameter("balance", BigDecimal::class.java)
 
         it("can be configured through YAML") {
             facade.facadeId shouldBe FacadeId.of("org.corda.interop/platform/tokens/v1.0")
@@ -45,7 +45,7 @@ class FacadeSpec : DescribeSpec({
         }
 
         it("can contain methods with no parameters") {
-            val facade = FacadeReaders.JSON.read("""
+            @Suppress("NAME_SHADOWING") val facade = FacadeReaders.JSON.read("""
                 { "id": "org.corda.interop/platform/serialisation/v1.0",
                   "commands": { "dummy": {} }
                 }
@@ -80,22 +80,22 @@ class FacadeSpec : DescribeSpec({
 
         it("enforces type discipline for in parameters") {
             shouldThrow<IllegalArgumentException> {
-                getBalance.inParameter<BigDecimal>("denomination")
+                getBalance.inParameter("denomination", BigDecimal::class.java)
             }.message shouldBe "Parameter denomination is of type class java.lang.String, not class java.math.BigDecimal"
         }
 
         it("enforces type discipline for out parameters") {
             shouldThrow<IllegalArgumentException> {
-                getBalance.outParameter<String>("balance")
+                getBalance.outParameter("balance", String::class.java)
             }.message shouldBe "Parameter balance is of type class java.math.BigDecimal, not class java.lang.String"
         }
 
         it("throws exception for unknown parameter") {
             shouldThrow<IllegalArgumentException> {
-                getBalance.inParameter<BigDecimal>("nonExistingParameter")
+                getBalance.inParameter("nonExistingParameter", BigDecimal::class.java)
             }
             shouldThrow<IllegalArgumentException> {
-                getBalance.outParameter<BigDecimal>("nonExistingParameter")
+                getBalance.outParameter("nonExistingParameter", BigDecimal::class.java)
             }
         }
 

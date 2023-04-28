@@ -24,7 +24,7 @@ interface MethodSignatureHasWronglyQualifiedParameter {
 class UnqualifiedFruit
 class UnqualifiedPastry
 
-class MismatchedConstructorAndGetterTypes(name: String, val ingredients: IngredientsV1) {
+class MismatchedConstructorAndGetterTypes(@Suppress("UNUSED_PARAMETER") name: String, val ingredients: IngredientsV1) {
     fun getName(): UUID = UUID.randomUUID()
 }
 

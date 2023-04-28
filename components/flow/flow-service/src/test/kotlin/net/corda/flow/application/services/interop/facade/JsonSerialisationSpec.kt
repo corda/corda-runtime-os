@@ -34,8 +34,8 @@ class JsonSerialisationSpec : DescribeSpec({
 
         it("serialises bytes to a base64 encoded string") {
             val exchangeBytes = facade.method("exchange-bytes")
-            val bytesIn = exchangeBytes.inParameter<ByteBuffer>("bytes")
-            val bytesOut = exchangeBytes.outParameter<ByteBuffer>("bytes")
+            val bytesIn = exchangeBytes.inParameter("bytes", ByteBuffer::class.java)
+            val bytesOut = exchangeBytes.outParameter("bytes", ByteBuffer::class.java)
 
             val digest = MessageDigest.getInstance("SHA-256").apply {
                 update("Goodbyte, cruel world!".toByteArray())
@@ -50,8 +50,8 @@ class JsonSerialisationSpec : DescribeSpec({
 
         it("serialises json to embedded json") {
             val exchangeJson = facade.method("exchange-json")
-            val jsonIn = exchangeJson.inParameter<String>("json")
-            val jsonOut = exchangeJson.outParameter<String>("json")
+            val jsonIn = exchangeJson.inParameter("json", String::class.java)
+            val jsonOut = exchangeJson.outParameter("json", String::class.java)
 
             val request = exchangeJson.request(jsonIn.of(mapper.writeValueAsString(listOf(1, 2, 3))))
             val response = exchangeJson.response(
@@ -71,8 +71,8 @@ class JsonSerialisationSpec : DescribeSpec({
 
         it("serialises a timestamp to a formatted string") {
             val exchangeTimestamp = facade.method("exchange-timestamp")
-            val timestampIn = exchangeTimestamp.inParameter<ZonedDateTime>("timestamp")
-            val timestampOut = exchangeTimestamp.outParameter<ZonedDateTime>("timestamp")
+            val timestampIn = exchangeTimestamp.inParameter("timestamp", ZonedDateTime::class.java)
+            val timestampOut = exchangeTimestamp.outParameter("timestamp", ZonedDateTime::class.java)
 
             val request = exchangeTimestamp.request(timestampIn.of(ZonedDateTime.now()))
             val response = exchangeTimestamp.response(timestampOut.of(ZonedDateTime.now()))

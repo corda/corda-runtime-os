@@ -67,7 +67,7 @@ class TestTokenServer(initialBalances: Map<String, BigDecimal>, private val time
         if (reservation.expires.isBefore(timeserver())) throw IllegalStateException("Reservation has expired")
 
         reservations.remove(reservationRef)
-        balances.compute(reservation.denomination) { denomination, balance ->
+        balances.compute(reservation.denomination) { _, balance ->
             if (balance == null) throw IllegalStateException("No balance exists for ${reservation.denomination}")
             balance.subtract(BigDecimal(reservation.amount))
         }

@@ -19,8 +19,8 @@ class FacadeClientProxySpec : DescribeSpec({
 
         it("should convert a method call into a request, and a response into a single result value") {
             val getBalance = facade.method("get-balance")
-            val denomination = getBalance.inParameter<String>("denomination")
-            val balance = getBalance.outParameter<BigDecimal>("balance")
+            val denomination = getBalance.inParameter("denomination", String::class.java)
+            val balance = getBalance.outParameter("balance", BigDecimal::class.java)
 
             val proxy = facade.getClientProxy<TokensFacade> { request ->
                 request.facadeId shouldBe facade.facadeId
@@ -35,12 +35,12 @@ class FacadeClientProxySpec : DescribeSpec({
 
         it("should convert a method call into a request, and a response into a data class") {
             val reserveTokens = facade.method("reserve-tokens")
-            val denomination = reserveTokens.inParameter<String>("denomination")
-            val amount = reserveTokens.inParameter<BigDecimal>("amount")
-            val timeToLive = reserveTokens.inParameter<BigDecimal>("ttl-ms")
+            val denomination = reserveTokens.inParameter("denomination", String::class.java)
+            val amount = reserveTokens.inParameter("amount", BigDecimal::class.java)
+            val timeToLive = reserveTokens.inParameter("ttl-ms", BigDecimal::class.java)
 
-            val reservationRef = reserveTokens.outParameter<UUID>("reservation-ref")
-            val expirationTimestamp = reserveTokens.outParameter<ZonedDateTime>("expiration-timestamp")
+            val reservationRef = reserveTokens.outParameter("reservation-ref", UUID::class.java)
+            val expirationTimestamp = reserveTokens.outParameter("expiration-timestamp", ZonedDateTime::class.java)
 
             val ref = UUID.randomUUID()
             val expiration = ZonedDateTime.now()

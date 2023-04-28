@@ -7,8 +7,8 @@ import net.corda.v5.application.interop.facade.FacadeRequest
 import net.corda.v5.application.interop.facade.FacadeResponse
 import net.corda.v5.application.interop.parameters.TypedParameterValue
 
-data class FacadeImpl(val facadeId: FacadeId, val methods: List<FacadeMethod>) : Facade {
-    val methodsByName: Map<String, FacadeMethod> = methods.associateBy { it.name }
+data class FacadeImpl(private val facadeId: FacadeId, private val methods: List<FacadeMethod>) : Facade {
+    private val methodsByName: Map<String, FacadeMethod> = methods.associateBy { it.name }
     override fun getFacadeId(): FacadeId {
         return facadeId
     }

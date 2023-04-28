@@ -56,20 +56,20 @@ class FacadeInParameterBindingSpec : DescribeSpec({
                 it.bindingForMethodParameter(0) should {
                     it.shouldNotBeNull()
                     it.boundParameter shouldBe BoundParameter(0, String::class.java)
-                    it.facadeParameter shouldBe reserveTokensV2.inParameter<String>("denomination")
+                    it.facadeParameter shouldBe reserveTokensV2.inParameter("denomination", String::class.java)
                 }
 
                 it.bindingForMethodParameter(1) should {
                     it.shouldNotBeNull()
                     it.boundParameter shouldBe BoundParameter(1, BigDecimal::class.java)
-                    it.facadeParameter shouldBe reserveTokensV2.inParameter<BigDecimal>("amount")
+                    it.facadeParameter shouldBe reserveTokensV2.inParameter("amount", BigDecimal::class.java)
                 }
 
                 it.bindingForMethodParameter(2) should {
                     it.shouldNotBeNull()
 
                     it.boundParameter shouldBe BoundParameter(2, Long::class.java)
-                    it.facadeParameter shouldBe reserveTokensV2.inParameter<BigDecimal>("ttl-ms")
+                    it.facadeParameter shouldBe reserveTokensV2.inParameter("ttl-ms", BigDecimal::class.java)
                 }
             }
         }

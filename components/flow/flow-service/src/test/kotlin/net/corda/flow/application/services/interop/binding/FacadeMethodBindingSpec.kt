@@ -109,7 +109,7 @@ class FacadeMethodBindingSpec : DescribeSpec({
                 (it.outParameterBindings as? FacadeOutParameterBindings.SingletonOutParameterBinding) should {
                     it.shouldNotBeNull()
 
-                    it.outParameter shouldBe getBalance.outParameter<BigDecimal>("balance")
+                    it.outParameter shouldBe getBalance.outParameter("balance", BigDecimal::class.java)
                     it.returnType shouldBe Double::class.javaObjectType
                 }
             }
@@ -117,8 +117,8 @@ class FacadeMethodBindingSpec : DescribeSpec({
 
         it("should bind methods with multiple out-parameters to a Kotlin data class") {
             val reserveTokens = facadeV2.method("reserve-tokens")
-            val refParameter = reserveTokens.outParameter<UUID>("reservation-ref")
-            val expiryParameter = reserveTokens.outParameter<ZonedDateTime>("expiration-timestamp")
+            val refParameter = reserveTokens.outParameter("reservation-ref", UUID::class.java)
+            val expiryParameter = reserveTokens.outParameter("expiration-timestamp", ZonedDateTime::class.java)
 
             bindingV2.bindingFor(TokensFacade::reserveTokensV2) should {
                 it.shouldNotBeNull()

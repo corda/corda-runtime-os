@@ -16,9 +16,9 @@ import net.corda.v5.application.interop.parameters.TypedParameterValue
 @JsonSerialize(using = FacadeResponseSerializer::class)
 @JsonDeserialize(using = FacadeResponseDeserializer::class)
 data class FacadeResponseImpl(
-    val facadeId: FacadeId,
-    val methodName: String,
-    val outParameters: List<TypedParameterValue<*>>
+    private val facadeId: FacadeId,
+    private val methodName: String,
+    private val outParameters: List<TypedParameterValue<*>>
 ) : FacadeResponse {
 
     private val outParametersByName = outParameters.associateBy { it.parameter.name }
