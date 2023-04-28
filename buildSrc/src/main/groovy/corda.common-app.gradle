@@ -51,6 +51,9 @@ configurations {
         attributes { attrs ->
             attrs.attribute(LibraryElements.LIBRARY_ELEMENTS_ATTRIBUTE, objects.named(LibraryElements, LibraryElements.JAR))
         }
+
+        // Remove unwanted transitive dependency from jackson-core-2.15.0
+        exclude group: 'ch.randelshofer', module: 'fastdoubleparser'
     }
     applyDependencySubstitution(systemPackages)
     applyDependencySubstitution(bootstrapClasspath)
@@ -66,11 +69,14 @@ configurations {
 }
 
 dependencies {
-    bootstrapClasspath project(":osgi-framework-bootstrap")
+    bootstrapClasspath(project(':osgi-framework-bootstrap')) {
+        // Remove unwanted transitive dependency from jackson-core-2.15.0
+        exclude group: 'ch.randelshofer', module: 'fastdoubleparser'
+    }
 
     systemPackages "org.jboss.spec.javax.transaction:jboss-transaction-api_1.2_spec:$jbossTransactionApiSpecVersion"
     systemPackages "org.slf4j:slf4j-api:$slf4jVersion"
-    systemPackages project(":osgi-framework-api")
+    systemPackages project(':osgi-framework-api')
 }
 
 TaskProvider<Jar> jarTask = tasks.named('jar', Jar) {

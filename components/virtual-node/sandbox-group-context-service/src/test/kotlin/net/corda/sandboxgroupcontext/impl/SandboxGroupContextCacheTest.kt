@@ -24,6 +24,7 @@ import org.mockito.kotlin.whenever
 import java.time.Duration.ofSeconds
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
+import kotlin.math.roundToInt
 
 @Suppress("ExplicitGarbageCollectionCall")
 class SandboxGroupContextCacheTest {
@@ -60,14 +61,14 @@ class SandboxGroupContextCacheTest {
 
     @Test
     fun `when cache is full, evict and do not close evicted sandbox if still in use`() {
-        val count = 50.0
+        val count = 50
         val cache = SandboxGroupContextCacheImpl(defaultInitialCapacities(1))
         val sandboxContext1 = mockSandboxContext()
         val contextStrongRef = cache.get(vNodeContext1) { sandboxContext1 }
         assertThat(contextStrongRef).isNotNull
 
         @Suppress("UnusedPrivateMember")
-        for (i in 1..count.toInt()) {
+        for (i in 0 until count) {
             cache.get(VirtualNodeContext(
                 holdingIdentity = createTestHoldingIdentity("CN=Bob-$i, O=Bob Corp, L=LDN, C=GB", "group"),
                 cpkFileChecksums = emptySet(),
@@ -82,13 +83,14 @@ class SandboxGroupContextCacheTest {
         assertThat(cache.evictedContextsToBeClosed).isGreaterThanOrEqualTo(1)
 
         eventually(duration = ofSeconds(TIMEOUT), waitBetween = ofSeconds(1)) {
+            System.gc()
             verifyCacheMetrics(puts = count + 1, misses = count + 1, evictions = count)
         }
     }
 
     @Test
     fun `when cache is full, evict and close evicted sandbox if not in use anymore`() {
-        val count = 25.0
+        val count = 25
         val cache = SandboxGroupContextCacheImpl(defaultInitialCapacities(1))
         val sandboxContext1: CloseableSandboxGroupContext = spy {
             val completable = CompletableFuture<Boolean>()
@@ -99,7 +101,7 @@ class SandboxGroupContextCacheTest {
 
         // Trigger some evictions, close should not be invoked (there's at least one strong reference to the context)
         @Suppress("UnusedPrivateMember")
-        for (i in 1..count.toInt()) {
+        for (i in 0 until count) {
             cache.get(VirtualNodeContext(
                 holdingIdentity = createTestHoldingIdentity("CN=Bob-$i, O=Bob Corp, L=LDN, C=GB", "group"),
                 cpkFileChecksums = emptySet(),
@@ -139,6 +141,7 @@ class SandboxGroupContextCacheTest {
         }
 
         eventually(duration = ofSeconds(TIMEOUT), waitBetween = ofSeconds(1)) {
+            System.gc()
             verifyCacheMetrics(puts = count + 1 + extraOps, misses = count + 1 + extraOps, evictions = count + extraOps)
         }
     }
@@ -178,7 +181,8 @@ class SandboxGroupContextCacheTest {
         verify(sandboxContext1).close()
         verify(sandboxContext2).close()
         eventually(duration = ofSeconds(TIMEOUT), waitBetween = ofSeconds(1)) {
-            verifyCacheMetrics(puts = 2.0, misses = 2.0)
+            System.gc()
+            verifyCacheMetrics(puts = 2, misses = 2)
         }
     }
 
@@ -208,7 +212,8 @@ class SandboxGroupContextCacheTest {
 
         verify(sandboxContext1).close()
         eventually(duration = ofSeconds(TIMEOUT), waitBetween = ofSeconds(1)) {
-            verifyCacheMetrics(puts = 1.0, hits = 1.0, misses = 1.0)
+            System.gc()
+            verifyCacheMetrics(puts = 1, hits = 1, misses = 1)
         }
     }
 
@@ -217,7 +222,8 @@ class SandboxGroupContextCacheTest {
         val cache = SandboxGroupContextCacheImpl(defaultInitialCapacities(10))
         assertThat(cache.remove(vNodeContext1)).isNull()
         eventually(duration = ofSeconds(TIMEOUT), waitBetween = ofSeconds(1)) {
-            verifyCacheMetrics(misses = 1.0)
+            System.gc()
+            verifyCacheMetrics(misses = 1)
         }
     }
 
@@ -230,7 +236,8 @@ class SandboxGroupContextCacheTest {
         assertThat(cache.evictedContextsToBeClosed).isEqualTo(0)
         assertThat(retrievedContext).isSameAs(sandboxContext1)
         eventually(duration = ofSeconds(TIMEOUT), waitBetween = ofSeconds(1)) {
-            verifyCacheMetrics(puts = 1.0, hits = 1.0, misses = 1.0)
+            System.gc()
+            verifyCacheMetrics(puts = 1, hits = 1, misses = 1)
         }
     }
 
@@ -256,7 +263,8 @@ class SandboxGroupContextCacheTest {
         assertThat(cache.evictedContextsToBeClosed).isEqualTo(0)
         assertThat(retrievedContext).isSameAs(sandboxContext1)
         eventually(duration = ofSeconds(TIMEOUT), waitBetween = ofSeconds(1)) {
-            verifyCacheMetrics(puts = 1.0, hits = 1.0, misses = 1.0)
+            System.gc()
+            verifyCacheMetrics(puts = 1, hits = 1, misses = 1)
         }
     }
 
@@ -267,6 +275,7 @@ class SandboxGroupContextCacheTest {
         assertThat(completion.isDone).isTrue
         assertThat(cache.waitFor(completion, ofSeconds(0))).isTrue
         eventually(duration = ofSeconds(TIMEOUT), waitBetween = ofSeconds(1)) {
+            System.gc()
             verifyCacheMetrics()
         }
     }
@@ -317,7 +326,8 @@ class SandboxGroupContextCacheTest {
         verify(sandboxContext2).close()
         verify(sandboxContext3, never()).close()
         eventually(duration = ofSeconds(TIMEOUT), waitBetween = ofSeconds(1)) {
-            verifyCacheMetrics(puts = 3.0, misses = 3.0)
+            System.gc()
+            verifyCacheMetrics(puts = 3, misses = 3)
         }
     }
 
@@ -347,43 +357,44 @@ class SandboxGroupContextCacheTest {
         assertThat(sandboxContext1.completion.isCompletedExceptionally).isTrue
         verify(sandboxContext1).close()
         eventually(duration = ofSeconds(TIMEOUT), waitBetween = ofSeconds(1)) {
-            verifyCacheMetrics(puts = 1.0, misses = 1.0)
+            System.gc()
+            verifyCacheMetrics(puts = 1, misses = 1)
         }
     }
 
     private fun verifyCacheMetrics(
         sandboxType: SandboxGroupType = SandboxGroupType.FLOW,
-        puts: Double = 0.0,
-        hits: Double = 0.0,
-        misses: Double = 0.0,
-        evictions: Double = 0.0,
+        puts: Int = 0,
+        hits: Int = 0,
+        misses: Int = 0,
+        evictions: Int = 0,
     ) {
         val cacheName = "sandbox-cache-${sandboxType}"
 
         val cachePuts = CordaMetrics.registry
             .find("cache.puts")
-            .tags("cache", cacheName).meter()?.measure()?.first()?.value
+            .tags("cache", cacheName).meter()?.measure()?.first()?.value?.roundToInt()
         assertThat(cachePuts)
             .withFailMessage("Expected $cacheName puts from metrics to be $puts but was $cachePuts")
             .isEqualTo(puts)
 
         val cacheHits = CordaMetrics.registry
             .find("cache.gets")
-            .tags("cache", cacheName, "result", "hit").meter()?.measure()?.first()?.value
+            .tags("cache", cacheName, "result", "hit").meter()?.measure()?.first()?.value?.roundToInt()
         assertThat(cacheHits)
             .withFailMessage("Expected $cacheName hits from metrics to be $hits but was $cacheHits")
             .isEqualTo(hits)
 
         val cacheMisses = CordaMetrics.registry
             .find("cache.gets")
-            .tags("cache", cacheName, "result", "miss").meter()?.measure()?.first()?.value
+            .tags("cache", cacheName, "result", "miss").meter()?.measure()?.first()?.value?.roundToInt()
         assertThat(cacheMisses)
             .withFailMessage("Expected $cacheName misses from metrics to be $misses but was $cacheMisses")
             .isEqualTo(misses)
 
         val cacheEvictions = CordaMetrics.registry
             .find("cache.evictions")
-            .tags("cache", cacheName).meter()?.measure()?.first()?.value
+            .tags("cache", cacheName).meter()?.measure()?.first()?.value?.roundToInt()
         assertThat(cacheEvictions)
             .withFailMessage("Expected $cacheName evictions from metrics to be $evictions but was $cacheEvictions")
             .isEqualTo(evictions)
