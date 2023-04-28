@@ -89,7 +89,7 @@ internal class CordaPublisherImpl(
             )
         }
         val batch = Batch(records, CompletableFuture())
-        queue.add(batch)
+        queue.put(batch)
         lock.withLock {
             val batches = mutableListOf<Batch>()
             queue.drainTo(batches)
