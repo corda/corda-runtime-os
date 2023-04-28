@@ -59,8 +59,6 @@ class CryptoFlowOpsBusProcessor(
             return null // cannot send any error back as have no idea where to send to
         }
 
-        logger.info("Handling ${request.request::class.java.name} for tenant ${request.context.tenantId}")
-
         val expireAt = getRequestExpireAt(request)
         val clientRequestId = request.flowExternalEventContext.contextProperties.toMap()[MDC_CLIENT_ID] ?: ""
         val mdc = mapOf(
@@ -70,6 +68,8 @@ class CryptoFlowOpsBusProcessor(
         )
 
         return withMDC(mdc) {
+            logger.info("Handling ${request.request::class.java.name} for tenant ${request.context.tenantId}")
+
             try {
                 if (Instant.now() >= expireAt) {
                     logger.warn("Event ${request.request::class.java} for tenant ${request.context.tenantId} " +
