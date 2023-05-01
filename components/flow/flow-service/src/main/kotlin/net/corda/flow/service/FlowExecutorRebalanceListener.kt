@@ -8,6 +8,7 @@ import net.corda.virtualnode.toCorda
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.slf4j.LoggerFactory
 
 @Component(service = [FlowExecutorRebalanceListener::class])
 class FlowExecutorRebalanceListener @Activate constructor(
@@ -16,6 +17,11 @@ class FlowExecutorRebalanceListener @Activate constructor(
     @Reference(service = FlowFiberCache::class)
     private val flowFiberCache: FlowFiberCache
 ) : StateAndEventListener<String, Checkpoint> {
+
+    private companion object {
+        val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+    }
+
     override fun onPartitionSynced(states: Map<String, Checkpoint>) {
         flowWakeUpScheduler.onPartitionSynced(states)
     }
@@ -31,6 +37,8 @@ class FlowExecutorRebalanceListener @Activate constructor(
 
     private fun handleFlowFiberCachePartitionLost(states: Map<String, Checkpoint>) {
         val holdingIdentitiesLost = states.map { it.value.flowState.flowStartContext.identity.toCorda() }.toSet()
+        logger.info("Evicting flow fiber cache for holding identities: " +
+                "${holdingIdentitiesLost.joinToString { "$it (${it.shortHash})" }} virtual nodes: $holdingIdentitiesLost")
         flowFiberCache.remove(holdingIdentitiesLost)
     }
 }

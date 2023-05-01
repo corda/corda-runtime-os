@@ -79,6 +79,10 @@ class FlowFiberFactoryImpl @Activate constructor(
             logger.warn("Exception when getting from flow fiber cache.", e)
             null
         }
+        if (cachedFiber == null) {
+            logger.info("Flow fiber cache missed for ${flowFiberExecutionContext.flowCheckpoint.holdingIdentity}" +
+                    " (${flowFiberExecutionContext.flowCheckpoint.holdingIdentity.shortHash})")
+        }
         return cachedFiber ?: flowFiberExecutionContext.sandboxGroupContext.checkpointSerializer.deserialize(
             flowFiberExecutionContext.flowCheckpoint.serializedFiber.array(),
             FlowFiberImpl::class.java
