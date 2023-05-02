@@ -20,7 +20,6 @@ class TokenBalanceQueryEventHandler(
         event: BalanceQuery
     ): Record<String, FlowEvent> {
 
-        // Todo: Calculate balance including claimed tokens. This is similar to balance and balance available. Or balance and balance including pending
         val tokenBalance = calculateTokenBalance(tokenCache, state)
 
         return recordFactory.getBalanceResponse(
