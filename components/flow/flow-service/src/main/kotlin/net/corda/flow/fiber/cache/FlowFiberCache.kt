@@ -23,7 +23,12 @@ interface FlowFiberCache {
     fun remove(key: FlowFiberCacheKey)
 
     /**
-     * Invalidate and remove all flow fibers from the cache for the given holding identities.
+     * Invalidate and remove flow fiber from the cache with the give flow identifiers.
      */
-    fun remove(holdingIdentities: Set<HoldingIdentity>)
+    fun remove(keys: List<FlowFiberCacheKey>)
+
+    /**
+     * Invalidate and remove all flow fibers from the cache for the given holding identity.
+     */
+    fun remove(holdingIdentity: HoldingIdentity)
 }
