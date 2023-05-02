@@ -104,13 +104,13 @@ interface IllFormedDataClassOutput {
 
 class TypeQualificationSpec : DescribeSpec({
 
-    val facade = FacadeReaders.JSON.read(this::class.java.getResourceAsStream("/qualification-test-facade.json")!!)
+    val facade = FacadeReaders.JSON.read(this::class.java.getResourceAsStream("/sampleFacades/qualification-test-facade.json")!!)
 
     infix fun <T : Any> KClass<T>.shouldFailToBindWith(expectedMessage: String) =
         facade.assertBindingFails(java, expectedMessage)
 
     describe("In-parameter binding") {
-        val tokensFacadeV2 = FacadeReaders.JSON.read(this::class.java.getResourceAsStream("/tokens-facade_v2.json")!!)
+        val tokensFacadeV2 = FacadeReaders.JSON.read(this::class.java.getResourceAsStream("/sampleFacades/tokens-facade_v2.json")!!)
 
         it("should fail if a primitive parameter type with a qualifier does not match the facade qualifier") {
             shouldThrow<FacadeInterfaceBindingException> {

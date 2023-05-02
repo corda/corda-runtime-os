@@ -41,7 +41,7 @@ interface ParameterIsAnnotatedWithIncorrectName {
 
 class FacadeInParameterBindingSpec : DescribeSpec({
 
-    val facadeV2 = FacadeReaders.JSON.read(this::class.java.getResourceAsStream("/tokens-facade_v2.json")!!)
+    val facadeV2 = FacadeReaders.JSON.read(this::class.java.getResourceAsStream("/sampleFacades/tokens-facade_v2.json")!!)
     val bindingV2 = facadeV2.bindTo<TokensFacade>()
 
     infix fun <T : Any> KClass<T>.shouldFailToBindWith(expectedMessage: String) =

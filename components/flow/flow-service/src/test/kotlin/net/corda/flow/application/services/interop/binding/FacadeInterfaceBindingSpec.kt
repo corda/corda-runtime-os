@@ -21,8 +21,8 @@ interface BindsToV2FacadeOnly
 
 class FacadeInterfaceBindingSpec : DescribeSpec({
 
-    val facadeV1 = FacadeReaders.JSON.read(this::class.java.getResourceAsStream("/tokens-facade.json")!!)
-    val facadeV2 = FacadeReaders.JSON.read(this::class.java.getResourceAsStream("/tokens-facade_v2.json")!!)
+    val facadeV1 = FacadeReaders.JSON.read(this::class.java.getResourceAsStream("/sampleFacades/tokens-facade.json")!!)
+    val facadeV2 = FacadeReaders.JSON.read(this::class.java.getResourceAsStream("/sampleFacades/tokens-facade_v2.json")!!)
 
     infix fun <T : Any> KClass<T>.shouldFailToBindWith(expectedMessage: String) =
         facadeV1.assertBindingFails(java, expectedMessage)

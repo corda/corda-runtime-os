@@ -86,7 +86,7 @@ interface MethodReturnTypeIsDataClassWithIncorrectTypes {
 
 class FacadeOutParameterBindingSpec : DescribeSpec({
 
-    val facadeV2 = FacadeReaders.JSON.read(this::class.java.getResourceAsStream("/tokens-facade_v2.json")!!)
+    val facadeV2 = FacadeReaders.JSON.read(this::class.java.getResourceAsStream("/sampleFacades/tokens-facade_v2.json")!!)
 
     infix fun <T : Any> KClass<T>.shouldFailToBindWith(expectedMessage: String) =
         facadeV2.assertBindingFails(java, expectedMessage)

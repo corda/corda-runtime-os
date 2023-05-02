@@ -57,8 +57,8 @@ interface MethodSignatureHasNonInteropActionReturnType {
 
 class FacadeMethodBindingSpec : DescribeSpec({
 
-    val facadeV1 = FacadeReaders.JSON.read(this::class.java.getResourceAsStream("/tokens-facade.json")!!)
-    val facadeV2 = FacadeReaders.JSON.read(this::class.java.getResourceAsStream("/tokens-facade_v2.json")!!)
+    val facadeV1 = FacadeReaders.JSON.read(this::class.java.getResourceAsStream("/sampleFacades/tokens-facade.json")!!)
+    val facadeV2 = FacadeReaders.JSON.read(this::class.java.getResourceAsStream("/sampleFacades/tokens-facade_v2.json")!!)
     val bindingV1 = facadeV1.bindTo<TokensFacade>()
     val bindingV2 = facadeV2.bindTo<TokensFacade>()
 

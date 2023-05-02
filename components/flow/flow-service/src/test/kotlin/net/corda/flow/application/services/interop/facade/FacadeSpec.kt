@@ -19,7 +19,10 @@ class FacadeSpec : DescribeSpec({
 
     describe("A facade") {
 
-        val facade = FacadeReaders.JSON.read(this::class.java.getResourceAsStream("/tokens-facade.json")!!)
+        val inputStream = this::class.java.getResourceAsStream("/sampleFacades/tokens-facade.json")
+        checkNotNull(inputStream) { "Failed to load JSON facade schema from $inputStream" }
+        println(inputStream)
+        val facade = FacadeReaders.JSON.read(inputStream)
         val getBalance = facade.method("get-balance")
         val denomination = getBalance.inParameter("denomination", String::class.java)
         val balance = getBalance.outParameter("balance", BigDecimal::class.java)

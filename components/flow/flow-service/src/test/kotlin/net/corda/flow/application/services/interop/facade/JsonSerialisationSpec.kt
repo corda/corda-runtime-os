@@ -30,7 +30,7 @@ class JsonSerialisationSpec : DescribeSpec({
 
     describe("The JSON serialiser") {
 
-        val facade = FacadeReaders.JSON.read(this::class.java.getResourceAsStream("/serialisation-test-facade.json")!!)
+        val facade = FacadeReaders.JSON.read(this::class.java.getResourceAsStream("/sampleFacades/serialisation-test-facade.json")!!)
 
         it("serialises bytes to a base64 encoded string") {
             val exchangeBytes = facade.method("exchange-bytes")

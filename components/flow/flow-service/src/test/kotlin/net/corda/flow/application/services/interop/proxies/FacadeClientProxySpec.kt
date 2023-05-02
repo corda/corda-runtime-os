@@ -13,7 +13,7 @@ import java.util.*
 
 class FacadeClientProxySpec : DescribeSpec({
 
-    val facade = FacadeReaders.JSON.read(this::class.java.getResourceAsStream("/tokens-facade_v2.json")!!)
+    val facade = FacadeReaders.JSON.read(this::class.java.getResourceAsStream("/sampleFacades/tokens-facade_v2.json")!!)
 
     describe("A facade client proxy") {
 
