@@ -1,12 +1,10 @@
 package net.corda.sandboxgroupcontext.test
 
-import net.corda.common.json.validation.JsonValidator
 import java.lang.invoke.MethodHandles
 import java.nio.file.Path
 import java.security.KeyPairGenerator
 import kotlin.reflect.full.primaryConstructor
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
-import net.corda.crypto.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.crypto.core.parseSecureHash
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.testkit.getWireTransactionExample
@@ -18,11 +16,10 @@ import net.corda.sandboxgroupcontext.RequireSandboxAMQP.AMQP_SERIALIZATION_SERVI
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.sandboxgroupcontext.SandboxGroupType
 import net.corda.sandboxgroupcontext.getObjectByKey
+import net.corda.sandboxgroupcontext.getSandboxSingletonService
 import net.corda.testing.sandboxes.SandboxSetup
 import net.corda.testing.sandboxes.fetchService
 import net.corda.testing.sandboxes.lifecycle.AllTestsLifecycle
-import net.corda.v5.application.crypto.DigestService
-import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.types.MemberX500Name
@@ -69,18 +66,6 @@ class AMQPSerializationTest {
 
     @InjectService(timeout = TIMEOUT_MILLIS)
     lateinit var cipherSchemeMetadata: CipherSchemeMetadata
-
-    @InjectService(timeout = TIMEOUT_MILLIS)
-    lateinit var merkleTreeProvider: MerkleTreeProvider
-
-    @InjectService(timeout = TIMEOUT_MILLIS)
-    lateinit var digestService: DigestService
-
-    @InjectService(timeout = TIMEOUT_MILLIS)
-    lateinit var jsonMarshallingService: JsonMarshallingService
-
-    @InjectService(timeout = TIMEOUT_MILLIS)
-    lateinit var jsonValidator: JsonValidator
 
     @RegisterExtension
     private val lifecycle = AllTestsLifecycle()
@@ -230,10 +215,11 @@ class AMQPSerializationTest {
             val serializationService = ctx.getSerializationService()
 
             origWireTx = getWireTransactionExample(
-                digestService,
-                merkleTreeProvider,
-                jsonMarshallingService,
-                jsonValidator)
+                digestService = ctx.getSandboxSingletonService(),
+                merkleTreeProvider = ctx.getSandboxSingletonService(),
+                jsonMarshallingService = ctx.getSandboxSingletonService(),
+                jsonValidator = ctx.getSandboxSingletonService()
+            )
 
             serializedBytes = serializationService.serialize(origWireTx!!)
         }
