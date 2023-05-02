@@ -38,18 +38,21 @@ fun parseDigestAlgoName(algoNameAndHexString: String): String {
     return algoNameAndHexString.substring(0, idx)
 }
 
-fun parseSecureHash(algoNameAndHexString: String, expectedLength: Int? = null): SecureHash {
+fun parseHexString(algoNameAndHexString: String): String {
+    val idx = algoNameAndHexString.indexOf(DELIMITER)
+    if (idx == -1) {
+        throw IllegalArgumentException("Provided string: $algoNameAndHexString should be of format algorithm:hexadecimal")
+    }
+    return algoNameAndHexString.substring(idx + 1)
+}
+
+fun parseSecureHash(algoNameAndHexString: String): SecureHash {
     val idx = algoNameAndHexString.indexOf(DELIMITER)
     return if (idx == -1) {
         throw IllegalArgumentException("Provided string: $algoNameAndHexString should be of format algorithm:hexadecimal")
     } else {
         val algorithm = algoNameAndHexString.substring(0, idx)
         val value = algoNameAndHexString.substring(idx + 1)
-        expectedLength?.let {
-            require(it == value.length) {
-                "Required hex string length: $it for algo: \"$algorithm\" is not met by the provided hex string: \"$value\""
-            }
-        }
         val data = ByteArrays.parseAsHex(value)
         SecureHashImpl(algorithm, data)
     }

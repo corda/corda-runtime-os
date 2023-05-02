@@ -4,11 +4,12 @@ import net.corda.crypto.cipher.suite.PlatformDigestService
 import net.corda.crypto.core.DigestAlgorithmFactoryProvider
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.core.parseDigestAlgoName
-import net.corda.crypto.core.parseSecureHash
+import net.corda.crypto.core.parseHexString
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.sandbox.type.UsedByPersistence
 import net.corda.sandbox.type.UsedByVerification
 import net.corda.v5.application.crypto.DigestService
+import net.corda.v5.base.util.ByteArrays
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.extensions.DigestAlgorithm
@@ -65,7 +66,11 @@ class DigestServiceImpl @Activate constructor(
             val digestName = parseDigestAlgoName(algoNameAndHexString)
             lookForCustomAlgorithm(DigestAlgorithmName(digestName))?.let {
                 val digestHexStringLength = it.digestLength * 2
-                parseSecureHash(algoNameAndHexString, digestHexStringLength)
+                val hexString = parseHexString(algoNameAndHexString)
+                require(digestHexStringLength == hexString.length) {
+                    "Required algorithm's: \"$digestName\" hex string length: $digestHexStringLength is not met by hex string: \"$hexString\""
+                }
+                SecureHashImpl(digestName, ByteArrays.parseAsHex(hexString))
             } ?: throw e
         }
 
