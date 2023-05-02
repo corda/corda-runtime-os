@@ -22,10 +22,10 @@ import java.util.UUID
 internal class ChunkWriterImpl(
     maxAllowedMessageSize: Int,
     private val chunkBuilderService: ChunkBuilderService,
-    private var properties: MutableMap<String, String?>? = null,
+    private val properties: Map<String, String?>? = null,
 ) : ChunkWriter {
     companion object {
-        private fun MutableMap<String, String?>.toAvro(): KeyValuePairList {
+        private fun Map<String, String?>.toAvro(): KeyValuePairList {
             return KeyValuePairList.newBuilder().setItems(
                 map { KeyValuePair(it.key, it.value) }
             ).build()
