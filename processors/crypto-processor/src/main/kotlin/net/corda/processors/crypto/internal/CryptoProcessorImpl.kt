@@ -1,5 +1,6 @@
 package net.corda.processors.crypto.internal
 
+import net.corda.configuration.read.ConfigChangedEvent
 import java.util.concurrent.atomic.AtomicInteger
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.client.CryptoOpsClient
@@ -30,7 +31,10 @@ import net.corda.orm.JpaEntitiesRegistry
 import net.corda.processors.crypto.CryptoProcessor
 import net.corda.schema.configuration.BootConfig.BOOT_CRYPTO
 import net.corda.schema.configuration.BootConfig.BOOT_DB
+import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
+import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
+import net.corda.utilities.trace
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -73,7 +77,12 @@ class CryptoProcessorImpl @Activate constructor(
 ) : CryptoProcessor {
     private companion object {
         val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        val configKeys = setOf(
+            MESSAGING_CONFIG,
+            CRYPTO_CONFIG
+        )
     }
+
 
     init {
         entitiesRegistry.register(CordaDb.Crypto.persistenceUnitName, CryptoEntities.classes)
@@ -141,8 +150,11 @@ class CryptoProcessorImpl @Activate constructor(
                 cryptoServiceFactory.bootstrapConfig(bootstrapConfig.getConfig(BOOT_CRYPTO))
             }
             is RegistrationStatusChangeEvent -> {
+                logger.trace { "Registering for configuration updates." }
+                configurationReadService.registerComponentForUpdates(coordinator, configKeys)
                 if (event.status == LifecycleStatus.UP) {
                     dependenciesUp = true
+                    // TODO: only do setStatus once the config is in in ConfigChangedEvent
                     if (hsmAssociated) {
                         setStatus(event.status, coordinator)
                     } else {
@@ -154,13 +166,13 @@ class CryptoProcessorImpl @Activate constructor(
                 }
             }
             is AssociateHSM -> {
-                if(dependenciesUp) {
+                if (dependenciesUp) {
                     if (hsmAssociated) {
                         setStatus(LifecycleStatus.UP, coordinator)
                     } else {
                         val failed = temporaryAssociateClusterWithSoftHSM()
                         if (failed.isNotEmpty()) {
-                            if(tmpAssignmentFailureCounter.getAndIncrement() <= 5) {
+                            if (tmpAssignmentFailureCounter.getAndIncrement() <= 5) {
                                 logger.warn(
                                     "Failed to associate: [${failed.joinToString { "${it.first}:${it.second}" }}]" +
                                             ", will retry..."
@@ -168,7 +180,8 @@ class CryptoProcessorImpl @Activate constructor(
                                 coordinator.postEvent(AssociateHSM()) // try again
                             } else {
                                 logger.error(
-                                    "Failed to associate: [${failed.joinToString { "${it.first}:${it.second}" }}]")
+                                    "Failed to associate: [${failed.joinToString { "${it.first}:${it.second}" }}]"
+                                )
                                 setStatus(LifecycleStatus.ERROR, coordinator)
                             }
                         } else {
@@ -178,6 +191,10 @@ class CryptoProcessorImpl @Activate constructor(
                         }
                     }
                 }
+            }
+            is ConfigChangedEvent -> {
+                // TODO
+                // now we can crea
             }
         }
     }

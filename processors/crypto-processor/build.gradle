@@ -42,6 +42,7 @@ dependencies {
     implementation project(':libs:lifecycle:lifecycle')
     implementation project(":libs:messaging:messaging")
     implementation project(":libs:virtual-node:virtual-node-info")
+    implementation project(':libs:utilities')
 
     integrationTestImplementation project(':components:crypto:crypto-hes')
     integrationTestImplementation project(":libs:configuration:configuration-core")
