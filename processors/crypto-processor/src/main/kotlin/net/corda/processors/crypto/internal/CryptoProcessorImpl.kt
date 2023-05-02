@@ -13,9 +13,12 @@ import net.corda.crypto.service.CryptoOpsBusService
 import net.corda.crypto.service.CryptoServiceFactory
 import net.corda.crypto.service.HSMRegistrationBusService
 import net.corda.crypto.service.HSMService
+import net.corda.crypto.service.impl.bus.CryptoFlowOpsBusProcessor
+import net.corda.crypto.service.impl.bus.CryptoFlowOpsBusServiceImpl
 import net.corda.crypto.softhsm.SoftCryptoServiceProvider
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.schema.CordaDb
+import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.datamodel.ConfigurationEntities
 import net.corda.lifecycle.DependentComponents
@@ -27,8 +30,11 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
+import net.corda.messaging.api.subscription.config.SubscriptionConfig
+import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.processors.crypto.CryptoProcessor
+import net.corda.schema.Schemas
 import net.corda.schema.configuration.BootConfig.BOOT_CRYPTO
 import net.corda.schema.configuration.BootConfig.BOOT_DB
 import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
@@ -74,6 +80,10 @@ class CryptoProcessorImpl @Activate constructor(
     private val dbConnectionManager: DbConnectionManager,
     @Reference(service = VirtualNodeInfoReadService::class)
     private val vnodeInfo: VirtualNodeInfoReadService,
+    @Reference(service = SubscriptionFactory::class)
+    private val subscriptionFactory: SubscriptionFactory,
+    @Reference(service = ExternalEventResponseFactory::class)
+    private val externalEventResponseFactory: ExternalEventResponseFactory,
 ) : CryptoProcessor {
     private companion object {
         val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -100,7 +110,7 @@ class CryptoProcessorImpl @Activate constructor(
         ::hsmService,
         ::hsmRegistration,
         ::dbConnectionManager,
-        ::vnodeInfo
+        ::vnodeInfo,
     )
 
     private val lifecycleCoordinator = coordinatorFactory.createCoordinator<CryptoProcessor>(dependentComponents, ::eventHandler)
@@ -194,7 +204,19 @@ class CryptoProcessorImpl @Activate constructor(
             }
             is ConfigChangedEvent -> {
                 // TODO
-                // now we can crea
+                // now we can create the subscriptions and bus processors 
+//                val flowOpsBusProcessorrocessor =
+//                    CryptoFlowOpsBusProcessor(cryptoOpsClient, externalEventResponseFactory, event)
+//
+//                subscriptionFactory.createDurableSubscription(
+//                    subscriptionConfig = SubscriptionConfig(
+//                        groupName = CryptoFlowOpsBusServiceImpl.GROUP_NAME,
+//                        eventTopic = Schemas.Crypto.FLOW_OPS_MESSAGE_TOPIC
+//                    ),
+//                    processor = processor,
+//                    messagingConfig = messagingConfig,
+//                    partitionAssignmentListener = null
+//                )
             }
         }
     }

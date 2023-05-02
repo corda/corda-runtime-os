@@ -38,6 +38,7 @@ dependencies {
     implementation project(':libs:crypto:crypto-serialization-impl')
     implementation project(":libs:db:db-core")
     implementation project(":libs:db:db-orm")
+    implementation project(':libs:flows:external-event-responses')
     implementation project(":libs:layered-property-map")
     implementation project(':libs:lifecycle:lifecycle')
     implementation project(":libs:messaging:messaging")
