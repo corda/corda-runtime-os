@@ -8,6 +8,11 @@ import org.slf4j.Logger
 import org.slf4j.MDC
 
 /**
+ * Common logging Marker Names
+ */
+const val FLOW_TRACING_MARKER = "FLOW_TRACING"
+
+/**
  * Common MDC properties used across corda.
  */
 const val MDC_CLIENT_ID = "corda.client.id"

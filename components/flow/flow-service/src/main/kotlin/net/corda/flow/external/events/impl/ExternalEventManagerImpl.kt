@@ -14,11 +14,15 @@ import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.records.Record
 import net.corda.schema.configuration.FlowConfig
+import net.corda.utilities.FLOW_TRACING_MARKER
 import net.corda.utilities.debug
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import org.slf4j.Marker
+import org.slf4j.MarkerFactory
 import java.nio.ByteBuffer
 import java.time.Instant
 import java.time.temporal.ChronoUnit
@@ -32,7 +36,8 @@ class ExternalEventManagerImpl(
 ) : ExternalEventManager {
 
     private companion object {
-        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        val flowTraceMarker: Marker = MarkerFactory.getMarker(FLOW_TRACING_MARKER)
     }
 
     @Activate
@@ -78,7 +83,7 @@ class ExternalEventManagerImpl(
         externalEventResponse: ExternalEventResponse
     ): ExternalEventState {
         val requestId = externalEventResponse.requestId
-        log.info("Processing response for external event with id '{}'", requestId)
+        log.info(flowTraceMarker, "Processing response for external event with id '{}'", requestId)
 
         if (requestId == externalEventState.requestId) {
             log.debug { "External event response with id $requestId matched last sent request" }
@@ -197,7 +202,7 @@ class ExternalEventManagerImpl(
         val eventToSend = externalEventState.eventToSend
         eventToSend.timestamp = instant
         externalEventState.sendTimestamp = instant.plusMillis(config.getLong(FlowConfig.EXTERNAL_EVENT_MESSAGE_RESEND_WINDOW))
-        log.info("Dispatching external event with id '{}' to '{}'", externalEventState.requestId, eventToSend.topic)
+        log.info(flowTraceMarker, "Dispatching external event with id '{}' to '{}'", externalEventState.requestId, eventToSend.topic)
 
         return externalEventState to Record(eventToSend.topic, eventToSend.key.array(), eventToSend.payload.array())
     }
