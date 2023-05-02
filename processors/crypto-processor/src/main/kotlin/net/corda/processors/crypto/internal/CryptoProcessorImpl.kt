@@ -37,6 +37,10 @@ import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
+// An OSGi component, with no unit tests; instead, tested by using OGGi and mocked out databases in 
+// integration tests (CryptoProcessorTests), as well as in various kinds of end to end and other full
+// system tests.
+
 @Suppress("LongParameterList")
 @Component(service = [CryptoProcessor::class])
 class CryptoProcessorImpl @Activate constructor(
@@ -65,7 +69,7 @@ class CryptoProcessorImpl @Activate constructor(
     @Reference(service = DbConnectionManager::class)
     private val dbConnectionManager: DbConnectionManager,
     @Reference(service = VirtualNodeInfoReadService::class)
-    private val vnodeInfo: VirtualNodeInfoReadService
+    private val vnodeInfo: VirtualNodeInfoReadService,
 ) : CryptoProcessor {
     private companion object {
         val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
