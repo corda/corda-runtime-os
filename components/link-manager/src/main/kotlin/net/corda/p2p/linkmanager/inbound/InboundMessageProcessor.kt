@@ -16,7 +16,7 @@ import net.corda.data.p2p.MessageAck
 import net.corda.data.p2p.SessionPartitions
 import net.corda.data.p2p.app.AppMessage
 import net.corda.data.p2p.app.AuthenticatedMessage
-import net.corda.data.p2p.app.UnauthenticatedMessage
+import net.corda.data.p2p.app.InboundUnauthenticatedMessage
 import net.corda.data.p2p.crypto.AuthenticatedDataMessage
 import net.corda.data.p2p.crypto.AuthenticatedEncryptedDataMessage
 import net.corda.data.p2p.crypto.InitiatorHandshakeMessage
@@ -33,7 +33,6 @@ import net.corda.data.p2p.markers.AppMessageMarker
 import net.corda.data.p2p.markers.LinkManagerReceivedMarker
 import net.corda.metrics.CordaMetrics
 import net.corda.schema.Schemas
-import net.corda.utilities.Either
 import net.corda.utilities.debug
 import net.corda.utilities.time.Clock
 import net.corda.virtualnode.toCorda
@@ -73,31 +72,18 @@ internal class InboundMessageProcessor(
                 is ResponderHelloMessage, is ResponderHandshakeMessage, is InitiatorHandshakeMessage, is InitiatorHelloMessage -> {
                     processSessionMessage(message)
                 }
-                is UnauthenticatedMessage -> {
+                is InboundUnauthenticatedMessage -> {
                     logger.debug {
                         "Processing unauthenticated message ${payload.header.messageId}"
                     }
                     recordInboundMessagesMetric(payload)
-                    val validationResult = networkMessagingValidator.validateInbound(
-                        payload.header.source.toCorda(),
-                        payload.header.destination.toCorda()
+                    listOf(
+                        Record(
+                            Schemas.P2P.P2P_IN_TOPIC,
+                            LinkManager.generateKey(),
+                            AppMessage(payload)
+                        )
                     )
-                    when(validationResult) {
-                        is Either.Left -> {
-                            listOf(
-                                Record(
-                                    Schemas.P2P.P2P_IN_TOPIC,
-                                    LinkManager.generateKey(),
-                                    AppMessage(payload)
-                                )
-                            )
-                        }
-                        is Either.Right -> {
-                            logger.warn("Dropped unauthenticated message. Network membership is not valid for " +
-                                    "messaging because ${validationResult.b}")
-                            emptyList()
-                        }
-                    }
                 }
                 else -> {
                     logger.error("Received unknown payload type ${message.payload::class.java.simpleName}. The message was discarded.")
@@ -309,9 +295,9 @@ internal class InboundMessageProcessor(
         }
     }
 
-    private fun recordInboundMessagesMetric(message: UnauthenticatedMessage) {
+    private fun recordInboundMessagesMetric(message: InboundUnauthenticatedMessage) {
         message.header.let {
-            recordInboundMessagesMetric(it.source.x500Name, it.destination.x500Name, it.source.groupId,
+            recordInboundMessagesMetric("***", "***", "***",
                 it.subsystem, message::class.java.simpleName)
         }
     }
