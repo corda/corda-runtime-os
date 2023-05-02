@@ -21,7 +21,16 @@ fun ClusterInfo.conditionallyUploadCordaPackage(
 }
 
 fun ClusterInfo.conditionallyUploadCpiSigningCertificate() = cluster {
-    if (!hasCertificateChain(CODE_SIGNER_CERT_USAGE, CODE_SIGNER_CERT_ALIAS)) {
+    val hasCertificateChain = assertWithRetry {
+        command { getCertificateChain(CODE_SIGNER_CERT_USAGE, CODE_SIGNER_CERT_ALIAS) }
+        condition {
+            it.code != ResponseCode.RESOURCE_NOT_FOUND.statusCode ||
+                    it.code == ResponseCode.OK.statusCode
+        }
+    }.let {
+        it.code != ResponseCode.RESOURCE_NOT_FOUND.statusCode
+    }
+    if (!hasCertificateChain) {
         assertWithRetry {
             // Certificate upload can be slow in the combined worker, especially after it has just started up.
             timeout(30.seconds)

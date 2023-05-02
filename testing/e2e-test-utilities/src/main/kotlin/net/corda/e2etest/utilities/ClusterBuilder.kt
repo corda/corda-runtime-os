@@ -88,10 +88,8 @@ class ClusterBuilder {
     fun importCertificate(file: File, usage: String, alias: String) =
         uploadCertificateFile("/api/v1/certificates/cluster/$usage", file, alias)
 
-    fun hasCertificateChain(usage: String, alias: String): Boolean {
-        return client!!
-            .get("/api/v1/certificates/cluster/$usage/$alias").code != ResponseCode.RESOURCE_NOT_FOUND.statusCode
-    }
+    fun getCertificateChain(usage: String, alias: String) =
+        client!!.get("/api/v1/certificates/cluster/$usage/$alias")
 
     /** Assumes the resource *is* a CPB */
     fun cpbUpload(resourceName: String) = uploadUnmodifiedResource("/api/v1/cpi/", resourceName)

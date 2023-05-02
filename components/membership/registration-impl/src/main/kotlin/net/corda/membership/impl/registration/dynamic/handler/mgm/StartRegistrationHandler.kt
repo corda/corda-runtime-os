@@ -34,7 +34,7 @@ import net.corda.membership.lib.SignedMemberInfo
 import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.p2p.helpers.P2pRecordsFactory
 import net.corda.membership.persistence.client.MembershipPersistenceClient
-import net.corda.membership.persistence.client.MembershipPersistenceResult
+import net.corda.membership.persistence.client.MembershipPersistenceOperation
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.persistence.client.MembershipQueryResult
 import net.corda.membership.read.MembershipGroupReaderProvider
@@ -64,11 +64,14 @@ internal class StartRegistrationHandler(
         cordaAvroSerializationFactory,
         clock,
     ),
-    private val registrationContextCustomFieldsVerifier: RegistrationContextCustomFieldsVerifier = RegistrationContextCustomFieldsVerifier()
+    private val registrationContextCustomFieldsVerifier: RegistrationContextCustomFieldsVerifier =
+        RegistrationContextCustomFieldsVerifier()
 ) : RegistrationHandler<StartRegistration> {
 
     private companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+
+        private const val PERSISTENCE_RETRIES = 10
     }
 
     private val keyValuePairListDeserializer =
@@ -101,9 +104,9 @@ internal class StartRegistrationHandler(
             val mgmMemberInfo = getMGMMemberInfo(mgmHoldingId)
 
             logger.info("Persisting the received registration request.")
-            membershipPersistenceClient
-                .persistRegistrationRequest(mgmHoldingId, registrationRequest)
-                .getOrThrow()
+            attemptPersistenceOperationWithRetry {
+                membershipPersistenceClient.persistRegistrationRequest(mgmHoldingId, registrationRequest)
+            }
 
             logger.info("Registering $pendingMemberHoldingId with MGM for holding identity: $mgmHoldingId")
             val pendingMemberInfo = buildPendingMemberInfo(registrationRequest)
@@ -133,10 +136,9 @@ internal class StartRegistrationHandler(
                 pendingMemberInfo.name == pendingMemberHoldingId.x500Name
             ) { "MemberX500Name in registration request does not match member sending request over P2P." }
 
-            val existingMemberInfos = membershipQueryClient.queryMemberInfo(
-                mgmHoldingId,
-                listOf(pendingMemberHoldingId)
-            ).getOrThrow()
+            val existingMemberInfos = attemptQueryOperationWithRetry {
+                membershipQueryClient.queryMemberInfo(mgmHoldingId, listOf(pendingMemberHoldingId))
+            }
             // The MemberX500Name is not a duplicate
             validateRegistrationRequest(
                 existingMemberInfos.isEmpty() || registrationRequest.serial != 0L
@@ -173,12 +175,8 @@ internal class StartRegistrationHandler(
             )
 
             // Persist pending member info
-            membershipPersistenceClient.persistMemberInfo(mgmHoldingId, listOf(signedMemberInfo))
-                .execute().also {
-                require(it as? MembershipPersistenceResult.Failure == null) {
-                    "Failed to persist pending member info. Reason: " +
-                            (it as MembershipPersistenceResult.Failure).errorMsg
-                }
+            attemptPersistenceOperationWithRetry {
+                membershipPersistenceClient.persistMemberInfo(mgmHoldingId, listOf(signedMemberInfo))
             }
 
             val persistMemberStatusMessage = p2pRecordsFactory.createAuthenticatedMessageRecord(
@@ -196,10 +194,10 @@ internal class StartRegistrationHandler(
             logger.info("Successful initial validation of registration request with ID ${registrationRequest.registrationId}")
             VerifyMember()
         } catch (ex: InvalidRegistrationRequestException) {
-            logger.warn("Declined registration.", ex)
+            logger.warn("Declined registration. ${ex.originalMessage}")
             DeclineRegistration(ex.originalMessage)
         } catch (ex: Exception) {
-            logger.warn("Declined registration.", ex)
+            logger.warn("Declined registration. ${ex.message}")
             DeclineRegistration("Failed to verify registration request due to: [${ex.message}]")
         }
         outputRecords.add(Record(REGISTRATION_COMMAND_TOPIC, key, RegistrationCommand(outputCommand)))
@@ -285,14 +283,18 @@ internal class StartRegistrationHandler(
             // The notary service x500 name is different from the notary virtual node being registered.
             validateRegistrationRequest(
                 member.name != notary.serviceName
-            ) { "The virtual node `${member.name}` and the notary service `${notary.serviceName}`" +
-                    " name cannot be the same." }
+            ) {
+                "The virtual node `${member.name}` and the notary service `${notary.serviceName}`" +
+                        " name cannot be the same."
+            }
             // The notary service x500 name is different from any existing virtual node x500 name (notary or otherwise).
             validateRegistrationRequest(
-                membershipQueryClient.queryMemberInfo(
-                    mgmHoldingId,
-                    listOf(HoldingIdentity(notary.serviceName, member.groupId))
-                ).getOrThrow().firstOrNull() == null
+                attemptQueryOperationWithRetry {
+                    membershipQueryClient.queryMemberInfo(
+                        mgmHoldingId,
+                        listOf(HoldingIdentity(notary.serviceName, member.groupId))
+                    )
+                }.firstOrNull() == null
             ) { "There is a virtual node having the same name as the notary service ${notary.serviceName}." }
             membershipGroupReaderProvider.getGroupReader(mgmHoldingId).groupParameters?.let { groupParameters ->
                 validateRegistrationRequest(groupParameters.notaries.none { it.name == member.name }) {
@@ -301,7 +303,8 @@ internal class StartRegistrationHandler(
                 validateRegistrationRequest(groupParameters.notaries.none { it.name == notary.serviceName }) {
                     "Notary service '${notary.serviceName}' already exists."
                 }
-            } ?: throw MembershipRegistrationException("Could not read group parameters of the membership group '${member.groupId}'.")
+            }
+                ?: throw MembershipRegistrationException("Could not read group parameters of the membership group '${member.groupId}'.")
         }
     }
 
@@ -312,12 +315,14 @@ internal class StartRegistrationHandler(
     private fun validatePreAuthTokenUsage(mgmHoldingId: HoldingIdentity, pendingMemberInfo: MemberInfo) {
         try {
             pendingMemberInfo.preAuthToken?.let {
-                val result = membershipQueryClient.queryPreAuthTokens(
-                    mgmHoldingIdentity = mgmHoldingId,
-                    ownerX500Name = pendingMemberInfo.name,
-                    preAuthTokenId = it,
-                    viewInactive = false
-                ).getOrThrow()
+                val result = attemptQueryOperationWithRetry {
+                    membershipQueryClient.queryPreAuthTokens(
+                        mgmHoldingIdentity = mgmHoldingId,
+                        ownerX500Name = pendingMemberInfo.name,
+                        preAuthTokenId = it,
+                        viewInactive = false
+                    )
+                }
                 validateRegistrationRequest(result.isNotEmpty()) {
                     logger.warn(
                         "'${pendingMemberInfo.name}' in group '${pendingMemberInfo.groupId}' attempted to " +
@@ -345,6 +350,36 @@ internal class StartRegistrationHandler(
             with("Registration failed due to failure to query configured pre-auth tokens.") {
                 logger.info(this, e)
                 throw InvalidRegistrationRequestException(this)
+            }
+        }
+    }
+
+    private fun <T> attemptPersistenceOperationWithRetry(
+        retries: Int = 0,
+        func: () -> MembershipPersistenceOperation<T>
+    ): T {
+        return try {
+            func().getOrThrow()
+        } catch (ex: CordaRuntimeException) {
+            if (retries < PERSISTENCE_RETRIES) {
+                attemptPersistenceOperationWithRetry(retries + 1, func)
+            } else {
+                throw ex
+            }
+        }
+    }
+
+    private fun <T> attemptQueryOperationWithRetry(
+        retries: Int = 0,
+        func: () -> MembershipQueryResult<T>
+    ): T {
+        return try {
+            func().getOrThrow()
+        } catch (ex: CordaRuntimeException) {
+            if (retries < PERSISTENCE_RETRIES) {
+                attemptQueryOperationWithRetry(retries + 1, func)
+            } else {
+                throw ex
             }
         }
     }

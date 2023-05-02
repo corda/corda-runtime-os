@@ -6,6 +6,7 @@ import net.corda.data.membership.command.registration.mgm.ApproveRegistration
 import net.corda.data.membership.command.registration.mgm.DeclineRegistration
 import net.corda.data.membership.command.registration.mgm.ProcessMemberVerificationResponse
 import net.corda.data.membership.common.ApprovalRuleType
+import net.corda.data.membership.common.RegistrationRequestDetails
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.p2p.SetOwnRegistrationStatus
 import net.corda.data.membership.state.RegistrationState
@@ -118,6 +119,9 @@ internal class ProcessMemberVerificationResponseHandler(
                 persistStatusMessage,
                 approveRecord,
             ) + setRegistrationRequestStatusCommands
+        } catch(e: VerificationResponseAlreadyProcessed) {
+            logger.warn(e.message)
+            emptyList()
         } catch (e: Exception) {
             logger.warn("Could not process member verification response for registration request: '$registrationId'", e)
             listOf(
@@ -141,15 +145,19 @@ internal class ProcessMemberVerificationResponseHandler(
         member: HoldingIdentity,
         registrationId: String
     ): RegistrationStatus {
-        val proposedMemberInfo = membershipQueryClient
+        val registrationRequest = membershipQueryClient
             .queryRegistrationRequest(mgm, registrationId)
             .getOrThrow()
+
+        val proposedMemberInfo = registrationRequest
             ?.memberProvidedContext
             ?.toMap()
             ?: throw CordaRuntimeException(
                 "Could not read the proposed MemberInfo for registration request " +
                         "(ID=$registrationId) submitted by ${member.x500Name}."
             )
+
+        registrationRequest.checkValidState()
 
         val activeMemberInfo = membershipGroupReaderProvider
             .getGroupReader(mgm)
@@ -209,6 +217,16 @@ internal class ProcessMemberVerificationResponseHandler(
     }
 
     class InvalidPreAuthTokenException(msg: String) : CordaRuntimeException(msg)
+    object VerificationResponseAlreadyProcessed : CordaRuntimeException(
+        "Verification response has already been processed and the registration request is no longer in the " +
+                "${RegistrationStatus.PENDING_MEMBER_VERIFICATION} status."
+    )
 
     private fun MemberContext.toMap() = entries.associate { it.key to it.value }
+
+    private fun RegistrationRequestDetails.checkValidState() {
+        if (registrationStatus != RegistrationStatus.PENDING_MEMBER_VERIFICATION) {
+            throw VerificationResponseAlreadyProcessed
+        }
+    }
 }
