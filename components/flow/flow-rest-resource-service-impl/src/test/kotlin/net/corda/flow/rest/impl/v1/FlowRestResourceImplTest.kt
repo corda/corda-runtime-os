@@ -34,9 +34,11 @@ import net.corda.rest.security.CURRENT_REST_CONTEXT
 import net.corda.rest.security.RestAuthContext
 import net.corda.rest.ws.DuplexChannel
 import net.corda.test.util.identity.createTestHoldingIdentity
+import net.corda.utilities.MDC_CLIENT_ID
 import net.corda.virtualnode.OperationalStatus
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertInstanceOf
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -263,6 +265,7 @@ class FlowRestResourceImplTest {
     @Test
     fun `start flow event triggers successfully`() {
         val flowRestResource = createFlowRestResource()
+        val platformPropertiesCaptor = argumentCaptor<Map<String, String>>()
 
         whenever(messageFactory.createFlowStatusResponse(any())).thenReturn(mock())
 
@@ -271,11 +274,13 @@ class FlowRestResourceImplTest {
         verify(virtualNodeInfoReadService, times(1)).getByHoldingIdentityShortHash(any())
         verify(cpiInfoReadService, times(1)).get(any())
         verify(flowStatusCacheService, times(1)).getStatus(any(), any())
-        verify(messageFactory, times(1)).createStartFlowEvent(any(), any(), any(), any(), any())
+        verify(messageFactory, times(1)).createStartFlowEvent(any(), any(), any(), any(), platformPropertiesCaptor.capture())
         verify(messageFactory, times(1)).createStartFlowStatus(any(), any(), any())
         verify(publisher, times(1)).batchPublish(any())
         verify(messageFactory, times(1)).createStartFlowStatus(any(), any(), any())
         verify(fatalErrorFunction, never()).invoke()
+
+        assertEquals(clientRequestId, platformPropertiesCaptor.firstValue[MDC_CLIENT_ID])
     }
 
     @Test

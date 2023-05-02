@@ -8,6 +8,11 @@ import net.corda.data.flow.state.checkpoint.Checkpoint
 import net.corda.data.flow.state.checkpoint.FlowState
 import net.corda.data.flow.state.external.ExternalEventStateType
 import net.corda.flow.pipeline.FlowMDCService
+import net.corda.utilities.MDC_CLIENT_ID
+import net.corda.utilities.MDC_EXTERNAL_EVENT_ID
+import net.corda.utilities.MDC_FLOW_ID
+import net.corda.utilities.MDC_SESSION_EVENT_ID
+import net.corda.utilities.MDC_VNODE_ID
 import net.corda.virtualnode.toCorda
 import org.osgi.service.component.annotations.Component
 import org.slf4j.LoggerFactory
@@ -15,12 +20,7 @@ import org.slf4j.LoggerFactory
 @Component(service = [FlowMDCService::class])
 class FlowMDCServiceImpl : FlowMDCService {
     
-    private companion object {
-        const val MDC_FLOW_ID = "flow_id"
-        const val MDC_CLIENT_ID = "client_id"
-        const val MDC_VNODE_ID = "vnode_id"
-        const val MDC_SESSION_EVENT_ID = "session_event_id"
-        const val MDC_EXTERNAL_EVENT_ID = "external_event_id"
+    companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
     
@@ -42,18 +42,18 @@ class FlowMDCServiceImpl : FlowMDCService {
                 val startKey = startContext.statusKey
                 val holdingIdentityShortHash = startKey.identity.toCorda().shortHash.toString()
                 mapOf(
-                    MDC_VNODE_ID to holdingIdentityShortHash,
+                    MDC_FLOW_ID to flowId,
                     MDC_CLIENT_ID to startContext.requestId,
-                    MDC_FLOW_ID to flowId
+                    MDC_VNODE_ID to holdingIdentityShortHash,
                 )
             }
             is SessionEvent -> {
                 //no checkpoint so this is either a SessionInit or a duplicate SessionEvent for an expired session
                 val holdingIdentityShortHash = payload.initiatedIdentity.toCorda().shortHash.toString()
                 mapOf(MDC_VNODE_ID to holdingIdentityShortHash,
+                    MDC_FLOW_ID to flowId,
                     MDC_CLIENT_ID to payload.sessionId,
                     MDC_SESSION_EVENT_ID to payload.sessionId,
-                    MDC_FLOW_ID to flowId
                 )
             }
             else -> {
