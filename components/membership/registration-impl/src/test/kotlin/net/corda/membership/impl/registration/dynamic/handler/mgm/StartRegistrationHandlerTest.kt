@@ -255,11 +255,11 @@ class StartRegistrationHandlerTest {
             assertThat(pendingMemberRecord.viewOwningMember).isEqualTo(mgmHoldingIdentity)
         }
         verifyServices(
-            persistRegistrationRequest = true,
-            verify = true,
-            verifyCustomFields = true,
-            queryMemberInfo = true,
-            persistMemberInfo = true
+            persistRegistrationRequest = 1,
+            verify = 1,
+            verifyCustomFields = 1,
+            queryMemberInfo = 1,
+            persistMemberInfo = 1
         )
     }
 
@@ -352,8 +352,8 @@ class StartRegistrationHandlerTest {
             assertDeclinedRegistration()
         }
         verifyServices(
-            persistRegistrationRequest = true,
-            verify = true,
+            persistRegistrationRequest = 10,
+            verify = 1,
         )
     }
 
@@ -370,7 +370,7 @@ class StartRegistrationHandlerTest {
             assertDeclinedRegistration()
         }
         verifyServices(
-            verify = true,
+            verify = 1,
         )
     }
 
@@ -411,8 +411,8 @@ class StartRegistrationHandlerTest {
             assertDeclinedRegistration()
         }
         verifyServices(
-            persistRegistrationRequest = true,
-            verify = true,
+            persistRegistrationRequest = 1,
+            verify = 1,
         )
     }
 
@@ -430,9 +430,9 @@ class StartRegistrationHandlerTest {
             assertDeclinedRegistration()
         }
         verifyServices(
-            persistRegistrationRequest = true,
-            verify = true,
-            verifyCustomFields = true,
+            persistRegistrationRequest = 1,
+            verify = 1,
+            verifyCustomFields = 1,
         )
     }
 
@@ -458,9 +458,9 @@ class StartRegistrationHandlerTest {
             assertDeclinedRegistration()
         }
         verifyServices(
-            persistRegistrationRequest = true,
-            verify = true,
-            verifyCustomFields = true,
+            persistRegistrationRequest = 1,
+            verify = 1,
+            verifyCustomFields = 1,
         )
     }
 
@@ -479,10 +479,10 @@ class StartRegistrationHandlerTest {
             assertDeclinedRegistration()
         }
         verifyServices(
-            persistRegistrationRequest = true,
-            verify = true,
-            verifyCustomFields = true,
-            queryMemberInfo = true,
+            persistRegistrationRequest = 1,
+            verify = 1,
+            verifyCustomFields = 1,
+            queryMemberInfo = 1,
         )
     }
 
@@ -523,10 +523,10 @@ class StartRegistrationHandlerTest {
             assertDeclinedRegistration()
         }
         verifyServices(
-            persistRegistrationRequest = true,
-            verify = true,
-            verifyCustomFields = true,
-            queryMemberInfo = true,
+            persistRegistrationRequest = 1,
+            verify = 1,
+            verifyCustomFields = 1,
+            queryMemberInfo = 1,
         )
     }
 
@@ -553,11 +553,11 @@ class StartRegistrationHandlerTest {
             assertDeclinedRegistration()
         }
         verifyServices(
-            persistRegistrationRequest = true,
-            verify = true,
-            verifyCustomFields = true,
-            queryMemberInfo = true,
-            persistMemberInfo = true
+            persistRegistrationRequest = 1,
+            verify = 1,
+            verifyCustomFields = 1,
+            queryMemberInfo = 1,
+            persistMemberInfo = 10
         )
     }
 
@@ -752,7 +752,7 @@ class StartRegistrationHandlerTest {
 
             val result = handler.invoke(null, Record(testTopic, testTopicKey, startRegistrationCommand))
 
-            verify(membershipQueryClient).queryPreAuthTokens(any(), any(), any(), any())
+            verify(membershipQueryClient, times(10)).queryPreAuthTokens(any(), any(), any(), any())
             result.assertDeclinedRegistration()
         }
 
@@ -852,27 +852,25 @@ class StartRegistrationHandlerTest {
 
     @Suppress("LongParameterList")
     private fun verifyServices(
-        persistRegistrationRequest: Boolean = false,
-        verify: Boolean = false,
-        verifyCustomFields: Boolean = false,
-        queryMemberInfo: Boolean = false,
-        persistMemberInfo: Boolean = false
+        persistRegistrationRequest: Int = 0,
+        verify: Int = 0,
+        verifyCustomFields: Int = 0,
+        queryMemberInfo: Int = 0,
+        persistMemberInfo: Int = 0
     ) {
-        fun getVerificationMode(condition: Boolean) = if (condition) times(1) else never()
-
-        verify(membershipPersistenceClient, getVerificationMode(persistRegistrationRequest))
+        verify(membershipPersistenceClient, times(persistRegistrationRequest))
             .persistRegistrationRequest(eq(mgmHoldingIdentity.toCorda()), any())
 
-        verify(membershipQueryClient, getVerificationMode(queryMemberInfo))
+        verify(membershipQueryClient, times(queryMemberInfo))
             .queryMemberInfo(eq(mgmHoldingIdentity.toCorda()), any())
 
-        verify(membershipPersistenceClient, getVerificationMode(persistMemberInfo))
+        verify(membershipPersistenceClient, times(persistMemberInfo))
             .persistMemberInfo(eq(mgmHoldingIdentity.toCorda()), any())
 
-        verify(registrationContextCustomFieldsVerifier, getVerificationMode(verifyCustomFields))
+        verify(registrationContextCustomFieldsVerifier, times(verifyCustomFields))
             .verify(memberContext.toMap())
 
-        verify(memberTypeChecker, getVerificationMode(verify))
+        verify(memberTypeChecker, times(verify))
             .getMgmMemberInfo(eq(mgmHoldingIdentity.toCorda()))
     }
 }

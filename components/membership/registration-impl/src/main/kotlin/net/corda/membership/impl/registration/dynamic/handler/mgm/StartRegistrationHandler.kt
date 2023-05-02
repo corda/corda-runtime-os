@@ -355,14 +355,14 @@ internal class StartRegistrationHandler(
     }
 
     private fun <T> attemptPersistenceOperationWithRetry(
-        retries: Int = 0,
+        attempts: Int = 1,
         func: () -> MembershipPersistenceOperation<T>
     ): T {
         return try {
             func().getOrThrow()
         } catch (ex: CordaRuntimeException) {
-            if (retries < PERSISTENCE_RETRIES) {
-                attemptPersistenceOperationWithRetry(retries + 1, func)
+            if (attempts < PERSISTENCE_RETRIES) {
+                attemptPersistenceOperationWithRetry(attempts + 1, func)
             } else {
                 throw ex
             }
@@ -370,14 +370,14 @@ internal class StartRegistrationHandler(
     }
 
     private fun <T> attemptQueryOperationWithRetry(
-        retries: Int = 0,
+        attempts: Int = 1,
         func: () -> MembershipQueryResult<T>
     ): T {
         return try {
             func().getOrThrow()
         } catch (ex: CordaRuntimeException) {
-            if (retries < PERSISTENCE_RETRIES) {
-                attemptQueryOperationWithRetry(retries + 1, func)
+            if (attempts < PERSISTENCE_RETRIES) {
+                attemptQueryOperationWithRetry(attempts + 1, func)
             } else {
                 throw ex
             }
