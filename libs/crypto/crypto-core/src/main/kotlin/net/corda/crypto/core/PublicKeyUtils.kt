@@ -3,7 +3,6 @@ package net.corda.crypto.core
 import java.security.PublicKey
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.cipher.suite.PlatformDigestService
-import net.corda.crypto.cipher.suite.PublicKeyHash
 import net.corda.crypto.cipher.suite.sha256Bytes
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
@@ -16,7 +15,9 @@ import net.corda.v5.crypto.SecureHash
 // TODO Should use `digestService`
 fun publicKeyIdFromBytes(publicKey: ByteArray): String =
     // TODO Need to replace below calculation with using `DigestService` and get short id from its outcome
-    PublicKeyHash.calculate(publicKey).id
+    ShortHash.of(
+        SecureHashImpl(DigestAlgorithmName.SHA2_256.name, publicKey.sha256Bytes())
+    ).value
 
 fun fullPublicKeyIdFromBytes(publicKey: ByteArray, digestService: PlatformDigestService): String =
     // TODO default digest algorithm needs to selected through default digest service

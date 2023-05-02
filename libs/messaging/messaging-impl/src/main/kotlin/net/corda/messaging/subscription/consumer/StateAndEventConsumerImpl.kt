@@ -8,7 +8,9 @@ import net.corda.messagebus.api.consumer.CordaOffsetResetStrategy
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
 import net.corda.messaging.config.ResolvedSubscriptionConfig
+import net.corda.messaging.constants.MetricsConstants
 import net.corda.messaging.utils.tryGetResult
+import net.corda.metrics.CordaMetrics
 import net.corda.schema.Schemas.getStateAndEventStateTopic
 import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
@@ -53,8 +55,21 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
     private val initialProcessorTimeout = maxPollInterval / 4
 
     private val currentStates = partitionState.currentStates
-    private val partitionsToSync: MutableSet<CordaTopicPartition> = ConcurrentHashMap<CordaTopicPartition, Unit>().keySet(Unit)
-    private val inSyncPartitions: MutableSet<CordaTopicPartition> = ConcurrentHashMap<CordaTopicPartition, Unit>().keySet(Unit)
+    private val partitionsToSync = ConcurrentHashMap.newKeySet<CordaTopicPartition>()
+    private val inSyncPartitions = ConcurrentHashMap.newKeySet<CordaTopicPartition>()
+
+    private val statePollTimer = CordaMetrics.Metric.MessagePollTime.builder()
+        .withTag(CordaMetrics.Tag.MessagePatternType, MetricsConstants.STATE_AND_EVENT_PATTERN_TYPE)
+        .withTag(CordaMetrics.Tag.MessagePatternClientId, config.clientId)
+        .withTag(CordaMetrics.Tag.OperationName, MetricsConstants.STATE_POLL_OPERATION)
+        .build()
+
+    private val eventPollTimer = CordaMetrics.Metric.MessagePollTime.builder()
+        .withTag(CordaMetrics.Tag.MessagePatternType, MetricsConstants.STATE_AND_EVENT_PATTERN_TYPE)
+        .withTag(CordaMetrics.Tag.MessagePatternClientId, config.clientId)
+        .withTag(CordaMetrics.Tag.OperationName, MetricsConstants.EVENT_POLL_OPERATION)
+        .build()
+
 
     private var pollIntervalCutoff = 0L
 
@@ -141,6 +156,7 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
         stateConsumer.assign(newAssignment)
     }
 
+
     override fun getInMemoryStateValue(key: K): S? {
         currentStates.forEach {
             val state = it.value[key]
@@ -158,7 +174,10 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
             return
         }
 
-        stateConsumer.poll(STATE_POLL_TIMEOUT).forEach { state ->
+        val states = statePollTimer.recordCallable {
+            stateConsumer.poll(STATE_POLL_TIMEOUT)
+        }
+        states?.forEach { state ->
             log.debug { "Processing state: $state" }
             // This condition should always be true. This can however guard against a potential race where the partition
             // is revoked while states are being processed, resulting in the partition no longer being required to sync.
@@ -197,9 +216,11 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
     override fun pollEvents(): List<CordaConsumerRecord<K, E>> {
         return when {
             inSyncPartitions.isNotEmpty() -> {
-                eventConsumer.poll(EVENT_POLL_TIMEOUT).also {
-                    log.debug { "Received ${it.size} events on keys ${it.joinToString { it.key.toString() }}" }
-                }
+                eventPollTimer.recordCallable {
+                    eventConsumer.poll(EVENT_POLL_TIMEOUT).also {
+                        log.debug { "Received ${it.size} events on keys ${it.joinToString { it.key.toString() }}" }
+                    }
+                }!!
             }
             partitionsToSync.isEmpty() -> {
                 // Call poll more frequently to trigger a rebalance of the event consumer.
