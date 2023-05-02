@@ -11,7 +11,7 @@ data class QualifiedType<T>(private val rawParameterType: ParameterType<T>, priv
     private val isQualified: Boolean = true
 
     override fun getTypeLabel(): ParameterTypeLabel {
-        return typeLabel
+        return rawParameterType.typeLabel
     }
 
     override fun getExpectedType(): Class<T> {

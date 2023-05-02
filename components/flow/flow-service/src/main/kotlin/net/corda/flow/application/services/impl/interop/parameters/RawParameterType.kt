@@ -26,6 +26,6 @@ data class RawParameterType<T>(private val typeLabel: ParameterTypeLabel) : Para
     }
 
     override fun getRawParameterType(): ParameterType<T> {
-        return expectedType as ParameterType<T>
+        return expectedType as ParameterType<T> //expectedType is Class<?/T> vs ParameterType<T>
     }
 }

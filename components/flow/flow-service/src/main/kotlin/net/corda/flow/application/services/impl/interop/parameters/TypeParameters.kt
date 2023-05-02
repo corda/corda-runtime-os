@@ -3,6 +3,9 @@ package net.corda.flow.application.services.impl.interop.parameters
 import net.corda.v5.application.interop.parameters.ParameterType
 import net.corda.v5.application.interop.parameters.ParameterTypeLabel
 import net.corda.v5.application.interop.parameters.TypeQualifier
+import java.math.BigDecimal
+import java.nio.ByteBuffer
+import java.time.ZonedDateTime
 import java.util.*
 
 /**
@@ -53,14 +56,27 @@ class TypeParameters<T> {
             return aliased as ParameterType<T>
         }
 
-        val rawType = parseRawParameterType<T>(rawTypeName)
+        val rawType = parseRawParameterType<T>(rawTypeName) //rawTypeName = "boolean"
         return if (qualifierString == null) rawType
-        else QualifiedType(rawType.rawParameterType, TypeQualifier.of(qualifierString))
+        else QualifiedType(rawType, TypeQualifier.of(qualifierString))
     }
 
     @Suppress("UNCHECKED_CAST")
     private fun <T : Any> parseRawParameterType(typeName: String): ParameterType<T> {
-        return ParameterTypeLabel.parse(typeName).expectedClass as ParameterType<T>
+        return when (typeName) {
+            ParameterTypeLabel.BOOLEAN.typeName -> RawParameterType<Boolean>(ParameterTypeLabel.BOOLEAN)
+            ParameterTypeLabel.STRING.typeName -> RawParameterType<String>(ParameterTypeLabel.STRING)
+            ParameterTypeLabel.DECIMAL.typeName -> RawParameterType<BigDecimal>(ParameterTypeLabel.DECIMAL)
+            ParameterTypeLabel.UUID.typeName -> RawParameterType<UUID>(ParameterTypeLabel.UUID)
+            ParameterTypeLabel.TIMESTAMP.typeName -> RawParameterType<ZonedDateTime>(ParameterTypeLabel.TIMESTAMP)
+            ParameterTypeLabel.BYTES.typeName -> RawParameterType<ByteBuffer>(ParameterTypeLabel.BYTES)
+            ParameterTypeLabel.JSON.typeName -> RawParameterType<String>(ParameterTypeLabel.JSON)
+
+            else -> throw IllegalArgumentException(
+                "Invalid raw parameter type: $typeName - " +
+                        "must be one of boolean, string, decimal, uuid, timestamp, bytes or json"
+            )
+        } as ParameterType<T>
     }
 
 //        /**
