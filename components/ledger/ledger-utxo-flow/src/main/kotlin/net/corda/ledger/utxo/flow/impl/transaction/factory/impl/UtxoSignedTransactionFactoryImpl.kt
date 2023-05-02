@@ -158,9 +158,7 @@ class UtxoSignedTransactionFactoryImpl @Activate constructor(
                 it.encumbranceGroup?.tag,
                 it.encumbranceGroup?.size,
                 utxoTransactionBuilder.notaryName!!,
-                utxoTransactionBuilder.notaryKey!!,
-                currentSandboxGroup.getEvolvableTag(it.contractStateType),
-                currentSandboxGroup.getEvolvableTag(it.contractType)
+                utxoTransactionBuilder.notaryKey!!
             )
         }
 

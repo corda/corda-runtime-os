@@ -52,8 +52,8 @@ open class UtxoFilteredTransactionTestBase {
         val signerKey1 = mock<PublicKey>()
         val signerKey2 = mock<PublicKey>()
 
-        val outputInfo1 = UtxoOutputInfoComponent(null, null, notaryName, notaryKey, "", "")
-        val outputInfo2 = UtxoOutputInfoComponent("three", 3, notaryName, notaryKey, "", "")
+        val outputInfo1 = UtxoOutputInfoComponent(null, null, notaryName, notaryKey)
+        val outputInfo2 = UtxoOutputInfoComponent("three", 3, notaryName, notaryKey)
     }
 
     lateinit var wireTransaction: WireTransaction

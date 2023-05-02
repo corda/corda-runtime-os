@@ -23,9 +23,7 @@ class UtxoFilteredTransactionAMQPSerializationTest : UtxoLedgerIntegrationTest()
             encumbrance = null,
             encumbranceGroupSize = null,
             notaryName = MemberX500Name("alice", "LDN", "GB"),
-            notaryKey = publicKeyExample,
-            contractStateTag = UtxoStateClassExample::class.java.name,
-            contractTag = "contract tag"
+            notaryKey = publicKeyExample
         )
     }
 

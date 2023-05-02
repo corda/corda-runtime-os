@@ -191,7 +191,7 @@ class UtxoLedgerMessageProcessorTests {
         ).bytes
         val outputInfo = ctx.getSerializationService().serialize(
             UtxoOutputInfoComponent(
-                null, null, notaryX500Name, publicKeyExample, TestContractState::class.java.name, "contract tag"
+                null, null, notaryX500Name, publicKeyExample
             )
         ).bytes
         val wireTransactionFactory: WireTransactionFactory = ctx.getSandboxSingletonService()

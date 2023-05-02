@@ -14,7 +14,6 @@ import java.time.Instant
  * @property TIMESTAMP The timestamp parameter component group. Ordinal = 1.
  * @property SIGNATORIES The required signing keys component group. Ordinal = 2.
  * @property OUTPUT_STATES The output states component group. Ordinal = 3.
- * @property OUTPUT_STATE_TYPES The output state types component group. Ordinal = 4.
  */
 
 enum class ConsensualComponentGroup {
@@ -22,14 +21,12 @@ enum class ConsensualComponentGroup {
               // [net.corda.ledger.common.impl.transaction.WireTransactionImplKt.ALL_LEDGER_METADATA_COMPONENT_GROUP_ID]
     TIMESTAMP,
     SIGNATORIES,
-    OUTPUT_STATES,
-    OUTPUT_STATE_TYPES
+    OUTPUT_STATES
 }
 
 val consensualComponentGroupStructure = listOf(
     listOf("metadata"),
     listOf(Instant::class.java.name),
     listOf(PublicKey::class.java.name),
-    listOf(ConsensualState::class.java.name),
-    listOf("OutputInfo"),
+    listOf(ConsensualState::class.java.name)
 )

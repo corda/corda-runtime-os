@@ -414,9 +414,7 @@ class UtxoFilteredTransactionTest : UtxoLedgerIntegrationTest() {
             encumbrance = null,
             encumbranceGroupSize = null,
             notaryName = notaryX500Name,
-            notaryKey = publicKeyExample,
-            contractStateTag = UtxoStateClassExample::class.java.name,
-            contractTag = "contract tag"
+            notaryKey = publicKeyExample
         )
         return utxoSignedTransactionFactory.createExample(
             jsonMarshallingService,

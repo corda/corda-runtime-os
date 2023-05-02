@@ -14,7 +14,6 @@ import net.corda.ledger.consensual.data.transaction.verifier.verifyMetadata
 import net.corda.ledger.consensual.flow.impl.transaction.ConsensualSignedTransactionImpl
 import net.corda.ledger.consensual.flow.impl.transaction.verifier.ConsensualLedgerTransactionVerifier
 import net.corda.sandbox.type.UsedByFlow
-import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.serialization.SerializationService
@@ -43,8 +42,6 @@ class ConsensualSignedTransactionFactoryImpl @Activate constructor(
     private val transactionMetadataFactory: TransactionMetadataFactory,
     @Reference(service = WireTransactionFactory::class)
     private val wireTransactionFactory: WireTransactionFactory,
-    @Reference(service = CurrentSandboxGroupContext::class)
-    private val currentSandboxGroupContext: CurrentSandboxGroupContext,
     @Reference(service = JsonMarshallingService::class)
     private val jsonMarshallingService: JsonMarshallingService,
     @Reference(service = JsonValidator::class)
@@ -110,8 +107,6 @@ class ConsensualSignedTransactionFactoryImpl @Activate constructor(
         metadataBytes: ByteArray
     ): List<List<ByteArray>> {
 
-        val currentSandboxGroup = currentSandboxGroupContext.get().sandboxGroup
-
         val requiredSigningKeys = consensualTransactionBuilder
             .states
             .flatMap { it.participants }
@@ -133,15 +128,6 @@ class ConsensualSignedTransactionFactoryImpl @Activate constructor(
                     }
                     ConsensualComponentGroup.OUTPUT_STATES -> {
                         consensualTransactionBuilder.states.map { serializationService.serialize(it).bytes }
-                    }
-                    ConsensualComponentGroup.OUTPUT_STATE_TYPES -> {
-                        consensualTransactionBuilder.states.map {
-                            serializationService.serialize(
-                                currentSandboxGroup.getEvolvableTag(
-                                    it::class.java
-                                )
-                            ).bytes
-                        }
                     }
                 }
             }

@@ -542,10 +542,10 @@ class UtxoPersistenceServiceImplTest {
             listOf("group2_component1".toByteArray()),
             listOf(
                 UtxoOutputInfoComponent(
-                    null, null, notaryExampleName, notaryExampleKey, TestContractState1::class.java.name, "contract tag"
+                    null, null, notaryExampleName, notaryExampleKey
                 ).toBytes(),
                 UtxoOutputInfoComponent(
-                    null, null, notaryExampleName, notaryExampleKey, TestContractState2::class.java.name, "contract tag"
+                    null, null, notaryExampleName, notaryExampleKey
                 ).toBytes()
             ),
             listOf("group4_component1".toByteArray()),

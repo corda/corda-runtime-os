@@ -9,7 +9,5 @@ data class UtxoOutputInfoComponent(
     val encumbrance: String?,
     val encumbranceGroupSize: Int?,
     val notaryName: MemberX500Name,
-    val notaryKey: PublicKey,
-    val contractStateTag: String,
-    val contractTag: String
+    val notaryKey: PublicKey
 )
