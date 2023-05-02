@@ -38,10 +38,11 @@ import net.corda.utilities.MDC_CLIENT_ID
 import net.corda.virtualnode.OperationalStatus
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
-import org.assertj.core.api.Assertions.assertThat
-import org.assertj.core.api.Assertions.assertThatThrownBy
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertInstanceOf
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.kotlin.any
@@ -191,9 +192,9 @@ class FlowRestResourceImplTest {
 
         val flowRestResource = createFlowRestResource()
 
-        assertThatThrownBy {
+        assertThrows<ResourceNotFoundException> {
             flowRestResource.getFlowStatus(VALID_SHORT_HASH, clientRequestId)
-        }.isInstanceOf(ResourceNotFoundException::class.java)
+        }
 
         verify(virtualNodeInfoReadService, times(1)).getByHoldingIdentityShortHash(any())
         verify(flowStatusCacheService, never()).getStatus(any(), any())
@@ -206,9 +207,9 @@ class FlowRestResourceImplTest {
     fun `get flow status throws bad request if short hash is invalid`(invalidShortHash: String) {
         val flowRestResource = createFlowRestResource()
 
-        assertThatThrownBy {
+        assertThrows<BadRequestException> {
             flowRestResource.getFlowStatus(invalidShortHash, "")
-        }.isInstanceOf(BadRequestException::class.java)
+        }
 
         verify(virtualNodeInfoReadService, never()).getByHoldingIdentityShortHash(any())
         verify(flowStatusCacheService, never()).getStatus(any(), any())
@@ -234,9 +235,9 @@ class FlowRestResourceImplTest {
 
         val flowRestResource = createFlowRestResource()
 
-        assertThatThrownBy {
+        assertThrows<ResourceNotFoundException> {
             flowRestResource.getMultipleFlowStatus(VALID_SHORT_HASH)
-        }.isInstanceOf(ResourceNotFoundException::class.java)
+        }
 
         verify(virtualNodeInfoReadService, times(1)).getByHoldingIdentityShortHash(any())
         verify(flowStatusCacheService, never()).getStatusesPerIdentity(any())
@@ -249,9 +250,9 @@ class FlowRestResourceImplTest {
     fun `get multiple flow status throws bad request if short hash is invalid`(invalidShortHash: String) {
         val flowRestResource = createFlowRestResource()
 
-        assertThatThrownBy {
+        assertThrows<BadRequestException> {
             flowRestResource.getMultipleFlowStatus(invalidShortHash)
-        }.isInstanceOf(BadRequestException::class.java)
+        }
 
         verify(virtualNodeInfoReadService, never()).getByHoldingIdentityShortHash(any())
         verify(flowStatusCacheService, never()).getStatusesPerIdentity(any())
@@ -279,7 +280,7 @@ class FlowRestResourceImplTest {
         verify(messageFactory, times(1)).createStartFlowStatus(any(), any(), any())
         verify(fatalErrorFunction, never()).invoke()
 
-        assertThat(platformPropertiesCaptor.firstValue[MDC_CLIENT_ID]).isEqualTo(clientRequestId)
+        assertEquals(clientRequestId, platformPropertiesCaptor.firstValue[MDC_CLIENT_ID])
     }
 
     @Test
@@ -290,18 +291,18 @@ class FlowRestResourceImplTest {
             getStubVirtualNode(flowStartOperationalStatus = OperationalStatus.INACTIVE)
         )
 
-        assertThatThrownBy {
+        assertThrows<OperationNotAllowedException> {
             flowRestResource.startFlow(VALID_SHORT_HASH, StartFlowParameters(clientRequestId, FLOW1, TestJsonObject()))
-        }.isInstanceOf(OperationNotAllowedException::class.java)
+        }
     }
 
     @Test
     fun `start flow event fails when not initialized`() {
         val flowRestResource = createFlowRestResource(false)
 
-        assertThatThrownBy {
+        assertThrows<ServiceUnavailableException> {
             flowRestResource.startFlow(VALID_SHORT_HASH, StartFlowParameters(clientRequestId, FLOW1, TestJsonObject()))
-        }.isInstanceOf(ServiceUnavailableException::class.java)
+        }
 
         verify(virtualNodeInfoReadService, never()).getByHoldingIdentityShortHash(any())
         verify(cpiInfoReadService, never()).get(any())
@@ -318,9 +319,9 @@ class FlowRestResourceImplTest {
     fun `start flow event throws bad request if short hash is invalid`(invalidShortHash: String) {
         val flowRestResource = createFlowRestResource()
 
-        assertThatThrownBy {
+        assertThrows<BadRequestException> {
             flowRestResource.startFlow(invalidShortHash, StartFlowParameters(clientRequestId, "", TestJsonObject()))
-        }.isInstanceOf(BadRequestException::class.java)
+        }
 
         verify(flowStatusCacheService, never()).getStatus(any(), any())
         verify(messageFactory, never()).createStartFlowEvent(any(), any(), any(), any(), any())
@@ -336,9 +337,9 @@ class FlowRestResourceImplTest {
 
         val flowRestResource = createFlowRestResource()
 
-        assertThatThrownBy {
+        assertThrows<ResourceNotFoundException> {
             flowRestResource.startFlow(VALID_SHORT_HASH, StartFlowParameters(clientRequestId, "", TestJsonObject()))
-        }.isInstanceOf(ResourceNotFoundException::class.java)
+        }
 
         verify(flowStatusCacheService, never()).getStatus(any(), any())
         verify(messageFactory, never()).createStartFlowEvent(any(), any(), any(), any(), any())
@@ -353,9 +354,9 @@ class FlowRestResourceImplTest {
         val flowRestResource = createFlowRestResource()
 
         whenever(flowStatusCacheService.getStatus(any(), any())).thenReturn(mock())
-        assertThatThrownBy {
+        assertThrows<ResourceAlreadyExistsException> {
             flowRestResource.startFlow(VALID_SHORT_HASH, StartFlowParameters(clientRequestId, FLOW1, TestJsonObject()))
-        }.isInstanceOf(ResourceAlreadyExistsException::class.java)
+        }
 
         verify(virtualNodeInfoReadService, times(1)).getByHoldingIdentityShortHash(any())
         verify(flowStatusCacheService, times(1)).getStatus(any(), any())
@@ -373,9 +374,9 @@ class FlowRestResourceImplTest {
 
         whenever(messageFactory.createFlowStatusResponse(any())).thenReturn(mock())
 
-        assertThatThrownBy {
+        assertThrows<InvalidInputDataException> {
             flowRestResource.startFlow(VALID_SHORT_HASH, StartFlowParameters("requetsId", "invalid", TestJsonObject()))
-        }.isInstanceOf(InvalidInputDataException::class.java)
+        }
 
         verify(virtualNodeInfoReadService, times(1)).getByHoldingIdentityShortHash(any())
         verify(flowStatusCacheService, times(1)).getStatus(any(), any())
@@ -392,9 +393,9 @@ class FlowRestResourceImplTest {
         val flowRestResource = createFlowRestResource()
 
         doThrow(CordaMessageAPIIntermittentException("")).whenever(publisher).batchPublish(any())
-        assertThatThrownBy {
+        assertThrows<InternalServerException> {
             flowRestResource.startFlow(VALID_SHORT_HASH, StartFlowParameters(clientRequestId, FLOW1, TestJsonObject()))
-        }.isInstanceOf(InternalServerException::class.java)
+        }
 
         verify(virtualNodeInfoReadService, times(1)).getByHoldingIdentityShortHash(any())
         verify(flowStatusCacheService, times(1)).getStatus(any(), any())
@@ -414,9 +415,9 @@ class FlowRestResourceImplTest {
             )
         })
 
-        assertThatThrownBy {
+        assertThrows<InternalServerException> {
             flowRestResource.startFlow(VALID_SHORT_HASH, StartFlowParameters(clientRequestId, FLOW1, TestJsonObject()))
-        }.isInstanceOf(InternalServerException::class.java)
+        }
 
         verify(virtualNodeInfoReadService, times(1)).getByHoldingIdentityShortHash(any())
         verify(flowStatusCacheService, times(1)).getStatus(any(), any())
@@ -432,9 +433,9 @@ class FlowRestResourceImplTest {
         val flowRestResource = createFlowRestResource()
 
         doThrow(CordaMessageAPIFatalException("")).whenever(publisher).batchPublish(any())
-        assertThatThrownBy {
+        assertThrows<InternalServerException> {
             flowRestResource.startFlow(VALID_SHORT_HASH, StartFlowParameters(clientRequestId, FLOW1, TestJsonObject()))
-        }.isInstanceOf(InternalServerException::class.java)
+        }
 
         verify(virtualNodeInfoReadService, times(1)).getByHoldingIdentityShortHash(any())
         verify(flowStatusCacheService, times(1)).getStatus(any(), any())
@@ -447,9 +448,9 @@ class FlowRestResourceImplTest {
         // flowRestResource should have marked itself as unable to start flows after fata error, which means throwing without
         // attempting to start the flow
 
-        assertThatThrownBy {
+        assertThrows<ServiceUnavailableException> {
             flowRestResource.startFlow(VALID_SHORT_HASH, StartFlowParameters(clientRequestId, FLOW1, TestJsonObject()))
-        }.isInstanceOf(ServiceUnavailableException::class.java)
+        }
 
         verify(virtualNodeInfoReadService, times(1)).getByHoldingIdentityShortHash(any())
         verify(flowStatusCacheService, times(1)).getStatus(any(), any())
@@ -469,9 +470,9 @@ class FlowRestResourceImplTest {
             )
         })
 
-        assertThatThrownBy {
+        assertThrows<InternalServerException> {
             flowRestResource.startFlow(VALID_SHORT_HASH, StartFlowParameters(clientRequestId, FLOW1, TestJsonObject()))
-        }.isInstanceOf(InternalServerException::class.java)
+        }
 
         verify(virtualNodeInfoReadService, times(1)).getByHoldingIdentityShortHash(any())
         verify(flowStatusCacheService, times(1)).getStatus(any(), any())
@@ -484,9 +485,9 @@ class FlowRestResourceImplTest {
         // flowRestResource should have marked itself as unable to start flows after fata error, which means throwing without
         // attempting to start the flow
 
-        assertThatThrownBy {
+        assertThrows<ServiceUnavailableException> {
             flowRestResource.startFlow(VALID_SHORT_HASH, StartFlowParameters(clientRequestId, FLOW1, TestJsonObject()))
-        }.isInstanceOf(ServiceUnavailableException::class.java)
+        }
 
         verify(virtualNodeInfoReadService, times(1)).getByHoldingIdentityShortHash(any())
         verify(flowStatusCacheService, times(1)).getStatus(any(), any())
@@ -511,7 +512,7 @@ class FlowRestResourceImplTest {
 
         verify(virtualNodeInfoReadService, times(1)).getByHoldingIdentityShortHash(any())
         verify(duplexChannel, times(1)).error(any())
-        assertThat(exceptionArgumentCaptor.firstValue.cause).isInstanceOf(ResourceNotFoundException::class.java)
+        assertInstanceOf(ResourceNotFoundException::class.java, exceptionArgumentCaptor.firstValue.cause)
         verify(fatalErrorFunction, never()).invoke()
     }
 
@@ -528,7 +529,7 @@ class FlowRestResourceImplTest {
 
         verify(virtualNodeInfoReadService, never()).getByHoldingIdentityShortHash(any())
         verify(duplexChannel, times(1)).error(any())
-        assertThat(exceptionArgumentCaptor.firstValue.cause).isInstanceOf(BadRequestException::class.java)
+        assertInstanceOf(BadRequestException::class.java, exceptionArgumentCaptor.firstValue.cause)
         verify(fatalErrorFunction, never()).invoke()
     }
 
@@ -543,9 +544,9 @@ class FlowRestResourceImplTest {
             )
         ).thenReturn(false)
 
-        assertThatThrownBy {
+        assertThrows<ForbiddenException> {
             flowRestResource.startFlow(VALID_SHORT_HASH, StartFlowParameters(clientRequestId, FLOW1, TestJsonObject()))
-        }.isInstanceOf(ForbiddenException::class.java)
+        }
         verify(virtualNodeInfoReadService, times(1)).getByHoldingIdentityShortHash(any())
         verify(fatalErrorFunction, never()).invoke()
     }
@@ -556,8 +557,8 @@ class FlowRestResourceImplTest {
 
         whenever(messageFactory.createFlowStatusResponse(any())).thenReturn(mock())
 
-        assertThatThrownBy {
+        assertThrows<BadRequestException> {
             flowRestResource.startFlow(VALID_SHORT_HASH, StartFlowParameters("", FLOW1, TestJsonObject()))
-        }.isInstanceOf(BadRequestException::class.java)
+        }
     }
 }
