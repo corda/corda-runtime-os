@@ -39,23 +39,15 @@ fun parseSecureHashAlgoName(algoNameAndHexString: String): String {
 }
 
 fun parseSecureHashHexString(algoNameAndHexString: String): String {
-    val idx = algoNameAndHexString.indexOf(DELIMITER)
-    if (idx == -1) {
-        throw IllegalArgumentException("Provided string: $algoNameAndHexString should be of format algorithm:hexadecimal")
-    }
-    return algoNameAndHexString.substring(idx + 1)
+    val algoName = parseSecureHashAlgoName(algoNameAndHexString)
+    return algoNameAndHexString.substring(algoName.length + 1)
 }
 
 fun parseSecureHash(algoNameAndHexString: String): SecureHash {
-    val idx = algoNameAndHexString.indexOf(DELIMITER)
-    return if (idx == -1) {
-        throw IllegalArgumentException("Provided string: $algoNameAndHexString should be of format algorithm:hexadecimal")
-    } else {
-        val algorithm = algoNameAndHexString.substring(0, idx)
-        val value = algoNameAndHexString.substring(idx + 1)
-        val data = ByteArrays.parseAsHex(value)
-        SecureHashImpl(algorithm, data)
-    }
+    val algoName = parseSecureHashAlgoName(algoNameAndHexString)
+    val hexString = algoNameAndHexString.substring(algoName.length + 1)
+    val data = ByteArrays.parseAsHex(hexString)
+    return SecureHashImpl(algoName, data)
 }
 
 val SecureHash.bytes: ByteArray
