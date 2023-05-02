@@ -1,4 +1,4 @@
-package net.cordapp.testing.testflows
+package com.r3.corda.testing.interop
 
 import net.corda.v5.application.flows.InitiatedBy
 import net.corda.v5.application.flows.ResponderFlow
