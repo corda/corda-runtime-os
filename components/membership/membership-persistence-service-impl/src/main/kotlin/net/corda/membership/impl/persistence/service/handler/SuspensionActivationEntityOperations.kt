@@ -23,18 +23,25 @@ internal class SuspensionActivationEntityOperations(
     private val keyValuePairListDeserializer: CordaAvroDeserializer<KeyValuePairList>,
     private val keyValuePairListSerializer: CordaAvroSerializer<KeyValuePairList>
 ) {
+    @Suppress("ThrowsCount")
     fun findMember(
         em: EntityManager,
         memberName: String,
         groupId: String,
         expectedSerial: Long?,
-        expectedStatus: String
+        expectedStatus: String,
     ): MemberInfoEntity {
-        val member = em.find(
-            MemberInfoEntity::class.java,
-            MemberInfoEntityPrimaryKey(groupId, memberName, false),
-            LockModeType.PESSIMISTIC_WRITE
-        ) ?: throw MembershipPersistenceException("Member '$memberName' does not exist.")
+        val member = try {
+            em.find(
+                MemberInfoEntity::class.java,
+                MemberInfoEntityPrimaryKey(groupId, memberName, false),
+                LockModeType.PESSIMISTIC_WRITE,
+            ) ?: throw MembershipPersistenceException("Member '$memberName' does not exist.")
+        } catch (e: PessimisticLockException) {
+            throw InvalidEntityUpdateException(
+                "Could not update member '$memberName' with serial number: $expectedSerial: ${e.message}",
+            )
+        }
         expectedSerial?.let {
             require(member.serialNumber == it) {
                 throw InvalidEntityUpdateException(
@@ -48,7 +55,7 @@ internal class SuspensionActivationEntityOperations(
         return member
     }
 
-    @Suppress("LongParameterList", "ThrowsCount")
+    @Suppress("LongParameterList")
     fun updateStatus(
         em: EntityManager,
         memberName: String,
@@ -70,27 +77,21 @@ internal class SuspensionActivationEntityOperations(
         val serializedMgmContext = keyValuePairListSerializer.serialize(mgmContext)
             ?: throw MembershipPersistenceException("Failed to serialize the MGM-provided context.")
 
-        try {
-            em.merge(
-                MemberInfoEntity(
-                    mgmHoldingIdentity.groupId,
-                    memberName,
-                    false,
-                    newStatus,
-                    now,
-                    currentMemberInfo.memberContext,
-                    currentMemberInfo.memberSignatureKey,
-                    currentMemberInfo.memberSignatureContent,
-                    currentMemberInfo.memberSignatureSpec,
-                    serializedMgmContext,
-                    updatedSerial,
-                ),
-            )
-        } catch (e: PessimisticLockException) {
-            throw InvalidEntityUpdateException(
-                "Could not update member '$memberName' to serial number: $updatedSerial: ${e.message}",
-            )
-        }
+        em.merge(
+            MemberInfoEntity(
+                mgmHoldingIdentity.groupId,
+                memberName,
+                false,
+                newStatus,
+                now,
+                currentMemberInfo.memberContext,
+                currentMemberInfo.memberSignatureKey,
+                currentMemberInfo.memberSignatureContent,
+                currentMemberInfo.memberSignatureSpec,
+                serializedMgmContext,
+                updatedSerial,
+            ),
+        )
 
         val memberContext = keyValuePairListDeserializer.deserialize(currentMemberInfo.memberContext)
             ?: throw MembershipPersistenceException("Failed to deserialize the member provided context.")

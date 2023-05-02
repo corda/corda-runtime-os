@@ -162,6 +162,17 @@ class SuspensionActivationEntityOperationsTest {
             assertThat(this.message).contains("cannot be performed")
         }
     }
+    @Test
+    fun `findMember throws InvalidEntityUpdateException if PessimisticLockException is thrown`() {
+        val currentStatus = "Status"
+        whenever(
+            em.find(eq(MemberInfoEntity::class.java), eq(primaryKey), eq(LockModeType.PESSIMISTIC_WRITE)),
+        ).doThrow(PessimisticLockException())
+
+        assertThrows<InvalidEntityUpdateException> {
+            handler.findMember(em, knownX500Name.toString(), knownGroupId, SERIAL_NUMBER, currentStatus)
+        }
+    }
 
     @Test
     fun `updateStatus persists the correct entity and returns the expected PersistentMemberInfo`() {
@@ -258,33 +269,6 @@ class SuspensionActivationEntityOperationsTest {
             handler.updateStatus(em, knownX500Name.toString(), mock { on {groupId} doReturn knownGroupId }, mockEntity, mock(), "")
         }.apply {
             assertThat(this.message).contains("Failed to deserialize")
-        }
-    }
-
-    @Test
-    fun `updateStatus throws InvalidEntityUpdateException if PessimisticLockException is thrown`() {
-        val mgmHoldingIdentity = AvroHoldingIdentity("MGM", knownGroupId)
-        val entity = mock<MemberInfoEntity> {
-            on { serialNumber } doReturn 1
-            on { memberSignatureKey } doReturn signatureKey
-            on { memberContext } doReturn byteArrayOf()
-            on { memberSignatureContent } doReturn signatureContent
-            on { memberSignatureSpec } doReturn SIGNATURE_SPEC
-        }
-        val mgmContext = KeyValuePairList(
-            emptyList(),
-        )
-        whenever(em.merge(any<MemberInfoEntity>())).doThrow(PessimisticLockException(""))
-
-        assertThrows<InvalidEntityUpdateException> {
-            handler.updateStatus(
-                em,
-                knownX500Name.toString(),
-                mgmHoldingIdentity,
-                entity,
-                mgmContext,
-                "newStatus",
-            )
         }
     }
 }
