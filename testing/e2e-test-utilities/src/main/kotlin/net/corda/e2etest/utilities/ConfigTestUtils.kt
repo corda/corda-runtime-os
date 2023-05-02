@@ -73,8 +73,16 @@ fun waitForConfigurationChange(
     value: String,
     expectServiceToBeDown: Boolean = true,
     timeout: Duration = Duration.ofMinutes(1)
+) = DEFAULT_CLUSTER.waitForConfigurationChange(section, key, value, expectServiceToBeDown, timeout)
+
+fun ClusterInfo.waitForConfigurationChange(
+    section: String,
+    key: String,
+    value: String,
+    expectServiceToBeDown: Boolean = true,
+    timeout: Duration = Duration.ofMinutes(1)
 ) {
-    DEFAULT_CLUSTER.cluster {
+    cluster {
         if (expectServiceToBeDown) {
             // Wait for the service to become unavailable
             eventually(timeout) {
@@ -96,4 +104,21 @@ fun waitForConfigurationChange(
             }
         }
     }
+}
+
+fun ClusterInfo.updateConfigAndWaitForChange(
+    section: String,
+    key: String,
+    value: Any
+) {
+    updateConfig(
+        mapOf(key to value).toJsonString(),
+        section
+    )
+    waitForConfigurationChange(
+        section,
+        key,
+        value.toString(),
+        expectServiceToBeDown = false
+    )
 }

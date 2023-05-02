@@ -1,11 +1,15 @@
 package net.corda.sandboxgroupcontext.test
 
+import net.corda.common.json.validation.JsonValidator
 import java.lang.invoke.MethodHandles
 import java.nio.file.Path
 import java.security.KeyPairGenerator
 import kotlin.reflect.full.primaryConstructor
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
+import net.corda.crypto.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.crypto.core.parseSecureHash
+import net.corda.ledger.common.data.transaction.WireTransaction
+import net.corda.ledger.common.testkit.getWireTransactionExample
 import net.corda.ledger.utxo.data.state.EncumbranceGroupImpl
 import net.corda.ledger.utxo.data.state.StateAndRefImpl
 import net.corda.ledger.utxo.data.state.TransactionStateImpl
@@ -17,6 +21,8 @@ import net.corda.sandboxgroupcontext.getObjectByKey
 import net.corda.testing.sandboxes.SandboxSetup
 import net.corda.testing.sandboxes.fetchService
 import net.corda.testing.sandboxes.lifecycle.AllTestsLifecycle
+import net.corda.v5.application.crypto.DigestService
+import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.types.MemberX500Name
@@ -63,6 +69,18 @@ class AMQPSerializationTest {
 
     @InjectService(timeout = TIMEOUT_MILLIS)
     lateinit var cipherSchemeMetadata: CipherSchemeMetadata
+
+    @InjectService(timeout = TIMEOUT_MILLIS)
+    lateinit var merkleTreeProvider: MerkleTreeProvider
+
+    @InjectService(timeout = TIMEOUT_MILLIS)
+    lateinit var digestService: DigestService
+
+    @InjectService(timeout = TIMEOUT_MILLIS)
+    lateinit var jsonMarshallingService: JsonMarshallingService
+
+    @InjectService(timeout = TIMEOUT_MILLIS)
+    lateinit var jsonValidator: JsonValidator
 
     @RegisterExtension
     private val lifecycle = AllTestsLifecycle()
@@ -197,6 +215,38 @@ class AMQPSerializationTest {
                 assertEquals(LABEL, fieldValue<String>(contractState, "tag"))
                 assertEquals(STATE_CLASS_NAME, contractState::class.java.name)
             }
+        }
+    }
+
+    @ParameterizedTest
+    @EnumSource(SandboxGroupType::class)
+    @DisplayName("Serialize & Deserialize WireTransaction: {0}")
+    fun testSerializeAndDeserializeWireTransaction(sandboxGroupType: SandboxGroupType) {
+        var origWireTx: WireTransaction? = null
+        var serializedBytes: SerializedBytes<WireTransaction>? = null
+
+        // Create a WireTransaction, and then serialise it.
+        virtualNode.withSandbox(CONTRACT_CPB, sandboxGroupType) { _, ctx ->
+            val serializationService = ctx.getSerializationService()
+
+            origWireTx = getWireTransactionExample(
+                digestService,
+                merkleTreeProvider,
+                jsonMarshallingService,
+                jsonValidator)
+
+            serializedBytes = serializationService.serialize(origWireTx!!)
+        }
+
+        // Deserialize the WireTransaction inside a new sandbox.
+        virtualNode.withSandbox(CONTRACT_CPB, sandboxGroupType) { _, ctx ->
+            val serializationService = ctx.getSerializationService()
+            val wireTx = serializationService.deserialize(
+                serializedBytes ?: fail("No bytes to deserialize!"),
+                WireTransaction::class.java
+            )
+
+            assertEquals(origWireTx, wireTx)
         }
     }
 
