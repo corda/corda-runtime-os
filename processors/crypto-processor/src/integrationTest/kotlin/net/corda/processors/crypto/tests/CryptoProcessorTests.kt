@@ -1,5 +1,6 @@
 package net.corda.processors.crypto.tests
 
+import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigRenderOptions
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.cipher.suite.SignatureSpecImpl
@@ -9,6 +10,7 @@ import net.corda.crypto.cipher.suite.publicKeyId
 import net.corda.crypto.cipher.suite.sha256Bytes
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.client.hsm.HSMRegistrationClient
+import net.corda.crypto.config.impl.createCryptoBootstrapParamsMap
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.core.DigitalSignatureWithKey
@@ -36,6 +38,7 @@ import net.corda.db.messagebus.testkit.DBSetup
 import net.corda.db.schema.CordaDb
 import net.corda.db.testkit.DatabaseInstaller
 import net.corda.db.testkit.TestDbInfo
+import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.datamodel.ConfigurationEntities
 import net.corda.libs.configuration.datamodel.DbConnectionConfig
 import net.corda.libs.packaging.core.CpiIdentifier
@@ -103,11 +106,13 @@ import javax.persistence.EntityManagerFactory
 class CryptoProcessorTests {
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        private val smartConfigFactory = SmartConfigFactory.createWithoutSecurityServices()
 
         private val CLIENT_ID = makeClientId<CryptoProcessorTests>()
 
         @InjectService(timeout = 5000L)
         lateinit var lifecycleRegistry: LifecycleRegistry
+
 
         @InjectService(timeout = 5000L)
         lateinit var coordinatorFactory: LifecycleCoordinatorFactory
@@ -184,9 +189,12 @@ class CryptoProcessorTests {
         private val cryptoDb = TestDbInfo(
             name = CordaDb.Crypto.persistenceUnitName
         )
-        private val boostrapConfig = makeBootstrapConfig(clusterDb.config)
+        private val bootstrapConfig = makeBootstrapConfig(clusterDb.config)
         private val messagingConfig = makeMessagingConfig()
         private val cryptoConfig = makeCryptoConfig()
+        private val bootConfig =  cryptoConfig.factory.create(
+            ConfigFactory.parseMap(createCryptoBootstrapParamsMap(CryptoConsts.SOFT_HSM_ID))
+        )
 
         private lateinit var connectionIds: Map<String, UUID>
 
@@ -195,12 +203,20 @@ class CryptoProcessorTests {
         @JvmStatic
         @BeforeAll
         fun setup() {
+            logger.info("Test setup starting")
             setupPrerequisites()
             setupDatabases()
             setupVirtualNodeInfo()
             startDependencies()
             waitForVirtualNodeInfoReady()
             assignHSMs()
+            cryptoProcessor.start(bootConfig)
+            logger.info("Test setup ending")
+            eventually {
+                assertTrue(opsClient.isRunning)
+            }
+            logger.info("Test setup complete")
+
         }
 
         @JvmStatic
@@ -356,19 +372,19 @@ class CryptoProcessorTests {
         }
 
         private fun startDependencies() {
-            cryptoProcessor.start(boostrapConfig)
+            cryptoProcessor.start(bootstrapConfig)
             hsmRegistrationClient.start()
             stableDecryptor.start()
             tracker = TestDependenciesTracker(
-            coordinatorFactory,
-            lifecycleRegistry,
-            setOf(
-                LifecycleCoordinatorName.forComponent<CryptoProcessor>(),
-                LifecycleCoordinatorName.forComponent<HSMRegistrationClient>(),
-                LifecycleCoordinatorName.forComponent<StableKeyPairDecryptor>()
-            )
+                coordinatorFactory,
+                lifecycleRegistry,
+                setOf(
+                    LifecycleCoordinatorName.forComponent<CryptoProcessor>(),
+                    LifecycleCoordinatorName.forComponent<HSMRegistrationClient>(),
+                    LifecycleCoordinatorName.forComponent<StableKeyPairDecryptor>()
+                )
             ).also {
-                it.start()
+                    it.start()
             }
             tracker.waitUntilAllUp(Duration.ofSeconds(60))
         }
