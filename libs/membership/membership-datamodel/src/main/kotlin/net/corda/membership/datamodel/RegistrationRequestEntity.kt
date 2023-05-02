@@ -49,28 +49,51 @@ class RegistrationRequestEntity(
     /**
      * The serialized member context provided during registration. Serialized as [KeyValuePairList].
      */
-    @Column(nullable = false, updatable = false, columnDefinition = "BLOB")
-    val context: ByteArray,
+    @Column(name = "member_context", nullable = false, updatable = false, columnDefinition = "BLOB")
+    val memberContext: ByteArray,
 
     /**
      * Signature key of member signature, can be sued to verify the signature.
      */
-    @Column(name = "signature_key", nullable = false, updatable = false, columnDefinition = "BLOB")
-    val signatureKey: ByteArray,
+    @Column(name = "member_context_signature_key", nullable = false, updatable = false, columnDefinition = "BLOB")
+    val memberContextSignatureKey: ByteArray,
 
     /**
      * Byte array of the member signature, exactly as returned by crypto signing operations.
      */
-    @Column(name = "signature_content", nullable = false, updatable = false, columnDefinition = "BLOB")
-    val signatureContent: ByteArray,
+    @Column(name = "member_context_signature_content", nullable = false, updatable = false, columnDefinition = "BLOB")
+    val memberContextSignatureContent: ByteArray,
 
     /**
      * Signature spec of member signature.
      */
-    // TODO Are we going to be storing `ParameterizedSignatureSpec` here?
-    //  If so need to consider saving extra signature spec parameters as recorded in https://r3-cev.atlassian.net/browse/CORE-11685
-    @Column(name = "signature_spec", nullable = false, updatable = false)
-    val signatureSpec: String,
+    @Column(name = "member_context_signature_spec", nullable = false, updatable = false)
+    val memberContextSignatureSpec: String,
+
+    /**
+     * The serialized registration context provided during registration. Serialized as [KeyValuePairList].
+     */
+    @Column(name = "registration_context", nullable = false, updatable = false, columnDefinition = "BLOB")
+    val registrationContext: ByteArray,
+
+    /**
+     * Signature key of member signature over the registration context, can be used to verify the signature.
+     */
+    @Column(name = "registration_context_signature_key", nullable = false, updatable = false, columnDefinition = "BLOB")
+    val registrationContextSignatureKey: ByteArray,
+
+    /**
+     * Byte array of the member signature over the registration context,
+     * exactly as returned by crypto signing operations.
+     */
+    @Column(name = "registration_context_signature_content", nullable = false, updatable = false, columnDefinition = "BLOB")
+    val registrationContextSignatureContent: ByteArray,
+
+    /**
+     * Signature spec of member signature over the registration context.
+     */
+    @Column(name = "registration_context_signature_spec", nullable = false, updatable = false)
+    val registrationContextSignatureSpec: String,
 
     /**
      * Latest serial seen by the member when calling registration.

@@ -7,6 +7,7 @@ import net.corda.data.CordaAvroSerializer
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
+import net.corda.data.membership.SignedData
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.data.membership.db.request.command.PersistRegistrationRequest
@@ -55,9 +56,12 @@ class PersistRegistrationRequestHandlerTest {
     private val ourRegistrationId = UUID.randomUUID().toString()
     private val clock = TestClock(Instant.ofEpochSecond(0))
     private val vaultDmlConnectionId = UUID(12, 0)
-    private val signatureKey = "123".toByteArray()
-    private val signatureContent = "456".toByteArray()
-    private val signatureSpec = "dummySignature"
+    private val memberContextSignatureKey = "123".toByteArray()
+    private val memberContextSignatureContent = "456".toByteArray()
+    private val memberContextSignatureSpec = "dummySignature"
+    private val registrationContextSignatureKey = "123".toByteArray()
+    private val registrationContextSignatureContent = "456".toByteArray()
+    private val registrationContextSignatureSpec = "dummySignature"
 
     private val virtualNodeInfo = VirtualNodeInfo(
         ourHoldingIdentity,
@@ -124,20 +128,34 @@ class PersistRegistrationRequestHandlerTest {
         ourHoldingIdentity.toAvro(),
     )
 
-    private fun getPersistRegistrationRequest() = PersistRegistrationRequest(
-        RegistrationStatus.SENT_TO_MGM,
-        ourHoldingIdentity.toAvro(),
-        MembershipRegistrationRequest(
-            ourRegistrationId,
+    private fun getPersistRegistrationRequest(): PersistRegistrationRequest {
+        val memberContext = SignedData(
             ByteBuffer.wrap("89".toByteArray()),
             CryptoSignatureWithKey(
-                ByteBuffer.wrap(signatureKey),
-                ByteBuffer.wrap(signatureContent)
+                ByteBuffer.wrap(memberContextSignatureKey),
+                ByteBuffer.wrap(memberContextSignatureContent)
             ),
-            CryptoSignatureSpec(signatureSpec, null, null),
-            0L,
+            CryptoSignatureSpec(memberContextSignatureSpec, null, null)
         )
-    )
+        val registrationContext = SignedData(
+            ByteBuffer.wrap("89".toByteArray()),
+            CryptoSignatureWithKey(
+                ByteBuffer.wrap(registrationContextSignatureKey),
+                ByteBuffer.wrap(registrationContextSignatureContent)
+            ),
+            CryptoSignatureSpec(registrationContextSignatureSpec, null, null)
+        )
+        return PersistRegistrationRequest(
+            RegistrationStatus.SENT_TO_MGM,
+            ourHoldingIdentity.toAvro(),
+            MembershipRegistrationRequest(
+                ourRegistrationId,
+                memberContext,
+                registrationContext,
+                0L,
+            )
+        )
+    }
 
     @Test
     fun `invoke with registration request`() {
@@ -167,9 +185,18 @@ class PersistRegistrationRequestHandlerTest {
             assertThat(entity.status).isEqualTo(RegistrationStatus.SENT_TO_MGM.toString())
             assertThat(entity.created).isBeforeOrEqualTo(clock.instant())
             assertThat(entity.lastModified).isBeforeOrEqualTo(clock.instant())
-            assertThat(entity.signatureKey).isEqualTo(signatureKey)
-            assertThat(entity.signatureContent).isEqualTo(signatureContent)
-            assertThat(entity.signatureSpec).isEqualTo(signatureSpec)
+            assertThat(entity.memberContextSignatureKey)
+                .isEqualTo(this@PersistRegistrationRequestHandlerTest.memberContextSignatureKey)
+            assertThat(entity.memberContextSignatureContent)
+                .isEqualTo(this@PersistRegistrationRequestHandlerTest.memberContextSignatureContent)
+            assertThat(entity.memberContextSignatureSpec)
+                .isEqualTo(this@PersistRegistrationRequestHandlerTest.memberContextSignatureSpec)
+            assertThat(entity.registrationContextSignatureKey)
+                .isEqualTo(this@PersistRegistrationRequestHandlerTest.registrationContextSignatureKey)
+            assertThat(entity.registrationContextSignatureContent)
+                .isEqualTo(this@PersistRegistrationRequestHandlerTest.registrationContextSignatureContent)
+            assertThat(entity.registrationContextSignatureSpec)
+                .isEqualTo(this@PersistRegistrationRequestHandlerTest.registrationContextSignatureSpec)
         }
     }
 

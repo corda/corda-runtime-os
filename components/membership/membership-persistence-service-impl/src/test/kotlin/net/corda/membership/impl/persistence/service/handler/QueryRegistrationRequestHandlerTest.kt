@@ -42,6 +42,9 @@ class QueryRegistrationRequestHandlerTest {
     private val memberSignatureKey = byteArrayOf(1)
     private val memberSignatureContent = byteArrayOf(2)
     private val memberSignatureSpec = "SignatureSpec"
+    private val registrationSignatureKey = byteArrayOf(3)
+    private val registrationSignatureContent = byteArrayOf(4)
+    private val registrationSignatureSpec = "SignatureSpec-2"
     private val entitySet = mock<JpaEntitiesSet>()
     private val jpaEntitiesRegistry = mock<JpaEntitiesRegistry> {
         on { get(CordaDb.Vault.persistenceUnitName) } doReturn entitySet
@@ -116,6 +119,10 @@ class QueryRegistrationRequestHandlerTest {
                     memberSignatureKey,
                     memberSignatureContent,
                     memberSignatureSpec,
+                    byteArrayOf(4,5,6),
+                    registrationSignatureKey,
+                    registrationSignatureContent,
+                    registrationSignatureSpec,
                     0L,
                     "test reason"
                 )

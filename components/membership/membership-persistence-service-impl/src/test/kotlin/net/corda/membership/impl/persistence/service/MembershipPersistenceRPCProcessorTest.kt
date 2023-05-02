@@ -7,6 +7,7 @@ import net.corda.data.CordaAvroSerializer
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
+import net.corda.data.membership.SignedData
 import net.corda.data.membership.StaticNetworkInfo
 import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.ApprovalRuleType
@@ -115,9 +116,12 @@ class MembershipPersistenceRPCProcessorTest {
     private val ourRegistrationId = UUID.randomUUID().toString()
     private val preAuthTokenId = UUID.randomUUID().toString()
     private val ourHoldingIdentity = createTestHoldingIdentity(ourX500Name, ourGroupId)
-    private val context = "context".toByteArray()
-    private val signatureKey = "signatureKey".toByteArray()
-    private val signatureContent = "signatureContent".toByteArray()
+    private val memberContext = "member-context".toByteArray()
+    private val memberSignatureKey = "member-signatureKey".toByteArray()
+    private val memberSignatureContent = "member-signatureContent".toByteArray()
+    private val registrationContext = "registration-context".toByteArray()
+    private val registrationSignatureKey = "registration-signatureKey".toByteArray()
+    private val registrationSignatureContent = "registration-signatureContent".toByteArray()
     private val vaultDmlConnectionId = UUID(30, 0)
 
     private val virtualNodeInfo = VirtualNodeInfo(
@@ -135,9 +139,13 @@ class MembershipPersistenceRPCProcessorTest {
         RegistrationStatus.PENDING_MEMBER_VERIFICATION.name,
         clock.instant(),
         clock.instant(),
-        context,
-        signatureKey,
-        signatureContent,
+        memberContext,
+        memberSignatureKey,
+        memberSignatureContent,
+        SIGNATURE_SPEC,
+        registrationContext,
+        registrationSignatureKey,
+        registrationSignatureContent,
         SIGNATURE_SPEC,
         SERIAL,
     )
@@ -225,8 +233,8 @@ class MembershipPersistenceRPCProcessorTest {
         on { groupId } doReturn "groupId"
         on { memberX500Name } doReturn ourX500Name
         on { isPending } doReturn false
-        on { memberSignatureKey } doReturn signatureKey
-        on { memberSignatureContent } doReturn signatureContent
+        on { memberSignatureKey } doReturn memberSignatureKey
+        on { memberSignatureContent } doReturn memberSignatureContent
         on { memberSignatureSpec } doReturn SIGNATURE_SPEC
     }
     private val entityManager: EntityManager = mock {
@@ -331,6 +339,22 @@ class MembershipPersistenceRPCProcessorTest {
      */
     @Test
     fun `persist registration request returns success`() {
+        val memberContext = SignedData(
+            ByteBuffer.wrap("8".toByteArray()),
+            CryptoSignatureWithKey(
+                ByteBuffer.wrap(memberSignatureKey),
+                ByteBuffer.wrap(memberSignatureContent)
+            ),
+            CryptoSignatureSpec(SIGNATURE_SPEC, null, null),
+        )
+        val registrationContext = SignedData(
+            ByteBuffer.wrap("0".toByteArray()),
+            CryptoSignatureWithKey(
+                ByteBuffer.wrap(memberSignatureKey),
+                ByteBuffer.wrap(memberSignatureContent)
+            ),
+            CryptoSignatureSpec(SIGNATURE_SPEC, null, null),
+        )
         val rq = MembershipPersistenceRequest(
             rqContext,
             PersistRegistrationRequest(
@@ -338,12 +362,8 @@ class MembershipPersistenceRPCProcessorTest {
                 ourHoldingIdentity.toAvro(),
                 MembershipRegistrationRequest(
                     ourRegistrationId,
-                    ByteBuffer.wrap("8".toByteArray()),
-                    CryptoSignatureWithKey(
-                        ByteBuffer.wrap(signatureKey),
-                        ByteBuffer.wrap(signatureContent)
-                    ),
-                    CryptoSignatureSpec(SIGNATURE_SPEC, null, null),
+                    memberContext,
+                    registrationContext,
                     SERIAL,
                 )
             )
@@ -427,6 +447,22 @@ class MembershipPersistenceRPCProcessorTest {
      */
     @Test
     fun `update registration request status return success`() {
+        val memberContext = SignedData(
+            ByteBuffer.wrap("8".toByteArray()),
+            CryptoSignatureWithKey(
+                ByteBuffer.wrap(memberSignatureKey),
+                ByteBuffer.wrap(memberSignatureContent)
+            ),
+            CryptoSignatureSpec(SIGNATURE_SPEC, null, null),
+        )
+        val registrationContext = SignedData(
+            ByteBuffer.wrap("0".toByteArray()),
+            CryptoSignatureWithKey(
+                ByteBuffer.wrap(memberSignatureKey),
+                ByteBuffer.wrap(memberSignatureContent)
+            ),
+            CryptoSignatureSpec(SIGNATURE_SPEC, null, null),
+        )
         val rq = MembershipPersistenceRequest(
             rqContext,
             PersistRegistrationRequest(
@@ -434,12 +470,8 @@ class MembershipPersistenceRPCProcessorTest {
                 ourHoldingIdentity.toAvro(),
                 MembershipRegistrationRequest(
                     ourRegistrationId,
-                    ByteBuffer.wrap("8".toByteArray()),
-                    CryptoSignatureWithKey(
-                        ByteBuffer.wrap(signatureKey),
-                        ByteBuffer.wrap(signatureContent)
-                    ),
-                    CryptoSignatureSpec(SIGNATURE_SPEC, null, null),
+                    memberContext,
+                    registrationContext,
                     SERIAL,
                 )
             )

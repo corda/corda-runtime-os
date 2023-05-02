@@ -236,8 +236,7 @@ class MembershipPersistenceClientImpl(
                     MembershipRegistrationRequest(
                         registrationId,
                         memberContext,
-                        signature,
-                        signatureSpec,
+                        registrationContext,
                         serial,
                     )
                 }
