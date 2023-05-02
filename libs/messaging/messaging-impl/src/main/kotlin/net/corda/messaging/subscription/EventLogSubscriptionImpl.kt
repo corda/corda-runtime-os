@@ -94,8 +94,8 @@ internal class EventLogSubscriptionImpl<K : Any, V : Any>(
     @Suppress("NestedBlockDepth")
     private fun runConsumeLoop() {
         var attempts = 0
-        var consumer: CordaConsumer<K, V>?
-        var producer: CordaProducer?
+        var consumer: CordaConsumer<K, V>? = null
+        var producer: CordaProducer? = null
         while (!threadLooper.loopStopped) {
             attempts++
             try {
@@ -134,6 +134,8 @@ internal class EventLogSubscriptionImpl<K : Any, V : Any>(
                         log.warn(
                             "$errorMsg Attempts: $attempts. Recreating consumer/producer and Retrying.", ex
                         )
+                        consumer?.close()
+                        producer?.close()
                     }
                     else -> {
                         log.error(
