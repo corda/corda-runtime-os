@@ -9,9 +9,11 @@ import net.corda.data.p2p.SessionPartitions
 import net.corda.data.p2p.app.AppMessage
 import net.corda.data.p2p.app.AuthenticatedMessage
 import net.corda.data.p2p.app.AuthenticatedMessageHeader
+import net.corda.data.p2p.app.InboundUnauthenticatedMessage
+import net.corda.data.p2p.app.InboundUnauthenticatedMessageHeader
 import net.corda.data.p2p.app.MembershipStatusFilter
-import net.corda.data.p2p.app.UnauthenticatedMessage
-import net.corda.data.p2p.app.UnauthenticatedMessageHeader
+import net.corda.data.p2p.app.OutboundUnauthenticatedMessage
+import net.corda.data.p2p.app.OutboundUnauthenticatedMessageHeader
 import net.corda.p2p.crypto.protocol.api.AuthenticatedSession
 import net.corda.p2p.crypto.protocol.api.AuthenticationResult
 import net.corda.p2p.linkmanager.hosting.LinkManagerHostingMap
@@ -369,8 +371,8 @@ class OutboundMessageProcessorTest {
     @Test
     fun `if destination identity is hosted locally, unauthenticated messages are looped back`() {
         val payload = "test"
-        val unauthenticatedMsg = UnauthenticatedMessage(
-            UnauthenticatedMessageHeader(
+        val unauthenticatedMsg = OutboundUnauthenticatedMessage(
+            OutboundUnauthenticatedMessageHeader(
                 myIdentity.toAvro(),
                 localIdentity.toAvro(),
                 "subsystem",
@@ -389,18 +391,25 @@ class OutboundMessageProcessorTest {
             )
         )
 
+        val expectedMessage = InboundUnauthenticatedMessage(
+            InboundUnauthenticatedMessageHeader(
+                unauthenticatedMsg.header.subsystem,
+                unauthenticatedMsg.header.messageId,
+            ),
+            unauthenticatedMsg.payload,
+        )
         assertThat(records).hasSize(1).allMatch {
             it.topic == Schemas.P2P.P2P_IN_TOPIC
         }.allMatch {
-            it.value == appMessage
+            (it.value as? AppMessage)?.message == expectedMessage
         }
     }
 
     @Test
     fun `onNext forwards unauthenticated messages directly to link out topic`() {
         val payload = "test"
-        val unauthenticatedMsg = UnauthenticatedMessage(
-            UnauthenticatedMessageHeader(
+        val unauthenticatedMsg = OutboundUnauthenticatedMessage(
+            OutboundUnauthenticatedMessageHeader(
                 remoteIdentity.toAvro(),
                 myIdentity.toAvro(),
                 "subsystem",
@@ -422,18 +431,25 @@ class OutboundMessageProcessorTest {
             )
         )
 
+        val expectedMessage = InboundUnauthenticatedMessage(
+            InboundUnauthenticatedMessageHeader(
+                unauthenticatedMsg.header.subsystem,
+                unauthenticatedMsg.header.messageId,
+            ),
+            unauthenticatedMsg.payload,
+        )
         assertThat(records).hasSize(1).allMatch {
             it.topic == Schemas.P2P.LINK_OUT_TOPIC
         }.allMatch {
-            (it.value as? LinkOutMessage)?.payload == unauthenticatedMsg
+            (it.value as? LinkOutMessage)?.payload == expectedMessage
         }
     }
 
     @Test
     fun `unauthenticated messages are dropped if source is invalid X500 name`() {
         val payload = "test"
-        val unauthenticatedMsg = UnauthenticatedMessage(
-            UnauthenticatedMessageHeader(
+        val unauthenticatedMsg = OutboundUnauthenticatedMessage(
+            OutboundUnauthenticatedMessageHeader(
                 remoteIdentity.toAvro(),
                 HoldingIdentity(
                     "Invalid name",
@@ -464,8 +480,8 @@ class OutboundMessageProcessorTest {
     @Test
     fun `unauthenticated messages are dropped if destination is invalid X500 name`() {
         val payload = "test"
-        val unauthenticatedMsg = UnauthenticatedMessage(
-            UnauthenticatedMessageHeader(
+        val unauthenticatedMsg = OutboundUnauthenticatedMessage(
+            OutboundUnauthenticatedMessageHeader(
                 HoldingIdentity(
                     "Invalid name",
                     myIdentity.groupId,
@@ -496,8 +512,8 @@ class OutboundMessageProcessorTest {
     @Test
     fun `unauthenticated messages are dropped if source and destination are in different groups`() {
         val payload = "test"
-        val unauthenticatedMsg = UnauthenticatedMessage(
-            UnauthenticatedMessageHeader(
+        val unauthenticatedMsg = OutboundUnauthenticatedMessage(
+            OutboundUnauthenticatedMessageHeader(
                 remoteIdentity.copy(groupId = "Group-other").toAvro(),
                 myIdentity.toAvro(),
                 "subsystem",
@@ -525,8 +541,8 @@ class OutboundMessageProcessorTest {
     @Test
     fun `unauthenticated messages are dropped if destination identity is not in the members map or locally hosted`() {
         val payload = "test"
-        val unauthenticatedMsg = UnauthenticatedMessage(
-            UnauthenticatedMessageHeader(
+        val unauthenticatedMsg = OutboundUnauthenticatedMessage(
+            OutboundUnauthenticatedMessageHeader(
                 HoldingIdentity("CN=PartyE, O=Corp, L=LDN, C=GB", "Group"),
                 myIdentity.toAvro(),
                 "subsystem",
@@ -569,8 +585,8 @@ class OutboundMessageProcessorTest {
         )
 
         val payload = "test"
-        val unauthenticatedMsg = UnauthenticatedMessage(
-            UnauthenticatedMessageHeader(
+        val unauthenticatedMsg = OutboundUnauthenticatedMessage(
+            OutboundUnauthenticatedMessageHeader(
                 remoteIdentity.toAvro(),
                 myIdentity.toAvro(),
                 "subsystem",
@@ -601,8 +617,8 @@ class OutboundMessageProcessorTest {
             networkMessagingValidator.validateOutbound(any(), any())
         ).doReturn(Either.Right("foo-bar"))
         val payload = "test"
-        val unauthenticatedMsg = UnauthenticatedMessage(
-            UnauthenticatedMessageHeader(
+        val unauthenticatedMsg = OutboundUnauthenticatedMessage(
+            OutboundUnauthenticatedMessageHeader(
                 remoteIdentity.toAvro(),
                 localIdentity.toAvro(),
                 "subsystem",
@@ -633,8 +649,8 @@ class OutboundMessageProcessorTest {
             networkMessagingValidator.validateInbound(any(), any())
         ).doReturn(Either.Right("foo-bar"))
         val payload = "test"
-        val unauthenticatedMsg = UnauthenticatedMessage(
-            UnauthenticatedMessageHeader(
+        val unauthenticatedMsg = OutboundUnauthenticatedMessage(
+            OutboundUnauthenticatedMessageHeader(
                 myIdentity.toAvro(),
                 localIdentity.toAvro(),
                 "subsystem",
@@ -665,8 +681,8 @@ class OutboundMessageProcessorTest {
             networkMessagingValidator.validateOutbound(any(), any())
         ).doReturn(Either.Right("foo-bar"))
         val payload = "test"
-        val unauthenticatedMsg = UnauthenticatedMessage(
-            UnauthenticatedMessageHeader(
+        val unauthenticatedMsg = OutboundUnauthenticatedMessage(
+            OutboundUnauthenticatedMessageHeader(
                 myIdentity.toAvro(),
                 localIdentity.toAvro(),
                 "subsystem",
@@ -1224,8 +1240,8 @@ class OutboundMessageProcessorTest {
     @Test
     fun `unauthenticated messages are dropped if source ID is not locally hosted`() {
         val payload = "test"
-        val unauthenticatedMsg = UnauthenticatedMessage(
-            UnauthenticatedMessageHeader(
+        val unauthenticatedMsg = OutboundUnauthenticatedMessage(
+            OutboundUnauthenticatedMessageHeader(
                 HoldingIdentity("CN=PartyC, O=Corp, L=LDN, C=GB", "Group"),
                 HoldingIdentity("CN=PartyE, O=Corp, L=LDN, C=GB", "Group"),
                 "subsystem",
