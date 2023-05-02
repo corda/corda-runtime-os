@@ -165,7 +165,7 @@ class FlowRestResourceImpl @Activate constructor(
             throw ForbiddenException(FlowRestExceptionConstants.FORBIDDEN.format(principal, startFlow.flowClassName))
         }
 
-        // TODO Platform properties to be populated correctly, for now a fixed 'account zero' is the only property
+        // TODO Platform properties to be populated correctly.
         // This is a placeholder which indicates access to everything, see CORE-6076
         val flowContextPlatformProperties = mapOf(
             "corda.account" to "account-zero",
