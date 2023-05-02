@@ -69,6 +69,7 @@ class RPCSenderImplTest {
 
         verify(lifecycleCoordinator, times(1)).close()
         verify(lifecycleCoordinator, never()).stop()
+        verify(lifecycleCoordinator, never()).updateStatus(any(), any())
     }
 
     private fun getConfig(): RPCConfig<String, String> {
