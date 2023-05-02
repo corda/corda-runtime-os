@@ -1,0 +1,10 @@
+plugins {
+    id 'corda.common-library'
+    id 'corda.common-publishing'
+}
+
+dependencies {
+    compileOnly "org.osgi:osgi.annotation"
+    compileOnly "org.osgi:org.osgi.service.component.annotations"
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+}

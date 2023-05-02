@@ -6,7 +6,7 @@ import java.time.Instant
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.data.CordaAvroSerializationFactory
+import net.corda.serialization.CordaAvroSerializationFactory
 import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.data.flow.event.FlowEvent

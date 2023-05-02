@@ -34,9 +34,18 @@ class StateAndEventBuilderImpl @Activate constructor(
 
     private val log = LoggerFactory.getLogger(this::class.java)
 
-    override fun createProducer(config: ResolvedSubscriptionConfig, onSerializationError: ((ByteArray) -> Unit)?): CordaProducer {
+    override fun createProducer(
+        config: ResolvedSubscriptionConfig,
+        throwOnError: Boolean,
+        onSerializationError: ((ByteArray) -> Unit)?
+    ): CordaProducer {
         val producerConfig = ProducerConfig(config.clientId, config.instanceId, true, ProducerRoles.SAE_PRODUCER)
-        return cordaProducerBuilder.createProducer(producerConfig, config.messageBusConfig, onSerializationError)
+        return cordaProducerBuilder.createProducer(
+            producerConfig,
+            config.messageBusConfig,
+            throwOnError,
+            onSerializationError
+        )
     }
 
     override fun <K : Any, S : Any, E : Any> createStateEventConsumerAndRebalanceListener(
@@ -48,10 +57,24 @@ class StateAndEventBuilderImpl @Activate constructor(
         onStateError: (ByteArray) -> Unit,
         onEventError: (ByteArray) -> Unit,
     ): Pair<StateAndEventConsumer<K, S, E>, StateAndEventConsumerRebalanceListener> {
-        val stateConsumerConfig = ConsumerConfig(config.group, "${config.clientId}-stateConsumer", ConsumerRoles.SAE_STATE)
-        val stateConsumer = cordaConsumerBuilder.createConsumer(stateConsumerConfig, config.messageBusConfig, kClazz, sClazz, onStateError)
-        val eventConsumerConfig = ConsumerConfig(config.group, "${config.clientId}-eventConsumer", ConsumerRoles.SAE_EVENT)
-        val eventConsumer = cordaConsumerBuilder.createConsumer(eventConsumerConfig, config.messageBusConfig, kClazz, eClazz, onEventError)
+        val stateConsumerConfig =
+            ConsumerConfig(config.group, "${config.clientId}-stateConsumer", ConsumerRoles.SAE_STATE)
+        val stateConsumer = cordaConsumerBuilder.createConsumer(
+            stateConsumerConfig,
+            config.messageBusConfig,
+            kClazz,
+            sClazz,
+            onStateError
+        )
+        val eventConsumerConfig =
+            ConsumerConfig(config.group, "${config.clientId}-eventConsumer", ConsumerRoles.SAE_EVENT)
+        val eventConsumer = cordaConsumerBuilder.createConsumer(
+            eventConsumerConfig,
+            config.messageBusConfig,
+            kClazz,
+            eClazz,
+            onEventError
+        )
         validateConsumers(config, stateConsumer, eventConsumer)
 
         val partitionState =
@@ -87,8 +110,10 @@ class StateAndEventBuilderImpl @Activate constructor(
             eventConsumer.getPartitions(config.topic)
         if (statePartitions.size != eventPartitions.size) {
             val errorMsg = "Mismatch between state and event partitions."
-            log.warn(errorMsg +" state : ${statePartitions.joinToString()}" +
-                        ", event: ${eventPartitions.joinToString()}")
+            log.warn(
+                errorMsg + " state : ${statePartitions.joinToString()}" +
+                        ", event: ${eventPartitions.joinToString()}"
+            )
             throw CordaRuntimeException(errorMsg)
         }
     }

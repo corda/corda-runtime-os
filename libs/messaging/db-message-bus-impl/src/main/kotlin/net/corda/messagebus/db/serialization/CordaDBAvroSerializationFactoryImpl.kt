@@ -1,8 +1,8 @@
 package net.corda.messagebus.db.serialization
 
-import net.corda.data.CordaAvroDeserializer
-import net.corda.data.CordaAvroSerializationFactory
-import net.corda.data.CordaAvroSerializer
+import net.corda.serialization.CordaAvroDeserializer
+import net.corda.serialization.CordaAvroSerializationFactory
+import net.corda.serialization.CordaAvroSerializer
 import net.corda.schema.registry.AvroSchemaRegistry
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -28,8 +28,9 @@ class CordaDBAvroSerializationFactoryImpl @Activate constructor(
         )
     }
 
-    override fun <T: Any> createAvroSerializer(
-        onError: Consumer<ByteArray>
+    override fun <T : Any> createAvroSerializer(
+        throwOnError: Boolean,
+        onError: Consumer<ByteArray>?
     ): CordaAvroSerializer<T> {
         return CordaDBAvroSerializerImpl(avroSchemaRegistry)
     }

@@ -49,6 +49,7 @@ class DBCordaProducerBuilderImpl @Activate constructor(
     override fun createProducer(
         producerConfig: ProducerConfig,
         messageBusConfig: SmartConfig,
+        throwOnError: Boolean,
         onSerializationError: ((ByteArray) -> Unit)?
     ): CordaProducer {
         val isTransactional = producerConfig.transactional

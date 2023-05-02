@@ -1,8 +1,8 @@
 package net.corda.flow.external.events.impl
 
-import net.corda.data.CordaAvroDeserializer
-import net.corda.data.CordaAvroSerializationFactory
-import net.corda.data.CordaAvroSerializer
+import net.corda.serialization.CordaAvroDeserializer
+import net.corda.serialization.CordaAvroSerializationFactory
+import net.corda.serialization.CordaAvroSerializer
 import net.corda.data.flow.event.external.ExternalEvent
 import net.corda.data.flow.event.external.ExternalEventResponse
 import net.corda.data.flow.event.external.ExternalEventResponseErrorType

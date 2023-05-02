@@ -21,6 +21,7 @@ interface CordaProducerBuilder {
     fun createProducer(
         producerConfig: ProducerConfig,
         messageBusConfig: SmartConfig,
+        throwOnError: Boolean = false,
         onSerializationError: ((ByteArray) -> Unit)? = null
     ): CordaProducer
 }

@@ -6,7 +6,7 @@ import java.time.Instant
 import java.util.UUID
 import net.corda.cpiinfo.read.fake.CpiInfoReadServiceFake
 import net.corda.crypto.core.SecureHashImpl
-import net.corda.data.CordaAvroSerializationFactory
+import net.corda.serialization.CordaAvroSerializationFactory
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.KeyValuePairList
 import net.corda.data.flow.FlowInitiatorType

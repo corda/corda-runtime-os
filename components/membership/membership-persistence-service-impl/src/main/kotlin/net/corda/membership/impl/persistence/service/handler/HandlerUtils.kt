@@ -1,6 +1,6 @@
 package net.corda.membership.impl.persistence.service.handler
 
-import net.corda.data.CordaAvroDeserializer
+import net.corda.serialization.CordaAvroDeserializer
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey

@@ -1,13 +1,13 @@
 package net.corda.messagebus.kafka.serialization
 
-import net.corda.data.CordaAvroDeserializer
-import net.corda.data.CordaAvroSerializationFactory
-import net.corda.data.CordaAvroSerializer
+import java.util.function.Consumer
 import net.corda.schema.registry.AvroSchemaRegistry
+import net.corda.serialization.CordaAvroDeserializer
+import net.corda.serialization.CordaAvroSerializationFactory
+import net.corda.serialization.CordaAvroSerializer
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import java.util.function.Consumer
 
 /**
  * Kafka implementation of the Subscription Factory.
@@ -28,9 +28,10 @@ class CordaAvroSerializationFactoryImpl @Activate constructor(
         )
     }
 
-    override fun <T: Any> createAvroSerializer(
-        onError: Consumer<ByteArray>
+    override fun <T : Any> createAvroSerializer(
+        throwOnError: Boolean,
+        onError: Consumer<ByteArray>?
     ): CordaAvroSerializer<T> {
-        return CordaAvroSerializerImpl(avroSchemaRegistry, onError)
+        return CordaAvroSerializerImpl(avroSchemaRegistry, throwOnError, onError)
     }
 }

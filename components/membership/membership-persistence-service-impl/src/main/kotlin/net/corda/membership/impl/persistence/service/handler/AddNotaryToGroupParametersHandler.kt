@@ -1,7 +1,7 @@
 package net.corda.membership.impl.persistence.service.handler
 
-import net.corda.data.CordaAvroDeserializer
-import net.corda.data.CordaAvroSerializer
+import net.corda.serialization.CordaAvroDeserializer
+import net.corda.serialization.CordaAvroSerializer
 import net.corda.data.KeyValuePairList
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.SignedGroupParameters
@@ -29,7 +29,7 @@ internal class AddNotaryToGroupParametersHandler(
     }
 
     private val keyValuePairListSerializer: CordaAvroSerializer<KeyValuePairList> =
-        cordaAvroSerializationFactory.createAvroSerializer {
+        cordaAvroSerializationFactory.createAvroSerializer(false) {
             logger.error("Failed to serialize key value pair list.")
         }
 

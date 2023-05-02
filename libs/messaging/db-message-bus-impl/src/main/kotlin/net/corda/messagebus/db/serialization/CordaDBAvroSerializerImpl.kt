@@ -1,6 +1,6 @@
 package net.corda.messagebus.db.serialization
 
-import net.corda.data.CordaAvroSerializer
+import net.corda.serialization.CordaAvroSerializer
 import net.corda.schema.registry.AvroSchemaRegistry
 
 class CordaDBAvroSerializerImpl<T : Any>(

@@ -1,7 +1,7 @@
 package net.corda.flow.mapper.impl.executor
 
 import com.typesafe.config.ConfigValueFactory
-import net.corda.data.CordaAvroSerializer
+import net.corda.serialization.CordaAvroSerializer
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent

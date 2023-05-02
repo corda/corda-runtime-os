@@ -1,6 +1,6 @@
 package net.corda.flow.mapper.impl
 
-import net.corda.data.CordaAvroSerializationFactory
+import net.corda.serialization.CordaAvroSerializationFactory
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent

@@ -10,7 +10,8 @@ import net.corda.messaging.subscription.consumer.listener.StateAndEventConsumerR
 interface StateAndEventBuilder {
     fun createProducer(
         config: ResolvedSubscriptionConfig,
-        onSerializationError: ((ByteArray) -> Unit)? = null
+        throwOnError: Boolean,
+        onSerializationError: ((ByteArray) -> Unit)?
     ): CordaProducer
 
     fun <K : Any, S : Any, E : Any> createStateEventConsumerAndRebalanceListener(

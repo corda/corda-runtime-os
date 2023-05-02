@@ -3,7 +3,7 @@ package net.corda.membership.lib.impl
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.core.DigitalSignatureWithKey
 import net.corda.crypto.cipher.suite.SignatureSpecImpl
-import net.corda.data.CordaAvroSerializationFactory
+import net.corda.serialization.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey

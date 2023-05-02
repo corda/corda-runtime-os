@@ -1,8 +1,8 @@
 package net.corda.flow.external.events.responses.impl.factory
 
 import java.nio.ByteBuffer
-import net.corda.data.CordaAvroSerializationFactory
-import net.corda.data.CordaAvroSerializer
+import net.corda.serialization.CordaAvroSerializationFactory
+import net.corda.serialization.CordaAvroSerializer
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.external.ExternalEventContext

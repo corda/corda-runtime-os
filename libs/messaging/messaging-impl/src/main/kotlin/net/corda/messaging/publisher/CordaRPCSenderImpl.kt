@@ -1,7 +1,7 @@
 package net.corda.messaging.publisher
 
-import net.corda.data.CordaAvroDeserializer
-import net.corda.data.CordaAvroSerializer
+import net.corda.serialization.CordaAvroDeserializer
+import net.corda.serialization.CordaAvroSerializer
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.messaging.RPCRequest
 import net.corda.data.messaging.RPCResponse

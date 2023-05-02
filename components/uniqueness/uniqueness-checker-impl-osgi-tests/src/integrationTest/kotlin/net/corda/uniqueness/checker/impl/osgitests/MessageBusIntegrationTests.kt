@@ -8,7 +8,7 @@ import java.time.ZoneOffset
 import java.util.*
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.testkit.SecureHashUtils.randomSecureHash
-import net.corda.data.CordaAvroSerializationFactory
+import net.corda.serialization.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePairList
 import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationSchemaVersion

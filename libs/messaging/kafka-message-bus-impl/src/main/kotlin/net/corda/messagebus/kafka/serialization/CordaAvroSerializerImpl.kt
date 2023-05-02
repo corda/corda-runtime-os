@@ -1,7 +1,7 @@
 package net.corda.messagebus.kafka.serialization
 
 import java.util.function.Consumer
-import net.corda.data.CordaAvroSerializer
+import net.corda.serialization.CordaAvroSerializer
 import net.corda.schema.registry.AvroSchemaRegistry
 import org.apache.kafka.common.serialization.Serializer
 import org.apache.kafka.common.serialization.StringSerializer
@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory
 
 class CordaAvroSerializerImpl<T : Any>(
     private val schemaRegistry: AvroSchemaRegistry,
+    private val throwOnError: Boolean,
     private val onError: Consumer<ByteArray>?
 ) : CordaAvroSerializer<T>, Serializer<T> {
 
@@ -30,12 +31,14 @@ class CordaAvroSerializerImpl<T : Any>(
                     // and return a null.  This will mean the record gets treated as 'deleted' in the processors
                     val message = "Failed to serialize instance of class type ${data::class.java.name} containing " +
                                 "$data"
-                    if(onError == null) {
+
+                    if(throwOnError) {
                         log.error(message, ex)
+                        runOnErrorLambda(message, onError)
                         throw ex
                     } else {
                         log.warn(message, ex)
-                        onError.accept(message.toByteArray())
+                        runOnErrorLambda(message, onError)
                         null
                     }
                 }
@@ -48,5 +51,9 @@ class CordaAvroSerializerImpl<T : Any>(
             null -> null
             else -> serialize(data)
         }
+    }
+
+    private fun runOnErrorLambda(message: String, onError: Consumer<ByteArray>?) {
+        onError?.accept(message.toByteArray())
     }
 }

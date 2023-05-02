@@ -21,7 +21,7 @@ import net.corda.crypto.hes.EphemeralKeyPairEncryptor
 import net.corda.crypto.hes.HybridEncryptionParams
 import net.corda.crypto.hes.StableKeyPairDecryptor
 import net.corda.crypto.persistence.db.model.CryptoEntities
-import net.corda.data.CordaAvroSerializationFactory
+import net.corda.serialization.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePairList
 import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationSchemaVersion

@@ -46,6 +46,7 @@ dependencies {
     implementation project(':libs:membership:network-info')
     implementation project(':components:chunking:chunk-db-write')
     implementation project(':components:membership:certificates-service')
+    implementation project(":libs:serialization:serialization-avro")
 
     implementation "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
     implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
