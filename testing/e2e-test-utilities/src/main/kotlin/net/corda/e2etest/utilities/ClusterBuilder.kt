@@ -1,6 +1,5 @@
 package net.corda.e2etest.utilities
 
-import net.corda.rest.ResponseCode
 import java.io.File
 import java.io.FileNotFoundException
 import java.io.InputStream
