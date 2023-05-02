@@ -1,5 +1,6 @@
 package net.corda.flow.pipeline.sandbox.impl
 
+import net.corda.flow.fiber.cache.FlowFiberCacheEvictionService
 import net.corda.flow.pipeline.sandbox.FlowSandboxGroupContext
 import net.corda.flow.pipeline.sandbox.FlowSandboxService
 import net.corda.flow.pipeline.sandbox.factory.SandboxDependencyInjectorFactory
@@ -41,6 +42,8 @@ class FlowSandboxServiceImpl @Activate constructor(
     private val dependencyInjectionFactory: SandboxDependencyInjectorFactory,
     @Reference(service = FlowProtocolStoreFactory::class)
     private val flowProtocolStoreFactory: FlowProtocolStoreFactory,
+    @Reference(service = FlowFiberCacheEvictionService::class)
+    private val flowFiberCacheEvictionService: FlowFiberCacheEvictionService,
     private val bundleContext: BundleContext
 ) : FlowSandboxService {
 
@@ -79,14 +82,15 @@ class FlowSandboxServiceImpl @Activate constructor(
             throw IllegalStateException("The sandbox can't find one or more of the CPKs $cpkFileHashes ")
         }
 
-        val sandboxGroupContext = sandboxGroupContextComponent.getOrCreate(vNodeContext) { _, sandboxGroupContext ->
-            initialiseSandbox(dependencyInjectionFactory, sandboxGroupContext)
+        val sandboxGroupContext = sandboxGroupContextComponent.getOrCreate(vNodeContext) { holdingId, sandboxGroupContext ->
+            initialiseSandbox(holdingId, dependencyInjectionFactory, sandboxGroupContext)
         }
 
         return FlowSandboxGroupContextImpl.fromContext(sandboxGroupContext)
     }
 
     private fun initialiseSandbox(
+        holdingIdentity: HoldingIdentity,
         dependencyInjectionFactory: SandboxDependencyInjectorFactory,
         sandboxGroupContext: MutableSandboxGroupContext,
     ): AutoCloseable {
@@ -127,6 +131,7 @@ class FlowSandboxServiceImpl @Activate constructor(
             customSerializers.close()
             injectorService.close()
             customCrypto.close()
+            flowFiberCacheEvictionService.evictByHoldingIdentity(holdingIdentity)
         }
     }
 

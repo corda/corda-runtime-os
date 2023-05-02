@@ -37,8 +37,13 @@ class FlowFiberCacheImpl @Activate constructor() : FlowFiberCache {
         cache.invalidate(key)
     }
 
-    override fun remove(holdingIdentities: Set<HoldingIdentity>) {
-        val keysToInvalidate = cache.asMap().keys.filter { holdingIdentities.contains(it.holdingIdentity) }
+    override fun remove(keys: List<FlowFiberCacheKey>) {
+        cache.invalidateAll(keys)
+        cache.cleanUp()
+    }
+
+    override fun remove(holdingIdentity: HoldingIdentity) {
+        val keysToInvalidate = cache.asMap().keys.filter { holdingIdentity == it.holdingIdentity }
         cache.invalidateAll(keysToInvalidate)
         cache.cleanUp()
     }
