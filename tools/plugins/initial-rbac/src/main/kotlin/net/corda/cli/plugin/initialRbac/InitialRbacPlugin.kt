@@ -7,11 +7,10 @@ import net.corda.cli.plugin.initialRbac.commands.FlowExecutorSubcommand
 import net.corda.cli.plugin.initialRbac.commands.VNodeCreatorSubcommand
 import org.pf4j.Extension
 import org.pf4j.Plugin
-import org.pf4j.PluginWrapper
 import picocli.CommandLine
 
 @Suppress("unused")
-class InitialRbacPlugin(wrapper: PluginWrapper) : Plugin(wrapper) {
+class InitialRbacPlugin : Plugin() {
 
     override fun start() {
     }

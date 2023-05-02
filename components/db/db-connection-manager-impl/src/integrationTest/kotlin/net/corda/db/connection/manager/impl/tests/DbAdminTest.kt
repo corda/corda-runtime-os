@@ -18,7 +18,7 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.orm.EntityManagerConfiguration
 import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
 import net.corda.orm.impl.JpaEntitiesRegistryImpl
-import net.cordapp.testing.bundles.cats.Cat
+import com.r3.corda.testing.bundles.cats.Cat
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assumptions

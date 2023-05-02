@@ -122,8 +122,6 @@ internal class SandboxServiceImpl @Activate constructor(
             lookedAtSandbox === lookingSandbox -> true
             // Does only one of the bundles belong to a sandbox?
             lookedAtSandbox == null || lookingSandbox == null -> false
-            // Is the looked-at bundle a public bundle in a public sandbox?
-            lookedAtBundle in publicSandboxes.flatMap { sandbox -> sandbox.publicBundles } -> true
             // Does the looking sandbox not have visibility of the looked at sandbox?
             !lookingSandbox.hasVisibility(lookedAtSandbox) -> false
             // Is the looked-at bundle a public bundle in the looked-at sandbox?
@@ -221,6 +219,7 @@ internal class SandboxServiceImpl @Activate constructor(
 
         newSandboxes.forEach { newSandbox ->
             // Each sandbox requires visibility of the sandboxes of the other CPKs and of the public sandboxes.
+            newSandbox.grantVisibility(publicSandboxes)
             newSandbox.grantVisibility(newSandboxes - newSandbox)
         }
 

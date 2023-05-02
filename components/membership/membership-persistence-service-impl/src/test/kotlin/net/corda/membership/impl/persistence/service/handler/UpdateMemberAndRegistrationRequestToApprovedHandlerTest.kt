@@ -167,10 +167,13 @@ class UpdateMemberAndRegistrationRequestToApprovedHandlerTest {
 
     @Test
     fun `invoke throws exception if request can not be found`() {
+        whenever(keyValuePairListDeserializer.deserialize(mgmContextBytes)).doReturn(
+            KeyValuePairList(listOf(KeyValuePair(STATUS, MEMBER_STATUS_PENDING))),
+        )
         mockMemberInfoEntity()
         mockRegistrationRequestEntity(null)
-        val context = MembershipRequestContext(clock.instant(), requestId, member,)
-        val request = UpdateMemberAndRegistrationRequestToApproved(member, requestId,)
+        val context = MembershipRequestContext(clock.instant(), requestId, member)
+        val request = UpdateMemberAndRegistrationRequestToApproved(member, requestId)
 
         assertThrows<MembershipPersistenceException> {
             handler.invoke(context, request)

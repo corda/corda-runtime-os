@@ -1,5 +1,6 @@
 package net.corda.crypto.component.impl
 
+import net.corda.crypto.core.AbstractComponentNotReadyException
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -38,7 +39,7 @@ abstract class AbstractComponent<IMPL : AbstractComponent.AbstractImpl>(
         get() {
             val tmp = _impl
             if (tmp == null || lifecycleCoordinator.status != LifecycleStatus.UP) {
-                throw IllegalStateException("Component $myName is not ready.")
+                throw AbstractComponentNotReadyException("Component $myName is not ready.")
             }
             return tmp
         }
