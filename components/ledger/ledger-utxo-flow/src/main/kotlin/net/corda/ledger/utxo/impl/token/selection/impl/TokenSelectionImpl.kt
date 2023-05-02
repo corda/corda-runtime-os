@@ -6,7 +6,7 @@ import net.corda.ledger.utxo.impl.token.selection.factories.TokenBalanceQueryExt
 import net.corda.ledger.utxo.impl.token.selection.factories.TokenClaimQueryExternalEventFactory
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.v5.base.annotations.Suspendable
-import net.corda.v5.ledger.utxo.observer.UtxoTokenPoolKey
+import net.corda.v5.ledger.utxo.token.selection.TokenBalanceCriteria
 import net.corda.v5.ledger.utxo.token.selection.TokenClaim
 import net.corda.v5.ledger.utxo.token.selection.TokenClaimCriteria
 import net.corda.v5.ledger.utxo.token.selection.TokenSelection
@@ -36,10 +36,10 @@ class TokenSelectionImpl @Activate constructor(
     }
 
     @Suspendable
-    override fun queryBalance(utxoTokenPoolKey: UtxoTokenPoolKey): BigDecimal {
+    override fun queryBalance(criteria: TokenBalanceCriteria): BigDecimal {
         return externalEventExecutor.execute(
             TokenBalanceQueryExternalEventFactory::class.java,
-            utxoTokenPoolKey
+            criteria
         )
     }
 }

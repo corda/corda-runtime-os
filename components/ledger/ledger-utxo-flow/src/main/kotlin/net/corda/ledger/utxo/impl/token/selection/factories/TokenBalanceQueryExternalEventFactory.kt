@@ -12,13 +12,13 @@ import net.corda.flow.external.events.factory.ExternalEventFactory
 import net.corda.flow.external.events.factory.ExternalEventRecord
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.schema.Schemas
-import net.corda.v5.ledger.utxo.observer.UtxoTokenPoolKey
+import net.corda.v5.ledger.utxo.token.selection.TokenBalanceCriteria
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 
 @Component(service = [ExternalEventFactory::class])
 class TokenBalanceQueryExternalEventFactory @Activate constructor() :
-    ExternalEventFactory<UtxoTokenPoolKey, TokenBalanceQueryResult, BigDecimal> {
+    ExternalEventFactory<TokenBalanceCriteria, TokenBalanceQueryResult, BigDecimal> {
 
     override val responseType = TokenBalanceQueryResult::class.java
 
@@ -26,13 +26,14 @@ class TokenBalanceQueryExternalEventFactory @Activate constructor() :
     override fun createExternalEvent(
         checkpoint: FlowCheckpoint,
         flowExternalEventContext: ExternalEventContext,
-        parameters: UtxoTokenPoolKey
+        parameters: TokenBalanceCriteria
     ): ExternalEventRecord {
         val key = TokenPoolCacheKey().apply {
             this.shortHolderId = checkpoint.holdingIdentity.shortHash.value
-            this.tokenType = parameters.tokenType
-            this.issuerHash = parameters.issuerHash.toString()
-            this.symbol = parameters.symbol
+            this.tokenType = parameters.utxoTokenPoolKey.tokenType
+            this.issuerHash = parameters.utxoTokenPoolKey.issuerHash.toString()
+            this.symbol = parameters.utxoTokenPoolKey.symbol
+            this.notaryX500Name = parameters.notaryX500Name.toString()
         }
 
         val balanceQuery = TokenBalanceQuery().apply {

@@ -1,31 +1,27 @@
-package net.corda.ledger.utxo.impl.token.selection.impl.factories
+package net.corda.ledger.utxo.token.selection.impl.factories
 
+import java.math.BigDecimal
+import java.nio.ByteBuffer
 import net.corda.data.KeyValuePairList
 import net.corda.data.flow.event.external.ExternalEventContext
-import net.corda.data.ledger.utxo.token.selection.data.Token
 import net.corda.data.ledger.utxo.token.selection.data.TokenAmount
-import net.corda.data.ledger.utxo.token.selection.data.TokenClaimQuery
-import net.corda.data.ledger.utxo.token.selection.data.TokenClaimQueryResult
-import net.corda.data.ledger.utxo.token.selection.data.TokenClaimResultStatus
+import net.corda.data.ledger.utxo.token.selection.data.TokenBalanceQuery
+import net.corda.data.ledger.utxo.token.selection.data.TokenBalanceQueryResult
 import net.corda.data.ledger.utxo.token.selection.event.TokenPoolCacheEvent
 import net.corda.data.ledger.utxo.token.selection.key.TokenPoolCacheKey
 import net.corda.flow.external.events.factory.ExternalEventRecord
 import net.corda.flow.state.FlowCheckpoint
-import net.corda.ledger.utxo.impl.token.selection.factories.TokenClaimFactory
-import net.corda.ledger.utxo.impl.token.selection.factories.TokenClaimQueryExternalEventFactory
+import net.corda.ledger.utxo.impl.token.selection.factories.TokenBalanceQueryExternalEventFactory
 import net.corda.ledger.utxo.impl.token.selection.impl.ALICE_X500_HOLDING_ID
 import net.corda.ledger.utxo.impl.token.selection.impl.BOB_X500_NAME
 import net.corda.ledger.utxo.impl.token.selection.impl.toSecureHash
 import net.corda.schema.Schemas.Services.TOKEN_CACHE_EVENT
-import net.corda.v5.ledger.utxo.token.selection.ClaimedToken
-import net.corda.v5.ledger.utxo.token.selection.TokenClaim
-import net.corda.v5.ledger.utxo.token.selection.TokenClaimCriteria
+import net.corda.v5.ledger.utxo.observer.UtxoTokenPoolKey
+import net.corda.v5.ledger.utxo.token.selection.TokenBalanceCriteria
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
-import java.math.BigDecimal
-import java.nio.ByteBuffer
 
 class TokenClaimQueryExternalEventFactoryTest {
     private val tokenType = "tt"
@@ -45,36 +41,24 @@ class TokenClaimQueryExternalEventFactoryTest {
     }
 
     @Test
-    fun `createExternalEvent should return claim query event record`() {
-        val ownerHash = "owner".toSecureHash()
-        val tagRegex = "tag"
-        val amount = BigDecimal(10)
-        val tokenAmount = TokenAmount(
-            amount.scale(),
-            ByteBuffer.wrap(amount.unscaledValue().toByteArray())
-        )
+    fun `createExternalEvent should return balance query event record`() {
+
         val flowExternalEventContext = ExternalEventContext("r1", "f1", KeyValuePairList())
 
-        val parameters = TokenClaimCriteria(tokenType, issuerHash, notaryX500Name, symbol, amount).apply {
-            this.tagRegex = tagRegex
-            this.ownerHash = ownerHash
-        }
+        val parameters = TokenBalanceCriteria(UtxoTokenPoolKey(tokenType, issuerHash, symbol), notaryX500Name)
 
-        val expectedClaimQuery = TokenClaimQuery().apply {
+        val expectedBalanceQuery = TokenBalanceQuery().apply {
             this.poolKey = key
             this.requestContext = flowExternalEventContext
-            this.ownerHash = ownerHash.toString()
-            this.tagRegex = tagRegex
-            this.targetAmount = tokenAmount
         }
 
         val expectedExternalEventRecord = ExternalEventRecord(
             TOKEN_CACHE_EVENT,
             key,
-            TokenPoolCacheEvent(key, expectedClaimQuery)
+            TokenPoolCacheEvent(key, expectedBalanceQuery)
         )
 
-        val target = TokenClaimQueryExternalEventFactory(mock())
+        val target = TokenBalanceQueryExternalEventFactory()
 
         val result = target.createExternalEvent(checkpoint, flowExternalEventContext, parameters)
 
@@ -82,43 +66,24 @@ class TokenClaimQueryExternalEventFactoryTest {
     }
 
     @Test
-    fun `resumeWith returns token claim when successful`() {
-        val token = Token()
-        val expectedToken = mock<ClaimedToken>()
-        val tokenClaim = mock<TokenClaim>()
+    fun `resumeWith returns the balance of the token pool`() {
+        val balanceBigDecimal = BigDecimal(2.0)
+        val balanceTokenAmount = balanceBigDecimal.toTokenAmount()
 
-        val tokenClaimFactory = mock<TokenClaimFactory>().apply {
-            whenever(createClaimedToken(key, token)).thenReturn(expectedToken)
-            whenever(createTokenClaim("c1", key, listOf(expectedToken))).thenReturn(tokenClaim)
-        }
-
-        val response = TokenClaimQueryResult().apply {
+        val response = TokenBalanceQueryResult().apply {
             this.poolKey = key
-            this.claimId = "c1"
-            this.claimedTokens = listOf(token)
-            this.resultType = TokenClaimResultStatus.SUCCESS
+            this.balance = balanceTokenAmount
         }
 
-        val target = TokenClaimQueryExternalEventFactory(tokenClaimFactory)
+        val target = TokenBalanceQueryExternalEventFactory()
 
         val result = target.resumeWith(checkpoint, response)
 
-        assertThat(result).isSameAs(tokenClaim)
+        assertThat(result).isEqualTo(balanceBigDecimal)
     }
 
-    @Test
-    fun `resumeWith returns null when none found`() {
-        val response = TokenClaimQueryResult().apply {
-            this.poolKey = key
-            this.claimId = "c1"
-            this.claimedTokens = listOf()
-            this.resultType = TokenClaimResultStatus.NONE_AVAILABLE
-        }
-
-        val target = TokenClaimQueryExternalEventFactory(mock())
-
-        val result = target.resumeWith(checkpoint, response)
-
-        assertThat(result).isNull()
-    }
+    private fun BigDecimal.toTokenAmount() = TokenAmount.newBuilder()
+        .setScale(scale())
+        .setUnscaledValue(ByteBuffer.wrap(unscaledValue().toByteArray()))
+        .build()
 }
