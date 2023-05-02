@@ -46,8 +46,7 @@ fun parseSecureHashHexString(algoNameAndHexString: String): String {
 fun parseSecureHash(algoNameAndHexString: String): SecureHash {
     val algoName = parseSecureHashAlgoName(algoNameAndHexString)
     val hexString = algoNameAndHexString.substring(algoName.length + 1)
-    val data = ByteArrays.parseAsHex(hexString)
-    return SecureHashImpl(algoName, data)
+    return SecureHashImpl(algoName, ByteArrays.parseAsHex(hexString))
 }
 
 val SecureHash.bytes: ByteArray
