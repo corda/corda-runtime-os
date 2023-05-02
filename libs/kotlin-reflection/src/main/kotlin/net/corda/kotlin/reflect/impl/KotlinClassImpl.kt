@@ -380,6 +380,7 @@ private fun <T : Any> Metadata.forKotlinType(
         is KotlinClassMetadata.Class -> KotlinClassImpl.KmClassType(clazz, klazz, pool, km.toKmClass())
         is KotlinClassMetadata.FileFacade -> KotlinClassImpl.KmPackageType(clazz, klazz, pool, km.toKmPackage())
         is KotlinClassMetadata.MultiFileClassPart -> KotlinClassImpl.KmPackageType(clazz, klazz, pool, km.toKmPackage())
+        null -> throw IllegalArgumentException("Incompatible Kotlin metadata version '${metadataVersion.joinToString(".")}'.")
         else -> throw IllegalArgumentException("Unsupported Kotlin class type: $km")
     }
 }

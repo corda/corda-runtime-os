@@ -3,10 +3,9 @@ package net.corda.cli.plugin.initialconfig
 import net.corda.cli.api.CordaCliPlugin
 import org.pf4j.Extension
 import org.pf4j.Plugin
-import org.pf4j.PluginWrapper
 import picocli.CommandLine.Command
 
-class InitialConfigPlugin(wrapper: PluginWrapper) : Plugin(wrapper) {
+class InitialConfigPlugin : Plugin() {
     override fun start() {
     }
 

@@ -32,6 +32,12 @@ class CordaPublisher(
         }
     }
 
+    override fun batchPublish(records: List<Record<*, *>>): CompletableFuture<Unit> {
+        return runAndCreateFutures(1) {
+            topicService.addRecords(records)
+        }.first()
+    }
+
     private fun runAndCreateFutures(size: Int, block: () -> Unit): List<CompletableFuture<Unit>> {
         val future = try {
             block()

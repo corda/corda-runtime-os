@@ -1,7 +1,5 @@
 package net.corda.flow.pipeline.handlers.requests
 
-import java.time.Instant
-import net.corda.data.flow.event.mapper.ScheduleCleanup
 import net.corda.data.flow.output.FlowStates
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.data.flow.state.waiting.WaitingFor
@@ -11,14 +9,15 @@ import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.flow.pipeline.exceptions.FlowProcessingExceptionTypes.FLOW_FAILED
 import net.corda.flow.pipeline.factory.FlowMessageFactory
 import net.corda.flow.pipeline.factory.FlowRecordFactory
+import net.corda.flow.pipeline.handlers.requests.helper.getRecords
 import net.corda.flow.pipeline.handlers.requests.helper.recordFlowRuntimeMetric
 import net.corda.flow.pipeline.sessions.FlowSessionManager
 import net.corda.flow.pipeline.sessions.FlowSessionStateException
-import net.corda.schema.configuration.FlowConfig.PROCESSING_FLOW_CLEANUP_TIME
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
+import java.time.Instant
 
 @Suppress("Unused")
 @Component(service = [FlowRequestHandler::class])
@@ -67,12 +66,8 @@ class FlowFailedRequestHandler @Activate constructor(
             FLOW_FAILED,
             request.exception.message ?: request.exception.javaClass.name
         )
-        val flowCleanupTime = context.config.getLong(PROCESSING_FLOW_CLEANUP_TIME)
-        val expiryTime = Instant.now().plusMillis(flowCleanupTime).toEpochMilli()
-        val records = listOf(
-            flowRecordFactory.createFlowStatusRecord(status),
-            flowRecordFactory.createFlowMapperEventRecord(checkpoint.flowKey.toString(), ScheduleCleanup(expiryTime))
-        )
+        val records = getRecords(flowRecordFactory, context, status)
+
         log.info("Flow [${checkpoint.flowId}] failed")
         checkpoint.markDeleted()
         return context.copy(outputRecords = context.outputRecords + records)
