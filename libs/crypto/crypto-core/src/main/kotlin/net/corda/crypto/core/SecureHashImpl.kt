@@ -30,7 +30,7 @@ class SecureHashImpl(
     override fun toString() = "$algorithm$DELIMITER${toHexString()}"
 }
 
-fun parseDigestAlgoName(algoNameAndHexString: String): String {
+fun parseSecureHashAlgoName(algoNameAndHexString: String): String {
     val idx = algoNameAndHexString.indexOf(DELIMITER)
     if (idx == -1) {
         throw IllegalArgumentException("Provided string: $algoNameAndHexString should be of format algorithm:hexadecimal")
@@ -38,7 +38,7 @@ fun parseDigestAlgoName(algoNameAndHexString: String): String {
     return algoNameAndHexString.substring(0, idx)
 }
 
-fun parseHexString(algoNameAndHexString: String): String {
+fun parseSecureHashHexString(algoNameAndHexString: String): String {
     val idx = algoNameAndHexString.indexOf(DELIMITER)
     if (idx == -1) {
         throw IllegalArgumentException("Provided string: $algoNameAndHexString should be of format algorithm:hexadecimal")

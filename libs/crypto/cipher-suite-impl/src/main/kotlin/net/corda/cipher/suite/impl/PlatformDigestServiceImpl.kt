@@ -3,8 +3,8 @@ package net.corda.cipher.suite.impl
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.cipher.suite.PlatformDigestService
 import net.corda.crypto.core.SecureHashImpl
-import net.corda.crypto.core.parseDigestAlgoName
-import net.corda.crypto.core.parseHexString
+import net.corda.crypto.core.parseSecureHashAlgoName
+import net.corda.crypto.core.parseSecureHashHexString
 import net.corda.crypto.impl.DoubleSHA256DigestFactory
 import net.corda.v5.base.util.ByteArrays
 import net.corda.v5.crypto.DigestAlgorithmName
@@ -45,10 +45,10 @@ class PlatformDigestServiceImpl @Activate constructor(
     }
 
     override fun parseSecureHash(algoNameAndHexString: String): SecureHash {
-        val digestName = parseDigestAlgoName(algoNameAndHexString)
+        val digestName = parseSecureHashAlgoName(algoNameAndHexString)
         // `digestLength` throws if algorithm not found/ not supported
         val digestHexStringLength = digestLength(DigestAlgorithmName(digestName)) * 2
-        val hexString = parseHexString(algoNameAndHexString)
+        val hexString = parseSecureHashHexString(algoNameAndHexString)
         require(digestHexStringLength == hexString.length) {
             "Required algorithm's: \"$digestName\" hex string length: $digestHexStringLength is not met by hex string: \"$hexString\""
         }

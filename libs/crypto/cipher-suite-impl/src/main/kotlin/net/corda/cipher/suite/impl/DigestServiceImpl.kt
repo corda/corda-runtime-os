@@ -3,8 +3,8 @@ package net.corda.cipher.suite.impl
 import net.corda.crypto.cipher.suite.PlatformDigestService
 import net.corda.crypto.core.DigestAlgorithmFactoryProvider
 import net.corda.crypto.core.SecureHashImpl
-import net.corda.crypto.core.parseDigestAlgoName
-import net.corda.crypto.core.parseHexString
+import net.corda.crypto.core.parseSecureHashAlgoName
+import net.corda.crypto.core.parseSecureHashHexString
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.sandbox.type.UsedByPersistence
 import net.corda.sandbox.type.UsedByVerification
@@ -63,10 +63,10 @@ class DigestServiceImpl @Activate constructor(
         try {
             platformDigestService.parseSecureHash(algoNameAndHexString)
         } catch (e: IllegalArgumentException) {
-            val digestName = parseDigestAlgoName(algoNameAndHexString)
+            val digestName = parseSecureHashAlgoName(algoNameAndHexString)
             lookForCustomAlgorithm(DigestAlgorithmName(digestName))?.let {
                 val digestHexStringLength = it.digestLength * 2
-                val hexString = parseHexString(algoNameAndHexString)
+                val hexString = parseSecureHashHexString(algoNameAndHexString)
                 require(digestHexStringLength == hexString.length) {
                     "Required algorithm's: \"$digestName\" hex string length: $digestHexStringLength is not met by hex string: \"$hexString\""
                 }
