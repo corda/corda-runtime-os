@@ -11,12 +11,16 @@ import net.corda.data.membership.db.response.command.ActivateMemberResponse
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_SUSPENDED
 import net.corda.membership.lib.MemberInfoExtension.Companion.isNotary
+import net.corda.membership.lib.exceptions.InvalidEntityUpdateException
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.virtualnode.toCorda
 import javax.persistence.EntityManager
+import javax.persistence.PessimisticLockException
 
 internal class ActivateMemberHandler(
-    private val persistenceHandlerServices: PersistenceHandlerServices
+    private val persistenceHandlerServices: PersistenceHandlerServices,
+    private val addNotaryToGroupParametersHandler: AddNotaryToGroupParametersHandler =
+        AddNotaryToGroupParametersHandler(persistenceHandlerServices)
 ) : BasePersistenceHandler<ActivateMember, ActivateMemberResponse>(persistenceHandlerServices) {
     private val keyValuePairListDeserializer: CordaAvroDeserializer<KeyValuePairList> by lazy {
         cordaAvroSerializationFactory.createAvroDeserializer(
@@ -66,7 +70,12 @@ internal class ActivateMemberHandler(
     }
 
     private fun updateGroupParameters(em: EntityManager, memberInfo: PersistentMemberInfo): SignedGroupParameters {
-        val notaryHandler = AddNotaryToGroupParametersHandler(persistenceHandlerServices)
-        return notaryHandler.addNotaryToGroupParameters(em, memberInfo)
+        return try {
+            addNotaryToGroupParametersHandler.addNotaryToGroupParameters(em, memberInfo)
+        } catch (e: PessimisticLockException) {
+            throw InvalidEntityUpdateException(
+                "Could not update member group parameters: ${e.message}",
+            )
+        }
     }
 }
