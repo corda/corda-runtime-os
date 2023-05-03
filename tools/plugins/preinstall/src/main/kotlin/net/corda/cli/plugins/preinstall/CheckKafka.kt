@@ -52,10 +52,11 @@ class CheckKafka : Callable<Int>, PluginContext() {
             admin = AdminClient.create(props)
         }
 
-        open fun getNodes(): Collection<Node>? {
+        open fun getNodes(): Collection<Node> {
             return admin?.describeCluster()
                 ?.nodes()
                 ?.get()
+                ?: listOf()
         }
 
         open fun getDescriptionID(): String? {
@@ -86,7 +87,7 @@ class CheckKafka : Callable<Int>, PluginContext() {
             val saslEnabled = !(saslUsername == null && saslPassword == null)
 
             // Assembles the properties in the same way as the helm charts:
-            // https://github.com/corda/corda-runtime-os/blob/release/os/5.0/charts/corda-lib/templates/_bootstrap.tpl#L333
+            // https://github.com/corda/corda-runtime-os/blob/release/os/5.0/charts/corda-lib/templates/_bootstrap.tpl#L185
             if (tlsEnabled) {
                 if (saslEnabled) {
                     props["security.protocol"] = "SASL_SSL"

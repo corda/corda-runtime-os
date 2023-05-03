@@ -24,10 +24,10 @@ Check the resource limits have been assigned correctly.
 Check that the PostgreSQL DB is up and that the credentials work.
 > **preinstall check-postgres [-n=\<namespace\>] \<path\>**
 
-      <path>        The yaml file containing either the username and password
-                    value, or valueFrom.secretKeyRef.key fields for Postgres
+      <path>        The yaml file containing the username and password values for 
+                    PostgreSQL - either as values, or as secret references
 	  -n, --namespace=<namespace>
-                    The namespace in which to look for Postgres secrets if there are any
+                    The namespace in which to look for PostgreSQL secrets if there are any
 
 ## check-kafka
 Check that Kafka is up and that the credentials work.
@@ -41,7 +41,7 @@ Check that Kafka is up and that the credentials work.
 	  -n, --namespace=<namespace>
                               The namespace in which to look for the Kafka secrets if TLS or 
                               SASL is enabled
-	  -t, --timeout=<timeout> The timeout in milliseconds for testing the kafka
+	  -t, --timeout=<timeout> The timeout in milliseconds for testing the Kafka
                               connection - defaults to 3000
 
 ## run-all
@@ -53,6 +53,6 @@ Runs all preinstall checks.
 	  -f, --file=<truststoreLocation>
                               The file location of the truststore for Kafka
 	  -n, --namespace=<namespace>
-                              The namespace in which to look for both the Postgres and Kafka secrets
+                              The namespace in which to look for both the PostgreSQL and Kafka secrets
 	  -t, --timeout=<timeout> The timeout in milliseconds for testing the Kafka
                               connection - defaults to 3000

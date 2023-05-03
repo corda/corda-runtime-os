@@ -41,6 +41,8 @@ class PreInstallPlugin(wrapper: PluginWrapper) : Plugin(wrapper) {
     // Common class for plugins to inherit methods from
     open class PluginContext {
         var report = Report()
+        var client = KubernetesClientBuilder().build()
+
         class SecretException: Exception {
             constructor (message: String?) : super(message)
             constructor (message: String?, cause: Throwable?) : super(message, cause)
@@ -69,22 +71,21 @@ class PreInstallPlugin(wrapper: PluginWrapper) : Plugin(wrapper) {
             val secretName: String? = values.valueFrom?.secretKeyRef?.name
             var credential: String? = values.value
 
-            credential = credential ?: run {
-                if (secretKey == null || secretName == null)  {
-                    throw SecretException("Credential secret $secretName with key $secretKey could not be parsed.")
-                }
-                val encoded = getSecret(secretName, secretKey, namespace) ?: run {
-                    throw SecretException("Secret $secretName has no key $secretKey.")
-                }
-                String(Base64.getDecoder().decode(encoded))
+            if (secretKey == null && secretName == null) {
+                return credential ?: throw SecretException("Credential could not be found from value or secret.")
             }
-            return credential
+
+            if (secretKey == null || secretName == null)  {
+                throw SecretException("Credential secret $secretName with key $secretKey could not be parsed.")
+            }
+            val encoded = getSecret(secretName, secretKey, namespace) ?: run {
+                throw SecretException("Secret $secretName has no key $secretKey.")
+            }
+            return String(Base64.getDecoder().decode(encoded))
         }
 
         private fun getSecret(secretName: String, secretKey: String, namespace: String?): String? {
             return try {
-                val client = KubernetesClientBuilder().build()
-
                 val secret: Secret = if (namespace != null) {
                     val names = client.namespaces().list().items.map { item -> item.metadata.name}
                     if (!names.contains(namespace)) {

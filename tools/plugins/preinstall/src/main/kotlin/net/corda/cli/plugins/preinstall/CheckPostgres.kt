@@ -15,7 +15,7 @@ class CheckPostgres : Callable<Int>, PluginContext() {
 
     @Parameters(
         index = "0",
-        description = ["YAML file containing either the username and password value, or valueFrom.secretKeyRef.key fields for PostgreSQL"]
+        description = ["YAML file containing the username and password values for PostgreSQL - either as values, or as secret references"]
     )
     lateinit var path: String
 
