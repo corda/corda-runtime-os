@@ -104,8 +104,7 @@ class ChunkReadingTest {
     @Test
     fun `can read out of order chunks`() {
         val ourFileName = randomFileName()
-        val properties = mutableMapOf<String, String?>()
-        properties[CHUNK_FILENAME_KEY] = ourFileName
+        val properties = mapOf<String, String?>(CHUNK_FILENAME_KEY to ourFileName)
 
         val chunks = mutableListOf<Chunk>()
         val writer = ChunkWriterImpl(32 + APP_LEVEL_CHUNK_MESSAGE_OVERHEAD, chunkBuilderService, properties).apply {
@@ -195,8 +194,7 @@ class ChunkReadingTest {
         """.trimIndent()
 
         val ourFileName = randomFileName()
-        val properties = mutableMapOf<String, String?>()
-        properties[CHUNK_FILENAME_KEY] = ourFileName
+        val properties = mapOf<String, String?>(CHUNK_FILENAME_KEY to ourFileName)
 
         val expectedPath = fs.getPath(randomFileName())
         Files.newBufferedWriter(expectedPath, StandardOpenOption.WRITE, StandardOpenOption.CREATE_NEW).use {

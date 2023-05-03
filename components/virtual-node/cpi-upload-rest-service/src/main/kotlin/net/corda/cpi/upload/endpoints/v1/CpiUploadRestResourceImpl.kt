@@ -58,8 +58,7 @@ class CpiUploadRestResourceImpl @Activate constructor(
 
     override fun cpi(upload: HttpFileUpload): CpiUploadRestResource.CpiUploadResponse {
         val opName = "Uploading CPI: ${upload.fileName}"
-        val properties = mutableMapOf<String, String?>()
-        properties[CHUNK_FILENAME_KEY] = upload.fileName
+        val properties = mapOf<String, String?>(CHUNK_FILENAME_KEY to upload.fileName)
         logger.info(opName)
         requireRunning()
         val cpiUploadRequestId = tryWithExceptionHandling(logger, opName) {

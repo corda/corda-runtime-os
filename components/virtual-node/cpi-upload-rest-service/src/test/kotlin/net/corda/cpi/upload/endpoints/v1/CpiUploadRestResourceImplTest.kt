@@ -65,8 +65,7 @@ class CpiUploadRestResourceImplTest {
             parseSecureHash("FOO:123456789012")
         )
 
-        val properties = mutableMapOf<String, String?>()
-        properties[CHUNK_FILENAME_KEY] = DUMMY_FILE_NAME
+        val properties = mapOf<String, String?>(CHUNK_FILENAME_KEY to DUMMY_FILE_NAME)
         whenever(cpiUploadManager.uploadCpi(eq(cpiContent), eq(properties))).thenReturn(cpiUploadRequestId)
 
         val httpResponse = cpiUploadRestResourceImpl.cpi(HttpFileUpload(cpiContent, DUMMY_FILE_NAME))

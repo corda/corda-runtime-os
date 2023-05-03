@@ -49,7 +49,7 @@ class ChunkWritingTest {
 
     @Test
     fun `simple chunking`() {
-        val chunkWriter = ChunkWriterFactory.create(1 * MB, mutableMapOf())
+        val chunkWriter = ChunkWriterFactory.create(1 * MB, emptyMap())
         var chunkWrittenCount = 0
         chunkWriter.onChunk { chunkWrittenCount++ }
 
@@ -76,8 +76,7 @@ class ChunkWritingTest {
     @Test
     fun `chunk file name is set correctly`() {
         val fileName = randomFileName()
-        val properties = mutableMapOf<String, String?>()
-        properties[CHUNK_FILENAME_KEY] = fileName
+        val properties = mapOf<String, String?>(CHUNK_FILENAME_KEY to fileName)
         val writer = ChunkWriterFactory.create(1 * MB, properties)
         writer.apply {
             this.onChunk { chunk ->
