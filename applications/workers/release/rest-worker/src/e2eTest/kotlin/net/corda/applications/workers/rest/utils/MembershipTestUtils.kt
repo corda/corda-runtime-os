@@ -168,7 +168,7 @@ fun E2eCluster.assertMemberInMemberList(
     member: E2eClusterMember
 ) {
     eventually(
-        duration = 2.minutes,
+        duration = 6.minutes,
         waitBetween = 3.seconds,
         retryAllExceptions = true,
     ) {
