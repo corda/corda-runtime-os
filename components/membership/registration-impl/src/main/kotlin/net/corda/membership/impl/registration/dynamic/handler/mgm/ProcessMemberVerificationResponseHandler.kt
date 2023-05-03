@@ -124,15 +124,32 @@ internal class ProcessMemberVerificationResponseHandler(
             emptyList()
         } catch (e: Exception) {
             logger.warn("Could not process member verification response for registration request: '$registrationId'", e)
-            listOf(
-                Record(
-                    REGISTRATION_COMMAND_TOPIC,
-                    key,
-                    RegistrationCommand(
-                        DeclineRegistration(e.message)
-                    )
-                ),
-            )
+            try {
+                // Only decline the request if the state hasn't already moved on.
+                membershipQueryClient
+                    .queryRegistrationRequest(mgm.toCorda(), registrationId)
+                    .getOrThrow()
+                    ?.checkValidState()
+
+                listOf(
+                    Record(
+                        REGISTRATION_COMMAND_TOPIC,
+                        key,
+                        RegistrationCommand(DeclineRegistration(e.message))
+                    ),
+                )
+            } catch (ex: VerificationResponseAlreadyProcessed) {
+                logger.warn(e.message)
+                emptyList()
+            } catch (ex: Exception) {
+                listOf(
+                    Record(
+                        REGISTRATION_COMMAND_TOPIC,
+                        key,
+                        RegistrationCommand(DeclineRegistration(e.message))
+                    ),
+                )
+            }
         }
         return RegistrationHandlerResult(
             RegistrationState(registrationId, member, mgm),
@@ -157,8 +174,6 @@ internal class ProcessMemberVerificationResponseHandler(
                         "(ID=$registrationId) submitted by ${member.x500Name}."
             )
 
-        registrationRequest.checkValidState()
-
         val activeMemberInfo = membershipGroupReaderProvider
             .getGroupReader(mgm)
             .lookup(member.x500Name)
@@ -167,6 +182,8 @@ internal class ProcessMemberVerificationResponseHandler(
             ?.toMap()
 
         val preAuthToken = proposedMemberInfo[PRE_AUTH_TOKEN]
+
+        registrationRequest.checkValidState()
 
         val approvalRuleType = preAuthToken?.let {
             val tokenExists = membershipQueryClient.queryPreAuthTokens(
