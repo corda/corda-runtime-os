@@ -122,7 +122,7 @@ internal class SandboxGroupImpl(
                 } ?: throw SandboxException(
                     "Class tag $serialisedClassTag did not match any sandbox in the sandbox group."
                 )
-                sandbox.loadClass(className, classTag.classBundleName) ?: throw SandboxException(
+                sandbox.loadClass(className, sandbox.mainBundle.symbolicName) ?: throw SandboxException(
                     "Class $className could not be loaded from bundle ${classTag.classBundleName} in sandbox ${sandbox.id}."
                 )
             }
