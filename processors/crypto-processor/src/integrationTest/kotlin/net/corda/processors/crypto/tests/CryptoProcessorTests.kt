@@ -133,7 +133,7 @@ class CryptoProcessorTests {
         lateinit var cryptoFlowOpsTransformerFactory: CryptoFlowOpsTransformerFactory
 
         @InjectService(timeout = 5000L)
-        lateinit var opsClient: CryptoOpsClient
+        lateinit var cryptoOpsClient: CryptoOpsClient
 
         @InjectService(timeout = 5000L)
         lateinit var verifier: SignatureVerificationService
@@ -210,13 +210,7 @@ class CryptoProcessorTests {
             startDependencies()
             waitForVirtualNodeInfoReady()
             assignHSMs()
-            cryptoProcessor.start(bootConfig)
-            logger.info("Test setup ending")
-            eventually {
-                assertTrue(opsClient.isRunning)
-            }
-            logger.info("Test setup complete")
-
+            logger.info("Test setup steps done")
         }
 
         @JvmStatic
@@ -381,7 +375,8 @@ class CryptoProcessorTests {
                 setOf(
                     LifecycleCoordinatorName.forComponent<CryptoProcessor>(),
                     LifecycleCoordinatorName.forComponent<HSMRegistrationClient>(),
-                    LifecycleCoordinatorName.forComponent<StableKeyPairDecryptor>()
+                    LifecycleCoordinatorName.forComponent<StableKeyPairDecryptor>(),
+                    LifecycleCoordinatorName.forComponent<CryptoOpsClient>(),
                 )
             ).also {
                     it.start()
@@ -438,7 +433,7 @@ class CryptoProcessorTests {
         category: String,
         tenantId: String
     ) {
-        val supportedSchemes = opsClient.getSupportedSchemes(tenantId, category)
+        val supportedSchemes = cryptoOpsClient.getSupportedSchemes(tenantId, category)
         assertTrue(supportedSchemes.isNotEmpty())
     }
 
@@ -447,7 +442,7 @@ class CryptoProcessorTests {
     fun `Should not find unknown public key by its id`(
         tenantId: String,
     ) {
-        val found = opsClient.lookupKeysByIds(
+        val found = cryptoOpsClient.lookupKeysByIds(
             tenantId = tenantId,
             keyIds = listOf(ShortHash.of(publicKeyIdFromBytes(UUID.randomUUID().toString().toByteArray())))
         )
@@ -459,7 +454,7 @@ class CryptoProcessorTests {
     fun `Should return empty collection when lookp filter does not match`(
         tenantId: String,
     ) {
-        val found = opsClient.lookup(
+        val found = cryptoOpsClient.lookup(
             tenantId = tenantId,
             skip = 0,
             take = 20,
@@ -480,18 +475,16 @@ class CryptoProcessorTests {
 
         val category = CryptoConsts.Categories.SESSION_INIT
 
-        val original = opsClient.generateKeyPair(
+        val original = cryptoOpsClient.generateKeyPair(
             tenantId = tenantId,
             category = category,
             alias = alias,
             scheme = X25519_CODE_NAME
         )
 
-        `Should find existing public key by its id`(tenantId, alias, original, category, null)
-
-        `Should find existing public key by its alias`(tenantId, alias, original, category)
-
-        `Should be able to derive secret and encrypt`(tenantId, original)
+       findPublicKeyById(tenantId, alias, original, category, null)
+       findPublicKeyByAlias(tenantId, alias, original, category)
+       deriveSecretAndEncrypt(tenantId, original)
     }
 
     @ParameterizedTest
@@ -501,16 +494,15 @@ class CryptoProcessorTests {
     ) {
         val category = CryptoConsts.Categories.SESSION_INIT
 
-        val original = opsClient.freshKey(
+        val original = cryptoOpsClient.freshKey(
             tenantId = tenantId,
             category = category,
             scheme = X25519_CODE_NAME,
             context = CryptoOpsClient.EMPTY_CONTEXT
         )
 
-        `Should find existing public key by its id`(tenantId, null, original, category, null)
-
-        `Should be able to derive secret and encrypt`(tenantId, original)
+        findPublicKeyById(tenantId, null, original, category, null)
+        deriveSecretAndEncrypt(tenantId, original)
     }
 
     @ParameterizedTest
@@ -521,26 +513,20 @@ class CryptoProcessorTests {
     ) {
         val alias = UUID.randomUUID().toString()
 
-        val original = opsClient.generateKeyPair(
+        val original = cryptoOpsClient.generateKeyPair(
             tenantId = tenantId,
             category = category,
             alias = alias,
             scheme = ECDSA_SECP256R1_CODE_NAME
         )
 
-        `Should find existing public key by its id`(tenantId, alias, original, category, null)
-
-        `Should find existing public key by its alias`(tenantId, alias, original, category)
-
-        `Should be able to sign and verify`(tenantId, original)
-
-        `Should be able to sign and verify by inferring signtaure spec`(tenantId, original)
-
-        `Should be able to sign using custom signature spec`(tenantId, original)
-
-        `Should be able to sign by flow ops and verify`(tenantId, original)
-
-        `Should be able to sign by flow ops and verify bu inferring signature spec`(tenantId, original)
+        findPublicKeyById(tenantId, alias, original, category, null)
+        findPublicKeyByAlias(tenantId, alias, original, category)
+        doSignAndVerify(tenantId, original)
+        doSignVerifyWithInferredSignatureSpec(tenantId, original)
+        doSignCustomSignatureSpec(tenantId, original)
+        doFlowOpsSignAndVerify(tenantId, original)
+        doSignFlowWithInferredSignatureSpec(tenantId, original)
     }
 
     @ParameterizedTest
@@ -550,7 +536,7 @@ class CryptoProcessorTests {
     ) {
         val externalId = UUID.randomUUID().toString()
 
-        val original = opsClient.freshKey(
+        val original = cryptoOpsClient.freshKey(
             tenantId = tenantId,
             category = CryptoConsts.Categories.CI,
             externalId = externalId,
@@ -558,23 +544,12 @@ class CryptoProcessorTests {
             context = CryptoOpsClient.EMPTY_CONTEXT
         )
 
-        `Should find existing public key by its id`(
-            tenantId,
-            null,
-            original,
-            CryptoConsts.Categories.CI,
-            externalId
-        )
-
-        `Should be able to sign and verify`(tenantId, original)
-
-        `Should be able to sign and verify by inferring signtaure spec`(tenantId, original)
-
-        `Should be able to sign using custom signature spec`(tenantId, original)
-
-        `Should be able to sign by flow ops and verify`(tenantId, original)
-
-        `Should be able to sign by flow ops and verify bu inferring signature spec`(tenantId, original)
+        findPublicKeyById(tenantId,null,original,CryptoConsts.Categories.CI,externalId)
+        doSignAndVerify(tenantId, original)
+        doSignVerifyWithInferredSignatureSpec(tenantId, original)
+        doSignCustomSignatureSpec(tenantId, original)
+        doFlowOpsSignAndVerify(tenantId, original)
+        doSignFlowWithInferredSignatureSpec(tenantId, original)
     }
 
     @ParameterizedTest
@@ -582,40 +557,29 @@ class CryptoProcessorTests {
     fun `Should generate a new fresh key pair without external id then find it and use for signing`(
         tenantId: String,
     ) {
-        val original = opsClient.freshKey(
+        val original = cryptoOpsClient.freshKey(
             tenantId = tenantId,
             category = CryptoConsts.Categories.CI,
             scheme = ECDSA_SECP256R1_CODE_NAME,
             context = CryptoOpsClient.EMPTY_CONTEXT
         )
 
-        `Should find existing public key by its id`(
-            tenantId,
-            null,
-            original,
-            CryptoConsts.Categories.CI,
-            null
-        )
-
-        `Should be able to sign and verify`(tenantId, original)
-
-        `Should be able to sign and verify by inferring signtaure spec`(tenantId, original)
-
-        `Should be able to sign using custom signature spec`(tenantId, original)
-
-        `Should be able to sign by flow ops and verify`(tenantId, original)
-
-        `Should be able to sign by flow ops and verify bu inferring signature spec`(tenantId, original)
+        findPublicKeyById(tenantId,null,original,CryptoConsts.Categories.CI,null)
+        doSignAndVerify(tenantId, original)
+        doSignVerifyWithInferredSignatureSpec(tenantId, original)
+        doSignCustomSignatureSpec(tenantId, original)
+        doFlowOpsSignAndVerify(tenantId, original)
+        doSignFlowWithInferredSignatureSpec(tenantId, original)
     }
 
-    private fun `Should find existing public key by its id`(
+    private fun findPublicKeyById(
         tenantId: String,
         alias: String?,
         publicKey: PublicKey,
         category: String,
         externalId: String?,
     ) {
-        val found = opsClient.lookupKeysByIds(
+        val found = cryptoOpsClient.lookupKeysByIds(
             tenantId = tenantId,
             keyIds = listOf(ShortHash.of(publicKey.publicKeyId()))
         )
@@ -639,13 +603,8 @@ class CryptoProcessorTests {
         assertNull(found[0].hsmAlias)
     }
 
-    private fun `Should find existing public key by its alias`(
-        tenantId: String,
-        alias: String,
-        publicKey: PublicKey,
-        category: String
-    ) {
-        val found = opsClient.lookup(
+    private fun findPublicKeyByAlias(tenantId: String, alias: String, publicKey: PublicKey, category: String) {
+        val found = cryptoOpsClient.lookup(
             tenantId = tenantId,
             skip = 0,
             take = 20,
@@ -666,13 +625,13 @@ class CryptoProcessorTests {
         assertNull(found[0].hsmAlias)
     }
 
-    private fun `Should be able to sign and verify`(
+    private fun doSignAndVerify(
         tenantId: String,
         publicKey: PublicKey
     ) {
         schemeMetadata.supportedSignatureSpec(schemeMetadata.findKeyScheme(publicKey)).forEach { spec ->
             val data = randomDataByteArray()
-            val signature = opsClient.sign(
+            val signature = cryptoOpsClient.sign(
                 tenantId = tenantId,
                 publicKey = publicKey,
                 signatureSpec = spec,
@@ -689,7 +648,7 @@ class CryptoProcessorTests {
         }
     }
 
-    private fun `Should be able to derive secret and encrypt`(tenantId: String, publicKey: PublicKey) {
+    private fun deriveSecretAndEncrypt(tenantId: String, publicKey: PublicKey) {
         val plainText = "Hello World!".toByteArray()
         val cipherText = ephemeralEncryptor.encrypt(
             otherPublicKey = publicKey,
@@ -710,13 +669,13 @@ class CryptoProcessorTests {
         assertArrayEquals(plainText, decryptedPlainTex)
     }
 
-    private fun `Should be able to sign and verify by inferring signtaure spec`(
+    private fun doSignVerifyWithInferredSignatureSpec(
         tenantId: String,
         publicKey: PublicKey
     ) {
         schemeMetadata.inferableDigestNames(schemeMetadata.findKeyScheme(publicKey)).forEach { digest ->
             val data = randomDataByteArray()
-            val signature = opsClient.sign(
+            val signature = cryptoOpsClient.sign(
                 tenantId = tenantId,
                 publicKey = publicKey,
                 signatureSpec = schemeMetadata.inferSignatureSpec(publicKey, digest)!!,
@@ -733,7 +692,7 @@ class CryptoProcessorTests {
         }
     }
 
-    private fun `Should be able to sign using custom signature spec`(
+    private fun doSignCustomSignatureSpec(
         tenantId: String,
         publicKey: PublicKey
     ) {
@@ -743,7 +702,7 @@ class CryptoProcessorTests {
             "RSA" -> SignatureSpecs.RSASSA_PSS_SHA256
             else -> throw IllegalArgumentException("Test supports only RSA or ECDSA")
         }
-        val signature = opsClient.sign(
+        val signature = cryptoOpsClient.sign(
             tenantId = tenantId,
             publicKey = publicKey,
             signatureSpec = signatureSpec,
@@ -759,7 +718,7 @@ class CryptoProcessorTests {
         )
     }
 
-    private fun `Should be able to sign by flow ops and verify`(
+    private fun doFlowOpsSignAndVerify(
         tenantId: String,
         publicKey: PublicKey
     ) {
@@ -804,7 +763,7 @@ class CryptoProcessorTests {
         }
     }
 
-    private fun `Should be able to sign by flow ops and verify bu inferring signature spec`(
+    private fun doSignFlowWithInferredSignatureSpec(
         tenantId: String,
         publicKey: PublicKey
     ) {
@@ -863,8 +822,8 @@ class CryptoProcessorTests {
         val vnode2Keys = listOf(vnode2Key1, vnode2Key2, vnode2Key3)
         val allKeys = vnodeKeys + vnode2Keys
 
-        assertEquals(vnodeKeys, opsClient.filterMyKeys(vnodeId, allKeys))
-        assertEquals(vnode2Keys, opsClient.filterMyKeys(vnodeId2, allKeys))
+        assertEquals(vnodeKeys, cryptoOpsClient.filterMyKeys(vnodeId, allKeys))
+        assertEquals(vnode2Keys, cryptoOpsClient.filterMyKeys(vnodeId2, allKeys))
     }
 
     @Test
@@ -880,10 +839,10 @@ class CryptoProcessorTests {
         val vnode2Keys = listOf(vnode2Key1, vnode2Key2, vnode2Key3)
         val allKeys = vnodeKeys + vnode2Keys
 
-        assertEquals(vnodeKeys, opsClient.filterMyKeys(vnodeId, allKeys))
-        assertEquals(vnode2Keys, opsClient.filterMyKeys(vnodeId2, allKeys))
-        assertEquals(vnodeKeys, opsClient.filterMyKeys(vnodeId, allKeys, usingFullIds = true))
-        assertEquals(vnode2Keys, opsClient.filterMyKeys(vnodeId2, allKeys, usingFullIds = true))
+        assertEquals(vnodeKeys, cryptoOpsClient.filterMyKeys(vnodeId, allKeys))
+        assertEquals(vnode2Keys, cryptoOpsClient.filterMyKeys(vnodeId2, allKeys))
+        assertEquals(vnodeKeys, cryptoOpsClient.filterMyKeys(vnodeId, allKeys, usingFullIds = true))
+        assertEquals(vnode2Keys, cryptoOpsClient.filterMyKeys(vnodeId2, allKeys, usingFullIds = true))
     }
 
     @Test
@@ -904,12 +863,12 @@ class CryptoProcessorTests {
         val allKeyIds = allKeys.map { it.publicKeyId() }.map { ShortHash.of(it) }
         val allKeyFullIds = allKeys.map { it.fullId() }
 
-        val queriedVnodeKeysEncoded = opsClient.lookupKeysByIds(vnodeId, allKeyIds).map { it.publicKey.toBytes() }
-        val queriedVnode2KeysEncoded = opsClient.lookupKeysByIds(vnodeId2, allKeyIds).map { it.publicKey.toBytes() }
+        val queriedVnodeKeysEncoded = cryptoOpsClient.lookupKeysByIds(vnodeId, allKeyIds).map { it.publicKey.toBytes() }
+        val queriedVnode2KeysEncoded = cryptoOpsClient.lookupKeysByIds(vnodeId2, allKeyIds).map { it.publicKey.toBytes() }
         val queriedByFullIdsVnodeKeysEncoded =
-            opsClient.lookupKeysByFullIds(vnodeId, allKeyFullIds).map { it.publicKey.toBytes() }
+            cryptoOpsClient.lookupKeysByFullIds(vnodeId, allKeyFullIds).map { it.publicKey.toBytes() }
         val queriedByFullIdsVnode2KeysEncoded =
-            opsClient.lookupKeysByFullIds(vnodeId2, allKeyFullIds).map { it.publicKey.toBytes() }
+            cryptoOpsClient.lookupKeysByFullIds(vnodeId2, allKeyFullIds).map { it.publicKey.toBytes() }
 
         assertTrue(listsOfBytesAreEqual(vnodeKeysEncoded, queriedVnodeKeysEncoded))
         assertTrue(listsOfBytesAreEqual(vnode2KeysEncoded, queriedVnode2KeysEncoded))
@@ -918,7 +877,7 @@ class CryptoProcessorTests {
     }
 
     private fun generateLedgerKey(tenantId: String, keyAlias: String): PublicKey =
-        opsClient.generateKeyPair(
+        cryptoOpsClient.generateKeyPair(
             tenantId = tenantId,
             category = CryptoConsts.Categories.LEDGER,
             alias = keyAlias,

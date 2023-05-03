@@ -60,14 +60,13 @@ class CryptoFlowOpsBusProcessor(
     }
 
     private fun onNext(event: Record<String, FlowOpsRequest>): Record<*, *>? {
+        logger.info("top of flow ops on next")
         val request = event.value
         if (request == null) {
             logger.error("Unexpected null payload for event with the key={} in topic={}", event.key, event.topic)
             return null // cannot send any error back as have no idea where to send to
         }
 
-        val requestId = request.flowExternalEventContext.requestId
-        val flowId = request.flowExternalEventContext.flowId
         val expireAt = getRequestExpireAt(request)
         val clientRequestId = request.flowExternalEventContext.contextProperties.toMap()[MDC_CLIENT_ID] ?: ""
         val mdc = mapOf(

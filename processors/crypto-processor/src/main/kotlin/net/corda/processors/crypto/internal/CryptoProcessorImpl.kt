@@ -214,12 +214,13 @@ class CryptoProcessorImpl @Activate constructor(
                 val flowOpsProcessor = CryptoFlowOpsBusProcessor(cryptoOpsProxyClient, externalEventResponseFactory, event)
                 val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
 
-                subscriptionFactory.createDurableSubscription(
+                val subscription = subscriptionFactory.createDurableSubscription(
                     subscriptionConfig = SubscriptionConfig(groupName,Schemas.Crypto.FLOW_OPS_MESSAGE_TOPIC),
                     processor = flowOpsProcessor,
                     messagingConfig = messagingConfig,
                     partitionAssignmentListener = null
                 )
+                subscription.start()
             }
         }
     }
