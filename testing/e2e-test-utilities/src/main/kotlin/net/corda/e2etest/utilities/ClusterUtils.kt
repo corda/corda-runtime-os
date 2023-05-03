@@ -24,7 +24,7 @@ fun ClusterInfo.conditionallyUploadCpiSigningCertificate() = cluster {
     val hasCertificateChain = assertWithRetry {
         command { getCertificateChain(CODE_SIGNER_CERT_USAGE, CODE_SIGNER_CERT_ALIAS) }
         condition {
-            it.code != ResponseCode.RESOURCE_NOT_FOUND.statusCode ||
+            it.code == ResponseCode.RESOURCE_NOT_FOUND.statusCode ||
                     it.code == ResponseCode.OK.statusCode
         }
     }.let {
