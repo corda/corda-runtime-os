@@ -2,6 +2,7 @@ package net.corda.flow.application.services.impl
 
 import net.corda.flow.application.serialization.SerializationServiceInternal
 import net.corda.flow.application.services.impl.interop.dispatch.buildDispatcher
+import net.corda.flow.application.services.impl.interop.facade.FacadeRequestImpl
 import net.corda.flow.application.services.impl.interop.facade.FacadeResponseImpl
 import net.corda.flow.application.services.impl.interop.parameters.RawParameterType
 import net.corda.flow.application.services.impl.interop.parameters.TypedParameterImpl
@@ -42,15 +43,15 @@ class FacadeServiceImpl @Activate constructor(
     ): T {
         val x = JacksonJsonMarshallerAdaptor(jsonMarshallingService)
         val m = MessagingDispatcher(flowMessaging, jsonMarshallingService, alias!!, interopGroup!!)
-        val client = facade!!.getClientProxy<Any>(x, m)
-        return client as T
+        val client = facade!!.getClientProxy(x, expectedType!!, m)
+        return client
     }
 
     override fun dispatch(facade: Facade?, target: Any?, request: String?): FacadeResponse {
         val x = JacksonJsonMarshallerAdaptor(jsonMarshallingService)
         val dispatcher = target!!.buildDispatcher(facade!!, x)
 
-         val facadeRequest  = jsonMarshallingService.parse(request!!, FacadeRequest::class.java)
+         val facadeRequest  = jsonMarshallingService.parse(request!!, FacadeRequestImpl::class.java)
 
 //        val facadeRequest = FacadeRequest(
 //            FacadeId("", mutableListOf("com", "r3", "tokens", "sample").joinToString("/"), "v1.0"),
@@ -75,8 +76,10 @@ class MessagingDispatcher(private var flowMessaging: FlowMessaging, private val 
         //val payload : String = om.writeValueAsString(p1)
         val payload  = jsonMarshallingService.format(p1)
         val response = flowMessaging.callFacade(alias, facade.toString(), method, payload)
-        return FacadeResponseImpl(p1.facadeId, method,
-            listOf(TypedParameterValueImpl(TypedParameterImpl("greeting", RawParameterType(ParameterTypeLabel.STRING)), response)))
+        return response
+
+       // FacadeResponseImpl(p1.facadeId, method,
+       //     listOf(TypedParameterValueImpl(TypedParameterImpl("greeting", RawParameterType(ParameterTypeLabel.STRING)), response)))
 
     }
 

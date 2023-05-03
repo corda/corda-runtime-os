@@ -59,6 +59,11 @@ inline fun <reified T : Any> Facade.getClientProxy(
     jsonMarshaller: JsonMarshaller,
     noinline requestProcessor: (FacadeRequest) -> FacadeResponse): T =
     FacadeProxies.getClientProxy(this, T::class.java, jsonMarshaller, requestProcessor)
+ fun <T> Facade.getClientProxy(
+    jsonMarshaller: JsonMarshaller,
+    expectedClass: Class<T>,
+    requestProcessor: (FacadeRequest) -> FacadeResponse): T =
+    FacadeProxies.getClientProxy(this, expectedClass, jsonMarshaller, requestProcessor)
 
 /**
  * Exception thrown if for some reason we can't dispatch a method call on a client proxy to create a [FacadeRequest],

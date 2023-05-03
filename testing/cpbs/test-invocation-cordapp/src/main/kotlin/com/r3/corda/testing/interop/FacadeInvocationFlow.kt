@@ -36,7 +36,7 @@ class FacadeInvocationFlow : ClientStartableFlow {
 
     @Suspendable
     override fun call(requestBody: ClientRequestBody): String {
-        log.info("FacadeInvocationFlow with serilizer.call() starting")
+        log.info("FacadeInvocationFlow with Weft.call() starting")
 
         val args = requestBody.getRequestBodyAsMap(jsonMarshallingService, String::class.java, String::class.java)
 
@@ -48,8 +48,8 @@ class FacadeInvocationFlow : ClientStartableFlow {
         log.info("Calling facade method '$methodName@$facadeId' with payload '$payload' to $alias")
         val facade = facadeReader.read(
             """{ "id": "/com/r3/tokens/sample/v1.0",
-                  "commands": { 
-                    "hello": {
+                "commands": { 
+                    "say-hello": {
                         "in": {
                             "greeting": "string"
                             },
@@ -70,7 +70,7 @@ class FacadeInvocationFlow : ClientStartableFlow {
         )
         val client : SampleTokensFacade = facadeService.getClientProxy(facade, SampleTokensFacade::class.java, alias, "")
         val responseObject = client.getHello("Hi there!")
-        val response = responseObject.result
+        val response = responseObject.result.toString()
         log.info("Facade responded with '$response'")
         log.info("FacadeInvocationFlow.call() ending")
 

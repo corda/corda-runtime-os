@@ -30,14 +30,14 @@ class FacadeInvocationResponderFlow : ResponderFlow , SampleTokensFacade {
     }
     @Suspendable
     override fun call(session: FlowSession) {
-        log.info("FacadeInvocationResponderFlow with proxy and serilizer 3 .call() starting")
+        log.info("FacadeInvocationResponderFlow with Weft.call() starting")
         val request = session.receive(String::class.java)
-        log.info("FacadeInvocationResponderFlow with proxy and serilizer 3 .call() received : $request")
+        log.info("FacadeInvocationResponderFlow with Weft.call() received : $request")
 
         val facade = facadeReader.read(
             """{ "id": "/com/r3/tokens/sample/v1.0",
-                  "commands": { 
-                    "hello": {
+                "commands": { 
+                    "say-hello": {
                         "in": {
                             "greeting": "string"
                             },
@@ -45,7 +45,7 @@ class FacadeInvocationResponderFlow : ResponderFlow , SampleTokensFacade {
                             "greeting": "string"
                             }
                         },
-                        "get-balance": {
+                    "get-balance": {
                         "in": {
                             "greeting": "string"
                             },
@@ -53,14 +53,13 @@ class FacadeInvocationResponderFlow : ResponderFlow , SampleTokensFacade {
                             "greeting": "string"
                             }
                         }
-                         
                     }
                 }""".trimIndent()
         )
 
         val facadeResponse = facadeService.dispatch(facade, this, request)
         val response = facadeResponse.outParameters.first().value
-        log.info("FacadeInvocationResponderFlow with proxy 1.call(): received=$request, response=$response")
+        log.info("FacadeInvocationResponderFlow with Weft.call(): received=$request, response=$response")
         session.send(response)
     }
 
