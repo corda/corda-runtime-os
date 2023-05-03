@@ -4,12 +4,6 @@ plugins {
     id 'corda.osgi-test-conventions'
     id 'corda.common-publishing'
     id 'corda.common-library'
-    id 'corda.javadoc-generation'
-}
-
-
-ext {
-    releasable = true
 }
 
 description 'Corda AMQP serialization library'

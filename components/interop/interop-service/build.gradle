@@ -35,7 +35,7 @@ dependencies {
 
     testImplementation "org.assertj:assertj-core:$assertjVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
-    testImplementation project(":libs:flows:utils")
+    testImplementation project(":libs:flows:flow-utils")
 
     integrationTestImplementation project(":testing:db-message-bus-testkit")
 

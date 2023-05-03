@@ -2,11 +2,14 @@ param ($addToPath)
 
 $cliHomeDir = "$ENV:UserProfile\.corda\cli"
 
+Write-Output "Removing previous cli version if exists"
+if(Test-Path -Path "$cliHomeDir") {
+    Write-Output "Deleting: $cliHomeDir"
+    Remove-Item "$cliHomeDir" -Recurse
+}
+
 Write-Output "Creating corda-cli dir at $cliHomeDir"
 New-Item -Path "$cliHomeDir" -ItemType "directory" -Force
-
-Write-Output "Removing previous cli version if exists"
-Remove-Item '$cliHomeDir\plugins' -Include *.jar
 
 Write-Output "Copying files and plugins"
 Copy-Item -Path ".\*" -Destination $cliHomeDir -Recurse

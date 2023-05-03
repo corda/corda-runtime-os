@@ -1,11 +1,6 @@
 plugins {
     id 'corda.common-publishing'
     id 'java'
-    id 'corda.javadoc-generation'
-}
-
-ext {
-    releasable = true
 }
 
 group 'net.corda.cli.deployment'
