@@ -266,28 +266,51 @@ fun E2eCluster.assignSoftHsm(
         }
 }
 
+fun RegistrationStatus.isEndState(): Boolean {
+    return when (this) {
+        RegistrationStatus.NEW,
+        RegistrationStatus.SENT_TO_MGM,
+        RegistrationStatus.RECEIVED_BY_MGM,
+        RegistrationStatus.PENDING_MEMBER_VERIFICATION,
+        RegistrationStatus.PENDING_MANUAL_APPROVAL,
+        RegistrationStatus.PENDING_AUTO_APPROVAL,
+        -> false
+        RegistrationStatus.DECLINED,
+        RegistrationStatus.APPROVED,
+        RegistrationStatus.INVALID,
+        RegistrationStatus.FAILED,
+        -> true
+    }
+}
+
 fun E2eCluster.register(
     member: E2eClusterMember,
-    context: Map<String, String>
+    context: Map<String, String>,
 ): RegistrationRequestProgress {
     return clusterHttpClientFor(MemberRegistrationRestResource::class.java)
         .use { client ->
             val proxy = client.start().proxy
-            proxy.startRegistration(
-                member.holdingId,
-                MemberRegistrationRequest(
-                    context,
-                )
-            ).apply {
-                assertThat(registrationStatus).isEqualTo("SUBMITTED")
+            eventually(duration = 7.minutes, retryAllExceptions = true) {
+                proxy.startRegistration(
+                    member.holdingId,
+                    MemberRegistrationRequest(
+                        context,
+                    ),
+                ).apply {
+                    assertThat(registrationStatus).isEqualTo("SUBMITTED")
 
-                eventually(duration = 3.minutes, retryAllExceptions = true) {
-                    val registrationStatus = proxy.checkSpecificRegistrationProgress(member.holdingId, registrationId)
-                    assertThat(registrationStatus.registrationStatus)
+                    eventually(duration = 3.minutes, retryAllExceptions = true) {
+                        val registrationStatus =
+                            proxy.checkSpecificRegistrationProgress(member.holdingId, registrationId)
+                        assertThat(registrationStatus.registrationStatus.isEndState()).isTrue()
+                    }
+                }.also {
+                    println("QQQ got ${it.registrationStatus} for ${it.registrationStatus}")
+                    assertThat(it.registrationStatus)
                         .withFailMessage {
                             "${member.name} failed to get to approved registration state. " +
-                                "Last state was ${registrationStatus.registrationStatus}. " +
-                                "Registration ID was $registrationId"
+                                "Last state was ${it.registrationStatus}. " +
+                                "Registration ID was ${it.registrationId}"
                         }
                         .isEqualTo(RegistrationStatus.APPROVED)
                 }
