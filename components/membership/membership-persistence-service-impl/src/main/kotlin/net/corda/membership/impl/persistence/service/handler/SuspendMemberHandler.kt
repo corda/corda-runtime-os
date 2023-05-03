@@ -24,15 +24,22 @@ import net.corda.virtualnode.toCorda
 import javax.persistence.EntityManager
 import javax.persistence.LockModeType
 import net.corda.utilities.mapNotNull
+import net.corda.utilities.time.Clock
 import kotlin.streams.toList
 
 internal class SuspendMemberHandler(
-    persistenceHandlerServices: PersistenceHandlerServices
+    persistenceHandlerServices: PersistenceHandlerServices,
+    private val notaryUpdater: GroupParametersNotaryUpdater
+    = GroupParametersNotaryUpdater(persistenceHandlerServices.keyEncodingService, persistenceHandlerServices.clock),
+    suspensionActivationEntityOperationsFactory:
+        (clock: Clock, serializer: CordaAvroDeserializer<KeyValuePairList>, deserializer: CordaAvroSerializer<KeyValuePairList>)
+    -> SuspensionActivationEntityOperations
+    = { clock: Clock, serializer: CordaAvroDeserializer<KeyValuePairList>, deserializer: CordaAvroSerializer<KeyValuePairList>
+        -> SuspensionActivationEntityOperations(clock, serializer, deserializer)}
 ) : BasePersistenceHandler<SuspendMember, SuspendMemberResponse>(persistenceHandlerServices) {
     private companion object {
         val notaryServiceRegex = NOTARY_SERVICE_NAME_KEY.format("([0-9]+)").toRegex()
     }
-    private val notaryUpdater = GroupParametersNotaryUpdater(keyEncodingService, clock)
     private val keyValuePairListDeserializer: CordaAvroDeserializer<KeyValuePairList> by lazy {
         cordaAvroSerializationFactory.createAvroDeserializer(
             {
@@ -47,7 +54,7 @@ internal class SuspendMemberHandler(
         }
     }
     private val suspensionActivationEntityOperations =
-        SuspensionActivationEntityOperations(clock, keyValuePairListDeserializer, keyValuePairListSerializer)
+        suspensionActivationEntityOperationsFactory(clock, keyValuePairListDeserializer, keyValuePairListSerializer)
 
     private fun serializeProperties(context: KeyValuePairList): ByteArray {
         return keyValuePairListSerializer.serialize(context) ?: throw MembershipPersistenceException(

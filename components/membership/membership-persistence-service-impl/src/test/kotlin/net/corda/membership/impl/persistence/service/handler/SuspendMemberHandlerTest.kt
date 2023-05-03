@@ -53,9 +53,7 @@ import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.membership.lib.notary.MemberNotaryDetails
 import net.corda.membership.lib.toSortedMap
 import net.corda.v5.membership.MemberContext
-import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.assertThrows
-import org.mockito.Mockito
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.verify
 
@@ -79,9 +77,7 @@ class SuspendMemberHandlerTest {
     private val clock: Clock = TestClock(Instant.ofEpochSecond(1))
 
     private val transaction: EntityTransaction = mock()
-    private val resultList: List<GroupParametersEntity> = mock {
-        on { isEmpty() } doReturn false
-    }
+    private val resultList: List<GroupParametersEntity> = listOf(mock())
     private val previousGroupParameters = "test".toByteArray()
     private val previousEntry: TypedQuery<GroupParametersEntity> = mock {
         on { resultList } doReturn resultList
@@ -160,20 +156,22 @@ class SuspendMemberHandlerTest {
     )
     private val persistentMemberInfo = mock<PersistentMemberInfo>()
     private val suspensionActivationEntityOperations =
-        Mockito.mockConstruction(SuspensionActivationEntityOperations::class.java) { mock, _ ->
-            whenever(
-                mock.findMember(em, holdingIdentity.x500Name.toString(), holdingIdentity.groupId, SERIAL_NUMBER, MEMBER_STATUS_ACTIVE)
-            ).doReturn(memberInfoEntity)
-            whenever(
-                mock.updateStatus(
-                    em,
-                    holdingIdentity.x500Name.toString(),
-                    holdingIdentity.toAvro(),
-                    memberInfoEntity,
-                    mgmContext,
-                    MEMBER_STATUS_SUSPENDED
-                )
-            ).doReturn(persistentMemberInfo)
+        mock<SuspensionActivationEntityOperations> {
+            on{ mock.findMember(
+                em,
+                holdingIdentity.x500Name.toString(),
+                holdingIdentity.groupId,
+                SERIAL_NUMBER,
+                MEMBER_STATUS_ACTIVE
+            )} doReturn(memberInfoEntity)
+            on {mock.updateStatus(
+                em,
+                holdingIdentity.x500Name.toString(),
+                holdingIdentity.toAvro(),
+                memberInfoEntity,
+                mgmContext,
+                MEMBER_STATUS_SUSPENDED
+            )}.doReturn(persistentMemberInfo)
         }
     private val keyValuePairListSerializer = mock<CordaAvroSerializer<KeyValuePairList>> {
         on { serialize(any()) } doReturn byteArrayOf(0)
@@ -215,8 +213,10 @@ class SuspendMemberHandlerTest {
         on { memberInfoFactory } doReturn memberInfoFactory
         on { keyEncodingService } doReturn mock()
     }
-    private val notaryUpdater = Mockito.mockConstruction(GroupParametersNotaryUpdater::class.java)
-    private val handler: SuspendMemberHandler = SuspendMemberHandler(persistenceHandlerServices)
+    private val notaryUpdater = mock<GroupParametersNotaryUpdater>()
+    private val handler: SuspendMemberHandler = SuspendMemberHandler(persistenceHandlerServices, notaryUpdater) { _, _, _, ->
+        suspensionActivationEntityOperations
+    }
     private val context = MembershipRequestContext(
         clock.instant(),
         UUID(0, 1).toString(),
@@ -226,12 +226,6 @@ class SuspendMemberHandlerTest {
 
     private fun invokeTestFunction(): SuspendMemberResponse {
         return handler.invoke(context, request)
-    }
-
-    @AfterEach
-    fun cleanUp() {
-        suspensionActivationEntityOperations.close()
-        notaryUpdater.close()
     }
 
     @Test
@@ -263,7 +257,7 @@ class SuspendMemberHandlerTest {
         val updatedSerializedGroupParameters = mock<KeyValuePairList>()
         val serializedGroupParameters = "101112".toByteArray()
         whenever(keyValuePairListSerializer.serialize(updatedSerializedGroupParameters)).doReturn(serializedGroupParameters)
-        whenever(notaryUpdater.constructed().last().removeNotaryService(any(), any()))
+        whenever(notaryUpdater.removeNotaryService(any(), any()))
             .doReturn(10 to updatedSerializedGroupParameters)
 
         val result = invokeTestFunction()
@@ -298,7 +292,7 @@ class SuspendMemberHandlerTest {
         val updatedSerializedGroupParameters = mock<KeyValuePairList>()
         val serializedGroupParameters = "101112".toByteArray()
         whenever(keyValuePairListSerializer.serialize(updatedSerializedGroupParameters)).doReturn(serializedGroupParameters)
-        whenever(notaryUpdater.constructed().last().removeNotaryService(any(), any()))
+        whenever(notaryUpdater.removeNotaryService(any(), any()))
             .doReturn(newEpoch to updatedSerializedGroupParameters)
 
         invokeTestFunction()
@@ -343,7 +337,7 @@ class SuspendMemberHandlerTest {
         val updatedSerializedGroupParameters = mock<KeyValuePairList>()
         val serializedGroupParameters = "101112".toByteArray()
         whenever(keyValuePairListSerializer.serialize(updatedSerializedGroupParameters)).doReturn(serializedGroupParameters)
-        whenever(notaryUpdater.constructed().last()
+        whenever(notaryUpdater
             .removeNotaryFromExistingNotaryService(any(), any(), eq(NOTARY_SERVICE_NUMBER), eq(listOf(memberNotaryDetails))))
             .doReturn(10 to updatedSerializedGroupParameters)
 
@@ -396,7 +390,7 @@ class SuspendMemberHandlerTest {
         val updatedSerializedGroupParameters = mock<KeyValuePairList>()
         val serializedGroupParameters = "101112".toByteArray()
         whenever(keyValuePairListSerializer.serialize(updatedSerializedGroupParameters)).doReturn(serializedGroupParameters)
-        whenever(notaryUpdater.constructed().last()
+        whenever(notaryUpdater
             .removeNotaryFromExistingNotaryService(any(), any(), eq(NOTARY_SERVICE_NUMBER), eq(listOf(memberNotaryDetails))))
             .doReturn(newEpoch to updatedSerializedGroupParameters)
 
@@ -409,7 +403,7 @@ class SuspendMemberHandlerTest {
     fun `invoke throws a MembershipPersistenceException if the mgmContext can't be deserialized`() {
         whenever(keyValuePairListDeserializer.deserialize(serializedMgmContext)).thenReturn(null)
         assertThrows<MembershipPersistenceException> {  invokeTestFunction() }.also {
-            it.message!!.contains("Failed to deserialize")
+            assertThat(it).hasMessageContaining("Failed to deserialize")
         }
     }
 }

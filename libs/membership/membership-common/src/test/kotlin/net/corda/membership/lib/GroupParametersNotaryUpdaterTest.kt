@@ -81,7 +81,7 @@ class GroupParametersNotaryUpdaterTest {
         val notaryToAdd = MemberNotaryDetails(notaryAx500Name, null, setOf(1, 3), listOf(notaryKey))
 
         val ex = assertThrows<MembershipPersistenceException> { notaryUpdater.addNewNotaryService(originalGroupParameters, notaryToAdd) }
-        assertThat(ex.message).contains("protocol must be specified")
+        assertThat(ex).hasMessageContaining("protocol must be specified")
     }
 
     @Test
@@ -91,7 +91,7 @@ class GroupParametersNotaryUpdaterTest {
         val notaryToAdd = MemberNotaryDetails(notaryAx500Name, NOTARY_PROTOCOL_A, emptySet(), listOf(notaryKey))
 
         val ex = assertThrows<MembershipPersistenceException> { notaryUpdater.addNewNotaryService(originalGroupParameters, notaryToAdd) }
-        assertThat(ex.message).contains("protocol versions are missing")
+        assertThat(ex).hasMessageContaining("protocol versions are missing")
     }
 
     @Test
@@ -181,7 +181,7 @@ class GroupParametersNotaryUpdaterTest {
             5,
             setOf(1, 3)
         )}
-        assertThat(ex.message).contains("protocols do not match")
+        assertThat(ex).hasMessageContaining("protocols do not match")
     }
 
     @Test
@@ -203,7 +203,7 @@ class GroupParametersNotaryUpdaterTest {
             5,
             setOf(1, 3)
         )}
-        assertThat(ex.message).contains("versions are missing")
+        assertThat(ex).hasMessageContaining("versions are missing")
     }
 
     @Test
@@ -358,7 +358,7 @@ class GroupParametersNotaryUpdaterTest {
             5,
             listOf(otherNotary1, otherNotary2),
         )}
-        assertThat(ex.message).contains("protocols do not match")
+        assertThat(ex).hasMessageContaining("protocols do not match")
     }
 
     @Test
@@ -382,6 +382,6 @@ class GroupParametersNotaryUpdaterTest {
             5,
             listOf(otherNotary1, otherNotary2),
         )}
-        assertThat(ex.message).contains("versions are missing.")
+        assertThat(ex).hasMessageContaining("versions are missing.")
     }
 }

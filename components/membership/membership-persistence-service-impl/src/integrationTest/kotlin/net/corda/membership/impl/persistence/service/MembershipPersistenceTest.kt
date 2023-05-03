@@ -1561,7 +1561,7 @@ class MembershipPersistenceTest {
                 )
             )
         ).execute()
-        assertThat(memberPersistenceResult1).isInstanceOf(MembershipPersistenceResult.Success::class.java)
+        memberPersistenceResult1.getOrThrow()
 
         val (updatedMemberInfo, groupParameters) = membershipPersistenceClientWrapper.activateMember(
             viewOwningHoldingIdentity, memberX500Name, 1, "test-reason"
@@ -1582,13 +1582,9 @@ class MembershipPersistenceTest {
                 MemberInfoEntityPrimaryKey(viewOwningHoldingIdentity.groupId, memberX500Name.toString(), false)
             )
         }
-        assertThat(persistedMemberInfoEntity).isNotNull
         assertThat(persistedMemberInfoEntity.status).isEqualTo(MEMBER_STATUS_ACTIVE)
         assertThat(persistedMemberInfoEntity.serialNumber).isEqualTo(2L)
-        with(updatedMemberInfo.mgmContext.toMap()) {
-            assertThat(this[STATUS]).isEqualTo(MEMBER_STATUS_ACTIVE)
-            assertThat(this[SERIAL]).isEqualTo("2")
-        }
+        assertThat(updatedMemberInfo.mgmContext.toMap()).containsEntry(STATUS, MEMBER_STATUS_ACTIVE).containsEntry(SERIAL, "2")
 
         val persistedGroupParametersEntity = vnodeEmf.createEntityManager().use {
             it.find(

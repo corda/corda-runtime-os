@@ -20,7 +20,7 @@ import net.corda.membership.lib.toSortedMap
 import net.corda.virtualnode.toCorda
 import javax.persistence.EntityManager
 import javax.persistence.LockModeType
-import kotlin.streams.toList
+import kotlin.streams.asSequence
 
 internal class AddNotaryToGroupParametersHandler(
     persistenceHandlerServices: PersistenceHandlerServices
@@ -106,7 +106,7 @@ internal class AddNotaryToGroupParametersHandler(
                 it.notaryDetails?.serviceName.toString() == notaryServiceName
             }.map {
                 it.notaryDetails!!.serviceProtocolVersions.toHashSet()
-            }.toList().reduceOrNull { acc, it -> acc.apply { retainAll(it) } } ?: emptySet()
+            }.asSequence().reduceOrNull { acc, it -> acc.apply { retainAll(it) } } ?: emptySet()
 
             notaryUpdater.updateExistingNotaryService(parametersMap, notary, notaryServiceNumber, currentProtocolVersions).apply {
                 first ?: return previous.singleResult.toAvro()
