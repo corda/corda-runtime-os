@@ -4,7 +4,7 @@ import net.corda.configuration.read.ConfigurationGetService
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.client.CryptoOpsClient
-import net.corda.serialization.CordaAvroSerializationFactory
+import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.lifecycle.LifecycleCoordinator

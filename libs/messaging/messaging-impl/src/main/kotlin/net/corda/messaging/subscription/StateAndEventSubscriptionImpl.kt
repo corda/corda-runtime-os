@@ -1,6 +1,6 @@
 package net.corda.messaging.subscription
 
-import net.corda.serialization.CordaAvroSerializer
+import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.deadletter.StateAndEventDeadLetterRecord
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName

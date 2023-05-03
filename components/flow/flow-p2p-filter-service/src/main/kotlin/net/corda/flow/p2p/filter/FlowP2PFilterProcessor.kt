@@ -1,7 +1,7 @@
 package net.corda.flow.p2p.filter
 
-import net.corda.serialization.CordaAvroDeserializer
-import net.corda.serialization.CordaAvroSerializationFactory
+import net.corda.avro.serialization.CordaAvroDeserializer
+import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.mapper.FlowMapperEvent

@@ -1,8 +1,8 @@
 package net.corda.flow.testing.context
 
 import java.nio.ByteBuffer
-import net.corda.serialization.CordaAvroDeserializer
-import net.corda.serialization.CordaAvroSerializer
+import net.corda.avro.serialization.CordaAvroDeserializer
+import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.Wakeup

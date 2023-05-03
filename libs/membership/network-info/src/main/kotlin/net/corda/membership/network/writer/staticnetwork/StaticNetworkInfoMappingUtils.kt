@@ -1,6 +1,6 @@
 package net.corda.membership.network.writer.staticnetwork
 
-import net.corda.serialization.CordaAvroDeserializer
+import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.data.KeyValuePairList
 import net.corda.data.membership.StaticNetworkInfo as AvroStaticNetworkInfo
 import net.corda.membership.datamodel.StaticNetworkInfoEntity

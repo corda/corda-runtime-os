@@ -1,6 +1,6 @@
 package net.corda.flow.mapper.impl
 
-import net.corda.serialization.CordaAvroSerializationFactory
+import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.StartFlow
 import net.corda.data.flow.event.mapper.ExecuteCleanup

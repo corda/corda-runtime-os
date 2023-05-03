@@ -3,8 +3,8 @@ package net.corda.ledger.verification.tests
 import net.corda.common.json.validation.JsonValidator
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.crypto.core.parseSecureHash
-import net.corda.serialization.CordaAvroDeserializer
-import net.corda.serialization.CordaAvroSerializationFactory
+import net.corda.avro.serialization.CordaAvroDeserializer
+import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.flow.event.FlowEvent
@@ -19,7 +19,6 @@ import net.corda.ledger.common.testkit.publicKeyExample
 import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionContainer
 import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionImpl
 import net.corda.ledger.utxo.data.transaction.UtxoOutputInfoComponent
-import net.corda.ledger.utxo.data.transaction.UtxoTransactionOutputDto
 import net.corda.ledger.utxo.verification.CordaPackageSummary
 import net.corda.ledger.utxo.verification.TransactionVerificationRequest
 import net.corda.ledger.utxo.verification.TransactionVerificationResponse

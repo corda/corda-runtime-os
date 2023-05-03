@@ -1,4 +1,4 @@
-package net.corda.serialization
+package net.corda.avro.serialization
 
 /**
  * Defines the interface for message bus serialization. The underlying mechanism may differ.

@@ -2,7 +2,7 @@ package net.corda.membership.impl.registration.dynamic
 
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.serialization.CordaAvroSerializationFactory
+import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.data.membership.command.registration.RegistrationCommand
 import net.corda.data.membership.state.RegistrationState
 import net.corda.lifecycle.LifecycleCoordinator

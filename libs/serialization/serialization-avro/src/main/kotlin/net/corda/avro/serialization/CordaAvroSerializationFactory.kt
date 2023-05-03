@@ -1,4 +1,4 @@
-package net.corda.serialization
+package net.corda.avro.serialization
 
 import java.util.function.Consumer
 

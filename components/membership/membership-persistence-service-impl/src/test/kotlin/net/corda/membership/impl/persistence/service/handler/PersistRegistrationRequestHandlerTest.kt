@@ -2,8 +2,8 @@ package net.corda.membership.impl.persistence.service.handler
 
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.core.ShortHash
-import net.corda.serialization.CordaAvroSerializationFactory
-import net.corda.serialization.CordaAvroSerializer
+import net.corda.avro.serialization.CordaAvroSerializationFactory
+import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey

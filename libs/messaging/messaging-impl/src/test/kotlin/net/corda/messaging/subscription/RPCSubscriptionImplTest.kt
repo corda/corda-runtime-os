@@ -1,7 +1,7 @@
 package net.corda.messaging.subscription
 
-import net.corda.serialization.CordaAvroDeserializer
-import net.corda.serialization.CordaAvroSerializer
+import net.corda.avro.serialization.CordaAvroDeserializer
+import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.identity.HoldingIdentity
 import net.corda.data.messaging.RPCRequest

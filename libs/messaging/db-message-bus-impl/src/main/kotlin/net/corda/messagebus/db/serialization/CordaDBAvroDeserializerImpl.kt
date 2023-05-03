@@ -2,7 +2,7 @@ package net.corda.messagebus.db.serialization
 
 import java.nio.ByteBuffer
 import java.util.function.Consumer
-import net.corda.serialization.CordaAvroDeserializer
+import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.data.chunking.Chunk
 import net.corda.data.chunking.ChunkKey
 import net.corda.schema.registry.AvroSchemaRegistry

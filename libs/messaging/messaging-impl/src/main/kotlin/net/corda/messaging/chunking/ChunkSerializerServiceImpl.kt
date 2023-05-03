@@ -8,7 +8,7 @@ import net.corda.chunking.ChunkBuilderService
 import net.corda.chunking.Constants.Companion.APP_LEVEL_CHUNK_MESSAGE_OVERHEAD
 import net.corda.chunking.Constants.Companion.CORDA_RECORD_OVERHEAD
 import net.corda.crypto.cipher.suite.PlatformDigestService
-import net.corda.serialization.CordaAvroSerializer
+import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.chunking.Chunk
 import net.corda.data.chunking.ChunkKey
 import net.corda.messagebus.api.producer.CordaProducerRecord

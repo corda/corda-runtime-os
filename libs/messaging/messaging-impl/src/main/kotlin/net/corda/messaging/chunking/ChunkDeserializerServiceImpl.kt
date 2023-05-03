@@ -4,7 +4,7 @@ import net.corda.chunking.Checksum
 import net.corda.chunking.Constants
 import net.corda.crypto.cipher.suite.PlatformDigestService
 import net.corda.crypto.core.SecureHashImpl
-import net.corda.serialization.CordaAvroDeserializer
+import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.data.chunking.Chunk
 import net.corda.data.chunking.ChunkKey
 import net.corda.messaging.api.chunking.ChunkDeserializerService

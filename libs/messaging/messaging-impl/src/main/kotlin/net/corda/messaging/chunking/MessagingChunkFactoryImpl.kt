@@ -2,8 +2,8 @@ package net.corda.messaging.chunking
 
 import net.corda.chunking.ChunkBuilderService
 import net.corda.crypto.cipher.suite.PlatformDigestService
-import net.corda.serialization.CordaAvroDeserializer
-import net.corda.serialization.CordaAvroSerializationFactory
+import net.corda.avro.serialization.CordaAvroDeserializer
+import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.messaging.api.chunking.ChunkDeserializerService
 import net.corda.messaging.api.chunking.ChunkSerializerService
 import net.corda.messaging.api.chunking.ConsumerChunkDeserializerService

@@ -14,7 +14,7 @@ class CordaAvroSerializerImplTest {
 
     private val topic = "topic"
     private val avroSchemaRegistry : AvroSchemaRegistry = mock()
-    private val cordaAvroSerializer = CordaAvroSerializerImpl<Any>(avroSchemaRegistry, null)
+    private val cordaAvroSerializer = CordaAvroSerializerImpl<Any>(avroSchemaRegistry, true, null)
 
     data class SerializeTester(val contents: String = "test contents")
 

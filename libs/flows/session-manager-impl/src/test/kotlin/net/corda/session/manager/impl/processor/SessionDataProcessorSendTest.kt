@@ -2,7 +2,7 @@ package net.corda.session.manager.impl.processor
 
 import java.nio.ByteBuffer
 import java.time.Instant
-import net.corda.serialization.CordaAvroSerializer
+import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.chunking.Chunk
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.session.SessionData

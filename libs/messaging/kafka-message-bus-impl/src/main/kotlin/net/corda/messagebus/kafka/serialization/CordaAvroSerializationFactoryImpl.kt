@@ -2,9 +2,9 @@ package net.corda.messagebus.kafka.serialization
 
 import java.util.function.Consumer
 import net.corda.schema.registry.AvroSchemaRegistry
-import net.corda.serialization.CordaAvroDeserializer
-import net.corda.serialization.CordaAvroSerializationFactory
-import net.corda.serialization.CordaAvroSerializer
+import net.corda.avro.serialization.CordaAvroDeserializer
+import net.corda.avro.serialization.CordaAvroSerializationFactory
+import net.corda.avro.serialization.CordaAvroSerializer
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference

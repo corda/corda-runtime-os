@@ -1,7 +1,7 @@
 package net.corda.messagebus.kafka.serialization
 
 import java.util.function.Consumer
-import net.corda.serialization.CordaAvroSerializer
+import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.schema.registry.AvroSchemaRegistry
 import org.apache.kafka.common.serialization.Serializer
 import org.apache.kafka.common.serialization.StringSerializer

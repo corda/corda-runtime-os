@@ -1,6 +1,6 @@
 package net.corda.messagebus.db.producer
 
-import net.corda.serialization.CordaAvroSerializer
+import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.messagebus.api.CordaTopicPartition
 import net.corda.messagebus.api.producer.CordaProducer
 import net.corda.messagebus.api.producer.CordaProducerRecord

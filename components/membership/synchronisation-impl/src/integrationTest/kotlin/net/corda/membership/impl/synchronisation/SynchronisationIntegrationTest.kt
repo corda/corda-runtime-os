@@ -11,9 +11,9 @@ import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.core.bytes
 import net.corda.crypto.core.toAvro
 import net.corda.crypto.hes.StableKeyPairDecryptor
-import net.corda.serialization.CordaAvroDeserializer
-import net.corda.serialization.CordaAvroSerializationFactory
-import net.corda.serialization.CordaAvroSerializer
+import net.corda.avro.serialization.CordaAvroDeserializer
+import net.corda.avro.serialization.CordaAvroSerializationFactory
+import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.config.Configuration
