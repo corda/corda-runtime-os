@@ -1,10 +1,6 @@
 package net.cordapp.testing.testflows
 
-import org.corda.weft.binding.api.BindsFacade
-import org.corda.weft.binding.api.BindsFacadeMethod
-import org.corda.weft.binding.api.FacadeVersions
-import org.corda.weft.binding.api.InteropAction
-import org.corda.weft.binding.api.QualifiedWith
+import net.corda.v5.application.interop.binding.*
 
 @BindsFacade("/com/r3/tokens/sample")
 @FacadeVersions("v1.0")

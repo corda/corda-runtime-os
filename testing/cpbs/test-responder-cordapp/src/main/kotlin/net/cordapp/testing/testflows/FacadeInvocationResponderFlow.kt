@@ -3,18 +3,18 @@ package net.cordapp.testing.testflows
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.InitiatedBy
 import net.corda.v5.application.flows.ResponderFlow
+import net.corda.v5.application.interop.binding.InteropAction
+import net.corda.v5.application.interop.facade.FacadeId
+import net.corda.v5.application.interop.facade.FacadeReader
+import net.corda.v5.application.interop.facade.FacadeRequest
+import net.corda.v5.application.interop.parameters.ParameterType
+import net.corda.v5.application.interop.parameters.TypedParameter
+import net.corda.v5.application.interop.parameters.TypedParameterValue
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.annotations.Suspendable
-import org.corda.weft.binding.api.InteropAction
-import org.corda.weft.facade.FacadeId3
-import org.corda.weft.facade.FacadeReaders
-import org.corda.weft.facade.FacadeRequest
-import org.corda.weft.parameters.TypedParameterValue
 import org.slf4j.LoggerFactory
-import org.corda.weft.dispatch.buildDispatcher
-import org.corda.weft.parameters.ParameterType
-import org.corda.weft.parameters.TypedParameter
+
 
 //Following protocol name is deliberately used to
 // prove that interop is not using protocol string to start the responder flow
@@ -22,6 +22,9 @@ import org.corda.weft.parameters.TypedParameter
 class FacadeInvocationResponderFlow : ResponderFlow , SampleTokensFacade {
     @CordaInject
     lateinit var jsonMarshallingService: JsonMarshallingService
+
+    @CordaInject
+    lateinit var facadeReader: FacadeReader
 
     private companion object {
         private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -40,9 +43,10 @@ class FacadeInvocationResponderFlow : ResponderFlow , SampleTokensFacade {
 
         //log.info("FacadeInvocationResponderFlow with proxy and serilizer 3 .call() parsed : $facadeRequest")
         //val response = "$request:Bye"
-        val facadeRequest = FacadeRequest(FacadeId3("", mutableListOf("com", "r3", "tokens", "sample").joinToString("/"), "v1.0"),
+        val facadeRequest = FacadeRequest(
+            FacadeId("", mutableListOf("com", "r3", "tokens", "sample").joinToString("/"), "v1.0"),
             "hello", listOf(TypedParameterValue(TypedParameter("greeting", ParameterType.StringType), request)))
-        val facade = FacadeReaders.JSON.read(
+        val facade = facadeReader.read(
             """{ "id": "/com/r3/tokens/sample/v1.0",
                   "commands": { 
                     "hello": {

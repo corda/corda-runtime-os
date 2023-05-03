@@ -4,17 +4,16 @@ import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.InitiatingFlow
 import net.corda.v5.application.flows.ClientRequestBody
+import net.corda.v5.application.interop.facade.FacadeReader
+import net.corda.v5.application.interop.facade.FacadeRequest
+import net.corda.v5.application.interop.facade.FacadeResponse
+import net.corda.v5.application.interop.parameters.ParameterType
+import net.corda.v5.application.interop.parameters.TypedParameter
+import net.corda.v5.application.interop.parameters.TypedParameterValue
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.types.MemberX500Name
-import org.corda.weft.facade.FacadeReaders
-import org.corda.weft.facade.FacadeRequest
-import org.corda.weft.facade.FacadeResponse
-import org.corda.weft.parameters.ParameterType
-import org.corda.weft.parameters.TypedParameter
-import org.corda.weft.parameters.TypedParameterValue
-import org.corda.weft.proxies.getClientProxy
 import org.slf4j.LoggerFactory
 
 @InitiatingFlow(protocol = "invoke_facade_method")
@@ -33,6 +32,9 @@ class FacadeInvocationFlow : ClientStartableFlow {
     @CordaInject
     lateinit var jsonMarshallingService: JsonMarshallingService
 
+    @CordaInject
+    lateinit var facadeReader: FacadeReader
+
     @Suspendable
     override fun call(requestBody: ClientRequestBody): String {
         log.info("FacadeInvocationFlow with serilizer.call() starting")
@@ -45,7 +47,7 @@ class FacadeInvocationFlow : ClientStartableFlow {
         val payload = getArgument(args, "payload")
 
         log.info("Calling facade method '$methodName@$facadeId' with payload '$payload' to $alias")
-        val facade = FacadeReaders.JSON.read(
+        val facade = facadeReader.read(
             """{ "id": "/com/r3/tokens/sample/v1.0",
                   "commands": { 
                     "hello": {
@@ -89,7 +91,7 @@ class MessagingDispatcher(private var flowMessaging: FlowMessaging, private val 
         //val payload : String = om.writeValueAsString(p1)
         val payload  = jsonMarshallingService.format(p1)
         val response = flowMessaging.callFacade(alias, facade.toString(), method, payload)
-        return FacadeResponse(p1.facadeId, method,
+        return FacadeResponseImpl(p1.facadeId, method,
             listOf(TypedParameterValue(TypedParameter("greeting", ParameterType.StringType), response)))
 
     }
