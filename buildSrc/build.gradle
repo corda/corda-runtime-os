@@ -11,6 +11,7 @@ def artifactoryContextUrl = constants.getProperty('artifactoryContextUrl')
 def jibCoreVersion = constants.getProperty('jibCoreVersion')
 def internalPublishVersion = constants.getProperty('internalPublishVersion')
 def gradleEnterpriseVersion = constants.getProperty('gradleEnterpriseVersion')
+def log4jVersion = constants.getProperty('log4jVersion')
 
 dependencies {
     implementation "biz.aQute.bnd:biz.aQute.bnd.gradle:$bndVersion"
@@ -18,6 +19,8 @@ dependencies {
 
     implementation "com.google.cloud.tools:jib-core:$jibCoreVersion"
     implementation "com.gradle:gradle-enterprise-gradle-plugin:$gradleEnterpriseVersion"
+
+    implementation "org.apache.logging.log4j:log4j-core:$log4jVersion"
 
     if (System.getenv('CORDA_ARTIFACTORY_USERNAME') != null || project.hasProperty('cordaArtifactoryUsername')) {
         implementation "com.r3.internal.gradle.plugins:publish:$internalPublishVersion"

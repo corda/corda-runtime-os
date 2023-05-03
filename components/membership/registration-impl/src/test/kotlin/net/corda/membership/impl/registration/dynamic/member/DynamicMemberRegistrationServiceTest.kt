@@ -24,7 +24,7 @@ import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.p2p.MembershipRegistrationRequest
 import net.corda.data.p2p.app.AppMessage
-import net.corda.data.p2p.app.UnauthenticatedMessage
+import net.corda.data.p2p.app.OutboundUnauthenticatedMessage
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.platform.PlatformInfoProvider
@@ -411,7 +411,7 @@ class DynamicMemberRegistrationServiceTest {
                 it.assertThat(publishedMessage.topic).isEqualTo(Schemas.P2P.P2P_OUT_TOPIC)
                 it.assertThat(publishedMessage.key).isEqualTo(memberId.value)
                 val unauthenticatedMessagePublished =
-                    (publishedMessage.value as AppMessage).message as UnauthenticatedMessage
+                    (publishedMessage.value as AppMessage).message as OutboundUnauthenticatedMessage
                 it.assertThat(unauthenticatedMessagePublished.header.source).isEqualTo(member.toAvro())
                 it.assertThat(unauthenticatedMessagePublished.header.destination).isEqualTo(mgm.toAvro())
                 it.assertThat(unauthenticatedMessagePublished.payload).isEqualTo(ByteBuffer.wrap(UNAUTH_REQUEST_BYTES))

@@ -42,15 +42,14 @@ fun startRpcFlow(
         requestId
     }
 }
-
-fun startRpcFlow(holdingId: String, args: Map<String, Any>, flowName: String, expectedCode: Int = 202): String {
-    return cluster {
-        endpoint(
-            CLUSTER_URI,
-            USERNAME,
-            PASSWORD
-        )
-
+fun startRpcFlow(
+    holdingId: String,
+    args: Map<String, Any>,
+    flowName: String,
+    expectedCode: Int = 202,
+    clusterInfo: ClusterInfo = ClusterBInfo,
+): String {
+    return clusterInfo.cluster {
         val requestId = UUID.randomUUID().toString()
 
         assertWithRetry {
@@ -69,14 +68,12 @@ fun startRpcFlow(holdingId: String, args: Map<String, Any>, flowName: String, ex
     }
 }
 
-fun awaitRpcFlowFinished(holdingId: String, requestId: String): FlowStatus {
-    return cluster {
-        endpoint(
-            CLUSTER_URI,
-            USERNAME,
-            PASSWORD
-        )
-
+fun awaitRpcFlowFinished(
+    holdingId: String,
+    requestId: String,
+    clusterInfo: ClusterInfo = ClusterBInfo,
+): FlowStatus {
+    return clusterInfo.cluster {
         ObjectMapper().readValue(
             assertWithRetry {
                 command { flowStatus(holdingId, requestId) }
@@ -92,14 +89,13 @@ fun awaitRpcFlowFinished(holdingId: String, requestId: String): FlowStatus {
     }
 }
 
-fun getFlowStatus(holdingId: String, requestId: String, expectedCode: Int): FlowStatus {
-    return  cluster {
-        endpoint(
-            CLUSTER_URI,
-            USERNAME,
-            PASSWORD
-        )
-
+fun getFlowStatus(
+    holdingId: String,
+    requestId: String,
+    expectedCode: Int,
+    clusterInfo: ClusterInfo = ClusterBInfo,
+): FlowStatus {
+    return clusterInfo.cluster {
         ObjectMapper().readValue(
             assertWithRetry {
                 command { flowStatus(holdingId, requestId) }

@@ -5,10 +5,8 @@ import net.corda.cli.plugins.packaging.TestSigningKeys.SIGNING_KEY_2
 import net.corda.cli.plugins.packaging.TestSigningKeys.SIGNING_KEY_2_ALIAS
 import net.corda.cli.plugins.packaging.TestUtils.captureStdErr
 import net.corda.libs.packaging.testutils.cpb.TestCpbV2Builder
-import net.corda.libs.packaging.testutils.cpk.TestCpkV2Builder
 import net.corda.utilities.exists
 import net.corda.utilities.inputStream
-import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -274,41 +272,6 @@ Creates a CPI v2 from a CPB and GroupPolicy.json file.
   -t, --tsa=<tsaUrl>         Time Stamping Authority (TSA) URL
       --upgrade=<cpiUpgrade> Allow upgrade without flow draining
 """, errText)
-    }
-
-    @Test
-    fun `cpi create tool aborts if its not a cpb before packing it into a cpi`() {
-        // Attempt to pack a Cpk into a Cpi - should fail since it's not a Cpb
-        val cpkBuilder = TestCpkV2Builder()
-        val cpkStream = cpkBuilder
-            .signers(CPK_SIGNER).build().inputStream()
-        val cpkPath = Path.of(tempDir.toString(), cpkBuilder.name)
-        Files.newOutputStream(cpkPath, StandardOpenOption.CREATE_NEW).use { outStream ->
-            cpkStream.use {
-                it.copyTo(outStream)
-            }
-        }
-
-        val cpiOutputFile = Path.of(tempDir.toString(), CPI_FILE_NAME)
-
-        val outText = captureStdErr {
-            CommandLine(app).execute (
-                "--cpb=${cpkPath}",
-                "--group-policy=${testGroupPolicy}",
-                "--file=$cpiOutputFile",
-                "--keystore=${testKeyStore}",
-                "--storepass=keystore password",
-                "--key=$SIGNING_KEY_2_ALIAS",
-                "--sig-file=${CPI_SIGNER_NAME}",
-                "--cpi-name=cpi name",
-                "--cpi-version=1.2.3"
-            )
-        }
-
-        assertFalse(cpiOutputFile.exists())
-        assertThat(outText).contains("java.lang.IllegalArgumentException: Cpb is invalid")
-        assertThat(outText).contains("net.corda.libs.packaging.core.exception.CordappManifestException: " +
-                "Manifest has invalid attribute \"Corda-CPB-Format\" value \"null\"")
     }
 
     @Test

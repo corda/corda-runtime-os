@@ -19,11 +19,12 @@ import net.corda.flow.pipeline.sandbox.FlowSandboxService
 import net.corda.flow.pipeline.sessions.FlowSessionManager
 import net.corda.flow.pipeline.sessions.protocol.FlowAndProtocolVersion
 import net.corda.flow.utils.KeyValueStore
-import net.corda.flow.utils.emptyKeyValuePairList
+import net.corda.flow.utils.keyValuePairListOf
 import net.corda.session.manager.Constants.Companion.FLOW_PROTOCOL
 import net.corda.session.manager.Constants.Companion.FLOW_PROTOCOL_VERSIONS_SUPPORTED
 import net.corda.session.manager.Constants.Companion.FLOW_PROTOCOL_VERSION_USED
 import net.corda.session.manager.SessionManager
+import net.corda.utilities.MDC_CLIENT_ID
 import net.corda.utilities.debug
 import net.corda.utilities.trace
 import net.corda.virtualnode.toCorda
@@ -120,6 +121,7 @@ class SessionEventHandler @Activate constructor(
                     e
                 )
             }
+
             val flowAndProtocolVersion = protocolStore.responderForProtocol(requestedProtocolName, initiatorVersionsSupported, context)
             initiatedFlowNameAndProtocol = flowAndProtocolVersion
             FlowStartContext.newBuilder()
@@ -130,12 +132,12 @@ class SessionEventHandler @Activate constructor(
                 .setCpiId(sessionInit.cpiId)
                 .setInitiatedBy(initiatingIdentity)
                 .setFlowClassName(flowAndProtocolVersion.flowClassName)
-                .setContextPlatformProperties(emptyKeyValuePairList())
+                .setContextPlatformProperties(keyValuePairListOf(mapOf(MDC_CLIENT_ID to sessionId)))
                 .setCreatedTimestamp(Instant.now())
                 .build()
         }
 
-        //set initial session state so it can be found when trying to send the confirm message
+        //set initial session state, so it can be found when trying to send the confirmation message
         context.checkpoint.putSessionState(initialSessionState)
 
         sendConfirmMessage(initiatedFlowNameAndProtocol, requestedProtocolName, initiatorVersionsSupported, context, sessionId)
