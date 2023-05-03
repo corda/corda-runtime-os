@@ -137,22 +137,25 @@ class CheckKafka : Callable<Int>, PluginContext() {
 
     // Connect to kafka using the properties assembled earlier
     fun connect(client: KafkaAdmin, replicas: Int?) {
-        val nodes: Collection<Node>? = client.getNodes()
+        val nodes: Collection<Node> = client.getNodes()
         val clusterID = client.getDescriptionID()
 
         report.addEntry(ReportEntry("Connect to Kafka cluster using client", true))
 
-        if (nodes.isNullOrEmpty()) {
+        if (nodes.isEmpty()) {
             report.addEntry(ReportEntry("Kafka cluster has brokers", false))
             return
         }
+        report.addEntry(ReportEntry("Kafka cluster has brokers", true))
 
         logger.info("Kafka client connected to cluster with ID ${clusterID}.")
         logger.info("Number of brokers: ${nodes.size}")
         replicas?.let {
             if (nodes.size < it) {
-                throw BrokerException("Number of brokers (${nodes.size}) is less than replica count.")
+                report.addEntry(ReportEntry("Kafka replica count is less than the broker count", false))
+                return
             }
+            report.addEntry(ReportEntry("Kafka replica count is less than the broker count", true))
         }
     }
 
@@ -251,8 +254,6 @@ class CheckKafka : Callable<Int>, PluginContext() {
             report.addEntry(ReportEntry("Create Kafka client", false, e))
         } catch (e: ExecutionException) {
             report.addEntry(ReportEntry("Connect to Kafka cluster using client", false, e))
-        } catch (e: BrokerException) {
-            report.addEntry(ReportEntry("Kafka replica count is less than the broker count", false, e))
         }
 
         if (report.testsPassed() == 0) {

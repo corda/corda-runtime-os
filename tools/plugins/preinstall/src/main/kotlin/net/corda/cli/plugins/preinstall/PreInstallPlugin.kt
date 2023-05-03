@@ -69,14 +69,13 @@ class PreInstallPlugin(wrapper: PluginWrapper) : Plugin(wrapper) {
         fun getCredential(values: SecretValues, namespace: String?): String {
             val secretKey: String? = values.valueFrom?.secretKeyRef?.key
             val secretName: String? = values.valueFrom?.secretKeyRef?.name
-            var credential: String? = values.value
+            val credential: String? = values.value
 
-            if (secretKey == null && secretName == null) {
-                return credential ?: throw SecretException("Credential could not be found from value or secret.")
-            }
-
-            if (secretKey == null || secretName == null)  {
-                throw SecretException("Credential secret $secretName with key $secretKey could not be parsed.")
+            if (secretKey.isNullOrEmpty() || secretName.isNullOrEmpty())  {
+                if (!credential.isNullOrEmpty()) {
+                    return credential
+                }
+                throw SecretException("No value $credential and no secret $secretName with key $secretKey could be parsed.")
             }
             val encoded = getSecret(secretName, secretKey, namespace) ?: run {
                 throw SecretException("Secret $secretName has no key $secretKey.")
