@@ -15,6 +15,7 @@ import java.time.Duration
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentMap
+import net.corda.sandboxgroupcontext.SandboxGroupContextPreRemovalCallback
 
 internal class SandboxGroupContextCacheImpl private constructor(
     override val capacities: Map<SandboxGroupType, Long>,
@@ -42,6 +43,7 @@ internal class SandboxGroupContextCacheImpl private constructor(
      * invoke [CloseableSandboxGroupContext.close] on cache eviction when all strong references are gone.
      */
     private class SandboxGroupContextWrapper(
+        val preRemovalCallback: SandboxGroupContextPreRemovalCallback?,
         val wrappedSandboxGroupContext: CloseableSandboxGroupContext
     ) : SandboxGroupContext by wrappedSandboxGroupContext
 
@@ -60,8 +62,14 @@ internal class SandboxGroupContextCacheImpl private constructor(
             // is not referenced anymore).
             .removalListener { key, context, cause ->
                 purgeExpiryQueue()
-                (context?.wrappedSandboxGroupContext as? AutoCloseable)?.also { autoCloseable ->
-                    toBeClosed += ToBeClosed(key!!, context.completion, autoCloseable, context, expiryQueue)
+
+                context?.let { ctx ->
+                    ctx.preRemovalCallback?.preSandboxRemoval(key?.holdingIdentity!!)
+                        ?: logger.info("Sandbox cache with removalListener for flow fiber cache has either a null context, callback or key")
+
+                    (ctx.wrappedSandboxGroupContext as? AutoCloseable)?.also { autoCloseable ->
+                        toBeClosed += ToBeClosed(key!!, context.completion, autoCloseable, context, expiryQueue)
+                    }
                 }
 
                 logger.info(
@@ -189,6 +197,7 @@ internal class SandboxGroupContextCacheImpl private constructor(
 
     override fun get(
         virtualNodeContext: VirtualNodeContext,
+        preSandboxRemovalCallback: SandboxGroupContextPreRemovalCallback?,
         createFunction: (VirtualNodeContext) -> CloseableSandboxGroupContext
     ): SandboxGroupContext {
         purgeExpiryQueue()
@@ -208,7 +217,7 @@ internal class SandboxGroupContextCacheImpl private constructor(
                 sandboxCache.estimatedSize()
             )
 
-            SandboxGroupContextWrapper(createFunction(virtualNodeContext))
+            SandboxGroupContextWrapper(preSandboxRemovalCallback, createFunction(virtualNodeContext))
         }
     }
 

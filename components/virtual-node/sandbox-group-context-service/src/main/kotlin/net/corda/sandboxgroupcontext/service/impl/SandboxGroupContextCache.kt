@@ -3,6 +3,7 @@ package net.corda.sandboxgroupcontext.service.impl
 import java.time.Duration
 import java.util.concurrent.CompletableFuture
 import net.corda.sandboxgroupcontext.SandboxGroupContext
+import net.corda.sandboxgroupcontext.SandboxGroupContextPreRemovalCallback
 import net.corda.sandboxgroupcontext.SandboxGroupType
 import net.corda.sandboxgroupcontext.VirtualNodeContext
 
@@ -11,6 +12,7 @@ interface SandboxGroupContextCache : AutoCloseable {
     fun remove(virtualNodeContext: VirtualNodeContext): CompletableFuture<*>?
     fun get(
         virtualNodeContext: VirtualNodeContext,
+        preSandboxRemovalCallback: SandboxGroupContextPreRemovalCallback? = null,
         createFunction: (VirtualNodeContext) -> CloseableSandboxGroupContext
     ): SandboxGroupContext
 

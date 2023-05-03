@@ -58,6 +58,7 @@ import java.util.SortedMap
 import java.util.TreeMap
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
+import net.corda.sandboxgroupcontext.SandboxGroupContextPreRemovalCallback
 
 typealias SatisfiedServiceReferences = Map<String, SortedMap<ServiceReference<*>, Any>>
 
@@ -124,6 +125,7 @@ class SandboxGroupContextServiceImpl @Activate constructor(
 
             override fun get(
                 virtualNodeContext: VirtualNodeContext,
+                preSandboxRemovalCallback: SandboxGroupContextPreRemovalCallback?,
                 createFunction: (VirtualNodeContext) -> CloseableSandboxGroupContext
             ) = throw IllegalStateException("get: SandboxGroupContextService is not ready.")
 
@@ -165,7 +167,15 @@ class SandboxGroupContextServiceImpl @Activate constructor(
         virtualNodeContext: VirtualNodeContext,
         initializer: SandboxGroupContextInitializer
     ): SandboxGroupContext {
-        return cache.get(virtualNodeContext) { vnc ->
+        return getOrCreate(virtualNodeContext, null, initializer)
+    }
+
+    override fun getOrCreate(
+        virtualNodeContext: VirtualNodeContext,
+        preSandboxRemovalCallback: SandboxGroupContextPreRemovalCallback?,
+        initializer: SandboxGroupContextInitializer
+    ): SandboxGroupContext {
+        return cache.get(virtualNodeContext, preSandboxRemovalCallback) { vnc ->
             val sandboxTimer = CordaMetrics.Metric.SandboxCreateTime.builder()
                 .forVirtualNode(vnc.holdingIdentity.shortHash.value)
                 .withTag(CordaMetrics.Tag.SandboxGroupType, vnc.sandboxGroupType.name)
