@@ -51,16 +51,7 @@ import java.io.NotSerializableException
 import java.math.BigDecimal
 import java.time.DayOfWeek
 import java.time.Month
-import java.util.Currency
-import java.util.Date
-import java.util.EnumMap
-import java.util.NavigableMap
-import java.util.Objects
-import java.util.Random
-import java.util.SortedSet
-import java.util.TreeMap
-import java.util.TreeSet
-import java.util.UUID
+import java.util.*
 
 object AckWrapper {
     @CordaSerializable
@@ -286,6 +277,7 @@ class SerializationOutputTests {
         assertTrue(AMQPTypeIdentifiers.isPrimitive(Short::class.java))
         assertTrue(AMQPTypeIdentifiers.isPrimitive(UnsignedShort::class.java))
         assertTrue(AMQPTypeIdentifiers.isPrimitive(Int::class.java))
+        assertTrue(AMQPTypeIdentifiers.isPrimitive(Integer::class.java))
         assertTrue(AMQPTypeIdentifiers.isPrimitive(UnsignedInteger::class.java))
         assertTrue(AMQPTypeIdentifiers.isPrimitive(Long::class.java))
         assertTrue(AMQPTypeIdentifiers.isPrimitive(UnsignedLong::class.java))
@@ -311,6 +303,26 @@ class SerializationOutputTests {
     @Test
     fun `test float`() {
         val obj = TestFloat(10.0F)
+        serdes(obj)
+    }
+
+    @Test
+    fun `test primitive float`() {
+        val obj = 10.0f
+        serdes(obj)
+    }
+
+    @Test
+    fun `test primitive int`() {
+        val obj = 5
+        assert(obj.javaClass == Int::class.java)
+        serdes(obj)
+    }
+
+    @Test
+    fun `test boxed integer`() {
+        val obj = Integer.valueOf(5)
+        assert(obj.javaClass == Integer::class.java)
         serdes(obj)
     }
 
