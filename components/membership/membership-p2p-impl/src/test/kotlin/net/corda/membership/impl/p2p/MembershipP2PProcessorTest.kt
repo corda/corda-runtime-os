@@ -201,7 +201,7 @@ class MembershipP2PProcessorTest {
                 ),
             ),
         )
-        whenever(avroSchemaRegistry.deserialize<KeyValuePairList>(memberContext)).doReturn(context)
+        whenever(avroSchemaRegistry.deserialize<KeyValuePairList>(memberContext.data)).doReturn(context)
         val result = processUnauthMsgPayload(unauthenticatedRegMsgPayload)
 
         with(result) {
