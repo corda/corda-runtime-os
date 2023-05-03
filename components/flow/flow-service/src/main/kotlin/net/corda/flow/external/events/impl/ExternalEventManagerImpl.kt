@@ -83,7 +83,12 @@ class ExternalEventManagerImpl(
         externalEventResponse: ExternalEventResponse
     ): ExternalEventState {
         val requestId = externalEventResponse.requestId
-        log.info(flowTraceMarker, "Processing response for external event with id '{}'", requestId)
+        log.info(
+            flowTraceMarker,
+            "Processing response for external event with id '{}' factory '{}'",
+            requestId,
+            externalEventState.factoryClassName
+        )
 
         if (requestId == externalEventState.requestId) {
             log.debug { "External event response with id $requestId matched last sent request" }
@@ -202,7 +207,13 @@ class ExternalEventManagerImpl(
         val eventToSend = externalEventState.eventToSend
         eventToSend.timestamp = instant
         externalEventState.sendTimestamp = instant.plusMillis(config.getLong(FlowConfig.EXTERNAL_EVENT_MESSAGE_RESEND_WINDOW))
-        log.info(flowTraceMarker, "Dispatching external event with id '{}' to '{}'", externalEventState.requestId, eventToSend.topic)
+        log.info(
+            flowTraceMarker,
+            "Dispatching external event with id '{}' to '{}' factory '{}'",
+            externalEventState.requestId,
+            eventToSend.topic,
+            externalEventState.factoryClassName
+        )
 
         return externalEventState to Record(eventToSend.topic, eventToSend.key.array(), eventToSend.payload.array())
     }
