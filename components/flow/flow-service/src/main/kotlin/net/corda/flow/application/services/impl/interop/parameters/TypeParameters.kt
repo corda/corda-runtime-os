@@ -65,16 +65,22 @@ class TypeParameters<T> {
     private fun <T : Any> parseRawParameterType(typeName: String): ParameterType<T> {
         return when (typeName) {
             ParameterTypeLabel.BOOLEAN.typeName -> RawParameterType<Boolean>(ParameterTypeLabel.BOOLEAN)
+            ParameterTypeLabel.BOOLEAN.name -> RawParameterType<Boolean>(ParameterTypeLabel.BOOLEAN)
             ParameterTypeLabel.STRING.typeName -> RawParameterType<String>(ParameterTypeLabel.STRING)
+            ParameterTypeLabel.STRING.name -> RawParameterType<String>(ParameterTypeLabel.STRING)
             ParameterTypeLabel.DECIMAL.typeName -> RawParameterType<BigDecimal>(ParameterTypeLabel.DECIMAL)
+            ParameterTypeLabel.DECIMAL.name -> RawParameterType<BigDecimal>(ParameterTypeLabel.DECIMAL)
             ParameterTypeLabel.UUID.typeName -> RawParameterType<UUID>(ParameterTypeLabel.UUID)
+            ParameterTypeLabel.UUID.name -> RawParameterType<UUID>(ParameterTypeLabel.UUID)
             ParameterTypeLabel.TIMESTAMP.typeName -> RawParameterType<ZonedDateTime>(ParameterTypeLabel.TIMESTAMP)
+            ParameterTypeLabel.TIMESTAMP.name -> RawParameterType<ZonedDateTime>(ParameterTypeLabel.TIMESTAMP)
             ParameterTypeLabel.BYTES.typeName -> RawParameterType<ByteBuffer>(ParameterTypeLabel.BYTES)
+            ParameterTypeLabel.BYTES.name -> RawParameterType<ByteBuffer>(ParameterTypeLabel.BYTES)
             ParameterTypeLabel.JSON.typeName -> RawParameterType<String>(ParameterTypeLabel.JSON)
-
+            ParameterTypeLabel.JSON.name -> RawParameterType<String>(ParameterTypeLabel.JSON)
             else -> throw IllegalArgumentException(
                 "Invalid raw parameter type: $typeName - " +
-                        "must be one of ${ParameterTypeLabel.values().map { it.typeName }}"
+                        "must be one of ${ParameterTypeLabel.values().map { it.typeName }} or ${ParameterTypeLabel.values().map { it.name }}"
             )
         } as ParameterType<T>
     }
