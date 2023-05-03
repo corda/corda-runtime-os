@@ -12,11 +12,11 @@ import java.time.Duration
  * the resulting CPI to the system if it doesn't already exist.
  */
 fun conditionallyUploadCordaPackage(
-    name: String,
-    cpb: String,
+    cpiName: String,
+    cpbResourceName: String?,
     groupPolicy: String
-) = conditionallyUploadCordaPackage(name) {
-    cpiUpload(cpb, groupPolicy, name)
+) = conditionallyUploadCordaPackage(cpiName) {
+    cpiUpload(cpbResourceName, groupPolicy, cpiName)
 }
 
 /**
@@ -24,12 +24,12 @@ fun conditionallyUploadCordaPackage(
  * file used by smoke tests and upload the resulting CPI to the system if it doesn't already exist.
  */
 fun conditionallyUploadCordaPackage(
-    name: String,
-    cpb: String,
+    cpiName: String,
+    cpbResourceName: String,
     groupId: String,
     staticMemberNames: List<String>
-) = conditionallyUploadCordaPackage(name) {
-    cpiUpload(cpb, groupId, staticMemberNames, name)
+) = conditionallyUploadCordaPackage(cpiName) {
+    cpiUpload(cpbResourceName, groupId, staticMemberNames, cpiName)
 }
 
 fun conditionallyUploadCordaPackage(
