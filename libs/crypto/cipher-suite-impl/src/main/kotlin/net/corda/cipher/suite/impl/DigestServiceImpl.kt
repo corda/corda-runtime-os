@@ -68,7 +68,7 @@ class DigestServiceImpl @Activate constructor(
                 val digestHexStringLength = it.digestLength * 2
                 val hexString = parseSecureHashHexString(algoNameAndHexString)
                 require(digestHexStringLength == hexString.length) {
-                    "Required algorithm's: \"$digestName\" hex string length: $digestHexStringLength " +
+                    "Digest algorithm's: \"$digestName\" required hex string length: $digestHexStringLength " +
                             "is not met by hex string: \"$hexString\""
                 }
                 SecureHashImpl(digestName, ByteArrays.parseAsHex(hexString))
