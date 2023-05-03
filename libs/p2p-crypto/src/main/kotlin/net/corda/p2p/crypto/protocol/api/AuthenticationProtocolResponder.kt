@@ -54,20 +54,14 @@ import kotlin.math.min
  */
 class AuthenticationProtocolResponder(
     val sessionId: String,
-    private val supportedModes: Set<ProtocolMode>,
-    private val ourMaxMessageSize: Int,
-    private val certificateCheckMode: CertificateCheckMode
-): AuthenticationProtocol(certificateCheckMode) {
-
-    init {
-        require(supportedModes.isNotEmpty()) { "At least one supported mode must be provided." }
-        require(ourMaxMessageSize >= MIN_PACKET_SIZE) { "max message size needs to be at least $MIN_PACKET_SIZE bytes." }
-    }
+): AuthenticationProtocol() {
 
     private var step = Step.INIT
     private var handshakeIdentityData: HandshakeIdentityData? = null
     private var responderHandshakeMessage: ResponderHandshakeMessage? = null
     private var session: Session? = null
+    private var initiatorHandshakePayload: InitiatorHandshakePayload? = null
+    private var initiatorPublicKey: PublicKey? = null
 
     enum class Step {
         INIT,
@@ -110,8 +104,7 @@ class AuthenticationProtocolResponder(
             val commonHeader = CommonHeader(MessageType.RESPONDER_HELLO, PROTOCOL_VERSION, sessionId,
                 0, Instant.now().toEpochMilli())
 
-            selectedMode = ProtocolModeNegotiation.selectMode(initiatorHelloMessage!!.supportedModes.toSet(), supportedModes)
-            responderHelloMessage = ResponderHelloMessage(commonHeader, ByteBuffer.wrap(myPublicDHKey!!), selectedMode)
+            responderHelloMessage = ResponderHelloMessage(commonHeader, ByteBuffer.wrap(myPublicDHKey!!))
             initiatorHelloToResponderHelloBytes = initiatorHelloMessage!!.toByteBuffer().array() +
                     responderHelloMessage!!.toByteBuffer().array()
             responderHelloMessage!!
@@ -137,7 +130,6 @@ class AuthenticationProtocolResponder(
     @Suppress("ThrowsCount")
     fun validatePeerHandshakeMessage(
         initiatorHandshakeMessage: InitiatorHandshakeMessage,
-        initiatorX500Name: MemberX500Name,
         initiatorPublicKeys: Collection<Pair<PublicKey, SignatureSpec>>,
     ): HandshakeIdentityData {
         return transition(Step.GENERATED_HANDSHAKE_SECRETS, Step.RECEIVED_HANDSHAKE_MESSAGE, { handshakeIdentityData!! }) {
@@ -146,6 +138,7 @@ class AuthenticationProtocolResponder(
                 val initiatorPublicKeyHash = hash(key)
                 initiatorPublicKeyHash.contentEquals(expectedInitiatorPublicKeyHash)
             } ?: throw WrongPublicKeyHashException(expectedInitiatorPublicKeyHash, initiatorPublicKeys.map { hash(it.first) })
+            this.initiatorPublicKey = initiatorPublicKey
 
             val initiatorRecordHeaderBytes = initiatorHandshakeMessage.header.toByteBuffer().array()
             try {
@@ -158,10 +151,10 @@ class AuthenticationProtocolResponder(
                 throw InvalidHandshakeMessageException()
             }
 
-            val initiatorHandshakePayload = InitiatorHandshakePayload.fromByteBuffer(ByteBuffer.wrap(initiatorHandshakePayloadBytes))
+            initiatorHandshakePayload = InitiatorHandshakePayload.fromByteBuffer(ByteBuffer.wrap(initiatorHandshakePayloadBytes))
             val initiatorHandshakePayloadIncomplete = InitiatorHandshakePayload(
-                initiatorHandshakePayload.initiatorEncryptedExtensions,
-                initiatorHandshakePayload.initiatorPublicKeyHash,
+                initiatorHandshakePayload!!.initiatorEncryptedExtensions,
+                initiatorHandshakePayload!!.initiatorPublicKeyHash,
                 ByteBuffer.allocate(0),
                 ByteBuffer.allocate(0)
             )
@@ -172,53 +165,25 @@ class AuthenticationProtocolResponder(
             val signatureWasValid = getSignature(initiatorSignatureSpec).verify(initiatorPublicKey,
                 INITIATOR_SIG_PAD.toByteArray(Charsets.UTF_8) +
                         messageDigest.hash(initiatorHelloToInitiatorPublicKeyHash),
-                initiatorHandshakePayload.initiatorPartyVerify.array())
+                initiatorHandshakePayload!!.initiatorPartyVerify.array())
             if (!signatureWasValid) {
                 throw InvalidHandshakeMessageException()
             }
-            initiatorHandshakePayloadIncomplete.initiatorPartyVerify = initiatorHandshakePayload.initiatorPartyVerify
+            initiatorHandshakePayloadIncomplete.initiatorPartyVerify = initiatorHandshakePayload!!.initiatorPartyVerify
 
             // validate MAC
             val initiatorHelloToInitiatorPartyVerify = initiatorHelloToResponderHelloBytes!! +
                     initiatorHandshakePayloadIncomplete.toByteBuffer().array()
             val calculatedInitiatorFinished = hmac.calculateMac(sharedHandshakeSecrets!!.initiatorAuthKey,
                 messageDigest.hash(initiatorHelloToInitiatorPartyVerify))
-            if (!calculatedInitiatorFinished.contentEquals(initiatorHandshakePayload.initiatorFinished.array())) {
+            if (!calculatedInitiatorFinished.contentEquals(initiatorHandshakePayload!!.initiatorFinished.array())) {
                 throw InvalidHandshakeMessageException()
             }
 
-            initiatorHandshakePayload.initiatorEncryptedExtensions.maxMessageSize.apply {
-                if (this < MIN_PACKET_SIZE) {
-                    throw InvalidMaxMessageSizeProposedError("Initiator's proposed max message size ($this) " +
-                            "was smaller than the minimum allowed value ($MIN_PACKET_SIZE).")
-                }
-
-                agreedMaxMessageSize = min(ourMaxMessageSize, this)
-            }
-            validateCertificate(initiatorHandshakePayload, initiatorX500Name, initiatorPublicKey)
-
-            handshakeIdentityData =  HandshakeIdentityData(initiatorHandshakePayload.initiatorPublicKeyHash.array(),
-                initiatorHandshakePayload.initiatorEncryptedExtensions.responderPublicKeyHash.array(),
-                initiatorHandshakePayload.initiatorEncryptedExtensions.groupId)
+            handshakeIdentityData =  HandshakeIdentityData(initiatorHandshakePayload!!.initiatorPublicKeyHash.array(),
+                initiatorHandshakePayload!!.initiatorEncryptedExtensions.responderPublicKeyHash.array(),
+                initiatorHandshakePayload!!.initiatorEncryptedExtensions.groupId)
             handshakeIdentityData!!
-        }
-    }
-
-    private fun validateCertificate(
-        initiatorHandshakePayload: InitiatorHandshakePayload,
-        initiatorX500Name: MemberX500Name,
-        initiatorPublicKey: PublicKey
-    ) {
-        if (certificateCheckMode != CertificateCheckMode.NoCertificate) {
-            if (initiatorHandshakePayload.initiatorEncryptedExtensions.initiatorCertificate != null) {
-                certificateValidator!!.validate(
-                    initiatorHandshakePayload.initiatorEncryptedExtensions.initiatorCertificate,
-                    initiatorX500Name,
-                    initiatorPublicKey
-                )
-            } else {
-                throw InvalidPeerCertificate("No peer certificate was sent in the initiator handshake message.")
-            }
         }
     }
 
@@ -230,17 +195,42 @@ class AuthenticationProtocolResponder(
      *
      * @param signingFn a callback function that will be invoked for performing signing (with the stable identity key).
      */
+    @Suppress("LongParameterList")
     fun generateOurHandshakeMessage(
         ourPublicKey: PublicKey,
         ourCertificates: List<PemCertificate>?,
         signingFn: (ByteArray) -> ByteArray,
+        initiatorX500Name: MemberX500Name,
+        ourSupportedModes: Set<ProtocolMode>,
+        ourMaxMessageSize: Int,
+        certificateCheckMode: CertificateCheckMode
     ): ResponderHandshakeMessage {
         return transition(Step.RECEIVED_HANDSHAKE_MESSAGE, Step.SENT_HANDSHAKE_MESSAGE, { responderHandshakeMessage!! }) {
+            initiatorHandshakePayload!!.initiatorEncryptedExtensions.maxMessageSize.apply {
+                if (this < MIN_PACKET_SIZE) {
+                    throw InvalidMaxMessageSizeProposedError("Initiator's proposed max message size ($this) " +
+                            "was smaller than the minimum allowed value ($MIN_PACKET_SIZE).")
+                }
+
+                agreedMaxMessageSize = min(ourMaxMessageSize, this)
+            }
+            selectedMode = ProtocolModeNegotiation.selectMode(
+                initiatorHandshakePayload!!.initiatorEncryptedExtensions.supportedModes.toSet(),
+                ourSupportedModes
+            )
+            validateCertificate(
+                initiatorHandshakePayload!!.initiatorEncryptedExtensions.initiatorCertificate,
+                initiatorX500Name,
+                this.initiatorPublicKey!!,
+                certificateCheckMode,
+                "initiator handshake message"
+            )
+
             val responderRecordHeader = CommonHeader(MessageType.RESPONDER_HANDSHAKE, PROTOCOL_VERSION,
                 sessionId, 1, Instant.now().toEpochMilli())
             val responderRecordHeaderBytes = responderRecordHeader.toByteBuffer().array()
             val responderHandshakePayload = ResponderHandshakePayload(
-                ResponderEncryptedExtensions(agreedMaxMessageSize, ourCertificates),
+                ResponderEncryptedExtensions(agreedMaxMessageSize, ourCertificates, selectedMode),
                 ByteBuffer.wrap(hash(ourPublicKey)),
                 ByteBuffer.allocate(0),
                 ByteBuffer.allocate(0)

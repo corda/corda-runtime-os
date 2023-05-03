@@ -93,6 +93,7 @@ import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.locks.ReentrantReadWriteLock
+import net.corda.data.p2p.NetworkType
 import kotlin.concurrent.read
 import kotlin.concurrent.write
 
@@ -420,18 +421,13 @@ internal class SessionManagerImpl(
             return emptyList()
         }
 
-        val sessionManagerConfig = config.get()
         val messagesAndProtocol = mutableListOf<Pair<AuthenticationProtocolInitiator, InitiatorHelloMessage>>()
-        val pkiMode = pkiMode(groupPolicy, sessionManagerConfig) ?: return emptyList()
         (1..multiplicity).map {
             val sessionId = UUID.randomUUID().toString()
             val session = protocolFactory.createInitiator(
                 sessionId,
-                groupPolicy.protocolModes,
-                sessionManagerConfig.maxMessageSize,
                 ourIdentityInfo.preferredSessionKeyAndCertificates.sessionPublicKey,
                 ourIdentityInfo.holdingIdentity.groupId,
-                pkiMode
             )
             messagesAndProtocol.add(Pair(session, session.generateInitiatorHello()))
         }
@@ -563,6 +559,12 @@ internal class SessionManagerImpl(
         val tenantId = ourIdentityInfo.holdingIdentity.shortHash.value
         val ourIdentitySessionKey = ourIdentityInfo.preferredSessionKeyAndCertificates
 
+        val groupPolicy = groupPolicyProvider.getGroupPolicy(ourIdentityInfo.holdingIdentity)
+        if (groupPolicy == null) {
+            logger.couldNotFindGroupInfo(message::class.java.simpleName, message.header.sessionId, ourIdentityInfo.holdingIdentity)
+            return null
+        }
+
         val signWithOurGroupId = { data: ByteArray ->
             cryptoOpsClient.sign(
                 tenantId,
@@ -571,11 +573,16 @@ internal class SessionManagerImpl(
                 data
             ).bytes
         }
+        val sessionManagerConfig = config.get()
+        val pkiMode = pkiMode(groupPolicy, sessionManagerConfig) ?: return null
         val payload = try {
             session.generateOurHandshakeMessage(
                 responderMemberInfo.sessionInitiationKeys.first(),
                 ourIdentitySessionKey.sessionCertificateChain,
-                signWithOurGroupId
+                signWithOurGroupId,
+                sessionManagerConfig.maxMessageSize,
+                groupPolicy.protocolModes,
+                pkiMode
             )
         } catch (exception: Exception) {
             logger.warn(
@@ -599,11 +606,6 @@ internal class SessionManagerImpl(
             sessionInfo
         )
 
-        val groupPolicy = groupPolicyProvider.getGroupPolicy(ourIdentityInfo.holdingIdentity)
-        if (groupPolicy == null) {
-            logger.couldNotFindGroupInfo(message::class.java.simpleName, message.header.sessionId, ourIdentityInfo.holdingIdentity)
-            return null
-        }
         heartbeatManager.sessionMessageSent(
             sessionInfo,
             message.header.sessionId,
@@ -688,7 +690,6 @@ internal class SessionManagerImpl(
             return null
         }
 
-        val sessionManagerConfig = config.get()
         val locallyHostedIdentityWithPeerMemberInfo = hostedIdentitiesInSameGroup.mapNotNull { localIdentity ->
             val peerMemberInfo = membershipGroupReaderProvider.lookupByKey(
                 localIdentity,
@@ -712,27 +713,22 @@ internal class SessionManagerImpl(
         }
 
         val (hostedIdentityInSameGroup, peerMemberInfo) = locallyHostedIdentityWithPeerMemberInfo
-        val groupPolicy = groupPolicyProvider.getGroupPolicy(hostedIdentityInSameGroup)
-        if (groupPolicy == null) {
-            logger.couldNotFindGroupInfo(message::class.java.simpleName, message.header.sessionId, hostedIdentityInSameGroup)
-            return null
-        }
-        val pkiMode = pkiMode(groupPolicy, sessionManagerConfig) ?: return null
+//        val groupPolicy = groupPolicyProvider.getGroupPolicy(hostedIdentityInSameGroup)
+//        if (groupPolicy == null) {
+//            logger.couldNotFindGroupInfo(message::class.java.simpleName, message.header.sessionId, hostedIdentityInSameGroup)
+//            return null
+//        }
+//        val pkiMode = pkiMode(groupPolicy, sessionManagerConfig) ?: return null
 
         val session = pendingInboundSessions.computeIfAbsent(message.header.sessionId) { sessionId ->
-            val session = protocolFactory.createResponder(
-                sessionId,
-                groupPolicy.protocolModes,
-                sessionManagerConfig.maxMessageSize,
-                pkiMode
-            )
+            val session = protocolFactory.createResponder(sessionId)
             session.receiveInitiatorHello(message)
             session
         }
         val responderHello = session.generateResponderHello()
 
         logger.info("Remote identity ${peerMemberInfo.holdingIdentity} initiated new session ${message.header.sessionId}.")
-        return createLinkOutMessage(responderHello, hostedIdentityInSameGroup, peerMemberInfo, groupPolicy.networkType)
+        return createLinkOutMessage(responderHello, hostedIdentityInSameGroup, peerMemberInfo, NetworkType.CORDA_5)
     }
 
     private fun processInitiatorHandshake(message: InitiatorHandshakeMessage): LinkOutMessage? {
@@ -804,7 +800,17 @@ internal class SessionManagerImpl(
                     data
                 ).bytes
             }
-            session.generateOurHandshakeMessage(ourPublicKey, ourIdentitySessionKey.sessionCertificateChain, signData)
+            val sessionManagerConfig = config.get()
+            val pkiMode = pkiMode(groupPolicy, config.get()) ?: return null
+            session.generateOurHandshakeMessage(
+                ourPublicKey,
+                ourIdentitySessionKey.sessionCertificateChain,
+                signData,
+                peer.holdingIdentity.x500Name,
+                groupPolicy.protocolModes,
+                sessionManagerConfig.maxMessageSize,
+                pkiMode
+            )
         } catch (exception: Exception) {
             logger.warn(
                 "Received ${message::class.java.simpleName} with sessionId ${message.header.sessionId}. ${exception.message}." +
@@ -835,7 +841,6 @@ internal class SessionManagerImpl(
         return try {
             validatePeerHandshakeMessage(
                 message,
-                peer.holdingIdentity.x500Name,
                 peer.sessionInitiationKeys.map { it to it.toKeyAlgorithm().getSignatureSpec() }
             )
         } catch (exception: WrongPublicKeyHashException) {
@@ -853,7 +858,7 @@ internal class SessionManagerImpl(
     private fun AuthenticationProtocolInitiator.validatePeerHandshakeMessageHandleError(
         message: ResponderHandshakeMessage,
         memberInfo: MemberInfo,
-        sessionCounterparties: SessionCounterparties,
+        sessionCounterparties: SessionCounterparties
     ): Boolean {
         try {
             this.validatePeerHandshakeMessage(

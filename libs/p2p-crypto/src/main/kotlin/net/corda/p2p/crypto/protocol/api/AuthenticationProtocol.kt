@@ -41,6 +41,7 @@ import javax.crypto.KeyAgreement
 import javax.crypto.Mac
 import javax.crypto.SecretKey
 import javax.crypto.spec.SecretKeySpec
+import net.corda.v5.base.types.MemberX500Name
 
 /**
  * A base, abstract class containing the core utilities for the session authentication protocol.
@@ -49,7 +50,7 @@ import javax.crypto.spec.SecretKeySpec
  *
  * For the detailed spec of the authentication protocol, refer to the corresponding design document.
  */
-abstract class AuthenticationProtocol(certificateCheckMode: CertificateCheckMode) {
+abstract class AuthenticationProtocol {
     protected var myPrivateDHKey: PrivateKey? = null
     protected var myPublicDHKey: ByteArray? = null
     protected var peerPublicDHKey: PublicKey? = null
@@ -64,7 +65,7 @@ abstract class AuthenticationProtocol(certificateCheckMode: CertificateCheckMode
     protected var responderHandshakePayloadBytes: ByteArray? = null
     protected var agreedMaxMessageSize: Int? = null
 
-    protected val secureRandom = SecureRandom()
+    private val secureRandom = SecureRandom()
     protected val provider = BouncyCastleProvider()
     protected val ephemeralKeyFactory = KeyFactory.getInstance(ELLIPTIC_CURVE_ALGO, provider)
     protected val keyPairGenerator = KeyPairGenerator.getInstance(ELLIPTIC_CURVE_ALGO, provider).apply {
@@ -74,14 +75,7 @@ abstract class AuthenticationProtocol(certificateCheckMode: CertificateCheckMode
     protected val hmac = Mac.getInstance(HMAC_ALGO, provider)
     protected val aesCipher = Cipher.getInstance(CIPHER_ALGO, provider)
     protected val messageDigest = MessageDigest.getInstance(HASH_ALGO, provider)
-    protected val certificateValidator = when(certificateCheckMode) {
-        is CertificateCheckMode.NoCertificate -> null
-        is CertificateCheckMode.CheckCertificate -> CertificateValidator(
-            certificateCheckMode.revocationCheckMode,
-            certificateCheckMode.truststore,
-            certificateCheckMode.revocationChecker
-        )
-    }
+
     private val hkdfGenerator = HKDFBytesGenerator(messageDigest.convertToBCDigest())
 
     fun getSignature(signatureSpec: SignatureSpec): Signature {
@@ -129,6 +123,31 @@ abstract class AuthenticationProtocol(certificateCheckMode: CertificateCheckMode
                                                                     RESPONDER_SESSION_NONCE_INFO, CIPHER_NONCE_SIZE_BYTES)
 
         return SharedSessionSecrets(initiatorEncryptionKey, responderEncryptionKey, initiatorNonce, responderNonce)
+    }
+
+    protected fun validateCertificate(
+        certificate: List<String>?,
+        initiatorX500Name: MemberX500Name,
+        initiatorPublicKey: PublicKey,
+        certificateCheckMode: CertificateCheckMode,
+        messageType: String
+    ) {
+        if (certificateCheckMode is CertificateCheckMode.CheckCertificate) {
+            val certificateValidator = CertificateValidator(
+                certificateCheckMode.revocationCheckMode,
+                certificateCheckMode.truststore,
+                certificateCheckMode.revocationChecker
+            )
+            if (certificate != null) {
+                certificateValidator.validate(
+                    certificate,
+                    initiatorX500Name,
+                    initiatorPublicKey
+                )
+            } else {
+                throw InvalidPeerCertificate("No peer certificate was sent in the $messageType.")
+            }
+        }
     }
 
     /**
