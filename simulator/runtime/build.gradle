@@ -1,11 +1,6 @@
 plugins {
     id 'corda.common-publishing'
     id 'corda.common-library'
-    id 'corda.javadoc-generation'
-}
-
-ext {
-    releasable = true
 }
 
 dependencies {

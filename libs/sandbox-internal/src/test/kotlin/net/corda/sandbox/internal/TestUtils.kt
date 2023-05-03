@@ -7,6 +7,7 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import org.osgi.framework.Bundle
+import org.osgi.framework.Constants.SYSTEM_BUNDLE_ID
 import org.osgi.framework.Version
 import kotlin.math.abs
 import kotlin.random.Random
@@ -26,14 +27,22 @@ fun mockBundle(
     klass: Class<*>? = null,
     bundleLocation: String = random.nextInt().toString()
 ) = mock<Bundle>().apply {
-    whenever(bundleId).thenReturn(nextLong())
+    val bundleVersion = Version.parseVersion("${abs(random.nextInt())}.${abs(random.nextInt())}")
+    val id = if ("org.apache.felix.framework" == bundleSymbolicName) {
+        SYSTEM_BUNDLE_ID
+    } else {
+        nextLong()
+    }
+    val description = "Bundle[BSN=$bundleSymbolicName, ID=$id]"
+    whenever(bundleId).thenReturn(id)
     whenever(symbolicName).thenReturn(bundleSymbolicName)
-    whenever(version).thenReturn(Version.parseVersion("${abs(random.nextInt())}.${abs(random.nextInt())}"))
+    whenever(version).thenReturn(bundleVersion)
     whenever(loadClass(any())).then { answer ->
         val requestedClass = answer.arguments.single()
         if (klass?.name == requestedClass) klass else throw ClassNotFoundException()
     }
     whenever(location).thenReturn(bundleLocation)
+    whenever(toString()).thenReturn(description)
 }
 
 /** Generates a mock CpkMetadata. */
