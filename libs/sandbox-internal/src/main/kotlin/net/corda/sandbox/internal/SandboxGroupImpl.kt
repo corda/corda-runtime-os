@@ -115,10 +115,8 @@ internal class SandboxGroupImpl(
                     is EvolvableTag -> {
                         cpkSandboxes.find {
                             it.cpkMetadata.cpkId.signerSummaryHash == classTag.cpkSignerSummaryHash
-                                    && it.mainBundle.symbolicName == classTag.classBundleName
-                            // In later versions of Corda 5 we should be finding a sandbox by trying to match its
-                            // Corda-CPK-Cordapp-Name to classTag.cordaCpkCordappName. Currently neither of those properties
-                            // are populated so we are matching by bundle symbolic versions.
+                                    && (it.cpkMetadata.cpkId.name == classTag.cordaCpkCordappName || // CPK given names match or
+                                        it.mainBundle.symbolicName == classTag.classBundleName) // symbolic names of class bundle match
                         }
                     }
                 } ?: throw SandboxException(
