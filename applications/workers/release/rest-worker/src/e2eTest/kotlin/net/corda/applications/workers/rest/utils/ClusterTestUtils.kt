@@ -309,7 +309,7 @@ fun E2eCluster.register(
                             }
                     }
                 }.also {
-                    println("QQQ got ${it.registrationStatus} for ${it.registrationStatus}")
+                    println("QQQ got ${it.registrationStatus} for ${it.registrationId}")
                     assertThat(it.registrationStatus)
                         .withFailMessage {
                             "${member.name} failed to get to approved registration state. " +
