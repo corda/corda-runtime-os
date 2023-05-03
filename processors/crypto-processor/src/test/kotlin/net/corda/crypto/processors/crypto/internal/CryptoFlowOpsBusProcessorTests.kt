@@ -1,4 +1,5 @@
-package net.corda.crypto.service.impl.bus
+package net.corda.crypto.processors.crypto.internal
+
 
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.crypto.cipher.suite.KeyEncodingService
@@ -13,9 +14,6 @@ import net.corda.crypto.flow.CryptoFlowOpsTransformer.Companion.REQUEST_OP_KEY
 import net.corda.crypto.flow.CryptoFlowOpsTransformer.Companion.REQUEST_TTL_KEY
 import net.corda.crypto.flow.CryptoFlowOpsTransformer.Companion.RESPONSE_TOPIC
 import net.corda.crypto.flow.impl.CryptoFlowOpsTransformerImpl
-import net.corda.crypto.service.impl.infra.ActResult
-import net.corda.crypto.service.impl.infra.ActResultTimestamps
-import net.corda.crypto.service.impl.infra.act
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
@@ -33,6 +31,7 @@ import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.messaging.api.records.Record
+import net.corda.processors.crypto.CryptoFlowOpsBusProcessor
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.v5.application.crypto.DigestService
@@ -65,7 +64,7 @@ class CryptoFlowOpsBusProcessorTests {
             mapOf(ConfigKeys.CRYPTO_CONFIG to
                     SmartConfigFactory.createWithoutSecurityServices().create(
                         createDefaultCryptoConfig("pass", "salt")
-                )
+                    )
             )
         )
     }
@@ -109,7 +108,7 @@ class CryptoFlowOpsBusProcessorTests {
         assertInstanceOf(RESPONSE::class.java, flowOpsResponse.response)
         val context = flowOpsResponse.context
         val resp = flowOpsResponse.response as RESPONSE
-        assertResponseContext<REQUEST>(result, context, ttl)
+        assertResponseContext<REQUEST>(ActResultTimestamps(result.before, result.after),  context, ttl)
         return resp
     }
 
@@ -590,7 +589,7 @@ class CryptoFlowOpsBusProcessorTests {
             assertInstanceOf(CryptoSigningKeys::class.java, flowOpsResponse.response)
             val context1 = flowOpsResponse.context
             val response1 = flowOpsResponse.response as CryptoSigningKeys
-            assertResponseContext<ByIdsFlowQuery>(result, context1, 123)
+            assertResponseContext<ByIdsFlowQuery>(ActResultTimestamps(result.before, result.after), context1, 123)
             assertNotNull(response1.keys)
             assertEquals(2, response1.keys.size)
             assertTrue(
@@ -737,7 +736,7 @@ class CryptoFlowOpsBusProcessorTests {
             assertInstanceOf(CryptoSigningKeys::class.java, flowOpsResponse.response)
             val context1 = flowOpsResponse.context
             val response1 = flowOpsResponse.response as CryptoSigningKeys
-            assertResponseContext<ByIdsFlowQuery>(result, context1, 123, tenantId)
+            assertResponseContext<ByIdsFlowQuery>(ActResultTimestamps(result.before, result.after), context1, 123, tenantId)
             assertNotNull(response1.keys)
             assertEquals(2, response1.keys.size)
             assertTrue(

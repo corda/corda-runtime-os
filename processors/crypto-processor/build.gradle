@@ -91,4 +91,19 @@ dependencies {
     integrationTestRuntimeOnly "org.hibernate:hibernate-core:$hibernateVersion"
     integrationTestRuntimeOnly "org.ops4j.pax.jdbc:pax-jdbc-hsqldb:$paxJdbcVersion"
     integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
+
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    testImplementation project(":components:crypto:crypto-persistence-model")
+    testImplementation project(":components:crypto:crypto-hes-impl")
+    testImplementation project(":components:crypto:crypto-softhsm-impl")
+    testImplementation project(":libs:layered-property-map")
+    testImplementation project(":libs:lifecycle:lifecycle-impl")
+    testImplementation project(":libs:lifecycle:lifecycle-test-impl")
+    testImplementation project(":libs:lifecycle:registry")
+    testImplementation project(":testing:test-utilities")
+    testImplementation project(":libs:cache:cache-caffeine")
+    testImplementation 'net.corda:corda-application'
+    testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
+    testImplementation project(":components:crypto:crypto-component-test-utils")
 }

@@ -72,10 +72,10 @@ interface HsmRestResource : RestResource {
      *
      * @param tenantId Can either be a holding identity ID, the value 'p2p' for a cluster-level tenant of the P2P
      * services, or the value 'rest' for a cluster-level tenant of the REST.
-     * @param category The category of the HSM; can be the value 'ACCOUNTS', 'CI', 'LEDGER', 'NOTARY', 'SESSION_INIT',
+     * @param category The category of the HSM; can be the value 'ACCOUNTS', 'CI', 'LEDGER', 'NassOTARY', 'SESSION_INIT',
      * 'TLS', or 'JWT_KEY'.
      *
-     * @return Information on the newly assigned HSM.
+     * @return Information on th`e newly assigned HSM.
      */
     @HttpPOST(
         path = "soft/{tenantId}/{category}",
