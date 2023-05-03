@@ -39,8 +39,8 @@ interface MemberLookupRestResource : RestResource {
      * @param locality Optional. Locality (L) attribute of the X.500 name to filter members by.
      * @param state Optional. State (ST) attribute of the X.500 name to filter members by.
      * @param country Optional. Country (C) attribute of the X.500 name to filter members by.
-     * @param statuses Optional. List of statuses ("ACTIVE", "SUSPENDED") to filter members by. Only an MGM can view
-     * suspended members.
+     * @param statuses Optional. List of statuses ("ACTIVE", "SUSPENDED") to filter members by.
+     * By default, only ACTIVE members are filtered. Only an MGM can view suspended members.
      *
      * @return List of active and pending members matching the criteria as [RestMemberInfoList].
      */
@@ -90,8 +90,8 @@ interface MemberLookupRestResource : RestResource {
         )
         country: String? = null,
         @RestQueryParameter(
-            description = "List of statuses (\"ACTIVE\", \"SUSPENDED\") to filter members by. Only an " +
-                    "MGM can view suspended members.",
+            description = "List of statuses (\"ACTIVE\", \"SUSPENDED\") to filter members by. " +
+                    "By default, only ACTIVE members are filtered. Only an MGM can view suspended members.",
             required = false,
         )
         statuses: List<String> = listOf(MemberInfoExtension.MEMBER_STATUS_ACTIVE),

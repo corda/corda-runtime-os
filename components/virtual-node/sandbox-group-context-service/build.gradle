@@ -70,7 +70,9 @@ dependencies {
     integrationTestImplementation 'net.corda:corda-application'
     integrationTestImplementation 'net.corda:corda-ledger-utxo'
     integrationTestImplementation project(':components:security-manager')
+    integrationTestImplementation project(':libs:ledger:ledger-common-data')
     integrationTestImplementation project(':libs:ledger:ledger-utxo-data')
+    integrationTestImplementation project(':testing:ledger:ledger-utxo-testkit')
     integrationTestImplementation project(':testing:security-manager-utilities')
     integrationTestImplementation project(':testing:test-utilities')
     integrationTestRuntimeOnly project(':components:virtual-node:sandbox-amqp')

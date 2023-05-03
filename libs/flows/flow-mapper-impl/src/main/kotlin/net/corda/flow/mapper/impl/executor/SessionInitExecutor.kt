@@ -37,7 +37,11 @@ class SessionInitExecutor(
         } else {
             //duplicate
             log.debug { "Duplicate SessionInit event received. Key: $eventKey, Event: $sessionEvent" }
-            FlowMapperResult(flowMapperState, emptyList())
+            if(messageDirection == MessageDirection.OUTBOUND){
+                sessionInit.flowId = null
+                FlowMapperResult(flowMapperState, listOf(Record(outputTopic, eventKey, sessionEvent)))
+            }
+            else FlowMapperResult(flowMapperState, emptyList())
         }
     }
 

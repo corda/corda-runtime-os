@@ -192,10 +192,11 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
             try {
                 log.debug { "Polling and processing events" }
                 var rebalanceOccurred = false
-                val batches = getEventsByBatch(stateAndEventConsumer.pollEvents()).iterator()
+                val records = stateAndEventConsumer.pollEvents()
+                batchSizeHistogram.record(records.size.toDouble())
+                val batches = getEventsByBatch(records).iterator()
                 while (!rebalanceOccurred && batches.hasNext()) {
                     val batch = batches.next()
-                    batchSizeHistogram.record(batch.size.toDouble())
                     rebalanceOccurred = tryProcessBatchOfEvents(batch)
                 }
                 keepProcessing = false // We only want to do one batch at a time
@@ -228,15 +229,17 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         val updatedStates: MutableMap<Int, MutableMap<K, S?>> = mutableMapOf()
 
         log.debug { "Processing events(keys: ${events.joinToString { it.key.toString() }}, size: ${events.size})" }
-        for (event in events) {
-            try {
-                stateAndEventConsumer.resetPollInterval()
-                processEvent(event, outputRecords, updatedStates)
-            } catch (ex: StateAndEventConsumer.RebalanceInProgressException) {
-                log.warn ("Abandoning processing of events(keys: ${events.joinToString { it.key.toString() }}, " +
-                        "size: ${events.size}) due to rebalance", ex)
-                return true
+        try {
+            processorMeter.recordCallable {
+                for (event in events) {
+                    stateAndEventConsumer.resetPollInterval()
+                    processEvent(event, outputRecords, updatedStates)
+                }
             }
+        } catch (ex: StateAndEventConsumer.RebalanceInProgressException) {
+            log.warn ("Abandoning processing of events(keys: ${events.joinToString { it.key.toString() }}, " +
+                    "size: ${events.size}) due to rebalance", ex)
+            return true
         }
 
         commitTimer.recordCallable {
@@ -323,12 +326,10 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
     }
 
     private fun getUpdatesForEvent(state: S?, event: CordaConsumerRecord<K, E>): StateAndEventProcessor.Response<S>? {
-        val future = processorMeter.recordCallable {
-            stateAndEventConsumer.waitForFunctionToFinish(
-                { processor.onNext(state, event.toRecord()) }, config.processorTimeout.toMillis(),
-                "Failed to finish within the time limit for state: $state and event: $event"
-            )
-        }!!
+        val future = stateAndEventConsumer.waitForFunctionToFinish(
+            { processor.onNext(state, event.toRecord()) }, config.processorTimeout.toMillis(),
+            "Failed to finish within the time limit for state: $state and event: $event"
+        )
         @Suppress("unchecked_cast")
         return future.tryGetResult() as? StateAndEventProcessor.Response<S>
     }

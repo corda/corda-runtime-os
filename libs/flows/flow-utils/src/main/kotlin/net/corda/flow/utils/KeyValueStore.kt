@@ -41,12 +41,14 @@ fun keyValuePairListOf(map: Map<String, String>) = mutableKeyValuePairList().app
 /**
  * Transforms [KeyValuePairList] into map.
  */
-fun KeyValuePairList.toMap() = items.associate { it.key to it.value }
+fun KeyValuePairList.toMap() =
+    if (items != null) items.associate { it.key to it.value } else emptyMap()
 
 /**
  * Transforms [KeyValuePairList] into a mutable map.
  */
-fun KeyValuePairList.toMutableMap() = items.associateTo(mutableMapOf()) { it.key to it.value }
+fun KeyValuePairList.toMutableMap() =
+    if (items != null) items.associateTo(mutableMapOf()) { it.key to it.value } else mutableMapOf()
 
 /**
  * Creates a [KeyValuePairList] from an iterable container of objects of type [T] with keys
@@ -61,8 +63,8 @@ inline fun <reified T> Iterable<T>.toKeyValuePairList(prefix: String? = null): K
     return KeyValuePairList(
         this.filterNotNull()
             .mapIndexed { idx, value ->
-            KeyValuePair(listOf(keyPrefix, idx).joinToString("."), value.toString())
-        }
+                KeyValuePair(listOf(keyPrefix, idx).joinToString("."), value.toString())
+            }
     )
 }
 

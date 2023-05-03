@@ -16,7 +16,7 @@ import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.data.membership.p2p.MembershipRegistrationRequest
 import net.corda.data.membership.p2p.UnauthenticatedRegistrationRequest
 import net.corda.data.p2p.app.AppMessage
-import net.corda.data.p2p.app.UnauthenticatedMessage
+import net.corda.data.p2p.app.OutboundUnauthenticatedMessage
 import net.corda.db.messagebus.testkit.DBSetup
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.packaging.core.CpiIdentifier
@@ -308,7 +308,7 @@ class MemberRegistrationIntegrationTest {
                 .isNotNull
                 .isInstanceOf(AppMessage::class.java)
 
-            with(result!!.second["message"] as UnauthenticatedMessage) {
+            with(result!!.second["message"] as OutboundUnauthenticatedMessage) {
                 it.assertThat(this.header.destination.x500Name).isEqualTo(mgmName.toString())
                 it.assertThat(this.header.destination.groupId).isEqualTo(groupId)
                 it.assertThat(this.header.source.x500Name).isEqualTo(memberName.toString())
