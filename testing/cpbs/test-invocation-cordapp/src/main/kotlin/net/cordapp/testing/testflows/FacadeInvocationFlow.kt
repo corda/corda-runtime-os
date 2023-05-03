@@ -5,11 +5,7 @@ import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.InitiatingFlow
 import net.corda.v5.application.flows.ClientRequestBody
 import net.corda.v5.application.interop.facade.FacadeReader
-import net.corda.v5.application.interop.facade.FacadeRequest
-import net.corda.v5.application.interop.facade.FacadeResponse
-import net.corda.v5.application.interop.parameters.ParameterType
-import net.corda.v5.application.interop.parameters.TypedParameter
-import net.corda.v5.application.interop.parameters.TypedParameterValue
+import net.corda.v5.application.interop.facade.FacadeService
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.base.annotations.Suspendable
@@ -34,6 +30,9 @@ class FacadeInvocationFlow : ClientStartableFlow {
 
     @CordaInject
     lateinit var facadeReader: FacadeReader
+
+    @CordaInject
+    lateinit var facadeService: FacadeService
 
     @Suspendable
     override fun call(requestBody: ClientRequestBody): String {
@@ -69,7 +68,7 @@ class FacadeInvocationFlow : ClientStartableFlow {
                     }
                 }""".trimIndent()
         )
-        val client = facade.getClientProxy<SampleTokensFacade>(jsonMarshallingService, MessagingDispatcher(flowMessaging, jsonMarshallingService, alias, ""))
+        val client : SampleTokensFacade = facadeService.getClientProxy(facade, SampleTokensFacade::class.java, alias, "")
         val responseObject = client.getHello("Hi there!")
         val response = responseObject.result
         log.info("Facade responded with '$response'")
@@ -80,20 +79,3 @@ class FacadeInvocationFlow : ClientStartableFlow {
 }
 
 
-class MessagingDispatcher(private var flowMessaging: FlowMessaging, private val jsonMarshallingService: JsonMarshallingService, private val alias: MemberX500Name, val aliasGroupId: String)
-    : (FacadeRequest) -> FacadeResponse {
-    override fun invoke(p1: FacadeRequest): FacadeResponse {
-        val facade = p1.facadeId
-        val method = p1.methodName
-        //val payload = p1.inParameters.toString()
-        //val om = ObjectMapper()
-        //om.registerSubtypes(FacadeRequest::class.java)
-        //val payload : String = om.writeValueAsString(p1)
-        val payload  = jsonMarshallingService.format(p1)
-        val response = flowMessaging.callFacade(alias, facade.toString(), method, payload)
-        return FacadeResponseImpl(p1.facadeId, method,
-            listOf(TypedParameterValue(TypedParameter("greeting", ParameterType.StringType), response)))
-
-    }
-
-}

@@ -7,6 +7,7 @@ import net.corda.v5.application.interop.binding.InteropAction
 import net.corda.v5.application.interop.facade.FacadeId
 import net.corda.v5.application.interop.facade.FacadeReader
 import net.corda.v5.application.interop.facade.FacadeRequest
+import net.corda.v5.application.interop.facade.FacadeService
 import net.corda.v5.application.interop.parameters.ParameterType
 import net.corda.v5.application.interop.parameters.TypedParameter
 import net.corda.v5.application.interop.parameters.TypedParameterValue
@@ -26,6 +27,9 @@ class FacadeInvocationResponderFlow : ResponderFlow , SampleTokensFacade {
     @CordaInject
     lateinit var facadeReader: FacadeReader
 
+    @CordaInject
+    lateinit var facadeService: FacadeService
+
     private companion object {
         private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
@@ -43,9 +47,9 @@ class FacadeInvocationResponderFlow : ResponderFlow , SampleTokensFacade {
 
         //log.info("FacadeInvocationResponderFlow with proxy and serilizer 3 .call() parsed : $facadeRequest")
         //val response = "$request:Bye"
-        val facadeRequest = FacadeRequest(
-            FacadeId("", mutableListOf("com", "r3", "tokens", "sample").joinToString("/"), "v1.0"),
-            "hello", listOf(TypedParameterValue(TypedParameter("greeting", ParameterType.StringType), request)))
+//        val facadeRequest = FacadeRequest(
+//            FacadeId("", mutableListOf("com", "r3", "tokens", "sample").joinToString("/"), "v1.0"),
+//            "hello", listOf(TypedParameterValue(TypedParameter("greeting", ParameterType.StringType), request)))
         val facade = facadeReader.read(
             """{ "id": "/com/r3/tokens/sample/v1.0",
                   "commands": { 
@@ -69,8 +73,10 @@ class FacadeInvocationResponderFlow : ResponderFlow , SampleTokensFacade {
                     }
                 }""".trimIndent()
         )
-        val dispatcher = buildDispatcher(facade, jsonMarshallingService)
-        val facadeResponse = dispatcher.invoke(facadeRequest)
+
+        val facadeResponse = facadeService.dispatch(facade, this, request)
+        //val dispatcher = buildDispatcher(facade, jsonMarshallingService)
+        //val facadeResponse = dispatcher.invoke(facadeRequest)
         val response = facadeResponse.outParameters.first().value
         log.info("FacadeInvocationResponderFlow with proxy 1.call(): received=$request, response=$response")
         session.send(response)
