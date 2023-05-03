@@ -23,6 +23,7 @@ import net.corda.membership.rest.v1.types.request.MemberRegistrationRequest
 import net.corda.membership.rest.v1.types.response.HsmAssociationInfo
 import net.corda.membership.rest.v1.types.response.RegistrationRequestProgress
 import net.corda.membership.rest.v1.types.response.RegistrationStatus
+import net.corda.membership.rest.v1.types.response.RestRegistrationRequestStatus
 import net.corda.rest.HttpFileUpload
 import net.corda.rest.JsonObject
 import net.corda.rest.ResponseCode
@@ -286,7 +287,7 @@ fun RegistrationStatus.isEndState(): Boolean {
 fun E2eCluster.register(
     member: E2eClusterMember,
     context: Map<String, String>,
-): RegistrationRequestProgress {
+): RestRegistrationRequestStatus {
     return clusterHttpClientFor(MemberRegistrationRestResource::class.java)
         .use { client ->
             val proxy = client.start().proxy
@@ -296,13 +297,14 @@ fun E2eCluster.register(
                     MemberRegistrationRequest(
                         context,
                     ),
-                ).apply {
-                    assertThat(registrationStatus).isEqualTo("SUBMITTED")
+                ).let {
+                    assertThat(it.registrationStatus).isEqualTo("SUBMITTED")
 
                     eventually(duration = 3.minutes, retryAllExceptions = true) {
-                        val registrationStatus =
-                            proxy.checkSpecificRegistrationProgress(member.holdingId, registrationId)
-                        assertThat(registrationStatus.registrationStatus.isEndState()).isTrue()
+                        proxy.checkSpecificRegistrationProgress(member.holdingId, it.registrationId)
+                            .also {
+                                assertThat(it.registrationStatus.isEndState()).isTrue()
+                            }
                     }
                 }.also {
                     println("QQQ got ${it.registrationStatus} for ${it.registrationStatus}")
