@@ -15,6 +15,7 @@ import org.bouncycastle.asn1.x509.AlgorithmIdentifier
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo
 import java.security.PublicKey
 import java.util.IdentityHashMap
+import java.util.LinkedList
 
 val PublicKey.keys: Set<PublicKey> get() = (this as? CompositeKey)?.leafKeys ?: setOf(this)
 
@@ -164,8 +165,13 @@ class CompositeKeyImpl(val threshold: Int, childrenUnsorted: List<CompositeKeyNo
      */
     override fun getFormat() = ASN1Encoding.DER
 
+
+    // `keysToCheck` below is a list to have the below code working in case passed in keys are mix of
+    // `BCECPublicKey` and non `BCECPublicKey` in which case <BCECPublicKey>.hashCode != <non BCECPublicKey>.hashCode
+    // but <BCECPublicKey>.equals == <non BCECPublicKey>.equals
+
     // Return true when and if the threshold requirement is met.
-    private fun checkFulfilledBy(keysToCheck: Set<PublicKey>): Boolean {
+    private fun checkFulfilledBy(keysToCheck: List<PublicKey>): Boolean {
         var totalWeight = 0
         children.forEach {
             val node = it.node
@@ -190,7 +196,7 @@ class CompositeKeyImpl(val threshold: Int, childrenUnsorted: List<CompositeKeyNo
         // Doing these checks at deserialization/construction time would result in duplicate checks.
         checkValidity()
         if (keysToCheck.any { it is CompositeKey }) return false
-        return checkFulfilledBy(keysToCheck)
+        return checkFulfilledBy(LinkedList(keysToCheck))
     }
 
     /**
