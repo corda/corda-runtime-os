@@ -71,11 +71,13 @@ class TestSubCommands {
             // Test SASL_SSL with non-PEM format truststore
             var path = "./src/test/resources/KafkaTestSaslTls.yaml"
             var yaml: PreInstallPlugin.Kafka = parseYaml<PreInstallPlugin.Kafka>(path)
-            var props = CheckKafka.KafkaProperties(yaml)
+            var props = CheckKafka.KafkaProperties(yaml.kafka.bootstrapServers)
             props.saslUsername = "sasl-user"
             props.saslPassword = "sasl-pass"
+            props.saslMechanism = yaml.kafka.sasl.mechanism
             props.truststorePassword = "truststore-pass"
             props.truststoreLocation = "/test/location"
+            props.truststoreType = yaml.kafka.tls.truststore!!.type
 
             var check = props.getKafkaProperties()
 
@@ -91,10 +93,12 @@ class TestSubCommands {
             // Test SASL_SSL with PEM format truststore (i.e. no password required)
             path = "./src/test/resources/KafkaTestSaslTlsPEM.yaml"
             yaml = parseYaml<PreInstallPlugin.Kafka>(path)
-            props = CheckKafka.KafkaProperties(yaml)
+            props = CheckKafka.KafkaProperties(yaml.kafka.bootstrapServers)
             props.saslUsername = "sasl-user1"
             props.saslPassword = "sasl-pass2"
+            props.saslMechanism = yaml.kafka.sasl.mechanism
             props.truststoreFile = "-----BEGIN CERTIFICATE-----"
+            props.truststoreType = yaml.kafka.tls.truststore!!.type
 
             check = props.getKafkaProperties()
 
@@ -109,9 +113,10 @@ class TestSubCommands {
             // Test SASL_PLAINTEXT
             path = "./src/test/resources/KafkaTestSasl.yaml"
             yaml = parseYaml<PreInstallPlugin.Kafka>(path)
-            props = CheckKafka.KafkaProperties(yaml)
+            props = CheckKafka.KafkaProperties(yaml.kafka.bootstrapServers)
             props.saslUsername = "sasl-user"
             props.saslPassword = "sasl-pass"
+            props.saslMechanism = yaml.kafka.sasl.mechanism
 
             check = props.getKafkaProperties()
 
@@ -124,9 +129,10 @@ class TestSubCommands {
             // Test SSL
             path = "./src/test/resources/KafkaTestTls.yaml"
             yaml = parseYaml<PreInstallPlugin.Kafka>(path)
-            props = CheckKafka.KafkaProperties(yaml)
+            props = CheckKafka.KafkaProperties(yaml.kafka.bootstrapServers)
             props.truststorePassword = "truststore-pass"
             props.truststoreLocation = "/test/location"
+            props.truststoreType = yaml.kafka.tls.truststore!!.type
 
             check = props.getKafkaProperties()
 
