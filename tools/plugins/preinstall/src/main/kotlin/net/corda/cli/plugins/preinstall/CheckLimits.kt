@@ -18,6 +18,8 @@ class CheckLimits : Callable<Int>, PluginContext() {
 
     private var hasCheckedLimits = false
 
+    private val logger = getLogger()
+
     // split resource into a digit portion and a unit portion
     private fun parseResourceString(resourceString: String): Long {
         val regex = Regex("(\\d+)([EPTGMK]?i?[Bb]?)?")
@@ -43,7 +45,7 @@ class CheckLimits : Callable<Int>, PluginContext() {
             else -> if (unit.isEmpty()) 1L else throw IllegalArgumentException("Invalid memory unit: $unit")
         }
 
-        getLogger().debug("$resourceString -> $value x $multiplier = ${value.toLong() * multiplier} bytes")
+        logger.debug("$resourceString -> $value x $multiplier = ${value.toLong() * multiplier} bytes")
 
         return (value.toLong() * multiplier)
     }
@@ -64,9 +66,9 @@ class CheckLimits : Callable<Int>, PluginContext() {
         val requests: ResourceValues = resources.requests
         val limits: ResourceValues = resources.limits
 
-        getLogger().info("${name.uppercase()}:")
-        getLogger().info("Requests: \n\t memory - ${requests.memory}\n\t cpu - ${requests.cpu}")
-        getLogger().info("Limits: \n\t memory - ${limits.memory}\n\t cpu - ${limits.cpu}")
+        logger.info("${name.uppercase()}:")
+        logger.info("Requests: \n\t memory - ${requests.memory}\n\t cpu - ${requests.cpu}")
+        logger.info("Limits: \n\t memory - ${limits.memory}\n\t cpu - ${limits.cpu}")
 
         try {
             checkResource(requests.memory, limits.memory)
@@ -88,7 +90,7 @@ class CheckLimits : Callable<Int>, PluginContext() {
             report.addEntry(PreInstallPlugin.ReportEntry("Parse resource properties from YAML", true))
         } catch (e: Exception) {
             report.addEntry(PreInstallPlugin.ReportEntry("Parse resource properties from YAML", false, e))
-            getLogger().error(report.failingTests())
+            logger.error(report.failingTests())
             return 1
         }
 
@@ -102,13 +104,13 @@ class CheckLimits : Callable<Int>, PluginContext() {
         yaml.workers?.p2pGateway?.let { checkResources(it.resources, "P2P gateway") }
 
         if (report.testsPassed() == 0) {
-            getLogger().info(report.toString())
+            logger.info(report.toString())
         } else {
-            getLogger().error(report.failingTests())
+            logger.error(report.failingTests())
         }
 
         if (!hasCheckedLimits) {
-            getLogger().info("No resource requests or limits were found.")
+            logger.info("No resource requests or limits were found.")
         }
 
         return report.testsPassed()

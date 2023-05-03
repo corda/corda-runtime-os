@@ -24,6 +24,7 @@ class CheckPostgres : Callable<Int>, PluginContext() {
         description = ["The namespace in which to look for the secrets if there are any"]
     )
     var namespace: String? = null
+    private val logger = getLogger()
 
     override fun call(): Int {
         val yaml: DB
@@ -32,7 +33,7 @@ class CheckPostgres : Callable<Int>, PluginContext() {
             report.addEntry(PreInstallPlugin.ReportEntry("Parse PostgreSQL properties from YAML", true))
         } catch (e: Exception) {
             report.addEntry(PreInstallPlugin.ReportEntry("Parse PostgreSQL properties from YAML", false, e))
-            getLogger().error(report.failingTests())
+            logger.error(report.failingTests())
             return 1
         }
 
@@ -40,11 +41,11 @@ class CheckPostgres : Callable<Int>, PluginContext() {
         val password: String
 
         try {
-            username = getCredentialOrSecret(yaml.db.cluster.username, namespace)
-            password = getCredentialOrSecret(yaml.db.cluster.password, namespace)
+            username = getCredential(yaml.db.cluster.username, namespace)
+            password = getCredential(yaml.db.cluster.password, namespace)
         } catch (e: Exception) {
             report.addEntry(PreInstallPlugin.ReportEntry("Get PostgreSQL credentials", false, e))
-            getLogger().error(report.failingTests())
+            logger.error(report.failingTests())
             return 1
         }
 
@@ -61,9 +62,9 @@ class CheckPostgres : Callable<Int>, PluginContext() {
         }
 
         if (report.testsPassed() == 0) {
-            getLogger().info(report.toString())
+            logger.info(report.toString())
         } else {
-            getLogger().error(report.failingTests())
+            logger.error(report.failingTests())
         }
 
         return report.testsPassed()

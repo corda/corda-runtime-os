@@ -43,6 +43,7 @@ class CheckKafka : Callable<Int>, PluginContext() {
 
     class SASLCredentialException(message: String) : Exception(message)
     class BrokerException(message: String) : Exception(message)
+    private val logger = getLogger()
 
     open class KafkaAdmin(props: Properties) {
         private val admin: AdminClient?
@@ -77,6 +78,8 @@ class CheckKafka : Callable<Int>, PluginContext() {
             props["bootstrap.servers"] = yaml.kafka.bootstrapServers
             props["request.timeout.ms"] = timeout
             props["connections.max.idle.ms"] = 5000
+
+            val tlsEnabled = if (truststoreFile == null && truststoreLocation == null)
 
             // Assembles the properties in the same way as the helm charts:
             // https://github.com/corda/corda-runtime-os/blob/release/os/5.0/charts/corda-lib/templates/_bootstrap.tpl#L333
@@ -136,8 +139,8 @@ class CheckKafka : Callable<Int>, PluginContext() {
             return
         }
 
-        getLogger().info("Kafka client connected to cluster with ID ${clusterID}.")
-        getLogger().info("Number of brokers: ${nodes.size}")
+        logger.info("Kafka client connected to cluster with ID ${clusterID}.")
+        logger.info("Number of brokers: ${nodes.size}")
         replicas?.let {
             if (nodes.size < it) {
                 throw BrokerException("Number of brokers (${nodes.size}) is less than replica count.")
@@ -152,7 +155,7 @@ class CheckKafka : Callable<Int>, PluginContext() {
             report.addEntry(ReportEntry("Parse Kafka properties from YAML", true))
         } catch (e: Exception) {
             report.addEntry(ReportEntry("Parse Kafka properties from YAML", false, e))
-            getLogger().error(report.failingTests())
+            logger.error(report.failingTests())
             return 1
         }
 
@@ -166,15 +169,15 @@ class CheckKafka : Callable<Int>, PluginContext() {
                 report.addEntry(ReportEntry("Create Kafka client properties",
                     false,
                     SASLCredentialException("If SASL is enabled, you must provide a mechanism, a username, and a password.")))
-                getLogger().error(report.failingTests())
+                logger.error(report.failingTests())
                 return 1
             }
             try {
-                saslUsername = getCredentialOrSecret(yaml.kafka.sasl.username, namespace)
-                saslPassword = getCredentialOrSecret(yaml.kafka.sasl.password, namespace)
+                saslUsername = getCredential(yaml.kafka.sasl.username, namespace)
+                saslPassword = getCredential(yaml.kafka.sasl.password, namespace)
             } catch (e: Exception) {
                 report.addEntry(ReportEntry("Get SASL credentials", false, e))
-                getLogger().error(report.failingTests())
+                logger.error(report.failingTests())
                 return 1
             }
         }
@@ -184,25 +187,25 @@ class CheckKafka : Callable<Int>, PluginContext() {
                 report.addEntry(ReportEntry("Parse Kafka properties from YAML",
                     false,
                     TruststoreNotFoundException("If SSL is enabled, you must provide entries for kafka.tls.truststore.")))
-                getLogger().error(report.failingTests())
+                logger.error(report.failingTests())
                 return 1
             }
 
             if (yaml.kafka.tls.truststore.type != "PEM" && yaml.kafka.tls.truststore.password != null) {
                 try {
-                    truststorePassword = getCredentialOrSecret(yaml.kafka.tls.truststore.password, namespace)
+                    truststorePassword = getCredential(yaml.kafka.tls.truststore.password, namespace)
                 } catch (e: Exception) {
                     report.addEntry(ReportEntry("Get TLS truststore password", false, e))
-                    getLogger().error(report.failingTests())
+                    logger.error(report.failingTests())
                     return 1
                 }
             } else if (yaml.kafka.tls.truststore.valueFrom?.secretKeyRef?.name != null ) {
                 val secret = PreInstallPlugin.SecretValues(yaml.kafka.tls.truststore.valueFrom, null, null, null, null)
                 try {
-                    truststoreFile = getCredentialOrSecret(secret, namespace)
+                    truststoreFile = getCredential(secret, namespace)
                 } catch (e: Exception) {
                     report.addEntry(ReportEntry("Get TLS truststore certificate", false, e))
-                    getLogger().error(report.failingTests())
+                    logger.error(report.failingTests())
                     return 1
                 }
             }
@@ -220,7 +223,7 @@ class CheckKafka : Callable<Int>, PluginContext() {
             props = creds.getKafkaProperties()
         } catch (e: TruststoreNotFoundException) {
             report.addEntry(ReportEntry("Create Kafka client properties", false, e))
-            getLogger().error(report.failingTests())
+            logger.error(report.failingTests())
             return 1
         }
 
@@ -235,9 +238,9 @@ class CheckKafka : Callable<Int>, PluginContext() {
         }
 
         if (report.testsPassed() == 0) {
-            getLogger().error(report.toString())
+            logger.error(report.toString())
         } else {
-            getLogger().error(report.failingTests())
+            logger.error(report.failingTests())
         }
 
         return report.testsPassed()

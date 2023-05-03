@@ -64,7 +64,7 @@ class PreInstallPlugin(wrapper: PluginWrapper) : Plugin(wrapper) {
 
         // get the credentials (.value) or credentials from a secret (.valueFrom.secretKeyRef...) from a SecretValues
         // object, and a namespace (if the credential is in a secret)
-        fun getCredentialOrSecret(values: SecretValues, namespace: String?): String {
+        fun getCredential(values: SecretValues, namespace: String?): String {
             val secretKey: String? = values.valueFrom?.secretKeyRef?.key
             val secretName: String? = values.valueFrom?.secretKeyRef?.name
             var credential: String? = values.value
