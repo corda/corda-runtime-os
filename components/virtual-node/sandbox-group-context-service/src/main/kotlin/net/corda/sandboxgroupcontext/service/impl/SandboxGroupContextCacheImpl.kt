@@ -65,7 +65,6 @@ internal class SandboxGroupContextCacheImpl private constructor(
 
                 context?.let { ctx ->
                     ctx.preRemovalCallback?.preSandboxRemoval(key?.holdingIdentity!!)
-                        ?: logger.info("Sandbox cache with removalListener for flow fiber cache has either a null context, callback or key")
 
                     (ctx.wrappedSandboxGroupContext as? AutoCloseable)?.also { autoCloseable ->
                         toBeClosed += ToBeClosed(key!!, context.completion, autoCloseable, context, expiryQueue)
