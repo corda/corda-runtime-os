@@ -4,6 +4,7 @@ import net.corda.cli.plugins.preinstall.PreInstallPlugin.ResourceConfig
 import net.corda.cli.plugins.preinstall.PreInstallPlugin.ResourceValues
 import net.corda.cli.plugins.preinstall.PreInstallPlugin.Configurations
 import net.corda.cli.plugins.preinstall.PreInstallPlugin.PluginContext
+import net.corda.cli.plugins.preinstall.PreInstallPlugin.ReportEntry
 import picocli.CommandLine
 import picocli.CommandLine.Parameters
 import java.util.concurrent.Callable
@@ -67,29 +68,45 @@ class CheckLimits : Callable<Int>, PluginContext() {
         val limits: ResourceValues = resources.limits
 
         logger.info("${name.uppercase()}:")
-        logger.info("Requests: \n\t memory - ${requests.memory}\n\t cpu - ${requests.cpu}")
-        logger.info("Limits: \n\t memory - ${limits.memory}\n\t cpu - ${limits.cpu}")
 
         try {
-            checkResource(requests.memory, limits.memory)
-            checkResource(requests.cpu, limits.cpu)
+            if (requests.memory != null || limits.memory != null) {
+                if (requests.memory == null || limits.memory == null) {
+                    report.addEntry(ReportEntry("${name.uppercase()} memory resources contains both a request and a limit", false))
+                    return
+                }
+                report.addEntry(ReportEntry("${name.uppercase()} memory resources contains both a request and a limit", true))
+                logger.info("Memory: \n\t request - ${requests.memory}\n\t limit - ${limits.memory}")
+                checkResource(requests.memory, limits.memory)
+            }
+            if (requests.cpu != null || limits.cpu != null) {
+                if (requests.cpu == null || limits.cpu == null) {
+                    report.addEntry(ReportEntry("${name.uppercase()} cpu resources contains both a request and a limit", false))
+                    return
+                }
+                report.addEntry(ReportEntry("${name.uppercase()} cpu resources contains both a request and a limit", true))
+                logger.info("CPU: \n\t request - ${requests.cpu}\n\t limit - ${limits.cpu}")
+                checkResource(requests.cpu, limits.cpu)
+            }
+
+            report.addEntry(ReportEntry("Parse resource strings", true))
+            report.addEntry(ReportEntry("$name requests do not exceed limits", true))
         } catch(e: IllegalArgumentException) {
-            report.addEntry(PreInstallPlugin.ReportEntry("Parse resource strings", false, e))
+            report.addEntry(ReportEntry("Parse resource strings", false, e))
             return
         } catch (e: ResourceLimitsExceededException) {
-            report.addEntry(PreInstallPlugin.ReportEntry("$name requests do not exceed limits", false, e))
+            report.addEntry(ReportEntry("$name requests do not exceed limits", false, e))
             return
         }
-        report.addEntry(PreInstallPlugin.ReportEntry("$name requests do not exceed limits", true))
     }
 
     override fun call(): Int {
         val yaml: Configurations
         try {
             yaml = parseYaml<Configurations>(path)
-            report.addEntry(PreInstallPlugin.ReportEntry("Parse resource properties from YAML", true))
+            report.addEntry(ReportEntry("Parse resource properties from YAML", true))
         } catch (e: Exception) {
-            report.addEntry(PreInstallPlugin.ReportEntry("Parse resource properties from YAML", false, e))
+            report.addEntry(ReportEntry("Parse resource properties from YAML", false, e))
             logger.error(report.failingTests())
             return 1
         }

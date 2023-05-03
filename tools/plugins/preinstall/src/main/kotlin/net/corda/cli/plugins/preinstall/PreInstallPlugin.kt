@@ -296,8 +296,8 @@ class PreInstallPlugin(wrapper: PluginWrapper) : Plugin(wrapper) {
 
     data class ResourceValues(
         @JsonProperty("memory")
-        val memory: String,
+        val memory: String?,
         @JsonProperty("cpu")
-        val cpu: String
+        val cpu: String?
     )
 }
