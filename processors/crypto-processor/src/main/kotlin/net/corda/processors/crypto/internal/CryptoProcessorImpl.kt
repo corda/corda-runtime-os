@@ -23,7 +23,6 @@ import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationHandle
@@ -41,7 +40,6 @@ import net.corda.schema.configuration.BootConfig.BOOT_CRYPTO
 import net.corda.schema.configuration.BootConfig.BOOT_DB
 import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
-import net.corda.utilities.trace
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -169,7 +167,7 @@ class CryptoProcessorImpl @Activate constructor(
                 configurationReadService.registerComponentForUpdates(coordinator, configKeys)
                 if (event.status == LifecycleStatus.UP) {
                     dependenciesUp = true
-                    // TODO: only do setStatus once the config is in in ConfigChangedEvent
+                    // TODO only do setStatus once the config is in in ConfigChangedEvent
                     if (hsmAssociated) {
                         setStatus(event.status, coordinator)
                     } else {
