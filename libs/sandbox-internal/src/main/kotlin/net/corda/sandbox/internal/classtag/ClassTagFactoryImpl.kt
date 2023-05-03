@@ -37,10 +37,13 @@ internal class ClassTagFactoryImpl : ClassTagFactory {
             if (isStaticTag) {
                 StaticTagImplV1(ClassType.CpkSandboxClass, bundleName, cpkSandbox.cpkMetadata.fileChecksum)
             } else {
-                val mainBundleName = cpkSandbox.mainBundle.symbolicName
+                // In later versions of Corda 5, cordaCpkCordappName will be populated from Corda-CPK-Cordapp-Name
+                // from the CPK metadata, and this will be modifiable by the CorDapp developer. Currently Corda-CPK-Cordapp-Name
+                // is always populated by the build system with the CPK symbolic bundle name, so we do that here too.
+                val cordaCpkCordappName = cpkSandbox.mainBundle.symbolicName
                 val signerSummaryHash = cpkSandbox.cpkMetadata.cpkId.signerSummaryHash
                 EvolvableTagImplV1(
-                    ClassType.CpkSandboxClass, bundleName, mainBundleName, signerSummaryHash
+                    ClassType.CpkSandboxClass, bundleName, cordaCpkCordappName, signerSummaryHash
                 )
             }
         }.serialise()

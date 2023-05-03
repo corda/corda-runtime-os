@@ -108,10 +108,13 @@ class ClassTagFactoryImplTests {
         val serialisedTag = classTagFactory.createSerialisedTag(false, mockBundle, mockSandbox)
         val classTag = classTagFactory.deserialise(serialisedTag)
 
+        // All evolvable tags set cordaCpkCordappName to the main bundle symbolic name presently
+        var cordaCpkCordappName = mockSandbox.mainBundle.symbolicName
+
         val expectedClassTag = EvolvableTagImplV1(
             ClassType.CpkSandboxClass,
             mockBundle.symbolicName,
-            mockSandbox.mainBundle.symbolicName,
+            cordaCpkCordappName,
             mockCpkMetadata.cpkId.signerSummaryHash
         )
         assertEquals(expectedClassTag, classTag)

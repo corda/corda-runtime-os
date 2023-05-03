@@ -113,19 +113,12 @@ internal class SandboxGroupImpl(
                 val sandbox = when (classTag) {
                     is StaticTag -> cpkSandboxes.find { sandbox -> sandbox.cpkMetadata.fileChecksum == classTag.cpkFileHash }
                     is EvolvableTag -> {
-                        val sandbox = cpkSandboxes.find {
+                        cpkSandboxes.find {
                             it.cpkMetadata.cpkId.signerSummaryHash == classTag.cpkSignerSummaryHash
-                                    && it.mainBundle.symbolicName == classTag.mainBundleName
-                        }
-                        sandbox?.let {
-                            if (classTag.classBundleName != it.mainBundle.symbolicName) {
-                                throw SandboxException(
-                                    "Attempted to load class $className with an evolvable class tag from cpk private bundle " +
-                                            "${classTag.classBundleName}."
-                                )
-                            } else {
-                                it
-                            }
+                                    && it.mainBundle.symbolicName == classTag.classBundleName
+                            // In later versions of Corda 5 we should be finding a sandbox by trying to match its
+                            // Corda-CPK-Cordapp-Name to classTag.cordaCpkCordappName. Currently neither of those properties
+                            // are populated so we are matching by bundle symbolic versions.
                         }
                     }
                 } ?: throw SandboxException(
