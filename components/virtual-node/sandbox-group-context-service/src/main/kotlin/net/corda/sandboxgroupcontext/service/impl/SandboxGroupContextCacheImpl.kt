@@ -64,7 +64,9 @@ internal class SandboxGroupContextCacheImpl private constructor(
                 purgeExpiryQueue()
 
                 context?.let { ctx ->
-                    ctx.preRemovalCallback?.preSandboxRemoval(key?.holdingIdentity!!)
+                    key?.let {
+                        ctx.preRemovalCallback?.preSandboxRemoval(key)
+                    }
 
                     (ctx.wrappedSandboxGroupContext as? AutoCloseable)?.also { autoCloseable ->
                         toBeClosed += ToBeClosed(key!!, context.completion, autoCloseable, context, expiryQueue)

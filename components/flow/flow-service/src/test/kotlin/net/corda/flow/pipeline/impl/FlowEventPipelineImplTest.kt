@@ -36,7 +36,6 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
 import java.util.stream.Stream
 import net.corda.flow.fiber.cache.FlowFiberCache
-import net.corda.flow.fiber.cache.FlowFiberCacheKey
 import net.corda.flow.pipeline.events.FlowEventContext
 import net.corda.flow.pipeline.exceptions.FlowMarkedForKillException
 import net.corda.virtualnode.HoldingIdentity
@@ -223,7 +222,6 @@ class FlowEventPipelineImplTest {
         pipeline.runOrContinue(RUN_OR_CONTINUE_TIMEOUT)
         verify(flowRunner).runFlow(any(), any())
         verify(flowWaitingForHandler).runOrContinue(inputContext, WakeUpWaitingFor())
-        verify(flowFiberCache).remove(eq(FlowFiberCacheKey(mockHoldingIdentity, mockFlowId)))
     }
 
     @Test
@@ -249,7 +247,6 @@ class FlowEventPipelineImplTest {
         verify(flowRunner).runFlow(any(), any())
         verify(runFlowFiberFuture.future).get(RUN_OR_CONTINUE_TIMEOUT, TimeUnit.MILLISECONDS)
         verify(checkpoint, never()).serializedFiber
-        verify(flowFiberCache).remove(eq(FlowFiberCacheKey(mockHoldingIdentity, mockFlowId)))
     }
 
     @Test
@@ -267,7 +264,6 @@ class FlowEventPipelineImplTest {
         verify(runFlowFiberFuture.future).get(RUN_OR_CONTINUE_TIMEOUT, TimeUnit.MILLISECONDS)
         verify(runFlowFiberFuture.interruptable).attemptInterrupt()
         verify(checkpoint, never()).serializedFiber
-        verify(flowFiberCache).remove(eq(FlowFiberCacheKey(mockHoldingIdentity, mockFlowId)))
     }
 
     @Test

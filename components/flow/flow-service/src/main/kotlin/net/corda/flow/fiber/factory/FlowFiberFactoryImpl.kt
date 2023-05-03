@@ -19,7 +19,6 @@ import org.slf4j.LoggerFactory
 import java.util.UUID
 import java.util.concurrent.ExecutorService
 import net.corda.flow.fiber.cache.FlowFiberCache
-import net.corda.flow.fiber.cache.FlowFiberCacheKey
 
 @Component
 @Suppress("Unused")
@@ -72,9 +71,7 @@ class FlowFiberFactoryImpl @Activate constructor(
 
     private fun getFromCacheOrDeserialize(flowFiberExecutionContext: FlowFiberExecutionContext): FlowFiberImpl {
         val cachedFiber: FlowFiberImpl? = try {
-            flowFiberCache.get(
-                FlowFiberCacheKey(flowFiberExecutionContext.flowCheckpoint.holdingIdentity, flowFiberExecutionContext.flowCheckpoint.flowId)
-            )
+            flowFiberCache.get(flowFiberExecutionContext.flowCheckpoint.flowKey)
         } catch (e: Exception) {
             logger.warn("Exception when getting from flow fiber cache.", e)
             null

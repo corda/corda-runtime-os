@@ -158,6 +158,10 @@ class FlowFiberImpl(
         }
     }
 
+    /**
+     * Prepare the fiber for caching by removing unnecessary transient fields. These fields will be set
+     * on the fiber after it is selected from the cache and resumed in [resume].
+     */
     private fun Fiber<*>.prepareForCaching(): FlowFiberImpl {
         return (this as FlowFiberImpl).apply {
             flowFiberExecutionContext = null
