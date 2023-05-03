@@ -99,8 +99,8 @@ class TopicTemplates {
                     } 
                 ]"""
 
-    const val PUBLISHER_TEST_DURABLE_TOPIC2 = "PublisherTestDurableTopic2"
-    val PUBLISHER_TEST_DURABLE_TOPIC2_TEMPLATE = """topics = [ 
+        const val PUBLISHER_TEST_DURABLE_TOPIC2 = "PublisherTestDurableTopic2"
+        val PUBLISHER_TEST_DURABLE_TOPIC2_TEMPLATE = """topics = [ 
             { 
                 topicName = "$TEST_TOPIC_PREFIX$PUBLISHER_TEST_DURABLE_TOPIC2" 
                 numPartitions = 2 
@@ -108,16 +108,24 @@ class TopicTemplates {
             } 
         ]"""
 
-    const val PUBLISHER_TEST_DURABLE_TOPIC3 = "PublisherTestDurableTopic3"
-    val PUBLISHER_TEST_DURABLE_TOPIC3_TEMPLATE = """topics = [ 
+        const val PUBLISHER_TEST_DURABLE_TOPIC3 = "PublisherTestDurableTopic3"
+        val PUBLISHER_TEST_DURABLE_TOPIC3_TEMPLATE = """topics = [ 
             { 
                 topicName = "$TEST_TOPIC_PREFIX$PUBLISHER_TEST_DURABLE_TOPIC3" 
                 numPartitions = 2 
                 replicationFactor = 3 
             } 
         ]"""
+        const val PUBLISHER_TEST_DURABLE_TOPIC4 = "PublisherTestDurableTopic3"
+        val PUBLISHER_TEST_DURABLE_TOPIC4_TEMPLATE = """topics = [ 
+            { 
+                topicName = "$TEST_TOPIC_PREFIX$PUBLISHER_TEST_DURABLE_TOPIC4" 
+                numPartitions = 2 
+                replicationFactor = 3 
+            } 
+        ]"""
 
-        const val   EVENT_TOPIC1 = "EventTopic1"
+        const val EVENT_TOPIC1 = "EventTopic1"
         private val EVENT_TOPIC1_DLQ = getStateAndEventDLQTopic(EVENT_TOPIC1)
         private val EVENT_TOPIC1_STATE = getStateAndEventStateTopic(EVENT_TOPIC1)
         val EVENT_TOPIC1_TEMPLATE = """topics = [ 
@@ -141,7 +149,7 @@ class TopicTemplates {
                     } 
                 ]"""
 
-        const val   EVENT_TOPIC2 = "EventTopic2"
+        const val EVENT_TOPIC2 = "EventTopic2"
         private val EVENT_TOPIC2_DLQ = getStateAndEventDLQTopic(EVENT_TOPIC2)
         private val EVENT_TOPIC2_STATE = getStateAndEventStateTopic(EVENT_TOPIC2)
         val EVENT_TOPIC2_TEMPLATE = """topics = [ 
@@ -165,7 +173,7 @@ class TopicTemplates {
                     } 
                 ]"""
 
-        const val   EVENT_TOPIC3 = "EventTopic3"
+        const val EVENT_TOPIC3 = "EventTopic3"
         private val EVENT_TOPIC3_DLQ = getStateAndEventDLQTopic(EVENT_TOPIC3)
         private val EVENT_TOPIC3_STATE = getStateAndEventStateTopic(EVENT_TOPIC3)
         val EVENT_TOPIC3_TEMPLATE = """topics = [ 
@@ -189,7 +197,7 @@ class TopicTemplates {
                     } 
                 ]"""
 
-        const val   EVENT_TOPIC4 = "EventTopic4"
+        const val EVENT_TOPIC4 = "EventTopic4"
         private val EVENT_TOPIC4_DLQ = getStateAndEventDLQTopic(EVENT_TOPIC4)
         private val EVENT_TOPIC4_STATE = getStateAndEventStateTopic(EVENT_TOPIC4)
         val EVENT_TOPIC4_TEMPLATE = """topics = [ 
@@ -213,7 +221,7 @@ class TopicTemplates {
                     } 
                 ]"""
 
-        const val   EVENT_TOPIC5 = "EventTopic5"
+        const val EVENT_TOPIC5 = "EventTopic5"
         val EVENT_TOPIC5_DLQ = getStateAndEventDLQTopic(EVENT_TOPIC5)
         private val EVENT_TOPIC5_STATE = getStateAndEventStateTopic(EVENT_TOPIC5)
         val EVENT_TOPIC5_TEMPLATE = """topics = [ 
@@ -237,7 +245,7 @@ class TopicTemplates {
                     } 
                 ]"""
 
-        const val   EVENT_TOPIC6 = "EventTopic6"
+        const val EVENT_TOPIC6 = "EventTopic6"
         private val EVENT_TOPIC6_DLQ = getStateAndEventDLQTopic(EVENT_TOPIC6)
         private val EVENT_TOPIC6_STATE = getStateAndEventStateTopic(EVENT_TOPIC6)
         val EVENT_TOPIC6_TEMPLATE = """topics = [ 
@@ -261,7 +269,7 @@ class TopicTemplates {
                     } 
                 ]"""
 
-        const val   EVENT_TOPIC7 = "EventTopic7"
+        const val EVENT_TOPIC7 = "EventTopic7"
         val EVENT_TOPIC7_DLQ = getStateAndEventDLQTopic(EVENT_TOPIC7)
         private val EVENT_TOPIC7_STATE = getStateAndEventStateTopic(EVENT_TOPIC7)
         val EVENT_TOPIC7_TEMPLATE = """topics = [ 

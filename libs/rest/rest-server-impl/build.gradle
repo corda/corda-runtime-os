@@ -32,7 +32,7 @@ dependencies {
         }
     }
     implementation "com.nimbusds:oauth2-oidc-sdk:$nimbusVersion"
-    implementation "org.apache.servicemix.bundles:org.apache.servicemix.bundles.jcip-annotations:1.0_1"
+    implementation "org.apache.servicemix.bundles:org.apache.servicemix.bundles.jcip-annotations:$jcipAnnotationsVersion"
     implementation "org.eclipse.jetty.websocket:websocket-servlet:$jettyVersion"
     implementation "org.eclipse.jetty.websocket:websocket-server:$jettyVersion"
     implementation "org.eclipse.jetty.http2:http2-server:$jettyVersion"

@@ -2,7 +2,7 @@
 <Configuration status="INFO">
     <Appenders>
         <Console name="json" target="SYSTEM_OUT">
-            <JSONLayout compact="true" eventEol="true" properties="true" stacktraceAsString="true" />
+            <JsonTemplateLayout eventTemplateUri="classpath:JsonLayout.json"/>
         </Console>
         <Console name="text" target="SYSTEM_OUT">
             <PatternLayout pattern="%d{HH:mm:ss.SSS} [%t] %-5level %logger{36} %X - %msg%n"/>
