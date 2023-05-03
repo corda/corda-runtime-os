@@ -82,7 +82,7 @@ class FacadeServerDispatcher(
         is FacadeOutParameterBindings.DataClassOutParameterBindings -> {
             outParameterBindings.bindings.map { binding ->
                 val propertyValue = binding.readMethod.invoke(result)
-                (binding.facadeOutParameter as TypedParameter<Any>).of(propertyValue as String)
+                (binding.facadeOutParameter as TypedParameter<Any>).of(propertyValue)
             }
         }
     }
