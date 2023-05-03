@@ -6,8 +6,9 @@ import net.corda.messaging.api.records.Record
 import net.corda.data.p2p.app.AppMessage
 import net.corda.data.p2p.app.AuthenticatedMessage
 import net.corda.data.p2p.app.AuthenticatedMessageHeader
-import net.corda.data.p2p.app.UnauthenticatedMessage
-import net.corda.data.p2p.app.UnauthenticatedMessageHeader
+import net.corda.data.p2p.app.InboundUnauthenticatedMessage
+import net.corda.data.p2p.app.OutboundUnauthenticatedMessage
+import net.corda.data.p2p.app.OutboundUnauthenticatedMessageHeader
 import net.corda.schema.Schemas.P2P.P2P_IN_TOPIC
 import net.corda.schema.Schemas.P2P.P2P_OUT_TOPIC
 import net.corda.v5.base.types.MemberX500Name
@@ -56,13 +57,13 @@ fun assertP2pConnectivity(
         senderKafkaTestToolKit.uniqueName to senderKafkaTestToolKit.uniqueName
     }
     val unauthenticatedRecords = unauthenticatedMessagesContent.map { (messageId, content) ->
-        val messageHeader = UnauthenticatedMessageHeader.newBuilder()
+        val messageHeader = OutboundUnauthenticatedMessageHeader.newBuilder()
             .setDestination(receiver)
             .setSource(sender)
             .setSubsystem(subSystem)
             .setMessageId(messageId)
             .build()
-        val message = UnauthenticatedMessage.newBuilder()
+        val message = OutboundUnauthenticatedMessage.newBuilder()
             .setHeader(messageHeader)
             .setPayload(ByteBuffer.wrap(content.toByteArray()))
             .build()
@@ -96,19 +97,7 @@ fun assertP2pConnectivity(
             }
             receivedAuthenticatedMessages[message.header.messageId] = String(message.payload.array())
             countDown.countDown()
-        } else if (message is UnauthenticatedMessage) {
-            if (message.header.destination.x500Name.clearX500Name() != receiver.x500Name.clearX500Name()) {
-                return@acceptRecordsFromKafka
-            }
-            if (message.header.destination.groupId != groupId) {
-                return@acceptRecordsFromKafka
-            }
-            if (message.header.source.x500Name.clearX500Name() != sender.x500Name.clearX500Name()) {
-                return@acceptRecordsFromKafka
-            }
-            if (message.header.source.groupId != groupId) {
-                return@acceptRecordsFromKafka
-            }
+        } else if (message is InboundUnauthenticatedMessage) {
             if (message.header.subsystem != subSystem) {
                 return@acceptRecordsFromKafka
             }

@@ -100,7 +100,12 @@ class CreateCpiV2 : Runnable {
 
         // Check input Cpb file is indeed a Cpb
         cpbPath?.let {
-            verifyIsValidCpbV2(it)
+            try {
+                verifyIsValidCpbV2(it)
+            } catch (e: Exception) {
+                System.err.println("Error verifying CPB: ${e.message}")
+                return@run
+            }
         }
 
         val outputName = determineOutputFileName(cpbPath)
@@ -130,18 +135,14 @@ class CreateCpiV2 : Runnable {
      * @throws IllegalArgumentException if it fails to verify Cpb V2
      */
     private fun verifyIsValidCpbV2(cpbPath: Path) {
-        try {
-            VerifierBuilder()
-                .type(PackageType.CPB)
-                .format(VerifierFactory.FORMAT_2)
-                .name(cpbPath.toString())
-                .inputStream(FileInputStream(cpbPath.toString()))
-                .trustedCerts(readCertificates(signingOptions.keyStoreFileName, signingOptions.keyStorePass))
-                .build()
-                .verify()
-        } catch (e: Exception) {
-            throw IllegalArgumentException("Cpb is invalid", e)
-        }
+        VerifierBuilder()
+            .type(PackageType.CPB)
+            .format(VerifierFactory.FORMAT_2)
+            .name(cpbPath.toString())
+            .inputStream(FileInputStream(cpbPath.toString()))
+            .trustedCerts(readCertificates(signingOptions.keyStoreFileName, signingOptions.keyStorePass))
+            .build()
+            .verify()
     }
 
     /**

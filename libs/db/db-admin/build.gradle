@@ -1,15 +1,8 @@
 plugins {
     id 'corda.common-library'
     id 'corda.common-publishing'
-    id 'corda.javadoc-generation'
 }
 
-// Temporary measure for DP2, required as a transitive dependency by simulator modules
-// This code marks this module as to be published externally.
-// TODO To be revisited prior to beta program.
-ext {
-    releasable = true
-}
 
 description 'Database Admin API'
 

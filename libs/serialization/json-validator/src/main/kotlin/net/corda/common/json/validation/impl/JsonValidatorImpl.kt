@@ -8,15 +8,19 @@ import net.corda.common.json.validation.JsonValidator
 import net.corda.common.json.validation.WrappedJsonSchema
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.sandbox.type.UsedByPersistence
+import net.corda.sandbox.type.UsedByVerification
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.erdtman.jcs.JsonCanonicalizer
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.ServiceScope
 import java.io.InputStream
 
-@Component(service = [ JsonValidator::class, UsedByFlow::class, UsedByPersistence::class ], scope = ServiceScope.PROTOTYPE)
+@Component(
+    service = [ JsonValidator::class, UsedByFlow::class, UsedByPersistence::class, UsedByVerification::class ],
+    scope = ServiceScope.PROTOTYPE
+)
 class JsonValidatorImpl: JsonValidator,
-    UsedByFlow, UsedByPersistence, SingletonSerializeAsToken {
+    UsedByFlow, UsedByPersistence, UsedByVerification, SingletonSerializeAsToken {
 
     override fun validate(json: String, wrappedSchema: WrappedJsonSchema) {
         val errors = validateSchema(json, wrappedSchema)
