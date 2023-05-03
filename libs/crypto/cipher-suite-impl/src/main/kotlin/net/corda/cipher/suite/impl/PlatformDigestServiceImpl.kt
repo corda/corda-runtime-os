@@ -50,7 +50,8 @@ class PlatformDigestServiceImpl @Activate constructor(
         val digestHexStringLength = digestLength(DigestAlgorithmName(digestName)) * 2
         val hexString = parseSecureHashHexString(algoNameAndHexString)
         require(digestHexStringLength == hexString.length) {
-            "Required algorithm's: \"$digestName\" hex string length: $digestHexStringLength is not met by hex string: \"$hexString\""
+            "Required algorithm's: \"$digestName\" hex string length: $digestHexStringLength " +
+                    "is not met by hex string: \"$hexString\""
         }
         return SecureHashImpl(digestName, ByteArrays.parseAsHex(hexString))
     }
