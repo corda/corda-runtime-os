@@ -6,7 +6,6 @@ import net.corda.cli.plugins.preinstall.PreInstallPlugin.Configurations
 import net.corda.cli.plugins.preinstall.PreInstallPlugin.PluginContext
 import picocli.CommandLine
 import picocli.CommandLine.Parameters
-import picocli.CommandLine.Option
 import java.util.concurrent.Callable
 
 @CommandLine.Command(name = "check-limits", description = ["Check the resource limits have been assigned correctly."])
@@ -14,12 +13,6 @@ class CheckLimits : Callable<Int>, PluginContext() {
 
     @Parameters(index = "0", description = ["YAML file containing resource limit overrides for the corda install"])
     lateinit var path: String
-
-    @Option(names = ["-v", "--verbose"], description = ["Display additional information when checking resources"])
-    var verbose: Boolean = false
-
-    @Option(names = ["-d", "--debug"], description = ["Show information about limit calculation for debugging purposes"])
-    var debug: Boolean = false
 
     class ResourceLimitsExceededException(message: String) : Exception(message)
 
@@ -89,8 +82,6 @@ class CheckLimits : Callable<Int>, PluginContext() {
     }
 
     override fun call(): Int {
-        register(verbose, debug)
-
         val yaml: Configurations
         try {
             yaml = parseYaml<Configurations>(path)

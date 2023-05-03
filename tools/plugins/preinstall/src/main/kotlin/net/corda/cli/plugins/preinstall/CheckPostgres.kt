@@ -25,27 +25,7 @@ class CheckPostgres : Callable<Int>, PluginContext() {
     )
     var namespace: String? = null
 
-    @Option(
-        names = ["-u", "--url"],
-        description = ["The kubernetes cluster URL (if the preinstall is being called from outside the cluster)"]
-    )
-    var url: String? = null
-
-    @Option(
-        names = ["-v", "--verbose"],
-        description = ["Display additional information when connecting to postgres"]
-    )
-    var verbose: Boolean = false
-
-    @Option(
-        names = ["-d", "--debug"],
-        description = ["Show extra information while connecting to PostgreSQL for debugging purposes"]
-    )
-    var debug: Boolean = false
-
     override fun call(): Int {
-        register(verbose, debug)
-
         val yaml: DB
         try {
             yaml = parseYaml<DB>(path)
@@ -60,8 +40,8 @@ class CheckPostgres : Callable<Int>, PluginContext() {
         val password: String
 
         try {
-            username = getCredentialOrSecret(yaml.db.cluster.username, namespace, url)
-            password = getCredentialOrSecret(yaml.db.cluster.password, namespace, url)
+            username = getCredentialOrSecret(yaml.db.cluster.username, namespace)
+            password = getCredentialOrSecret(yaml.db.cluster.password, namespace)
         } catch (e: Exception) {
             report.addEntry(PreInstallPlugin.ReportEntry("Get PostgreSQL credentials", false, e))
             getLogger().error(report.failingTests())

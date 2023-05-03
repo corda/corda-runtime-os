@@ -30,12 +30,6 @@ class CheckKafka : Callable<Int>, PluginContext() {
     var namespace: String? = null
 
     @Option(
-        names = ["-u", "--url"],
-        description = ["The kubernetes cluster URL (if the preinstall is being called from outside the cluster)"]
-    )
-    var url: String? = null
-
-    @Option(
         names = ["-f", "--file"],
         description = ["The file location of the truststore for Kafka"]
     )
@@ -46,24 +40,6 @@ class CheckKafka : Callable<Int>, PluginContext() {
         description = ["The timeout in milliseconds for testing the kafka connection - defaults to 3000"]
     )
     var timeout: Int = 3000
-
-    @Option(
-        names = ["-m", "--max-idle"],
-        description = ["The maximum ms a connection can be idle for while testing the kafka connection - defaults to 5000"]
-    )
-    var maxIdleMs: Int = 5000
-
-    @Option(
-        names = ["-v", "--verbose"],
-        description = ["Display additional information about the configuration provided"]
-    )
-    var verbose: Boolean = false
-
-    @Option(
-        names = ["-d", "--debug"],
-        description = ["Show information for debugging purposes"]
-    )
-    var debug: Boolean = false
 
     class SASLCredentialException(message: String) : Exception(message)
     class BrokerException(message: String) : Exception(message)
@@ -93,7 +69,6 @@ class CheckKafka : Callable<Int>, PluginContext() {
         var truststoreLocation: String? = null
         var truststoreFile: String? = null
         var timeout: Int = 3000
-        var connectionsMaxIdleMs: Int = 5000
 
         class TruststoreNotFoundException(message: String) : Exception(message)
 
@@ -101,7 +76,7 @@ class CheckKafka : Callable<Int>, PluginContext() {
             val props = Properties()
             props["bootstrap.servers"] = yaml.kafka.bootstrapServers
             props["request.timeout.ms"] = timeout
-            props["connections.max.idle.ms"] = connectionsMaxIdleMs
+            props["connections.max.idle.ms"] = 5000
 
             // Assembles the properties in the same way as the helm charts:
             // https://github.com/corda/corda-runtime-os/blob/release/os/5.0/charts/corda-lib/templates/_bootstrap.tpl#L333
@@ -171,8 +146,6 @@ class CheckKafka : Callable<Int>, PluginContext() {
     }
 
     override fun call(): Int {
-        register(verbose, debug)
-
         val yaml: Kafka
         try {
             yaml = parseYaml<Kafka>(path)
@@ -197,8 +170,8 @@ class CheckKafka : Callable<Int>, PluginContext() {
                 return 1
             }
             try {
-                saslUsername = getCredentialOrSecret(yaml.kafka.sasl.username, namespace, url)
-                saslPassword = getCredentialOrSecret(yaml.kafka.sasl.password, namespace, url)
+                saslUsername = getCredentialOrSecret(yaml.kafka.sasl.username, namespace)
+                saslPassword = getCredentialOrSecret(yaml.kafka.sasl.password, namespace)
             } catch (e: Exception) {
                 report.addEntry(ReportEntry("Get SASL credentials", false, e))
                 getLogger().error(report.failingTests())
@@ -217,7 +190,7 @@ class CheckKafka : Callable<Int>, PluginContext() {
 
             if (yaml.kafka.tls.truststore.type != "PEM" && yaml.kafka.tls.truststore.password != null) {
                 try {
-                    truststorePassword = getCredentialOrSecret(yaml.kafka.tls.truststore.password, namespace, url)
+                    truststorePassword = getCredentialOrSecret(yaml.kafka.tls.truststore.password, namespace)
                 } catch (e: Exception) {
                     report.addEntry(ReportEntry("Get TLS truststore password", false, e))
                     getLogger().error(report.failingTests())
@@ -226,7 +199,7 @@ class CheckKafka : Callable<Int>, PluginContext() {
             } else if (yaml.kafka.tls.truststore.valueFrom?.secretKeyRef?.name != null ) {
                 val secret = PreInstallPlugin.SecretValues(yaml.kafka.tls.truststore.valueFrom, null, null, null, null)
                 try {
-                    truststoreFile = getCredentialOrSecret(secret, namespace, url)
+                    truststoreFile = getCredentialOrSecret(secret, namespace)
                 } catch (e: Exception) {
                     report.addEntry(ReportEntry("Get TLS truststore certificate", false, e))
                     getLogger().error(report.failingTests())
@@ -241,7 +214,6 @@ class CheckKafka : Callable<Int>, PluginContext() {
         truststorePassword?.let{ creds.truststorePassword = it }
         truststoreFile?.let{ creds.truststoreFile = it }
         creds.timeout = timeout
-        creds.connectionsMaxIdleMs = maxIdleMs
 
         val props: Properties
         try {

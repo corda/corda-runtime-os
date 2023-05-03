@@ -5,9 +5,6 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.dataformat.yaml.YAMLMapper
 import io.fabric8.kubernetes.api.model.Secret
-import io.fabric8.kubernetes.client.ConfigBuilder
-import io.fabric8.kubernetes.client.Config
-import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.KubernetesClientBuilder
 import io.fabric8.kubernetes.client.KubernetesClientException
 import net.corda.cli.api.CordaCliPlugin
@@ -43,9 +40,6 @@ class PreInstallPlugin(wrapper: PluginWrapper) : Plugin(wrapper) {
 
     // Common class for plugins to inherit methods from
     open class PluginContext {
-        private var verbose = false
-        private var debug = false
-
         var report = Report()
         class SecretException: Exception {
             constructor (message: String?) : super(message)
@@ -54,11 +48,6 @@ class PreInstallPlugin(wrapper: PluginWrapper) : Plugin(wrapper) {
 
         fun getLogger(): Logger {
             return logger
-        }
-
-        fun register(verbose: Boolean, debug: Boolean) {
-            this.verbose = verbose
-            this.debug = debug
         }
 
         // parse a yaml file, and return an object of type T or null if there was an error
@@ -75,7 +64,7 @@ class PreInstallPlugin(wrapper: PluginWrapper) : Plugin(wrapper) {
 
         // get the credentials (.value) or credentials from a secret (.valueFrom.secretKeyRef...) from a SecretValues
         // object, and a namespace (if the credential is in a secret)
-        fun getCredentialOrSecret(values: SecretValues, namespace: String?, url: String?): String {
+        fun getCredentialOrSecret(values: SecretValues, namespace: String?): String {
             val secretKey: String? = values.valueFrom?.secretKeyRef?.key
             val secretName: String? = values.valueFrom?.secretKeyRef?.name
             var credential: String? = values.value
@@ -84,7 +73,7 @@ class PreInstallPlugin(wrapper: PluginWrapper) : Plugin(wrapper) {
                 if (secretKey == null || secretName == null)  {
                     throw SecretException("Credential secret $secretName with key $secretKey could not be parsed.")
                 }
-                val encoded = getSecret(secretName, secretKey, namespace, url) ?: run {
+                val encoded = getSecret(secretName, secretKey, namespace) ?: run {
                     throw SecretException("Secret $secretName has no key $secretKey.")
                 }
                 String(Base64.getDecoder().decode(encoded))
@@ -92,16 +81,9 @@ class PreInstallPlugin(wrapper: PluginWrapper) : Plugin(wrapper) {
             return credential
         }
 
-        private fun getSecret(secretName: String, secretKey: String, namespace: String?, url: String?): String? {
+        private fun getSecret(secretName: String, secretKey: String, namespace: String?): String? {
             return try {
-                val client: KubernetesClient = if (url != null) {
-                    val kubeConfig: Config = ConfigBuilder()
-                        .withMasterUrl(url)
-                        .build()
-                    KubernetesClientBuilder().withConfig(kubeConfig).build()
-                } else {
-                    KubernetesClientBuilder().build()
-                }
+                val client = KubernetesClientBuilder().build()
 
                 val secret: Secret = if (namespace != null) {
                     val names = client.namespaces().list().items.map { item -> item.metadata.name}

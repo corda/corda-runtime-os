@@ -145,7 +145,6 @@ class TestSubCommands {
             whenever(mockAdmin.getNodes()).thenReturn(nodes)
 
             val ck = CheckKafka()
-            ck.register(verbose=true, debug=false)
             ck.connect(mockAdmin, 2)
 
             assertTrue( ck.report.toString().contains("Connect to Kafka cluster using client: PASSED") )
