@@ -29,8 +29,8 @@ import net.corda.data.membership.p2p.UnauthenticatedRegistrationRequest
 import net.corda.data.membership.p2p.UnauthenticatedRegistrationRequestHeader
 import net.corda.data.p2p.app.AppMessage
 import net.corda.data.p2p.app.MembershipStatusFilter
-import net.corda.data.p2p.app.UnauthenticatedMessage
-import net.corda.data.p2p.app.UnauthenticatedMessageHeader
+import net.corda.data.p2p.app.OutboundUnauthenticatedMessage
+import net.corda.data.p2p.app.OutboundUnauthenticatedMessageHeader
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.lifecycle.LifecycleCoordinator
@@ -340,12 +340,13 @@ class DynamicMemberRegistrationService @Activate constructor(
                             keyEncodingService.encodeAsByteArray(ek)
                     val salt = aad + keyEncodingService.encodeAsByteArray(sk)
                     latestHeader = UnauthenticatedRegistrationRequestHeader(
+                        mgm.holdingIdentity.toAvro(),
                         ByteBuffer.wrap(salt), ByteBuffer.wrap(aad), keyEncodingService.encodeAsString(ek)
                     )
                     HybridEncryptionParams(salt, aad)
                 }
 
-                val messageHeader = UnauthenticatedMessageHeader(
+                val messageHeader = OutboundUnauthenticatedMessageHeader(
                     mgm.holdingIdentity.toAvro(),
                     member.toAvro(),
                     MEMBERSHIP_P2P_SUBSYSTEM,
@@ -618,7 +619,7 @@ class DynamicMemberRegistrationService @Activate constructor(
         }
 
         private fun buildUnauthenticatedP2PRequest(
-            messageHeader: UnauthenticatedMessageHeader,
+            messageHeader: OutboundUnauthenticatedMessageHeader,
             payload: ByteBuffer,
             topicKey: String,
         ): Record<String, AppMessage> {
@@ -626,7 +627,7 @@ class DynamicMemberRegistrationService @Activate constructor(
                 Schemas.P2P.P2P_OUT_TOPIC,
                 topicKey,
                 AppMessage(
-                    UnauthenticatedMessage(
+                    OutboundUnauthenticatedMessage(
                         messageHeader,
                         payload
                     )
