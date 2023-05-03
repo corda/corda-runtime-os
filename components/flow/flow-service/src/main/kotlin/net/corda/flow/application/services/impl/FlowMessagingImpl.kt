@@ -32,10 +32,7 @@ import java.util.UUID
 import net.corda.flow.application.sessions.utils.SessionUtils.verifySessionStatusNotErrorOrClose
 import net.corda.v5.application.interop.facade.FacadeId
 import net.corda.v5.application.interop.facade.FacadeResponse
-import net.corda.v5.application.interop.parameters.ParameterType
 import net.corda.v5.application.interop.parameters.ParameterTypeLabel
-import net.corda.v5.application.interop.parameters.TypedParameter
-import net.corda.v5.application.interop.parameters.TypedParameterValue
 
 @Suppress("TooManyFunctions")
 @Component(service = [FlowMessaging::class, UsedByFlow::class], scope = PROTOTYPE)

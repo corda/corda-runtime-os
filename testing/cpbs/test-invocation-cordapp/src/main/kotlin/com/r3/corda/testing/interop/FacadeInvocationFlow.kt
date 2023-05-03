@@ -77,5 +77,3 @@ class FacadeInvocationFlow : ClientStartableFlow {
         return response
     }
 }
-
-

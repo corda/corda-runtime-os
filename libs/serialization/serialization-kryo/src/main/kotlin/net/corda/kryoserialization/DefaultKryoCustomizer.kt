@@ -23,7 +23,6 @@ import net.corda.kryoserialization.serializers.LinkedHashMapIteratorSerializer
 import net.corda.kryoserialization.serializers.LinkedListItrSerializer
 import net.corda.kryoserialization.serializers.LoggerSerializer
 import net.corda.kryoserialization.serializers.NonSerializableSerializer
-import net.corda.kryoserialization.serializers.ProxySerializer
 import net.corda.kryoserialization.serializers.ThrowableSerializer
 import net.corda.kryoserialization.serializers.X509CertificateSerializer
 import net.corda.serialization.checkpoint.NonSerializable
@@ -34,7 +33,6 @@ import org.objenesis.strategy.InstantiatorStrategy
 import org.objenesis.strategy.StdInstantiatorStrategy
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.lang.reflect.InvocationHandler
 import java.lang.reflect.Modifier.isPublic
 import java.security.cert.CertPath
 import java.security.cert.X509Certificate

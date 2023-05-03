@@ -14,8 +14,6 @@ import net.corda.v5.application.interop.facade.FacadeRequest
 import net.corda.v5.application.interop.facade.FacadeResponse
 import net.corda.v5.application.interop.parameters.TypedParameter
 import net.corda.v5.application.interop.parameters.TypedParameterValue
-import net.corda.v5.application.marshalling.JsonMarshallingService
-import net.corda.v5.application.marshalling.MarshallingService
 import java.lang.reflect.InvocationHandler
 import java.lang.reflect.Method
 import java.lang.reflect.Proxy

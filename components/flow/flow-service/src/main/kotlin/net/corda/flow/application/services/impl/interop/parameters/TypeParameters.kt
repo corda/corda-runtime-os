@@ -80,7 +80,8 @@ class TypeParameters<T> {
             ParameterTypeLabel.JSON.name -> RawParameterType<String>(ParameterTypeLabel.JSON)
             else -> throw IllegalArgumentException(
                 "Invalid raw parameter type: $typeName - " +
-                        "must be one of ${ParameterTypeLabel.values().map { it.typeName }} or ${ParameterTypeLabel.values().map { it.name }}"
+                        "must be one of ${ParameterTypeLabel.values().map { it.typeName }}" +
+                        " or ${ParameterTypeLabel.values().map { it.name }}"
             )
         } as ParameterType<T>
     }

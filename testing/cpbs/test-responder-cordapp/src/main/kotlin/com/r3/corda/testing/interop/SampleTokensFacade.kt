@@ -1,7 +1,10 @@
 package com.r3.corda.testing.interop
 
-import net.corda.v5.application.interop.binding.*
-
+import net.corda.v5.application.interop.binding.BindsFacade
+import net.corda.v5.application.interop.binding.BindsFacadeMethod
+import net.corda.v5.application.interop.binding.FacadeVersions
+import net.corda.v5.application.interop.binding.InteropAction
+import net.corda.v5.application.interop.binding.QualifiedWith
 
 @BindsFacade("/com/r3/tokens/sample")
 @FacadeVersions("v1.0")
