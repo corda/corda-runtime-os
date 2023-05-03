@@ -3,6 +3,7 @@ package net.corda.flow.fiber.cache.impl
 import net.corda.flow.fiber.cache.FlowFiberCache
 import net.corda.flow.fiber.cache.FlowFiberCacheEvictionService
 import net.corda.flow.fiber.cache.FlowFiberCacheKey
+import net.corda.utilities.debug
 import net.corda.virtualnode.HoldingIdentity
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -22,12 +23,12 @@ class FlowFiberCacheEvictionServiceImpl @Activate constructor(
     }
 
     override fun evictByHoldingIdentity(holdingIdentity: HoldingIdentity) {
-        logger.info("Flow fiber cache evicting holding identity $holdingIdentity (${holdingIdentity.shortHash})")
+        logger.debug { "Flow fiber cache evicting holding identity $holdingIdentity (${holdingIdentity.shortHash})" }
         flowFiberCache.remove(holdingIdentity)
     }
 
     override fun evict(keys: List<FlowFiberCacheKey>) {
-        logger.info("Flow fiber cache evicting keys ${keys.joinToString()}")
+        logger.debug { "Flow fiber cache evicting keys ${keys.joinToString()}" }
         flowFiberCache.remove(keys)
     }
 }
