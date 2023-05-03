@@ -27,7 +27,7 @@ dependencies {
     implementation project(":libs:external-messaging")
     implementation project(':libs:flows:flow-api')
     implementation project(':libs:flows:session-manager')
-    implementation project(":libs:flows:utils")
+    implementation project(":libs:flows:flow-utils")
     implementation project(":libs:lifecycle:lifecycle")
     implementation project(":libs:metrics")
     implementation project(":libs:messaging:messaging")
@@ -90,16 +90,4 @@ dependencies {
     integrationTestRuntimeOnly project(":components:virtual-node:cpk-read-service-impl")
 
     integrationTestRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
-}
-
-def jar = tasks.named('jar', Jar) {
-    archiveBaseName = 'corda-flow-service'
-
-    bundle {
-        bnd """\
-Import-Package:\
-    org.apache.avro.specific,\
-    *
-"""
-    }
 }

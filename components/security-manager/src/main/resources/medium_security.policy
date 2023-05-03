@@ -35,6 +35,7 @@ DENY {
 [org.osgi.service.condpermadmin.BundleLocationCondition "FLOW/*"]
 
 (org.osgi.framework.AdminPermission "*" "*")
+(org.osgi.framework.BundlePermission "*" "host,fragment")
 (org.osgi.framework.PackagePermission "org.osgi.framework" "import")
 (org.osgi.framework.PackagePermission "org.osgi.service.component" "import")
 (org.osgi.framework.PackagePermission "net.corda" "exportonly,import")
@@ -85,6 +86,9 @@ DENY {
 (java.net.NetPermission "getCookieHandler" "")
 (java.net.NetPermission "setResponseCache" "")
 (java.net.NetPermission "getResponseCache" "")
+(java.net.SocketPermission "*" "accept,listen,connect,resolve")
+(java.net.URLPermission "http://*:*" "*:*")
+(java.net.URLPermission "https://*:*" "*:*")
 (java.nio.file.LinkPermission "hard" "")
 (java.nio.file.LinkPermission "symbolic" "")
 (java.security.SecurityPermission "createAccessControlContext" "")
@@ -136,9 +140,6 @@ DENY {
 (java.lang.RuntimePermission "getFileSystemAttributes" "")
 (java.lang.RuntimePermission "readFileDescriptor" "")
 (java.lang.RuntimePermission "writeFileDescriptor" "")
-(java.net.SocketPermission "*:1−" "accept,listen,connect,resolve")
-(java.net.URLPermission "http://*:*" "*:*")
-(java.net.URLPermission "https://*:*" "*:*")
 
 } "Medium security profile for FLOW Sandbox"
 
@@ -162,6 +163,7 @@ DENY {
 [org.osgi.service.condpermadmin.BundleLocationCondition "PERSISTENCE/*"]
 
 (org.osgi.framework.AdminPermission "*" "*")
+(org.osgi.framework.BundlePermission "*" "host,fragment")
 (org.osgi.framework.PackagePermission "org.osgi.framework" "import")
 (org.osgi.framework.PackagePermission "org.osgi.service.component" "import")
 (org.osgi.framework.PackagePermission "net.corda" "exportonly,import")
@@ -213,6 +215,9 @@ DENY {
 (java.net.NetPermission "getCookieHandler" "")
 (java.net.NetPermission "setResponseCache" "")
 (java.net.NetPermission "getResponseCache" "")
+(java.net.SocketPermission "*" "accept,listen,connect,resolve")
+(java.net.URLPermission "http://*:*" "*:*")
+(java.net.URLPermission "https://*:*" "*:*")
 (java.nio.file.LinkPermission "hard" "")
 (java.nio.file.LinkPermission "symbolic" "")
 (java.security.SecurityPermission "createAccessControlContext" "")
@@ -264,9 +269,6 @@ DENY {
 (java.lang.RuntimePermission "getFileSystemAttributes" "")
 (java.lang.RuntimePermission "readFileDescriptor" "")
 (java.lang.RuntimePermission "writeFileDescriptor" "")
-(java.net.SocketPermission "*:1−" "accept,listen,connect,resolve")
-(java.net.URLPermission "http://*:*" "*:*")
-(java.net.URLPermission "https://*:*" "*:*")
 (java.lang.reflect.ReflectPermission "suppressAccessChecks" "")
 (java.lang.reflect.ReflectPermission "newProxyInPackage.*" "")
 
@@ -292,6 +294,7 @@ DENY {
 [org.osgi.service.condpermadmin.BundleLocationCondition "VERIFICATION/*"]
 
 (org.osgi.framework.AdminPermission "*" "*")
+(org.osgi.framework.BundlePermission "*" "host,fragment")
 (org.osgi.framework.PackagePermission "org.osgi.framework" "import")
 (org.osgi.framework.PackagePermission "org.osgi.service.component" "import")
 (org.osgi.framework.PackagePermission "net.corda" "exportonly,import")
@@ -343,6 +346,9 @@ DENY {
 (java.net.NetPermission "getCookieHandler" "")
 (java.net.NetPermission "setResponseCache" "")
 (java.net.NetPermission "getResponseCache" "")
+(java.net.SocketPermission "*" "accept,listen,connect,resolve")
+(java.net.URLPermission "http://*:*" "*:*")
+(java.net.URLPermission "https://*:*" "*:*")
 (java.nio.file.LinkPermission "hard" "")
 (java.nio.file.LinkPermission "symbolic" "")
 (java.security.SecurityPermission "createAccessControlContext" "")
@@ -394,9 +400,6 @@ DENY {
 (java.lang.RuntimePermission "getFileSystemAttributes" "")
 (java.lang.RuntimePermission "readFileDescriptor" "")
 (java.lang.RuntimePermission "writeFileDescriptor" "")
-(java.net.SocketPermission "*:1−" "accept,listen,connect,resolve")
-(java.net.URLPermission "http://*:*" "*:*")
-(java.net.URLPermission "https://*:*" "*:*")
 
 } "Medium security profile for VERIFICATION Sandbox"
 

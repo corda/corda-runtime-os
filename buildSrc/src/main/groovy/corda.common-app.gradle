@@ -5,6 +5,7 @@ import java.util.jar.Attributes
 import java.util.jar.JarEntry
 import java.util.jar.JarFile
 import javax.inject.Inject
+import org.apache.logging.log4j.core.config.plugins.processor.PluginCache;
 
 import static java.util.stream.Collectors.toSet
 import static org.osgi.framework.Constants.BUNDLE_MANIFESTVERSION
@@ -51,6 +52,9 @@ configurations {
         attributes { attrs ->
             attrs.attribute(LibraryElements.LIBRARY_ELEMENTS_ATTRIBUTE, objects.named(LibraryElements, LibraryElements.JAR))
         }
+
+        // Remove unwanted transitive dependency from jackson-core-2.15.0
+        exclude group: 'ch.randelshofer', module: 'fastdoubleparser'
     }
     applyDependencySubstitution(systemPackages)
     applyDependencySubstitution(bootstrapClasspath)
@@ -66,11 +70,14 @@ configurations {
 }
 
 dependencies {
-    bootstrapClasspath project(":osgi-framework-bootstrap")
+    bootstrapClasspath(project(':osgi-framework-bootstrap')) {
+        // Remove unwanted transitive dependency from jackson-core-2.15.0
+        exclude group: 'ch.randelshofer', module: 'fastdoubleparser'
+    }
 
     systemPackages "org.jboss.spec.javax.transaction:jboss-transaction-api_1.2_spec:$jbossTransactionApiSpecVersion"
     systemPackages "org.slf4j:slf4j-api:$slf4jVersion"
-    systemPackages project(":osgi-framework-api")
+    systemPackages project(':osgi-framework-api')
 }
 
 TaskProvider<Jar> jarTask = tasks.named('jar', Jar) {
@@ -452,6 +459,26 @@ TaskProvider<JavaAgentFile> javaAgentFileTask =  tasks.register("javaAgentFile",
     javaAgents = osgiRun.javaAgents
 }
 
+def mergeLog4j2Plugins = tasks.register('mergeLog4j2Plugins') {
+    dependsOn configurations.bootstrapClasspath
+    inputs.files(configurations.bootstrapClasspath.collect { it.isDirectory() ? it : zipTree(it) })
+    def outputDir = layout.buildDirectory.dir('log4j')
+    outputs.dir(outputDir)
+
+    doLast {
+        def inputFiles = inputs.files.getFiles().findAll { it.name == 'Log4j2Plugins.dat' }.collect { it.toURI().toURL() }
+        if (inputFiles) {
+            def combinedCache = new PluginCache()
+            combinedCache.loadCacheFiles(Collections.enumeration(inputFiles))
+            def outputFile = outputDir.get().file('META-INF/org/apache/logging/log4j/core/config/plugins/Log4j2Plugins.dat').asFile
+            outputFile.parentFile.mkdirs()
+            try (OutputStream out = new FileOutputStream(outputFile)) {
+                combinedCache.writeCache(out)
+            }
+        }
+    }
+}
+
 def appJar = tasks.register('appJar', Jar) {
     inputs.files(configurations.bootstrapClasspath).withPathSensitivity(PathSensitivity.RELATIVE)
     inputs.property('addOpensAttribute', osgiRun.addOpensAttribute)
@@ -484,10 +511,14 @@ def appJar = tasks.register('appJar', Jar) {
     into("META-INF/") {
         from(javaAgentFileTask)
     }
-    from{ configurations.bootstrapClasspath.collect { it.isDirectory() ? it : zipTree(it) } }
+    from{ configurations.bootstrapClasspath.collect { it.isDirectory() ? it : zipTree(it) } } {
+        // Exclude the Log4J2 plugins caches as the merged version is included from mergeLog4J2Plugins
+        eachFile { if (it.name == "Log4j2Plugins.dat") { it.exclude() } }
+    }
     from(createApplicationBundlesFile.flatMap { it.applicationBundleFile })
     from(cordaAssembleSystemPackagesExtraTask)
     from(writeFrameworkPropertyFile)
+    from(mergeLog4j2Plugins)
     into('bundles') {
         from(defineApplicationBundles.map { it.applicationBundles }) {
             eachFile { FileCopyDetails fileCopyDetails ->

@@ -4,12 +4,12 @@
       "facade-id": "/com/r3/tokens/sample/v1.0",
       "facade-method-mapping": [
         {
-          "facade-method": "hello",
-          "flow-name": "net.cordapp.testing.testflows.FacadeInvocationResponderFlow"
+          "facade-method": "say-hello",
+          "flow-name": "com.r3.corda.testing.interop.FacadeInvocationResponderFlow"
         },
         {
           "facade-method": "get-balance",
-          "flow-name": "net.cordapp.testing.testflows.ProxyResponderFlow"
+          "flow-name": "com.r3.corda.testing.interop.FacadeInvocationResponderFlow"
         }
       ]
     },

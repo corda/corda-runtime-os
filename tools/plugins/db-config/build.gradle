@@ -22,6 +22,11 @@ dependencies {
     implementation 'net.corda:corda-db-schema'
     implementation 'javax.persistence:javax.persistence-api'
     implementation "org.liquibase:liquibase-core:$liquibaseVersion"
+    constraints {
+        implementation("org.yaml:snakeyaml:$snakeyamlVersion") {
+            because "required until liquibase-core updates it's internal version of snakeYaml, currently using 1.33 which has CVE-2022-1471"
+        }
+    }
 
     // DO NOT DISTRIBUTE DRIVERS HERE WE ARE NOT LICENSED TO DISTRIBUTE
     // JDBC drivers are picked up in Corda 5 from a configured location, the CLI tool does not yet have this ability so

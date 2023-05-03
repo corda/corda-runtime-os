@@ -332,17 +332,17 @@ Bootstrap resources
 {{- define "corda.bootstrapResources" }}
 resources:
   requests:
-  {{- with .Values.bootstrap.resources.requests.cpu | default .Values.resources.requests.cpu }}
+  {{- with .Values.bootstrap.resources.requests.cpu }}
     cpu: {{ . }}
   {{- end }}
-  {{- with .Values.bootstrap.resources.requests.memory | default .Values.resources.requests.memory  }}
+  {{- with .Values.bootstrap.resources.requests.memory }}
     memory: {{ . }}
   {{- end}}
   limits:
-  {{- with .Values.bootstrap.resources.limits.cpu | default .Values.resources.limits.cpu }}
+  {{- with .Values.bootstrap.resources.limits.cpu }}
     cpu: {{ . }}
   {{- end }}
-  {{- with .Values.bootstrap.resources.limits.memory | default .Values.resources.limits.memory  }}
+  {{- with .Values.bootstrap.resources.limits.memory }}
     memory: {{ . }}
   {{- end }}
 {{- end }}

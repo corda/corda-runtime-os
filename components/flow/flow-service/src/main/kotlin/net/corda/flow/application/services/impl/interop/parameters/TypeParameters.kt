@@ -10,7 +10,7 @@ import java.util.*
 
 /**
  * A [TypeParameters] is the type of a [TypedParameterImpl]. It is always one of a small set of primitive types, or
- * a [QualifiedType] qualifying a primitive type with a [FacadeTypeQualifier] which identifies a more complex type.
+ * a [QualifiedType] qualifying a primitive type with a [TypeQualifier] which identifies a more complex type.
  */
 class TypeParameters<T> {
 
