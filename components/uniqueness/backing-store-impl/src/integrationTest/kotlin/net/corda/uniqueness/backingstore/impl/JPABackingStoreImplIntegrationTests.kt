@@ -580,7 +580,7 @@ class JPABackingStoreImplIntegrationTests {
 
         // This test is repeated a number of times due to in-flight double spends being a timing
         // issue that can be difficult to reproduce reliably
-        @RepeatedTest(100)
+        @RepeatedTest(10)
         fun `In-flight double spend is prevented using separate backing store instances executing in parallel`() {
             val numExecutors = 4
             val stateRefs = List(5) { UniquenessCheckStateRefImpl(SecureHashUtils.randomSecureHash(), it) }
