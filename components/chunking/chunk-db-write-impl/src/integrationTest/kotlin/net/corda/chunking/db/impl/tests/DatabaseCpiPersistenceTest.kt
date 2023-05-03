@@ -106,7 +106,7 @@ internal class DatabaseCpiPersistenceTest {
         on { serialize(any()) } doReturn "serialized-bytes".toByteArray()
     }
     private val cordaAvroSerializationFactory: CordaAvroSerializationFactory = mock {
-        on { createAvroSerializer<KeyValuePairList>(any()) } doReturn serializer
+        on { createAvroSerializer<KeyValuePairList>(any(), any()) } doReturn serializer
     }
     private val networkInfoWriter: NetworkInfoWriter = NetworkInfoDBWriterImpl(
         platformInfoProvider,
