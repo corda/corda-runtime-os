@@ -22,7 +22,6 @@ import java.nio.ByteBuffer
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
 import net.corda.flow.fiber.cache.FlowFiberCache
-import net.corda.flow.fiber.cache.FlowFiberCacheKey
 
 /**
  * [FlowEventPipelineImpl] encapsulates the pipeline steps that are executed when a [FlowEvent] is received by a [FlowEventProcessor].
@@ -185,19 +184,19 @@ class FlowEventPipelineImpl(
         }
         when (flowResult) {
             is FlowIORequest.FlowFinished -> {
-                flowFiberCache.remove(FlowFiberCacheKey(context.checkpoint.holdingIdentity, context.checkpoint.flowId))
+                flowFiberCache.remove(context.checkpoint.flowKey)
                 context.checkpoint.serializedFiber = ByteBuffer.wrap(byteArrayOf())
                 output = flowResult
             }
             is FlowIORequest.FlowSuspended<*> -> {
                 flowResult.cacheableFiber?.let {
-                    flowFiberCache.put(FlowFiberCacheKey(context.checkpoint.holdingIdentity, context.checkpoint.flowId), it)
+                    flowFiberCache.put(context.checkpoint.flowKey, it)
                 }
                 context.checkpoint.serializedFiber = flowResult.fiber
                 output = flowResult.output
             }
             is FlowIORequest.FlowFailed -> {
-                flowFiberCache.remove(FlowFiberCacheKey(context.checkpoint.holdingIdentity, context.checkpoint.flowId))
+                flowFiberCache.remove(context.checkpoint.flowKey)
                 output = flowResult
             }
             else -> throw FlowFatalException("Invalid ${FlowIORequest::class.java.simpleName} returned from flow fiber")
