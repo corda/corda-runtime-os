@@ -39,7 +39,7 @@ internal class MGMRegistrationRequestHandler(
         mgmInfo: SignedMemberInfo
     ) {
         val serializedMemberContext = serialize(mgmInfo.memberInfo.memberProvidedContext.toWire())
-        val serializedRegistrationContext = keyValuePairListSerializer.serialize(KeyValuePairList(emptyList()))
+        val serializedRegistrationContext = serialize(KeyValuePairList(emptyList()))
 
         val registrationRequestPersistenceResult = membershipPersistenceClient.persistRegistrationRequest(
             viewOwningIdentity = holdingIdentity,

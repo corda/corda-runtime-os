@@ -41,7 +41,9 @@ class MgmRegistrationRequestHandlerTest {
         MemberX500Name.parse("O=Alice, L=London, C=GB"),
         UUID(0, 1).toString()
     )
-    private val mockMemberContext: MemberContext = mock()
+    private val mockMemberContext: MemberContext = mock {
+        on { entries } doReturn mapOf("key" to "value").entries
+    }
     private val memberInfo: MemberInfo = mock {
         on { memberProvidedContext } doReturn mockMemberContext
     }

@@ -51,6 +51,10 @@ class RegistrationRequestEntityTest {
             signatureKey,
             signatureContent,
             SIGNATURE_SPEC,
+            getRegistrationContext(emptyList()),
+            signatureKey,
+            signatureContent,
+            SIGNATURE_SPEC,
             SERIAL,
         )
         val e2 = RegistrationRequestEntity(
@@ -60,6 +64,10 @@ class RegistrationRequestEntityTest {
             currentInstant.minusSeconds(5),
             currentInstant.minusSeconds(5),
             getRegistrationContext(KEY_2 to VALUE_2),
+            signatureKey,
+            signatureContent,
+            SIGNATURE_SPEC,
+            getRegistrationContext(emptyList()),
             signatureKey,
             signatureContent,
             SIGNATURE_SPEC,
@@ -81,6 +89,10 @@ class RegistrationRequestEntityTest {
             signatureKey,
             signatureContent,
             SIGNATURE_SPEC,
+            getRegistrationContext(emptyList()),
+            signatureKey,
+            signatureContent,
+            SIGNATURE_SPEC,
             SERIAL,
         )
         val e2 = RegistrationRequestEntity(
@@ -90,6 +102,10 @@ class RegistrationRequestEntityTest {
             currentInstant.minusSeconds(5),
             currentInstant.minusSeconds(5),
             getRegistrationContext(KEY_2 to VALUE_2),
+            signatureKey,
+            signatureContent,
+            SIGNATURE_SPEC,
+            getRegistrationContext(emptyList()),
             signatureKey,
             signatureContent,
             SIGNATURE_SPEC,
@@ -111,6 +127,10 @@ class RegistrationRequestEntityTest {
             signatureKey,
             signatureContent,
             SIGNATURE_SPEC,
+            getRegistrationContext(emptyList()),
+            signatureKey,
+            signatureContent,
+            SIGNATURE_SPEC,
             SERIAL,
         )
         assertEquals(e1, e1)
@@ -129,6 +149,10 @@ class RegistrationRequestEntityTest {
             signatureKey,
             signatureContent,
             SIGNATURE_SPEC,
+            getRegistrationContext(emptyList()),
+            signatureKey,
+            signatureContent,
+            SIGNATURE_SPEC,
             SERIAL,
         )
         assertNotEquals(e1, null)
@@ -143,6 +167,10 @@ class RegistrationRequestEntityTest {
             currentInstant,
             currentInstant,
             getRegistrationContext(KEY_1 to VALUE_1),
+            signatureKey,
+            signatureContent,
+            SIGNATURE_SPEC,
+            getRegistrationContext(emptyList()),
             signatureKey,
             signatureContent,
             SIGNATURE_SPEC,

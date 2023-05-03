@@ -749,7 +749,6 @@ class StartRegistrationHandlerTest {
 
             val result = handler.invoke(null, Record(testTopic, testTopicKey, startRegistrationCommand))
 
-            verify(registrationContext).items
             verify(membershipQueryClient, never()).queryPreAuthTokens(any(), any(), any(), any())
             result.assertDeclinedRegistration()
         }
