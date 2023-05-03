@@ -2,6 +2,7 @@ package net.corda.flow.application.services.interop.facade
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.SerializationFeature
+import com.fasterxml.jackson.databind.exc.InvalidDefinitionException
 import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.DescribeSpec
@@ -9,8 +10,8 @@ import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
+import net.corda.flow.application.services.impl.interop.facade.FacadeRequestImpl
 import net.corda.v5.application.interop.facade.FacadeId
-import net.corda.v5.application.interop.facade.FacadeRequest
 
 class JsonDeserialisationSpec : DescribeSpec({
 
@@ -18,7 +19,7 @@ class JsonDeserialisationSpec : DescribeSpec({
 
     infix fun String.assertDeserialisationFails(expectedMessage: String) {
         shouldThrow<IllegalArgumentException> {
-            mapper.readValue(this, FacadeRequest::class.java)
+            mapper.readValue(this, FacadeRequestImpl::class.java)
         }.message shouldContain expectedMessage
     }
     describe("The JSON deserialiser") {
@@ -44,7 +45,7 @@ class JsonDeserialisationSpec : DescribeSpec({
                 {
                     "method": "org.corda.test/facades/serialisation/v1.0/test-method"
                 }
-            """, FacadeRequest::class.java) should {
+            """, FacadeRequestImpl::class.java) should {
                 it.facadeId shouldBe FacadeId.of("org.corda.test/facades/serialisation/v1.0")
                 it.methodName shouldBe "test-method"
                 it.inParameters shouldHaveSize 0

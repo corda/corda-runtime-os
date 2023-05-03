@@ -134,7 +134,7 @@ class FacadeOutParameterBindingSpec : DescribeSpec({
         it("should fail if a data class property has the wrong type") {
             MethodReturnTypeIsDataClassWithIncorrectTypes::class shouldFailToBindWith
                     "Constructor parameter reservationRef(#0) of type long does not match type of " +
-                    "facade out parameter TypedParameter(name=reservation-ref, type=uuid)"
+                    "facade out parameter TypedParameterImpl(name=reservation-ref, type=uuid)"
         }
     }
 })

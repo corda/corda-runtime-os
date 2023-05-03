@@ -43,7 +43,8 @@ class FacadeSpec : DescribeSpec({
 
             balance shouldBe TypedParameterImpl(
                 "balance",
-                TypeParameters<Any>().of(ParameterTypeLabel.DECIMAL.name)
+                TypeParameters<Any>().of(ParameterTypeLabel.DECIMAL.typeName)
+               //TODO originally it was using "Java's" implied "name" field of an enum
             )
         }
 

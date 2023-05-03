@@ -55,7 +55,7 @@ private fun serialize(
 
 fun ParameterType<*>.writeValue(value: Any, gen: JsonGenerator): Unit =
     if (this.isQualified) {
-        this.writeValue(value, gen)
+        this.rawParameterType.writeValue(value, gen)
     } else {
         when (this.typeLabel) {
             ParameterTypeLabel.BOOLEAN -> gen.writeBoolean(value as Boolean)
