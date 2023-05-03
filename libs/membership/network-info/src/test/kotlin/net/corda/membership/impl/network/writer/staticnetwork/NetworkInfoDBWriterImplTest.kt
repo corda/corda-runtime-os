@@ -56,7 +56,7 @@ class NetworkInfoDBWriterImplTest {
         on { serialize(any()) } doReturn serializedProperties
     }
     private val cordaAvroSerializationFactory: CordaAvroSerializationFactory = mock {
-        on { createAvroSerializer<KeyValuePairList>(any()) } doReturn serializer
+        on { createAvroSerializer<KeyValuePairList>(any(), any()) } doReturn serializer
     }
     private val encodedMgmPublicKey = "mgm-public-key".toByteArray()
     private val stringEncodedMgmPublicKey = "mgm-public-key"

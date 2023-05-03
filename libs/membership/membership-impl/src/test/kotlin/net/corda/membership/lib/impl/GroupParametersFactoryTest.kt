@@ -65,7 +65,7 @@ class GroupParametersFactoryTest {
     }
     private val cordaAvroSerializationFactory: CordaAvroSerializationFactory = mock {
         on { createAvroDeserializer(any(), eq(KeyValuePairList::class.java)) } doReturn cordaAvroDeserializer
-        on { createAvroSerializer<KeyValuePairList>(any()) } doReturn cordaAvroSerializer
+        on { createAvroSerializer<KeyValuePairList>(any(), any()) } doReturn cordaAvroSerializer
     }
 
     private val groupParametersFactory = GroupParametersFactoryImpl(

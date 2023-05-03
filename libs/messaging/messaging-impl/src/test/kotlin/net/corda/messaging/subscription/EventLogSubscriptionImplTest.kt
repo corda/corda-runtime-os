@@ -89,7 +89,7 @@ class EventLogSubscriptionImplTest {
             any(),
             rebalanceListenerCaptor.capture()
         )
-        doReturn(mockCordaProducer).whenever(cordaProducerBuilder).createProducer(any(), any())
+        doReturn(mockCordaProducer).whenever(cordaProducerBuilder).createProducer(any(), any(), any(), anyOrNull())
         doReturn(lifeCycleCoordinatorMockHelper.lifecycleCoordinator).`when`(lifecycleCoordinatorFactory)
             .createCoordinator(any(), any())
     }
@@ -120,7 +120,7 @@ class EventLogSubscriptionImplTest {
             any(),
             any(),
         )
-        verify(cordaProducerBuilder, times(1)).createProducer(any(), any())
+        verify(cordaProducerBuilder, times(1)).createProducer(any(), any(), any(), anyOrNull())
         verify(mockCordaProducer, times(1)).beginTransaction()
         verify(mockCordaProducer, times(1)).sendRecords(any())
         verify(mockCordaProducer, times(1)).sendAllOffsetsToTransaction(any())
@@ -166,7 +166,7 @@ class EventLogSubscriptionImplTest {
             any(),
             any(),
         )
-        verify(cordaProducerBuilder, times(0)).createProducer(any(), any())
+        verify(cordaProducerBuilder, times(0)).createProducer(any(), any(), any(), anyOrNull())
         assertThat(eventsLatch.count).isEqualTo(mockRecordCount)
         assertThat(lifeCycleCoordinatorMockHelper.lifecycleCoordinatorThrows).isFalse
     }
@@ -179,7 +179,9 @@ class EventLogSubscriptionImplTest {
         whenever(
             cordaProducerBuilder.createProducer(
                 any(),
-                any()
+                any(),
+                any(),
+                anyOrNull()
             )
         ).thenThrow(CordaMessageAPIFatalException("Fatal Error", Exception()))
 
@@ -204,7 +206,7 @@ class EventLogSubscriptionImplTest {
             any(),
             any(),
         )
-        verify(cordaProducerBuilder, times(1)).createProducer(any(), any())
+        verify(cordaProducerBuilder, times(1)).createProducer(any(), any(), any(), anyOrNull())
         verify(mockCordaProducer, times(0)).beginTransaction()
         assertThat(eventsLatch.count).isEqualTo(mockRecordCount)
         assertThat(lifeCycleCoordinatorMockHelper.lifecycleCoordinatorThrows).isFalse
@@ -258,7 +260,7 @@ class EventLogSubscriptionImplTest {
             any(),
             any(),
         )
-        verify(cordaProducerBuilder, times(1)).createProducer(any(), any())
+        verify(cordaProducerBuilder, times(1)).createProducer(any(), any(), any(), anyOrNull())
         verify(mockCordaProducer, times(0)).beginTransaction()
         verify(mockCordaConsumer, times(consumerPollAndProcessRetriesCount)).resetToLastCommittedPositions(any())
         verify(mockCordaConsumer, times(consumerPollAndProcessRetriesCount + 1)).poll(config.pollTimeout)
@@ -312,7 +314,7 @@ class EventLogSubscriptionImplTest {
             any(),
             anyOrNull()
         )
-        verify(cordaProducerBuilder, times(1)).createProducer(any(), any())
+        verify(cordaProducerBuilder, times(1)).createProducer(any(), any(), any(), anyOrNull())
         verify(mockCordaProducer, times(consumerPollAndProcessRetriesCount + 1)).beginTransaction()
         verify(mockCordaProducer, times(0)).sendRecords(any())
         verify(mockCordaProducer, times(0)).sendAllOffsetsToTransaction(any())
@@ -350,7 +352,7 @@ class EventLogSubscriptionImplTest {
             any(),
             any()
         )
-        verify(cordaProducerBuilder, times(1)).createProducer(any(), any())
+        verify(cordaProducerBuilder, times(1)).createProducer(any(), any(), any(), anyOrNull())
         verify(mockCordaProducer, times(1)).beginTransaction()
         verify(mockCordaProducer, times(0)).sendRecords(any())
         verify(mockCordaProducer, times(0)).sendRecordOffsetsToTransaction(any(), anyOrNull())
@@ -375,7 +377,7 @@ class EventLogSubscriptionImplTest {
             }
             @Suppress("TooGenericExceptionThrown")
             throw Throwable()
-        }.whenever(cordaProducerBuilder).createProducer(any(), any())
+        }.whenever(cordaProducerBuilder).createProducer(any(), any(), any(), anyOrNull())
 
         kafkaEventLogSubscription = EventLogSubscriptionImpl(
             config,
@@ -421,7 +423,7 @@ class EventLogSubscriptionImplTest {
             any()
         )
 
-        verify(cordaProducerBuilder, times(1)).createProducer(any(), any())
+        verify(cordaProducerBuilder, times(1)).createProducer(any(), any(), any(), anyOrNull())
         verify(mockCordaProducer, times(1)).beginTransaction()
         verify(mockCordaProducer, times(1)).sendRecords(any())
         verify(mockCordaProducer, times(1)).sendAllOffsetsToTransaction(any())

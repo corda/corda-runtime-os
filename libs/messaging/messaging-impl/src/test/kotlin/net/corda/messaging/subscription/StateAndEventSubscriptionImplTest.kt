@@ -85,7 +85,7 @@ class StateAndEventSubscriptionImplTest {
         doAnswer { eventConsumer }.whenever(stateAndEventConsumer).eventConsumer
         doAnswer { stateConsumer }.whenever(stateAndEventConsumer).stateConsumer
         doAnswer { false }.whenever(stateAndEventConsumer).resetPollInterval()
-        doAnswer { producer }.whenever(builder).createProducer(any())
+        doAnswer { producer }.whenever(builder).createProducer(any(), any(), anyOrNull())
         doAnswer { setOf(topicPartition) }.whenever(stateConsumer).assignment()
         doAnswer { listOf(state) }.whenever(stateConsumer).poll(any())
         doAnswer { Pair(stateAndEventConsumer, rebalanceListener) }.whenever(builder)
@@ -135,7 +135,7 @@ class StateAndEventSubscriptionImplTest {
             } else {
                 producer
             }
-        }.whenever(builder).createProducer(any())
+        }.whenever(builder).createProducer(any(), any(), anyOrNull())
 
         val subscription = StateAndEventSubscriptionImpl<String, String, String>(
             config,
@@ -158,7 +158,7 @@ class StateAndEventSubscriptionImplTest {
             anyOrNull(),
             anyOrNull()
         )
-        verify(builder, times(2)).createProducer(any())
+        verify(builder, times(2)).createProducer(any(), any(), anyOrNull())
         verify(stateAndEventConsumer, times(6)).pollEvents()
         verify(producer, times(5)).beginTransaction()
         verify(producer, times(5)).sendRecords(any())
@@ -206,7 +206,7 @@ class StateAndEventSubscriptionImplTest {
             any(),
             any()
         )
-        verify(builder, times(1)).createProducer(any())
+        verify(builder, times(1)).createProducer(any(), any(), anyOrNull())
         verify(stateAndEventConsumer, times(1)).pollEvents()
         verify(producer, times(0)).beginTransaction()
         verify(rebalanceListener).close()
@@ -277,7 +277,7 @@ class StateAndEventSubscriptionImplTest {
             anyOrNull(),
             anyOrNull()
         )
-        verify(builder, times(1)).createProducer(any())
+        verify(builder, times(1)).createProducer(any(), any(), anyOrNull())
         verify(stateAndEventConsumer, times(6)).pollEvents()
         verify(producer, times(5)).beginTransaction()
         verify(producer, times(5)).sendRecords(any())
@@ -330,7 +330,7 @@ class StateAndEventSubscriptionImplTest {
             anyOrNull(),
             anyOrNull()
         )
-        verify(builder, times(1)).createProducer(any())
+        verify(builder, times(1)).createProducer(any(), any(), anyOrNull())
         verify(producer, times(28)).beginTransaction()
         verify(producer, times(28)).sendRecords(any())
         verify(producer, times(28)).sendRecordOffsetsToTransaction(any(), any())
@@ -382,7 +382,7 @@ class StateAndEventSubscriptionImplTest {
             anyOrNull(),
             anyOrNull()
         )
-        verify(builder, times(1)).createProducer(any())
+        verify(builder, times(1)).createProducer(any(), any(), anyOrNull())
         verify(producer, times(3)).beginTransaction()
         verify(producer, times(3)).sendRecords(any())
         verify(producer, times(3)).sendRecordOffsetsToTransaction(any(), any())
@@ -440,7 +440,7 @@ class StateAndEventSubscriptionImplTest {
             anyOrNull(),
             anyOrNull()
         )
-        verify(builder, times(1)).createProducer(any())
+        verify(builder, times(1)).createProducer(any(), any(), anyOrNull())
         verify(producer, times(1)).beginTransaction()
         verify(producer, times(1)).sendRecords(any())
         verify(producer, times(1)).sendRecordOffsetsToTransaction(any(), any())
@@ -502,7 +502,7 @@ class StateAndEventSubscriptionImplTest {
             anyOrNull(),
             anyOrNull()
         )
-        verify(builder, times(1)).createProducer(any())
+        verify(builder, times(1)).createProducer(any(), any(), anyOrNull())
         verify(producer, times(1)).beginTransaction()
         verify(producer, times(1)).sendRecords(argThat { list: List<CordaProducerRecord<*, *>> ->
             list.contains(CordaProducerRecord("Topic", "Key", "Value"))
