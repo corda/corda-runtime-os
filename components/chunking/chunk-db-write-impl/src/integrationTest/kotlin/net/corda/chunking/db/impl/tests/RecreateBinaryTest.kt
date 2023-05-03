@@ -83,8 +83,7 @@ class RecreateBinaryTest {
         val chunkSize = loremIpsum.length / divisor
 
         val chunks = mutableListOf<Chunk>()
-        val properties= mutableMapOf<String,String?>()
-        properties[CHUNK_FILENAME_KEY] = someFile
+        val properties = mapOf<String, String?>(CHUNK_FILENAME_KEY to someFile)
         val writer = ChunkWriterFactory.create(chunkSize + APP_LEVEL_CHUNK_MESSAGE_OVERHEAD, properties).apply {
             onChunk { chunks.add(it) }
         }

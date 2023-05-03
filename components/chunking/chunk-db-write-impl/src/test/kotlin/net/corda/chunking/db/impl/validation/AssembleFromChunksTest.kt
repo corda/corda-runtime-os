@@ -25,16 +25,10 @@ import java.util.UUID
 
 internal class AssembleFromChunksTest {
     lateinit var fs: FileSystem
-    companion object {
-        const val expectedFileName = "some.cpi"
 
-    }
-    private lateinit var properties: MutableMap<String, String?>
     @BeforeEach
     fun beforeEach() {
         fs = Jimfs.newFileSystem()
-        properties = mutableMapOf()
-        properties[CHUNK_FILENAME_KEY] = expectedFileName
     }
 
     @AfterEach
@@ -44,6 +38,8 @@ internal class AssembleFromChunksTest {
 
     @Test
     fun `assemble succeeds with simple test`() {
+        val expectedFileName = "some.cpi"
+        val properties = mapOf<String, String?>(CHUNK_FILENAME_KEY to expectedFileName)
         val cacheDir = fs.getPath("dest").also { Files.createDirectory(it) }
         val expectedTempDir = fs.getPath("expected")
         val chunkPersistence = object : ChunkPersistence {

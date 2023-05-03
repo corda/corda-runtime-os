@@ -51,8 +51,7 @@ class ChunkReadingTest {
     @Test
     fun `can read in order chunks`() {
         val ourFileName = randomFileName()
-        val properties = mutableMapOf<String, String?>()
-        properties[CHUNK_FILENAME_KEY] = ourFileName
+        val properties = mapOf<String, String?>(CHUNK_FILENAME_KEY to ourFileName)
         var actualFileName: String? = null
         var actualPath: Path? = null
         val reader = chunkReaderFactory.create(Files.createDirectory(fs.getPath("temp"))).apply {

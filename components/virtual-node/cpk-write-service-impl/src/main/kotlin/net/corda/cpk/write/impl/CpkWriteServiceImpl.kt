@@ -227,8 +227,7 @@ class CpkWriteServiceImpl @Activate constructor(
     private fun CpkChunksPublisher.chunkAndPublishCpk(cpkFile: CpkFile) {
         logger.debug { "Publishing CPK ${cpkFile.fileChecksum}" }
         val cpkChecksum = cpkFile.fileChecksum
-        val properties= mutableMapOf<String,String?>()
-        properties[CHUNK_FILENAME_KEY] = cpkChecksum.toFileName()
+        val properties = mapOf<String, String?>(CHUNK_FILENAME_KEY to cpkChecksum.toFileName())
         val cpkData = cpkFile.data
         val chunkWriter = maxAllowedKafkaMsgSize?.let {
             ChunkWriterFactory.create(it, properties)

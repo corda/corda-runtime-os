@@ -10,7 +10,7 @@ import javax.persistence.EntityManagerFactory
 import javax.persistence.NoResultException
 import javax.persistence.NonUniqueResultException
 import net.corda.chunking.ChunkWriterFactory
-import net.corda.chunking.Constants
+import net.corda.chunking.Constants.Companion.CHUNK_FILENAME_KEY
 import net.corda.chunking.Constants.Companion.APP_LEVEL_CHUNK_MESSAGE_OVERHEAD
 import net.corda.chunking.RequestId
 import net.corda.chunking.datamodel.ChunkEntity
@@ -138,8 +138,7 @@ internal class DatabaseChunkPersistenceTest {
             it.write(mockCpkContent)
         }
 
-        val properties = mutableMapOf<String, String?>()
-        properties[Constants.CHUNK_FILENAME_KEY] = someFile
+        val properties = mapOf<String, String?>(CHUNK_FILENAME_KEY to someFile)
         val divisor = 10
         val chunkSize = mockCpkContent.length / divisor
         assertThat(chunkSize * 10)

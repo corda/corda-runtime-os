@@ -13,6 +13,6 @@ object ChunkWriterFactory {
             throw CordaRuntimeException("Cannot write chunks larger than $MAX_DB_CHUNK_SIZE because it will exceed the db table definition")
         }
 
-        return ChunkWriterImpl(maxAllowedMessageSize, ChunkBuilderServiceImpl(), properties?.toMutableMap())
+        return ChunkWriterImpl(maxAllowedMessageSize, ChunkBuilderServiceImpl(), properties)
     }
 }

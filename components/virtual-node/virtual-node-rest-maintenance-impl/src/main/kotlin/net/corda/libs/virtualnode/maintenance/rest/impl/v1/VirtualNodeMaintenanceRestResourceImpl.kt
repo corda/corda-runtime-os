@@ -141,8 +141,7 @@ class VirtualNodeMaintenanceRestResourceImpl @Activate constructor(
         if (!isRunning) throw IllegalStateException(
             "${this.javaClass.simpleName} is not running! Its status is: ${lifecycleCoordinator.status}"
         )
-        val properties = mutableMapOf(PropertyKeys.FORCE_UPLOAD to true.toString())
-        properties[CHUNK_FILENAME_KEY] = upload.fileName
+        val properties = mapOf<String, String?>(PropertyKeys.FORCE_UPLOAD to true.toString(), CHUNK_FILENAME_KEY to upload.fileName)
         val cpiUploadRequestId = tryWithExceptionHandling(logger, "Force CPI upload") {
             cpiUploadService.cpiUploadManager.uploadCpi(
                 upload.content,
