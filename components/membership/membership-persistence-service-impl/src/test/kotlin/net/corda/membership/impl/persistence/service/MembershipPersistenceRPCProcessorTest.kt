@@ -267,7 +267,7 @@ class MembershipPersistenceRPCProcessorTest {
     }
     private val keyValuePairListDeserializer = mock<CordaAvroDeserializer<KeyValuePairList>>()
     private val cordaAvroSerializationFactory = mock<CordaAvroSerializationFactory> {
-        on { createAvroSerializer<KeyValuePairList>(any()) } doReturn keyValuePairListSerializer
+        on { createAvroSerializer<KeyValuePairList>(any(), any()) } doReturn keyValuePairListSerializer
         on { createAvroDeserializer(any(), eq(KeyValuePairList::class.java)) } doReturn keyValuePairListDeserializer
     }
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService = mock {

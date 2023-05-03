@@ -139,7 +139,7 @@ class MemberResourceClientTest {
         on { serialize(any()) } doReturn byteArrayOf(1, 2, 3)
     }
     private val cordaAvroSerializationFactory = mock<CordaAvroSerializationFactory> {
-        on { createAvroSerializer<KeyValuePairList>(any()) } doReturn keyValuePairListSerializer
+        on { createAvroSerializer<KeyValuePairList>(any(), any()) } doReturn keyValuePairListSerializer
     }
     private val membershipQueryClient = mock<MembershipQueryClient>()
     private val memberOpsClient = MemberResourceClientImpl(

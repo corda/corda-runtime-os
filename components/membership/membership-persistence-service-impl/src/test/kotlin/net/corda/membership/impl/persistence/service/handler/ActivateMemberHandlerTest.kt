@@ -86,7 +86,7 @@ class ActivateMemberHandlerTest {
             )
         } doReturn keyValuePairListDeserializer
         on {
-            createAvroSerializer<KeyValuePairList>(any())
+            createAvroSerializer<KeyValuePairList>(any(),any())
         } doReturn keyValuePairListSerializer
     }
     private val memberInfo = mock<MemberInfo> {

@@ -56,7 +56,7 @@ class MerkleTreeGeneratorTest {
         on { serialize(eq(bobMember.toAvro())) } doReturn bobMemberSerialized
     }
     private val cordaAvroSerializationFactory = mock<CordaAvroSerializationFactory> {
-        on { createAvroSerializer<KeyValuePairList>(any()) } doReturn cordaAvroSerializer
+        on { createAvroSerializer<KeyValuePairList>(any(), any()) } doReturn cordaAvroSerializer
     }
     private val alice = mock<MemberInfo> {
         on { name } doReturn MemberX500Name.parse("C=GB, CN=Alice, O=Alice Corp, L=LDN")

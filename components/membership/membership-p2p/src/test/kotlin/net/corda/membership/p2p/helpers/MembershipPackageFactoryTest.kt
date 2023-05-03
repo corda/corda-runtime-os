@@ -55,7 +55,7 @@ class MembershipPackageFactoryTest {
         on { serialize(eq(groupParameters.toAvro())) } doReturn groupParametersBytes
     }
     private val cordaAvroSerializationFactory = mock<CordaAvroSerializationFactory> {
-        on { createAvroSerializer<KeyValuePairList>(any()) } doReturn serializer
+        on { createAvroSerializer<KeyValuePairList>(any(), any()) } doReturn serializer
     }
     private val cipherSchemeMetadata = mock<CipherSchemeMetadata> {
         on { encodeAsByteArray(any()) } doAnswer {
