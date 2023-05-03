@@ -292,12 +292,14 @@ fun E2eCluster.register(
         .use { client ->
             val proxy = client.start().proxy
             eventually(duration = 7.minutes, retryAllExceptions = true) {
+                println("QQQ Starting registration...")
                 proxy.startRegistration(
                     member.holdingId,
                     MemberRegistrationRequest(
                         context,
                     ),
                 ).let {
+                    println("QQQ  registration ID: ${it.registrationId}")
                     assertThat(it.registrationStatus).isEqualTo("SUBMITTED")
 
                     eventually(duration = 3.minutes, retryAllExceptions = true) {
