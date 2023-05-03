@@ -42,7 +42,7 @@ class FlowFinishedRequestHandler @Activate constructor(
         val status = flowMessageFactory.createFlowCompleteStatusMessage(checkpoint, request.result)
         val records = getRecords(flowRecordFactory, context, status)
 
-        log.info("Flow [${checkpoint.flowId}] completed successfully")
+        log.info("Flow [${checkpoint.flowId}, ${context.checkpoint.flowStartContext.flowClassName}] completed successfully")
         checkpoint.markDeleted()
         return context.copy(outputRecords = context.outputRecords + records)
     }
