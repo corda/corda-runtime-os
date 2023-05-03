@@ -6,6 +6,8 @@ import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import io.kotest.core.spec.style.DescribeSpec
 import io.kotest.matchers.shouldBe
 import net.corda.flow.application.services.impl.interop.facade.FacadeReaders
+import net.corda.flow.application.services.impl.interop.facade.FacadeRequestImpl
+import net.corda.flow.application.services.impl.interop.facade.FacadeResponseImpl
 import net.corda.v5.application.interop.facade.FacadeRequest
 import net.corda.v5.application.interop.facade.FacadeResponse
 import java.nio.ByteBuffer
@@ -18,13 +20,13 @@ class JsonSerialisationSpec : DescribeSpec({
 
     fun assertRoundtripsCorrectly(request: FacadeRequest) {
         val json = mapper.writeValueAsString(request)
-        val deserialised = mapper.readValue(json, FacadeRequest::class.java)
+        val deserialised = mapper.readValue(json, FacadeRequestImpl::class.java)
         deserialised shouldBe request
     }
 
     fun assertRoundtripsCorrectly(response: FacadeResponse) {
         val json = mapper.writeValueAsString(response)
-        val deserialised = mapper.readValue(json, FacadeResponse::class.java)
+        val deserialised = mapper.readValue(json, FacadeResponseImpl::class.java)
         deserialised shouldBe response
     }
 

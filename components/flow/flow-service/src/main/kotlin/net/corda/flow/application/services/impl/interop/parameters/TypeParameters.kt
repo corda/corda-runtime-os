@@ -56,7 +56,7 @@ class TypeParameters<T> {
             return aliased as ParameterType<T>
         }
 
-        val rawType = parseRawParameterType<T>(rawTypeName) //rawTypeName = "boolean"
+        val rawType = parseRawParameterType<T>(rawTypeName)
         return if (qualifierString == null) rawType
         else QualifiedType(rawType, TypeQualifier.of(qualifierString))
     }
@@ -74,7 +74,7 @@ class TypeParameters<T> {
 
             else -> throw IllegalArgumentException(
                 "Invalid raw parameter type: $typeName - " +
-                        "must be one of boolean, string, decimal, uuid, timestamp, bytes or json"
+                        "must be one of ${ParameterTypeLabel.values().map { it.typeName }}"
             )
         } as ParameterType<T>
     }
