@@ -3,10 +3,13 @@ package net.corda.cipher.suite.impl
 import net.corda.crypto.cipher.suite.PlatformDigestService
 import net.corda.crypto.core.DigestAlgorithmFactoryProvider
 import net.corda.crypto.core.SecureHashImpl
+import net.corda.crypto.core.parseSecureHashAlgoName
+import net.corda.crypto.core.parseSecureHashHexString
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.sandbox.type.UsedByPersistence
 import net.corda.sandbox.type.UsedByVerification
 import net.corda.v5.application.crypto.DigestService
+import net.corda.v5.base.util.ByteArrays
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.extensions.DigestAlgorithm
@@ -57,7 +60,20 @@ class DigestServiceImpl @Activate constructor(
         }
 
     override fun parseSecureHash(algoNameAndHexString: String) =
-        net.corda.crypto.core.parseSecureHash(algoNameAndHexString)
+        try {
+            platformDigestService.parseSecureHash(algoNameAndHexString)
+        } catch (e: IllegalArgumentException) {
+            val digestName = parseSecureHashAlgoName(algoNameAndHexString)
+            lookForCustomAlgorithm(DigestAlgorithmName(digestName))?.let {
+                val digestHexStringLength = it.digestLength * 2
+                val hexString = parseSecureHashHexString(algoNameAndHexString)
+                require(digestHexStringLength == hexString.length) {
+                    "Digest algorithm's: \"$digestName\" required hex string length: $digestHexStringLength " +
+                            "is not met by hex string: \"$hexString\""
+                }
+                SecureHashImpl(digestName, ByteArrays.parseAsHex(hexString))
+            } ?: throw e
+        }
 
     override fun digestLength(digestName: DigestAlgorithmName): Int =
         try {
@@ -71,7 +87,7 @@ class DigestServiceImpl @Activate constructor(
     private fun lookForCustomAlgorithm(digestAlgorithmName: DigestAlgorithmName): DigestAlgorithm? =
         // Check any custom registered versions.
         customFactoriesProvider?.get(digestAlgorithmName.name)
-            ?.getInstance()
+            ?.instance
 
     override fun defaultDigestAlgorithm(): DigestAlgorithmName =
         platformDigestService.defaultDigestAlgorithm()
