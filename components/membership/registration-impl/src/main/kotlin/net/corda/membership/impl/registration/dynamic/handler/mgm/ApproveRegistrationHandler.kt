@@ -142,14 +142,9 @@ internal class ApproveRegistrationHandler(
             listOf(memberRecord, persistApproveMessage, distributionAction, commandToStartProcessingTheNextRequest)
         } catch (e: Exception) {
             logger.warn("Could not approve registration request: '$registrationId'", e)
-            listOf(
-                Record(
-                    REGISTRATION_COMMAND_TOPIC,
-                    key,
-                    RegistrationCommand(
-                        DeclineRegistration(e.message)
-                    )
-                ),
+            return RegistrationHandlerResult(
+                state,
+                listOf(Record(REGISTRATION_COMMAND_TOPIC, key, RegistrationCommand(DeclineRegistration(e.message))))
             )
         }
 
