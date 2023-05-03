@@ -86,7 +86,7 @@ class AuthenticationProtocolInitiator(val sessionId: String,
 
             val commonHeader = CommonHeader(MessageType.INITIATOR_HELLO, PROTOCOL_VERSION, sessionId, 0, Instant.now().toEpochMilli())
             val identity = InitiatorHandshakeIdentity(ByteBuffer.wrap(hash(ourPublicKey)), groupId)
-            initiatorHelloMessage = InitiatorHelloMessage(commonHeader, ByteBuffer.wrap(myPublicDHKey!!), supportedModes.toList(), identity)
+            initiatorHelloMessage = InitiatorHelloMessage(commonHeader, ByteBuffer.wrap(myPublicDHKey!!), identity)
             step = Step.SENT_MY_DH_KEY
             initiatorHelloMessage!!
         }
@@ -95,11 +95,6 @@ class AuthenticationProtocolInitiator(val sessionId: String,
     fun receiveResponderHello(responderHelloMsg: ResponderHelloMessage) {
         return transition(Step.SENT_MY_DH_KEY, Step.RECEIVED_PEER_DH_KEY, {}) {
             responderHelloMessage = responderHelloMsg
-            selectedMode = responderHelloMsg.selectedMode
-            if (!supportedModes.contains(selectedMode)) {
-                throw InvalidSelectedModeError("The mode selected by the responder ($selectedMode) " +
-                        "was not amongst the ones we proposed ($supportedModes).")
-            }
             initiatorHelloToResponderHelloBytes = initiatorHelloMessage!!.toByteBuffer().array() +
                     responderHelloMessage!!.toByteBuffer().array()
             peerPublicDHKey = ephemeralKeyFactory.generatePublic(X509EncodedKeySpec(responderHelloMsg.responderPublicKey.array()))
@@ -130,7 +125,7 @@ class AuthenticationProtocolInitiator(val sessionId: String,
             val initiatorRecordHeaderBytes = initiatorRecordHeader.toByteBuffer().array()
             val responderPublicKeyHash = ByteBuffer.wrap(hash(theirPublicKey))
             val initiatorHandshakePayload = InitiatorHandshakePayload(
-                InitiatorEncryptedExtensions(responderPublicKeyHash, groupId, ourMaxMessageSize, ourCertificates),
+                InitiatorEncryptedExtensions(responderPublicKeyHash, groupId, ourMaxMessageSize, ourCertificates, supportedModes.toList()),
                 ByteBuffer.wrap(hash(ourPublicKey)),
                 ByteBuffer.allocate(0),
                 ByteBuffer.allocate(0)
@@ -225,6 +220,11 @@ class AuthenticationProtocolInitiator(val sessionId: String,
                             "was smaller than the minimum allowed value ($MIN_PACKET_SIZE).")
                 }
                 agreedMaxMessageSize = this
+            }
+            selectedMode = responderHandshakePayload.responderEncryptedExtensions.selectedMode
+            if (!supportedModes.contains(selectedMode)) {
+                throw InvalidSelectedModeError("The mode selected by the responder ($selectedMode) " +
+                        "was not amongst the ones we proposed ($supportedModes).")
             }
             validateCertificate(responderHandshakePayload, theirX500Name, theirPublicKey)
         }
