@@ -82,15 +82,21 @@ class FlowSandboxServiceImpl @Activate constructor(
             throw IllegalStateException("The sandbox can't find one or more of the CPKs $cpkFileHashes ")
         }
 
-        val sandboxGroupContext = sandboxGroupContextComponent.getOrCreate(vNodeContext) { holdingId, sandboxGroupContext ->
-            initialiseSandbox(holdingId, dependencyInjectionFactory, sandboxGroupContext)
+        val sandboxGroupContext = sandboxGroupContextComponent.getOrCreate(
+            vNodeContext,
+            ::preSandboxRemovalCallback
+        ) { _, sandboxGroupContext ->
+            initialiseSandbox(dependencyInjectionFactory, sandboxGroupContext)
         }
 
         return FlowSandboxGroupContextImpl.fromContext(sandboxGroupContext)
     }
 
+    private fun preSandboxRemovalCallback(holdingIdentity: HoldingIdentity) {
+        flowFiberCacheEvictionService.evictByHoldingIdentity(holdingIdentity)
+    }
+
     private fun initialiseSandbox(
-        holdingIdentity: HoldingIdentity,
         dependencyInjectionFactory: SandboxDependencyInjectorFactory,
         sandboxGroupContext: MutableSandboxGroupContext,
     ): AutoCloseable {
@@ -131,7 +137,6 @@ class FlowSandboxServiceImpl @Activate constructor(
             customSerializers.close()
             injectorService.close()
             customCrypto.close()
-            flowFiberCacheEvictionService.evictByHoldingIdentity(holdingIdentity)
         }
     }
 
