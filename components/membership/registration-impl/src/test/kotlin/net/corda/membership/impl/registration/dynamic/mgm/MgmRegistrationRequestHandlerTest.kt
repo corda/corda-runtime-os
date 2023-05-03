@@ -86,10 +86,10 @@ class MgmRegistrationRequestHandlerTest {
         val captor = argumentCaptor<RegistrationRequest>()
         verify(membershipPersistenceClient).persistRegistrationRequest(eq(holdingIdentity), captor.capture())
         assertThat(captor.firstValue.registrationId).isEqualTo(registrationId.toString())
-        assertThat(captor.firstValue.memberContext).isEqualTo(ByteBuffer.wrap(serialisedPayload))
+        assertThat(captor.firstValue.memberContext.data).isEqualTo(ByteBuffer.wrap(serialisedPayload))
         assertThat(captor.firstValue.status).isEqualTo(RegistrationStatus.APPROVED)
-        assertThat(captor.firstValue.signature).isEqualTo(signature)
-        assertThat(captor.firstValue.signatureSpec).isEqualTo(signatureSpec)
+        assertThat(captor.firstValue.memberContext.signature).isEqualTo(signature)
+        assertThat(captor.firstValue.memberContext.signatureSpec).isEqualTo(signatureSpec)
         verify(cordaAvroSerializer).serialize(memberInfo.memberProvidedContext.toWire())
     }
 

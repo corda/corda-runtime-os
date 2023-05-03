@@ -64,10 +64,16 @@ class BaseRequestStatusHandlerTest {
                 KeyValuePair("registrationProtocolVersion", PROTOCOL_VERSION.toString())
             )
         )
+        val deserializedRegistrationContext = KeyValuePairList(
+            listOf(
+                KeyValuePair("key-1", "value-1")
+            )
+        )
     }
 
     private val keyValuePairListDeserializer = mock<CordaAvroDeserializer<KeyValuePairList>> {
         on { deserialize(memberContext) } doReturn deserializedContext
+        on { deserialize(registrationContext) } doReturn deserializedRegistrationContext
     }
     private val serializationFactory = mock<CordaAvroSerializationFactory> {
         on { createAvroDeserializer(any(), eq(KeyValuePairList::class.java)) } doReturn keyValuePairListDeserializer

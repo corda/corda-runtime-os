@@ -605,7 +605,7 @@ class MemberResourceClientTest {
             argThat {
                 status == RegistrationStatus.NEW &&
                     requester == holdingIdentity &&
-                    memberContext == ByteBuffer.wrap(byteArrayOf(1, 2, 3))
+                    memberContext.data == ByteBuffer.wrap(byteArrayOf(1, 2, 3))
             },
         )
     }

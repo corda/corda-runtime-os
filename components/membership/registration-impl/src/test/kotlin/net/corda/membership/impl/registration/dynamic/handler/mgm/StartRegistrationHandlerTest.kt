@@ -96,6 +96,7 @@ class StartRegistrationHandlerTest {
         const val testTopic = "topic"
         const val testTopicKey = "key"
 
+        val serialisedMemberContext = byteArrayOf(0)
         val memberContext = KeyValuePairList(
             listOf(
                 KeyValuePair("key", "value"),
@@ -103,20 +104,20 @@ class StartRegistrationHandlerTest {
                 KeyValuePair("apple", "pear"),
             )
         )
+        val serialisedRegistrationContext = byteArrayOf(1)
         val registrationContext = mock<KeyValuePairList> {
             on { items } doReturn emptyList()
+            on { toByteBuffer() } doReturn ByteBuffer.wrap(byteArrayOf(1))
         }
 
-        val startRegistrationCommand = getStartRegistrationCommand(aliceHoldingIdentity, memberContext, registrationContext)
+        val startRegistrationCommand = getStartRegistrationCommand()
 
         fun getStartRegistrationCommand(
-            holdingIdentity: HoldingIdentity,
-            memberContext: KeyValuePairList,
-            registrationContext: KeyValuePairList,
+            holdingIdentity: HoldingIdentity = aliceHoldingIdentity,
             serial: Long? = 0L
         ): RegistrationCommand {
             val signedMemberContext = SignedData(
-                memberContext.toByteBuffer(),
+                ByteBuffer.wrap(serialisedMemberContext),
                 CryptoSignatureWithKey(
                     ByteBuffer.wrap("456".toByteArray()),
                     ByteBuffer.wrap("789".toByteArray())
@@ -124,7 +125,7 @@ class StartRegistrationHandlerTest {
                 CryptoSignatureSpec("", null, null)
             )
             val signedRegistrationContext = SignedData(
-                registrationContext.toByteBuffer(),
+                ByteBuffer.wrap(serialisedRegistrationContext),
                 CryptoSignatureWithKey(
                     ByteBuffer.wrap("456".toByteArray()),
                     ByteBuffer.wrap("789".toByteArray())
@@ -216,12 +217,13 @@ class StartRegistrationHandlerTest {
     private val registrationContextCustomFieldsVerifier = mock<RegistrationContextCustomFieldsVerifier> {
         on { verify(any()) } doReturn RegistrationContextCustomFieldsVerifier.Result.Success
     }
+    private val deserializer = mock<CordaAvroDeserializer<KeyValuePairList>> {
+        on { deserialize(eq(serialisedMemberContext)) } doReturn memberContext
+        on { deserialize(eq(serialisedRegistrationContext)) } doReturn registrationContext
+    }
 
     @BeforeEach
     fun setUp() {
-        val deserializer = mock<CordaAvroDeserializer<KeyValuePairList>> {
-            on { deserialize(eq(memberContext.toByteBuffer().array())) } doReturn memberContext
-        }
         val cordaAvroSerializationFactory = mock<CordaAvroSerializationFactory> {
             on { createAvroDeserializer(any(), eq(KeyValuePairList::class.java)) } doReturn deserializer
         }
@@ -327,7 +329,7 @@ class StartRegistrationHandlerTest {
     @Test
     fun `serial is increased when building pending member info`() {
         val mgmContextCaptor = argumentCaptor<SortedMap<String, String?>>()
-        val startRegistrationCommand = getStartRegistrationCommand(aliceHoldingIdentity, memberContext, registrationContext, 10L)
+        val startRegistrationCommand = getStartRegistrationCommand(serial = 10L)
         handler.invoke(null, Record(testTopic, testTopicKey, startRegistrationCommand))
         verify(memberInfoFactory).create(any(), mgmContextCaptor.capture())
         assertThat(mgmContextCaptor.firstValue[SERIAL]).isEqualTo("11")
@@ -335,7 +337,7 @@ class StartRegistrationHandlerTest {
 
     @Test
     fun `declined if serial in the registration request is null`() {
-        val startRegistrationCommand = getStartRegistrationCommand(aliceHoldingIdentity, memberContext, registrationContext, null)
+        val startRegistrationCommand = getStartRegistrationCommand(serial = null)
         with(handler.invoke(null, Record(testTopic, testTopicKey, startRegistrationCommand))) {
             assertThat(updatedState).isNotNull
             assertThat(updatedState!!.registrationId).isEqualTo(registrationId)
@@ -407,17 +409,12 @@ class StartRegistrationHandlerTest {
 
     @Test
     fun `declined if member context is empty`() {
+        whenever(deserializer.deserialize(serialisedMemberContext)).doReturn(KeyValuePairList(emptyList()))
         with(
             handler.invoke(
                 null,
                 Record(
-                    testTopic, testTopicKey, getStartRegistrationCommand(
-                        aliceHoldingIdentity,
-                        KeyValuePairList(
-                            emptyList()
-                        ),
-                        registrationContext
-                    )
+                    testTopic, testTopicKey, getStartRegistrationCommand()
                 )
             )
         ) {
@@ -461,11 +458,7 @@ class StartRegistrationHandlerTest {
             handler.invoke(
                 null,
                 Record(
-                    testTopic, testTopicKey, getStartRegistrationCommand(
-                        badHoldingIdentity,
-                        memberContext,
-                        registrationContext
-                    )
+                    testTopic, testTopicKey, getStartRegistrationCommand(badHoldingIdentity)
                 )
             )
         ) {
@@ -517,7 +510,7 @@ class StartRegistrationHandlerTest {
         }
         whenever(membershipQueryClient.queryMemberInfo(eq(mgmHoldingIdentity.toCorda()), any()))
             .doReturn(MembershipQueryResult.Success(listOf(activeMemberInfo)))
-        val startRegistrationCommand = getStartRegistrationCommand(aliceHoldingIdentity, memberContext, registrationContext, 1L)
+        val startRegistrationCommand = getStartRegistrationCommand(serial = 1L)
         with(
             handler.invoke(null, Record(testTopic, testTopicKey, startRegistrationCommand))
         ) {
@@ -660,11 +653,7 @@ class StartRegistrationHandlerTest {
         val notaryResult = handler.invoke(null, Record(testTopic, testTopicKey, startRegistrationCommand))
         notaryResult.assertRegistrationStarted()
 
-        val memberStartRegistrationCommand = getStartRegistrationCommand(
-            HoldingIdentity(notaryX500Name.toString(), groupId),
-            memberContext,
-            registrationContext
-        )
+        val memberStartRegistrationCommand = getStartRegistrationCommand(HoldingIdentity(notaryX500Name.toString(), groupId))
         val memberResult = handler.invoke(null, Record(testTopic, testTopicKey, memberStartRegistrationCommand))
         memberResult.assertDeclinedRegistration()
     }
@@ -726,7 +715,7 @@ class StartRegistrationHandlerTest {
             )
         ).thenReturn(MembershipQueryResult.Success(listOf(pendingMemberInfo)))
 
-        val registrationCommand = getStartRegistrationCommand(bobHoldingIdentity, memberContext, registrationContext)
+        val registrationCommand = getStartRegistrationCommand(bobHoldingIdentity)
         val result = handler.invoke(null, Record(testTopic, testTopicKey, registrationCommand))
         result.assertDeclinedRegistration()
     }
