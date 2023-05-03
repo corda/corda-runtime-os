@@ -236,8 +236,32 @@ class AuthenticationProtocolFailureTest {
         authenticationProtocolB.receiveInitiatorHello(initiatorHelloMsg)
 
         // Step 2: responder sending hello message to initiator.
-        assertThatThrownBy { authenticationProtocolB.generateResponderHello() }
-            .isInstanceOf(NoCommonModeError::class.java)
+        val responderHelloMsg = authenticationProtocolB.generateResponderHello()
+        authenticationProtocolA.receiveResponderHello(responderHelloMsg)
+
+        // Both sides generate handshake secrets.
+        authenticationProtocolA.generateHandshakeSecrets()
+        authenticationProtocolB.generateHandshakeSecrets()
+
+        // Step 3: initiator sending handshake message and responder validating it.
+        val signingCallbackForA = { data: ByteArray ->
+            signature.initSign(partyASessionKey.private)
+            signature.update(data)
+            signature.sign()
+        }
+        val initiatorHandshakeMessage = authenticationProtocolA.generateOurHandshakeMessage(
+            partyBSessionKey.public,
+            null,
+            signingCallbackForA
+        )
+
+        assertThrows<NoCommonModeError> {
+            authenticationProtocolB.validatePeerHandshakeMessage(
+                initiatorHandshakeMessage,
+                aliceX500Name,
+                listOf(partyASessionKey.public to SignatureSpecs.ECDSA_SHA256)
+            )
+        }
     }
 
     @Test
