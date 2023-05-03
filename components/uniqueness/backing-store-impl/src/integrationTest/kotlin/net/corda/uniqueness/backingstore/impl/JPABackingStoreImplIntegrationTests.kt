@@ -29,6 +29,7 @@ import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorReferenceStateCon
 import net.corda.uniqueness.datamodel.internal.UniquenessCheckRequestInternal
 import net.corda.uniqueness.datamodel.internal.UniquenessCheckTransactionDetailsInternal
 import net.corda.uniqueness.utils.UniquenessAssertions
+import net.corda.utilities.rootCause
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResult
 import net.corda.v5.application.uniqueness.model.UniquenessCheckStateRef
 import net.corda.v5.application.uniqueness.model.UniquenessCheckStateDetails
@@ -44,6 +45,7 @@ import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertAll
 import org.junit.jupiter.api.Assertions
+import org.junit.jupiter.api.RepeatedTest
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.Mockito
@@ -61,6 +63,9 @@ import java.time.LocalDate
 import java.time.ZoneOffset
 import java.time.Duration
 import java.util.*
+import java.util.concurrent.Callable
+import java.util.concurrent.ExecutionException
+import java.util.concurrent.Executors
 import javax.persistence.EntityManagerFactory
 import javax.persistence.EntityExistsException
 import javax.persistence.RollbackException
@@ -570,6 +575,55 @@ class JPABackingStoreImplIntegrationTests {
                         txnOps.consumeStates(SecureHashUtils.randomSecureHash(), consumingStateRefs)
                     }
                 }
+            }
+        }
+
+        // This test is repeated a number of times due to in-flight double spends being a timing
+        // issue that can be difficult to reproduce reliably
+        @RepeatedTest(100)
+        fun `In-flight double spend is prevented using separate backing store instances executing in parallel`() {
+            val numExecutors = 4
+            val stateRefs = List(5) { UniquenessCheckStateRefImpl(SecureHashUtils.randomSecureHash(), it) }
+
+            // Generate an unconsumed state in DB.
+            backingStoreImpl.transactionSession(notaryVNodeIdentity) { _, txnOps ->
+                txnOps.createUnconsumedStates(stateRefs)
+            }
+
+            // Use an additional backing store for each thread to guarantee no interference from
+            // shared state etc.
+            val additionalBackingStores = List(numExecutors) {
+                createBackingStoreImpl(notaryVNodeEmFactory).also {
+                    it.eventHandler(RegistrationStatusChangeEvent(mock(), LifecycleStatus.UP), mock())
+                }
+            }
+
+            val spendTasks = List(numExecutors) {
+                Callable {
+                    additionalBackingStores[it].transactionSession(notaryVNodeIdentity) { _, txnOps ->
+                        txnOps.consumeStates(SecureHashUtils.randomSecureHash(), stateRefs.shuffled())
+                    }
+                }
+            }
+
+            with (Executors.newFixedThreadPool(numExecutors)) {
+                val exceptions = invokeAll(spendTasks).map { task ->
+                    try {
+                        task.get()
+                        null
+                    } catch (e: ExecutionException) {
+                        e.rootCause
+                    } finally {
+                        shutdownNow()
+                    }
+                }
+
+                // All but one should fail
+                assertThat(exceptions)
+                    .hasSize(numExecutors)
+                    .containsOnlyOnce(null)
+                assertThat(exceptions.filterNotNull().map { it.message })
+                    .containsOnly("No states were consumed, this might be an in-flight double spend")
             }
         }
 
