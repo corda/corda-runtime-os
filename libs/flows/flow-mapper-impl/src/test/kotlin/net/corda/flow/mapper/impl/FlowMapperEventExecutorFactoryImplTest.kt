@@ -23,6 +23,7 @@ import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.time.Instant
+import org.mockito.kotlin.any
 
 class FlowMapperEventExecutorFactoryImplTest {
 
@@ -31,7 +32,7 @@ class FlowMapperEventExecutorFactoryImplTest {
     @BeforeEach
     fun setup() {
         val cordaAvroSerializationFactory: CordaAvroSerializationFactory = mock()
-        whenever(cordaAvroSerializationFactory.createAvroSerializer<SessionEvent>(anyOrNull())).thenReturn(mock())
+        whenever(cordaAvroSerializationFactory.createAvroSerializer<SessionEvent>(any(), anyOrNull())).thenReturn(mock())
         executorFactoryImpl = FlowMapperEventExecutorFactoryImpl(cordaAvroSerializationFactory)
     }
 

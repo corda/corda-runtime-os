@@ -65,7 +65,7 @@ class RegistrationServiceLifecycleHandlerTest {
     }
     private val membershipQueryClient = mock<MembershipQueryClient>()
     private val cordaAvroSerializationFactory: CordaAvroSerializationFactory = mock {
-        on { createAvroSerializer<Any>(any()) } doReturn mock()
+        on { createAvroSerializer<Any>(any(), any()) } doReturn mock()
         on { createAvroDeserializer(any(), eq(KeyValuePairList::class.java)) } doReturn mock()
     }
 

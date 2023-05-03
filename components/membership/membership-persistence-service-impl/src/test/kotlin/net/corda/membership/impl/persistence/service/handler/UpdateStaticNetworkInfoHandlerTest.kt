@@ -95,7 +95,7 @@ class UpdateStaticNetworkInfoHandlerTest {
     }
     private val serializationFactory = mock<CordaAvroSerializationFactory> {
         on { createAvroDeserializer(any(), eq(KeyValuePairList::class.java)) } doReturn deserializer
-        on { createAvroSerializer<KeyValuePairList>(any()) } doReturn serializer
+        on { createAvroSerializer<KeyValuePairList>(any(), any()) } doReturn serializer
     }
 
     private val services = mock<PersistenceHandlerServices> {

@@ -276,7 +276,7 @@ class DynamicMemberRegistrationServiceTest {
         on { serialize(any()) } doReturn UNAUTH_REQUEST_BYTES
     }
     private val serializationFactory: CordaAvroSerializationFactory = mock {
-        on { createAvroSerializer<Any>(any()) }.thenReturn(
+        on { createAvroSerializer<Any>(any(), any()) }.thenReturn(
             registrationRequestSerializer, keyValuePairListSerializer, unauthenticatedRegistrationRequestSerializer
         )
     }
