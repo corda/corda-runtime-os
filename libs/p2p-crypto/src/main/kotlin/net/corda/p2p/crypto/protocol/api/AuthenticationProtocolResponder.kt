@@ -110,8 +110,7 @@ class AuthenticationProtocolResponder(
             val commonHeader = CommonHeader(MessageType.RESPONDER_HELLO, PROTOCOL_VERSION, sessionId,
                 0, Instant.now().toEpochMilli())
 
-            selectedMode = ProtocolModeNegotiation.selectMode(initiatorHelloMessage!!.supportedModes.toSet(), supportedModes)
-            responderHelloMessage = ResponderHelloMessage(commonHeader, ByteBuffer.wrap(myPublicDHKey!!), selectedMode)
+            responderHelloMessage = ResponderHelloMessage(commonHeader, ByteBuffer.wrap(myPublicDHKey!!))
             initiatorHelloToResponderHelloBytes = initiatorHelloMessage!!.toByteBuffer().array() +
                     responderHelloMessage!!.toByteBuffer().array()
             responderHelloMessage!!
@@ -187,6 +186,10 @@ class AuthenticationProtocolResponder(
                 throw InvalidHandshakeMessageException()
             }
 
+            selectedMode = ProtocolModeNegotiation.selectMode(
+                initiatorHandshakePayload.initiatorEncryptedExtensions.supportedModes.toSet(),
+                supportedModes
+            )
             initiatorHandshakePayload.initiatorEncryptedExtensions.maxMessageSize.apply {
                 if (this < MIN_PACKET_SIZE) {
                     throw InvalidMaxMessageSizeProposedError("Initiator's proposed max message size ($this) " +
@@ -240,7 +243,7 @@ class AuthenticationProtocolResponder(
                 sessionId, 1, Instant.now().toEpochMilli())
             val responderRecordHeaderBytes = responderRecordHeader.toByteBuffer().array()
             val responderHandshakePayload = ResponderHandshakePayload(
-                ResponderEncryptedExtensions(agreedMaxMessageSize, ourCertificates),
+                ResponderEncryptedExtensions(agreedMaxMessageSize, ourCertificates, selectedMode),
                 ByteBuffer.wrap(hash(ourPublicKey)),
                 ByteBuffer.allocate(0),
                 ByteBuffer.allocate(0)
