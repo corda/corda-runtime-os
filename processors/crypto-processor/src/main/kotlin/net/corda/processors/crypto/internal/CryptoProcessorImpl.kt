@@ -1,41 +1,55 @@
 package net.corda.processors.crypto.internal
 
+import net.corda.configuration.read.ConfigChangedEvent
 import java.util.concurrent.atomic.AtomicInteger
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.client.CryptoOpsClient
+import net.corda.crypto.client.CryptoOpsProxyClient
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.persistence.HSMStore
 import net.corda.crypto.persistence.db.model.CryptoEntities
-import net.corda.crypto.service.CryptoFlowOpsBusService
 import net.corda.crypto.service.CryptoOpsBusService
 import net.corda.crypto.service.CryptoServiceFactory
 import net.corda.crypto.service.HSMRegistrationBusService
 import net.corda.crypto.service.HSMService
+import net.corda.crypto.service.impl.bus.CryptoFlowOpsBusProcessor
 import net.corda.crypto.softhsm.SoftCryptoServiceProvider
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.schema.CordaDb
+import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.datamodel.ConfigurationEntities
+import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleStatus
+import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
+import net.corda.messaging.api.subscription.config.SubscriptionConfig
+import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.processors.crypto.CryptoProcessor
+import net.corda.schema.Schemas
 import net.corda.schema.configuration.BootConfig.BOOT_CRYPTO
 import net.corda.schema.configuration.BootConfig.BOOT_DB
+import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
+import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+
+// An OSGi component, with no unit tests; instead, tested by using OGGi and mocked out databases in 
+// integration tests (CryptoProcessorTests), as well as in various kinds of end to end and other full
+// system tests.
 
 @Suppress("LongParameterList")
 @Component(service = [CryptoProcessor::class])
@@ -50,10 +64,10 @@ class CryptoProcessorImpl @Activate constructor(
     private val cryptoOspService: CryptoOpsBusService,
     @Reference(service = SoftCryptoServiceProvider::class)
     private val softCryptoServiceProvider: SoftCryptoServiceProvider,
-    @Reference(service = CryptoFlowOpsBusService::class)
-    private val cryptoFlowOpsBusService: CryptoFlowOpsBusService,
     @Reference(service = CryptoOpsClient::class)
     private val cryptoOpsClient: CryptoOpsClient,
+    @Reference(service = CryptoOpsProxyClient::class)
+    private val cryptoOpsProxyClient: CryptoOpsProxyClient,
     @Reference(service = CryptoServiceFactory::class)
     private val cryptoServiceFactory: CryptoServiceFactory,
     @Reference(service = HSMService::class)
@@ -65,11 +79,20 @@ class CryptoProcessorImpl @Activate constructor(
     @Reference(service = DbConnectionManager::class)
     private val dbConnectionManager: DbConnectionManager,
     @Reference(service = VirtualNodeInfoReadService::class)
-    private val vnodeInfo: VirtualNodeInfoReadService
+    private val vnodeInfo: VirtualNodeInfoReadService,
+    @Reference(service = SubscriptionFactory::class)
+    private val subscriptionFactory: SubscriptionFactory,
+    @Reference(service = ExternalEventResponseFactory::class)
+    private val externalEventResponseFactory: ExternalEventResponseFactory,
 ) : CryptoProcessor {
     private companion object {
         val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        val configKeys = setOf(
+            MESSAGING_CONFIG,
+            CRYPTO_CONFIG
+        )
     }
+
 
     init {
         entitiesRegistry.register(CordaDb.Crypto.persistenceUnitName, CryptoEntities.classes)
@@ -80,23 +103,25 @@ class CryptoProcessorImpl @Activate constructor(
         ::configurationReadService,
         ::hsmStore,
         ::cryptoOspService,
-        ::cryptoFlowOpsBusService,
         ::cryptoOpsClient,
         ::softCryptoServiceProvider,
         ::cryptoServiceFactory,
         ::hsmService,
         ::hsmRegistration,
         ::dbConnectionManager,
-        ::vnodeInfo
+        ::vnodeInfo,
     )
 
-    private val lifecycleCoordinator = coordinatorFactory.createCoordinator<CryptoProcessor>(dependentComponents, ::eventHandler)
+    private val lifecycleCoordinator =
+        coordinatorFactory.createCoordinator<CryptoProcessor>(dependentComponents, ::eventHandler)
 
     @Volatile
     private var hsmAssociated: Boolean = false
 
     @Volatile
     private var dependenciesUp: Boolean = false
+
+    private var registration: RegistrationHandle? = null
 
     private val tmpAssignmentFailureCounter = AtomicInteger(0)
 
@@ -119,7 +144,9 @@ class CryptoProcessorImpl @Activate constructor(
         logger.info("Crypto processor received event $event.")
         when (event) {
             is StartEvent -> {
-                // Nothing to do
+                logger.info("Crypto processor starting")
+                registration?.close()
+                registration = coordinator.followStatusChangesByName(dependentComponents.coordinatorNames)
             }
             is StopEvent -> {
                 // Nothing to do
@@ -137,8 +164,11 @@ class CryptoProcessorImpl @Activate constructor(
                 cryptoServiceFactory.bootstrapConfig(bootstrapConfig.getConfig(BOOT_CRYPTO))
             }
             is RegistrationStatusChangeEvent -> {
+                logger.info("Registering for configuration updates.")
+                configurationReadService.registerComponentForUpdates(coordinator, configKeys)
                 if (event.status == LifecycleStatus.UP) {
                     dependenciesUp = true
+                    // TODO only do setStatus once the config is in in ConfigChangedEvent
                     if (hsmAssociated) {
                         setStatus(event.status, coordinator)
                     } else {
@@ -150,13 +180,13 @@ class CryptoProcessorImpl @Activate constructor(
                 }
             }
             is AssociateHSM -> {
-                if(dependenciesUp) {
+                if (dependenciesUp) {
                     if (hsmAssociated) {
                         setStatus(LifecycleStatus.UP, coordinator)
                     } else {
                         val failed = temporaryAssociateClusterWithSoftHSM()
                         if (failed.isNotEmpty()) {
-                            if(tmpAssignmentFailureCounter.getAndIncrement() <= 5) {
+                            if (tmpAssignmentFailureCounter.getAndIncrement() <= 5) {
                                 logger.warn(
                                     "Failed to associate: [${failed.joinToString { "${it.first}:${it.second}" }}]" +
                                             ", will retry..."
@@ -164,7 +194,8 @@ class CryptoProcessorImpl @Activate constructor(
                                 coordinator.postEvent(AssociateHSM()) // try again
                             } else {
                                 logger.error(
-                                    "Failed to associate: [${failed.joinToString { "${it.first}:${it.second}" }}]")
+                                    "Failed to associate: [${failed.joinToString { "${it.first}:${it.second}" }}]"
+                                )
                                 setStatus(LifecycleStatus.ERROR, coordinator)
                             }
                         } else {
@@ -174,6 +205,23 @@ class CryptoProcessorImpl @Activate constructor(
                         }
                     }
                 }
+            }
+
+            is ConfigChangedEvent -> {
+                val groupName = "crypto.ops.flow"
+                // now we can create the subscriptions and bus processors
+                logger.info("Starting processing on ${groupName} ${Schemas.Crypto.FLOW_OPS_MESSAGE_TOPIC}")
+                val flowOpsProcessor =
+                    CryptoFlowOpsBusProcessor(cryptoOpsProxyClient, externalEventResponseFactory, event)
+                val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
+
+                val subscription = subscriptionFactory.createDurableSubscription(
+                    subscriptionConfig = SubscriptionConfig(groupName, Schemas.Crypto.FLOW_OPS_MESSAGE_TOPIC),
+                    processor = flowOpsProcessor,
+                    messagingConfig = messagingConfig,
+                    partitionAssignmentListener = null
+                )
+                subscription.start()
             }
         }
     }
