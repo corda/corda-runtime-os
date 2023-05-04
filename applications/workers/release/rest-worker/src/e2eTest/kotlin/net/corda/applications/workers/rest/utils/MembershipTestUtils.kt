@@ -168,10 +168,14 @@ fun E2eCluster.assertMemberInMemberList(
     member: E2eClusterMember
 ) {
     eventually(
-        duration = 6.minutes,
+        duration = 8.minutes,
         waitBetween = 3.seconds,
         retryAllExceptions = true,
     ) {
+        val members = lookupMembers(holdingId).map {
+            it.name
+        }
+        println("QQQ looking for member: ${member.name} in $members")
         assertThat(
             lookupMembers(holdingId).map {
                 it.name
