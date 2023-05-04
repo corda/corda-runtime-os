@@ -119,7 +119,7 @@ class PersistMemberInfoHandlerTest {
     }
     private val keyValuePairListDeserializer = mock<CordaAvroDeserializer<KeyValuePairList>>()
     private val cordaAvroSerializationFactory: CordaAvroSerializationFactory = mock {
-        on { createAvroSerializer<KeyValuePairList>(any(), any()) } doReturn keyValueSerializer
+        on { createAvroSerializer<KeyValuePairList>(any()) } doReturn keyValueSerializer
         on { createAvroDeserializer<KeyValuePairList>(any(), any())} doReturn keyValuePairListDeserializer
     }
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService = mock {

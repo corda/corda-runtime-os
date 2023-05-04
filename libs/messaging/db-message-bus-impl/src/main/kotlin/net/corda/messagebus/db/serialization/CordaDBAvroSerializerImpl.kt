@@ -2,11 +2,11 @@ package net.corda.messagebus.db.serialization
 
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.schema.registry.AvroSchemaRegistry
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.slf4j.LoggerFactory
 
 class CordaDBAvroSerializerImpl<T : Any>(
     private val schemaRegistry: AvroSchemaRegistry,
-    private val throwOnSerializationError: Boolean,
     private val onError: ((ByteArray) -> Unit)?
 ) : CordaAvroSerializer<T> {
 
@@ -25,13 +25,8 @@ class CordaDBAvroSerializerImpl<T : Any>(
                     val message = "Failed to serialize instance of class type ${data::class.java.name} containing $data"
 
                     onError?.invoke(message.toByteArray())
-                    if(throwOnSerializationError) {
-                        log.error(message, ex)
-                        throw ex
-                    } else {
-                        log.warn(message, ex)
-                        null
-                    }
+                    log.error(message, ex)
+                    throw CordaRuntimeException(message, ex)
                 }
             }
         }

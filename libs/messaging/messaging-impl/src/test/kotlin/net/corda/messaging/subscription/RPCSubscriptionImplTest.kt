@@ -97,7 +97,7 @@ class RPCSubscriptionImplTest {
         this.kafkaConsumer = kafkaConsumer
         this.cordaConsumerBuilder = consumerBuilder
 
-        doAnswer { kafkaProducer }.whenever(cordaProducerBuilder).createProducer(any(), any(), any(), anyOrNull())
+        doAnswer { kafkaProducer }.whenever(cordaProducerBuilder).createProducer(any(), any(), anyOrNull())
 
         doAnswer {
             requestRecord

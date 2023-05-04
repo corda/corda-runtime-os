@@ -66,13 +66,13 @@ class CordaPublisherImplTest {
             SmartConfigFactory.createWithoutSecurityServices().create(ConfigFactory.empty())
         )
         producer = mock()
-        whenever(producerBuilder.createProducer(any(), any(), anyOrNull(), anyOrNull())).thenReturn(producer)
+        whenever(producerBuilder.createProducer(any(), any(), anyOrNull())).thenReturn(producer)
     }
 
     @Test
     fun testPublish() {
         publish(false, listOf(record, record, record))
-        verify(producerBuilder, times(1)).createProducer(any(), any(), anyOrNull(), anyOrNull())
+        verify(producerBuilder, times(1)).createProducer(any(), any(), anyOrNull())
         verify(producer, times(3)).send(any(), any())
         verify(producer, times(0)).beginTransaction()
         verify(producer, times(0)).commitTransaction()
@@ -231,7 +231,7 @@ class CordaPublisherImplTest {
         verify(producer, times(1)).beginTransaction()
         verify(producer, times(1)).commitTransaction()
         verify(producer, times(1)).close()
-        verify(producerBuilder, times(2)).createProducer(any(), any(), anyOrNull(), anyOrNull())
+        verify(producerBuilder, times(2)).createProducer(any(), any(), anyOrNull())
     }
 
     @Test

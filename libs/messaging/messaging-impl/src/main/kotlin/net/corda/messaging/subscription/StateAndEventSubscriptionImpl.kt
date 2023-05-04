@@ -122,7 +122,7 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
             attempts++
             try {
                 deadLetterRecords = mutableListOf()
-                nullableProducer = builder.createProducer(config, false) { data ->
+                nullableProducer = builder.createProducer(config) { data ->
                     log.warn("Failed to serialize record from ${config.topic}")
                     deadLetterRecords.add(data)
                 }

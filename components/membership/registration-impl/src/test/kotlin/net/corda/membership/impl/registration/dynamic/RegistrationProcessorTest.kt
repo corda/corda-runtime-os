@@ -178,7 +178,7 @@ class  RegistrationProcessorTest {
         }
         cordaAvroSerializationFactory = mock {
             on { createAvroDeserializer(any(), eq(KeyValuePairList::class.java)) } doReturn deserializer
-            on { createAvroSerializer<Any>(any(), any()) }.thenReturn(verificationRequestResponseSerializer)
+            on { createAvroSerializer<Any>(any()) }.thenReturn(verificationRequestResponseSerializer)
         }
         membershipPersistenceClient = mock {
             on { persistRegistrationRequest(any(), any()) } doReturn operation

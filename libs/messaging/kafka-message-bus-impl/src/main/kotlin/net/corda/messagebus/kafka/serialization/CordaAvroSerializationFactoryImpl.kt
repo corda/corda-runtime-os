@@ -29,9 +29,8 @@ class CordaAvroSerializationFactoryImpl @Activate constructor(
     }
 
     override fun <T : Any> createAvroSerializer(
-        throwOnSerializationError: Boolean,
         onError: ((ByteArray) -> Unit)?
     ): CordaAvroSerializer<T> {
-        return CordaAvroSerializerImpl(avroSchemaRegistry, throwOnSerializationError, onError)
+        return CordaAvroSerializerImpl(avroSchemaRegistry, onError)
     }
 }

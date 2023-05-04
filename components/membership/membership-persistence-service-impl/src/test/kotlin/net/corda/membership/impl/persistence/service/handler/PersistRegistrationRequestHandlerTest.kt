@@ -92,7 +92,7 @@ class PersistRegistrationRequestHandlerTest {
         on { serialize(any()) } doReturn byteArrayOf(1, 3, 4)
     }
     private val cordaAvroSerializationFactory = mock<CordaAvroSerializationFactory> {
-        on { createAvroSerializer<KeyValuePairList>(any(), any()) } doReturn serializer
+        on { createAvroSerializer<KeyValuePairList>(any()) } doReturn serializer
     }
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService = mock {
         on { getByHoldingIdentityShortHash(eq(ourHoldingIdentity.shortHash)) } doReturn virtualNodeInfo

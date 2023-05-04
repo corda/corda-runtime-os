@@ -234,7 +234,7 @@ class MGMRegistrationServiceTest {
         on { serialize(any()) } doReturn byteArrayOf(1, 2, 3)
     }
     private val cordaAvroSerializationFactory = mock<CordaAvroSerializationFactory> {
-        on { createAvroSerializer<KeyValuePairList>(any(), any()) } doReturn keyValuePairListSerializer
+        on { createAvroSerializer<KeyValuePairList>(any()) } doReturn keyValuePairListSerializer
     }
     private val membershipSchemaValidator: MembershipSchemaValidator = mock()
     private val membershipSchemaValidatorFactory: MembershipSchemaValidatorFactory = mock {

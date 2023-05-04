@@ -2,6 +2,7 @@ package net.corda.messagebus.db.serialization
 
 import java.nio.ByteBuffer
 import net.corda.schema.registry.AvroSchemaRegistry
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -16,7 +17,7 @@ import org.mockito.kotlin.whenever
 class CordaDBAvroSerializerImplTest {
 
     private val avroSchemaRegistry: AvroSchemaRegistry = mock()
-    private val cordaDBAvroSerializer = CordaDBAvroSerializerImpl<Any>(avroSchemaRegistry, true, null)
+    private val cordaDBAvroSerializer = CordaDBAvroSerializerImpl<Any>(avroSchemaRegistry, null)
 
     data class SerializeTester(val contents: String = "test contents")
 
@@ -49,7 +50,7 @@ class CordaDBAvroSerializerImplTest {
     fun testExceptionPropagation() {
         val data = SerializeTester()
         whenever(avroSchemaRegistry.serialize(data)).thenThrow(IllegalStateException())
-        assertThrows<IllegalStateException> { cordaDBAvroSerializer.serialize(data) }
+        assertThrows<CordaRuntimeException> { cordaDBAvroSerializer.serialize(data) }
     }
 
     @Test
@@ -58,20 +59,9 @@ class CordaDBAvroSerializerImplTest {
         val data = SerializeTester()
         whenever(avroSchemaRegistry.serialize(data)).thenThrow(IllegalStateException())
 
-        val onErrorSerializer = CordaDBAvroSerializerImpl<Any>(avroSchemaRegistry, true) { hasRan = true }
-        assertThrows<IllegalStateException> { onErrorSerializer.serialize(data) }
+        val onErrorSerializer = CordaDBAvroSerializerImpl<Any>(avroSchemaRegistry) { hasRan = true }
+        assertThrows<CordaRuntimeException> { onErrorSerializer.serialize(data) }
         assertTrue(hasRan)
-    }
-
-    @Test
-    fun testThrowOnFailureIsFalse() {
-        val data = SerializeTester()
-        whenever(avroSchemaRegistry.serialize(data)).thenThrow(IllegalStateException())
-
-        val serializer = CordaDBAvroSerializerImpl<Any>(avroSchemaRegistry, false, null)
-        assertDoesNotThrow {
-            assertNull(serializer.serialize(data))
-        }
     }
 
 }

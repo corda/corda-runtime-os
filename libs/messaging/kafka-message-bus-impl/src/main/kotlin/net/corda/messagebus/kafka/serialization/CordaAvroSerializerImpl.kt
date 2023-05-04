@@ -2,6 +2,7 @@ package net.corda.messagebus.kafka.serialization
 
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.schema.registry.AvroSchemaRegistry
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.apache.kafka.common.serialization.Serializer
 import org.apache.kafka.common.serialization.StringSerializer
 import org.slf4j.LoggerFactory
@@ -16,7 +17,6 @@ import org.slf4j.LoggerFactory
  */
 class CordaAvroSerializerImpl<T : Any>(
     private val schemaRegistry: AvroSchemaRegistry,
-    private val throwOnSerializationError: Boolean,
     private val onError: ((ByteArray) -> Unit)?
 ) : CordaAvroSerializer<T>, Serializer<T> {
 
@@ -44,13 +44,9 @@ class CordaAvroSerializerImpl<T : Any>(
                     val message = "Failed to serialize instance of class type ${data::class.java.name} containing $data"
 
                     onError?.invoke(message.toByteArray())
-                    if(throwOnSerializationError) {
-                        log.error(message, ex)
-                        throw ex
-                    } else {
-                        log.warn(message, ex)
-                        null
-                    }
+                    log.error(message, ex)
+                    throw CordaRuntimeException(message, ex)
+
                 }
             }
         }

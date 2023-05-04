@@ -49,7 +49,6 @@ class DBCordaProducerBuilderImpl @Activate constructor(
     override fun createProducer(
         producerConfig: ProducerConfig,
         messageBusConfig: SmartConfig,
-        throwOnSerializationError: Boolean,
         onSerializationError: ((ByteArray) -> Unit)?
     ): CordaProducer {
         val isTransactional = producerConfig.transactional
@@ -63,14 +62,14 @@ class DBCordaProducerBuilderImpl @Activate constructor(
 
         return if (isTransactional) {
             CordaTransactionalDBProducerImpl(
-                CordaDBAvroSerializerImpl(avroSchemaRegistry, throwOnSerializationError, onSerializationError),
+                CordaDBAvroSerializerImpl(avroSchemaRegistry, onSerializationError),
                 DBAccess(emf),
                 getWriteOffsets(resolvedConfig),
                 MessageHeaderSerializerImpl()
             )
         } else {
             CordaAtomicDBProducerImpl(
-                CordaDBAvroSerializerImpl(avroSchemaRegistry, throwOnSerializationError, onSerializationError),
+                CordaDBAvroSerializerImpl(avroSchemaRegistry, onSerializationError),
                 DBAccess(emf),
                 getWriteOffsets(resolvedConfig),
                 MessageHeaderSerializerImpl()

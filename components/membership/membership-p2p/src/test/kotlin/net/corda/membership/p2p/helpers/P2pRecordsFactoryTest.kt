@@ -28,7 +28,7 @@ import java.time.Instant
 class P2pRecordsFactoryTest {
     private val serializer = mock<CordaAvroSerializer<KeyValuePairList>>()
     private val cordaAvroSerializationFactory = mock<CordaAvroSerializationFactory> {
-        on { createAvroSerializer<KeyValuePairList>(any(), any()) } doReturn serializer
+        on { createAvroSerializer<KeyValuePairList>(any()) } doReturn serializer
     }
     private val clock = TestClock(Instant.ofEpochMilli(2000))
 

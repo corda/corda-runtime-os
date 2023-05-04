@@ -18,7 +18,6 @@ interface StateAndEventBuilder {
      */
     fun createProducer(
         config: ResolvedSubscriptionConfig,
-        throwOnSerializationError: Boolean = true,
         onSerializationError: ((ByteArray) -> Unit)? = null
     ): CordaProducer
 

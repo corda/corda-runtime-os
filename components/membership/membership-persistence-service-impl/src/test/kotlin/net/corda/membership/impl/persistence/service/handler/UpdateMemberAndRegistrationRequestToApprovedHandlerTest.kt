@@ -66,7 +66,7 @@ class UpdateMemberAndRegistrationRequestToApprovedHandlerTest {
             )
         } doReturn keyValuePairListDeserializer
         on {
-            createAvroSerializer<KeyValuePairList>(any(), any())
+            createAvroSerializer<KeyValuePairList>(any())
         } doReturn keyValuePairListSerializer
     }
     private val vaultDmlConnectionId = UUID(0, 0)

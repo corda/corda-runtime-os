@@ -47,7 +47,6 @@ class KafkaCordaProducerBuilderImpl @Activate constructor(
     override fun createProducer(
         producerConfig: ProducerConfig,
         messageBusConfig: SmartConfig,
-        throwOnSerializationError: Boolean,
         onSerializationError: ((ByteArray) -> Unit)?
     ): CordaProducer {
         val configResolver = MessageBusConfigResolver(messageBusConfig.factory)
@@ -55,7 +54,7 @@ class KafkaCordaProducerBuilderImpl @Activate constructor(
 
         return executeKafkaActionWithRetry(
             action = {
-                val producer = createKafkaProducer(kafkaProperties, throwOnSerializationError, onSerializationError)
+                val producer = createKafkaProducer(kafkaProperties, onSerializationError)
                 val maxAllowedMessageSize = messageBusConfig.getLong(MessagingConfig.MAX_ALLOWED_MSG_SIZE)
                 val producerChunkService = messagingChunkFactory.createChunkSerializerService(maxAllowedMessageSize)
                 CordaKafkaProducerImpl(
@@ -75,7 +74,6 @@ class KafkaCordaProducerBuilderImpl @Activate constructor(
 
     private fun createKafkaProducer(
         kafkaProperties: Properties,
-        throwOnSerializationError: Boolean,
         onSerializationError: ((ByteArray) -> Unit)?
     ): KafkaProducer<Any, Any> {
         val contextClassLoader = Thread.currentThread().contextClassLoader
@@ -87,8 +85,8 @@ class KafkaCordaProducerBuilderImpl @Activate constructor(
             }
             KafkaProducer(
                 kafkaProperties,
-                CordaAvroSerializerImpl(avroSchemaRegistry, throwOnSerializationError, onSerializationError),
-                CordaAvroSerializerImpl(avroSchemaRegistry, throwOnSerializationError, onSerializationError)
+                CordaAvroSerializerImpl(avroSchemaRegistry, onSerializationError),
+                CordaAvroSerializerImpl(avroSchemaRegistry, onSerializationError)
             )
         } finally {
             Thread.currentThread().contextClassLoader = contextClassLoader

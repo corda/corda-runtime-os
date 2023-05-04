@@ -14,6 +14,7 @@ import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.exception.CordaMessageAPIProducerRequiresReset
 import net.corda.metrics.CordaMetrics
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.clients.consumer.OffsetAndMetadata
 import org.apache.kafka.clients.producer.Callback
@@ -103,7 +104,11 @@ class CordaKafkaProducerImpl(
         if (chunkedRecords.isNotEmpty()) {
             sendChunks(chunkedRecords, callback, partition)
         } else {
-            producer.send(record.toKafkaRecord(topicPrefix , partition), callback?.toKafkaCallback())
+            try {
+                producer.send(record.toKafkaRecord(topicPrefix , partition), callback?.toKafkaCallback())
+            } catch (ex: CordaRuntimeException) {
+                log.warn("Failed to send record to topic ${record.topic} with key ${record.key}", ex)
+            }
         }
     }
 

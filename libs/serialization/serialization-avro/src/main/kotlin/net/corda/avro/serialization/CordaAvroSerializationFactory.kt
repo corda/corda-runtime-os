@@ -15,7 +15,6 @@ interface CordaAvroSerializationFactory {
      * @return an implementation of CordaAvroSerializer
      */
     fun <T : Any> createAvroSerializer(
-        throwOnSerializationError: Boolean = true,
         onError: ((ByteArray) -> Unit)? = null
     ): CordaAvroSerializer<T>
 

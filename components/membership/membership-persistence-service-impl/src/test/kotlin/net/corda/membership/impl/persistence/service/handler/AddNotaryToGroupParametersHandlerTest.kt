@@ -85,7 +85,7 @@ class AddNotaryToGroupParametersHandlerTest {
         on { deserialize(any()) } doReturn KeyValuePairList(listOf(KeyValuePair(EPOCH_KEY, EPOCH.toString())))
     }
     private val serializationFactory = mock<CordaAvroSerializationFactory> {
-        on { createAvroSerializer<KeyValuePairList>(any(), any()) } doReturn keyValuePairListSerializer
+        on { createAvroSerializer<KeyValuePairList>(any()) } doReturn keyValuePairListSerializer
         on { createAvroDeserializer(any(), eq(KeyValuePairList::class.java)) } doReturn keyValuePairListDeserializer
     }
     private val identity = HoldingIdentity("CN=Alice, O=Alice Corp, L=LDN, C=GB", "group").toCorda()

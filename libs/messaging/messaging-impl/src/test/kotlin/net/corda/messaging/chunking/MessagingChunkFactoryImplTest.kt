@@ -26,7 +26,7 @@ class MessagingChunkFactoryImplTest {
     @BeforeEach
     fun setup() {
         whenever(cordaAvroFactory.createAvroDeserializer(any(), any<Class<Any>>())).thenReturn(valueDeserializer)
-        whenever(cordaAvroFactory.createAvroSerializer<Any>(any(), any())).thenReturn(serializer)
+        whenever(cordaAvroFactory.createAvroSerializer<Any>(any())).thenReturn(serializer)
     }
 
     @Test

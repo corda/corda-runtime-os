@@ -37,7 +37,7 @@ class CordaSubscriptionFactoryTest {
     @BeforeEach
     fun setup() {
         doReturn(chunkSerializerService).`when`(messagingChunkFactory).createChunkSerializerService(any())
-        doReturn(cordaAvroSerializer).`when`(cordaAvroSerializationFactory).createAvroSerializer<Any>(any(), any())
+        doReturn(cordaAvroSerializer).`when`(cordaAvroSerializationFactory).createAvroSerializer<Any>(any())
         smartConfigFactory = SmartConfigFactory.createWithoutSecurityServices()
         config = smartConfigFactory.create(ConfigFactory.load("config/test.conf"))
         factory = CordaSubscriptionFactory(

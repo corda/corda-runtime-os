@@ -52,7 +52,7 @@ class MgmRegistrationRequestHandlerTest {
         on { serialize(any()) } doReturn "".toByteArray()
     }
     private val cordaAvroSerializationFactory: CordaAvroSerializationFactory = mock {
-        on { createAvroSerializer<KeyValuePairList>(any(), any()) } doReturn cordaAvroSerializer
+        on { createAvroSerializer<KeyValuePairList>(any()) } doReturn cordaAvroSerializer
     }
     private val operation = mock<MembershipPersistenceOperation<Unit>> {
         on { execute() } doReturn MembershipPersistenceResult.success()
