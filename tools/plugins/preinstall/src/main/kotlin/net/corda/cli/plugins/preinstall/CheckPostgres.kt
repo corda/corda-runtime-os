@@ -46,6 +46,7 @@ class CheckPostgres : Callable<Int>, PluginContext() {
         try {
             username = getCredential(dbName, namespace)
             password = getCredential(dbPass, namespace)
+            report.addEntry(PreInstallPlugin.ReportEntry("Get PostgreSQL credentials", true))
         } catch (e: Exception) {
             report.addEntry(PreInstallPlugin.ReportEntry("Get PostgreSQL credentials", false, e))
             logger.error(report.failingTests())
