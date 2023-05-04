@@ -11,7 +11,7 @@ import java.security.DigestInputStream
 import java.security.MessageDigest
 import java.security.cert.Certificate
 import java.security.cert.X509Certificate
-import java.util.*
+import java.util.Arrays
 import java.util.jar.JarEntry
 import java.util.jar.Manifest
 
