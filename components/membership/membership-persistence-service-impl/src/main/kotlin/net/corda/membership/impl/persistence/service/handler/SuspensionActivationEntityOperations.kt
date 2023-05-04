@@ -16,24 +16,32 @@ import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.utilities.time.Clock
 import javax.persistence.EntityManager
 import javax.persistence.LockModeType
+import javax.persistence.PessimisticLockException
 
 internal class SuspensionActivationEntityOperations(
     private val clock: Clock,
     private val keyValuePairListDeserializer: CordaAvroDeserializer<KeyValuePairList>,
     private val keyValuePairListSerializer: CordaAvroSerializer<KeyValuePairList>
 ) {
+    @Suppress("ThrowsCount")
     fun findMember(
         em: EntityManager,
         memberName: String,
         groupId: String,
         expectedSerial: Long?,
-        expectedStatus: String
+        expectedStatus: String,
     ): MemberInfoEntity {
-        val member = em.find(
-            MemberInfoEntity::class.java,
-            MemberInfoEntityPrimaryKey(groupId, memberName, false),
-            LockModeType.PESSIMISTIC_WRITE
-        ) ?: throw MembershipPersistenceException("Member '$memberName' does not exist.")
+        val member = try {
+            em.find(
+                MemberInfoEntity::class.java,
+                MemberInfoEntityPrimaryKey(groupId, memberName, false),
+                LockModeType.PESSIMISTIC_WRITE,
+            ) ?: throw MembershipPersistenceException("Member '$memberName' does not exist.")
+        } catch (e: PessimisticLockException) {
+            throw InvalidEntityUpdateException(
+                "Could not update member '$memberName' with serial number: $expectedSerial: ${e.message}",
+            )
+        }
         expectedSerial?.let {
             require(member.serialNumber == it) {
                 throw InvalidEntityUpdateException(
@@ -81,8 +89,8 @@ internal class SuspensionActivationEntityOperations(
                 currentMemberInfo.memberSignatureContent,
                 currentMemberInfo.memberSignatureSpec,
                 serializedMgmContext,
-                updatedSerial
-            )
+                updatedSerial,
+            ),
         )
 
         val memberContext = keyValuePairListDeserializer.deserialize(currentMemberInfo.memberContext)

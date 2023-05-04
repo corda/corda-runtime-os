@@ -13,22 +13,30 @@ import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.membership.datamodel.MemberInfoEntity
 import net.corda.membership.datamodel.MemberInfoEntityPrimaryKey
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_SUSPENDED
+import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_ROLE
+import net.corda.membership.lib.MemberInfoExtension.Companion.ROLES_PREFIX
 import net.corda.membership.lib.MemberInfoFactory
+import net.corda.membership.lib.exceptions.InvalidEntityUpdateException
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.test.util.time.TestClock
 import net.corda.utilities.time.Clock
 import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.membership.MemberContext
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.time.Instant
 import java.util.UUID
@@ -36,6 +44,7 @@ import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.persistence.EntityTransaction
 import javax.persistence.LockModeType
+import javax.persistence.PessimisticLockException
 
 class ActivateMemberHandlerTest {
 
@@ -104,7 +113,11 @@ class ActivateMemberHandlerTest {
         on { cordaAvroSerializationFactory } doReturn cordaAvroSerializationFactory
         on { memberInfoFactory } doReturn memberInfoFactory
     }
-    private val handler: ActivateMemberHandler = ActivateMemberHandler(persistenceHandlerServices)
+    private val addNotaryToGroupParametersHandler = mock<AddNotaryToGroupParametersHandler>()
+    private val handler: ActivateMemberHandler = ActivateMemberHandler(
+        persistenceHandlerServices,
+        addNotaryToGroupParametersHandler,
+    )
     private val context = MembershipRequestContext(
         clock.instant(),
         UUID(0, 1).toString(),
@@ -166,4 +179,79 @@ class ActivateMemberHandlerTest {
             )
         )
     }
+
+    @Test
+    fun `a non notary member will not update the group parameters`() {
+        mockMemberInfoEntity(mgmProvidedContext = byteArrayOf(1), memberProvidedContext = byteArrayOf(2))
+        val mgmContext = KeyValuePairList(
+            listOf(
+                KeyValuePair("one", "1")
+            )
+        )
+        val memberContext = KeyValuePairList(
+            listOf(
+                KeyValuePair("two", "2")
+            )
+        )
+        whenever(keyValuePairListDeserializer.deserialize(byteArrayOf(1))).thenReturn(mgmContext)
+        whenever(keyValuePairListDeserializer.deserialize(byteArrayOf(2))).thenReturn(memberContext)
+
+        invokeTestFunction()
+
+        verify(addNotaryToGroupParametersHandler, never()).addNotaryToGroupParameters(any(), any())
+    }
+
+    @Test
+    fun `a notary member will update the group parameters`() {
+        val notaryMemberProvidedContext = mock<MemberContext> {
+            on { entries } doReturn mapOf("$ROLES_PREFIX.1" to NOTARY_ROLE).entries
+        }
+        whenever(memberInfo.memberProvidedContext).doReturn(notaryMemberProvidedContext)
+        mockMemberInfoEntity(mgmProvidedContext = byteArrayOf(1), memberProvidedContext = byteArrayOf(2))
+        val mgmContext = KeyValuePairList(
+            listOf(
+                KeyValuePair("one", "1")
+            )
+        )
+        val memberContext = KeyValuePairList(
+            listOf(
+                KeyValuePair("two", "2")
+            )
+        )
+        whenever(keyValuePairListDeserializer.deserialize(byteArrayOf(1))).thenReturn(mgmContext)
+        whenever(keyValuePairListDeserializer.deserialize(byteArrayOf(2))).thenReturn(memberContext)
+
+        invokeTestFunction()
+
+        verify(addNotaryToGroupParametersHandler).addNotaryToGroupParameters(any(), any())
+    }
+
+    @Test
+    fun `when updateGroupParameters throws a PessimisticLockException an InvalidEntityUpdateException is thrown`() {
+        val notaryMemberProvidedContext = mock<MemberContext> {
+            on { entries } doReturn mapOf("$ROLES_PREFIX.1" to NOTARY_ROLE).entries
+        }
+        whenever(memberInfo.memberProvidedContext).doReturn(notaryMemberProvidedContext)
+        whenever(addNotaryToGroupParametersHandler.addNotaryToGroupParameters(any(), any())).doThrow(
+            PessimisticLockException()
+        )
+        mockMemberInfoEntity(mgmProvidedContext = byteArrayOf(1), memberProvidedContext = byteArrayOf(2))
+        val mgmContext = KeyValuePairList(
+            listOf(
+                KeyValuePair("one", "1")
+            )
+        )
+        val memberContext = KeyValuePairList(
+            listOf(
+                KeyValuePair("two", "2")
+            )
+        )
+        whenever(keyValuePairListDeserializer.deserialize(byteArrayOf(1))).thenReturn(mgmContext)
+        whenever(keyValuePairListDeserializer.deserialize(byteArrayOf(2))).thenReturn(memberContext)
+
+        assertThrows<InvalidEntityUpdateException> {
+            invokeTestFunction()
+        }
+    }
+
 }

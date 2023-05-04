@@ -6,7 +6,6 @@ import net.corda.data.identity.HoldingIdentity
 import net.corda.data.membership.db.request.MembershipPersistenceRequest
 import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.data.membership.db.response.MembershipPersistenceResponse
-import net.corda.data.membership.db.response.query.PersistenceFailedResponse
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
@@ -70,7 +69,7 @@ abstract class AbstractPersistenceClient(
         }.send()
         return when (result) {
             is Either.Left -> result.a
-            is Either.Right -> PersistenceFailedResponse(result.b)
+            is Either.Right -> result.b
         }
     }
 

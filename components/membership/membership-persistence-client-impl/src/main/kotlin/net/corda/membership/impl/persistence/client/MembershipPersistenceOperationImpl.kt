@@ -35,11 +35,11 @@ internal class MembershipPersistenceOperationImpl<T>(
         val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
-    fun send(): Either<T, String> {
+    fun send(): Either<T, MembershipPersistenceResult.Failure<T>> {
         if (sender == null) {
             val failureReason = "Persistence client could not send persistence request because the RPC sender has not been initialised."
             logger.warn(failureReason)
-            return Either.Right(failureReason)
+            return Either.Right(MembershipPersistenceResult.Failure(failureReason))
         }
         val requestId = request.context.requestId
         logger.info("Sending membership persistence RPC request ID: $requestId.")
@@ -50,31 +50,63 @@ internal class MembershipPersistenceOperationImpl<T>(
             val payload = response.payload
             val context = response.context
             if (context.holdingIdentity != request.context.holdingIdentity) {
-                Either.Right("Holding identity in the response received does not match what was sent in the request.")
+                Either.Right(
+                    MembershipPersistenceResult.Failure(
+                        "Holding identity in the response received does not match what was sent in the request.",
+                    ),
+                )
             } else if (context.requestTimestamp != request.context.requestTimestamp) {
-                Either.Right("Request timestamp in the response received does not match what was sent in the request.")
+                Either.Right(
+                    MembershipPersistenceResult.Failure(
+                        "Request timestamp in the response received does not match what was sent in the request.",
+                    ),
+                )
             } else if (context.requestId != request.context.requestId) {
-                Either.Right("Request ID in the response received does not match what was sent in the request.")
+                Either.Right(
+                    MembershipPersistenceResult.Failure(
+                        "Request ID in the response received does not match what was sent in the request.",
+                    ),
+                )
             } else if (context.requestTimestamp > response.context.responseTimestamp) {
-                Either.Right("Response timestamp is before the request timestamp.")
+                Either.Right(
+                    MembershipPersistenceResult.Failure(
+                        "Response timestamp is before the request timestamp.",
+                    ),
+                )
             } else if (payload is PersistenceFailedResponse) {
-                Either.Right(payload.errorMessage)
+                Either.Right(
+                    MembershipPersistenceResult.Failure(payload.errorMessage, payload.errorKind),
+                )
             } else {
-                convertResult(payload)
+                convertResult(payload).mapRight {
+                    MembershipPersistenceResult.Failure(it)
+                }
             }
         } catch (e: IllegalArgumentException) {
-            Either.Right("Invalid response for request $requestId. ${e.message}")
+            Either.Right(
+                MembershipPersistenceResult.Failure(
+                    "Invalid response for request $requestId. ${e.message}",
+                ),
+            )
         } catch (e: TimeoutException) {
-            Either.Right("Timeout waiting for response from membership persistence RPC request ID: $requestId.")
+            Either.Right(
+                MembershipPersistenceResult.Failure(
+                    "Timeout waiting for response from membership persistence RPC request ID: $requestId.",
+                ),
+            )
         } catch (e: Exception) {
-            Either.Right("Exception occurred while sending RPC request ID: $requestId. ${e.message}")
+            Either.Right(
+                MembershipPersistenceResult.Failure(
+                    "Exception occurred while sending RPC request ID: $requestId. ${e.message}",
+                ),
+            )
         }
     }
 
     override fun execute(): MembershipPersistenceResult<T> {
         return when (val result = send()) {
             is Either.Left -> MembershipPersistenceResult.Success(result.a)
-            is Either.Right -> MembershipPersistenceResult.Failure(result.b)
+            is Either.Right -> result.b
         }
     }
 
@@ -83,6 +115,6 @@ internal class MembershipPersistenceOperationImpl<T>(
             topic = MEMBERSHIP_DB_ASYNC_TOPIC,
             key = request.context.requestId,
             value = MembershipPersistenceAsyncRequest(request),
-        )
+        ),
     )
 }

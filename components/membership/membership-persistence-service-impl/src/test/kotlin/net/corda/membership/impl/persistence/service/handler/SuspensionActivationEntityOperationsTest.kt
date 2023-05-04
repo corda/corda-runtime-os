@@ -4,7 +4,6 @@ import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
-import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.membership.datamodel.MemberInfoEntity
 import net.corda.membership.datamodel.MemberInfoEntityPrimaryKey
@@ -25,6 +24,7 @@ import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
@@ -33,6 +33,7 @@ import java.util.UUID
 import javax.persistence.EntityManager
 import javax.persistence.EntityTransaction
 import javax.persistence.LockModeType
+import javax.persistence.PessimisticLockException
 import net.corda.data.identity.HoldingIdentity as AvroHoldingIdentity
 
 class SuspensionActivationEntityOperationsTest {
@@ -70,19 +71,6 @@ class SuspensionActivationEntityOperationsTest {
         UUID(0, 1).toString(),
         holdingIdentity.toAvro()
     )
-
-    private fun invokeTestFunctionWithError(
-        testFunction: () -> PersistentMemberInfo,
-        errorMsg: String,
-        type: Class<*> = MembershipPersistenceException::class.java
-    ) {
-        assertThrows<Exception> {
-            testFunction.invoke()
-        }.apply {
-            assertThat(this).isInstanceOf(type)
-            assertThat(message).contains(errorMsg)
-        }
-    }
 
     @Suppress("LongParameterList")
     private fun mockMemberInfoEntity(
@@ -172,6 +160,17 @@ class SuspensionActivationEntityOperationsTest {
             handler.findMember(em, knownX500Name.toString(), knownGroupId, null, expectedStatus)
         }.apply {
             assertThat(this.message).contains("cannot be performed")
+        }
+    }
+    @Test
+    fun `findMember throws InvalidEntityUpdateException if PessimisticLockException is thrown`() {
+        val currentStatus = "Status"
+        whenever(
+            em.find(eq(MemberInfoEntity::class.java), eq(primaryKey), eq(LockModeType.PESSIMISTIC_WRITE)),
+        ).doThrow(PessimisticLockException())
+
+        assertThrows<InvalidEntityUpdateException> {
+            handler.findMember(em, knownX500Name.toString(), knownGroupId, SERIAL_NUMBER, currentStatus)
         }
     }
 
