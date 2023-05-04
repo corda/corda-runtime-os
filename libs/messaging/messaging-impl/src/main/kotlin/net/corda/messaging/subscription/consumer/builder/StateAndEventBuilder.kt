@@ -8,9 +8,17 @@ import net.corda.messaging.subscription.consumer.listener.StateAndEventConsumerR
 
 @Suppress("LongParameterList")
 interface StateAndEventBuilder {
+    /**
+     * Create producer
+     *
+     * @param config subscription configuration for the messaging layer.
+     * @param throwOnSerializationError throw exception on serialization error, or return null. defaults to throw
+     * @param onSerializationError a lambda to run on serialization error, will run regardless of throwOnSerializationError
+     * @return
+     */
     fun createProducer(
         config: ResolvedSubscriptionConfig,
-        throwOnError: Boolean = true,
+        throwOnSerializationError: Boolean = true,
         onSerializationError: ((ByteArray) -> Unit)? = null
     ): CordaProducer
 

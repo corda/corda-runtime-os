@@ -9,6 +9,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 
+
 /**
  * Kafka implementation of the Subscription Factory.
  */
@@ -29,9 +30,9 @@ class CordaAvroSerializationFactoryImpl @Activate constructor(
     }
 
     override fun <T : Any> createAvroSerializer(
-        throwOnError: Boolean,
-        onError: Consumer<ByteArray>?
+        throwOnSerializationError: Boolean,
+        onError: ((ByteArray) -> Unit)?
     ): CordaAvroSerializer<T> {
-        return CordaAvroSerializerImpl(avroSchemaRegistry, throwOnError, onError)
+        return CordaAvroSerializerImpl(avroSchemaRegistry, throwOnSerializationError, onError)
     }
 }

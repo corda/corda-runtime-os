@@ -119,7 +119,10 @@ internal class EventLogSubscriptionImpl<K : Any, V : Any>(
                     rebalanceListener
                 )
                 val producerConfig = ProducerConfig(config.clientId, config.instanceId, true, ProducerRoles.EVENT_LOG)
-                producer = cordaProducerBuilder.createProducer(producerConfig, config.messageBusConfig)
+                producer = cordaProducerBuilder.createProducer(producerConfig, config.messageBusConfig) { data ->
+                    log.warn("Failed to serialize record from ${config.topic}")
+                    deadLetterRecords.add(data)
+                }
                 consumer.use { cordaConsumer ->
                     cordaConsumer.subscribe(config.topic)
                     producer.use { cordaProducer ->

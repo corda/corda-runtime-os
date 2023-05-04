@@ -11,6 +11,13 @@ import org.apache.kafka.common.serialization.Deserializer
 import org.apache.kafka.common.serialization.StringDeserializer
 import org.slf4j.LoggerFactory
 
+/**
+ * Corda avro serializer impl
+ *
+ * @param T Type to deserialize
+ * @property schemaRegistry the Avro-based Schemas
+ * @property onError lambda to be run on deserialization error
+ */
 class CordaAvroDeserializerImpl<T: Any>(
     private val schemaRegistry: AvroSchemaRegistry,
     private val onError: Consumer<ByteArray>,

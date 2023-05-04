@@ -29,7 +29,7 @@ internal class AddNotaryToGroupParametersHandler(
     }
 
     private val keyValuePairListSerializer: CordaAvroSerializer<KeyValuePairList> =
-        cordaAvroSerializationFactory.createAvroSerializer(false) {
+        cordaAvroSerializationFactory.createAvroSerializer {
             logger.error("Failed to serialize key value pair list.")
         }
 
