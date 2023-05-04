@@ -1,5 +1,6 @@
 package net.corda.messaging.emulation.publisher
 
+import java.util.concurrent.CompletableFuture
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
@@ -7,7 +8,6 @@ import net.corda.messaging.api.exception.CordaRPCAPISenderException
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.messaging.emulation.rpc.RPCTopicService
-import java.util.concurrent.CompletableFuture
 
 class RPCSenderImpl<REQUEST, RESPONSE>(
     private val rpcConfig: RPCConfig<REQUEST, RESPONSE>,
@@ -32,8 +32,6 @@ class RPCSenderImpl<REQUEST, RESPONSE>(
 
     override fun close() {
         running = false
-        lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
-        lifecycleCoordinator.stop()
         lifecycleCoordinator.close()
     }
 
