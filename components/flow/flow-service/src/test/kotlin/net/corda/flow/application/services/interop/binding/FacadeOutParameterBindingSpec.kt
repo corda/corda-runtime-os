@@ -131,6 +131,7 @@ class FacadeOutParameterBindingSpec : DescribeSpec({
                     "but constructor parameters are [reservation-ref]"
         }
 
+        //TODO Investigate changing toString method to get TypedParameter(... instead of TypedParameterImpl
         it("should fail if a data class property has the wrong type") {
             MethodReturnTypeIsDataClassWithIncorrectTypes::class shouldFailToBindWith
                     "Constructor parameter reservationRef(#0) of type long does not match type of " +

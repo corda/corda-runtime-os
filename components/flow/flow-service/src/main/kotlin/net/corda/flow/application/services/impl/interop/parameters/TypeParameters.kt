@@ -85,15 +85,4 @@ class TypeParameters<T> {
             )
         } as ParameterType<T>
     }
-
-//        /**
-//         * The expected type of a [TypedParameterValue] for this [ParameterTypeImpl].
-//         */
-//        @Suppress("UNCHECKED_CAST")
-//        open val expectedType: Class<T>
-//            get() {
-//                val superclass = this::class.java.genericSuperclass as ParameterizedType
-//                return superclass.actualTypeArguments[0] as Class<T>
-//            }
-//    }
 }

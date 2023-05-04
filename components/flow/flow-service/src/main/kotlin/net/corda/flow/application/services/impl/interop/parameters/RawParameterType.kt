@@ -29,5 +29,7 @@ data class RawParameterType<T>(private val typeLabel: ParameterTypeLabel) : Para
         return expectedType as ParameterType<T> //expectedType is Class<?/T> vs ParameterType<T>
     }
 
-    override fun toString() = typeLabel.typeName
+    override fun toString(): String {
+        return typeLabel.typeName
+    }
 }
