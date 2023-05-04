@@ -50,6 +50,10 @@ class CordaKafkaConsumerBuilderImpl @Activate constructor(
     ): CordaConsumer<K, V> {
         val resolver = MessageBusConfigResolver(messageBusConfig.factory)
         val (resolvedConfig, kafkaProperties) = resolver.resolve(messageBusConfig, consumerConfig)
+        log.info("QQQ for ${consumerConfig.group} and ${consumerConfig.role} (${vClazz.simpleName}) we have $resolvedConfig")
+        kafkaProperties.forEach { k, v ->
+            log.info("QQQ ${consumerConfig.group} \t $k $v")
+        }
 
         return executeKafkaActionWithRetry(
             action = {
