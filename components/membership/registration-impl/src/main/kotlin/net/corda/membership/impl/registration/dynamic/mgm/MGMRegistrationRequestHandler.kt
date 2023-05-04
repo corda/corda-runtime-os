@@ -18,7 +18,7 @@ import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
 import java.util.UUID
 
-internal class MGMRegistrationRequestHandler(
+internal class MGMRegistrationRequestHandler (
     cordaAvroSerializationFactory: CordaAvroSerializationFactory,
     private val membershipPersistenceClient: MembershipPersistenceClient,
     private val membershipQueryClient: MembershipQueryClient,
@@ -73,10 +73,8 @@ internal class MGMRegistrationRequestHandler(
     fun throwIfRegistrationAlreadyApproved(holdingIdentity: HoldingIdentity) {
         val result = membershipQueryClient.queryRegistrationRequests(holdingIdentity).getOrThrow()
         result.find { it.registrationStatus == RegistrationStatus.APPROVED }?.let { approvedRegistration ->
-            throw InvalidMembershipRegistrationException(
-                "Registration failed, there is already an approved registration for" +
-                        " ${holdingIdentity.shortHash} with id ${approvedRegistration.registrationId}."
-            )
+            throw InvalidMembershipRegistrationException("Registration failed, there is already an approved registration for" +
+                " ${holdingIdentity.shortHash} with id ${approvedRegistration.registrationId}.")
         }
     }
 

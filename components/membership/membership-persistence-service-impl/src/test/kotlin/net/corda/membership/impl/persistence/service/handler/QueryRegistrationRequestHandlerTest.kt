@@ -39,11 +39,15 @@ import javax.persistence.criteria.Root
 class QueryRegistrationRequestHandlerTest {
     private val holdingIdentity = HoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", "groupId")
     private val shortHash = holdingIdentity.toCorda().shortHash
+    private val serialisedMemberContext = byteArrayOf(1, 2, 3)
+    private val memberContext = mock<KeyValuePairList>()
     private val memberSignatureKey = byteArrayOf(1)
     private val memberSignatureContent = byteArrayOf(2)
     private val memberSignatureSpec = "SignatureSpec"
-    private val registrationSignatureKey = byteArrayOf(3)
-    private val registrationSignatureContent = byteArrayOf(4)
+    private val registrationContext = mock<KeyValuePairList>()
+    private val serialisedRegistrationContext = "serialisedRegistrationContext".toByteArray()
+    private val registrationSignatureKey = "registrationSignatureKey".toByteArray()
+    private val registrationSignatureContent = "registrationSignatureContent".toByteArray()
     private val registrationSignatureSpec = "SignatureSpec-2"
     private val entitySet = mock<JpaEntitiesSet>()
     private val jpaEntitiesRegistry = mock<JpaEntitiesRegistry> {
@@ -62,7 +66,8 @@ class QueryRegistrationRequestHandlerTest {
         on { where(predicate) } doReturn mock
     }
     private val keyValuePairListDeserializer = mock<CordaAvroDeserializer<KeyValuePairList>> {
-        on { deserialize(any()) } doReturn KeyValuePairList(emptyList())
+        on { deserialize(serialisedMemberContext) } doReturn memberContext
+        on { deserialize(serialisedRegistrationContext) } doReturn registrationContext
     }
     private val serializationFactory = mock<CordaAvroSerializationFactory> {
         on { createAvroDeserializer(any(), eq(KeyValuePairList::class.java)) } doReturn keyValuePairListDeserializer
@@ -115,11 +120,11 @@ class QueryRegistrationRequestHandlerTest {
                     "SENT_TO_MGM",
                     Instant.ofEpochSecond(500),
                     Instant.ofEpochSecond(600),
-                    byteArrayOf(1, 2, 3),
+                    serialisedMemberContext,
                     memberSignatureKey,
                     memberSignatureContent,
                     memberSignatureSpec,
-                    byteArrayOf(4,5,6),
+                    serialisedRegistrationContext,
                     registrationSignatureKey,
                     registrationSignatureContent,
                     registrationSignatureSpec,
@@ -134,10 +139,26 @@ class QueryRegistrationRequestHandlerTest {
         assertThat(result.registrationRequest?.registrationId)
             .isNotNull
             .isEqualTo(registrationId)
-        assertThat(result.registrationRequest.memberSignature)
-            .isEqualTo(CryptoSignatureWithKey(ByteBuffer.wrap(memberSignatureKey), ByteBuffer.wrap(memberSignatureContent)))
-        assertThat(result.registrationRequest.memberSignatureSpec)
-            .isEqualTo(CryptoSignatureSpec(memberSignatureSpec, null, null))
+        assertThat(result.registrationRequest.memberProvidedContext).isEqualTo(memberContext)
+        assertThat(result.registrationRequest.memberSignature).isEqualTo(
+            CryptoSignatureWithKey(
+                ByteBuffer.wrap(memberSignatureKey),
+                ByteBuffer.wrap(memberSignatureContent)
+            )
+        )
+        assertThat(result.registrationRequest.memberSignatureSpec).isEqualTo(
+            CryptoSignatureSpec(memberSignatureSpec, null, null)
+        )
+        assertThat(result.registrationRequest.registrationContext).isEqualTo(registrationContext)
+        assertThat(result.registrationRequest.registrationSignature).isEqualTo(
+            CryptoSignatureWithKey(
+                ByteBuffer.wrap(registrationSignatureKey),
+                ByteBuffer.wrap(registrationSignatureContent)
+            )
+        )
+        assertThat(result.registrationRequest.registrationSignatureSpec).isEqualTo(
+            CryptoSignatureSpec(registrationSignatureSpec, null, null)
+        )
     }
 
     @Test

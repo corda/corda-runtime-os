@@ -395,9 +395,7 @@ class SynchronisationIntegrationTest {
             memberInfoFactory.create(
                 sortedMapOf(
                     MemberInfoExtension.PARTY_NAME to holdingIdentity.x500Name,
-                    String.format(MemberInfoExtension.PARTY_SESSION_KEYS, 0) to keyEncodingService.encodeAsString(
-                        sessionInitKey
-                    ),
+                    String.format(MemberInfoExtension.PARTY_SESSION_KEYS, 0) to keyEncodingService.encodeAsString(sessionInitKey),
                     MemberInfoExtension.GROUP_ID to groupId,
                     String.format(MemberInfoExtension.URL_KEY, 0) to "https://corda5.r3.com:10000",
                     String.format(MemberInfoExtension.PROTOCOL_VERSION, 0) to "1",

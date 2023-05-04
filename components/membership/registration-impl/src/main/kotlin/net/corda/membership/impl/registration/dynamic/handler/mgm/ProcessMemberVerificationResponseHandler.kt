@@ -90,11 +90,7 @@ internal class ProcessMemberVerificationResponseHandler(
                 )
             }
 
-            val status = getNextRegistrationStatus(
-                mgm.toCorda(),
-                member.toCorda(),
-                registrationId
-            )
+            val status = getNextRegistrationStatus(mgm.toCorda(), member.toCorda(), registrationId)
             val setRegistrationRequestStatusCommands = membershipPersistenceClient.setRegistrationRequestStatus(
                 mgm.toCorda(),
                 registrationId,

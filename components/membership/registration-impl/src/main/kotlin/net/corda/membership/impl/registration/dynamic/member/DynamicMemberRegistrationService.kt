@@ -172,9 +172,7 @@ class DynamicMemberRegistrationService @Activate constructor(
         val sessionKeyIdRegex = SESSION_KEY_ID.format("([0-9]+)").toRegex()
         val notaryProtocolVersionsRegex = NOTARY_SERVICE_PROTOCOL_VERSIONS.format("[0-9]+").toRegex()
 
-        val REGISTRATION_CONTEXT_FIELDS = setOf(
-            PRE_AUTH_TOKEN
-        )
+        val REGISTRATION_CONTEXT_FIELDS = setOf(PRE_AUTH_TOKEN)
     }
 
     // for watching the config changes
@@ -282,7 +280,7 @@ class DynamicMemberRegistrationService @Activate constructor(
                 )
             }
             val customFieldsValid = registrationContextCustomFieldsVerifier.verify(context)
-            if (customFieldsValid is RegistrationContextCustomFieldsVerifier.Result.Failure) {
+            if (customFieldsValid is RegistrationContextCustomFieldsVerifier.Result.Failure)  {
                 logger.info(customFieldsValid.reason)
                 throw InvalidMembershipRegistrationException("Registration failed. ${customFieldsValid.reason}")
             }
@@ -299,6 +297,13 @@ class DynamicMemberRegistrationService @Activate constructor(
                     notaryKeys,
                 ).toSortedMap()
                     .toWire()
+                val registrationContext = buildRegistrationContext(context)
+
+                val publicKey = keyEncodingService.decodePublicKey(memberContext.getFirst(PARTY_SESSION_KEYS_PEM))
+                val signatureSpec = memberContext.getFirst(SESSION_KEYS_SIGNATURE_SPEC)
+
+                val signedMemberContext = sign(memberId, publicKey, signatureSpec, memberContext)
+                val signedRegistrationContext = sign(memberId, publicKey, signatureSpec, registrationContext)
 
                 val groupReader = membershipGroupReaderProvider.getGroupReader(member)
                 val mgm = groupReader.lookup().firstOrNull { it.isMgm }
@@ -312,14 +317,6 @@ class DynamicMemberRegistrationService @Activate constructor(
                 val serialInfo = context[SERIAL]?.toLong()
                     ?: currentInfo?.serial
                     ?: 0
-
-                val registrationContext = buildRegistrationContext(context)
-
-                val publicKey = keyEncodingService.decodePublicKey(memberContext.getFirst(PARTY_SESSION_KEYS_PEM))
-                val signatureSpec = memberContext.getFirst(SESSION_KEYS_SIGNATURE_SPEC)
-
-                val signedMemberContext = sign(memberId, publicKey, signatureSpec, memberContext)
-                val signedRegistrationContext = sign(memberId, publicKey, signatureSpec, registrationContext)
 
                 val message = MembershipRegistrationRequest(
                     registrationId.toString(),
@@ -406,11 +403,10 @@ class DynamicMemberRegistrationService @Activate constructor(
 
         private fun buildRegistrationContext(
             context: Map<String, String>
-        ): KeyValuePairList {
-            return context.filter {
-                REGISTRATION_CONTEXT_FIELDS.contains(it.key)
-            }.toSortedMap().toWire()
-        }
+        ) = context.filter {
+            REGISTRATION_CONTEXT_FIELDS.contains(it.key)
+        }.toSortedMap().toWire()
+
 
         private fun buildMemberContext(
             context: Map<String, String>,
@@ -451,14 +447,14 @@ class DynamicMemberRegistrationService @Activate constructor(
 
         }
 
-        private fun getTlsSubject(member: HoldingIdentity): Map<String, String> {
+        private fun getTlsSubject(member: HoldingIdentity) : Map<String, String> {
             return if (TlsType.getClusterType(configurationGetService::getSmartConfig) == TlsType.MUTUAL) {
                 val info =
                     locallyHostedIdentitiesService.getIdentityInfo(member)
                         ?: throw CordaRuntimeException(
                             "Member $member is not locally hosted. " +
-                                    "If it had been configured, please retry the registration in a few seconds. " +
-                                    "If it had not been configured, please configure it using the network/setup API."
+                            "If it had been configured, please retry the registration in a few seconds. " +
+                            "If it had not been configured, please configure it using the network/setup API."
                         )
                 val certificate = info.tlsCertificates
                     .firstOrNull()
@@ -487,12 +483,7 @@ class DynamicMemberRegistrationService @Activate constructor(
                     require(orderVerifier.isOrdered(this, 3)) { "Provided notary key IDs are incorrectly numbered." }
                 }
                 context.keys.filter { notaryProtocolVersionsRegex.matches(it) }.apply {
-                    require(
-                        orderVerifier.isOrdered(
-                            this,
-                            6
-                        )
-                    ) { "Provided notary protocol versions are incorrectly numbered." }
+                    require(orderVerifier.isOrdered(this, 6)) { "Provided notary protocol versions are incorrectly numbered." }
                 }
             }
         }
@@ -533,11 +524,11 @@ class DynamicMemberRegistrationService @Activate constructor(
             }
             logger.info(
                 "Signature spec for key with ID: ${key.id} was not specified. Applying default signature spec " +
-                        "for ${key.schemeCodeName}."
+                    "for ${key.schemeCodeName}."
             )
             return key.spec ?: throw IllegalArgumentException(
                 "Could not find a suitable signature spec for ${key.schemeCodeName}. " +
-                        "Specify signature spec for key with ID: ${key.id} explicitly in the context."
+                    "Specify signature spec for key with ID: ${key.id} explicitly in the context."
             )
         }
 
@@ -679,7 +670,6 @@ class DynamicMemberRegistrationService @Activate constructor(
                     setOf(ConfigKeys.BOOT_CONFIG, MESSAGING_CONFIG)
                 )
             }
-
             else -> {
                 deactivate(coordinator)
                 configHandle?.close()
@@ -701,9 +691,8 @@ class DynamicMemberRegistrationService @Activate constructor(
     private fun serialize(context: KeyValuePairList) = keyValuePairListSerializer.serialize(context)
         ?: throw IllegalArgumentException("Failed to serialize the KeyValuePairList for this request.")
 
-    private fun KeyValuePairList.getFirst(key: String): String {
-        val firstKey = key.format(0)
-        return items.first { it.key == firstKey }.value
+    private fun KeyValuePairList.getFirst(key: String): String = key.format(0).let { firstKey ->
+        items.first { it.key == firstKey }.value
     }
 
     private fun sign(

@@ -109,6 +109,7 @@ class MembershipPersistenceRPCProcessorTest {
         const val DUMMY_LABEL = "label1"
         const val SERIAL = 0L
         const val SIGNATURE_SPEC = "signatureSpec"
+        const val REG_SIGNATURE_SPEC = "regSignatureSpec"
     }
 
     private lateinit var processor: MembershipPersistenceRPCProcessor
@@ -387,7 +388,7 @@ class MembershipPersistenceRPCProcessorTest {
     @Test
     fun `persist registration request returns success`() {
         val memberContext = SignedData(
-            ByteBuffer.wrap("8".toByteArray()),
+            ByteBuffer.wrap(memberContext),
             CryptoSignatureWithKey(
                 ByteBuffer.wrap(memberSignatureKey),
                 ByteBuffer.wrap(memberSignatureContent)
@@ -395,12 +396,12 @@ class MembershipPersistenceRPCProcessorTest {
             CryptoSignatureSpec(SIGNATURE_SPEC, null, null),
         )
         val registrationContext = SignedData(
-            ByteBuffer.wrap("0".toByteArray()),
+            ByteBuffer.wrap(registrationContext),
             CryptoSignatureWithKey(
-                ByteBuffer.wrap(memberSignatureKey),
-                ByteBuffer.wrap(memberSignatureContent)
+                ByteBuffer.wrap(registrationSignatureKey),
+                ByteBuffer.wrap(registrationSignatureContent)
             ),
-            CryptoSignatureSpec(SIGNATURE_SPEC, null, null),
+            CryptoSignatureSpec(REG_SIGNATURE_SPEC, null, null),
         )
         val rq = MembershipPersistenceRequest(
             rqContext,
@@ -495,7 +496,7 @@ class MembershipPersistenceRPCProcessorTest {
     @Test
     fun `update registration request status return success`() {
         val memberContext = SignedData(
-            ByteBuffer.wrap("8".toByteArray()),
+            ByteBuffer.wrap(memberContext),
             CryptoSignatureWithKey(
                 ByteBuffer.wrap(memberSignatureKey),
                 ByteBuffer.wrap(memberSignatureContent)
@@ -503,12 +504,12 @@ class MembershipPersistenceRPCProcessorTest {
             CryptoSignatureSpec(SIGNATURE_SPEC, null, null),
         )
         val registrationContext = SignedData(
-            ByteBuffer.wrap("0".toByteArray()),
+            ByteBuffer.wrap(registrationContext),
             CryptoSignatureWithKey(
-                ByteBuffer.wrap(memberSignatureKey),
-                ByteBuffer.wrap(memberSignatureContent)
+                ByteBuffer.wrap(registrationSignatureKey),
+                ByteBuffer.wrap(registrationSignatureContent)
             ),
-            CryptoSignatureSpec(SIGNATURE_SPEC, null, null),
+            CryptoSignatureSpec(REG_SIGNATURE_SPEC, null, null),
         )
         val rq = MembershipPersistenceRequest(
             rqContext,

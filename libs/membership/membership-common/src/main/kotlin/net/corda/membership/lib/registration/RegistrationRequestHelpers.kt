@@ -15,7 +15,6 @@ object RegistrationRequestHelpers {
     fun RegistrationRequest.getPreAuthToken(
         keyValuePairDeserializer: CordaAvroDeserializer<KeyValuePairList>
     ): UUID? {
-        println("charlie bbe")
         return keyValuePairDeserializer.deserialize(registrationContext.data.array())?.items?.find {
             it.key == PRE_AUTH_TOKEN
         }?.let {
