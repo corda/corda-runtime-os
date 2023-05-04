@@ -108,10 +108,6 @@ class DefaultKryoCustomizer {
                     override fun newSerializer(kryo: Kryo, type: Class<*>) = ThrowableSerializer(kryo, type)
                 })
 
-//                addDefaultSerializer(InvocationHandler::class.java, object: BaseSerializerFactory<ProxySerializer<*,*>>() {
-//                    override fun newSerializer(kryo: Kryo, type: Class<*>) = ProxySerializer(type)
-//                })
-
                 //register loggers using an int ID to reduce information saved in kryo
                 //ensures Kryo does not write the name of the concrete logging impl class into the serialized stream
                 //See CORE-812 for more details

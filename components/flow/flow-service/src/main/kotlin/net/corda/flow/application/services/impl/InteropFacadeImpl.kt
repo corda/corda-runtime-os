@@ -13,7 +13,6 @@ import net.corda.v5.application.interop.facade.Facade
 import net.corda.v5.application.interop.facade.FacadeReader
 import java.io.Reader
 
-@Suppress("TooManyFunctions")
 @Component(service = [FacadeReader::class, UsedByFlow::class], scope = PROTOTYPE)
 class InteropFacadeImpl @Activate constructor(
     @Reference(service = SerializationServiceInternal::class)

@@ -41,8 +41,8 @@ object FacadeProxies {
             proxy
         ) as T
     }
-}
 
+}
 
 /**
  * Kotlin convenience method for creating a client proxy with a default [JsonMarshaller].
