@@ -14,6 +14,7 @@ import net.corda.crypto.flow.CryptoFlowOpsTransformer.Companion.REQUEST_OP_KEY
 import net.corda.crypto.flow.CryptoFlowOpsTransformer.Companion.REQUEST_TTL_KEY
 import net.corda.crypto.flow.CryptoFlowOpsTransformer.Companion.RESPONSE_TOPIC
 import net.corda.crypto.flow.impl.CryptoFlowOpsTransformerImpl
+import net.corda.crypto.persistence.SigningKeyInfo
 import net.corda.crypto.service.impl.SigningServiceImpl
 import net.corda.crypto.service.impl.infra.ActResult
 import net.corda.crypto.service.impl.infra.ActResultTimestamps
@@ -38,6 +39,7 @@ import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.crypto.DigestAlgorithmName
+import net.corda.v5.crypto.SecureHash
 import org.junit.jupiter.api.Assertions.assertInstanceOf
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.BeforeEach
@@ -76,6 +78,7 @@ class CryptoFlowOpsBusProcessorTests {
     private lateinit var responseTopic: String
     private lateinit var keyEncodingService: KeyEncodingService
     private lateinit var cryptoOpsClient: CryptoOpsProxyClient
+    private lateinit var signingService: SigningServiceImpl
     private lateinit var externalEventResponseFactory: ExternalEventResponseFactory
     private lateinit var processor: CryptoFlowOpsBusProcessor
     private lateinit var digestService: DigestService
@@ -170,7 +173,7 @@ class CryptoFlowOpsBusProcessorTests {
             on { decodePublicKey(any<ByteArray>()) } doReturn publicKeyMock
             on { encodeAsByteArray(any()) } doReturn byteArrayOf(42)
         }
-        val signingService = mock<SigningServiceImpl> {
+        signingService = mock<SigningServiceImpl> {
             on { sign(any(), any(), any(), any(), any()) } doReturn signatureMock
             on { schemeMetadata } doReturn schemeMetadataMock
         }
@@ -219,40 +222,9 @@ class CryptoFlowOpsBusProcessorTests {
 
         doAnswer {
             passedTenantId = it.getArgument(0)
-            passedList = it.getArgument<SecureHashes>(1).hashes.map { avroSecureHash ->
-                SecureHashImpl(avroSecureHash.algorithm, avroSecureHash.bytes.array()).toString()
-            }
-            CryptoSigningKeys(
-                listOf(
-                    CryptoSigningKey(
-                        "id1",
-                        "tenant",
-                        "LEDGER",
-                        "alias1",
-                        "hsmAlias1",
-                        ByteBuffer.wrap(keyEncodingService.encodeAsByteArray(myPublicKeys[0])),
-                        "FAKE",
-                        null,
-                        null,
-                        null,
-                        Instant.now()
-                    ),
-                    CryptoSigningKey(
-                        "id2",
-                        "tenant",
-                        "LEDGER",
-                        "alias2",
-                        "hsmAlias2",
-                        ByteBuffer.wrap(keyEncodingService.encodeAsByteArray(myPublicKeys[1])),
-                        "FAKE",
-                        null,
-                        null,
-                        null,
-                        Instant.now()
-                    )
-                )
-            )
-        }.whenever(cryptoOpsClient).lookupKeysByFullIdsProxy(any(), any())
+            passedList = it.getArgument<List<SecureHash>>(1).map { it.toString() }
+            myPublicKeys.map { mockSigningKeyInfo(it) }
+        }.whenever(signingService).lookupSigningKeysByPublicKeyHashes(any(), any())
         val transformer = buildTransformer()
         val result = act {
             processor.onNext(
@@ -502,39 +474,8 @@ class CryptoFlowOpsBusProcessorTests {
 
         doAnswer {
             passedTenantIds.add(it.getArgument(0))
-            passedLists.add(it.getArgument<SecureHashes>(1).hashes.map { avroSecureHash ->
-                SecureHashImpl(avroSecureHash.algorithm, avroSecureHash.bytes.array()).toString()
-            })
-            CryptoSigningKeys(
-                listOf(
-                    CryptoSigningKey(
-                        "id1",
-                        "tenant",
-                        "LEDGER",
-                        "alias1",
-                        "hsmAlias1",
-                        ByteBuffer.wrap(keyEncodingService.encodeAsByteArray(myPublicKeys[0])),
-                        "FAKE",
-                        null,
-                        null,
-                        null,
-                        Instant.now()
-                    ),
-                    CryptoSigningKey(
-                        "id2",
-                        "tenant",
-                        "LEDGER",
-                        "alias2",
-                        "hsmAlias2",
-                        ByteBuffer.wrap(keyEncodingService.encodeAsByteArray(myPublicKeys[1])),
-                        "FAKE",
-                        null,
-                        null,
-                        null,
-                        Instant.now()
-                    )
-                )
-            )
+            passedLists.add(it.getArgument<List<SecureHash>>(1).map { it.toString() })
+            myPublicKeys.map { mockSigningKeyInfo(it) }
         }.whenever(cryptoOpsClient).lookupKeysByFullIdsProxy(any(), any())
         val transformer = buildTransformer()
         val result = act {
@@ -651,46 +592,15 @@ class CryptoFlowOpsBusProcessorTests {
         doAnswer {
             val tenantId = it.getArgument<String>(0)
             passedTenantIds.add(tenantId)
-            passedLists.add(it.getArgument<SecureHashes>(1).hashes.map { avroSecureHash ->
-                SecureHashImpl(avroSecureHash.algorithm, avroSecureHash.bytes.array()).toString()
-            })
+            passedLists.add(it.getArgument<List<SecureHash>>(1).map { it.toString() })
             if (tenantId == failingTenantId) {
                 throw NotImplementedError()
             }
-            CryptoSigningKeys(
-                listOf(
-                    CryptoSigningKey(
-                        "id1",
-                        "tenant",
-                        "LEDGER",
-                        "alias1",
-                        "hsmAlias1",
-                        ByteBuffer.wrap(keyEncodingService.encodeAsByteArray(myPublicKeys[0])),
-                        "FAKE",
-                        null,
-                        null,
-                        null,
-                        Instant.now()
-                    ),
-                    CryptoSigningKey(
-                        "id2",
-                        "tenant",
-                        "LEDGER",
-                        "alias2",
-                        "hsmAlias2",
-                        ByteBuffer.wrap(keyEncodingService.encodeAsByteArray(myPublicKeys[1])),
-                        "FAKE",
-                        null,
-                        null,
-                        null,
-                        Instant.now()
-                    )
-                )
-            )
-        }.whenever(cryptoOpsClient).lookupKeysByFullIdsProxy(any(), any())
+            myPublicKeys.map { mockSigningKeyInfo(it) }
+        }.whenever(signingService).lookupSigningKeysByPublicKeyHashes(any(), any())
         val transformer = buildTransformer()
         val result = act {
-            processor.onNext(
+            processor.onNextSilent(
                 listOf(
                     Record(
                         topic = eventTopic,
@@ -758,5 +668,15 @@ class CryptoFlowOpsBusProcessorTests {
         assertEquals(2, transformed.size)
         assertTrue(keys.any { it.encoded.contentEquals(myPublicKeys[0].encoded) })
         assertTrue(keys.any { it.encoded.contentEquals(myPublicKeys[1].encoded) })
+    }
+
+    private fun mockSigningKeyInfo(key0: PublicKey) = mock<SigningKeyInfo> {
+        on { id } doAnswer {
+            mock() {
+                on { value } doAnswer { "id1" }
+            }
+        }
+        on { timestamp } doAnswer { Instant.now() }
+        on { publicKey } doAnswer { keyEncodingService.encodeAsByteArray(key0) }
     }
 }

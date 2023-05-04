@@ -4,6 +4,7 @@ import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.crypto.client.CryptoOpsProxyClient
 import net.corda.crypto.config.impl.flowBusProcessor
 import net.corda.crypto.config.impl.toCryptoConfig
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.flow.CryptoFlowOpsTransformer
 import net.corda.crypto.impl.retrying.BackoffStrategy
 import net.corda.crypto.impl.retrying.CryptoRetryingExecutor
@@ -12,9 +13,12 @@ import net.corda.crypto.impl.toSignatureSpec
 import net.corda.crypto.service.impl.SigningServiceImpl
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.KeyValuePairList
+import net.corda.data.crypto.SecureHashes
+import net.corda.data.crypto.ShortHashes
 import net.corda.data.crypto.wire.CryptoRequestContext
 import net.corda.data.crypto.wire.CryptoResponseContext
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
+import net.corda.data.crypto.wire.CryptoSigningKeys
 import net.corda.data.crypto.wire.ops.flow.FlowOpsRequest
 import net.corda.data.crypto.wire.ops.flow.FlowOpsResponse
 import net.corda.data.crypto.wire.ops.flow.commands.SignFlowCommand
@@ -57,7 +61,10 @@ class CryptoFlowOpsBusProcessor(
         return events.mapNotNull { onNext(it) }
     }
 
-    private fun onNext(event: Record<String, FlowOpsRequest>): Record<*, *>? {
+    fun onNextSilent(events: List<Record<String, FlowOpsRequest>>): List<Record<*, *>> =
+        events.mapNotNull { onNext(it, false) }
+
+    private fun onNext(event: Record<String, FlowOpsRequest>, logFailures: Boolean = true): Record<*, *>? {
         val request = event.value
         if (request == null) {
             logger.error("Unexpected null payload for event with the key={} in topic={}", event.key, event.topic)
@@ -103,10 +110,12 @@ class CryptoFlowOpsBusProcessor(
                     }
                 }
             } catch (throwable: Throwable) {
-                logger.error(
-                    "Failed to handle ${request.request::class.java.name} for tenant ${request.context.tenantId}",
-                    throwable
-                )
+                if (logFailures) {
+                    logger.error(
+                        "Failed to handle ${request.request::class.java.name} for tenant ${request.context.tenantId}",
+                        throwable
+                    )
+                }
                 externalEventResponseFactory.platformError(request.flowExternalEventContext, throwable)
             }
         }
@@ -144,7 +153,10 @@ class CryptoFlowOpsBusProcessor(
             }
 
             is ByIdsFlowQuery ->
-                cryptoOpsClient.lookupKeysByFullIdsProxy(context.tenantId, request.fullKeyIds)
+                CryptoSigningKeys(signingService.lookupSigningKeysByPublicKeyHashes(
+                    context.tenantId,
+                    request.fullKeyIds.hashes.map { SecureHashImpl(it.algorithm, it.bytes.array()) }
+                ).map { it.toAvro() })
 
             else ->
                 throw IllegalArgumentException("Unknown request type ${request::class.java.name}")
