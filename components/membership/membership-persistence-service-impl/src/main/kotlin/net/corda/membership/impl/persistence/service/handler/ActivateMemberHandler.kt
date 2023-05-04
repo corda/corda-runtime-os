@@ -1,5 +1,7 @@
 package net.corda.membership.impl.persistence.service.handler
 
+import javax.persistence.EntityManager
+import javax.persistence.PessimisticLockException
 import net.corda.data.CordaAvroDeserializer
 import net.corda.data.CordaAvroSerializer
 import net.corda.data.KeyValuePairList
@@ -11,14 +13,15 @@ import net.corda.data.membership.db.response.command.ActivateMemberResponse
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_SUSPENDED
 import net.corda.membership.lib.MemberInfoExtension.Companion.isNotary
+import net.corda.membership.lib.exceptions.InvalidEntityUpdateException
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
-import net.corda.virtualnode.toCorda
-import javax.persistence.EntityManager
 import net.corda.utilities.time.Clock
+import net.corda.virtualnode.toCorda
 
 internal class ActivateMemberHandler(
     persistenceHandlerServices: PersistenceHandlerServices,
-    private val notaryHandler: AddNotaryToGroupParametersHandler = AddNotaryToGroupParametersHandler(persistenceHandlerServices),
+    private val addNotaryToGroupParametersHandler: AddNotaryToGroupParametersHandler
+        = AddNotaryToGroupParametersHandler(persistenceHandlerServices),
     suspensionActivationEntityOperationsFactory:
         (clock: Clock, serializer: CordaAvroDeserializer<KeyValuePairList>, deserializer: CordaAvroSerializer<KeyValuePairList>)
         -> SuspensionActivationEntityOperations
@@ -75,6 +78,12 @@ internal class ActivateMemberHandler(
     }
 
     private fun updateGroupParameters(em: EntityManager, memberInfo: PersistentMemberInfo): SignedGroupParameters {
-        return notaryHandler.addNotaryToGroupParameters(em, memberInfo)
+        return try {
+            addNotaryToGroupParametersHandler.addNotaryToGroupParameters(em, memberInfo)
+        } catch (e: PessimisticLockException) {
+            throw InvalidEntityUpdateException(
+                "Could not update member group parameters: ${e.message}",
+            )
+        }
     }
 }

@@ -27,6 +27,6 @@ dependencies {
     implementation project(':components:membership:locally-hosted-identities-service')
 
     testImplementation project(':testing:test-utilities')
-    testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 }

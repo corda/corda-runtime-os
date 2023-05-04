@@ -12,22 +12,30 @@ import net.corda.data.membership.db.response.command.ActivateMemberResponse
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.membership.datamodel.MemberInfoEntity
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_SUSPENDED
+import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_ROLE
+import net.corda.membership.lib.MemberInfoExtension.Companion.ROLES_PREFIX
 import net.corda.membership.lib.MemberInfoFactory
+import net.corda.membership.lib.exceptions.InvalidEntityUpdateException
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.test.util.time.TestClock
 import net.corda.utilities.time.Clock
 import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.membership.MemberContext
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.time.Instant
 import java.util.UUID
@@ -38,10 +46,7 @@ import net.corda.data.membership.SignedGroupParameters
 import net.corda.membership.lib.MemberInfoExtension
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
-import net.corda.v5.membership.MemberContext
-import org.junit.jupiter.api.assertThrows
-import org.mockito.kotlin.never
-import org.mockito.kotlin.verify
+import javax.persistence.PessimisticLockException
 
 class ActivateMemberHandlerTest {
 
@@ -133,9 +138,12 @@ class ActivateMemberHandlerTest {
         on { cordaAvroSerializationFactory } doReturn cordaAvroSerializationFactory
         on { memberInfoFactory } doReturn memberInfoFactory
     }
-    private val notaryHandler = mock<AddNotaryToGroupParametersHandler>()
-    private val handler: ActivateMemberHandler = ActivateMemberHandler(persistenceHandlerServices, notaryHandler)
-        {_, _, _ -> suspensionActivationEntityOperations}
+
+    private val addNotaryToGroupParametersHandler = mock<AddNotaryToGroupParametersHandler>()
+    private val handler: ActivateMemberHandler = ActivateMemberHandler(
+        persistenceHandlerServices,
+        addNotaryToGroupParametersHandler
+    ) { _, _, _ -> suspensionActivationEntityOperations }
     private val context = MembershipRequestContext(
         clock.instant(),
         UUID(0, 1).toString(),
@@ -151,7 +159,7 @@ class ActivateMemberHandlerTest {
     fun `invoke returns the correct data when member is not a notary`() {
         val result = invokeTestFunction()
 
-        verify(notaryHandler, never()).addNotaryToGroupParameters(any(), any())
+        verify(addNotaryToGroupParametersHandler, never()).addNotaryToGroupParameters(any(), any())
         assertThat(result.memberInfo).isEqualTo(persistentMemberInfo)
         assertThat(result.groupParameters).isNull()
     }
@@ -168,7 +176,7 @@ class ActivateMemberHandlerTest {
         }
         whenever(memberInfoFactory.create(persistentMemberInfo)).thenReturn(mockMemberInfo)
         val groupParameters = mock<SignedGroupParameters>()
-        whenever(notaryHandler.addNotaryToGroupParameters(em, persistentMemberInfo)).doReturn(groupParameters)
+        whenever(addNotaryToGroupParametersHandler.addNotaryToGroupParameters(em, persistentMemberInfo)).doReturn(groupParameters)
 
         val result = invokeTestFunction()
 
@@ -181,6 +189,21 @@ class ActivateMemberHandlerTest {
         whenever(keyValuePairListDeserializer.deserialize(serializedMgmContext)).thenReturn(null)
         assertThrows<MembershipPersistenceException> {  invokeTestFunction() }.also {
             assertThat(it).hasMessageContaining("Failed to deserialize")
+        }
+    }
+
+    @Test
+    fun `when updateGroupParameters throws a PessimisticLockException an InvalidEntityUpdateException is thrown`() {
+        val notaryMemberProvidedContext = mock<MemberContext> {
+            on { entries } doReturn mapOf("$ROLES_PREFIX.1" to NOTARY_ROLE).entries
+        }
+        whenever(memberInfo.memberProvidedContext).doReturn(notaryMemberProvidedContext)
+        whenever(addNotaryToGroupParametersHandler.addNotaryToGroupParameters(any(), any())).doThrow(
+            PessimisticLockException()
+        )
+
+        assertThrows<InvalidEntityUpdateException> {
+            invokeTestFunction()
         }
     }
 

@@ -5,13 +5,14 @@ import net.corda.configuration.read.ConfigurationGetService
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.cipher.suite.SignatureSpecImpl
-import net.corda.crypto.cipher.suite.calculateHash
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.core.CryptoConsts.Categories.LEDGER
 import net.corda.crypto.core.CryptoConsts.Categories.NOTARY
 import net.corda.crypto.core.CryptoConsts.Categories.SESSION_INIT
 import net.corda.crypto.core.ShortHash
 import net.corda.crypto.core.ShortHashException
+import net.corda.crypto.core.fullId
+import net.corda.crypto.core.fullIdHash
 import net.corda.crypto.core.toByteArray
 import net.corda.crypto.hes.EphemeralKeyPairEncryptor
 import net.corda.crypto.hes.HybridEncryptionParams
@@ -27,8 +28,8 @@ import net.corda.data.membership.p2p.UnauthenticatedRegistrationRequest
 import net.corda.data.membership.p2p.UnauthenticatedRegistrationRequestHeader
 import net.corda.data.p2p.app.AppMessage
 import net.corda.data.p2p.app.MembershipStatusFilter
-import net.corda.data.p2p.app.UnauthenticatedMessage
-import net.corda.data.p2p.app.UnauthenticatedMessageHeader
+import net.corda.data.p2p.app.OutboundUnauthenticatedMessage
+import net.corda.data.p2p.app.OutboundUnauthenticatedMessageHeader
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.lifecycle.LifecycleCoordinator
@@ -157,7 +158,6 @@ class DynamicMemberRegistrationService @Activate constructor(
         val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         val clock: Clock = UTCClock()
 
-        const val PUBLICATION_TIMEOUT_SECONDS = 30L
         const val SESSION_KEY_ID = "$PARTY_SESSION_KEYS.id"
         const val LEDGER_KEY_ID = "$LEDGER_KEYS.%s.id"
         const val NOTARY_KEY_ID = "corda.notary.keys.%s.id"
@@ -342,12 +342,13 @@ class DynamicMemberRegistrationService @Activate constructor(
                             keyEncodingService.encodeAsByteArray(ek)
                     val salt = aad + keyEncodingService.encodeAsByteArray(sk)
                     latestHeader = UnauthenticatedRegistrationRequestHeader(
+                        mgm.holdingIdentity.toAvro(),
                         ByteBuffer.wrap(salt), ByteBuffer.wrap(aad), keyEncodingService.encodeAsString(ek)
                     )
                     HybridEncryptionParams(salt, aad)
                 }
 
-                val messageHeader = UnauthenticatedMessageHeader(
+                val messageHeader = OutboundUnauthenticatedMessageHeader(
                     mgm.holdingIdentity.toAvro(),
                     member.toAvro(),
                     MEMBERSHIP_P2P_SUBSYSTEM,
@@ -538,7 +539,7 @@ class DynamicMemberRegistrationService @Activate constructor(
                 keyEncodingService.encodeAsString(publicKey)
             }
             override val hash by lazy {
-                publicKey.calculateHash()
+                publicKey.fullIdHash()
             }
             override val spec by lazy {
                 getSignatureSpec(key, defaultSpec)
@@ -559,7 +560,7 @@ class DynamicMemberRegistrationService @Activate constructor(
             }.flatMapIndexed { index, ledgerKey ->
                 listOf(
                     String.format(LEDGER_KEYS_KEY, index) to keyEncodingService.encodeAsString(ledgerKey),
-                    String.format(LEDGER_KEY_HASHES_KEY, index) to ledgerKey.calculateHash().value,
+                    String.format(LEDGER_KEY_HASHES_KEY, index) to ledgerKey.fullId(),
                     String.format(LEDGER_KEY_SIGNATURE_SPEC, index) to getSignatureSpec(
                         ledgerKeys[index],
                         context[String.format(LEDGER_KEY_SIGNATURE_SPEC, index)]
@@ -583,7 +584,7 @@ class DynamicMemberRegistrationService @Activate constructor(
                 val spec = context[specKey]
                 listOf(
                     String.format(PARTY_SESSION_KEYS_PEM, index) to keyEncodingService.encodeAsString(sessionPublicKey),
-                    String.format(SESSION_KEYS_HASH, index) to sessionPublicKey.calculateHash().value,
+                    String.format(SESSION_KEYS_HASH, index) to sessionPublicKey.fullId(),
                     specKey to getSignatureSpec(
                         sessionKey,
                         spec,
@@ -605,7 +606,7 @@ class DynamicMemberRegistrationService @Activate constructor(
         }
 
         private fun buildUnauthenticatedP2PRequest(
-            messageHeader: UnauthenticatedMessageHeader,
+            messageHeader: OutboundUnauthenticatedMessageHeader,
             payload: ByteBuffer,
             topicKey: String,
         ): Record<String, AppMessage> {
@@ -613,7 +614,7 @@ class DynamicMemberRegistrationService @Activate constructor(
                 Schemas.P2P.P2P_OUT_TOPIC,
                 topicKey,
                 AppMessage(
-                    UnauthenticatedMessage(
+                    OutboundUnauthenticatedMessage(
                         messageHeader,
                         payload
                     )

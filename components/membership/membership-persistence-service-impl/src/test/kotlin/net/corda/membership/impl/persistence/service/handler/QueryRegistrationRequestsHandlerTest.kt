@@ -163,7 +163,7 @@ class QueryRegistrationRequestsHandlerTest {
     fun `invoke queries with correct predicates if X500 name specified in request`() {
         whenever(actualQuery.resultList).doReturn(emptyList())
         val captor = argumentCaptor<Predicate>()
-        whenever(query.where(captor.capture())).thenReturn(query)
+        whenever(query.where(captor.capture(), any())).thenReturn(query)
 
         handler.invoke(
             context,

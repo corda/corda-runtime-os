@@ -124,7 +124,7 @@ abstract class DeployableContainerBuilder extends DefaultTask {
 
     @Input
     final Property<String> baseImageTag =
-            getObjects().property(String).convention('11.0.15-11.56.19')
+            getObjects().property(String).convention('11.0.16.1-11.58.23')
 
     @Input
     final Property<String> subDir =
@@ -255,8 +255,8 @@ abstract class DeployableContainerBuilder extends DefaultTask {
             builder.setEntrypoint(
                     "/bin/sh",
                     "-c",
-                    "exec java ${javaArgs.join(" ")} -jar " + CONTAINER_LOCATION + entryName + ".jar \$@",
-                    "\$@"
+                    "exec java ${javaArgs.join(" ")} -jar " + CONTAINER_LOCATION + entryName + ".jar \"\$@\"",
+                    "\"\$@\""
             )
         }
         if (!environment.get().empty) {

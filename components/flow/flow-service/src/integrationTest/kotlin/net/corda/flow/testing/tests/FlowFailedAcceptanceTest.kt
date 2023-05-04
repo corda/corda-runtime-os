@@ -65,7 +65,7 @@ class FlowFailedAcceptanceTest : FlowServiceTestBase() {
             expectOutputForFlow(FLOW_ID1) {
                 nullStateRecord()
                 flowStatus(FlowStates.FAILED, errorType = FLOW_FAILED, errorMessage = EXCEPTION.message)
-                scheduleFlowMapperCleanupEvents(FlowKey(INITIATED_SESSION_ID_1, BOB_HOLDING_IDENTITY).toString(), "S1-INITIATED")
+                scheduleFlowMapperCleanupEvents(INITIATED_SESSION_ID_1)
             }
         }
     }

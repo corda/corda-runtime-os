@@ -198,7 +198,7 @@ class AvroSchemaRegistryImpl(
                 // deserializing into, so we can search this list to find a name match.
                 compiledSchemaFingerprintsByClazz.keys.firstOrNull { it.name == schema.fullName }?.let { classFromSchema ->
                     clazzByFingerprint.putIfAbsent(fingerprint, classFromSchema)
-                } ?: log.info("Cannot find $clazz in schema registry, this schema will be ignored")
+                } ?: log.info("Attempt to register Avro schema for unknown class ${schema.fullName}, this schema will be ignored")
                 // Do not populate any other maps here, they are reserved for compile time classes
             } else {
                 // Class is known at compile time

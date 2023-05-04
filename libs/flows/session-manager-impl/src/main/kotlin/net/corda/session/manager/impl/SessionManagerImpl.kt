@@ -1,7 +1,5 @@
 package net.corda.session.manager.impl
 
-import java.nio.ByteBuffer
-import java.time.Instant
 import net.corda.data.chunking.Chunk
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
@@ -9,6 +7,7 @@ import net.corda.data.flow.event.session.SessionAck
 import net.corda.data.flow.event.session.SessionClose
 import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.event.session.SessionError
+import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.data.identity.HoldingIdentity
@@ -21,10 +20,13 @@ import net.corda.session.manager.SessionManager
 import net.corda.session.manager.impl.factory.SessionEventProcessorFactory
 import net.corda.session.manager.impl.processor.helper.generateErrorEvent
 import net.corda.session.manager.impl.processor.helper.setErrorState
+import net.corda.utilities.debug
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
+import java.nio.ByteBuffer
+import java.time.Instant
 
 @Suppress("TooManyFunctions")
 @Component
@@ -173,6 +175,7 @@ class SessionManagerImpl @Activate constructor(
 
     /**
      * Get any new messages to send from the sendEvents state within [sessionState].
+     * If we're in [SessionStateType.CREATED], only send [SessionInit] events.
      * Send any Acks or Errors regardless of timestamps.
      * Send any other messages with a timestamp less than that of [instantInMillis].
      * Don't send a SessionAck if other events present in the send list as ack info is present at SessionEvent level on all events.
@@ -187,10 +190,8 @@ class SessionManagerImpl @Activate constructor(
         instant: Instant,
         config: SmartConfig,
     ): List<SessionEvent> {
-        //get all events with a timestamp in the past, as well as any acks or errors
-        val sessionEvents = sessionState.sendEventsState.undeliveredMessages.filter {
-            it.timestamp <= instant || it.payload is SessionError
-        }
+        val sessionEvents = filterSessionEvents(sessionState, instant)
+        if (sessionEvents.isEmpty()) return emptyList()
 
         //update events with the latest ack info from the current state
         sessionEvents.forEach { eventToSend ->
@@ -200,32 +201,68 @@ class SessionManagerImpl @Activate constructor(
 
         //remove SessionAcks/SessionErrors and increase timestamp of messages to be sent that are awaiting acknowledgement
         val messageResendWindow = config.getLong(SESSION_MESSAGE_RESEND_WINDOW)
-        updateSessionStateSendEvents(sessionState, instant, messageResendWindow)
+        updateSessionStateSendEvents(sessionState, instant, messageResendWindow, sessionEvents)
+
+        logger.debug {
+            "Dispatching events for session [${sessionState.sessionId}]: " +
+            sessionEvents.joinToString {
+                "[Sequence: ${it.sequenceNum}, Class: ${it.payload::class.java.simpleName}, Resend timestamp: ${it.timestamp}]"
+            }
+        }
 
         return sessionEvents
+    }
+
+    /**
+     * Filters session events from the given [SessionState] that are ready to be sent based on the given [instant].
+     * Events with a timestamp in the past or any error events are included in the filtered list.
+     *
+     * If the [SessionState] status is [SessionStateType.CREATED], only the first [SessionInit] event from the filtered
+     * list is returned (if present), otherwise all events are returned.
+     *
+     * @param sessionState the [SessionState] from which to filter session events.
+     * @param instant the [Instant] to use for filtering events based on their timestamp.
+     * @return a list of [SessionEvent] objects that are ready to be sent.
+     */
+    private fun filterSessionEvents(
+        sessionState: SessionState,
+        instant: Instant
+    ): List<SessionEvent> {
+        if (sessionState.sendEventsState.undeliveredMessages.isEmpty()) return emptyList()
+
+        val pastEventsAndErrors = sessionState.sendEventsState.undeliveredMessages.filter {
+            it.timestamp <= instant || it.payload is SessionError
+        }
+
+        return if (SessionStateType.CREATED == sessionState.status) {
+            pastEventsAndErrors.firstOrNull { it.payload is SessionInit }?.let { listOf(it) } ?: emptyList()
+        } else {
+            pastEventsAndErrors
+        }
     }
 
     /**
      * Remove Acks and Errors from the session state sendEvents.undeliveredMessages as these cannot be acked by a counterparty.
      * Increase the timestamps of messages with a timestamp less than [instantInMillis]
      * by the configurable value of the [messageResendWindow]. This will avoid message resends in quick succession.
-     * @param sessionState to update the sendEventsState.undeliveredMessages
-     * @param instant to update the sendEventsState.undeliveredMessages
-     * @param messageResendWindow time to wait between resending messages
+     * @param sessionState to update the sendEventsState.undeliveredMessages.
+     * @param instant to update the sendEventsState.undeliveredMessages.
+     * @param messageResendWindow time to wait between resending messages.
+     * @param dispatchedEvents list of events which have been dispatched to the counterparty.
      */
     private fun updateSessionStateSendEvents(
         sessionState: SessionState,
         instant: Instant,
         messageResendWindow: Long,
+        dispatchedEvents: List<SessionEvent>,
     ) {
-        sessionState.sendEventsState.undeliveredMessages = sessionState.sendEventsState.undeliveredMessages.filter {
-            it.payload !is SessionError
-        }.map {
-            if (it.timestamp <= instant) {
-                it.timestamp = instant.plusMillis(messageResendWindow)
+        sessionState.sendEventsState.undeliveredMessages = sessionState.sendEventsState.undeliveredMessages
+            .filter { it.payload !is SessionError }
+            .onEach { message ->
+                if (message in dispatchedEvents) {
+                    message.timestamp = instant.plusMillis(messageResendWindow)
+                }
             }
-            it
-        }
     }
 
     /**

@@ -10,7 +10,7 @@ import net.corda.data.ledger.persistence.UtxoTransactionOutputs
 import net.corda.flow.external.events.factory.ExternalEventFactory
 import net.corda.flow.external.events.factory.ExternalEventRecord
 import net.corda.flow.state.FlowCheckpoint
-import net.corda.ledger.utxo.flow.impl.persistence.UtxoTransactionOutputDto
+import net.corda.ledger.utxo.data.transaction.UtxoTransactionOutputDto
 import net.corda.schema.Schemas
 import net.corda.v5.ledger.utxo.StateRef
 import net.corda.virtualnode.toAvro

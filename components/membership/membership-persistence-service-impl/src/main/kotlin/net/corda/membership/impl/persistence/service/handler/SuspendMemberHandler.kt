@@ -17,6 +17,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTI
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_SUSPENDED
 import net.corda.membership.lib.MemberInfoExtension.Companion.isNotary
 import net.corda.membership.lib.MemberInfoExtension.Companion.notaryDetails
+import net.corda.membership.lib.exceptions.InvalidEntityUpdateException
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.membership.lib.toMap
 import net.corda.membership.lib.toSortedMap
@@ -26,6 +27,7 @@ import javax.persistence.LockModeType
 import net.corda.utilities.mapNotNull
 import net.corda.utilities.time.Clock
 import kotlin.streams.toList
+import javax.persistence.PessimisticLockException
 
 internal class SuspendMemberHandler(
     persistenceHandlerServices: PersistenceHandlerServices,
@@ -83,7 +85,20 @@ internal class SuspendMemberHandler(
             )
             val updatedGroupParameters = if (memberInfoFactory.create(updatedMemberInfo).isNotary()) {
                 logger.info("Suspending notary member ${context.holdingIdentity}.")
-                updateGroupParameters(em, updatedMemberInfo, HoldingIdentity(request.suspendedMember, context.holdingIdentity.groupId))
+                try {
+                    updateGroupParameters(
+                        em,
+                        updatedMemberInfo,
+                        HoldingIdentity(
+                            request.suspendedMember,
+                            context.holdingIdentity.groupId
+                        ),
+                    )
+                } catch (e: PessimisticLockException) {
+                    throw InvalidEntityUpdateException(
+                        "Could not update member group parameters: ${e.message}",
+                    )
+                }
             } else {
                 logger.info("Suspending member ${context.holdingIdentity}.")
                 null

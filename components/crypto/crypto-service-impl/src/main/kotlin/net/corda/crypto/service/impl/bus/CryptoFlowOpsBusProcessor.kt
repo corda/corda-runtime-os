@@ -7,6 +7,7 @@ import net.corda.crypto.config.impl.toCryptoConfig
 import net.corda.crypto.flow.CryptoFlowOpsTransformer
 import net.corda.crypto.impl.retrying.BackoffStrategy
 import net.corda.crypto.impl.retrying.CryptoRetryingExecutor
+import net.corda.crypto.impl.toMap
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoRequestContext
@@ -19,7 +20,11 @@ import net.corda.data.crypto.wire.ops.flow.queries.FilterMyKeysFlowQuery
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
-import net.corda.utilities.debug
+import net.corda.utilities.MDC_CLIENT_ID
+import net.corda.utilities.MDC_EXTERNAL_EVENT_ID
+import net.corda.utilities.MDC_FLOW_ID
+import net.corda.utilities.trace
+import net.corda.utilities.withMDC
 import org.slf4j.LoggerFactory
 import java.time.Instant
 
@@ -42,8 +47,10 @@ class CryptoFlowOpsBusProcessor(
         BackoffStrategy.createBackoff(config.maxAttempts, config.waitBetweenMills)
     )
 
-    override fun onNext(events: List<Record<String, FlowOpsRequest>>): List<Record<*, *>> =
-        events.mapNotNull { onNext(it) }
+    override fun onNext(events: List<Record<String, FlowOpsRequest>>): List<Record<*, *>> {
+        logger.trace { "onNext processing messages ${events.joinToString(",") { it.key }}" }
+        return events.mapNotNull { onNext(it) }
+    }
 
     private fun onNext(event: Record<String, FlowOpsRequest>): Record<*, *>? {
         val request = event.value
@@ -52,58 +59,63 @@ class CryptoFlowOpsBusProcessor(
             return null // cannot send any error back as have no idea where to send to
         }
 
-        val requestId = request.flowExternalEventContext.requestId
-        val flowId = request.flowExternalEventContext.flowId
         val expireAt = getRequestExpireAt(request)
-        
-        if (Instant.now() >= expireAt) {
-            logger.warn(
-                "Event ${request.request::class.java} for tenant ${request.context.tenantId} is no longer valid, " +
-                        "expired at $expireAt { requestId: $requestId, key: $flowId }"
-            )
-            return externalEventResponseFactory.transientError(
-                request.flowExternalEventContext,
-                ExceptionEnvelope("Expired", "Expired at $expireAt")
-            )
-        }
-        return try {
-            logger.info(
-                "Handling ${request.request::class.java.name} for tenant ${request.context.tenantId} " +
-                        "{ requestId: $requestId, key: $flowId }"
-            )
-            val response = executor.executeWithRetry {
-                handleRequest(request.request, request.context)
-            }
-            if (Instant.now() >= expireAt) {
+        val clientRequestId = request.flowExternalEventContext.contextProperties.toMap()[MDC_CLIENT_ID] ?: ""
+        val mdc = mapOf(
+            MDC_FLOW_ID to request.flowExternalEventContext.flowId,
+            MDC_CLIENT_ID to clientRequestId,
+            MDC_EXTERNAL_EVENT_ID to request.flowExternalEventContext.requestId
+        )
+
+        return withMDC(mdc) {
+            logger.info("Handling ${request.request::class.java.name} for tenant ${request.context.tenantId}")
+
+            try {
+                if (Instant.now() >= expireAt) {
+                    logger.warn("Event ${request.request::class.java.name} for tenant ${request.context.tenantId} " +
+                            "is no longer valid, expired at $expireAt")
+                    externalEventResponseFactory.transientError(
+                        request.flowExternalEventContext,
+                        ExceptionEnvelope("Expired", "Expired at $expireAt")
+                    )
+                } else {
+                    val response = executor.executeWithRetry {
+                        handleRequest(request.request, request.context)
+                    }
+
+                    if (Instant.now() >= expireAt) {
+                        logger.warn("Event ${request.request::class.java.name} for tenant ${request.context.tenantId} " +
+                                "is no longer valid, expired at $expireAt")
+                        externalEventResponseFactory.transientError(
+                            request.flowExternalEventContext,
+                            ExceptionEnvelope("Expired", "Expired at $expireAt")
+                        )
+                    } else {
+                        externalEventResponseFactory.success(
+                            request.flowExternalEventContext,
+                            FlowOpsResponse(createResponseContext(request), response, null)
+                        )
+                    }
+                }
+            } catch (throwable: Throwable) {
                 logger.error(
-                    "Event ${request.request::class.java} for tenant ${request.context.tenantId} is no longer valid, " +
-                            "expired at $expireAt { requestId: $requestId, key: $flowId }"
+                    "Failed to handle ${request.request::class.java.name} for tenant ${request.context.tenantId}",
+                    throwable
                 )
-                return externalEventResponseFactory.transientError(
-                    request.flowExternalEventContext,
-                    ExceptionEnvelope("Expired", "Expired at $expireAt")
-                )
+                externalEventResponseFactory.platformError(request.flowExternalEventContext, throwable)
             }
-            val result = externalEventResponseFactory.success(
-                request.flowExternalEventContext,
-                FlowOpsResponse(createResponseContext(request), response, null)
-            )
-            logger.debug {
-                "Handled ${request.request::class.java.name} for tenant ${request.context.tenantId} " +
-                        "{ requestId: $requestId, key: $flowId }"
-            }
-            result
-        } catch (t: Throwable) {
-            logger.error(
-                "Failed to handle ${request.request::class.java} for tenant ${request.context.tenantId} " +
-                        "{ requestId: $requestId, key: $flowId }",
-                t
-            )
-            return externalEventResponseFactory.platformError(request.flowExternalEventContext, t)
         }
     }
 
     private fun handleRequest(request: Any, context: CryptoRequestContext): Any {
+        // What about if cryptoOpsClient has gone to DOWN or ERROR out at this point? 
+        // Then CryptoOpsClientComponent will throw AbstractComponentNotReadyFunction, and the retry logic
+        // will keep repeating it until timeout or the cryptoOpsClient potentially comes back. 
+
+        // For example, if we get an UnknownHostException from Kafka client code then the crypto ops client
+        // will be marked as DOWN or ERROR (depending on what catches it; certainly if it made it to the top of the
+        // TreadLooper it will cause the status to go to ERROR)
+
         return when (request) {
             is FilterMyKeysFlowQuery ->
                 cryptoOpsClient.filterMyKeysProxy(

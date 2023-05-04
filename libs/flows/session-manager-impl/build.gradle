@@ -9,7 +9,7 @@ dependencies {
 
 
     implementation project(":libs:configuration:configuration-core")
-    implementation project(":libs:flows:utils")
+    implementation project(":libs:flows:flow-utils")
     implementation project(":libs:flows:session-manager")
     implementation project(":libs:messaging:messaging")
     implementation project(':libs:utilities')
@@ -23,9 +23,10 @@ dependencies {
     implementation "net.corda:corda-topic-schema"
 
     testImplementation "org.assertj:assertj-core:$assertjVersion"
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation project(":testing:flow:flow-utilities")
-    testImplementation project(":libs:flows:utils")
+    testImplementation project(":libs:flows:flow-utils")
 }
 
 description 'Session Manager Impl lib'

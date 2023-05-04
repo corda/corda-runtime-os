@@ -16,7 +16,6 @@ import java.util.concurrent.TimeoutException
 
 const val USERNAME = "admin"
 val PASSWORD = System.getenv("INITIAL_ADMIN_USER_PASSWORD") ?: "admin"
-const val GROUP_ID = "7c5d6948-e17b-44e7-9d1c-fa4a3f667cad"
 val testRunUniqueId: UUID = UUID.randomUUID()
 
 // Code signer certificate
@@ -57,3 +56,10 @@ fun getHoldingIdShortHash(x500Name: String, groupId: String): String {
         .joinToString("") { byte -> "%02x".format(byte).uppercase() }
         .substring(0, 12)
 }
+
+/**
+ * Transform a string-string context map object represented as a [JsonNode] to a [Map].
+ */
+fun JsonNode.parseContextMap(): Map<String, String> = fields().asSequence().map {
+    it.key to it.value.textValue()
+}.toMap()

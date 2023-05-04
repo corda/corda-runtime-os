@@ -26,7 +26,7 @@ class ZipTweakerTest {
     @BeforeAll
     fun setup(@TempDir junitTestDir : Path) {
         testDir = junitTestDir
-        workflowCPKPath = URI(System.getProperty("net.cordapp.packaging.test.workflow.cpk")).toURL()
+        workflowCPKPath = URI(System.getProperty("com.r3.corda.packaging.test.workflow.cpk")).toURL()
     }
 
     @Test

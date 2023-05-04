@@ -24,5 +24,6 @@ dependencies {
 
     api project(':libs:permissions:permission-management-cache')
 
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 }
