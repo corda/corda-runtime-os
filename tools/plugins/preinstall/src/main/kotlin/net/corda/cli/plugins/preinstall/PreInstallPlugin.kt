@@ -10,7 +10,6 @@ import io.fabric8.kubernetes.client.KubernetesClientException
 import net.corda.cli.api.CordaCliPlugin
 import org.pf4j.Extension
 import org.pf4j.Plugin
-import org.pf4j.PluginWrapper
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import picocli.CommandLine
@@ -18,7 +17,7 @@ import java.io.File
 import java.io.FileNotFoundException
 import java.util.Base64
 
-class PreInstallPlugin(wrapper: PluginWrapper) : Plugin(wrapper) {
+class PreInstallPlugin : Plugin() {
 
     private companion object {
         private val logger: Logger = LoggerFactory.getLogger(this::class.java)
