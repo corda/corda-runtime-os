@@ -71,7 +71,7 @@ private fun <T> deserialize(
 
 fun ParameterType<*>.readValue(name: String, node: JsonNode, parser: JsonParser): Any =
     if (this.isQualified) {
-        this.readValue(name, node, parser)
+        this.rawParameterType.readValue(name, node, parser)
     } else {
         when (this.typeLabel) {
             ParameterTypeLabel.BOOLEAN -> if (node.isBoolean) node.asBoolean() else throw IllegalArgumentException(
