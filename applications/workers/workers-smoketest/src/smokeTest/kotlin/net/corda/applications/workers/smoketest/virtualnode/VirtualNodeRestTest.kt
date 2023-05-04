@@ -28,7 +28,6 @@ import org.junit.jupiter.api.MethodOrderer
 import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestMethodOrder
-import java.util.UUID
 
 /**
  * Any 'unordered' tests are run *last*
@@ -50,8 +49,8 @@ class VirtualNodeRestTest {
         // Server side messages
         private const val EXPECTED_ERROR_CPB_INSTEAD_OF_CPI = "Invalid CPI.  Unknown Corda-CPI-Format - \"1.0\""
 
-        private val testRunUniqueId = UUID.randomUUID()
-        private val groupId = UUID.randomUUID().toString()
+        private val testRunUniqueId = "1"//UUID.randomUUID()
+        private val groupId = "b3de5521-9aef-453f-9f94-62f0d86962a2"
         private val aliceX500 = "CN=Alice-$testRunUniqueId, OU=Application, O=R3, L=London, C=GB"
         private val bobX500 = "CN=Bob-$testRunUniqueId, OU=Application, O=R3, L=London, C=GB"
         private val aliceHoldingId: String = getHoldingIdShortHash(aliceX500, groupId)

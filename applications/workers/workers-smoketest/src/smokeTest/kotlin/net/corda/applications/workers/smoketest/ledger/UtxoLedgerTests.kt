@@ -18,7 +18,6 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS
-import java.util.UUID
 
 @Suppress("Unused", "FunctionName")
 @TestInstance(PER_CLASS)
@@ -37,8 +36,8 @@ class UtxoLedgerTests {
         }
     }
 
-    private val testRunUniqueId = UUID.randomUUID()
-    private val groupId = UUID.randomUUID().toString()
+    private val testRunUniqueId = "1"//UUID.randomUUID()
+    private val groupId = "b3de5521-9aef-453f-9f94-62f0d86962a2"
     private val cpiName = "${TEST_CPI_NAME}_$testRunUniqueId"
     private val notaryCpiName = "${TEST_NOTARY_CPI_NAME}_$testRunUniqueId"
 
