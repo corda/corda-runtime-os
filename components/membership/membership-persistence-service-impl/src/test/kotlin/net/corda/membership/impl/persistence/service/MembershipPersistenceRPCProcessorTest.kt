@@ -63,7 +63,6 @@ import net.corda.membership.impl.persistence.service.handler.PersistenceHandlerS
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_SUSPENDED
 import net.corda.membership.lib.MemberInfoFactory
-import net.corda.membership.lib.MessagesHeaders
 import net.corda.membership.lib.exceptions.InvalidEntityUpdateException
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.messaging.api.records.Record
@@ -917,7 +916,6 @@ class MembershipPersistenceRPCProcessorTest {
                 "topic",
                 "key",
                 request,
-                listOf(MessagesHeaders.SENDER_ID to "id"),
             ),
         )
     }

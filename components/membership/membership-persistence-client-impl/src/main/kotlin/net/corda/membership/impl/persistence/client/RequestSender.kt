@@ -4,7 +4,6 @@ import net.corda.data.membership.db.request.MembershipPersistenceRequest
 import net.corda.data.membership.db.response.MembershipPersistenceResponse
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.Resource
-import net.corda.membership.lib.MessagesHeaders.SENDER_ID
 import net.corda.messaging.api.processor.PubSubProcessor
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -59,11 +58,8 @@ internal class RequestSender(
             listOf(
                 Record(
                     topic = Schemas.Membership.MEMBERSHIP_DB_RPC_TOPIC,
-                    key = request.context.requestId,
+                    key = "$id:${request.context.requestId}",
                     value = request,
-                    headers = listOf(
-                        SENDER_ID to id,
-                    ),
                 ),
             ),
         ).forEach {
@@ -75,7 +71,7 @@ internal class RequestSender(
     private inner class Processor : PubSubProcessor<String, MembershipPersistenceResponse> {
         override fun onNext(event: Record<String, MembershipPersistenceResponse>): Future<Unit> {
             val complete = CompletableFuture.completedFuture(Unit)
-            if (!event.headers.any { it.first == SENDER_ID && it.second == id }) {
+            if (!event.key.startsWith(id)) {
                 return complete
             }
             val value = event.value ?: return complete

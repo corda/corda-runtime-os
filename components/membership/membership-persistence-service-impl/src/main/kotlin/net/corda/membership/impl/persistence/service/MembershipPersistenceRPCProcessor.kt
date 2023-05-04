@@ -7,7 +7,6 @@ import net.corda.data.membership.db.response.MembershipResponseContext
 import net.corda.data.membership.db.response.query.ErrorKind
 import net.corda.data.membership.db.response.query.PersistenceFailedResponse
 import net.corda.membership.impl.persistence.service.handler.HandlerFactories
-import net.corda.membership.lib.MessagesHeaders
 import net.corda.membership.lib.exceptions.InvalidEntityUpdateException
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
@@ -27,10 +26,7 @@ internal class MembershipPersistenceRPCProcessor(
     ): List<Record<*, *>> {
         return events.flatMap { requestRecord ->
             val request = requestRecord.value
-            val senderId = requestRecord.headers.firstOrNull {
-                it.first == MessagesHeaders.SENDER_ID
-            }?.second
-            if ((request == null) || (senderId == null)) {
+            if (request == null) {
                 emptyList()
             } else {
                 val response = handleEvent(request)
@@ -39,9 +35,6 @@ internal class MembershipPersistenceRPCProcessor(
                         MEMBERSHIP_DB_RPC_RESPONSE_TOPIC,
                         requestRecord.key,
                         response,
-                        listOf(
-                            MessagesHeaders.SENDER_ID to senderId,
-                        ),
                     ),
                 )
             }
