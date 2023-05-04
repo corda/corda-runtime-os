@@ -41,6 +41,7 @@ import java.nio.file.StandardOpenOption
 import java.security.cert.CertificateFactory
 import java.security.cert.X509Certificate
 import java.util.UUID
+import java.util.concurrent.atomic.AtomicLong
 
 const val GATEWAY_CONFIG = "corda.p2p.gateway"
 const val LINK_MANAGER_CONFIG = "corda.p2p.linkManager"
@@ -291,20 +292,29 @@ fun E2eCluster.register(
     return clusterHttpClientFor(MemberRegistrationRestResource::class.java)
         .use { client ->
             val proxy = client.start().proxy
-            eventually(duration = 7.minutes, retryAllExceptions = true) {
-                println("QQQ Starting registration...")
+            val serial = AtomicLong()
+            eventually(duration = 8.minutes, retryAllExceptions = true) {
+                println("QQQ Starting registration $serial...")
+                val contextWithSerial = if (!context.containsKey("corda.serial")) {
+                    context + ("corda.serial" to serial.getAndIncrement().toString())
+                } else {
+                    context
+                }
                 proxy.startRegistration(
                     member.holdingId,
                     MemberRegistrationRequest(
-                        context,
+                        contextWithSerial,
                     ),
                 ).let {
                     println("QQQ  registration ID: ${it.registrationId}")
                     assertThat(it.registrationStatus).isEqualTo("SUBMITTED")
 
-                    eventually(duration = 3.minutes, retryAllExceptions = true) {
+                    eventually(duration = 5.minutes, retryAllExceptions = true) {
                         proxy.checkSpecificRegistrationProgress(member.holdingId, it.registrationId)
                             .also {
+                                println(
+                                    "\t QQQ  for registration ID: ${it.registrationId} we have ${it.registrationStatus}"
+                                )
                                 assertThat(it.registrationStatus.isEndState()).isTrue()
                             }
                     }
