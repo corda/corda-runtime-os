@@ -7,6 +7,8 @@ import net.corda.flow.application.services.impl.interop.proxies.JacksonJsonMarsh
 import net.corda.flow.application.services.impl.interop.proxies.getClientProxy
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.v5.application.interop.facade.Facade
+import net.corda.v5.application.interop.facade.FacadeId
+import net.corda.v5.application.interop.facade.FacadeReader
 import net.corda.v5.application.interop.facade.FacadeRequest
 import net.corda.v5.application.interop.facade.FacadeResponse
 import net.corda.v5.application.interop.facade.FacadeService
@@ -25,29 +27,59 @@ class FacadeServiceImpl @Activate constructor(
     @Reference(service = JsonMarshallingService::class)
     private val jsonMarshallingService: JsonMarshallingService,
     @Reference(service = FlowMessaging::class)
-    private val flowMessaging: FlowMessaging
+    private val flowMessaging: FlowMessaging,
+    @Reference(service = FacadeReader::class)
+    private val facadeReader: FacadeReader
 ) : FacadeService, UsedByFlow, SingletonSerializeAsToken {
 
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
-    override fun <T : Any?> getClientProxy(facade: Facade?, expectedType: Class<T>?, alias: MemberX500Name?, interopGroup: String?): T {
-        logger.info("getClientProxy: $facade, $expectedType, $alias, $interopGroup")
+    override fun <T : Any?> getClientProxy(facadeId: String?, expectedType: Class<T>?, alias: MemberX500Name?, interopGroup: String?): T {
+        logger.info("Creating Proxy for: $facadeId, $expectedType, $alias, $interopGroup")
+        val facade = facadeLookup(facadeId!!)
         val marshaller = JacksonJsonMarshallerAdaptor(jsonMarshallingService)
         val transportLayer = MessagingDispatcher(flowMessaging, jsonMarshallingService, alias!!, interopGroup!!)
-        val client = facade!!.getClientProxy(marshaller, expectedType!!, transportLayer)
-        return client
+        return facade.getClientProxy(marshaller, expectedType!!, transportLayer)
     }
 
-    override fun dispatch(facade: Facade?, target: Any?, request: String?): String {
-        logger.info("dispatch: $facade, $target, $request")
-        val marshaller = JacksonJsonMarshallerAdaptor(jsonMarshallingService)
-        val dispatcher = target!!.buildDispatcher(facade!!, marshaller)
+    override fun dispatch(target: Any?, request: String?): String {
+        logger.info("Dispatching: ${target!!::class.java}, $request")
         val facadeRequest = jsonMarshallingService.parse(request!!, FacadeRequestImpl::class.java)
+        val facade = facadeLookup(facadeRequest.facadeId)
+        val marshaller = JacksonJsonMarshallerAdaptor(jsonMarshallingService)
+        val dispatcher = target.buildDispatcher(facade, marshaller)
         val facadeResponse = dispatcher.invoke(facadeRequest)
         return jsonMarshallingService.format(facadeResponse)
     }
+
+    @Suppress("UNUSED_PARAMETER")
+    private fun facadeLookup(facadeId: String) : Facade {
+        return facadeReader.read(
+        """{ "id": "/com/r3/tokens/sample/v1.0",
+                "commands": { 
+                    "say-hello": {
+                        "in": {
+                            "greeting": "string"
+                            },
+                        "out": {
+                            "greeting": "string"
+                            }
+                        },
+                    "get-balance": {
+                        "in": {
+                            "greeting": "string"
+                            },
+                        "out": {
+                            "greeting": "string"
+                            }
+                        }
+                    }
+                }""".trimIndent())
+    }
+
+    private fun facadeLookup(facadeId: FacadeId) : Facade = facadeLookup(facadeId.toString())
 }
 
 class MessagingDispatcher(private var flowMessaging: FlowMessaging, private val jsonMarshallingService: JsonMarshallingService,

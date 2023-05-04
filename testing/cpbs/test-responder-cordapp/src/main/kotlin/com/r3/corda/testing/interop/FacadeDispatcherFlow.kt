@@ -23,31 +23,7 @@ open class FacadeDispatcherFlow : ResponderFlow {
     override fun call(session: FlowSession) {
         val request = session.receive(String::class.java)
         log.info("Processing $request")
-
-        val facade = facadeReader.read(
-            """{ "id": "/com/r3/tokens/sample/v1.0",
-                "commands": { 
-                    "say-hello": {
-                        "in": {
-                            "greeting": "string"
-                            },
-                        "out": {
-                            "greeting": "string"
-                            }
-                        },
-                    "get-balance": {
-                        "in": {
-                            "greeting": "string"
-                            },
-                        "out": {
-                            "greeting": "string"
-                            }
-                        }
-                    }
-                }""".trimIndent()
-        )
-
-        val facadeResponse = facadeService.dispatch(facade, this, request)
+        val facadeResponse = facadeService.dispatch( this, request)
         log.info("Responding $facadeResponse")
         session.send(facadeResponse)
     }

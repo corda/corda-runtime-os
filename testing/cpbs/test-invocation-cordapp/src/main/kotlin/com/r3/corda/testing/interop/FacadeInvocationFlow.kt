@@ -4,7 +4,6 @@ import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.InitiatingFlow
 import net.corda.v5.application.flows.ClientRequestBody
-import net.corda.v5.application.interop.facade.FacadeReader
 import net.corda.v5.application.interop.facade.FacadeService
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.base.annotations.Suspendable
@@ -25,9 +24,6 @@ class FacadeInvocationFlow : ClientStartableFlow {
     lateinit var jsonMarshallingService: JsonMarshallingService
 
     @CordaInject
-    lateinit var facadeReader: FacadeReader
-
-    @CordaInject
     lateinit var facadeService: FacadeService
 
     @Suspendable
@@ -42,29 +38,7 @@ class FacadeInvocationFlow : ClientStartableFlow {
         val payload = getArgument(args, "payload")
 
         log.info("Calling '$methodName@$facadeId' with payload '$payload' to '$alias'")
-        val facade = facadeReader.read(
-            """{ "id": "/com/r3/tokens/sample/v1.0",
-                "commands": { 
-                    "say-hello": {
-                        "in": {
-                            "greeting": "string"
-                            },
-                        "out": {
-                            "greeting": "string"
-                            }
-                        },
-                    "get-balance": {
-                        "in": {
-                            "greeting": "string"
-                            },
-                        "out": {
-                            "greeting": "string"
-                            }
-                        }
-                    }
-                }""".trimIndent()
-        )
-        val client : SampleTokensFacade = facadeService.getClientProxy(facade, SampleTokensFacade::class.java, alias, "")
+        val client : SampleTokensFacade = facadeService.getClientProxy(facadeId, SampleTokensFacade::class.java, alias, "")
         val responseObject = client.getHello("Hi there!")
         val response = responseObject.result.toString()
         log.info("Received '$response'")
