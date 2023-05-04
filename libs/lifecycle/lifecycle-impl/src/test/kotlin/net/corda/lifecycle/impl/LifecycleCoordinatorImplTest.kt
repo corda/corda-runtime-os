@@ -1,5 +1,10 @@
 package net.corda.lifecycle.impl
 
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.Executors
+import java.util.concurrent.ScheduledFuture
+import java.util.concurrent.TimeUnit
+import kotlin.random.Random
 import net.corda.lifecycle.CustomEvent
 import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.ErrorEvent
@@ -33,11 +38,6 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.Executors
-import java.util.concurrent.ScheduledFuture
-import java.util.concurrent.TimeUnit
-import kotlin.random.Random
 
 // These tests create simple lifecycle coordinator, provide an event handler to do some processing of events, and then
 // deliver some series of events to the coordinator to process. There are some subtleties to keep in mind when adding to
@@ -1214,6 +1214,7 @@ internal class LifecycleCoordinatorImplTest {
                 }
             }
         }
+
         coordinator.use {
             it.start()
             assertTrue(startLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
