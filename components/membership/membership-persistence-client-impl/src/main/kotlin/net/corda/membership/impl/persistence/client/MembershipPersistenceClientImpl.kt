@@ -229,18 +229,18 @@ class MembershipPersistenceClientImpl(
         logger.info("Persisting the member registration request.")
         val request = MembershipPersistenceRequest(
             buildMembershipRequestContext(viewOwningIdentity.toAvro()),
-            PersistRegistrationRequest(
-                registrationRequest.status,
-                registrationRequest.requester.toAvro(),
-                with(registrationRequest) {
+            with(registrationRequest) {
+                PersistRegistrationRequest(
+                    status,
+                    requester.toAvro(),
                     MembershipRegistrationRequest(
                         registrationId,
                         memberContext,
                         registrationContext,
                         serial,
                     )
-                }
-            )
+                )
+            }
         )
         return request.operation(::nullToUnitConvertor)
     }

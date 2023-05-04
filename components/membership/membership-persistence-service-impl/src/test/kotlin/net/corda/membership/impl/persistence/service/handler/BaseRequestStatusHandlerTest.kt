@@ -29,6 +29,7 @@ class BaseRequestStatusHandlerTest {
         const val REASON = "test reason"
         const val SERIAL = 0L
         const val SIGNATURE_SPEC = "signatureSpec"
+        const val REG_SIGNATURE_SPEC = "regSignatureSpec"
         const val PROTOCOL_VERSION = 12
 
         val sent = Instant.ofEpochSecond(500)
@@ -53,7 +54,7 @@ class BaseRequestStatusHandlerTest {
             registrationContext,
             registrationSignatureKey,
             registrationSignatureContent,
-            SIGNATURE_SPEC,
+            REG_SIGNATURE_SPEC,
             SERIAL,
             REASON,
         )
@@ -101,10 +102,23 @@ class BaseRequestStatusHandlerTest {
             softly.assertThat(details.registrationStatus).isEqualTo(RegistrationStatus.SENT_TO_MGM)
             softly.assertThat(details.registrationProtocolVersion).isEqualTo(PROTOCOL_VERSION)
             softly.assertThat(details.memberProvidedContext).isEqualTo(deserializedContext)
-            softly.assertThat(details.memberSignature)
-                .isEqualTo(CryptoSignatureWithKey(ByteBuffer.wrap(memberSignatureKey), ByteBuffer.wrap(memberSignatureContent)))
+            softly.assertThat(details.memberSignature).isEqualTo(
+                CryptoSignatureWithKey(
+                    ByteBuffer.wrap(memberSignatureKey),
+                    ByteBuffer.wrap(memberSignatureContent)
+                )
+            )
             softly.assertThat(details.memberSignatureSpec)
                 .isEqualTo(CryptoSignatureSpec(SIGNATURE_SPEC, null, null))
+            softly.assertThat(details.registrationContext).isEqualTo(deserializedRegistrationContext)
+            softly.assertThat(details.registrationSignature).isEqualTo(
+                CryptoSignatureWithKey(
+                    ByteBuffer.wrap(registrationSignatureKey),
+                    ByteBuffer.wrap(registrationSignatureContent)
+                )
+            )
+            softly.assertThat(details.registrationSignatureSpec)
+                .isEqualTo(CryptoSignatureSpec(REG_SIGNATURE_SPEC, null, null))
             softly.assertThat(details.reason).isEqualTo(REASON)
         }
     }

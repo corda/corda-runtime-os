@@ -56,12 +56,14 @@ class PersistRegistrationRequestHandlerTest {
     private val ourRegistrationId = UUID.randomUUID().toString()
     private val clock = TestClock(Instant.ofEpochSecond(0))
     private val vaultDmlConnectionId = UUID(12, 0)
+    private val memberContext = "89".toByteArray()
     private val memberContextSignatureKey = "123".toByteArray()
     private val memberContextSignatureContent = "456".toByteArray()
     private val memberContextSignatureSpec = "dummySignature"
-    private val registrationContextSignatureKey = "123".toByteArray()
-    private val registrationContextSignatureContent = "456".toByteArray()
-    private val registrationContextSignatureSpec = "dummySignature"
+    private val registrationContext = "registrationContext".toByteArray()
+    private val registrationContextSignatureKey = "registrationContextSignatureKey".toByteArray()
+    private val registrationContextSignatureContent = "registrationContextSignatureContent".toByteArray()
+    private val registrationContextSignatureSpec = "registrationContextSignatureSpec"
 
     private val virtualNodeInfo = VirtualNodeInfo(
         ourHoldingIdentity,
@@ -130,7 +132,7 @@ class PersistRegistrationRequestHandlerTest {
 
     private fun getPersistRegistrationRequest(): PersistRegistrationRequest {
         val memberContext = SignedData(
-            ByteBuffer.wrap("89".toByteArray()),
+            ByteBuffer.wrap(memberContext),
             CryptoSignatureWithKey(
                 ByteBuffer.wrap(memberContextSignatureKey),
                 ByteBuffer.wrap(memberContextSignatureContent)
@@ -138,7 +140,7 @@ class PersistRegistrationRequestHandlerTest {
             CryptoSignatureSpec(memberContextSignatureSpec, null, null)
         )
         val registrationContext = SignedData(
-            ByteBuffer.wrap("89".toByteArray()),
+            ByteBuffer.wrap(registrationContext),
             CryptoSignatureWithKey(
                 ByteBuffer.wrap(registrationContextSignatureKey),
                 ByteBuffer.wrap(registrationContextSignatureContent)
@@ -185,12 +187,16 @@ class PersistRegistrationRequestHandlerTest {
             assertThat(entity.status).isEqualTo(RegistrationStatus.SENT_TO_MGM.toString())
             assertThat(entity.created).isBeforeOrEqualTo(clock.instant())
             assertThat(entity.lastModified).isBeforeOrEqualTo(clock.instant())
+            assertThat(entity.memberContext)
+                .isEqualTo(this@PersistRegistrationRequestHandlerTest.memberContext)
             assertThat(entity.memberContextSignatureKey)
                 .isEqualTo(this@PersistRegistrationRequestHandlerTest.memberContextSignatureKey)
             assertThat(entity.memberContextSignatureContent)
                 .isEqualTo(this@PersistRegistrationRequestHandlerTest.memberContextSignatureContent)
             assertThat(entity.memberContextSignatureSpec)
                 .isEqualTo(this@PersistRegistrationRequestHandlerTest.memberContextSignatureSpec)
+            assertThat(entity.registrationContext)
+                .isEqualTo(this@PersistRegistrationRequestHandlerTest.registrationContext)
             assertThat(entity.registrationContextSignatureKey)
                 .isEqualTo(this@PersistRegistrationRequestHandlerTest.registrationContextSignatureKey)
             assertThat(entity.registrationContextSignatureContent)

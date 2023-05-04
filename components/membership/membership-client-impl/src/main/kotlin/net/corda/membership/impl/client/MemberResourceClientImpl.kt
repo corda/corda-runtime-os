@@ -89,9 +89,7 @@ class MemberResourceClientImpl @Activate constructor(
 
         private val clock = UTCClock()
 
-        private val REGISTRATION_CONTEXT_KEYS = setOf(
-            PRE_AUTH_TOKEN
-        )
+        private val REGISTRATION_CONTEXT_KEYS = setOf(PRE_AUTH_TOKEN)
     }
 
     private val keyValuePairListSerializer: CordaAvroSerializer<KeyValuePairList> =
@@ -279,8 +277,7 @@ class MemberResourceClientImpl @Activate constructor(
             val persistenceSuccess = try {
                 val context = keyValuePairListSerializer.serialize(
                     registrationContext.filterNot {
-                        it.key == SERIAL
-                                || REGISTRATION_CONTEXT_KEYS.contains(it.key)
+                        it.key == SERIAL || REGISTRATION_CONTEXT_KEYS.contains(it.key)
                     }.toWire()
                 )
                 val additionalContext = keyValuePairListSerializer.serialize(

@@ -590,6 +590,13 @@ class MembershipPersistenceTest {
             assertThat(first().key).isEqualTo(MEMBER_CONTEXT_KEY)
             assertThat(first().value).isEqualTo(MEMBER_CONTEXT_VALUE)
         }
+
+        val persistedRegistrationContext = persistedEntity.registrationContext.deserializeContextAsMap()
+        with(persistedRegistrationContext.entries) {
+            assertThat(size).isEqualTo(1)
+            assertThat(first().key).isEqualTo(REGISTRATION_CONTEXT_KEY)
+            assertThat(first().value).isEqualTo(REGISTRATION_CONTEXT_VALUE)
+        }
     }
 
     @Test
@@ -1034,12 +1041,17 @@ class MembershipPersistenceTest {
             memberAndRegistrationId[holdingId] = registrationId
             val publicKey = "pk-$index".toByteArray()
             val signature = "signature-$index".toByteArray()
+            val regContextSig = "reg-context-signature-$index".toByteArray()
             val signatureSpec = CryptoSignatureSpec("spec-$index", null, null)
             persistMember(holdingId.x500Name, MEMBER_STATUS_PENDING, publicKey, signature, signatureSpec)
 
             val cryptoSignatureWithKey = CryptoSignatureWithKey(
                 ByteBuffer.wrap(publicKey),
                 ByteBuffer.wrap(signature)
+            )
+            val cryptoSignatureWithKeyForRegistrationContext = CryptoSignatureWithKey(
+                ByteBuffer.wrap(publicKey),
+                ByteBuffer.wrap(regContextSig)
             )
             val context = KeyValuePairList(
                 listOf(
@@ -1068,7 +1080,7 @@ class MembershipPersistenceTest {
                         ByteBuffer.wrap(
                             cordaAvroSerializer.serialize(registrationContext)
                         ),
-                        cryptoSignatureWithKey,
+                        cryptoSignatureWithKeyForRegistrationContext,
                         signatureSpec,
                     ),
                     REGISTRATION_SERIAL,
