@@ -43,13 +43,14 @@ internal class SandboxGroupImpl(
         }
     }
 
-    override val metadata: SortedMap<Bundle, CpkMetadata> =
-        unmodifiableSortedMap(cpkSandboxes.associateTo(TreeMap()) { cpk ->
-            cpk.mainBundle to cpk.cpkMetadata
-        })
+    override val metadata: SortedMap<Bundle, CpkMetadata> = unmodifiableSortedMap(cpkSandboxes.associateTo(TreeMap()) { cpk ->
+        cpk.mainBundle to cpk.cpkMetadata
+    })
 
     override fun loadClassFromPublicBundles(className: String): Class<*>? {
-        val clazz = publicSandboxes.flatMap(Sandbox::publicBundles).filterNot(Bundle::isFragment)
+        val clazz = publicSandboxes
+            .flatMap(Sandbox::publicBundles)
+            .filterNot(Bundle::isFragment)
             .mapNotNullTo(LinkedHashSet()) { bundle ->
                 try {
                     bundle.loadClass(className)
@@ -74,9 +75,8 @@ internal class SandboxGroupImpl(
                 null
             }
         }.singleOrNull()
-            ?: throw SandboxException("Class $className was not found in any sandbox in the sandbox group.").withSuppressed(
-                suppressed
-            )
+            ?: throw SandboxException("Class $className was not found in any sandbox in the sandbox group.")
+                .withSuppressed(suppressed)
     }
 
     override fun <T : Any> loadClassFromMainBundles(className: String, type: Class<T>): Class<out T> {
