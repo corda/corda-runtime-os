@@ -127,7 +127,6 @@ class ProcessMemberVerificationResponseHandlerTest {
     }
     private val requestStatus = mock<RegistrationRequestDetails> {
         on { memberProvidedContext } doReturn memberContext
-        on { registrationStatus } doReturn RegistrationStatus.PENDING_MEMBER_VERIFICATION
     }
     private val membershipQueryClient = mock<MembershipQueryClient> {
         on {
