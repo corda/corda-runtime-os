@@ -4,7 +4,6 @@ import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.core.bytes
 import net.corda.libs.packaging.core.CpkFormatVersion
 import net.corda.libs.packaging.internal.FormatVersionReader
-import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
 import java.io.InputStream
@@ -12,7 +11,7 @@ import java.security.DigestInputStream
 import java.security.MessageDigest
 import java.security.cert.Certificate
 import java.security.cert.X509Certificate
-import java.util.Arrays
+import java.util.*
 import java.util.jar.JarEntry
 import java.util.jar.Manifest
 
@@ -69,7 +68,8 @@ fun Sequence<Certificate>.signerSummaryHash(): SecureHash {
     val summaryHash = map {
         it as? X509Certificate
             ?: throw IllegalArgumentException("Certificate should be of type ${X509Certificate::class.java.name}")
-        MemberX500Name.parse(it.subjectX500Principal.name).toString().toByteArray().hash()
+        // NOTE: this should NOT use MemberX500Name as we don't need/want to apply Corda Member restrictions
+        it.subjectX500Principal.name.toByteArray().hash()
     }.summaryHash()
 
     return summaryHash
