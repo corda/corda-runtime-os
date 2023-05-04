@@ -10,12 +10,14 @@ import net.corda.data.flow.FlowKey
 import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.fiber.FlowFiberImpl
 import net.corda.flow.fiber.cache.FlowFiberCache
+import org.slf4j.LoggerFactory
 
 @Suppress("unused")
 @Component(service = [FlowFiberCache::class])
 class FlowFiberCacheImpl @Activate constructor() : FlowFiberCache {
 
     private companion object {
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         private const val FLOW_FIBER_CACHE_MAX_SIZE_PROPERTY_NAME = "net.corda.flow.fiber.cache.maximumSize"
         private const val FLOW_FIBER_CACHE_EXPIRE_AFTER_WRITE_SECONDS_PROPERTY_NAME = "net.corda.flow.fiber.cache.expireAfterWriteSeconds"
     }
@@ -48,6 +50,7 @@ class FlowFiberCacheImpl @Activate constructor() : FlowFiberCache {
     }
 
     override fun remove(holdingIdentity: HoldingIdentity) {
+        logger.info("Flow fiber cache removing holdingIdentity $holdingIdentity")
         val keysToInvalidate = cache.asMap().keys.filter { holdingIdentity == it.identity }
         cache.invalidateAll(keysToInvalidate)
         cache.cleanUp()

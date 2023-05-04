@@ -12,6 +12,7 @@ import net.corda.flow.pipeline.sessions.FlowProtocolStoreFactory
 import net.corda.sandboxgroupcontext.MutableSandboxGroupContext
 import net.corda.sandboxgroupcontext.RequireSandboxAMQP
 import net.corda.sandboxgroupcontext.RequireSandboxJSON
+import net.corda.sandboxgroupcontext.SandboxCloseable
 import net.corda.sandboxgroupcontext.SandboxGroupType
 import net.corda.sandboxgroupcontext.VirtualNodeContext
 import net.corda.sandboxgroupcontext.putObjectByKey
@@ -63,24 +64,17 @@ class FlowSandboxServiceImpl @Activate constructor(
             throw IllegalStateException("The sandbox can't find one or more of the CPKs $cpkFileHashes ")
         }
 
-        val sandboxGroupContext = sandboxGroupContextComponent.getOrCreate(
-            vNodeContext,
-            ::preSandboxRemovalCallback
-        ) { _, sandboxGroupContext ->
+        val sandboxGroupContext = sandboxGroupContextComponent.getOrCreate(vNodeContext) { _, sandboxGroupContext ->
             initialiseSandbox(dependencyInjectionFactory, sandboxGroupContext)
         }
 
         return FlowSandboxGroupContextImpl.fromContext(sandboxGroupContext)
     }
 
-    private fun preSandboxRemovalCallback(virtualNodeContext: VirtualNodeContext) {
-        flowFiberCache.remove(virtualNodeContext.holdingIdentity.toAvro())
-    }
-
     private fun initialiseSandbox(
         dependencyInjectionFactory: SandboxDependencyInjectorFactory,
         sandboxGroupContext: MutableSandboxGroupContext,
-    ): AutoCloseable {
+    ): SandboxCloseable {
         val sandboxGroup = sandboxGroupContext.sandboxGroup
         val customCrypto = sandboxGroupContextComponent.registerCustomCryptography(sandboxGroupContext)
 
@@ -111,13 +105,19 @@ class FlowSandboxServiceImpl @Activate constructor(
         // Instruct all CustomMetadataConsumers to accept their metadata.
         sandboxGroupContextComponent.acceptCustomMetadata(sandboxGroupContext)
 
-        return AutoCloseable {
-            jsonDeserializers.close()
-            jsonSerializers.close()
-            cleanupCordaSingletons.forEach(AutoCloseable::close)
-            customSerializers.close()
-            injectorService.close()
-            customCrypto.close()
+        return object : SandboxCloseable {
+            override fun preClose(virtualNodeContext: VirtualNodeContext) {
+                flowFiberCache.remove(virtualNodeContext.holdingIdentity.toAvro())
+            }
+
+            override fun close() {
+                jsonDeserializers.close()
+                jsonSerializers.close()
+                cleanupCordaSingletons.forEach(AutoCloseable::close)
+                customSerializers.close()
+                injectorService.close()
+                customCrypto.close()
+            }
         }
     }
 

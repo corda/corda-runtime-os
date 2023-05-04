@@ -2,20 +2,20 @@ package net.corda.sandboxgroupcontext.service.impl
 
 import com.github.benmanes.caffeine.cache.Cache
 import com.github.benmanes.caffeine.cache.Caffeine
-import net.corda.cache.caffeine.CacheFactoryImpl
-import net.corda.sandboxgroupcontext.SandboxGroupContext
-import net.corda.sandboxgroupcontext.SandboxGroupType
-import net.corda.sandboxgroupcontext.VirtualNodeContext
-import net.corda.v5.base.annotations.VisibleForTesting
-import net.corda.v5.base.exceptions.CordaRuntimeException
-import org.slf4j.LoggerFactory
 import java.lang.ref.ReferenceQueue
 import java.lang.ref.WeakReference
 import java.time.Duration
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentMap
-import net.corda.sandboxgroupcontext.SandboxGroupContextPreRemovalCallback
+import net.corda.cache.caffeine.CacheFactoryImpl
+import net.corda.sandboxgroupcontext.SandboxCloseable
+import net.corda.sandboxgroupcontext.SandboxGroupContext
+import net.corda.sandboxgroupcontext.SandboxGroupType
+import net.corda.sandboxgroupcontext.VirtualNodeContext
+import net.corda.v5.base.annotations.VisibleForTesting
+import net.corda.v5.base.exceptions.CordaRuntimeException
+import org.slf4j.LoggerFactory
 
 internal class SandboxGroupContextCacheImpl private constructor(
     override val capacities: Map<SandboxGroupType, Long>,
@@ -43,7 +43,6 @@ internal class SandboxGroupContextCacheImpl private constructor(
      * invoke [CloseableSandboxGroupContext.close] on cache eviction when all strong references are gone.
      */
     private class SandboxGroupContextWrapper(
-        val preRemovalCallback: SandboxGroupContextPreRemovalCallback?,
         val wrappedSandboxGroupContext: CloseableSandboxGroupContext
     ) : SandboxGroupContext by wrappedSandboxGroupContext
 
@@ -62,15 +61,9 @@ internal class SandboxGroupContextCacheImpl private constructor(
             // is not referenced anymore).
             .removalListener { key, context, cause ->
                 purgeExpiryQueue()
-
-                context?.let { ctx ->
-                    key?.let {
-                        ctx.preRemovalCallback?.preSandboxRemoval(key)
-                    }
-
-                    (ctx.wrappedSandboxGroupContext as? AutoCloseable)?.also { autoCloseable ->
-                        toBeClosed += ToBeClosed(key!!, context.completion, autoCloseable, context, expiryQueue)
-                    }
+                (context?.wrappedSandboxGroupContext as? SandboxCloseable)?.also { sandboxCloseable ->
+                    sandboxCloseable.preClose(key!!)
+                    toBeClosed += ToBeClosed(key, context.completion, sandboxCloseable, context, expiryQueue)
                 }
 
                 logger.info(
@@ -198,7 +191,6 @@ internal class SandboxGroupContextCacheImpl private constructor(
 
     override fun get(
         virtualNodeContext: VirtualNodeContext,
-        preSandboxRemovalCallback: SandboxGroupContextPreRemovalCallback?,
         createFunction: (VirtualNodeContext) -> CloseableSandboxGroupContext
     ): SandboxGroupContext {
         purgeExpiryQueue()
@@ -218,7 +210,7 @@ internal class SandboxGroupContextCacheImpl private constructor(
                 sandboxCache.estimatedSize()
             )
 
-            SandboxGroupContextWrapper(preSandboxRemovalCallback, createFunction(virtualNodeContext))
+            SandboxGroupContextWrapper(createFunction(virtualNodeContext))
         }
     }
 

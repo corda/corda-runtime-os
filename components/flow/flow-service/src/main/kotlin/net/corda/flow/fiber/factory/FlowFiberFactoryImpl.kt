@@ -3,12 +3,15 @@ package net.corda.flow.fiber.factory
 import co.paralleluniverse.concurrent.util.ScheduledSingleThreadExecutor
 import co.paralleluniverse.fibers.FiberExecutorScheduler
 import co.paralleluniverse.fibers.FiberScheduler
+import java.util.UUID
+import java.util.concurrent.ExecutorService
+import net.corda.flow.fiber.FiberExceptionConstants
 import net.corda.flow.fiber.FiberFuture
 import net.corda.flow.fiber.FlowContinuation
 import net.corda.flow.fiber.FlowFiberExecutionContext
 import net.corda.flow.fiber.FlowFiberImpl
 import net.corda.flow.fiber.FlowLogicAndArgs
-import net.corda.flow.fiber.FiberExceptionConstants
+import net.corda.flow.fiber.cache.FlowFiberCache
 import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.metrics.CordaMetrics
 import org.osgi.service.component.annotations.Activate
@@ -16,9 +19,6 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Deactivate
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
-import java.util.UUID
-import java.util.concurrent.ExecutorService
-import net.corda.flow.fiber.cache.FlowFiberCache
 
 @Component
 @Suppress("Unused")

@@ -1,6 +1,18 @@
 @file:JvmName("SandboxGroupContextServiceUtils")
 package net.corda.sandboxgroupcontext.service.impl
 
+import java.security.AccessControlContext
+import java.security.AccessControlException
+import java.time.Duration
+import java.util.Collections.singleton
+import java.util.Collections.unmodifiableSet
+import java.util.Deque
+import java.util.Hashtable
+import java.util.LinkedList
+import java.util.SortedMap
+import java.util.TreeMap
+import java.util.UUID
+import java.util.concurrent.CompletableFuture
 import net.corda.cpk.read.CpkReadService
 import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.metrics.CordaMetrics
@@ -16,6 +28,7 @@ import net.corda.sandboxgroupcontext.CustomMetadataConsumer
 import net.corda.sandboxgroupcontext.MutableSandboxGroupContext
 import net.corda.sandboxgroupcontext.RequireSandboxCrypto
 import net.corda.sandboxgroupcontext.SANDBOX_SINGLETONS
+import net.corda.sandboxgroupcontext.SandboxCloseable
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.sandboxgroupcontext.SandboxGroupContextInitializer
 import net.corda.sandboxgroupcontext.SandboxGroupContextService
@@ -46,19 +59,6 @@ import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.runtime.ServiceComponentRuntime
 import org.osgi.service.component.runtime.dto.ComponentDescriptionDTO
 import org.slf4j.LoggerFactory
-import java.security.AccessControlContext
-import java.security.AccessControlException
-import java.time.Duration
-import java.util.Collections.singleton
-import java.util.Collections.unmodifiableSet
-import java.util.Deque
-import java.util.Hashtable
-import java.util.LinkedList
-import java.util.SortedMap
-import java.util.TreeMap
-import java.util.UUID
-import java.util.concurrent.CompletableFuture
-import net.corda.sandboxgroupcontext.SandboxGroupContextPreRemovalCallback
 
 typealias SatisfiedServiceReferences = Map<String, SortedMap<ServiceReference<*>, Any>>
 
@@ -125,7 +125,6 @@ class SandboxGroupContextServiceImpl @Activate constructor(
 
             override fun get(
                 virtualNodeContext: VirtualNodeContext,
-                preSandboxRemovalCallback: SandboxGroupContextPreRemovalCallback?,
                 createFunction: (VirtualNodeContext) -> CloseableSandboxGroupContext
             ) = throw IllegalStateException("get: SandboxGroupContextService is not ready.")
 
@@ -167,15 +166,7 @@ class SandboxGroupContextServiceImpl @Activate constructor(
         virtualNodeContext: VirtualNodeContext,
         initializer: SandboxGroupContextInitializer
     ): SandboxGroupContext {
-        return getOrCreate(virtualNodeContext, null, initializer)
-    }
-
-    override fun getOrCreate(
-        virtualNodeContext: VirtualNodeContext,
-        preSandboxRemovalCallback: SandboxGroupContextPreRemovalCallback?,
-        initializer: SandboxGroupContextInitializer
-    ): SandboxGroupContext {
-        return cache.get(virtualNodeContext, preSandboxRemovalCallback) { vnc ->
+        return cache.get(virtualNodeContext) { vnc ->
             val sandboxTimer = CordaMetrics.Metric.SandboxCreateTime.builder()
                 .forVirtualNode(vnc.holdingIdentity.shortHash.value)
                 .withTag(CordaMetrics.Tag.SandboxGroupType, vnc.sandboxGroupType.name)
@@ -210,27 +201,33 @@ class SandboxGroupContextServiceImpl @Activate constructor(
                 }
 
                 // Run the caller's initializer.
-                val initializerAutoCloseable =
-                    initializer.initializeSandboxGroupContext(vnc.holdingIdentity, sandboxGroupContext)
+                val closeableSandbox = initializer.initializeSandboxGroupContext(vnc.holdingIdentity, sandboxGroupContext)
 
                 logger.debug("Created {} sandbox {} for holding identity={}",
                     vnc.sandboxGroupType, sandboxGroup.id, vnc.holdingIdentity)
 
                 // Wrapped SandboxGroupContext, specifically to set closeable and forward on all other calls.
 
+                // Calling preClose invokes a pre-close step returned from the initializer before
                 // Calling close also removes us from the contexts map and unloads the [SandboxGroup].
-                CloseableSandboxGroupContextImpl(sandboxGroupContext) {
-                    // These objects might still be in a sandbox, so close them whilst the sandbox is still valid.
-                    runIgnoringExceptions(initializerAutoCloseable::close)
-
-                    // Remove this sandbox's common services.
-                    commonServiceRegistrations?.forEach { closeable ->
-                        runIgnoringExceptions(closeable::close)
+                CloseableSandboxGroupContextImpl(sandboxGroupContext, object: SandboxCloseable {
+                    override fun preClose(virtualNodeContext: VirtualNodeContext) {
+                        closeableSandbox.preClose(virtualNodeContext)
                     }
 
-                    // And unload the (OSGi) sandbox group
-                    sandboxCreationService.unloadSandboxGroup(sandboxGroupContext.sandboxGroup)
-                }
+                    override fun close() {
+                        // These objects might still be in a sandbox, so close them whilst the sandbox is still valid.
+                        runIgnoringExceptions(closeableSandbox::close)
+
+                        // Remove this sandbox's common services.
+                        commonServiceRegistrations?.forEach { closeable ->
+                            runIgnoringExceptions(closeable::close)
+                        }
+
+                        // And unload the (OSGi) sandbox group
+                        sandboxCreationService.unloadSandboxGroup(sandboxGroupContext.sandboxGroup)
+                    }
+                })
             }!!
         }
     }
