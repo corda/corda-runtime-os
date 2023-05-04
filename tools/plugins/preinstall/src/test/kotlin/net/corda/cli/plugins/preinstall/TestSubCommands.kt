@@ -17,51 +17,56 @@ import picocli.CommandLine
 
 class TestSubCommands {
     @Test
-    fun testFileParsing() {
-        var path = "./src/test/resources/LimitsTestUnderLimits.yaml"
+    fun testLimitsFileParsing() {
+        val path = "./src/test/resources/LimitsTestUnderLimits.yaml"
         val limits = CheckLimits()
         CommandLine(limits).execute(path)
 
-        println(limits.report)
-
         assertTrue(limits.report.toString().contains("Parse resource properties from YAML: PASSED"))
+    }
 
-        path = "./src/test/resources/PostgresTest.yaml"
+    @Test
+    fun testPostgresFileParsing() {
+        val path = "./src/test/resources/PostgresTest.yaml"
         val postgres = CheckPostgres()
         CommandLine(postgres).execute(path)
 
-        println(postgres.report)
+        assertTrue(postgres.report.toString().contains("Parse PostgreSQL properties from YAML: PASSED"))}
 
-        assertTrue(postgres.report.toString().contains("Parse PostgreSQL properties from YAML: PASSED"))
-
-        path = "./src/test/resources/KafkaTestSaslScram.yaml"
+    @Test
+    fun testKafkaFileParsing() {
+        val path = "./src/test/resources/KafkaTestSaslScram.yaml"
         val kafka = CheckKafka()
         CommandLine(kafka).execute(path)
-
-        println(kafka.report)
 
         assertTrue(kafka.report.toString().contains("Parse Kafka properties from YAML: PASSED"))
     }
 
     @Test
-    fun testLimitsParser() {
-        var path = "./src/test/resources/LimitsTestUnderLimits.yaml"
-        var limits = CheckLimits()
-        var result: Int = CommandLine(limits).execute(path)
+    fun testParserUnderLimits() {
+        val path = "./src/test/resources/LimitsTestUnderLimits.yaml"
+        val limits = CheckLimits()
+        val result: Int = CommandLine(limits).execute(path)
 
         assertTrue(limits.report.toString().contains("bootstrap requests do not exceed limits: PASSED"))
         assertEquals(0, result)
+    }
 
-        path = "./src/test/resources/LimitsTestOverLimits.yaml"
-        limits = CheckLimits()
-        result = CommandLine(limits).execute(path)
+    @Test
+    fun testParserOverLimits() {
+        val path = "./src/test/resources/LimitsTestOverLimits.yaml"
+        val limits = CheckLimits()
+        val result = CommandLine(limits).execute(path)
 
         assertTrue(limits.report.toString().contains("resources requests do not exceed limits: FAILED"))
         assertEquals(1, result)
+    }
 
-        path = "./src/test/resources/LimitsTestBadValues.yaml"
-        limits = CheckLimits()
-        result = CommandLine(limits).execute(path)
+    @Test
+    fun testParserBadValues() {
+        val path = "./src/test/resources/LimitsTestBadValues.yaml"
+        val limits = CheckLimits()
+        val result = CommandLine(limits).execute(path)
 
         assertTrue(limits.report.toString().contains("Parse resource strings: FAILED"))
         assertEquals(1, result)
