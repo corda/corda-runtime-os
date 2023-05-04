@@ -11,19 +11,16 @@ import com.esotericsoftware.kryo.serializers.CompatibleFieldSerializer
 import com.esotericsoftware.kryo.serializers.FieldSerializer
 import com.esotericsoftware.kryo.util.DefaultInstantiatorStrategy
 import de.javakaffee.kryoserializers.UnmodifiableCollectionsSerializer
+import net.corda.kryoserialization.serializers.*
 import net.corda.kryoserialization.serializers.AutoCloseableSerializer
 import net.corda.kryoserialization.serializers.AvroRecordRejectSerializer
 import net.corda.kryoserialization.serializers.CertPathSerializer
-import net.corda.kryoserialization.serializers.ClassSerializer
 import net.corda.kryoserialization.serializers.CordaClosureSerializer
 import net.corda.kryoserialization.serializers.IteratorSerializer
-import net.corda.kryoserialization.serializers.LazyMappedListSerializer
 import net.corda.kryoserialization.serializers.LinkedHashMapEntrySerializer
 import net.corda.kryoserialization.serializers.LinkedHashMapIteratorSerializer
 import net.corda.kryoserialization.serializers.LinkedListItrSerializer
-import net.corda.kryoserialization.serializers.LoggerSerializer
 import net.corda.kryoserialization.serializers.NonSerializableSerializer
-import net.corda.kryoserialization.serializers.ThrowableSerializer
 import net.corda.kryoserialization.serializers.X509CertificateSerializer
 import net.corda.serialization.checkpoint.NonSerializable
 import net.corda.utilities.LazyMappedList
@@ -100,6 +97,8 @@ class DefaultKryoCustomizer {
                 UnmodifiableCollectionsSerializer.registerSerializers(this)
 
                 addDefaultSerializer(CertPath::class.java, CertPathSerializer)
+
+                addDefaultSerializer(EntrySetSerializer.serializedType, EntrySetSerializer)
 
                 register(java.lang.invoke.SerializedLambda::class.java)
                 addDefaultSerializer(ClosureSerializer.Closure::class.java, CordaClosureSerializer)
