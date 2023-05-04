@@ -31,7 +31,8 @@ internal class MembershipPersistenceOperationImpl<T>(
     private val convertResult: (Any?) -> Either<T, String>,
 ) : MembershipPersistenceOperation<T> {
     private companion object {
-        const val RPC_TIMEOUT_MS = 10000L
+        // Reduce timeout to 10 seconds once CORE-13288 is solved
+        const val RPC_TIMEOUT_MS = 27000L
         val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
