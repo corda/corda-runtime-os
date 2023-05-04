@@ -20,9 +20,10 @@ class TestSubCommands {
     fun testLimitsFileParsing() {
         val path = "./src/test/resources/LimitsTestUnderLimits.yaml"
         val limits = CheckLimits()
-        CommandLine(limits).execute(path)
+        val ret = CommandLine(limits).execute(path)
 
         assertTrue(limits.report.toString().contains("Parse resource properties from YAML: PASSED"))
+        assertEquals(0, ret)
     }
 
     @Test
@@ -31,7 +32,8 @@ class TestSubCommands {
         val postgres = CheckPostgres()
         CommandLine(postgres).execute(path)
 
-        assertTrue(postgres.report.toString().contains("Parse PostgreSQL properties from YAML: PASSED"))}
+        assertTrue(postgres.report.toString().contains("Parse PostgreSQL properties from YAML: PASSED"))
+    }
 
     @Test
     fun testKafkaFileParsing() {
@@ -46,30 +48,30 @@ class TestSubCommands {
     fun testParserUnderLimits() {
         val path = "./src/test/resources/LimitsTestUnderLimits.yaml"
         val limits = CheckLimits()
-        val result: Int = CommandLine(limits).execute(path)
+        val ret = CommandLine(limits).execute(path)
 
         assertTrue(limits.report.toString().contains("bootstrap requests do not exceed limits: PASSED"))
-        assertEquals(0, result)
+        assertEquals(0, ret)
     }
 
     @Test
     fun testParserOverLimits() {
         val path = "./src/test/resources/LimitsTestOverLimits.yaml"
         val limits = CheckLimits()
-        val result = CommandLine(limits).execute(path)
+        val ret = CommandLine(limits).execute(path)
 
         assertTrue(limits.report.toString().contains("resources requests do not exceed limits: FAILED"))
-        assertEquals(1, result)
+        assertEquals(1, ret)
     }
 
     @Test
     fun testParserBadValues() {
         val path = "./src/test/resources/LimitsTestBadValues.yaml"
         val limits = CheckLimits()
-        val result = CommandLine(limits).execute(path)
+        val ret = CommandLine(limits).execute(path)
 
         assertTrue(limits.report.toString().contains("Parse resource strings: FAILED"))
-        assertEquals(1, result)
+        assertEquals(1, ret)
     }
 
     @Nested
@@ -246,11 +248,5 @@ class TestSubCommands {
 
         report.addEntry(ReportEntry("Is magical", false, Exception("Not magic")))
         assertEquals(1, report.testsPassed())
-
-        println(report)
-
-        if (report.testsPassed() == 1) {
-            println(report.failingTests())
-        }
     }
 }
