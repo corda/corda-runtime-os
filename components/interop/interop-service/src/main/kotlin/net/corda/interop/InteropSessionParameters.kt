@@ -12,6 +12,7 @@ class InteropSessionParameters(
         private const val INTEROP_FACADE_ID = "INTEROP_FACADE_ID"
         private const val INTEROP_FACADE_METHOD = "INTEROP_FACADE_METHOD"
 
+        @Suppress("ThrowsCount")
         fun fromContextUserProperties(properties: KeyValuePairList): InteropSessionParameters {
             val facadeId = properties.items.find { it.key == INTEROP_FACADE_ID }?.value ?: throw InteropProcessorException(
                 "Message without facadeId.", null)

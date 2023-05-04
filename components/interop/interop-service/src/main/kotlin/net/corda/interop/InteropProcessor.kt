@@ -57,6 +57,7 @@ class InteropProcessor(
     private val sessionEventSerializer: CordaAvroSerializer<SessionEvent> =
         cordaAvroSerializationFactory.createAvroSerializer{}
 
+    @Suppress("ThrowsCount")
     private fun processInboundEvent(state: InteropState?, eventKey: String, sessionEvent: SessionEvent):
             StateAndEventProcessor.Response<InteropState> {
 
