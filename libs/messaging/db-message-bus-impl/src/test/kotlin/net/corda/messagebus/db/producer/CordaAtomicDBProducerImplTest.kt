@@ -29,14 +29,6 @@ internal class CordaAtomicDBProducerImplTest {
     private val serializedKey = key.toByteArray()
     private val serializedValue = value.toByteArray()
 
-
-    @Test
-    fun `atomic producer inserts atomic transaction record on initialization`() {
-        val dbAccess: DBAccess = mock()
-        CordaAtomicDBProducerImpl(mock(), dbAccess, mock(), mock())
-        verify(dbAccess).writeAtomicTransactionRecord()
-    }
-
     @Test
     fun `atomic producer is okay when db already has atomic transaction`() {
         val dbAccess: DBAccess = mock()
@@ -136,7 +128,6 @@ internal class CordaAtomicDBProducerImplTest {
         assertThatExceptionOfType(CordaMessageAPIFatalException::class.java).isThrownBy {
             producer.sendRecordOffsetsToTransaction(mock(), mock())
         }
-        verify(dbAccess).writeAtomicTransactionRecord()
         verifyNoMoreInteractions(dbAccess)
     }
 

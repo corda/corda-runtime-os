@@ -22,10 +22,6 @@ class CordaAtomicDBProducerImpl(
     private val headerSerializer: MessageHeaderSerializer
 ) : CordaProducer {
 
-    init {
-        dbAccess.writeAtomicTransactionRecord()
-    }
-
     override fun send(record: CordaProducerRecord<*, *>, callback: CordaProducer.Callback?) {
         sendRecords(listOf(record))
         callback?.onCompletion(null)
