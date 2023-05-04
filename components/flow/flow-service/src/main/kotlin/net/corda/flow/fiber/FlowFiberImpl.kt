@@ -126,7 +126,10 @@ class FlowFiberImpl(
 
     @Suspendable
     override fun <SUSPENDRETURN> suspend(request: FlowIORequest<SUSPENDRETURN>): SUSPENDRETURN {
-        log.trace("Suspend: ${getExecutionContext().flowCheckpoint.flowStartContext.flowClassName} ${request.javaClass.name}")
+        log.trace(
+            "Suspend: ${getExecutionContext().flowCheckpoint.flowStartContext.flowClassName} " +
+                    "${request.javaClass.name}"
+        )
         removeCurrentSandboxGroupContext()
         parkAndCustomSerialize { _ ->
             resetLoggingContext()
