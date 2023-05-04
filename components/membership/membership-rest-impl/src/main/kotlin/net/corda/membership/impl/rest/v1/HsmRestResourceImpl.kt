@@ -76,21 +76,6 @@ class HsmRestResourceImpl @Activate constructor(
         }
     }
 
-    override fun assignHsm(tenantId: String, category: String): HsmAssociationInfo {
-        verifyTenantId(tenantId)
-        return tryWithExceptionHandling(
-            logger,
-            "Assign HSM",
-            untranslatedExceptions = setOf(ResourceNotFoundException::class.java)
-        ) {
-            hsmRegistrationClient.assignHSM(
-                tenantId,
-                category.toCategory(),
-                emptyMap()
-            ).expose()
-        }
-    }
-
     override val targetInterface = HsmRestResource::class.java
 
     override val protocolVersion = 1
