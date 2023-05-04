@@ -2,21 +2,19 @@ package net.corda.membership.impl.rest.v1
 
 import net.corda.crypto.client.hsm.HSMRegistrationClient
 import net.corda.crypto.core.CryptoConsts.Categories.CI
-import net.corda.crypto.core.CryptoConsts.Categories.LEDGER
 import net.corda.crypto.core.CryptoConsts.Categories.NOTARY
 import net.corda.crypto.core.CryptoConsts.Categories.TLS
 import net.corda.crypto.core.CryptoTenants.P2P
-import net.corda.crypto.core.CryptoTenants.REST
 import net.corda.crypto.core.ShortHash
 import net.corda.data.crypto.wire.hsm.HSMAssociationInfo
-import net.corda.rest.exception.BadRequestException
-import net.corda.rest.exception.ResourceNotFoundException
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleEventHandler
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.membership.rest.v1.types.response.HsmAssociationInfo
+import net.corda.rest.exception.BadRequestException
+import net.corda.rest.exception.ResourceNotFoundException
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Nested
@@ -127,68 +125,6 @@ class HsmRestResourceImplTest {
                     deprecatedAt = 0
                 ),
             )
-        }
-
-        @Test
-        fun `assignHsm will return the data`() {
-            whenever(hsmRegistrationClient.assignHSM(tenantId, LEDGER, emptyMap())).doReturn(
-                HSMAssociationInfo(
-                    "id1",
-                    tenantId,
-                    "hsm-id",
-                    LEDGER,
-                    "master-key-alias",
-                    0,
-                )
-            )
-
-            val hsm = ops.assignHsm(tenantId, LEDGER)
-
-            assertThat(hsm).isEqualTo(
-                HsmAssociationInfo(
-                    id = "id1",
-                    hsmId = "hsm-id",
-                    category = LEDGER,
-                    masterKeyAlias = "master-key-alias",
-                    deprecatedAt = 0
-                ),
-            )
-        }
-
-        @Test
-        fun `assignHsm verify the tenantId`() {
-            whenever(hsmRegistrationClient.assignHSM(tenantId, LEDGER, emptyMap())).doReturn(
-                HSMAssociationInfo(
-                    "id1",
-                    tenantId,
-                    "hsm-id",
-                    LEDGER,
-                    "master-key-alias",
-                    0,
-                )
-            )
-
-            ops.assignHsm(tenantId, LEDGER)
-
-            verify(virtualNodeInfoReadService).getByHoldingIdentityShortHash(tenantIdShortHash)
-        }
-
-        @Test
-        fun `assignHsm will not verify the tenantId from REST tenant`() {
-            whenever(hsmRegistrationClient.assignHSM(REST, LEDGER, emptyMap())).doReturn(
-                HSMAssociationInfo(
-                    "id1",
-                    REST,
-                    "hsm-id",
-                    LEDGER,
-                    "master-key-alias",
-                    0,
-                )
-            )
-
-            ops.assignHsm(REST, LEDGER)
-
-            verify(virtualNodeInfoReadService, never()).getByHoldingIdentityShortHash(tenantIdShortHash)
         }
 
         @Test
