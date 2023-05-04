@@ -33,21 +33,19 @@ class FacadeServiceImpl @Activate constructor(
     }
 
     override fun <T : Any?> getClientProxy(facade: Facade?, expectedType: Class<T>?, alias: MemberX500Name?, interopGroup: String?): T {
-        logger.info("$facade, $expectedType, $alias, $interopGroup")
+        logger.info("getClientProxy: $facade, $expectedType, $alias, $interopGroup")
         val marshaller = JacksonJsonMarshallerAdaptor(jsonMarshallingService)
         val transportLayer = MessagingDispatcher(flowMessaging, jsonMarshallingService, alias!!, interopGroup!!)
         val client = facade!!.getClientProxy(marshaller, expectedType!!, transportLayer)
-        logger.info("$facade, $expectedType, $alias, $interopGroup -> $client")
         return client
     }
 
     override fun dispatch(facade: Facade?, target: Any?, request: String?): String {
-        logger.info("$facade, $target, $request")
+        logger.info("dispatch: $facade, $target, $request")
         val marshaller = JacksonJsonMarshallerAdaptor(jsonMarshallingService)
         val dispatcher = target!!.buildDispatcher(facade!!, marshaller)
         val facadeRequest = jsonMarshallingService.parse(request!!, FacadeRequestImpl::class.java)
         val facadeResponse = dispatcher.invoke(facadeRequest)
-        logger.info("$facade, $target, $request -> $facadeResponse")
         return jsonMarshallingService.format(facadeResponse)
     }
 }

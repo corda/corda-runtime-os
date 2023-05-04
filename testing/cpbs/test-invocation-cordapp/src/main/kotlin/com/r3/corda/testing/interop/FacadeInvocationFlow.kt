@@ -7,7 +7,6 @@ import net.corda.v5.application.flows.ClientRequestBody
 import net.corda.v5.application.interop.facade.FacadeReader
 import net.corda.v5.application.interop.facade.FacadeService
 import net.corda.v5.application.marshalling.JsonMarshallingService
-import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.types.MemberX500Name
 import org.slf4j.LoggerFactory
@@ -21,9 +20,6 @@ class FacadeInvocationFlow : ClientStartableFlow {
             return checkNotNull(args[key]) { "Missing argument '$key'" }
         }
     }
-
-    @CordaInject
-    lateinit var flowMessaging: FlowMessaging
 
     @CordaInject
     lateinit var jsonMarshallingService: JsonMarshallingService
@@ -45,7 +41,7 @@ class FacadeInvocationFlow : ClientStartableFlow {
         val alias = MemberX500Name.parse(getArgument(args, "alias"))
         val payload = getArgument(args, "payload")
 
-        log.info("Calling facade method '$methodName@$facadeId' with payload '$payload' to $alias")
+        log.info("Calling '$methodName@$facadeId' with payload '$payload' to '$alias'")
         val facade = facadeReader.read(
             """{ "id": "/com/r3/tokens/sample/v1.0",
                 "commands": { 
@@ -71,8 +67,7 @@ class FacadeInvocationFlow : ClientStartableFlow {
         val client : SampleTokensFacade = facadeService.getClientProxy(facade, SampleTokensFacade::class.java, alias, "")
         val responseObject = client.getHello("Hi there!")
         val response = responseObject.result.toString()
-        log.info("Facade responded with '$response'")
-        log.info("FacadeInvocationFlow.call() ending")
+        log.info("Received '$response'")
 
         return response
     }
