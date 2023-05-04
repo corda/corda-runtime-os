@@ -37,25 +37,37 @@ class CheckPostgres : Callable<Int>, PluginContext() {
             return 1
         }
 
+        // Get DB credentials from values or secrets
         val username: String
         val password: String
+        val dbName = yaml.bootstrap?.db?.cluster?.username ?: yaml.db.cluster.username
+        val dbPass = yaml.bootstrap?.db?.cluster?.password ?: yaml.db.cluster.password
 
         try {
-            username = getCredential(yaml.db.cluster.username, namespace)
-            password = getCredential(yaml.db.cluster.password, namespace)
+            username = getCredential(dbName, namespace)
+            password = getCredential(dbPass, namespace)
         } catch (e: Exception) {
             report.addEntry(PreInstallPlugin.ReportEntry("Get PostgreSQL credentials", false, e))
             logger.error(report.failingTests())
             return 1
         }
 
+        // Create the URL using DB host and port
         val postgresUrl = "jdbc:postgresql://${yaml.db.cluster.host}:${yaml.db.cluster.port}/postgres"
+        report.addEntry(PreInstallPlugin.ReportEntry("Create PostgreSQL URL with DB host", true))
 
+        // Try connecting to the DB URL using supplied credentials
         try {
             Class.forName("org.postgresql.Driver")
             val connection = DriverManager.getConnection(postgresUrl, username, password)
             if (connection.isValid(0)) {
                 report.addEntry(PreInstallPlugin.ReportEntry("Connect to PostgreSQL", true))
+            } else {
+                report.addEntry(PreInstallPlugin.ReportEntry(
+                    "Connect to PostgreSQL",
+                    false,
+                    Exception("Connection to PostgreSQL DB timed out.")
+                ))
             }
         } catch(e: SQLException) {
             report.addEntry(PreInstallPlugin.ReportEntry("Connect to PostgreSQL", false, e))

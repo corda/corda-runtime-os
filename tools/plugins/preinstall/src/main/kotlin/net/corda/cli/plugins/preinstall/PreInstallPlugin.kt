@@ -35,13 +35,13 @@ class PreInstallPlugin(wrapper: PluginWrapper) : Plugin(wrapper) {
     @Extension
     @CommandLine.Command(name = "preinstall",
         subcommands = [CheckLimits::class, CheckPostgres::class, CheckKafka::class, RunAll::class],
-        description = ["Preinstall checks for corda."])
+        description = ["Preinstall checks for Corda."])
     class PreInstallPluginEntry : CordaCliPlugin
 
     // Common class for plugins to inherit methods from
     open class PluginContext {
         var report = Report()
-        var client = KubernetesClientBuilder().build()
+        private var client = KubernetesClientBuilder().build()
 
         class SecretException: Exception {
             constructor (message: String?) : super(message)
@@ -220,7 +220,9 @@ class PreInstallPlugin(wrapper: PluginWrapper) : Plugin(wrapper) {
     @JsonIgnoreProperties(ignoreUnknown = true)
     data class DB(
         @JsonProperty("db")
-        val db: Cluster
+        val db: Cluster,
+        @JsonProperty("bootstrap")
+        val bootstrap: BootstrapDB?
     )
 
     @JsonIgnoreProperties(ignoreUnknown = true)
@@ -239,6 +241,26 @@ class PreInstallPlugin(wrapper: PluginWrapper) : Plugin(wrapper) {
         val host: String,
         @JsonProperty("port")
         val port: Int? = 5432
+    )
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    data class BootstrapDB(
+        @JsonProperty("db")
+        val db: BootstrapCluster?
+    )
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    data class BootstrapCluster(
+        @JsonProperty("cluster")
+        val cluster: BootstrapCredentials?
+    )
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    data class BootstrapCredentials(
+        @JsonProperty("username")
+        val username: SecretValues,
+        @JsonProperty("password")
+        val password: SecretValues
     )
 
     data class SecretValues(
