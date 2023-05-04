@@ -295,9 +295,10 @@ fun E2eCluster.register(
             val serial = AtomicLong()
             eventually(duration = 8.minutes, retryAllExceptions = true) {
                 println("QQQ Starting registration $serial...")
-                val contextWithSerial = if (!context.containsKey("corda.serial")) {
+                val contextWithSerial = if ((!context.containsKey("corda.serial")) && (serial.get() != 0L)) {
                     context + ("corda.serial" to serial.getAndIncrement().toString())
                 } else {
+                    serial.getAndIncrement()
                     context
                 }
                 proxy.startRegistration(
