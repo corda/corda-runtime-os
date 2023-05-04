@@ -26,8 +26,6 @@ import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 import java.util.UUID
 import net.corda.flow.application.sessions.utils.SessionUtils.verifySessionStatusNotErrorOrClose
-import net.corda.messaging.interop.FacadeInvocation
-import net.corda.messaging.interop.FacadeInvocationResult
 
 @Suppress("TooManyFunctions")
 @Component(service = [FlowMessaging::class, UsedByFlow::class], scope = PROTOTYPE)
@@ -65,13 +63,13 @@ class FlowMessagingImpl @Activate constructor(
     @Suspendable
     override fun callFacade(
         memberName: MemberX500Name,
-        groupId: String,
+        interopGroupId: String,
         facadeId: String,
         methodName: String,
         payload: String
     ): String {
         // TODO revisit input/results while integrating with CORE-10430
-        val session = createInteropFlowSession(memberName, groupId, facadeId, methodName)
+        val session = createInteropFlowSession(memberName, interopGroupId, facadeId, methodName)
         return session.sendAndReceive(String::class.java, payload)
     }
 
