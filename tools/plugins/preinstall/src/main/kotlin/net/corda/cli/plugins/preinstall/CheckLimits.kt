@@ -17,7 +17,7 @@ class CheckLimits : Callable<Int>, PluginContext() {
 
     class ResourceLimitsExceededException(message: String) : Exception(message)
 
-    private var hasCheckedLimits = false
+    private var resourceRequestsChecked = false
 
     private val logger = getLogger()
 
@@ -63,7 +63,7 @@ class CheckLimits : Callable<Int>, PluginContext() {
 
     // use the checkResource function to check each individual resource
     private fun checkResources(resources: ResourceConfig, name: String) {
-        hasCheckedLimits = true
+        resourceRequestsChecked = true
         val requests: ResourceValues = resources.requests
         val limits: ResourceValues = resources.limits
 
@@ -120,16 +120,16 @@ class CheckLimits : Callable<Int>, PluginContext() {
         yaml.workers?.p2pLinkManager?.let { checkResources(it.resources, "P2P link manager") }
         yaml.workers?.p2pGateway?.let { checkResources(it.resources, "P2P gateway") }
 
-        if (report.testsPassed() == 0) {
-            logger.info(report.toString())
-        } else {
-            logger.error(report.failingTests())
-        }
-
-        if (!hasCheckedLimits) {
+        if (!resourceRequestsChecked) {
             logger.info("No resource requests or limits were found.")
         }
 
-        return report.testsPassed()
+        return if (report.testsPassed()) {
+            logger.info(report.toString())
+            0
+        } else {
+            logger.error(report.failingTests())
+            1
+        }
     }
 }

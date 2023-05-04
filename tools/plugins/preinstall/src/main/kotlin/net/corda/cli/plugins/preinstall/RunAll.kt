@@ -49,7 +49,11 @@ class RunAll : Callable<Int> {
         report.addEntries(postgresCMD.report)
         report.addEntries(kafkaCMD.report)
 
-        return report.testsPassed()
+        return if (report.testsPassed()) {
+            0
+        } else {
+            1
+        }
     }
 
 }

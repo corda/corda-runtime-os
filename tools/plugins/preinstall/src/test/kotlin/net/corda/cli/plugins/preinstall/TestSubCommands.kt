@@ -240,13 +240,13 @@ class TestSubCommands {
         val report = Report()
 
         report.addEntries(mutableListOf(ReportEntry("Doesn't crash", true), ReportEntry("No bugs", true)))
-        assertEquals(0, report.testsPassed())
+        assertEquals(true, report.testsPassed())
 
         val anotherReport = Report(mutableListOf(ReportEntry("Can combine with other reports", true)))
         report.addEntries(anotherReport)
-        assertEquals(0, report.testsPassed())
+        assertEquals(true, report.testsPassed())
 
         report.addEntry(ReportEntry("Is magical", false, Exception("Not magic")))
-        assertEquals(1, report.testsPassed())
+        assertEquals(false, report.testsPassed())
     }
 }

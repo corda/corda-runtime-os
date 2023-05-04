@@ -73,12 +73,12 @@ class CheckPostgres : Callable<Int>, PluginContext() {
             report.addEntry(PreInstallPlugin.ReportEntry("Connect to PostgreSQL", false, e))
         }
 
-        if (report.testsPassed() == 0) {
+        return if (report.testsPassed()) {
             logger.info(report.toString())
+            0
         } else {
             logger.error(report.failingTests())
+            1
         }
-
-        return report.testsPassed()
     }
 }

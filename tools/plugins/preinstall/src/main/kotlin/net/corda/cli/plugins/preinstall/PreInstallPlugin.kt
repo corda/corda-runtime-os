@@ -103,53 +103,44 @@ class PreInstallPlugin(wrapper: PluginWrapper) : Plugin(wrapper) {
 
     class ReportEntry(private var check: String, var result: Boolean, var reason: Exception? = null) {
         override fun toString(): String {
-            return "$check: ${if (result) "PASSED" else "FAILED"}"
+            var entry = "$check: ${if (result) "PASSED" else "FAILED"}"
+            if (!result) {
+                val message = reason?.message ?: "(No message provided)"
+                val cause = reason?.cause ?: "(No cause provided)"
+                entry += "\n\t - $message \n\t - $cause"
+            }
+            return entry
         }
     }
 
-    class Report (private var report: MutableList<ReportEntry> = mutableListOf()) {
+    class Report (private var entries: MutableList<ReportEntry> = mutableListOf()) {
         private fun getEntries(): MutableList<ReportEntry> {
-            return report
+            return entries
         }
 
         fun addEntry(entry: ReportEntry) {
-            report.add(entry)
-            if (!entry.result) { this.failingTests() }
+            entries.add(entry)
         }
 
-        fun addEntries(entries: List<ReportEntry>) {
-            report.addAll(entries)
+        fun addEntries(newEntries: List<ReportEntry>) {
+            entries.addAll(newEntries)
         }
 
         fun addEntries(reportEntries: Report) {
-            report.addAll(reportEntries.getEntries())
+            entries.addAll(reportEntries.getEntries())
         }
 
-        // Fails (returns 1) if any of the report entries have failed. If no entries are found, the report passes.
-        fun testsPassed(): Int {
-            val result = report.reduceOrNull { acc, entry -> ReportEntry("", acc.result && entry.result) } ?: return 0
-
-            return if (result.result) 0 else 1
+        // Fails if any of the report entries have failed. If no entries are found, the report passes.
+        fun testsPassed(): Boolean {
+            return entries.all { it.result }
         }
 
         fun failingTests(): String {
-            var acc = ""
-            for(entry in report) {
-                if (!entry.result) {
-                    val message = entry.reason?.message ?: "(No message provided)"
-                    val cause = entry.reason?.cause ?: "(No cause provided)"
-                    acc += "$entry \n\t - $message \n\t - $cause \n"
-                }
-            }
-            return acc
+            return entries.filter { !it.result }.joinToString(separator = "\n")
         }
 
         override fun toString(): String {
-            var acc = ""
-            for (entry in report) {
-                acc += "$entry\n"
-            }
-            return acc
+            return entries.joinToString(separator = "\n")
         }
     }
 
