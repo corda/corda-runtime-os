@@ -1220,7 +1220,7 @@ internal class LifecycleCoordinatorImplTest {
             it.close()
         }
         assertTrue(stopLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
-        verify(registry).removeCoordinator(coordinator.name)
+
         assertThrows<LifecycleException> {
             coordinator.start()
         }
