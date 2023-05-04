@@ -50,11 +50,11 @@ fun conditionallyUploadCordaPackage(
     cpbResourceName: String,
     groupId: String,
     staticMemberNames: List<String>
-) = DEFAULT_CLUSTER.conditionallyUploadCordaPackage(name, cpb, groupId, staticMemberNames)
+) = DEFAULT_CLUSTER.conditionallyUploadCordaPackage(cpiName, cpbResourceName, groupId, staticMemberNames)
 
 fun ClusterInfo.conditionallyUploadCordaPackage(
-    name: String,
-    cpb: String,
+    cpiName: String,
+    cpbResourceName: String,
     groupId: String,
     staticMemberNames: List<String>
 ) = conditionallyUploadCordaPackage(cpiName) {
