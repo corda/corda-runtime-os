@@ -16,7 +16,6 @@ class CordaDBAvroSerializerImpl<T : Any>(
 
     override fun serialize(data: T): ByteArray? {
         return when (data) {
-
             is String -> (data as String).encodeToByteArray()
             is ByteArray -> data
             else -> {
