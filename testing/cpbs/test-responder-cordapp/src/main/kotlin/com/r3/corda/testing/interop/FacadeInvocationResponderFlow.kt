@@ -58,9 +58,10 @@ class FacadeInvocationResponderFlow : ResponderFlow , SampleTokensFacade {
         )
 
         val facadeResponse = facadeService.dispatch(facade, this, request)
-        val response = facadeResponse.outParameters.first().value
-        log.info("FacadeInvocationResponderFlow with Weft.call(): received=$request, response=$response")
-        session.send(response)
+
+        //val response = facadeResponse.outParameters.first().value
+        log.info("FacadeInvocationResponderFlow with Weft.call(): received=$request, response=$facadeResponse")
+        session.send(facadeResponse)
     }
 
     override fun processHello(greeting: String): InteropAction<String> {

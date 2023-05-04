@@ -4,10 +4,6 @@ import net.corda.data.flow.state.checkpoint.FlowStackItem
 import net.corda.data.flow.state.checkpoint.FlowStackItemSession
 import net.corda.flow.application.serialization.DeserializedWrongAMQPObjectException
 import net.corda.flow.application.serialization.SerializationServiceInternal
-import net.corda.flow.application.services.impl.interop.facade.FacadeResponseImpl
-import net.corda.flow.application.services.impl.interop.parameters.RawParameterType
-import net.corda.flow.application.services.impl.interop.parameters.TypedParameterImpl
-import net.corda.flow.application.services.impl.interop.parameters.TypedParameterValueImpl
 import net.corda.flow.application.sessions.FlowSessionInternal
 import net.corda.flow.application.sessions.SessionInfo
 import net.corda.flow.application.sessions.factory.FlowSessionFactory
@@ -30,9 +26,6 @@ import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 import java.util.UUID
 import net.corda.flow.application.sessions.utils.SessionUtils.verifySessionStatusNotErrorOrClose
-import net.corda.v5.application.interop.facade.FacadeId
-import net.corda.v5.application.interop.facade.FacadeResponse
-import net.corda.v5.application.interop.parameters.ParameterTypeLabel
 
 @Suppress("TooManyFunctions")
 @Component(service = [FlowMessaging::class, UsedByFlow::class], scope = PROTOTYPE)
@@ -72,12 +65,11 @@ class FlowMessagingImpl @Activate constructor(
         facadeId: String,
         methodName: String,
         payload: String
-    ): FacadeResponse {
+    ): String {
         // TODO revisit input/results while integrating with CORE-10430
         val session = createInteropFlowSession(memberName, facadeId, methodName)
         val response = session.sendAndReceive(String::class.java, payload)
-        return FacadeResponseImpl(FacadeId.of(facadeId), methodName,
-            listOf(TypedParameterValueImpl(TypedParameterImpl("greeting", RawParameterType(ParameterTypeLabel.STRING)), response)))
+        return response
     }
 
     @Suspendable

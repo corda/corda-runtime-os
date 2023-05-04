@@ -5,7 +5,6 @@ import net.corda.simulator.runtime.flows.FlowAndProtocol
 import net.corda.simulator.runtime.flows.FlowFactory
 import net.corda.simulator.runtime.flows.FlowServicesInjector
 import net.corda.v5.application.flows.FlowContextProperties
-import net.corda.v5.application.interop.facade.FacadeResponse
 import net.corda.v5.application.messaging.FlowContextPropertiesBuilder
 import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.messaging.FlowSession
@@ -132,7 +131,7 @@ class ConcurrentFlowMessaging(
         facadeName: String,
         methodName: String,
         payload: String
-    ): FacadeResponse {
+    ): String {
         TODO("The simulator does not currently support facade calls.")
     }
 
