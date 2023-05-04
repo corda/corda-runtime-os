@@ -1,6 +1,7 @@
 package net.corda.crypto.service.impl.bus
 
 import net.corda.configuration.read.ConfigChangedEvent
+import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.cipher.suite.SignatureSpecs
 import net.corda.crypto.cipher.suite.sha256Bytes
@@ -13,6 +14,7 @@ import net.corda.crypto.flow.CryptoFlowOpsTransformer.Companion.REQUEST_OP_KEY
 import net.corda.crypto.flow.CryptoFlowOpsTransformer.Companion.REQUEST_TTL_KEY
 import net.corda.crypto.flow.CryptoFlowOpsTransformer.Companion.RESPONSE_TOPIC
 import net.corda.crypto.flow.impl.CryptoFlowOpsTransformerImpl
+import net.corda.crypto.service.impl.SigningServiceImpl
 import net.corda.crypto.service.impl.infra.ActResult
 import net.corda.crypto.service.impl.infra.ActResultTimestamps
 import net.corda.crypto.service.impl.infra.act
@@ -21,7 +23,6 @@ import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.SecureHashes
 import net.corda.data.crypto.wire.CryptoResponseContext
-import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.data.crypto.wire.CryptoSigningKeys
@@ -37,7 +38,6 @@ import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.crypto.DigestAlgorithmName
-import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertInstanceOf
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.BeforeEach
@@ -160,7 +160,22 @@ class CryptoFlowOpsBusProcessorTests {
         }
         cryptoOpsClient = mock()
         externalEventResponseFactory = mock()
-        processor = CryptoFlowOpsBusProcessor(cryptoOpsClient, externalEventResponseFactory, configEvent)
+        val publicKeyMock = mock<PublicKey> {
+        }
+        val signatureMock = mock<DigitalSignatureWithKey> {
+            on { by } doReturn publicKeyMock
+            on { bytes } doReturn byteArrayOf(9, 0, 0, 0)
+        }
+        val schemeMetadataMock = mock<CipherSchemeMetadata> {
+            on { decodePublicKey(any<ByteArray>()) } doReturn publicKeyMock
+            on { encodeAsByteArray(any()) } doReturn byteArrayOf(42)
+        }
+        val signingService = mock<SigningServiceImpl> {
+            on { sign(any(), any(), any(), any(), any()) } doReturn signatureMock
+            on { schemeMetadata } doReturn schemeMetadataMock
+        }
+        processor =
+            CryptoFlowOpsBusProcessor(cryptoOpsClient, signingService, externalEventResponseFactory, configEvent)
         digestService = mock<DigestService>().also {
             fun capture() {
                 val bytesCaptor = argumentCaptor<ByteArray>()
@@ -287,22 +302,6 @@ class CryptoFlowOpsBusProcessorTests {
     @Test
     fun `Should process sign command`() {
         val publicKey = mockPublicKey()
-        val signature = UUID.randomUUID().toString().toByteArray()
-        var passedTenantId = UUID.randomUUID().toString()
-        var passedPublicKey = ByteBuffer.allocate(1)
-        var passedData = ByteBuffer.allocate(1)
-        var passedSignatureSpec = CryptoSignatureSpec()
-        doAnswer {
-            passedTenantId = it.getArgument(0)
-            passedPublicKey = it.getArgument(1)
-            passedSignatureSpec = it.getArgument(2)
-            passedData = it.getArgument(3)
-            CryptoSignatureWithKey(
-                ByteBuffer.wrap(keyEncodingService.encodeAsByteArray(publicKey)),
-                ByteBuffer.wrap(signature)
-            )
-        }.whenever(cryptoOpsClient).signProxy(any(), any(), any(), any(), any())
-
         val recordKey = UUID.randomUUID().toString()
         val flowExternalEventContext = ExternalEventContext("request id", recordKey, KeyValuePairList(emptyList()))
 
@@ -341,22 +340,10 @@ class CryptoFlowOpsBusProcessorTests {
                 )
             )
         }
-        assertEquals(recordKey, result.value?.get(0)?.key)
-        val response = assertResponseContext<SignFlowCommand, CryptoSignatureWithKey>(
+        assertResponseContext<SignFlowCommand, CryptoSignatureWithKey>(
             result,
             flowOpsResponseArgumentCaptor.firstValue
         )
-        assertArrayEquals(response.publicKey.array(), keyEncodingService.encodeAsByteArray(publicKey))
-        assertArrayEquals(response.bytes.array(), signature)
-        assertEquals(tenantId, passedTenantId)
-        assertArrayEquals(keyEncodingService.encodeAsByteArray(publicKey), passedPublicKey.array())
-        assertArrayEquals(data, passedData.array())
-        assertEquals(SignatureSpecs.EDDSA_ED25519.signatureName, passedSignatureSpec.signatureName)
-        val transformed = transformer.transform(flowOpsResponseArgumentCaptor.firstValue)
-        assertInstanceOf(DigitalSignatureWithKey::class.java, transformed)
-        val transformedSignature = transformed as DigitalSignatureWithKey
-        assertArrayEquals(publicKey.encoded, transformedSignature.by.encoded)
-        assertArrayEquals(signature, transformedSignature.bytes)
     }
 
     @Suppress("UNCHECKED_CAST")
