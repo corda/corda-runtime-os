@@ -54,22 +54,20 @@ class ChunkSerializerServiceImplTest {
                 .setPartNumber(partNumber)
                 .setRequestId("id")
                 .setChecksum(null)
-                .setFileName(null)
                 .setOffset(partNumber.toLong())
                 .setData(ByteBuffer.wrap("bytes".toByteArray()))
                 .setProperties(KeyValuePairList()).build()
-        }.whenever(chunkBuilderService).buildChunk(any(), any(), any(), any(), anyOrNull(), anyOrNull())
+        }.whenever(chunkBuilderService).buildChunk(any(), any(), any(), any(), anyOrNull())
         doAnswer {
             partNumber += 1
             Chunk.newBuilder()
                 .setPartNumber(partNumber)
                 .setRequestId("id")
                 .setChecksum(SecureHash())
-                .setFileName(null)
                 .setOffset(partNumber.toLong())
                 .setData(ByteBuffer.wrap(ByteArray(0)))
                 .setProperties(KeyValuePairList()).build()
-        }.whenever(chunkBuilderService).buildFinalChunk(any(), any(), any(), any(), anyOrNull(), anyOrNull())
+        }.whenever(chunkBuilderService).buildFinalChunk(any(), any(), any(), any(), anyOrNull())
 
         whenever(platformDigestService.hash(any<ByteArray>(), any())).thenReturn(SecureHashImpl("", someSmallBytes))
         whenever(producerRecord.topic).thenReturn("topic")
@@ -95,8 +93,8 @@ class ChunkSerializerServiceImplTest {
         assertThat(result).isNotEmpty
         assertThat(result).size().isEqualTo(5)
 
-        verify(chunkBuilderService, times(4)).buildChunk(any(), any(), any(), any(), anyOrNull(), anyOrNull())
-        verify(chunkBuilderService, times(1)).buildFinalChunk(any(), any(), any(), any(), anyOrNull(), anyOrNull())
+        verify(chunkBuilderService, times(4)).buildChunk(any(), any(), any(), any(), anyOrNull())
+        verify(chunkBuilderService, times(1)).buildFinalChunk(any(), any(), any(), any(), anyOrNull())
     }
 
     @Test
@@ -119,8 +117,8 @@ class ChunkSerializerServiceImplTest {
         assertThat(result).isNotEmpty
         assertThat(result.size).isEqualTo(4)
 
-        verify(chunkBuilderService, times(3)).buildChunk(any(), any(), any(), any(), anyOrNull(), anyOrNull())
-        verify(chunkBuilderService, times(1)).buildFinalChunk(any(), any(), any(), any(), anyOrNull(), anyOrNull())
+        verify(chunkBuilderService, times(3)).buildChunk(any(), any(), any(), any(), anyOrNull())
+        verify(chunkBuilderService, times(1)).buildFinalChunk(any(), any(), any(), any(), anyOrNull())
     }
 
     @Test

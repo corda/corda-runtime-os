@@ -17,7 +17,6 @@ object Helpers {
         CpkChunkId(cpkChecksum.toAvro(), cpkChunkPartNumber) to
                 Chunk(
                     "dummyRequestId",
-                    "dummyFileName",
                     chunkingChecksum.toAvro(),
                     cpkChunkPartNumber,
                     0,

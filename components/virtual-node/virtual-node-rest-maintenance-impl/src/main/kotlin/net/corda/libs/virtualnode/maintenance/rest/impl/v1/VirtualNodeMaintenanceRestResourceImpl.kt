@@ -1,5 +1,6 @@
 package net.corda.libs.virtualnode.maintenance.rest.impl.v1
 
+import net.corda.chunking.Constants.Companion.CHUNK_FILENAME_KEY
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpi.upload.endpoints.service.CpiUploadService
@@ -61,10 +62,12 @@ class VirtualNodeMaintenanceRestResourceImpl @Activate constructor(
         private const val REGISTRATION = "REGISTRATION"
         private const val SENDER = "SENDER"
         private const val CONFIG_HANDLE = "CONFIG_HANDLE"
-        private const val VIRTUAL_NODE_MAINTENANCE_ASYNC_OPERATION_CLIENT_ID = "VIRTUAL_NODE_MAINTENANCE_ASYNC_OPERATION_CLIENT"
+        private const val VIRTUAL_NODE_MAINTENANCE_ASYNC_OPERATION_CLIENT_ID =
+            "VIRTUAL_NODE_MAINTENANCE_ASYNC_OPERATION_CLIENT"
     }
 
-    override val targetInterface: Class<VirtualNodeMaintenanceRestResource> = VirtualNodeMaintenanceRestResource::class.java
+    override val targetInterface: Class<VirtualNodeMaintenanceRestResource> =
+        VirtualNodeMaintenanceRestResource::class.java
     override val protocolVersion: Int = 1
 
     private val clock = UTCClock()
@@ -88,6 +91,7 @@ class VirtualNodeMaintenanceRestResourceImpl @Activate constructor(
                 dependentComponents.registerAndStartAll(coordinator)
                 coordinator.updateStatus(LifecycleStatus.UP)
             }
+
             is StopEvent -> coordinator.updateStatus(LifecycleStatus.DOWN)
             is RegistrationStatusChangeEvent -> {
                 when (event.status) {
@@ -95,6 +99,7 @@ class VirtualNodeMaintenanceRestResourceImpl @Activate constructor(
                         coordinator.closeManagedResources(setOf(CONFIG_HANDLE))
                         coordinator.postEvent(StopEvent(errored = true))
                     }
+
                     LifecycleStatus.UP -> {
                         // Receive updates to the REST and Messaging config
                         coordinator.createManagedResource(CONFIG_HANDLE) {
@@ -104,15 +109,18 @@ class VirtualNodeMaintenanceRestResourceImpl @Activate constructor(
                             )
                         }
                     }
+
                     else -> logger.debug { "Unexpected status: ${event.status}" }
                 }
                 coordinator.updateStatus(event.status)
             }
+
             is ConfigChangedEvent -> {
                 if (requiredKeys.all { it in event.config.keys } and event.keys.any { it in requiredKeys }) {
                     val restConfig = event.config.getConfig(ConfigKeys.REST_CONFIG)
                     val messagingConfig = event.config.getConfig(ConfigKeys.MESSAGING_CONFIG)
-                    val duration = Duration.ofMillis(restConfig.getInt(ConfigKeys.REST_ENDPOINT_TIMEOUT_MILLIS).toLong())
+                    val duration =
+                        Duration.ofMillis(restConfig.getInt(ConfigKeys.REST_ENDPOINT_TIMEOUT_MILLIS).toLong())
                     // Make sender unavailable while we're updating
                     coordinator.updateStatus(LifecycleStatus.DOWN)
                     coordinator.createManagedResource(SENDER) {
@@ -133,10 +141,11 @@ class VirtualNodeMaintenanceRestResourceImpl @Activate constructor(
         if (!isRunning) throw IllegalStateException(
             "${this.javaClass.simpleName} is not running! Its status is: ${lifecycleCoordinator.status}"
         )
-        val cpiUploadRequestId = tryWithExceptionHandling(logger,"Force CPI upload") {
+        val properties = mapOf<String, String?>(PropertyKeys.FORCE_UPLOAD to true.toString(), CHUNK_FILENAME_KEY to upload.fileName)
+        val cpiUploadRequestId = tryWithExceptionHandling(logger, "Force CPI upload") {
             cpiUploadService.cpiUploadManager.uploadCpi(
-                upload.fileName, upload.content,
-                mapOf(PropertyKeys.FORCE_UPLOAD to true.toString())
+                upload.content,
+                properties
             )
         }
         return CpiUploadRestResource.CpiUploadResponse(cpiUploadRequestId.requestId)
