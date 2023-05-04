@@ -85,14 +85,14 @@ class TestSubCommands {
             props.saslUsername = "sasl-user"
             props.saslPassword = "sasl-pass"
             props.saslMechanism = yaml.kafka.sasl.mechanism
+            props.truststoreFile = "-----BEGIN CERTIFICATE-----"
             props.truststorePassword = "truststore-pass"
-            props.truststoreLocation = "/test/location"
             props.truststoreType = yaml.kafka.tls.truststore!!.type
 
             val check = props.getKafkaProperties()
 
             assertEquals("SASL_SSL", check.getProperty("security.protocol"))
-            assertEquals("/test/location", check.getProperty("ssl.truststore.location"))
+            assertEquals("-----BEGIN CERTIFICATE-----", check.getProperty("ssl.truststore.certificates"))
             assertEquals("PLAIN", check.getProperty("sasl.mechanism"))
             assertEquals("org.apache.kafka.common.security.plain.PlainLoginModule required " +
                     "username=\"sasl-user\" password=\"sasl-pass\" ;", check.getProperty("sasl.jaas.config"))
@@ -164,14 +164,14 @@ class TestSubCommands {
             val path = "./src/test/resources/KafkaTestTls.yaml"
             val yaml = parseYaml<PreInstallPlugin.Kafka>(path)
             val props = CheckKafka.KafkaProperties(yaml.kafka.bootstrapServers)
+            props.truststoreFile = "-----BEGIN CERTIFICATE-----"
             props.truststorePassword = "truststore-pass"
-            props.truststoreLocation = "/test/location"
             props.truststoreType = yaml.kafka.tls.truststore!!.type
 
             val check = props.getKafkaProperties()
 
             assertEquals("SSL", check.getProperty("security.protocol"))
-            assertEquals("/test/location", check.getProperty("ssl.truststore.location"))
+            assertEquals("-----BEGIN CERTIFICATE-----", check.getProperty("ssl.truststore.certificates"))
             assertEquals("localhost:9093", check.getProperty("bootstrap.servers"))
             assertEquals("truststore-pass", check.getProperty("ssl.truststore.password"))
             assertEquals("PKCS12", check.getProperty("ssl.truststore.type"))

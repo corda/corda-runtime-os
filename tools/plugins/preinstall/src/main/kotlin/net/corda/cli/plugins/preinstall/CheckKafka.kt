@@ -30,19 +30,12 @@ class CheckKafka : Callable<Int>, PluginContext() {
     var namespace: String? = null
 
     @Option(
-        names = ["-f", "--file"],
-        description = ["The file location of the truststore for Kafka"]
-    )
-    var truststoreLocation: String? = null
-
-    @Option(
         names = ["-t", "--timeout"],
         description = ["The timeout in milliseconds for testing the kafka connection - defaults to 3000"]
     )
     var timeout: Int = 3000
 
     class SASLCredentialException(message: String) : Exception(message)
-    class BrokerException(message: String) : Exception(message)
     private val logger = getLogger()
 
     open class KafkaAdmin(props: Properties) {
@@ -69,7 +62,6 @@ class CheckKafka : Callable<Int>, PluginContext() {
         var saslPassword: String? = null
         var saslMechanism: String? = null
         var truststorePassword: String? = null
-        var truststoreLocation: String? = null
         var truststoreFile: String? = null
         var truststoreType: String? = null
         var timeout: Int = 3000
@@ -110,9 +102,7 @@ class CheckKafka : Callable<Int>, PluginContext() {
                     props["ssl.truststore.password"] = truststorePassword
                 }
 
-                if (truststoreLocation != null) {
-                    props["ssl.truststore.location"] = truststoreLocation
-                } else if (truststoreFile != null) {
+                if (truststoreFile != null) {
                     props["ssl.truststore.certificates"] = truststoreFile
                 } else {
                     throw TruststoreNotFoundException(
@@ -233,7 +223,6 @@ class CheckKafka : Callable<Int>, PluginContext() {
         saslUsername?.let{ creds.saslUsername = it }
         saslPassword?.let{ creds.saslPassword = it }
         saslMechanism?.let{ creds.saslMechanism = it }
-        truststoreLocation?.let{ creds.truststoreLocation = it }
         truststorePassword?.let{ creds.truststorePassword = it }
         truststoreFile?.let{ creds.truststoreFile = it }
         truststoreType?.let{ creds.truststoreType = it }

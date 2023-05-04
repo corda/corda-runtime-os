@@ -14,15 +14,9 @@ class RunAll : Callable<Int> {
 
     @CommandLine.Option(
         names = ["-n", "--namespace"],
-        description = ["The namespace in which to look for both the Postgres and Kafka secrets"]
+        description = ["The namespace in which to look for both the PostgreSQL and Kafka secrets"]
     )
     var namespace: String? = null
-
-    @CommandLine.Option(
-        names = ["-f", "--file"],
-        description = ["The file location of the truststore for Kafka"]
-    )
-    var truststoreLocation: String? = null
 
     @CommandLine.Option(
         names = ["-t", "--timeout"],
@@ -45,7 +39,6 @@ class RunAll : Callable<Int> {
         val kafkaCMD = CheckKafka()
         val kafkaArgs = mutableListOf<String>()
         namespace?.let{ kafkaArgs.add("-n$it") }
-        truststoreLocation?.let{ kafkaArgs.add("-f$it") }
         kafkaArgs.add("-t$timeout")
 
         CommandLine(limitsCMD).execute(path, *limitsArgs.toTypedArray())
@@ -55,8 +48,6 @@ class RunAll : Callable<Int> {
         report.addEntries(limitsCMD.report)
         report.addEntries(postgresCMD.report)
         report.addEntries(kafkaCMD.report)
-
-        println(report)
 
         return report.testsPassed()
     }

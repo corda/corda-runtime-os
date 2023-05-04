@@ -32,12 +32,9 @@ Check that the PostgreSQL DB is up and that the credentials work.
 ## check-kafka
 Check that Kafka is up and that the credentials work.
 
->**preinstall check-kafka [-f=\<truststoreLocation\>] [-n=\<namespace\>] 
-[-t=\<timeout\>] \<path\>**
+>**preinstall check-kafka [-n=\<namespace\>] [-t=\<timeout\>] \<path\>**
 
       <path>                  The yaml file containing the Kafka, SASL, and TLS configurations
-	  -f, --file=<truststoreLocation>
-                              The file location of the truststore if TLS is enabled
 	  -n, --namespace=<namespace>
                               The namespace in which to look for the Kafka secrets if TLS or 
                               SASL is enabled
@@ -46,12 +43,9 @@ Check that Kafka is up and that the credentials work.
 
 ## run-all
 Runs all preinstall checks.
-> **preinstall run-all [-f=\<truststoreLocation\>] [-n=\<namespace\>] 
-[-t=\<timeout\>] \<path\>**
+> **preinstall run-all [-n=\<namespace\>] [-t=\<timeout\>] \<path\>**
 
       <path>                  The yaml file containing all configurations
-	  -f, --file=<truststoreLocation>
-                              The file location of the truststore for Kafka
 	  -n, --namespace=<namespace>
                               The namespace in which to look for both the PostgreSQL and Kafka secrets
 	  -t, --timeout=<timeout> The timeout in milliseconds for testing the Kafka

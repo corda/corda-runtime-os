@@ -4,6 +4,10 @@ kafka:
   tls:
     enabled: true
     truststore:
+      valueFrom:
+        secretKeyRef:
+          name: "kafka-truststore-file"
+          key: "kafka-truststore-file"
       password:
         valueFrom:
           secretKeyRef:
