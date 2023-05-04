@@ -10,7 +10,13 @@ import net.corda.flow.pipeline.sessions.protocol.FlowAndProtocolVersion
 import net.corda.flow.pipeline.sessions.protocol.FlowProtocolStore
 import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.sandbox.SandboxGroup
-import net.corda.sandboxgroupcontext.*
+import net.corda.sandboxgroupcontext.MutableSandboxGroupContext
+import net.corda.sandboxgroupcontext.RequireSandboxAMQP
+import net.corda.sandboxgroupcontext.SandboxGroupContext
+import net.corda.sandboxgroupcontext.SandboxGroupContextInitializer
+import net.corda.sandboxgroupcontext.SandboxGroupType
+import net.corda.sandboxgroupcontext.VirtualNodeContext
+import net.corda.sandboxgroupcontext.service.EvictionListener
 import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
 import net.corda.serialization.checkpoint.CheckpointSerializer
 import net.corda.v5.application.flows.Flow
@@ -27,6 +33,7 @@ import org.osgi.service.component.propertytypes.ServiceRanking
 class FakeSandboxGroupContextComponent : SandboxGroupContextComponent {
 
     private val availableCpk = mutableSetOf<SecureHash>()
+    private val evictionListeners = SandboxGroupType.values().associateWith { linkedSetOf<EvictionListener>() }
     private var initiatingToInitiatedFlowsMap: Map<String, Pair<String, String>> = mapOf()
 
     fun putCpk(cpkFileChecksum: SecureHash) {
@@ -79,6 +86,20 @@ class FakeSandboxGroupContextComponent : SandboxGroupContextComponent {
 
     override fun remove(virtualNodeContext: VirtualNodeContext): CompletableFuture<*>? {
         TODO("Not yet implemented")
+    }
+
+    override fun addEvictionListener(type: SandboxGroupType, listener: EvictionListener): Boolean {
+        val listeners = evictionListeners[type] ?: return false
+        return synchronized(listeners) {
+            listeners.add(listener)
+        }
+    }
+
+    override fun removeEvictionListener(type: SandboxGroupType, listener: EvictionListener): Boolean {
+        val listeners = evictionListeners[type] ?: return false
+        return synchronized(listeners) {
+            listeners.remove(listener)
+        }
     }
 
     override val isRunning: Boolean
@@ -198,7 +219,7 @@ class FakeSandboxGroupContextComponent : SandboxGroupContextComponent {
 
         override fun responderForProtocol(protocolName: String, supportedVersions: Collection<Int>, context: FlowEventContext<*>): FlowAndProtocolVersion {
             val flowClass = responderForProtocol[protocolName] ?: throw IllegalArgumentException("No responder configured for $protocolName")
-            return FlowAndProtocolVersion(protocolName, flowClass,1, )
+            return FlowAndProtocolVersion(protocolName, flowClass, 1)
         }
 
         override fun protocolsForInitiator(initiator: String, context: FlowEventContext<*>): Pair<String, List<Int>> {

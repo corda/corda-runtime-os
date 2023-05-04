@@ -3,18 +3,18 @@ package net.corda.flow.fiber.cache.impl
 import com.github.benmanes.caffeine.cache.Cache
 import com.github.benmanes.caffeine.cache.Caffeine
 import net.corda.cache.caffeine.CacheFactoryImpl
-import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import java.time.Duration
 import net.corda.data.flow.FlowKey
 import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.fiber.FlowFiberImpl
 import net.corda.flow.fiber.cache.FlowFiberCache
+import org.osgi.service.component.annotations.Deactivate
 import org.slf4j.LoggerFactory
 
 @Suppress("unused")
 @Component(service = [FlowFiberCache::class])
-class FlowFiberCacheImpl @Activate constructor() : FlowFiberCache {
+class FlowFiberCacheImpl : FlowFiberCache {
 
     private companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -31,6 +31,12 @@ class FlowFiberCacheImpl @Activate constructor() : FlowFiberCache {
             .maximumSize(maximumSize)
             .expireAfterWrite(Duration.ofSeconds(expireAfterWriteSeconds))
     )
+
+    @Deactivate
+    fun shutdown() {
+        cache.invalidateAll()
+        cache.cleanUp()
+    }
 
     override fun put(key: FlowKey, fiber: FlowFiberImpl) {
         cache.put(key, fiber)
@@ -50,9 +56,8 @@ class FlowFiberCacheImpl @Activate constructor() : FlowFiberCache {
     }
 
     override fun remove(holdingIdentity: HoldingIdentity) {
-        logger.info("Flow fiber cache removing holdingIdentity $holdingIdentity")
+        logger.info("Flow fiber cache removing holdingIdentity={}", holdingIdentity)
         val keysToInvalidate = cache.asMap().keys.filter { holdingIdentity == it.identity }
-        cache.invalidateAll(keysToInvalidate)
-        cache.cleanUp()
+        remove(keysToInvalidate)
     }
 }

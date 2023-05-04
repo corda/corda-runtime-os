@@ -1,13 +1,12 @@
 package net.corda.sandboxgroupcontext.service.impl
 
+import net.corda.sandbox.SandboxGroup
+import net.corda.sandboxgroupcontext.MutableSandboxGroupContext
+import net.corda.sandboxgroupcontext.VirtualNodeContext
+import org.slf4j.LoggerFactory
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
-import net.corda.sandbox.SandboxGroup
-import net.corda.sandboxgroupcontext.MutableSandboxGroupContext
-import net.corda.sandboxgroupcontext.SandboxCloseable
-import net.corda.sandboxgroupcontext.VirtualNodeContext
-import org.slf4j.LoggerFactory
 
 /**
  * [MutableSandboxGroupContext] / [SandboxGroupContext] wrapped so that we set [close] now that the user has
@@ -15,11 +14,11 @@ import org.slf4j.LoggerFactory
  *
  * We return an instance of this object of type [SandboxGroupContext] to the user once [getOrCreate] is complete.
  */
-interface CloseableSandboxGroupContext: MutableSandboxGroupContext, SandboxCloseable
+interface CloseableSandboxGroupContext: MutableSandboxGroupContext, AutoCloseable
 
 internal class CloseableSandboxGroupContextImpl(
     private val sandboxGroupContext: SandboxGroupContextImpl,
-    private val closeable: SandboxCloseable
+    private val closeable: AutoCloseable
 ) : CloseableSandboxGroupContext {
     private companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -36,10 +35,6 @@ internal class CloseableSandboxGroupContextImpl(
 
     override val sandboxGroup: SandboxGroup
         get() = sandboxGroupContext.sandboxGroup
-
-    override fun preClose(virtualNodeContext: VirtualNodeContext) {
-        closeable.preClose(virtualNodeContext)
-    }
 
     override val completion: CompletableFuture<Boolean>
         get() = sandboxGroupContext.completion

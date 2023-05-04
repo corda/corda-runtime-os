@@ -3,7 +3,6 @@ package net.corda.sandboxgroupcontext.impl
 import net.corda.cpk.read.CpkReadService
 import net.corda.crypto.core.parseSecureHash
 import net.corda.libs.packaging.Cpk
-import net.corda.sandboxgroupcontext.SandboxCloseable
 import net.corda.sandboxgroupcontext.SandboxGroupType
 import net.corda.sandboxgroupcontext.VirtualNodeContext
 import net.corda.sandboxgroupcontext.putUniqueObject
@@ -16,7 +15,6 @@ import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.mock
 import org.osgi.framework.BundleContext
 import org.osgi.service.component.runtime.ServiceComponentRuntime
@@ -75,19 +73,9 @@ class SandboxGroupContextServiceImplTest {
         )
     }
 
-    val sandboxCloseable = object : SandboxCloseable {
-        override fun preClose(virtualNodeContext: VirtualNodeContext) {
-
-        }
-
-        override fun close() {
-
-        }
-    }
-
     @Test
     fun `can create a sandbox group context without initializer`() {
-        val ctx = service.getOrCreate(virtualNodeContext) { _, _ -> sandboxCloseable }
+        val ctx = service.getOrCreate(virtualNodeContext) { _, _ ->  AutoCloseable {} }
         assertThat(virtualNodeContext).isEqualTo(ctx.virtualNodeContext)
     }
 
@@ -96,7 +84,7 @@ class SandboxGroupContextServiceImplTest {
         var initializerCalled = false
         val ctx = service.getOrCreate(virtualNodeContext) { _, _ ->
             initializerCalled = true
-            sandboxCloseable
+            AutoCloseable {}
         }
 
         assertThat(virtualNodeContext).isEqualTo(ctx.virtualNodeContext)
@@ -114,7 +102,7 @@ class SandboxGroupContextServiceImplTest {
             initializerCalled = true
             actualHoldingIdentity = holdingIdentity
             mutableContext.putUniqueObject(dog)
-            sandboxCloseable
+            AutoCloseable {}
         }
 
         assertThat(virtualNodeContext).isEqualTo(ctx.virtualNodeContext)
@@ -167,17 +155,17 @@ class SandboxGroupContextServiceImplTest {
 
         val sandboxGroupContext1 = service.getOrCreate(ctx1) { _, mc ->
             mc.putUniqueObject(dog1)
-            sandboxCloseable
+            AutoCloseable {}
         }
 
         val sandboxGroupContext2 = service.getOrCreate(ctx2) { _, mc ->
             mc.putUniqueObject(dog2)
-            sandboxCloseable
+            AutoCloseable {}
         }
 
         val sandboxGroupContext3 = service.getOrCreate(ctx3) { _, mc ->
             mc.putUniqueObject(dog3)
-            sandboxCloseable
+            AutoCloseable {}
         }
 
         // Can get correct 'unique' object from context 1
@@ -205,17 +193,25 @@ class SandboxGroupContextServiceImplTest {
     @Test
     fun `remove removes from cache`() {
         val holdingIdentity1 = createTestHoldingIdentity("CN=Foo, O=Foo Corp, L=LDN, C=GB", "bar")
-        val cpks1 = setOf(Helpers.mockTrivialCpk("MAIN1", "example", "1.0.0"))
+        val cpkChecksum = parseSecureHash("DUMMY:1234567890abcdef")
+        val cpks1 = setOf(Helpers.mockTrivialCpk("MAIN1", "example", "1.0.0", cpkChecksum))
         val ctx1 = createVirtualNodeContextForFlow(
             holdingIdentity1,
-            cpks1.map { parseSecureHash("DUMMY:1234567890abcdef") }.toSet()
+            cpks1.mapTo(linkedSetOf()) { cpkChecksum }
         )
         val sandboxCreationService = Helpers.mockSandboxCreationService(listOf(cpks1))
         val cpkService = CpkReadServiceFake(cpks1)
-        val service = SandboxGroupContextServiceImpl(sandboxCreationService, cpkService, scr, bundleContext)
+        val service = SandboxGroupContextServiceImpl(sandboxCreationService, cpkService, scr, bundleContext).apply {
+            initCache(SandboxGroupType.FLOW, 1)
+        }
+        service.getOrCreate(ctx1) { _, _ -> AutoCloseable {} }
 
-        val ex = assertThrows<IllegalStateException> { service.remove(ctx1) }
-        assertThat(ex).hasMessageStartingWith("remove: ")
+        val completion = service.remove(ctx1)
+        assertThat(completion)
+            .isNotNull
+            .isNotDone
+        assertThat(service.remove(ctx1))
+            .isNull()
     }
 
     @Test

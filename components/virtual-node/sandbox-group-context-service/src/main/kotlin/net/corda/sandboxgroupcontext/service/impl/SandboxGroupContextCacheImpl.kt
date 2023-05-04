@@ -9,10 +9,11 @@ import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentMap
 import net.corda.cache.caffeine.CacheFactoryImpl
-import net.corda.sandboxgroupcontext.SandboxCloseable
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.sandboxgroupcontext.SandboxGroupType
 import net.corda.sandboxgroupcontext.VirtualNodeContext
+import net.corda.sandboxgroupcontext.service.CacheEviction
+import net.corda.sandboxgroupcontext.service.EvictionListener
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.slf4j.LoggerFactory
@@ -21,13 +22,45 @@ internal class SandboxGroupContextCacheImpl private constructor(
     override val capacities: Map<SandboxGroupType, Long>,
     private val expiryQueue: ReferenceQueue<SandboxGroupContextWrapper>,
     private val toBeClosed: MutableSet<ToBeClosed>
-) : SandboxGroupContextCache {
-    constructor(capacities: Map<SandboxGroupType, Long>)
-        : this(capacities, ReferenceQueue<SandboxGroupContextWrapper>(), ConcurrentHashMap.newKeySet())
+) : SandboxGroupContextCache, CacheEviction {
+    constructor(capacities: Long) : this(
+        capacities = SandboxGroupType.values().associateWith { capacities },
+        expiryQueue = ReferenceQueue<SandboxGroupContextWrapper>(),
+        toBeClosed = ConcurrentHashMap.newKeySet()
+    )
 
     private companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         private const val WAIT_MILLIS = 100L
+    }
+
+    private val evictionListeners = SandboxGroupType.values().associateWith { linkedSetOf<EvictionListener>() }
+
+    private fun onEviction(vnc: VirtualNodeContext) {
+        val listeners = evictionListeners[vnc.sandboxGroupType] ?: return
+        synchronized(listeners) {
+            listeners.toList()
+        }.forEach { listener ->
+            try {
+                listener.onEviction(vnc)
+            } catch(e: Exception) {
+                logger.warn("Error while evicting sandbox $vnc", e)
+            }
+        }
+    }
+
+    override fun addEvictionListener(type: SandboxGroupType, listener: EvictionListener): Boolean {
+        val listeners = evictionListeners[type] ?: return false
+        return synchronized(listeners) {
+            listeners.add(listener)
+        }
+    }
+
+    override fun removeEvictionListener(type: SandboxGroupType, listener: EvictionListener): Boolean {
+        val listeners = evictionListeners[type] ?: return false
+        return synchronized(listeners) {
+            listeners.remove(listener)
+        }
     }
 
     private class ToBeClosed(
@@ -61,14 +94,15 @@ internal class SandboxGroupContextCacheImpl private constructor(
             // is not referenced anymore).
             .removalListener { key, context, cause ->
                 purgeExpiryQueue()
-                (context?.wrappedSandboxGroupContext as? SandboxCloseable)?.also { sandboxCloseable ->
-                    sandboxCloseable.preClose(key!!)
-                    toBeClosed += ToBeClosed(key, context.completion, sandboxCloseable, context, expiryQueue)
+                key ?: return@removalListener
+                (context?.wrappedSandboxGroupContext as? AutoCloseable)?.also { autoCloseable ->
+                    toBeClosed += ToBeClosed(key, context.completion, autoCloseable, context, expiryQueue)
+                    onEviction(key)
                 }
 
                 logger.info(
                     "Evicting {} sandbox for {} [{}]",
-                    key!!.sandboxGroupType,
+                    key.sandboxGroupType,
                     key.holdingIdentity.x500Name,
                     cause.name
                 )
@@ -79,7 +113,7 @@ internal class SandboxGroupContextCacheImpl private constructor(
      * Creates the cache for the given [sandboxGroupType] with [newCapacity] maximum size, if not created yet.
      * Changes the maximum size for the [sandboxGroupType]'s cache to [newCapacity] if the cache already exists.
      */
-    override fun resize(sandboxGroupType: SandboxGroupType, newCapacity: Long): SandboxGroupContextCache {
+    override fun resize(sandboxGroupType: SandboxGroupType, newCapacity: Long) {
         val sandboxCache = caches.computeIfAbsent(sandboxGroupType) {
             buildSandboxGroupTypeCache(sandboxGroupType, newCapacity)
         }
@@ -87,8 +121,6 @@ internal class SandboxGroupContextCacheImpl private constructor(
         sandboxCache.policy().eviction().ifPresent {
             it.maximum = newCapacity
         }
-
-        return this
     }
 
     /**

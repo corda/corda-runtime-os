@@ -42,8 +42,6 @@ class SandboxGroupContextCacheTest {
     private lateinit var idAlice: HoldingIdentity
     private lateinit var vNodeContext1: VirtualNodeContext
 
-    private fun defaultInitialCapacities(initial: Long) = SandboxGroupType.values().associateWith { initial }
-
     @BeforeEach
     fun setUp() {
         idBob = createTestHoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", "group")
@@ -62,7 +60,7 @@ class SandboxGroupContextCacheTest {
     @Test
     fun `when cache is full, evict and do not close evicted sandbox if still in use`() {
         val count = 50
-        val cache = SandboxGroupContextCacheImpl(defaultInitialCapacities(1))
+        val cache = SandboxGroupContextCacheImpl(1)
         val sandboxContext1 = mockSandboxContext()
         val contextStrongRef = cache.get(vNodeContext1) { sandboxContext1 }
         assertThat(contextStrongRef).isNotNull
@@ -91,7 +89,7 @@ class SandboxGroupContextCacheTest {
     @Test
     fun `when cache is full, evict and close evicted sandbox if not in use anymore`() {
         val count = 25
-        val cache = SandboxGroupContextCacheImpl(defaultInitialCapacities(1))
+        val cache = SandboxGroupContextCacheImpl(1)
         val sandboxContext1: CloseableSandboxGroupContext = spy {
             val completable = CompletableFuture<Boolean>()
             whenever(it.completion).doReturn(completable)
@@ -149,7 +147,7 @@ class SandboxGroupContextCacheTest {
     @Suppress("unused_value")
     @Test
     fun `when cache closed, close everything`() {
-        val cache = SandboxGroupContextCacheImpl(defaultInitialCapacities(10))
+        val cache = SandboxGroupContextCacheImpl(10)
         val vNodeContext2 = VirtualNodeContext(
             holdingIdentity = idBob,
             cpkFileChecksums = setOf(parseSecureHash("DUMMY:1234567890abcdef")),
@@ -189,7 +187,7 @@ class SandboxGroupContextCacheTest {
     @Suppress("unused_value")
     @Test
     fun `when remove also close`() {
-        val cache = SandboxGroupContextCacheImpl(defaultInitialCapacities(10))
+        val cache = SandboxGroupContextCacheImpl(10)
         val sandboxContext1 = mockSandboxContext()
 
         var ref: SandboxGroupContext? = cache.get(vNodeContext1) { sandboxContext1 }
@@ -219,7 +217,7 @@ class SandboxGroupContextCacheTest {
 
     @Test
     fun removingMissingKeyReturnsNull() {
-        val cache = SandboxGroupContextCacheImpl(defaultInitialCapacities(10))
+        val cache = SandboxGroupContextCacheImpl(10)
         assertThat(cache.remove(vNodeContext1)).isNull()
         eventually(duration = ofSeconds(TIMEOUT), waitBetween = ofSeconds(1)) {
             System.gc()
@@ -229,7 +227,7 @@ class SandboxGroupContextCacheTest {
 
     @Test
     fun `when in cache retrieve same`() {
-        val cache = SandboxGroupContextCacheImpl(defaultInitialCapacities(10))
+        val cache = SandboxGroupContextCacheImpl(10)
         val sandboxContext1 = cache.get(vNodeContext1) { mockSandboxContext(name = "ctx1") }
         val retrievedContext = cache.get(vNodeContext1) { mockSandboxContext(name = "ctx2") }
 
@@ -243,7 +241,7 @@ class SandboxGroupContextCacheTest {
 
     @Test
     fun `when key in cache equal, don't replace`() {
-        val cache = SandboxGroupContextCacheImpl(defaultInitialCapacities(10))
+        val cache = SandboxGroupContextCacheImpl(10)
         val vnodeContext1 = VirtualNodeContext(
             idAlice,
             setOf(parseSecureHash("DUMMY:1234567890abcdef")),
@@ -270,7 +268,7 @@ class SandboxGroupContextCacheTest {
 
     @Test
     fun testEmptyCacheFlushesImmediately() {
-        val cache = SandboxGroupContextCacheImpl(defaultInitialCapacities(10))
+        val cache = SandboxGroupContextCacheImpl(10)
         val completion = cache.flush()
         assertThat(completion.isDone).isTrue
         assertThat(cache.waitFor(completion, ofSeconds(0))).isTrue
@@ -283,7 +281,7 @@ class SandboxGroupContextCacheTest {
     @Suppress("unused_value")
     @Test
     fun testCacheFlushesCurrentContents() {
-        val cache = SandboxGroupContextCacheImpl(defaultInitialCapacities(10))
+        val cache = SandboxGroupContextCacheImpl(10)
         val vNodeContext2 = VirtualNodeContext(
             holdingIdentity = idAlice,
             cpkFileChecksums = emptySet(),
@@ -334,7 +332,7 @@ class SandboxGroupContextCacheTest {
     @Suppress("unused_value")
     @Test
     fun testFlushingSandboxWithExceptionOnClose() {
-        val cache = SandboxGroupContextCacheImpl(defaultInitialCapacities(10))
+        val cache = SandboxGroupContextCacheImpl(10)
 
         val sandboxContext1 = mock<CloseableSandboxGroupContext> {
             val completable = CompletableFuture<Boolean>()

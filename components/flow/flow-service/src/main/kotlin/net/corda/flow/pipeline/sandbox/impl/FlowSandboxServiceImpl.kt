@@ -12,7 +12,6 @@ import net.corda.flow.pipeline.sessions.FlowProtocolStoreFactory
 import net.corda.sandboxgroupcontext.MutableSandboxGroupContext
 import net.corda.sandboxgroupcontext.RequireSandboxAMQP
 import net.corda.sandboxgroupcontext.RequireSandboxJSON
-import net.corda.sandboxgroupcontext.SandboxCloseable
 import net.corda.sandboxgroupcontext.SandboxGroupType
 import net.corda.sandboxgroupcontext.VirtualNodeContext
 import net.corda.sandboxgroupcontext.putObjectByKey
@@ -21,6 +20,7 @@ import net.corda.sandboxgroupcontext.service.registerCordappCustomSerializers
 import net.corda.sandboxgroupcontext.service.registerCustomCryptography
 import net.corda.sandboxgroupcontext.service.registerCustomJsonDeserializers
 import net.corda.sandboxgroupcontext.service.registerCustomJsonSerializers
+import net.corda.utilities.detailedLogger
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import net.corda.virtualnode.HoldingIdentity
@@ -30,6 +30,7 @@ import org.osgi.framework.Constants.SCOPE_PROTOTYPE
 import org.osgi.framework.Constants.SERVICE_SCOPE
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
+import org.osgi.service.component.annotations.Deactivate
 import org.osgi.service.component.annotations.Reference
 
 @Suppress("LongParameterList")
@@ -48,8 +49,26 @@ class FlowSandboxServiceImpl @Activate constructor(
     private val bundleContext: BundleContext
 ) : FlowSandboxService {
 
-    companion object {
+    private companion object {
         const val NON_PROTOTYPE_SERVICES = "(!($SERVICE_SCOPE=$SCOPE_PROTOTYPE))"
+    }
+
+    init {
+        if (!sandboxGroupContextComponent.addEvictionListener(SandboxGroupType.FLOW, ::onEviction)) {
+            detailedLogger().warn("FAILED TO ADD EVICTION LISTENER")
+        }
+    }
+
+    @Suppress("unused")
+    @Deactivate
+    fun shutdown() {
+        if (!sandboxGroupContextComponent.removeEvictionListener(SandboxGroupType.FLOW, ::onEviction)) {
+            detailedLogger().warn("FAILED TO REMOVE EVICTION LISTENER")
+        }
+    }
+
+    private fun onEviction(vnc: VirtualNodeContext) {
+        flowFiberCache.remove(vnc.holdingIdentity.toAvro())
     }
 
     override fun get(holdingIdentity: HoldingIdentity, cpkFileHashes: Set<SecureHash>): FlowSandboxGroupContext {
@@ -74,7 +93,7 @@ class FlowSandboxServiceImpl @Activate constructor(
     private fun initialiseSandbox(
         dependencyInjectionFactory: SandboxDependencyInjectorFactory,
         sandboxGroupContext: MutableSandboxGroupContext,
-    ): SandboxCloseable {
+    ): AutoCloseable {
         val sandboxGroup = sandboxGroupContext.sandboxGroup
         val customCrypto = sandboxGroupContextComponent.registerCustomCryptography(sandboxGroupContext)
 
@@ -105,19 +124,13 @@ class FlowSandboxServiceImpl @Activate constructor(
         // Instruct all CustomMetadataConsumers to accept their metadata.
         sandboxGroupContextComponent.acceptCustomMetadata(sandboxGroupContext)
 
-        return object : SandboxCloseable {
-            override fun preClose(virtualNodeContext: VirtualNodeContext) {
-                flowFiberCache.remove(virtualNodeContext.holdingIdentity.toAvro())
-            }
-
-            override fun close() {
-                jsonDeserializers.close()
-                jsonSerializers.close()
-                cleanupCordaSingletons.forEach(AutoCloseable::close)
-                customSerializers.close()
-                injectorService.close()
-                customCrypto.close()
-            }
+        return AutoCloseable {
+            jsonDeserializers.close()
+            jsonSerializers.close()
+            cleanupCordaSingletons.forEach(AutoCloseable::close)
+            customSerializers.close()
+            injectorService.close()
+            customCrypto.close()
         }
     }
 

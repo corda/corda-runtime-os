@@ -19,6 +19,7 @@ import net.corda.sandboxgroupcontext.SandboxGroupContextService
 import net.corda.sandboxgroupcontext.SandboxGroupType
 import net.corda.sandboxgroupcontext.VirtualNodeContext
 import net.corda.sandboxgroupcontext.service.CacheControl
+import net.corda.sandboxgroupcontext.service.EvictionListener
 import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.utilities.debug
@@ -38,7 +39,7 @@ import java.util.concurrent.CompletableFuture
  * Sandbox group context service component... with lifecycle, since it depends on a CPK service
  * that has a lifecycle.
  */
-@Suppress("Unused", "LongParameterList")
+@Suppress("Unused", "LongParameterList", "TooManyFunctions")
 @Component(service = [SandboxGroupContextComponent::class])
 class SandboxGroupContextComponentImpl @Activate constructor(
     @Reference(service = ConfigurationReadService::class)
@@ -184,6 +185,16 @@ class SandboxGroupContextComponentImpl @Activate constructor(
     override fun remove(virtualNodeContext: VirtualNodeContext): CompletableFuture<*>? {
         return (sandboxGroupContextService as? CacheControl
             ?: throw IllegalStateException("Sandbox could not be removed from cache")).remove(virtualNodeContext)
+    }
+
+    override fun addEvictionListener(type: SandboxGroupType, listener: EvictionListener): Boolean {
+        return (sandboxGroupContextService as? CacheControl
+            ?: throw IllegalStateException("Failed to add eviction listener")).addEvictionListener(type, listener)
+    }
+
+    override fun removeEvictionListener(type: SandboxGroupType, listener: EvictionListener): Boolean {
+        return (sandboxGroupContextService as? CacheControl
+            ?: throw IllegalStateException("Failed to remove eviction listener")).removeEvictionListener(type, listener)
     }
 
     override fun initCache(type: SandboxGroupType, capacity: Long) {

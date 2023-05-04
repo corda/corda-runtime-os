@@ -4,6 +4,7 @@ import net.corda.sandboxgroupcontext.SandboxGroupContextService
 import net.corda.sandboxgroupcontext.SandboxGroupType
 import net.corda.sandboxgroupcontext.VirtualNodeContext
 import net.corda.sandboxgroupcontext.service.CacheControl
+import net.corda.sandboxgroupcontext.service.EvictionListener
 import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
 import net.corda.testing.sandboxes.SandboxSetup
 import org.osgi.service.component.annotations.Activate
@@ -23,7 +24,8 @@ class SandboxGroupContextComponentImpl @Activate constructor(
 ) : SandboxGroupContextComponent, SandboxGroupContextService by sandboxGroupContextService {
     private val logger = LoggerFactory.getLogger(this::class.java)
 
-    override val isRunning: Boolean = true
+    override val isRunning: Boolean
+        get() = true
 
     override fun initCache(type: SandboxGroupType, capacity: Long) {
         (sandboxGroupContextService as? CacheControl
@@ -44,6 +46,16 @@ class SandboxGroupContextComponentImpl @Activate constructor(
     override fun waitFor(completion: CompletableFuture<*>, duration: Duration): Boolean {
         return (sandboxGroupContextService as? CacheControl
             ?: throw IllegalStateException("Cannot wait for sandbox cache to flush")).waitFor(completion, duration)
+    }
+
+    override fun addEvictionListener(type: SandboxGroupType, listener: EvictionListener): Boolean {
+        return (sandboxGroupContextService as? CacheControl
+            ?: throw IllegalStateException("Failed to add eviction listener")).addEvictionListener(type, listener)
+    }
+
+    override fun removeEvictionListener(type: SandboxGroupType, listener: EvictionListener): Boolean {
+        return (sandboxGroupContextService as? CacheControl
+            ?: throw IllegalStateException("Failed to remove eviction listener")).removeEvictionListener(type, listener)
     }
 
     override fun start() {

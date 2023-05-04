@@ -28,7 +28,6 @@ import net.corda.sandboxgroupcontext.CustomMetadataConsumer
 import net.corda.sandboxgroupcontext.MutableSandboxGroupContext
 import net.corda.sandboxgroupcontext.RequireSandboxCrypto
 import net.corda.sandboxgroupcontext.SANDBOX_SINGLETONS
-import net.corda.sandboxgroupcontext.SandboxCloseable
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.sandboxgroupcontext.SandboxGroupContextInitializer
 import net.corda.sandboxgroupcontext.SandboxGroupContextService
@@ -37,6 +36,7 @@ import net.corda.sandboxgroupcontext.VirtualNodeContext
 import net.corda.sandboxgroupcontext.getObjectByKey
 import net.corda.sandboxgroupcontext.putObjectByKey
 import net.corda.sandboxgroupcontext.service.CacheControl
+import net.corda.sandboxgroupcontext.service.EvictionListener
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.crypto.SecureHash
 import org.osgi.framework.Bundle
@@ -71,6 +71,7 @@ typealias SatisfiedServiceReferences = Map<String, SortedMap<ServiceReference<*>
  * This is a per-process service, but it must return the "same instance" for a given [VirtualNodeContext]
  * in EVERY process.
  */
+@Suppress("TooManyFunctions")
 @Component(service = [ SandboxGroupContextService::class ])
 @RequireSandboxCrypto
 @RequireSandboxHooks
@@ -115,37 +116,14 @@ class SandboxGroupContextServiceImpl @Activate constructor(
                 logger.debug("Ignoring exception", e)
             }
         }
-
-        private val DUMMY_CACHE = object : SandboxGroupContextCache {
-            override val capacities: Map<SandboxGroupType, Long>
-                get() = SandboxGroupType.values().associateWith { 0 }
-
-            override fun remove(virtualNodeContext: VirtualNodeContext)
-                = throw IllegalStateException("remove: SandboxGroupContextService is not ready.")
-
-            override fun get(
-                virtualNodeContext: VirtualNodeContext,
-                createFunction: (VirtualNodeContext) -> CloseableSandboxGroupContext
-            ) = throw IllegalStateException("get: SandboxGroupContextService is not ready.")
-
-            override fun resize(sandboxGroupType: SandboxGroupType, newCapacity: Long): SandboxGroupContextCache {
-                val newCapacities = capacities.toMutableMap()
-                newCapacities[sandboxGroupType] = newCapacity
-                return SandboxGroupContextCacheImpl(newCapacities)
-            }
-
-            override fun waitFor(completion: CompletableFuture<*>, duration: Duration) = true
-            override fun flush() = CompletableFuture.completedFuture(true)
-            override fun close() {}
-        }
     }
 
-    private var cache: SandboxGroupContextCache = DUMMY_CACHE
+    private val cache: SandboxGroupContextCache = SandboxGroupContextCacheImpl(0)
 
     override fun initCache(type: SandboxGroupType, capacity: Long) {
         if (capacity != cache.capacities[type]) {
             logger.info("Changing Sandbox cache capacity for type {} from {} to {}", type, cache.capacities[type], capacity)
-            cache = cache.resize(type, capacity)
+            cache.resize(type, capacity)
         }
     }
 
@@ -160,6 +138,14 @@ class SandboxGroupContextServiceImpl @Activate constructor(
 
     override fun remove(virtualNodeContext: VirtualNodeContext): CompletableFuture<*>? {
         return cache.remove(virtualNodeContext)
+    }
+
+    override fun addEvictionListener(type: SandboxGroupType, listener: EvictionListener): Boolean {
+        return cache.addEvictionListener(type, listener)
+    }
+
+    override fun removeEvictionListener(type: SandboxGroupType, listener: EvictionListener): Boolean {
+        return cache.removeEvictionListener(type, listener)
     }
 
     override fun getOrCreate(
@@ -201,33 +187,27 @@ class SandboxGroupContextServiceImpl @Activate constructor(
                 }
 
                 // Run the caller's initializer.
-                val closeableSandbox = initializer.initializeSandboxGroupContext(vnc.holdingIdentity, sandboxGroupContext)
+                val initializerAutoCloseable =
+                    initializer.initializeSandboxGroupContext(vnc.holdingIdentity, sandboxGroupContext)
 
                 logger.debug("Created {} sandbox {} for holding identity={}",
                     vnc.sandboxGroupType, sandboxGroup.id, vnc.holdingIdentity)
 
                 // Wrapped SandboxGroupContext, specifically to set closeable and forward on all other calls.
 
-                // Calling preClose invokes a pre-close step returned from the initializer before
                 // Calling close also removes us from the contexts map and unloads the [SandboxGroup].
-                CloseableSandboxGroupContextImpl(sandboxGroupContext, object: SandboxCloseable {
-                    override fun preClose(virtualNodeContext: VirtualNodeContext) {
-                        closeableSandbox.preClose(virtualNodeContext)
+                CloseableSandboxGroupContextImpl(sandboxGroupContext) {
+                    // These objects might still be in a sandbox, so close them whilst the sandbox is still valid.
+                    runIgnoringExceptions(initializerAutoCloseable::close)
+
+                    // Remove this sandbox's common services.
+                    commonServiceRegistrations?.forEach { closeable ->
+                        runIgnoringExceptions(closeable::close)
                     }
 
-                    override fun close() {
-                        // These objects might still be in a sandbox, so close them whilst the sandbox is still valid.
-                        runIgnoringExceptions(closeableSandbox::close)
-
-                        // Remove this sandbox's common services.
-                        commonServiceRegistrations?.forEach { closeable ->
-                            runIgnoringExceptions(closeable::close)
-                        }
-
-                        // And unload the (OSGi) sandbox group
-                        sandboxCreationService.unloadSandboxGroup(sandboxGroupContext.sandboxGroup)
-                    }
-                })
+                    // And unload the (OSGi) sandbox group
+                    sandboxCreationService.unloadSandboxGroup(sandboxGroupContext.sandboxGroup)
+                }
             }!!
         }
     }
