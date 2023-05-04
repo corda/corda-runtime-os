@@ -8,10 +8,13 @@ import net.corda.crypto.flow.CryptoFlowOpsTransformer
 import net.corda.crypto.impl.retrying.BackoffStrategy
 import net.corda.crypto.impl.retrying.CryptoRetryingExecutor
 import net.corda.crypto.impl.toMap
+import net.corda.crypto.impl.toSignatureSpec
+import net.corda.crypto.service.impl.SigningServiceImpl
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoRequestContext
 import net.corda.data.crypto.wire.CryptoResponseContext
+import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.crypto.wire.ops.flow.FlowOpsRequest
 import net.corda.data.crypto.wire.ops.flow.FlowOpsResponse
 import net.corda.data.crypto.wire.ops.flow.commands.SignFlowCommand
@@ -26,12 +29,14 @@ import net.corda.utilities.MDC_FLOW_ID
 import net.corda.utilities.trace
 import net.corda.utilities.withMDC
 import org.slf4j.LoggerFactory
+import java.nio.ByteBuffer
 import java.time.Instant
 
 class CryptoFlowOpsBusProcessor(
     private val cryptoOpsClient: CryptoOpsProxyClient,
+    private val signingService: SigningServiceImpl,
     private val externalEventResponseFactory: ExternalEventResponseFactory,
-    event: ConfigChangedEvent
+    event: ConfigChangedEvent,
 ) : DurableProcessor<String, FlowOpsRequest> {
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -122,16 +127,25 @@ class CryptoFlowOpsBusProcessor(
                     tenantId = context.tenantId,
                     candidateKeys = request.keys
                 )
-            is SignFlowCommand ->
-                cryptoOpsClient.signProxy(
-                    tenantId = context.tenantId,
-                    publicKey = request.publicKey,
-                    signatureSpec = request.signatureSpec,
-                    data = request.bytes,
-                    context = request.context
+
+            is SignFlowCommand -> {
+                val publicKey = signingService.schemeMetadata.decodePublicKey(request.publicKey.array())
+                val signature = signingService.sign(
+                    context.tenantId,
+                    publicKey,
+                    request.signatureSpec.toSignatureSpec(signingService.schemeMetadata),
+                    request.bytes.array(),
+                    request.context.toMap()
                 )
+                return CryptoSignatureWithKey(
+                    ByteBuffer.wrap(signingService.schemeMetadata.encodeAsByteArray(signature.by)),
+                    ByteBuffer.wrap(signature.bytes)
+                )
+            }
+
             is ByIdsFlowQuery ->
                 cryptoOpsClient.lookupKeysByFullIdsProxy(context.tenantId, request.fullKeyIds)
+
             else ->
                 throw IllegalArgumentException("Unknown request type ${request::class.java.name}")
         }

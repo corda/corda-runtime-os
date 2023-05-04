@@ -3,8 +3,12 @@ package net.corda.processors.crypto.internal
 import net.corda.configuration.read.ConfigChangedEvent
 import java.util.concurrent.atomic.AtomicInteger
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.crypto.cipher.suite.CipherSchemeMetadata
+import net.corda.crypto.cipher.suite.KeyEncodingService
+import net.corda.crypto.cipher.suite.PlatformDigestService
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.client.CryptoOpsProxyClient
+import net.corda.crypto.config.impl.signingService
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.persistence.HSMStore
@@ -13,11 +17,14 @@ import net.corda.crypto.service.CryptoOpsBusService
 import net.corda.crypto.service.CryptoServiceFactory
 import net.corda.crypto.service.HSMRegistrationBusService
 import net.corda.crypto.service.HSMService
+import net.corda.crypto.service.impl.SigningServiceImpl
 import net.corda.crypto.service.impl.bus.CryptoFlowOpsBusProcessor
 import net.corda.crypto.softhsm.SoftCryptoServiceProvider
+import net.corda.crypto.softhsm.impl.SigningRepositoryFactoryImpl
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.schema.CordaDb
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
+import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.datamodel.ConfigurationEntities
 import net.corda.libs.configuration.helper.getConfig
@@ -84,6 +91,16 @@ class CryptoProcessorImpl @Activate constructor(
     private val subscriptionFactory: SubscriptionFactory,
     @Reference(service = ExternalEventResponseFactory::class)
     private val externalEventResponseFactory: ExternalEventResponseFactory,
+    @Reference(service = JpaEntitiesRegistry::class)
+    private val jpaEntitiesRegistry: JpaEntitiesRegistry,
+    @Reference(service = KeyEncodingService::class)
+    private val keyEncodingService: KeyEncodingService,
+    @Reference(service = LayeredPropertyMapFactory::class)
+    private val layeredPropertyMapFactory: LayeredPropertyMapFactory,
+    @Reference(service = PlatformDigestService::class)
+    private val digestService: PlatformDigestService,
+    @Reference(service = CipherSchemeMetadata::class)
+    private val schemeMetadata: CipherSchemeMetadata,
 ) : CryptoProcessor {
     private companion object {
         val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -208,22 +225,41 @@ class CryptoProcessorImpl @Activate constructor(
             }
 
             is ConfigChangedEvent -> {
-                val groupName = "crypto.ops.flow"
-                // now we can create the subscriptions and bus processors
-                logger.info("Starting processing on ${groupName} ${Schemas.Crypto.FLOW_OPS_MESSAGE_TOPIC}")
-                val flowOpsProcessor =
-                    CryptoFlowOpsBusProcessor(cryptoOpsProxyClient, externalEventResponseFactory, event)
-                val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
-
-                val subscription = subscriptionFactory.createDurableSubscription(
-                    subscriptionConfig = SubscriptionConfig(groupName, Schemas.Crypto.FLOW_OPS_MESSAGE_TOPIC),
-                    processor = flowOpsProcessor,
-                    messagingConfig = messagingConfig,
-                    partitionAssignmentListener = null
-                )
-                subscription.start()
+                startBusProcessors(event)
             }
         }
+    }
+
+    private fun startBusProcessors(event: ConfigChangedEvent) {
+        val cryptoConfig = event.config.getConfig(CRYPTO_CONFIG)
+        val groupName = "crypto.ops.flow"
+        // now we can create the subscriptions and bus processors
+        logger.info("Starting processing on ${groupName} ${Schemas.Crypto.FLOW_OPS_MESSAGE_TOPIC}")
+        val signingService = SigningServiceImpl(
+            cryptoServiceFactory, SigningRepositoryFactoryImpl(
+                dbConnectionManager,
+                vnodeInfo,
+                jpaEntitiesRegistry,
+                keyEncodingService,
+                digestService,
+                layeredPropertyMapFactory
+            ),
+            schemeMetadata = schemeMetadata,
+            digestService = digestService,
+            config = cryptoConfig.signingService()
+        )
+
+        val flowOpsProcessor =
+            CryptoFlowOpsBusProcessor(cryptoOpsProxyClient, signingService, externalEventResponseFactory, event)
+        val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
+
+        val subscription = subscriptionFactory.createDurableSubscription(
+            subscriptionConfig = SubscriptionConfig(groupName, Schemas.Crypto.FLOW_OPS_MESSAGE_TOPIC),
+            processor = flowOpsProcessor,
+            messagingConfig = messagingConfig,
+            partitionAssignmentListener = null
+        )
+        subscription.start()
     }
 
     private fun setStatus(status: LifecycleStatus, coordinator: LifecycleCoordinator) {
