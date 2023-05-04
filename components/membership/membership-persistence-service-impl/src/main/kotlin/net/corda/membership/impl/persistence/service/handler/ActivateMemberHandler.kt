@@ -2,6 +2,8 @@ package net.corda.membership.impl.persistence.service.handler
 
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializer
+import javax.persistence.EntityManager
+import javax.persistence.PessimisticLockException
 import net.corda.data.KeyValuePairList
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.SignedGroupParameters
@@ -13,14 +15,18 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_SUSP
 import net.corda.membership.lib.MemberInfoExtension.Companion.isNotary
 import net.corda.membership.lib.exceptions.InvalidEntityUpdateException
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
+import net.corda.utilities.time.Clock
 import net.corda.virtualnode.toCorda
-import javax.persistence.EntityManager
-import javax.persistence.PessimisticLockException
 
 internal class ActivateMemberHandler(
-    private val persistenceHandlerServices: PersistenceHandlerServices,
-    private val addNotaryToGroupParametersHandler: AddNotaryToGroupParametersHandler =
-        AddNotaryToGroupParametersHandler(persistenceHandlerServices)
+    persistenceHandlerServices: PersistenceHandlerServices,
+    private val addNotaryToGroupParametersHandler: AddNotaryToGroupParametersHandler
+        = AddNotaryToGroupParametersHandler(persistenceHandlerServices),
+    suspensionActivationEntityOperationsFactory:
+        (clock: Clock, serializer: CordaAvroDeserializer<KeyValuePairList>, deserializer: CordaAvroSerializer<KeyValuePairList>)
+        -> SuspensionActivationEntityOperations
+        = {clock: Clock, serializer: CordaAvroDeserializer<KeyValuePairList>, deserializer: CordaAvroSerializer<KeyValuePairList>
+        -> SuspensionActivationEntityOperations(clock, serializer, deserializer)}
 ) : BasePersistenceHandler<ActivateMember, ActivateMemberResponse>(persistenceHandlerServices) {
     private val keyValuePairListDeserializer: CordaAvroDeserializer<KeyValuePairList> by lazy {
         cordaAvroSerializationFactory.createAvroDeserializer(
@@ -36,7 +42,7 @@ internal class ActivateMemberHandler(
         }
     }
     private val suspensionActivationEntityOperations =
-        SuspensionActivationEntityOperations(clock, keyValuePairListDeserializer, keyValuePairListSerializer)
+        suspensionActivationEntityOperationsFactory(clock, keyValuePairListDeserializer, keyValuePairListSerializer)
 
     override fun invoke(context: MembershipRequestContext, request: ActivateMember): ActivateMemberResponse {
         val (updatedMemberInfo, updatedGroupParameters) = transaction(context.holdingIdentity.toCorda().shortHash) { em ->
@@ -59,8 +65,10 @@ internal class ActivateMemberHandler(
                 MEMBER_STATUS_ACTIVE
             )
             val updatedGroupParameters = if (memberInfoFactory.create(updatedMemberInfo).isNotary()) {
+                logger.info("Activating notary member ${context.holdingIdentity}.")
                 updateGroupParameters(em, updatedMemberInfo)
             } else {
+                logger.info("Activating member ${context.holdingIdentity}.")
                 null
             }
 
