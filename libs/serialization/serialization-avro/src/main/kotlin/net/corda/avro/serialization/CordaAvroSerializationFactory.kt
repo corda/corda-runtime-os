@@ -1,6 +1,5 @@
 package net.corda.avro.serialization
 
-import java.util.function.Consumer
 
 /**
  * Defines the interface for message bus deserialization. The underlying mechanism may differ.
@@ -29,7 +28,7 @@ interface CordaAvroSerializationFactory {
      * @return an implementation of the CordaAvroDeserializer
      */
     fun <T : Any> createAvroDeserializer(
-        onError: Consumer<ByteArray>,
+        onError: (ByteArray) -> Unit,
         expectedClass: Class<T>
     ): CordaAvroDeserializer<T>
 }
