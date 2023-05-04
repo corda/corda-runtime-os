@@ -38,6 +38,7 @@ import net.corda.data.membership.db.response.command.PersistApprovalRuleResponse
 import net.corda.data.membership.db.response.command.RevokePreAuthTokenResponse
 import net.corda.data.membership.db.response.command.SuspendMemberResponse
 import net.corda.data.membership.db.response.query.ApprovalRulesQueryResponse
+import net.corda.data.membership.db.response.query.ErrorKind
 import net.corda.data.membership.db.response.query.GroupPolicyQueryResponse
 import net.corda.data.membership.db.response.query.MemberInfoQueryResponse
 import net.corda.data.membership.db.response.query.PersistenceFailedResponse
@@ -59,9 +60,12 @@ import net.corda.membership.datamodel.PreAuthTokenEntity
 import net.corda.membership.datamodel.RegistrationRequestEntity
 import net.corda.membership.impl.persistence.service.handler.HandlerFactories
 import net.corda.membership.datamodel.StaticNetworkInfoEntity
+import net.corda.membership.impl.persistence.service.handler.PersistenceHandlerServices
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_SUSPENDED
 import net.corda.membership.lib.MemberInfoFactory
+import net.corda.membership.lib.exceptions.InvalidEntityUpdateException
+import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.test.util.TestRandom
 import net.corda.test.util.identity.createTestHoldingIdentity
@@ -78,6 +82,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
@@ -322,7 +327,7 @@ class MembershipPersistenceRPCProcessorTest {
             it.assertThat(responseFuture).isCompleted
             with(responseFuture.get()) {
                 it.assertThat(payload).isNotNull
-                it.assertThat(payload).isInstanceOf(PersistenceFailedResponse::class.java)
+                it.assertThat((payload as? PersistenceFailedResponse)?.errorKind).isEqualTo(ErrorKind.GENERAL)
 
                 with(context) {
                     it.assertThat(requestTimestamp).isEqualTo(rqContext.requestTimestamp)
@@ -332,6 +337,48 @@ class MembershipPersistenceRPCProcessorTest {
                 }
             }
         }
+    }
+
+    @Test
+    fun `InvalidEntityUpdateException will return INVALID_ENTITY_UPDATE error`() {
+        val handlerServices = mock<PersistenceHandlerServices> {
+            on { clock } doReturn clock
+        }
+        val handlerFactories = mock<HandlerFactories> {
+            on { handle(any()) } doThrow InvalidEntityUpdateException("")
+            on { persistenceHandlerServices } doReturn handlerServices
+        }
+        val processor = MembershipPersistenceRPCProcessor(
+            handlerFactories,
+        )
+
+        val rq = MembershipPersistenceRequest(rqContext, Unit)
+
+        processor.onNext(rq, responseFuture)
+
+        assertThat((responseFuture.get()?.payload as? PersistenceFailedResponse)?.errorKind)
+            .isEqualTo(ErrorKind.INVALID_ENTITY_UPDATE)
+    }
+
+    @Test
+    fun `MembershipPersistenceException will return GENERAL error`() {
+        val handlerServices = mock<PersistenceHandlerServices> {
+            on { clock } doReturn clock
+        }
+        val handlerFactories = mock<HandlerFactories> {
+            on { handle(any()) } doThrow MembershipPersistenceException("")
+            on { persistenceHandlerServices } doReturn handlerServices
+        }
+        val processor = MembershipPersistenceRPCProcessor(
+            handlerFactories,
+        )
+
+        val rq = MembershipPersistenceRequest(rqContext, Unit)
+
+        processor.onNext(rq, responseFuture)
+
+        assertThat((responseFuture.get()?.payload as? PersistenceFailedResponse)?.errorKind)
+            .isEqualTo(ErrorKind.GENERAL)
     }
 
     /**
