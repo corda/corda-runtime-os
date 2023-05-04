@@ -12,7 +12,7 @@ import java.util.concurrent.Callable
 @CommandLine.Command(name = "check-limits", description = ["Check the resource limits have been assigned correctly."])
 class CheckLimits : Callable<Int>, PluginContext() {
 
-    @Parameters(index = "0", description = ["YAML file containing resource limit overrides for the corda install"])
+    @Parameters(index = "0", description = ["YAML file containing resource limit overrides for the Corda install"])
     lateinit var path: String
 
     class ResourceLimitsExceededException(message: String) : Exception(message)
