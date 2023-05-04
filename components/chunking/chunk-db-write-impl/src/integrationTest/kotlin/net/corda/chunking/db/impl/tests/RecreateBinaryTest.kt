@@ -9,6 +9,7 @@ import java.util.UUID
 import net.corda.chunking.ChunkReaderFactoryImpl
 import net.corda.chunking.ChunkWriterFactory
 import net.corda.chunking.Constants.Companion.APP_LEVEL_CHUNK_MESSAGE_OVERHEAD
+import net.corda.chunking.Constants.Companion.CHUNK_FILENAME_KEY
 import net.corda.chunking.datamodel.ChunkingEntities
 import net.corda.chunking.db.impl.persistence.database.DatabaseChunkPersistence
 import net.corda.data.chunking.Chunk
@@ -82,13 +83,14 @@ class RecreateBinaryTest {
         val chunkSize = loremIpsum.length / divisor
 
         val chunks = mutableListOf<Chunk>()
-        val writer = ChunkWriterFactory.create(chunkSize + APP_LEVEL_CHUNK_MESSAGE_OVERHEAD).apply {
+        val properties = mapOf<String, String?>(CHUNK_FILENAME_KEY to someFile)
+        val writer = ChunkWriterFactory.create(chunkSize + APP_LEVEL_CHUNK_MESSAGE_OVERHEAD, properties).apply {
             onChunk { chunks.add(it) }
         }
         // end of setup...
 
         // This is what we'd write in one of our components
-        writer.write(someFile, Files.newInputStream(tempFile))
+        writer.write(Files.newInputStream(tempFile))
         return chunks
     }
 
@@ -124,13 +126,13 @@ class RecreateBinaryTest {
         val originalFile = createFile()
         val chunks = createChunks(expectedFileName, originalFile)
 
-        var actualFileName = ""
+        var actualFileName: String? = ""
         var tempPath: Path? = null
         val destDir = fs.getPath("destDir").apply { Files.createDirectories(this) }
 
         val chunkReader = ChunkReaderFactoryImpl.create(destDir).apply {
-            this.onComplete { originalFileName: String, tempPathOfBinary: Path, _: SecureHash, _ ->
-                actualFileName = originalFileName
+            this.onComplete {tempPathOfBinary: Path, _: SecureHash, properties ->
+                actualFileName = properties?.get(CHUNK_FILENAME_KEY)
                 tempPath = tempPathOfBinary
             }
         }
