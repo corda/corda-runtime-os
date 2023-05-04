@@ -1,6 +1,7 @@
 package net.corda.cpk.write.impl
 
 import net.corda.chunking.Constants.Companion.APP_LEVEL_CHUNK_MESSAGE_OVERHEAD
+import net.corda.chunking.Constants.Companion.CHUNK_FILENAME_KEY
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpk.write.impl.services.db.CpkStorage
@@ -203,8 +204,14 @@ class CpkWriteServiceImplTest {
         assertTrue(chunks[2].data.equals(ByteBuffer.wrap(cpkData)))
         assertTrue(chunks[3].data.limit() == 0)
 
-        assertEquals("${cpkChecksum.toHexString()}.cpk", chunks[0].fileName)
-        assertEquals("${cpkChecksum.toHexString()}.cpk", chunks[2].fileName)
+        assertEquals(
+            "${cpkChecksum.toHexString()}.cpk",
+            chunks[0].properties.items.find { it.key == CHUNK_FILENAME_KEY }?.value
+        )
+        assertEquals(
+            "${cpkChecksum.toHexString()}.cpk",
+            chunks[2].properties.items.find { it.key == CHUNK_FILENAME_KEY }?.value
+        )
     }
 
     @Test

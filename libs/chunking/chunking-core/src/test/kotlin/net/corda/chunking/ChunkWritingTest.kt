@@ -8,6 +8,7 @@ import java.nio.file.Path
 import java.nio.file.StandardOpenOption
 import java.util.UUID
 import net.corda.chunking.Constants.Companion.APP_LEVEL_CHUNK_MESSAGE_OVERHEAD
+import net.corda.chunking.Constants.Companion.CHUNK_FILENAME_KEY
 import net.corda.chunking.Constants.Companion.KB
 import net.corda.chunking.Constants.Companion.MB
 import net.corda.chunking.impl.ChunkBuilderServiceImpl
@@ -48,13 +49,13 @@ class ChunkWritingTest {
 
     @Test
     fun `simple chunking`() {
-        val chunkWriter = ChunkWriterFactory.create(1 * MB)
+        val chunkWriter = ChunkWriterFactory.create(1 * MB, emptyMap())
         var chunkWrittenCount = 0
         chunkWriter.onChunk { chunkWrittenCount++ }
 
         val path = createFile((2 * MB).toLong())
 
-        Files.newInputStream(path).use { chunkWriter.write(randomFileName(), it) }
+        Files.newInputStream(path).use { chunkWriter.write(it) }
 
         assertThat(chunkWrittenCount).isGreaterThan(0)
     }
@@ -67,7 +68,7 @@ class ChunkWritingTest {
 
         val path = createFile((2 * MB).toLong())
 
-        Files.newInputStream(path).use { chunkWriter.write(randomFileName(), it) }
+        Files.newInputStream(path).use { chunkWriter.write(it) }
 
         assertThat(0).isEqualTo(lastChunkSize)
     }
@@ -75,12 +76,18 @@ class ChunkWritingTest {
     @Test
     fun `chunk file name is set correctly`() {
         val fileName = randomFileName()
-        val writer = ChunkWriterFactory.create(1 * MB).apply {
-            onChunk { assertThat(it.fileName).isEqualTo(fileName.toString()) }
+        val properties = mapOf<String, String?>(CHUNK_FILENAME_KEY to fileName)
+        val writer = ChunkWriterFactory.create(1 * MB, properties)
+        writer.apply {
+            this.onChunk { chunk ->
+                assertThat(chunk.properties.items.find
+                { it.key == CHUNK_FILENAME_KEY }?.value
+                ).isEqualTo(fileName)
+            }
         }
 
         val path = createFile((32 * KB).toLong())
-        writer.write(fileName, Files.newInputStream(path))
+        writer.write(Files.newInputStream(path))
     }
 
     @Test
@@ -92,7 +99,7 @@ class ChunkWritingTest {
 
         val chunks = 5
         val path = createFile((chunks * writer.chunkSize).toLong())
-        writer.write(randomFileName(), Files.newInputStream(path))
+        writer.write(Files.newInputStream(path))
 
         val expected = chunks + 1 // same chunks, plus a zero sized one.
         assertThat(expected).isEqualTo(count)
@@ -110,7 +117,7 @@ class ChunkWritingTest {
         val excessBytes = 55
         val fileSize = chunkCount * chunkSize + excessBytes
         val path = createFile(fileSize.toLong())
-        writer.write(randomFileName(), Files.newInputStream(path))
+        writer.write(Files.newInputStream(path))
 
         assertThat(chunkCount + 2).isEqualTo(chunks.size)
 

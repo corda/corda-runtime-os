@@ -25,10 +25,6 @@ class CpiUploadManagerImplTest {
     private val subscription: Subscription<UploadStatusKey, UploadStatus> = mock()
     private val maxAllowedMessageSize = 97280
 
-    companion object {
-        const val DUMMY_FILE_NAME = "dummyFileName"
-    }
-
     @BeforeEach
     @Suppress("UNCHECKED_CAST")
     fun setUp() {
@@ -58,7 +54,7 @@ class CpiUploadManagerImplTest {
         val expectedNoZeroChunkCount = 3
         val expectedChunkCount = expectedNoZeroChunkCount + 1
         val cpiBytes = ByteArray(maxAllowedMessageSize * expectedNoZeroChunkCount)
-        val request = cpiUploadManagerImpl.uploadCpi(DUMMY_FILE_NAME, ByteArrayInputStream(cpiBytes))
+        val request = cpiUploadManagerImpl.uploadCpi(ByteArrayInputStream(cpiBytes))
 
         assertThat(chunkCount).isNotEqualTo(expectedChunkCount)
         assertThat(request.requestId.isNotEmpty()).isTrue
@@ -79,7 +75,7 @@ class CpiUploadManagerImplTest {
 
         val expectedNoZeroChunkCount = 3
         val cpiBytes = ByteArray(maxAllowedMessageSize * expectedNoZeroChunkCount)
-        val request = cpiUploadManagerImpl.uploadCpi(DUMMY_FILE_NAME, ByteArrayInputStream(cpiBytes))
+        val request = cpiUploadManagerImpl.uploadCpi(ByteArrayInputStream(cpiBytes))
 
         // send a single message with 'last' = true.  sequence number doesn't matter here since it's a test.
         ackProcessor.onNext(
