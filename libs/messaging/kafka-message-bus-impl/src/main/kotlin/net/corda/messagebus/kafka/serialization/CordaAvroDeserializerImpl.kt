@@ -17,6 +17,7 @@ import org.slf4j.LoggerFactory
  * @param T Type to deserialize
  * @property schemaRegistry the Avro-based Schemas
  * @property onError lambda to be run on deserialization error
+ * @property expectedClass
  */
 class CordaAvroDeserializerImpl<T: Any>(
     private val schemaRegistry: AvroSchemaRegistry,

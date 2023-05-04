@@ -14,8 +14,7 @@ interface CordaProducerBuilder {
      * @param producerConfig The mandatory config for setting up producers
      * @param messageBusConfig Configuration for connecting to the message bus and controlling its behaviour.
      * @param throwOnSerializationError throw exception on error or return null defaults to true
-     * @param onSerializationError a callback to receive messages that fail to serialize.  In the producer feed
-     *        these will show up as records with a null value, which means they should be removed from any maps.
+     * @param onSerializationError a callback to execute when serialization fails
      * @return Producer capable of publishing records of any type to any topic.
      * @throws CordaMessageAPIFatalException thrown if producer cannot be created.
      */
