@@ -1,3 +1,5 @@
+import groovy.transform.CompileStatic
+
 // plugin to cater for R3 vs Non R3 users building code base. R3 employees will leverage internal plugins non
 // R3 users will use standard Maven publishing conventions as provided by the Maven-publish gradle plugin
 if (System.getenv('CORDA_ARTIFACTORY_USERNAME') != null || project.hasProperty('cordaArtifactoryUsername')) {
@@ -15,11 +17,13 @@ if (System.getenv('CORDA_ARTIFACTORY_USERNAME') != null || project.hasProperty('
                         maven(MavenPublication) {
                             artifactId = tasks.named('jar', Jar).flatMap { it.archiveBaseName }.get()
                             groupId group.toString()
-                            from components.findByName('cordapp') ?: components.findByName('kotlin') ?: components.java
+                            from findSoftwareComponent(components).get()
 
-                            try {
-                                artifact tasks.named('sourcesJar', Jar)
-                            } catch (UnknownTaskException ignored) {
+                            if (artifacts.matching { it.classifier == 'sources' }.isEmpty()) {
+                                try {
+                                    artifact tasks.named('sourcesJar', Jar)
+                                } catch (UnknownTaskException ignored) {
+                                }
                             }
 
                             try {
@@ -39,5 +43,18 @@ if (System.getenv('CORDA_ARTIFACTORY_USERNAME') != null || project.hasProperty('
 
     tasks.register('install') {
         dependsOn 'publishToMavenLocal'
+    }
+}
+
+@CompileStatic
+private static Provider<SoftwareComponent> findSoftwareComponent(SoftwareComponentContainer components) {
+    try {
+        return components.named('cordapp')
+    } catch (UnknownDomainObjectException ignored) {
+        try {
+            return components.named('kotlin')
+        } catch (UnknownDomainObjectException ignored2) {
+            return components.named('java')
+        }
     }
 }

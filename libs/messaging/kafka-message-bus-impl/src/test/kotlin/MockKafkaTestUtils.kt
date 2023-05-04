@@ -127,7 +127,6 @@ fun generateChunkedCleanupRecords(
 fun buildChunk(id: String, data: String, partNumber: Long): Chunk {
     return Chunk.newBuilder()
         .setProperties(null)
-        .setFileName(null)
         .setChecksum(null)
         .setRequestId(id)
         .setPartNumber(partNumber.toInt())
@@ -139,7 +138,6 @@ fun buildChunk(id: String, data: String, partNumber: Long): Chunk {
 fun buildFinalChunk(id: String, partNumber: Long): Chunk {
     return Chunk.newBuilder()
         .setProperties(null)
-        .setFileName(null)
         .setChecksum(SecureHash())
         .setRequestId(id)
         .setPartNumber(partNumber.toInt())

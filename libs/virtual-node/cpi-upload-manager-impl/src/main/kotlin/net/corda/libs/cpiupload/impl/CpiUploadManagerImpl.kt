@@ -31,17 +31,17 @@ class CpiUploadManagerImpl(
     private val maxAllowedMessageSize: Int,
 ) : CpiUploadManager {
 
-    override fun uploadCpi(cpiFileName: String, cpiContent: InputStream, properties: Map<String, String?>?): Request {
+    override fun uploadCpi(cpiContent: InputStream, properties: Map<String, String?>?): Request {
         val chunkWriter = ChunkWriterFactory.create(maxAllowedMessageSize, properties).apply {
             onChunk {
                 val futures = publisher.publish(listOf(Record(uploadTopic, it.requestId, it)))
                 futures.forEach { f -> f.get() }
             }
         }
-        return chunkWriter.write(cpiFileName, cpiContent)
+        return chunkWriter.write(cpiContent)
     }
 
-    override fun status(requestId: RequestId) : UploadStatus? = statusProcessor.status(requestId)
+    override fun status(requestId: RequestId): UploadStatus? = statusProcessor.status(requestId)
 
     override fun close() {
         publisher.close()
