@@ -7,6 +7,7 @@ import net.corda.flow.application.serialization.SerializationServiceInternal
 import net.corda.flow.application.sessions.FlowSessionInternal
 import net.corda.flow.application.sessions.SessionInfo
 import net.corda.flow.application.sessions.factory.FlowSessionFactory
+import net.corda.flow.application.sessions.impl.FlowSessionImpl
 import net.corda.flow.application.versioning.impl.sessions.VersionReceivingFlowSession
 import net.corda.flow.application.versioning.impl.sessions.VersionSendingFlowSession
 import net.corda.flow.fiber.FlowFiber
@@ -26,6 +27,7 @@ import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 import java.util.UUID
 import net.corda.flow.application.sessions.utils.SessionUtils.verifySessionStatusNotErrorOrClose
+import org.slf4j.LoggerFactory
 
 @Suppress("TooManyFunctions")
 @Component(service = [FlowMessaging::class, UsedByFlow::class], scope = PROTOTYPE)
@@ -39,6 +41,10 @@ class FlowMessagingImpl @Activate constructor(
 ) : FlowMessaging, UsedByFlow, SingletonSerializeAsToken {
 
     private val fiber: FlowFiber get() = flowFiberService.getExecutingFiber()
+
+    private companion object {
+        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
+    }
 
     @Suspendable
     override fun initiateFlow(x500Name: MemberX500Name): FlowSession {
@@ -55,6 +61,7 @@ class FlowMessagingImpl @Activate constructor(
 
     @Suspendable
     override fun <R : Any> receiveAll(receiveType: Class<out R>, sessions: Set<FlowSession>): List<R> {
+        log.trace("ReceiveAll started [${sessions.map{ it.counterparty}}]")
         requireBoxedType(receiveType)
 
         @Suppress("unchecked_cast")
@@ -82,11 +89,13 @@ class FlowMessagingImpl @Activate constructor(
         val request = FlowIORequest.Receive(sessions = sessionsToReceiveFrom.map { it.getSessionInfo() }.toSet())
         val received = fiber.suspend(request)
         setSessionsAsConfirmed(flowSessionInternals)
+        log.trace("ReceiveAll returning [${sessions.map{ it.counterparty}}]")
         return deserializeReceivedPayload(received, receiveType) + versionReceivingFlowSessionPayloads.values
     }
 
     @Suspendable
     override fun receiveAllMap(sessions: Map<FlowSession, Class<out Any>>): Map<FlowSession, Any> {
+        log.trace("ReceiveAllMap started [${sessions.keys.map{ it.counterparty}}]")
         val flowSessionInternals = sessions.mapKeys {
             requireBoxedType(it.value)
             it.key as FlowSessionInternal
@@ -120,11 +129,13 @@ class FlowMessagingImpl @Activate constructor(
 
         val received = fiber.suspend(request)
         setSessionsAsConfirmed(flowSessionInternals.keys)
+        log.trace("ReceiveAllMap returning [${sessions.keys.map{ it.counterparty}}]")
         return deserializeReceivedPayload(received, sessionsToReceiveFrom) + versionReceivingFlowSessionPayloads
     }
 
     @Suspendable
     override fun sendAll(payload: Any, sessions: Set<FlowSession>) {
+        log.trace("SendAll started [${sessions.map{ it.counterparty}}]")
         requireBoxedType(payload::class.java)
         if (sessions.isEmpty()) {
             return
@@ -141,6 +152,7 @@ class FlowMessagingImpl @Activate constructor(
         }
         fiber.suspend(FlowIORequest.Send(sessionToPayload))
         setSessionsAsConfirmed(flowSessionInternals)
+        log.trace("SendAll returning [${sessions.map{ it.counterparty}}]")
     }
 
     @Suspendable
@@ -148,6 +160,7 @@ class FlowMessagingImpl @Activate constructor(
         if (payloadsPerSession.isEmpty()) {
             return
         }
+        log.trace("sendAllMap started [${payloadsPerSession.keys.map{ it.counterparty}}]")
         val sessionPayload = payloadsPerSession.map { (session, payload) ->
             requireBoxedType(payload::class.java)
             val flowSessionInternal = session as FlowSessionInternal
@@ -160,6 +173,7 @@ class FlowMessagingImpl @Activate constructor(
         fiber.suspend(FlowIORequest.Send(sessionPayload))
         @Suppress("unchecked_cast")
         setSessionsAsConfirmed(payloadsPerSession.keys as Set<FlowSessionInternal>)
+        log.trace("sendAllMap returning [${payloadsPerSession.keys.map{ it.counterparty}}]")
     }
 
     private fun setSessionsAsConfirmed(flowSessionInternals: Set<FlowSessionInternal>) {

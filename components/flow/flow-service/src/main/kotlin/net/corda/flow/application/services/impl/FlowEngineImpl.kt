@@ -20,6 +20,8 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import java.security.AccessController
 import java.security.PrivilegedActionException
 import java.security.PrivilegedExceptionAction
@@ -30,6 +32,10 @@ class FlowEngineImpl @Activate constructor(
     @Reference(service = FlowFiberService::class)
     private val flowFiberService: FlowFiberService
 ) : FlowEngine, UsedByFlow, SingletonSerializeAsToken {
+
+    companion object {
+        private val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+    }
 
     override fun getFlowId(): UUID
             = flowFiberService.getExecutingFiber().flowId
@@ -42,7 +48,7 @@ class FlowEngineImpl @Activate constructor(
 
     @Suspendable
     override fun <R> subFlow(subFlow: SubFlow<R>): R {
-
+        log.trace("SubFlow start: ${subFlow::class.java.name}")
         try {
             AccessController.doPrivileged(PrivilegedExceptionAction {
                 getFiberExecutionContext().sandboxGroupContext.dependencyInjector.injectServices(subFlow)
@@ -62,6 +68,7 @@ class FlowEngineImpl @Activate constructor(
              * suspend for flows that require session cleanup
              */
 
+            log.trace("Finish subflow: ${subFlow::class.java.name}")
             finishSubFlow()
 
             return result
@@ -76,6 +83,7 @@ class FlowEngineImpl @Activate constructor(
             throw t
         } finally {
             popCurrentFlowStackItem()
+            log.trace("Subflow Finished: ${subFlow::class.java.name}")
         }
     }
 

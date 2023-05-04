@@ -120,11 +120,13 @@ class FlowFiberImpl(
         this.suspensionOutcome = suspensionOutcome
         this.flowCompletion = CompletableFuture<FlowIORequest<*>>()
         unparkDeserialized(this, scheduler)
+        log.trace("Resume: ${getExecutionContext().flowCheckpoint.flowStartContext.flowClassName}")
         return flowCompletion
     }
 
     @Suspendable
     override fun <SUSPENDRETURN> suspend(request: FlowIORequest<SUSPENDRETURN>): SUSPENDRETURN {
+        log.trace("Suspend: ${getExecutionContext().flowCheckpoint.flowStartContext.flowClassName} ${request.javaClass.name}")
         removeCurrentSandboxGroupContext()
         parkAndCustomSerialize { _ ->
             resetLoggingContext()

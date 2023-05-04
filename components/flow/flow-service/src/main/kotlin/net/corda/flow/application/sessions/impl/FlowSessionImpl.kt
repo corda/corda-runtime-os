@@ -99,29 +99,35 @@ class FlowSessionImpl(
 
     @Suspendable
     override fun <R : Any> sendAndReceive(receiveType: Class<R>, payload: Any): R {
+        log.trace("SendAndReceive started [${getCounterparty()}]")
         verifySessionStatusNotErrorOrClose(sourceSessionId, flowFiberService)
         requireBoxedType(receiveType)
         val request = FlowIORequest.SendAndReceive(mapOf(getSessionInfo() to serialize(payload)))
         val received = fiber.suspend(request)
         setSessionConfirmed()
+        log.trace("SendAndReceive returning [${getCounterparty()}]")
         return deserializeReceivedPayload(received, receiveType)
     }
 
     @Suspendable
     override fun <R : Any> receive(receiveType: Class<R>): R {
+        log.trace("Receive started [${getCounterparty()}]")
         verifySessionStatusNotErrorOrClose(sourceSessionId, flowFiberService)
         requireBoxedType(receiveType)
         val request = FlowIORequest.Receive(setOf(getSessionInfo()))
         val received = fiber.suspend(request)
         setSessionConfirmed()
+        log.trace("Receive returning [${getCounterparty()}]")
         return deserializeReceivedPayload(received, receiveType)
     }
     @Suspendable
     override fun send(payload: Any) {
+        log.trace("Send started [${getCounterparty()}]")
         verifySessionStatusNotErrorOrClose(sourceSessionId, flowFiberService)
         val request =
             FlowIORequest.Send(mapOf(getSessionInfo() to serialize(payload)))
         fiber.suspend(request)
+        log.trace("Send returning [${getCounterparty()}]")
         setSessionConfirmed()
     }
 

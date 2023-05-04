@@ -11,12 +11,18 @@ import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 
 @Component(service = [ExternalEventExecutor::class, SingletonSerializeAsToken::class])
 class ExternalEventExecutorImpl @Activate constructor(
     @Reference(service = FlowFiberService::class)
     private val flowFiberService: FlowFiberService
 ) : ExternalEventExecutor, SingletonSerializeAsToken {
+
+    companion object {
+        private val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+    }
 
     @Suspendable
     override fun <PARAMETERS : Any, RESPONSE : Any, RESUME> execute(
@@ -26,6 +32,7 @@ class ExternalEventExecutorImpl @Activate constructor(
     ): RESUME {
         @Suppress("unchecked_cast")
         return with(flowFiberService.getExecutingFiber()) {
+            log.trace("Suspend for ${factoryClass.name}")
             suspend(
                 FlowIORequest.ExternalEvent(
                     requestId,
