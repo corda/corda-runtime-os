@@ -14,6 +14,7 @@ import net.corda.sandbox.SandboxException
 import net.corda.sandboxgroupcontext.MutableSandboxGroupContext
 import net.corda.sandboxgroupcontext.RequireSandboxAMQP
 import net.corda.sandboxgroupcontext.RequireSandboxJSON
+import net.corda.sandboxgroupcontext.SandboxCloseable
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.sandboxgroupcontext.SandboxGroupType
 import net.corda.sandboxgroupcontext.VirtualNodeContext
@@ -84,7 +85,7 @@ class EntitySandboxServiceImpl @Activate constructor(
         cpks: Collection<CpkMetadata>,
         virtualNode: VirtualNodeInfo,
         ctx: MutableSandboxGroupContext
-    ): AutoCloseable {
+    ): SandboxCloseable {
         val customCrypto = sandboxService.registerCustomCryptography(ctx)
         val customSerializers = sandboxService.registerCordappCustomSerializers(ctx)
         val namedQueryFactories = sandboxService.registerLedgerNamedQueryFactories(ctx)
@@ -104,19 +105,23 @@ class EntitySandboxServiceImpl @Activate constructor(
             virtualNode.cpiIdentifier.version
         )
 
-        return AutoCloseable {
-            logger.info("Closing DB Sandbox for {}/{}[{}]",
-                virtualNode.holdingIdentity,
-                virtualNode.cpiIdentifier.name,
-                virtualNode.cpiIdentifier.version
-            )
-            jsonSerializers.close()
-            jsonDeserializers.close()
-            emfCloseable.close()
-            customSerializers.close()
-            customCrypto.close()
-            namedQueryFactories.close()
-            contractStateJsonFactories.close()
+        return object : SandboxCloseable {
+            override fun preClose(virtualNodeContext: VirtualNodeContext) { }
+
+            override fun close() {
+                logger.info("Closing DB Sandbox for {}/{}[{}]",
+                    virtualNode.holdingIdentity,
+                    virtualNode.cpiIdentifier.name,
+                    virtualNode.cpiIdentifier.version
+                )
+                jsonSerializers.close()
+                jsonDeserializers.close()
+                emfCloseable.close()
+                customSerializers.close()
+                customCrypto.close()
+                namedQueryFactories.close()
+                contractStateJsonFactories.close()
+            }
         }
     }
 

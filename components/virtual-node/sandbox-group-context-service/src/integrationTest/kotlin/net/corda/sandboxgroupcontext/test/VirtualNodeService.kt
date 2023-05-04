@@ -25,6 +25,7 @@ import java.time.Duration.ofSeconds
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
 import java.util.function.BiConsumer
+import net.corda.sandboxgroupcontext.SandboxCloseable
 
 @Component(service = [ VirtualNodeService::class ])
 class VirtualNodeService @Activate constructor(
@@ -75,8 +76,13 @@ class VirtualNodeService @Activate constructor(
                 sandboxGroupContextComponent.registerCordappCustomSerializers(sandboxGroupContext)
             )
             sandboxGroupContextComponent.acceptCustomMetadata(sandboxGroupContext)
-            AutoCloseable {
-                closeables.forEach(AutoCloseable::close)
+
+            object : SandboxCloseable {
+                override fun preClose(virtualNodeContext: VirtualNodeContext) { }
+
+                override fun close() {
+                    closeables.forEach(AutoCloseable::close)
+                }
             }
         }
     }

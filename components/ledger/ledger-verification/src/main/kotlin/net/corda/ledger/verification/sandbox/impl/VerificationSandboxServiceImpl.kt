@@ -9,6 +9,7 @@ import net.corda.ledger.verification.sandbox.VerificationSandboxService
 import net.corda.sandboxgroupcontext.MutableSandboxGroupContext
 import net.corda.sandboxgroupcontext.RequireSandboxAMQP
 import net.corda.sandboxgroupcontext.RequireSandboxJSON
+import net.corda.sandboxgroupcontext.SandboxCloseable
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.sandboxgroupcontext.SandboxGroupType
 import net.corda.sandboxgroupcontext.VirtualNodeContext
@@ -68,7 +69,7 @@ class VerificationSandboxServiceImpl @Activate constructor(
     private fun initializeSandbox(
         holdingIdentity: HoldingIdentity,
         ctx: MutableSandboxGroupContext
-    ): AutoCloseable {
+    ): SandboxCloseable {
         val customCrypto = sandboxService.registerCustomCryptography(ctx)
         val customSerializers = sandboxService.registerCordappCustomSerializers(ctx)
         val jsonDeserializers = sandboxService.registerCustomJsonDeserializers(ctx)
@@ -79,12 +80,16 @@ class VerificationSandboxServiceImpl @Activate constructor(
 
         logger.info("Initialising Verification Sandbox for $holdingIdentity")
 
-        return AutoCloseable {
-            logger.info("Closing Verification Sandbox for $holdingIdentity")
-            jsonSerializers.close()
-            jsonDeserializers.close()
-            customSerializers.close()
-            customCrypto.close()
+        return object : SandboxCloseable {
+            override fun preClose(virtualNodeContext: VirtualNodeContext) { }
+
+            override fun close() {
+                logger.info("Closing Verification Sandbox for $holdingIdentity")
+                jsonSerializers.close()
+                jsonDeserializers.close()
+                customSerializers.close()
+                customCrypto.close()
+            }
         }
     }
 

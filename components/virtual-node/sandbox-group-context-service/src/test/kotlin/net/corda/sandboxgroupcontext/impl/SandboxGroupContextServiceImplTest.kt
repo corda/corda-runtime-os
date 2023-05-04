@@ -3,6 +3,7 @@ package net.corda.sandboxgroupcontext.impl
 import net.corda.cpk.read.CpkReadService
 import net.corda.crypto.core.parseSecureHash
 import net.corda.libs.packaging.Cpk
+import net.corda.sandboxgroupcontext.SandboxCloseable
 import net.corda.sandboxgroupcontext.SandboxGroupType
 import net.corda.sandboxgroupcontext.VirtualNodeContext
 import net.corda.sandboxgroupcontext.putUniqueObject
@@ -77,9 +78,19 @@ class SandboxGroupContextServiceImplTest {
         )
     }
 
+    val sandboxCloseable = object : SandboxCloseable {
+        override fun preClose(virtualNodeContext: VirtualNodeContext) {
+
+        }
+
+        override fun close() {
+
+        }
+    }
+
     @Test
     fun `can create a sandbox group context without initializer`() {
-        val ctx = service.getOrCreate(virtualNodeContext) { _, _ -> AutoCloseable { } }
+        val ctx = service.getOrCreate(virtualNodeContext) { _, _ -> sandboxCloseable }
         assertThat(virtualNodeContext).isEqualTo(ctx.virtualNodeContext)
     }
 
@@ -88,7 +99,7 @@ class SandboxGroupContextServiceImplTest {
         var initializerCalled = false
         val ctx = service.getOrCreate(virtualNodeContext) { _, _ ->
             initializerCalled = true
-            AutoCloseable { }
+            sandboxCloseable
         }
 
         assertThat(virtualNodeContext).isEqualTo(ctx.virtualNodeContext)
@@ -106,7 +117,7 @@ class SandboxGroupContextServiceImplTest {
             initializerCalled = true
             actualHoldingIdentity = holdingIdentity
             mutableContext.putUniqueObject(dog)
-            AutoCloseable { }
+            sandboxCloseable
         }
 
         assertThat(virtualNodeContext).isEqualTo(ctx.virtualNodeContext)
@@ -159,17 +170,17 @@ class SandboxGroupContextServiceImplTest {
 
         val sandboxGroupContext1 = service.getOrCreate(ctx1) { _, mc ->
             mc.putUniqueObject(dog1)
-            AutoCloseable { }
+            sandboxCloseable
         }
 
         val sandboxGroupContext2 = service.getOrCreate(ctx2) { _, mc ->
             mc.putUniqueObject(dog2)
-            AutoCloseable { }
+            sandboxCloseable
         }
 
         val sandboxGroupContext3 = service.getOrCreate(ctx3) { _, mc ->
             mc.putUniqueObject(dog3)
-            AutoCloseable { }
+            sandboxCloseable
         }
 
         // Can get correct 'unique' object from context 1

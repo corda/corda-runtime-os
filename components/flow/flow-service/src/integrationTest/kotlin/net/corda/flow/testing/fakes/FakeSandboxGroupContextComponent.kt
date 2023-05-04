@@ -52,14 +52,6 @@ class FakeSandboxGroupContextComponent : SandboxGroupContextComponent {
         virtualNodeContext: VirtualNodeContext,
         initializer: SandboxGroupContextInitializer
     ): SandboxGroupContext {
-        return getOrCreate(virtualNodeContext, null, initializer)
-    }
-
-    override fun getOrCreate(
-        virtualNodeContext: VirtualNodeContext,
-        preSandboxRemovalCallback: SandboxGroupContextPreRemovalCallback?,
-        initializer: SandboxGroupContextInitializer
-    ): SandboxGroupContext {
         return FakeSandboxGroupContext(virtualNodeContext, FakeSandboxGroup(UUID.randomUUID(), mapOf()), initiatingToInitiatedFlowsMap)
     }
 
