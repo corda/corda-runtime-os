@@ -4,7 +4,6 @@ import net.corda.data.CordaAvroDeserializer
 import net.corda.data.CordaAvroSerializer
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
-import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.membership.datamodel.MemberInfoEntity
 import net.corda.membership.datamodel.MemberInfoEntityPrimaryKey
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_SUSPENDED
@@ -16,8 +15,6 @@ import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.test.util.time.TestClock
 import net.corda.utilities.time.Clock
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.virtualnode.HoldingIdentity
-import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -53,7 +50,6 @@ class SuspensionActivationEntityOperationsTest {
     private val contextBytes = byteArrayOf(1, 10)
     private val signatureKey = byteArrayOf(5)
     private val signatureContent = byteArrayOf(6)
-    private val holdingIdentity = HoldingIdentity(knownX500Name, knownGroupId)
     private val clock: Clock = TestClock(Instant.ofEpochSecond(1))
 
     private val transaction: EntityTransaction = mock()
@@ -66,11 +62,6 @@ class SuspensionActivationEntityOperationsTest {
     private val keyValuePairListDeserializer = mock<CordaAvroDeserializer<KeyValuePairList>>()
 
     private val handler = SuspensionActivationEntityOperations(clock, keyValuePairListDeserializer, keyValuePairListSerializer)
-    private val context = MembershipRequestContext(
-        clock.instant(),
-        UUID(0, 1).toString(),
-        holdingIdentity.toAvro()
-    )
 
     @Suppress("LongParameterList")
     private fun mockMemberInfoEntity(
@@ -243,6 +234,7 @@ class SuspensionActivationEntityOperationsTest {
     @Test
     fun `updateStatus throws exception if MGM-provided context cannot be serialized`() {
         whenever(keyValuePairListSerializer.serialize(any())).doReturn(null)
+
         assertThrows<MembershipPersistenceException> {
             handler.updateStatus(em, knownX500Name.toString(), mock(), mock(), mock(), "")
         }.apply {
