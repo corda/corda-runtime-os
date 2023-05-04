@@ -3,6 +3,7 @@ package net.corda.flow.application.persistence.query
 import net.corda.flow.persistence.query.ResultSetExecutor
 import net.corda.v5.application.serialization.SerializationService
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
@@ -59,7 +60,13 @@ class ResultSetImplTest {
     }
 
     @Test
-    fun `hasNext returns true when there might be another page of data to retrieve`() {
+    fun `hasNext returns true when the limit is 0 and next has not been called yet`() {
+        val resultSet = this.resultSet.copy(limit = 0)
+        assertThat(resultSet.hasNext()).isTrue
+    }
+
+    @Test
+    fun `hasNext returns true when the number of rows returned from next is equal to the limit`() {
         whenever(resultSetExecutor.execute(serializedParameters, OFFSET)).thenReturn(resultExecutorResults)
         resultSet.next()
         assertThat(resultSet.hasNext()).isTrue
@@ -69,15 +76,23 @@ class ResultSetImplTest {
      * Within the system, this scenario shouldn't be possible but a >= check has been added for safety.
      */
     @Test
-    fun `hasNext returns true when there is another page of data to retrieve`() {
+    fun `hasNext returns true when the number of rows returned from next is greater than the limit`() {
         whenever(resultSetExecutor.execute(serializedParameters, OFFSET)).thenReturn(resultExecutorResults.copy(numberOfRowsFromQuery = 12))
         resultSet.next()
         assertThat(resultSet.hasNext()).isTrue
     }
 
     @Test
-    fun `hasNext returns false when there is not another page of data to retrieve`() {
+    fun `hasNext returns false when the number of rows returned from next is less than the limit`() {
         whenever(resultSetExecutor.execute(serializedParameters, OFFSET)).thenReturn(resultExecutorResults.copy(numberOfRowsFromQuery = 2))
+        resultSet.next()
+        assertThat(resultSet.hasNext()).isFalse
+    }
+
+    @Test
+    fun `hasNext returns false when the limit is 0 and next has been called`() {
+        val resultSet = this.resultSet.copy(limit = 0)
+        whenever(resultSetExecutor.execute(serializedParameters, OFFSET)).thenReturn(resultExecutorResults.copy(numberOfRowsFromQuery = 1))
         resultSet.next()
         assertThat(resultSet.hasNext()).isFalse
     }
@@ -100,5 +115,19 @@ class ResultSetImplTest {
             verify().execute(any(), eq(OFFSET + LIMIT))
             verify().execute(any(), eq(OFFSET + LIMIT + LIMIT))
         }
+    }
+
+    @Test
+    fun `next throws exception when hasNext returns false`() {
+        whenever(resultSetExecutor.execute(serializedParameters, OFFSET)).thenReturn(resultExecutorResults.copy(numberOfRowsFromQuery = 2))
+        resultSet.next()
+        assertThatThrownBy { resultSet.next() }.isInstanceOf(NoSuchElementException::class.java)
+    }
+
+    @Test
+    fun `next returns empty list when limit is 0`() {
+        val resultSet = this.resultSet.copy(limit = 0)
+        whenever(resultSetExecutor.execute(serializedParameters, OFFSET)).thenReturn(ResultSetExecutor.Results(emptyList(), 0))
+        assertThat(resultSet.next()).isEmpty()
     }
 }

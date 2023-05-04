@@ -16,7 +16,6 @@ data class ResultSetImpl<R> internal constructor(
 ) : PagedQuery.ResultSet<R> {
 
     private var results: List<R> = emptyList()
-    private var numberOfRowsFromQuery: Int = 0
     private var hasNext: Boolean = true
 
     override fun getResults(): List<R> {
@@ -33,10 +32,9 @@ data class ResultSetImpl<R> internal constructor(
             throw NoSuchElementException("The result set has no more pages to query")
         }
         val (serializedResults, numberOfRowsFromQuery) = resultSetExecutor.execute(serializedParameters, offset)
-        this.numberOfRowsFromQuery = numberOfRowsFromQuery
-        this.hasNext = numberOfRowsFromQuery >= limit
-        this.offset += limit
-        this.results = serializedResults.map { serializationService.deserialize(it.array(), resultClass) }
-        return this.results
+        hasNext = limit in 1..numberOfRowsFromQuery
+        offset += limit
+        results = serializedResults.map { serializationService.deserialize(it.array(), resultClass) }
+        return results
     }
 }
