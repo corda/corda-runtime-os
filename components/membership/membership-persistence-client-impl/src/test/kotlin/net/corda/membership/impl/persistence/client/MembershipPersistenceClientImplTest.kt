@@ -41,6 +41,7 @@ import net.corda.data.membership.db.response.command.PersistApprovalRuleResponse
 import net.corda.data.membership.db.response.command.PersistGroupParametersResponse
 import net.corda.data.membership.db.response.command.RevokePreAuthTokenResponse
 import net.corda.data.membership.db.response.command.SuspendMemberResponse
+import net.corda.data.membership.db.response.query.ErrorKind
 import net.corda.data.membership.db.response.query.PersistenceFailedResponse
 import net.corda.data.membership.db.response.query.StaticNetworkInfoQueryResponse
 import net.corda.data.membership.db.response.query.UpdateMemberAndRegistrationRequestResponse
@@ -440,7 +441,7 @@ class MembershipPersistenceClientImplTest {
     @Test
     fun `failed response for list of member info is correct`() {
         postConfigChangedEvent()
-        mockPersistenceResponse(PersistenceFailedResponse("Placeholder error"), null)
+        mockPersistenceResponse(PersistenceFailedResponse("Placeholder error", ErrorKind.GENERAL), null)
 
         val result = membershipPersistenceClient.persistMemberInfo(ourHoldingIdentity, listOf(ourSignedMemberInfo))
             .execute()
@@ -515,7 +516,7 @@ class MembershipPersistenceClientImplTest {
         val groupPolicy = mock<LayeredPropertyMap>()
         postConfigChangedEvent()
         mockPersistenceResponse(
-            PersistenceFailedResponse("Placeholder error"),
+            PersistenceFailedResponse("Placeholder error", ErrorKind.GENERAL),
         )
 
         val result = membershipPersistenceClient.persistGroupPolicy(ourHoldingIdentity, groupPolicy, 1L)
@@ -594,7 +595,7 @@ class MembershipPersistenceClientImplTest {
         fun `persistGroupParametersInitialSnapshot returns error in case of failure`() {
             postConfigChangedEvent()
             mockPersistenceResponse(
-                PersistenceFailedResponse("Placeholder error"),
+                PersistenceFailedResponse("Placeholder error", ErrorKind.GENERAL),
             )
 
             val result = membershipPersistenceClient.persistGroupParametersInitialSnapshot(ourHoldingIdentity)
@@ -650,7 +651,7 @@ class MembershipPersistenceClientImplTest {
             }
             postConfigChangedEvent()
             mockPersistenceResponse(
-                PersistenceFailedResponse("Placeholder error"),
+                PersistenceFailedResponse("Placeholder error", ErrorKind.GENERAL),
             )
 
             val result = membershipPersistenceClient.persistGroupParameters(ourHoldingIdentity, groupParameters)
@@ -716,7 +717,7 @@ class MembershipPersistenceClientImplTest {
             val notary = ourMemberInfo
             postConfigChangedEvent()
             mockPersistenceResponse(
-                PersistenceFailedResponse("Placeholder error"),
+                PersistenceFailedResponse("Placeholder error", ErrorKind.GENERAL),
             )
 
             val result = membershipPersistenceClient.addNotaryToGroupParameters(ourHoldingIdentity, notary)
@@ -788,7 +789,7 @@ class MembershipPersistenceClientImplTest {
         fun `addApprovalRule returns error in case of failure`() {
             postConfigChangedEvent()
             mockPersistenceResponse(
-                PersistenceFailedResponse("Placeholder error"),
+                PersistenceFailedResponse("Placeholder error", ErrorKind.GENERAL),
             )
 
             val result = membershipPersistenceClient.addApprovalRule(
@@ -859,7 +860,7 @@ class MembershipPersistenceClientImplTest {
         fun `deleteApprovalRule returns error in case of failure`() {
             postConfigChangedEvent()
             mockPersistenceResponse(
-                PersistenceFailedResponse("Placeholder error"),
+                PersistenceFailedResponse("Placeholder error", ErrorKind.GENERAL),
             )
 
             val result = membershipPersistenceClient.deleteApprovalRule(
@@ -991,7 +992,7 @@ class MembershipPersistenceClientImplTest {
         @Test
         fun `mutualTlsAddCertificateToAllowedList return failure after failure`() {
             postConfigChangedEvent()
-            mockPersistenceResponse(PersistenceFailedResponse("Placeholder error"))
+            mockPersistenceResponse(PersistenceFailedResponse("Placeholder error", ErrorKind.GENERAL))
 
             val response = membershipPersistenceClient.mutualTlsAddCertificateToAllowedList(
                 ourHoldingIdentity,
@@ -1049,7 +1050,7 @@ class MembershipPersistenceClientImplTest {
         @Test
         fun `mutualTlsRemoveCertificateFromAllowedList return failure after failure`() {
             postConfigChangedEvent()
-            mockPersistenceResponse(PersistenceFailedResponse("Placeholder error"))
+            mockPersistenceResponse(PersistenceFailedResponse("Placeholder error", ErrorKind.GENERAL))
 
             val response = membershipPersistenceClient.mutualTlsRemoveCertificateFromAllowedList(
                 ourHoldingIdentity,
@@ -1115,7 +1116,7 @@ class MembershipPersistenceClientImplTest {
 
         @Test
         fun `generatePreAuthToken return failure after failure`() {
-            mockPersistenceResponse(PersistenceFailedResponse("Placeholder error"))
+            mockPersistenceResponse(PersistenceFailedResponse("Placeholder error", ErrorKind.GENERAL))
 
             val response =
                 membershipPersistenceClient.generatePreAuthToken(ourHoldingIdentity, uuid, ourX500Name, ttl, remarks)
@@ -1163,7 +1164,7 @@ class MembershipPersistenceClientImplTest {
 
         @Test
         fun `revokePreAuthToken return failure after failure`() {
-            mockPersistenceResponse(PersistenceFailedResponse("Placeholder error"))
+            mockPersistenceResponse(PersistenceFailedResponse("Placeholder error", ErrorKind.GENERAL))
 
             val response = membershipPersistenceClient.revokePreAuthToken(ourHoldingIdentity, uuid, removalRemark)
                 .execute()
@@ -1218,7 +1219,7 @@ class MembershipPersistenceClientImplTest {
 
         @Test
         fun `consumePreAuthToken returns failure after failure`() {
-            mockPersistenceResponse(PersistenceFailedResponse("Placeholder error"))
+            mockPersistenceResponse(PersistenceFailedResponse("Placeholder error", ErrorKind.GENERAL))
 
             val response = membershipPersistenceClient.consumePreAuthToken(
                 ourHoldingIdentity,
@@ -1284,7 +1285,7 @@ class MembershipPersistenceClientImplTest {
         @Test
         fun `suspendMember returns error in case of failure`() {
             mockPersistenceResponse(
-                PersistenceFailedResponse("Placeholder error"),
+                PersistenceFailedResponse("Placeholder error", ErrorKind.GENERAL),
             )
 
             val result = membershipPersistenceClient.suspendMember(
@@ -1370,7 +1371,7 @@ class MembershipPersistenceClientImplTest {
         @Test
         fun `activateMember returns error in case of failure`() {
             mockPersistenceResponse(
-                PersistenceFailedResponse("Placeholder error"),
+                PersistenceFailedResponse("Placeholder error", ErrorKind.GENERAL),
             )
 
             val result = membershipPersistenceClient.activateMember(
@@ -1462,7 +1463,7 @@ class MembershipPersistenceClientImplTest {
             val error = "foo-bar"
 
             postConfigChangedEvent()
-            mockPersistenceResponse(PersistenceFailedResponse(error))
+            mockPersistenceResponse(PersistenceFailedResponse(error, ErrorKind.GENERAL))
 
             val output = membershipPersistenceClient.updateStaticNetworkInfo(info)
                 .execute()

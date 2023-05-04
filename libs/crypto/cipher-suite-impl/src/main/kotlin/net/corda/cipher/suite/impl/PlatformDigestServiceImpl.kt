@@ -3,7 +3,10 @@ package net.corda.cipher.suite.impl
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.cipher.suite.PlatformDigestService
 import net.corda.crypto.core.SecureHashImpl
+import net.corda.crypto.core.parseSecureHashAlgoName
+import net.corda.crypto.core.parseSecureHashHexString
 import net.corda.crypto.impl.DoubleSHA256DigestFactory
+import net.corda.v5.base.util.ByteArrays
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.extensions.DigestAlgorithm
@@ -41,6 +44,18 @@ class PlatformDigestServiceImpl @Activate constructor(
         return SecureHashImpl(platformDigestName.name, hashBytes)
     }
 
+    override fun parseSecureHash(algoNameAndHexString: String): SecureHash {
+        val digestName = parseSecureHashAlgoName(algoNameAndHexString)
+        // `digestLength` throws if algorithm not found/ not supported
+        val digestHexStringLength = digestLength(DigestAlgorithmName(digestName)) * 2
+        val hexString = parseSecureHashHexString(algoNameAndHexString)
+        require(digestHexStringLength == hexString.length) {
+            "Digest algorithm's: \"$digestName\" required hex string length: $digestHexStringLength " +
+                    "is not met by hex string: \"$hexString\""
+        }
+        return SecureHashImpl(digestName, ByteArrays.parseAsHex(hexString))
+    }
+
     override fun digestLength(platformDigestName: DigestAlgorithmName): Int =
         lengths.getOrPut(platformDigestName.name) {
             digestFor(platformDigestName).digestLength
@@ -64,7 +79,7 @@ class PlatformDigestServiceImpl @Activate constructor(
     private fun digestFor(digestAlgorithmName: DigestAlgorithmName): DigestAlgorithm =
         factories.getOrPut(digestAlgorithmName.name) {
             SpiDigestAlgorithmFactory(schemeMetadata, digestAlgorithmName.name)
-        }.getInstance()
+        }.instance
 
     private class SpiDigestAlgorithmFactory(
         schemeMetadata: CipherSchemeMetadata,

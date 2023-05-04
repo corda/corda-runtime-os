@@ -93,6 +93,8 @@ import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.locks.ReentrantReadWriteLock
+import net.corda.p2p.crypto.protocol.api.InvalidSelectedModeError
+import net.corda.p2p.crypto.protocol.api.NoCommonModeError
 import kotlin.concurrent.read
 import kotlin.concurrent.write
 
@@ -867,6 +869,9 @@ internal class SessionManagerImpl(
         } catch (exception: InvalidPeerCertificate) {
             logger.validationFailedWarning(message::class.java.simpleName, message.header.sessionId, exception.message)
             null
+        } catch (exception: NoCommonModeError) {
+            logger.validationFailedWarning(message::class.java.simpleName, message.header.sessionId, exception.message)
+            null
         }
     }
 
@@ -889,6 +894,8 @@ internal class SessionManagerImpl(
         } catch (exception: InvalidHandshakeMessageException) {
             logger.validationFailedWarning(message::class.java.simpleName, message.header.sessionId, exception.message)
         } catch (exception: InvalidPeerCertificate) {
+            logger.validationFailedWarning(message::class.java.simpleName, message.header.sessionId, exception.message)
+        } catch (exception: InvalidSelectedModeError) {
             logger.validationFailedWarning(message::class.java.simpleName, message.header.sessionId, exception.message)
         }
         return false
