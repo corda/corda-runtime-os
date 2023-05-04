@@ -32,6 +32,9 @@ class StartFlowEventHandler @Activate constructor(
         ) {
             context.inputEventPayload.startContext
         }
+
+        context.flowMetrics.flowStarted()
+
         return context
     }
 }

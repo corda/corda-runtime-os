@@ -53,6 +53,8 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
                 getExternalEvent(context, now) +
                 postProcessRetries(context)
 
+        context.flowMetrics.flowEventCompleted()
+
         return context.copy(outputRecords = context.outputRecords + outputRecords)
     }
 
@@ -108,8 +110,9 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
             ).plusMillis(timeoutWindow)
 
             if (expiryTime < now) {
-                val msg = "[${context.checkpoint.holdingIdentity.x500Name}] has failed to create a flow with counterparty: " +
-                        "[${counterparty}] as the recipient doesn't exist in the network."
+                val msg =
+                    "[${context.checkpoint.holdingIdentity.x500Name}] has failed to create a flow with counterparty: " +
+                            "[${counterparty}] as the recipient doesn't exist in the network."
                 sessionManager.errorSession(sessionState)
                 if (doesCheckpointExist) {
                     log.debug { "$msg. Throwing FlowPlatformException" }
