@@ -17,12 +17,14 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTI
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_SUSPENDED
 import net.corda.membership.lib.MemberInfoExtension.Companion.isNotary
 import net.corda.membership.lib.MemberInfoExtension.Companion.notaryDetails
+import net.corda.membership.lib.exceptions.InvalidEntityUpdateException
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.membership.lib.toMap
 import net.corda.membership.lib.toSortedMap
 import net.corda.virtualnode.toCorda
 import javax.persistence.EntityManager
 import javax.persistence.LockModeType
+import javax.persistence.PessimisticLockException
 
 internal class SuspendMemberHandler(
     persistenceHandlerServices: PersistenceHandlerServices
@@ -73,7 +75,20 @@ internal class SuspendMemberHandler(
                 MEMBER_STATUS_SUSPENDED
             )
             val updatedGroupParameters = if (memberInfoFactory.create(updatedMemberInfo).isNotary()) {
-                updateGroupParameters(em, updatedMemberInfo, HoldingIdentity(request.suspendedMember, context.holdingIdentity.groupId))
+                try {
+                    updateGroupParameters(
+                        em,
+                        updatedMemberInfo,
+                        HoldingIdentity(
+                            request.suspendedMember,
+                            context.holdingIdentity.groupId
+                        ),
+                    )
+                } catch (e: PessimisticLockException) {
+                    throw InvalidEntityUpdateException(
+                        "Could not update member group parameters: ${e.message}",
+                    )
+                }
             } else {
                 null
             }
