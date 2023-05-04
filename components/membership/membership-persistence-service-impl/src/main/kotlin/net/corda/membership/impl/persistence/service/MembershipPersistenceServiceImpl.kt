@@ -4,10 +4,8 @@ import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.data.CordaAvroSerializationFactory
-import net.corda.data.membership.db.request.MembershipPersistenceRequest
 import net.corda.data.membership.db.request.async.MembershipPersistenceAsyncRequest
 import net.corda.data.membership.db.request.async.MembershipPersistenceAsyncRequestState
-import net.corda.data.membership.db.response.MembershipPersistenceResponse
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.libs.platform.PlatformInfoProvider
@@ -18,6 +16,7 @@ import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
+import net.corda.lifecycle.Resource
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
@@ -26,9 +25,7 @@ import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.mtls.allowed.list.service.AllowedCertificatesReaderWriterService
 import net.corda.membership.persistence.service.MembershipPersistenceService
 import net.corda.messaging.api.publisher.factory.PublisherFactory
-import net.corda.messaging.api.subscription.RPCSubscription
 import net.corda.messaging.api.subscription.StateAndEventSubscription
-import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.orm.JpaEntitiesRegistry
@@ -77,14 +74,13 @@ class MembershipPersistenceServiceImpl @Activate constructor(
         val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
         const val GROUP_NAME = "membership.db.persistence"
-        const val CLIENT_NAME = "membership.db.persistence"
         const val ASYNC_GROUP_NAME = "membership.db.persistence.async"
 
         private val clock: Clock = UTCClock()
     }
 
     private val coordinator = coordinatorFactory.createCoordinator<MembershipPersistenceService>(::handleEvent)
-    private var rpcSubscription: RPCSubscription<MembershipPersistenceRequest, MembershipPersistenceResponse>? = null
+    private var rpcSubscription: Resource? = null
     private var asyncSubscription:
         StateAndEventSubscription<String, MembershipPersistenceAsyncRequestState, MembershipPersistenceAsyncRequest>? = null
     private var retryManager: MembershipPersistenceAsyncRetryManager? = null
@@ -192,18 +188,16 @@ class MembershipPersistenceServiceImpl @Activate constructor(
         subHandle = null
         rpcSubscription?.close()
         val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
-        val firstSubscription = subscriptionFactory.createRPCSubscription(
-            rpcConfig = RPCConfig(
+        val firstSubscription = subscriptionFactory.createDurableSubscription(
+            subscriptionConfig = SubscriptionConfig(
                 groupName = GROUP_NAME,
-                clientName = CLIENT_NAME,
-                requestTopic = Schemas.Membership.MEMBERSHIP_DB_RPC_TOPIC,
-                requestType = MembershipPersistenceRequest::class.java,
-                responseType = MembershipPersistenceResponse::class.java
+                Schemas.Membership.MEMBERSHIP_DB_RPC_TOPIC,
             ),
-            responderProcessor = MembershipPersistenceRPCProcessor(
+            processor = MembershipPersistenceRPCProcessor(
                 handlers
             ),
-            messagingConfig = messagingConfig
+            messagingConfig = messagingConfig,
+            partitionAssignmentListener = null,
         ).also {
             rpcSubscription = it
             it.start()

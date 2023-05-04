@@ -9,7 +9,6 @@ import net.corda.data.membership.db.response.MembershipResponseContext
 import net.corda.data.membership.db.response.query.ErrorKind
 import net.corda.data.membership.db.response.query.PersistenceFailedResponse
 import net.corda.membership.persistence.client.MembershipPersistenceResult
-import net.corda.messaging.api.publisher.RPCSender
 import net.corda.schema.Schemas.Membership.MEMBERSHIP_DB_ASYNC_TOPIC
 import net.corda.utilities.Either
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -49,8 +48,8 @@ class MembershipPersistenceOperationImplTest {
         responseContext,
         100
     )
-    private val sender = mock<RPCSender<MembershipPersistenceRequest, MembershipPersistenceResponse>> {
-        on { sendRequest(any()) } doReturn CompletableFuture.completedFuture(response)
+    private val sender = mock<RequestSender> {
+        on { send(any()) } doReturn CompletableFuture.completedFuture(response)
     }
     private val operation = MembershipPersistenceOperationImpl(
         sender,
@@ -65,7 +64,7 @@ class MembershipPersistenceOperationImplTest {
         fun `it will invoke the request`() {
             operation.send()
 
-            verify(sender).sendRequest(request)
+            verify(sender).send(request)
         }
 
         @Test
@@ -80,7 +79,7 @@ class MembershipPersistenceOperationImplTest {
             val future = mock<CompletableFuture<MembershipPersistenceResponse>> {
                 on { get(any(), any()) } doThrow TimeoutException("")
             }
-            whenever(sender.sendRequest(any())).doReturn(future)
+            whenever(sender.send(any())).doReturn(future)
 
             val reply = operation.send()
 

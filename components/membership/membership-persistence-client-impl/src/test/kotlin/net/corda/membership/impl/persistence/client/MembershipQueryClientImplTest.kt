@@ -46,10 +46,6 @@ import net.corda.lifecycle.StopEvent
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.persistence.client.MembershipQueryResult
-import net.corda.messaging.api.publisher.RPCSender
-import net.corda.messaging.api.publisher.factory.PublisherFactory
-import net.corda.messaging.api.subscription.config.RPCConfig
-import net.corda.schema.Schemas.Membership.MEMBERSHIP_DB_RPC_TOPIC
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.test.util.time.TestClock
@@ -92,20 +88,15 @@ class MembershipQueryClientImplTest {
 
     private val registrationHandle: RegistrationHandle = mock()
     private val configHandle: Resource = mock()
-    private val rpcSender: RPCSender<MembershipPersistenceRequest, MembershipPersistenceResponse> = mock()
+    private val rpcSender = mock<RequestSender>()
+    private val requestSenderFactory = mock<RequestSenderFactory> {
+        on { createSender(any()) } doReturn rpcSender
+    }
     private val coordinator: LifecycleCoordinator = mock {
         on { followStatusChangesByName(any()) } doReturn registrationHandle
     }
     private val coordinatorFactory: LifecycleCoordinatorFactory = mock {
         on { createCoordinator(any(), any()) } doReturn coordinator
-    }
-    private val publisherFactory: PublisherFactory = mock {
-        on {
-            createRPCSender(
-                any<RPCConfig<MembershipPersistenceRequest, MembershipPersistenceResponse>>(),
-                any()
-            )
-        } doReturn rpcSender
     }
     private val configurationReadService: ConfigurationReadService = mock {
         on { registerComponentForUpdates(eq(coordinator), any()) } doReturn configHandle
@@ -150,7 +141,7 @@ class MembershipQueryClientImplTest {
     fun setUp() {
         membershipQueryClient = MembershipQueryClientImpl(
             coordinatorFactory,
-            publisherFactory,
+            requestSenderFactory,
             configurationReadService,
             memberInfoFactory,
             clock,
@@ -245,20 +236,13 @@ class MembershipQueryClientImplTest {
     fun `config change event handled as expected`() {
         postConfigChangedEvent()
 
-        val argCaptor = argumentCaptor<RPCConfig<MembershipPersistenceRequest, MembershipPersistenceResponse>>()
         verify(rpcSender, never()).close()
-        verify(rpcSender).start()
-        verify(publisherFactory).createRPCSender(argCaptor.capture(), any())
+        verify(requestSenderFactory).createSender(any())
         verify(coordinator).updateStatus(eq(LifecycleStatus.UP), any())
-
-        assertThat(argCaptor.firstValue.requestTopic).isEqualTo(MEMBERSHIP_DB_RPC_TOPIC)
-        assertThat(argCaptor.firstValue.requestType).isEqualTo(MembershipPersistenceRequest::class.java)
-        assertThat(argCaptor.firstValue.responseType).isEqualTo(MembershipPersistenceResponse::class.java)
 
         postConfigChangedEvent()
         verify(rpcSender).close()
-        verify(rpcSender, times(2)).start()
-        verify(publisherFactory, times(2)).createRPCSender(argCaptor.capture(), any())
+        verify(requestSenderFactory, times(2)).createSender(any())
         verify(coordinator, times(2)).updateStatus(eq(LifecycleStatus.UP), any())
 
         postStopEvent()
@@ -281,7 +265,7 @@ class MembershipQueryClientImplTest {
         rsTimestampOverride: Instant? = null,
         holdingIdentityOverride: net.corda.data.identity.HoldingIdentity? = null,
     ) {
-        whenever(rpcSender.sendRequest(any())).thenAnswer {
+        whenever(rpcSender.send(any())).thenAnswer {
             val rsContext = with((it.arguments.first() as MembershipPersistenceRequest).context) {
                 MembershipResponseContext(
                     reqTimestampOverride ?: requestTimestamp,
@@ -307,7 +291,7 @@ class MembershipQueryClientImplTest {
         membershipQueryClient.queryMemberInfo(ourHoldingIdentity)
 
         with(argumentCaptor<MembershipPersistenceRequest>()) {
-            verify(rpcSender).sendRequest(capture())
+            verify(rpcSender).send(capture())
 
             assertThat(firstValue.context.requestTimestamp).isBeforeOrEqualTo(clock.instant())
             assertThat(firstValue.context.holdingIdentity)
@@ -422,7 +406,7 @@ class MembershipQueryClientImplTest {
     fun `successful request for group policy`() {
         postConfigChangedEvent()
 
-        whenever(rpcSender.sendRequest(any())).thenAnswer {
+        whenever(rpcSender.send(any())).thenAnswer {
             val context = with((it.arguments.first() as MembershipPersistenceRequest).context) {
                 MembershipResponseContext(
                     requestTimestamp,
@@ -449,7 +433,7 @@ class MembershipQueryClientImplTest {
     fun `when no group policy found empty property map is created`() {
         postConfigChangedEvent()
 
-        whenever(rpcSender.sendRequest(any())).thenAnswer {
+        whenever(rpcSender.send(any())).thenAnswer {
             val context = with((it.arguments.first() as MembershipPersistenceRequest).context) {
                 MembershipResponseContext(
                     requestTimestamp,
@@ -501,7 +485,7 @@ class MembershipQueryClientImplTest {
                 MemberSignature(holdingId1.toAvro(), signature1, signatureSpec1),
                 MemberSignature(holdingId2.toAvro(), signature2, signatureSpec2),
             )
-            whenever(rpcSender.sendRequest(any())).thenAnswer {
+            whenever(rpcSender.send(any())).thenAnswer {
                 val context = with((it.arguments.first() as MembershipPersistenceRequest).context) {
                     MembershipResponseContext(
                         requestTimestamp,
@@ -534,7 +518,7 @@ class MembershipQueryClientImplTest {
         fun `it will return error for failure`() {
             val bob = createTestHoldingIdentity("O=Bob ,L=London, C=GB", ourGroupId)
             postConfigChangedEvent()
-            whenever(rpcSender.sendRequest(any())).thenAnswer {
+            whenever(rpcSender.send(any())).thenAnswer {
                 val context = with((it.arguments.first() as MembershipPersistenceRequest).context) {
                     MembershipResponseContext(
                         requestTimestamp,
@@ -559,7 +543,7 @@ class MembershipQueryClientImplTest {
         fun `it will return error for invalid reply`() {
             val bob = createTestHoldingIdentity("O=Bob ,L=London, C=GB", ourGroupId)
             postConfigChangedEvent()
-            whenever(rpcSender.sendRequest(any())).thenAnswer {
+            whenever(rpcSender.send(any())).thenAnswer {
                 val context = with((it.arguments.first() as MembershipPersistenceRequest).context) {
                     MembershipResponseContext(
                         requestTimestamp,
@@ -603,7 +587,7 @@ class MembershipQueryClientImplTest {
                     "test reason",
                     0L,
                 )
-            whenever(rpcSender.sendRequest(any())).thenAnswer {
+            whenever(rpcSender.send(any())).thenAnswer {
                 val context = with((it.arguments.first() as MembershipPersistenceRequest).context) {
                     MembershipResponseContext(
                         requestTimestamp,
@@ -627,7 +611,7 @@ class MembershipQueryClientImplTest {
         @Test
         fun `it will returns the correct data in case of successful null result`() {
             postConfigChangedEvent()
-            whenever(rpcSender.sendRequest(any())).thenAnswer {
+            whenever(rpcSender.send(any())).thenAnswer {
                 val context = with((it.arguments.first() as MembershipPersistenceRequest).context) {
                     MembershipResponseContext(
                         requestTimestamp,
@@ -652,7 +636,7 @@ class MembershipQueryClientImplTest {
         @Test
         fun `it will returns an error when the result is unexpected`() {
             postConfigChangedEvent()
-            whenever(rpcSender.sendRequest(any())).thenAnswer {
+            whenever(rpcSender.send(any())).thenAnswer {
                 val context = with((it.arguments.first() as MembershipPersistenceRequest).context) {
                     MembershipResponseContext(
                         requestTimestamp,
@@ -676,7 +660,7 @@ class MembershipQueryClientImplTest {
         @Test
         fun `it will returns an error when the result is an error`() {
             postConfigChangedEvent()
-            whenever(rpcSender.sendRequest(any())).thenAnswer {
+            whenever(rpcSender.send(any())).thenAnswer {
                 val context = with((it.arguments.first() as MembershipPersistenceRequest).context) {
                     MembershipResponseContext(
                         requestTimestamp,
@@ -700,7 +684,7 @@ class MembershipQueryClientImplTest {
         @Test
         fun `it will returns an error when the result not right`() {
             postConfigChangedEvent()
-            whenever(rpcSender.sendRequest(any())).thenAnswer {
+            whenever(rpcSender.send(any())).thenAnswer {
                 val myContext = with((it.arguments.first() as MembershipPersistenceRequest).context) {
                     MembershipResponseContext(
                         requestTimestamp,
@@ -760,7 +744,7 @@ class MembershipQueryClientImplTest {
                     1L,
                 ),
             )
-            whenever(rpcSender.sendRequest(any())).thenAnswer {
+            whenever(rpcSender.send(any())).thenAnswer {
                 val context = with((it.arguments.first() as MembershipPersistenceRequest).context) {
                     MembershipResponseContext(
                         requestTimestamp,
@@ -784,7 +768,7 @@ class MembershipQueryClientImplTest {
         @Test
         fun `it will returns an error when the result is unexpected`() {
             postConfigChangedEvent()
-            whenever(rpcSender.sendRequest(any())).thenAnswer {
+            whenever(rpcSender.send(any())).thenAnswer {
                 val context = with((it.arguments.first() as MembershipPersistenceRequest).context) {
                     MembershipResponseContext(
                         requestTimestamp,
@@ -808,7 +792,7 @@ class MembershipQueryClientImplTest {
         @Test
         fun `it will returns an error when the result is an error`() {
             postConfigChangedEvent()
-            whenever(rpcSender.sendRequest(any())).thenAnswer {
+            whenever(rpcSender.send(any())).thenAnswer {
                 val context = with((it.arguments.first() as MembershipPersistenceRequest).context) {
                     MembershipResponseContext(
                         requestTimestamp,
@@ -832,7 +816,7 @@ class MembershipQueryClientImplTest {
         @Test
         fun `it will returns an error when the result not right`() {
             postConfigChangedEvent()
-            whenever(rpcSender.sendRequest(any())).thenAnswer {
+            whenever(rpcSender.send(any())).thenAnswer {
                 val myContext = with((it.arguments.first() as MembershipPersistenceRequest).context) {
                     MembershipResponseContext(
                         requestTimestamp,
@@ -861,7 +845,7 @@ class MembershipQueryClientImplTest {
             postConfigChangedEvent()
             val argument = argumentCaptor<MembershipPersistenceRequest>()
             val response = CompletableFuture.completedFuture(mock<MembershipPersistenceResponse>())
-            whenever(rpcSender.sendRequest(argument.capture())).thenReturn(response)
+            whenever(rpcSender.send(argument.capture())).thenReturn(response)
 
             membershipQueryClient.mutualTlsListAllowedCertificates(
                 ourHoldingIdentity,
@@ -873,7 +857,7 @@ class MembershipQueryClientImplTest {
         @Test
         fun `mutualTlsListAllowedCertificates return the correct result if the request was successful`() {
             postConfigChangedEvent()
-            whenever(rpcSender.sendRequest(any())).thenAnswer {
+            whenever(rpcSender.send(any())).thenAnswer {
                 val request = it.getArgument<MembershipPersistenceRequest>(0)
                 val context = MembershipResponseContext(
                     request.context.requestTimestamp,
@@ -904,7 +888,7 @@ class MembershipQueryClientImplTest {
         @Test
         fun `mutualTlsListAllowedCertificates return error if the query failed`() {
             postConfigChangedEvent()
-            whenever(rpcSender.sendRequest(any())).thenAnswer {
+            whenever(rpcSender.send(any())).thenAnswer {
                 val request = it.getArgument<MembershipPersistenceRequest>(0)
                 val context = MembershipResponseContext(
                     request.context.requestTimestamp,
@@ -931,7 +915,7 @@ class MembershipQueryClientImplTest {
         @Test
         fun `mutualTlsListAllowedCertificates return error if the result is unknown`() {
             postConfigChangedEvent()
-            whenever(rpcSender.sendRequest(any())).thenAnswer {
+            whenever(rpcSender.send(any())).thenAnswer {
                 val request = it.getArgument<MembershipPersistenceRequest>(0)
                 val context = MembershipResponseContext(
                     request.context.requestTimestamp,
@@ -962,7 +946,7 @@ class MembershipQueryClientImplTest {
         fun `getApprovalRules returns the correct list of rules`() {
             val rules = listOf(ApprovalRuleDetails("rule-id", "rule-regex", "rule-label"))
             postConfigChangedEvent()
-            whenever(rpcSender.sendRequest(any())).thenAnswer {
+            whenever(rpcSender.send(any())).thenAnswer {
                 val context = with((it.arguments.first() as MembershipPersistenceRequest).context) {
                     MembershipResponseContext(
                         requestTimestamp,
@@ -990,7 +974,7 @@ class MembershipQueryClientImplTest {
         @Test
         fun `getApprovalRules returns error in case of failure`() {
             postConfigChangedEvent()
-            whenever(rpcSender.sendRequest(any())).thenAnswer {
+            whenever(rpcSender.send(any())).thenAnswer {
                 val context = with((it.arguments.first() as MembershipPersistenceRequest).context) {
                     MembershipResponseContext(
                         requestTimestamp,
@@ -1015,7 +999,7 @@ class MembershipQueryClientImplTest {
         @Test
         fun `getApprovalRules returns failure for unexpected result`() {
             postConfigChangedEvent()
-            whenever(rpcSender.sendRequest(any())).thenAnswer {
+            whenever(rpcSender.send(any())).thenAnswer {
                 val context = with((it.arguments.first() as MembershipPersistenceRequest).context) {
                     MembershipResponseContext(
                         requestTimestamp,
@@ -1040,7 +1024,7 @@ class MembershipQueryClientImplTest {
         @Test
         fun `getApprovalRules returns an error when the result not right`() {
             postConfigChangedEvent()
-            whenever(rpcSender.sendRequest(any())).thenAnswer {
+            whenever(rpcSender.send(any())).thenAnswer {
                 val myContext = with((it.arguments.first() as MembershipPersistenceRequest).context) {
                     MembershipResponseContext(
                         requestTimestamp, requestId, clock.instant(), holdingIdentity
@@ -1067,7 +1051,7 @@ class MembershipQueryClientImplTest {
             postConfigChangedEvent()
             val tokenId = UUID.randomUUID()
             val capture = argumentCaptor<MembershipPersistenceRequest>()
-            whenever(rpcSender.sendRequest(capture.capture())).thenAnswer {
+            whenever(rpcSender.send(capture.capture())).thenAnswer {
                 val context = with((it.arguments.first() as MembershipPersistenceRequest).context) {
                     MembershipResponseContext(
                         requestTimestamp,
@@ -1102,7 +1086,7 @@ class MembershipQueryClientImplTest {
             postConfigChangedEvent()
             val tokenId = UUID.randomUUID()
             val capture = argumentCaptor<MembershipPersistenceRequest>()
-            whenever(rpcSender.sendRequest(capture.capture())).thenAnswer {
+            whenever(rpcSender.send(capture.capture())).thenAnswer {
                 val context = with((it.arguments.first() as MembershipPersistenceRequest).context) {
                     MembershipResponseContext(
                         requestTimestamp,
@@ -1136,7 +1120,7 @@ class MembershipQueryClientImplTest {
         fun `queryPreAuthToken returns the correct list of tokens`() {
             val tokens = listOf(PreAuthToken())
             postConfigChangedEvent()
-            whenever(rpcSender.sendRequest(any())).thenAnswer {
+            whenever(rpcSender.send(any())).thenAnswer {
                 val context = with((it.arguments.first() as MembershipPersistenceRequest).context) {
                     MembershipResponseContext(
                         requestTimestamp,
@@ -1161,7 +1145,7 @@ class MembershipQueryClientImplTest {
         @Test
         fun `queryPreAuthTokens returns error in case of failure`() {
             postConfigChangedEvent()
-            whenever(rpcSender.sendRequest(any())).thenAnswer {
+            whenever(rpcSender.send(any())).thenAnswer {
                 val context = with((it.arguments.first() as MembershipPersistenceRequest).context) {
                     MembershipResponseContext(
                         requestTimestamp,
@@ -1186,7 +1170,7 @@ class MembershipQueryClientImplTest {
         @Test
         fun `queryPreAuthTokens returns failure for unexpected result`() {
             postConfigChangedEvent()
-            whenever(rpcSender.sendRequest(any())).thenAnswer {
+            whenever(rpcSender.send(any())).thenAnswer {
                 val context = with((it.arguments.first() as MembershipPersistenceRequest).context) {
                     MembershipResponseContext(
                         requestTimestamp,
@@ -1211,7 +1195,7 @@ class MembershipQueryClientImplTest {
         @Test
         fun `getApprovalRules returns an error when the result not right`() {
             postConfigChangedEvent()
-            whenever(rpcSender.sendRequest(any())).thenAnswer {
+            whenever(rpcSender.send(any())).thenAnswer {
                 val myContext = with((it.arguments.first() as MembershipPersistenceRequest).context) {
                     MembershipResponseContext(
                         requestTimestamp, requestId, clock.instant(), holdingIdentity

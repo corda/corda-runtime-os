@@ -63,8 +63,10 @@ import net.corda.membership.impl.persistence.service.handler.PersistenceHandlerS
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_SUSPENDED
 import net.corda.membership.lib.MemberInfoFactory
+import net.corda.membership.lib.MessagesHeaders
 import net.corda.membership.lib.exceptions.InvalidEntityUpdateException
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
+import net.corda.messaging.api.records.Record
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.test.util.TestRandom
 import net.corda.test.util.identity.createTestHoldingIdentity
@@ -88,7 +90,6 @@ import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 import java.time.Instant
 import java.util.UUID
-import java.util.concurrent.CompletableFuture
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.persistence.EntityTransaction
@@ -281,7 +282,6 @@ class MembershipPersistenceRPCProcessorTest {
     private val keyEncodingService: KeyEncodingService = mock()
     private val platformInfoProvider: PlatformInfoProvider = mock()
 
-    private lateinit var responseFuture: CompletableFuture<MembershipPersistenceResponse>
     private lateinit var rqContext: MembershipRequestContext
 
     @BeforeEach
@@ -299,7 +299,6 @@ class MembershipPersistenceRPCProcessorTest {
                 mock(),
             )
         )
-        responseFuture = CompletableFuture()
         rqContext = MembershipRequestContext(
             clock.instant(),
             requestId,
@@ -313,11 +312,11 @@ class MembershipPersistenceRPCProcessorTest {
 
         val rq = MembershipPersistenceRequest(rqContext, UnknownRequest())
 
-        processor.onNext(rq, responseFuture)
+        val responses = processor.onNext(createRequestRecord(rq))
 
         assertSoftly {
-            it.assertThat(responseFuture).isCompleted
-            with(responseFuture.get()) {
+            assertThat(responses).hasSize(1)
+            with(responses.firstOrNull()?.value as MembershipPersistenceResponse ) {
                 it.assertThat(payload).isNotNull
                 it.assertThat((payload as? PersistenceFailedResponse)?.errorKind).isEqualTo(ErrorKind.GENERAL)
 
@@ -346,10 +345,14 @@ class MembershipPersistenceRPCProcessorTest {
 
         val rq = MembershipPersistenceRequest(rqContext, Unit)
 
-        processor.onNext(rq, responseFuture)
+        val responses = processor.onNext(createRequestRecord(rq))
 
-        assertThat((responseFuture.get()?.payload as? PersistenceFailedResponse)?.errorKind)
-            .isEqualTo(ErrorKind.INVALID_ENTITY_UPDATE)
+        assertThat(responses.map { it.value }.filterIsInstance<MembershipPersistenceResponse>())
+            .hasSize(1)
+            .allSatisfy {
+                assertThat((it.payload as? PersistenceFailedResponse)?.errorKind)
+                    .isEqualTo(ErrorKind.INVALID_ENTITY_UPDATE)
+            }
     }
 
     @Test
@@ -367,10 +370,14 @@ class MembershipPersistenceRPCProcessorTest {
 
         val rq = MembershipPersistenceRequest(rqContext, Unit)
 
-        processor.onNext(rq, responseFuture)
+        val responses = processor.onNext(createRequestRecord(rq))
 
-        assertThat((responseFuture.get()?.payload as? PersistenceFailedResponse)?.errorKind)
-            .isEqualTo(ErrorKind.GENERAL)
+        assertThat(responses.map { it.value }.filterIsInstance<MembershipPersistenceResponse>())
+            .hasSize(1)
+            .allSatisfy {
+                assertThat((it.payload as? PersistenceFailedResponse)?.errorKind)
+                    .isEqualTo(ErrorKind.GENERAL)
+            }
     }
 
     /**
@@ -396,17 +403,19 @@ class MembershipPersistenceRPCProcessorTest {
             )
         )
 
-        processor.onNext(rq, responseFuture)
+        val responses = processor.onNext(createRequestRecord(rq))
 
-        assertThat(responseFuture).isCompleted
-        with(responseFuture.get()) {
-            assertThat(payload).isNull()
+        assertSoftly {
+            assertThat(responses).hasSize(1)
+            with(responses.firstOrNull()?.value as MembershipPersistenceResponse ) {
+                assertThat(payload).isNull()
 
-            with(context) {
-                assertThat(requestTimestamp).isEqualTo(rqContext.requestTimestamp)
-                assertThat(requestId).isEqualTo(rqContext.requestId)
-                assertThat(responseTimestamp).isAfterOrEqualTo(rqContext.requestTimestamp)
-                assertThat(holdingIdentity).isEqualTo(rqContext.holdingIdentity)
+                with(context) {
+                    assertThat(requestTimestamp).isEqualTo(rqContext.requestTimestamp)
+                    assertThat(requestId).isEqualTo(rqContext.requestId)
+                    assertThat(responseTimestamp).isAfterOrEqualTo(rqContext.requestTimestamp)
+                    assertThat(holdingIdentity).isEqualTo(rqContext.holdingIdentity)
+                }
             }
         }
     }
@@ -421,17 +430,19 @@ class MembershipPersistenceRPCProcessorTest {
             PersistMemberInfo(emptyList())
         )
 
-        processor.onNext(rq, responseFuture)
+        val responses = processor.onNext(createRequestRecord(rq))
 
-        assertThat(responseFuture).isCompleted
-        with(responseFuture.get()) {
-            assertThat(payload).isNull()
+        assertSoftly {
+            assertThat(responses).hasSize(1)
+            with(responses.firstOrNull()?.value as MembershipPersistenceResponse) {
+                assertThat(payload).isNull()
 
-            with(context) {
-                assertThat(requestTimestamp).isEqualTo(rqContext.requestTimestamp)
-                assertThat(requestId).isEqualTo(rqContext.requestId)
-                assertThat(responseTimestamp).isAfterOrEqualTo(rqContext.requestTimestamp)
-                assertThat(holdingIdentity).isEqualTo(rqContext.holdingIdentity)
+                with(context) {
+                    assertThat(requestTimestamp).isEqualTo(rqContext.requestTimestamp)
+                    assertThat(requestId).isEqualTo(rqContext.requestId)
+                    assertThat(responseTimestamp).isAfterOrEqualTo(rqContext.requestTimestamp)
+                    assertThat(holdingIdentity).isEqualTo(rqContext.holdingIdentity)
+                }
             }
         }
     }
@@ -450,21 +461,23 @@ class MembershipPersistenceRPCProcessorTest {
             QueryMemberInfo(emptyList())
         )
 
-        processor.onNext(rq, responseFuture)
+        val responses = processor.onNext(createRequestRecord(rq))
 
-        assertThat(responseFuture).isCompleted
-        with(responseFuture.get()) {
-            assertThat(payload)
-                .isInstanceOf(MemberInfoQueryResponse::class.java)
-            assertThat((payload as MemberInfoQueryResponse).members)
-                .isInstanceOf(List::class.java)
-                .isEmpty()
+        assertSoftly {
+            assertThat(responses).hasSize(1)
+            with(responses.firstOrNull()?.value as MembershipPersistenceResponse) {
+                assertThat(payload)
+                    .isInstanceOf(MemberInfoQueryResponse::class.java)
+                assertThat((payload as MemberInfoQueryResponse).members)
+                    .isInstanceOf(List::class.java)
+                    .isEmpty()
 
-            with(context) {
-                assertThat(requestTimestamp).isEqualTo(rqContext.requestTimestamp)
-                assertThat(requestId).isEqualTo(rqContext.requestId)
-                assertThat(responseTimestamp).isAfterOrEqualTo(rqContext.requestTimestamp)
-                assertThat(holdingIdentity).isEqualTo(rqContext.holdingIdentity)
+                with(context) {
+                    assertThat(requestTimestamp).isEqualTo(rqContext.requestTimestamp)
+                    assertThat(requestId).isEqualTo(rqContext.requestId)
+                    assertThat(responseTimestamp).isAfterOrEqualTo(rqContext.requestTimestamp)
+                    assertThat(holdingIdentity).isEqualTo(rqContext.holdingIdentity)
+                }
             }
         }
     }
@@ -492,10 +505,9 @@ class MembershipPersistenceRPCProcessorTest {
             )
         )
 
-        processor.onNext(rq, responseFuture)
+        val responses = processor.onNext(createRequestRecord(rq))
 
-        assertThat(responseFuture).isCompleted
-        responseFuture = CompletableFuture()
+        assertThat(responses).hasSize(1)
 
         val uRqContext = MembershipRequestContext(
             clock.instant(),
@@ -511,11 +523,11 @@ class MembershipPersistenceRPCProcessorTest {
             )
         )
 
-        processor.onNext(uRq, responseFuture)
+        val responses2 = processor.onNext(createRequestRecord(uRq))
 
-        assertThat(responseFuture).isCompleted
+        assertThat(responses2).hasSize(1)
 
-        with(responseFuture.get()) {
+        with(responses2.firstOrNull()?.value as MembershipPersistenceResponse) {
             assertThat(payload).isNull()
 
             with(context) {
@@ -534,18 +546,20 @@ class MembershipPersistenceRPCProcessorTest {
             QueryGroupPolicy()
         )
 
-        processor.onNext(rq, responseFuture)
+        val responses = processor.onNext(createRequestRecord(rq))
 
-        assertThat(responseFuture).isCompleted
-        with(responseFuture.get()) {
-            assertThat(payload).isNotNull
-            assertThat(payload).isInstanceOf(GroupPolicyQueryResponse::class.java)
+        assertSoftly {
+            assertThat(responses).hasSize(1)
+            with(responses.firstOrNull()?.value as MembershipPersistenceResponse) {
+                assertThat(payload).isNotNull
+                assertThat(payload).isInstanceOf(GroupPolicyQueryResponse::class.java)
 
-            with(context) {
-                assertThat(requestTimestamp).isEqualTo(rqContext.requestTimestamp)
-                assertThat(requestId).isEqualTo(rqContext.requestId)
-                assertThat(responseTimestamp).isAfterOrEqualTo(rqContext.requestTimestamp)
-                assertThat(holdingIdentity).isEqualTo(rqContext.holdingIdentity)
+                with(context) {
+                    assertThat(requestTimestamp).isEqualTo(rqContext.requestTimestamp)
+                    assertThat(requestId).isEqualTo(rqContext.requestId)
+                    assertThat(responseTimestamp).isAfterOrEqualTo(rqContext.requestTimestamp)
+                    assertThat(holdingIdentity).isEqualTo(rqContext.holdingIdentity)
+                }
             }
         }
     }
@@ -557,20 +571,22 @@ class MembershipPersistenceRPCProcessorTest {
             PersistApprovalRule(DUMMY_ID, DUMMY_RULE, ApprovalRuleType.STANDARD, DUMMY_LABEL)
         )
 
-        processor.onNext(rq, responseFuture)
+        val responses = processor.onNext(createRequestRecord(rq))
 
-        assertThat(responseFuture).isCompleted
-        with(responseFuture.get()) {
-            assertThat(payload).isNotNull
-            assertThat(payload).isInstanceOf(PersistApprovalRuleResponse::class.java)
-            assertThat((payload as PersistApprovalRuleResponse).persistedRule)
-                .isEqualTo(ApprovalRuleDetails(DUMMY_ID, DUMMY_RULE, DUMMY_LABEL))
+        assertSoftly {
+            assertThat(responses).hasSize(1)
+            with(responses.firstOrNull()?.value as MembershipPersistenceResponse) {
+                assertThat(payload).isNotNull
+                assertThat(payload).isInstanceOf(PersistApprovalRuleResponse::class.java)
+                assertThat((payload as PersistApprovalRuleResponse).persistedRule)
+                    .isEqualTo(ApprovalRuleDetails(DUMMY_ID, DUMMY_RULE, DUMMY_LABEL))
 
-            with(context) {
-                assertThat(requestTimestamp).isEqualTo(rqContext.requestTimestamp)
-                assertThat(requestId).isEqualTo(rqContext.requestId)
-                assertThat(responseTimestamp).isAfterOrEqualTo(rqContext.requestTimestamp)
-                assertThat(holdingIdentity).isEqualTo(rqContext.holdingIdentity)
+                with(context) {
+                    assertThat(requestTimestamp).isEqualTo(rqContext.requestTimestamp)
+                    assertThat(requestId).isEqualTo(rqContext.requestId)
+                    assertThat(responseTimestamp).isAfterOrEqualTo(rqContext.requestTimestamp)
+                    assertThat(holdingIdentity).isEqualTo(rqContext.holdingIdentity)
+                }
             }
         }
     }
@@ -588,18 +604,20 @@ class MembershipPersistenceRPCProcessorTest {
             DeleteApprovalRule(DUMMY_ID, ApprovalRuleType.PREAUTH)
         )
 
-        processor.onNext(rq, responseFuture)
+        val responses = processor.onNext(createRequestRecord(rq))
 
-        assertThat(responseFuture).isCompleted
-        with(responseFuture.get()) {
-            assertThat(payload).isNotNull
-            assertThat(payload).isInstanceOf(DeleteApprovalRuleResponse::class.java)
+        assertSoftly {
+            assertThat(responses).hasSize(1)
+            with(responses.firstOrNull()?.value as MembershipPersistenceResponse) {
+                assertThat(payload).isNotNull
+                assertThat(payload).isInstanceOf(DeleteApprovalRuleResponse::class.java)
 
-            with(context) {
-                assertThat(requestTimestamp).isEqualTo(rqContext.requestTimestamp)
-                assertThat(requestId).isEqualTo(rqContext.requestId)
-                assertThat(responseTimestamp).isAfterOrEqualTo(rqContext.requestTimestamp)
-                assertThat(holdingIdentity).isEqualTo(rqContext.holdingIdentity)
+                with(context) {
+                    assertThat(requestTimestamp).isEqualTo(rqContext.requestTimestamp)
+                    assertThat(requestId).isEqualTo(rqContext.requestId)
+                    assertThat(responseTimestamp).isAfterOrEqualTo(rqContext.requestTimestamp)
+                    assertThat(holdingIdentity).isEqualTo(rqContext.holdingIdentity)
+                }
             }
         }
     }
@@ -611,18 +629,20 @@ class MembershipPersistenceRPCProcessorTest {
             QueryApprovalRules(ApprovalRuleType.STANDARD)
         )
 
-        processor.onNext(rq, responseFuture)
+        val responses = processor.onNext(createRequestRecord(rq))
 
-        assertThat(responseFuture).isCompleted
-        with(responseFuture.get()) {
-            assertThat(payload).isNotNull
-            assertThat(payload).isInstanceOf(ApprovalRulesQueryResponse::class.java)
+        assertSoftly {
+            assertThat(responses).hasSize(1)
+            with(responses.firstOrNull()?.value as MembershipPersistenceResponse) {
+                assertThat(payload).isNotNull
+                assertThat(payload).isInstanceOf(ApprovalRulesQueryResponse::class.java)
 
-            with(context) {
-                assertThat(requestTimestamp).isEqualTo(rqContext.requestTimestamp)
-                assertThat(requestId).isEqualTo(rqContext.requestId)
-                assertThat(responseTimestamp).isAfterOrEqualTo(rqContext.requestTimestamp)
-                assertThat(holdingIdentity).isEqualTo(rqContext.holdingIdentity)
+                with(context) {
+                    assertThat(requestTimestamp).isEqualTo(rqContext.requestTimestamp)
+                    assertThat(requestId).isEqualTo(rqContext.requestId)
+                    assertThat(responseTimestamp).isAfterOrEqualTo(rqContext.requestTimestamp)
+                    assertThat(holdingIdentity).isEqualTo(rqContext.holdingIdentity)
+                }
             }
         }
     }
@@ -634,18 +654,20 @@ class MembershipPersistenceRPCProcessorTest {
             QueryRegistrationRequests(null, listOf(RegistrationStatus.PENDING_MANUAL_APPROVAL), null)
         )
 
-        processor.onNext(rq, responseFuture)
+        val responses = processor.onNext(createRequestRecord(rq))
 
-        assertThat(responseFuture).isCompleted
-        with(responseFuture.get()) {
-            assertThat(payload).isNotNull
-            assertThat(payload).isInstanceOf(RegistrationRequestsQueryResponse::class.java)
+        assertSoftly {
+            assertThat(responses).hasSize(1)
+            with(responses.firstOrNull()?.value as MembershipPersistenceResponse) {
+                assertThat(payload).isNotNull
+                assertThat(payload).isInstanceOf(RegistrationRequestsQueryResponse::class.java)
 
-            with(context) {
-                assertThat(requestTimestamp).isEqualTo(rqContext.requestTimestamp)
-                assertThat(requestId).isEqualTo(rqContext.requestId)
-                assertThat(responseTimestamp).isAfterOrEqualTo(rqContext.requestTimestamp)
-                assertThat(holdingIdentity).isEqualTo(rqContext.holdingIdentity)
+                with(context) {
+                    assertThat(requestTimestamp).isEqualTo(rqContext.requestTimestamp)
+                    assertThat(requestId).isEqualTo(rqContext.requestId)
+                    assertThat(responseTimestamp).isAfterOrEqualTo(rqContext.requestTimestamp)
+                    assertThat(holdingIdentity).isEqualTo(rqContext.holdingIdentity)
+                }
             }
         }
     }
@@ -657,20 +679,22 @@ class MembershipPersistenceRPCProcessorTest {
             QueryPreAuthToken(null, null, null)
         )
 
-        processor.onNext(rq, responseFuture)
+        val responses = processor.onNext(createRequestRecord(rq))
 
-        assertThat(responseFuture).isCompleted
-        with(responseFuture.get()) {
-            assertThat(payload).isNotNull
-            assertThat(payload).isInstanceOf(PreAuthTokenQueryResponse::class.java)
-            assertThat((payload as PreAuthTokenQueryResponse).tokens)
-                .isEqualTo(emptyList<PreAuthToken>())
+        assertSoftly {
+            assertThat(responses).hasSize(1)
+            with(responses.firstOrNull()?.value as MembershipPersistenceResponse) {
+                assertThat(payload).isNotNull
+                assertThat(payload).isInstanceOf(PreAuthTokenQueryResponse::class.java)
+                assertThat((payload as PreAuthTokenQueryResponse).tokens)
+                    .isEqualTo(emptyList<PreAuthToken>())
 
-            with(context) {
-                assertThat(requestTimestamp).isEqualTo(rqContext.requestTimestamp)
-                assertThat(requestId).isEqualTo(rqContext.requestId)
-                assertThat(responseTimestamp).isAfterOrEqualTo(rqContext.requestTimestamp)
-                assertThat(holdingIdentity).isEqualTo(rqContext.holdingIdentity)
+                with(context) {
+                    assertThat(requestTimestamp).isEqualTo(rqContext.requestTimestamp)
+                    assertThat(requestId).isEqualTo(rqContext.requestId)
+                    assertThat(responseTimestamp).isAfterOrEqualTo(rqContext.requestTimestamp)
+                    assertThat(holdingIdentity).isEqualTo(rqContext.holdingIdentity)
+                }
             }
         }
     }
@@ -682,17 +706,19 @@ class MembershipPersistenceRPCProcessorTest {
             AddPreAuthToken("", "", Instant.ofEpochMilli(100), null)
         )
 
-        processor.onNext(rq, responseFuture)
+        val responses = processor.onNext(createRequestRecord(rq))
 
-        assertThat(responseFuture).isCompleted
-        with(responseFuture.get()) {
-            assertThat(payload).isNull()
+        assertSoftly {
+            assertThat(responses).hasSize(1)
+            with(responses.firstOrNull()?.value as MembershipPersistenceResponse) {
+                assertThat(payload).isNull()
 
-            with(context) {
-                assertThat(requestTimestamp).isEqualTo(rqContext.requestTimestamp)
-                assertThat(requestId).isEqualTo(rqContext.requestId)
-                assertThat(responseTimestamp).isAfterOrEqualTo(rqContext.requestTimestamp)
-                assertThat(holdingIdentity).isEqualTo(rqContext.holdingIdentity)
+                with(context) {
+                    assertThat(requestTimestamp).isEqualTo(rqContext.requestTimestamp)
+                    assertThat(requestId).isEqualTo(rqContext.requestId)
+                    assertThat(responseTimestamp).isAfterOrEqualTo(rqContext.requestTimestamp)
+                    assertThat(holdingIdentity).isEqualTo(rqContext.holdingIdentity)
+                }
             }
         }
     }
@@ -704,20 +730,22 @@ class MembershipPersistenceRPCProcessorTest {
             RevokePreAuthToken(preAuthTokenId, null)
         )
 
-        processor.onNext(rq, responseFuture)
+        val responses = processor.onNext(createRequestRecord(rq))
 
-        assertThat(responseFuture).isCompleted
-        with(responseFuture.get()) {
-            assertThat(payload).isNotNull
-            assertThat(payload).isInstanceOf(RevokePreAuthTokenResponse::class.java)
-            assertThat((payload as RevokePreAuthTokenResponse).preAuthToken)
-                .isEqualTo(revokedAuthToken)
+        assertSoftly {
+            assertThat(responses).hasSize(1)
+            with(responses.firstOrNull()?.value as MembershipPersistenceResponse) {
+                assertThat(payload).isNotNull
+                assertThat(payload).isInstanceOf(RevokePreAuthTokenResponse::class.java)
+                assertThat((payload as RevokePreAuthTokenResponse).preAuthToken)
+                    .isEqualTo(revokedAuthToken)
 
-            with(context) {
-                assertThat(requestTimestamp).isEqualTo(rqContext.requestTimestamp)
-                assertThat(requestId).isEqualTo(rqContext.requestId)
-                assertThat(responseTimestamp).isAfterOrEqualTo(rqContext.requestTimestamp)
-                assertThat(holdingIdentity).isEqualTo(rqContext.holdingIdentity)
+                with(context) {
+                    assertThat(requestTimestamp).isEqualTo(rqContext.requestTimestamp)
+                    assertThat(requestId).isEqualTo(rqContext.requestId)
+                    assertThat(responseTimestamp).isAfterOrEqualTo(rqContext.requestTimestamp)
+                    assertThat(holdingIdentity).isEqualTo(rqContext.holdingIdentity)
+                }
             }
         }
     }
@@ -729,17 +757,19 @@ class MembershipPersistenceRPCProcessorTest {
             ConsumePreAuthToken(preAuthTokenId, ourX500Name)
         )
 
-        processor.onNext(rq, responseFuture)
+        val responses = processor.onNext(createRequestRecord(rq))
 
-        assertThat(responseFuture).isCompleted
-        with(responseFuture.get()) {
-            assertThat(payload).isNull()
+        assertSoftly {
+            assertThat(responses).hasSize(1)
+            with(responses.firstOrNull()?.value as MembershipPersistenceResponse) {
+                assertThat(payload).isNull()
 
-            with(context) {
-                assertThat(requestTimestamp).isEqualTo(rqContext.requestTimestamp)
-                assertThat(requestId).isEqualTo(rqContext.requestId)
-                assertThat(responseTimestamp).isAfterOrEqualTo(rqContext.requestTimestamp)
-                assertThat(holdingIdentity).isEqualTo(rqContext.holdingIdentity)
+                with(context) {
+                    assertThat(requestTimestamp).isEqualTo(rqContext.requestTimestamp)
+                    assertThat(requestId).isEqualTo(rqContext.requestId)
+                    assertThat(responseTimestamp).isAfterOrEqualTo(rqContext.requestTimestamp)
+                    assertThat(holdingIdentity).isEqualTo(rqContext.holdingIdentity)
+                }
             }
         }
     }
@@ -758,18 +788,20 @@ class MembershipPersistenceRPCProcessorTest {
             SuspendMember(ourX500Name, null, null)
         )
 
-        processor.onNext(rq, responseFuture)
+        val responses = processor.onNext(createRequestRecord(rq))
 
-        assertThat(responseFuture).isCompleted
-        with(responseFuture.get()) {
-            assertThat(payload).isNotNull
-            assertThat(payload).isInstanceOf(SuspendMemberResponse::class.java)
+        assertSoftly {
+            assertThat(responses).hasSize(1)
+            with(responses.firstOrNull()?.value as MembershipPersistenceResponse) {
+                assertThat(payload).isNotNull
+                assertThat(payload).isInstanceOf(SuspendMemberResponse::class.java)
 
-            with(context) {
-                assertThat(requestTimestamp).isEqualTo(rqContext.requestTimestamp)
-                assertThat(requestId).isEqualTo(rqContext.requestId)
-                assertThat(responseTimestamp).isAfterOrEqualTo(rqContext.requestTimestamp)
-                assertThat(holdingIdentity).isEqualTo(rqContext.holdingIdentity)
+                with(context) {
+                    assertThat(requestTimestamp).isEqualTo(rqContext.requestTimestamp)
+                    assertThat(requestId).isEqualTo(rqContext.requestId)
+                    assertThat(responseTimestamp).isAfterOrEqualTo(rqContext.requestTimestamp)
+                    assertThat(holdingIdentity).isEqualTo(rqContext.holdingIdentity)
+                }
             }
         }
     }
@@ -788,18 +820,20 @@ class MembershipPersistenceRPCProcessorTest {
             ActivateMember(ourX500Name, null, null)
         )
 
-        processor.onNext(rq, responseFuture)
+        val responses = processor.onNext(createRequestRecord(rq))
 
-        assertThat(responseFuture).isCompleted
-        with(responseFuture.get()) {
-            assertThat(payload).isNotNull
-            assertThat(payload).isInstanceOf(ActivateMemberResponse::class.java)
+        assertSoftly {
+            assertThat(responses).hasSize(1)
+            with(responses.firstOrNull()?.value as MembershipPersistenceResponse) {
+                assertThat(payload).isNotNull
+                assertThat(payload).isInstanceOf(ActivateMemberResponse::class.java)
 
-            with(context) {
-                assertThat(requestTimestamp).isEqualTo(rqContext.requestTimestamp)
-                assertThat(requestId).isEqualTo(rqContext.requestId)
-                assertThat(responseTimestamp).isAfterOrEqualTo(rqContext.requestTimestamp)
-                assertThat(holdingIdentity).isEqualTo(rqContext.holdingIdentity)
+                with(context) {
+                    assertThat(requestTimestamp).isEqualTo(rqContext.requestTimestamp)
+                    assertThat(requestId).isEqualTo(rqContext.requestId)
+                    assertThat(responseTimestamp).isAfterOrEqualTo(rqContext.requestTimestamp)
+                    assertThat(holdingIdentity).isEqualTo(rqContext.holdingIdentity)
+                }
             }
         }
     }
@@ -819,18 +853,20 @@ class MembershipPersistenceRPCProcessorTest {
             QueryStaticNetworkInfo(groupId)
         )
 
-        processor.onNext(rq, responseFuture)
+        val responses = processor.onNext(createRequestRecord(rq))
 
-        assertThat(responseFuture).isCompleted
-        with(responseFuture.get()) {
-            assertThat(payload).isNotNull
-            assertThat(payload).isInstanceOf(StaticNetworkInfoQueryResponse::class.java)
+        assertSoftly {
+            assertThat(responses).hasSize(1)
+            with(responses.firstOrNull()?.value as MembershipPersistenceResponse) {
+                assertThat(payload).isNotNull
+                assertThat(payload).isInstanceOf(StaticNetworkInfoQueryResponse::class.java)
 
-            with(context) {
-                assertThat(requestTimestamp).isEqualTo(rqContext.requestTimestamp)
-                assertThat(requestId).isEqualTo(rqContext.requestId)
-                assertThat(responseTimestamp).isAfterOrEqualTo(rqContext.requestTimestamp)
-                assertThat(holdingIdentity).isNull()
+                with(context) {
+                    assertThat(requestTimestamp).isEqualTo(rqContext.requestTimestamp)
+                    assertThat(requestId).isEqualTo(rqContext.requestId)
+                    assertThat(responseTimestamp).isAfterOrEqualTo(rqContext.requestTimestamp)
+                    assertThat(holdingIdentity).isNull()
+                }
             }
         }
     }
@@ -857,20 +893,32 @@ class MembershipPersistenceRPCProcessorTest {
             UpdateStaticNetworkInfo(info)
         )
 
-        processor.onNext(rq, responseFuture)
+        val responses = processor.onNext(createRequestRecord(rq))
 
-        assertThat(responseFuture).isCompleted
-        with(responseFuture.get()) {
-            assertThat(payload).isNotNull
-            assertThat(payload).isInstanceOf(StaticNetworkInfoQueryResponse::class.java)
+        assertSoftly {
+            assertThat(responses).hasSize(1)
+            with(responses.firstOrNull()?.value as MembershipPersistenceResponse) {
+                assertThat(payload).isNotNull
+                assertThat(payload).isInstanceOf(StaticNetworkInfoQueryResponse::class.java)
 
-            with(context) {
-                assertThat(requestTimestamp).isEqualTo(rqContext.requestTimestamp)
-                assertThat(requestId).isEqualTo(rqContext.requestId)
-                assertThat(responseTimestamp).isAfterOrEqualTo(rqContext.requestTimestamp)
-                assertThat(holdingIdentity).isNull()
+                with(context) {
+                    assertThat(requestTimestamp).isEqualTo(rqContext.requestTimestamp)
+                    assertThat(requestId).isEqualTo(rqContext.requestId)
+                    assertThat(responseTimestamp).isAfterOrEqualTo(rqContext.requestTimestamp)
+                    assertThat(holdingIdentity).isNull()
+                }
             }
         }
     }
 
+    private fun createRequestRecord(request: MembershipPersistenceRequest): List<Record<String, MembershipPersistenceRequest>> {
+        return listOf(
+            Record(
+                "topic",
+                "key",
+                request,
+                listOf(MessagesHeaders.SENDER_ID to "id"),
+            ),
+        )
+    }
 }

@@ -54,6 +54,7 @@ import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceOperation
 import net.corda.messaging.api.publisher.factory.PublisherFactory
+import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.utilities.Either
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
@@ -74,9 +75,9 @@ import net.corda.data.membership.SignedGroupParameters as AvroGroupParameters
 
 @Suppress("LongParameterList", "TooManyFunctions")
 @Component(service = [MembershipPersistenceClient::class])
-class MembershipPersistenceClientImpl(
+internal class MembershipPersistenceClientImpl(
     coordinatorFactory: LifecycleCoordinatorFactory,
-    publisherFactory: PublisherFactory,
+    requestSenderFactory: RequestSenderFactory,
     configurationReadService: ConfigurationReadService,
     private val memberInfoFactory: MemberInfoFactory,
     private val groupParametersFactory: GroupParametersFactory,
@@ -85,7 +86,7 @@ class MembershipPersistenceClientImpl(
 ) : MembershipPersistenceClient, AbstractPersistenceClient(
     coordinatorFactory,
     LifecycleCoordinatorName.forComponent<MembershipPersistenceClient>(),
-    publisherFactory,
+    requestSenderFactory,
     configurationReadService,
     clock,
 ) {
@@ -95,6 +96,8 @@ class MembershipPersistenceClientImpl(
         coordinatorFactory: LifecycleCoordinatorFactory,
         @Reference(service = PublisherFactory::class)
         publisherFactory: PublisherFactory,
+        @Reference(service = SubscriptionFactory::class)
+        subscriptionFactory: SubscriptionFactory,
         @Reference(service = ConfigurationReadService::class)
         configurationReadService: ConfigurationReadService,
         @Reference(service = MemberInfoFactory::class)
@@ -105,7 +108,12 @@ class MembershipPersistenceClientImpl(
         keyEncodingService: KeyEncodingService,
     ) : this(
         coordinatorFactory,
-        publisherFactory,
+        RequestSenderFactory(
+            publisherFactory,
+            subscriptionFactory,
+            CLIENT_NAME,
+            GROUP_NAME,
+        ),
         configurationReadService,
         memberInfoFactory,
         groupParametersFactory,
@@ -115,10 +123,9 @@ class MembershipPersistenceClientImpl(
 
     private companion object {
         val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        const val GROUP_NAME = "membership.db.persistence.client.group"
+        const val CLIENT_NAME = "membership.db.persistence.client"
     }
-
-    override val groupName = "membership.db.persistence.client.group"
-    override val clientName = "membership.db.persistence.client"
 
     override fun persistMemberInfo(
         viewOwningIdentity: HoldingIdentity,

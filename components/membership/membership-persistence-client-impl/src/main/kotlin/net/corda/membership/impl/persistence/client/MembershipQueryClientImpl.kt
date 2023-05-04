@@ -38,6 +38,7 @@ import net.corda.membership.lib.toMap
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.persistence.client.MembershipQueryResult
 import net.corda.messaging.api.publisher.factory.PublisherFactory
+import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.types.LayeredPropertyMap
@@ -54,9 +55,9 @@ import org.slf4j.LoggerFactory
 
 @Suppress("LongParameterList")
 @Component(service = [MembershipQueryClient::class])
-class MembershipQueryClientImpl(
+internal class MembershipQueryClientImpl(
     coordinatorFactory: LifecycleCoordinatorFactory,
-    publisherFactory: PublisherFactory,
+    requestSenderFactory: RequestSenderFactory,
     configurationReadService: ConfigurationReadService,
     private val memberInfoFactory: MemberInfoFactory,
     clock: Clock,
@@ -64,7 +65,7 @@ class MembershipQueryClientImpl(
 ) : MembershipQueryClient, AbstractPersistenceClient(
     coordinatorFactory,
     LifecycleCoordinatorName.forComponent<MembershipQueryClient>(),
-    publisherFactory,
+    requestSenderFactory,
     configurationReadService,
     clock,
 ) {
@@ -74,20 +75,33 @@ class MembershipQueryClientImpl(
         coordinatorFactory: LifecycleCoordinatorFactory,
         @Reference(service = PublisherFactory::class)
         publisherFactory: PublisherFactory,
+        @Reference(service = SubscriptionFactory::class)
+        subscriptionFactory: SubscriptionFactory,
         @Reference(service = ConfigurationReadService::class)
         configurationReadService: ConfigurationReadService,
         @Reference(service = MemberInfoFactory::class)
         memberInfoFactory: MemberInfoFactory,
         @Reference(service = LayeredPropertyMapFactory::class)
-        layeredPropertyMapFactory: LayeredPropertyMapFactory
-    ) : this(coordinatorFactory, publisherFactory, configurationReadService, memberInfoFactory, UTCClock(), layeredPropertyMapFactory)
+        layeredPropertyMapFactory: LayeredPropertyMapFactory,
+    ) : this(
+        coordinatorFactory,
+        RequestSenderFactory(
+            publisherFactory,
+            subscriptionFactory,
+            CLIENT_NAME,
+            GROUP_NAME,
+        ),
+        configurationReadService,
+        memberInfoFactory,
+        UTCClock(),
+        layeredPropertyMapFactory,
+    )
 
     private companion object {
         val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        const val GROUP_NAME = "membership.db.query.client.group"
+        const val CLIENT_NAME = "membership.db.query.client"
     }
-
-    override val groupName = "membership.db.query.client.group"
-    override val clientName = "membership.db.query.client"
 
     override fun queryMemberInfo(viewOwningIdentity: HoldingIdentity): MembershipQueryResult<Collection<MemberInfo>> {
         logger.info("Querying for all member infos visible from holding identity [${viewOwningIdentity.shortHash}].")

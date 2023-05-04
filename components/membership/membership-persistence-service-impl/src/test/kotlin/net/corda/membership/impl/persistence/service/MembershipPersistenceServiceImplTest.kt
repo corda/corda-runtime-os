@@ -8,7 +8,6 @@ import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.membership.db.request.MembershipPersistenceRequest
 import net.corda.data.membership.db.request.async.MembershipPersistenceAsyncRequest
 import net.corda.data.membership.db.request.async.MembershipPersistenceAsyncRequestState
-import net.corda.data.membership.db.response.MembershipPersistenceResponse
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.platform.PlatformInfoProvider
@@ -27,12 +26,10 @@ import net.corda.membership.mtls.allowed.list.service.AllowedCertificatesReaderW
 import net.corda.membership.persistence.service.MembershipPersistenceService
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.factory.PublisherFactory
-import net.corda.messaging.api.subscription.RPCSubscription
 import net.corda.messaging.api.subscription.StateAndEventSubscription
-import net.corda.messaging.api.subscription.config.RPCConfig
+import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.orm.JpaEntitiesRegistry
-import net.corda.schema.Schemas.Membership.MEMBERSHIP_DB_RPC_TOPIC
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
@@ -41,6 +38,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.KArgumentCaptor
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
@@ -55,7 +53,7 @@ class MembershipPersistenceServiceImplTest {
 
     private val rpcSubscriptionCoordinatorName = LifecycleCoordinatorName("SUB")
     private val asyncSubscriptionCoordinatorName = LifecycleCoordinatorName("SUB")
-    private val rpcSubscription: RPCSubscription<MembershipPersistenceRequest, MembershipPersistenceResponse> = mock {
+    private val rpcSubscription: Subscription<String, MembershipPersistenceRequest> = mock {
         on { subscriptionName } doReturn rpcSubscriptionCoordinatorName
     }
     private val asyncSubscription =
@@ -98,10 +96,11 @@ class MembershipPersistenceServiceImplTest {
 
     private val subscriptionFactory: SubscriptionFactory = mock {
         on {
-            createRPCSubscription(
-                any<RPCConfig<MembershipPersistenceRequest, MembershipPersistenceResponse>>(),
+            createDurableSubscription(
                 any(),
-                any()
+                any<MembershipPersistenceRPCProcessor>(),
+                any(),
+                anyOrNull(),
             )
         } doReturn rpcSubscription
         on {
@@ -257,29 +256,25 @@ class MembershipPersistenceServiceImplTest {
     fun `config changed event creates subscription`() {
         postConfigChangedEvent()
 
-        val configCaptor = argumentCaptor<RPCConfig<MembershipPersistenceRequest, MembershipPersistenceResponse>>()
         verify(rpcSubscription, never()).close()
-        verify(subscriptionFactory).createRPCSubscription(
-            configCaptor.capture(),
+        verify(subscriptionFactory).createDurableSubscription(
             any(),
-            any()
+            any<MembershipPersistenceRPCProcessor>(),
+            any(),
+            anyOrNull(),
         )
         verify(rpcSubscription).start()
         verify(rpcSubscription).subscriptionName
         verify(coordinator).followStatusChangesByName(eq(setOf(rpcSubscription.subscriptionName)))
 
-        with(configCaptor.firstValue) {
-            assertThat(requestTopic).isEqualTo(MEMBERSHIP_DB_RPC_TOPIC)
-            assertThat(requestType).isEqualTo(MembershipPersistenceRequest::class.java)
-            assertThat(responseType).isEqualTo(MembershipPersistenceResponse::class.java)
-        }
 
         postConfigChangedEvent()
         verify(rpcSubscription).close()
-        verify(subscriptionFactory, times(2)).createRPCSubscription(
-            configCaptor.capture(),
+        verify(subscriptionFactory, times(2)).createDurableSubscription(
             any(),
-            any()
+            any<MembershipPersistenceRPCProcessor>(),
+            any(),
+            anyOrNull(),
         )
         verify(rpcSubscription, times(2)).start()
         verify(rpcSubscription, times(3)).subscriptionName

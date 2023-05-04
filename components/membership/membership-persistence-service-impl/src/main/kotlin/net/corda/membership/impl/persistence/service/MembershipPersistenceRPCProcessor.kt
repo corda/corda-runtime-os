@@ -2,28 +2,53 @@ package net.corda.membership.impl.persistence.service
 
 import net.corda.data.membership.db.request.MembershipPersistenceRequest
 import net.corda.data.membership.db.request.MembershipRequestContext
-import net.corda.membership.impl.persistence.service.handler.HandlerFactories
 import net.corda.data.membership.db.response.MembershipPersistenceResponse
 import net.corda.data.membership.db.response.MembershipResponseContext
 import net.corda.data.membership.db.response.query.ErrorKind
 import net.corda.data.membership.db.response.query.PersistenceFailedResponse
+import net.corda.membership.impl.persistence.service.handler.HandlerFactories
+import net.corda.membership.lib.MessagesHeaders
 import net.corda.membership.lib.exceptions.InvalidEntityUpdateException
-import net.corda.messaging.api.processor.RPCResponderProcessor
+import net.corda.messaging.api.processor.DurableProcessor
+import net.corda.messaging.api.records.Record
+import net.corda.schema.Schemas.Membership.MEMBERSHIP_DB_RPC_RESPONSE_TOPIC
 import org.slf4j.LoggerFactory
-import java.util.concurrent.CompletableFuture
 
 internal class MembershipPersistenceRPCProcessor(
     private val handlerFactories: HandlerFactories,
-) : RPCResponderProcessor<MembershipPersistenceRequest, MembershipPersistenceResponse> {
+) : DurableProcessor<String, MembershipPersistenceRequest> {
 
     private companion object {
         val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     override fun onNext(
-        request: MembershipPersistenceRequest,
-        respFuture: CompletableFuture<MembershipPersistenceResponse>
-    ) {
+        events: List<Record<String, MembershipPersistenceRequest>>,
+    ): List<Record<*, *>> {
+        return events.flatMap { requestRecord ->
+            val request = requestRecord.value
+            val senderId = requestRecord.headers.firstOrNull {
+                it.first == MessagesHeaders.SENDER_ID
+            }?.second
+            if ((request == null) || (senderId == null)) {
+                emptyList()
+            } else {
+                val response = handleEvent(request)
+                listOf(
+                    Record(
+                        MEMBERSHIP_DB_RPC_RESPONSE_TOPIC,
+                        requestRecord.key,
+                        response,
+                        listOf(
+                            MessagesHeaders.SENDER_ID to senderId,
+                        ),
+                    ),
+                )
+            }
+        }
+    }
+
+    private fun handleEvent(request: MembershipPersistenceRequest): MembershipPersistenceResponse {
         logger.info("Received membership persistence request: ${request.request::class.java}")
         val result = try {
             val result = handlerFactories.handle(
@@ -43,11 +68,9 @@ internal class MembershipPersistenceRPCProcessor(
             }
             PersistenceFailedResponse(error, kind)
         }
-        respFuture.complete(
-            MembershipPersistenceResponse(
-                buildResponseContext(request.context),
-                result
-            )
+        return MembershipPersistenceResponse(
+            buildResponseContext(request.context),
+            result,
         )
     }
 
@@ -57,8 +80,11 @@ internal class MembershipPersistenceRPCProcessor(
                 requestTimestamp,
                 requestId,
                 handlerFactories.persistenceHandlerServices.clock.instant(),
-                holdingIdentity
+                holdingIdentity,
             )
         }
     }
+
+    override val keyClass = String::class.java
+    override val valueClass = MembershipPersistenceRequest::class.java
 }

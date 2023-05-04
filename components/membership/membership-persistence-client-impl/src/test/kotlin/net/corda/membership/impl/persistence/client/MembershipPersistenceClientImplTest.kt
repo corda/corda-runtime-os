@@ -64,10 +64,6 @@ import net.corda.membership.lib.approval.ApprovalRuleParams
 import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
-import net.corda.messaging.api.publisher.RPCSender
-import net.corda.messaging.api.publisher.factory.PublisherFactory
-import net.corda.messaging.api.subscription.config.RPCConfig
-import net.corda.schema.Schemas.Membership.MEMBERSHIP_DB_RPC_TOPIC
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.test.util.time.TestClock
@@ -118,20 +114,11 @@ class MembershipPersistenceClientImplTest {
 
     private val registrationHandle: RegistrationHandle = mock()
     private val configHandle: Resource = mock()
-    private val rpcSender: RPCSender<MembershipPersistenceRequest, MembershipPersistenceResponse> = mock()
     private val coordinator: LifecycleCoordinator = mock {
         on { followStatusChangesByName(any()) } doReturn registrationHandle
     }
     private val coordinatorFactory: LifecycleCoordinatorFactory = mock {
         on { createCoordinator(any(), any()) } doReturn coordinator
-    }
-    private val publisherFactory: PublisherFactory = mock {
-        on {
-            createRPCSender(
-                any<RPCConfig<MembershipPersistenceRequest, MembershipPersistenceResponse>>(),
-                any()
-            )
-        } doReturn rpcSender
     }
     private val configurationReadService: ConfigurationReadService = mock {
         on { registerComponentForUpdates(eq(coordinator), any()) } doReturn configHandle
@@ -165,6 +152,10 @@ class MembershipPersistenceClientImplTest {
         signatureSpec,
         0L,
     )
+    private val rpcSender = mock<RequestSender>()
+    private val requestSenderFactory = mock<RequestSenderFactory> {
+        on { createSender(any()) } doReturn rpcSender
+    }
 
     private val memberInfoFactory = mock<MemberInfoFactory>()
     private val serialisedParams = "serialised-params".toByteArray()
@@ -216,7 +207,7 @@ class MembershipPersistenceClientImplTest {
     fun setUp() {
         membershipPersistenceClient = MembershipPersistenceClientImpl(
             coordinatorFactory,
-            publisherFactory,
+            requestSenderFactory,
             configurationReadService,
             memberInfoFactory,
             groupParametersFactory,
@@ -316,20 +307,14 @@ class MembershipPersistenceClientImplTest {
     fun `config change event handled as expected`() {
         postConfigChangedEvent()
 
-        val argCaptor = argumentCaptor<RPCConfig<MembershipPersistenceRequest, MembershipPersistenceResponse>>()
         verify(rpcSender, never()).close()
-        verify(rpcSender).start()
-        verify(publisherFactory).createRPCSender(argCaptor.capture(), any())
+        verify(requestSenderFactory).createSender(any())
         verify(coordinator).updateStatus(eq(LifecycleStatus.UP), any())
-
-        assertThat(argCaptor.firstValue.requestTopic).isEqualTo(MEMBERSHIP_DB_RPC_TOPIC)
-        assertThat(argCaptor.firstValue.requestType).isEqualTo(MembershipPersistenceRequest::class.java)
-        assertThat(argCaptor.firstValue.responseType).isEqualTo(MembershipPersistenceResponse::class.java)
 
         postConfigChangedEvent()
         verify(rpcSender).close()
-        verify(rpcSender, times(2)).start()
-        verify(publisherFactory, times(2)).createRPCSender(argCaptor.capture(), any())
+        verify(requestSenderFactory, times(2)).createSender(any())
+        verify(requestSenderFactory, times(2)).createSender(any())
         verify(coordinator, times(2)).updateStatus(eq(LifecycleStatus.UP), any())
 
         postStopEvent()
@@ -351,7 +336,7 @@ class MembershipPersistenceClientImplTest {
         rsTimestampOverride: Instant? = null,
         holdingIdentityOverride: net.corda.data.identity.HoldingIdentity? = null,
     ) {
-        whenever(rpcSender.sendRequest(any())).thenAnswer {
+        whenever(rpcSender.send(any())).thenAnswer {
             val rsContext = with((it.arguments.first() as MembershipPersistenceRequest).context) {
                 MembershipResponseContext(
                     reqTimestampOverride ?: requestTimestamp,
@@ -378,7 +363,7 @@ class MembershipPersistenceClientImplTest {
             .execute()
 
         with(argumentCaptor<MembershipPersistenceRequest>()) {
-            verify(rpcSender).sendRequest(capture())
+            verify(rpcSender).send(capture())
 
             assertThat(firstValue.context.requestTimestamp).isBeforeOrEqualTo(clock.instant())
             assertThat(firstValue.context.holdingIdentity)
@@ -411,7 +396,7 @@ class MembershipPersistenceClientImplTest {
         membershipPersistenceClient.persistRegistrationRequest(ourHoldingIdentity, ourRegistrationRequest).execute()
 
         with(argumentCaptor<MembershipPersistenceRequest>()) {
-            verify(rpcSender).sendRequest(capture())
+            verify(rpcSender).send(capture())
 
             assertThat(firstValue.context.requestTimestamp).isBeforeOrEqualTo(clock.instant())
             assertThat(firstValue.context.holdingIdentity)
@@ -548,7 +533,7 @@ class MembershipPersistenceClientImplTest {
         postConfigChangedEvent()
         val argument = argumentCaptor<MembershipPersistenceRequest>()
         val response = CompletableFuture.completedFuture(mock<MembershipPersistenceResponse>())
-        whenever(rpcSender.sendRequest(argument.capture())).thenReturn(response)
+        whenever(rpcSender.send(argument.capture())).thenReturn(response)
 
         membershipPersistenceClient.persistGroupPolicy(ourHoldingIdentity, groupPolicy, 1L)
             .execute()
@@ -670,7 +655,7 @@ class MembershipPersistenceClientImplTest {
             postConfigChangedEvent()
             val argument = argumentCaptor<MembershipPersistenceRequest>()
             val response = CompletableFuture.completedFuture(mock<MembershipPersistenceResponse>())
-            whenever(rpcSender.sendRequest(argument.capture())).thenReturn(response)
+            whenever(rpcSender.send(argument.capture())).thenReturn(response)
 
             membershipPersistenceClient.persistGroupParameters(ourHoldingIdentity, groupParameters)
                 .execute()
@@ -755,7 +740,7 @@ class MembershipPersistenceClientImplTest {
             postConfigChangedEvent()
             val argument = argumentCaptor<MembershipPersistenceRequest>()
             val response = CompletableFuture.completedFuture(mock<MembershipPersistenceResponse>())
-            whenever(rpcSender.sendRequest(argument.capture())).thenReturn(response)
+            whenever(rpcSender.send(argument.capture())).thenReturn(response)
 
             membershipPersistenceClient.addNotaryToGroupParameters(ourHoldingIdentity, notaryInRequest)
                 .execute()
@@ -822,7 +807,7 @@ class MembershipPersistenceClientImplTest {
             postConfigChangedEvent()
             val argument = argumentCaptor<MembershipPersistenceRequest>()
             val response = CompletableFuture.completedFuture(mock<MembershipPersistenceResponse>())
-            whenever(rpcSender.sendRequest(argument.capture())).thenReturn(response)
+            whenever(rpcSender.send(argument.capture())).thenReturn(response)
 
             membershipPersistenceClient.addApprovalRule(
                 ourHoldingIdentity,
@@ -878,7 +863,7 @@ class MembershipPersistenceClientImplTest {
             postConfigChangedEvent()
             val argument = argumentCaptor<MembershipPersistenceRequest>()
             val response = CompletableFuture.completedFuture(mock<MembershipPersistenceResponse>())
-            whenever(rpcSender.sendRequest(argument.capture())).thenReturn(response)
+            whenever(rpcSender.send(argument.capture())).thenReturn(response)
 
             membershipPersistenceClient.deleteApprovalRule(
                 ourHoldingIdentity,
@@ -964,7 +949,7 @@ class MembershipPersistenceClientImplTest {
             postConfigChangedEvent()
             val argument = argumentCaptor<MembershipPersistenceRequest>()
             val response = CompletableFuture.completedFuture(mock<MembershipPersistenceResponse>())
-            whenever(rpcSender.sendRequest(argument.capture())).thenReturn(response)
+            whenever(rpcSender.send(argument.capture())).thenReturn(response)
 
             membershipPersistenceClient.mutualTlsAddCertificateToAllowedList(
                 ourHoldingIdentity,
@@ -1022,7 +1007,7 @@ class MembershipPersistenceClientImplTest {
             postConfigChangedEvent()
             val argument = argumentCaptor<MembershipPersistenceRequest>()
             val response = CompletableFuture.completedFuture(mock<MembershipPersistenceResponse>())
-            whenever(rpcSender.sendRequest(argument.capture())).thenReturn(response)
+            whenever(rpcSender.send(argument.capture())).thenReturn(response)
 
             membershipPersistenceClient.mutualTlsRemoveCertificateFromAllowedList(
                 ourHoldingIdentity,
@@ -1090,7 +1075,7 @@ class MembershipPersistenceClientImplTest {
         fun `generatePreAuthToken sends the correct request`() {
             val argument = argumentCaptor<MembershipPersistenceRequest>()
             val response = CompletableFuture.completedFuture(mock<MembershipPersistenceResponse>())
-            whenever(rpcSender.sendRequest(argument.capture())).thenReturn(response)
+            whenever(rpcSender.send(argument.capture())).thenReturn(response)
 
             membershipPersistenceClient.generatePreAuthToken(ourHoldingIdentity, uuid, ourX500Name, ttl, remarks)
                 .execute()
@@ -1140,7 +1125,7 @@ class MembershipPersistenceClientImplTest {
         fun `revokePreAuthToken sends the correct request`() {
             val argument = argumentCaptor<MembershipPersistenceRequest>()
             val response = CompletableFuture.completedFuture(mock<MembershipPersistenceResponse>())
-            whenever(rpcSender.sendRequest(argument.capture())).thenReturn(response)
+            whenever(rpcSender.send(argument.capture())).thenReturn(response)
 
             membershipPersistenceClient.revokePreAuthToken(ourHoldingIdentity, uuid, removalRemark)
                 .execute()
@@ -1193,7 +1178,7 @@ class MembershipPersistenceClientImplTest {
             )
                 .execute()
 
-            verify(rpcSender).sendRequest(
+            verify(rpcSender).send(
                 argThat {
                     request is ConsumePreAuthToken
                             && (request as ConsumePreAuthToken).tokenId == uuid.toString()
@@ -1316,7 +1301,7 @@ class MembershipPersistenceClientImplTest {
         fun `suspendMember sends the correct data`() {
             val argument = argumentCaptor<MembershipPersistenceRequest>()
             val response = CompletableFuture.completedFuture(mock<MembershipPersistenceResponse>())
-            whenever(rpcSender.sendRequest(argument.capture())).thenReturn(response)
+            whenever(rpcSender.send(argument.capture())).thenReturn(response)
 
             membershipPersistenceClient.suspendMember(
                 ourHoldingIdentity,
@@ -1402,7 +1387,7 @@ class MembershipPersistenceClientImplTest {
         fun `activateMember sends the correct data`() {
             val argument = argumentCaptor<MembershipPersistenceRequest>()
             val response = CompletableFuture.completedFuture(mock<MembershipPersistenceResponse>())
-            whenever(rpcSender.sendRequest(argument.capture())).thenReturn(response)
+            whenever(rpcSender.send(argument.capture())).thenReturn(response)
 
             membershipPersistenceClient.activateMember(
                 ourHoldingIdentity,
@@ -1445,7 +1430,7 @@ class MembershipPersistenceClientImplTest {
             val output = membershipPersistenceClient.updateStaticNetworkInfo(info).execute()
 
             val argument = argumentCaptor<MembershipPersistenceRequest>()
-            verify(rpcSender).sendRequest(argument.capture())
+            verify(rpcSender).send(argument.capture())
 
             val persistenceRequest = argument.firstValue as? MembershipPersistenceRequest
             assertThat(persistenceRequest).isNotNull

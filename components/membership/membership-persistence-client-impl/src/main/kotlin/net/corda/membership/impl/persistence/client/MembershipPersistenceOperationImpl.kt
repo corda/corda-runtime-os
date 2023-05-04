@@ -2,11 +2,9 @@ package net.corda.membership.impl.persistence.client
 
 import net.corda.data.membership.db.request.MembershipPersistenceRequest
 import net.corda.data.membership.db.request.async.MembershipPersistenceAsyncRequest
-import net.corda.data.membership.db.response.MembershipPersistenceResponse
 import net.corda.data.membership.db.response.query.PersistenceFailedResponse
 import net.corda.membership.persistence.client.MembershipPersistenceOperation
 import net.corda.membership.persistence.client.MembershipPersistenceResult
-import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.Membership.MEMBERSHIP_DB_ASYNC_TOPIC
 import net.corda.utilities.Either
@@ -26,7 +24,7 @@ import java.util.concurrent.TimeoutException
  *   result (Either.Left) or a failure message (Either.Right)
  */
 internal class MembershipPersistenceOperationImpl<T>(
-    private val sender: RPCSender<MembershipPersistenceRequest, MembershipPersistenceResponse>?,
+    private val sender: RequestSender?,
     private val request: MembershipPersistenceRequest,
     private val convertResult: (Any?) -> Either<T, String>,
 ) : MembershipPersistenceOperation<T> {
@@ -45,7 +43,7 @@ internal class MembershipPersistenceOperationImpl<T>(
         logger.info("Sending membership persistence RPC request ID: $requestId.")
         return try {
             val response = sender
-                .sendRequest(request)
+                .send(request)
                 .getOrThrow(Duration.ofMillis(RPC_TIMEOUT_MS))
             val payload = response.payload
             val context = response.context
