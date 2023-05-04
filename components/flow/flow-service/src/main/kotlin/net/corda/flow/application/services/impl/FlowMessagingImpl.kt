@@ -58,7 +58,6 @@ class FlowMessagingImpl @Activate constructor(
         return doInitiateFlow(x500Name, flowContextPropertiesBuilder)
     }
 
-    @Suppress("ForbiddenComment")
     @Suspendable
     override fun callFacade(
         memberName: MemberX500Name,
@@ -66,10 +65,8 @@ class FlowMessagingImpl @Activate constructor(
         methodName: String,
         payload: String
     ): String {
-        // TODO revisit input/results while integrating with CORE-10430
         val session = createInteropFlowSession(memberName, facadeId, methodName)
-        val response = session.sendAndReceive(String::class.java, payload)
-        return response
+        return session.sendAndReceive(String::class.java, payload)
     }
 
     @Suspendable
