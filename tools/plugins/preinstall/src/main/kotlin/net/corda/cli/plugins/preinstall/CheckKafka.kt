@@ -189,6 +189,7 @@ class CheckKafka : Callable<Int>, PluginContext() {
             try {
                 saslUsername = getCredential(yaml.kafka.sasl.username!!, namespace)
                 saslPassword = getCredential(yaml.kafka.sasl.password!!, namespace)
+                report.addEntry(ReportEntry("Get SASL credentials", true))
             } catch (e: Exception) {
                 report.addEntry(ReportEntry("Get SASL credentials", false, e))
                 logger.error(report.failingTests())
@@ -248,7 +249,7 @@ class CheckKafka : Callable<Int>, PluginContext() {
         try {
             connect(KafkaAdmin(props), yaml.bootstrap?.kafka?.replicas)
         } catch (e: KafkaException) {
-            report.addEntry(ReportEntry("Create Kafka client", false, e))
+            report.addEntry(ReportEntry("Connect to Kafka cluster using client", false, e))
         } catch (e: ExecutionException) {
             report.addEntry(ReportEntry("Connect to Kafka cluster using client", false, e))
         }
