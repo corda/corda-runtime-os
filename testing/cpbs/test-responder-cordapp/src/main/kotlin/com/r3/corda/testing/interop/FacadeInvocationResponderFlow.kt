@@ -5,11 +5,10 @@ import net.corda.v5.application.flows.InitiatedBy
 import net.corda.v5.application.interop.binding.InteropAction
 import net.corda.v5.application.membership.MemberLookup
 
-
 //Following protocol name is deliberately used to
 // prove that interop is not using protocol string to start the responder flow
 @InitiatedBy(protocol = "dummy_protocol")
-class FacadeInvocationResponderFlow : FacadeDispatcherFlow() , SampleTokensFacade {
+class FacadeInvocationResponderFlow : FacadeDispatcherFlow(), SampleTokensFacade {
 
     @CordaInject
     lateinit var memberLookup: MemberLookup
