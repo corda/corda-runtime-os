@@ -10,6 +10,7 @@ import net.corda.data.flow.FlowKey
 import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.fiber.FlowFiberImpl
 import net.corda.flow.fiber.cache.FlowFiberCache
+import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
 
 @Suppress("unused")
@@ -44,13 +45,13 @@ class FlowFiberCacheImpl @Activate constructor() : FlowFiberCache {
         cache.invalidate(key)
     }
 
-    override fun remove(keys: List<FlowKey>) {
+    override fun remove(keys: Collection<FlowKey>) {
         cache.invalidateAll(keys)
         cache.cleanUp()
     }
 
     override fun remove(holdingIdentity: HoldingIdentity) {
-        logger.info("Flow fiber cache removing holdingIdentity $holdingIdentity")
+        logger.debug { "Flow fiber cache removing holdingIdentity $holdingIdentity" }
         val keysToInvalidate = cache.asMap().keys.filter { holdingIdentity == it.identity }
         cache.invalidateAll(keysToInvalidate)
         cache.cleanUp()

@@ -26,7 +26,7 @@ interface FlowFiberCache {
     /**
      * Invalidate and remove flow fiber from the cache with the give flow identifiers.
      */
-    fun remove(keys: List<FlowKey>)
+    fun remove(keys: Collection<FlowKey>)
 
     /**
      * Invalidate and remove all flow fibers from the cache for the given holding identity.
