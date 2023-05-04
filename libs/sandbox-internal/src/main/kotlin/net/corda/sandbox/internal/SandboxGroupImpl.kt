@@ -134,7 +134,7 @@ internal class SandboxGroupImpl(
                 publicSandboxes.asSequence().mapNotNull { publicSandbox ->
                     publicSandbox.loadClass(className, classTag.classBundleName)
                 }.firstOrNull() ?: throw SandboxException(
-                    "Class $className from bundle ${classTag.classBundleName} could not be loaded from any of the public " + "sandboxes."
+                    "Class $className from bundle ${classTag.classBundleName} could not be loaded from any of the public sandboxes."
                 )
             }
         }
