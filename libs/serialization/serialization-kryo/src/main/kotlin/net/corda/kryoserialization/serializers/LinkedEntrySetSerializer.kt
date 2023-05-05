@@ -14,10 +14,10 @@ import com.esotericsoftware.kryo.io.Output
 internal object LinkedEntrySetSerializer : Serializer<Set<Map.Entry<*,*>>>() {
 
     // Create a dummy object to get the LinkedHashMap$LinkedEntrySet from it
-    val serializedType: Class<out Set<Map.Entry<*,*>>> = mapOf(Any() to Any(), Any() to Any()).entries::class.java
+    val serializedType: Class<out Set<Map.Entry<*,*>>> = linkedMapOf(Any() to Any(), Any() to Any()).entries::class.java
     override fun write(kryo: Kryo, output: Output?, obj: Set<Map.Entry<*, *>>) {
         // HashSet is already supported
-        kryo.writeClassAndObject(output, obj.toHashSet())
+        kryo.writeClassAndObject(output, obj.toList())
     }
 
     override fun read(kryo: Kryo, input: Input?, type: Class<out Set<Map.Entry<*, *>>>?): Set<Map.Entry<*, *>> {
@@ -26,10 +26,10 @@ internal object LinkedEntrySetSerializer : Serializer<Set<Map.Entry<*,*>>>() {
         The exception is if the cast lies within variance bounds: https://kotlinlang.org/docs/generics.html#variance
          */
         @Suppress("UNCHECKED_CAST")
-        val deserializedHashSet = kryo.readClassAndObject(input) as HashSet<Map.Entry<*,*>>
+        val deserializedList = kryo.readClassAndObject(input) as List<Map.Entry<*,*>>
 
         // Grant that the return is a LinkedEntrySet
-        val collectionMap = deserializedHashSet.associateBy({ it.key }, { it.value }) as Map<*, *>
+        val collectionMap = deserializedList.associateBy({ it.key }, { it.value }) as Map<*, *>
         return collectionMap.entries
     }
 }
