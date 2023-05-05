@@ -55,7 +55,6 @@ class CordaAtomicDBProducerImpl(
         val dbRecords = recordsWithPartitions.mapNotNull { (partition, record) ->
             val offset = writeOffsets.getNextOffsetFor(CordaTopicPartition(record.topic, partition))
             try {
-                serializer.serialize(record.value!!)
                 val serializedKey = serializer.serialize(record.key)
                     ?: throw CordaMessageAPIFatalException("Serialized Key cannot be null")
                 val serializedValue = if (record.value != null) {
