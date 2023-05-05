@@ -42,6 +42,7 @@ abstract class DeployableContainerBuilder extends DefaultTask {
     private def gitBranchTask
     private def gitRemoteTask
     private def gitRevisionTask
+    private def gitShortRevisionTask
     private def gitLogTask
     private def releaseType
 
@@ -187,6 +188,8 @@ abstract class DeployableContainerBuilder extends DefaultTask {
         gitRevisionTask = project.tasks.register("gitRevision", GetGitRevision.class)
         super.dependsOn(gitRevisionTask)
 
+        gitShortRevisionTask = project.tasks.register("gitShortRevision", GetGitShortRevision.class)
+        super.dependsOn(gitShortRevisionTask)
 
         gitLogTask = project.tasks.register("gitMessageTask", getLatestGitCommitMessage.class)
         super.dependsOn(gitLogTask)
@@ -206,7 +209,7 @@ abstract class DeployableContainerBuilder extends DefaultTask {
         String gitBranch = gitBranchTask.flatMap { it.branch }.get()
         String gitRevision = gitRevisionTask.flatMap { it.revision }.get()
         // TODO: remove this once pipelines have been updated to use the long hash instead.
-        String gitRevisionShortHash = gitRevision.substring(0, 8)
+        String gitRevisionShortHash = gitShortRevisionTask.flatMap { it.revision }.get()
 
         def jiraTicket = hasJiraTicket()
         def timeStamp =  new SimpleDateFormat("ddMMyy").format(new Date())
@@ -407,6 +410,24 @@ abstract class DeployableContainerBuilder extends DefaultTask {
             JiraTicket = (gitLogMessage =~ /(^(CORDA|EG|ENT|INFRA|CORE)-\d+|^NOTICK)/)[0][0]
         }
         return (JiraTicket != null) ? JiraTicket : ""
+    }
+
+    /**
+     * Helper task to retrieve get the latest git hash
+     */
+    static class GetGitShortRevision extends Exec {
+        @Internal
+        final Property<String> revision
+
+        @Inject
+        GetGitShortRevision(ObjectFactory objects, ProviderFactory providers) {
+            executable 'git'
+            args 'rev-parse', '--verify', '--short', 'HEAD'
+            standardOutput = new ByteArrayOutputStream()
+            revision = objects.property(String).value(
+                    providers.provider { standardOutput.toString() }
+            )
+        }
     }
 
     /**
