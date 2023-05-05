@@ -25,7 +25,6 @@ internal class ChunkWriterImpl(
     private val properties: Map<String, String?>? = null,
 ) : ChunkWriter {
     companion object {
-
         private fun Map<String, String?>.toAvro(): KeyValuePairList {
             return KeyValuePairList.newBuilder().setItems(
                 map { KeyValuePair(it.key, it.value) }
@@ -39,7 +38,7 @@ internal class ChunkWriterImpl(
     //add extra overhead to avoid message bus level chunking
     val chunkSize = maxAllowedMessageSize - APP_LEVEL_CHUNK_MESSAGE_OVERHEAD
 
-    override fun write(fileName: String, inputStream: InputStream): ChunkWriter.Request {
+    override fun write(inputStream: InputStream): ChunkWriter.Request {
         if (chunkWriteCallback == null) {
             throw CordaRuntimeException("Chunk write callback not set")
         }
@@ -71,7 +70,7 @@ internal class ChunkWriterImpl(
 
             // We don't bother creating a checksum for the individual chunks.
             // We've trimmed the bytes, so [byteBuffer] implicitly contains the length of this chunk.
-            writeChunk(identifier, fileName, chunkNumber, byteBuffer, offset)
+            writeChunk(identifier, chunkNumber, byteBuffer, offset)
 
             chunkNumber++
             offset += actualBytesRead
@@ -82,29 +81,27 @@ internal class ChunkWriterImpl(
         // We always send a zero sized chunk as a marker to indicate that we've sent
         // every chunk.  It also includes the checksum of the file, and the final offset
         // is also the length of the bytes read from the stream.
-        writeZeroChunk(identifier, fileName, chunkNumber, finalChecksum, offset)
+        writeZeroChunk(identifier, chunkNumber, finalChecksum, offset)
 
         return ChunkWriter.Request(identifier, finalChecksum)
     }
 
     private fun writeZeroChunk(
         identifier: String,
-        fileName: String,
         chunkNumber: Int,
         checksum: SecureHash,
         offset: Long
     ) = chunkWriteCallback!!.onChunk(
-        chunkBuilderService.buildFinalChunk(identifier, chunkNumber, checksum, offset, properties?.toAvro(), fileName)
+        chunkBuilderService.buildFinalChunk(identifier, chunkNumber, checksum, offset, properties?.toAvro())
     )
 
     private fun writeChunk(
         identifier: String,
-        fileName: String,
         chunkNumber: Int,
         byteBuffer: ByteBuffer,
         offset: Long
     ) = chunkWriteCallback!!.onChunk(
-        chunkBuilderService.buildChunk(identifier, chunkNumber, byteBuffer, offset, properties?.toAvro(), fileName)
+        chunkBuilderService.buildChunk(identifier, chunkNumber, byteBuffer, offset, properties?.toAvro())
     )
 
     override fun onChunk(onChunkWriteCallback: ChunkWriteCallback) {

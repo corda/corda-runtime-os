@@ -654,6 +654,27 @@ class MemberSynchronisationServiceImplTest {
     }
 
     @Test
+    fun `processMembershipUpdates hashes the correct members if the viewOwningMember is suspended and not in the update`() {
+        postConfigChangedEvent()
+        synchronisationService.start()
+        whenever(memberInfo.status).thenReturn(MEMBER_STATUS_SUSPENDED)
+        whenever(groupReader.lookup(filter = MembershipStatusFilter.ACTIVE_OR_SUSPENDED)).doReturn(
+            listOf(
+                mgmInfo,
+                memberInfo,
+            )
+        )
+
+        synchronisationService.processMembershipUpdates(updates)
+
+        verify(
+            merkleTreeGenerator
+        ).generateTree(
+            listOf(memberInfo)
+        )
+    }
+
+    @Test
     fun `processing of membership updates fails when coordinator is not running`() {
         val ex1 = assertFailsWith<IllegalStateException> {
             synchronisationService.processMembershipUpdates(mock())
