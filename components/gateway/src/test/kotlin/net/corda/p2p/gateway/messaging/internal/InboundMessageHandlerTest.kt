@@ -2,7 +2,6 @@ package net.corda.p2p.gateway.messaging.internal
 
 import io.netty.handler.codec.http.HttpResponseStatus
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.data.identity.HoldingIdentity
 import net.corda.data.p2p.gateway.GatewayMessage
 import net.corda.data.p2p.gateway.GatewayResponse
 import net.corda.libs.configuration.SmartConfigImpl
@@ -17,15 +16,14 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.data.p2p.LinkInMessage
-import net.corda.data.p2p.app.UnauthenticatedMessage
-import net.corda.data.p2p.app.UnauthenticatedMessageHeader
+import net.corda.data.p2p.app.InboundUnauthenticatedMessage
+import net.corda.data.p2p.app.InboundUnauthenticatedMessageHeader
 import net.corda.data.p2p.crypto.AuthenticatedDataMessage
 import net.corda.data.p2p.crypto.AuthenticatedEncryptedDataMessage
 import net.corda.data.p2p.crypto.CommonHeader
 import net.corda.data.p2p.crypto.InitiatorHandshakeMessage
 import net.corda.data.p2p.crypto.InitiatorHelloMessage
 import net.corda.data.p2p.crypto.MessageType
-import net.corda.data.p2p.crypto.ProtocolMode
 import net.corda.data.p2p.crypto.ResponderHandshakeMessage
 import net.corda.data.p2p.crypto.ResponderHelloMessage
 import net.corda.data.p2p.crypto.internal.InitiatorHandshakeIdentity
@@ -439,7 +437,6 @@ class InboundMessageHandlerTest {
             .apply {
                 header = CommonHeader(MessageType.DATA, 0, sessionId, 1, 1)
                 responderPublicKey = ByteBuffer.wrap(byteArrayOf())
-                selectedMode = ProtocolMode.AUTHENTICATION_ONLY
             }.build()
         val gatewayMessage = GatewayMessage("msg-id", payload)
         `when`(avroSchemaRegistry.deserialize<GatewayMessage>(ByteBuffer.wrap(serialisedMessage))).thenReturn(gatewayMessage)
@@ -500,14 +497,11 @@ class InboundMessageHandlerTest {
     private fun authenticatedP2PInitiatorHelloMessage(sessionId: String) = InitiatorHelloMessage.newBuilder().apply {
         header = CommonHeader(MessageType.INITIATOR_HELLO, 0, sessionId, 1, 1)
         initiatorPublicKey = ByteBuffer.wrap(byteArrayOf())
-        supportedModes = listOf(ProtocolMode.AUTHENTICATED_ENCRYPTION, ProtocolMode.AUTHENTICATION_ONLY)
         source = InitiatorHandshakeIdentity(ByteBuffer.wrap(byteArrayOf()), "some-group")
     }.build()
 
-    private fun unauthenticatedP2PMessage(content: String) = UnauthenticatedMessage.newBuilder().apply {
-        header = UnauthenticatedMessageHeader(
-            HoldingIdentity("A", "B"),
-            HoldingIdentity("C", "D"),
+    private fun unauthenticatedP2PMessage(content: String) = InboundUnauthenticatedMessage.newBuilder().apply {
+        header = InboundUnauthenticatedMessageHeader(
             "subsystem",
             "messageId",
         )

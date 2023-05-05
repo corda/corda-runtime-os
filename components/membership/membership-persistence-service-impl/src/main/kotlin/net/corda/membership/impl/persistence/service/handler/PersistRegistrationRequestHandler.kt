@@ -30,18 +30,24 @@ internal class PersistRegistrationRequestHandler(
                 return@transaction
             }
             em.merge(
-                RegistrationRequestEntity(
-                    registrationId = request.registrationRequest.registrationId,
-                    holdingIdentityShortHash = request.registeringHoldingIdentity.toCorda().shortHash.value,
-                    status = request.status.toString(),
-                    created = now,
-                    lastModified = now,
-                    context = request.registrationRequest.memberContext.array(),
-                    signatureKey = request.registrationRequest.memberSignature.publicKey.array(),
-                    signatureContent = request.registrationRequest.memberSignature.bytes.array(),
-                    signatureSpec = request.registrationRequest.memberSignatureSpec.signatureName,
-                    serial = request.registrationRequest.serial,
-                )
+                with(request.registrationRequest) {
+                    RegistrationRequestEntity(
+                        registrationId = registrationId,
+                        holdingIdentityShortHash = request.registeringHoldingIdentity.toCorda().shortHash.value,
+                        status = request.status.toString(),
+                        created = now,
+                        lastModified = now,
+                        memberContext = memberContext.data.array(),
+                        memberContextSignatureKey = memberContext.signature.publicKey.array(),
+                        memberContextSignatureContent = memberContext.signature.bytes.array(),
+                        memberContextSignatureSpec = memberContext.signatureSpec.signatureName,
+                        registrationContext = registrationContext.data.array(),
+                        registrationContextSignatureKey = registrationContext.signature.publicKey.array(),
+                        registrationContextSignatureContent = registrationContext.signature.bytes.array(),
+                        registrationContextSignatureSpec = registrationContext.signatureSpec.signatureName,
+                        serial = serial,
+                    )
+                }
             )
         }
     }

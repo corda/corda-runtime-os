@@ -64,9 +64,9 @@ class SandboxGroupContextComponentImplTest {
             mock()
         )
 
-        verify(sandboxGroupContextService).initCache(eq(SandboxGroupType.FLOW), eq(4))
-        verify(sandboxGroupContextService).initCache(eq(SandboxGroupType.PERSISTENCE), eq(3))
-        verify(sandboxGroupContextService).initCache(eq(SandboxGroupType.VERIFICATION), eq(2))
+        verify(sandboxGroupContextService).resizeCache(eq(SandboxGroupType.FLOW), eq(4))
+        verify(sandboxGroupContextService).resizeCache(eq(SandboxGroupType.PERSISTENCE), eq(3))
+        verify(sandboxGroupContextService).resizeCache(eq(SandboxGroupType.VERIFICATION), eq(2))
     }
 
     @Test
@@ -95,8 +95,8 @@ class SandboxGroupContextComponentImplTest {
             mock()
         )
 
-        verify(sandboxGroupContextService).initCache(eq(SandboxGroupType.FLOW), eq(SANDBOX_CACHE_SIZE_DEFAULT))
-        verify(sandboxGroupContextService).initCache(eq(SandboxGroupType.PERSISTENCE), eq(SANDBOX_CACHE_SIZE_DEFAULT))
-        verify(sandboxGroupContextService).initCache(eq(SandboxGroupType.VERIFICATION), eq(SANDBOX_CACHE_SIZE_DEFAULT))
+        verify(sandboxGroupContextService).resizeCache(eq(SandboxGroupType.FLOW), eq(SANDBOX_CACHE_SIZE_DEFAULT))
+        verify(sandboxGroupContextService).resizeCache(eq(SandboxGroupType.PERSISTENCE), eq(SANDBOX_CACHE_SIZE_DEFAULT))
+        verify(sandboxGroupContextService).resizeCache(eq(SandboxGroupType.VERIFICATION), eq(SANDBOX_CACHE_SIZE_DEFAULT))
     }
 }

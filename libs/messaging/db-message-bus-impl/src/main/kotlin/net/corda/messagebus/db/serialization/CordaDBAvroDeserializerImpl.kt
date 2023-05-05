@@ -1,8 +1,7 @@
 package net.corda.messagebus.db.serialization
 
 import java.nio.ByteBuffer
-import java.util.function.Consumer
-import net.corda.data.CordaAvroDeserializer
+import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.data.chunking.Chunk
 import net.corda.data.chunking.ChunkKey
 import net.corda.schema.registry.AvroSchemaRegistry
@@ -11,7 +10,7 @@ import org.slf4j.LoggerFactory
 
 class CordaDBAvroDeserializerImpl<T : Any>(
     private val schemaRegistry: AvroSchemaRegistry,
-    private val onError: Consumer<ByteArray>,
+    private val onError: (ByteArray) -> Unit,
     private val expectedClass: Class<T>
 ) : CordaAvroDeserializer<T> {
 
@@ -56,7 +55,7 @@ class CordaDBAvroDeserializerImpl<T : Any>(
         // We don't want to throw back into Kafka as that would mean the entire poll (with possibly
         // many records) would fail, and keep failing.  So we'll just callback to note the bad deserialize
         // and return a null.  This will mean the record gets treated as 'deleted' in the processors
-        onError.accept(data)
+        onError.invoke(data)
         null
     }
 

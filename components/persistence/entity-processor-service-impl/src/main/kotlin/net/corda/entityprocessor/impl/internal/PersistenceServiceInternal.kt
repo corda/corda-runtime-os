@@ -1,5 +1,7 @@
 package net.corda.entityprocessor.impl.internal
 
+import net.corda.data.KeyValuePair
+import net.corda.data.KeyValuePairList
 import net.corda.data.persistence.DeleteEntities
 import net.corda.data.persistence.DeleteEntitiesById
 import net.corda.data.persistence.EntityResponse
@@ -65,7 +67,7 @@ class PersistenceServiceInternal(
         payload: PersistEntities
     ): EntityResponse {
         payload.entities.map { entityManager.persist(serializationService.deserialize(it.array(), Any::class.java)) }
-        return EntityResponse(emptyList())
+        return EntityResponse(emptyList(), KeyValuePairList(emptyList()))
     }
 
     fun find(
@@ -78,7 +80,7 @@ class PersistenceServiceInternal(
             val id = serializationService.deserialize(serializedId.array(), Any::class.java)
             entityManager.find(clazz, id)?.let { entity -> payloadCheck(serializationService.toBytes(entity)) }
         }
-        return EntityResponse(results)
+        return EntityResponse(results, KeyValuePairList(emptyList()))
     }
 
     fun merge(
@@ -90,7 +92,7 @@ class PersistenceServiceInternal(
             val entity = serializationService.deserialize(it.array(), Any::class.java)
             entityManager.merge(entity)
         }
-        return EntityResponse(results.map { payloadCheck(serializationService.toBytes(it)) })
+        return EntityResponse(results.map { payloadCheck(serializationService.toBytes(it)) }, KeyValuePairList(emptyList()))
     }
 
     fun deleteEntities(
@@ -103,7 +105,7 @@ class PersistenceServiceInternal(
             val entity = serializationService.deserialize(it.array(), Any::class.java)
             entityManager.remove(entityManager.merge(entity))
         }
-        return EntityResponse(emptyList())
+        return EntityResponse(emptyList(), KeyValuePairList(emptyList()))
     }
 
     /**
@@ -126,7 +128,7 @@ class PersistenceServiceInternal(
                 logger.debug("Entity not found for deletion: ${payload.entityClassName} and id: $id")
             }
         }
-        return EntityResponse(emptyList())
+        return EntityResponse(emptyList(), KeyValuePairList(emptyList()))
     }
 
     /**
@@ -202,10 +204,11 @@ class PersistenceServiceInternal(
             query.maxResults = limit
         }
 
-        val result = when (val results = query.resultList) {
+        val results = query.resultList
+        val result = when (results ) {
             null -> emptyList()
             else -> results.filterNotNull().map { item -> payloadCheck(serializationService.toBytes(item)) }
         }
-        return EntityResponse(result)
+        return EntityResponse(result, KeyValuePairList(listOf(KeyValuePair("numberOfRowsFromQuery", results.size.toString()))))
     }
 }

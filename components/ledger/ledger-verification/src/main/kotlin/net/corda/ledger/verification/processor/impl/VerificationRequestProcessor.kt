@@ -9,6 +9,9 @@ import net.corda.ledger.verification.processor.VerificationRequestHandler
 import net.corda.ledger.verification.sandbox.VerificationSandboxService
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
+import net.corda.flow.utils.toMap
+import net.corda.utilities.MDC_CLIENT_ID
+import net.corda.utilities.MDC_EXTERNAL_EVENT_ID
 import net.corda.utilities.trace
 import net.corda.utilities.withMDC
 import net.corda.virtualnode.toCorda
@@ -27,7 +30,6 @@ class VerificationRequestProcessor(
 
     private companion object {
         val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
-        const val MDC_EXTERNAL_EVENT_ID = "external_event_id"
     }
 
     override val keyClass = String::class.java
@@ -40,7 +42,14 @@ class VerificationRequestProcessor(
         return events
             .mapNotNull { it.value }
             .map { request ->
-                withMDC(mapOf(MDC_EXTERNAL_EVENT_ID to request.flowExternalEventContext.requestId)) {
+                val clientRequestId = request.flowExternalEventContext.contextProperties.toMap()[MDC_CLIENT_ID] ?: ""
+
+                withMDC(
+                    mapOf(
+                        MDC_CLIENT_ID to clientRequestId,
+                        MDC_EXTERNAL_EVENT_ID to request.flowExternalEventContext.requestId
+                    )
+                ) {
                     try {
                         val holdingIdentity = request.holdingIdentity.toCorda()
                         val sandbox = verificationSandboxService.get(holdingIdentity, request.cpkMetadata)
