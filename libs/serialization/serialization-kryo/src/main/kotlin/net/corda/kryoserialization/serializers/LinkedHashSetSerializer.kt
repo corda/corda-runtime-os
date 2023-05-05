@@ -13,7 +13,7 @@ import com.esotericsoftware.kryo.io.Output
  * Taking a look at HashMap#keySet() method, it’s possible to see that it does
  * not support the add or addAll operations.
  */
-internal object EntrySetSerializer : Serializer<Set<Map.Entry<*,*>>>() {
+internal object LinkedHashSetSerializer : Serializer<Set<Map.Entry<*,*>>>() {
 
     // Create a dummy object to get the LinkedHashMap$LinkedEntrySet from it
     val serializedType: Class<out Set<Map.Entry<*,*>>> = mapOf(Any() to Any(), Any() to Any()).entries::class.java
