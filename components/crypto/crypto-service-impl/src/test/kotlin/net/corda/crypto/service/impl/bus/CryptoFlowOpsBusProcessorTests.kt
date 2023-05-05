@@ -23,6 +23,7 @@ import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoResponseContext
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.crypto.wire.CryptoSigningKeys
+import net.corda.data.crypto.wire.ops.flow.FlowOpsRequest
 import net.corda.data.crypto.wire.ops.flow.FlowOpsResponse
 import net.corda.data.crypto.wire.ops.flow.commands.SignFlowCommand
 import net.corda.data.crypto.wire.ops.flow.queries.ByIdsFlowQuery
@@ -197,15 +198,20 @@ class CryptoFlowOpsBusProcessorTests {
         )
 
         val notMyKey = mockPublicKey()
-        val inputKeys = listOf(myPublicKeys[0], myPublicKeys[1], notMyKey)
 
-        doFlowOperations(myPublicKeys, inputKeys, notMyKey)
+        doFlowOperations(myPublicKeys, notMyKey, {
+            transformer:CryptoFlowOpsTransformerImpl, flowExternalEventContext:ExternalEventContext -> transformer.createFilterMyKeys(
+                tenantId,
+            listOf(myPublicKeys[0], myPublicKeys[1], notMyKey),
+                flowExternalEventContext
+            )
+        })
     }
 
     private fun doFlowOperations(
         myPublicKeys: List<PublicKey>,
-        inputKeys: List<PublicKey>,
-        notMyKey: PublicKey
+        notMyKey: PublicKey,
+        flowOpCallback: (CryptoFlowOpsTransformerImpl, ExternalEventContext)->FlowOpsRequest
     ) {
         var passedTenantId = UUID.randomUUID().toString() // the tenant ID that the signing service is called with
         var passedSecureHashes = listOf<String>() // the secure hashes passed into the signing service
@@ -238,11 +244,7 @@ class CryptoFlowOpsBusProcessorTests {
                     Record(
                         topic = eventTopic,
                         key = recordKey,
-                        value = transformer.createFilterMyKeys(
-                            tenantId,
-                            inputKeys,
-                            flowExternalEventContext
-                        )
+                        value = flowOpCallback(transformer, flowExternalEventContext)
                     )
                 )
             )
