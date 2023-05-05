@@ -21,7 +21,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 import java.nio.file.Path
 
-@Disabled("CORE-13288: Tests are disabled until there is a solution in place")
+
 class SessionCertificateTest {
     @TempDir
     lateinit var tempDir: Path
