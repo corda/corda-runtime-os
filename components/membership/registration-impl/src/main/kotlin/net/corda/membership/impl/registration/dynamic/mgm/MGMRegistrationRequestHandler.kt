@@ -1,6 +1,6 @@
 package net.corda.membership.impl.registration.dynamic.mgm
 
-import net.corda.data.CordaAvroSerializationFactory
+import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey

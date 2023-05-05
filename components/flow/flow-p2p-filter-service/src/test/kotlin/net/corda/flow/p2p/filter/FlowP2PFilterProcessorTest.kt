@@ -2,8 +2,8 @@ package net.corda.flow.p2p.filter
 
 import java.nio.ByteBuffer
 import java.time.Instant
-import net.corda.data.CordaAvroDeserializer
-import net.corda.data.CordaAvroSerializationFactory
+import net.corda.avro.serialization.CordaAvroDeserializer
+import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.mapper.FlowMapperEvent

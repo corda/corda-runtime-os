@@ -1,6 +1,6 @@
 package net.corda.messaging.api.chunking
 
-import net.corda.data.CordaAvroDeserializer
+import net.corda.avro.serialization.CordaAvroDeserializer
 
 /**
  * Factory class for instantiating services used by consumer and producers to produce and reassemble chunks.
