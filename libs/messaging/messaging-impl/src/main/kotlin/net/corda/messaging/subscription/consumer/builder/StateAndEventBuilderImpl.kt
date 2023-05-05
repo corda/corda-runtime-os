@@ -38,7 +38,7 @@ class StateAndEventBuilderImpl @Activate constructor(
         config: ResolvedSubscriptionConfig,
         onSerializationError: ((ByteArray) -> Unit)?
     ): CordaProducer {
-        val producerConfig = ProducerConfig(config.clientId, config.instanceId, true, ProducerRoles.SAE_PRODUCER)
+        val producerConfig = ProducerConfig(config.clientId, config.instanceId, true, ProducerRoles.SAE_PRODUCER, false)
         return cordaProducerBuilder.createProducer(
             producerConfig,
             config.messageBusConfig,

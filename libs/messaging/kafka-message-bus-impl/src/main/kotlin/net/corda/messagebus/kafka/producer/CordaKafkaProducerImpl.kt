@@ -107,7 +107,13 @@ class CordaKafkaProducerImpl(
             try {
                 producer.send(record.toKafkaRecord(topicPrefix , partition), callback?.toKafkaCallback())
             } catch (ex: CordaRuntimeException) {
-                log.warn("Failed to send record to topic ${record.topic} with key ${record.key}", ex)
+                val msg = "Failed to send record to topic ${record.topic} with key ${record.key}"
+                if (config.throwOnSerializationError) {
+                    log.error(msg, ex)
+                    throw ex
+                } else {
+                    log.warn(msg, ex)
+                }
             }
         }
     }

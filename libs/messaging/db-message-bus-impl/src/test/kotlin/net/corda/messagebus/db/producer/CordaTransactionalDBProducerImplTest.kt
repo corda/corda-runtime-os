@@ -12,11 +12,15 @@ import net.corda.messagebus.db.persistence.DBAccess
 import net.corda.messagebus.db.persistence.DBAccess.Companion.ATOMIC_TRANSACTION
 import net.corda.messagebus.db.util.WriteOffsets
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatExceptionOfType
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertDoesNotThrow
+import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
@@ -38,7 +42,8 @@ internal class CordaTransactionalDBProducerImplTest {
             mock(),
             dbAccess,
             mock(),
-            mock()
+            mock(),
+            true
         ) as CordaProducer
 
         val record = CordaProducerRecord(topic, key, value)
@@ -78,7 +83,7 @@ internal class CordaTransactionalDBProducerImplTest {
         whenever(serializer.serialize(eq(value))).thenReturn(serializedValue)
         val callback: CordaProducer.Callback = mock()
 
-        val producer = CordaTransactionalDBProducerImpl(serializer, dbAccess, mock(), mock())
+        val producer = CordaTransactionalDBProducerImpl(serializer, dbAccess, mock(), mock(), true)
         val cordaRecord = CordaProducerRecord(topic, key, value)
 
         producer.beginTransaction()
@@ -107,7 +112,7 @@ internal class CordaTransactionalDBProducerImplTest {
         whenever(serializer.serialize(eq(value))).thenReturn(serializedValue)
         val callback: CordaProducer.Callback = mock()
 
-        val producer = CordaTransactionalDBProducerImpl(serializer, dbAccess, writeOffsets, mock())
+        val producer = CordaTransactionalDBProducerImpl(serializer, dbAccess, writeOffsets, mock(), true)
         val cordaRecord = CordaProducerRecord(topic, key, value)
 
         producer.beginTransaction()
@@ -141,8 +146,59 @@ internal class CordaTransactionalDBProducerImplTest {
     @Test
     fun `producer correctly closes down dbAccess when closed`() {
         val dbAccess: DBAccess = mock()
-        val producer = CordaTransactionalDBProducerImpl(mock(), dbAccess, mock(), mock())
+        val producer = CordaTransactionalDBProducerImpl(mock(), dbAccess, mock(), mock(), true)
         producer.close()
         verify(dbAccess).close()
+    }
+
+    @Test
+    fun `Transactional producer throws exception for serialization error`() {
+        val dbAccess = mock<DBAccess>()
+        val writeOffsets = mock<WriteOffsets>().apply {
+            whenever(getNextOffsetFor(eq(CordaTopicPartition(topic, 0)))).thenReturn(3)
+        }
+        val serializer = mock<CordaAvroSerializer<Any>>()
+        whenever(serializer.serialize(eq(key))).doThrow(CordaRuntimeException("error"))
+        whenever(serializer.serialize(eq(value))).thenReturn(serializedValue)
+        val callback: CordaProducer.Callback = mock()
+
+        val producer = CordaTransactionalDBProducerImpl(
+            serializer,
+            dbAccess,
+            writeOffsets,
+            mock(),
+        )
+        val cordaRecord = CordaProducerRecord(topic, key, value)
+
+        assertThrows<CordaRuntimeException> {
+            producer.beginTransaction()
+            producer.send(cordaRecord, 0, callback)
+        }
+    }
+
+    @Test
+    fun `Transactional producer does not throw exception for serialization error when flag to false`() {
+        val dbAccess = mock<DBAccess>()
+        val writeOffsets = mock<WriteOffsets>().apply {
+            whenever(getNextOffsetFor(eq(CordaTopicPartition(topic, 0)))).thenReturn(3)
+        }
+        val serializer = mock<CordaAvroSerializer<Any>>()
+        doThrow(CordaRuntimeException("error")).whenever(serializer).serialize(eq(key))
+        whenever(serializer.serialize(eq(value))).thenReturn(serializedValue)
+        val callback: CordaProducer.Callback = mock()
+
+        val producer = CordaTransactionalDBProducerImpl(
+            serializer,
+            dbAccess,
+            writeOffsets,
+            mock(),
+            false
+        )
+        val cordaRecord = CordaProducerRecord(topic, key, value)
+
+        assertDoesNotThrow {
+            producer.beginTransaction()
+            producer.send(cordaRecord, 0, callback)
+        }
     }
 }
