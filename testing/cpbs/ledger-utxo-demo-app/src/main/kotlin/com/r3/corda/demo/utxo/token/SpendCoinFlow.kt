@@ -1,6 +1,8 @@
 package com.r3.corda.demo.utxo.token
 
+import com.r3.corda.demo.utxo.contract.CoinState
 import java.math.BigDecimal
+import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.application.flows.ClientRequestBody
 import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.CordaInject
@@ -8,6 +10,7 @@ import net.corda.v5.application.flows.InitiatingFlow
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.ledger.common.NotaryLookup
 import net.corda.v5.ledger.utxo.token.selection.TokenClaimCriteria
 import net.corda.v5.ledger.utxo.token.selection.TokenSelection
@@ -28,6 +31,9 @@ class SpendCoinFlow : ClientStartableFlow {
     @CordaInject
     lateinit var tokenSelection: TokenSelection
 
+    @CordaInject
+    lateinit var digestService: DigestService
+
     @Suspendable
     override fun call(requestBody: ClientRequestBody): String {
         log.info("Starting Coin Spend...")
@@ -38,7 +44,7 @@ class SpendCoinFlow : ClientStartableFlow {
 
             val selectionCriteria = TokenClaimCriteria(
                 CoinState.tokenType,
-                bankX500.toSecureHash(),
+                digestService.hash(bankX500.toString().toByteArray(), DigestAlgorithmName.SHA2_256),
                 notary.name,
                 spendRequest.currency,
                 BigDecimal(spendRequest.targetAmount)

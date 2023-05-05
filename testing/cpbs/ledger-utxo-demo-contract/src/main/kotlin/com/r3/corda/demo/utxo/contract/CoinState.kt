@@ -1,4 +1,4 @@
-package com.r3.corda.demo.utxo.token
+package com.r3.corda.demo.utxo.contract
 
 import java.math.BigDecimal
 import java.security.PublicKey

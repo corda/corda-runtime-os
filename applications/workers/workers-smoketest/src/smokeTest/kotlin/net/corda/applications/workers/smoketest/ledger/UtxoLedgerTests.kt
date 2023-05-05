@@ -91,6 +91,48 @@ class UtxoLedgerTests {
     }
 
     @Test
+    fun `Utxo Token - Create 10 Coins`() {
+        val rpcStartArgs = mapOf(
+            "issuerBankX500" to charlieX500,
+            "currency" to "USD",
+            "numberOfCoins" to 10,
+            "valueOfCoin" to 5,
+            "tag" to "simple coin"
+        )
+
+        val utxoFlowRequestId = startRpcFlow(
+            aliceHoldingId,
+            rpcStartArgs,
+            "com.r3.corda.demo.utxo.token.CreateCoinFlow"
+        )
+
+        println("creating coins for bank = ${charlieHoldingId} vnode = ${aliceHoldingId}")
+
+        val utxoFlowResult = awaitRpcFlowFinished(aliceHoldingId, utxoFlowRequestId)
+        assertThat(utxoFlowResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+    }
+
+    @Test
+    fun `Utxo Token - Spend Coins`() {
+
+        val rpcStartArgs = mapOf(
+            "issuerBankX500" to charlieX500,
+            "currency" to "USD",
+            "maxCoinsToUse" to 1,
+            "targetAmount" to 20,
+        )
+
+        val utxoFlowRequestId = startRpcFlow(
+            aliceHoldingId,
+            rpcStartArgs,
+            "com.r3.corda.demo.utxo.token.SpendCoinFlow"
+        )
+
+        val utxoFlowResult = awaitRpcFlowFinished(aliceHoldingId, utxoFlowRequestId)
+        assertThat(utxoFlowResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+    }
+
+    @Test
     fun `Utxo Ledger - custom query can be executed and results are returned if no offset is provided and limit is maximized`() {
         val input = "test input"
 

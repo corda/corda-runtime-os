@@ -1,9 +1,5 @@
 package com.r3.corda.demo.utxo.token
 
-import net.corda.crypto.core.SecureHashImpl
-import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.crypto.DigestAlgorithmName
-import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.utxo.Command
 import net.corda.v5.ledger.utxo.token.selection.ClaimedToken
 
@@ -32,11 +28,3 @@ data class SpendCoinResponseMessage(
 )
 
 class NullCoinCommand : Command
-
-fun MemberX500Name.toSecureHash(): SecureHash {
-    return SecureHashImpl(
-        DigestAlgorithmName.SHA2_256.name,
-        this.toString().toByteArray()
-    )
-}
-

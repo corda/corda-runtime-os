@@ -14,7 +14,6 @@ cordapp {
 }
 
 dependencies {
-    cordaProvided project(":libs:crypto:crypto-core")
     cordaProvided platform("net.corda:corda-api:$cordaApiVersion")
     cordaProvided 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     cordaProvided 'net.corda:corda-ledger-utxo'

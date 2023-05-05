@@ -1,9 +1,11 @@
 package com.r3.corda.demo.utxo.token
 
+import com.r3.corda.demo.utxo.contract.CoinState
+import com.r3.corda.demo.utxo.contract.TestCommand
 import java.math.BigDecimal
 import java.time.Instant
 import kotlin.time.Duration.Companion.days
-import net.corda.crypto.core.parseSecureHash
+import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.application.flows.ClientRequestBody
 import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.CordaInject
@@ -13,6 +15,7 @@ import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.ledger.common.NotaryLookup
 import net.corda.v5.ledger.utxo.UtxoLedgerService
 import org.slf4j.LoggerFactory
@@ -37,6 +40,9 @@ class CreateCoinFlow : ClientStartableFlow {
 
     @CordaInject
     lateinit var notaryLookup: NotaryLookup
+
+    @CordaInject
+    lateinit var digestService: DigestService
 
     @Suspendable
     override fun call(requestBody: ClientRequestBody): String {
@@ -64,12 +70,12 @@ class CreateCoinFlow : ClientStartableFlow {
             val ownerHash = if (creationRequest.ownerHash == null) {
                 null
             } else {
-                parseSecureHash(creationRequest.ownerHash)
+                digestService.parseSecureHash(creationRequest.ownerHash)
             }
 
             val coins = IntRange(1, creationRequest.numberOfCoins).map {
                 CoinState(
-                    issuer = bankX500.toSecureHash(),
+                    issuer = digestService.hash(bankX500.toString().toByteArray(), DigestAlgorithmName.SHA2_256),
                     currency = creationRequest.currency,
                     value = BigDecimal(creationRequest.valueOfCoin),
                     participants = participants,
@@ -92,7 +98,7 @@ class CreateCoinFlow : ClientStartableFlow {
                 .setNotary(notary.name)
                 .setTimeWindowBetween(Instant.now(), Instant.now().plusMillis(1.days.inWholeMilliseconds))
                 .addOutputStates(coins)
-                .addCommand(NullCoinCommand())
+                .addCommand(TestCommand())
                 .addSignatories(participants)
                 .toSignedTransaction()
 
