@@ -10,6 +10,7 @@ import net.corda.messagebus.db.datamodel.TopicEntry
 import net.corda.messagebus.db.datamodel.TopicRecordEntry
 import net.corda.messagebus.db.datamodel.TransactionRecordEntry
 import net.corda.messagebus.db.datamodel.TransactionState
+import net.corda.messagebus.db.persistence.DBAccess.Companion.ATOMIC_TRANSACTION
 import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
 import net.corda.test.util.LoggingUtils.emphasise
 import org.assertj.core.api.Assertions.assertThat
@@ -418,5 +419,15 @@ class DBAccessIntegrationTest {
         )
 
         assertThat(dbAccess.getTopicPartitionMapFor(topic)).isEqualTo(expectedResult)
+    }
+    @Test
+    fun `Atomic Transaction has been committed`() {
+        val result =
+            query(
+                TransactionRecordEntry::class.java,
+                "from transaction_record where transactionId = '${ATOMIC_TRANSACTION.transactionId}'"
+            ).single()
+        assertThat(result.transactionId == ATOMIC_TRANSACTION.transactionId)
+        assertThat(result.state == TransactionState.COMMITTED)
     }
 }
