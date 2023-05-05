@@ -199,9 +199,18 @@ class CryptoFlowOpsBusProcessorTests {
         val notMyKey = mockPublicKey()
         val inputKeys = listOf(myPublicKeys[0], myPublicKeys[1], notMyKey)
 
-        var passedTenantId = UUID.randomUUID().toString()
-        var passedList = listOf<String>()
-        val recordKey = UUID.randomUUID().toString()
+        doFlowOperations(myPublicKeys, inputKeys, notMyKey)
+    }
+
+    private fun doFlowOperations(
+        myPublicKeys: List<PublicKey>,
+        inputKeys: List<PublicKey>,
+        notMyKey: PublicKey
+    ) {
+        var passedTenantId = UUID.randomUUID().toString() // the tenant ID that the signing service is called with
+        var passedSecureHashes = listOf<String>() // the secure hashes passed into the signing service
+        val recordKey =
+            UUID.randomUUID().toString() // GUID for the record that is passed into the crypto flow ops processor
         val flowExternalEventContext = ExternalEventContext("request id", recordKey, KeyValuePairList(emptyList()))
 
         whenever(
@@ -219,7 +228,7 @@ class CryptoFlowOpsBusProcessorTests {
 
         doAnswer {
             passedTenantId = it.getArgument(0)
-            passedList = it.getArgument<List<SecureHash>>(1).map { it.toString() }
+            passedSecureHashes = it.getArgument<List<SecureHash>>(1).map { it.toString() }
             myPublicKeys.map { mockSigningKeyInfo(it) }
         }.whenever(signingService).lookupSigningKeysByPublicKeyHashes(any(), any())
         val transformer = buildTransformer()
@@ -256,16 +265,19 @@ class CryptoFlowOpsBusProcessorTests {
             }
         )
         assertEquals(tenantId, passedTenantId)
-        assertEquals(3, passedList.size)
-        assertEquals(myPublicKeys[0].fullId(), passedList[0])
-        assertEquals(myPublicKeys[1].fullId(), passedList[1])
-        assertEquals(notMyKey.fullId(), passedList[2])
+        assertEquals(3, passedSecureHashes.size)
+        assertEquals(myPublicKeys[0].fullId(), passedSecureHashes[0])
+        assertEquals(myPublicKeys[1].fullId(), passedSecureHashes[1])
+        assertEquals(notMyKey.fullId(), passedSecureHashes[2])
         val transformed = transformer.transform(flowOpsResponseArgumentCaptor.firstValue)
         assertInstanceOf(List::class.java, transformed)
-        val keys = transformed as List<PublicKey>
-        assertEquals(2, transformed.size)
-        assertTrue(keys.any { it.encoded.contentEquals(myPublicKeys[0].encoded) })
-        assertTrue(keys.any { it.encoded.contentEquals(myPublicKeys[1].encoded) })
+        if (transformed is List<*> && transformed.firstOrNull() is PublicKey) {
+            assertEquals(2, transformed.size)
+            assertTrue(transformed.any { (it as PublicKey).encoded.contentEquals(myPublicKeys[0].encoded) })
+            assertTrue(transformed.any { (it as PublicKey).encoded.contentEquals(myPublicKeys[1].encoded) })
+        } else {
+            throw IllegalArgumentException()
+        }
     }
 
     @Test
