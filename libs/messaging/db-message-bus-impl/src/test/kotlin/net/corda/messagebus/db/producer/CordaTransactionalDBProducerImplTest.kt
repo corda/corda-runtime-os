@@ -38,7 +38,8 @@ internal class CordaTransactionalDBProducerImplTest {
             mock(),
             dbAccess,
             mock(),
-            mock()
+            mock(),
+            true
         ) as CordaProducer
 
         val record = CordaProducerRecord(topic, key, value)
@@ -78,7 +79,7 @@ internal class CordaTransactionalDBProducerImplTest {
         whenever(serializer.serialize(eq(value))).thenReturn(serializedValue)
         val callback: CordaProducer.Callback = mock()
 
-        val producer = CordaTransactionalDBProducerImpl(serializer, dbAccess, mock(), mock())
+        val producer = CordaTransactionalDBProducerImpl(serializer, dbAccess, mock(), mock(), true)
         val cordaRecord = CordaProducerRecord(topic, key, value)
 
         producer.beginTransaction()
@@ -107,7 +108,7 @@ internal class CordaTransactionalDBProducerImplTest {
         whenever(serializer.serialize(eq(value))).thenReturn(serializedValue)
         val callback: CordaProducer.Callback = mock()
 
-        val producer = CordaTransactionalDBProducerImpl(serializer, dbAccess, writeOffsets, mock())
+        val producer = CordaTransactionalDBProducerImpl(serializer, dbAccess, writeOffsets, mock(), true)
         val cordaRecord = CordaProducerRecord(topic, key, value)
 
         producer.beginTransaction()
@@ -141,7 +142,7 @@ internal class CordaTransactionalDBProducerImplTest {
     @Test
     fun `producer correctly closes down dbAccess when closed`() {
         val dbAccess: DBAccess = mock()
-        val producer = CordaTransactionalDBProducerImpl(mock(), dbAccess, mock(), mock())
+        val producer = CordaTransactionalDBProducerImpl(mock(), dbAccess, mock(), mock(), true)
         producer.close()
         verify(dbAccess).close()
     }

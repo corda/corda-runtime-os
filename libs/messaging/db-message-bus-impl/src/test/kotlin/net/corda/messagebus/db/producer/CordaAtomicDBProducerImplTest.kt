@@ -1,5 +1,6 @@
 package net.corda.messagebus.db.producer
 
+import javax.persistence.RollbackException
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.messagebus.api.CordaTopicPartition
 import net.corda.messagebus.api.producer.CordaProducer
@@ -19,7 +20,6 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.kotlin.whenever
-import javax.persistence.RollbackException
 
 internal class CordaAtomicDBProducerImplTest {
 
@@ -97,7 +97,7 @@ internal class CordaAtomicDBProducerImplTest {
             serializer,
             dbAccess,
             writeOffsets,
-            mock()
+            mock(),
         )
         val cordaRecord = CordaProducerRecord(topic, key, value)
 

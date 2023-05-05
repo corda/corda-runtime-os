@@ -21,6 +21,7 @@ class CordaAtomicDBProducerImpl(
     private val dbAccess: DBAccess,
     private val writeOffsets: WriteOffsets,
     private val headerSerializer: MessageHeaderSerializer,
+    private val throwOnSerializationError: Boolean = true,
 ) : CordaProducer {
 
     companion object {
@@ -73,8 +74,14 @@ class CordaAtomicDBProducerImpl(
                     ATOMIC_TRANSACTION,
                 )
             } catch (ex: Exception) {
-                logger.warn("Failed to send record to topic ${record.topic} with key ${record.key}", ex)
-                null            }
+                if (throwOnSerializationError) {
+                    logger.error("Failed to send record to topic ${record.topic} with key ${record.key}", ex)
+                    throw ex
+                } else {
+                    logger.warn("Failed to send record to topic ${record.topic} with key ${record.key}", ex)
+                    null
+                }
+            }
         }
 
         doSendRecordsToTopicAndDB(dbRecords)

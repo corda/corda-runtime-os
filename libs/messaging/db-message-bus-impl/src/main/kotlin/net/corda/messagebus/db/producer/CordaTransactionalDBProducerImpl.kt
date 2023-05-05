@@ -26,6 +26,7 @@ class CordaTransactionalDBProducerImpl(
     private val dbAccess: DBAccess,
     private val writeOffsets: WriteOffsets,
     private val headerSerializer: MessageHeaderSerializer,
+    private val throwOnSerializationError: Boolean,
 ) : CordaProducer {
 
     companion object {
@@ -88,8 +89,13 @@ class CordaTransactionalDBProducerImpl(
                     transaction,
                 )
             } catch (ex: Exception) {
-                log.warn("Failed to send record to topic ${record.topic} with key ${record.key}", ex)
-                null
+                if (throwOnSerializationError) {
+                    log.error("Failed to send record to topic ${record.topic} with key ${record.key}", ex)
+                    throw ex
+                } else {
+                    log.warn("Failed to send record to topic ${record.topic} with key ${record.key}", ex)
+                    null
+                }
             }
         }
 

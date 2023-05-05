@@ -65,14 +65,16 @@ class DBCordaProducerBuilderImpl @Activate constructor(
                 CordaDBAvroSerializerImpl(avroSchemaRegistry, onSerializationError),
                 DBAccess(emf),
                 getWriteOffsets(resolvedConfig),
-                MessageHeaderSerializerImpl()
+                MessageHeaderSerializerImpl(),
+                true
             )
         } else {
             CordaAtomicDBProducerImpl(
                 CordaDBAvroSerializerImpl(avroSchemaRegistry, onSerializationError),
                 DBAccess(emf),
                 getWriteOffsets(resolvedConfig),
-                MessageHeaderSerializerImpl()
+                MessageHeaderSerializerImpl(),
+                producerConfig.throwOnSerializationError
             )
         }
     }
