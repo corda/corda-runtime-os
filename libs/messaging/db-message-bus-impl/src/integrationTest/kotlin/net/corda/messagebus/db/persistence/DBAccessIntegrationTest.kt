@@ -427,7 +427,7 @@ class DBAccessIntegrationTest {
                 TransactionRecordEntry::class.java,
                 "from transaction_record where transactionId = '${ATOMIC_TRANSACTION.transactionId}'"
             ).single()
-        assertThat(result.transactionId == ATOMIC_TRANSACTION.transactionId)
-        assertThat(result.state == TransactionState.COMMITTED)
+        assertThat(result.transactionId).isEqualTo(ATOMIC_TRANSACTION.transactionId)
+        assertThat(result.state).isEqualTo(TransactionState.COMMITTED)
     }
 }
