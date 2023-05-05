@@ -36,7 +36,6 @@ import net.corda.messaging.integration.getStringRecords
 import net.corda.messaging.integration.getTopicConfig
 import net.corda.messaging.integration.processors.TestBadSerializationDurableProcessor
 import net.corda.messaging.integration.processors.TestDLQDurableProcessor
-import net.corda.messaging.integration.processors.TestDurableDummyMessageProcessor
 import net.corda.messaging.integration.processors.TestDurableProcessor
 import net.corda.messaging.integration.processors.TestDurableProcessorStrings
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
@@ -214,7 +213,7 @@ class DurableSubscriptionIntegrationTest {
         )
         val dlqDurableSub = subscriptionFactory.createDurableSubscription(
             SubscriptionConfig("$DURABLE_TOPIC3-group-dlq", DURABLE_TOPIC3_DLQ),
-            TestDurableDummyMessageProcessor(dlqLatch),
+            TestDLQDurableProcessor(dlqLatch),
             TEST_CONFIG,
             null
         )
