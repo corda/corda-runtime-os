@@ -16,7 +16,6 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.TimerEvent
-import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
 import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.read.MembershipGroupReaderProvider
@@ -43,6 +42,7 @@ import java.util.concurrent.ConcurrentHashMap
 import kotlin.random.Random
 
 @Component(service = [ExpirationProcessor::class])
+@Suppress("LongParameterList")
 internal class ExpirationProcessorImpl internal constructor(
     private val publisherFactory: PublisherFactory,
     private val configurationReadService: ConfigurationReadService,
@@ -114,16 +114,11 @@ internal class ExpirationProcessorImpl internal constructor(
 
     private fun loadMgms() {
         mgms.addAll(
-            virtualNodeInfoReadService.getAll().map {
-                it.holdingIdentity
-            }.flatMap { holdingIdentity ->
-                membershipGroupReaderProvider
-                    .getGroupReader(holdingIdentity)
-                    .lookup()
-                    .filter {
-                        it.isMgm
-                    }.map {
-                        it.holdingIdentity
+            virtualNodeInfoReadService.getAll().mapNotNull {
+                val holdingIdentity = it.holdingIdentity
+                membershipGroupReaderProvider.getGroupReader(holdingIdentity).lookup(holdingIdentity.x500Name)
+                    ?.let { member ->
+                        if (member.isMgm) holdingIdentity else null
                     }
             }
         )

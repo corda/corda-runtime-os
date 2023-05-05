@@ -58,6 +58,7 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.time.Instant
 import java.util.UUID
+import kotlin.reflect.jvm.internal.impl.util.MemberKindCheck.Member
 import kotlin.test.assertTrue
 
 class ExpirationProcessorTest {
@@ -124,12 +125,15 @@ class ExpirationProcessorTest {
     private val mgmVirtualNodeInfo: VirtualNodeInfo = mock {
         on { holdingIdentity } doReturn mgmTwo
     }
+    private val aliceVirtualNodeInfo: VirtualNodeInfo = mock {
+        on { holdingIdentity } doReturn alice
+    }
     private val bobVirtualNodeInfo: VirtualNodeInfo = mock {
         on { holdingIdentity } doReturn bob
     }
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService = mock {
         on { getByHoldingIdentityShortHash(bob.shortHash) } doReturn bobVirtualNodeInfo
-        on { getAll() } doReturn listOf(mgmVirtualNodeInfo)
+        on { getAll() } doReturn listOf(mgmVirtualNodeInfo, aliceVirtualNodeInfo, bobVirtualNodeInfo)
     }
     private val memberContext: MemberContext = mock {
         on { parse(GROUP_ID, String::class.java) } doReturn groupId
@@ -149,10 +153,12 @@ class ExpirationProcessorTest {
         on { memberProvidedContext } doReturn mock()
     }
     private val membershipGroupReader: MembershipGroupReader = mock {
-        on { lookup() } doReturn listOf(mgmInfo, aliceInfo, bobInfo)
+        on { lookup(eq(mgmTwo.x500Name), any()) } doReturn mgmInfo
+        on { lookup(eq(alice.x500Name), any()) } doReturn aliceInfo
+        on { lookup(eq(bob.x500Name), any()) } doReturn bobInfo
     }
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider = mock {
-        on { getGroupReader(mgmTwo) } doReturn membershipGroupReader
+        on { getGroupReader(any()) } doReturn membershipGroupReader
     }
 
     private val expirationProcessor = ExpirationProcessorImpl(
