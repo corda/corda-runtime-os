@@ -7,15 +7,11 @@ import com.esotericsoftware.kryo.io.Output
 
 /**
  * The [java.util.LinkedHashMap.LinkedEntrySet] has a problem when the default Kryo is
- * deserializing immutable collections: an exception is thrown.
+ * deserializing immutable collections: an exception is thrown due to the fact that
+ * the methods add() and addAll() were not implemented.
  *
  * Taking a look at HashMap#keySet() method, it’s possible to see that it does
  * not support the add or addAll operations.
- *
- * We've added our own custom serializer in order to ensure that Set<Map.Entry<K, V>>
- * are being serialized properly.
- *
- * Test Case: mapOf("1" to "a", "2" to null).entries
  */
 internal object EntrySetSerializer : Serializer<Set<Map.Entry<*,*>>>() {
 
