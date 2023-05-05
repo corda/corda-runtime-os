@@ -58,7 +58,6 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.time.Instant
 import java.util.UUID
-import kotlin.reflect.jvm.internal.impl.util.MemberKindCheck.Member
 import kotlin.test.assertTrue
 
 class ExpirationProcessorTest {
