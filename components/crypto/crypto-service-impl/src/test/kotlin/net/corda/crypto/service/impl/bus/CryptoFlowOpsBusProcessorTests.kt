@@ -289,7 +289,7 @@ class CryptoFlowOpsBusProcessorTests {
     }
 
         @Test
-        fun `Should process sign command using generic method`() {
+        fun `Should process sign command`() {
             val publicKey = mockPublicKey()
             val data = UUID.randomUUID().toString().toByteArray()
 
@@ -306,52 +306,6 @@ class CryptoFlowOpsBusProcessorTests {
             }
         }
 
-    @Test
-    fun `Should process sign command`() {
-        val publicKey = mockPublicKey()
-        val recordKey = UUID.randomUUID().toString()
-        val flowExternalEventContext = ExternalEventContext("request id", recordKey, KeyValuePairList(emptyList()))
-
-        whenever(
-            externalEventResponseFactory.success(
-                eq(flowExternalEventContext),
-                flowOpsResponseArgumentCaptor.capture()
-            )
-        ).thenReturn(
-            Record(
-                Schemas.Flow.FLOW_EVENT_TOPIC,
-                flowExternalEventContext.flowId,
-                FlowEvent()
-            )
-        )
-
-        val data = UUID.randomUUID().toString().toByteArray()
-        val operationContext = mapOf("key1" to "value1")
-        val transformer = buildTransformer()
-        val result = act {
-            processor.onNext(
-                listOf(
-                    Record(
-                        topic = eventTopic,
-                        key = recordKey,
-                        value = transformer.createSign(
-                            UUID.randomUUID().toString(),
-                            tenantId,
-                            publicKey.encoded,
-                            SignatureSpecs.EDDSA_ED25519,
-                            data,
-                            operationContext,
-                            flowExternalEventContext
-                        )
-                    )
-                )
-            )
-        }
-        assertResponseContext<SignFlowCommand, CryptoSignatureWithKey>(
-            result,
-            flowOpsResponseArgumentCaptor.firstValue
-        )
-    }
 
 //    @Suppress("UNCHECKED_CAST")
 //    @Test
