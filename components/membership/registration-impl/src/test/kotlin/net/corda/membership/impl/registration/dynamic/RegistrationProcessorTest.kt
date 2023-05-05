@@ -91,6 +91,7 @@ class  RegistrationProcessorTest {
                 clock.instant(),
                 RegistrationStatus.RECEIVED_BY_MGM,
                 registrationId,
+                holdingIdentity.toCorda().shortHash.value,
                 1,
                 memberContext,
                 signature,

@@ -9,7 +9,6 @@ import net.corda.db.connection.manager.VirtualNodeDbType
 import net.corda.db.core.DbPrivilege
 import net.corda.db.messagebus.testkit.DBSetup
 import net.corda.db.schema.CordaDb
-import net.corda.db.schema.DbSchema
 import net.corda.db.testkit.DatabaseInstaller
 import net.corda.db.testkit.TestDbInfo
 import net.corda.libs.configuration.datamodel.ConfigurationEntities
@@ -20,7 +19,6 @@ import net.corda.lifecycle.registry.LifecycleRegistry
 import net.corda.membership.certificate.publisher.MembersClientCertificatePublisher
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.read.MembershipGroupReaderProvider
-import net.corda.membership.registration.MembershipRequestRegistrationOutcome
 import net.corda.membership.registration.RegistrationProxy
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
