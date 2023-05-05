@@ -6,8 +6,8 @@ import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.StaticNetworkInfo
 import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.ApprovalRuleType
-import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.common.RegistrationRequestDetails
+import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.db.request.MembershipPersistenceRequest
 import net.corda.data.membership.db.request.query.MutualTlsListAllowedCertificates
 import net.corda.data.membership.db.request.query.QueryApprovalRules
@@ -23,7 +23,6 @@ import net.corda.data.membership.db.response.query.GroupPolicyQueryResponse
 import net.corda.data.membership.db.response.query.MemberInfoQueryResponse
 import net.corda.data.membership.db.response.query.MemberSignatureQueryResponse
 import net.corda.data.membership.db.response.query.MutualTlsListAllowedCertificatesResponse
-import net.corda.data.membership.db.response.query.PersistenceFailedResponse
 import net.corda.data.membership.db.response.query.PreAuthTokenQueryResponse
 import net.corda.data.membership.db.response.query.RegistrationRequestQueryResponse
 import net.corda.data.membership.db.response.query.RegistrationRequestsQueryResponse
@@ -39,6 +38,7 @@ import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.persistence.client.MembershipQueryResult
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
+import net.corda.utilities.Either
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.types.LayeredPropertyMap
@@ -50,8 +50,8 @@ import net.corda.virtualnode.toCorda
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import java.util.UUID
 import org.slf4j.LoggerFactory
+import java.util.UUID
 
 @Suppress("LongParameterList")
 @Component(service = [MembershipQueryClient::class])
@@ -61,7 +61,7 @@ internal class MembershipQueryClientImpl(
     configurationReadService: ConfigurationReadService,
     private val memberInfoFactory: MemberInfoFactory,
     clock: Clock,
-    private val layeredPropertyMapFactory: LayeredPropertyMapFactory
+    private val layeredPropertyMapFactory: LayeredPropertyMapFactory,
 ) : MembershipQueryClient, AbstractPersistenceClient(
     coordinatorFactory,
     LifecycleCoordinatorName.forComponent<MembershipQueryClient>(),
@@ -110,32 +110,17 @@ internal class MembershipQueryClientImpl(
 
     override fun queryMemberInfo(
         viewOwningIdentity: HoldingIdentity,
-        queryFilter: Collection<HoldingIdentity>
+        queryFilter: Collection<HoldingIdentity>,
     ): MembershipQueryResult<Collection<MemberInfo>> {
         if (queryFilter.isNotEmpty()) {
             logger.info("Querying for member infos represented by ${queryFilter.size} holding identities")
         }
-        val payload = MembershipPersistenceRequest(
+        return MembershipPersistenceRequest(
             buildMembershipRequestContext(viewOwningIdentity.toAvro()),
-            QueryMemberInfo(queryFilter.map { it.toAvro() })
-        ).execute()
-        return when (payload) {
-            is MemberInfoQueryResponse -> {
-                logger.info("Found ${payload.members.size} results.")
-                MembershipQueryResult.Success(
-                    payload.members.map { memberInfoFactory.create(it) }
-                )
-            }
-            is PersistenceFailedResponse -> {
-                val err = "Query failed because of: ${payload.errorMessage}"
-                logger.warn(err)
-                MembershipQueryResult.Failure(err)
-            }
-            else -> {
-                val err = "Query returned unexpected payload."
-                logger.warn(err)
-                MembershipQueryResult.Failure(err)
-            }
+            QueryMemberInfo(queryFilter.map { it.toAvro() }),
+        ).execute("query member info") { payload: MemberInfoQueryResponse ->
+            logger.info("Found ${payload.members.size} results.")
+            payload.members.map { memberInfoFactory.create(it) }
         }
     }
 
@@ -143,26 +128,11 @@ internal class MembershipQueryClientImpl(
         viewOwningIdentity: HoldingIdentity,
         registrationId: String,
     ): MembershipQueryResult<RegistrationRequestDetails?> {
-        val payload = MembershipPersistenceRequest(
+        return MembershipPersistenceRequest(
             buildMembershipRequestContext(viewOwningIdentity.toAvro()),
-            QueryRegistrationRequest(registrationId)
-        ).execute()
-        return when (payload) {
-            is RegistrationRequestQueryResponse -> {
-                MembershipQueryResult.Success(
-                    payload.registrationRequest
-                )
-            }
-            is PersistenceFailedResponse -> {
-                val err = "Query failed because of: ${payload.errorMessage}"
-                logger.warn(err)
-                MembershipQueryResult.Failure(err)
-            }
-            else -> {
-                val err = "Query returned unexpected payload."
-                logger.warn(err)
-                MembershipQueryResult.Failure(err)
-            }
+            QueryRegistrationRequest(registrationId),
+        ).execute("retrieve registration request") { payload: RegistrationRequestQueryResponse ->
+            payload.registrationRequest
         }
     }
 
@@ -170,28 +140,13 @@ internal class MembershipQueryClientImpl(
         viewOwningIdentity: HoldingIdentity,
         requestSubjectX500Name: MemberX500Name?,
         statuses: List<RegistrationStatus>,
-        limit: Int?
+        limit: Int?,
     ): MembershipQueryResult<List<RegistrationRequestDetails>> {
-        val payload = MembershipPersistenceRequest(
+        return MembershipPersistenceRequest(
             buildMembershipRequestContext(viewOwningIdentity.toAvro()),
-            QueryRegistrationRequests(requestSubjectX500Name?.toString(), statuses, limit)
-        ).execute()
-        return when (payload) {
-            is RegistrationRequestsQueryResponse -> {
-                MembershipQueryResult.Success(
-                    payload.registrationRequests
-                )
-            }
-            is PersistenceFailedResponse -> {
-                val err = "Query failed because of: ${payload.errorMessage}"
-                logger.warn(err)
-                MembershipQueryResult.Failure(err)
-            }
-            else -> {
-                val err = "Query returned unexpected payload."
-                logger.warn(err)
-                MembershipQueryResult.Failure(err)
-            }
+            QueryRegistrationRequests(requestSubjectX500Name?.toString(), statuses, limit),
+        ).execute("retrieve registration requests") { payload: RegistrationRequestsQueryResponse ->
+            payload.registrationRequests
         }
     }
 
@@ -202,61 +157,34 @@ internal class MembershipQueryClientImpl(
         if (holdingsIdentities.isEmpty()) {
             return MembershipQueryResult.Success(emptyMap())
         }
-        val payload = MembershipPersistenceRequest(
+        return MembershipPersistenceRequest(
             buildMembershipRequestContext(viewOwningIdentity.toAvro()),
-            QueryMemberSignature(holdingsIdentities.map { it.toAvro() })
-        ).execute()
-        return when (payload) {
-            is MemberSignatureQueryResponse -> {
-                MembershipQueryResult.Success(
-                    payload.membersSignatures.associate { memberSignature ->
-                        memberSignature.holdingIdentity.toCorda() to
-                                (memberSignature.signature to memberSignature.signatureSpec)
-                    }
-                )
-            }
-            is PersistenceFailedResponse -> {
-                MembershipQueryResult.Failure("Failed to find members signatures: ${payload.errorMessage}")
-            }
-            else -> {
-                MembershipQueryResult.Failure("Failed to find members signatures, unexpected response: $payload")
+            QueryMemberSignature(holdingsIdentities.map { it.toAvro() }),
+        ).execute("find members signatures") { payload: MemberSignatureQueryResponse ->
+            payload.membersSignatures.associate { memberSignature ->
+                memberSignature.holdingIdentity.toCorda() to
+                    (memberSignature.signature to memberSignature.signatureSpec)
             }
         }
     }
 
     override fun queryGroupPolicy(viewOwningIdentity: HoldingIdentity): MembershipQueryResult<Pair<LayeredPropertyMap, Long>> {
-        val payload = MembershipPersistenceRequest(
+        return MembershipPersistenceRequest(
             buildMembershipRequestContext(viewOwningIdentity.toAvro()),
-            QueryGroupPolicy()
-        ).execute()
-        return when (payload) {
-            is GroupPolicyQueryResponse -> {
-                MembershipQueryResult.Success(
-                    layeredPropertyMapFactory.createMap(payload.properties.toMap()) to payload.version
-                )
-            }
-            else -> {
-                MembershipQueryResult.Failure("Failed to find group policy information.")
-            }
+            QueryGroupPolicy(),
+        ).execute("retrieve group policy") { payload: GroupPolicyQueryResponse ->
+            layeredPropertyMapFactory.createMap(payload.properties.toMap()) to payload.version
         }
     }
 
     override fun mutualTlsListAllowedCertificates(
-        mgmHoldingIdentity: HoldingIdentity
+        mgmHoldingIdentity: HoldingIdentity,
     ): MembershipQueryResult<Collection<String>> {
-        val payload = MembershipPersistenceRequest(
+        return MembershipPersistenceRequest(
             buildMembershipRequestContext(mgmHoldingIdentity.toAvro()),
-            MutualTlsListAllowedCertificates()
-        ).execute()
-        return when (payload) {
-            is MutualTlsListAllowedCertificatesResponse -> {
-                MembershipQueryResult.Success(
-                    payload.subjects,
-                )
-            }
-            else -> {
-                MembershipQueryResult.Failure("Failed to retrieve list of allowed certificates.")
-            }
+            MutualTlsListAllowedCertificates(),
+        ).execute("retrieve mutual TLS allowed certificates") { payload: MutualTlsListAllowedCertificatesResponse ->
+            payload.subjects
         }
     }
 
@@ -264,7 +192,7 @@ internal class MembershipQueryClientImpl(
         mgmHoldingIdentity: HoldingIdentity,
         ownerX500Name: MemberX500Name?,
         preAuthTokenId: UUID?,
-        viewInactive: Boolean
+        viewInactive: Boolean,
     ): MembershipQueryResult<List<PreAuthToken>> {
         val statuses = if (viewInactive) {
             PreAuthTokenStatus.values().toList()
@@ -273,46 +201,57 @@ internal class MembershipQueryClientImpl(
         }
         val ownerX500NameString = ownerX500Name?.let { ownerX500Name.toString() }
         val preAuthTokenIdString = preAuthTokenId?.let { preAuthTokenId.toString() }
-        val payload = MembershipPersistenceRequest(
+        return MembershipPersistenceRequest(
             buildMembershipRequestContext(mgmHoldingIdentity.toAvro()),
-            QueryPreAuthToken(ownerX500NameString, preAuthTokenIdString, statuses)
-        ).execute()
-        return when (payload) {
-            is PreAuthTokenQueryResponse -> {
-                MembershipQueryResult.Success(
-                    payload.tokens,
-                )
-            }
-            else -> {
-                MembershipQueryResult.Failure("Failed to query for pre auth tokens.")
-            }
+            QueryPreAuthToken(ownerX500NameString, preAuthTokenIdString, statuses),
+        ).execute("query for pre auth tokens") { payload: PreAuthTokenQueryResponse ->
+            payload.tokens
         }
     }
 
     override fun getApprovalRules(
         viewOwningIdentity: HoldingIdentity,
-        ruleType: ApprovalRuleType
+        ruleType: ApprovalRuleType,
     ): MembershipQueryResult<Collection<ApprovalRuleDetails>> {
-        val payload = MembershipPersistenceRequest(
+        return MembershipPersistenceRequest(
             buildMembershipRequestContext(viewOwningIdentity.toAvro()),
-            QueryApprovalRules(ruleType)
-        ).execute()
-        return when (payload) {
-            is ApprovalRulesQueryResponse -> MembershipQueryResult.Success(payload.rules)
-            else -> MembershipQueryResult.Failure("Failed to retrieve approval rules.")
+            QueryApprovalRules(ruleType),
+        ).execute("retrieve approval rules") { payload: ApprovalRulesQueryResponse ->
+            payload.rules
         }
     }
 
     override fun queryStaticNetworkInfo(
-        groupId: String
+        groupId: String,
     ): MembershipQueryResult<StaticNetworkInfo> {
-        val payload = MembershipPersistenceRequest(
+        return MembershipPersistenceRequest(
             buildMembershipRequestContext(),
-            QueryStaticNetworkInfo(groupId)
-        ).execute()
-        return when (payload) {
-            is StaticNetworkInfoQueryResponse -> MembershipQueryResult.Success(payload.info)
-            else -> MembershipQueryResult.Failure("Failed to retrieve static network configuration.")
+            QueryStaticNetworkInfo(groupId),
+        ).execute("retrieve static network") { payload: StaticNetworkInfoQueryResponse ->
+            payload.info
+        }
+    }
+
+    private inline fun <reified T, E> MembershipPersistenceRequest.execute(
+        operationName: String,
+        crossinline convert: (T) -> E,
+    ): MembershipQueryResult<E> {
+        val result = this.operation {
+            if (it is T) {
+                Either.Left(it)
+            } else {
+                Either.Right(
+                    "Query returned unexpected payload. Got ${it?.javaClass} while waiting for ${T::class.java}",
+                )
+            }
+        }.send()
+        return when (result) {
+            is Either.Left -> MembershipQueryResult.Success(convert(result.a))
+            is Either.Right -> {
+                val err = "Failed to $operationName: ${result.b}."
+                logger.warn(err)
+                MembershipQueryResult.Failure(err)
+            }
         }
     }
 }

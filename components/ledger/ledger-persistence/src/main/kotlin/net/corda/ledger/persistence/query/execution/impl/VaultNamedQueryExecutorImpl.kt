@@ -1,5 +1,7 @@
 package net.corda.ledger.persistence.query.execution.impl
 
+import net.corda.data.KeyValuePair
+import net.corda.data.KeyValuePairList
 import net.corda.data.persistence.EntityResponse
 import net.corda.data.persistence.FindWithNamedQuery
 import net.corda.ledger.persistence.common.ComponentLeafDto
@@ -72,9 +74,10 @@ class VaultNamedQueryExecutorImpl(
         )?.results?.filterNotNull() ?: filteredAndTransformedResults
 
         // Return the filtered/transformed/collected (if present) result to the caller
-        return EntityResponse(
-            collectedResults.map { ByteBuffer.wrap(serializationService.serialize(it).bytes) }
-        )
+        return EntityResponse.newBuilder()
+            .setResults(collectedResults.map { ByteBuffer.wrap(serializationService.serialize(it).bytes) })
+            .setMetadata(KeyValuePairList(listOf(KeyValuePair("numberOfRowsFromQuery", contractStateResults.size.toString()))))
+            .build()
     }
 
     /**

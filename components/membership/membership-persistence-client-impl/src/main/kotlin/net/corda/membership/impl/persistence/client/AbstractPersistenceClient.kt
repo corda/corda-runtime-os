@@ -55,16 +55,6 @@ internal abstract class AbstractPersistenceClient(
         )
     }
 
-    fun MembershipPersistenceRequest.execute(): Any? {
-        val result = this.operation {
-            Either.Left(it)
-        }.send()
-        return when (result) {
-            is Either.Left -> result.a
-            is Either.Right -> result.b
-        }
-    }
-
     override val isRunning: Boolean
         get() = coordinator.status == LifecycleStatus.UP
 
