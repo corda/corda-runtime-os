@@ -5,20 +5,26 @@ import net.corda.metrics.CordaMetrics
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.sandboxgroupcontext.SandboxGroupType
 import net.corda.sandboxgroupcontext.VirtualNodeContext
+import net.corda.sandboxgroupcontext.service.EvictionListener
 import net.corda.sandboxgroupcontext.service.impl.CloseableSandboxGroupContext
 import net.corda.sandboxgroupcontext.service.impl.SandboxGroupContextCacheImpl
 import net.corda.test.util.eventually
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.virtualnode.HoldingIdentity
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.fail
+import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.spy
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.time.Duration.ofSeconds
@@ -42,8 +48,6 @@ class SandboxGroupContextCacheTest {
     private lateinit var idAlice: HoldingIdentity
     private lateinit var vNodeContext1: VirtualNodeContext
 
-    private fun defaultInitialCapacities(initial: Long) = SandboxGroupType.values().associateWith { initial }
-
     @BeforeEach
     fun setUp() {
         idBob = createTestHoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", "group")
@@ -60,9 +64,33 @@ class SandboxGroupContextCacheTest {
     }
 
     @Test
+    fun `test adding eviction listeners`() {
+        val listener = mock<EvictionListener>()
+        val cache = SandboxGroupContextCacheImpl(1)
+
+        // We can add the same listener ONCE for each sandbox group type.
+        for (type in SandboxGroupType.values()) {
+            assertTrue(cache.addEvictionListener(type, listener))
+            assertFalse(cache.addEvictionListener(type, listener))
+        }
+
+        // And we can remove that listener again afterwards.
+        for (type in SandboxGroupType.values()) {
+            assertTrue(cache.removeEvictionListener(type, listener))
+            assertFalse(cache.removeEvictionListener(type, listener))
+        }
+
+        // Adding and removing doesn't invoke the listener (obviously).
+        verify(listener, never()).onEviction(any())
+    }
+
+    @Test
     fun `when cache is full, evict and do not close evicted sandbox if still in use`() {
         val count = 50
-        val cache = SandboxGroupContextCacheImpl(defaultInitialCapacities(1))
+        val listener = mock<EvictionListener>()
+        val cache = SandboxGroupContextCacheImpl(1).apply {
+            assertTrue(addEvictionListener(vNodeContext1.sandboxGroupType, listener))
+        }
         val sandboxContext1 = mockSandboxContext()
         val contextStrongRef = cache.get(vNodeContext1) { sandboxContext1 }
         assertThat(contextStrongRef).isNotNull
@@ -86,12 +114,13 @@ class SandboxGroupContextCacheTest {
             System.gc()
             verifyCacheMetrics(puts = count + 1, misses = count + 1, evictions = count)
         }
+        verify(listener, times(count)).onEviction(any())
     }
 
     @Test
     fun `when cache is full, evict and close evicted sandbox if not in use anymore`() {
         val count = 25
-        val cache = SandboxGroupContextCacheImpl(defaultInitialCapacities(1))
+        val cache = SandboxGroupContextCacheImpl(1)
         val sandboxContext1: CloseableSandboxGroupContext = spy {
             val completable = CompletableFuture<Boolean>()
             whenever(it.completion).doReturn(completable)
@@ -149,7 +178,10 @@ class SandboxGroupContextCacheTest {
     @Suppress("unused_value")
     @Test
     fun `when cache closed, close everything`() {
-        val cache = SandboxGroupContextCacheImpl(defaultInitialCapacities(10))
+        val listener = mock<EvictionListener>()
+        val cache = SandboxGroupContextCacheImpl(10).apply {
+            assertTrue(addEvictionListener(SandboxGroupType.FLOW, listener))
+        }
         val vNodeContext2 = VirtualNodeContext(
             holdingIdentity = idBob,
             cpkFileChecksums = setOf(parseSecureHash("DUMMY:1234567890abcdef")),
@@ -164,11 +196,13 @@ class SandboxGroupContextCacheTest {
         var ref2: SandboxGroupContext? = cache.get(vNodeContext2) { sandboxContext2 }
         assertThat(ref2).isNotNull
 
+        verify(listener, never()).onEviction(any())
         cache.close()
 
         eventually(duration = ofSeconds(TIMEOUT)) {
             assertThat(cache.evictedContextsToBeClosed).isEqualTo(2)
         }
+        verify(listener, times(2)).onEviction(any())
 
         ref1 = null
         ref2 = null
@@ -189,13 +223,17 @@ class SandboxGroupContextCacheTest {
     @Suppress("unused_value")
     @Test
     fun `when remove also close`() {
-        val cache = SandboxGroupContextCacheImpl(defaultInitialCapacities(10))
+        val listener = mock<EvictionListener>()
+        val cache = SandboxGroupContextCacheImpl(10).apply {
+            assertTrue(addEvictionListener(vNodeContext1.sandboxGroupType, listener))
+        }
         val sandboxContext1 = mockSandboxContext()
 
         var ref: SandboxGroupContext? = cache.get(vNodeContext1) { sandboxContext1 }
         assertThat(ref).isNotNull
         val completion = cache.remove(vNodeContext1.copy())
             ?: fail("No sandbox for $vNodeContext1")
+        verify(listener).onEviction(eq(vNodeContext1))
 
         eventually(duration = ofSeconds(TIMEOUT)) {
             assertThat(cache.evictedContextsToBeClosed).isEqualTo(1)
@@ -219,17 +257,21 @@ class SandboxGroupContextCacheTest {
 
     @Test
     fun removingMissingKeyReturnsNull() {
-        val cache = SandboxGroupContextCacheImpl(defaultInitialCapacities(10))
+        val listener = mock<EvictionListener>()
+        val cache = SandboxGroupContextCacheImpl(10).apply {
+            assertTrue(addEvictionListener(vNodeContext1.sandboxGroupType, listener))
+        }
         assertThat(cache.remove(vNodeContext1)).isNull()
         eventually(duration = ofSeconds(TIMEOUT), waitBetween = ofSeconds(1)) {
             System.gc()
             verifyCacheMetrics(misses = 1)
         }
+        verify(listener, never()).onEviction(any())
     }
 
     @Test
     fun `when in cache retrieve same`() {
-        val cache = SandboxGroupContextCacheImpl(defaultInitialCapacities(10))
+        val cache = SandboxGroupContextCacheImpl(10)
         val sandboxContext1 = cache.get(vNodeContext1) { mockSandboxContext(name = "ctx1") }
         val retrievedContext = cache.get(vNodeContext1) { mockSandboxContext(name = "ctx2") }
 
@@ -243,7 +285,7 @@ class SandboxGroupContextCacheTest {
 
     @Test
     fun `when key in cache equal, don't replace`() {
-        val cache = SandboxGroupContextCacheImpl(defaultInitialCapacities(10))
+        val cache = SandboxGroupContextCacheImpl(10)
         val vnodeContext1 = VirtualNodeContext(
             idAlice,
             setOf(parseSecureHash("DUMMY:1234567890abcdef")),
@@ -270,7 +312,7 @@ class SandboxGroupContextCacheTest {
 
     @Test
     fun testEmptyCacheFlushesImmediately() {
-        val cache = SandboxGroupContextCacheImpl(defaultInitialCapacities(10))
+        val cache = SandboxGroupContextCacheImpl(10)
         val completion = cache.flush()
         assertThat(completion.isDone).isTrue
         assertThat(cache.waitFor(completion, ofSeconds(0))).isTrue
@@ -283,7 +325,10 @@ class SandboxGroupContextCacheTest {
     @Suppress("unused_value")
     @Test
     fun testCacheFlushesCurrentContents() {
-        val cache = SandboxGroupContextCacheImpl(defaultInitialCapacities(10))
+        val listener = mock<EvictionListener>()
+        val cache = SandboxGroupContextCacheImpl(10).apply {
+            assertTrue(addEvictionListener(SandboxGroupType.FLOW, listener))
+        }
         val vNodeContext2 = VirtualNodeContext(
             holdingIdentity = idAlice,
             cpkFileChecksums = emptySet(),
@@ -305,9 +350,12 @@ class SandboxGroupContextCacheTest {
         var ref2: SandboxGroupContext? = cache.get(vNodeContext2) { sandboxContext2 }
         assertThat(ref1).isNotNull
         assertThat(ref2).isNotNull
+        verify(listener, never()).onEviction(any())
 
         val completion = cache.flush()
         assertThat(completion.isDone).isFalse
+        verify(listener).onEviction(vNodeContext1)
+        verify(listener).onEviction(vNodeContext2)
 
         cache.get(vNodeContext3) { sandboxContext3 }
 
@@ -325,6 +373,7 @@ class SandboxGroupContextCacheTest {
         verify(sandboxContext1).close()
         verify(sandboxContext2).close()
         verify(sandboxContext3, never()).close()
+        verify(listener, times(2)).onEviction(any())
         eventually(duration = ofSeconds(TIMEOUT), waitBetween = ofSeconds(1)) {
             System.gc()
             verifyCacheMetrics(puts = 3, misses = 3)
@@ -334,7 +383,7 @@ class SandboxGroupContextCacheTest {
     @Suppress("unused_value")
     @Test
     fun testFlushingSandboxWithExceptionOnClose() {
-        val cache = SandboxGroupContextCacheImpl(defaultInitialCapacities(10))
+        val cache = SandboxGroupContextCacheImpl(10)
 
         val sandboxContext1 = mock<CloseableSandboxGroupContext> {
             val completable = CompletableFuture<Boolean>()
