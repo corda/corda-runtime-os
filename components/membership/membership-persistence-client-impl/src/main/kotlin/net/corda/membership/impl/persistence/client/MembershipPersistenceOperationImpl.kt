@@ -44,9 +44,11 @@ internal class MembershipPersistenceOperationImpl<T>(
         val requestId = request.context.requestId
         logger.info("Sending membership persistence RPC request ID: $requestId.")
         return try {
+            logger.info("QQQ Sending $requestId to ${sender.hashCode()}")
             val response = sender
                 .sendRequest(request)
                 .getOrThrow(Duration.ofMillis(RPC_TIMEOUT_MS))
+            logger.info("QQQ Got reply $requestId to ${sender.hashCode()}")
             val payload = response.payload
             val context = response.context
             if (context.holdingIdentity != request.context.holdingIdentity) {
@@ -89,6 +91,7 @@ internal class MembershipPersistenceOperationImpl<T>(
                 ),
             )
         } catch (e: TimeoutException) {
+            logger.info("QQQ Got timeout $requestId to ${sender.hashCode()}")
             Either.Right(
                 MembershipPersistenceResult.Failure(
                     "Timeout waiting for response from membership persistence RPC request ID: $requestId.",

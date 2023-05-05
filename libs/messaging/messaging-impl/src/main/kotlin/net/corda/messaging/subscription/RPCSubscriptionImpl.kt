@@ -137,13 +137,16 @@ internal class RPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
         producer: CordaProducer
     ) {
         consumerRecords.forEach {
+            log.info("QQQ (${hashCode()}) record: ${it.key}")
             if (cannotReplyToRequest(it)) {
+                log.info("QQQ (${hashCode()}) ${it.key} cannotReplyToRequest!")
                 log.error("Malformed request cannot be processed and no response can be returned, $it")
                 return@forEach
             }
 
             val rpcRequest = it.value!!
             if (invalidRequest(rpcRequest)) {
+                log.info("QQQ (${hashCode()}) ${it.key} invalid record!")
                 val record = buildRecord(
                     rpcRequest,
                     ResponseStatus.FAILED,
@@ -156,8 +159,11 @@ internal class RPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
             val requestBytes = rpcRequest.payload
             val request = deserializer.deserialize(requestBytes.array())
             val future = CompletableFuture<RESPONSE>()
+            log.info("QQQ (${hashCode()}) ${it.key} request - ${request?.javaClass}")
 
             future.whenComplete { response, error ->
+                log.info("QQQ (${hashCode()}) ${it.key} future completed, error: $error")
+                log.info("QQQ (${hashCode()}) ${it.key} future completed, response: ${response?.javaClass}")
                 val record: CordaProducerRecord<String, RPCResponse>?
                 try {
                     when {
@@ -188,13 +194,18 @@ internal class RPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
                             )
                         }
                     }
+                    log.info("QQQ (${hashCode()}) ${it.key} sending to partition: ${rpcRequest.replyPartition}")
                     producer.sendRecordsToPartitions(listOf(Pair(rpcRequest.replyPartition, record)))
                 } catch (ex: Exception) {
                     // intentionally swallowed
                     log.warn("Error publishing response", ex)
                 }
             }
-            processorMeter.recordCallable { responderProcessor.onNext(request!!, future) }
+            processorMeter.recordCallable {
+                log.info("QQQ (${hashCode()}) ${it.key} before onNext")
+                responderProcessor.onNext(request!!, future)
+                log.info("QQQ (${hashCode()}) ${it.key} after onNext - ${future.isDone}")
+            }
         }
     }
 

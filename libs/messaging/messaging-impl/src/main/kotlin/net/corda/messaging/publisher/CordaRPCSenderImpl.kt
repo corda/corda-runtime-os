@@ -154,14 +154,22 @@ internal class CordaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
     @Suppress("TooGenericExceptionCaught")
     private fun processRecords(cordaConsumerRecords: List<CordaConsumerRecord<String, RPCResponse>>) {
         cordaConsumerRecords
-            .filter { it.value?.sender == config.clientId }
+            .filter {
+                log.info("QQQ (${hashCode()}) it.value?.sender - ${it.value?.sender}; config.clientId - ${config.clientId}")
+                it.value?.sender == config.clientId
+            }
             .forEach {
                 processorMeter.recordCallable {
                     val correlationKey = it.key
+                    log.info("QQQ (${hashCode()}) correlationKey $correlationKey")
                     val partition = it.partition
+                    log.info("QQQ (${hashCode()}) \t partition $partition")
                     val future = futureTracker.getFuture(correlationKey, partition)
+                    log.info("QQQ (${hashCode()}) \t future $future")
+                    log.info("QQQ (${hashCode()}) \t rpcResponse ${it.value?.javaClass} ($it.value)")
                     val rpcResponse = it.value ?: throw CordaMessageAPIFatalException("Is this bad here?")
 
+                    log.info("QQQ (${hashCode()}) \t responseStatus ${rpcResponse.responseStatus}")
                     val responseStatus = rpcResponse.responseStatus
                         ?: throw CordaMessageAPIFatalException("Response status came back NULL. This should never happen")
 
@@ -189,8 +197,10 @@ internal class CordaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
                                 future.cancel(true)
                             }
                         }
+                        log.info("QQQ \t removing $correlationKey...")
                         futureTracker.removeFuture(correlationKey, partition)
                     } else {
+                        log.info("QQQ \t oops?!...")
                         log.debug {
                             "Response for request $correlationKey was received at ${rpcResponse.sendTime}. " +
                                     "There is no future assigned for $correlationKey meaning that this request was either orphaned " +
@@ -204,8 +214,10 @@ internal class CordaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
 
     override fun sendRequest(req: REQUEST): CompletableFuture<RESPONSE> {
         val correlationId = UUID.randomUUID().toString()
+        log.info("QQQ (${hashCode()}) sendRequest $correlationId (${req.javaClass})")
         val future = CompletableFuture<RESPONSE>()
         val partitions = partitionListener.getPartitions()
+        log.info("QQQ (${hashCode()}) \t partitions = $partitions")
 
         val reqBytes = try {
             serializer.serialize(req)
@@ -225,6 +237,7 @@ internal class CordaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
             )
             return future
         }
+        log.info("QQQ (${hashCode()}) \t reqBytes = ${reqBytes.size}")
 
         if (partitions.isEmpty()) {
             val error = "No partitions for topic ${getRPCResponseTopic(config.topic)}. Couldn't send."
@@ -232,6 +245,9 @@ internal class CordaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
             log.warn(error)
         } else {
             val partition = partitions[0].partition
+            log.info("QQQ (${hashCode()}) \t partition = $partition")
+            log.info("QQQ (${hashCode()}) \t config.clientId ${config.clientId}")
+            log.info("QQQ (${hashCode()}) \t config.topic ${config.topic}")
             val request = RPCRequest(
                 config.clientId,
                 correlationId,
@@ -244,6 +260,7 @@ internal class CordaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
             val record = CordaProducerRecord(config.topic, correlationId, request)
             futureTracker.addFuture(correlationId, future, partition)
             try {
+                log.info("QQQ (${hashCode()}) \t producer $producer")
                 producer?.sendRecords(listOf(record))
             } catch (ex: Exception) {
                 future.completeExceptionally(CordaRPCAPISenderException("Failed to publish", ex))
