@@ -196,9 +196,11 @@ class CryptoFlowOpsBusProcessorTests {
             mockPublicKey()
         )
 
+        val notMyKey = mockPublicKey()
+        val inputKeys = listOf(myPublicKeys[0], myPublicKeys[1], notMyKey)
+
         var passedTenantId = UUID.randomUUID().toString()
         var passedList = listOf<String>()
-        val notMyKey = mockPublicKey()
         val recordKey = UUID.randomUUID().toString()
         val flowExternalEventContext = ExternalEventContext("request id", recordKey, KeyValuePairList(emptyList()))
 
@@ -229,7 +231,7 @@ class CryptoFlowOpsBusProcessorTests {
                         key = recordKey,
                         value = transformer.createFilterMyKeys(
                             tenantId,
-                            listOf(myPublicKeys[0], myPublicKeys[1], notMyKey),
+                            inputKeys,
                             flowExternalEventContext
                         )
                     )
