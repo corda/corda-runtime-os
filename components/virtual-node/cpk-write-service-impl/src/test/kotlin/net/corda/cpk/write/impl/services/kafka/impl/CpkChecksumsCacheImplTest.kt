@@ -35,7 +35,6 @@ class CpkChecksumsCacheImplTest {
                 CpkChunkId(cpkChecksum.toAvro(), partNumber),
                 Chunk(
                     "dummyRequestId",
-                    "dummyFileName",
                     secureHash("dummyChecksum".toByteArray()).toAvro(),
                     partNumber,
                     0,

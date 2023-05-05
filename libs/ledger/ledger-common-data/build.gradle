@@ -1,19 +1,9 @@
-import aQute.bnd.gradle.Bundle
-
 plugins {
     id 'corda.common-library'
     id 'corda.common-publishing'
-    id 'corda.osgi-test-conventions'
 }
 
 description 'Corda ledger common data'
-
-configurations {
-    cpis {
-        canBeConsumed = false
-        transitive = false
-    }
-}
 
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
@@ -39,25 +29,4 @@ dependencies {
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
-
-    integrationTestImplementation project(':testing:ledger:ledger-common-base-integration-test')
-    integrationTestRuntimeOnly project(':libs:flows:session-manager-impl')
-    integrationTestRuntimeOnly project(':libs:lifecycle:lifecycle-impl')
-    integrationTestRuntimeOnly project(':libs:messaging:db-message-bus-impl')
-    integrationTestRuntimeOnly project(':libs:messaging:messaging-impl')
-    integrationTestRuntimeOnly project(':libs:serialization:serialization-kryo')
-    integrationTestRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
-    cpis project(path: ':testing:ledger:ledger-common-empty-app', configuration: 'cordaCPB')
-}
-
-//  Copy the cpi builds declared in the cpis configuration into our resources so we find and load them
-def integrationTestResources = tasks.named('processIntegrationTestResources', ProcessResources) {
-    from(configurations.cpis) {
-        into 'META-INF'
-        rename "(.*)-\\Q${version}\\E-package.cpb", "\$1.cpb"
-    }
-}
-
-tasks.named('testingBundle', Bundle) {
-    dependsOn integrationTestResources
 }

@@ -32,7 +32,7 @@ spec:
           {{- include "corda.bootstrapResources" . | nindent 10 }}
           {{- include "corda.containerSecurityContext" . | nindent 10 }}
           command:
-            - /bin/sh
+            - /bin/bash
             - -e
             - -c
           args: ["echo", "'DB Bootstrapped'"]
@@ -51,18 +51,20 @@ spec:
           imagePullPolicy: {{ .Values.imagePullPolicy }}
           {{- include "corda.bootstrapResources" . | nindent 10 }}
           {{- include "corda.containerSecurityContext" . | nindent 10 }}
-          command: [ '/bin/sh', '-e', '-c' ]
+          command: [ '/bin/bash', '-e', '-c' ]
           args:
             - |
-              psql -h {{ required "A db host is required" .Values.db.cluster.host }} -p {{ include "corda.clusterDbPort" . }} {{ include "corda.clusterDbName" . }}  -c "GRANT USAGE ON SCHEMA {{ .Values.db.cluster.schema }} to \"$DB_CLUSTER_USERNAME\";"
-              psql -h {{ required "A db host is required" .Values.db.cluster.host }} -p {{ include "corda.clusterDbPort" . }} {{ include "corda.clusterDbName" . }}  -c "GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA {{ .Values.db.cluster.schema }} to \"$DB_CLUSTER_USERNAME\";"
-              psql -h {{ required "A db host is required" .Values.db.cluster.host }} -p {{ include "corda.clusterDbPort" . }} {{ include "corda.clusterDbName" . }}  -c "GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA {{ .Values.db.cluster.schema }} TO \"$DB_CLUSTER_USERNAME\";"
-              psql -h {{ required "A db host is required" .Values.db.cluster.host }} -p {{ include "corda.clusterDbPort" . }} {{ include "corda.clusterDbName" . }}  -c "CREATE USER \"$RBAC_DB_USER_USERNAME\" WITH ENCRYPTED PASSWORD '$RBAC_DB_USER_PASSWORD';"
-              psql -h {{ required "A db host is required" .Values.db.cluster.host }} -p {{ include "corda.clusterDbPort" . }} {{ include "corda.clusterDbName" . }}  -c "GRANT USAGE ON SCHEMA {{ .Values.bootstrap.db.rbac.schema }} to \"$RBAC_DB_USER_USERNAME\";"
-              psql -h {{ required "A db host is required" .Values.db.cluster.host }} -p {{ include "corda.clusterDbPort" . }} {{ include "corda.clusterDbName" . }}  -c "GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA {{ .Values.bootstrap.db.rbac.schema }} to \"$RBAC_DB_USER_USERNAME\";"
-              psql -h {{ required "A db host is required" .Values.db.cluster.host }} -p {{ include "corda.clusterDbPort" . }} {{ include "corda.clusterDbName" . }}  -c "CREATE USER \"$CRYPTO_DB_USER_USERNAME\" WITH ENCRYPTED PASSWORD '$CRYPTO_DB_USER_PASSWORD';"
-              psql -h {{ required "A db host is required" .Values.db.cluster.host }} -p {{ include "corda.clusterDbPort" . }} {{ include "corda.clusterDbName" . }}  -c "GRANT USAGE ON SCHEMA {{ .Values.bootstrap.db.crypto.schema }} to \"$CRYPTO_DB_USER_USERNAME\";"
-              psql -h {{ required "A db host is required" .Values.db.cluster.host }} -p {{ include "corda.clusterDbPort" . }} {{ include "corda.clusterDbName" . }}  -c "GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA {{ .Values.bootstrap.db.crypto.schema }} to \"$CRYPTO_DB_USER_USERNAME\";"
+              psql -v ON_ERROR_STOP=1 -h {{ required "A db host is required" .Values.db.cluster.host }} -p {{ include "corda.clusterDbPort" . }} {{ include "corda.clusterDbName" . }} << SQL
+                GRANT USAGE ON SCHEMA {{ .Values.db.cluster.schema }} TO "$DB_CLUSTER_USERNAME";
+                GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA {{ .Values.db.cluster.schema }} TO "$DB_CLUSTER_USERNAME";
+                GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA {{ .Values.db.cluster.schema }} TO "$DB_CLUSTER_USERNAME";
+                DO \$\$ BEGIN IF EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = '$RBAC_DB_USER_USERNAME') THEN RAISE NOTICE 'Role "$RBAC_DB_USER_USERNAME" already exists'; ELSE CREATE USER "$RBAC_DB_USER_USERNAME" WITH ENCRYPTED PASSWORD '$RBAC_DB_USER_PASSWORD'; END IF; END \$\$;
+                GRANT USAGE ON SCHEMA {{ .Values.bootstrap.db.rbac.schema }} TO "$RBAC_DB_USER_USERNAME";
+                GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA {{ .Values.bootstrap.db.rbac.schema }} TO "$RBAC_DB_USER_USERNAME";
+                DO \$\$ BEGIN IF EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = '$CRYPTO_DB_USER_USERNAME') THEN RAISE NOTICE 'Role "$CRYPTO_DB_USER_USERNAME" already exists'; ELSE CREATE USER "$CRYPTO_DB_USER_USERNAME" WITH ENCRYPTED PASSWORD '$CRYPTO_DB_USER_PASSWORD'; END IF; END \$\$;
+                GRANT USAGE ON SCHEMA {{ .Values.bootstrap.db.crypto.schema }} TO "$CRYPTO_DB_USER_USERNAME";
+                GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA {{ .Values.bootstrap.db.crypto.schema }} TO "$CRYPTO_DB_USER_USERNAME";
+              SQL
           volumeMounts:
             - mountPath: /tmp
               name: temp
@@ -80,6 +82,7 @@ spec:
       {{- include "corda.bootstrapNodeSelector" . | nindent 6 }}
 
       restartPolicy: Never
+  backoffLimit: 0
 {{- end }}
 {{- end }}
 
@@ -332,17 +335,17 @@ Bootstrap resources
 {{- define "corda.bootstrapResources" }}
 resources:
   requests:
-  {{- with .Values.bootstrap.resources.requests.cpu | default .Values.resources.requests.cpu }}
+  {{- with .Values.bootstrap.resources.requests.cpu }}
     cpu: {{ . }}
   {{- end }}
-  {{- with .Values.bootstrap.resources.requests.memory | default .Values.resources.requests.memory  }}
+  {{- with .Values.bootstrap.resources.requests.memory }}
     memory: {{ . }}
   {{- end}}
   limits:
-  {{- with .Values.bootstrap.resources.limits.cpu | default .Values.resources.limits.cpu }}
+  {{- with .Values.bootstrap.resources.limits.cpu }}
     cpu: {{ . }}
   {{- end }}
-  {{- with .Values.bootstrap.resources.limits.memory | default .Values.resources.limits.memory  }}
+  {{- with .Values.bootstrap.resources.limits.memory }}
     memory: {{ . }}
   {{- end }}
 {{- end }}
@@ -470,7 +473,7 @@ a second init container to execute the output SQL to the relevant database
   imagePullPolicy: {{ .Values.imagePullPolicy }}
   {{- include "corda.bootstrapResources" . | nindent 2 }}
   {{- include "corda.containerSecurityContext" . | nindent 2 }}
-  command: [ 'sh', '-c',{{- if eq .name "db" }} 'for f in /tmp/*.sql; do psql -h {{ required "A db host is required" .Values.db.cluster.host }} -p {{ include "corda.clusterDbPort" . }} -f "$f" --dbname {{ include "corda.clusterDbName" . }}; done'{{- else }} 'psql -h {{ required "A db host is required" .Values.db.cluster.host }} -p {{ include "corda.clusterDbPort" . }} -f /tmp/{{ .sqlFile | default "db-config.sql" }} --dbname "dbname={{ include "corda.clusterDbName" . }} options=--search_path={{ .searchPath | default .Values.db.cluster.schema }}"' {{- end }} ]
+  command: [ 'sh', '-c', '-e',{{- if eq .name "db" }} 'for f in /tmp/*.sql; do psql -v ON_ERROR_STOP=1 -h {{ required "A db host is required" .Values.db.cluster.host }} -p {{ include "corda.clusterDbPort" . }} -f "$f" --dbname {{ include "corda.clusterDbName" . }}; done'{{- else }} 'psql -v ON_ERROR_STOP=1 -h {{ required "A db host is required" .Values.db.cluster.host }} -p {{ include "corda.clusterDbPort" . }} -f /tmp/{{ .sqlFile | default "db-config.sql" }} --dbname "dbname={{ include "corda.clusterDbName" . }} options=--search_path={{ .searchPath | default .Values.db.cluster.schema }}"' {{- end }} ]
   volumeMounts:
     - mountPath: /tmp
       name: temp

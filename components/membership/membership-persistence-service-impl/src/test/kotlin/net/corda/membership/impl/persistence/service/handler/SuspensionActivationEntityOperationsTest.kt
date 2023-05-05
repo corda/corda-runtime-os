@@ -4,8 +4,6 @@ import net.corda.data.CordaAvroDeserializer
 import net.corda.data.CordaAvroSerializer
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
-import net.corda.data.membership.PersistentMemberInfo
-import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.membership.datamodel.MemberInfoEntity
 import net.corda.membership.datamodel.MemberInfoEntityPrimaryKey
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_SUSPENDED
@@ -17,14 +15,13 @@ import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.test.util.time.TestClock
 import net.corda.utilities.time.Clock
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.virtualnode.HoldingIdentity
-import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
@@ -33,6 +30,7 @@ import java.util.UUID
 import javax.persistence.EntityManager
 import javax.persistence.EntityTransaction
 import javax.persistence.LockModeType
+import javax.persistence.PessimisticLockException
 import net.corda.data.identity.HoldingIdentity as AvroHoldingIdentity
 
 class SuspensionActivationEntityOperationsTest {
@@ -52,7 +50,6 @@ class SuspensionActivationEntityOperationsTest {
     private val contextBytes = byteArrayOf(1, 10)
     private val signatureKey = byteArrayOf(5)
     private val signatureContent = byteArrayOf(6)
-    private val holdingIdentity = HoldingIdentity(knownX500Name, knownGroupId)
     private val clock: Clock = TestClock(Instant.ofEpochSecond(1))
 
     private val transaction: EntityTransaction = mock()
@@ -65,24 +62,6 @@ class SuspensionActivationEntityOperationsTest {
     private val keyValuePairListDeserializer = mock<CordaAvroDeserializer<KeyValuePairList>>()
 
     private val handler = SuspensionActivationEntityOperations(clock, keyValuePairListDeserializer, keyValuePairListSerializer)
-    private val context = MembershipRequestContext(
-        clock.instant(),
-        UUID(0, 1).toString(),
-        holdingIdentity.toAvro()
-    )
-
-    private fun invokeTestFunctionWithError(
-        testFunction: () -> PersistentMemberInfo,
-        errorMsg: String,
-        type: Class<*> = MembershipPersistenceException::class.java
-    ) {
-        assertThrows<Exception> {
-            testFunction.invoke()
-        }.apply {
-            assertThat(this).isInstanceOf(type)
-            assertThat(message).contains(errorMsg)
-        }
-    }
 
     @Suppress("LongParameterList")
     private fun mockMemberInfoEntity(
@@ -174,6 +153,17 @@ class SuspensionActivationEntityOperationsTest {
             assertThat(this.message).contains("cannot be performed")
         }
     }
+    @Test
+    fun `findMember throws InvalidEntityUpdateException if PessimisticLockException is thrown`() {
+        val currentStatus = "Status"
+        whenever(
+            em.find(eq(MemberInfoEntity::class.java), eq(primaryKey), eq(LockModeType.PESSIMISTIC_WRITE)),
+        ).doThrow(PessimisticLockException())
+
+        assertThrows<InvalidEntityUpdateException> {
+            handler.findMember(em, knownX500Name.toString(), knownGroupId, SERIAL_NUMBER, currentStatus)
+        }
+    }
 
     @Test
     fun `updateStatus persists the correct entity and returns the expected PersistentMemberInfo`() {
@@ -244,6 +234,7 @@ class SuspensionActivationEntityOperationsTest {
     @Test
     fun `updateStatus throws exception if MGM-provided context cannot be serialized`() {
         whenever(keyValuePairListSerializer.serialize(any())).doReturn(null)
+
         assertThrows<MembershipPersistenceException> {
             handler.updateStatus(em, knownX500Name.toString(), mock(), mock(), mock(), "")
         }.apply {

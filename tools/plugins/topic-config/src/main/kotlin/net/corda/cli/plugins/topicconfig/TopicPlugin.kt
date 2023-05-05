@@ -4,14 +4,13 @@ import net.corda.cli.api.CordaCliPlugin
 import org.apache.kafka.clients.admin.AdminClientConfig
 import org.pf4j.Extension
 import org.pf4j.Plugin
-import org.pf4j.PluginWrapper
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import picocli.CommandLine
 import java.io.FileInputStream
 import java.util.Properties
 
-class TopicPlugin(wrapper: PluginWrapper) : Plugin(wrapper) {
+class TopicPlugin : Plugin() {
 
     companion object {
         val classLoader: ClassLoader = this::class.java.classLoader

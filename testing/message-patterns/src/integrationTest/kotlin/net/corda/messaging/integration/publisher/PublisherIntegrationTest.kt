@@ -14,6 +14,8 @@ import net.corda.messaging.integration.TopicTemplates.Companion.PUBLISHER_TEST_D
 import net.corda.messaging.integration.TopicTemplates.Companion.PUBLISHER_TEST_DURABLE_TOPIC2_TEMPLATE
 import net.corda.messaging.integration.TopicTemplates.Companion.PUBLISHER_TEST_DURABLE_TOPIC3
 import net.corda.messaging.integration.TopicTemplates.Companion.PUBLISHER_TEST_DURABLE_TOPIC3_TEMPLATE
+import net.corda.messaging.integration.TopicTemplates.Companion.PUBLISHER_TEST_DURABLE_TOPIC4
+import net.corda.messaging.integration.TopicTemplates.Companion.PUBLISHER_TEST_DURABLE_TOPIC4_TEMPLATE
 import net.corda.messaging.integration.getDemoRecords
 import net.corda.messaging.integration.getKafkaProperties
 import net.corda.messaging.integration.getTopicConfig
@@ -21,6 +23,7 @@ import net.corda.messaging.integration.processors.TestDurableProcessor
 import net.corda.utilities.concurrent.getOrThrow
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
@@ -28,6 +31,7 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.context.BundleContextExtension
 import org.osgi.test.junit5.service.ServiceExtension
+import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.CyclicBarrier
 import java.util.concurrent.TimeUnit
@@ -141,6 +145,48 @@ class PublisherIntegrationTest {
         val latch = CountDownLatch(recordsWithPartitions.size * 2)
         val durableSub = subscriptionFactory.createDurableSubscription(
             SubscriptionConfig("$PUBLISHER_TEST_DURABLE_TOPIC3-group", PUBLISHER_TEST_DURABLE_TOPIC3),
+            TestDurableProcessor(latch),
+            TEST_CONFIG,
+            null
+        )
+        durableSub.start()
+
+        Assertions.assertTrue(latch.await(20, TimeUnit.SECONDS))
+        durableSub.close()
+    }
+
+    @Test
+    @Timeout(value = 30, unit = TimeUnit.SECONDS)
+    fun `publisher can batch publish from multiple threads`() {
+        topicUtils.createTopics(getTopicConfig(PUBLISHER_TEST_DURABLE_TOPIC4_TEMPLATE))
+        publisherConfig = PublisherConfig("$CLIENT_ID.$PUBLISHER_TEST_DURABLE_TOPIC4", true)
+        val publisher = publisherFactory.createPublisher(publisherConfig, TEST_CONFIG)
+        val numRecords = 5
+        val numKeys = 2
+        val numThreads = 50
+
+        val records = getDemoRecords(PUBLISHER_TEST_DURABLE_TOPIC4, numRecords, numKeys)
+        val futures = (0..numThreads).map { CompletableFuture<Unit>() }
+        val threads = futures.map {
+            Thread {
+                publisher.batchPublish(records).whenComplete { _, throwable ->
+                    if (throwable != null) {
+                        it.completeExceptionally(throwable)
+                    } else {
+                        it.complete(Unit)
+                    }
+                }
+            }
+        }
+        threads.forEach { it.start() }
+        futures.forEach {
+            assertEquals(Unit, it.getOrThrow())
+        }
+        publisher.close()
+
+        val latch = CountDownLatch(records.size * numThreads)
+        val durableSub = subscriptionFactory.createDurableSubscription(
+            SubscriptionConfig("$PUBLISHER_TEST_DURABLE_TOPIC4-group", PUBLISHER_TEST_DURABLE_TOPIC4),
             TestDurableProcessor(latch),
             TEST_CONFIG,
             null

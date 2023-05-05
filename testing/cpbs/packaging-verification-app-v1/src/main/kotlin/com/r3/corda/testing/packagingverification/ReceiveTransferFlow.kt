@@ -4,6 +4,7 @@ import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.InitiatedBy
 import net.corda.v5.application.flows.ResponderFlow
 import net.corda.v5.application.messaging.FlowSession
+import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.ledger.utxo.UtxoLedgerService
 import org.slf4j.LoggerFactory
 
@@ -16,6 +17,7 @@ class ReceiveTransferFlow : ResponderFlow {
     @CordaInject
     lateinit var utxoLedgerService: UtxoLedgerService
 
+    @Suspendable
     override fun call(session: FlowSession) {
         log.info("Receiving states")
 

@@ -394,7 +394,6 @@ class SessionManagerImplTest {
     private fun buildChunk(id: String, bytes: ByteArray, partNumber: Long, checksum: SecureHash? = null): Chunk {
         return Chunk.newBuilder()
             .setProperties(null)
-            .setFileName(null)
             .setChecksum(checksum)
             .setRequestId(id)
             .setPartNumber(partNumber.toInt())

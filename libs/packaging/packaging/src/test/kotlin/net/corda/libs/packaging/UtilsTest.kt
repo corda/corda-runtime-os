@@ -36,7 +36,7 @@ class UtilsTest {
         val algoName = DigestAlgorithmName.SHA2_256.name
         val md = MessageDigest.getInstance(algoName)
         certs
-            .map { MemberX500Name.parse(it.subjectX500Principal.name).toString().toByteArray().hash() }
+            .map { it.subjectX500Principal.name.toByteArray().hash() }
             .sortedWith(secureHashComparator)
             .map(SecureHash::toString)
             .map(String::toByteArray)

@@ -6,6 +6,7 @@ import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.data.membership.db.request.async.MembershipPersistenceAsyncRequest
 import net.corda.data.membership.db.response.MembershipPersistenceResponse
 import net.corda.data.membership.db.response.MembershipResponseContext
+import net.corda.data.membership.db.response.query.ErrorKind
 import net.corda.data.membership.db.response.query.PersistenceFailedResponse
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.messaging.api.publisher.RPCSender
@@ -83,7 +84,7 @@ class MembershipPersistenceOperationImplTest {
 
             val reply = operation.send()
 
-            assertThat((reply as? Either.Right)?.b).contains("Timeout")
+            assertThat((reply as? Either.Right)?.b?.errorMsg).contains("Timeout")
         }
 
         @Test
@@ -109,7 +110,7 @@ class MembershipPersistenceOperationImplTest {
 
             val reply = operation.send()
 
-            assertThat((reply as? Either.Right)?.b).contains("Holding identity in the response")
+            assertThat((reply as? Either.Right)?.b?.errorMsg).contains("Holding identity in the response")
         }
 
         @Test
@@ -118,7 +119,7 @@ class MembershipPersistenceOperationImplTest {
 
             val reply = operation.send()
 
-            assertThat((reply as? Either.Right)?.b).contains("Request timestamp in the response")
+            assertThat((reply as? Either.Right)?.b?.errorMsg).contains("Request timestamp in the response")
         }
 
         @Test
@@ -127,7 +128,7 @@ class MembershipPersistenceOperationImplTest {
 
             val reply = operation.send()
 
-            assertThat((reply as? Either.Right)?.b).contains("Request ID in the response")
+            assertThat((reply as? Either.Right)?.b?.errorMsg).contains("Request ID in the response")
         }
 
         @Test
@@ -136,16 +137,16 @@ class MembershipPersistenceOperationImplTest {
 
             val reply = operation.send()
 
-            assertThat((reply as? Either.Right)?.b).contains("Response timestamp is before")
+            assertThat((reply as? Either.Right)?.b?.errorMsg).contains("Response timestamp is before")
         }
 
         @Test
         fun `PersistenceFailedResponse as reply will give the correct error`() {
-            response.payload = PersistenceFailedResponse("oops")
+            response.payload = PersistenceFailedResponse("oops", ErrorKind.GENERAL)
 
             val reply = operation.send()
 
-            assertThat((reply as? Either.Right)?.b).contains("oops")
+            assertThat((reply as? Either.Right)?.b?.errorMsg).contains("oops")
         }
 
         @Test
@@ -175,7 +176,7 @@ class MembershipPersistenceOperationImplTest {
 
             val reply = operation.send()
 
-            assertThat((reply as? Either.Right)?.b)
+            assertThat((reply as? Either.Right)?.b?.errorMsg)
                 .contains("Invalid response for request")
                 .contains("nop")
         }
@@ -191,7 +192,7 @@ class MembershipPersistenceOperationImplTest {
 
             val reply = operation.send()
 
-            assertThat((reply as? Either.Right)?.b)
+            assertThat((reply as? Either.Right)?.b?.errorMsg)
                 .contains("Exception occurred")
                 .contains("nop")
         }
@@ -208,7 +209,7 @@ class MembershipPersistenceOperationImplTest {
 
         @Test
         fun `it will return error if the request had failed`() {
-            response.payload = PersistenceFailedResponse("oops")
+            response.payload = PersistenceFailedResponse("oops", ErrorKind.GENERAL)
 
             val reply = operation.execute()
 
