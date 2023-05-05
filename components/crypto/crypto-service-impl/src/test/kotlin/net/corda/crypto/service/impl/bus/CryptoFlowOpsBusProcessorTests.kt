@@ -240,8 +240,7 @@ class CryptoFlowOpsBusProcessorTests {
         myPublicKeys: List<PublicKey>,
         flowOpCallback: (CryptoFlowOpsTransformerImpl, ExternalEventContext)->FlowOpsRequest
     ): Triple<List<String>, R, S> {
-        var underlyingServiceCapturedTenantIdSet = false
-        var underlyingServiceCapturedTenantId = UUID.randomUUID().toString() // will be assigned the tenant ID that the signing service is called with
+        val underlyingServiceCapturedTenantIds: MutableList<String> = mutableListOf()
         var passedSecureHashes = listOf<String>() // the secure hashes passed into the signing service
         val recordKey =
             UUID.randomUUID().toString() // GUID for the record that is passed into the crypto flow ops processor
@@ -263,14 +262,12 @@ class CryptoFlowOpsBusProcessorTests {
         
         // capture what is passed in  to the signing service operations
         doAnswer {
-            underlyingServiceCapturedTenantIdSet = true
-            underlyingServiceCapturedTenantId = it.getArgument(0)
+            underlyingServiceCapturedTenantIds.add(it.getArgument(0))
             passedSecureHashes = it.getArgument<List<SecureHash>>(1).map { it.toString() }
             myPublicKeys.map { mockSigningKeyInfo(it) }
         }.whenever(signingService).lookupSigningKeysByPublicKeyHashes(any(), any())
         doAnswer {
-            underlyingServiceCapturedTenantIdSet = true
-            underlyingServiceCapturedTenantId = it.getArgument(0)
+            underlyingServiceCapturedTenantIds.add(it.getArgument(0))
             DigitalSignatureWithKey(myPublicKeys.first(), byteArrayOf(42))
         }.whenever(signingService).sign(any(), any(), any(), any(), any())
 
@@ -281,8 +278,8 @@ class CryptoFlowOpsBusProcessorTests {
         assertEquals(recordKey, result.value?.get(0)?.key)
         val response = assertResponseContext<P, R>(result,flowOpsResponseArgumentCaptor.firstValue)
 
-        assertTrue(underlyingServiceCapturedTenantIdSet)
-        assertEquals(tenantId, underlyingServiceCapturedTenantId)
+        assertTrue(underlyingServiceCapturedTenantIds.size > 0)
+        assertEquals(tenantId, underlyingServiceCapturedTenantIds.first())
         val transformedResponse = transformer.transform(flowOpsResponseArgumentCaptor.firstValue)
         if (!(transformedResponse is S)) throw IllegalArgumentException()
         return Triple(passedSecureHashes, response, transformedResponse)
