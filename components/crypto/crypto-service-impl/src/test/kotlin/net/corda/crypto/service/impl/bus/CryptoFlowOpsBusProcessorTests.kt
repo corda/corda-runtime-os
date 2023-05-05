@@ -199,7 +199,7 @@ class CryptoFlowOpsBusProcessorTests {
 
         val notMyKey = mockPublicKey()
 
-        val (passedSecureHashes, response, transformedResponse) =  doFlowOperations<CryptoSigningKeys,  List<PublicKey>>(myPublicKeys) {
+        val (passedSecureHashes, response, transformedResponse) =  doFlowOperations<ByIdsFlowQuery, CryptoSigningKeys,  List<PublicKey>>(myPublicKeys) {
             transformer, flowExternalEventContext -> transformer.createFilterMyKeys(
                 tenantId,
                 listOf(myPublicKeys[0], myPublicKeys[1], notMyKey),
@@ -225,7 +225,10 @@ class CryptoFlowOpsBusProcessorTests {
 
     /** Run a flow operation in the mocked flow ops bus processor
 
-    * @param myPublicKeys - the set of public keys available from the underlying signing service
+     * @param P - type parameter for the flow os request
+     * @param R - type parameter for the flow ops responses
+     * @param S - type parameter for transformed flow ops responses
+     * @param myPublicKeys - the set of public keys available from the underlying signing service
      *@param flowOpCallback - a callback to create the flow signing opeeration required, given a transformer and an event context
      *
      * @returns A triple of:
@@ -233,11 +236,12 @@ class CryptoFlowOpsBusProcessorTests {
      *   - the capture responses
      *    - the captured responses decoded by the transformer
     * */
-    private inline fun <reified R, reified S> doFlowOperations(
+    private inline fun <reified P, reified R, reified S> doFlowOperations(
         myPublicKeys: List<PublicKey>,
         flowOpCallback: (CryptoFlowOpsTransformerImpl, ExternalEventContext)->FlowOpsRequest
     ): Triple<List<String>, R, S> {
-        var passedTenantId = UUID.randomUUID().toString() // the tenant ID that the signing service is called with
+        var underlyingServiceCapturedTenantIdSet = false
+        var underlyingServiceCapturedTenantId = UUID.randomUUID().toString() // will be assigned the tenant ID that the signing service is called with
         var passedSecureHashes = listOf<String>() // the secure hashes passed into the signing service
         val recordKey =
             UUID.randomUUID().toString() // GUID for the record that is passed into the crypto flow ops processor
@@ -256,49 +260,51 @@ class CryptoFlowOpsBusProcessorTests {
             )
         )
 
+        
+        // capture what is passed in  to the signing service operations
         doAnswer {
-            passedTenantId = it.getArgument(0)
+            underlyingServiceCapturedTenantIdSet = true
+            underlyingServiceCapturedTenantId = it.getArgument(0)
             passedSecureHashes = it.getArgument<List<SecureHash>>(1).map { it.toString() }
             myPublicKeys.map { mockSigningKeyInfo(it) }
         }.whenever(signingService).lookupSigningKeysByPublicKeyHashes(any(), any())
-        val transformer = buildTransformer()
-        val result = act {
-            processor.onNext(
-                listOf(
-                    Record(
-                        topic = eventTopic,
-                        key = recordKey,
-                        value = flowOpCallback(transformer, flowExternalEventContext)
-                    )
-                )
-            )
-        }
-        assertEquals(recordKey, result.value?.get(0)?.key)
-        val response = assertResponseContext<ByIdsFlowQuery, R>(result,flowOpsResponseArgumentCaptor.firstValue)
+        doAnswer {
+            underlyingServiceCapturedTenantIdSet = true
+            underlyingServiceCapturedTenantId = it.getArgument(0)
+            DigitalSignatureWithKey(myPublicKeys.first(), byteArrayOf(42))
+        }.whenever(signingService).sign(any(), any(), any(), any(), any())
 
-        assertEquals(tenantId, passedTenantId)
+        val transformer = buildTransformer()
+        val flowOp = flowOpCallback(transformer, flowExternalEventContext)
+        // run the flows ops processor
+        val result = act { processor.onNext(listOf(Record(topic = eventTopic, key = recordKey,value = flowOp))) }
+        assertEquals(recordKey, result.value?.get(0)?.key)
+        val response = assertResponseContext<P, R>(result,flowOpsResponseArgumentCaptor.firstValue)
+
+        assertTrue(underlyingServiceCapturedTenantIdSet)
+        assertEquals(tenantId, underlyingServiceCapturedTenantId)
         val transformedResponse = transformer.transform(flowOpsResponseArgumentCaptor.firstValue)
         if (!(transformedResponse is S)) throw IllegalArgumentException()
         return Triple(passedSecureHashes, response, transformedResponse)
     }
 
-    //    @Test
-    //    fun `Should process sign command using generic method`() {
-    //        val publicKey = mockPublicKey()
-    //        val data = UUID.randomUUID().toString().toByteArray()
-    //
-    //        doFlowOperations<CryptoSignatureWithKey>(listOf(publicKey)) { transformer, flowExternalEventContext ->
-    //            transformer.createSign(
-    //                UUID.randomUUID().toString(),
-    //                tenantId,
-    //                publicKey.encoded,
-    //                SignatureSpecs.EDDSA_ED25519,
-    //                data,
-    //                mapOf("key1" to "value1"),
-    //                flowExternalEventContext
-    //            )
-    //        }
-    //    }
+        @Test
+        fun `Should process sign command using generic method`() {
+            val publicKey = mockPublicKey()
+            val data = UUID.randomUUID().toString().toByteArray()
+
+            doFlowOperations<SignFlowCommand, CryptoSignatureWithKey, DigitalSignatureWithKey>(listOf(publicKey)) { transformer, flowExternalEventContext ->
+                transformer.createSign(
+                    UUID.randomUUID().toString(),
+                    tenantId,
+                    publicKey.encoded,
+                    SignatureSpecs.EDDSA_ED25519,
+                    data,
+                    mapOf("key1" to "value1"),
+                    flowExternalEventContext
+                )
+            }
+        }
 
     @Test
     fun `Should process sign command`() {
