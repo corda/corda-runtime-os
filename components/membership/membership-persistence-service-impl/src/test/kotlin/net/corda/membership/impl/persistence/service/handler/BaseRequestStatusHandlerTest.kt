@@ -111,13 +111,13 @@ class BaseRequestStatusHandlerTest {
             softly.assertThat(details.memberSignatureSpec)
                 .isEqualTo(CryptoSignatureSpec(SIGNATURE_SPEC, null, null))
             softly.assertThat(details.registrationContext).isEqualTo(deserializedRegistrationContext)
-            softly.assertThat(details.registrationSignature).isEqualTo(
+            softly.assertThat(details.registrationContextSignature).isEqualTo(
                 CryptoSignatureWithKey(
                     ByteBuffer.wrap(registrationSignatureKey),
                     ByteBuffer.wrap(registrationSignatureContent)
                 )
             )
-            softly.assertThat(details.registrationSignatureSpec)
+            softly.assertThat(details.registrationContextSignatureSpec)
                 .isEqualTo(CryptoSignatureSpec(REG_SIGNATURE_SPEC, null, null))
             softly.assertThat(details.reason).isEqualTo(REASON)
         }

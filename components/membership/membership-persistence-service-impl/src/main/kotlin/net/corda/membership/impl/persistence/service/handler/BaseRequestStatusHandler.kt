@@ -42,13 +42,13 @@ internal abstract class BaseRequestStatusHandler<REQUEST, RESPONSE>(persistenceH
             )
             .setMemberSignatureSpec(retrieveSignatureSpec(this.memberContextSignatureSpec))
             .setRegistrationContext(keyValuePairListDeserializer.deserialize(registrationContext))
-            .setRegistrationSignature(
+            .setRegistrationContextSignature(
                 CryptoSignatureWithKey(
                     ByteBuffer.wrap(registrationContextSignatureKey),
                     ByteBuffer.wrap(registrationContextSignatureContent)
                 )
             )
-            .setRegistrationSignatureSpec(retrieveSignatureSpec(registrationContextSignatureSpec))
+            .setRegistrationContextSignatureSpec(retrieveSignatureSpec(registrationContextSignatureSpec))
             .setReason(this.reason)
             .setSerial(this.serial)
             .build()

@@ -48,7 +48,7 @@ class QueryRegistrationRequestHandlerTest {
     private val serialisedRegistrationContext = "serialisedRegistrationContext".toByteArray()
     private val registrationSignatureKey = "registrationSignatureKey".toByteArray()
     private val registrationSignatureContent = "registrationSignatureContent".toByteArray()
-    private val registrationSignatureSpec = "SignatureSpec-2"
+    private val registrationContextSignatureSpec = "SignatureSpec-2"
     private val entitySet = mock<JpaEntitiesSet>()
     private val jpaEntitiesRegistry = mock<JpaEntitiesRegistry> {
         on { get(CordaDb.Vault.persistenceUnitName) } doReturn entitySet
@@ -127,7 +127,7 @@ class QueryRegistrationRequestHandlerTest {
                     serialisedRegistrationContext,
                     registrationSignatureKey,
                     registrationSignatureContent,
-                    registrationSignatureSpec,
+                    registrationContextSignatureSpec,
                     0L,
                     "test reason"
                 )
@@ -150,14 +150,14 @@ class QueryRegistrationRequestHandlerTest {
             CryptoSignatureSpec(memberSignatureSpec, null, null)
         )
         assertThat(result.registrationRequest.registrationContext).isEqualTo(registrationContext)
-        assertThat(result.registrationRequest.registrationSignature).isEqualTo(
+        assertThat(result.registrationRequest.registrationContextSignature).isEqualTo(
             CryptoSignatureWithKey(
                 ByteBuffer.wrap(registrationSignatureKey),
                 ByteBuffer.wrap(registrationSignatureContent)
             )
         )
-        assertThat(result.registrationRequest.registrationSignatureSpec).isEqualTo(
-            CryptoSignatureSpec(registrationSignatureSpec, null, null)
+        assertThat(result.registrationRequest.registrationContextSignatureSpec).isEqualTo(
+            CryptoSignatureSpec(registrationContextSignatureSpec, null, null)
         )
     }
 
