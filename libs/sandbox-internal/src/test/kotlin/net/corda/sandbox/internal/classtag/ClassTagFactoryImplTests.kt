@@ -4,6 +4,7 @@ import net.corda.sandbox.SandboxException
 import net.corda.sandbox.internal.CLASS_TAG_DELIMITER
 import net.corda.sandbox.internal.CLASS_TAG_IDENTIFIER_IDX
 import net.corda.sandbox.internal.CLASS_TAG_VERSION_IDX
+import net.corda.sandbox.internal.CORDA_CPK_CORDAPP_NAME
 import net.corda.sandbox.internal.CPK_MAIN_BUNDLE_NAME
 import net.corda.sandbox.internal.ClassTagV1
 import net.corda.sandbox.internal.ClassTagV1.CLASS_TYPE_IDX
@@ -111,7 +112,7 @@ class ClassTagFactoryImplTests {
         val expectedClassTag = EvolvableTagImplV1(
             ClassType.CpkSandboxClass,
             mockBundle.symbolicName,
-            mockSandbox.mainBundle.symbolicName,
+            CORDA_CPK_CORDAPP_NAME,
             mockCpkMetadata.cpkId.signerSummaryHash
         )
         assertEquals(expectedClassTag, classTag)

@@ -37,10 +37,10 @@ internal class ClassTagFactoryImpl : ClassTagFactory {
             if (isStaticTag) {
                 StaticTagImplV1(ClassType.CpkSandboxClass, bundleName, cpkSandbox.cpkMetadata.fileChecksum)
             } else {
-                val mainBundleName = cpkSandbox.mainBundle.symbolicName
+                val cordaCpkCordappName = cpkSandbox.cpkMetadata.cpkId.name
                 val signerSummaryHash = cpkSandbox.cpkMetadata.cpkId.signerSummaryHash
                 EvolvableTagImplV1(
-                    ClassType.CpkSandboxClass, bundleName, mainBundleName, signerSummaryHash
+                    ClassType.CpkSandboxClass, bundleName, cordaCpkCordappName, signerSummaryHash
                 )
             }
         }.serialise()

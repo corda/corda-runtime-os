@@ -1,14 +1,15 @@
 package net.corda.membership.p2p.helpers
 
 import net.corda.crypto.cipher.suite.KeyEncodingService
-import net.corda.crypto.core.bytes
 import net.corda.crypto.core.DigitalSignatureWithKey
+import net.corda.crypto.core.bytes
 import net.corda.crypto.core.toAvro
 import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
+import net.corda.data.membership.SignedData
 import net.corda.data.membership.SignedGroupParameters
 import net.corda.data.membership.SignedMemberInfo
 import net.corda.data.membership.p2p.DistributionMetaData
@@ -39,6 +40,7 @@ class MembershipPackageFactory(
     private companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
+
     private fun DigitalSignatureWithKey.toAvro() =
         CryptoSignatureWithKey.newBuilder()
             .setBytes(ByteBuffer.wrap(this.bytes))
@@ -71,12 +73,20 @@ class MembershipPackageFactory(
                 } ?: throw CordaRuntimeException("Could not find member signature and signature spec for ${it.name}")
 
             SignedMemberInfo.newBuilder()
-                .setMemberContext(ByteBuffer.wrap(serializer.serialize(it.memberProvidedContext.toAvro())))
-                .setMgmContext(ByteBuffer.wrap(serializer.serialize(it.mgmProvidedContext.toAvro())))
-                .setMemberSignature(memberSignature)
-                .setMemberSignatureSpec(memberSignatureSpec)
-                .setMgmSignature(mgmSignature)
-                .setMgmSignatureSpec(mgmSignatureSpec)
+                .setMemberContext(
+                    SignedData(
+                        ByteBuffer.wrap(serializer.serialize(it.memberProvidedContext.toAvro())),
+                        memberSignature,
+                        memberSignatureSpec
+                    )
+                )
+                .setMgmContext(
+                    SignedData(
+                        ByteBuffer.wrap(serializer.serialize(it.mgmProvidedContext.toAvro())),
+                        mgmSignature,
+                        mgmSignatureSpec
+                    )
+                )
                 .build()
         }
         val signedGroupParameters = SignedGroupParameters(

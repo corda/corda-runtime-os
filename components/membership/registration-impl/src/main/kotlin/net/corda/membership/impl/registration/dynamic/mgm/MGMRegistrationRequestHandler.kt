@@ -2,6 +2,9 @@ package net.corda.membership.impl.registration.dynamic.mgm
 
 import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePairList
+import net.corda.data.crypto.wire.CryptoSignatureSpec
+import net.corda.data.crypto.wire.CryptoSignatureWithKey
+import net.corda.data.membership.SignedData
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.membership.lib.SignedMemberInfo
 import net.corda.membership.lib.registration.RegistrationRequest
@@ -35,20 +38,28 @@ internal class MGMRegistrationRequestHandler (
         holdingIdentity: HoldingIdentity,
         mgmInfo: SignedMemberInfo
     ) {
-        val serializedMemberContext = keyValuePairListSerializer.serialize(
-            mgmInfo.memberInfo.memberProvidedContext.toWire()
-        ) ?: throw InvalidMembershipRegistrationException(
-            "Failed to serialize the member context for this request."
-        )
+        val serializedMemberContext = serialize(mgmInfo.memberInfo.memberProvidedContext.toWire())
+        val serializedRegistrationContext = serialize(KeyValuePairList(emptyList()))
+
         val registrationRequestPersistenceResult = membershipPersistenceClient.persistRegistrationRequest(
             viewOwningIdentity = holdingIdentity,
             registrationRequest = RegistrationRequest(
                 status = RegistrationStatus.APPROVED,
                 registrationId = registrationId.toString(),
                 requester = holdingIdentity,
-                memberContext = ByteBuffer.wrap(serializedMemberContext),
-                signature = mgmInfo.memberSignature,
-                signatureSpec = mgmInfo.memberSignatureSpec,
+                memberContext = SignedData(
+                    ByteBuffer.wrap(serializedMemberContext),
+                    mgmInfo.memberSignature,
+                    mgmInfo.memberSignatureSpec
+                ),
+                registrationContext = SignedData(
+                    ByteBuffer.wrap(serializedRegistrationContext),
+                    CryptoSignatureWithKey(
+                        ByteBuffer.wrap(byteArrayOf()),
+                        ByteBuffer.wrap(byteArrayOf())
+                    ),
+                    CryptoSignatureSpec("", null, null)
+                ),
                 serial = 0L,
             )
         ).execute()
@@ -66,4 +77,9 @@ internal class MGMRegistrationRequestHandler (
                 " ${holdingIdentity.shortHash} with id ${approvedRegistration.registrationId}.")
         }
     }
+
+    private fun serialize(data: KeyValuePairList) = keyValuePairListSerializer.serialize(data)
+        ?: throw InvalidMembershipRegistrationException(
+            "Failed to serialize the member context for this request."
+        )
 }

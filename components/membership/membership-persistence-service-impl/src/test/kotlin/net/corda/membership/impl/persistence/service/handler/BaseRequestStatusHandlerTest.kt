@@ -29,13 +29,17 @@ class BaseRequestStatusHandlerTest {
         const val REASON = "test reason"
         const val SERIAL = 0L
         const val SIGNATURE_SPEC = "signatureSpec"
+        const val REG_SIGNATURE_SPEC = "regSignatureSpec"
         const val PROTOCOL_VERSION = 12
 
         val sent = Instant.ofEpochSecond(500)
         val modified = Instant.ofEpochSecond(600)
-        val context = byteArrayOf(1, 2, 3)
-        val signatureKey = byteArrayOf(4)
-        val signatureContent = byteArrayOf(5)
+        val memberContext = byteArrayOf(1, 2, 3)
+        val memberSignatureKey = byteArrayOf(4)
+        val memberSignatureContent = byteArrayOf(5)
+        val registrationContext = byteArrayOf(6)
+        val registrationSignatureKey = byteArrayOf(7)
+        val registrationSignatureContent = byteArrayOf(8)
 
         val entity = RegistrationRequestEntity(
             REGISTRATION_ID,
@@ -43,10 +47,14 @@ class BaseRequestStatusHandlerTest {
             RegistrationStatus.SENT_TO_MGM.toString(),
             sent,
             modified,
-            context,
-            signatureKey,
-            signatureContent,
+            memberContext,
+            memberSignatureKey,
+            memberSignatureContent,
             SIGNATURE_SPEC,
+            registrationContext,
+            registrationSignatureKey,
+            registrationSignatureContent,
+            REG_SIGNATURE_SPEC,
             SERIAL,
             REASON,
         )
@@ -57,10 +65,16 @@ class BaseRequestStatusHandlerTest {
                 KeyValuePair("registrationProtocolVersion", PROTOCOL_VERSION.toString())
             )
         )
+        val deserializedRegistrationContext = KeyValuePairList(
+            listOf(
+                KeyValuePair("key-1", "value-1")
+            )
+        )
     }
 
     private val keyValuePairListDeserializer = mock<CordaAvroDeserializer<KeyValuePairList>> {
-        on { deserialize(context) } doReturn deserializedContext
+        on { deserialize(memberContext) } doReturn deserializedContext
+        on { deserialize(registrationContext) } doReturn deserializedRegistrationContext
     }
     private val serializationFactory = mock<CordaAvroSerializationFactory> {
         on { createAvroDeserializer(any(), eq(KeyValuePairList::class.java)) } doReturn keyValuePairListDeserializer
@@ -88,10 +102,23 @@ class BaseRequestStatusHandlerTest {
             softly.assertThat(details.registrationStatus).isEqualTo(RegistrationStatus.SENT_TO_MGM)
             softly.assertThat(details.registrationProtocolVersion).isEqualTo(PROTOCOL_VERSION)
             softly.assertThat(details.memberProvidedContext).isEqualTo(deserializedContext)
-            softly.assertThat(details.memberSignature)
-                .isEqualTo(CryptoSignatureWithKey(ByteBuffer.wrap(signatureKey), ByteBuffer.wrap(signatureContent)))
+            softly.assertThat(details.memberSignature).isEqualTo(
+                CryptoSignatureWithKey(
+                    ByteBuffer.wrap(memberSignatureKey),
+                    ByteBuffer.wrap(memberSignatureContent)
+                )
+            )
             softly.assertThat(details.memberSignatureSpec)
                 .isEqualTo(CryptoSignatureSpec(SIGNATURE_SPEC, null, null))
+            softly.assertThat(details.registrationContext).isEqualTo(deserializedRegistrationContext)
+            softly.assertThat(details.registrationContextSignature).isEqualTo(
+                CryptoSignatureWithKey(
+                    ByteBuffer.wrap(registrationSignatureKey),
+                    ByteBuffer.wrap(registrationSignatureContent)
+                )
+            )
+            softly.assertThat(details.registrationContextSignatureSpec)
+                .isEqualTo(CryptoSignatureSpec(REG_SIGNATURE_SPEC, null, null))
             softly.assertThat(details.reason).isEqualTo(REASON)
         }
     }
@@ -105,10 +132,14 @@ class BaseRequestStatusHandlerTest {
             RegistrationStatus.SENT_TO_MGM.toString(),
             sent,
             modified,
-            context,
-            signatureKey,
-            signatureContent,
+            memberContext,
+            memberSignatureKey,
+            memberSignatureContent,
             emptySpec,
+            registrationContext,
+            registrationSignatureKey,
+            registrationSignatureContent,
+            SIGNATURE_SPEC,
             SERIAL,
             REASON,
         )
@@ -128,9 +159,13 @@ class BaseRequestStatusHandlerTest {
             "Nop",
             sent,
             modified,
-            context,
-            signatureKey,
-            signatureContent,
+            memberContext,
+            memberSignatureKey,
+            memberSignatureContent,
+            SIGNATURE_SPEC,
+            registrationContext,
+            registrationSignatureKey,
+            registrationSignatureContent,
             SIGNATURE_SPEC,
             SERIAL,
         )
@@ -144,7 +179,7 @@ class BaseRequestStatusHandlerTest {
 
     @Test
     fun `toDetails gets the protocol version from the context`() {
-        whenever(keyValuePairListDeserializer.deserialize(context)).doReturn(
+        whenever(keyValuePairListDeserializer.deserialize(memberContext)).doReturn(
             KeyValuePairList(
                 listOf(
                     KeyValuePair("key", "value"),
@@ -162,7 +197,7 @@ class BaseRequestStatusHandlerTest {
 
     @Test
     fun `toDetails return default protocol version if context is not a number`() {
-        whenever(keyValuePairListDeserializer.deserialize(context)).doReturn(
+        whenever(keyValuePairListDeserializer.deserialize(memberContext)).doReturn(
             KeyValuePairList(
                 listOf(
                     KeyValuePair("key", "value"),
@@ -180,7 +215,7 @@ class BaseRequestStatusHandlerTest {
 
     @Test
     fun `toDetails return default protocol version if context version number is null`() {
-        whenever(keyValuePairListDeserializer.deserialize(context)).doReturn(
+        whenever(keyValuePairListDeserializer.deserialize(memberContext)).doReturn(
             KeyValuePairList(
                 listOf(
                     KeyValuePair("key", "value"),
@@ -198,7 +233,7 @@ class BaseRequestStatusHandlerTest {
 
     @Test
     fun `toDetails return default protocol version if context has no version`() {
-        whenever(keyValuePairListDeserializer.deserialize(context)).doReturn(
+        whenever(keyValuePairListDeserializer.deserialize(memberContext)).doReturn(
             KeyValuePairList(
                 listOf(
                     KeyValuePair("key", "value"),
@@ -215,7 +250,7 @@ class BaseRequestStatusHandlerTest {
 
     @Test
     fun `toDetails return default protocol version if context is null`() {
-        whenever(keyValuePairListDeserializer.deserialize(context)).doReturn(KeyValuePairList())
+        whenever(keyValuePairListDeserializer.deserialize(memberContext)).doReturn(KeyValuePairList())
 
         val details = with(handler) {
             entity.toDetails()
@@ -226,16 +261,20 @@ class BaseRequestStatusHandlerTest {
 
     @Test
     fun `toDetails sets reason to null by default`() {
-        whenever(keyValuePairListDeserializer.deserialize(context)).doReturn(KeyValuePairList())
+        whenever(keyValuePairListDeserializer.deserialize(memberContext)).doReturn(KeyValuePairList())
         val entity = RegistrationRequestEntity(
             REGISTRATION_ID,
             HOLDING_ID_HASH,
             RegistrationStatus.SENT_TO_MGM.toString(),
             sent,
             modified,
-            context,
-            signatureKey,
-            signatureContent,
+            memberContext,
+            memberSignatureKey,
+            memberSignatureContent,
+            SIGNATURE_SPEC,
+            registrationContext,
+            registrationSignatureKey,
+            registrationSignatureContent,
             SIGNATURE_SPEC,
             SERIAL,
         )

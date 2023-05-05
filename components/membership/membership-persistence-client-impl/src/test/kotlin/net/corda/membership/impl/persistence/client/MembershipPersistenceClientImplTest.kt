@@ -12,6 +12,7 @@ import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.PersistentSignedMemberInfo
+import net.corda.data.membership.SignedData
 import net.corda.data.membership.StaticNetworkInfo
 import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.ApprovalRuleType
@@ -160,9 +161,16 @@ class MembershipPersistenceClientImplTest {
         RegistrationStatus.SENT_TO_MGM,
         registrationId,
         ourHoldingIdentity,
-        ByteBuffer.wrap("123".toByteArray()),
-        signature,
-        signatureSpec,
+        SignedData(
+            ByteBuffer.wrap("123".toByteArray()),
+            signature,
+            signatureSpec,
+        ),
+        SignedData(
+            ByteBuffer.wrap("456".toByteArray()),
+            signature,
+            signatureSpec,
+        ),
         0L,
     )
 

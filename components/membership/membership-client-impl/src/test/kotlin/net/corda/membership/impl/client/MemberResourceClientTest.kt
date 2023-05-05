@@ -32,6 +32,7 @@ import net.corda.membership.client.dto.RegistrationRequestStatusDto
 import net.corda.membership.client.dto.RegistrationStatusDto
 import net.corda.membership.client.dto.SubmittedRegistrationStatus
 import net.corda.membership.lib.MemberInfoExtension
+import net.corda.membership.lib.registration.PRE_AUTH_TOKEN
 import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceOperation
@@ -68,6 +69,7 @@ import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 import java.time.Instant
+import java.util.UUID
 import java.util.concurrent.CompletableFuture
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
@@ -314,6 +316,9 @@ class MemberResourceClientTest {
                     KeyValuePairList(listOf(KeyValuePair("key", "value"))),
                     signatureWithKey,
                     signatureSpec,
+                    KeyValuePairList(emptyList()),
+                    signatureWithKey,
+                    signatureSpec,
                     null,
                     SERIAL,
                 ),
@@ -326,6 +331,9 @@ class MemberResourceClientTest {
                     KeyValuePairList(listOf(KeyValuePair("key 2", "value 2"))),
                     signatureWithKey,
                     signatureSpec,
+                    KeyValuePairList(emptyList()),
+                    signatureWithKey,
+                    signatureSpec,
                     null,
                     SERIAL,
                 ),
@@ -336,6 +344,9 @@ class MemberResourceClientTest {
                     "registration id 3",
                     1,
                     KeyValuePairList(listOf(KeyValuePair("key 3", "value 3"))),
+                    signatureWithKey,
+                    signatureSpec,
+                    KeyValuePairList(emptyList()),
                     signatureWithKey,
                     signatureSpec,
                     null,
@@ -432,6 +443,9 @@ class MemberResourceClientTest {
                 "registration id",
                 1,
                 KeyValuePairList(listOf(KeyValuePair("key", "value"))),
+                signatureWithKey,
+                signatureSpec,
+                KeyValuePairList(emptyList()),
                 signatureWithKey,
                 signatureSpec,
                 null,
@@ -586,14 +600,29 @@ class MemberResourceClientTest {
         memberOpsClient.start()
         setUpConfig()
 
-        memberOpsClient.startRegistration(holdingIdentityId, context)
+        val expectedMemberContext = mapOf("property" to "test")
+        val expectedRegistrationContext = mapOf(PRE_AUTH_TOKEN to UUID(0, 1).toString())
+        val inputContext = expectedMemberContext + expectedRegistrationContext
+
+        val serialisedMemberContext = "member-context".toByteArray()
+        val serialisedRegistrationContext = "registration-context".toByteArray()
+
+        whenever(
+            keyValuePairListSerializer.serialize(expectedMemberContext.toWire())
+        ).doReturn(serialisedMemberContext)
+        whenever(
+            keyValuePairListSerializer.serialize(expectedRegistrationContext.toWire())
+        ).doReturn(serialisedRegistrationContext)
+
+        memberOpsClient.startRegistration(holdingIdentityId, inputContext)
 
         verify(membershipPersistenceClient).persistRegistrationRequest(
             eq(holdingIdentity),
             argThat {
                 status == RegistrationStatus.NEW &&
                     requester == holdingIdentity &&
-                    memberContext == ByteBuffer.wrap(byteArrayOf(1, 2, 3))
+                    memberContext.data == ByteBuffer.wrap(serialisedMemberContext) &&
+                    registrationContext.data == ByteBuffer.wrap(serialisedRegistrationContext)
             },
         )
     }

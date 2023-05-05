@@ -486,7 +486,7 @@ class PersistenceServiceInternalTests {
     @Test
     fun `find all`() {
         val expected = persistDogs()
-        val results = assertQuery(QuerySetup.All(DOG_CLASS_NAME))
+        val results = assertQuery(QuerySetup.All(DOG_CLASS_NAME), numberOfRowsFromQuery = expected)
         assertThat(results.size).isGreaterThanOrEqualTo(expected)
 
         // And check the types we've returned
@@ -500,8 +500,8 @@ class PersistenceServiceInternalTests {
     @Test
     fun `find all with pagination`() {
         val expected = persistDogs()
-        val results1 = assertQuery(QuerySetup.All(DOG_CLASS_NAME), 0, 2)
-        val results2 = assertQuery(QuerySetup.All(DOG_CLASS_NAME), 2, 2)
+        val results1 = assertQuery(QuerySetup.All(DOG_CLASS_NAME), 0, 2, numberOfRowsFromQuery = 2)
+        val results2 = assertQuery(QuerySetup.All(DOG_CLASS_NAME), 2, 2, numberOfRowsFromQuery = 2)
         val resultsBalance = assertQuery(QuerySetup.All(DOG_CLASS_NAME), 4, Int.MAX_VALUE)
 
         assertThat(results1.size).isEqualTo(2)
@@ -599,7 +599,7 @@ class PersistenceServiceInternalTests {
     @Test
     fun `find all with composite key`() {
         val expected = persistCats()
-        val results = assertQuery(QuerySetup.All(CAT_CLASS_NAME))
+        val results = assertQuery(QuerySetup.All(CAT_CLASS_NAME), numberOfRowsFromQuery = expected)
 
         assertThat(results.size).isEqualTo(expected)
 
@@ -629,21 +629,21 @@ class PersistenceServiceInternalTests {
     @Test
     fun `find with named query with many results`() {
         persistDogs()
-        val r = assertQuery(QuerySetup.NamedQuery(mapOf("name" to "%o%"), query = "Dog.summonLike"))
+        val r = assertQuery(QuerySetup.NamedQuery(mapOf("name" to "%o%"), query = "Dog.summonLike"), numberOfRowsFromQuery = 4)
         assertThat(r.size).isEqualTo(4)
     }
 
     @Test
     fun `find with named query with 1 result`() {
-        persistDogs()
-        val r = assertQuery(QuerySetup.NamedQuery(mapOf("name" to "Rover 1"), query = "Dog.summon"))
+       persistDogs()
+        val r = assertQuery(QuerySetup.NamedQuery(mapOf("name" to "Rover 1"), query = "Dog.summon"), numberOfRowsFromQuery = 1)
         assertThat(r.size).isEqualTo(1)
     }
 
     @Test
     fun `find with named query and missing owner`() {
         persistDogs()
-        val r = assertQuery(QuerySetup.NamedQuery(mapOf(), query = "Dog.independent"))
+        val r = assertQuery(QuerySetup.NamedQuery(mapOf(), query = "Dog.independent"), numberOfRowsFromQuery = 1)
         assertThat(r.size).isEqualTo(1)
     }
 
@@ -677,14 +677,13 @@ class PersistenceServiceInternalTests {
     @Test
     fun `find with named query with all results`() {
         persistDogs()
-        val r = assertQuery(QuerySetup.NamedQuery(mapOf(), query = "Dog.all"))
+        val r = assertQuery(QuerySetup.NamedQuery(mapOf(), query = "Dog.all"), numberOfRowsFromQuery = 8)
         assertThat(r.size).isEqualTo(8)
     }
 
     @Test
     fun `find with named query and zero limit returns no results`() {
-        persistDogs()
-        val r = assertQuery(QuerySetup.NamedQuery(mapOf(), query = "Dog.all"), limit = 0)
+        val r = assertQuery(QuerySetup.NamedQuery(mapOf(), query = "Dog.all"), limit = 0, numberOfRowsFromQuery = 0)
         assertThat(r.size).isEqualTo(0)
     }
 
@@ -708,11 +707,11 @@ class PersistenceServiceInternalTests {
     @Test
     fun `find with named query with pagination`() {
         persistDogs()
-        val r = assertQuery(QuerySetup.NamedQuery(mapOf(), query = "Dog.all"), 0, 2)
+        val r = assertQuery(QuerySetup.NamedQuery(mapOf(), query = "Dog.all"), 0, 2, numberOfRowsFromQuery = 2)
         assertThat(r.size).isEqualTo(2)
         assertThat(r[0].toString()).contains("Butch 1")
         assertThat(r[1].toString()).contains("Eddie 1")
-        val r2 = assertQuery(QuerySetup.NamedQuery(mapOf(), query = "Dog.all"), 2, 2)
+        val r2 = assertQuery(QuerySetup.NamedQuery(mapOf(), query = "Dog.all"), 2, 2, numberOfRowsFromQuery = 2)
         assertThat(r.size).isEqualTo(2)
         assertThat(r2[0].toString()).contains("Gromit 1")
         assertThat(r2[1].toString()).contains("Lassie 1")
@@ -721,14 +720,13 @@ class PersistenceServiceInternalTests {
     @Test
     fun `find with named query with excessive pagination`() {
         persistDogs()
-        val r = assertQuery(QuerySetup.NamedQuery(mapOf(), query = "Dog.all"), 0, 1000)
+        val r = assertQuery(QuerySetup.NamedQuery(mapOf(), query = "Dog.all"), 0, 1000, numberOfRowsFromQuery = 8)
         assertThat(r.size).isEqualTo(8)
     }
 
     @Test
     fun `find with named query with 0 results`() {
-        persistDogs()
-        val r = assertQuery(QuerySetup.NamedQuery(mapOf("name" to "Topcat"), query = "Dog.summon"))
+        val r = assertQuery(QuerySetup.NamedQuery(mapOf("name" to "Topcat"), query = "Dog.summon"), numberOfRowsFromQuery = 0)
         assertThat(r.size).isEqualTo(0)
     }
 
@@ -794,8 +792,11 @@ class PersistenceServiceInternalTests {
 
     private fun assertQuery(
         querySetup: QuerySetup,
-        offset: Int = 0, limit: Int = Int.MAX_VALUE,
-        expectFailure: String? = null, sizeLimit: Int = Int.MAX_VALUE
+        offset: Int = 0,
+        limit: Int = Int.MAX_VALUE,
+        expectFailure: String? = null,
+        sizeLimit: Int = Int.MAX_VALUE,
+        numberOfRowsFromQuery: Int? = null
     ): List<*> {
         val rec = when (querySetup) {
             is QuerySetup.NamedQuery -> {
@@ -830,6 +831,11 @@ class PersistenceServiceInternalTests {
             val entityResponse = deserializer.deserialize(
                 (flowEvent.payload as ExternalEventResponse).payload.array()
             )!!
+            if (numberOfRowsFromQuery != null) {
+                val actualNumberOfRowsFromQuery = entityResponse.metadata.items.associate { it.key to it.value }["numberOfRowsFromQuery"]
+                assertThat(actualNumberOfRowsFromQuery).isNotNull
+                assertThat(actualNumberOfRowsFromQuery?.toInt()).isEqualTo(numberOfRowsFromQuery)
+            }
             return entityResponse.results.map { sandbox.deserialize(it) }
         }
     }

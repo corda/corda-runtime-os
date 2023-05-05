@@ -8,6 +8,7 @@ import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
+import net.corda.data.membership.SignedData
 import net.corda.data.membership.async.request.MembershipAsyncRequest
 import net.corda.data.membership.async.request.RegistrationAsyncRequest
 import net.corda.data.membership.common.RegistrationRequestDetails
@@ -32,6 +33,7 @@ import net.corda.membership.client.dto.RegistrationRequestStatusDto
 import net.corda.membership.client.dto.RegistrationStatusDto
 import net.corda.membership.client.dto.SubmittedRegistrationStatus
 import net.corda.membership.lib.MemberInfoExtension.Companion.SERIAL
+import net.corda.membership.lib.registration.PRE_AUTH_TOKEN
 import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.lib.toWire
 import net.corda.membership.persistence.client.MembershipPersistenceClient
@@ -86,6 +88,8 @@ class MemberResourceClientImpl @Activate constructor(
         const val COMPONENT_HANDLE_NAME = "MemberOpsClient.componentHandle"
 
         private val clock = UTCClock()
+
+        private val REGISTRATION_CONTEXT_KEYS = setOf(PRE_AUTH_TOKEN)
     }
 
     private val keyValuePairListSerializer: CordaAvroSerializer<KeyValuePairList> =
@@ -272,7 +276,14 @@ class MemberResourceClientImpl @Activate constructor(
             val sent = clock.instant()
             val persistenceSuccess = try {
                 val context = keyValuePairListSerializer.serialize(
-                    registrationContext.filterNot { it.key == SERIAL }.toWire()
+                    registrationContext.filterNot {
+                        it.key == SERIAL || REGISTRATION_CONTEXT_KEYS.contains(it.key)
+                    }.toWire()
+                )
+                val additionalContext = keyValuePairListSerializer.serialize(
+                    registrationContext.filter {
+                        REGISTRATION_CONTEXT_KEYS.contains(it.key)
+                    }.toWire()
                 )
                 val persistentOperation = membershipPersistenceClient.persistRegistrationRequest(
                     holdingIdentity,
@@ -280,12 +291,22 @@ class MemberResourceClientImpl @Activate constructor(
                         RegistrationStatus.NEW,
                         requestId,
                         holdingIdentity,
-                        ByteBuffer.wrap(context),
-                        CryptoSignatureWithKey(
-                            ByteBuffer.wrap(byteArrayOf()),
-                            ByteBuffer.wrap(byteArrayOf())
+                        SignedData(
+                            ByteBuffer.wrap(context),
+                            CryptoSignatureWithKey(
+                                ByteBuffer.wrap(byteArrayOf()),
+                                ByteBuffer.wrap(byteArrayOf())
+                            ),
+                            CryptoSignatureSpec("", null, null),
                         ),
-                        CryptoSignatureSpec("", null, null),
+                        SignedData(
+                            ByteBuffer.wrap(additionalContext),
+                            CryptoSignatureWithKey(
+                                ByteBuffer.wrap(byteArrayOf()),
+                                ByteBuffer.wrap(byteArrayOf())
+                            ),
+                            CryptoSignatureSpec("", null, null),
+                        ),
                         registrationContext[SERIAL]?.toLong(),
                     )
                 )

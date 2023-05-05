@@ -12,6 +12,7 @@ import net.corda.data.crypto.SecureHash
 import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.PersistentMemberInfo
+import net.corda.data.membership.SignedData
 import net.corda.data.membership.SignedMemberInfo
 import net.corda.data.membership.command.synchronisation.SynchronisationMetaData
 import net.corda.data.membership.command.synchronisation.member.ProcessMembershipUpdates
@@ -178,23 +179,29 @@ class MemberSynchronisationServiceImplTest {
     private val serializationFactory: CordaAvroSerializationFactory = mock {
         on { createAvroDeserializer(any(), eq(KeyValuePairList::class.java)) } doReturn keyValuePairListDeserializer
     }
-    private val memberContext: ByteBuffer = mock {
+    private val memberContextData: ByteBuffer = mock {
         on { array() } doReturn MEMBER_CONTEXT_BYTES
     }
-    private val mgmContext: ByteBuffer = mock {
+    private val mgmContextData: ByteBuffer = mock {
         on { array() } doReturn MGM_CONTEXT_BYTES
     }
     private val memberSignature = mock<CryptoSignatureWithKey>()
     private val memberSignatureSpec = mock<CryptoSignatureSpec>()
     private val mgmSignature = mock<CryptoSignatureWithKey>()
     private val mgmSignatureSpec = mock<CryptoSignatureSpec>()
+    private val memberContext = SignedData(
+        memberContextData,
+        memberSignature,
+        memberSignatureSpec
+    )
+    private val mgmContext = SignedData(
+        mgmContextData,
+        mgmSignature,
+        mgmSignatureSpec
+    )
     private val signedMemberInfo: SignedMemberInfo = mock {
         on { memberContext } doReturn memberContext
         on { mgmContext } doReturn mgmContext
-        on { memberSignature } doReturn memberSignature
-        on { memberSignatureSpec } doReturn memberSignatureSpec
-        on { mgmSignature } doReturn mgmSignature
-        on { mgmSignatureSpec } doReturn mgmSignatureSpec
     }
     private val hash = SecureHash("algo", ByteBuffer.wrap(byteArrayOf(1, 2, 3)))
     private val signedMemberships: SignedMemberships = mock {
