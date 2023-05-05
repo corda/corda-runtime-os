@@ -7,10 +7,12 @@ import net.corda.messagebus.api.constants.ProducerRoles
  * @param clientId Client provided identifier for the producer. Used for logging and producer message bus configuration.
  * @param instanceId Instance id for this producer.
  * @param role Producer role to extract config for from the message bus config
+ * @param throwOnSerializationError Boolean to decide whether a serialization error should throw an exception
  */
 data class ProducerConfig(
     val clientId: String,
     val instanceId: Int,
     val transactional: Boolean,
-    val role: ProducerRoles
+    val role: ProducerRoles,
+    val throwOnSerializationError: Boolean = true
 )

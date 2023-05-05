@@ -456,8 +456,9 @@ internal class VirtualNodeRestResourceImpl(
         return when (exception.errorType) {
             InvalidStateChangeRuntimeException::class.java.name -> InvalidStateChangeException(exception.errorMessage)
             VirtualNodeOperationNotFoundException::class.java.name -> ResourceNotFoundException(exception.errorMessage)
-            VirtualNodeOperationBadRequestException::class.java.name, LiquibaseDiffCheckFailedException::class.java.name ->
-                BadRequestException(exception.errorMessage)
+            VirtualNodeOperationBadRequestException::class.java.name,
+            LiquibaseDiffCheckFailedException::class.java.name,
+            javax.persistence.RollbackException::class.java.name -> BadRequestException(exception.errorMessage)
             else -> InternalServerException(exception.errorMessage)
         }
     }

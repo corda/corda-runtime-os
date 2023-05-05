@@ -1,6 +1,6 @@
 package net.corda.membership.impl.registration.dynamic.handler.mgm
 
-import net.corda.data.CordaAvroSerializationFactory
+import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePairList
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.command.registration.RegistrationCommand
@@ -26,11 +26,11 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.endpoints
 import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
 import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
 import net.corda.membership.lib.MemberInfoExtension.Companion.notaryDetails
-import net.corda.membership.lib.MemberInfoExtension.Companion.preAuthToken
 import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.SignedMemberInfo
 import net.corda.membership.lib.registration.RegistrationRequest
+import net.corda.membership.lib.registration.RegistrationRequestHelpers.getPreAuthToken
 import net.corda.membership.p2p.helpers.P2pRecordsFactory
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
@@ -108,7 +108,7 @@ internal class StartRegistrationHandler(
             logger.info("Registering $pendingMemberHoldingId with MGM for holding identity: $mgmHoldingId")
             val pendingMemberInfo = buildPendingMemberInfo(registrationRequest)
 
-            validatePreAuthTokenUsage(mgmHoldingId, pendingMemberInfo)
+            validatePreAuthTokenUsage(mgmHoldingId, pendingMemberInfo, registrationRequest)
             // Parse the registration request and verify contents
             // The MemberX500Name matches the source MemberX500Name from the P2P messaging
             validateRegistrationRequest(
@@ -149,8 +149,8 @@ internal class StartRegistrationHandler(
 
             val signedMemberInfo = SignedMemberInfo(
                 pendingMemberInfo,
-                registrationRequest.signature,
-                registrationRequest.signatureSpec
+                registrationRequest.memberContext.signature,
+                registrationRequest.memberContext.signatureSpec
             )
 
             // Persist pending member info
@@ -218,7 +218,7 @@ internal class StartRegistrationHandler(
 
     private fun buildPendingMemberInfo(registrationRequest: RegistrationRequest): MemberInfo {
         val memberContext = keyValuePairListDeserializer
-            .deserialize(registrationRequest.memberContext.array())
+            .deserialize(registrationRequest.memberContext.data.array())
             ?.items?.associate { it.key to it.value }
             ?: emptyMap()
         validateRegistrationRequest(memberContext.isNotEmpty()) {
@@ -256,8 +256,7 @@ internal class StartRegistrationHandler(
             memberRegistrationRequest.registrationId,
             source.toCorda(),
             memberRegistrationRequest.memberContext,
-            memberRegistrationRequest.memberSignature,
-            memberRegistrationRequest.memberSignatureSpec,
+            memberRegistrationRequest.registrationContext,
             memberRegistrationRequest.serial,
         )
     }
@@ -300,9 +299,13 @@ internal class StartRegistrationHandler(
      * Fail to validate a registration request if a pre-auth token is present in the registration context, and
      * it is not a valid UUID or it is not currently an active token for the registering member.
      */
-    private fun validatePreAuthTokenUsage(mgmHoldingId: HoldingIdentity, pendingMemberInfo: MemberInfo) {
+    private fun validatePreAuthTokenUsage(
+        mgmHoldingId: HoldingIdentity,
+        pendingMemberInfo: MemberInfo,
+        registrationRequest: RegistrationRequest
+    ) {
         try {
-            pendingMemberInfo.preAuthToken?.let {
+            registrationRequest.getPreAuthToken(keyValuePairListDeserializer)?.let {
                 val result = membershipQueryClient.queryPreAuthTokens(
                     mgmHoldingIdentity = mgmHoldingId,
                     ownerX500Name = pendingMemberInfo.name,

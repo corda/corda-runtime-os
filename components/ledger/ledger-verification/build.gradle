@@ -40,6 +40,7 @@ dependencies {
     implementation project(':libs:ledger:ledger-utxo-transaction-verifier')
     implementation project(':libs:messaging:messaging')
     implementation project(":libs:serialization:json-validator")
+    implementation project(":libs:serialization:serialization-avro")
     implementation project(':libs:utilities')
     implementation project(':libs:virtual-node:sandbox-group-context')
 

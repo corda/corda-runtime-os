@@ -72,7 +72,6 @@ class DatabaseChunkPersistence(private val entityManagerFactory: EntityManagerFa
             // Persist this chunk.
             val chunkEntity = ChunkEntity(
                 chunk.requestId,
-                chunk.fileName,
                 cordaSecureHash?.toString(),
                 chunk.partNumber,
                 chunk.offset,
@@ -181,7 +180,7 @@ class DatabaseChunkPersistence(private val entityManagerFactory: EntityManagerFa
                         if (entity.checksum != null) parseSecureHash(entity.checksum!!).toAvro() else null
                     val data = if (entity.data != null) ByteBuffer.wrap(entity.data) else ByteBuffer.allocate(0)
                     val chunk = Chunk(
-                        requestId, entity.fileName, checksum, entity.partNumber, entity.offset, data,
+                        requestId, checksum, entity.partNumber, entity.offset, data,
                         avroChunkProperties
                     )
                     onChunk(chunk)

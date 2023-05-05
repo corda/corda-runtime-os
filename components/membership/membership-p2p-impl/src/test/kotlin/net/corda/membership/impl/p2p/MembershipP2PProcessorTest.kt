@@ -8,6 +8,7 @@ import net.corda.data.crypto.SecureHash
 import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.identity.HoldingIdentity
+import net.corda.data.membership.SignedData
 import net.corda.data.membership.command.registration.RegistrationCommand
 import net.corda.data.membership.command.registration.member.ProcessMemberVerificationRequest
 import net.corda.data.membership.command.registration.mgm.ProcessMemberVerificationResponse
@@ -75,16 +76,24 @@ class MembershipP2PProcessorTest {
     private fun String.toByteBuffer() = ByteBuffer.wrap(toByteArray())
     private val avroSchemaRegistry: AvroSchemaRegistry = mock()
 
-    private val memberContext = ByteBuffer.wrap(byteArrayOf(1, 2, 3))
     private val testSig =
         CryptoSignatureWithKey("ABC".toByteBuffer(), "DEF".toByteBuffer())
     private val testSigSpec = CryptoSignatureSpec("", null, null)
+    private val memberContext = SignedData(
+        ByteBuffer.wrap(byteArrayOf(1, 2, 3)),
+        testSig,
+        testSigSpec
+    )
+    private val registrationContext = SignedData(
+        ByteBuffer.wrap(byteArrayOf(4, 5, 6)),
+        testSig,
+        testSigSpec
+    )
     private val registrationId = UUID.randomUUID().toString()
     private val registrationRequest = MembershipRegistrationRequest(
         registrationId,
         memberContext,
-        testSig,
-        testSigSpec,
+        registrationContext,
         0L,
     )
     private val registrationReqMsgPayload = registrationRequest.toByteBuffer()
@@ -192,7 +201,7 @@ class MembershipP2PProcessorTest {
                 ),
             ),
         )
-        whenever(avroSchemaRegistry.deserialize<KeyValuePairList>(memberContext)).doReturn(context)
+        whenever(avroSchemaRegistry.deserialize<KeyValuePairList>(memberContext.data)).doReturn(context)
         val result = processUnauthMsgPayload(unauthenticatedRegMsgPayload)
 
         with(result) {
