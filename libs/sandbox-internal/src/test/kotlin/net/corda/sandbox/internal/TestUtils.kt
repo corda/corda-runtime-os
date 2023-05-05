@@ -18,6 +18,7 @@ const val HASH_LENGTH = 32
 const val PUBLIC_BUNDLE_NAME = "public_bundle_symbolic_name"
 const val CPK_LIBRARY_BUNDLE_NAME = "cpk_library_bundle_symbolic_name"
 const val CPK_MAIN_BUNDLE_NAME = "cpk_main_bundle_symbolic_name"
+const val CORDA_CPK_CORDAPP_NAME = "cpk_cordapp_name"
 
 val random = Random(0)
 
@@ -47,7 +48,7 @@ fun mockBundle(
 
 /** Generates a mock CpkMetadata. */
 fun mockCpkMeta(): CpkMetadata {
-    val id = CpkIdentifier(random.nextInt().toString(), "1.0", randomSecureHash())
+    val id = CpkIdentifier(CORDA_CPK_CORDAPP_NAME, "1.0", randomSecureHash())
     val hash = randomSecureHash()
     return mock<CpkMetadata>().apply {
         whenever(this.cpkId).thenReturn(id)
