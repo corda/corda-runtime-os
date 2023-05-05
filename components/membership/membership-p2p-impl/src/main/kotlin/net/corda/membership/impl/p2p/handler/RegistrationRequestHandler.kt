@@ -40,7 +40,7 @@ internal class RegistrationRequestHandler(
         try {
             logger.info("Received registration request. Issuing StartRegistration command.")
             val (registrationRequest, mgm) = decryptPayload(payload)
-            val memberName = avroSchemaRegistry.deserialize<KeyValuePairList>(registrationRequest.memberContext)
+            val memberName = avroSchemaRegistry.deserialize<KeyValuePairList>(registrationRequest.memberContext.data)
                 .items
                 .firstOrNull { it.key == MemberInfoExtension.PARTY_NAME }
                 ?.value

@@ -125,13 +125,18 @@ class QueryRegistrationRequestsHandlerTest {
                     byteArrayOf(4, 5),
                     byteArrayOf(6, 7),
                     "signatureSpec",
+                    byteArrayOf(8, 9, 10),
+                    byteArrayOf(11, 12),
+                    byteArrayOf(13, 14),
+                    "signatureSpec",
                     SERIAL,
                     "test reason"
                 )
             }
         )
 
-        val result = handler.invoke(context, QueryRegistrationRequests(null, RegistrationStatus.values().toList(), null))
+        val result =
+            handler.invoke(context, QueryRegistrationRequests(null, RegistrationStatus.values().toList(), null))
 
         assertThat(result.registrationRequests.map { it.registrationId })
             .containsAll(ids)
@@ -147,7 +152,11 @@ class QueryRegistrationRequestsHandlerTest {
             context,
             QueryRegistrationRequests(
                 null,
-                listOf(RegistrationStatus.PENDING_MANUAL_APPROVAL, RegistrationStatus.APPROVED, RegistrationStatus.DECLINED),
+                listOf(
+                    RegistrationStatus.PENDING_MANUAL_APPROVAL,
+                    RegistrationStatus.APPROVED,
+                    RegistrationStatus.DECLINED
+                ),
                 null
             )
         )
@@ -192,6 +201,10 @@ class QueryRegistrationRequestsHandlerTest {
                     byteArrayOf(1, 2, 3),
                     byteArrayOf(4, 5),
                     byteArrayOf(6, 7),
+                    "signatureSpec",
+                    byteArrayOf(8, 9, 10),
+                    byteArrayOf(11, 12),
+                    byteArrayOf(13, 14),
                     "signatureSpec",
                     SERIAL,
                 )

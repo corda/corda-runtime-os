@@ -24,6 +24,7 @@ import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.identity.HoldingIdentity
 import net.corda.data.membership.PersistentGroupParameters
 import net.corda.data.membership.PersistentMemberInfo
+import net.corda.data.membership.SignedData
 import net.corda.data.membership.SignedGroupParameters
 import net.corda.data.membership.SignedMemberInfo
 import net.corda.data.membership.p2p.DistributionMetaData
@@ -485,8 +486,8 @@ class SynchronisationIntegrationTest {
             it.assertThat(membershipPackage.memberships.memberships).hasSize(2)
                 .allSatisfy {
                     val member = memberInfoFactory.create(
-                        keyValueDeserializer.deserialize(it.memberContext.array())!!.toSortedMap(),
-                        keyValueDeserializer.deserialize(it.mgmContext.array())!!.toSortedMap()
+                        keyValueDeserializer.deserialize(it.memberContext.data.array())!!.toSortedMap(),
+                        keyValueDeserializer.deserialize(it.mgmContext.data.array())!!.toSortedMap()
                     )
                     assertThat(member.name.toString()).isIn(members)
                     assertThat(member.groupId).isEqualTo(groupId)
@@ -529,15 +530,19 @@ class SynchronisationIntegrationTest {
                 )
             }
             SignedMemberInfo.newBuilder()
-                .setMemberContext(ByteBuffer.wrap(memberInfo))
-                .setMgmContext(ByteBuffer.wrap(keyValueSerializer.serialize(it.mgmProvidedContext.toAvro())))
-                .setMemberSignature(memberSignature)
-                .setMemberSignatureSpec(
-                    CryptoSignatureSpec(memberSignatureSpec.signatureName, null, null)
+                .setMemberContext(
+                    SignedData(
+                        ByteBuffer.wrap(memberInfo),
+                        memberSignature,
+                        CryptoSignatureSpec(memberSignatureSpec.signatureName, null, null)
+                    )
                 )
-                .setMgmSignature(mgmSignature)
-                .setMgmSignatureSpec(
-                    CryptoSignatureSpec(mgmSignatureSpec.signatureName, null, null)
+                .setMgmContext(
+                    SignedData(
+                        ByteBuffer.wrap(keyValueSerializer.serialize(it.mgmProvidedContext.toAvro())),
+                        mgmSignature,
+                        CryptoSignatureSpec(mgmSignatureSpec.signatureName, null, null)
+                    )
                 )
                 .build()
         }
