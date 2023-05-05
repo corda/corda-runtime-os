@@ -169,21 +169,6 @@ class DBAccess(
         }
     }
 
-    /**
-     * Special case for writing Atomic Txn Record. We check first if it's in the database as this isn't
-     * an error for this one txn record
-     */
-    fun writeAtomicTransactionRecord() {
-        executeWithErrorHandling(
-            "write atomic transaction record",
-            allowDuplicate = true
-        ) { entityManager ->
-            if (entityManager.find(TransactionRecordEntry::class.java, ATOMIC_TRANSACTION.transactionId) == null) {
-                entityManager.persist(ATOMIC_TRANSACTION)
-            }
-        }
-    }
-
     fun writeTransactionRecord(entry: TransactionRecordEntry) {
         executeWithErrorHandling("write transaction record $entry") { entityManager ->
             entityManager.persist(entry)

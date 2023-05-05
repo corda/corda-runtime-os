@@ -27,9 +27,6 @@ class CordaAtomicDBProducerImpl(
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
-    init {
-        dbAccess.writeAtomicTransactionRecord()
-    }
 
     override fun send(record: CordaProducerRecord<*, *>, callback: CordaProducer.Callback?) {
         sendRecords(listOf(record))
