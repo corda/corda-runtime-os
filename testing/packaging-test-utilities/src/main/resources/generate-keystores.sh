@@ -20,7 +20,7 @@ keytool -genkeypair -keyalg EC -alias ca1 -dname 'CN=Corda Dev CA1, OU=R3, O=Cor
 keytool -genkeypair -keyalg EC -alias ca2 -dname 'CN=Corda Dev CA2, OU=R3, O=Corda, L=Dublin, C=IE' \
         -validity 3650 -keypass ${KEYPASS} -keystore ca2.p12 -storetype ${STORETYPE} -storepass ${STOREPASS}
 # Alice
-keytool -genkeypair -keyalg EC -alias alice -dname 'CN=Alice, OU=R3, O=Corda, L=Dublin, C=IE' \
+keytool -genkeypair -keyalg EC -alias alice -dname 'CN=Alice, OU=R3, O=Corda, L=Dublin, C=IE, OID.1.3.6.1.4.1.311.60.2.1.3=GB, OID.2.5.4.15=Private, SERIALNUMBER=10103259' \
         -validity 3650 -keypass ${KEYPASS} -keystore alice.p12 -storetype ${STORETYPE} -storepass ${STOREPASS}
 # Bob
 keytool -genkeypair -keyalg EC -alias bob -dname 'CN=Bob, OU=R3, O=Corda, L=Dublin, C=IE' \
