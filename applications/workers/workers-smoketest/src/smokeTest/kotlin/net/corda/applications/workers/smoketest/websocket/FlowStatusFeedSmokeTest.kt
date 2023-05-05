@@ -5,12 +5,11 @@ import net.corda.applications.workers.smoketest.TEST_CPI_NAME
 import net.corda.applications.workers.smoketest.websocket.client.MessageQueueWebSocketHandler
 import net.corda.applications.workers.smoketest.websocket.client.SmokeTestWebsocketClient
 import net.corda.applications.workers.smoketest.websocket.client.useWebsocketConnection
-import net.corda.e2etest.utilities.CLUSTER_URI
 import net.corda.e2etest.utilities.CODE_SIGNER_CERT
-import net.corda.e2etest.utilities.PASSWORD
+import net.corda.e2etest.utilities.CODE_SIGNER_CERT_ALIAS
+import net.corda.e2etest.utilities.CODE_SIGNER_CERT_USAGE
 import net.corda.e2etest.utilities.RpcSmokeTestInput
 import net.corda.e2etest.utilities.SMOKE_TEST_CLASS_NAME
-import net.corda.e2etest.utilities.USERNAME
 import net.corda.e2etest.utilities.assertWithRetry
 import net.corda.e2etest.utilities.awaitRpcFlowFinished
 import net.corda.e2etest.utilities.cluster
@@ -49,15 +48,10 @@ class FlowStatusFeedSmokeTest {
         fun beforeAll() {
             // Certificate upload can be slow in the combined worker, especially after it has just started up.
             cluster {
-                endpoint(
-                    CLUSTER_URI,
-                    USERNAME,
-                    PASSWORD
-                )
                 assertWithRetry {
                     timeout(Duration.ofSeconds(100))
                     interval(Duration.ofSeconds(1))
-                    command { importCertificate(CODE_SIGNER_CERT, "code-signer", "cordadev") }
+                    command { importCertificate(CODE_SIGNER_CERT, CODE_SIGNER_CERT_USAGE, CODE_SIGNER_CERT_ALIAS) }
                     condition { it.code == 204 }
                 }
             }
