@@ -26,7 +26,7 @@ class CordaTransactionalDBProducerImpl(
     private val dbAccess: DBAccess,
     private val writeOffsets: WriteOffsets,
     private val headerSerializer: MessageHeaderSerializer,
-    private val throwOnSerializationError: Boolean
+    private val throwOnSerializationError: Boolean = true
 ) : CordaProducer {
 
     companion object {
