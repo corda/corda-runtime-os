@@ -32,6 +32,7 @@ import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.messaging.api.records.Record
+import net.corda.orm.utils.transactionExecutor
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.v5.application.crypto.DigestService
@@ -232,7 +233,7 @@ import kotlin.test.asserter
      * @param R - type parameter for the flow ops responses
      * @param S - type parameter for transformed flow ops responses
      * @param myPublicKeys - the set of public keys available from the underlying signing service
-     *@param flowOpCallback - a callback to create the flow signing opeeration required, given a transformer and an event context
+     *@param flowOpCallbacks - a list of callback to create the flow signing opeeration required, given a transformer and an event context
      *
      * @returns A triple of:
      *   - a list of each set of signing keys as strings that were looked up in the signing service
@@ -282,7 +283,7 @@ import kotlin.test.asserter
         // run the flows ops processor
         val result = act { processor.onNext(indices.map { Record(topic = eventTopic, key = recordKeys.get(it), value = flowOps.get(it)) }) }
         assertEquals(recordKeys.first(), result.value?.get(0)?.key)
-        val response = assertResponseContext<P, R>(result,flowOpsResponseArgumentCaptor.firstValue)
+        val response = assertResponseContext<P, R>(result, flowOpsResponseArgumentCaptor.firstValue)
 
         assertTrue(underlyingServiceCapturedTenantIds.size > 0)
         assertEquals(tenantId, underlyingServiceCapturedTenantIds.first())
@@ -291,23 +292,23 @@ import kotlin.test.asserter
         return Triple(passedSecureHashLists, response, transformedResponse)
     }
 
-        @Test
-        fun `Should process sign command`() {
-            val publicKey = mockPublicKey()
-            val data = UUID.randomUUID().toString().toByteArray()
+    @Test
+    fun `Should process sign command`() {
+        val publicKey = mockPublicKey()
+        val data = UUID.randomUUID().toString().toByteArray()
 
-            doFlowOperations<SignFlowCommand, CryptoSignatureWithKey, DigitalSignatureWithKey>(listOf(publicKey), listOf( { transformer, flowExternalEventContext ->
-                transformer.createSign(
-                    UUID.randomUUID().toString(),
-                    tenantId,
-                    publicKey.encoded,
-                    SignatureSpecs.EDDSA_ED25519,
-                    data,
-                    mapOf("key1" to "value1"),
-                    flowExternalEventContext
-                )
-            }))
-        }
+        doFlowOperations<SignFlowCommand, CryptoSignatureWithKey, DigitalSignatureWithKey>(listOf(publicKey), listOf( { transformer, flowExternalEventContext ->
+            transformer.createSign(
+                UUID.randomUUID().toString(),
+                tenantId,
+                publicKey.encoded,
+                SignatureSpecs.EDDSA_ED25519,
+                data,
+                mapOf("key1" to "value1"),
+                flowExternalEventContext
+            )
+        }))
+    }
 
 
 //    @Suppress("UNCHECKED_CAST")
@@ -540,7 +541,23 @@ import kotlin.test.asserter
 //        assertTrue(keys.any { it.encoded.contentEquals(myPublicKeys[1].encoded) })
 //    }
 
-    @Suppress("UNCHECKED_CAST")
+//     @Test
+//     fun `Should process list with valid event and return error for failed event with generic engine`() {
+//         val failingTenantId = UUID.randomUUID().toString()
+//         val myPublicKeys = listOf(
+//             mockPublicKey(),
+//             mockPublicKey()
+//         )
+//         val notMyKey = mockPublicKey()
+//
+//         doFlowOperations<ByIdsFlowQuery, CryptoSigningKeys,  List<PublicKey>>(
+//             myPublicKeys, listOf(
+//                 { t,f -> t.createFilterMyKeys( failingTenantId, listOf(myPublicKeys[0], myPublicKeys[1], notMyKey), f) },
+//                 { t,f -> t.createFilterMyKeys( tenantId, listOf(myPublicKeys[0], myPublicKeys[1], notMyKey), f) }
+//             ))
+//     }
+
+     @Suppress("UNCHECKED_CAST")
     @Test
     fun `Should process list with valid event and return error for failed event`() {
         val myPublicKeys = listOf(
