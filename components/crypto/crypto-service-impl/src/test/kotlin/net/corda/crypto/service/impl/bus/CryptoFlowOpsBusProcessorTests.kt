@@ -199,7 +199,7 @@ class CryptoFlowOpsBusProcessorTests {
 
         val notMyKey = mockPublicKey()
 
-        val (passedSecureHashes, response) =  doFlowOperations<CryptoSigningKeys>(myPublicKeys) {
+        val (passedSecureHashes, response, transformedResponse) =  doFlowOperations<CryptoSigningKeys,  List<PublicKey>>(myPublicKeys) {
             transformer, flowExternalEventContext -> transformer.createFilterMyKeys(
                 tenantId,
                 listOf(myPublicKeys[0], myPublicKeys[1], notMyKey),
@@ -212,22 +212,21 @@ class CryptoFlowOpsBusProcessorTests {
         assertEquals(notMyKey.fullId(), passedSecureHashes[2])
         assertNotNull(response.keys)
         assertEquals(2, response.keys.size)
-        assertTrue(
-            response.keys.any {
-                it.publicKey.array().contentEquals(keyEncodingService.encodeAsByteArray(myPublicKeys[0]))
-            }
-        )
+        assertTrue(response.keys.any { it.publicKey.array().contentEquals(keyEncodingService.encodeAsByteArray(myPublicKeys[0])) })
         assertTrue(
             response.keys.any {
                 it.publicKey.array().contentEquals(keyEncodingService.encodeAsByteArray(myPublicKeys[1]))
             }
         )
+        assertEquals(2, transformedResponse.size)
+        assertTrue(transformedResponse.any { it.encoded.contentEquals(myPublicKeys[0].encoded) })
+        assertTrue(transformedResponse.any { it.encoded.contentEquals(myPublicKeys[1].encoded) })
     }
 
-    private inline fun <reified R> doFlowOperations(
+    private inline fun <reified R, reified S> doFlowOperations(
         myPublicKeys: List<PublicKey>,
         flowOpCallback: (CryptoFlowOpsTransformerImpl, ExternalEventContext)->FlowOpsRequest
-    ): Pair<List<String>, R> {
+    ): Triple<List<String>, R, S> {
         var passedTenantId = UUID.randomUUID().toString() // the tenant ID that the signing service is called with
         var passedSecureHashes = listOf<String>() // the secure hashes passed into the signing service
         val recordKey =
@@ -268,17 +267,28 @@ class CryptoFlowOpsBusProcessorTests {
         val response = assertResponseContext<ByIdsFlowQuery, R>(result,flowOpsResponseArgumentCaptor.firstValue)
 
         assertEquals(tenantId, passedTenantId)
-        val transformed = transformer.transform(flowOpsResponseArgumentCaptor.firstValue)
-        assertInstanceOf(List::class.java, transformed)
-        if (transformed is List<*> && transformed.firstOrNull() is PublicKey) {
-            assertEquals(2, transformed.size)
-            assertTrue(transformed.any { (it as PublicKey).encoded.contentEquals(myPublicKeys[0].encoded) })
-            assertTrue(transformed.any { (it as PublicKey).encoded.contentEquals(myPublicKeys[1].encoded) })
-        } else {
-            throw IllegalArgumentException()
-        }
-        return Pair(passedSecureHashes, response)
+        val transformedResponse = transformer.transform(flowOpsResponseArgumentCaptor.firstValue)
+        if (!(transformedResponse is S)) throw IllegalArgumentException()
+        return Triple(passedSecureHashes, response, transformedResponse)
     }
+
+    //    @Test
+    //    fun `Should process sign command using generic method`() {
+    //        val publicKey = mockPublicKey()
+    //        val data = UUID.randomUUID().toString().toByteArray()
+    //
+    //        doFlowOperations<CryptoSignatureWithKey>(listOf(publicKey)) { transformer, flowExternalEventContext ->
+    //            transformer.createSign(
+    //                UUID.randomUUID().toString(),
+    //                tenantId,
+    //                publicKey.encoded,
+    //                SignatureSpecs.EDDSA_ED25519,
+    //                data,
+    //                mapOf("key1" to "value1"),
+    //                flowExternalEventContext
+    //            )
+    //        }
+    //    }
 
     @Test
     fun `Should process sign command`() {
