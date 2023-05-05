@@ -1,6 +1,7 @@
 package net.corda.flow.application.services.impl
 
 import net.corda.flow.application.services.impl.interop.dispatch.buildDispatcher
+import net.corda.flow.application.services.impl.interop.facade.FacadeReaders
 import net.corda.flow.application.services.impl.interop.facade.FacadeRequestImpl
 import net.corda.flow.application.services.impl.interop.facade.FacadeResponseImpl
 import net.corda.flow.application.services.impl.interop.proxies.JacksonJsonMarshallerAdaptor
@@ -8,7 +9,6 @@ import net.corda.flow.application.services.impl.interop.proxies.getClientProxy
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.v5.application.interop.facade.Facade
 import net.corda.v5.application.interop.facade.FacadeId
-import net.corda.v5.application.interop.facade.FacadeReader
 import net.corda.v5.application.interop.facade.FacadeRequest
 import net.corda.v5.application.interop.facade.FacadeResponse
 import net.corda.v5.application.interop.facade.FacadeService
@@ -28,8 +28,6 @@ class FacadeServiceImpl @Activate constructor(
     private val jsonMarshallingService: JsonMarshallingService,
     @Reference(service = FlowMessaging::class)
     private val flowMessaging: FlowMessaging,
-    @Reference(service = FacadeReader::class)
-    private val facadeReader: FacadeReader
 ) : FacadeService, UsedByFlow, SingletonSerializeAsToken {
 
     companion object {
@@ -56,7 +54,7 @@ class FacadeServiceImpl @Activate constructor(
 
     @Suppress("UNUSED_PARAMETER")
     private fun facadeLookup(facadeId: String) : Facade {
-        return facadeReader.read(
+        return FacadeReaders.JSON.read(
         """{ "id": "/com/r3/tokens/sample/v1.0",
                 "commands": { 
                     "say-hello": {
