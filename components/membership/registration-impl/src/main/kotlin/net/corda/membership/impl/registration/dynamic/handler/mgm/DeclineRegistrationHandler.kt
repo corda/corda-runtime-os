@@ -54,7 +54,8 @@ internal class DeclineRegistrationHandler(
         val registrationRequestDeclinedCommand = membershipPersistenceClient.setRegistrationRequestStatus(
             viewOwningIdentity = declinedBy.toCorda(),
             registrationId = registrationId,
-            registrationRequestStatus = RegistrationStatus.DECLINED
+            registrationRequestStatus = RegistrationStatus.DECLINED,
+            reason = command.reason
         ).createAsyncCommands()
         val memberDeclinedMessage = p2pRecordsFactory.createAuthenticatedMessageRecord(
             source = declinedBy,

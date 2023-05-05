@@ -118,7 +118,7 @@ class MembershipQueryClientImpl(
                 MembershipQueryResult.Failure(err)
             }
             else -> {
-                val err = "Query returned unexpected payload."
+                val err = "Query returned unexpected payload [${payload?.let { it::class.java }}]."
                 logger.warn(err)
                 MembershipQueryResult.Failure(err)
             }
@@ -145,7 +145,7 @@ class MembershipQueryClientImpl(
                 MembershipQueryResult.Failure(err)
             }
             else -> {
-                val err = "Query returned unexpected payload."
+                val err = "Query returned unexpected payload [${payload?.let { it::class.java }}]."
                 logger.warn(err)
                 MembershipQueryResult.Failure(err)
             }
@@ -174,7 +174,7 @@ class MembershipQueryClientImpl(
                 MembershipQueryResult.Failure(err)
             }
             else -> {
-                val err = "Query returned unexpected payload."
+                val err = "Query returned unexpected payload [${payload?.let { it::class.java }}]."
                 logger.warn(err)
                 MembershipQueryResult.Failure(err)
             }
