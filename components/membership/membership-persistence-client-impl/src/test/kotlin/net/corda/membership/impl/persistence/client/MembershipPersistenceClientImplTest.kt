@@ -93,7 +93,6 @@ import java.nio.ByteBuffer
 import java.security.PublicKey
 import java.time.Instant
 import java.util.UUID
-import java.util.concurrent.CompletableFuture
 import net.corda.data.membership.SignedGroupParameters as AvroGroupParameters
 
 class MembershipPersistenceClientImplTest {
@@ -353,11 +352,9 @@ class MembershipPersistenceClientImplTest {
                     holdingIdentityOverride ?: holdingIdentity
                 )
             }
-            CompletableFuture.completedFuture(
-                buildResponse(
-                    rsContext,
-                    payload,
-                )
+            buildResponse(
+                rsContext,
+                payload,
             )
         }
     }

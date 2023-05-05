@@ -17,6 +17,8 @@ import java.util.UUID
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Future
+import java.util.concurrent.TimeoutException
+import kotlin.jvm.Throws
 
 internal class RequestSender(
     publisherFactory: PublisherFactory,
@@ -56,6 +58,7 @@ internal class RequestSender(
         receiver.close()
     }
 
+    @Throws(TimeoutException::class)
     fun send(request: MembershipPersistenceRequest): MembershipPersistenceResponse {
         val future = CompletableFuture<MembershipPersistenceResponse>()
         outstandingRequests[request.context.requestId] = future

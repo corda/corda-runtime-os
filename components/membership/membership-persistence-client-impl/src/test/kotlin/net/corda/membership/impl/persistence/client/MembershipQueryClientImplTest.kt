@@ -69,7 +69,6 @@ import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 import java.time.Instant
 import java.util.UUID
-import java.util.concurrent.CompletableFuture
 
 class MembershipQueryClientImplTest {
 
@@ -274,11 +273,9 @@ class MembershipQueryClientImplTest {
                     holdingIdentityOverride ?: holdingIdentity
                 )
             }
-            CompletableFuture.completedFuture(
-                buildResponse(
-                    rsContext,
-                    payload
-                )
+            buildResponse(
+                rsContext,
+                payload
             )
         }
     }
@@ -415,11 +412,9 @@ class MembershipQueryClientImplTest {
                     holdingIdentity
                 )
             }
-            CompletableFuture.completedFuture(
-                MembershipPersistenceResponse(
-                    context,
-                    GroupPolicyQueryResponse(KeyValuePairList(listOf(KeyValuePair("Key", "Value"))), 101L)
-                )
+            MembershipPersistenceResponse(
+                context,
+                GroupPolicyQueryResponse(KeyValuePairList(listOf(KeyValuePair("Key", "Value"))), 101L)
             )
         }
 
@@ -442,11 +437,9 @@ class MembershipQueryClientImplTest {
                     holdingIdentity
                 )
             }
-            CompletableFuture.completedFuture(
-                MembershipPersistenceResponse(
-                    context,
-                    GroupPolicyQueryResponse(KeyValuePairList(emptyList()), 0L)
-                )
+            MembershipPersistenceResponse(
+                context,
+                GroupPolicyQueryResponse(KeyValuePairList(emptyList()), 0L)
             )
         }
 
@@ -494,11 +487,9 @@ class MembershipQueryClientImplTest {
                         holdingIdentity
                     )
                 }
-                CompletableFuture.completedFuture(
-                    MembershipPersistenceResponse(
-                        context,
-                        MemberSignatureQueryResponse(signatures)
-                    )
+                MembershipPersistenceResponse(
+                    context,
+                    MemberSignatureQueryResponse(signatures)
                 )
             }
 
@@ -527,11 +518,9 @@ class MembershipQueryClientImplTest {
                         holdingIdentity
                     )
                 }
-                CompletableFuture.completedFuture(
-                    MembershipPersistenceResponse(
-                        context,
-                        PersistenceFailedResponse("oops", ErrorKind.GENERAL)
-                    )
+                MembershipPersistenceResponse(
+                    context,
+                    PersistenceFailedResponse("oops", ErrorKind.GENERAL)
                 )
             }
 
@@ -552,11 +541,9 @@ class MembershipQueryClientImplTest {
                         holdingIdentity
                     )
                 }
-                CompletableFuture.completedFuture(
-                    MembershipPersistenceResponse(
-                        context,
-                        "Nop"
-                    )
+                MembershipPersistenceResponse(
+                    context,
+                    "Nop"
                 )
             }
 
@@ -602,11 +589,9 @@ class MembershipQueryClientImplTest {
                         holdingIdentity
                     )
                 }
-                CompletableFuture.completedFuture(
-                    MembershipPersistenceResponse(
-                        context,
-                        RegistrationRequestQueryResponse(status)
-                    )
+                MembershipPersistenceResponse(
+                    context,
+                    RegistrationRequestQueryResponse(status)
                 )
             }
 
@@ -626,11 +611,9 @@ class MembershipQueryClientImplTest {
                         holdingIdentity
                     )
                 }
-                CompletableFuture.completedFuture(
-                    MembershipPersistenceResponse(
-                        context,
-                        RegistrationRequestQueryResponse(null)
-                    )
+                MembershipPersistenceResponse(
+                    context,
+                    RegistrationRequestQueryResponse(null)
                 )
             }
 
@@ -651,11 +634,9 @@ class MembershipQueryClientImplTest {
                         holdingIdentity
                     )
                 }
-                CompletableFuture.completedFuture(
-                    MembershipPersistenceResponse(
-                        context,
-                        GroupPolicyQueryResponse()
-                    )
+                MembershipPersistenceResponse(
+                    context,
+                    GroupPolicyQueryResponse()
                 )
             }
 
@@ -675,11 +656,9 @@ class MembershipQueryClientImplTest {
                         holdingIdentity
                     )
                 }
-                CompletableFuture.completedFuture(
-                    MembershipPersistenceResponse(
-                        context,
-                        PersistenceFailedResponse("oops", ErrorKind.GENERAL)
-                    )
+                MembershipPersistenceResponse(
+                    context,
+                    PersistenceFailedResponse("oops", ErrorKind.GENERAL)
                 )
             }
 
@@ -703,7 +682,7 @@ class MembershipQueryClientImplTest {
                     on { context } doReturn myContext
                     on { payload } doReturn null
                 }
-                CompletableFuture.completedFuture(response)
+                response
             }
 
             val result = membershipQueryClient.queryRegistrationRequest(ourHoldingIdentity, "id")
@@ -771,11 +750,9 @@ class MembershipQueryClientImplTest {
                         holdingIdentity
                     )
                 }
-                CompletableFuture.completedFuture(
-                    MembershipPersistenceResponse(
-                        context,
-                        RegistrationRequestsQueryResponse(statuses)
-                    )
+                MembershipPersistenceResponse(
+                    context,
+                    RegistrationRequestsQueryResponse(statuses)
                 )
             }
 
@@ -795,11 +772,9 @@ class MembershipQueryClientImplTest {
                         holdingIdentity
                     )
                 }
-                CompletableFuture.completedFuture(
-                    MembershipPersistenceResponse(
-                        context,
-                        GroupPolicyQueryResponse()
-                    )
+                MembershipPersistenceResponse(
+                    context,
+                    GroupPolicyQueryResponse()
                 )
             }
 
@@ -819,11 +794,9 @@ class MembershipQueryClientImplTest {
                         holdingIdentity
                     )
                 }
-                CompletableFuture.completedFuture(
-                    MembershipPersistenceResponse(
-                        context,
-                        PersistenceFailedResponse("oops", ErrorKind.GENERAL)
-                    )
+                MembershipPersistenceResponse(
+                    context,
+                    PersistenceFailedResponse("oops", ErrorKind.GENERAL)
                 )
             }
 
@@ -847,7 +820,7 @@ class MembershipQueryClientImplTest {
                     on { context } doReturn myContext
                     on { payload } doReturn null
                 }
-                CompletableFuture.completedFuture(response)
+                response
             }
 
             val result = membershipQueryClient.queryRegistrationRequests(ourHoldingIdentity)
@@ -884,13 +857,11 @@ class MembershipQueryClientImplTest {
                     request.context.holdingIdentity,
                 )
 
-                CompletableFuture.completedFuture(
-                    buildResponse(
-                        context,
-                        MutualTlsListAllowedCertificatesResponse(
-                            listOf(
-                                ourX500Name.toString(),
-                            )
+                buildResponse(
+                    context,
+                    MutualTlsListAllowedCertificatesResponse(
+                        listOf(
+                            ourX500Name.toString(),
                         )
                     )
                 )
@@ -915,11 +886,9 @@ class MembershipQueryClientImplTest {
                     request.context.holdingIdentity,
                 )
 
-                CompletableFuture.completedFuture(
-                    buildResponse(
-                        context,
-                        PersistenceFailedResponse("Error", ErrorKind.GENERAL)
-                    )
+                buildResponse(
+                    context,
+                    PersistenceFailedResponse("Error", ErrorKind.GENERAL)
                 )
             }
 
@@ -942,11 +911,9 @@ class MembershipQueryClientImplTest {
                     request.context.holdingIdentity,
                 )
 
-                CompletableFuture.completedFuture(
-                    buildResponse(
-                        context,
-                        "ooops"
-                    )
+                buildResponse(
+                    context,
+                    "ooops"
                 )
             }
 
@@ -973,11 +940,9 @@ class MembershipQueryClientImplTest {
                         holdingIdentity
                     )
                 }
-                CompletableFuture.completedFuture(
-                    MembershipPersistenceResponse(
-                        context,
-                        ApprovalRulesQueryResponse(rules)
-                    )
+                MembershipPersistenceResponse(
+                    context,
+                    ApprovalRulesQueryResponse(rules)
                 )
             }
 
@@ -1001,11 +966,9 @@ class MembershipQueryClientImplTest {
                         holdingIdentity
                     )
                 }
-                CompletableFuture.completedFuture(
-                    MembershipPersistenceResponse(
-                        context,
-                        PersistenceFailedResponse("oops", ErrorKind.GENERAL)
-                    )
+                MembershipPersistenceResponse(
+                    context,
+                    PersistenceFailedResponse("oops", ErrorKind.GENERAL)
                 )
             }
 
@@ -1026,11 +989,9 @@ class MembershipQueryClientImplTest {
                         holdingIdentity
                     )
                 }
-                CompletableFuture.completedFuture(
-                    MembershipPersistenceResponse(
-                        context,
-                        GroupPolicyQueryResponse()
-                    )
+                MembershipPersistenceResponse(
+                    context,
+                    GroupPolicyQueryResponse()
                 )
             }
 
@@ -1052,7 +1013,7 @@ class MembershipQueryClientImplTest {
                     on { context } doReturn myContext
                     on { payload } doReturn null
                 }
-                CompletableFuture.completedFuture(response)
+                response
             }
 
             val result = membershipQueryClient.getApprovalRules(ourHoldingIdentity, ApprovalRuleType.STANDARD)
@@ -1078,11 +1039,9 @@ class MembershipQueryClientImplTest {
                         holdingIdentity
                     )
                 }
-                CompletableFuture.completedFuture(
-                    MembershipPersistenceResponse(
-                        context,
-                        PreAuthTokenQueryResponse(mock())
-                    )
+                MembershipPersistenceResponse(
+                    context,
+                    PreAuthTokenQueryResponse(mock())
                 )
             }
 
@@ -1113,11 +1072,9 @@ class MembershipQueryClientImplTest {
                         holdingIdentity
                     )
                 }
-                CompletableFuture.completedFuture(
-                    MembershipPersistenceResponse(
-                        context,
-                        PreAuthTokenQueryResponse(mock())
-                    )
+                MembershipPersistenceResponse(
+                    context,
+                    PreAuthTokenQueryResponse(mock())
                 )
             }
 
@@ -1147,11 +1104,9 @@ class MembershipQueryClientImplTest {
                         holdingIdentity
                     )
                 }
-                CompletableFuture.completedFuture(
-                    MembershipPersistenceResponse(
-                        context,
-                        PreAuthTokenQueryResponse(tokens)
-                    )
+                MembershipPersistenceResponse(
+                    context,
+                    PreAuthTokenQueryResponse(tokens)
                 )
             }
 
@@ -1172,11 +1127,9 @@ class MembershipQueryClientImplTest {
                         holdingIdentity
                     )
                 }
-                CompletableFuture.completedFuture(
-                    MembershipPersistenceResponse(
-                        context,
-                        PersistenceFailedResponse("oops", ErrorKind.GENERAL)
-                    )
+                MembershipPersistenceResponse(
+                    context,
+                    PersistenceFailedResponse("oops", ErrorKind.GENERAL)
                 )
             }
 
@@ -1197,11 +1150,9 @@ class MembershipQueryClientImplTest {
                         holdingIdentity
                     )
                 }
-                CompletableFuture.completedFuture(
-                    MembershipPersistenceResponse(
-                        context,
-                        GroupPolicyQueryResponse()
-                    )
+                MembershipPersistenceResponse(
+                    context,
+                    GroupPolicyQueryResponse()
                 )
             }
 
@@ -1223,7 +1174,7 @@ class MembershipQueryClientImplTest {
                     on { context } doReturn myContext
                     on { payload } doReturn null
                 }
-                CompletableFuture.completedFuture(response)
+                response
             }
 
             val result = membershipQueryClient.queryPreAuthTokens(ourHoldingIdentity, null, null, true)
