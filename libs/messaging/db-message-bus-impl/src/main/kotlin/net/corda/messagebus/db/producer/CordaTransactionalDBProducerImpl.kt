@@ -89,11 +89,12 @@ class CordaTransactionalDBProducerImpl(
                     transaction,
                 )
             } catch (ex: Exception) {
+                val msg = "Failed to send record to topic ${record.topic} with key ${record.key}"
                 if (throwOnSerializationError) {
-                    log.error("Failed to send record to topic ${record.topic} with key ${record.key}", ex)
+                    log.error(msg, ex)
                     throw ex
                 } else {
-                    log.warn("Failed to send record to topic ${record.topic} with key ${record.key}", ex)
+                    log.warn(msg, ex)
                     null
                 }
             }

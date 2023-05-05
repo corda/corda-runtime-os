@@ -1,29 +1,54 @@
 package net.corda.messaging.integration.subscription
 
+import com.typesafe.config.ConfigValueFactory
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.ThreadLocalRandom
 import java.util.concurrent.TimeUnit
+import net.corda.data.demo.DemoRecord
 import net.corda.db.messagebus.testkit.DBSetup
+import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.messaging.topic.utils.TopicUtils
 import net.corda.libs.messaging.topic.utils.factory.TopicUtilsFactory
+import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleCoordinatorName
+import net.corda.lifecycle.LifecycleEvent
+import net.corda.lifecycle.LifecycleStatus
+import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
+import net.corda.messaging.api.records.Record
+import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.integration.IntegrationTestProperties.Companion.TEST_CONFIG
+import net.corda.messaging.integration.KafkaOnly
+import net.corda.messaging.integration.TopicTemplates.Companion.DURABLE_TOPIC1
+import net.corda.messaging.integration.TopicTemplates.Companion.DURABLE_TOPIC1_TEMPLATE
+import net.corda.messaging.integration.TopicTemplates.Companion.DURABLE_TOPIC2_TEMPLATE
 import net.corda.messaging.integration.TopicTemplates.Companion.DURABLE_TOPIC3_DLQ
 import net.corda.messaging.integration.TopicTemplates.Companion.DURABLE_TOPIC3_TEMPLATE
 import net.corda.messaging.integration.getDemoRecords
+import net.corda.messaging.integration.getDummyRecords
 import net.corda.messaging.integration.getKafkaProperties
+import net.corda.messaging.integration.getStringRecords
 import net.corda.messaging.integration.getTopicConfig
 import net.corda.messaging.integration.processors.TestBadSerializationDurableProcessor
 import net.corda.messaging.integration.processors.TestDLQDurableProcessor
+import net.corda.messaging.integration.processors.TestDurableProcessor
+import net.corda.messaging.integration.processors.TestDurableProcessorStrings
+import net.corda.schema.configuration.BootConfig.INSTANCE_ID
+import net.corda.schema.configuration.MessagingConfig.Bus.KAFKA_CONSUMER_MAX_POLL_INTERVAL
+import net.corda.test.util.eventually
+import net.corda.utilities.millis
+import net.corda.utilities.seconds
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.extension.ExtendWith
@@ -69,7 +94,6 @@ class DurableSubscriptionIntegrationTest {
     fun afterEach() {
         topicUtils.close()
     }
-/*
 
     @Test
     @KafkaOnly
@@ -279,7 +303,6 @@ class DurableSubscriptionIntegrationTest {
         assertTrue(latch.await(90, TimeUnit.SECONDS))
         durableSub1.close()
     }
-*/
 
     @Test
     @Timeout(value = 30, unit = TimeUnit.SECONDS)

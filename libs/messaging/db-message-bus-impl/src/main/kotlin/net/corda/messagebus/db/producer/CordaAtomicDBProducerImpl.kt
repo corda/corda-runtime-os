@@ -74,11 +74,12 @@ class CordaAtomicDBProducerImpl(
                     ATOMIC_TRANSACTION,
                 )
             } catch (ex: Exception) {
+                val msg = "Failed to send record to topic ${record.topic} with key ${record.key}"
                 if (throwOnSerializationError) {
-                    logger.error("Failed to send record to topic ${record.topic} with key ${record.key}", ex)
+                    logger.error(msg, ex)
                     throw ex
                 } else {
-                    logger.warn("Failed to send record to topic ${record.topic} with key ${record.key}", ex)
+                    logger.warn(msg, ex)
                     null
                 }
             }
