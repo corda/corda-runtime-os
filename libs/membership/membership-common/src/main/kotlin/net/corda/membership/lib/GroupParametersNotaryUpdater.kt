@@ -192,7 +192,7 @@ class GroupParametersNotaryUpdater(
     private fun Map<String, String>.removeNotaryService(notaryServiceNumber: Int): Map<String, String> {
         val numberOfNotaryServices = this.filter { notaryServiceRegex.matches(it.key) }.size
         val keyPrefix = NOTARY_SERVICE_KEY_PREFIX.format(notaryServiceNumber)
-        var listWithNotaryServiceRemoved = this.filterNot { it.key.contains(keyPrefix) }.toMutableMap()
+        val listWithNotaryServiceRemoved = this.filterNot { it.key.contains(keyPrefix) }.toMutableMap()
         //Make the Notary services numbers contiguous
         for (i in notaryServiceNumber + 1 until numberOfNotaryServices) {
             val currentKeyPrefix = NOTARY_SERVICE_KEY_PREFIX.format(i)
