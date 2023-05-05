@@ -6,7 +6,7 @@ import com.esotericsoftware.kryo.io.Input
 import com.esotericsoftware.kryo.io.Output
 
 /**
- * The [LinkedEntrySet] have a problem when the default Kryo is
+ * The [java.util.LinkedHashMap.LinkedEntrySet] has a problem when the default Kryo is
  * deserializing immutable collections: an exception is thrown.
  *
  * Taking a look at HashMap#keySet() method, it’s possible to see that it does
