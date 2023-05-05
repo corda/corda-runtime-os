@@ -1,6 +1,7 @@
 package net.corda.messagebus.db.producer
 
-import net.corda.data.CordaAvroSerializer
+import javax.persistence.RollbackException
+import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.messagebus.api.CordaTopicPartition
 import net.corda.messagebus.api.producer.CordaProducer
 import net.corda.messagebus.api.producer.CordaProducerRecord
@@ -9,17 +10,20 @@ import net.corda.messagebus.db.persistence.DBAccess
 import net.corda.messagebus.db.persistence.DBAccess.Companion.ATOMIC_TRANSACTION
 import net.corda.messagebus.db.util.WriteOffsets
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatExceptionOfType
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertDoesNotThrow
+import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.kotlin.whenever
-import javax.persistence.RollbackException
 
 internal class CordaAtomicDBProducerImplTest {
 
@@ -105,6 +109,55 @@ internal class CordaAtomicDBProducerImplTest {
         assertThat(record.recordOffset).isEqualTo(3)
         assertThat(record.partition).isEqualTo(0)
         assertThat(record.transactionId).isEqualTo(ATOMIC_TRANSACTION)
+    }
+
+    @Test
+    fun `atomic producer throws exception for serialization error`() {
+        val dbAccess = mock<DBAccess>()
+        val writeOffsets = mock<WriteOffsets>().apply {
+            whenever(getNextOffsetFor(eq(CordaTopicPartition(topic, 0)))).thenReturn(3)
+        }
+        val serializer = mock<CordaAvroSerializer<Any>>()
+        whenever(serializer.serialize(eq(key))).doThrow(CordaRuntimeException("error"))
+        whenever(serializer.serialize(eq(value))).thenReturn(serializedValue)
+        val callback: CordaProducer.Callback = mock()
+
+        val producer = CordaAtomicDBProducerImpl(
+            serializer,
+            dbAccess,
+            writeOffsets,
+            mock()
+        )
+        val cordaRecord = CordaProducerRecord(topic, key, value)
+
+        assertThrows<CordaRuntimeException> {
+            producer.send(cordaRecord, 0, callback)
+        }
+    }
+
+    @Test
+    fun `atomic producer does not throw exception for serialization error when flag set to false`() {
+        val dbAccess = mock<DBAccess>()
+        val writeOffsets = mock<WriteOffsets>().apply {
+            whenever(getNextOffsetFor(eq(CordaTopicPartition(topic, 0)))).thenReturn(3)
+        }
+        val serializer = mock<CordaAvroSerializer<Any>>()
+        doThrow(CordaRuntimeException("error")).whenever(serializer).serialize(eq(key))
+        whenever(serializer.serialize(eq(value))).thenReturn(serializedValue)
+        val callback: CordaProducer.Callback = mock()
+
+        val producer = CordaAtomicDBProducerImpl(
+            serializer,
+            dbAccess,
+            writeOffsets,
+            mock(),
+            false
+        )
+        val cordaRecord = CordaProducerRecord(topic, key, value)
+
+        assertDoesNotThrow {
+            producer.send(cordaRecord, 0, callback)
+        }
     }
 
     @Test

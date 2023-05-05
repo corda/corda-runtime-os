@@ -1,6 +1,8 @@
 package net.corda.membership.lib.registration
 
-import net.corda.data.CordaAvroDeserializer
+import java.nio.ByteBuffer
+import java.util.UUID
+import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureSpec
@@ -16,8 +18,6 @@ import org.junit.jupiter.api.assertDoesNotThrow
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
-import java.nio.ByteBuffer
-import java.util.UUID
 
 class RegistrationRequestHelpersTest {
     val serialisedRegistrationContext = "reg-con".toByteArray()
