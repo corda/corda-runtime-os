@@ -1,5 +1,6 @@
 package net.corda.ledger.persistence.utxo.impl
 
+import net.corda.data.KeyValuePairList
 import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.persistence.EntityResponse
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
@@ -26,7 +27,7 @@ class UtxoPersistTransactionIfDoesNotExistRequestHandler(
         return listOf(
             externalEventResponseFactory.success(
                 externalEventContext,
-                EntityResponse(listOf(ByteBuffer.wrap(serializationService.serialize(result).bytes)))
+                EntityResponse(listOf(ByteBuffer.wrap(serializationService.serialize(result).bytes)), KeyValuePairList(emptyList()))
             )
         )
     }

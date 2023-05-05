@@ -1,6 +1,7 @@
 package net.corda.ledger.utxo.flow.impl
 
 import net.corda.flow.external.events.executor.ExternalEventExecutor
+import net.corda.flow.persistence.query.ResultSetFactory
 import net.corda.flow.pipeline.sessions.protocol.FlowProtocolStore
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.utxo.flow.impl.flows.finality.UtxoFinalityFlow
@@ -20,9 +21,9 @@ import net.corda.ledger.utxo.flow.impl.transaction.filtered.factory.UtxoFiltered
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.sandboxgroupcontext.getObjectByKey
+import net.corda.utilities.time.UTCClock
 import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.messaging.FlowSession
-import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -61,8 +62,12 @@ class UtxoLedgerServiceImpl @Activate constructor(
     @Reference(service = CurrentSandboxGroupContext::class) private val currentSandboxGroupContext: CurrentSandboxGroupContext,
     @Reference(service = NotaryLookup::class) private val notaryLookup: NotaryLookup,
     @Reference(service = ExternalEventExecutor::class) private val externalEventExecutor: ExternalEventExecutor,
-    @Reference(service = SerializationService::class) private val serializationService: SerializationService
+    @Reference(service = ResultSetFactory::class) private val resultSetFactory: ResultSetFactory
 ) : UtxoLedgerService, UsedByFlow, SingletonSerializeAsToken {
+
+    private companion object {
+        val clock = UTCClock()
+    }
 
     @Suspendable
     override fun createTransactionBuilder() =
@@ -143,11 +148,12 @@ class UtxoLedgerServiceImpl @Activate constructor(
         return VaultNamedParameterizedQueryImpl(
             queryName,
             externalEventExecutor,
-            serializationService,
+            resultSetFactory,
             parameters = mutableMapOf(),
             limit = Int.MAX_VALUE,
             offset = 0,
-            resultClass
+            resultClass,
+            clock
         )
     }
 

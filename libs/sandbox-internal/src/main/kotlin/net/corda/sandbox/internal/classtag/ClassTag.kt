@@ -33,13 +33,17 @@ internal abstract class StaticTag : ClassTag() {
 }
 
 /**
- * Identifies a sandboxed class based on the CPK's main bundle name and signers.
+ * Identifies a sandboxed class based on the CPK's name and signers. Classes tagged with this tag can evolve over subsequent
+ * versions of software so long as the changes are compatible with the evolution rules.
  *
- * @property mainBundleName The symbolic name of the main bundle of the CPK that the class if from.
+ * @property cordaCpkCordappName The name given to the CPK by the CorDapp developer which uniquely identifies it. This will
+ * be used for continuity purposes, the assumption being that a developer expects Corda to treat a class from a CPK with this
+ * cordaCpkCordappName as the same class type as any other with the same cordaCpkCordappName - generally to identify it between
+ * serialization and deserialization.
  * @property cpkSignerSummaryHash A summary hash of the hashes of the public keys that signed the CPK the class is from.
  */
 internal abstract class EvolvableTag : ClassTag() {
-    abstract val mainBundleName: String
+    abstract val cordaCpkCordappName: String
     abstract val cpkSignerSummaryHash: SecureHash?
 }
 

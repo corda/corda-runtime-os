@@ -1,138 +1,104 @@
 package net.corda.flow.application.persistence.query
 
-import java.nio.ByteBuffer
-import net.corda.flow.application.persistence.external.events.AbstractPersistenceExternalEventFactory
 import net.corda.flow.application.persistence.external.events.FindAllExternalEventFactory
-import net.corda.flow.application.persistence.external.events.FindAllParameters
 import net.corda.flow.external.events.executor.ExternalEventExecutor
+import net.corda.flow.persistence.query.ResultSetExecutor
+import net.corda.flow.persistence.query.ResultSetFactory
 import net.corda.v5.application.persistence.CordaPersistenceException
-import net.corda.v5.application.serialization.SerializationService
+import net.corda.v5.application.persistence.PagedQuery
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.serialization.SerializedBytes
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.Assertions.assertEquals
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
-import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
 class PagedFindQueryTest {
 
-    class TestObject
+    private companion object {
+        val results = listOf("A", "B")
+    }
 
     private val externalEventExecutor = mock<ExternalEventExecutor>()
-    private val serializationService = mock<SerializationService>()
-    private val serializedBytes = mock<SerializedBytes<Any>>()
-    private val byteBuffer = ByteBuffer.wrap("bytes".toByteArray())
-    private val factoryArgumentCaptor = argumentCaptor<Class<out AbstractPersistenceExternalEventFactory<Any>>>()
-    private val parametersArgumentCaptor = argumentCaptor<FindAllParameters>()
-    private val serializeArgumentCaptor = argumentCaptor<Any>()
+    private val resultSetFactory = mock<ResultSetFactory>()
+    private val resultSet = mock<PagedQuery.ResultSet<Any>>()
+    private val resultSetExecutorCaptor = argumentCaptor<ResultSetExecutor<Any>>()
 
     private val query = PagedFindQuery(
         externalEventExecutor = externalEventExecutor,
-        serializationService = serializationService,
-        entityClass = TestObject::class.java,
+        resultSetFactory = resultSetFactory,
         limit = 1,
-        offset = 0
+        offset = 0,
+        entityClass = Any::class.java
     )
 
     @BeforeEach
-    fun setup() {
-        whenever(serializationService.serialize(serializeArgumentCaptor.capture())).thenReturn(serializedBytes)
-        whenever(serializedBytes.bytes).thenReturn(byteBuffer.array())
+    fun beforeEach() {
+        whenever(resultSetFactory.create(any(), any(), any(), any(), resultSetExecutorCaptor.capture())).thenReturn(resultSet)
+        whenever(resultSet.next()).thenReturn(results)
     }
 
     @Test
     fun `setLimit updates the limit`() {
-        whenever(externalEventExecutor.execute(factoryArgumentCaptor.capture(), parametersArgumentCaptor.capture()))
-            .thenReturn(listOf(byteBuffer))
-        whenever(serializationService.deserialize<TestObject>(any<ByteArray>(), any()))
-            .thenReturn(TestObject())
-
         query.execute()
-        assertEquals(1, parametersArgumentCaptor.firstValue.limit)
+        verify(resultSetFactory).create(any(), eq(1), any(), any<Class<Any>>(), any())
 
         query.setLimit(10)
         query.execute()
-        assertEquals(10, parametersArgumentCaptor.secondValue.limit)
+        verify(resultSetFactory).create(any(), eq(10), any(), any<Class<Any>>(), any())
     }
 
     @Test
     fun `setOffset updates the offset`() {
-        whenever(externalEventExecutor.execute(factoryArgumentCaptor.capture(), parametersArgumentCaptor.capture()))
-            .thenReturn(listOf(byteBuffer))
-        whenever(serializationService.deserialize<TestObject>(any<ByteArray>(), any()))
-            .thenReturn(TestObject())
-
         query.execute()
-        assertEquals(0, parametersArgumentCaptor.firstValue.offset)
+        verify(resultSetFactory).create(any(), any(), eq(0), any<Class<Any>>(), any())
 
         query.setOffset(10)
         query.execute()
-        assertEquals(10, parametersArgumentCaptor.secondValue.offset)
+        verify(resultSetFactory).create(any(), any(), eq(10), any<Class<Any>>(), any())
     }
 
     @Test
     fun `setLimit cannot be negative`() {
-        assertThrows<IllegalArgumentException> { query.setLimit(-1) }
+        assertThatThrownBy { query.setLimit(-1) }.isInstanceOf(IllegalArgumentException::class.java)
     }
 
     @Test
     fun `setOffset cannot be negative`() {
-        assertThrows<IllegalArgumentException> { query.setOffset(-1) }
+        assertThatThrownBy { query.setOffset(-1) }.isInstanceOf(IllegalArgumentException::class.java)
     }
 
     @Test
-    fun `executes find query and returns results`() {
-        whenever(externalEventExecutor.execute(factoryArgumentCaptor.capture(), parametersArgumentCaptor.capture()))
-            .thenReturn(listOf(byteBuffer))
-
-        query.setLimit(10)
-        query.setOffset(1)
-        query.execute()
-
-        verify(serializationService).deserialize<TestObject>(any<ByteArray>(), any())
-        assertEquals(FindAllExternalEventFactory::class.java, factoryArgumentCaptor.firstValue)
-    }
-
-    @Test
-    fun `executes find query and returns empty list if no results returned from factory`() {
-        whenever(externalEventExecutor.execute(factoryArgumentCaptor.capture(), any()))
-            .thenReturn(emptyList())
-
-        query.setLimit(10)
-        query.setOffset(1)
-
-        assertThat(query.execute().results).isEmpty()
-
-        verify(serializationService, never()).deserialize<TestObject>(any<ByteArray>(), any())
-        assertEquals(FindAllExternalEventFactory::class.java, factoryArgumentCaptor.firstValue)
+    fun `execute creates a result set, gets the next page and returns the result set`() {
+        assertThat(query.execute()).isEqualTo(resultSet)
+        verify(resultSetFactory).create(eq(emptyMap()), any(), any(), any<Class<Any>>(), any())
+        verify(resultSet).next()
     }
 
     @Test
     fun `rethrows CordaRuntimeExceptions as CordaPersistenceExceptions`() {
-        whenever(externalEventExecutor.execute(factoryArgumentCaptor.capture(), any()))
+        whenever(externalEventExecutor.execute(any<Class<FindAllExternalEventFactory>>(), any()))
             .thenThrow(CordaRuntimeException("boom"))
 
-        query.setLimit(10)
-        query.setOffset(1)
+        query.execute()
 
-        assertThrows<CordaPersistenceException> { query.execute() }
+        val resultSetExecutor = resultSetExecutorCaptor.firstValue
+        assertThatThrownBy { resultSetExecutor.execute(emptyMap(), 0) }.isInstanceOf(CordaPersistenceException::class.java)
     }
 
     @Test
     fun `does not rethrow general exceptions as CordaPersistenceExceptions`() {
-        whenever(externalEventExecutor.execute(factoryArgumentCaptor.capture(), any()))
+        whenever(externalEventExecutor.execute(any<Class<FindAllExternalEventFactory>>(), any()))
             .thenThrow(IllegalStateException("boom"))
 
-        query.setLimit(10)
-        query.setOffset(1)
+        query.execute()
 
-        assertThrows<IllegalStateException> { query.execute() }
+        val resultSetExecutor = resultSetExecutorCaptor.firstValue
+        assertThatThrownBy { resultSetExecutor.execute(emptyMap(), 0) }.isInstanceOf(IllegalStateException::class.java)
     }
 }
