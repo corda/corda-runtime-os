@@ -25,13 +25,13 @@ class CheckKafka : Callable<Int>, PluginContext() {
 
     @Option(
         names = ["-n", "--namespace"],
-        description = ["The namespace in which to look for both the Postgres and Kafka secrets"]
+        description = ["The namespace in which to look for both the Kafka secrets"]
     )
     var namespace: String? = null
 
     @Option(
         names = ["-t", "--timeout"],
-        description = ["The timeout in milliseconds for testing the kafka connection - defaults to 3000"]
+        description = ["The timeout in milliseconds for testing the Kafka connection - defaults to 3000"]
     )
     var timeout: Int = 3000
 

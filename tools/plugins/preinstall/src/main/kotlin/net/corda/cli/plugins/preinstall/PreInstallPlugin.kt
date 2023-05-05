@@ -104,9 +104,8 @@ class PreInstallPlugin : Plugin() {
         override fun toString(): String {
             var entry = "$check: ${if (result) "PASSED" else "FAILED"}"
             if (!result) {
-                val message = reason?.message ?: "(No message provided)"
-                val cause = reason?.cause ?: "(No cause provided)"
-                entry += "\n\t - $message \n\t - $cause"
+                reason?.message?.let { entry += "\n\t - $it" }
+                reason?.cause?.let { entry += "\n\t - $it" }
             }
             return entry
         }
