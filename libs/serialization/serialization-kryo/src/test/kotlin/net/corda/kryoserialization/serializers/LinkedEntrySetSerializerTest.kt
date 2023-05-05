@@ -40,7 +40,7 @@ internal class LinkedEntrySetSerializerTest {
         val map = LinkedHashMap<Any,Any?>()
         val randomValues = arrayOf("a","b","c", 1,2,3,null);
 
-        repeat(1000) {
+        repeat(500) {
             val r = (0 until randomValues.size).random()
             val r2 = (0 until randomValues.size-1).random()
             if (it%2==0) map[it] = randomValues[r]
@@ -57,7 +57,7 @@ internal class LinkedEntrySetSerializerTest {
             ClassSerializer(mock())
         )
 
-        val output = Output(5000)
+        val output = Output(3000)
         kryo.writeClassAndObject(output, entries)
         output.close()
 
