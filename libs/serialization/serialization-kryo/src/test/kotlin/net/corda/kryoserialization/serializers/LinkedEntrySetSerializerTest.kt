@@ -8,11 +8,11 @@ import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
 
-internal class LinkedHashSetSerializerTest {
+internal class LinkedEntrySetSerializerTest {
 
     @Test
     fun `EntrySet serializer returns correct value`() {
-        val map = mapOf("1" to "a", "2" to null)
+        val map = linkedMapOf("1" to "a", "2" to null)
         val entries = map.entries
 
         val kryo = Kryo()

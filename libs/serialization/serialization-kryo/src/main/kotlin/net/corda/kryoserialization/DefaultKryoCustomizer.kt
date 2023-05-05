@@ -11,7 +11,7 @@ import com.esotericsoftware.kryo.serializers.CompatibleFieldSerializer
 import com.esotericsoftware.kryo.serializers.FieldSerializer
 import com.esotericsoftware.kryo.util.DefaultInstantiatorStrategy
 import de.javakaffee.kryoserializers.UnmodifiableCollectionsSerializer
-import net.corda.kryoserialization.serializers.LinkedHashSetSerializer
+import net.corda.kryoserialization.serializers.LinkedEntrySetSerializer
 import net.corda.kryoserialization.serializers.ClassSerializer
 import net.corda.kryoserialization.serializers.LazyMappedListSerializer
 import net.corda.kryoserialization.serializers.LoggerSerializer
@@ -102,7 +102,7 @@ class DefaultKryoCustomizer {
 
                 addDefaultSerializer(CertPath::class.java, CertPathSerializer)
 
-                addDefaultSerializer(LinkedHashSetSerializer.serializedType, LinkedHashSetSerializer)
+                addDefaultSerializer(LinkedEntrySetSerializer.serializedType, LinkedEntrySetSerializer)
 
                 register(java.lang.invoke.SerializedLambda::class.java)
                 addDefaultSerializer(ClosureSerializer.Closure::class.java, CordaClosureSerializer)

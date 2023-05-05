@@ -11,7 +11,7 @@ import com.esotericsoftware.kryo.io.Output
  * the methods add() and addAll() were not properly implemented (Take look at the
  * public interface Map<K, V> method to see that it does not support these operations).
  */
-internal object LinkedHashSetSerializer : Serializer<Set<Map.Entry<*,*>>>() {
+internal object LinkedEntrySetSerializer : Serializer<Set<Map.Entry<*,*>>>() {
 
     // Create a dummy object to get the LinkedHashMap$LinkedEntrySet from it
     val serializedType: Class<out Set<Map.Entry<*,*>>> = mapOf(Any() to Any(), Any() to Any()).entries::class.java
