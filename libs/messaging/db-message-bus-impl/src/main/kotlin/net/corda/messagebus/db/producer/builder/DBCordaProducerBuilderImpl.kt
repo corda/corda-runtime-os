@@ -66,7 +66,7 @@ class DBCordaProducerBuilderImpl @Activate constructor(
                 DBAccess(emf),
                 getWriteOffsets(resolvedConfig),
                 MessageHeaderSerializerImpl(),
-                true
+                producerConfig.throwOnSerializationError
             )
         } else {
             CordaAtomicDBProducerImpl(
