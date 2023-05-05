@@ -66,7 +66,6 @@ class InteropProcessor(
         } else {
             Pair(sessionEvent.initiatedIdentity, sessionEvent.initiatingIdentity)
         }
-
         logEntering("INBOUND", oldSource, destinationAlias, sessionEvent)
 
         val destinationAliasX500 = destinationAlias.toCorda().x500Name.toString()
@@ -87,16 +86,18 @@ class InteropProcessor(
                 "Processing message from flow.interop.event with subsystem $SUBSYSTEM." +
                 " Key: $eventKey, facade request: ${parameters.facadeId}/${parameters.facadeMethod}")
 
-            try {
-                val flowName = facadeToFlowMapperService.getFlowName(realHoldingIdentity, parameters.facadeId, parameters.facadeMethod)
-                logger.info("Mapped flowName=$flowName for facade=${parameters.facadeId}/${parameters.facadeMethod}")
-                sessionPayload.apply {
-                    contextUserProperties = KeyValuePairList(
-                        contextUserProperties.items + KeyValuePair(INTEROP_RESPONDER_FLOW, flowName)
-                    )
-                }
+            val flowName = try {
+                facadeToFlowMapperService.getFlowName(realHoldingIdentity, parameters.facadeId, parameters.facadeMethod)
             } catch (e: IllegalStateException) {
-                throw InteropProcessorException("Error processing inbound session init event.", state, e)
+                throw InteropProcessorException("Failed to find responder flow for facade ${parameters.facadeId}.", state, e)
+            }
+
+            logger.info("Mapped flowName=$flowName for facade=${parameters.facadeId}/${parameters.facadeMethod}")
+
+            sessionPayload.apply {
+                contextUserProperties = KeyValuePairList(
+                    contextUserProperties.items + KeyValuePair(INTEROP_RESPONDER_FLOW, flowName)
+                )
             }
         } else {
             logger.info("Pass-through event ${sessionEvent.payload::class.java} without FacadeRequest")
