@@ -265,10 +265,7 @@ class CryptoFlowOpsBusProcessorTests {
             )
         }
         assertEquals(recordKey, result.value?.get(0)?.key)
-        val response = assertResponseContext<ByIdsFlowQuery, R>(
-            result,
-            flowOpsResponseArgumentCaptor.firstValue
-        )
+        val response = assertResponseContext<ByIdsFlowQuery, R>(result,flowOpsResponseArgumentCaptor.firstValue)
 
         assertEquals(tenantId, passedTenantId)
         val transformed = transformer.transform(flowOpsResponseArgumentCaptor.firstValue)
