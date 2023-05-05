@@ -1,5 +1,6 @@
 package net.corda.ledger.persistence.utxo.impl
 
+import net.corda.data.KeyValuePairList
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.ledger.persistence.UtxoTransactionOutput
@@ -65,7 +66,8 @@ class UtxoOutputRecordFactoryImpl(private val responseFactory: ResponseFactory) 
             externalEventContext,
             EntityResponse(
                 listOf(transactionContainer to status)
-                    .map { ByteBuffer.wrap(serializationService.serialize(it).bytes) }
+                    .map { ByteBuffer.wrap(serializationService.serialize(it).bytes) },
+                KeyValuePairList(emptyList())
             )
         )
     }
@@ -95,7 +97,7 @@ class UtxoOutputRecordFactoryImpl(private val responseFactory: ResponseFactory) 
     ): Record<String, FlowEvent> {
         return responseFactory.successResponse(
             externalEventContext,
-            EntityResponse(emptyList())
+            EntityResponse(emptyList(), KeyValuePairList(emptyList()))
         )
     }
 
