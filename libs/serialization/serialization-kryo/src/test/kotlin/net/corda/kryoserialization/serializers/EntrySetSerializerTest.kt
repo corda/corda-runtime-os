@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
 
 internal class EntrySetSerializerTest {
+
     @Test
     fun `EntrySet serializer returns correct value`() {
         val map = mapOf("1" to "a", "2" to null)
@@ -23,7 +24,6 @@ internal class EntrySetSerializerTest {
         )
 
         val output = Output(200)
-
         kryo.writeClassAndObject(output, entries)
         output.close()
 
