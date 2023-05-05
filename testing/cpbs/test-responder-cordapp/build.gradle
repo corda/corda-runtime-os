@@ -17,6 +17,4 @@ dependencies {
     cordaProvided platform("net.corda:corda-api:$cordaApiVersion")
     cordaProvided 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     cordaProvided 'net.corda:corda-notary-plugin'
-
-    cordapp project(':testing:cpbs:test-cordapp')
 }
