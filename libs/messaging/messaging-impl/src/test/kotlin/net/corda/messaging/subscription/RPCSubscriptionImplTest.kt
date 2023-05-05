@@ -1,7 +1,7 @@
 package net.corda.messaging.subscription
 
-import net.corda.data.CordaAvroDeserializer
-import net.corda.data.CordaAvroSerializer
+import net.corda.avro.serialization.CordaAvroDeserializer
+import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.identity.HoldingIdentity
 import net.corda.data.messaging.RPCRequest
@@ -97,7 +97,7 @@ class RPCSubscriptionImplTest {
         this.kafkaConsumer = kafkaConsumer
         this.cordaConsumerBuilder = consumerBuilder
 
-        doAnswer { kafkaProducer }.whenever(cordaProducerBuilder).createProducer(any(), any())
+        doAnswer { kafkaProducer }.whenever(cordaProducerBuilder).createProducer(any(), any(), anyOrNull())
 
         doAnswer {
             requestRecord

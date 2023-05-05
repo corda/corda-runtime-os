@@ -1,6 +1,7 @@
 package net.corda.messagebus.db.producer
 
-import net.corda.data.CordaAvroSerializer
+import kotlin.math.abs
+import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.messagebus.api.CordaTopicPartition
 import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
@@ -12,18 +13,19 @@ import net.corda.messagebus.db.persistence.DBAccess.Companion.ATOMIC_TRANSACTION
 import net.corda.messagebus.db.serialization.MessageHeaderSerializer
 import net.corda.messagebus.db.util.WriteOffsets
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
-import kotlin.math.abs
+import org.slf4j.LoggerFactory
 
 @Suppress("TooManyFunctions")
 class CordaAtomicDBProducerImpl(
     private val serializer: CordaAvroSerializer<Any>,
     private val dbAccess: DBAccess,
     private val writeOffsets: WriteOffsets,
-    private val headerSerializer: MessageHeaderSerializer
+    private val headerSerializer: MessageHeaderSerializer,
+    private val throwOnSerializationError: Boolean = true
 ) : CordaProducer {
 
-    init {
-        dbAccess.writeAtomicTransactionRecord()
+    companion object {
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     override fun send(record: CordaProducerRecord<*, *>, callback: CordaProducer.Callback?) {
@@ -47,32 +49,43 @@ class CordaAtomicDBProducerImpl(
     }
 
     override fun sendRecordsToPartitions(recordsWithPartitions: List<Pair<Int, CordaProducerRecord<*, *>>>) {
-        val dbRecords = recordsWithPartitions.map { (partition, record) ->
+        val dbRecords = recordsWithPartitions.mapNotNull { (partition, record) ->
             val offset = writeOffsets.getNextOffsetFor(CordaTopicPartition(record.topic, partition))
-            val serializedKey = serializer.serialize(record.key)
-                ?: throw CordaMessageAPIFatalException("Serialized Key cannot be null")
-            val serializedValue = if (record.value != null) {
-                serializer.serialize(record.value!!)
-            } else {
-                null
+            try {
+                val serializedKey = serializer.serialize(record.key)
+                    ?: throw CordaMessageAPIFatalException("Serialized Key cannot be null")
+                val serializedValue = if (record.value != null) {
+                    serializer.serialize(record.value!!)
+                } else {
+                    null
+                }
+                val serializedHeaders = headerSerializer.serialize(record.headers)
+                TopicRecordEntry(
+                    record.topic,
+                    partition,
+                    offset,
+                    serializedKey,
+                    serializedValue,
+                    serializedHeaders,
+                    ATOMIC_TRANSACTION,
+                )
+            } catch (ex: Exception) {
+                val msg = "Failed to send record to topic ${record.topic} with key ${record.key}"
+                if (throwOnSerializationError) {
+                    logger.error(msg, ex)
+                    throw ex
+                } else {
+                    logger.warn(msg, ex)
+                    null
+                }
             }
-            val serializedHeaders = headerSerializer.serialize(record.headers)
-            TopicRecordEntry(
-                record.topic,
-                partition,
-                offset,
-                serializedKey,
-                serializedValue,
-                serializedHeaders,
-                ATOMIC_TRANSACTION,
-            )
         }
 
         doSendRecordsToTopicAndDB(dbRecords)
     }
 
     private fun doSendRecordsToTopicAndDB(
-        dbRecords: List<TopicRecordEntry>
+        dbRecords: List<TopicRecordEntry>,
     ) {
         dbAccess.writeRecords(dbRecords)
     }
