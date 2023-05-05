@@ -42,6 +42,7 @@ dependencies {
     implementation project(':libs:lifecycle:lifecycle')
     implementation project(":libs:messaging:messaging")
     implementation project(":libs:virtual-node:virtual-node-info")
+    implementation project(':libs:flows:external-event-responses')
     implementation project(":libs:serialization:serialization-avro")
 
     integrationTestImplementation project(':components:crypto:crypto-hes')
