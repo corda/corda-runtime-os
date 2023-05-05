@@ -600,6 +600,12 @@ class MembershipQueryClientImplTest {
                         ByteBuffer.wrap("ct1".toByteArray())
                     ),
                     CryptoSignatureSpec("dummy", null, null),
+                    KeyValuePairList(emptyList()),
+                    CryptoSignatureWithKey(
+                        ByteBuffer.wrap("pk2".toByteArray()),
+                        ByteBuffer.wrap("ct2".toByteArray())
+                    ),
+                    CryptoSignatureSpec("dummy2", null, null),
                     "test reason",
                     0L,
                 )
@@ -741,6 +747,12 @@ class MembershipQueryClientImplTest {
                         ByteBuffer.wrap("ct1".toByteArray())
                     ),
                     CryptoSignatureSpec("dummy1", null, null),
+                    KeyValuePairList(emptyList()),
+                    CryptoSignatureWithKey(
+                        ByteBuffer.wrap("pk3".toByteArray()),
+                        ByteBuffer.wrap("ct3".toByteArray())
+                    ),
+                    CryptoSignatureSpec("dummy3", null, null),
                     "test reason 1",
                     0L,
                 ),
@@ -756,6 +768,12 @@ class MembershipQueryClientImplTest {
                         ByteBuffer.wrap("ct2".toByteArray())
                     ),
                     CryptoSignatureSpec("dummy2", null, null),
+                    KeyValuePairList(emptyList()),
+                    CryptoSignatureWithKey(
+                        ByteBuffer.wrap("pk4".toByteArray()),
+                        ByteBuffer.wrap("ct4".toByteArray())
+                    ),
+                    CryptoSignatureSpec("dummy4", null, null),
                     "test reason 2",
                     1L,
                 ),

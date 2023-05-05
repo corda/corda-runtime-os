@@ -319,7 +319,7 @@ class MemberRegistrationIntegrationTest {
                 val deserializedPayload =
                     requestDeserializer.deserialize(deserializedUnauthenticatedRegistrationRequest.payload.array())!!
                 val deserializedContext =
-                    deserializedPayload.run { keyValuePairListDeserializer.deserialize(memberContext.array())!! }
+                    deserializedPayload.run { keyValuePairListDeserializer.deserialize(memberContext.data.array())!! }
 
                 with(deserializedContext.items) {
                     fun getValue(key: String) = first { pair -> pair.key == key }.value
