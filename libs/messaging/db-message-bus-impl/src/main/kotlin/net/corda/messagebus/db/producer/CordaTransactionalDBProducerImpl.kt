@@ -26,7 +26,7 @@ class CordaTransactionalDBProducerImpl(
     private val dbAccess: DBAccess,
     private val writeOffsets: WriteOffsets,
     private val headerSerializer: MessageHeaderSerializer,
-    private val throwOnSerializationError: Boolean,
+    private val throwOnSerializationError: Boolean
 ) : CordaProducer {
 
     companion object {
@@ -120,7 +120,7 @@ class CordaTransactionalDBProducerImpl(
 
     override fun sendRecordOffsetsToTransaction(
         consumer: CordaConsumer<*, *>,
-        records: List<CordaConsumerRecord<*, *>>,
+        records: List<CordaConsumerRecord<*, *>>
     ) {
         verifyInTransaction()
 

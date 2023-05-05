@@ -61,7 +61,7 @@ class KafkaCordaProducerBuilderImpl @Activate constructor(
                     resolvedConfig,
                     producer,
                     producerChunkService,
-                    KafkaClientMetrics(producer),
+                    KafkaClientMetrics(producer)
                 )
             },
             errorMessage = {

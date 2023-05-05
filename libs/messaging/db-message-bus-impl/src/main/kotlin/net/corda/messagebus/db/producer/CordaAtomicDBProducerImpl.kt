@@ -21,7 +21,7 @@ class CordaAtomicDBProducerImpl(
     private val dbAccess: DBAccess,
     private val writeOffsets: WriteOffsets,
     private val headerSerializer: MessageHeaderSerializer,
-    private val throwOnSerializationError: Boolean = true,
+    private val throwOnSerializationError: Boolean = true
 ) : CordaProducer {
 
     companion object {
@@ -99,7 +99,7 @@ class CordaAtomicDBProducerImpl(
 
     override fun sendRecordOffsetsToTransaction(
         consumer: CordaConsumer<*, *>,
-        records: List<CordaConsumerRecord<*, *>>,
+        records: List<CordaConsumerRecord<*, *>>
     ) {
         throwNonTransactionalLogic()
     }

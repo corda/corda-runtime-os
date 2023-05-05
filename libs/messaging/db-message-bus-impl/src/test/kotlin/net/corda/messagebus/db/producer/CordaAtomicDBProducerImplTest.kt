@@ -29,7 +29,6 @@ internal class CordaAtomicDBProducerImplTest {
     private val serializedKey = key.toByteArray()
     private val serializedValue = value.toByteArray()
 
-
     @Test
     fun `atomic producer inserts atomic transaction record on initialization`() {
         val dbAccess: DBAccess = mock()
@@ -97,7 +96,7 @@ internal class CordaAtomicDBProducerImplTest {
             serializer,
             dbAccess,
             writeOffsets,
-            mock(),
+            mock()
         )
         val cordaRecord = CordaProducerRecord(topic, key, value)
 
