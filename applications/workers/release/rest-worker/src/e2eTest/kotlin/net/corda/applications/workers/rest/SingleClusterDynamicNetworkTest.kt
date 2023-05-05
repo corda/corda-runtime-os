@@ -42,7 +42,6 @@ class SingleClusterDynamicNetworkTest {
     (as this one will cover that use case as well)
     To run it locally while disabled follow the instruction in resources/RunP2PTest.md:
      */
-    @Disabled("Is disabled and can be run manually until CORE-6079 is complete.")
     @Test
     fun `Onboard group and check p2p connectivity`() {
         val groupId = onboardSingleClusterGroup()
