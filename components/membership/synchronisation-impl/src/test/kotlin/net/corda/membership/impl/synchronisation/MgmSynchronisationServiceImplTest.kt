@@ -295,7 +295,7 @@ class MgmSynchronisationServiceImplTest {
                 eq(simonMembershipPackage),
                 any(),
                 any(),
-                eq(MembershipStatusFilter.ACTIVE),
+                eq(MembershipStatusFilter.ACTIVE_OR_SUSPENDED),
             )
         } doReturn simonMembershipPackageRecord
     }
