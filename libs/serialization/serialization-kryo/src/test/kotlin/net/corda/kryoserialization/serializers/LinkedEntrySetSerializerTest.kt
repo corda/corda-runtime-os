@@ -65,6 +65,9 @@ internal class LinkedEntrySetSerializerTest {
         val testedEntries = kryo.readClassAndObject(input)
         input.close()
 
-        Assertions.assertThat(testedEntries).isEqualTo(entries)
+        @Suppress("UNCHECKED_CAST")
+        Assertions.assertThat(
+            (testedEntries as Set<Map.Entry<*, *>>).toList()
+        ).isEqualTo(entries.toList())
     }
 }
