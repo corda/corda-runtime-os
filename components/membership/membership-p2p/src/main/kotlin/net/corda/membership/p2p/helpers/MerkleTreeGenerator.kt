@@ -1,8 +1,8 @@
 package net.corda.membership.p2p.helpers
 
 import net.corda.crypto.cipher.suite.merkle.MerkleTreeProvider
-import net.corda.data.CordaAvroSerializationFactory
-import net.corda.data.CordaAvroSerializer
+import net.corda.avro.serialization.CordaAvroSerializationFactory
+import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.KeyValuePairList
 import net.corda.layeredpropertymap.toAvro
 import net.corda.v5.crypto.DigestAlgorithmName

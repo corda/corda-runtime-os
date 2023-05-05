@@ -1,8 +1,8 @@
 package net.corda.membership.lib.registration
 
-import net.corda.data.CordaAvroDeserializer
-import net.corda.data.KeyValuePairList
 import java.util.UUID
+import net.corda.avro.serialization.CordaAvroDeserializer
+import net.corda.data.KeyValuePairList
 
 object RegistrationRequestHelpers {
 

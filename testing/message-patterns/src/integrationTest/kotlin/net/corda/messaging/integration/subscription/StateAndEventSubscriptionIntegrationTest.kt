@@ -1,6 +1,8 @@
 package net.corda.messaging.integration.subscription
 
 import com.typesafe.config.ConfigValueFactory
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 import net.corda.db.messagebus.testkit.DBSetup
 import net.corda.libs.messaging.topic.utils.TopicUtils
 import net.corda.libs.messaging.topic.utils.factory.TopicUtilsFactory
@@ -37,9 +39,9 @@ import net.corda.messaging.integration.getKafkaProperties
 import net.corda.messaging.integration.getStringRecords
 import net.corda.messaging.integration.getTopicConfig
 import net.corda.messaging.integration.listener.TestStateAndEventListenerStrings
+import net.corda.messaging.integration.processors.TestDLQDurableProcessor
 import net.corda.messaging.integration.processors.TestDurableProcessor
 import net.corda.messaging.integration.processors.TestDurableProcessorStrings
-import net.corda.messaging.integration.processors.TestDurableStringProcessor
 import net.corda.messaging.integration.processors.TestStateEventProcessor
 import net.corda.messaging.integration.processors.TestStateEventProcessorStrings
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
@@ -58,8 +60,6 @@ import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.context.BundleContextExtension
 import org.osgi.test.junit5.service.ServiceExtension
 import org.slf4j.LoggerFactory
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.TimeUnit
 
 @ExtendWith(ServiceExtension::class, BundleContextExtension::class, DBSetup::class)
 class StateAndEventSubscriptionIntegrationTest {
@@ -454,7 +454,7 @@ class StateAndEventSubscriptionIntegrationTest {
         )
         val dlqSub = subscriptionFactory.createDurableSubscription(
             SubscriptionConfig("$EVENT_TOPIC7-group",  EVENT_TOPIC7_DLQ),
-            TestDurableStringProcessor(dlqLatch),
+            TestDLQDurableProcessor(dlqLatch),
             TEST_CONFIG,
             null
         )

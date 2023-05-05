@@ -3,7 +3,7 @@ package net.corda.flow.eternal.events.responses.impl.factory
 import java.nio.ByteBuffer
 import java.time.Instant
 import java.time.temporal.ChronoUnit
-import net.corda.data.CordaAvroSerializer
+import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.ops.flow.FlowOpsResponse
