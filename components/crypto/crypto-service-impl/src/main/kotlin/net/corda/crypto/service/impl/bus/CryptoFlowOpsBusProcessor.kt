@@ -13,8 +13,6 @@ import net.corda.crypto.impl.toSignatureSpec
 import net.corda.crypto.service.impl.SigningServiceImpl
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.KeyValuePairList
-import net.corda.data.crypto.SecureHashes
-import net.corda.data.crypto.ShortHashes
 import net.corda.data.crypto.wire.CryptoRequestContext
 import net.corda.data.crypto.wire.CryptoResponseContext
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
