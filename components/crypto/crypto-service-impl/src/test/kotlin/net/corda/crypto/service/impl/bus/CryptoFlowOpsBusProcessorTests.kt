@@ -223,6 +223,16 @@ class CryptoFlowOpsBusProcessorTests {
         assertTrue(transformedResponse.any { it.encoded.contentEquals(myPublicKeys[1].encoded) })
     }
 
+    /** Run a flow operation in the mocked flow ops bus processor
+
+    * @param myPublicKeys - the set of public keys available from the underlying signing service
+     *@param flowOpCallback - a callback to create the flow signing opeeration required, given a transformer and an event context
+     *
+     * @returns A triple of:
+     *   - the signing keys as strings that were looked up in the signing service
+     *   - the capture responses
+     *    - the captured responses decoded by the transformer
+    * */
     private inline fun <reified R, reified S> doFlowOperations(
         myPublicKeys: List<PublicKey>,
         flowOpCallback: (CryptoFlowOpsTransformerImpl, ExternalEventContext)->FlowOpsRequest
