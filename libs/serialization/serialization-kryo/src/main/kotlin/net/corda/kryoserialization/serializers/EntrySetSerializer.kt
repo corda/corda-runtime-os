@@ -35,7 +35,7 @@ internal object EntrySetSerializer : Serializer<Set<Map.Entry<*,*>>>() {
         val deserializedHashSet = kryo.readClassAndObject(input) as HashSet<Map.Entry<*,*>>
 
         // Grant that the return is a LinkedEntrySet
-        val tempMapAss = deserializedHashSet.associateBy({ it.key }, { it.value }) as Map<*, *>
-        return tempMapAss.entries
+        val collectionMap = deserializedHashSet.associateBy({ it.key }, { it.value }) as Map<*, *>
+        return collectionMap.entries
     }
 }
