@@ -237,7 +237,7 @@ internal class CordaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
             )
             return future
         }
-        log.info("QQQ (${hashCode()}) \t reqBytes = ${reqBytes.size}")
+        log.info("QQQ (${hashCode()}) \t reqBytes = ${reqBytes?.size}")
 
         if (partitions.isEmpty()) {
             val error = "No partitions for topic ${getRPCResponseTopic(config.topic)}. Couldn't send."
