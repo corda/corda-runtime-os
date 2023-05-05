@@ -30,7 +30,8 @@ ALLOW {
 
 (net.corda.internal.serialization.amqp.CustomSerializerPermission "FLOW")
 
-        (java.lang.reflect.ReflectPermission "suppressAccessChecks" "")
+(java.lang.reflect.ReflectPermission "suppressAccessChecks" "")
+
 } "Allow public packages and services for FLOW Sandbox"
 
 DENY {
