@@ -244,21 +244,22 @@ import kotlin.test.asserter
         flowOpCallbacks: List<(CryptoFlowOpsTransformerImpl, ExternalEventContext)->FlowOpsRequest>,
 
     ): Triple<List<List<String>>, R, S> {
+        val indices = 0..(flowOpCallbacks.size-1)
         val underlyingServiceCapturedTenantIds: MutableList<String> = mutableListOf()
         var passedSecureHashLists = mutableListOf<List<String>>() // the secure hashes passed into the signing service
-        val recordKey =
-            UUID.randomUUID().toString() // GUID for the record that is passed into the crypto flow ops processor
-        val flowExternalEventContext = ExternalEventContext("request id", recordKey, KeyValuePairList(emptyList()))
+        val recordKeys = flowOpCallbacks.map { UUID.randomUUID().toString() } // UUIDs for the flow op records that are passed into the crypto flow ops processor
+
+        val flowExternalEventContexts = recordKeys.map { ExternalEventContext("request id", it, KeyValuePairList(emptyList())) }
 
         whenever(
             externalEventResponseFactory.success(
-                eq(flowExternalEventContext),
+                eq(flowExternalEventContexts.first()),
                 flowOpsResponseArgumentCaptor.capture()
             )
         ).thenReturn(
             Record(
                 Schemas.Flow.FLOW_EVENT_TOPIC,
-                flowExternalEventContext.flowId,
+                flowExternalEventContexts.first().flowId,
                 FlowEvent()
             )
         )
@@ -276,10 +277,11 @@ import kotlin.test.asserter
         }.whenever(signingService).sign(any(), any(), any(), any(), any())
 
         val transformer = buildTransformer()
-        val flowOps = flowOpCallbacks.map { it(transformer, flowExternalEventContext) }
+        val flowOps = indices.map { flowOpCallbacks.get(it)(transformer, flowExternalEventContexts.get(it)) }
+
         // run the flows ops processor
-        val result = act { processor.onNext(flowOps.map { Record(topic = eventTopic, key = recordKey,value = it) }) }
-        assertEquals(recordKey, result.value?.get(0)?.key)
+        val result = act { processor.onNext(indices.map { Record(topic = eventTopic, key = recordKeys.get(it), value = flowOps.get(it)) }) }
+        assertEquals(recordKeys.first(), result.value?.get(0)?.key)
         val response = assertResponseContext<P, R>(result,flowOpsResponseArgumentCaptor.firstValue)
 
         assertTrue(underlyingServiceCapturedTenantIds.size > 0)
