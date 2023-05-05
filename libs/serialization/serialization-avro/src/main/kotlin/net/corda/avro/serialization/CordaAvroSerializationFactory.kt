@@ -10,7 +10,6 @@ interface CordaAvroSerializationFactory {
      * Create the {@link CordaAvroSerializer} for use in Avro/message bus serialization.
      *
      * @param T the type to serialize
-     * @param throwOnSerializationError throw an exception on serialization failure, or return null (defaults to true)
      * @param onError a lambda to run on serialization error, will run regardless of throwOnSerializationError
      * @return an implementation of CordaAvroSerializer
      */
