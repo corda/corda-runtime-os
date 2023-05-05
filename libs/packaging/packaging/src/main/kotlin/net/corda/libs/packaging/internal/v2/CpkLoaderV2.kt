@@ -3,6 +3,7 @@ package net.corda.libs.packaging.internal.v2
 import net.corda.libs.packaging.Cpk
 import net.corda.libs.packaging.PackagingConstants.CPK_FORMAT_VERSION2_MAINBUNDLE_PLACEHOLDER
 import net.corda.libs.packaging.PackagingConstants.CPK_LIB_FOLDER_V2
+import net.corda.libs.packaging.PackagingConstants.CPK_NAME_ATTRIBUTE
 import net.corda.libs.packaging.core.CordappManifest
 import net.corda.libs.packaging.core.CpkIdentifier
 import net.corda.libs.packaging.core.CpkManifest
@@ -89,9 +90,12 @@ class CpkLoaderV2(
         // Read the configuration for the external channels
         val externalChannelsConfig = externalChannelsConfigLoader.read(cpkEntries)
 
+        // Corda-CPK-Cordapp-Name
+        val cordaCpkName = cordappManifest.attributes[CPK_NAME_ATTRIBUTE] ?: cordappManifest.bundleSymbolicName
+
         return CpkMetadata(
             cpkId = CpkIdentifier(
-                cordappManifest.bundleSymbolicName,
+                cordaCpkName,
                 cordappManifest.bundleVersion,
                 signerSummaryHash
             ),
