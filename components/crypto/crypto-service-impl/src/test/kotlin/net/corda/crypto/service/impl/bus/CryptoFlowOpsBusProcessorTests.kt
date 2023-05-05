@@ -199,13 +199,13 @@ class CryptoFlowOpsBusProcessorTests {
 
         val notMyKey = mockPublicKey()
 
-        doFlowOperations(myPublicKeys, notMyKey, {
-            transformer:CryptoFlowOpsTransformerImpl, flowExternalEventContext:ExternalEventContext -> transformer.createFilterMyKeys(
+        doFlowOperations(myPublicKeys, notMyKey) {
+            transformer, flowExternalEventContext -> transformer.createFilterMyKeys(
                 tenantId,
-            listOf(myPublicKeys[0], myPublicKeys[1], notMyKey),
+                listOf(myPublicKeys[0], myPublicKeys[1], notMyKey),
                 flowExternalEventContext
             )
-        })
+        }
     }
 
     private fun doFlowOperations(
