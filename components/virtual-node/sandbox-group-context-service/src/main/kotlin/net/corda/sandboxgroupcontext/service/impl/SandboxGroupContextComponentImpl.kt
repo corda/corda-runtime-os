@@ -19,6 +19,7 @@ import net.corda.sandboxgroupcontext.SandboxGroupContextService
 import net.corda.sandboxgroupcontext.SandboxGroupType
 import net.corda.sandboxgroupcontext.VirtualNodeContext
 import net.corda.sandboxgroupcontext.service.CacheControl
+import net.corda.sandboxgroupcontext.service.EvictionListener
 import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.utilities.debug
@@ -38,7 +39,7 @@ import java.util.concurrent.CompletableFuture
  * Sandbox group context service component... with lifecycle, since it depends on a CPK service
  * that has a lifecycle.
  */
-@Suppress("Unused", "LongParameterList")
+@Suppress("Unused", "LongParameterList", "TooManyFunctions")
 @Component(service = [SandboxGroupContextComponent::class])
 class SandboxGroupContextComponentImpl @Activate constructor(
     @Reference(service = ConfigurationReadService::class)
@@ -186,13 +187,18 @@ class SandboxGroupContextComponentImpl @Activate constructor(
             ?: throw IllegalStateException("Sandbox could not be removed from cache")).remove(virtualNodeContext)
     }
 
-    override fun initCache(type: SandboxGroupType, capacity: Long) {
-        logger.info("Initialising Sandbox cache with capacity: {}", capacity)
-        resizeCache(type, capacity)
+    override fun addEvictionListener(type: SandboxGroupType, listener: EvictionListener): Boolean {
+        return (sandboxGroupContextService as? CacheControl
+            ?: throw IllegalStateException("Failed to add eviction listener")).addEvictionListener(type, listener)
     }
 
-    private fun resizeCache(type: SandboxGroupType, capacity: Long) {
+    override fun removeEvictionListener(type: SandboxGroupType, listener: EvictionListener): Boolean {
+        return (sandboxGroupContextService as? CacheControl
+            ?: throw IllegalStateException("Failed to remove eviction listener")).removeEvictionListener(type, listener)
+    }
+
+    override fun resizeCache(type: SandboxGroupType, capacity: Long) {
         (sandboxGroupContextService as? CacheControl
-            ?: throw IllegalStateException("Sandbox $type cache could not be resized to $capacity")).initCache(type, capacity)
+            ?: throw IllegalStateException("Sandbox $type cache could not be resized to $capacity")).resizeCache(type, capacity)
     }
 }
