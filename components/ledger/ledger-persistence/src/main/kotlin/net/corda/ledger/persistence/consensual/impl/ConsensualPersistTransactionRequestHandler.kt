@@ -1,5 +1,6 @@
 package net.corda.ledger.persistence.consensual.impl
 
+import net.corda.data.KeyValuePairList
 import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.ledger.persistence.PersistTransaction
 import net.corda.data.persistence.EntityResponse
@@ -28,7 +29,8 @@ class ConsensualPersistTransactionRequestHandler(
             responseFactory.successResponse(
                 externalEventContext,
                 EntityResponse(
-                    missingCpks.map { ByteBuffer.wrap(serializationService.serialize(it).bytes) }
+                    missingCpks.map { ByteBuffer.wrap(serializationService.serialize(it).bytes) },
+                    KeyValuePairList(emptyList())
                 )
             )
         )

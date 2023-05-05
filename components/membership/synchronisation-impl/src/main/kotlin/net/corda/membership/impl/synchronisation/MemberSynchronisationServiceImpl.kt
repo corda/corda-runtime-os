@@ -338,9 +338,10 @@ class MemberSynchronisationServiceImpl internal constructor(
                 } else {
                     val knownMembers = groupReader.lookup(MembershipStatusFilter.ACTIVE_OR_SUSPENDED)
                         .filter { !it.isMgm }.associateBy { it.id }
-                    val updatedViewOwner = updateMembersInfo[viewOwningMember.shortHash.value]
-                    val expectedHash = if (updatedViewOwner?.status == MEMBER_STATUS_SUSPENDED) {
-                        merkleTreeGenerator.generateTree(listOf(updatedViewOwner)).root
+                    val viewOwnerShortHash = viewOwningMember.shortHash.value
+                    val latestViewOwnerMemberInfo = updateMembersInfo[viewOwnerShortHash] ?: knownMembers[viewOwnerShortHash]
+                    val expectedHash = if (latestViewOwnerMemberInfo?.status == MEMBER_STATUS_SUSPENDED) {
+                        merkleTreeGenerator.generateTree(listOf(latestViewOwnerMemberInfo)).root
                     } else {
                         val allMembers = knownMembers + updateMembersInfo
                         merkleTreeGenerator.generateTree(allMembers.values).root

@@ -1566,6 +1566,108 @@ class MembershipPersistenceTest {
     }
 
     @Test
+    fun `activateMember can persist re-activated notary and update the group parameters info over RPC topic`() {
+        val generator = KeyPairGenerator.getInstance("RSA", BouncyCastleProvider())
+        vnodeEmf.transaction {
+            it.createQuery("DELETE FROM GroupParametersEntity").executeUpdate()
+            val entity = GroupParametersEntity(
+                epoch = 50,
+                parameters = cordaAvroSerializer.serialize(
+                    KeyValuePairList(
+                        listOf(
+                            KeyValuePair(EPOCH_KEY, "50"),
+                            KeyValuePair(MODIFIED_TIME_KEY, clock.instant().toString()),
+                        )
+                    )
+                )!!,
+                signaturePublicKey = keyEncodingService.encodeAsByteArray(generator.genKeyPair().public),
+                signatureContent = byteArrayOf(1),
+                signatureSpec = RSA_SHA256.signatureName
+            )
+            it.persist(entity)
+        }
+
+        val memberX500Name = MemberX500Name.parse("O=Notary, C=GB, L=London")
+        val notaryServiceName = "O=New Service, L=London, C=GB"
+        val notaryPlugin = "Notary Plugin"
+        val notaryPublicKey = generator.generateKeyPair().public
+        val notaryVersions = listOf("1")
+        val memberContext = notaryMemberContext(
+            memberX500Name,
+            groupId,
+            endpointUrl = "https://localhost:8080",
+            notaryServiceName = notaryServiceName,
+            notaryServicePlugin = notaryPlugin,
+            notaryPublicKey,
+            notaryVersions
+        )
+        val mgmContext = KeyValuePairList(
+            listOf(
+                KeyValuePair(STATUS, MEMBER_STATUS_SUSPENDED),
+                KeyValuePair(SERIAL, "1"),
+            ).sorted()
+        )
+
+        val memberPersistenceResult1 = membershipPersistenceClientWrapper.persistMemberInfo(
+            viewOwningHoldingIdentity,
+            listOf(
+                SignedMemberInfo(
+                    memberInfoFactory.create(
+                        memberContext.toSortedMap(),
+                        mgmContext.toSortedMap()
+                    ),
+                    CryptoSignatureWithKey(
+                        ByteBuffer.wrap(signatureKey),
+                        ByteBuffer.wrap(signatureContent)
+                    ),
+                    signatureSpec,
+                )
+            )
+        ).execute()
+        memberPersistenceResult1.getOrThrow()
+
+        val (updatedMemberInfo, groupParameters) = membershipPersistenceClientWrapper.activateMember(
+            viewOwningHoldingIdentity, memberX500Name, 1, "test-reason"
+        ).getOrThrow()
+
+        val updatedEpoch = 51
+        val expectedGroupParameters = listOf(KeyValuePair(EPOCH_KEY, updatedEpoch.toString()),
+            KeyValuePair(String.format(NOTARY_SERVICE_NAME_KEY, 0), notaryServiceName),
+            KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_KEY, 0), notaryPlugin),
+            KeyValuePair(String.format(NOTARY_SERVICE_KEYS_KEY, 0, 0), keyEncodingService.encodeAsString(notaryPublicKey)),
+            ) + notaryVersions.mapIndexed { i, version -> KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS_KEY, 0, i), version) }
+        assertThat(groupParameters!!.entries.filterNot { it.key == MODIFIED_TIME_KEY })
+            .containsExactlyInAnyOrderElementsOf(expectedGroupParameters.associate { it.key to it.value }.entries)
+
+        val persistedMemberInfoEntity = vnodeEmf.createEntityManager().use {
+            it.find(
+                MemberInfoEntity::class.java,
+                MemberInfoEntityPrimaryKey(viewOwningHoldingIdentity.groupId, memberX500Name.toString(), false)
+            )
+        }
+        assertThat(persistedMemberInfoEntity.status).isEqualTo(MEMBER_STATUS_ACTIVE)
+        assertThat(persistedMemberInfoEntity.serialNumber).isEqualTo(2L)
+        assertThat(updatedMemberInfo.mgmContext.toMap()).containsEntry(STATUS, MEMBER_STATUS_ACTIVE).containsEntry(SERIAL, "2")
+
+        val persistedGroupParametersEntity = vnodeEmf.createEntityManager().use {
+            it.find(
+                GroupParametersEntity::class.java,
+                updatedEpoch
+            )
+        }
+        assertThat(persistedGroupParametersEntity).isNotNull
+        with(persistedGroupParametersEntity.parameters) {
+            val deserialized = cordaAvroDeserializer.deserialize(this)!!
+            val deserializedList = deserialized.items
+            assertThat(deserializedList).anyMatch { it.key == MODIFIED_TIME_KEY }
+            assertThat(deserializedList.filterNot { it.key == MODIFIED_TIME_KEY })
+                .containsExactlyInAnyOrderElementsOf(expectedGroupParameters)
+            assertDoesNotThrow { Instant.parse(deserialized.toMap()[MODIFIED_TIME_KEY]) }
+        }
+    }
+
+
+    @Test
     fun `can persist static network info to cluster DB`() {
         val groupId = UUID(0, 1).toString()
         val groupParameters = KeyValuePairList(listOf(KeyValuePair("key", "value")))

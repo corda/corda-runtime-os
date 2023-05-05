@@ -1,6 +1,7 @@
 package net.corda.ledger.utxo.test
 
 import net.corda.flow.external.events.executor.ExternalEventExecutor
+import net.corda.flow.persistence.query.ResultSetFactory
 import net.corda.flow.pipeline.sandbox.FlowSandboxService
 import net.corda.ledger.common.flow.impl.transaction.filtered.factory.FilteredTransactionFactoryImpl
 import net.corda.ledger.common.test.CommonLedgerTest
@@ -13,8 +14,8 @@ import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerStateQueryService
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoTransactionBuilderImpl
 import net.corda.ledger.utxo.flow.impl.transaction.factory.impl.UtxoLedgerTransactionFactoryImpl
-import net.corda.ledger.utxo.flow.impl.transaction.filtered.factory.UtxoFilteredTransactionFactoryImpl
 import net.corda.ledger.utxo.flow.impl.transaction.factory.impl.UtxoSignedTransactionFactoryImpl
+import net.corda.ledger.utxo.flow.impl.transaction.filtered.factory.UtxoFilteredTransactionFactoryImpl
 import net.corda.ledger.utxo.flow.impl.transaction.serializer.amqp.UtxoSignedTransactionSerializer
 import net.corda.ledger.utxo.flow.impl.transaction.serializer.kryo.UtxoSignedTransactionKryoSerializer
 import net.corda.ledger.utxo.flow.impl.transaction.verifier.UtxoLedgerTransactionVerificationService
@@ -23,7 +24,6 @@ import net.corda.ledger.utxo.testkit.getUtxoSignedTransactionExample
 import net.corda.ledger.utxo.testkit.notaryX500Name
 import net.corda.ledger.utxo.transaction.verifier.SignedGroupParametersVerifier
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
-import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.ledger.common.NotaryLookup
 import net.corda.v5.membership.NotaryInfo
 import org.mockito.kotlin.mock
@@ -39,8 +39,8 @@ abstract class UtxoLedgerTest : CommonLedgerTest() {
     val mockUtxoLedgerStateQueryService = mock<UtxoLedgerStateQueryService>()
     val mockCurrentSandboxGroupContext = mock<CurrentSandboxGroupContext>()
     val mockFlowSandboxService = mock<FlowSandboxService>()
-    val mockExternalEventExecutor = mock<ExternalEventExecutor>()
-    val mockSerializationService = mock<SerializationService>()
+    private val mockExternalEventExecutor = mock<ExternalEventExecutor>()
+    private val mockResultSetFactory = mock<ResultSetFactory>()
 
     val mockNotaryLookup = mock<NotaryLookup>().also{
         val notaryExampleInfo = mock<NotaryInfo>().also {
@@ -91,7 +91,7 @@ abstract class UtxoLedgerTest : CommonLedgerTest() {
         mockCurrentSandboxGroupContext,
         mockNotaryLookup,
         mockExternalEventExecutor,
-        mockSerializationService
+        mockResultSetFactory
     )
     val utxoSignedTransactionKryoSerializer = UtxoSignedTransactionKryoSerializer(
         serializationServiceWithWireTx,

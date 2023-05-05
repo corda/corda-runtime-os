@@ -110,29 +110,23 @@ internal class SandboxGroupImpl(
             }
 
             ClassType.CpkSandboxClass -> {
-                val sandbox = when (classTag) {
+                val (sandbox, bundleName) = when (classTag) {
                     is StaticTag -> cpkSandboxes.find { sandbox -> sandbox.cpkMetadata.fileChecksum == classTag.cpkFileHash }
+                        ?.let { Pair(it, classTag.classBundleName) }
+
                     is EvolvableTag -> {
-                        val sandbox = cpkSandboxes.find {
-                            it.cpkMetadata.cpkId.signerSummaryHash == classTag.cpkSignerSummaryHash
-                                    && it.mainBundle.symbolicName == classTag.mainBundleName
-                        }
-                        sandbox?.let {
-                            if (classTag.classBundleName != it.mainBundle.symbolicName) {
-                                throw SandboxException(
-                                    "Attempted to load class $className with an evolvable class tag from cpk private bundle " +
-                                            "${classTag.classBundleName}."
-                                )
-                            } else {
-                                it
-                            }
-                        }
+                        cpkSandboxes.find {
+                            it.cpkMetadata.cpkId.signerSummaryHash == classTag.cpkSignerSummaryHash &&
+                                    (it.cpkMetadata.cpkId.name == classTag.cordaCpkCordappName || // CPK given names match or
+                                    it.mainBundle.symbolicName == classTag.classBundleName) // symbolic names of class bundle match
+                        }?.let { Pair(it, it.mainBundle.symbolicName) } // only load evolvable classes from the main bundle
                     }
                 } ?: throw SandboxException(
                     "Class tag $serialisedClassTag did not match any sandbox in the sandbox group."
                 )
-                sandbox.loadClass(className, classTag.classBundleName) ?: throw SandboxException(
-                    "Class $className could not be loaded from bundle ${classTag.classBundleName} in sandbox ${sandbox.id}."
+
+                sandbox.loadClass(className, bundleName) ?: throw SandboxException(
+                    "Class $className could not be loaded from bundle $bundleName in sandbox ${sandbox.id}."
                 )
             }
 
@@ -140,8 +134,7 @@ internal class SandboxGroupImpl(
                 publicSandboxes.asSequence().mapNotNull { publicSandbox ->
                     publicSandbox.loadClass(className, classTag.classBundleName)
                 }.firstOrNull() ?: throw SandboxException(
-                    "Class $className from bundle ${classTag.classBundleName} could not be loaded from any of the public " +
-                            "sandboxes."
+                    "Class $className from bundle ${classTag.classBundleName} could not be loaded from any of the public sandboxes."
                 )
             }
         }
