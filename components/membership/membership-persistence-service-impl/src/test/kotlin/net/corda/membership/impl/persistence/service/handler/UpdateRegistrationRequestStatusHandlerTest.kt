@@ -1,8 +1,8 @@
 package net.corda.membership.impl.persistence.service.handler
 
 import net.corda.crypto.cipher.suite.KeyEncodingService
-import net.corda.data.CordaAvroSerializationFactory
-import net.corda.data.CordaAvroSerializer
+import net.corda.avro.serialization.CordaAvroSerializationFactory
+import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.KeyValuePairList
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.db.request.MembershipRequestContext
