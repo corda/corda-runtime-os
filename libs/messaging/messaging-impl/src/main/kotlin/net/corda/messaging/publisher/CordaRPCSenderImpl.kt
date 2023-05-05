@@ -1,5 +1,9 @@
 package net.corda.messaging.publisher
 
+import java.nio.ByteBuffer
+import java.time.Instant
+import java.util.UUID
+import java.util.concurrent.CompletableFuture
 import net.corda.data.CordaAvroDeserializer
 import net.corda.data.CordaAvroSerializer
 import net.corda.data.ExceptionEnvelope
@@ -35,10 +39,6 @@ import net.corda.schema.Schemas.getRPCResponseTopic
 import net.corda.utilities.debug
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.nio.ByteBuffer
-import java.time.Instant
-import java.util.UUID
-import java.util.concurrent.CompletableFuture
 
 @Suppress("LongParameterList")
 internal class CordaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
@@ -207,6 +207,7 @@ internal class CordaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
         val future = CompletableFuture<RESPONSE>()
         val partitions = partitionListener.getPartitions()
 
+        log.info("Sending request. correlationId $correlationId, topic: ${config.topic}, group: ${config.group}")
         val reqBytes = try {
             serializer.serialize(req)
         } catch (ex: Exception) {
@@ -227,9 +228,10 @@ internal class CordaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
         }
 
         if (partitions.isEmpty()) {
+            log.info("Partitions are empty. correlationId $correlationId, topic: ${config.topic}, group: ${config.group}")
+
             val error = "No partitions for topic ${getRPCResponseTopic(config.topic)}. Couldn't send."
             future.completeExceptionally(CordaRPCAPISenderException(error))
-            log.warn(error)
         } else {
             val partition = partitions[0].partition
             val request = RPCRequest(
@@ -245,9 +247,11 @@ internal class CordaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
             futureTracker.addFuture(correlationId, future, partition)
             try {
                 producer?.sendRecords(listOf(record))
+                log.info("Sent records!!. correlationId $correlationId, topic: ${config.topic}, group: ${config.group}")
             } catch (ex: Exception) {
                 future.completeExceptionally(CordaRPCAPISenderException("Failed to publish", ex))
-                log.warn("Failed to publish. Exception: ${ex.message}", ex)
+                log.warn("Failed to publish. correlationId $correlationId, topic: ${config.topic}, group: ${config.group} Exception: ${ex
+                    .message}", ex)
             }
         }
 

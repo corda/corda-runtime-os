@@ -28,6 +28,7 @@ import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.messaging.api.subscription.RPCSubscription
 import net.corda.messaging.config.ResolvedSubscriptionConfig
 import net.corda.messaging.constants.MetricsConstants
+import net.corda.messaging.subscription.consumer.listener.LoggingConsumerRebalanceListener
 import net.corda.metrics.CordaMetrics
 import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
@@ -74,7 +75,7 @@ internal class RPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
         while (!threadLooper.loopStopped) {
             attempts++
             try {
-                log.debug { "Creating rpc consumer.  Attempt: $attempts" }
+                log.info("Creating rpc consumer in group ${config.group} for topic ${config.topic}.  Attempt: $attempts" )
                 createProducerConsumerAndStartPolling()
                 attempts = 0
             } catch (ex: Exception) {
@@ -102,7 +103,7 @@ internal class RPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
                 String::class.java,
                 RPCRequest::class.java
             ).use {
-                it.subscribe(config.topic)
+                it.subscribe(config.topic, LoggingConsumerRebalanceListener(config.topic, config.group, config.clientId))
                 threadLooper.updateLifecycleStatus(LifecycleStatus.UP)
                 pollAndProcessRecords(it, producer)
             }
@@ -136,6 +137,9 @@ internal class RPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
         consumerRecords: List<CordaConsumerRecord<String, RPCRequest>>,
         producer: CordaProducer
     ) {
+        if (consumerRecords.isNotEmpty()) {
+            log.info("polled records with keys [${consumerRecords.joinToString { it.key }}]")
+        }
         consumerRecords.forEach {
             if (cannotReplyToRequest(it)) {
                 log.error("Malformed request cannot be processed and no response can be returned, $it")
@@ -163,6 +167,7 @@ internal class RPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
                     when {
                         // the order of these is important due to how the futures api is
                         future.isCancelled -> {
+                            log.info("Future cancelled for request [${it.key}]")
                             record = buildRecord(
                                 rpcRequest,
                                 ResponseStatus.CANCELLED,
@@ -173,6 +178,7 @@ internal class RPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
                             )
                         }
                         future.isCompletedExceptionally -> {
+                            log.info("Future isCompletedExceptionally for request [${it.key}]")
                             record = buildRecord(
                                 rpcRequest,
                                 ResponseStatus.FAILED,
@@ -180,6 +186,7 @@ internal class RPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
                             )
                         }
                         else -> {
+                            log.info("Sending response back for request [${it.key}]....")
                             val serializedResponse = serializer.serialize(response)
                             record = buildRecord(
                                 rpcRequest,
@@ -189,6 +196,7 @@ internal class RPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
                         }
                     }
                     producer.sendRecordsToPartitions(listOf(Pair(rpcRequest.replyPartition, record)))
+                    log.info("Sent response back for request [${it.key}]")
                 } catch (ex: Exception) {
                     // intentionally swallowed
                     log.warn("Error publishing response", ex)

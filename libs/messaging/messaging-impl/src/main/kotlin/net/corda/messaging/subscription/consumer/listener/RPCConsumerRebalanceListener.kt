@@ -1,16 +1,16 @@
 package net.corda.messaging.subscription.consumer.listener
 
+import java.util.Collections
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.messagebus.api.CordaTopicPartition
 import net.corda.messaging.subscription.LifecycleStatusUpdater
 import net.corda.messaging.utils.FutureTracker
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.util.*
 
 class RPCConsumerRebalanceListener<RESPONSE>(
-    topic: String,
-    groupName: String,
+    private val topic: String,
+    private val groupName: String,
     private var tracker: FutureTracker<RESPONSE>,
     private val lifecycleStatusUpdater: LifecycleStatusUpdater
 ) : LoggingConsumerRebalanceListener(topic, groupName) {
@@ -24,6 +24,9 @@ class RPCConsumerRebalanceListener<RESPONSE>(
 
         tracker.removePartitions(partitions.toList())
         this.partitions.removeAll(partitions)
+        log.info("Partitions are revoked, topic: $topic, group: $groupName. partitions revoked: [$partitions].    partitions remaining " +
+                "[${this.partitions}]")
+
         if (this.partitions.isEmpty()) {
             lifecycleStatusUpdater.updateLifecycleStatus(LifecycleStatus.DOWN)
         }
@@ -37,7 +40,8 @@ class RPCConsumerRebalanceListener<RESPONSE>(
         }
         tracker.addPartitions(partitions.toList())
         this.partitions.addAll(partitions)
-
+        log.info("Assign partitions! topic: $topic, group: $groupName. " +
+                "new partitions assigned [$partitions]. All partitions assigned [${this.partitions}]")
     }
 
     fun getPartitions(): List<CordaTopicPartition> {
