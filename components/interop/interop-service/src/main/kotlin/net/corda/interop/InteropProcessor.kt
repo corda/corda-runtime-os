@@ -142,8 +142,7 @@ class InteropProcessor(
         )
     }
 
-    @Suppress("UNUSED_PARAMETER")
-    private fun processOutboundEvent(state: InteropState?, eventKey: String, sessionEvent: SessionEvent):
+    private fun processOutboundEvent(state: InteropState?, sessionEvent: SessionEvent):
             StateAndEventProcessor.Response<InteropState> {
 
         val (sourceIdentity, destinationIdentity) = getSourceAndDestinationIdentity(sessionEvent)
@@ -225,7 +224,7 @@ class InteropProcessor(
             if (eventPayload.messageDirection == MessageDirection.INBOUND) {
                 processInboundEvent(state, event.key, eventPayload)
             } else {
-                processOutboundEvent(state, event.key, eventPayload)
+                processOutboundEvent(state, eventPayload)
             }
         } catch (e: InteropProcessorException) {
             logger.warn("${e.message} Key: ${event.key}")
