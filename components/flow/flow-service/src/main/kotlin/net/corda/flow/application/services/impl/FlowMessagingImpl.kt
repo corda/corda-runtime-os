@@ -39,6 +39,7 @@ class FlowMessagingImpl @Activate constructor(
 ) : FlowMessaging, UsedByFlow, SingletonSerializeAsToken {
 
     companion object {
+        private const val INTEROP_GROUP_ID = "INTEROP_GROUP_ID"
         private const val INTEROP_FACADE_ID = "INTEROP_FACADE_ID"
         private const val INTEROP_FACADE_METHOD = "INTEROP_FACADE_METHOD"
     }
@@ -62,12 +63,13 @@ class FlowMessagingImpl @Activate constructor(
     @Suspendable
     override fun callFacade(
         memberName: MemberX500Name,
+        interopGroupId: String,
         facadeId: String,
         methodName: String,
         payload: String
     ): String {
         // TODO revisit input/results while integrating with CORE-10430
-        val session = createInteropFlowSession(memberName, facadeId, methodName)
+        val session = createInteropFlowSession(memberName, interopGroupId, facadeId, methodName)
         return session.sendAndReceive(String::class.java, payload)
     }
 
@@ -196,10 +198,11 @@ class FlowMessagingImpl @Activate constructor(
     }
 
     @Suspendable
-    private fun createInteropFlowSession(x500Name: MemberX500Name, facadeId: String, methodName: String): FlowSession {
+    private fun createInteropFlowSession(x500Name: MemberX500Name, groupId: String, facadeId: String, methodName: String): FlowSession {
         val sessionId = UUID.randomUUID().toString()
         addSessionIdToFlowStackItem(sessionId)
         return flowSessionFactory.createInitiatingFlowSession(sessionId, x500Name, { flowContextProperties ->
+            flowContextProperties.put(INTEROP_GROUP_ID, groupId)
             flowContextProperties.put(INTEROP_FACADE_ID, facadeId)
             flowContextProperties.put(INTEROP_FACADE_METHOD, methodName)
         }, true)
