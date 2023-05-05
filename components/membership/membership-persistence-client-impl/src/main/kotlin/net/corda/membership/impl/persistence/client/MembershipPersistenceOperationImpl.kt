@@ -8,9 +8,7 @@ import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.Membership.MEMBERSHIP_DB_ASYNC_TOPIC
 import net.corda.utilities.Either
-import net.corda.utilities.concurrent.getOrThrow
 import org.slf4j.LoggerFactory
-import java.time.Duration
 import java.util.concurrent.TimeoutException
 
 /**
@@ -29,7 +27,6 @@ internal class MembershipPersistenceOperationImpl<T>(
     private val convertResult: (Any?) -> Either<T, String>,
 ) : MembershipPersistenceOperation<T> {
     private companion object {
-        const val RPC_TIMEOUT_MS = 10000L
         val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
@@ -44,7 +41,6 @@ internal class MembershipPersistenceOperationImpl<T>(
         return try {
             val response = sender
                 .send(request)
-                .getOrThrow(Duration.ofMillis(RPC_TIMEOUT_MS))
             val payload = response.payload
             val context = response.context
             if (context.holdingIdentity != request.context.holdingIdentity) {

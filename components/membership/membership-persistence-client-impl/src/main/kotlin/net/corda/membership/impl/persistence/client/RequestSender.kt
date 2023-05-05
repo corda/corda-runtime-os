@@ -11,6 +11,8 @@ import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas
+import net.corda.utilities.concurrent.getOrThrow
+import java.time.Duration
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
@@ -23,6 +25,9 @@ internal class RequestSender(
     clientId: String,
     groupId: String,
 ) : Resource {
+    private companion object {
+        val RPC_TIMEOUT_MS = Duration.ofSeconds(16)
+    }
     private val id = UUID.randomUUID().toString()
 
     private val outstandingRequests = ConcurrentHashMap<String, CompletableFuture<MembershipPersistenceResponse>>()
@@ -51,7 +56,7 @@ internal class RequestSender(
         receiver.close()
     }
 
-    fun send(request: MembershipPersistenceRequest): CompletableFuture<MembershipPersistenceResponse> {
+    fun send(request: MembershipPersistenceRequest): MembershipPersistenceResponse {
         val future = CompletableFuture<MembershipPersistenceResponse>()
         outstandingRequests[request.context.requestId] = future
         publisher.publish(
@@ -65,7 +70,11 @@ internal class RequestSender(
         ).forEach {
             it.join()
         }
-        return future
+        return try {
+            future.getOrThrow(RPC_TIMEOUT_MS)
+        } finally {
+            outstandingRequests.remove(request.context.requestId)
+        }
     }
 
     private inner class Processor : PubSubProcessor<String, MembershipPersistenceResponse> {

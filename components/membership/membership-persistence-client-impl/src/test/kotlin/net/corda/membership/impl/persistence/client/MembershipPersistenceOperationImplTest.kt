@@ -22,7 +22,6 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.time.Instant
-import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeoutException
 
 class MembershipPersistenceOperationImplTest {
@@ -49,7 +48,7 @@ class MembershipPersistenceOperationImplTest {
         100
     )
     private val sender = mock<RequestSender> {
-        on { send(any()) } doReturn CompletableFuture.completedFuture(response)
+        on { send(any()) } doReturn response
     }
     private val operation = MembershipPersistenceOperationImpl(
         sender,
@@ -76,10 +75,7 @@ class MembershipPersistenceOperationImplTest {
 
         @Test
         fun `timeout will give the correct error`() {
-            val future = mock<CompletableFuture<MembershipPersistenceResponse>> {
-                on { get(any(), any()) } doThrow TimeoutException("")
-            }
-            whenever(sender.send(any())).doReturn(future)
+            whenever(sender.send(any())).doThrow(TimeoutException(""))
 
             val reply = operation.send()
 

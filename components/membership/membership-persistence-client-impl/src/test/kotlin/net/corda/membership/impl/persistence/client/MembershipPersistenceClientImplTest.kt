@@ -540,7 +540,7 @@ class MembershipPersistenceClientImplTest {
         }
         postConfigChangedEvent()
         val argument = argumentCaptor<MembershipPersistenceRequest>()
-        val response = CompletableFuture.completedFuture(mock<MembershipPersistenceResponse>())
+        val response = mock<MembershipPersistenceResponse>()
         whenever(rpcSender.send(argument.capture())).thenReturn(response)
 
         membershipPersistenceClient.persistGroupPolicy(ourHoldingIdentity, groupPolicy, 1L)
@@ -662,7 +662,7 @@ class MembershipPersistenceClientImplTest {
             }
             postConfigChangedEvent()
             val argument = argumentCaptor<MembershipPersistenceRequest>()
-            val response = CompletableFuture.completedFuture(mock<MembershipPersistenceResponse>())
+            val response = mock<MembershipPersistenceResponse>()
             whenever(rpcSender.send(argument.capture())).thenReturn(response)
 
             membershipPersistenceClient.persistGroupParameters(ourHoldingIdentity, groupParameters)
@@ -747,7 +747,7 @@ class MembershipPersistenceClientImplTest {
             }
             postConfigChangedEvent()
             val argument = argumentCaptor<MembershipPersistenceRequest>()
-            val response = CompletableFuture.completedFuture(mock<MembershipPersistenceResponse>())
+            val response = mock<MembershipPersistenceResponse>()
             whenever(rpcSender.send(argument.capture())).thenReturn(response)
 
             membershipPersistenceClient.addNotaryToGroupParameters(ourHoldingIdentity, notaryInRequest)
@@ -814,7 +814,7 @@ class MembershipPersistenceClientImplTest {
         fun `addApprovalRule sends the correct data`() {
             postConfigChangedEvent()
             val argument = argumentCaptor<MembershipPersistenceRequest>()
-            val response = CompletableFuture.completedFuture(mock<MembershipPersistenceResponse>())
+            val response = mock<MembershipPersistenceResponse>()
             whenever(rpcSender.send(argument.capture())).thenReturn(response)
 
             membershipPersistenceClient.addApprovalRule(
@@ -870,7 +870,7 @@ class MembershipPersistenceClientImplTest {
         fun `deleteApprovalRule sends the correct data`() {
             postConfigChangedEvent()
             val argument = argumentCaptor<MembershipPersistenceRequest>()
-            val response = CompletableFuture.completedFuture(mock<MembershipPersistenceResponse>())
+            val response = mock<MembershipPersistenceResponse>()
             whenever(rpcSender.send(argument.capture())).thenReturn(response)
 
             membershipPersistenceClient.deleteApprovalRule(
@@ -956,7 +956,7 @@ class MembershipPersistenceClientImplTest {
         fun `mutualTlsAddCertificateToAllowedList sends the correct request`() {
             postConfigChangedEvent()
             val argument = argumentCaptor<MembershipPersistenceRequest>()
-            val response = CompletableFuture.completedFuture(mock<MembershipPersistenceResponse>())
+            val response = mock<MembershipPersistenceResponse>()
             whenever(rpcSender.send(argument.capture())).thenReturn(response)
 
             membershipPersistenceClient.mutualTlsAddCertificateToAllowedList(
@@ -1014,7 +1014,7 @@ class MembershipPersistenceClientImplTest {
         fun `mutualTlsRemoveCertificateFromAllowedList sends the correct request`() {
             postConfigChangedEvent()
             val argument = argumentCaptor<MembershipPersistenceRequest>()
-            val response = CompletableFuture.completedFuture(mock<MembershipPersistenceResponse>())
+            val response = mock<MembershipPersistenceResponse>()
             whenever(rpcSender.send(argument.capture())).thenReturn(response)
 
             membershipPersistenceClient.mutualTlsRemoveCertificateFromAllowedList(
@@ -1082,7 +1082,7 @@ class MembershipPersistenceClientImplTest {
         @Test
         fun `generatePreAuthToken sends the correct request`() {
             val argument = argumentCaptor<MembershipPersistenceRequest>()
-            val response = CompletableFuture.completedFuture(mock<MembershipPersistenceResponse>())
+            val response = mock<MembershipPersistenceResponse>()
             whenever(rpcSender.send(argument.capture())).thenReturn(response)
 
             membershipPersistenceClient.generatePreAuthToken(ourHoldingIdentity, uuid, ourX500Name, ttl, remarks)
@@ -1132,7 +1132,7 @@ class MembershipPersistenceClientImplTest {
         @Test
         fun `revokePreAuthToken sends the correct request`() {
             val argument = argumentCaptor<MembershipPersistenceRequest>()
-            val response = CompletableFuture.completedFuture(mock<MembershipPersistenceResponse>())
+            val response = mock<MembershipPersistenceResponse>()
             whenever(rpcSender.send(argument.capture())).thenReturn(response)
 
             membershipPersistenceClient.revokePreAuthToken(ourHoldingIdentity, uuid, removalRemark)
@@ -1308,7 +1308,7 @@ class MembershipPersistenceClientImplTest {
         @Test
         fun `suspendMember sends the correct data`() {
             val argument = argumentCaptor<MembershipPersistenceRequest>()
-            val response = CompletableFuture.completedFuture(mock<MembershipPersistenceResponse>())
+            val response = mock<MembershipPersistenceResponse>()
             whenever(rpcSender.send(argument.capture())).thenReturn(response)
 
             membershipPersistenceClient.suspendMember(
@@ -1394,7 +1394,7 @@ class MembershipPersistenceClientImplTest {
         @Test
         fun `activateMember sends the correct data`() {
             val argument = argumentCaptor<MembershipPersistenceRequest>()
-            val response = CompletableFuture.completedFuture(mock<MembershipPersistenceResponse>())
+            val response = mock<MembershipPersistenceResponse>()
             whenever(rpcSender.send(argument.capture())).thenReturn(response)
 
             membershipPersistenceClient.activateMember(

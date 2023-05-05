@@ -862,7 +862,7 @@ class MembershipQueryClientImplTest {
         fun `mutualTlsListAllowedCertificates sends the correct request`() {
             postConfigChangedEvent()
             val argument = argumentCaptor<MembershipPersistenceRequest>()
-            val response = CompletableFuture.completedFuture(mock<MembershipPersistenceResponse>())
+            val response = mock<MembershipPersistenceResponse>()
             whenever(rpcSender.send(argument.capture())).thenReturn(response)
 
             membershipQueryClient.mutualTlsListAllowedCertificates(
