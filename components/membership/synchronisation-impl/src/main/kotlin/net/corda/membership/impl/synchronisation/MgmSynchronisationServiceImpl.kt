@@ -254,6 +254,7 @@ class MgmSynchronisationServiceImpl internal constructor(
                         destination = dest,
                         content = data,
                         minutesToWait = config.getTtlMinutes(MEMBERS_PACKAGE_UPDATE),
+                        filter = ACTIVE_OR_SUSPENDED
                     )
                 )
             )

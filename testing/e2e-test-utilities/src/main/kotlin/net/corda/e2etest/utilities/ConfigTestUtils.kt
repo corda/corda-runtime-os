@@ -19,13 +19,7 @@ fun JsonNode.configWithDefaultsNode(): JsonNode =
  * Get the current configuration (as a [JsonNode]) for the specified [section].
  */
 fun getConfig(section: String): JsonNode {
-    return cluster {
-        endpoint(
-            CLUSTER_URI,
-            USERNAME,
-            PASSWORD
-        )
-
+    return DEFAULT_CLUSTER.cluster {
         assertWithRetryIgnoringExceptions {
             command { getConfig(section) }
             condition { it.code == OK.statusCode }
@@ -38,8 +32,10 @@ fun getConfig(section: String): JsonNode {
  * The currently installed schema and configuration versions are automatically obtained from the running system
  * before updating.
  */
-fun updateConfig(config: String, section: String, clusterInfo: ClusterInfo = ClusterBInfo) {
-    return clusterInfo.cluster {
+fun updateConfig(config: String, section: String) = DEFAULT_CLUSTER.updateConfig(config, section)
+
+fun ClusterInfo.updateConfig(config: String, section: String) {
+    return cluster {
         val currentConfig = getConfig(section).body.toJson()
         val currentSchemaVersion = currentConfig["schemaVersion"]
 
@@ -71,16 +67,22 @@ fun updateConfig(config: String, section: String, clusterInfo: ClusterInfo = Clu
  * Wait for the REST API on the rest-worker to respond with an updated config value.
  * If [expectServiceToBeDown] is set to true it is expected the config endpoint will go down before coming back up with the new config.
  */
-@Suppress("LongParameterList")
 fun waitForConfigurationChange(
     section: String,
     key: String,
     value: String,
     expectServiceToBeDown: Boolean = true,
-    timeout: Duration = Duration.ofMinutes(1),
-    clusterInfo: ClusterInfo = ClusterBInfo,
+    timeout: Duration = Duration.ofMinutes(1)
+) = DEFAULT_CLUSTER.waitForConfigurationChange(section, key, value, expectServiceToBeDown, timeout)
+
+fun ClusterInfo.waitForConfigurationChange(
+    section: String,
+    key: String,
+    value: String,
+    expectServiceToBeDown: Boolean = true,
+    timeout: Duration = Duration.ofMinutes(1)
 ) {
-    clusterInfo.cluster {
+    cluster {
         if (expectServiceToBeDown) {
             // Wait for the service to become unavailable
             eventually(timeout) {
@@ -104,22 +106,19 @@ fun waitForConfigurationChange(
     }
 }
 
-fun updateConfigAndWaitForChange(
+fun ClusterInfo.updateConfigAndWaitForChange(
     section: String,
     key: String,
-    value: Any,
-    clusterInfo: ClusterInfo,
+    value: Any
 ) {
     updateConfig(
         mapOf(key to value).toJsonString(),
-        section,
-        clusterInfo,
+        section
     )
     waitForConfigurationChange(
         section,
         key,
         value.toString(),
-        expectServiceToBeDown = false,
-        clusterInfo = clusterInfo,
+        expectServiceToBeDown = false
     )
 }

@@ -275,7 +275,7 @@ class MgmSynchronisationServiceImplTest {
                 eq(allMembershipPackage),
                 any(),
                 any(),
-                eq(MembershipStatusFilter.ACTIVE),
+                eq(MembershipStatusFilter.ACTIVE_OR_SUSPENDED),
             )
         } doReturn allMembershipPackageRecord
         on {
@@ -285,7 +285,7 @@ class MgmSynchronisationServiceImplTest {
                 eq(bobMembershipPackage),
                 any(),
                 any(),
-                eq(MembershipStatusFilter.ACTIVE),
+                eq(MembershipStatusFilter.ACTIVE_OR_SUSPENDED),
             )
         } doReturn bobMembershipPackageRecord
         on {
@@ -295,7 +295,7 @@ class MgmSynchronisationServiceImplTest {
                 eq(simonMembershipPackage),
                 any(),
                 any(),
-                eq(MembershipStatusFilter.ACTIVE),
+                eq(MembershipStatusFilter.ACTIVE_OR_SUSPENDED),
             )
         } doReturn simonMembershipPackageRecord
     }

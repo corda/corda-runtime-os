@@ -29,21 +29,25 @@ abstract class ClusterInfo {
     /**
      * REST API properties
      */
-    open val rest = RestEndpointInfo(
-        System.getenv(restHostPropertyName) ?: DEFAULT_REST_HOST,
-        System.getenv(restPortPropertyName)?.toInt() ?: DEFAULT_REST_PORT,
-        AdminPasswordUtil.adminUser,
-        System.getenv(restPasswordPropertyName) ?: AdminPasswordUtil.adminPassword
-    )
+    open val rest by lazy {
+        RestEndpointInfo(
+            System.getenv(restHostPropertyName) ?: DEFAULT_REST_HOST,
+            System.getenv(restPortPropertyName)?.toInt() ?: DEFAULT_REST_PORT,
+            AdminPasswordUtil.adminUser,
+            System.getenv(restPasswordPropertyName) ?: AdminPasswordUtil.adminPassword
+        )
+    }
 
     /**
      * P2P gateway properties.
      */
-    open val p2p = P2PEndpointInfo(
-        System.getenv(p2pHostPropertyName) ?: DEFAULT_P2P_HOST,
-        System.getenv(p2pPortPropertyName)?.toInt() ?: DEFAULT_P2P_PORT,
-        "1"
-    )
+    open val p2p by lazy {
+        P2PEndpointInfo(
+            System.getenv(p2pHostPropertyName) ?: DEFAULT_P2P_HOST,
+            System.getenv(p2pPortPropertyName)?.toInt() ?: DEFAULT_P2P_PORT,
+            "1"
+        )
+    }
 
 }
 

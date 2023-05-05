@@ -71,7 +71,7 @@ class ReplaySchedulerTest {
     @Test
     fun `The ReplayScheduler will not replay before start`() {
         val replayManager = ReplayScheduler<SessionManager.SessionCounterparties, Any>(coordinatorFactory, service, false,
-            { _: Any -> }, clock = mockTimeFacilitiesProvider.clock)
+            { _: Any, _: String -> }, clock = mockTimeFacilitiesProvider.clock)
         assertThrows<IllegalStateException> {
             replayManager.addForReplay(0,"", Any(), Mockito.mock(SessionManager.SessionCounterparties::class.java))
         }
@@ -83,7 +83,7 @@ class ReplaySchedulerTest {
             coordinatorFactory,
             service,
             false,
-            { _: Any -> },
+            { _: Any, _: String -> },
             clock = mockTimeFacilitiesProvider.clock
         )
         val inner = ConfigFactory.empty()
@@ -110,7 +110,7 @@ class ReplaySchedulerTest {
             coordinatorFactory,
             service,
             false,
-            { _: Any -> },
+            { _: Any, _: String -> },
             clock = mockTimeFacilitiesProvider.clock
         )
         val inner = ConfigFactory.empty()
@@ -137,7 +137,7 @@ class ReplaySchedulerTest {
             coordinatorFactory,
             service,
             false,
-            { _: Any -> },
+            { _: Any, _: String -> },
             clock = mockTimeFacilitiesProvider.clock
         )
         val future = configHandler.applyNewConfiguration(
@@ -160,7 +160,7 @@ class ReplaySchedulerTest {
             coordinatorFactory,
             service,
             false,
-            { _: Any -> },
+            { _: Any, _: String -> },
             clock = mockTimeFacilitiesProvider.clock
         )
         val future = configHandler.applyNewConfiguration(
@@ -297,12 +297,12 @@ class ReplaySchedulerTest {
         val message = "message"
         val tracker = TrackReplayedMessages()
         var firstCall = true
-        fun replayMessage(message: String) {
+        fun replayMessage(message: String, messageId: String) {
             if (firstCall) {
                 firstCall = false
                 throw MyException()
             } else {
-                tracker.replayMessage(message)
+                tracker.replayMessage(message, messageId)
             }
         }
 
@@ -476,7 +476,8 @@ class ReplaySchedulerTest {
     class TrackReplayedMessages {
         val messages = mutableListOf<String>()
 
-        fun replayMessage(message: String) {
+        @Suppress("unused_parameter")
+        fun replayMessage(message: String, messageId: String) {
             messages.add(message)
         }
     }

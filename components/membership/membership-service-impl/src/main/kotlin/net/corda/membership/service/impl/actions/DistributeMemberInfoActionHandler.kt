@@ -10,7 +10,7 @@ import net.corda.data.membership.actions.request.DistributeMemberInfo
 import net.corda.data.membership.actions.request.MembershipActionsRequest
 import net.corda.data.membership.p2p.DistributionType
 import net.corda.data.membership.p2p.MembershipPackage
-import net.corda.data.p2p.app.MembershipStatusFilter
+import net.corda.data.p2p.app.MembershipStatusFilter.ACTIVE_OR_SUSPENDED
 import net.corda.libs.configuration.SmartConfig
 import net.corda.membership.lib.InternalGroupParameters
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_SUSPENDED
@@ -76,7 +76,7 @@ class DistributeMemberInfoActionHandler(
         val updatedMember = request.updatedMember
 
         val groupReader = groupReaderProvider.getGroupReader(approvedBy.toCorda())
-        val updatedMemberInfo = groupReader.lookup(filter = MembershipStatusFilter.ACTIVE_OR_SUSPENDED)
+        val updatedMemberInfo = groupReader.lookup(filter = ACTIVE_OR_SUSPENDED)
             .firstOrNull { it.name.toString() == updatedMember.x500Name } ?: return recordToRequeueDistribution(key, request) {
                 logger.info("The MemberInfo retrieved from the message bus for ${updatedMember.x500Name} is not present yet. " +
                     "Republishing the distribute command to be processed later when the MemberInfo is available.")
@@ -148,6 +148,7 @@ class DistributeMemberInfoActionHandler(
             source = approvedBy,
             destination = updatedMember,
             content = membersToDistributeToUpdatedMemberPackage,
+            filter = ACTIVE_OR_SUSPENDED
         )
 
         // Send the newly approved member to all other members in the same group over P2P
