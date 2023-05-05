@@ -1,6 +1,5 @@
 package net.corda.membership.lib.registration
 
-import net.corda.data.CordaAvroDeserializer
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureSpec
