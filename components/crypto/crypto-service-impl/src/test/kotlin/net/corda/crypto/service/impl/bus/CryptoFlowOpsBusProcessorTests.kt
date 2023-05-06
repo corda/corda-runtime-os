@@ -211,11 +211,11 @@ import kotlin.test.assertTrue
         assertEquals(myPublicKeys[0].fullId(), passedSecureHashes[0])
         assertEquals(myPublicKeys[1].fullId(), passedSecureHashes[1])
         assertEquals(notMyKey.fullId(), passedSecureHashes[2])
-        assertNotNull(results.flowOpsResponse.keys)
-        assertEquals(2, results.flowOpsResponse.keys.size)
-        assertTrue(results.flowOpsResponse.keys.any { it.publicKey.array().contentEquals(keyEncodingService.encodeAsByteArray(myPublicKeys[0])) })
+        assertNotNull(results.successfulFlowOpsResponses.first().keys)
+        assertEquals(2, results.successfulFlowOpsResponses.first().keys.size)
+        assertTrue(results.successfulFlowOpsResponses.first().keys.any { it.publicKey.array().contentEquals(keyEncodingService.encodeAsByteArray(myPublicKeys[0])) })
         assertTrue(
-            results.flowOpsResponse.keys.any {
+            results.successfulFlowOpsResponses.first().keys.any {
                 it.publicKey.array().contentEquals(keyEncodingService.encodeAsByteArray(myPublicKeys[1]))
             }
         )
@@ -227,7 +227,7 @@ import kotlin.test.assertTrue
 
      data class Results<R, S>(
          val lookedUpSigningKeys: List<List<String>>,
-         val flowOpsResponse: R,
+         val successfulFlowOpsResponses: List<R>,
          val transformedResponse: S,
          val capturedTenantIds: List<String>
      )
@@ -285,11 +285,11 @@ import kotlin.test.assertTrue
         // run the flows ops processor
         val result = act { processor.onNext(indices.map { Record(topic = eventTopic, key = recordKeys.get(it), value = flowOps.get(it)) }) }
         assertEquals(recordKeys.first(), result.value?.get(0)?.key)
-        val response = assertResponseContext<P, R>(result, flowOpsResponseArgumentCaptor.firstValue)
+        val successfulFlowOpsResponses = flowOpsResponseArgumentCaptor.allValues.map { assertResponseContext<P, R>(result, it) }
 
         val transformedResponse = transformer.transform(flowOpsResponseArgumentCaptor.firstValue)
         if (!(transformedResponse is S)) throw IllegalArgumentException()
-        return Results(passedSecureHashLists, response, transformedResponse, capturedTenantIds = underlyingServiceCapturedTenantIds.toList())
+        return Results(passedSecureHashLists, successfulFlowOpsResponses, transformedResponse, capturedTenantIds = underlyingServiceCapturedTenantIds.toList())
     }
 
     @Test
