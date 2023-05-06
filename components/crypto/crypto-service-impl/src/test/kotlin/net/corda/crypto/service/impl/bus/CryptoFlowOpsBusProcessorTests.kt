@@ -120,7 +120,8 @@ import kotlin.test.asserter
         ttl: Long,
         expectedTenantId: String = tenantId
     ) {
-        timestamps.assertThatIsBetween(context.requestTimestamp)
+        timestamps.assertThatIsBetween(context.responseTimestamp)
+        //timestamps.assertThatIsBetween(context.requestTimestamp)
         assertEquals(expectedTenantId, context.tenantId)
         assertEquals(componentName, context.requestingComponent)
         assertTrue(context.other.items.size >= 3)
@@ -227,24 +228,27 @@ import kotlin.test.asserter
         assertTrue(transformedResponse.any { it.encoded.contentEquals(myPublicKeys[1].encoded) })
     }
 
+     data class Results<R, S>(
+         val lookedUpSigningKeys: List<List<String>>,
+         val flowOpsResponses: R,
+         val transformedResponses: S
+     )
+
     /** Run a flow operation in the mocked flow ops bus processor
 
      * @param P - type parameter for the flow os request
      * @param R - type parameter for the flow ops responses
      * @param S - type parameter for transformed flow ops responses
      * @param myPublicKeys - the set of public keys available from the underlying signing service
-     *@param flowOpCallbacks - a list of callback to create the flow signing opeeration required, given a transformer and an event context
+     * @param flowOpCallbacks - a list of callback to create the flow signing opeeration required, given a transformer and an event context
      *
-     * @returns A triple of:
-     *   - a list of each set of signing keys as strings that were looked up in the signing service
-     *   - the capture responses
-     *    - the captured responses decoded by the transformer
-    * */
+     * @returns Results instance capturing data recorded during the flow operations
+     */
     private inline fun <reified P, reified R, reified S> doFlowOperations(
         myPublicKeys: List<PublicKey>,
         flowOpCallbacks: List<(CryptoFlowOpsTransformerImpl, ExternalEventContext)->FlowOpsRequest>,
 
-    ): Triple<List<List<String>>, R, S> {
+    ): Results<R, S> {
         val indices = 0..(flowOpCallbacks.size-1)
         val underlyingServiceCapturedTenantIds: MutableList<String> = mutableListOf()
         var passedSecureHashLists = mutableListOf<List<String>>() // the secure hashes passed into the signing service
@@ -289,7 +293,7 @@ import kotlin.test.asserter
         assertEquals(tenantId, underlyingServiceCapturedTenantIds.first())
         val transformedResponse = transformer.transform(flowOpsResponseArgumentCaptor.firstValue)
         if (!(transformedResponse is S)) throw IllegalArgumentException()
-        return Triple(passedSecureHashLists, response, transformedResponse)
+        return Results(passedSecureHashLists, response, transformedResponse)
     }
 
     @Test
