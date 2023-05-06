@@ -32,7 +32,6 @@ import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.messaging.api.records.Record
-import net.corda.orm.utils.transactionExecutor
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.v5.application.crypto.DigestService
@@ -56,7 +55,6 @@ import java.util.UUID
 import kotlin.random.Random
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
-import kotlin.test.asserter
 
  class CryptoFlowOpsBusProcessorTests {
     companion object {
@@ -202,36 +200,38 @@ import kotlin.test.asserter
 
         val notMyKey = mockPublicKey()
 
-        val (passedSecureHashLists, response, transformedResponse) =  doFlowOperations<ByIdsFlowQuery, CryptoSigningKeys,  List<PublicKey>>(myPublicKeys, listOf({
+        val results =  doFlowOperations<ByIdsFlowQuery, CryptoSigningKeys,  List<PublicKey>>(myPublicKeys, listOf({
             transformer, flowExternalEventContext -> transformer.createFilterMyKeys(
                 tenantId,
                 listOf(myPublicKeys[0], myPublicKeys[1], notMyKey),
                 flowExternalEventContext
             )
         }))
-        assertEquals(1, passedSecureHashLists.size)
-        val passedSecureHashes = passedSecureHashLists.first()
+        assertEquals(1, results.lookedUpSigningKeys.size)
+        val passedSecureHashes = results.lookedUpSigningKeys.first()
         assertEquals(3, passedSecureHashes.size)
         assertEquals(myPublicKeys[0].fullId(), passedSecureHashes[0])
         assertEquals(myPublicKeys[1].fullId(), passedSecureHashes[1])
         assertEquals(notMyKey.fullId(), passedSecureHashes[2])
-        assertNotNull(response.keys)
-        assertEquals(2, response.keys.size)
-        assertTrue(response.keys.any { it.publicKey.array().contentEquals(keyEncodingService.encodeAsByteArray(myPublicKeys[0])) })
+        assertNotNull(results.flowOpsResponse.keys)
+        assertEquals(2, results.flowOpsResponse.keys.size)
+        assertTrue(results.flowOpsResponse.keys.any { it.publicKey.array().contentEquals(keyEncodingService.encodeAsByteArray(myPublicKeys[0])) })
         assertTrue(
-            response.keys.any {
+            results.flowOpsResponse.keys.any {
                 it.publicKey.array().contentEquals(keyEncodingService.encodeAsByteArray(myPublicKeys[1]))
             }
         )
-        assertEquals(2, transformedResponse.size)
-        assertTrue(transformedResponse.any { it.encoded.contentEquals(myPublicKeys[0].encoded) })
-        assertTrue(transformedResponse.any { it.encoded.contentEquals(myPublicKeys[1].encoded) })
+        assertEquals(2, results.transformedResponse.size)
+        assertTrue(results.transformedResponse.any { it.encoded.contentEquals(myPublicKeys[0].encoded) })
+        assertTrue(results.transformedResponse.any { it.encoded.contentEquals(myPublicKeys[1].encoded) })
+        assertEquals(results.capturedTenantIds, listOf(tenantId))
     }
 
      data class Results<R, S>(
          val lookedUpSigningKeys: List<List<String>>,
-         val flowOpsResponses: R,
-         val transformedResponses: S
+         val flowOpsResponse: R,
+         val transformedResponse: S,
+         val capturedTenantIds: List<String>
      )
 
     /** Run a flow operation in the mocked flow ops bus processor
@@ -289,11 +289,9 @@ import kotlin.test.asserter
         assertEquals(recordKeys.first(), result.value?.get(0)?.key)
         val response = assertResponseContext<P, R>(result, flowOpsResponseArgumentCaptor.firstValue)
 
-        assertTrue(underlyingServiceCapturedTenantIds.size > 0)
-        assertEquals(tenantId, underlyingServiceCapturedTenantIds.first())
         val transformedResponse = transformer.transform(flowOpsResponseArgumentCaptor.firstValue)
         if (!(transformedResponse is S)) throw IllegalArgumentException()
-        return Results(passedSecureHashLists, response, transformedResponse)
+        return Results(passedSecureHashLists, response, transformedResponse, capturedTenantIds = underlyingServiceCapturedTenantIds.toList())
     }
 
     @Test
