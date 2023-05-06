@@ -115,12 +115,10 @@ import kotlin.test.assertTrue
     private inline fun <reified REQUEST> assertResponseContext(
         timestamps: ActResultTimestamps,
         context: CryptoResponseContext,
-        ttl: Long,
-        expectedTenantId: String = tenantId
+        ttl: Long
     ) {
         timestamps.assertThatIsBetween(context.responseTimestamp)
-        //timestamps.assertThatIsBetween(context.requestTimestamp)
-        assertEquals(expectedTenantId, context.tenantId)
+        //timestamps.assertThatIsBetween(context.requestTimestamp) // not always (or not normally?) true, TODO - find some way to cover?
         assertEquals(componentName, context.requestingComponent)
         assertTrue(context.other.items.size >= 3)
         assertTrue {
@@ -543,21 +541,21 @@ import kotlin.test.assertTrue
 //        assertTrue(keys.any { it.encoded.contentEquals(myPublicKeys[1].encoded) })
 //    }
 
-//     @Test
-//     fun `Should process list with valid event and return error for failed event with generic engine`() {
-//         val failingTenantId = UUID.randomUUID().toString()
-//         val myPublicKeys = listOf(
-//             mockPublicKey(),
-//             mockPublicKey()
-//         )
-//         val notMyKey = mockPublicKey()
-//
-//         doFlowOperations<ByIdsFlowQuery, CryptoSigningKeys,  List<PublicKey>>(
-//             myPublicKeys, listOf(
-//                 { t,f -> t.createFilterMyKeys( failingTenantId, listOf(myPublicKeys[0], myPublicKeys[1], notMyKey), f) },
-//                 { t,f -> t.createFilterMyKeys( tenantId, listOf(myPublicKeys[0], myPublicKeys[1], notMyKey), f) }
-//             ))
-//     }
+     @Test
+     fun `Should process list with valid event and return error for failed event with generic engine`() {
+         val failingTenantId = UUID.randomUUID().toString()
+         val myPublicKeys = listOf(
+             mockPublicKey(),
+             mockPublicKey()
+         )
+         val notMyKey = mockPublicKey()
+
+         doFlowOperations<ByIdsFlowQuery, CryptoSigningKeys,  List<PublicKey>>(
+             myPublicKeys, listOf(
+                 { t,f -> t.createFilterMyKeys( failingTenantId, listOf(myPublicKeys[0], myPublicKeys[1], notMyKey), f) },
+                 { t,f -> t.createFilterMyKeys( tenantId, listOf(myPublicKeys[0], myPublicKeys[1], notMyKey), f) }
+             ))
+     }
 
      @Suppress("UNCHECKED_CAST")
     @Test
@@ -645,7 +643,8 @@ import kotlin.test.assertTrue
             assertInstanceOf(CryptoSigningKeys::class.java, flowOpsResponse.response)
             val context1 = flowOpsResponse.context
             val response1 = flowOpsResponse.response as CryptoSigningKeys
-            assertResponseContext<ByIdsFlowQuery>(result, context1, 123, tenantId)
+            assertResponseContext<ByIdsFlowQuery>(result, context1, 123)
+            assertEquals(context1.tenantId, tenantId)
             assertNotNull(response1.keys)
             assertEquals(2, response1.keys.size)
             assertTrue(
