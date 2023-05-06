@@ -225,11 +225,24 @@ import kotlin.test.assertTrue
         assertEquals(results.capturedTenantIds, listOf(tenantId))
     }
 
+     /**
+      * Results of a doFlowOperations experiment
+      *
+      * @param lookedUpSigningKeys - string form of signing keys looked up in each invocation
+      * @param successfulFlowOpsResponses - flow ops responses which were successful
+      * @param transformedResponse - transformed DTO form of the first successful response
+      * @param capturedTenantIds - tenant IDs stored in flow resposnes
+      * @param rawActResult - timing information and a list of raw records
+      * @param recordKeys - the UUIds of each flow op request
+      */
+
      data class Results<R, S>(
          val lookedUpSigningKeys: List<List<String>>,
          val successfulFlowOpsResponses: List<R>,
          val transformedResponse: S,
-         val capturedTenantIds: List<String>
+         val capturedTenantIds: List<String>,
+         val rawActResult: ActResult<List<Record<*, *>>>,
+         val recordKeys: List<String>,
      )
 
     /** Run a flow operation in the mocked flow ops bus processor
@@ -295,12 +308,23 @@ import kotlin.test.assertTrue
 
         // run the flows ops processor
         val result = act { processor.onNext(indices.map { Record(topic = eventTopic, key = recordKeys.get(it), value = flowOps.get(it)) }) }
-        assertEquals(recordKeys.first(), result.value?.get(0)?.key)
+        // if we got as many successes as ops we requested, we can check a 1:1 Mmapping between result keys and the record keys we put in,
+        // otherwise we leave it to the caller to verify the mess.
+        if (result.value != null && result.value.size == flowOpCallbacks.size) {
+            indices.map { assertEquals(recordKeys.get(it), result.value.get(it).key) }
+        }
         val successfulFlowOpsResponses = flowOpsResponseArgumentCaptor.allValues.map { assertResponseContext<P, R>(result, it) }
 
         val transformedResponse = transformer.transform(flowOpsResponseArgumentCaptor.firstValue)
         if (!(transformedResponse is S)) throw IllegalArgumentException()
-        return Results(passedSecureHashLists, successfulFlowOpsResponses, transformedResponse, capturedTenantIds = underlyingServiceCapturedTenantIds.toList())
+        return Results(
+            passedSecureHashLists,
+            successfulFlowOpsResponses,
+            transformedResponse,
+            underlyingServiceCapturedTenantIds.toList(),
+            result,
+            recordKeys
+        )
     }
 
     @Test
