@@ -266,7 +266,18 @@ import kotlin.test.assertTrue
                 FlowEvent()
             )
         )
-
+        whenever(
+            externalEventResponseFactory.platformError(
+                eq(flowExternalEventContexts.first()),
+                any<Throwable>()
+            )
+        ).thenReturn(
+            Record(
+                Schemas.Flow.FLOW_EVENT_TOPIC,
+                flowExternalEventContexts.first().flowId,
+                FlowEvent()
+            )
+        )
         
         // capture what is passed in  to the signing service operations
         doAnswer {
