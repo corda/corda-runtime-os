@@ -219,9 +219,9 @@ import kotlin.test.assertTrue
                 it.publicKey.array().contentEquals(keyEncodingService.encodeAsByteArray(myPublicKeys[1]))
             }
         )
-        assertEquals(2, results.transformedResponse.size)
-        assertTrue(results.transformedResponse.any { it.encoded.contentEquals(myPublicKeys[0].encoded) })
-        assertTrue(results.transformedResponse.any { it.encoded.contentEquals(myPublicKeys[1].encoded) })
+        assertEquals(2, results.transformedResponses.first().size)
+        assertTrue(results.transformedResponses.first().any { it.encoded.contentEquals(myPublicKeys[0].encoded) })
+        assertTrue(results.transformedResponses.first().any { it.encoded.contentEquals(myPublicKeys[1].encoded) })
         assertEquals(results.capturedTenantIds, listOf(tenantId))
     }
 
@@ -234,15 +234,17 @@ import kotlin.test.assertTrue
       * @param capturedTenantIds - tenant IDs stored in flow resposnes
       * @param rawActResult - timing information and a list of raw records
       * @param recordKeys - the UUIds of each flow op request
+      * @param rawFlowOpsResponses - uncast records for flow ops response capture
       */
 
      data class Results<R, S>(
          val lookedUpSigningKeys: List<List<String>>,
          val successfulFlowOpsResponses: List<R>,
-         val transformedResponse: S,
+         val transformedResponses: List<S>,
          val capturedTenantIds: List<String>,
          val rawActResult: ActResult<List<Record<*, *>>>,
          val recordKeys: List<String>,
+         val rawFlowOpsResponses: List<FlowOpsResponse>
      )
 
     /** Run a flow operation in the mocked flow ops bus processor
@@ -261,8 +263,8 @@ import kotlin.test.assertTrue
 
     ): Results<R, S> {
         val indices = 0..(flowOpCallbacks.size-1)
-        val underlyingServiceCapturedTenantIds: MutableList<String> = mutableListOf()
-        var passedSecureHashLists = mutableListOf<List<String>>() // the secure hashes passed into the signing service
+        val capturedTenantIds: MutableList<String> = mutableListOf()
+        var lookedUpSigningKeys = mutableListOf<List<String>>() // the secure hashes passed into the signing service
         val recordKeys = flowOpCallbacks.map { UUID.randomUUID().toString() } // UUIDs for the flow op records that are passed into the crypto flow ops processor
 
         val flowExternalEventContexts = recordKeys.map { ExternalEventContext("request id", it, KeyValuePairList(emptyList())) }
@@ -296,12 +298,12 @@ import kotlin.test.assertTrue
         
         // capture what is passed in  to the signing service operations
         doAnswer {
-            underlyingServiceCapturedTenantIds.add(it.getArgument(0))
-            passedSecureHashLists.add(it.getArgument<List<SecureHash>>(1).map { it.toString() })
+            capturedTenantIds.add(it.getArgument(0))
+            lookedUpSigningKeys.add(it.getArgument<List<SecureHash>>(1).map { it.toString() })
             myPublicKeys.map { mockSigningKeyInfo(it) }
         }.whenever(signingService).lookupSigningKeysByPublicKeyHashes(any(), any())
         doAnswer {
-            underlyingServiceCapturedTenantIds.add(it.getArgument(0))
+            capturedTenantIds.add(it.getArgument(0))
             DigitalSignatureWithKey(myPublicKeys.first(), byteArrayOf(42))
         }.whenever(signingService).sign(any(), any(), any(), any(), any())
 
@@ -317,15 +319,20 @@ import kotlin.test.assertTrue
         }
         val successfulFlowOpsResponses = flowOpsResponseArgumentCaptor.allValues.map { assertResponseContext<P, R>(result, it) }
 
-        val transformedResponse = transformer.transform(flowOpsResponseArgumentCaptor.firstValue)
-        if (!(transformedResponse is S)) throw IllegalArgumentException()
+        val transformedResponses = flowOpsResponseArgumentCaptor.allValues.map {
+            val x = transformer.transform(it)
+            if (!(x is S)) throw IllegalArgumentException()
+            x
+        }
+
         return Results(
-            passedSecureHashLists,
-            successfulFlowOpsResponses,
-            transformedResponse,
-            underlyingServiceCapturedTenantIds.toList(),
-            result,
-            recordKeys
+            lookedUpSigningKeys = lookedUpSigningKeys,
+            successfulFlowOpsResponses = successfulFlowOpsResponses,
+            transformedResponses = transformedResponses,
+            capturedTenantIds = capturedTenantIds.toList(),
+            rawActResult = result,
+            recordKeys = recordKeys,
+            rawFlowOpsResponses = flowOpsResponseArgumentCaptor.allValues,
         )
     }
 
@@ -593,6 +600,44 @@ import kotlin.test.assertTrue
                  { t,f -> t.createFilterMyKeys( tenantId, listOf(myPublicKeys[0], myPublicKeys[1], notMyKey), f) }
              ))
          assertEquals(2, r.rawActResult.value?.size?:0)
+
+         r.rawFlowOpsResponses.get(1).let { flowOpsResponse ->
+             assertInstanceOf(CryptoSigningKeys::class.java, flowOpsResponse.response)
+             val context1 = flowOpsResponse.context
+             val response1 = flowOpsResponse.response as CryptoSigningKeys
+             assertEquals(context1.tenantId, tenantId)
+             assertNotNull(response1.keys)
+             assertEquals(2, response1.keys.size)
+             assertTrue(
+                 response1.keys.any {
+                     it.publicKey.array().contentEquals(keyEncodingService.encodeAsByteArray(myPublicKeys[0]))
+                 }
+             )
+             assertTrue(
+                 response1.keys.any {
+                     it.publicKey.array().contentEquals(keyEncodingService.encodeAsByteArray(myPublicKeys[1]))
+                 }
+             )
+         }
+         assertEquals(2, r.capturedTenantIds.size)
+         assertEquals(failingTenantId, r.capturedTenantIds[0])
+         assertEquals(tenantId, r.capturedTenantIds[1])
+         assertEquals(2, r.lookedUpSigningKeys.size)
+         val passedList0 = r.lookedUpSigningKeys[0]
+         assertEquals(3, passedList0.size)
+         assertEquals(myPublicKeys[0].fullId(), passedList0[0])
+         assertEquals(myPublicKeys[1].fullId(), passedList0[1])
+         assertEquals(notMyKey.fullId(), passedList0[2])
+         val passedList1 = r.lookedUpSigningKeys[0]
+         assertEquals(3, passedList1.size)
+         assertEquals(myPublicKeys[0].fullId(), passedList1[0])
+         assertEquals(myPublicKeys[1].fullId(), passedList1[1])
+         assertEquals(notMyKey.fullId(), passedList1[2])
+         assertInstanceOf(List::class.java, r.transformedResponses)
+         val keys = r.transformedResponses.first()
+         assertEquals(2, r.transformedResponses.first().size)
+         assertTrue(keys.any { it.encoded.contentEquals(myPublicKeys[0].encoded) })
+         assertTrue(keys.any { it.encoded.contentEquals(myPublicKeys[1].encoded) })
      }
 
      @Suppress("UNCHECKED_CAST")
