@@ -259,15 +259,18 @@ import kotlin.test.assertTrue
      */
     private inline fun <reified P, reified R, reified S> doFlowOperations(
         myPublicKeys: List<PublicKey>,
-        flowOpCallbacks: List<(CryptoFlowOpsTransformerImpl, ExternalEventContext)->FlowOpsRequest>,
+        flowOpCallbacks: List<(CryptoFlowOpsTransformerImpl, ExternalEventContext) -> FlowOpsRequest?>,
 
-    ): Results<R, S> {
-        val indices = 0..(flowOpCallbacks.size-1)
+        ): Results<R, S> {
+        val indices = 0..(flowOpCallbacks.size - 1)
         val capturedTenantIds: MutableList<String> = mutableListOf()
         var lookedUpSigningKeys = mutableListOf<List<String>>() // the secure hashes passed into the signing service
-        val recordKeys = flowOpCallbacks.map { UUID.randomUUID().toString() } // UUIDs for the flow op records that are passed into the crypto flow ops processor
+        val recordKeys = flowOpCallbacks.map {
+            UUID.randomUUID().toString()
+        } // UUIDs for the flow op records that are passed into the crypto flow ops processor
 
-        val flowExternalEventContexts = recordKeys.map { ExternalEventContext("request id", it, KeyValuePairList(emptyList())) }
+        val flowExternalEventContexts =
+            recordKeys.map { ExternalEventContext("request id", it, KeyValuePairList(emptyList())) }
 
         indices.map {
             whenever(
@@ -355,118 +358,33 @@ import kotlin.test.assertTrue
     }
 
 
-//    @Suppress("UNCHECKED_CAST")
-//    @Test
-//    fun `Should process list with valid event and skip event without value`() {
-//        val myPublicKeys = listOf(
-//            mockPublicKey(),
-//            mockPublicKey()
-//        )
-//        var passedTenantId = UUID.randomUUID().toString()
-//        var passedList = listOf<String>()
-//        val notMyKey = mockPublicKey()
-//        val recordKey = UUID.randomUUID().toString()
-//        val flowExternalEventContext = ExternalEventContext("request id", recordKey, KeyValuePairList(emptyList()))
-//
-//        whenever(
-//            externalEventResponseFactory.success(
-//                eq(flowExternalEventContext),
-//                flowOpsResponseArgumentCaptor.capture()
-//            )
-//        ).thenReturn(
-//            Record(
-//                Schemas.Flow.FLOW_EVENT_TOPIC,
-//                flowExternalEventContext.flowId,
-//                FlowEvent()
-//            )
-//        )
-//
-//        doAnswer {
-//            passedTenantId = it.getArgument(0)
-//            passedList = it.getArgument<SecureHashes>(1).hashes.map { avroSecureHash ->
-//                SecureHashImpl(avroSecureHash.algorithm, avroSecureHash.bytes.array()).toString()
-//            }
-//            CryptoSigningKeys(
-//                listOf(
-//                    CryptoSigningKey(
-//                        "id1",
-//                        "tenant",
-//                        "LEDGER",
-//                        "alias1",
-//                        "hsmAlias1",
-//                        ByteBuffer.wrap(keyEncodingService.encodeAsByteArray(myPublicKeys[0])),
-//                        "FAKE",
-//                        null,
-//                        null,
-//                        null,
-//                        Instant.now()
-//                    ),
-//                    CryptoSigningKey(
-//                        "id2",
-//                        "tenant",
-//                        "LEDGER",
-//                        "alias2",
-//                        "hsmAlias2",
-//                        ByteBuffer.wrap(keyEncodingService.encodeAsByteArray(myPublicKeys[1])),
-//                        "FAKE",
-//                        null,
-//                        null,
-//                        null,
-//                        Instant.now()
-//                    )
-//                )
-//            )
-//        }.whenever(cryptoOpsClient).lookupKeysByFullIdsProxy(any(), any())
-//        val transformer = buildTransformer()
-//        val result = act {
-//            processor.onNext(
-//                listOf(
-//                    Record(
-//                        topic = eventTopic,
-//                        key = UUID.randomUUID().toString(),
-//                        value = null
-//                    ),
-//                    Record(
-//                        topic = eventTopic,
-//                        key = recordKey,
-//                        value = transformer.createFilterMyKeys(
-//                            tenantId,
-//                            listOf(myPublicKeys[0], myPublicKeys[1], notMyKey),
-//                            flowExternalEventContext
-//                        )
-//                    )
-//                )
-//            )
-//        }
-//        assertEquals(recordKey, result.value?.get(0)?.key)
-//        val response = assertResponseContext<ByIdsFlowQuery, CryptoSigningKeys>(
-//            result,
-//            flowOpsResponseArgumentCaptor.firstValue
-//        )
-//        assertNotNull(response.keys)
-//        assertEquals(2, response.keys.size)
-//        assertTrue(
-//            response.keys.any {
-//                it.publicKey.array().contentEquals(keyEncodingService.encodeAsByteArray(myPublicKeys[0]))
-//            }
-//        )
-//        assertTrue(
-//            response.keys.any {
-//                it.publicKey.array().contentEquals(keyEncodingService.encodeAsByteArray(myPublicKeys[1]))
-//            }
-//        )
-//        assertEquals(tenantId, passedTenantId)
-//        assertEquals(3, passedList.size)
-//        assertEquals(myPublicKeys[0].fullId(), passedList[0])
-//        assertEquals(myPublicKeys[1].fullId(), passedList[1])
-//        assertEquals(notMyKey.fullId(), passedList[2])
-//        val transformed = transformer.transform(flowOpsResponseArgumentCaptor.firstValue)
-//        assertInstanceOf(List::class.java, transformed)
-//        val keys = transformed as List<PublicKey>
-//        assertEquals(2, transformed.size)
-//        assertTrue(keys.any { it.encoded.contentEquals(myPublicKeys[0].encoded) })
-//        assertTrue(keys.any { it.encoded.contentEquals(myPublicKeys[1].encoded) })
-//    }
+     //    @Suppress("UNCHECKED_CAST")
+     @Test
+     fun `Should process list with valid event and skip event without value`() {
+         val myPublicKeys = listOf(
+             mockPublicKey(),
+             mockPublicKey()
+         )
+         val notMyKey = mockPublicKey()
+
+         val r = doFlowOperations<ByIdsFlowQuery, CryptoSigningKeys, List<PublicKey>>(
+             myPublicKeys, listOf(
+                 { _, _ -> null },
+                 { t, f -> t.createFilterMyKeys(tenantId, listOf(myPublicKeys[0], myPublicKeys[1], notMyKey), f) },
+             )
+         )
+         assertEquals(listOf(tenantId), r.capturedTenantIds)
+         assertEquals(3, r.lookedUpSigningKeys.first().size)
+
+         // CryptoFlowOpsBusProcessor filters out null requests, since there's no information to send a response
+         // so we should expect 1 output not 2 in this case
+         assertEquals(1, r.transformedResponses.size)
+         val transformed = r.transformedResponses.first()
+         assertInstanceOf(List::class.java, transformed)
+         assertEquals(2, transformed.size)
+         assertTrue(transformed.any { it.encoded.contentEquals(myPublicKeys[0].encoded) })
+         assertTrue(transformed.any { it.encoded.contentEquals(myPublicKeys[1].encoded) })
+     }
 
 //    @Suppress("UNCHECKED_CAST")
 //    @Test
