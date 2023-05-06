@@ -19,6 +19,8 @@ import net.corda.crypto.service.impl.SigningServiceImpl
 import net.corda.crypto.service.impl.infra.ActResult
 import net.corda.crypto.service.impl.infra.ActResultTimestamps
 import net.corda.crypto.service.impl.infra.act
+import net.corda.data.ExceptionEnvelope
+import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoResponseContext
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
@@ -244,7 +246,8 @@ import kotlin.test.assertTrue
          val capturedTenantIds: List<String>,
          val rawActResult: ActResult<List<Record<*, *>>>,
          val recordKeys: List<String>,
-         val rawFlowOpsResponses: List<FlowOpsResponse>
+         val rawFlowOpsResponses: List<FlowOpsResponse>,
+         val flowExternalEventContexts: List<ExternalEventContext>,
      )
 
     /** Run a flow operation in the mocked flow ops bus processor
@@ -297,6 +300,18 @@ import kotlin.test.assertTrue
                     FlowEvent()
                 )
             )
+            whenever(
+                externalEventResponseFactory.transientError(
+                    eq(flowExternalEventContexts.get(it)),
+                    any<ExceptionEnvelope>()
+                )
+            ).thenReturn(
+                Record(
+                    Schemas.Flow.FLOW_EVENT_TOPIC,
+                    flowExternalEventContexts.get(it).flowId,
+                    FlowEvent()
+                )
+            )
         }
         
         // capture what is passed in  to the signing service operations
@@ -336,6 +351,7 @@ import kotlin.test.assertTrue
             rawActResult = result,
             recordKeys = recordKeys,
             rawFlowOpsResponses = flowOpsResponseArgumentCaptor.allValues,
+            flowExternalEventContexts = flowExternalEventContexts
         )
     }
 
@@ -386,122 +402,65 @@ import kotlin.test.assertTrue
          assertTrue(transformed.any { it.encoded.contentEquals(myPublicKeys[1].encoded) })
      }
 
-//    @Suppress("UNCHECKED_CAST")
-//    @Test
-//    fun `Should process list with valid event and return error for stale event`() {
-//        val myPublicKeys = listOf(
-//            mockPublicKey(),
-//            mockPublicKey()
-//        )
-//        val passedTenantIds = mutableListOf<String>()
-//        val passedLists = mutableListOf<List<String>>()
-//        val notMyKey = mockPublicKey()
-//        val recordKey0 = UUID.randomUUID().toString()
-//        val recordKey1 = UUID.randomUUID().toString()
-//        val flowExternalEventContext0 = ExternalEventContext("request id", recordKey0, KeyValuePairList(emptyList()))
-//        val flowExternalEventContext1 = ExternalEventContext("request id", recordKey1, KeyValuePairList(emptyList()))
-//
-//        whenever(
-//            externalEventResponseFactory.transientError(
-//                eq(flowExternalEventContext0),
-//                any<ExceptionEnvelope>()
-//            )
-//        ).thenReturn(
-//            Record(
-//                Schemas.Flow.FLOW_EVENT_TOPIC,
-//                flowExternalEventContext0.flowId,
-//                FlowEvent()
-//            )
-//        )
-//
-//        whenever(
-//            externalEventResponseFactory.success(
-//                eq(flowExternalEventContext1),
-//                flowOpsResponseArgumentCaptor.capture()
-//            )
-//        ).thenReturn(
-//            Record(
-//                Schemas.Flow.FLOW_EVENT_TOPIC,
-//                flowExternalEventContext1.flowId,
-//                FlowEvent()
-//            )
-//        )
-//
-//        doAnswer {
-//            passedTenantIds.add(it.getArgument(0))
-//            passedLists.add(it.getArgument<List<SecureHash>>(1).map { it.toString() })
-//            myPublicKeys.map { mockSigningKeyInfo(it) }
-//        }.whenever(cryptoOpsClient).lookupKeysByFullIdsProxy(any(), any())
-//        val transformer = buildTransformer()
-//        val result = act {
-//            processor.onNext(
-//                listOf(
-//                    Record(
-//                        topic = eventTopic,
-//                        key = recordKey0,
-//                        value = transformer.createFilterMyKeys(
-//                            tenantId,
-//                            listOf(myPublicKeys[0], myPublicKeys[1], notMyKey),
-//                            flowExternalEventContext0
-//                        ).apply {
-//                            context.other.items = context.other.items.filter {
-//                                it.key != REQUEST_TTL_KEY
-//                            }
-//                            context.other.items.add(KeyValuePair(REQUEST_TTL_KEY, "-1"))
-//                        }
-//                    ),
-//                    Record(
-//                        topic = eventTopic,
-//                        key = recordKey1,
-//                        value = transformer.createFilterMyKeys(
-//                            tenantId,
-//                            listOf(myPublicKeys[0], myPublicKeys[1], notMyKey),
-//                            flowExternalEventContext1
-//                        )
-//                    )
-//                )
-//            )
-//        }
-//        assertEquals(recordKey0, result.value?.get(0)?.key)
-//        assertEquals(recordKey1, result.value?.get(1)?.key)
-//        assertNotNull(result.value)
-//        assertEquals(2, result.value?.size)
-//
-//        verify(externalEventResponseFactory).transientError(eq(flowExternalEventContext0), any<ExceptionEnvelope>())
-//
-//        flowOpsResponseArgumentCaptor.firstValue.let { flowOpsResponse ->
-//            assertInstanceOf(CryptoSigningKeys::class.java, flowOpsResponse.response)
-//            val context1 = flowOpsResponse.context
-//            val response1 = flowOpsResponse.response as CryptoSigningKeys
-//            assertResponseContext<ByIdsFlowQuery>(result, context1, 123)
-//            assertNotNull(response1.keys)
-//            assertEquals(2, response1.keys.size)
-//            assertTrue(
-//                response1.keys.any {
-//                    it.publicKey.array().contentEquals(keyEncodingService.encodeAsByteArray(myPublicKeys[0]))
-//                }
-//            )
-//            assertTrue(
-//                response1.keys.any {
-//                    it.publicKey.array().contentEquals(keyEncodingService.encodeAsByteArray(myPublicKeys[1]))
-//                }
-//            )
-//        }
-//        assertEquals(1, passedTenantIds.size)
-//        assertEquals(tenantId, passedTenantIds[0])
-//        assertEquals(1, passedLists.size)
-//        val passedList = passedLists[0]
-//        assertEquals(3, passedList.size)
-//        assertEquals(myPublicKeys[0].fullId(), passedList[0])
-//        assertEquals(myPublicKeys[1].fullId(), passedList[1])
-//        assertEquals(notMyKey.fullId(), passedList[2])
-//        val transformed = transformer.transform(flowOpsResponseArgumentCaptor.firstValue)
-//        assertInstanceOf(List::class.java, transformed)
-//        val keys = transformed as List<PublicKey>
-//        assertEquals(2, transformed.size)
-//        assertTrue(keys.any { it.encoded.contentEquals(myPublicKeys[0].encoded) })
-//        assertTrue(keys.any { it.encoded.contentEquals(myPublicKeys[1].encoded) })
-//    }
+     @Suppress("UNCHECKED_CAST")
+     @Test
+     fun `Should process list with valid event and return error for stale event`() {
+         val myPublicKeys = listOf(
+             mockPublicKey(),
+             mockPublicKey()
+         )
+         val notMyKey = mockPublicKey()
+
+         val r = doFlowOperations<ByIdsFlowQuery, CryptoSigningKeys, List<PublicKey>>(
+             myPublicKeys, listOf(
+                 { t, f ->
+                     t.createFilterMyKeys(tenantId, listOf(myPublicKeys[0], myPublicKeys[1], notMyKey), f).apply {
+                         context.other.items = context.other.items.filter {
+                             it.key != REQUEST_TTL_KEY
+                         }
+                         context.other.items.add(KeyValuePair(REQUEST_TTL_KEY, "-1"))
+                     }
+                 },
+                 { t, f -> t.createFilterMyKeys(tenantId, listOf(myPublicKeys[0], myPublicKeys[1], notMyKey), f) },
+             )
+         )
+         assertEquals(2, r.rawActResult.value?.size)
+
+         verify(externalEventResponseFactory).transientError(
+             eq(r.flowExternalEventContexts.first()),
+             any<ExceptionEnvelope>()
+         )
+
+         r.rawFlowOpsResponses.first().let { flowOpsResponse ->
+             assertInstanceOf(CryptoSigningKeys::class.java, flowOpsResponse.response)
+             val context1 = flowOpsResponse.context
+             val response1 = flowOpsResponse.response as CryptoSigningKeys
+             assertResponseContext<ByIdsFlowQuery>(r.rawActResult, context1, 123)
+             assertNotNull(response1.keys)
+             assertEquals(2, response1.keys.size)
+             assertTrue(
+                 response1.keys.any {
+                     it.publicKey.array().contentEquals(keyEncodingService.encodeAsByteArray(myPublicKeys[0]))
+                 }
+             )
+             assertTrue(
+                 response1.keys.any {
+                     it.publicKey.array().contentEquals(keyEncodingService.encodeAsByteArray(myPublicKeys[1]))
+                 }
+             )
+         }
+         assertEquals(1, r.capturedTenantIds.size)
+         assertEquals(tenantId, r.capturedTenantIds[0])
+         assertEquals(1, r.lookedUpSigningKeys.size)
+         val passedList = r.lookedUpSigningKeys[0]
+         assertEquals(3, passedList.size)
+         assertEquals(myPublicKeys[0].fullId(), passedList[0])
+         assertEquals(myPublicKeys[1].fullId(), passedList[1])
+         assertEquals(notMyKey.fullId(), passedList[2])
+         assertInstanceOf(List::class.java, r.transformedResponses.first())
+         assertTrue(r.transformedResponses.first().any { it.encoded.contentEquals(myPublicKeys[0].encoded) })
+         assertTrue(r.transformedResponses.first().any { it.encoded.contentEquals(myPublicKeys[1].encoded) })
+     }
 
      @Test
      fun `Should process list with valid event and return error for failed event`() {
