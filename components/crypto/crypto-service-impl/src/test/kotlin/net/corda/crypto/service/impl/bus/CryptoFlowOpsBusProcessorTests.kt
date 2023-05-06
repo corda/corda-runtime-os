@@ -190,43 +190,6 @@ import kotlin.test.assertTrue
         }
     }
 
-    @Suppress("UNCHECKED_CAST")
-    @Test
-    fun `Should process filter my keys query`() {
-        val myPublicKeys = listOf(
-            mockPublicKey(),
-            mockPublicKey()
-        )
-
-        val notMyKey = mockPublicKey()
-
-        val results =  doFlowOperations<ByIdsFlowQuery, CryptoSigningKeys,  List<PublicKey>>(myPublicKeys, listOf({
-            transformer, flowExternalEventContext -> transformer.createFilterMyKeys(
-                tenantId,
-                listOf(myPublicKeys[0], myPublicKeys[1], notMyKey),
-                flowExternalEventContext
-            )
-        }))
-        assertEquals(1, results.lookedUpSigningKeys.size)
-        val passedSecureHashes = results.lookedUpSigningKeys.first()
-        assertEquals(3, passedSecureHashes.size)
-        assertEquals(myPublicKeys[0].fullId(), passedSecureHashes[0])
-        assertEquals(myPublicKeys[1].fullId(), passedSecureHashes[1])
-        assertEquals(notMyKey.fullId(), passedSecureHashes[2])
-        assertNotNull(results.successfulFlowOpsResponses.first().keys)
-        assertEquals(2, results.successfulFlowOpsResponses.first().keys.size)
-        assertTrue(results.successfulFlowOpsResponses.first().keys.any { it.publicKey.array().contentEquals(keyEncodingService.encodeAsByteArray(myPublicKeys[0])) })
-        assertTrue(
-            results.successfulFlowOpsResponses.first().keys.any {
-                it.publicKey.array().contentEquals(keyEncodingService.encodeAsByteArray(myPublicKeys[1]))
-            }
-        )
-        assertEquals(2, results.transformedResponses.first().size)
-        assertTrue(results.transformedResponses.first().any { it.encoded.contentEquals(myPublicKeys[0].encoded) })
-        assertTrue(results.transformedResponses.first().any { it.encoded.contentEquals(myPublicKeys[1].encoded) })
-        assertEquals(results.capturedTenantIds, listOf(tenantId))
-    }
-
      /**
       * Results of a doFlowOperations experiment
       *
@@ -237,6 +200,7 @@ import kotlin.test.assertTrue
       * @param rawActResult - timing information and a list of raw records
       * @param recordKeys - the UUIds of each flow op request
       * @param rawFlowOpsResponses - uncast records for flow ops response capture
+      * @param flowExternalEventContexts - the contexts prepared for each flow op
       */
 
      data class Results<R, S>(
@@ -250,127 +214,181 @@ import kotlin.test.assertTrue
          val flowExternalEventContexts: List<ExternalEventContext>,
      )
 
-    /** Run a flow operation in the mocked flow ops bus processor
+     /** Run a flow operation in the mocked flow ops bus processor
 
-     * @param P - type parameter for the flow os request
-     * @param R - type parameter for the flow ops responses
-     * @param S - type parameter for transformed flow ops responses
-     * @param myPublicKeys - the set of public keys available from the underlying signing service
-     * @param flowOpCallbacks - a list of callback to create the flow signing opeeration required, given a transformer and an event context
-     *
-     * @returns Results instance capturing data recorded during the flow operations
-     */
-    private inline fun <reified P, reified R, reified S> doFlowOperations(
-        myPublicKeys: List<PublicKey>,
-        flowOpCallbacks: List<(CryptoFlowOpsTransformerImpl, ExternalEventContext) -> FlowOpsRequest?>,
+      * @param P - type parameter for the flow os request
+      * @param R - type parameter for the flow ops responses
+      * @param S - type parameter for transformed flow ops responses
+      * @param myPublicKeys - the set of public keys available from the underlying signing service
+      * @param flowOpCallbacks - a list of callback to create the flow signing opeeration required, given a transformer and an event context
+      *
+      * @returns Results instance capturing data recorded during the flow operations
+      */
+     private inline fun <reified P, reified R, reified S> doFlowOperations(
+         myPublicKeys: List<PublicKey>,
+         flowOpCallbacks: List<(CryptoFlowOpsTransformerImpl, ExternalEventContext) -> FlowOpsRequest?>,
 
-        ): Results<R, S> {
-        val indices = 0..(flowOpCallbacks.size - 1)
-        val capturedTenantIds: MutableList<String> = mutableListOf()
-        var lookedUpSigningKeys = mutableListOf<List<String>>() // the secure hashes passed into the signing service
-        val recordKeys = flowOpCallbacks.map {
-            UUID.randomUUID().toString()
-        } // UUIDs for the flow op records that are passed into the crypto flow ops processor
+         ): Results<R, S> {
+         val indices = 0..(flowOpCallbacks.size - 1)
+         val capturedTenantIds: MutableList<String> = mutableListOf()
+         var lookedUpSigningKeys = mutableListOf<List<String>>() // the secure hashes passed into the signing service
+         val recordKeys = flowOpCallbacks.map {
+             UUID.randomUUID().toString()
+         } // UUIDs for the flow op records that are passed into the crypto flow ops processor
 
-        val flowExternalEventContexts =
-            recordKeys.map { ExternalEventContext("request id", it, KeyValuePairList(emptyList())) }
+         val flowExternalEventContexts =
+             recordKeys.map { ExternalEventContext("request id", it, KeyValuePairList(emptyList())) }
 
-        indices.map {
-            whenever(
-                externalEventResponseFactory.success(
-                    eq(flowExternalEventContexts.get(it)),
-                    flowOpsResponseArgumentCaptor.capture()
-                )
-            ).thenReturn(
-                Record(
-                    Schemas.Flow.FLOW_EVENT_TOPIC,
-                    flowExternalEventContexts.get(it).flowId,
-                    FlowEvent()
-                )
-            )
-            whenever(
-                externalEventResponseFactory.platformError(
-                    eq(flowExternalEventContexts.get(it)),
-                    any<Throwable>()
-                )
-            ).thenReturn(
-                Record(
-                    Schemas.Flow.FLOW_EVENT_TOPIC,
-                    flowExternalEventContexts.get(it).flowId,
-                    FlowEvent()
-                )
-            )
-            whenever(
-                externalEventResponseFactory.transientError(
-                    eq(flowExternalEventContexts.get(it)),
-                    any<ExceptionEnvelope>()
-                )
-            ).thenReturn(
-                Record(
-                    Schemas.Flow.FLOW_EVENT_TOPIC,
-                    flowExternalEventContexts.get(it).flowId,
-                    FlowEvent()
-                )
-            )
-        }
-        
-        // capture what is passed in  to the signing service operations
-        doAnswer {
-            capturedTenantIds.add(it.getArgument(0))
-            lookedUpSigningKeys.add(it.getArgument<List<SecureHash>>(1).map { it.toString() })
-            myPublicKeys.map { mockSigningKeyInfo(it) }
-        }.whenever(signingService).lookupSigningKeysByPublicKeyHashes(any(), any())
-        doAnswer {
-            capturedTenantIds.add(it.getArgument(0))
-            DigitalSignatureWithKey(myPublicKeys.first(), byteArrayOf(42))
-        }.whenever(signingService).sign(any(), any(), any(), any(), any())
+         indices.map {
+             whenever(
+                 externalEventResponseFactory.success(
+                     eq(flowExternalEventContexts.get(it)),
+                     flowOpsResponseArgumentCaptor.capture()
+                 )
+             ).thenReturn(
+                 Record(
+                     Schemas.Flow.FLOW_EVENT_TOPIC,
+                     flowExternalEventContexts.get(it).flowId,
+                     FlowEvent()
+                 )
+             )
+             whenever(
+                 externalEventResponseFactory.platformError(
+                     eq(flowExternalEventContexts.get(it)),
+                     any<Throwable>()
+                 )
+             ).thenReturn(
+                 Record(
+                     Schemas.Flow.FLOW_EVENT_TOPIC,
+                     flowExternalEventContexts.get(it).flowId,
+                     FlowEvent()
+                 )
+             )
+             whenever(
+                 externalEventResponseFactory.transientError(
+                     eq(flowExternalEventContexts.get(it)),
+                     any<ExceptionEnvelope>()
+                 )
+             ).thenReturn(
+                 Record(
+                     Schemas.Flow.FLOW_EVENT_TOPIC,
+                     flowExternalEventContexts.get(it).flowId,
+                     FlowEvent()
+                 )
+             )
+         }
 
-        val transformer = buildTransformer()
-        val flowOps = indices.map { flowOpCallbacks.get(it)(transformer, flowExternalEventContexts.get(it)) }
+         // capture what is passed in  to the signing service operations
+         doAnswer {
+             capturedTenantIds.add(it.getArgument(0))
+             lookedUpSigningKeys.add(it.getArgument<List<SecureHash>>(1).map { it.toString() })
+             myPublicKeys.map { mockSigningKeyInfo(it) }
+         }.whenever(signingService).lookupSigningKeysByPublicKeyHashes(any(), any())
+         doAnswer {
+             capturedTenantIds.add(it.getArgument(0))
+             DigitalSignatureWithKey(myPublicKeys.first(), byteArrayOf(42))
+         }.whenever(signingService).sign(any(), any(), any(), any(), any())
 
-        // run the flows ops processor
-        val result = act { processor.onNext(indices.map { Record(topic = eventTopic, key = recordKeys.get(it), value = flowOps.get(it)) }) }
-        // if we got as many successes as ops we requested, we can check a 1:1 Mmapping between result keys and the record keys we put in,
-        // otherwise we leave it to the caller to verify the mess.
-        if (result.value != null && result.value.size == flowOpCallbacks.size) {
-            indices.map { assertEquals(recordKeys.get(it), result.value.get(it).key) }
-        }
-        val successfulFlowOpsResponses = flowOpsResponseArgumentCaptor.allValues.map { assertResponseContext<P, R>(result, it) }
+         val transformer = buildTransformer()
+         val flowOps = indices.map { flowOpCallbacks.get(it)(transformer, flowExternalEventContexts.get(it)) }
 
-        val transformedResponses = flowOpsResponseArgumentCaptor.allValues.map {
-            val x = transformer.transform(it)
-            if (!(x is S)) throw IllegalArgumentException()
-            x
-        }
+         // run the flows ops processor
+         val result = act {
+             processor.onNext(indices.map {
+                 Record(
+                     topic = eventTopic,
+                     key = recordKeys.get(it),
+                     value = flowOps.get(it)
+                 )
+             })
+         }
+         // if we got as many successes as ops we requested, we can check a 1:1 Mmapping between result keys and the record keys we put in,
+         // otherwise we leave it to the caller to verify the mess.
+         if (result.value != null && result.value.size == flowOpCallbacks.size) {
+             indices.map { assertEquals(recordKeys.get(it), result.value.get(it).key) }
+         }
+         val successfulFlowOpsResponses =
+             flowOpsResponseArgumentCaptor.allValues.map { assertResponseContext<P, R>(result, it) }
 
-        return Results(
-            lookedUpSigningKeys = lookedUpSigningKeys,
-            successfulFlowOpsResponses = successfulFlowOpsResponses,
-            transformedResponses = transformedResponses,
-            capturedTenantIds = capturedTenantIds.toList(),
-            rawActResult = result,
-            recordKeys = recordKeys,
-            rawFlowOpsResponses = flowOpsResponseArgumentCaptor.allValues,
-            flowExternalEventContexts = flowExternalEventContexts
-        )
-    }
+         val transformedResponses = flowOpsResponseArgumentCaptor.allValues.map {
+             val x = transformer.transform(it)
+             if (!(x is S)) throw IllegalArgumentException()
+             x
+         }
 
-    @Test
-    fun `Should process sign command`() {
-        val publicKey = mockPublicKey()
-        val data = UUID.randomUUID().toString().toByteArray()
+         return Results(
+             lookedUpSigningKeys = lookedUpSigningKeys,
+             successfulFlowOpsResponses = successfulFlowOpsResponses,
+             transformedResponses = transformedResponses,
+             capturedTenantIds = capturedTenantIds.toList(),
+             rawActResult = result,
+             recordKeys = recordKeys,
+             rawFlowOpsResponses = flowOpsResponseArgumentCaptor.allValues,
+             flowExternalEventContexts = flowExternalEventContexts
+         )
+     }
 
-        doFlowOperations<SignFlowCommand, CryptoSignatureWithKey, DigitalSignatureWithKey>(listOf(publicKey), listOf( { transformer, flowExternalEventContext ->
-            transformer.createSign(
-                UUID.randomUUID().toString(),
-                tenantId,
-                publicKey.encoded,
-                SignatureSpecs.EDDSA_ED25519,
-                data,
-                mapOf("key1" to "value1"),
-                flowExternalEventContext
-            )
-        }))
+     @Suppress("UNCHECKED_CAST")
+     @Test
+     fun `Should process filter my keys query`() {
+         val myPublicKeys = listOf(
+             mockPublicKey(),
+             mockPublicKey()
+         )
+
+         val notMyKey = mockPublicKey()
+
+         val results = doFlowOperations<ByIdsFlowQuery, CryptoSigningKeys, List<PublicKey>>(
+             myPublicKeys,
+             listOf({ transformer, flowExternalEventContext ->
+                 transformer.createFilterMyKeys(
+                     tenantId,
+                     listOf(myPublicKeys[0], myPublicKeys[1], notMyKey),
+                     flowExternalEventContext
+                 )
+             })
+         )
+         assertEquals(1, results.lookedUpSigningKeys.size)
+         val passedSecureHashes = results.lookedUpSigningKeys.first()
+         assertEquals(3, passedSecureHashes.size)
+         assertEquals(myPublicKeys[0].fullId(), passedSecureHashes[0])
+         assertEquals(myPublicKeys[1].fullId(), passedSecureHashes[1])
+         assertEquals(notMyKey.fullId(), passedSecureHashes[2])
+         assertNotNull(results.successfulFlowOpsResponses.first().keys)
+         assertEquals(2, results.successfulFlowOpsResponses.first().keys.size)
+         assertTrue(results.successfulFlowOpsResponses.first().keys.any {
+             it.publicKey.array().contentEquals(keyEncodingService.encodeAsByteArray(myPublicKeys[0]))
+         })
+         assertTrue(
+             results.successfulFlowOpsResponses.first().keys.any {
+                 it.publicKey.array().contentEquals(keyEncodingService.encodeAsByteArray(myPublicKeys[1]))
+             }
+         )
+         assertEquals(2, results.transformedResponses.first().size)
+         assertTrue(results.transformedResponses.first().any { it.encoded.contentEquals(myPublicKeys[0].encoded) })
+         assertTrue(results.transformedResponses.first().any { it.encoded.contentEquals(myPublicKeys[1].encoded) })
+         assertEquals(results.capturedTenantIds, listOf(tenantId))
+     }
+
+
+     @Test
+     fun `Should process sign command`() {
+         val publicKey = mockPublicKey()
+         val data = UUID.randomUUID().toString().toByteArray()
+
+         doFlowOperations<SignFlowCommand, CryptoSignatureWithKey, DigitalSignatureWithKey>(
+             listOf(publicKey), listOf({ transformer, flowExternalEventContext ->
+                 transformer.createSign(
+                     UUID.randomUUID().toString(),
+                     tenantId,
+                     publicKey.encoded,
+                     SignatureSpecs.EDDSA_ED25519,
+                     data,
+                     mapOf("key1" to "value1"),
+                     flowExternalEventContext
+                 )
+             })
+         )
     }
 
 
