@@ -249,8 +249,7 @@ class CryptoProcessorImpl @Activate constructor(
             config = cryptoConfig.signingService()
         )
 
-        val flowOpsProcessor =
-            CryptoFlowOpsBusProcessor(cryptoOpsProxyClient, signingService, externalEventResponseFactory, event)
+        val flowOpsProcessor = CryptoFlowOpsBusProcessor(signingService, externalEventResponseFactory, event)
         val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
 
         val subscription = subscriptionFactory.createDurableSubscription(

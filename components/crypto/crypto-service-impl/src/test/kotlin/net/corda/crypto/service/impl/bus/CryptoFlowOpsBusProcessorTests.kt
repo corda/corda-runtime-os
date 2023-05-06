@@ -174,8 +174,7 @@ import kotlin.test.assertTrue
             on { sign(any(), any(), any(), any(), any()) } doReturn signatureMock
             on { schemeMetadata } doReturn schemeMetadataMock
         }
-        processor =
-            CryptoFlowOpsBusProcessor(cryptoOpsClient, signingService, externalEventResponseFactory, configEvent)
+        processor = CryptoFlowOpsBusProcessor(signingService, externalEventResponseFactory, configEvent)
         digestService = mock<DigestService>().also {
             fun capture() {
                 val bytesCaptor = argumentCaptor<ByteArray>()

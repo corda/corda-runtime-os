@@ -1,10 +1,11 @@
 package net.corda.crypto.service.impl.bus
 
 import net.corda.configuration.read.ConfigChangedEvent
-import net.corda.crypto.client.CryptoOpsProxyClient
 import net.corda.crypto.config.impl.flowBusProcessor
 import net.corda.crypto.config.impl.toCryptoConfig
 import net.corda.crypto.core.SecureHashImpl
+import net.corda.crypto.core.ShortHash
+import net.corda.crypto.core.publicKeyIdFromBytes
 import net.corda.crypto.flow.CryptoFlowOpsTransformer
 import net.corda.crypto.impl.retrying.BackoffStrategy
 import net.corda.crypto.impl.retrying.CryptoRetryingExecutor
@@ -33,9 +34,9 @@ import net.corda.utilities.withMDC
 import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
 import java.time.Instant
+import kotlin.math.sign
 
 class CryptoFlowOpsBusProcessor(
-    private val cryptoOpsClient: CryptoOpsProxyClient,
     private val signingService: SigningServiceImpl,
     private val externalEventResponseFactory: ExternalEventResponseFactory,
     event: ConfigChangedEvent,
@@ -120,20 +121,11 @@ class CryptoFlowOpsBusProcessor(
     }
 
     private fun handleRequest(request: Any, context: CryptoRequestContext): Any {
-        // What about if cryptoOpsClient has gone to DOWN or ERROR out at this point? 
-        // Then CryptoOpsClientComponent will throw AbstractComponentNotReadyFunction, and the retry logic
-        // will keep repeating it until timeout or the cryptoOpsClient potentially comes back. 
-
-        // For example, if we get an UnknownHostException from Kafka client code then the crypto ops client
-        // will be marked as DOWN or ERROR (depending on what catches it; certainly if it made it to the top of the
-        // TreadLooper it will cause the status to go to ERROR)
-
         return when (request) {
-            is FilterMyKeysFlowQuery ->
-                cryptoOpsClient.filterMyKeysProxy(
-                    tenantId = context.tenantId,
-                    candidateKeys = request.keys
-                )
+            is FilterMyKeysFlowQuery -> {
+                val keys = request.keys.map { ShortHash.of(publicKeyIdFromBytes(it.array())) }
+                signingService.lookupSigningKeysByPublicKeyShortHash(context.tenantId, keys)
+            }
 
             is SignFlowCommand -> {
                 val publicKey = signingService.schemeMetadata.decodePublicKey(request.publicKey.array())
