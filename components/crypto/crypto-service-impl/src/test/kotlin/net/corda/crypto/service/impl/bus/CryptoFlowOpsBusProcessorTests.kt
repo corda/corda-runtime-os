@@ -267,30 +267,32 @@ import kotlin.test.assertTrue
 
         val flowExternalEventContexts = recordKeys.map { ExternalEventContext("request id", it, KeyValuePairList(emptyList())) }
 
-        whenever(
-            externalEventResponseFactory.success(
-                eq(flowExternalEventContexts.first()),
-                flowOpsResponseArgumentCaptor.capture()
+        indices.map {
+            whenever(
+                externalEventResponseFactory.success(
+                    eq(flowExternalEventContexts.get(it)),
+                    flowOpsResponseArgumentCaptor.capture()
+                )
+            ).thenReturn(
+                Record(
+                    Schemas.Flow.FLOW_EVENT_TOPIC,
+                    flowExternalEventContexts.get(it).flowId,
+                    FlowEvent()
+                )
             )
-        ).thenReturn(
-            Record(
-                Schemas.Flow.FLOW_EVENT_TOPIC,
-                flowExternalEventContexts.first().flowId,
-                FlowEvent()
+            whenever(
+                externalEventResponseFactory.platformError(
+                    eq(flowExternalEventContexts.get(it)),
+                    any<Throwable>()
+                )
+            ).thenReturn(
+                Record(
+                    Schemas.Flow.FLOW_EVENT_TOPIC,
+                    flowExternalEventContexts.get(it).flowId,
+                    FlowEvent()
+                )
             )
-        )
-        whenever(
-            externalEventResponseFactory.platformError(
-                eq(flowExternalEventContexts.first()),
-                any<Throwable>()
-            )
-        ).thenReturn(
-            Record(
-                Schemas.Flow.FLOW_EVENT_TOPIC,
-                flowExternalEventContexts.first().flowId,
-                FlowEvent()
-            )
-        )
+        }
         
         // capture what is passed in  to the signing service operations
         doAnswer {
@@ -585,11 +587,12 @@ import kotlin.test.assertTrue
          )
          val notMyKey = mockPublicKey()
 
-         doFlowOperations<ByIdsFlowQuery, CryptoSigningKeys,  List<PublicKey>>(
+         val r= doFlowOperations<ByIdsFlowQuery, CryptoSigningKeys,  List<PublicKey>>(
              myPublicKeys, listOf(
                  { t,f -> t.createFilterMyKeys( failingTenantId, listOf(myPublicKeys[0], myPublicKeys[1], notMyKey), f) },
                  { t,f -> t.createFilterMyKeys( tenantId, listOf(myPublicKeys[0], myPublicKeys[1], notMyKey), f) }
              ))
+         assertEquals(2, r.rawActResult.value?.size?:0)
      }
 
      @Suppress("UNCHECKED_CAST")
