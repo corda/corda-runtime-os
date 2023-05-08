@@ -196,7 +196,7 @@ internal class RPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
                         }
                     }
                     producer.sendRecordsToPartitions(listOf(Pair(rpcRequest.replyPartition, record)))
-                    log.info("Sent response back for request [${it.key}]")
+                    log.info("Sent response back for request [${it.key}]. result: ${record.value}")
                 } catch (ex: Exception) {
                     // intentionally swallowed
                     log.warn("Error publishing response", ex)
