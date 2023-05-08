@@ -38,6 +38,7 @@ abstract class DeployableContainerBuilder extends DefaultTask {
     private static final String JDBC_DRIVER_LOCATION = "/opt/jdbc-driver/"
     private final String projectName = project.name
     private final String version = project.version
+    private final String cordaProductVersion = project.cordaProductVersion
     private String targetRepo
     private def gitTask
     private def gitLogTask
@@ -296,11 +297,11 @@ abstract class DeployableContainerBuilder extends DefaultTask {
             tagContainer(builder, "preTest-${tagPrefix}"+gitRevision)
         } else if (releaseType == 'RC' || releaseType == 'GA') {
             targetRepo = "corda-os-docker-stable.software.r3.com/corda-os-${containerName}"
-            tagContainer(builder, "${tagPrefix}latest")
+            tagContainer(builder, "${tagPrefix}latest-${cordaProductVersion}")
             tagContainer(builder, "${tagPrefix}${version}")
         } else if (releaseType == 'BETA' && !nightlyBuild.get()) {
             targetRepo = "corda-os-docker-unstable.software.r3.com/corda-os-${containerName}"
-            tagContainer(builder, "${tagPrefix}unstable")
+            tagContainer(builder, "${tagPrefix}unstable-${cordaProductVersion}")
             gitAndVersionTag(builder, "${tagPrefix}${gitRevision}")
         } else if (releaseType == 'ALPHA' && !nightlyBuild.get()) {
             targetRepo = "corda-os-docker-dev.software.r3.com/corda-os-${containerName}"
@@ -321,7 +322,7 @@ abstract class DeployableContainerBuilder extends DefaultTask {
             }
         } else{
             targetRepo = "corda-os-docker-dev.software.r3.com/corda-os-${containerName}"
-            tagContainer(builder, "latest-local")
+            tagContainer(builder, "latest-local-${cordaProductVersion}")
             gitAndVersionTag(builder, gitRevision)
         }
     }
