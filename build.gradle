@@ -6,7 +6,8 @@ import org.jetbrains.dokka.gradle.DokkaTask
 
 buildscript {
     configurations.classpath {
-        resolutionStrategy {
+        resolutionStrategy 
+        
             // FORCE Gradle to use latest dynamic-version plugins.
             cacheDynamicVersionsFor 0, 'seconds'
         }
