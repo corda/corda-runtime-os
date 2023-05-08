@@ -23,6 +23,7 @@ import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas
 import net.corda.schema.Schemas.Flow.FLOW_INTEROP_EVENT_TOPIC
+import net.corda.schema.configuration.ConfigKeys.FLOW_CONFIG
 //import net.corda.schema.configuration.ConfigKeys.FLOW_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import org.osgi.service.component.annotations.Activate
@@ -81,7 +82,7 @@ class InteropService @Activate constructor(
                     coordinator.createManagedResource(CONFIG_HANDLE) {
                         configurationReadService.registerComponentForUpdates(
                             coordinator,
-                            setOf(MESSAGING_CONFIG)//, FLOW_CONFIG)
+                            setOf(FLOW_CONFIG, MESSAGING_CONFIG)
                         )
                     }
                 } else {
@@ -96,7 +97,7 @@ class InteropService @Activate constructor(
 
     private fun restartInteropProcessor(event: ConfigChangedEvent) {
         val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
-        //val flowConfig = event.config.getConfig(FLOW_CONFIG)
+        val flowConfig = event.config.getConfig(FLOW_CONFIG)
         //TODO temporary code (commented and uncommented) to setup members of interop group,
         // and send seed message in absence of a flow, this will be phased out later on by CORE-10446
         publisher?.close()
@@ -130,7 +131,7 @@ class InteropService @Activate constructor(
             subscriptionFactory.createStateAndEventSubscription(
                 SubscriptionConfig(CONSUMER_GROUP, FLOW_INTEROP_EVENT_TOPIC),
                 InteropProcessor(
-                    cordaAvroSerializationFactory, membershipGroupReaderProvider, facadeToFlowMapperService
+                    cordaAvroSerializationFactory, membershipGroupReaderProvider, facadeToFlowMapperService, flowConfig
                 ),
                 messagingConfig,
                 InteropListener(newScheduledTaskState)
