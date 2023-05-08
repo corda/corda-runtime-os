@@ -51,7 +51,6 @@ import net.corda.v5.membership.EndpointInfo
 import net.corda.v5.membership.MGMContext
 import net.corda.v5.membership.MemberContext
 import net.corda.v5.membership.MemberInfo
-import net.corda.v5.membership.NotaryInfo
 import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -566,7 +565,7 @@ class StartRegistrationHandlerTest {
     fun `declined if registering member's name is the same as an existing notary's service name`() {
         val notaryDetails = MemberNotaryDetails(
             notaryX500Name,
-            "pluginType",
+            "Notary Protocol A",
             listOf(1),
             listOf(mock())
         )
@@ -587,15 +586,21 @@ class StartRegistrationHandlerTest {
     fun `declined if role is set to notary and notary service name already exists`() {
         val notaryDetails = MemberNotaryDetails(
             notaryX500Name,
-            "Notary Plugin A",
+            "Notary Protocol A",
             listOf(1),
             listOf(mock())
         )
-        val mockNotary = mock<NotaryInfo> {
-            on { name } doReturn notaryX500Name
-        }
         whenever(memberMemberContext.parse<MemberNotaryDetails>("corda.notary")).thenReturn(notaryDetails)
-        whenever(mockGroupParameters.notaries).thenReturn(listOf(mockNotary))
+        val existingNotaryContext = mock<MemberContext> {
+            on { entries } doReturn memberContextEntries.entries
+        }
+        whenever(existingNotaryContext.parse<MemberNotaryDetails>("corda.notary")).thenReturn(notaryDetails)
+        val existingNotary = mock<MemberInfo> {
+            on { name } doReturn bobX500Name
+            on { memberProvidedContext } doReturn existingNotaryContext
+            on { mgmProvidedContext } doReturn mock()
+        }
+        whenever(groupReader.lookup()).thenReturn(setOf(existingNotary))
 
         val result = handler.invoke(registrationState, Record(testTopic, testTopicKey, startRegistrationCommand))
 
@@ -766,6 +771,31 @@ class StartRegistrationHandlerTest {
         whenever(membershipQueryClient.queryRegistrationRequest(eq(mgmHoldingIdentity.toCorda()), eq(registrationId)))
             .doReturn(MembershipQueryResult.Success(createRegistrationRequest(serial = 2L)))
         val result = handler.invoke(registrationState, Record(testTopic, testTopicKey, startRegistrationCommand))
+        result.assertRegistrationStarted()
+    }
+
+    @Test
+    fun `allows notary virtual node re-registration`() {
+        val notaryDetails = MemberNotaryDetails(
+            notaryX500Name,
+            "Notary Protocol A",
+            listOf(1),
+            listOf(mock())
+        )
+        whenever(memberMemberContext.parse<MemberNotaryDetails>("corda.notary")).thenReturn(notaryDetails)
+        val existingNotaryContext = mock<MemberContext> {
+            on { entries } doReturn memberContextEntries.entries
+        }
+        whenever(existingNotaryContext.parse<MemberNotaryDetails>("corda.notary")).thenReturn(notaryDetails)
+        val existingNotary = mock<MemberInfo> {
+            on { name } doReturn aliceX500Name
+            on { memberProvidedContext } doReturn existingNotaryContext
+            on { mgmProvidedContext } doReturn mock()
+        }
+        whenever(groupReader.lookup()).thenReturn(setOf(existingNotary))
+
+        val result = handler.invoke(registrationState, Record(testTopic, testTopicKey, startRegistrationCommand))
+
         result.assertRegistrationStarted()
     }
 

@@ -17,7 +17,9 @@ import net.corda.membership.lib.addNewNotaryService
 import net.corda.membership.lib.toMap
 import net.corda.membership.lib.toSortedMap
 import net.corda.membership.lib.updateExistingNotaryService
+import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.toCorda
+import javax.persistence.EntityManager
 import javax.persistence.LockModeType
 
 internal class AddNotaryToGroupParametersHandler(
@@ -45,6 +47,33 @@ internal class AddNotaryToGroupParametersHandler(
         return keyValuePairListSerializer.serialize(context) ?: throw MembershipPersistenceException(
             "Failed to serialize key value pair list."
         )
+    }
+
+    private fun getLatestMemberList(entityManager: EntityManager): Collection<MemberInfo> {
+        val criteriaBuilder = entityManager.criteriaBuilder
+        val memberQueryBuilder = criteriaBuilder.createQuery(MemberInfoEntity::class.java)
+        val root = memberQueryBuilder.from(MemberInfoEntity::class.java)
+        val memberQuery = memberQueryBuilder.select(root)
+            .where(criteriaBuilder.equal(root.get<String>("status"), MEMBER_STATUS_ACTIVE))
+        return entityManager.createQuery(memberQuery).setLockMode(LockModeType.PESSIMISTIC_WRITE).resultList.map {
+            memberInfoFactory.create(
+                deserializer.deserializeKeyValuePairList(it.memberContext).toSortedMap(),
+                deserializer.deserializeKeyValuePairList(it.mgmContext).toSortedMap(),
+            )
+        }
+    }
+
+    private fun checkAgainstLatestMemberList(notary: MemberInfo, notaryServiceName: String, members: Collection<MemberInfo>) {
+        members.firstOrNull { it.notaryDetails?.serviceName.toString() == notaryServiceName }?.let {
+            require(it.name == notary.name && it.serial < notary.serial) {
+                throw MembershipPersistenceException(
+                    "Cannot add notary to group parameters - notary service '$notaryServiceName' already exists."
+                )
+            }
+        }
+        require(members.none { it.name.toString() == notaryServiceName }) {
+            throw MembershipPersistenceException("There is a virtual node having the same name as the notary service ${notaryServiceName}.")
+        }
     }
 
     override fun invoke(
@@ -77,18 +106,10 @@ internal class AddNotaryToGroupParametersHandler(
             val notaryServiceNumber = parametersMap.entries.firstOrNull { it.value == notaryServiceName }?.run {
                 notaryServiceRegex.find(key)?.groups?.get(1)?.value?.toIntOrNull()
             }
+            val members = getLatestMemberList(em).filterNot { it.name == notaryInfo.name }
+            checkAgainstLatestMemberList(notaryInfo, notaryServiceName, members)
             val (epoch, groupParameters) = if (notaryServiceNumber != null) {
                 // Add notary to existing notary service, or update notary with rotated keys
-                val memberQueryBuilder = criteriaBuilder.createQuery(MemberInfoEntity::class.java)
-                val memberQuery = memberQueryBuilder.select(memberQueryBuilder.from(MemberInfoEntity::class.java))
-                val members = em.createQuery(memberQuery)
-                    .setLockMode(LockModeType.PESSIMISTIC_WRITE)
-                    .resultList.map {
-                        memberInfoFactory.create(
-                            deserializer.deserializeKeyValuePairList(it.memberContext).toSortedMap(),
-                            deserializer.deserializeKeyValuePairList(it.mgmContext).toSortedMap(),
-                        )
-                    }
                 val currentProtocolVersions = members.filter {
                     it.notaryDetails?.serviceName.toString() == notaryServiceName &&
                     it.name != notaryInfo.name &&

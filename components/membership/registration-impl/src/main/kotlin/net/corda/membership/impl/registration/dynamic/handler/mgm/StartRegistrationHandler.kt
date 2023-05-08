@@ -237,6 +237,9 @@ internal class StartRegistrationHandler(
     }
 
     private fun validateRoleInformation(mgmHoldingId: HoldingIdentity, member: MemberInfo) {
+        val groupReader = membershipGroupReaderProvider.getGroupReader(mgmHoldingId)
+        val groupParameters = groupReader.groupParameters
+            ?: throw MembershipRegistrationException("Could not read group parameters of the membership group '${member.groupId}'.")
         // If role is set to notary, notary details are specified
         member.notaryDetails?.let { notary ->
             validateRegistrationRequest(
@@ -259,14 +262,15 @@ internal class StartRegistrationHandler(
                     listOf(HoldingIdentity(notary.serviceName, member.groupId))
                 ).getOrThrow().firstOrNull() == null
             ) { "There is a virtual node having the same name as the notary service ${notary.serviceName}." }
-            membershipGroupReaderProvider.getGroupReader(mgmHoldingId).groupParameters?.let { groupParameters ->
-                validateRegistrationRequest(groupParameters.notaries.none { it.name == member.name }) {
-                    "Registering member's name '${member.name}' is already in use as a notary service name."
+            validateRegistrationRequest(
+                groupReader.lookup().none {
+                    it.notaryDetails?.serviceName == notary.serviceName && it.name != member.name
                 }
-                validateRegistrationRequest(groupParameters.notaries.none { it.name == notary.serviceName }) {
-                    "Notary service '${notary.serviceName}' already exists."
-                }
-            } ?: throw MembershipRegistrationException("Could not read group parameters of the membership group '${member.groupId}'.")
+            ) { "Notary service '${notary.serviceName}' already exists." }
+        }
+
+        validateRegistrationRequest(groupParameters.notaries.none { it.name == member.name }) {
+            "Registering member's name '${member.name}' is already in use as a notary service name."
         }
     }
 

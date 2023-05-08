@@ -24,6 +24,7 @@ import net.corda.membership.p2p.helpers.P2pRecordsFactory
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.read.MembershipGroupReaderProvider
+import net.corda.membership.registration.InvalidMembershipRegistrationException
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.Membership.MEMBERSHIP_ACTIONS_TOPIC
 import net.corda.schema.Schemas.Membership.MEMBER_LIST_TOPIC
@@ -73,6 +74,13 @@ internal class ApproveRegistrationHandler(
                     "The registration request: '$registrationId' cannot be approved by ${approvedMember.x500Name} as it is an MGM."
                 )
             }
+            val groupParameters = groupReaderProvider.getGroupReader(approvedBy.toCorda()).groupParameters
+                ?: throw CordaRuntimeException("Failed to retrieve persisted group parameters.")
+            require(groupParameters.notaries.none { it.name.toString() == approvedMember.x500Name }) {
+                throw InvalidMembershipRegistrationException(
+                    "Registering member's name '${approvedMember.x500Name}' is already in use as a notary service name."
+                )
+            }
             val persistState = membershipPersistenceClient.setMemberAndRegistrationRequestAsApproved(
                 viewOwningIdentity = approvedBy.toCorda(),
                 approvedMember = approvedMember.toCorda(),
@@ -95,9 +103,8 @@ internal class ApproveRegistrationHandler(
                 groupParametersWriterService.put(mgmHoldingIdentity, persistedGroupParameters)
                 persistedGroupParameters.epoch
             } else {
-                val reader = groupReaderProvider.getGroupReader(approvedBy.toCorda())
-                reader.groupParameters?.epoch
-            } ?: throw CordaRuntimeException("Failed to get epoch of persisted group parameters.")
+                groupParameters.epoch
+            }
 
             val distributionAction = Record(
                 MEMBERSHIP_ACTIONS_TOPIC,
@@ -135,14 +142,9 @@ internal class ApproveRegistrationHandler(
             listOf(memberRecord, persistApproveMessage, distributionAction, commandToStartProcessingTheNextRequest)
         } catch (e: Exception) {
             logger.warn("Could not approve registration request: '$registrationId'", e)
-            listOf(
-                Record(
-                    REGISTRATION_COMMAND_TOPIC,
-                    key,
-                    RegistrationCommand(
-                        DeclineRegistration(e.message)
-                    )
-                ),
+            return RegistrationHandlerResult(
+                state,
+                listOf(Record(REGISTRATION_COMMAND_TOPIC, key, RegistrationCommand(DeclineRegistration(e.message))))
             )
         }
 

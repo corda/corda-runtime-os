@@ -179,6 +179,7 @@ class  RegistrationProcessorTest {
         }
         membershipGroupReader = mock {
             on { lookup(eq(mgmX500Name), any()) } doReturn mgmMemberInfo
+            on { groupParameters } doReturn mock()
         }
         membershipGroupReaderProvider = mock {
             on { getGroupReader(eq(mgmHoldingIdentity.toCorda())) } doReturn membershipGroupReader
