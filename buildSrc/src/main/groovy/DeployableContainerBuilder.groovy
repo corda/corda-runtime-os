@@ -188,6 +188,7 @@ abstract class DeployableContainerBuilder extends DefaultTask {
         gitRevisionTask = project.tasks.register("gitRevision", GetGitRevision.class)
         super.dependsOn(gitRevisionTask)
 
+        // TODO: remove this once pipelines have been updated to use the long hash instead.
         gitShortRevisionTask = project.tasks.register("gitShortRevision", GetGitShortRevision.class)
         super.dependsOn(gitShortRevisionTask)
 
@@ -208,7 +209,6 @@ abstract class DeployableContainerBuilder extends DefaultTask {
         String gitRemote = gitRemoteTask.flatMap { it.url }.get()
         String gitBranch = gitBranchTask.flatMap { it.branch }.get()
         String gitRevision = gitRevisionTask.flatMap { it.revision }.get()
-        // TODO: remove this once pipelines have been updated to use the long hash instead.
         String gitRevisionShortHash = gitShortRevisionTask.flatMap { it.revision }.get()
 
         def jiraTicket = hasJiraTicket()
