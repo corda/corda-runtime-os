@@ -40,7 +40,9 @@ abstract class DeployableContainerBuilder extends DefaultTask {
     private final String version = project.version
     private final String cordaProductVersion = project.cordaProductVersion
     private String targetRepo
-    private def gitTask
+    private def gitBranchTask
+    private def gitRemoteTask
+    private def gitRevisionTask
     private def gitLogTask
     private def releaseType
 
@@ -177,8 +179,14 @@ abstract class DeployableContainerBuilder extends DefaultTask {
         description = 'Creates a new "corda-dev" image with the file specified in "overrideFilePath".'
         group = 'publishing'
 
-        gitTask = project.tasks.register("gitVersion", GetLatestGitRevision.class)
-        super.dependsOn(gitTask)
+        gitBranchTask = project.tasks.register("gitBranch", GetGitBranch.class)
+        super.dependsOn(gitBranchTask)
+
+        gitRemoteTask = project.tasks.register("gitRemote", GetGitRemoteUrl.class)
+        super.dependsOn(gitRemoteTask)
+
+        gitRevisionTask = project.tasks.register("gitRevision", GetGitRevision.class)
+        super.dependsOn(gitRevisionTask)
 
         gitLogTask = project.tasks.register("gitMessageTask", getLatestGitCommitMessage.class)
         super.dependsOn(gitLogTask)
@@ -194,9 +202,14 @@ abstract class DeployableContainerBuilder extends DefaultTask {
         def buildBaseDir = temporaryDir.toPath()
         def containerizationDir = Paths.get("$buildBaseDir/containerization/")
         String tagPrefix = ""
-        String gitRevision = gitTask.flatMap { it.revision }.get()
+        String gitRemote = gitRemoteTask.flatMap { it.url }.get()
+        String gitBranch = gitBranchTask.flatMap { it.branch }.get()
+        String gitRevision = gitRevisionTask.flatMap { it.revision }.get()
+        String gitRevisionShortHash = gitRevision.substring(0, 10)
+
         def jiraTicket = hasJiraTicket()
         def timeStamp =  new SimpleDateFormat("ddMMyy").format(new Date())
+        logger.quiet("GitRemote: '{}', GitBranch: '{}', GitCommit: '{}', ShortHash: '{}'", gitRemote, gitBranch, gitRevision, gitRevisionShortHash)
 
         if (!(new File(containerizationDir.toString())).exists()) {
             logger.info("Created containerization dir")
@@ -230,6 +243,10 @@ abstract class DeployableContainerBuilder extends DefaultTask {
             logger.info("Resolving base image ${baseImageName.get()}: ${baseImageTag.get()} from remote repo")
             builder = setCredentialsOnBaseImage(builder)
         }
+
+        builder.addLabel("com.r3.corda.git.branch", gitBranch)
+        builder.addLabel("org.opencontainers.image.source", gitRemote)
+        builder.addLabel("org.opencontainers.image.revision", gitRevision)
 
         List<Path> jdbcDrivers = jdbcDriverFiles.collect { it.toPath() }
         if (!jdbcDrivers.empty) {
@@ -294,7 +311,7 @@ abstract class DeployableContainerBuilder extends DefaultTask {
         } else if (preTest.get()) {
             targetRepo = "corda-os-docker-pre-test.software.r3.com/corda-os-${containerName}"
             tagContainer(builder, "preTest-${tagPrefix}"+version)
-            tagContainer(builder, "preTest-${tagPrefix}"+gitRevision)
+            tagContainer(builder, "preTest-${tagPrefix}"+gitRevisionShortHash)
         } else if (releaseType == 'RC' || releaseType == 'GA') {
             targetRepo = "corda-os-docker-stable.software.r3.com/corda-os-${containerName}"
             tagContainer(builder, "${tagPrefix}latest-${cordaProductVersion}")
@@ -302,10 +319,10 @@ abstract class DeployableContainerBuilder extends DefaultTask {
         } else if (releaseType == 'BETA' && !nightlyBuild.get()) {
             targetRepo = "corda-os-docker-unstable.software.r3.com/corda-os-${containerName}"
             tagContainer(builder, "${tagPrefix}unstable-${cordaProductVersion}")
-            gitAndVersionTag(builder, "${tagPrefix}${gitRevision}")
+            gitAndVersionTag(builder, "${tagPrefix}${gitRevisionShortHash}")
         } else if (releaseType == 'ALPHA' && !nightlyBuild.get()) {
             targetRepo = "corda-os-docker-dev.software.r3.com/corda-os-${containerName}"
-            gitAndVersionTag(builder, "${tagPrefix}${gitRevision}")
+            gitAndVersionTag(builder, "${tagPrefix}${gitRevisionShortHash}")
         } else if (releaseType == 'BETA' && nightlyBuild.get()){
             targetRepo = "corda-os-docker-nightly.software.r3.com/corda-os-${containerName}"
             tagContainer(builder, "${tagPrefix}nightly")
@@ -315,15 +332,15 @@ abstract class DeployableContainerBuilder extends DefaultTask {
             if (!jiraTicket.isEmpty()) {
                 tagContainer(builder, "${tagPrefix}nightly-" + jiraTicket)
                 tagContainer(builder, "${tagPrefix}nightly" + "-" + jiraTicket + "-" + timeStamp)
-                tagContainer(builder, "${tagPrefix}nightly" + "-" + jiraTicket + "-" + gitRevision)
+                tagContainer(builder, "${tagPrefix}nightly" + "-" + jiraTicket + "-" + gitRevisionShortHash)
             }else{
                 gitAndVersionTag(builder, "${tagPrefix}nightly-" + version)
-                gitAndVersionTag(builder, "${tagPrefix}nightly-" + gitRevision)
+                gitAndVersionTag(builder, "${tagPrefix}nightly-" + gitRevisionShortHash)
             }
         } else{
             targetRepo = "corda-os-docker-dev.software.r3.com/corda-os-${containerName}"
             tagContainer(builder, "latest-local-${cordaProductVersion}")
-            gitAndVersionTag(builder, gitRevision)
+            gitAndVersionTag(builder, gitRevisionShortHash)
         }
     }
 
@@ -393,19 +410,55 @@ abstract class DeployableContainerBuilder extends DefaultTask {
     }
 
     /**
-     * Helper task to retrieve get the latest git hash
+     * Helper task to retrieve the latest full git hash
      */
-    static class GetLatestGitRevision extends Exec {
+    static class GetGitRevision extends Exec {
         @Internal
         final Property<String> revision
 
         @Inject
-        GetLatestGitRevision(ObjectFactory objects, ProviderFactory providers) {
+        GetGitRevision(ObjectFactory objects, ProviderFactory providers) {
             executable 'git'
-            args 'rev-parse', '--verify', '--short', 'HEAD'
+            args 'rev-parse', '--verify', 'HEAD'
             standardOutput = new ByteArrayOutputStream()
             revision = objects.property(String).value(
-                    providers.provider { standardOutput.toString() }
+                    providers.provider { standardOutput.toString().trim() }
+            )
+        }
+    }
+
+    /**
+     * Helper task to retrieve the git branch
+     */
+    static class GetGitBranch extends Exec {
+        @Internal
+        final Property<String> branch
+
+        @Inject
+        GetGitBranch(ObjectFactory objects, ProviderFactory providers) {
+            executable 'git'
+            args 'rev-parse', '--abbrev-ref', 'HEAD'
+            standardOutput = new ByteArrayOutputStream()
+            branch = objects.property(String).value(
+                    providers.provider { standardOutput.toString().trim() }
+            )
+        }
+    }
+
+    /**
+     * Helper task to retrieve get the git remote repository
+     */
+    static class GetGitRemoteUrl extends Exec {
+        @Internal
+        final Property<String> url
+
+        @Inject
+        GetGitRemoteUrl(ObjectFactory objects, ProviderFactory providers) {
+            executable 'git'
+            args 'remote', 'get-url', 'origin'
+            standardOutput = new ByteArrayOutputStream()
+            url = objects.property(String).value(
+                    providers.provider { standardOutput.toString().trim() }
             )
         }
     }
