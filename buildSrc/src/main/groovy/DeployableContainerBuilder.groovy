@@ -213,6 +213,7 @@ abstract class DeployableContainerBuilder extends DefaultTask {
 
         def jiraTicket = hasJiraTicket()
         def timeStamp =  new SimpleDateFormat("ddMMyy").format(new Date())
+        logger.quiet("GitRemote: '{}', GitBranch: '{}', GitCommit: '{}'", gitRemote, gitBranch, gitRevision)
 
         if (!(new File(containerizationDir.toString())).exists()) {
             logger.info("Created containerization dir")
@@ -449,6 +450,24 @@ abstract class DeployableContainerBuilder extends DefaultTask {
     }
 
     /**
+     * Helper task to retrieve the git branch
+     */
+    static class GetGitBranch extends Exec {
+        @Internal
+        final Property<String> branch
+
+        @Inject
+        GetGitBranch(ObjectFactory objects, ProviderFactory providers) {
+            executable 'git'
+            args 'rev-parse', '--abbrev-ref', 'HEAD'
+            standardOutput = new ByteArrayOutputStream()
+            branch = objects.property(String).value(
+                    providers.provider { standardOutput.toString().trim() }
+            )
+        }
+    }
+
+    /**
      * Helper task to retrieve get the git remote repository
      */
     static class GetGitRemoteUrl extends Exec {
@@ -461,24 +480,6 @@ abstract class DeployableContainerBuilder extends DefaultTask {
             args 'remote', 'get-url', 'origin'
             standardOutput = new ByteArrayOutputStream()
             url = objects.property(String).value(
-                    providers.provider { standardOutput.toString().trim() }
-            )
-        }
-    }
-
-    /**
-     * Helper task to retrieve the git branch
-     */
-    static class GetGitBranch extends Exec {
-        @Internal
-        final Property<String> branch
-
-        @Inject
-        GetGitBranch(ObjectFactory objects, ProviderFactory providers) {
-            executable 'git'
-            args 'branch', '--show-current'
-            standardOutput = new ByteArrayOutputStream()
-            branch = objects.property(String).value(
                     providers.provider { standardOutput.toString().trim() }
             )
         }
