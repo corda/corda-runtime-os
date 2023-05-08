@@ -17,6 +17,9 @@ class CheckLimits : Callable<Int>, PluginContext() {
 
     class ResourceLimitsExceededException(message: String) : Exception(message)
 
+    private var defaultRequests: ResourceValues? = null
+    private var defaultLimits: ResourceValues? = null
+
     private var resourceRequestsChecked = false
 
     private val logger = getLogger()
@@ -64,29 +67,44 @@ class CheckLimits : Callable<Int>, PluginContext() {
     // use the checkResource function to check each individual resource
     private fun checkResources(resources: ResourceConfig, name: String) {
         resourceRequestsChecked = true
-        val requests: ResourceValues = resources.requests
-        val limits: ResourceValues = resources.limits
+        val requests: ResourceValues? = resources.requests ?: defaultRequests
+        val limits: ResourceValues? = resources.limits ?: defaultLimits
 
         logger.info("${name.uppercase()}:")
 
         try {
-            if (requests.memory != null || limits.memory != null) {
-                if (requests.memory == null || limits.memory == null) {
+            if (requests?.memory == null) {
+                requests?.memory = defaultRequests?.memory
+            }
+            if (limits?.memory == null) {
+                limits?.memory = defaultLimits?.memory
+            }
+
+            if (requests?.memory != null || limits?.memory != null) {
+                if (requests?.memory == null || limits?.memory == null) {
                     report.addEntry(ReportEntry("${name.uppercase()} memory resources contains both a request and a limit", false))
                     return
                 }
                 report.addEntry(ReportEntry("${name.uppercase()} memory resources contains both a request and a limit", true))
                 logger.info("Memory: \n\t request - ${requests.memory}\n\t limit - ${limits.memory}")
-                checkResource(requests.memory, limits.memory)
+                checkResource(requests.memory!!, limits.memory!!)
             }
-            if (requests.cpu != null || limits.cpu != null) {
-                if (requests.cpu == null || limits.cpu == null) {
+
+            if (requests?.cpu == null) {
+                requests?.cpu = defaultRequests?.cpu
+            }
+            if (limits?.cpu == null) {
+                limits?.cpu = defaultLimits?.cpu
+            }
+
+            if (requests?.cpu != null || limits?.cpu != null) {
+                if (requests?.cpu == null || limits?.cpu == null) {
                     report.addEntry(ReportEntry("${name.uppercase()} cpu resources contains both a request and a limit", false))
                     return
                 }
                 report.addEntry(ReportEntry("${name.uppercase()} cpu resources contains both a request and a limit", true))
                 logger.info("CPU: \n\t request - ${requests.cpu}\n\t limit - ${limits.cpu}")
-                checkResource(requests.cpu, limits.cpu)
+                checkResource(requests.cpu!!, limits.cpu!!)
             }
 
             report.addEntry(ReportEntry("Parse resource strings", true))
@@ -109,6 +127,11 @@ class CheckLimits : Callable<Int>, PluginContext() {
             report.addEntry(ReportEntry("Parse resource properties from YAML", false, e))
             logger.error(report.failingTests())
             return 1
+        }
+
+        yaml.resources?.let {
+            defaultLimits = it.limits
+            defaultRequests = it.requests
         }
 
         yaml.resources?.let { checkResources(it, "resources") }

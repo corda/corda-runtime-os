@@ -205,7 +205,7 @@ class PreInstallPlugin : Plugin() {
         val replicas: Int?
     )
 
-    //DB Secrets
+    //DB
     @JsonIgnoreProperties(ignoreUnknown = true)
     data class DB(
         @JsonProperty("db")
@@ -265,7 +265,7 @@ class PreInstallPlugin : Plugin() {
         val name: String?
     )
 
-    //Resource secrets
+    //Resource
     @JsonIgnoreProperties(ignoreUnknown = true)
     data class Configurations(
         @JsonProperty("bootstrap")
@@ -300,15 +300,15 @@ class PreInstallPlugin : Plugin() {
 
     data class ResourceConfig(
         @JsonProperty("requests")
-        val requests: ResourceValues,
+        val requests: ResourceValues?,
         @JsonProperty("limits")
-        val limits: ResourceValues
+        val limits: ResourceValues?
     )
 
     data class ResourceValues(
         @JsonProperty("memory")
-        val memory: String?,
+        var memory: String?,
         @JsonProperty("cpu")
-        val cpu: String?
+        var cpu: String?
     )
 }

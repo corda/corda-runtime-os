@@ -74,6 +74,16 @@ class TestSubCommands {
         assertEquals(1, ret)
     }
 
+    @Test
+    fun testParserOverrideValues() {
+        val path = "./src/test/resources/LimitsTestOverrideValues.yaml"
+        val limits = CheckLimits()
+        val ret = CommandLine(limits).execute(path)
+
+        assertTrue(limits.report.toString().contains("Parse resource strings: PASSED"))
+        assertEquals(0, ret)
+    }
+
     @Nested
     inner class TestKafka : PreInstallPlugin.PluginContext() {
         @Test
@@ -192,7 +202,7 @@ class TestSubCommands {
             whenever(mockAdmin.getNodes()).thenReturn(nodes)
 
             val ck = CheckKafka()
-            ck.connect(mockAdmin, 2)
+            ck.checkConnectionAndBrokers(mockAdmin, 2)
 
             assertTrue( ck.report.toString().contains("Connect to Kafka cluster using client: PASSED") )
         }
@@ -205,7 +215,7 @@ class TestSubCommands {
             whenever(mockAdmin.getNodes()).thenReturn(nodes)
 
             val ck = CheckKafka()
-            ck.connect(mockAdmin, 2)
+            ck.checkConnectionAndBrokers(mockAdmin, 2)
 
             assertTrue( ck.report.toString().contains("Kafka cluster has brokers: FAILED") )
         }
@@ -218,7 +228,7 @@ class TestSubCommands {
             whenever(mockAdmin.getNodes()).thenReturn(nodes)
 
             val ck = CheckKafka()
-            ck.connect(mockAdmin, 2)
+            ck.checkConnectionAndBrokers(mockAdmin, 2)
 
             assertTrue( ck.report.toString().contains("Kafka replica count is less than the broker count: FAILED") )
         }

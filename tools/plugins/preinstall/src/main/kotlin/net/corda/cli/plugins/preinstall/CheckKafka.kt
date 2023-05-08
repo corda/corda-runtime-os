@@ -118,7 +118,7 @@ class CheckKafka : Callable<Int>, PluginContext() {
     }
 
     // Connect to kafka using the properties assembled earlier
-    fun connect(client: KafkaAdmin, replicas: Int?) {
+    fun checkConnectionAndBrokers(client: KafkaAdmin, replicas: Int?) {
         val nodes: Collection<Node> = client.getNodes()
         val clusterID = client.getDescriptionID()
 
@@ -231,7 +231,7 @@ class CheckKafka : Callable<Int>, PluginContext() {
         }
 
         try {
-            connect(KafkaAdmin(props), yaml.bootstrap?.kafka?.replicas)
+            checkConnectionAndBrokers(KafkaAdmin(props), yaml.bootstrap?.kafka?.replicas)
         } catch (e: KafkaException) {
             report.addEntry(ReportEntry("Connect to Kafka cluster using client", false, e))
         } catch (e: ExecutionException) {
