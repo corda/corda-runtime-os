@@ -1,6 +1,13 @@
 package net.corda.applications.workers.rest.utils
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import java.nio.file.Files
+import java.nio.file.Path
+import java.nio.file.StandardOpenOption
+import java.security.cert.CertificateFactory
+import java.security.cert.X509Certificate
+import java.time.Duration
+import java.util.UUID
 import net.corda.cli.plugins.packaging.CreateCpiV2
 import net.corda.cli.plugins.packaging.signing.SigningOptions
 import net.corda.crypto.test.certificates.generation.toPem
@@ -33,13 +40,9 @@ import net.corda.utilities.minutes
 import net.corda.utilities.seconds
 import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256R1_CODE_NAME
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.Assertions.*
-import java.nio.file.Files
-import java.nio.file.Path
-import java.nio.file.StandardOpenOption
-import java.security.cert.CertificateFactory
-import java.security.cert.X509Certificate
-import java.util.UUID
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNotEquals
+import org.junit.jupiter.api.Assertions.fail
 
 const val GATEWAY_CONFIG = "corda.p2p.gateway"
 const val LINK_MANAGER_CONFIG = "corda.p2p.linkManager"
@@ -281,7 +284,7 @@ fun E2eCluster.register(
             ).apply {
                 assertThat(registrationStatus).isEqualTo("SUBMITTED")
 
-                eventually(duration = 3.minutes, retryAllExceptions = true) {
+                eventually(duration = 3.minutes, retryAllExceptions = true, waitBetween = Duration.ofSeconds(2)) {
                     val registrationStatus = proxy.checkSpecificRegistrationProgress(member.holdingId, registrationId)
                     assertThat(registrationStatus.registrationStatus)
                         .withFailMessage {
