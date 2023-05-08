@@ -52,33 +52,6 @@ class OutputAssertionsImpl(
 
     val asserts = mutableListOf<(TestRun) -> Unit>()
 
-    override fun expectFlowFiberCacheContainsKey(holdingId: HoldingIdentity, flowId: String) {
-        asserts.add {
-            assertNotNull(
-                flowFiberCache.get(FlowKey(flowId, holdingId)),
-                "Expected flow fiber cache to contain flowKey: $flowId, $holdingId.")
-        }
-    }
-
-    override fun expectFlowFiberCacheDoesNotContain(holdingId: HoldingIdentity, flowId: String) {
-        asserts.add {
-            assertNull(
-                flowFiberCache.get(FlowKey(flowId, holdingId)),
-                "Expected flow fiber cache to not contain flowKey: $flowId, $holdingId"
-            )
-        }
-    }
-
-    override fun expectFlowFiberCacheOperations(holdingId: HoldingIdentity, flowId: String, expected: List<FlowFiberCacheOperation>) {
-        asserts.add {
-            assertEquals(
-                expected,
-                flowFiberCache.getManipulations(FlowKey(flowId, holdingId)),
-                "Expected flow fiber operations $expected but got ${flowFiberCache.getManipulations(FlowKey(flowId, holdingId))}"
-            )
-        }
-    }
-
     override fun sessionAckEvents(vararg sessionIds: String, initiatingIdentity: HoldingIdentity?, initiatedIdentity: HoldingIdentity?) {
         asserts.add { testRun ->
             findAndAssertSessionEvents<SessionAck>(testRun, sessionIds.toList(), initiatingIdentity, initiatedIdentity)
@@ -429,6 +402,33 @@ class OutputAssertionsImpl(
                     matchStatusRecord(flowId, FlowStates.KILLED, null, null, null, flowTerminatedReason, it)
                 },
                 "Expected Flow Status: KILLED result = null, errorType = null, error = null, processingTerminatedReason: $flowTerminatedReason"
+            )
+        }
+    }
+
+    override fun expectFlowFiberCacheContainsKey(holdingId: HoldingIdentity, flowId: String) {
+        asserts.add {
+            assertNotNull(
+                flowFiberCache.get(FlowKey(flowId, holdingId)),
+                "Expected flow fiber cache to contain flowKey: $flowId, $holdingId.")
+        }
+    }
+
+    override fun expectFlowFiberCacheDoesNotContain(holdingId: HoldingIdentity, flowId: String) {
+        asserts.add {
+            assertNull(
+                flowFiberCache.get(FlowKey(flowId, holdingId)),
+                "Expected flow fiber cache to not contain flowKey: $flowId, $holdingId"
+            )
+        }
+    }
+
+    override fun expectFlowFiberCacheOperations(holdingId: HoldingIdentity, flowId: String, expected: List<FlowFiberCacheOperation>) {
+        asserts.add {
+            assertEquals(
+                expected,
+                flowFiberCache.getManipulations(FlowKey(flowId, holdingId)),
+                "Expected flow fiber operations $expected but got ${flowFiberCache.getManipulations(FlowKey(flowId, holdingId))}"
             )
         }
     }

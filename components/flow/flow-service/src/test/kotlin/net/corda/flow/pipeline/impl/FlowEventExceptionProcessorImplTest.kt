@@ -2,12 +2,14 @@ package net.corda.flow.pipeline.impl
 
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
+import java.nio.ByteBuffer
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.Wakeup
 import net.corda.data.flow.output.FlowStatus
 import net.corda.data.flow.state.checkpoint.Checkpoint
 import net.corda.data.flow.state.waiting.WaitingFor
+import net.corda.flow.fiber.cache.FlowFiberCache
 import net.corda.flow.pipeline.converters.FlowEventContextConverter
 import net.corda.flow.pipeline.exceptions.FlowEventException
 import net.corda.flow.pipeline.exceptions.FlowFatalException
@@ -16,6 +18,7 @@ import net.corda.flow.pipeline.exceptions.FlowProcessingExceptionTypes
 import net.corda.flow.pipeline.exceptions.FlowTransientException
 import net.corda.flow.pipeline.factory.FlowMessageFactory
 import net.corda.flow.pipeline.factory.FlowRecordFactory
+import net.corda.flow.pipeline.sessions.FlowSessionManager
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.flow.test.utils.buildFlowEventContext
 import net.corda.libs.configuration.SmartConfigFactory
@@ -31,9 +34,6 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-import java.nio.ByteBuffer
-import net.corda.flow.fiber.cache.FlowFiberCache
-import net.corda.flow.pipeline.sessions.FlowSessionManager
 
 class FlowEventExceptionProcessorImplTest {
     private val flowMessageFactory = mock<FlowMessageFactory>()

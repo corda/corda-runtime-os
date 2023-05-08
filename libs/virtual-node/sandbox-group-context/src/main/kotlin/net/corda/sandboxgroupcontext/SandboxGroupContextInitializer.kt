@@ -29,5 +29,5 @@ fun interface SandboxGroupContextInitializer {
     fun initializeSandboxGroupContext(
         holdingIdentity: HoldingIdentity,
         mutableSandboxGroupContext: MutableSandboxGroupContext
-    ): SandboxCloseable
+    ): AutoCloseable
 }

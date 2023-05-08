@@ -413,13 +413,6 @@ class FlowServiceTestContext @Activate constructor(
         outputAssertions(assertionsCapture)
     }
 
-    override fun putFlowFiberInCache(holdingId: HoldingIdentity, flowId: String) {
-        flowFiberCache.put(
-            FlowKey(flowId, holdingId),
-            FlowFiberImpl(UUID.randomUUID(), ClientStartedFlow(FakeFlow(), FakeClientRequestBody()), currentScheduler)
-        )
-    }
-
     override fun resetFlowFiberCache() {
         flowFiberCache.reset()
     }

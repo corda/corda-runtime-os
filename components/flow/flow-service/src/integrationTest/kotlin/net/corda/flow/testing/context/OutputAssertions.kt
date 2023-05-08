@@ -6,12 +6,6 @@ import net.corda.flow.testing.fakes.FlowFiberCacheOperation
 
 interface OutputAssertions {
 
-    fun expectFlowFiberCacheContainsKey(holdingId: HoldingIdentity, flowId: String)
-
-    fun expectFlowFiberCacheDoesNotContain(holdingId: HoldingIdentity, flowId: String)
-
-    fun expectFlowFiberCacheOperations(holdingId: HoldingIdentity, flowId: String, expected: List<FlowFiberCacheOperation>)
-
     fun sessionAckEvents(
         vararg sessionIds: String,
         initiatingIdentity: HoldingIdentity? = null,
@@ -87,6 +81,12 @@ interface OutputAssertions {
     fun noEntityRequestSent()
 
     fun flowKilledStatus(flowTerminatedReason: String)
+
+    fun expectFlowFiberCacheContainsKey(holdingId: HoldingIdentity, flowId: String)
+
+    fun expectFlowFiberCacheDoesNotContain(holdingId: HoldingIdentity, flowId: String)
+
+    fun expectFlowFiberCacheOperations(holdingId: HoldingIdentity, flowId: String, expected: List<FlowFiberCacheOperation>)
 }
 
 inline fun <reified T: Throwable> OutputAssertions.flowResumedWithError() = flowResumedWithError(T::class.java)
