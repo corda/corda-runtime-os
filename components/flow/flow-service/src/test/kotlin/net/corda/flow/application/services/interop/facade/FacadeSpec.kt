@@ -19,10 +19,7 @@ class FacadeSpec : DescribeSpec({
 
     describe("A facade") {
 
-        val inputStream = this::class.java.getResourceAsStream("/sampleFacades/tokens-facade.json")
-        checkNotNull(inputStream) { "Failed to load JSON facade schema from $inputStream" }
-        println(inputStream)
-        val facade = FacadeReaders.JSON.read(inputStream)
+        val facade = FacadeReaders.JSON.read(this::class.java.getResourceAsStream("/sampleFacades/tokens-facade.json")!!)
         val getBalance = facade.method("get-balance")
         val denomination = getBalance.inParameter("denomination", String::class.java)
         val balance = getBalance.outParameter("balance", BigDecimal::class.java)
@@ -44,7 +41,6 @@ class FacadeSpec : DescribeSpec({
             balance shouldBe TypedParameterImpl(
                 "balance",
                 TypeParameters<Any>().of(ParameterTypeLabel.DECIMAL.typeName)
-               //TODO originally it was using "Java's" implied "name" field of an enum
             )
         }
 

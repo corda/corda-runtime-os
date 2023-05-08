@@ -59,6 +59,7 @@ class TypeParameters<T> {
         else QualifiedType(rawType, TypeQualifier.of(qualifierString))
     }
 
+    //TODO Quick fix, consider refactoring to a neater solution to wire RawParameterType with ParameterTypeLabel
     @Suppress("UNCHECKED_CAST")
     private fun <T : Any> parseRawParameterType(typeName: String): ParameterType<T> {
         return when (typeName) {

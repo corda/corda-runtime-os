@@ -34,7 +34,6 @@ data class FacadeImpl(private val facadeId: FacadeId, private val methods: List<
      * @param inParameters The parameter values to pass to the method.
      */
     override fun request(methodName: String?, vararg inParameters: TypedParameterValue<*>?): FacadeRequest {
-        //TODO address !!
         return method(methodName!!).request(*inParameters)
     }
 
@@ -44,7 +43,6 @@ data class FacadeImpl(private val facadeId: FacadeId, private val methods: List<
      * @param outParameters The values of the out parameters of the method.
      */
     override fun response(methodName: String?, vararg outParameters: TypedParameterValue<*>?): FacadeResponse {
-        //TODO address !!
         return method(methodName!!).response(*outParameters)
     }
 }

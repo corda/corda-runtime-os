@@ -32,7 +32,8 @@ class JsonSerialisationSpec : DescribeSpec({
 
     describe("The JSON serialiser") {
 
-        val facade = FacadeReaders.JSON.read(this::class.java.getResourceAsStream("/sampleFacades/serialisation-test-facade.json")!!)
+        val facade =
+            FacadeReaders.JSON.read(this::class.java.getResourceAsStream("/sampleFacades/serialisation-test-facade.json")!!)
 
         it("serialises bytes to a base64 encoded string") {
             val exchangeBytes = facade.method("exchange-bytes")
@@ -57,14 +58,15 @@ class JsonSerialisationSpec : DescribeSpec({
 
             val request = exchangeJson.request(jsonIn.of(mapper.writeValueAsString(listOf(1, 2, 3))))
             val response = exchangeJson.response(
-                jsonOut.of(mapper.writeValueAsString(
-                    mapOf(
-                        "a" to "apple",
-                        "c" to "carrot",
-                        "b" to "banana"
+                jsonOut.of(
+                    mapper.writeValueAsString(
+                        mapOf(
+                            "a" to "apple",
+                            "c" to "carrot",
+                            "b" to "banana"
+                        )
                     )
                 )
-            )
             )
 
             assertRoundtripsCorrectly(request)

@@ -6,5 +6,4 @@ class JacksonJsonMarshaller(private val objectMapper: ObjectMapper) : JsonMarsha
     override fun serialize(value: Any): String = objectMapper.writeValueAsString(value)
 
     override fun <T : Any> deserialize(value: String, type: Class<T>): T = objectMapper.readValue(value, type)
-
 }
