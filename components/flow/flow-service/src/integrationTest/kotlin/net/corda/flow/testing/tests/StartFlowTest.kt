@@ -27,20 +27,26 @@ class StartFlowTest : FlowServiceTestBase() {
         `when` {
             startFlowEventReceived(FLOW_ID1, REQUEST_ID1, BOB_HOLDING_IDENTITY, CPI1, "flow start data")
                 .suspendsWith(FlowIORequest.InitialCheckpoint)
-
-            wakeupEventReceived(FLOW_ID1)
-                .completedSuccessfullyWith("hello")
         }
 
         then {
             expectOutputForFlow(FLOW_ID1) {
                 wakeUpEvent()
                 flowStatus(FlowStates.RUNNING)
+                expectFlowFiberCacheContainsKey(BOB_HOLDING_IDENTITY, REQUEST_ID1)
             }
+        }
 
+        `when` {
+            wakeupEventReceived(FLOW_ID1)
+                .completedSuccessfullyWith("hello")
+        }
+
+        then {
             expectOutputForFlow(FLOW_ID1) {
                 flowStatus(FlowStates.COMPLETED, result = "hello")
                 nullStateRecord()
+                expectFlowFiberCacheDoesNotContain(BOB_HOLDING_IDENTITY, REQUEST_ID1)
             }
         }
     }

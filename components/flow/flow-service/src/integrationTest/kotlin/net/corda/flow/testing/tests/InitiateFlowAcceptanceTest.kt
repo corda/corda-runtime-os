@@ -5,6 +5,7 @@ import net.corda.flow.application.sessions.SessionInfo
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.testing.context.FlowServiceTestBase
 import net.corda.flow.testing.context.flowResumedWithError
+import net.corda.flow.testing.fakes.FlowFiberCacheOperation
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -27,6 +28,7 @@ class InitiateFlowAcceptanceTest : FlowServiceTestBase() {
 
             sessionInitiatingIdentity(ALICE_HOLDING_IDENTITY)
             sessionInitiatedIdentity(BOB_HOLDING_IDENTITY)
+            resetFlowFiberCache()
         }
     }
 
@@ -40,6 +42,8 @@ class InitiateFlowAcceptanceTest : FlowServiceTestBase() {
         then {
             expectOutputForFlow(FLOW_ID1) {
                 sessionInitEvents(SESSION_ID_1)
+                expectFlowFiberCacheContainsKey(ALICE_HOLDING_IDENTITY, REQUEST_ID1)
+                expectFlowFiberCacheOperations(ALICE_HOLDING_IDENTITY, REQUEST_ID1, listOf(FlowFiberCacheOperation.PUT))
             }
         }
     }
@@ -115,6 +119,8 @@ class InitiateFlowAcceptanceTest : FlowServiceTestBase() {
                 flowResumedWith(Unit)
                 flowStatus(FlowStates.RUNNING)
                 sessionConfirmEvents(INITIATED_SESSION_ID_1)
+                expectFlowFiberCacheContainsKey(BOB_HOLDING_IDENTITY, INITIATED_SESSION_ID_1)
+                expectFlowFiberCacheOperations(BOB_HOLDING_IDENTITY, INITIATED_SESSION_ID_1, listOf(FlowFiberCacheOperation.PUT))
             }
         }
     }

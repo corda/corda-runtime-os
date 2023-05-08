@@ -78,8 +78,6 @@ class VirtualNodeService @Activate constructor(
             sandboxGroupContextComponent.acceptCustomMetadata(sandboxGroupContext)
 
             object : SandboxCloseable {
-                override fun preClose(virtualNodeContext: VirtualNodeContext) { }
-
                 override fun close() {
                     closeables.forEach(AutoCloseable::close)
                 }

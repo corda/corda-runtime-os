@@ -1,5 +1,8 @@
 package net.corda.flow.testing.context
 
+import co.paralleluniverse.concurrent.util.ScheduledSingleThreadExecutor
+import co.paralleluniverse.fibers.FiberExecutorScheduler
+import co.paralleluniverse.fibers.FiberScheduler
 import com.typesafe.config.ConfigFactory
 import java.nio.ByteBuffer
 import java.time.Instant
@@ -26,9 +29,13 @@ import net.corda.data.flow.event.session.SessionError
 import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.checkpoint.Checkpoint
 import net.corda.data.identity.HoldingIdentity
+import net.corda.flow.fiber.ClientStartedFlow
+import net.corda.flow.fiber.FlowFiberImpl
 import net.corda.flow.fiber.FlowIORequest
-import net.corda.flow.fiber.cache.FlowFiberCache
 import net.corda.flow.pipeline.factory.FlowEventProcessorFactory
+import net.corda.flow.testing.fakes.FakeClientRequestBody
+import net.corda.flow.testing.fakes.FakeFlow
+import net.corda.flow.testing.fakes.FakeFlowFiberCache
 import net.corda.flow.testing.fakes.FakeFlowFiberFactory
 import net.corda.flow.testing.fakes.FakeMembershipGroupReaderProvider
 import net.corda.flow.testing.fakes.FakeSandboxGroupContextComponent
@@ -83,8 +90,8 @@ class FlowServiceTestContext @Activate constructor(
     val sandboxGroupContextComponent: FakeSandboxGroupContextComponent,
     @Reference(service = VirtualNodeInfoReadServiceFake::class)
     val virtualNodeInfoReadService: VirtualNodeInfoReadServiceFake,
-    @Reference(service = FlowFiberCache::class)
-    val flowFiberCache: FlowFiberCache,
+    @Reference(service = FakeFlowFiberCache::class)
+    val flowFiberCache: FakeFlowFiberCache,
 ) : StepSetup, ThenSetup {
 
     private companion object {
@@ -116,6 +123,11 @@ class FlowServiceTestContext @Activate constructor(
     private var lastPublishedState: Checkpoint? = null
     private var sessionInitiatingIdentity: HoldingIdentity? = null
     private var sessionInitiatedIdentity: HoldingIdentity? = null
+
+    private val currentScheduler: FiberScheduler = FiberExecutorScheduler(
+        "Same thread scheduler",
+        ScheduledSingleThreadExecutor()
+    )
 
     fun start() {
         virtualNodeInfoReadService.start()
@@ -394,10 +406,22 @@ class FlowServiceTestContext @Activate constructor(
             anyDeserializer,
             flowId,
             sessionInitiatingIdentity,
-            sessionInitiatedIdentity
+            sessionInitiatedIdentity,
+            flowFiberCache
         )
         assertions.add(assertionsCapture)
         outputAssertions(assertionsCapture)
+    }
+
+    override fun putFlowFiberInCache(holdingId: HoldingIdentity, flowId: String) {
+        flowFiberCache.put(
+            FlowKey(flowId, holdingId),
+            FlowFiberImpl(UUID.randomUUID(), ClientStartedFlow(FakeFlow(), FakeClientRequestBody()), currentScheduler)
+        )
+    }
+
+    override fun resetFlowFiberCache() {
+        flowFiberCache.reset()
     }
 
     fun clearTestRuns() {
@@ -445,6 +469,7 @@ class FlowServiceTestContext @Activate constructor(
         cpiInfoReadService.reset()
         sandboxGroupContextComponent.reset()
         membershipGroupReaderProvider.reset()
+        flowFiberCache.reset()
     }
 
     private fun createAndAddSessionEvent(
@@ -510,7 +535,11 @@ class FlowServiceTestContext @Activate constructor(
         return object : FlowIoRequestSetup {
 
             override fun suspendsWith(flowIoRequest: FlowIORequest<*>) {
-                testRun.ioRequest = FlowIORequest.FlowSuspended(ByteBuffer.wrap(byteArrayOf()), flowIoRequest)
+                testRun.ioRequest = FlowIORequest.FlowSuspended(
+                    ByteBuffer.wrap(byteArrayOf()),
+                    flowIoRequest,
+                    FlowFiberImpl(UUID.randomUUID(), ClientStartedFlow(FakeFlow(), FakeClientRequestBody()), currentScheduler)
+                )
             }
 
             override fun completedSuccessfullyWith(result: String?) {

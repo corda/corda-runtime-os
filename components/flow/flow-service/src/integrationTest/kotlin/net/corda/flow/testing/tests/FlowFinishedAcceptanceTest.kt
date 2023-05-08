@@ -5,6 +5,7 @@ import net.corda.data.flow.output.FlowStates
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.testing.context.FlowServiceTestBase
 import net.corda.flow.testing.context.initiateSingleFlow
+import net.corda.flow.testing.fakes.FlowFiberCacheOperation
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -34,6 +35,7 @@ class FlowFinishedAcceptanceTest : FlowServiceTestBase() {
             sessionInitiatedIdentity(BOB_HOLDING_IDENTITY)
 
             initiatingToInitiatedFlow(PROTOCOL, FAKE_FLOW_NAME, FAKE_FLOW_NAME)
+            resetFlowFiberCache()
         }
     }
 
@@ -41,7 +43,7 @@ class FlowFinishedAcceptanceTest : FlowServiceTestBase() {
     fun `A flow finishing removes the flow's checkpoint publishes a completed flow status and schedules flow cleanup`() {
         `when` {
             startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
-                .suspendsWith(FlowIORequest.FlowFinished(DONE))
+                .completedSuccessfullyWith(DONE)
         }
 
         then {
@@ -75,7 +77,7 @@ class FlowFinishedAcceptanceTest : FlowServiceTestBase() {
 
         `when` {
             startFlowEventReceived(FLOW_ID1, REQUEST_ID1, CHARLIE_HOLDING_IDENTITY, CPI1, "flow start data")
-                .suspendsWith(FlowIORequest.FlowFinished(DONE))
+                .completedSuccessfullyWith(DONE)
         }
 
         then {
@@ -88,16 +90,51 @@ class FlowFinishedAcceptanceTest : FlowServiceTestBase() {
     }
 
     @Test
-    fun `An initiated flow finishing removes the flow's checkpoint publishes a completed flow status`() {
+    fun `A flow finishing with FlowFinished removes fiber from fiber cache`() {
+        // Trigger a retry state
         `when` {
-            sessionInitEventReceived(FLOW_ID1, INITIATED_SESSION_ID_1, CPI1, PROTOCOL)
-                .suspendsWith(FlowIORequest.FlowFinished(DONE))
+            startFlowEventReceived(FLOW_ID1, REQUEST_ID1, BOB_HOLDING_IDENTITY, CPI1, "flow start data")
+                .suspendsWith(FlowIORequest.InitialCheckpoint)
+        }
+
+        then {
+            expectOutputForFlow(FLOW_ID1) {
+                wakeUpEvent()
+                flowStatus(FlowStates.RUNNING)
+                expectFlowFiberCacheContainsKey(BOB_HOLDING_IDENTITY, REQUEST_ID1)
+                expectFlowFiberCacheOperations(BOB_HOLDING_IDENTITY, REQUEST_ID1, listOf(FlowFiberCacheOperation.PUT))
+            }
+        }
+
+        `when` {
+            wakeupEventReceived(FLOW_ID1)
+                .completedSuccessfullyWith(DONE)
         }
 
         then {
             expectOutputForFlow(FLOW_ID1) {
                 nullStateRecord()
                 flowStatus(FlowStates.COMPLETED, result = DONE)
+                scheduleFlowMapperCleanupEvents(FlowKey(REQUEST_ID1, BOB_HOLDING_IDENTITY).toString())
+                expectFlowFiberCacheDoesNotContain(BOB_HOLDING_IDENTITY, REQUEST_ID1)
+                expectFlowFiberCacheOperations(BOB_HOLDING_IDENTITY, REQUEST_ID1,
+                    listOf(FlowFiberCacheOperation.PUT, FlowFiberCacheOperation.REMOVE))
+            }
+        }
+    }
+
+    @Test
+    fun `An initiated flow finishing removes the flow's checkpoint publishes a completed flow status`() {
+        `when` {
+            sessionInitEventReceived(FLOW_ID1, INITIATED_SESSION_ID_1, CPI1, PROTOCOL)
+                .completedSuccessfullyWith(DONE)
+        }
+
+        then {
+            expectOutputForFlow(FLOW_ID1) {
+                nullStateRecord()
+                flowStatus(FlowStates.COMPLETED, result = DONE)
+                expectFlowFiberCacheDoesNotContain(BOB_HOLDING_IDENTITY, INITIATED_SESSION_ID_1)
             }
         }
     }
@@ -114,7 +151,7 @@ class FlowFinishedAcceptanceTest : FlowServiceTestBase() {
 
         `when` {
             sessionAckEventReceived(FLOW_ID1, SESSION_ID_1, receivedSequenceNum = 3)
-                .suspendsWith(FlowIORequest.FlowFinished(DONE))
+                .completedSuccessfullyWith(DONE)
         }
 
         then {
@@ -122,6 +159,7 @@ class FlowFinishedAcceptanceTest : FlowServiceTestBase() {
                 nullStateRecord()
                 flowStatus(FlowStates.COMPLETED, result = DONE)
                 scheduleFlowMapperCleanupEvents(FlowKey(REQUEST_ID1, ALICE_HOLDING_IDENTITY).toString(), SESSION_ID_1)
+                expectFlowFiberCacheDoesNotContain(ALICE_HOLDING_IDENTITY, REQUEST_ID1)
             }
         }
     }

@@ -106,8 +106,6 @@ class EntitySandboxServiceImpl @Activate constructor(
         )
 
         return object : SandboxCloseable {
-            override fun preClose(virtualNodeContext: VirtualNodeContext) { }
-
             override fun close() {
                 logger.info("Closing DB Sandbox for {}/{}[{}]",
                     virtualNode.holdingIdentity,

@@ -32,6 +32,7 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
+import net.corda.flow.fiber.cache.FlowFiberCache
 import net.corda.flow.pipeline.sessions.FlowSessionManager
 
 class FlowEventExceptionProcessorImplTest {
@@ -50,13 +51,15 @@ class FlowEventExceptionProcessorImplTest {
         null,
         listOf<Record<String, String>>()
     )
+    private val flowFiberCache = mock<FlowFiberCache>()
     private val serializedFiber = ByteBuffer.wrap("mock fiber".toByteArray())
 
     private val target = FlowEventExceptionProcessorImpl(
         flowMessageFactory,
         flowRecordFactory,
         flowEventContextConverter,
-        flowSessionManager
+        flowSessionManager,
+        flowFiberCache
     )
 
     @BeforeEach

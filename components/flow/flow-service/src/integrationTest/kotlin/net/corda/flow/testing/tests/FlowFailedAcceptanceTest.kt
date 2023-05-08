@@ -6,6 +6,7 @@ import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.pipeline.exceptions.FlowProcessingExceptionTypes.FLOW_FAILED
 import net.corda.flow.testing.context.FlowServiceTestBase
 import net.corda.flow.testing.context.initiateSingleFlow
+import net.corda.flow.testing.fakes.FlowFiberCacheOperation
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -35,6 +36,7 @@ class FlowFailedAcceptanceTest : FlowServiceTestBase() {
             sessionInitiatedIdentity(BOB_HOLDING_IDENTITY)
 
             initiatingToInitiatedFlow(PROTOCOL, FAKE_FLOW_NAME, FAKE_FLOW_NAME)
+            resetFlowFiberCache()
         }
     }
 
@@ -42,7 +44,19 @@ class FlowFailedAcceptanceTest : FlowServiceTestBase() {
     fun `A flow failing removes the flow's checkpoint publishes a failed flow status and schedules flow cleanup`() {
         `when` {
             startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
-                .suspendsWith(FlowIORequest.FlowFailed(EXCEPTION))
+                .suspendsWith(FlowIORequest.InitialCheckpoint)
+        }
+
+        then {
+            expectOutputForFlow(FLOW_ID1) {
+                expectFlowFiberCacheContainsKey(ALICE_HOLDING_IDENTITY, REQUEST_ID1)
+                expectFlowFiberCacheOperations(ALICE_HOLDING_IDENTITY, REQUEST_ID1, listOf(FlowFiberCacheOperation.PUT))
+            }
+        }
+
+        `when` {
+            wakeupEventReceived(FLOW_ID1)
+                .completedWithError(EXCEPTION)
         }
 
         then {
@@ -50,6 +64,11 @@ class FlowFailedAcceptanceTest : FlowServiceTestBase() {
                 nullStateRecord()
                 flowStatus(FlowStates.FAILED, errorType = FLOW_FAILED, errorMessage = EXCEPTION.message)
                 scheduleFlowMapperCleanupEvents(FlowKey(REQUEST_ID1, ALICE_HOLDING_IDENTITY).toString())
+                expectFlowFiberCacheDoesNotContain(ALICE_HOLDING_IDENTITY, REQUEST_ID1)
+                expectFlowFiberCacheOperations(
+                    ALICE_HOLDING_IDENTITY, REQUEST_ID1,
+                    listOf(FlowFiberCacheOperation.PUT, FlowFiberCacheOperation.REMOVE)
+                )
             }
         }
     }
@@ -58,7 +77,7 @@ class FlowFailedAcceptanceTest : FlowServiceTestBase() {
     fun `An initiated flow failing removes the flow's checkpoint publishes a failed flow status and schedules flow cleanup`() {
         `when` {
             sessionInitEventReceived(FLOW_ID1, INITIATED_SESSION_ID_1, CPI1, PROTOCOL)
-                .suspendsWith(FlowIORequest.FlowFailed(EXCEPTION))
+                .completedWithError(EXCEPTION)
         }
 
         then {
@@ -66,6 +85,7 @@ class FlowFailedAcceptanceTest : FlowServiceTestBase() {
                 nullStateRecord()
                 flowStatus(FlowStates.FAILED, errorType = FLOW_FAILED, errorMessage = EXCEPTION.message)
                 scheduleFlowMapperCleanupEvents(INITIATED_SESSION_ID_1)
+                expectFlowFiberCacheDoesNotContain(ALICE_HOLDING_IDENTITY, REQUEST_ID1)
             }
         }
     }
@@ -82,16 +102,15 @@ class FlowFailedAcceptanceTest : FlowServiceTestBase() {
 
         `when` {
             sessionAckEventReceived(FLOW_ID1, SESSION_ID_1, receivedSequenceNum = 3)
-                .suspendsWith(FlowIORequest.FlowFailed(EXCEPTION))
+                .completedWithError(EXCEPTION)
         }
-
-
 
         then {
             expectOutputForFlow(FLOW_ID1) {
                 nullStateRecord()
                 flowStatus(FlowStates.FAILED, errorType = FLOW_FAILED, errorMessage = EXCEPTION.message)
                 scheduleFlowMapperCleanupEvents(FlowKey(REQUEST_ID1, ALICE_HOLDING_IDENTITY).toString(), SESSION_ID_1)
+                expectFlowFiberCacheDoesNotContain(ALICE_HOLDING_IDENTITY, REQUEST_ID1)
             }
         }
     }

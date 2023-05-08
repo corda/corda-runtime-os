@@ -1,6 +1,7 @@
 package net.corda.flow.testing.context
 
 import java.nio.ByteBuffer
+import net.corda.data.flow.FlowKey
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.flow.event.FlowEvent
@@ -20,6 +21,8 @@ import net.corda.data.flow.state.checkpoint.Checkpoint
 import net.corda.data.identity.HoldingIdentity
 import net.corda.data.persistence.EntityRequest
 import net.corda.flow.fiber.FlowContinuation
+import net.corda.flow.testing.fakes.FakeFlowFiberCache
+import net.corda.flow.testing.fakes.FlowFiberCacheOperation
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
@@ -40,6 +43,7 @@ class OutputAssertionsImpl(
     private val flowId: String,
     private val sessionInitiatingIdentity: HoldingIdentity? = null,
     private val sessionInitiatedIdentity: HoldingIdentity? = null,
+    private val flowFiberCache: FakeFlowFiberCache,
 ) : OutputAssertions {
 
     private companion object {
@@ -47,6 +51,33 @@ class OutputAssertionsImpl(
     }
 
     val asserts = mutableListOf<(TestRun) -> Unit>()
+
+    override fun expectFlowFiberCacheContainsKey(holdingId: HoldingIdentity, flowId: String) {
+        asserts.add {
+            assertNotNull(
+                flowFiberCache.get(FlowKey(flowId, holdingId)),
+                "Expected flow fiber cache to contain flowKey: $flowId, $holdingId.")
+        }
+    }
+
+    override fun expectFlowFiberCacheDoesNotContain(holdingId: HoldingIdentity, flowId: String) {
+        asserts.add {
+            assertNull(
+                flowFiberCache.get(FlowKey(flowId, holdingId)),
+                "Expected flow fiber cache to not contain flowKey: $flowId, $holdingId"
+            )
+        }
+    }
+
+    override fun expectFlowFiberCacheOperations(holdingId: HoldingIdentity, flowId: String, expected: List<FlowFiberCacheOperation>) {
+        asserts.add {
+            assertEquals(
+                expected,
+                flowFiberCache.getManipulations(FlowKey(flowId, holdingId)),
+                "Expected flow fiber operations $expected but got ${flowFiberCache.getManipulations(FlowKey(flowId, holdingId))}"
+            )
+        }
+    }
 
     override fun sessionAckEvents(vararg sessionIds: String, initiatingIdentity: HoldingIdentity?, initiatedIdentity: HoldingIdentity?) {
         asserts.add { testRun ->

@@ -126,7 +126,7 @@ class FlowSandboxServiceImpl @Activate constructor(
         sandboxGroupContextComponent.acceptCustomMetadata(sandboxGroupContext)
 
         return object : SandboxCloseable {
-            override fun preClose(virtualNodeContext: VirtualNodeContext) {
+            override fun onInvalidate(virtualNodeContext: VirtualNodeContext) {
                 flowFiberCache.remove(virtualNodeContext.holdingIdentity.toAvro())
             }
 

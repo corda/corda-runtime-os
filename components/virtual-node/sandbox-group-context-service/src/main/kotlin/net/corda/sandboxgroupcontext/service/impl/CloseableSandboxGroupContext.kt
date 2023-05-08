@@ -37,8 +37,8 @@ internal class CloseableSandboxGroupContextImpl(
     override val sandboxGroup: SandboxGroup
         get() = sandboxGroupContext.sandboxGroup
 
-    override fun preClose(virtualNodeContext: VirtualNodeContext) {
-        closeable.preClose(virtualNodeContext)
+    override fun onInvalidate(virtualNodeContext: VirtualNodeContext) {
+        closeable.onInvalidate(virtualNodeContext)
     }
 
     override val completion: CompletableFuture<Boolean>

@@ -81,8 +81,6 @@ class VerificationSandboxServiceImpl @Activate constructor(
         logger.info("Initialising Verification Sandbox for $holdingIdentity")
 
         return object : SandboxCloseable {
-            override fun preClose(virtualNodeContext: VirtualNodeContext) { }
-
             override fun close() {
                 logger.info("Closing Verification Sandbox for $holdingIdentity")
                 jsonSerializers.close()

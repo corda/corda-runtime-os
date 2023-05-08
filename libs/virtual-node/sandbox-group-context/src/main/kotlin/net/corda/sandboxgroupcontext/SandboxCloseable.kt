@@ -1,17 +1,21 @@
 package net.corda.sandboxgroupcontext
 
 /**
- * A closeable interface that adds a pre-close step to close a [SandboxGroupContext] with a given [VirtualNodeContext].
- * Implementing classes should provide a way to execute the pre-close step before closing the sandbox.
+ * An interface to provide steps to close a [SandboxGroupContext] with an [onInvalidate] step which is called
+ * before close when a sandbox is invalidated.
+ *
+ * Implementing this interface allows the implementation to define behaviour when a [SandboxGroupContext] is
+ * closed and optionally additional behaviour before a [SandboxGroupContext] is closed.
+ *
+ * For example, [onInvalidate] could be used to remove hard references to the sandbox before it is moved to
+ * an expiry queue.
  */
 interface SandboxCloseable : AutoCloseable {
 
     /**
-     * Executes the pre-close step for the sandbox with the given virtual node context.
-     * This method gives the caller an opportunity to remove any hard references to the [SandboxGroupContext] before
-     * the sandbox's close is called.
+     * Optional additional step executed before a [SandboxGroupContext] is moved to an expiry queue or closed.
      *
-     * @param virtualNodeContext the virtual node context associated with the sandbox to be closed.
+     * @param virtualNodeContext the [VirtualNodeContext] associated with the sandbox to be closed.
      */
-    fun preClose(virtualNodeContext: VirtualNodeContext)
+    fun onInvalidate(virtualNodeContext: VirtualNodeContext) {  }
 }

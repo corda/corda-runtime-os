@@ -2,8 +2,15 @@ package net.corda.flow.testing.context
 
 import net.corda.data.flow.output.FlowStates
 import net.corda.data.identity.HoldingIdentity
+import net.corda.flow.testing.fakes.FlowFiberCacheOperation
 
 interface OutputAssertions {
+
+    fun expectFlowFiberCacheContainsKey(holdingId: HoldingIdentity, flowId: String)
+
+    fun expectFlowFiberCacheDoesNotContain(holdingId: HoldingIdentity, flowId: String)
+
+    fun expectFlowFiberCacheOperations(holdingId: HoldingIdentity, flowId: String, expected: List<FlowFiberCacheOperation>)
 
     fun sessionAckEvents(
         vararg sessionIds: String,

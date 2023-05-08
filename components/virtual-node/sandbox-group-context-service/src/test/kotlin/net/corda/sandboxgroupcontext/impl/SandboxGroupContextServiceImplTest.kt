@@ -79,7 +79,7 @@ class SandboxGroupContextServiceImplTest {
     }
 
     val sandboxCloseable = object : SandboxCloseable {
-        override fun preClose(virtualNodeContext: VirtualNodeContext) {
+        override fun onInvalidate(virtualNodeContext: VirtualNodeContext) {
 
         }
 
