@@ -43,6 +43,7 @@ abstract class DeployableContainerBuilder extends DefaultTask {
     private def gitBranchTask
     private def gitRemoteTask
     private def gitRevisionTask
+    private def gitShortRevisionTask
     private def gitLogTask
     private def releaseType
 
@@ -188,6 +189,13 @@ abstract class DeployableContainerBuilder extends DefaultTask {
         gitRevisionTask = project.tasks.register("gitRevision", GetGitRevision.class)
         super.dependsOn(gitRevisionTask)
 
+        // TODO: remove once pipelines have been updated to consume images using the full hash as the tag.
+        // Several pipelines currently use 'git rev-parse --short' to determine the custom image tag to use when
+        // deploying corda and the length of the abbreviated commit hash is determined by local Git configuration, so
+        // we can't assume that the default of 7 is used everywhere.
+        gitShortRevisionTask = project.tasks.register("gitShortRevision", GetGitShortRevision.class)
+        super.dependsOn(gitShortRevisionTask)
+
         gitLogTask = project.tasks.register("gitMessageTask", getLatestGitCommitMessage.class)
         super.dependsOn(gitLogTask)
 
@@ -205,12 +213,11 @@ abstract class DeployableContainerBuilder extends DefaultTask {
         String gitRemote = gitRemoteTask.flatMap { it.url }.get()
         String gitBranch = gitBranchTask.flatMap { it.branch }.get()
         String gitRevision = gitRevisionTask.flatMap { it.revision }.get()
-        // TODO: remove once pipelines have been updated to consume images using the full hash as the tag.
-        String gitRevisionShortHash = gitRevision.substring(0, 10)
+        String gitRevisionShortHash = gitShortRevisionTask.flatMap { it.revision }.get()
 
         def jiraTicket = hasJiraTicket()
         def timeStamp =  new SimpleDateFormat("ddMMyy").format(new Date())
-        logger.quiet("GitRemote: '{}', GitBranch: '{}', GitCommit: '{}', ShortHash: '{}'", gitRemote, gitBranch, gitRevision, gitRevisionShortHash)
+        logger.quiet("GitRemote: '{}', GitBranch: '{}', GitCommit: '{}'", gitRemote, gitBranch, gitRevision)
 
         if (!(new File(containerizationDir.toString())).exists()) {
             logger.info("Created containerization dir")
@@ -421,6 +428,24 @@ abstract class DeployableContainerBuilder extends DefaultTask {
         GetGitRevision(ObjectFactory objects, ProviderFactory providers) {
             executable 'git'
             args 'rev-parse', '--verify', 'HEAD'
+            standardOutput = new ByteArrayOutputStream()
+            revision = objects.property(String).value(
+                    providers.provider { standardOutput.toString().trim() }
+            )
+        }
+    }
+
+    /**
+     * Helper task to retrieve the latest full git hash
+     */
+    static class GetGitShortRevision extends Exec {
+        @Internal
+        final Property<String> revision
+
+        @Inject
+        GetGitShortRevision(ObjectFactory objects, ProviderFactory providers) {
+            executable 'git'
+            args 'rev-parse', '--verify', '--short', 'HEAD'
             standardOutput = new ByteArrayOutputStream()
             revision = objects.property(String).value(
                     providers.provider { standardOutput.toString().trim() }
