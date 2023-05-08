@@ -91,7 +91,6 @@ class FlowFinishedAcceptanceTest : FlowServiceTestBase() {
 
     @Test
     fun `A flow finishing with FlowFinished removes fiber from fiber cache`() {
-        // Trigger a retry state
         `when` {
             startFlowEventReceived(FLOW_ID1, REQUEST_ID1, BOB_HOLDING_IDENTITY, CPI1, "flow start data")
                 .suspendsWith(FlowIORequest.InitialCheckpoint)

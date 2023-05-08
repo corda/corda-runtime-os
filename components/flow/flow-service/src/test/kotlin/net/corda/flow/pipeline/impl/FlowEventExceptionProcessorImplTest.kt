@@ -84,10 +84,13 @@ class FlowEventExceptionProcessorImplTest {
     fun `flow transient exception sets retry state and publishes a status update`() {
         val error = FlowTransientException("error")
         val flowStatusUpdate = FlowStatus()
-        val flowStatusUpdateRecord = Record("", FlowKey(), flowStatusUpdate)
+        val key = FlowKey()
+        val flowStatusUpdateRecord = Record("", key, flowStatusUpdate)
         whenever(flowCheckpoint.currentRetryCount).thenReturn(1)
         whenever(flowMessageFactory.createFlowRetryingStatusMessage(flowCheckpoint)).thenReturn(flowStatusUpdate)
         whenever(flowRecordFactory.createFlowStatusRecord(flowStatusUpdate)).thenReturn(flowStatusUpdateRecord)
+        whenever(flowCheckpoint.doesExist).thenReturn(true)
+        whenever(flowCheckpoint.flowKey).thenReturn(key)
 
         val result = target.process(error, context)
 
@@ -99,6 +102,30 @@ class FlowEventExceptionProcessorImplTest {
         )
         verify(flowCheckpoint).rollback()
         verify(flowCheckpoint).markForRetry(context.inputEvent, error)
+        verify(flowFiberCache).remove(key)
+    }
+
+    @Test
+    fun `flow transient exception when doesExist false does not remove from flow fiber cache`() {
+        val error = FlowTransientException("error")
+        val flowStatusUpdate = FlowStatus()
+        val flowStatusUpdateRecord = Record("", FlowKey(), flowStatusUpdate)
+        whenever(flowCheckpoint.currentRetryCount).thenReturn(1)
+        whenever(flowMessageFactory.createFlowRetryingStatusMessage(flowCheckpoint)).thenReturn(flowStatusUpdate)
+        whenever(flowRecordFactory.createFlowStatusRecord(flowStatusUpdate)).thenReturn(flowStatusUpdateRecord)
+        whenever(flowCheckpoint.doesExist).thenReturn(false)
+
+        val result = target.process(error, context)
+
+        assertThat(result).isSameAs(converterResponse)
+        verify(flowEventContextConverter).convert(argThat {
+            assertThat(this.outputRecords).containsOnly(flowStatusUpdateRecord)
+            true
+        }
+        )
+        verify(flowCheckpoint).rollback()
+        verify(flowCheckpoint).markForRetry(context.inputEvent, error)
+        verify(flowFiberCache, times(0)).remove(any<List<FlowKey>>())
     }
 
     @Test
@@ -128,7 +155,8 @@ class FlowEventExceptionProcessorImplTest {
     fun `flow fatal exception marks flow for dlq and publishes status update`() {
         val error = FlowFatalException("error")
         val flowStatusUpdate = FlowStatus()
-        val flowStatusUpdateRecord = Record("", FlowKey(), flowStatusUpdate)
+        val key = FlowKey()
+        val flowStatusUpdateRecord = Record("", key, flowStatusUpdate)
 
         whenever(
             flowMessageFactory.createFlowFailedStatusMessage(
@@ -138,12 +166,15 @@ class FlowEventExceptionProcessorImplTest {
             )
         ).thenReturn(flowStatusUpdate)
         whenever(flowRecordFactory.createFlowStatusRecord(flowStatusUpdate)).thenReturn(flowStatusUpdateRecord)
+        whenever(flowCheckpoint.doesExist).thenReturn(true)
+        whenever(flowCheckpoint.flowKey).thenReturn(key)
 
         val result = target.process(error, context)
 
         assertThat(result.updatedState).isNull()
         assertThat(result.responseEvents).containsOnly(flowStatusUpdateRecord)
         assertThat(result.markForDLQ).isTrue
+        verify(flowFiberCache).remove(key)
     }
 
     @Test
@@ -151,9 +182,12 @@ class FlowEventExceptionProcessorImplTest {
         val flowId = "f1"
         val error = FlowPlatformException("error")
         val flowEventRecord = Record("", flowId, FlowEvent(flowId, Wakeup()))
+        val key = FlowKey()
 
         whenever(flowCheckpoint.flowId).thenReturn(flowId)
         whenever(flowRecordFactory.createFlowEventRecord(flowId, Wakeup())).thenReturn(flowEventRecord)
+        whenever(flowCheckpoint.doesExist).thenReturn(true)
+        whenever(flowCheckpoint.flowKey).thenReturn(key)
 
         val result = target.process(error, context)
 
@@ -165,6 +199,30 @@ class FlowEventExceptionProcessorImplTest {
 
         verify(flowCheckpoint).waitingFor = WaitingFor(net.corda.data.flow.state.waiting.Wakeup())
         verify(flowCheckpoint).setPendingPlatformError(FlowProcessingExceptionTypes.PLATFORM_ERROR, error.message)
+        verify(flowFiberCache).remove(key)
+    }
+
+    @Test
+    fun `flow platform exception when doesExist false does not remove from flow fiber cache`() {
+        val flowId = "f1"
+        val error = FlowPlatformException("error")
+        val flowEventRecord = Record("", flowId, FlowEvent(flowId, Wakeup()))
+
+        whenever(flowCheckpoint.flowId).thenReturn(flowId)
+        whenever(flowRecordFactory.createFlowEventRecord(flowId, Wakeup())).thenReturn(flowEventRecord)
+        whenever(flowCheckpoint.doesExist).thenReturn(false)
+
+        val result = target.process(error, context)
+
+        assertThat(result).isSameAs(converterResponse)
+        verify(flowEventContextConverter).convert(argThat {
+            assertThat(this.outputRecords).containsOnly(flowEventRecord)
+            true
+        })
+
+        verify(flowCheckpoint).waitingFor = WaitingFor(net.corda.data.flow.state.waiting.Wakeup())
+        verify(flowCheckpoint).setPendingPlatformError(FlowProcessingExceptionTypes.PLATFORM_ERROR, error.message)
+        verify(flowFiberCache, times(0)).remove(any<List<FlowKey>>())
     }
 
     @Test
@@ -277,6 +335,7 @@ class FlowEventExceptionProcessorImplTest {
         target.process(error, context)
 
         verify(flowCheckpoint, times(0)).flowStartContext
+        verify(flowFiberCache, times(0)).remove(any<List<FlowKey>>())
     }
 
     @Test

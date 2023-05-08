@@ -3,6 +3,7 @@ package net.corda.flow.testing.tests
 import net.corda.data.flow.output.FlowStates
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.testing.context.FlowServiceTestBase
+import net.corda.flow.testing.fakes.FlowFiberCacheOperation
 import net.corda.schema.configuration.FlowConfig
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -34,6 +35,7 @@ class StartFlowTest : FlowServiceTestBase() {
                 wakeUpEvent()
                 flowStatus(FlowStates.RUNNING)
                 expectFlowFiberCacheContainsKey(BOB_HOLDING_IDENTITY, REQUEST_ID1)
+                expectFlowFiberCacheOperations(BOB_HOLDING_IDENTITY, REQUEST_ID1, listOf(FlowFiberCacheOperation.PUT))
             }
         }
 
@@ -47,6 +49,8 @@ class StartFlowTest : FlowServiceTestBase() {
                 flowStatus(FlowStates.COMPLETED, result = "hello")
                 nullStateRecord()
                 expectFlowFiberCacheDoesNotContain(BOB_HOLDING_IDENTITY, REQUEST_ID1)
+                expectFlowFiberCacheOperations(BOB_HOLDING_IDENTITY, REQUEST_ID1,
+                    listOf(FlowFiberCacheOperation.PUT, FlowFiberCacheOperation.REMOVE))
             }
         }
     }

@@ -176,7 +176,7 @@ class FlowEventPipelineImplTest {
     fun `runOrContinue runs a flow with suspend result`(outcome: FlowContinuation) {
         val flowResult = FlowIORequest.SubFlowFinished(emptyList())
         val expectedFiber = ByteBuffer.wrap(byteArrayOf(1))
-        val suspendRequest = FlowIORequest.FlowSuspended(expectedFiber, flowResult)
+        val suspendRequest = FlowIORequest.FlowSuspended(expectedFiber, flowResult) // cannot mock FlowFiberImpl
 
         whenever(flowWaitingForHandler.runOrContinue(eq(inputContext), any())).thenReturn(outcome)
         whenever(runFlowFiberFuture.future.get(RUN_OR_CONTINUE_TIMEOUT, TimeUnit.MILLISECONDS)).thenReturn(
