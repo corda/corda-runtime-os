@@ -6,7 +6,6 @@ import java.nio.file.Path
 import java.nio.file.StandardOpenOption
 import java.security.cert.CertificateFactory
 import java.security.cert.X509Certificate
-import java.time.Duration
 import java.util.UUID
 import net.corda.cli.plugins.packaging.CreateCpiV2
 import net.corda.cli.plugins.packaging.signing.SigningOptions
@@ -284,7 +283,7 @@ fun E2eCluster.register(
             ).apply {
                 assertThat(registrationStatus).isEqualTo("SUBMITTED")
 
-                eventually(duration = 3.minutes, retryAllExceptions = true, waitBetween = Duration.ofSeconds(1)) {
+                eventually(duration = 3.minutes, retryAllExceptions = true, waitBetween = 5.seconds) {
                     val registrationStatus = proxy.checkSpecificRegistrationProgress(member.holdingId, registrationId)
                     assertThat(registrationStatus.registrationStatus)
                         .withFailMessage {
