@@ -11,7 +11,7 @@ import net.corda.flow.application.services.impl.interop.facade.FacadeReaders
 import net.corda.flow.application.services.impl.interop.parameters.TypeParameters
 import net.corda.flow.application.services.impl.interop.parameters.TypedParameterImpl
 import net.corda.v5.application.interop.facade.FacadeId
-import net.corda.v5.application.interop.facade.FacadeMethodType
+import net.corda.v5.application.interop.facade.FacadeMethod
 import net.corda.v5.application.interop.parameters.ParameterTypeLabel
 import java.math.BigDecimal
 
@@ -30,7 +30,7 @@ class FacadeSpec : DescribeSpec({
             getBalance should {
                 it.facadeId shouldBe facade.facadeId
                 it.name shouldBe "get-balance"
-                it.type shouldBe FacadeMethodType.QUERY
+                it.type shouldBe FacadeMethod.FacadeMethodType.QUERY
             }
 
             denomination shouldBe TypedParameterImpl(

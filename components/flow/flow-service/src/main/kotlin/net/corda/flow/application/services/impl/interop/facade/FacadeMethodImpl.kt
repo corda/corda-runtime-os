@@ -3,7 +3,6 @@ package net.corda.flow.application.services.impl.interop.facade
 import net.corda.v5.application.interop.facade.Facade
 import net.corda.v5.application.interop.facade.FacadeId
 import net.corda.v5.application.interop.facade.FacadeMethod
-import net.corda.v5.application.interop.facade.FacadeMethodType
 import net.corda.v5.application.interop.facade.FacadeRequest
 import net.corda.v5.application.interop.facade.FacadeResponse
 import net.corda.v5.application.interop.parameters.TypedParameter
@@ -19,7 +18,7 @@ import net.corda.v5.application.interop.parameters.TypedParameterValue
 data class FacadeMethodImpl(
     private val facadeId: FacadeId,
     private val name: String,
-    private val type: FacadeMethodType,
+    private val type: FacadeMethod.FacadeMethodType,
     private val inParameters: List<TypedParameter<*>>,
     private val outParameters: List<TypedParameter<*>>
 ) : FacadeMethod {
@@ -105,7 +104,7 @@ data class FacadeMethodImpl(
         return name
     }
 
-    override fun getType(): FacadeMethodType {
+    override fun getType(): FacadeMethod.FacadeMethodType {
         return type
     }
 
