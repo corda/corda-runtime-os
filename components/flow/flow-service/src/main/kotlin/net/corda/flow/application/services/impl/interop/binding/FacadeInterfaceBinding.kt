@@ -2,6 +2,7 @@ package net.corda.flow.application.services.impl.interop.binding
 
 import net.corda.v5.application.interop.facade.Facade
 import net.corda.v5.application.interop.facade.FacadeMethod
+import net.corda.v5.application.interop.binding.InteropAction
 import net.corda.v5.application.interop.parameters.TypedParameter
 import java.lang.reflect.Constructor
 import java.lang.reflect.Method
@@ -89,14 +90,14 @@ data class BoundParameter(val index: Int, val type: Class<*>)
  *
  * - NoOutParameters - when the method returns `InteropAction<Void>` and there are no out-parameters to bind
  * - SingletonOutParameterBinding - when there is only one out-parameter to bind, and it is bound directly to the
- *   return type (wrapped with [org.corda.weft.binding.api.InteropAction]) of the method
+ *   return type (wrapped with [InteropAction]) of the method
  * - DataClassOutParameterBinding - used when there are multiple out-parameters to bind, and they are bound to the
  *   properties of a Kotlin data class or Java POJO.
  *
  * Note that in the third case, if a Java POJO is used it must obey the following conventions:
  *
  * - All property values must be passed in through the constructor, rather than set with "setter" methods.
- * - Every property value must gave a 'getter' method through which it can be read, e.g. for the property "balance" a
+ * - Every property value must give a 'getter' method through which it can be read, e.g. for the property "balance" a
  *   "getBalance" method.
  * - Matching of constructor arguments to getters is by the facade parameter method name to which they are bound.
  */

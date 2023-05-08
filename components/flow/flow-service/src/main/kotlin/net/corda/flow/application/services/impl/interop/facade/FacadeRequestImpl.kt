@@ -2,7 +2,9 @@ package net.corda.flow.application.services.impl.interop.facade
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize
 import com.fasterxml.jackson.databind.annotation.JsonSerialize
+import net.corda.v5.application.interop.facade.Facade
 import net.corda.v5.application.interop.facade.FacadeId
+import net.corda.v5.application.interop.facade.FacadeMethod
 import net.corda.v5.application.interop.facade.FacadeRequest
 import net.corda.v5.application.interop.parameters.TypedParameter
 import net.corda.v5.application.interop.parameters.TypedParameterValue

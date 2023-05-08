@@ -1,5 +1,6 @@
 package net.corda.flow.application.services.impl.interop.facade
 
+import net.corda.v5.application.interop.facade.Facade
 import net.corda.v5.application.interop.facade.FacadeId
 import net.corda.v5.application.interop.facade.FacadeMethod
 import net.corda.v5.application.interop.facade.FacadeMethodType
