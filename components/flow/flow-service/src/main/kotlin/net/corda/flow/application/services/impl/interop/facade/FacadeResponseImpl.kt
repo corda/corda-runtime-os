@@ -9,7 +9,6 @@ import net.corda.v5.application.interop.parameters.TypedParameterValue
 
 /**
  * A [FacadeResponseImpl] is a response to a [FacadeRequest] to invoke a [FacadeMethod] on a [Facade].
- *
  * @param method The method that was invoked.
  * @param outParameters The values of the out parameters of the method.
  */
@@ -36,7 +35,6 @@ data class FacadeResponseImpl(
 
     /**
      * Get the value of an out parameter.
-     *
      * @param parameter The parameter to get the value of.
      */
     @Suppress("UNCHECKED_CAST")

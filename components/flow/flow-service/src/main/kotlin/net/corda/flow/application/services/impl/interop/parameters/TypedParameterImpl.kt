@@ -6,7 +6,6 @@ import net.corda.v5.application.interop.parameters.TypedParameterValue
 
 /**
  * A [TypedParameter] is a parameter having a name and a defined [ParameterType].
- *
  * @param name The name of the parameter, e.g. "amount".
  * @param type The type of the parameter, e.g. [ParameterType].
  */

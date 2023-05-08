@@ -11,7 +11,6 @@ import kotlin.reflect.jvm.javaMethod
 
 /**
  * Represents the binding of a [Facade] to a JVM interface.
- *
  * @param facade The bound [Facade]
  * @param boundInterface The bound JVM interface.
  * @param methodBindings Bindings of Facade methods to interface methods.
@@ -27,7 +26,6 @@ data class FacadeInterfaceBinding(
 
     /**
      * Obtain the [FacadeMethodBinding] for a given [Method] on the bound interface.
-     *
      * @param interfaceMethod The [Method] to get the binding for
      */
     fun bindingFor(interfaceMethod: Method): FacadeMethodBinding? = bindingsByMethod[interfaceMethod]
@@ -35,7 +33,6 @@ data class FacadeInterfaceBinding(
     /**
      * Utility method for writing tests in Kotlin - enables us to request the binding for a method by passing in a
      * Kotlin method reference, e.g. `facadeBindings.bindingFor(MyInterface::myMethod)`.
-     *
      * @param method A Kotlin method reference pointing to the method to gether the binding for
      */
     fun bindingFor(method: KFunction<*>) = bindingFor(method.javaMethod!!)
@@ -44,7 +41,6 @@ data class FacadeInterfaceBinding(
 
 /**
  * Binding of a [FacadeMethod] to a [Method] on a JVM interface.
- *
  * @param facadeMethod The bound [FacadeMethod]
  * @param interfaceMethod The bound JVM [Method]
  * @param inParameterBindings Bindings of method parameters to [TypedParameter] in-parameters
@@ -62,7 +58,6 @@ data class FacadeMethodBinding(
 
     /**
      * Obtain the [FacadeInParameterBinding] for the method parameter at the given index
-     *
      * @param parameterIndex The index of the method parameter to get the binding for
      */
     fun bindingForMethodParameter(parameterIndex: Int): FacadeInParameterBinding? =
@@ -74,7 +69,6 @@ data class FacadeMethodBinding(
 
 /**
  * Binding of a [TypedParameter] in-parameter to a [BoundParameter] method parameter
- *
  * @param facadeParameter The bound facade in-parameter
  * @param boundParameter The bound method parameter
  */
@@ -85,7 +79,6 @@ data class FacadeInParameterBinding(
 
 /**
  * Represents a parameter of a method, by index and JVM [Class]
- *
  * @param index The index of the parameter
  * @param type The JVM [Class] (non-generic / erased) of the parameter
  */
@@ -125,7 +118,6 @@ sealed class FacadeOutParameterBindings {
 
 /**
  * Binding of a [TypedParameter] out-parameter to a property of a data class
- *
  * @param facadeOutParameter The bound parameter
  * @param constructorParameter The bound parameter of the data class constructor, used when populating a result
  * @param readMethod The "getter" method corresponding to the bound property, used when translating a result object into

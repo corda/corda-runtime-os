@@ -39,7 +39,6 @@ class FacadeInterfaceBindingException(message: String) : RuntimeException(messag
  *
  * These are temporary objects which create a "working context" for analysis of the interface and facade that are being
  * bound together - the application developer should never need to use anything here directly.
- *
  * @param T The type of binding this context can produce
  */
 internal abstract class BindingContext<T> {
@@ -52,7 +51,6 @@ internal abstract class BindingContext<T> {
     /**
      * Test that a boolean condition is met, and throw a [FacadeInterfaceBindingException] with a message describing the
      * current binding context if it is not.
-     *
      * @param passed Whether the condition was met or not.
      * @param reason Function that will generate the "reason" part of the error message.
      */
@@ -63,7 +61,6 @@ internal abstract class BindingContext<T> {
     /**
      * Extension function for any type of value that may be null. Will either throw a [FacadeInterfaceBindingException]
      * if the value is null, or return the non-null value if it is not.
-     *
      * @param reason Function that will generate the "reason" part of the error message, if the value is null.
      */
     protected fun <T : Any> T?.orFail(reason: () -> String): T =
@@ -73,7 +70,6 @@ internal abstract class BindingContext<T> {
 
 /**
  * [BindingContext] for binding a JVM interface to a [Facade] - the entry-point for interface/facade binding.
- *
  * @param facade the [Facade] to be bound.
  * @param boundInterface The JVM interface to be bound.
  */

@@ -31,7 +31,6 @@ object FacadeReaders {
 
 /**
  * A [JacksonFacadeReader] reads a [Facade] from a JSON input source, using Jackson.
- *
  * @param mapper The [ObjectMapper] to use for reading the JSON.
  */
 class JacksonFacadeReader(val deserialiser: (Reader) -> FacadeDefinition) : FacadeReader {

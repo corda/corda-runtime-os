@@ -27,7 +27,6 @@ class TypeParameters<T> {
      * Parse a [TypeParameters] from a string in the format "type" or "type (qualifier)".
      *
      * The accepted types are "boolean", "string", "decimal", "uuid", "timestamp", "bytes" and "json".
-     *
      * @param typeString The string to parse.
      */
     fun <T : Any> of(typeString: String): ParameterType<T> = of(typeString, emptyMap())
@@ -37,7 +36,6 @@ class TypeParameters<T> {
      *
      * The accepted types are "boolean", "string", "decimal", "uuid", "timestamp", "bytes" and "json", or aliases
      * defined in the supplied [Map].
-     *
      * @param typeString The string to parse.
      * @param aliases A map of type aliases.
      */

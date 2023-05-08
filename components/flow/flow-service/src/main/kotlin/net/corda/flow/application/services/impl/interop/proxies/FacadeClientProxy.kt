@@ -22,7 +22,6 @@ object FacadeProxies {
 
     /**
      * Entry point for generating a client proxy object for a [Facade] bound to a JVM interface.
-     *
      * @param facade The [Facade] to create a client proxy object for
      * @param interfaceType The [Class] of the JVM interface to create a client proxy object for
      * @param jsonMarshaller A [JsonMarshaller] to use when reading/writing JSON blobs
@@ -63,7 +62,6 @@ inline fun <reified T : Any> Facade.getClientProxy(
 /**
  * Exception thrown if for some reason we can't dispatch a method call on a client proxy to create a [FacadeRequest],
  * or interpret a [FacadeResponse] to get a response value.
- *
  * @param message The reason why dispatch failed.
  */
 class FacadeMethodDispatchException(message: String) : RuntimeException(message)

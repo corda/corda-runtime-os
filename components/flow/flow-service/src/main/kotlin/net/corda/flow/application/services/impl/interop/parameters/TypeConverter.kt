@@ -10,7 +10,6 @@ class TypeConverter(private val jsonMarshaller: JsonMarshaller) {
 
     /**
      * Convert a facade parameter value (in or out) to the JVM type declared for a JVM interface method parameter.
-     *
      * @param parameterType The [ParameterType] to convert from
      * @param parameterValue The value to convert
      * @param jvmType The target JVM type

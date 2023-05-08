@@ -9,7 +9,6 @@ import net.corda.v5.application.interop.parameters.TypedParameterValue
 
 /**
  * A [FacadeRequest] is a request to invoke a [FacadeMethod] on a [Facade].
- *
  * @param facadeId The id of the facade to which the method belongs.
  * @param methodName The name of the method to invoke.
  * @param inParameters The parameter values to pass to the method.
@@ -37,7 +36,6 @@ data class FacadeRequestImpl(
 
     /**
      * Get the value of a parameter by name.
-     *
      * @param parameter The parameter to get the value of.
      */
     @Suppress("UNCHECKED_CAST")
