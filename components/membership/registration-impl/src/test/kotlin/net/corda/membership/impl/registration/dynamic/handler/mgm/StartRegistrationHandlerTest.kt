@@ -173,6 +173,7 @@ class StartRegistrationHandlerTest {
     private val registrationRequest = createRegistrationRequest()
 
     private fun createRegistrationRequest(
+        registeringMember: HoldingIdentity = aliceHoldingIdentity,
         context: KeyValuePairList = memberContext,
         serial: Long? = 0L
     ) = RegistrationRequestDetails(
@@ -180,6 +181,7 @@ class StartRegistrationHandlerTest {
         clock.instant(),
         RegistrationStatus.RECEIVED_BY_MGM,
         registrationId,
+        registeringMember.toCorda().shortHash.value,
         1,
         context,
         CryptoSignatureWithKey(

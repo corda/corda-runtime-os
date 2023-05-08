@@ -73,6 +73,7 @@ import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.persistence.client.MembershipQueryResult
+import net.corda.membership.registration.ExpirationProcessor
 import net.corda.membership.registration.InvalidMembershipRegistrationException
 import net.corda.membership.registration.NotReadyMembershipRegistrationException
 import net.corda.messaging.api.publisher.Publisher
@@ -188,6 +189,7 @@ class MGMRegistrationServiceTest {
     private val dependentComponents = setOf(
         LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
         LifecycleCoordinatorName.forComponent<CryptoOpsClient>(),
+        LifecycleCoordinatorName.forComponent<ExpirationProcessor>(),
     )
 
     private var coordinatorIsRunning = false
@@ -257,6 +259,7 @@ class MGMRegistrationServiceTest {
         on { get(eq(mgm)) } doReturn virtualNodeInfo
     }
     private val writerService: GroupParametersWriterService = mock()
+    private val expirationProcessor: ExpirationProcessor = mock()
 
     private val registrationService = MGMRegistrationService(
         publisherFactory,
@@ -274,6 +277,7 @@ class MGMRegistrationServiceTest {
         virtualNodeInfoReadService,
         writerService,
         configurationGetService,
+        expirationProcessor,
     )
 
     private val properties = mapOf(
@@ -419,6 +423,7 @@ class MGMRegistrationServiceTest {
                 val mgmOnboardedEvent = membershipEvent.event as MgmOnboarded
                 it.assertThat(mgmOnboardedEvent.onboardedMgm).isEqualTo(mgm.toAvro())
             }
+            verify(expirationProcessor).scheduleProcessingOfExpiredRequests(mgm)
             registrationService.stop()
         }
 
@@ -533,6 +538,8 @@ class MGMRegistrationServiceTest {
             val exception = assertThrows<InvalidMembershipRegistrationException> {
                 registrationService.register(registrationRequest, mgm, properties)
             }
+
+            verify(expirationProcessor, never()).scheduleProcessingOfExpiredRequests(mgm)
 
             assertThat(exception).hasMessageContaining("Registration failed, persistence error. Reason: Nop")
         }
