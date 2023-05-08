@@ -3,7 +3,6 @@ package net.corda.cli.plugins.preinstall
 import net.corda.cli.plugins.preinstall.PreInstallPlugin.PluginContext
 import net.corda.cli.plugins.preinstall.PreInstallPlugin.Kafka
 import net.corda.cli.plugins.preinstall.PreInstallPlugin.ReportEntry
-import net.corda.cli.plugins.preinstall.CheckKafka.KafkaProperties.TruststoreNotFoundException
 import org.apache.kafka.clients.admin.AdminClient
 import org.apache.kafka.common.KafkaException
 import org.apache.kafka.common.Node
@@ -57,7 +56,7 @@ class CheckKafka : Callable<Int>, PluginContext() {
         }
     }
 
-    class KafkaProperties(private val bootstrapServers: String) {
+    data class KafkaProperties(private val bootstrapServers: String) {
         var saslUsername: String? = null
         var saslPassword: String? = null
         var saslMechanism: String? = null
@@ -65,8 +64,9 @@ class CheckKafka : Callable<Int>, PluginContext() {
         var truststoreFile: String? = null
         var truststoreType: String? = null
         var timeout: Int = 3000
+        var tlsEnabled = false
+        var saslEnabled = false
 
-        class TruststoreNotFoundException(message: String) : Exception(message)
         class SaslPlainWithoutTlsException(message: String) : Exception(message)
 
         fun getKafkaProperties(): Properties {
@@ -74,9 +74,6 @@ class CheckKafka : Callable<Int>, PluginContext() {
             props["bootstrap.servers"] = bootstrapServers
             props["request.timeout.ms"] = timeout
             props["connections.max.idle.ms"] = 5000
-
-            val tlsEnabled = !(truststoreFile == null && truststorePassword == null)
-            val saslEnabled = !(saslUsername == null && saslPassword == null)
 
             // Assembles the properties in the same way as the helm charts:
             // https://github.com/corda/corda-runtime-os/blob/release/os/5.0/charts/corda-lib/templates/_bootstrap.tpl#L185
@@ -104,11 +101,6 @@ class CheckKafka : Callable<Int>, PluginContext() {
 
                 if (truststoreFile != null) {
                     props["ssl.truststore.certificates"] = truststoreFile
-                } else {
-                    throw TruststoreNotFoundException(
-                        "If SSL is enabled, you must provide either a truststore.valueFrom.secretKeyRef entry, " +
-                                "or specify the location of a truststore file with -f."
-                    )
                 }
 
             } else if (saslEnabled) {
@@ -149,13 +141,10 @@ class CheckKafka : Callable<Int>, PluginContext() {
         }
     }
 
-    private fun checkCredential(value: Any?, e: Exception): Boolean {
+    private fun checkCredential(value: Any?, e: Exception) {
         if (value == null) {
             report.addEntry(ReportEntry("Create Kafka client properties", false, e))
-            logger.error(report.failingTests())
-            return false
         }
-        return true
     }
 
     override fun call(): Int {
@@ -178,11 +167,9 @@ class CheckKafka : Callable<Int>, PluginContext() {
         var truststoreType: String? = null
 
         if (yaml.kafka.sasl.enabled) {
-            if (!checkCredential(yaml.kafka.sasl.username, SASLCredentialException("If SASL is enabled, you must provide a username.")) ||
-                !checkCredential(yaml.kafka.sasl.password, SASLCredentialException("If SASL is enabled, you must provide a password.")) ||
-                !checkCredential(yaml.kafka.sasl.mechanism, SASLCredentialException("If SASL is enabled, you must provide a mechanism."))) {
-                return 1
-            }
+            checkCredential(yaml.kafka.sasl.username, SASLCredentialException("If SASL is enabled, you must provide a username."))
+            checkCredential(yaml.kafka.sasl.password, SASLCredentialException("If SASL is enabled, you must provide a password."))
+            checkCredential(yaml.kafka.sasl.mechanism, SASLCredentialException("If SASL is enabled, you must provide a mechanism."))
 
             saslMechanism = yaml.kafka.sasl.mechanism
 
@@ -198,14 +185,9 @@ class CheckKafka : Callable<Int>, PluginContext() {
         }
 
         if (yaml.kafka.tls.enabled) {
-            if (!checkCredential(yaml.kafka.tls.truststore,
-                    TruststoreNotFoundException("If SSL is enabled, you must provide entries for kafka.tls.truststore."))) {
-                return 1
-            }
+            truststoreType = yaml.kafka.tls.truststore?.type
 
-            truststoreType = yaml.kafka.tls.truststore!!.type
-
-            if (truststoreType != "PEM" && yaml.kafka.tls.truststore.password != null) {
+            if (truststoreType != "PEM" && yaml.kafka.tls.truststore?.password != null) {
                 try {
                     truststorePassword = getCredential(yaml.kafka.tls.truststore.password, namespace)
                     report.addEntry(ReportEntry("Get TLS truststore password", true))
@@ -214,7 +196,7 @@ class CheckKafka : Callable<Int>, PluginContext() {
                     logger.error(report.failingTests())
                     return 1
                 }
-            } else if (yaml.kafka.tls.truststore.valueFrom?.secretKeyRef?.name != null ) {
+            } else if (yaml.kafka.tls.truststore?.valueFrom?.secretKeyRef?.name != null ) {
                 val secret = PreInstallPlugin.SecretValues(yaml.kafka.tls.truststore.valueFrom, null, null, null, null)
                 try {
                     truststoreFile = getCredential(secret, namespace)
@@ -228,12 +210,14 @@ class CheckKafka : Callable<Int>, PluginContext() {
         }
 
         val creds = KafkaProperties(yaml.kafka.bootstrapServers)
-        saslUsername?.let{ creds.saslUsername = it }
-        saslPassword?.let{ creds.saslPassword = it }
-        saslMechanism?.let{ creds.saslMechanism = it }
-        truststorePassword?.let{ creds.truststorePassword = it }
-        truststoreFile?.let{ creds.truststoreFile = it }
-        truststoreType?.let{ creds.truststoreType = it }
+        creds.saslEnabled = yaml.kafka.sasl.enabled
+        creds.saslUsername = saslUsername
+        creds.saslPassword = saslPassword
+        creds.saslMechanism = saslMechanism
+        creds.tlsEnabled = yaml.kafka.tls.enabled
+        creds.truststorePassword = truststorePassword
+        creds.truststoreFile = truststoreFile
+        creds.truststoreType = truststoreType
         creds.timeout = timeout
 
         val props: Properties
