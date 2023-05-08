@@ -1,5 +1,7 @@
 package net.corda.membership.impl.persistence.client
 
+import java.time.Duration
+import java.util.concurrent.TimeoutException
 import net.corda.data.membership.db.request.MembershipPersistenceRequest
 import net.corda.data.membership.db.request.async.MembershipPersistenceAsyncRequest
 import net.corda.data.membership.db.response.MembershipPersistenceResponse
@@ -12,8 +14,6 @@ import net.corda.schema.Schemas.Membership.MEMBERSHIP_DB_ASYNC_TOPIC
 import net.corda.utilities.Either
 import net.corda.utilities.concurrent.getOrThrow
 import org.slf4j.LoggerFactory
-import java.time.Duration
-import java.util.concurrent.TimeoutException
 
 /**
  * An implementation of the MembershipPersistenceOperation.
@@ -31,7 +31,7 @@ internal class MembershipPersistenceOperationImpl<T>(
     private val convertResult: (Any?) -> Either<T, String>,
 ) : MembershipPersistenceOperation<T> {
     private companion object {
-        const val RPC_TIMEOUT_MS = 10000L
+        const val RPC_TIMEOUT_MS = 20000L
         val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
