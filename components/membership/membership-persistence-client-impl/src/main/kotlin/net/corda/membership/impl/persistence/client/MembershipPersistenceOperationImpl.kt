@@ -31,7 +31,7 @@ internal class MembershipPersistenceOperationImpl<T>(
     private val convertResult: (Any?) -> Either<T, String>,
 ) : MembershipPersistenceOperation<T> {
     private companion object {
-        const val RPC_TIMEOUT_MS = 10000L
+        const val RPC_TIMEOUT_MS = 20000L
         val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
