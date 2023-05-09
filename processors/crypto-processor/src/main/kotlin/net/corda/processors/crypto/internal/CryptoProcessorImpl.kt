@@ -178,7 +178,7 @@ class CryptoProcessorImpl @Activate constructor(
                 cryptoServiceFactory.bootstrapConfig(bootstrapConfig.getConfig(BOOT_CRYPTO))
             }
             is RegistrationStatusChangeEvent -> {
-                logger.info("Registering for configuration updates.")
+                logger.trace("Registering for configuration updates.")
                 configurationReadService.registerComponentForUpdates(coordinator, configKeys)
                 if (event.status == LifecycleStatus.UP) {
                     dependenciesUp = true

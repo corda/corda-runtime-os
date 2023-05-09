@@ -124,7 +124,7 @@ class CryptoFlowOpsBusProcessor(
         return when (request) {
             is FilterMyKeysFlowQuery -> {
                 // TODO - this message is not generated anywhere, and this handler is not tested
-                logger.warn { "Running untested code path for FilterMyKeysFlowQUery" }
+                logger.warn("Running untested code path for FilterMyKeysFlowQuery")
                 val keys = request.keys.map { ShortHash.of(publicKeyIdFromBytes(it.array())) }
                 signingService.lookupSigningKeysByPublicKeyShortHash(context.tenantId, keys)
             }
