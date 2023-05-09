@@ -1,7 +1,6 @@
 package net.corda.cli.plugins.packaging.aws.kms.rsa;
 
 import lombok.AccessLevel;
-import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import software.amazon.awssdk.services.kms.jce.provider.KmsPublicKey;
@@ -9,13 +8,21 @@ import software.amazon.awssdk.services.kms.jce.provider.KmsPublicKey;
 import java.math.BigInteger;
 import java.security.interfaces.RSAPublicKey;
 
-@Getter
 @RequiredArgsConstructor(access = AccessLevel.PACKAGE)
 public class KmsRSAPublicKey implements KmsPublicKey, RSAPublicKey {
 
     @NonNull
     private final String id;
     private final RSAPublicKey publicKey;
+
+    public String getId() {
+        return id;
+    }
+
+    @Override
+    public RSAPublicKey getPublicKey() {
+        return publicKey;
+    }
 
     @Override
     public BigInteger getPublicExponent() {

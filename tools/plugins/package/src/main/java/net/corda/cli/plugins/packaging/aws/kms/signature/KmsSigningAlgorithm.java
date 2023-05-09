@@ -1,10 +1,8 @@
 package net.corda.cli.plugins.packaging.aws.kms.signature;
 
 import lombok.AllArgsConstructor;
-import lombok.Getter;
 import software.amazon.awssdk.services.kms.model.SigningAlgorithmSpec;
 
-@Getter
 @AllArgsConstructor
 public enum KmsSigningAlgorithm {
 
@@ -24,4 +22,15 @@ public enum KmsSigningAlgorithm {
     private final String digestAlgorithm;
     private final SigningAlgorithmSpec signingAlgorithmSpec;
 
+    public String getAlgorithm() {
+        return algorithm;
+    }
+
+    public String getDigestAlgorithm() {
+        return digestAlgorithm;
+    }
+
+    public SigningAlgorithmSpec getSigningAlgorithmSpec() {
+        return signingAlgorithmSpec;
+    }
 }

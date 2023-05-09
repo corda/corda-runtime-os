@@ -1,9 +1,7 @@
 package net.corda.cli.plugins.packaging.aws.kms.utils.csr;
 
 import lombok.Builder;
-import lombok.Getter;
 
-@Getter
 @Builder
 public class CsrInfo {
 
@@ -14,6 +12,34 @@ public class CsrInfo {
     private final String st;
     private final String c;
     private final String mail;
+
+    public String getCn() {
+        return cn;
+    }
+
+    public String getOu() {
+        return ou;
+    }
+
+    public String getO() {
+        return o;
+    }
+
+    public String getL() {
+        return l;
+    }
+
+    public String getSt() {
+        return st;
+    }
+
+    public String getC() {
+        return c;
+    }
+
+    public String getMail() {
+        return mail;
+    }
 
     @Override
     public String toString() {
