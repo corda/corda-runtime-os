@@ -38,6 +38,7 @@ import net.corda.membership.mtls.allowed.list.service.AllowedCertificatesReaderW
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.utilities.time.Clock
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
+import org.slf4j.LoggerFactory
 
 @Suppress("LongParameterList")
 internal class HandlerFactories(
@@ -51,6 +52,9 @@ internal class HandlerFactories(
     platformInfoProvider: PlatformInfoProvider,
     allowedCertificatesReaderWriterService: AllowedCertificatesReaderWriterService,
 ) {
+    companion object {
+        private val logger = LoggerFactory.getLogger(this::class.java)
+    }
     val persistenceHandlerServices = PersistenceHandlerServices(
         clock,
         dbConnectionManager,
@@ -103,6 +107,19 @@ internal class HandlerFactories(
     }
 
     fun handle(request: MembershipPersistenceRequest): Any? {
-        return getHandler(request.request::class.java).invoke(request.context, request.request)
+        val startTime = persistenceHandlerServices.clock.instant()
+        return getHandler(request.request::class.java).invoke(request.context, request.request).also { _ ->
+            logger.info(
+                "Persistence operation " +
+                        request.request::class.java.simpleName +
+                        " with ID " +
+                        request.context.requestId +
+                        " took " +
+                        persistenceHandlerServices.clock.instant()
+                            .minusMillis(startTime.toEpochMilli())
+                            .toEpochMilli() +
+                        "ms"
+            )
+        }
     }
 }
