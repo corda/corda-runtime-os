@@ -143,22 +143,22 @@ class CryptoProcessorImpl @Activate constructor(
         get() = lifecycleCoordinator.isRunning
 
     override fun start(bootConfig: SmartConfig) {
-        logger.info("Crypto processor starting.")
+        logger.trace("Crypto processor starting.")
         lifecycleCoordinator.start()
         lifecycleCoordinator.postEvent(BootConfigEvent(bootConfig))
     }
 
     override fun stop() {
-        logger.info("Crypto processor stopping.")
+        logger.trace("Crypto processor stopping.")
         lifecycleCoordinator.stop()
     }
 
     @Suppress("ComplexMethod", "NestedBlockDepth")
     private fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
-        logger.info("Crypto processor received event $event.")
+        logger.trace("Crypto processor received event $event.")
         when (event) {
             is StartEvent -> {
-                logger.info("Crypto processor starting")
+                logger.trace("Crypto processor starting")
                 registration?.close()
                 registration = coordinator.followStatusChangesByName(dependentComponents.coordinatorNames)
             }
@@ -168,13 +168,13 @@ class CryptoProcessorImpl @Activate constructor(
             is BootConfigEvent -> {
                 val bootstrapConfig = event.config
 
-                logger.info("Bootstrapping {}", configurationReadService::class.simpleName)
+                logger.trace("Bootstrapping {}", configurationReadService::class.simpleName)
                 configurationReadService.bootstrapConfig(bootstrapConfig)
 
-                logger.info("Bootstrapping {}", dbConnectionManager::class.simpleName)
+                logger.trace("Bootstrapping {}", dbConnectionManager::class.simpleName)
                 dbConnectionManager.bootstrap(bootstrapConfig.getConfig(BOOT_DB))
 
-                logger.info("Bootstrapping {}", cryptoServiceFactory::class.simpleName)
+                logger.trace("Bootstrapping {}", cryptoServiceFactory::class.simpleName)
                 cryptoServiceFactory.bootstrapConfig(bootstrapConfig.getConfig(BOOT_CRYPTO))
             }
             is RegistrationStatusChangeEvent -> {
@@ -273,19 +273,19 @@ class CryptoProcessorImpl @Activate constructor(
         )
 
         // and start the subscriptions
-        logger.info("Starting processing on ${flowGroupName} ${Schemas.Crypto.FLOW_OPS_MESSAGE_TOPIC}")
+        logger.trace("Starting processing on ${flowGroupName} ${Schemas.Crypto.FLOW_OPS_MESSAGE_TOPIC}")
         flowOpsSubscription.start()
-        logger.info("Starting processing on ${rpcGroupName} ${Schemas.Crypto.RPC_OPS_MESSAGE_TOPIC}")
+        logger.trace("Starting processing on ${rpcGroupName} ${Schemas.Crypto.RPC_OPS_MESSAGE_TOPIC}")
         rpcOpsSubscription.start()
     }
 
     private fun setStatus(status: LifecycleStatus, coordinator: LifecycleCoordinator) {
-        logger.info("Crypto processor is set to be $status")
+        logger.trace("Crypto processor is set to be $status")
         coordinator.updateStatus(status)
     }
 
     private fun temporaryAssociateClusterWithSoftHSM(): List<Pair<String, String>> {
-        logger.info("Assigning SOFT HSM to cluster tenants.")
+        logger.trace("Assigning SOFT HSM to cluster tenants.")
         val assigned = mutableListOf<Pair<String, String>>()
         val failed = mutableListOf<Pair<String, String>>()
         CryptoConsts.Categories.all.forEach { category ->
@@ -297,7 +297,7 @@ class CryptoProcessorImpl @Activate constructor(
                 }
             }
         }
-        logger.info(
+        logger.trace(
             "SOFT HSM assignment is done. Assigned=[{}], failed=[{}]",
             assigned.joinToString { "${it.first}:${it.second}" },
             failed.joinToString { "${it.first}:${it.second}" }
@@ -306,9 +306,9 @@ class CryptoProcessorImpl @Activate constructor(
     }
 
     private fun tryAssignSoftHSM(tenantId: String, category: String): Boolean = try {
-        logger.info("Assigning SOFT HSM for $tenantId:$category")
+        logger.trace("Assigning SOFT HSM for $tenantId:$category")
         hsmService.assignSoftHSM(tenantId, category)
-        logger.info("Assigned SOFT HSM for $tenantId:$category")
+        logger.trace("Assigned SOFT HSM for $tenantId:$category")
         true
     } catch (e: Throwable) {
         logger.error("Failed to assign SOFT HSM for $tenantId:$category", e)
