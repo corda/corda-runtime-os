@@ -1,6 +1,6 @@
 package net.corda.membership.impl.registration.dynamic.handler.mgm
 
-import net.corda.data.CordaAvroSerializationFactory
+import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePairList
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.command.registration.RegistrationCommand
@@ -10,6 +10,7 @@ import net.corda.data.membership.command.registration.mgm.VerifyMember
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.p2p.SetOwnRegistrationStatus
 import net.corda.data.membership.state.RegistrationState
+import net.corda.data.p2p.app.MembershipStatusFilter.PENDING
 import net.corda.layeredpropertymap.toAvro
 import net.corda.membership.impl.registration.dynamic.handler.MemberTypeChecker
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandler
@@ -26,11 +27,11 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.endpoints
 import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
 import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
 import net.corda.membership.lib.MemberInfoExtension.Companion.notaryDetails
-import net.corda.membership.lib.MemberInfoExtension.Companion.preAuthToken
 import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.SignedMemberInfo
 import net.corda.membership.lib.registration.RegistrationRequest
+import net.corda.membership.lib.registration.RegistrationRequestHelpers.getPreAuthToken
 import net.corda.membership.p2p.helpers.P2pRecordsFactory
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
@@ -47,6 +48,7 @@ import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro
 import net.corda.virtualnode.toCorda
+import org.apache.avro.specific.SpecificRecordBase
 import org.slf4j.LoggerFactory
 
 @Suppress("LongParameterList")
@@ -90,7 +92,9 @@ internal class StartRegistrationHandler(
                 )
             }
 
-        val (outputCommand, outputStates) = try {
+        val outputRecords: MutableList<Record<String, out SpecificRecordBase>> = mutableListOf()
+
+        val outputCommand = try {
             validateRegistrationRequest(!memberTypeChecker.isMgm(pendingMemberHoldingId)) {
                 "Registration request is registering an MGM holding identity."
             }
@@ -101,14 +105,28 @@ internal class StartRegistrationHandler(
                 .persistRegistrationRequest(mgmHoldingId, registrationRequest)
                 .getOrThrow()
 
+            logger.info("Registering $pendingMemberHoldingId with MGM for holding identity: $mgmHoldingId")
+            val pendingMemberInfo = buildPendingMemberInfo(registrationRequest)
+            val persistentMemberInfo = PersistentMemberInfo.newBuilder()
+                .setMemberContext(pendingMemberInfo.memberProvidedContext.toAvro())
+                .setViewOwningMember(mgmMemberInfo.holdingIdentity.toAvro())
+                .setMgmContext(pendingMemberInfo.mgmProvidedContext.toAvro())
+                .build()
+            val pendingMemberRecord = Record(
+                topic = Schemas.Membership.MEMBER_LIST_TOPIC,
+                key = "${mgmMemberInfo.holdingIdentity.shortHash}-${pendingMemberInfo.holdingIdentity.shortHash}" +
+                        "-${pendingMemberInfo.status}",
+                value = persistentMemberInfo,
+            )
+            // Publish pending member record so that we can notify the member of declined registration if failure occurs
+            // after this point
+            outputRecords.add(pendingMemberRecord)
+
             validateRegistrationRequest(registrationRequest.serial != null) {
                 "Serial on the registration request should not be null."
             }
 
-            logger.info("Registering $pendingMemberHoldingId with MGM for holding identity: $mgmHoldingId")
-            val pendingMemberInfo = buildPendingMemberInfo(registrationRequest)
-
-            validatePreAuthTokenUsage(mgmHoldingId, pendingMemberInfo)
+            validatePreAuthTokenUsage(mgmHoldingId, pendingMemberInfo, registrationRequest)
             // Parse the registration request and verify contents
             // The MemberX500Name matches the source MemberX500Name from the P2P messaging
             validateRegistrationRequest(
@@ -149,8 +167,8 @@ internal class StartRegistrationHandler(
 
             val signedMemberInfo = SignedMemberInfo(
                 pendingMemberInfo,
-                registrationRequest.signature,
-                registrationRequest.signatureSpec
+                registrationRequest.memberContext.signature,
+                registrationRequest.memberContext.signatureSpec
             )
 
             // Persist pending member info
@@ -162,17 +180,6 @@ internal class StartRegistrationHandler(
                 }
             }
 
-            val persistentMemberInfo = PersistentMemberInfo.newBuilder()
-                .setMemberContext(pendingMemberInfo.memberProvidedContext.toAvro())
-                .setViewOwningMember(mgmMemberInfo.holdingIdentity.toAvro())
-                .setMgmContext(pendingMemberInfo.mgmProvidedContext.toAvro())
-                .build()
-            val pendingMemberRecord = Record(
-                topic = Schemas.Membership.MEMBER_LIST_TOPIC,
-                key = "${mgmMemberInfo.holdingIdentity.shortHash}-${pendingMemberInfo.holdingIdentity.shortHash}" +
-                        "-${pendingMemberInfo.status}",
-                value = persistentMemberInfo,
-            )
             val persistMemberStatusMessage = p2pRecordsFactory.createAuthenticatedMessageRecord(
                 source = mgmHoldingId.toAvro(),
                 destination = pendingMemberHoldingId.toAvro(),
@@ -180,18 +187,21 @@ internal class StartRegistrationHandler(
                     registrationRequest.registrationId,
                     RegistrationStatus.RECEIVED_BY_MGM,
                 ),
-                minutesToWait = 5
+                minutesToWait = 5,
+                filter = PENDING
             )
+            outputRecords.add(persistMemberStatusMessage)
 
             logger.info("Successful initial validation of registration request with ID ${registrationRequest.registrationId}")
-            Pair(VerifyMember(), listOf(pendingMemberRecord, persistMemberStatusMessage))
+            VerifyMember()
         } catch (ex: InvalidRegistrationRequestException) {
-            logger.warn("Declined registration.", ex)
-            Pair(DeclineRegistration(ex.originalMessage), emptyList())
+            logger.warn("Declined registration. ${ex.originalMessage}")
+            DeclineRegistration(ex.originalMessage)
         } catch (ex: Exception) {
-            logger.warn("Declined registration.", ex)
-            Pair(DeclineRegistration("Failed to verify registration request due to: [${ex.message}]"), emptyList())
+            logger.warn("Declined registration. ${ex.message}")
+            DeclineRegistration("Failed to verify registration request due to: [${ex.message}]")
         }
+        outputRecords.add(Record(REGISTRATION_COMMAND_TOPIC, key, RegistrationCommand(outputCommand)))
 
         return RegistrationHandlerResult(
             RegistrationState(
@@ -199,9 +209,7 @@ internal class StartRegistrationHandler(
                 pendingMemberHoldingId.toAvro(),
                 mgmHoldingId.toAvro()
             ),
-            listOf(
-                Record(REGISTRATION_COMMAND_TOPIC, key, RegistrationCommand(outputCommand))
-            ) + outputStates
+            outputRecords
         )
     }
 
@@ -218,7 +226,7 @@ internal class StartRegistrationHandler(
 
     private fun buildPendingMemberInfo(registrationRequest: RegistrationRequest): MemberInfo {
         val memberContext = keyValuePairListDeserializer
-            .deserialize(registrationRequest.memberContext.array())
+            .deserialize(registrationRequest.memberContext.data.array())
             ?.items?.associate { it.key to it.value }
             ?: emptyMap()
         validateRegistrationRequest(memberContext.isNotEmpty()) {
@@ -256,8 +264,7 @@ internal class StartRegistrationHandler(
             memberRegistrationRequest.registrationId,
             source.toCorda(),
             memberRegistrationRequest.memberContext,
-            memberRegistrationRequest.memberSignature,
-            memberRegistrationRequest.memberSignatureSpec,
+            memberRegistrationRequest.registrationContext,
             memberRegistrationRequest.serial,
         )
     }
@@ -300,9 +307,13 @@ internal class StartRegistrationHandler(
      * Fail to validate a registration request if a pre-auth token is present in the registration context, and
      * it is not a valid UUID or it is not currently an active token for the registering member.
      */
-    private fun validatePreAuthTokenUsage(mgmHoldingId: HoldingIdentity, pendingMemberInfo: MemberInfo) {
+    private fun validatePreAuthTokenUsage(
+        mgmHoldingId: HoldingIdentity,
+        pendingMemberInfo: MemberInfo,
+        registrationRequest: RegistrationRequest
+    ) {
         try {
-            pendingMemberInfo.preAuthToken?.let {
+            registrationRequest.getPreAuthToken(keyValuePairListDeserializer)?.let {
                 val result = membershipQueryClient.queryPreAuthTokens(
                     mgmHoldingIdentity = mgmHoldingId,
                     ownerX500Name = pendingMemberInfo.name,

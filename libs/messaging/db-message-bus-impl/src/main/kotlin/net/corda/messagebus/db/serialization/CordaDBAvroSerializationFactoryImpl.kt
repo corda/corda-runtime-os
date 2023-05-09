@@ -1,13 +1,12 @@
 package net.corda.messagebus.db.serialization
 
-import net.corda.data.CordaAvroDeserializer
-import net.corda.data.CordaAvroSerializationFactory
-import net.corda.data.CordaAvroSerializer
+import net.corda.avro.serialization.CordaAvroDeserializer
+import net.corda.avro.serialization.CordaAvroSerializationFactory
+import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.schema.registry.AvroSchemaRegistry
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import java.util.function.Consumer
 
 /**
  * DB implementation of the Serialization Factory.
@@ -18,7 +17,7 @@ class CordaDBAvroSerializationFactoryImpl @Activate constructor(
     private val avroSchemaRegistry: AvroSchemaRegistry,
 ) : CordaAvroSerializationFactory {
     override fun <T : Any> createAvroDeserializer(
-        onError: Consumer<ByteArray>,
+        onError: (ByteArray) -> Unit,
         expectedClass: Class<T>
     ): CordaAvroDeserializer<T> {
         return CordaDBAvroDeserializerImpl(
@@ -28,9 +27,9 @@ class CordaDBAvroSerializationFactoryImpl @Activate constructor(
         )
     }
 
-    override fun <T: Any> createAvroSerializer(
-        onError: Consumer<ByteArray>
+    override fun <T : Any> createAvroSerializer(
+        onError: ((ByteArray) -> Unit)?
     ): CordaAvroSerializer<T> {
-        return CordaDBAvroSerializerImpl(avroSchemaRegistry)
+        return CordaDBAvroSerializerImpl(avroSchemaRegistry, onError)
     }
 }

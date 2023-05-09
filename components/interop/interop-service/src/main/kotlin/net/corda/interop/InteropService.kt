@@ -2,7 +2,7 @@ package net.corda.interop
 
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.data.CordaAvroSerializationFactory
+import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.interop.service.InteropFacadeToFlowMapperService
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.Lifecycle

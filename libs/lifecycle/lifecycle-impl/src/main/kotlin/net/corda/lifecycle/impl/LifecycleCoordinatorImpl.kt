@@ -1,5 +1,9 @@
 package net.corda.lifecycle.impl
 
+import java.util.concurrent.RejectedExecutionException
+import java.util.concurrent.ScheduledFuture
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
 import net.corda.lifecycle.CustomEvent
 import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.LifecycleCoordinator
@@ -19,10 +23,6 @@ import net.corda.lifecycle.registry.LifecycleRegistryException
 import net.corda.utilities.trace
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.util.concurrent.RejectedExecutionException
-import java.util.concurrent.ScheduledFuture
-import java.util.concurrent.TimeUnit
-import java.util.concurrent.atomic.AtomicBoolean
 
 
 /**
@@ -273,7 +273,6 @@ class LifecycleCoordinatorImpl(
             logger.trace { "$name: Closing coordinator" }
             postInternalEvent(StopEvent())
             postInternalEvent(CloseCoordinator())
-            registry.removeCoordinator(name)
         }
     }
 }

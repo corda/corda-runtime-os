@@ -14,6 +14,7 @@ internal class ConsumePreAuthTokenHandler(persistenceHandlerServices: Persistenc
 
     override fun invoke(context: MembershipRequestContext, request: ConsumePreAuthToken) {
         val requestReceived = clock.instant()
+        logger.info("Consuming pre-auth token with ID ${request.tokenId}")
         return transaction(context.holdingIdentity.toCorda().shortHash) { em ->
             val token = em.find(
                 PreAuthTokenEntity::class.java,

@@ -25,6 +25,7 @@ dependencies {
     implementation project(':libs:configuration:configuration-core')
     implementation project(':components:crypto:crypto-client')
     implementation project(':components:membership:locally-hosted-identities-service')
+    implementation project(":libs:serialization:serialization-avro")
 
     testImplementation project(':testing:test-utilities')
     testImplementation "org.mockito:mockito-core:$mockitoVersion"

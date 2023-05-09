@@ -1,5 +1,6 @@
 package net.corda.ledger.persistence.utxo.impl
 
+import net.corda.data.KeyValuePairList
 import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.ledger.persistence.PersistSignedGroupParametersIfDoNotExist
 import net.corda.data.persistence.EntityResponse
@@ -16,14 +17,19 @@ class UtxoPersistSignedGroupParametersIfDoNotExistRequestHandler(
 ) : RequestHandler {
 
     override fun execute(): List<Record<*, *>> {
-        requireNotNull(persistSignedGroupParametersIfDoNotExist.signedGroupParameters.mgmSignature){
+        requireNotNull(persistSignedGroupParametersIfDoNotExist.signedGroupParameters.mgmSignature) {
             "SignedGroupParameters needs to be signed."
         }
-        requireNotNull(persistSignedGroupParametersIfDoNotExist.signedGroupParameters.mgmSignatureSpec){
+        requireNotNull(persistSignedGroupParametersIfDoNotExist.signedGroupParameters.mgmSignatureSpec) {
             "SignedGroupParameters needs a signature specification."
         }
         persistenceService.persistSignedGroupParametersIfDoNotExist(persistSignedGroupParametersIfDoNotExist.signedGroupParameters)
 
-        return listOf(externalEventResponseFactory.success(externalEventContext, EntityResponse(emptyList())))
+        return listOf(
+            externalEventResponseFactory.success(
+                externalEventContext,
+                EntityResponse(emptyList(), KeyValuePairList(emptyList()))
+            )
+        )
     }
 }

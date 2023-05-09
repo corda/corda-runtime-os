@@ -1,6 +1,6 @@
 package net.corda.messaging.subscription
 
-import net.corda.data.CordaAvroSerializer
+import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.deadletter.StateAndEventDeadLetterRecord
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -122,7 +122,10 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
             attempts++
             try {
                 deadLetterRecords = mutableListOf()
-                nullableProducer = builder.createProducer(config)
+                nullableProducer = builder.createProducer(config) { data ->
+                    log.warn("Failed to serialize record from ${config.topic}")
+                    deadLetterRecords.add(data)
+                }
                 val (stateAndEventConsumerTmp, rebalanceListener) = builder.createStateEventConsumerAndRebalanceListener(
                     config,
                     processor.keyClass,

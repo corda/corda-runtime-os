@@ -1,6 +1,6 @@
 package net.corda.membership.impl.registration.dynamic.handler.mgm
 
-import net.corda.data.CordaAvroSerializationFactory
+import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.data.membership.command.registration.mgm.DeclineRegistration
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.p2p.SetOwnRegistrationStatus
@@ -54,7 +54,8 @@ internal class DeclineRegistrationHandler(
         val registrationRequestDeclinedCommand = membershipPersistenceClient.setRegistrationRequestStatus(
             viewOwningIdentity = declinedBy.toCorda(),
             registrationId = registrationId,
-            registrationRequestStatus = RegistrationStatus.DECLINED
+            registrationRequestStatus = RegistrationStatus.DECLINED,
+            reason = command.reason
         ).createAsyncCommands()
         val memberDeclinedMessage = p2pRecordsFactory.createAuthenticatedMessageRecord(
             source = declinedBy,
