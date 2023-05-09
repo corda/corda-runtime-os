@@ -918,7 +918,7 @@
         } ],
         "responses" : {
           "200" : {
-            "description" : "\n            The result of the flow instance, including:\n            \n            holdingIdentityShortHash: The short form hash of the Holding Identity\n            clientRequestId: The unique ID supplied by the client when the flow was created.\n            flowId: The internal unique ID for the flow.\n            flowStatus: The current state of the executing flow.\n            jsonFlowResult: The result returned from a completed flow, only set when the flow status is 'COMPLETED' otherwise null.\n            flowError: The details of the error that caused a flow to fail, only set when the flow status is 'FAILED' otherwise null.\n            timestamp: The timestamp of when the status was last updated (in UTC)\n            ",
+            "description" : "\n            The result of the flow instance, including:\n            \n            holdingIdentityShortHash: The short form hash of the Holding Identity\n            clientRequestId: The unique ID supplied by the client when the flow was created.\n            flowId: The internal unique ID for the flow.\n            flowStatus: The current state of the executing flow.\n            json: The result returned from a completed flow, only set when the flow status is 'COMPLETED' otherwise null.\n            flowError: The details of the error that caused a flow to fail, only set when the flow status is 'FAILED' otherwise null.\n            timestamp: The timestamp of when the status was last updated (in UTC)\n            ",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -4404,7 +4404,7 @@
             "nullable" : false,
             "example" : "string"
           },
-          "jsonFlowResult" : {
+          "json" : {
             "description" : "Can be any value - string, number, boolean, array or object.",
             "nullable" : true,
             "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}",

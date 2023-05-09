@@ -125,8 +125,10 @@ class UtxoLedgerTests {
         assertThat(customQueryFlowResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
         assertThat(customQueryFlowResult.flowError).isNull()
 
-        val parsedResponse = customQueryFlowResult.flowResult!!.traverse(objectMapper).
-            readValueAs(CustomQueryFlowResponse::class.java)
+        val parsedResponse = objectMapper.readValue(
+            customQueryFlowResult.flowResult!!,
+            CustomQueryFlowResponse::class.java
+        )
 
         assertThat(parsedResponse.results).isNotEmpty
         assertThat(parsedResponse.results).hasSizeGreaterThan(1)
@@ -147,19 +149,20 @@ class UtxoLedgerTests {
         for (holdingId in listOf(aliceHoldingId, bobHoldingId, charlieHoldingId)) {
             val findTransactionFlowRequestId = startRpcFlow(
                 holdingId,
-                mapOf("transactionId" to utxoFlowResult.flowResult!!.textValue()),
+                mapOf("transactionId" to utxoFlowResult.flowResult!!),
                 "com.r3.corda.demo.utxo.FindTransactionFlow"
             )
             val transactionResult = awaitRpcFlowFinished(holdingId, findTransactionFlowRequestId)
             assertThat(transactionResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
             assertThat(transactionResult.flowError).isNull()
 
-            val parsedResult = transactionResult.flowResult!!.traverse(objectMapper).readValueAs(FindTransactionResponse::class.java)
+            val parsedResult = objectMapper
+                .readValue(transactionResult.flowResult!!, FindTransactionResponse::class.java)
 
             assertThat(parsedResult.transaction).withFailMessage {
                 "Member with holding identity $holdingId did not receive the transaction ${utxoFlowResult.flowResult}"
             }.isNotNull
-            assertThat(parsedResult.transaction!!.id.toString()).isEqualTo(utxoFlowResult.flowResult!!.textValue())
+            assertThat(parsedResult.transaction!!.id.toString()).isEqualTo(utxoFlowResult.flowResult)
             assertThat(parsedResult.transaction.states.map { it.testField }).containsOnly(input)
             assertThat(parsedResult.transaction.states.flatMap { it.participants }).hasSize(3)
             assertThat(parsedResult.transaction.participants).hasSize(3)
@@ -173,8 +176,8 @@ class UtxoLedgerTests {
         )
         val evolveFlowResult = awaitRpcFlowFinished(bobHoldingId, evolveRequestId)
 
-        val parsedEvolveFlowResult = evolveFlowResult.flowResult!!.traverse(objectMapper).
-            readValueAs(EvolveResponse::class.java)
+        val parsedEvolveFlowResult = objectMapper
+            .readValue(evolveFlowResult.flowResult!!, EvolveResponse::class.java)
         assertThat(parsedEvolveFlowResult.transactionId).isNotNull()
         assertThat(parsedEvolveFlowResult.errorMessage).isNull()
         assertThat(evolveFlowResult.flowError).isNull()
@@ -190,13 +193,14 @@ class UtxoLedgerTests {
         assertThat(peekFlowResult.flowError).isNull()
         assertThat(peekFlowResult.flowResult).isNotNull()
 
-        val parsedPeekFlowResult = peekFlowResult.flowResult!!.traverse(objectMapper).
-            readValueAs(PeekTransactionResponse::class.java)
+        val parsedPeekFlowResult = objectMapper
+            .readValue(peekFlowResult.flowResult, PeekTransactionResponse::class.java)
 
         assertThat(parsedPeekFlowResult.errorMessage).isNull()
         assertThat(parsedPeekFlowResult.inputs).singleElement().extracting { it.testField }.isEqualTo(input)
         assertThat(parsedPeekFlowResult.outputs).singleElement().extracting { it.testField }.isEqualTo(evolvedMessage)
     }
+
 
     @Test
     fun `Utxo Ledger - creating a transaction that fails custom validation causes finality to fail`() {
@@ -207,8 +211,8 @@ class UtxoLedgerTests {
         )
         val utxoFlowResult = awaitRpcFlowFinished(aliceHoldingId, utxoFlowRequestId)
         assertThat(utxoFlowResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
-        assertThat(utxoFlowResult.flowResult!!.textValue()).contains("Transaction validation failed for transaction")
-        assertThat(utxoFlowResult.flowResult!!.textValue()).contains("when signature was requested")
+        assertThat(utxoFlowResult.flowResult).contains("Transaction validation failed for transaction")
+        assertThat(utxoFlowResult.flowResult).contains("when signature was requested")
     }
 
     data class TestUtxoStateResult(val testField: String, val participants: List<ByteArray>)

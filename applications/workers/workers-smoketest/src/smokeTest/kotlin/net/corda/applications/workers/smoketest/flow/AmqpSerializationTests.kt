@@ -3,7 +3,7 @@ package net.corda.applications.workers.smoketest.flow
 import net.corda.applications.workers.smoketest.TEST_CPB_LOCATION
 import net.corda.applications.workers.smoketest.TEST_CPI_NAME
 import net.corda.e2etest.utilities.RPC_FLOW_STATUS_SUCCESS
-import net.corda.e2etest.utilities.awaitRpcFlowFinished
+import net.corda.e2etest.utilities.awaitRestFlowResult
 import net.corda.e2etest.utilities.conditionallyUploadCordaPackage
 import net.corda.e2etest.utilities.getHoldingIdShortHash
 import net.corda.e2etest.utilities.getOrCreateVirtualNodeFor
@@ -53,14 +53,12 @@ class AmqpSerializationTests {
     fun `Serialize and deserialize a Pair`() {
 
         val requestId = startRpcFlow(bobHoldingId, emptyMap(), AmqpSerializationTestFlow)
-        val result = awaitRpcFlowFinished(bobHoldingId, requestId)
-
-        val flowResult = result.flowResult
+        val flowResult = awaitRestFlowResult(bobHoldingId, requestId)
 
         assertAll(
-            { assertThat(result.flowError).isNull() },
-            { assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS) },
-            { assertThat(flowResult!!.textValue()).isEqualTo("SerializableClass(pair=(A, B))") },
+            { assertThat(flowResult.flowError).isNull() },
+            { assertThat(flowResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS) },
+            { assertThat(flowResult.json!!.textValue()).isEqualTo("SerializableClass(pair=(A, B))") },
         )
     }
 }

@@ -102,12 +102,13 @@ class ConsensualLedgerTests {
             assertThat(transactionResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
             assertThat(transactionResult.flowError).isNull()
 
-            val parsedResult = transactionResult.flowResult!!.traverse(objectMapper).readValueAs(FindTransactionResponse::class.java)
+            val parsedResult = objectMapper
+                .readValue(transactionResult.flowResult!!, FindTransactionResponse::class.java)
 
             assertThat(parsedResult.transaction).withFailMessage {
                 "Member with holding identity $holdingId did not receive the transaction"
             }.isNotNull
-            assertThat(parsedResult.transaction!!.id.toString()).isEqualTo(consensualFlowResult.flowResult!!.textValue())
+            assertThat(parsedResult.transaction!!.id.toString()).isEqualTo(consensualFlowResult.flowResult)
             assertThat(parsedResult.transaction.states.map { it.testField }).containsOnly(input)
             assertThat(parsedResult.transaction.states.flatMap { it.participants }).hasSize(3)
             assertThat(parsedResult.transaction.participants).hasSize(3)
@@ -123,8 +124,8 @@ class ConsensualLedgerTests {
         )
         val consensualFlowResult = awaitRpcFlowFinished(aliceHoldingId, consensualFlowRequestId)
         assertThat(consensualFlowResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
-        assertThat(consensualFlowResult.flowResult!!.textValue()).contains("Transaction validation failed for transaction")
-        assertThat(consensualFlowResult.flowResult!!.textValue()).contains("when signature was requested")
+        assertThat(consensualFlowResult.flowResult).contains("Transaction validation failed for transaction")
+        assertThat(consensualFlowResult.flowResult).contains("when signature was requested")
     }
 
     data class TestConsensualStateResult(val testField: String, val participants: List<ByteArray>)

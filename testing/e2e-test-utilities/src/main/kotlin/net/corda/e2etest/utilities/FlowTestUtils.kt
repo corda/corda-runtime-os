@@ -12,9 +12,6 @@ const val SMOKE_TEST_CLASS_NAME = "com.r3.corda.testing.smoketests.flow.RpcSmoke
 const val RPC_FLOW_STATUS_SUCCESS = "COMPLETED"
 const val RPC_FLOW_STATUS_FAILED = "FAILED"
 
-fun FlowStatus.getRpcFlowResult(): RpcSmokeTestOutput =
-    this.flowResult!!.traverse(ObjectMapper()).readValueAs(RpcSmokeTestOutput::class.java)
-
 fun startRpcFlow(
     holdingId: String,
     args: RpcSmokeTestInput,
@@ -73,7 +70,7 @@ fun awaitRpcFlowFinished(
 
 fun ClusterInfo.awaitRpcFlowFinished(holdingId: String, requestId: String): FlowStatus {
     return cluster {
-        val jsonNode = ObjectMapper().readTree(
+        ObjectMapper().readValue(
             assertWithRetry {
                 command { flowStatus(holdingId, requestId) }
                 //CORE-6118 - tmp increase this timeout to a large number to allow tests to pass while slow flow sessions are investigated
@@ -83,12 +80,32 @@ fun ClusterInfo.awaitRpcFlowFinished(holdingId: String, requestId: String): Flow
                             (it.toJson()["flowStatus"].textValue() == RPC_FLOW_STATUS_SUCCESS ||
                                     it.toJson()["flowStatus"].textValue() == RPC_FLOW_STATUS_FAILED)
                 }
+            }.body, FlowStatus::class.java
+        )
+    }
+}
+
+fun awaitRestFlowResult(
+    holdingId: String,
+    requestId: String
+) = DEFAULT_CLUSTER.awaitRestFlowResult(holdingId, requestId)
+fun ClusterInfo.awaitRestFlowResult(holdingId: String, requestId: String): FlowResult {
+    return cluster {
+        val jsonNode = ObjectMapper().readTree(
+            assertWithRetry {
+                command { flowResult(holdingId, requestId) }
+                timeout(Duration.ofMinutes(6))
+                condition {
+                    it.code == 200 &&
+                            (it.toJson()["flowStatus"].textValue() == RPC_FLOW_STATUS_SUCCESS ||
+                                    it.toJson()["flowStatus"].textValue() == RPC_FLOW_STATUS_FAILED)
+                }
             }.body)
 
-        FlowStatus(
-            jsonNode[FlowStatus::flowStatus.name]?.textValue(),
-            jsonNode[FlowStatus::flowResult.name]?.handlingNulls(),
-            jsonNode[FlowStatus::flowError.name]?.handlingNulls()?.asFlowError()
+        FlowResult(
+            jsonNode[FlowResult::flowStatus.name]?.textValue(),
+            jsonNode[FlowResult::json.name]?.handlingNulls(),
+            jsonNode[FlowResult::flowError.name]?.handlingNulls()?.asFlowError()
         )
     }
 }
@@ -108,26 +125,24 @@ fun getFlowStatus(
 
 fun ClusterInfo.getFlowStatus(holdingId: String, requestId: String, expectedCode: Int): FlowStatus {
     return cluster {
-        val jsonNode = ObjectMapper().readTree(
+        ObjectMapper().readValue(
             assertWithRetry {
                 command { flowStatus(holdingId, requestId) }
                 timeout(Duration.ofMinutes(6))
                 condition {
                     it.code == expectedCode
                 }
-            }.body
-        )
-
-        FlowStatus(
-            jsonNode[FlowStatus::flowStatus.name]?.textValue(),
-            jsonNode[FlowStatus::flowResult.name]?.handlingNulls(),
-            jsonNode[FlowStatus::flowError.name]?.handlingNulls()?.asFlowError()
+            }.body, FlowStatus::class.java
         )
     }
 }
 
-private fun JsonNode.asFlowError(): FlowError =
-    FlowError(this["type"]?.textValue(), this["message"]?.textValue())
+private fun JsonNode.asFlowError(): FlowError {
+    val flowError = FlowError()
+    flowError.type = this["type"]?.textValue()
+    flowError.message = this["message"]?.textValue()
+    return flowError
+}
 
 fun awaitMultipleRpcFlowFinished(holdingId: String, expectedFlowCount: Int) {
     return DEFAULT_CLUSTER.cluster {
@@ -164,19 +179,22 @@ class RpcSmokeTestInput {
     var data: Map<String, String>? = null
 }
 
+
 @JsonIgnoreProperties(ignoreUnknown = true)
-class RpcSmokeTestOutput {
-    var command: String? = null
-    var result: String? = null
+class FlowStatus {
+    var flowStatus: String? = null
+    val flowResult: String? = null
+    val flowError: FlowError? = null
 }
 
-data class FlowStatus (
-    val flowStatus: String?,
-    val flowResult: JsonNode?,
-    val flowError: FlowError?
-)
+@JsonIgnoreProperties(ignoreUnknown = true)
+class FlowError {
+    var type: String? = null
+    var message: String? = null
+}
 
-data class FlowError (
-    val type: String?,
-    val message: String?
+data class FlowResult (
+    val flowStatus: String?,
+    val json: JsonNode?,
+    val flowError: FlowError?
 )

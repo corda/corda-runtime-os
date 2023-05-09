@@ -44,6 +44,11 @@ class VirtualNodeRestTest {
         private const val ERROR_HOLDING_ID =
             "Holding id could not be created - this test needs to be run on a clean cluster."
         private const val ERROR_REQUEST_ID = "Request Id not found."
+        private const val ERROR_VNODE_NOT_IN_MAINTENANCE =
+            "Virtual node must be in maintenance to perform an upgrade."
+
+        // Server side messages
+        private const val EXPECTED_ERROR_CPB_INSTEAD_OF_CPI = "Invalid CPI.  Unknown Corda-CPI-Format - \"1.0\""
 
         private val testRunUniqueId = UUID.randomUUID()
         private val groupId = UUID.randomUUID().toString()
@@ -214,7 +219,7 @@ class VirtualNodeRestTest {
         }
     }
 
-    private fun ClusterBuilder.eventuallyCreateVirtualNode(cpiFileChecksum: String, x500Name: String): String {
+    private fun ClusterBuilder.eventuallyCreateVirtualNode(cpiFileChecksum: String, x500Name: String): String? {
         val vNodeJson = assertWithRetry {
             timeout(retryTimeout)
             interval(retryInterval)
@@ -475,7 +480,7 @@ class VirtualNodeRestTest {
 
         val flowStatus = awaitRpcFlowFinished(holdingId, requestId)
 
-        assertThat(flowStatus.flowResult!!.textValue()).isEqualTo(expectedResult)
+        assertThat(flowStatus.flowResult).isEqualTo(expectedResult)
     }
 
     private fun runSimplePersistenceCheckFlow(expectedResult: String, holdingId: String = aliceHoldingId) {
@@ -485,7 +490,7 @@ class VirtualNodeRestTest {
 
         val flowStatus = awaitRpcFlowFinished(holdingId, requestId)
 
-        assertThat(flowStatus.flowResult!!.textValue()).isEqualTo(expectedResult)
+        assertThat(flowStatus.flowResult).isEqualTo(expectedResult)
     }
 
     private fun ClusterBuilder.getCpiFileChecksum(cpiName: String): String {

@@ -10,7 +10,7 @@ import java.time.Instant
  * @param clientRequestId The unique ID supplied by the client when the flow was created.
  * @param flowId The internal unique ID for the flow.
  * @param flowStatus The current state of the executing flow.
- * @param jsonFlowResult The result returned from a completed flow, only set when the flow status is 'COMPLETED' otherwise
+ * @param json The result returned from a completed flow, only set when the flow status is 'COMPLETED' otherwise
  * null
  * @param flowError The details of the error that caused a flow to fail, only set when the flow status is 'FAILED'
  * otherwise null
@@ -21,7 +21,7 @@ data class FlowResultResponse(
     val clientRequestId: String?,
     val flowId: String?,
     val flowStatus: String,
-    val jsonFlowResult: JsonObject?,
+    val json: JsonObject?,
     val flowError: FlowStateErrorResponse?,
     val timestamp: Instant
 )
