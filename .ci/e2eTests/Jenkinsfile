@@ -6,5 +6,4 @@ endToEndPipeline(
     multiCluster: true,
     gradleTestTargetsToExecute: ['smokeTest', 'e2eTest'],
     usePackagedCordaHelmChart: false,
-    workerBaseImageTag: '17.0.4.1-17.36.17',
 )
