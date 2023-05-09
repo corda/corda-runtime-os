@@ -40,11 +40,11 @@ abstract class DeployableContainerBuilder extends DefaultTask {
     private final String version = project.version
     private final String cordaProductVersion = project.cordaProductVersion
     private String targetRepo
+    private def gitLogTask
     private def gitBranchTask
     private def gitRemoteTask
     private def gitRevisionTask
     private def gitShortRevisionTask
-    private def gitLogTask
     private def releaseType
 
     @Inject
@@ -189,7 +189,7 @@ abstract class DeployableContainerBuilder extends DefaultTask {
         gitRevisionTask = project.tasks.register("gitRevision", GetGitRevision.class)
         super.dependsOn(gitRevisionTask)
 
-        // TODO: remove once pipelines have been updated to consume images using the full hash as the tag.
+        // TODO: remove once CORE-13474 has been implemented.
         // Several pipelines currently use 'git rev-parse --short' to determine the custom image tag to use when
         // deploying corda and the length of the abbreviated commit hash is determined by local Git configuration, so
         // we can't assume that the default of 7 is used everywhere.
