@@ -160,17 +160,19 @@ class InteropProcessor(
             )
         }
 
+        // TODO CORE-13491 Implement proper lookup process for source alias name
         val translatedSource = sourceIdentity.apply {
             x500Name = state?.aliasHoldingIdentity ?: addAliasSubstringToOrganisationName(this.toCorda()).x500Name.toString()
             groupId = interopGroupId
             // as FlowProcessor assigns a real group of the source
         }
 
+        // TODO: CORE-13491 Implement proper lookup process for source alias name
         val translatedDestination = destinationIdentity.apply {
-            //TODO review destination from initiating flow vs from initiated
+            // TODO review destination from initiating flow vs from initiated
             val name = this.toCorda()
             if (!name.toString().contains(POSTFIX_DENOTING_ALIAS)) {
-                //TODO CORE-12208 this should be always an alias (set by API or kept by responder flow)
+                // TODO: CORE-13491 this should be always an alias (set by API or kept by responder flow)
                 x500Name = addAliasSubstringToOrganisationName(name).x500Name.toString()
             }
             groupId = interopGroupId
