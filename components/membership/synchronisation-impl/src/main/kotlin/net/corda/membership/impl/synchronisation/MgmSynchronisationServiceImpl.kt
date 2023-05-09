@@ -6,7 +6,7 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.crypto.client.CryptoOpsClient
-import net.corda.data.CordaAvroSerializationFactory
+import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.data.membership.command.synchronisation.mgm.ProcessSyncRequest
 import net.corda.data.membership.p2p.DistributionType
 import net.corda.data.membership.p2p.MembershipPackage
@@ -254,6 +254,7 @@ class MgmSynchronisationServiceImpl internal constructor(
                         destination = dest,
                         content = data,
                         minutesToWait = config.getTtlMinutes(MEMBERS_PACKAGE_UPDATE),
+                        filter = ACTIVE_OR_SUSPENDED
                     )
                 )
             )

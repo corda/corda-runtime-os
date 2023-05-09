@@ -8,8 +8,8 @@ import net.corda.chunking.db.impl.persistence.database.DatabaseCpiPersistence
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.core.parseSecureHash
-import net.corda.data.CordaAvroSerializationFactory
-import net.corda.data.CordaAvroSerializer
+import net.corda.avro.serialization.CordaAvroSerializationFactory
+import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.KeyValuePairList
 import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl

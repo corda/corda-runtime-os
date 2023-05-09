@@ -17,7 +17,6 @@ import org.slf4j.LoggerFactory
 import java.net.URL
 import java.security.PublicKey
 import java.time.Instant
-import java.util.UUID
 
 class MemberInfoExtension {
     companion object {
@@ -28,7 +27,6 @@ class MemberInfoExtension {
         const val LEDGER_KEYS_KEY = "corda.ledger.keys.%s.pem"
 
         /** Key name for ledger key hashes property. */
-        const val LEDGER_KEY_HASHES = "corda.ledger.keys"
         const val LEDGER_KEY_HASHES_KEY = "corda.ledger.keys.%s.hash"
 
         /** Key name for ledger key signature spec property. */
@@ -88,9 +86,6 @@ class MemberInfoExtension {
          * A static network MGM is not backed by a virtual node so may need different handling.
          */
         const val IS_STATIC_MGM = "corda.mgm.static"
-
-        /** Key name for pre-auth token property. */
-        const val PRE_AUTH_TOKEN = "corda.auth.token"
 
         /** Key name for the ID of the registration in which the current member info was approved. */
         const val REGISTRATION_ID = "corda.registration.id"
@@ -194,7 +189,7 @@ class MemberInfoExtension {
         /** Collection of ledger key hashes for member's node. */
         @JvmStatic
         val MemberInfo.ledgerKeyHashes: Collection<SecureHash>
-            get() = memberProvidedContext.parseSet(LEDGER_KEY_HASHES)
+            get() = memberProvidedContext.parseSet(LEDGER_KEYS)
 
         /**
          * The member session initiation keys
@@ -209,8 +204,8 @@ class MemberInfoExtension {
          * It is preferable to always store this in the member context to avoid the repeated calculation.
          */
         @JvmStatic
-        val MemberInfo.sessionKeysHash: Collection<SecureHash>
-            get() = memberProvidedContext.parseSet<SecureHash>(SESSION_KEYS_HASH).let { storedKeys ->
+        val MemberInfo.sessionKeyHashes: Collection<SecureHash>
+            get() = memberProvidedContext.parseSet<SecureHash>(SESSION_KEYS).let { storedKeys ->
                 if (storedKeys.isNotEmpty()) {
                     storedKeys
                 } else {
@@ -233,13 +228,6 @@ class MemberInfoExtension {
         @JvmStatic
         val MemberInfo.isStaticMgm: Boolean
             get() = mgmProvidedContext.parseOrNull(IS_STATIC_MGM) ?: false
-
-        /**
-         * Returns the pre-auth token from the member info if it is present, and it is a valid UUID.
-         */
-        @JvmStatic
-        val MemberInfo.preAuthToken: UUID?
-            get() = memberProvidedContext.parseOrNull(PRE_AUTH_TOKEN)
 
         /**
          * Return the notary details if the member is a notary.

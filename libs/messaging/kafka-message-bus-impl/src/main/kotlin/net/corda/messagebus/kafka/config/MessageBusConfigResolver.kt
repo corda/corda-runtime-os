@@ -4,8 +4,8 @@ import com.typesafe.config.ConfigFactory
 import java.util.Properties
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
-import net.corda.messagebus.api.configuration.ConsumerConfig
 import net.corda.messagebus.api.configuration.AdminConfig
+import net.corda.messagebus.api.configuration.ConsumerConfig
 import net.corda.messagebus.api.configuration.ProducerConfig
 import net.corda.messagebus.kafka.producer.KafkaProducerPartitioner
 import net.corda.messaging.api.exception.CordaMessageAPIConfigException
@@ -122,7 +122,8 @@ internal class MessageBusConfigResolver(private val smartConfigFactory: SmartCon
         val resolvedConfig = ResolvedProducerConfig(
             producerConfig.clientId,
             producerConfig.transactional,
-            messageBusConfig.getString(BootConfig.TOPIC_PREFIX)
+            messageBusConfig.getString(BootConfig.TOPIC_PREFIX),
+            producerConfig.throwOnSerializationError
         )
         return Pair(resolvedConfig, kafkaProperties)
     }

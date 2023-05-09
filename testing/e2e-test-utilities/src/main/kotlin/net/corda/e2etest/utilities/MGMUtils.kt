@@ -20,6 +20,7 @@ fun ClusterInfo.onboardMgm(
     groupPolicyConfig: GroupPolicyConfig = GroupPolicyConfig()
 ): NetworkOnboardingMetadata {
     val mgmCpiName = "mgm.cpi"
+    conditionallyUploadCpiSigningCertificate()
     conditionallyUploadCordaPackage(mgmCpiName, null, getMgmGroupPolicy())
     val mgmHoldingId = getOrCreateVirtualNodeFor(mgmName, mgmCpiName)
 
@@ -41,6 +42,7 @@ fun ClusterInfo.onboardMgm(
     )
 
     if (!keyExists(TENANT_P2P, "$TENANT_P2P$CAT_TLS", CAT_TLS)) {
+        disableCertificateRevocationChecks()
         val tlsKeyId = createKeyFor(TENANT_P2P, "$TENANT_P2P$CAT_TLS", CAT_TLS, DEFAULT_KEY_SCHEME)
         val mgmTlsCsr = generateCsr(mgmName, tlsKeyId)
         val mgmTlsCert = File.createTempFile("${this.hashCode()}$CAT_TLS", ".pem").also {

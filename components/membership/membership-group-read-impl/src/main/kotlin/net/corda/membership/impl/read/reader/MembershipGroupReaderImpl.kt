@@ -7,7 +7,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTI
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_PENDING
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_SUSPENDED
 import net.corda.membership.lib.MemberInfoExtension.Companion.ledgerKeyHashes
-import net.corda.membership.lib.MemberInfoExtension.Companion.sessionKeysHash
+import net.corda.membership.lib.MemberInfoExtension.Companion.sessionKeyHashes
 import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.lib.SignedGroupParameters
 import net.corda.membership.read.GroupParametersReaderService
@@ -45,7 +45,7 @@ class MembershipGroupReaderImpl(
         memberList.filterBy(filter).singleOrNull { ledgerKeyHash in it.ledgerKeyHashes }
 
     override fun lookupBySessionKey(sessionKeyHash: SecureHash, filter: MembershipStatusFilter): MemberInfo? =
-        memberList.filterBy(filter).singleOrNull { it.sessionKeysHash.contains(sessionKeyHash) }
+        memberList.filterBy(filter).singleOrNull { it.sessionKeyHashes.contains(sessionKeyHash) }
 
     override val notaryVirtualNodeLookup: NotaryVirtualNodeLookup by lazy {
         NotaryVirtualNodeLookupImpl(this)

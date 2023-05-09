@@ -11,6 +11,7 @@ dependencies {
 
     // Should really be integrationTestImplementation, but won't compile
     implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation project(":libs:serialization:serialization-avro")
 
     integrationTestImplementation "com.typesafe:config:$typeSafeConfigVersion"
     integrationTestImplementation 'net.corda:corda-application'

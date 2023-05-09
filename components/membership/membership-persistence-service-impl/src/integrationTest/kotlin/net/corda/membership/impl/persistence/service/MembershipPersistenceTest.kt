@@ -6,15 +6,16 @@ import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.cipher.suite.SignatureSpecs.RSA_SHA256
 import net.corda.crypto.core.DigitalSignatureWithKey
 import net.corda.crypto.core.fullIdHash
-import net.corda.data.CordaAvroDeserializer
-import net.corda.data.CordaAvroSerializationFactory
-import net.corda.data.CordaAvroSerializer
+import net.corda.avro.serialization.CordaAvroDeserializer
+import net.corda.avro.serialization.CordaAvroSerializationFactory
+import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
+import net.corda.data.membership.SignedData
 import net.corda.data.membership.StaticNetworkInfo
 import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.ApprovalRuleType
@@ -157,6 +158,8 @@ class MembershipPersistenceTest {
         """
         private const val MEMBER_CONTEXT_KEY = "key"
         private const val MEMBER_CONTEXT_VALUE = "value"
+        private const val REGISTRATION_CONTEXT_KEY = "key"
+        private const val REGISTRATION_CONTEXT_VALUE = "value"
         private const val messagingConf = """
             componentVersion="5.1"
             maxAllowedMessageSize = 1000000
@@ -535,20 +538,38 @@ class MembershipPersistenceTest {
                 RegistrationStatus.SENT_TO_MGM,
                 registrationId,
                 registeringHoldingIdentity,
-                ByteBuffer.wrap(
-                    cordaAvroSerializer.serialize(
-                        KeyValuePairList(
-                            listOf(
-                                KeyValuePair(MEMBER_CONTEXT_KEY, MEMBER_CONTEXT_VALUE)
+                SignedData(
+                    ByteBuffer.wrap(
+                        cordaAvroSerializer.serialize(
+                            KeyValuePairList(
+                                listOf(
+                                    KeyValuePair(MEMBER_CONTEXT_KEY, MEMBER_CONTEXT_VALUE)
+                                )
                             )
                         )
-                    )
+                    ),
+                    CryptoSignatureWithKey(
+                        ByteBuffer.wrap(byteArrayOf()),
+                        ByteBuffer.wrap(byteArrayOf())
+                    ),
+                    CryptoSignatureSpec("", null, null)
                 ),
-                CryptoSignatureWithKey(
-                    ByteBuffer.wrap(byteArrayOf()),
-                    ByteBuffer.wrap(byteArrayOf())
+                SignedData(
+                    ByteBuffer.wrap(
+                        cordaAvroSerializer.serialize(
+                            KeyValuePairList(
+                                listOf(
+                                    KeyValuePair(REGISTRATION_CONTEXT_KEY, REGISTRATION_CONTEXT_VALUE)
+                                )
+                            )
+                        )
+                    ),
+                    CryptoSignatureWithKey(
+                        ByteBuffer.wrap(byteArrayOf()),
+                        ByteBuffer.wrap(byteArrayOf())
+                    ),
+                    CryptoSignatureSpec("", null, null)
                 ),
-                CryptoSignatureSpec("", null, null),
                 REGISTRATION_SERIAL,
             )
         ).execute()
@@ -563,11 +584,18 @@ class MembershipPersistenceTest {
         assertThat(persistedEntity.holdingIdentityShortHash).isEqualTo(registeringHoldingIdentity.shortHash.value)
         assertThat(persistedEntity.status).isEqualTo(status.toString())
 
-        val persistedMemberContext = persistedEntity.context.deserializeContextAsMap()
+        val persistedMemberContext = persistedEntity.memberContext.deserializeContextAsMap()
         with(persistedMemberContext.entries) {
             assertThat(size).isEqualTo(1)
             assertThat(first().key).isEqualTo(MEMBER_CONTEXT_KEY)
             assertThat(first().value).isEqualTo(MEMBER_CONTEXT_VALUE)
+        }
+
+        val persistedRegistrationContext = persistedEntity.registrationContext.deserializeContextAsMap()
+        with(persistedRegistrationContext.entries) {
+            assertThat(size).isEqualTo(1)
+            assertThat(first().key).isEqualTo(REGISTRATION_CONTEXT_KEY)
+            assertThat(first().value).isEqualTo(REGISTRATION_CONTEXT_VALUE)
         }
     }
 
@@ -1013,6 +1041,7 @@ class MembershipPersistenceTest {
             memberAndRegistrationId[holdingId] = registrationId
             val publicKey = "pk-$index".toByteArray()
             val signature = "signature-$index".toByteArray()
+            val regContextSig = "reg-context-signature-$index".toByteArray()
             val signatureSpec = CryptoSignatureSpec("spec-$index", null, null)
             persistMember(holdingId.x500Name, MEMBER_STATUS_PENDING, publicKey, signature, signatureSpec)
 
@@ -1020,9 +1049,18 @@ class MembershipPersistenceTest {
                 ByteBuffer.wrap(publicKey),
                 ByteBuffer.wrap(signature)
             )
+            val cryptoSignatureWithKeyForRegistrationContext = CryptoSignatureWithKey(
+                ByteBuffer.wrap(publicKey),
+                ByteBuffer.wrap(regContextSig)
+            )
             val context = KeyValuePairList(
                 listOf(
                     KeyValuePair(MEMBER_CONTEXT_KEY, MEMBER_CONTEXT_VALUE)
+                )
+            )
+            val registrationContext = KeyValuePairList(
+                listOf(
+                    KeyValuePair(REGISTRATION_CONTEXT_KEY, REGISTRATION_CONTEXT_VALUE)
                 )
             )
             membershipPersistenceClientWrapper.persistRegistrationRequest(
@@ -1031,13 +1069,20 @@ class MembershipPersistenceTest {
                     RegistrationStatus.SENT_TO_MGM,
                     registrationId,
                     holdingId,
-                    ByteBuffer.wrap(
-                        cordaAvroSerializer.serialize(
-                            context
-                        )
+                    SignedData(
+                        ByteBuffer.wrap(
+                            cordaAvroSerializer.serialize(context)
+                        ),
+                        cryptoSignatureWithKey,
+                        signatureSpec,
                     ),
-                    cryptoSignatureWithKey,
-                    signatureSpec,
+                    SignedData(
+                        ByteBuffer.wrap(
+                            cordaAvroSerializer.serialize(registrationContext)
+                        ),
+                        cryptoSignatureWithKeyForRegistrationContext,
+                        signatureSpec,
+                    ),
                     REGISTRATION_SERIAL,
                 )
             ).getOrThrow()
@@ -1077,20 +1122,38 @@ class MembershipPersistenceTest {
                 RegistrationStatus.SENT_TO_MGM,
                 registrationId,
                 registeringHoldingIdentity,
-                ByteBuffer.wrap(
-                    cordaAvroSerializer.serialize(
-                        KeyValuePairList(
-                            listOf(
-                                KeyValuePair(MEMBER_CONTEXT_KEY, MEMBER_CONTEXT_VALUE)
+                SignedData(
+                    ByteBuffer.wrap(
+                        cordaAvroSerializer.serialize(
+                            KeyValuePairList(
+                                listOf(
+                                    KeyValuePair(MEMBER_CONTEXT_KEY, MEMBER_CONTEXT_VALUE)
+                                )
                             )
                         )
-                    )
+                    ),
+                    CryptoSignatureWithKey(
+                        ByteBuffer.wrap(byteArrayOf()),
+                        ByteBuffer.wrap(byteArrayOf())
+                    ),
+                    CryptoSignatureSpec("", null, null),
                 ),
-                CryptoSignatureWithKey(
-                    ByteBuffer.wrap(byteArrayOf()),
-                    ByteBuffer.wrap(byteArrayOf())
+                SignedData(
+                    ByteBuffer.wrap(
+                        cordaAvroSerializer.serialize(
+                            KeyValuePairList(
+                                listOf(
+                                    KeyValuePair(REGISTRATION_CONTEXT_KEY, REGISTRATION_CONTEXT_VALUE)
+                                )
+                            )
+                        )
+                    ),
+                    CryptoSignatureWithKey(
+                        ByteBuffer.wrap(byteArrayOf()),
+                        ByteBuffer.wrap(byteArrayOf())
+                    ),
+                    CryptoSignatureSpec("", null, null),
                 ),
-                CryptoSignatureSpec("", null, null),
                 REGISTRATION_SERIAL,
             )
         ).execute()
@@ -1751,20 +1814,38 @@ class MembershipPersistenceTest {
                 status,
                 registrationId,
                 member,
-                ByteBuffer.wrap(
-                    cordaAvroSerializer.serialize(
-                        KeyValuePairList(
-                            listOf(
-                                KeyValuePair(MEMBER_CONTEXT_KEY, MEMBER_CONTEXT_VALUE)
+                SignedData(
+                    ByteBuffer.wrap(
+                        cordaAvroSerializer.serialize(
+                            KeyValuePairList(
+                                listOf(
+                                    KeyValuePair(MEMBER_CONTEXT_KEY, MEMBER_CONTEXT_VALUE)
+                                )
                             )
                         )
-                    )
+                    ),
+                    CryptoSignatureWithKey(
+                        ByteBuffer.wrap(byteArrayOf()),
+                        ByteBuffer.wrap(byteArrayOf())
+                    ),
+                    CryptoSignatureSpec("", null, null)
                 ),
-                CryptoSignatureWithKey(
-                    ByteBuffer.wrap(byteArrayOf()),
-                    ByteBuffer.wrap(byteArrayOf())
+                SignedData(
+                    ByteBuffer.wrap(
+                        cordaAvroSerializer.serialize(
+                            KeyValuePairList(
+                                listOf(
+                                    KeyValuePair(REGISTRATION_CONTEXT_KEY, REGISTRATION_CONTEXT_VALUE)
+                                )
+                            )
+                        )
+                    ),
+                    CryptoSignatureWithKey(
+                        ByteBuffer.wrap(byteArrayOf()),
+                        ByteBuffer.wrap(byteArrayOf())
+                    ),
+                    CryptoSignatureSpec("", null, null)
                 ),
-                CryptoSignatureSpec("", null, null),
                 REGISTRATION_SERIAL,
             )
         ).execute()

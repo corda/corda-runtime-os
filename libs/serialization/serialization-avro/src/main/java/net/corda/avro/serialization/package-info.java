@@ -1,4 +1,4 @@
 @Export
-package net.corda.flow.persistence;
+package net.corda.avro.serialization;
 
 import org.osgi.annotation.bundle.Export;

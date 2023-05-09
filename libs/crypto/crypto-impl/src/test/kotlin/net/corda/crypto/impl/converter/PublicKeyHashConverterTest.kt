@@ -28,6 +28,19 @@ class PublicKeyHashConverterTest {
     }
 
     @Test
+    fun `converting hash should work for single element under hash property`() {
+        val conversionContext = LayeredPropertyMapMocks.createConversionContext<LayeredContextImpl>(
+            sortedMapOf(
+                "corda.ledger.keys.0.hash" to LEDGER_KEY_HASH
+            ),
+            converters,
+            "corda.ledger.keys.0"
+        )
+        val result = converters[0].convert(conversionContext)
+        assertEquals(ledgerKeyHash, result)
+    }
+
+    @Test
     fun `converting hash fails when the keys is null`() {
         val conversionContext = LayeredPropertyMapMocks.createConversionContext<LayeredContextImpl>(
             sortedMapOf(
