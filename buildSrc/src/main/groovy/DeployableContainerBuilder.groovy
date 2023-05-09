@@ -33,9 +33,11 @@ import java.time.Instant
  * If a kafka file is present in the sub project directory it will be copied to container and
  */
 abstract class DeployableContainerBuilder extends DefaultTask {
-
     private static final String CONTAINER_LOCATION = "/opt/override/"
     private static final String JDBC_DRIVER_LOCATION = "/opt/jdbc-driver/"
+    private static final String JENKINS_JOB_URL_KEY = "JENKINS_URL"
+    private static final String JENKINS_GIT_BRANCH_KEY = "GIT_BRANCH"
+    private static final String JENKINS_CHANGE_BRANCH_KEY = "CHANGE_BRANCH"
     private final String projectName = project.name
     private final String version = project.version
     private final String cordaProductVersion = project.cordaProductVersion
@@ -210,14 +212,10 @@ abstract class DeployableContainerBuilder extends DefaultTask {
         def buildBaseDir = temporaryDir.toPath()
         def containerizationDir = Paths.get("$buildBaseDir/containerization/")
         String tagPrefix = ""
-        String gitRemote = gitRemoteTask.flatMap { it.url }.get()
-        String gitBranch = gitBranchTask.flatMap { it.branch }.get()
-        String gitRevision = gitRevisionTask.flatMap { it.revision }.get()
         String gitRevisionShortHash = gitShortRevisionTask.flatMap { it.revision }.get()
 
         def jiraTicket = hasJiraTicket()
         def timeStamp =  new SimpleDateFormat("ddMMyy").format(new Date())
-        logger.quiet("GitRemote: '{}', GitBranch: '{}', GitCommit: '{}'", gitRemote, gitBranch, gitRevision)
 
         if (!(new File(containerizationDir.toString())).exists()) {
             logger.info("Created containerization dir")
@@ -252,9 +250,8 @@ abstract class DeployableContainerBuilder extends DefaultTask {
             builder = setCredentialsOnBaseImage(builder)
         }
 
-        builder.addLabel("com.r3.corda.git.branch", gitBranch)
-        builder.addLabel("org.opencontainers.image.source", gitRemote)
-        builder.addLabel("org.opencontainers.image.revision", gitRevision)
+        // Add labels (branch, source code url and git commit SHA) to the image
+        addImageSourceLabels(builder)
 
         List<Path> jdbcDrivers = jdbcDriverFiles.collect { it.toPath() }
         if (!jdbcDrivers.empty) {
@@ -299,7 +296,7 @@ abstract class DeployableContainerBuilder extends DefaultTask {
             logger.quiet("Forcing Jib to use ${targetPlatform.get()} platform")
             String[] osArch = targetPlatform.get().split("/")
             builder.setPlatforms(Set.of(new Platform(osArch[1], osArch[0])))
-        } else if (System.getenv().containsKey("JENKINS_URL") && multiArch.get()) {
+        } else if (System.getenv().containsKey(JENKINS_JOB_URL_KEY) && multiArch.get()) {
             logger.quiet("${multiArch.get() ? 'Running on CI server - producing arm64 and amd64 images' : 'Running on CI server but multiArch flag set to false - producing amd64 images'}")
             builder.addPlatform("arm64","linux")
         } else if (System.properties['os.arch'] == "aarch64") {
@@ -375,6 +372,29 @@ abstract class DeployableContainerBuilder extends DefaultTask {
             builder = Jib.from(baseImage)
         }
         return builder
+    }
+
+    private void addImageSourceLabels(JibContainerBuilder builder) {
+        String gitRemote = gitRemoteTask.flatMap { it.url }.get()
+        String gitRevision = gitRevisionTask.flatMap { it.revision }.get()
+
+        // Jenkins automatically overrides the branch name when checking out the source code, we can't just use
+        // regular git commands when the task is being executed from within CI.
+        def gitBranch = ""
+        if (System.getenv().containsKey(JENKINS_JOB_URL_KEY)) {
+            if (System.getenv().containsKey(JENKINS_CHANGE_BRANCH_KEY)) {
+                gitBranch = System.getenv(JENKINS_CHANGE_BRANCH_KEY) // PR build on jenkins
+            } else if (System.getenv().containsKey(JENKINS_GIT_BRANCH_KEY)) {
+                gitBranch = System.getenv(JENKINS_GIT_BRANCH_KEY)  // branch builds on jenkins
+            }
+        } else {
+            gitBranch = gitBranchTask.flatMap { it.branch }.get()
+        }
+
+        logger.quiet("GitRemote: '{}', GitBranch: '{}', GitCommit: '{}'", gitRemote, gitBranch, gitRevision)
+        builder.addLabel("com.r3.corda.git.branch", gitBranch)
+        builder.addLabel("org.opencontainers.image.source", gitRemote)
+        builder.addLabel("org.opencontainers.image.revision", gitRevision)
     }
 
     private void gitAndVersionTag(JibContainerBuilder builder, String gitRevision) {
