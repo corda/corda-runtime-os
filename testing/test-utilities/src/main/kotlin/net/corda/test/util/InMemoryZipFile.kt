@@ -9,8 +9,6 @@ import java.io.InputStream
 import java.io.OutputStream
 import java.nio.file.Files
 import java.security.KeyStore
-import java.security.cert.Certificate
-import java.security.cert.CertificateFactory
 import java.util.Collections.enumeration
 import java.util.Enumeration
 import java.util.jar.Manifest
@@ -100,19 +98,8 @@ class InMemoryZipFile(fileBytes: ByteArray): ZipFile(DUMMY_FILE) {
         entries.remove(entry)
     }
 
-    fun sign(
-        privateKeyEntry: KeyStore.PrivateKeyEntry,
-        signerName: String,
-        withCertPath: Boolean
-    ): InMemoryZipFile {
-        val jarSignerBuilder = if (withCertPath) {
-            val certPath = buildCertPath(privateKeyEntry.certificateChain.asList())
-            JarSigner.Builder(privateKeyEntry.privateKey, certPath)
-        } else {
-            JarSigner.Builder(privateKeyEntry)
-        }
-
-        val signer = jarSignerBuilder
+    fun sign(privateKeyEntry: KeyStore.PrivateKeyEntry, signerName: String): InMemoryZipFile {
+        val signer = JarSigner.Builder(privateKeyEntry)
             .signerName(signerName)
             .digestAlgorithm("SHA-256")
             .signatureAlgorithm("SHA256withECDSA")
@@ -121,11 +108,6 @@ class InMemoryZipFile(fileBytes: ByteArray): ZipFile(DUMMY_FILE) {
         signer.sign(this, signedZipFile)
         return InMemoryZipFile(signedZipFile)
     }
-
-    private fun buildCertPath(certificateChain: List<Certificate>) =
-        CertificateFactory
-            .getInstance("X.509")
-            .generateCertPath(certificateChain)
 
     fun write(outputStream: OutputStream) {
         ZipOutputStream(outputStream).use {

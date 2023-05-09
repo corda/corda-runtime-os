@@ -86,12 +86,12 @@ object TestUtils {
         addFile(name, contentBytes)
     }
 
-    fun InMemoryZipFile.signedBy(vararg signers: Signer, withCertPaths: Boolean = false): InMemoryZipFile {
+    fun InMemoryZipFile.signedBy(vararg signers: Signer): InMemoryZipFile {
         if (signers.isEmpty()) return this
         // Sets zip entry attributes required for signing
         var zipFile = InMemoryZipFile(this.toByteArray())
         signers.forEach {
-            val signedZipFile = zipFile.sign(it.privateKeyEntry, it.alias, withCertPaths)
+            val signedZipFile = zipFile.sign(it.privateKeyEntry, it.alias)
             zipFile.close()
             zipFile = signedZipFile
         }

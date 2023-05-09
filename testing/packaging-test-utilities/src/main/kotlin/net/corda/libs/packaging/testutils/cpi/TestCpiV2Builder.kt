@@ -39,7 +39,7 @@ class TestCpiV2Builder {
             cpb.build().use { cpb ->
                 addFile(this@TestCpiV2Builder.cpb.name, cpb.toByteArray())
             }
-        }.signedBy(signers = signers, withCertPaths = true)
+        }.signedBy(signers = signers)
 
     private fun cpiV2Manifest() =
         Manifest().apply {
