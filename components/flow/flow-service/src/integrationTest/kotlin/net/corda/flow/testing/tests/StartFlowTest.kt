@@ -33,7 +33,7 @@ class StartFlowTest : FlowServiceTestBase() {
             expectOutputForFlow(FLOW_ID1) {
                 wakeUpEvent()
                 flowStatus(FlowStates.RUNNING)
-                expectFlowFiberCacheContainsKey(BOB_HOLDING_IDENTITY, REQUEST_ID1)
+                flowFiberCacheContainsKey(BOB_HOLDING_IDENTITY, REQUEST_ID1)
             }
         }
 
@@ -46,7 +46,7 @@ class StartFlowTest : FlowServiceTestBase() {
             expectOutputForFlow(FLOW_ID1) {
                 flowStatus(FlowStates.COMPLETED, result = "hello")
                 nullStateRecord()
-                expectFlowFiberCacheDoesNotContainKey(BOB_HOLDING_IDENTITY, REQUEST_ID1)
+                flowFiberCacheDoesNotContainKey(BOB_HOLDING_IDENTITY, REQUEST_ID1)
             }
         }
     }
@@ -78,6 +78,7 @@ class StartFlowTest : FlowServiceTestBase() {
             expectOutputForFlow(FLOW_ID1) {
                 noFlowEvents()
                 checkpointHasRetry(1)
+                flowFiberCacheDoesNotContainKey(BOB_HOLDING_IDENTITY, REQUEST_ID1)
             }
         }
 
@@ -90,6 +91,7 @@ class StartFlowTest : FlowServiceTestBase() {
             expectOutputForFlow(FLOW_ID1) {
                 noFlowEvents()
                 checkpointHasRetry(2)
+                flowFiberCacheDoesNotContainKey(BOB_HOLDING_IDENTITY, REQUEST_ID1)
             }
         }
 
@@ -109,6 +111,7 @@ class StartFlowTest : FlowServiceTestBase() {
                 checkpointDoesNotHaveRetry()
                 wakeUpEvent()
                 flowStatus(FlowStates.RUNNING)
+                flowFiberCacheContainsKey(BOB_HOLDING_IDENTITY, REQUEST_ID1)
             }
         }
     }
@@ -130,6 +133,7 @@ class StartFlowTest : FlowServiceTestBase() {
             expectOutputForFlow(FLOW_ID1) {
                 noFlowEvents()
                 checkpointHasRetry(1)
+                flowFiberCacheDoesNotContainKey(BOB_HOLDING_IDENTITY, REQUEST_ID1)
             }
         }
 
@@ -143,6 +147,7 @@ class StartFlowTest : FlowServiceTestBase() {
                 nullStateRecord()
                 markedForDlq()
                 noFlowEvents()
+                flowFiberCacheDoesNotContainKey(BOB_HOLDING_IDENTITY, REQUEST_ID1)
                 //we can't return a status record after the change to checkpoint initialization
                 // Story to deal with change in status records -> CORE-10571: Re-design how status record is published
 /*                flowStatus(

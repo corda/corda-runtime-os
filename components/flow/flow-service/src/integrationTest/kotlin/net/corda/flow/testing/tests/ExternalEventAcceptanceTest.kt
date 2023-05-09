@@ -439,6 +439,7 @@ class ExternalEventAcceptanceTest : FlowServiceTestBase() {
             expectOutputForFlow(FLOW_ID1) {
                 flowResumedWith("return with this: $ANY_RESPONSE")
                 noExternalEvent(TOPIC)
+                flowFiberCacheContainsKey(ALICE_HOLDING_IDENTITY, REQUEST_ID1)
             }
         }
     }
@@ -464,6 +465,12 @@ class ExternalEventAcceptanceTest : FlowServiceTestBase() {
                 )
         }
 
+        then {
+            expectOutputForFlow(FLOW_ID1) {
+                flowFiberCacheContainsKey(ALICE_HOLDING_IDENTITY, REQUEST_ID1)
+            }
+        }
+
         `when` {
             externalEventErrorReceived(FLOW_ID1, REQUEST_ID, ExternalEventResponseErrorType.PLATFORM)
         }
@@ -471,6 +478,7 @@ class ExternalEventAcceptanceTest : FlowServiceTestBase() {
         then {
             expectOutputForFlow(FLOW_ID1) {
                 flowResumedWithError<CordaRuntimeException>()
+                flowFiberCacheContainsKey(ALICE_HOLDING_IDENTITY, REQUEST_ID1) // flow fiber is not removed, flow is not moved to DLQ
             }
         }
     }
@@ -496,6 +504,12 @@ class ExternalEventAcceptanceTest : FlowServiceTestBase() {
                 )
         }
 
+        then {
+            expectOutputForFlow(FLOW_ID1) {
+                flowFiberCacheContainsKey(ALICE_HOLDING_IDENTITY, REQUEST_ID1)
+            }
+        }
+
         `when` {
             externalEventErrorReceived(FLOW_ID1, REQUEST_ID, ExternalEventResponseErrorType.FATAL)
         }
@@ -504,6 +518,7 @@ class ExternalEventAcceptanceTest : FlowServiceTestBase() {
             expectOutputForFlow(FLOW_ID1) {
                 markedForDlq()
                 flowDidNotResume()
+                flowFiberCacheDoesNotContainKey(ALICE_HOLDING_IDENTITY, REQUEST_ID1)
             }
         }
     }

@@ -81,9 +81,9 @@ interface OutputAssertions {
 
     fun flowKilledStatus(flowTerminatedReason: String)
 
-    fun expectFlowFiberCacheContainsKey(holdingId: HoldingIdentity, flowId: String)
+    fun flowFiberCacheContainsKey(holdingId: HoldingIdentity, flowId: String)
 
-    fun expectFlowFiberCacheDoesNotContainKey(holdingId: HoldingIdentity, flowId: String)
+    fun flowFiberCacheDoesNotContainKey(holdingId: HoldingIdentity, flowId: String)
 }
 
 inline fun <reified T: Throwable> OutputAssertions.flowResumedWithError() = flowResumedWithError(T::class.java)

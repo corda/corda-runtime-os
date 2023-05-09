@@ -40,7 +40,7 @@ class InitiateFlowAcceptanceTest : FlowServiceTestBase() {
         then {
             expectOutputForFlow(FLOW_ID1) {
                 sessionInitEvents(SESSION_ID_1)
-                expectFlowFiberCacheContainsKey(ALICE_HOLDING_IDENTITY, REQUEST_ID1)
+                flowFiberCacheContainsKey(ALICE_HOLDING_IDENTITY, REQUEST_ID1)
             }
         }
     }
@@ -116,7 +116,7 @@ class InitiateFlowAcceptanceTest : FlowServiceTestBase() {
                 flowResumedWith(Unit)
                 flowStatus(FlowStates.RUNNING)
                 sessionConfirmEvents(INITIATED_SESSION_ID_1)
-                expectFlowFiberCacheContainsKey(BOB_HOLDING_IDENTITY, INITIATED_SESSION_ID_1)
+                flowFiberCacheContainsKey(BOB_HOLDING_IDENTITY, INITIATED_SESSION_ID_1)
             }
         }
     }

@@ -54,7 +54,7 @@ class SendAndReceiveAcceptanceTest : FlowServiceTestBase() {
         then {
             expectOutputForFlow(FLOW_ID1) {
                 sessionDataEvents(SESSION_ID_1 to DATA_MESSAGE_1, SESSION_ID_2 to DATA_MESSAGE_2)
-                expectFlowFiberCacheContainsKey(ALICE_HOLDING_IDENTITY, REQUEST_ID1)
+                flowFiberCacheContainsKey(ALICE_HOLDING_IDENTITY, REQUEST_ID1)
             }
         }
     }

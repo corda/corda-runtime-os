@@ -112,6 +112,7 @@ class CloseSessionsAcceptanceTest : FlowServiceTestBase() {
         then {
             expectOutputForFlow(FLOW_ID1) {
                 sessionCloseEvents(SESSION_ID_1, SESSION_ID_2)
+                flowFiberCacheContainsKey(ALICE_HOLDING_IDENTITY, REQUEST_ID1)
             }
         }
     }

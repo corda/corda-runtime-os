@@ -47,7 +47,7 @@ class FlowFailedAcceptanceTest : FlowServiceTestBase() {
 
         then {
             expectOutputForFlow(FLOW_ID1) {
-                expectFlowFiberCacheContainsKey(ALICE_HOLDING_IDENTITY, REQUEST_ID1)
+                flowFiberCacheContainsKey(ALICE_HOLDING_IDENTITY, REQUEST_ID1)
             }
         }
 
@@ -61,7 +61,7 @@ class FlowFailedAcceptanceTest : FlowServiceTestBase() {
                 nullStateRecord()
                 flowStatus(FlowStates.FAILED, errorType = FLOW_FAILED, errorMessage = EXCEPTION.message)
                 scheduleFlowMapperCleanupEvents(FlowKey(REQUEST_ID1, ALICE_HOLDING_IDENTITY).toString())
-                expectFlowFiberCacheDoesNotContainKey(ALICE_HOLDING_IDENTITY, REQUEST_ID1)
+                flowFiberCacheDoesNotContainKey(ALICE_HOLDING_IDENTITY, REQUEST_ID1)
             }
         }
     }
@@ -78,7 +78,7 @@ class FlowFailedAcceptanceTest : FlowServiceTestBase() {
                 nullStateRecord()
                 flowStatus(FlowStates.FAILED, errorType = FLOW_FAILED, errorMessage = EXCEPTION.message)
                 scheduleFlowMapperCleanupEvents(INITIATED_SESSION_ID_1)
-                expectFlowFiberCacheDoesNotContainKey(ALICE_HOLDING_IDENTITY, REQUEST_ID1)
+                flowFiberCacheDoesNotContainKey(ALICE_HOLDING_IDENTITY, REQUEST_ID1)
             }
         }
     }
@@ -103,7 +103,7 @@ class FlowFailedAcceptanceTest : FlowServiceTestBase() {
                 nullStateRecord()
                 flowStatus(FlowStates.FAILED, errorType = FLOW_FAILED, errorMessage = EXCEPTION.message)
                 scheduleFlowMapperCleanupEvents(FlowKey(REQUEST_ID1, ALICE_HOLDING_IDENTITY).toString(), SESSION_ID_1)
-                expectFlowFiberCacheDoesNotContainKey(ALICE_HOLDING_IDENTITY, REQUEST_ID1)
+                flowFiberCacheDoesNotContainKey(ALICE_HOLDING_IDENTITY, REQUEST_ID1)
             }
         }
     }

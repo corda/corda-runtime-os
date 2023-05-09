@@ -42,7 +42,7 @@ class FlowKilledAcceptanceTest : FlowServiceTestBase() {
             expectOutputForFlow(FLOW_ID1) {
                 nullStateRecord()
                 flowKilledStatus(flowTerminatedReason = "Flow operational status is INACTIVE")
-                expectFlowFiberCacheDoesNotContainKey(BOB_HOLDING_IDENTITY, REQUEST_ID1)
+                flowFiberCacheDoesNotContainKey(BOB_HOLDING_IDENTITY, REQUEST_ID1)
             }
         }
     }
@@ -59,7 +59,7 @@ class FlowKilledAcceptanceTest : FlowServiceTestBase() {
                 nullStateRecord()
                 flowKilledStatus(flowTerminatedReason = "Flow operational status is INACTIVE")
                 scheduleFlowMapperCleanupEvents(INITIATED_SESSION_ID_1)
-                expectFlowFiberCacheDoesNotContainKey(BOB_HOLDING_IDENTITY, REQUEST_ID1)
+                flowFiberCacheDoesNotContainKey(BOB_HOLDING_IDENTITY, REQUEST_ID1)
             }
         }
     }
@@ -76,7 +76,7 @@ class FlowKilledAcceptanceTest : FlowServiceTestBase() {
             expectOutputForFlow(FLOW_ID1) {
                 wakeUpEvent()
                 flowStatus(FlowStates.RUNNING)
-                expectFlowFiberCacheContainsKey(ALICE_HOLDING_IDENTITY, REQUEST_ID1)
+                flowFiberCacheContainsKey(ALICE_HOLDING_IDENTITY, REQUEST_ID1)
             }
         }
 
@@ -92,7 +92,7 @@ class FlowKilledAcceptanceTest : FlowServiceTestBase() {
             expectOutputForFlow(FLOW_ID1) {
                 nullStateRecord()
                 flowKilledStatus(flowTerminatedReason = "Flow operational status is INACTIVE")
-                expectFlowFiberCacheDoesNotContainKey(ALICE_HOLDING_IDENTITY, REQUEST_ID1)
+                flowFiberCacheDoesNotContainKey(ALICE_HOLDING_IDENTITY, REQUEST_ID1)
             }
         }
     }
