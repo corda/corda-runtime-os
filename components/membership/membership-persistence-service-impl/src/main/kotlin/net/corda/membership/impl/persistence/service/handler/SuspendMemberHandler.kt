@@ -1,7 +1,7 @@
 package net.corda.membership.impl.persistence.service.handler
 
-import net.corda.data.CordaAvroDeserializer
-import net.corda.data.CordaAvroSerializer
+import net.corda.avro.serialization.CordaAvroDeserializer
+import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.KeyValuePairList
 import net.corda.data.identity.HoldingIdentity
 import net.corda.data.membership.PersistentMemberInfo
@@ -17,20 +17,31 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTI
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_SUSPENDED
 import net.corda.membership.lib.MemberInfoExtension.Companion.isNotary
 import net.corda.membership.lib.MemberInfoExtension.Companion.notaryDetails
+import net.corda.membership.lib.exceptions.InvalidEntityUpdateException
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.membership.lib.toMap
 import net.corda.membership.lib.toSortedMap
 import net.corda.virtualnode.toCorda
 import javax.persistence.EntityManager
 import javax.persistence.LockModeType
+import net.corda.utilities.mapNotNull
+import net.corda.utilities.time.Clock
+import kotlin.streams.toList
+import javax.persistence.PessimisticLockException
 
 internal class SuspendMemberHandler(
-    persistenceHandlerServices: PersistenceHandlerServices
+    persistenceHandlerServices: PersistenceHandlerServices,
+    private val notaryUpdater: GroupParametersNotaryUpdater
+    = GroupParametersNotaryUpdater(persistenceHandlerServices.keyEncodingService, persistenceHandlerServices.clock),
+    suspensionActivationEntityOperationsFactory:
+        (clock: Clock, serializer: CordaAvroDeserializer<KeyValuePairList>, deserializer: CordaAvroSerializer<KeyValuePairList>)
+    -> SuspensionActivationEntityOperations
+    = { clock: Clock, serializer: CordaAvroDeserializer<KeyValuePairList>, deserializer: CordaAvroSerializer<KeyValuePairList>
+        -> SuspensionActivationEntityOperations(clock, serializer, deserializer)}
 ) : BasePersistenceHandler<SuspendMember, SuspendMemberResponse>(persistenceHandlerServices) {
     private companion object {
         val notaryServiceRegex = NOTARY_SERVICE_NAME_KEY.format("([0-9]+)").toRegex()
     }
-    private val notaryUpdater = GroupParametersNotaryUpdater(keyEncodingService, clock)
     private val keyValuePairListDeserializer: CordaAvroDeserializer<KeyValuePairList> by lazy {
         cordaAvroSerializationFactory.createAvroDeserializer(
             {
@@ -45,7 +56,7 @@ internal class SuspendMemberHandler(
         }
     }
     private val suspensionActivationEntityOperations =
-        SuspensionActivationEntityOperations(clock, keyValuePairListDeserializer, keyValuePairListSerializer)
+        suspensionActivationEntityOperationsFactory(clock, keyValuePairListDeserializer, keyValuePairListSerializer)
 
     private fun serializeProperties(context: KeyValuePairList): ByteArray {
         return keyValuePairListSerializer.serialize(context) ?: throw MembershipPersistenceException(
@@ -73,8 +84,23 @@ internal class SuspendMemberHandler(
                 MEMBER_STATUS_SUSPENDED
             )
             val updatedGroupParameters = if (memberInfoFactory.create(updatedMemberInfo).isNotary()) {
-                updateGroupParameters(em, updatedMemberInfo, HoldingIdentity(request.suspendedMember, context.holdingIdentity.groupId))
+                logger.info("Suspending notary member ${context.holdingIdentity}.")
+                try {
+                    updateGroupParameters(
+                        em,
+                        updatedMemberInfo,
+                        HoldingIdentity(
+                            request.suspendedMember,
+                            context.holdingIdentity.groupId
+                        ),
+                    )
+                } catch (e: PessimisticLockException) {
+                    throw InvalidEntityUpdateException(
+                        "Could not update member group parameters: ${e.message}",
+                    )
+                }
             } else {
+                logger.info("Suspending member ${context.holdingIdentity}.")
                 null
             }
 
@@ -124,7 +150,7 @@ internal class SuspendMemberHandler(
                 criteriaBuilder.notEqual(memberRoot.get<String>("memberX500Name"), notaryInfo.name.toString()))
         val otherMembers = em.createQuery(memberQuery)
             .setLockMode(LockModeType.PESSIMISTIC_WRITE)
-            .resultList.map {
+            .resultStream.map {
                 memberInfoFactory.create(
                     keyValuePairListDeserializer.deserializeKeyValuePairList(it.memberContext).toSortedMap(),
                     keyValuePairListDeserializer.deserializeKeyValuePairList(it.mgmContext).toSortedMap(),
@@ -132,7 +158,7 @@ internal class SuspendMemberHandler(
             }
         val otherMembersOfSameNotaryService = otherMembers.filter { otherMemberInfo ->
             otherMemberInfo.notaryDetails?.serviceName.toString() == notaryServiceName
-        }.mapNotNull { it.notaryDetails }
+        }.mapNotNull { it.notaryDetails }.toList()
 
         val (epoch, groupParameters) = if (otherMembersOfSameNotaryService.isEmpty()) {
             notaryUpdater.removeNotaryService(parametersMap, notaryServiceNumber)

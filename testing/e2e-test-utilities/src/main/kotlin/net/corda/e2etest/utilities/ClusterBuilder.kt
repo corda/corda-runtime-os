@@ -16,7 +16,7 @@ import java.nio.file.Paths
 class ClusterBuilder {
     private var client: HttpsClient? = null
 
-    fun endpoint(uri: URI, username: String, password: String) {
+    private fun endpoint(uri: URI, username: String, password: String) {
         client = UnirestHttpsClient(uri, username, password)
     }
 
@@ -37,14 +37,13 @@ class ClusterBuilder {
 
     private fun uploadCpiResource(
         cmd: String,
-        resourceName: String,
+        cpbResourceName: String?,
         groupPolicy: String,
         cpiName: String,
         cpiVersion: String
     ): SimpleResponse {
-        val fileName = Paths.get(resourceName).fileName.toString()
-        return CpiLoader.get(resourceName, groupPolicy, cpiName, cpiVersion).use {
-            client!!.postMultiPart(cmd, emptyMap(), mapOf("upload" to HttpsClientFileUpload(it, fileName)))
+        return CpiLoader.get(cpbResourceName, groupPolicy, cpiName, cpiVersion).use {
+            client!!.postMultiPart(cmd, emptyMap(), mapOf("upload" to HttpsClientFileUpload(it, cpiName)))
         }
     }
 
@@ -87,36 +86,39 @@ class ClusterBuilder {
     fun importCertificate(file: File, usage: String, alias: String) =
         uploadCertificateFile("/api/v1/certificates/cluster/$usage", file, alias)
 
+    fun getCertificateChain(usage: String, alias: String) =
+        client!!.get("/api/v1/certificates/cluster/$usage/$alias")
+
     /** Assumes the resource *is* a CPB */
     fun cpbUpload(resourceName: String) = uploadUnmodifiedResource("/api/v1/cpi/", resourceName)
 
     /** Assumes the resource is a CPB and converts it to CPI by adding a group policy file */
     fun cpiUpload(
-        resourceName: String,
+        cpbResourceName: String,
         groupId: String,
         staticMemberNames: List<String>,
         cpiName: String,
         cpiVersion: String = "1.0.0.0-SNAPSHOT"
     ) = cpiUpload(
-        resourceName,
+        cpbResourceName,
         getDefaultStaticNetworkGroupPolicy(groupId, staticMemberNames),
         cpiName,
         cpiVersion
     )
 
     fun cpiUpload(
-        resourceName: String,
+        cpbResourceName: String?,
         groupPolicy: String,
         cpiName: String,
         cpiVersion: String = "1.0.0.0-SNAPSHOT"
-    ) = uploadCpiResource("/api/v1/cpi/", resourceName, groupPolicy, cpiName, cpiVersion)
+    ) = uploadCpiResource("/api/v1/cpi/", cpbResourceName, groupPolicy, cpiName, cpiVersion)
 
     fun updateVirtualNodeState(holdingIdHash: String, newState: String) =
         put("/api/v1/virtualnode/$holdingIdHash/state/$newState", "")
 
     /** Assumes the resource is a CPB and converts it to CPI by adding a group policy file */
     fun forceCpiUpload(
-        resourceName: String,
+        cpbResourceName: String?,
         groupId: String,
         staticMemberNames: List<String>,
         cpiName: String,
@@ -124,7 +126,7 @@ class ClusterBuilder {
     ) =
         uploadCpiResource(
             "/api/v1/maintenance/virtualnode/forcecpiupload/",
-            resourceName,
+            cpbResourceName,
             getDefaultStaticNetworkGroupPolicy(groupId, staticMemberNames),
             cpiName,
             cpiVersion
@@ -307,7 +309,7 @@ class ClusterBuilder {
         )
 }
 
-fun <T> cluster(initialize: ClusterBuilder.() -> T): T = ClusterBuilder().let(initialize)
+fun <T> cluster(initialize: ClusterBuilder.() -> T): T = DEFAULT_CLUSTER.cluster(initialize)
 
 fun <T> ClusterInfo.cluster(
     initialize: ClusterBuilder.() -> T

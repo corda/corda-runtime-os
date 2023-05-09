@@ -2,9 +2,9 @@ package net.corda.membership.impl.persistence.service.handler
 
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.cipher.suite.SignatureSpecs
-import net.corda.data.CordaAvroDeserializer
-import net.corda.data.CordaAvroSerializationFactory
-import net.corda.data.CordaAvroSerializer
+import net.corda.avro.serialization.CordaAvroDeserializer
+import net.corda.avro.serialization.CordaAvroSerializationFactory
+import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.identity.HoldingIdentity
@@ -248,7 +248,7 @@ class AddNotaryToGroupParametersHandlerTest {
             on { name } doReturn MemberX500Name.parse("O=Bob,L=London,C=GB")
         }
         whenever(memberInfoFactory.create(any(), any<SortedMap<String, String?>>())).doReturn(otherNotary)
-        whenever(membersQuery.resultList).doReturn(listOf(otherNotaryEntity))
+        whenever(membersQuery.resultStream).doReturn(listOf(otherNotaryEntity).stream())
         whenever(keyValuePairListDeserializer.deserialize(any())).doReturn(
             KeyValuePairList(listOf(
                 KeyValuePair(EPOCH_KEY, EPOCH.toString()),
@@ -359,32 +359,6 @@ class AddNotaryToGroupParametersHandlerTest {
         verify(entityManager).transaction
         verify(registry).get(eq(CordaDb.Vault.persistenceUnitName))
         verify(entityManager, times(0)).persist(any())
-    }
-
-    @Test
-    fun `notary protocol must be specified to add new notary service`() {
-        whenever(notaryDetails.serviceProtocol).doReturn(null)
-
-        val ex = assertFailsWith<MembershipPersistenceException> { handler.invoke(requestContext, request) }
-        assertThat(ex.message).contains("protocol must be specified")
-    }
-
-    @Test
-    fun `notary protocol must match that of existing notary service`() {
-        mockExistingNotary()
-        whenever(notaryDetails.serviceProtocol).doReturn("incorrect.plugin.type")
-
-        val ex = assertFailsWith<MembershipPersistenceException> { handler.invoke(requestContext, request) }
-        assertThat(ex.message).contains("protocols do not match")
-    }
-
-    @Test
-    fun `exception is thrown if notary protocol is specified but versions are missing`() {
-        whenever(notaryDetails.serviceProtocol).doReturn(KNOWN_NOTARY_PROTOCOL)
-        whenever(notaryDetails.serviceProtocolVersions).doReturn(emptySet())
-
-        val ex = assertFailsWith<MembershipPersistenceException> { handler.invoke(requestContext, request) }
-        assertThat(ex.message).contains("protocol versions are missing")
     }
 
     @Test

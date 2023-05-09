@@ -6,11 +6,10 @@ import net.corda.applications.workers.smoketest.TEST_CPI_NAME
 import net.corda.applications.workers.smoketest.VNODE_UPGRADE_TEST_CPI_NAME
 import net.corda.applications.workers.smoketest.VNODE_UPGRADE_TEST_CPI_V1
 import net.corda.applications.workers.smoketest.VNODE_UPGRADE_TEST_CPI_V2
-import net.corda.e2etest.utilities.CLUSTER_URI
 import net.corda.e2etest.utilities.CODE_SIGNER_CERT
+import net.corda.e2etest.utilities.CODE_SIGNER_CERT_ALIAS
+import net.corda.e2etest.utilities.CODE_SIGNER_CERT_USAGE
 import net.corda.e2etest.utilities.ClusterBuilder
-import net.corda.e2etest.utilities.PASSWORD
-import net.corda.e2etest.utilities.USERNAME
 import net.corda.e2etest.utilities.assertWithRetry
 import net.corda.e2etest.utilities.awaitRpcFlowFinished
 import net.corda.e2etest.utilities.awaitVirtualNodeOperationStatusCheck
@@ -79,16 +78,11 @@ class VirtualNodeRestTest {
     @Order(5)
     fun `can import codesigner certificate`() {
         cluster {
-            endpoint(
-                CLUSTER_URI,
-                USERNAME,
-                PASSWORD
-            )
             assertWithRetry {
                 // Certificate upload can be slow in the combined worker, especially after it has just started up.
                 timeout(retryTimeout)
                 interval(retryInterval)
-                command { importCertificate(CODE_SIGNER_CERT, "code-signer", "cordadev") }
+                command { importCertificate(CODE_SIGNER_CERT, CODE_SIGNER_CERT_USAGE, CODE_SIGNER_CERT_ALIAS) }
                 condition { it.code == 204 }
             }
         }
@@ -101,12 +95,6 @@ class VirtualNodeRestTest {
     @Order(10)
     fun `can upload CPI`() {
         cluster {
-            endpoint(
-                CLUSTER_URI,
-                USERNAME,
-                PASSWORD
-            )
-
             val cpiHash = eventuallyUploadCpi(TEST_CPB_LOCATION, cpiName)
 
             val actualChecksum = getCpiChecksum(cpiName)
@@ -161,11 +149,6 @@ class VirtualNodeRestTest {
     @Order(32)
     fun `can upload different CPI with same groupId`() {
         cluster {
-            endpoint(
-                CLUSTER_URI,
-                USERNAME,
-                PASSWORD
-            )
             val requestId = cpiUpload(
                 TEST_CPB_LOCATION,
                 "8c5d6948-e17b-44e7-9d1c-fa4a3f667cad",
@@ -203,12 +186,6 @@ class VirtualNodeRestTest {
     @Order(33)
     fun `list cpis`() {
         cluster {
-            endpoint(
-                CLUSTER_URI,
-                USERNAME,
-                PASSWORD
-            )
-
             val json = assertWithRetry {
                 timeout(retryTimeout)
                 interval(retryInterval)
@@ -224,12 +201,6 @@ class VirtualNodeRestTest {
     @Order(37)
     fun `list cpis and check group id matches value in group policy file`() {
         cluster {
-            endpoint(
-                CLUSTER_URI,
-                USERNAME,
-                PASSWORD
-            )
-
             val json = cpiList().toJson()
             val cpiJson = json["cpis"].first { it["id"]["cpiName"].textValue() == cpiName }
 
@@ -242,11 +213,6 @@ class VirtualNodeRestTest {
     @Order(40)
     fun `can create virtual node with holding id and CPI`() {
         cluster {
-            endpoint(
-                CLUSTER_URI,
-                USERNAME,
-                PASSWORD
-            )
             val cpiFileChecksum = getCpiChecksum(cpiName)
 
             eventuallyCreateVirtualNode(cpiFileChecksum, aliceX500)
@@ -271,7 +237,6 @@ class VirtualNodeRestTest {
     @Order(50)
     fun `cannot create duplicate virtual node`() {
         cluster {
-            endpoint(CLUSTER_URI, USERNAME, PASSWORD)
             val hash = getCpiChecksum(cpiName)
 
             assertWithRetry {
@@ -287,12 +252,6 @@ class VirtualNodeRestTest {
     @Order(60)
     fun `list virtual nodes`() {
         cluster {
-            endpoint(
-                CLUSTER_URI,
-                USERNAME,
-                PASSWORD
-            )
-
             assertWithRetry {
                 timeout(retryTimeout)
                 interval(retryInterval)
@@ -311,8 +270,6 @@ class VirtualNodeRestTest {
     @Order(61)
     fun `get a virtual node`() {
         cluster {
-            endpoint(CLUSTER_URI, USERNAME, PASSWORD)
-
             assertWithRetry {
                 timeout(retryTimeout)
                 interval(retryInterval)
@@ -361,11 +318,6 @@ class VirtualNodeRestTest {
     @Order(65)
     fun `cpi status returns 400 for unknown request id`() {
         cluster {
-            endpoint(
-                CLUSTER_URI,
-                USERNAME,
-                PASSWORD
-            )
             assertWithRetry {
                 timeout(retryTimeout)
                 interval(retryInterval)
@@ -379,12 +331,6 @@ class VirtualNodeRestTest {
     @Order(80)
     fun `can force upload same CPI`() {
         cluster {
-            endpoint(
-                CLUSTER_URI,
-                USERNAME,
-                PASSWORD
-            )
-
             val initialCpiFileChecksum = getCpiFileChecksum(cpiName)
 
             val requestId = forceCpiUpload(
@@ -413,12 +359,6 @@ class VirtualNodeRestTest {
     @Order(81)
     fun `can run the uploaded CPI`() {
         cluster {
-            endpoint(
-                CLUSTER_URI,
-                USERNAME,
-                PASSWORD
-            )
-
             runReturnAStringFlow("original-cpi")
         }
     }
@@ -427,12 +367,6 @@ class VirtualNodeRestTest {
     @Order(82)
     fun `persist dog`() {
         cluster {
-            endpoint(
-                CLUSTER_URI,
-                USERNAME,
-                PASSWORD
-            )
-
             runSimplePersistenceCheckFlow("Could persist dog")
         }
     }
@@ -441,8 +375,6 @@ class VirtualNodeRestTest {
     @Order(110)
     fun `can upload multiple versions of a CPI with the same name`() {
         cluster {
-            endpoint(CLUSTER_URI, USERNAME, PASSWORD)
-
             eventuallyUploadCpi(VNODE_UPGRADE_TEST_CPI_V1, upgradeTestingCpiName, "v1")
             eventuallyUploadCpi(VNODE_UPGRADE_TEST_CPI_V2, upgradeTestingCpiName, "v2")
         }
@@ -452,8 +384,6 @@ class VirtualNodeRestTest {
     @Order(111)
     fun `prepare a virtual node with v1 CPI`() {
         cluster {
-            endpoint(CLUSTER_URI, USERNAME, PASSWORD)
-
             val cpiV1 = getCpiChecksum(upgradeTestingCpiName, "v1")
             eventuallyCreateVirtualNode(cpiV1, bobX500)
             eventuallyAssertVirtualNodeHasCpi(bobHoldingId, upgradeTestingCpiName, "v1")
@@ -468,8 +398,6 @@ class VirtualNodeRestTest {
     @Order(113)
     fun `can upgrade a virtual node's CPI when it is in maintenance`() {
         cluster {
-            endpoint(CLUSTER_URI, USERNAME, PASSWORD)
-
             eventuallyUpdateVirtualNodeState(bobHoldingId, "maintenance", "INACTIVE")
 
             val cpiV2 = getCpiChecksum(upgradeTestingCpiName, "v2")
@@ -492,8 +420,6 @@ class VirtualNodeRestTest {
     @Order(114)
     fun `can change virtual node's state to active and run a flow after upgrade`() {
         cluster {
-            endpoint(CLUSTER_URI, USERNAME, PASSWORD)
-
             eventuallyUpdateVirtualNodeState(bobHoldingId, "active", "ACTIVE")
 
             runReturnAStringFlow("upgrade-test-v2", bobHoldingId)

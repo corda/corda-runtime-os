@@ -40,7 +40,7 @@ class VirtualNodeService @Activate constructor(
     private var connectionCounter = AtomicInteger(0)
 
     init {
-        sandboxGroupContextComponent.initCaches(2)
+        sandboxGroupContextComponent.resizeCaches(2)
     }
 
     fun load(resourceName: String): VirtualNodeInfo {

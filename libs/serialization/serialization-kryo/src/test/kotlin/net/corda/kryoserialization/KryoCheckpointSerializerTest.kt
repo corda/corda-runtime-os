@@ -1,6 +1,9 @@
 package net.corda.kryoserialization
 
+import co.paralleluniverse.fibers.Fiber
 import co.paralleluniverse.io.serialization.kryo.ExternalizableKryoSerializer
+import co.paralleluniverse.io.serialization.kryo.KryoSerializer
+import com.esotericsoftware.kryo.ClassResolver
 import com.esotericsoftware.kryo.Kryo
 import com.esotericsoftware.kryo.util.MapReferenceResolver
 import net.corda.data.flow.state.checkpoint.FlowStackItem
@@ -16,11 +19,15 @@ import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import org.mockito.Mockito
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.whenever
 import java.io.Externalizable
+import java.time.Instant
+import java.time.ZoneOffset
+import java.time.chrono.Chronology
+import java.time.zone.ZoneRules
 import java.util.LinkedList
 import java.util.concurrent.Executors
 
@@ -115,6 +122,68 @@ internal class KryoCheckpointSerializerTest {
 
         assertThat(tested.someInt).isEqualTo(tester.someInt)
         assertThat(tested.someString).isEqualTo(tester.someString)
+    }
+
+    private fun getQuasarKryo(classResolver: ClassResolver): Kryo {
+        return (Fiber.getFiberSerializer(classResolver, false) as KryoSerializer).kryo
+    }
+
+    @Test
+    fun `test java time classes`() {
+        val sandboxGroup = mockSandboxGroup(emptySet())
+        val serializer = KryoCheckpointSerializer(
+            DefaultKryoCustomizer.customize(
+                kryo = getQuasarKryo(CordaClassResolver(sandboxGroup)),
+                serializers = emptyMap(),
+                classSerializer = ClassSerializer(sandboxGroup)
+            )
+        )
+        val tester = Instant.now()
+
+        val bytes = serializer.serialize(tester)
+        val tested = serializer.deserialize(bytes, Instant::class.java)
+
+        assertThat(tested)
+            .isEqualTo(tester)
+            .isNotSameAs(tester)
+    }
+
+    @Test
+    fun `test java time chrono classes`() {
+        val sandboxGroup = mockSandboxGroup(emptySet())
+        val serializer = KryoCheckpointSerializer(
+            DefaultKryoCustomizer.customize(
+                kryo = getQuasarKryo(CordaClassResolver(sandboxGroup)),
+                serializers = emptyMap(),
+                classSerializer = ClassSerializer(sandboxGroup)
+            )
+        )
+        val tester = Chronology.getAvailableChronologies().first()
+
+        val bytes = serializer.serialize(tester)
+        val tested = serializer.deserialize(bytes, Chronology::class.java)
+
+        assertThat(tested).isEqualTo(tester)
+    }
+
+    @Test
+    fun `test java time zone classes`() {
+        val sandboxGroup = mockSandboxGroup(emptySet())
+        val serializer = KryoCheckpointSerializer(
+            DefaultKryoCustomizer.customize(
+                kryo = getQuasarKryo(CordaClassResolver(sandboxGroup)),
+                serializers = emptyMap(),
+                classSerializer = ClassSerializer(sandboxGroup)
+            )
+        )
+        val tester = ZoneRules.of(ZoneOffset.UTC)
+
+        val bytes = serializer.serialize(tester)
+        val tested = serializer.deserialize(bytes, ZoneRules::class.java)
+
+        assertThat(tested)
+            .isEqualTo(tester)
+            .isNotSameAs(tester)
     }
 
     class ChildOfArrayList<T>(size: Int) : ArrayList<T>(size) {
@@ -221,13 +290,13 @@ internal class KryoCheckpointSerializerTest {
         assertThat(tested.iterator.hasNext()).isTrue
     }
 
-    private fun mockSandboxGroup(): SandboxGroup = mock<SandboxGroup>().also {
+    private fun mockSandboxGroup(): SandboxGroup = mock<SandboxGroup>().apply {
         val tagCaptor = argumentCaptor<Class<*>>()
-        Mockito.`when`(it.getStaticTag(tagCaptor.capture())).thenAnswer {
+        whenever(getStaticTag(tagCaptor.capture())).thenAnswer {
             tagCaptor.lastValue.typeName
         }
         val classCaptor = argumentCaptor<String>()
-        Mockito.`when`(it.getClass(any(), classCaptor.capture())).thenAnswer {
+        whenever(getClass(any(), classCaptor.capture())).thenAnswer {
             Class.forName(classCaptor.lastValue)
         }
     }

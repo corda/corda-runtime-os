@@ -10,8 +10,6 @@ deploy() {
    echo Creating $namespace
    kubectl delete ns $namespace || echo ''
    kubectl create ns $namespace
-   helm registry login corda-os-docker.software.r3.com -u $CORDA_ARTIFACTORY_USERNAME -p $CORDA_ARTIFACTORY_PASSWORD
-   helm registry login corda-os-docker-unstable.software.r3.com -u $CORDA_ARTIFACTORY_USERNAME -p $CORDA_ARTIFACTORY_PASSWORD
 
    echo Installing prereqs into $namespace
    helm upgrade --install prereqs -n $namespace \
@@ -35,6 +33,9 @@ then
 else
   namespaces=$@
 fi
+
+helm registry login corda-os-docker.software.r3.com -u $CORDA_ARTIFACTORY_USERNAME -p $CORDA_ARTIFACTORY_PASSWORD
+helm registry login corda-os-docker-unstable.software.r3.com -u $CORDA_ARTIFACTORY_USERNAME -p $CORDA_ARTIFACTORY_PASSWORD
 
 for namespace in ${namespaces[@]}; do
     deploy $namespace &

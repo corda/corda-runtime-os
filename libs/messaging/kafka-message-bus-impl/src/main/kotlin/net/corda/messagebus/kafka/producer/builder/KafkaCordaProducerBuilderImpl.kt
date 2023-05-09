@@ -44,13 +44,17 @@ class KafkaCordaProducerBuilderImpl @Activate constructor(
         private val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
-    override fun createProducer(producerConfig: ProducerConfig, messageBusConfig: SmartConfig): CordaProducer {
+    override fun createProducer(
+        producerConfig: ProducerConfig,
+        messageBusConfig: SmartConfig,
+        onSerializationError: ((ByteArray) -> Unit)?
+    ): CordaProducer {
         val configResolver = MessageBusConfigResolver(messageBusConfig.factory)
         val (resolvedConfig, kafkaProperties) = configResolver.resolve(messageBusConfig, producerConfig)
 
         return executeKafkaActionWithRetry(
             action = {
-                val producer = createKafkaProducer(kafkaProperties)
+                val producer = createKafkaProducer(kafkaProperties, onSerializationError)
                 val maxAllowedMessageSize = messageBusConfig.getLong(MessagingConfig.MAX_ALLOWED_MSG_SIZE)
                 val producerChunkService = messagingChunkFactory.createChunkSerializerService(maxAllowedMessageSize)
                 CordaKafkaProducerImpl(
@@ -60,13 +64,18 @@ class KafkaCordaProducerBuilderImpl @Activate constructor(
                     KafkaClientMetrics(producer)
                 )
             },
-            errorMessage = { "SubscriptionProducerBuilderImpl failed to producer with clientId ${producerConfig.clientId}, " +
-                    "with configuration: $messageBusConfig" },
+            errorMessage = {
+                "SubscriptionProducerBuilderImpl failed to producer with clientId ${producerConfig.clientId}, " +
+                        "with configuration: $messageBusConfig"
+            },
             log = log
         )
     }
 
-    private fun createKafkaProducer(kafkaProperties: Properties): KafkaProducer<Any, Any> {
+    private fun createKafkaProducer(
+        kafkaProperties: Properties,
+        onSerializationError: ((ByteArray) -> Unit)?
+    ): KafkaProducer<Any, Any> {
         val contextClassLoader = Thread.currentThread().contextClassLoader
         val currentBundle = FrameworkUtil.getBundle(KafkaProducer::class.java)
 
@@ -76,8 +85,8 @@ class KafkaCordaProducerBuilderImpl @Activate constructor(
             }
             KafkaProducer(
                 kafkaProperties,
-                CordaAvroSerializerImpl(avroSchemaRegistry),
-                CordaAvroSerializerImpl(avroSchemaRegistry)
+                CordaAvroSerializerImpl(avroSchemaRegistry, onSerializationError),
+                CordaAvroSerializerImpl(avroSchemaRegistry, onSerializationError)
             )
         } finally {
             Thread.currentThread().contextClassLoader = contextClassLoader

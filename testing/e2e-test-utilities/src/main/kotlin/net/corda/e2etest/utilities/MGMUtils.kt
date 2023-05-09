@@ -16,12 +16,12 @@ import java.time.Duration
  * Calls the necessary endpoints to create a vnode, and onboard the MGM to that vnode.
  */
 fun ClusterInfo.onboardMgm(
-    resourceName: String,
     mgmName: String = "O=Mgm, L=London, C=GB, OU=$testRunUniqueId",
     groupPolicyConfig: GroupPolicyConfig = GroupPolicyConfig()
 ): NetworkOnboardingMetadata {
-    val mgmCpiName = "mgm_$testRunUniqueId.cpi"
-    conditionallyUploadCordaPackage(mgmCpiName, resourceName, getMgmGroupPolicy())
+    val mgmCpiName = "mgm.cpi"
+    conditionallyUploadCpiSigningCertificate()
+    conditionallyUploadCordaPackage(mgmCpiName, null, getMgmGroupPolicy())
     val mgmHoldingId = getOrCreateVirtualNodeFor(mgmName, mgmCpiName)
 
     addSoftHsmFor(mgmHoldingId, CAT_SESSION_INIT)
@@ -42,6 +42,7 @@ fun ClusterInfo.onboardMgm(
     )
 
     if (!keyExists(TENANT_P2P, "$TENANT_P2P$CAT_TLS", CAT_TLS)) {
+        disableCertificateRevocationChecks()
         val tlsKeyId = createKeyFor(TENANT_P2P, "$TENANT_P2P$CAT_TLS", CAT_TLS, DEFAULT_KEY_SCHEME)
         val mgmTlsCsr = generateCsr(mgmName, tlsKeyId)
         val mgmTlsCert = File.createTempFile("${this.hashCode()}$CAT_TLS", ".pem").also {

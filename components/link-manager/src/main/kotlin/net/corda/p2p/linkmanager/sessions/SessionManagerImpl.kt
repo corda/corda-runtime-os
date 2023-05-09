@@ -93,6 +93,8 @@ import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.locks.ReentrantReadWriteLock
+import net.corda.p2p.crypto.protocol.api.InvalidSelectedModeError
+import net.corda.p2p.crypto.protocol.api.NoCommonModeError
 import kotlin.concurrent.read
 import kotlin.concurrent.write
 
@@ -475,6 +477,20 @@ internal class SessionManagerImpl(
                 "${sessionCounterparties.counterpartyId}"
         )
 
+        val responderMemberInfo = membershipGroupReaderProvider.lookup(
+            sessionCounterparties.ourId,
+            sessionCounterparties.counterpartyId,
+            filter
+        )
+        if (responderMemberInfo != null && responderMemberInfo.serial > sessionCounterparties.serial) {
+            logger.warn(
+                "Attempted to start session negotiation with peer ${sessionCounterparties.counterpartyId} which is " +
+                        "in ${sessionCounterparties.ourId}'s members map but the serial number has progressed beyond " +
+                        "the requested serial number. The sessionInit message was not sent and will not be retried."
+            )
+            return null
+        }
+
         for (message in messages) {
             sessionReplayer.addMessageForReplay(
                 initiatorHelloUniqueId(message.first.sessionId),
@@ -488,14 +504,20 @@ internal class SessionManagerImpl(
             )
         }
 
-        val responderMemberInfo = membershipGroupReaderProvider.lookup(
-            sessionCounterparties.ourId,
-            sessionCounterparties.counterpartyId,
-            filter
-        )
         if (responderMemberInfo == null) {
-            logger.warn("Attempted to start session negotiation with peer ${sessionCounterparties.counterpartyId} which is not in " +
-                "${sessionCounterparties.ourId}'s members map. Filter was $filter. The sessionInit message was not sent.")
+            logger.warn(
+                "Attempted to start session negotiation with peer ${sessionCounterparties.counterpartyId} which is " +
+                        "not in ${sessionCounterparties.ourId}'s members map. Filter was $filter. The sessionInit " +
+                        "message was not sent. Message will be retried."
+            )
+            return null
+        } else if (responderMemberInfo.serial < sessionCounterparties.serial) {
+            logger.warn(
+                "Attempted to start session negotiation with peer ${sessionCounterparties.counterpartyId} which is " +
+                        "not in ${sessionCounterparties.ourId}'s members map with serial " +
+                        "${sessionCounterparties.serial}. Filter was $filter and serial found was " +
+                        "${responderMemberInfo.serial}. The sessionInit message was not sent. Message will be retried."
+            )
             return null
         }
 
@@ -847,6 +869,9 @@ internal class SessionManagerImpl(
         } catch (exception: InvalidPeerCertificate) {
             logger.validationFailedWarning(message::class.java.simpleName, message.header.sessionId, exception.message)
             null
+        } catch (exception: NoCommonModeError) {
+            logger.validationFailedWarning(message::class.java.simpleName, message.header.sessionId, exception.message)
+            null
         }
     }
 
@@ -869,6 +894,8 @@ internal class SessionManagerImpl(
         } catch (exception: InvalidHandshakeMessageException) {
             logger.validationFailedWarning(message::class.java.simpleName, message.header.sessionId, exception.message)
         } catch (exception: InvalidPeerCertificate) {
+            logger.validationFailedWarning(message::class.java.simpleName, message.header.sessionId, exception.message)
+        } catch (exception: InvalidSelectedModeError) {
             logger.validationFailedWarning(message::class.java.simpleName, message.header.sessionId, exception.message)
         }
         return false
