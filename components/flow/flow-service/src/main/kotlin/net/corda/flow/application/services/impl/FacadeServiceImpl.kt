@@ -22,6 +22,7 @@ import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.base.types.MemberX500Name
 import org.slf4j.LoggerFactory
 import java.security.AccessController
+import java.security.PrivilegedActionException
 import java.security.PrivilegedExceptionAction
 
 @Component(service = [FacadeService::class, UsedByFlow::class], scope = PROTOTYPE)
@@ -55,28 +56,36 @@ class FacadeServiceImpl @Activate constructor(
     }
 
     @Suppress("UNUSED_PARAMETER")
-    private fun facadeLookup(facadeId: String) : Facade {
-        return AccessController.doPrivileged(PrivilegedExceptionAction { FacadeReaders.JSON.read(
-        """{ "id": "/com/r3/tokens/sample/v1.0",
-                "commands": { 
-                    "say-hello": {
-                        "in": {
-                            "greeting": "string"
+    private fun facadeLookup(facadeId: String): Facade {
+        return try {
+            AccessController.doPrivileged(PrivilegedExceptionAction {
+                FacadeReaders.JSON.read(
+                    """{ 
+                        "id": "/com/r3/tokens/sample/v1.0",
+                        "commands": { 
+                            "say-hello": {
+                                "in": {
+                                    "greeting": "string"
+                                },
+                                "out": {
+                                    "greeting": "string"
+                                }
                             },
-                        "out": {
-                            "greeting": "string"
-                            }
-                        },
-                    "get-balance": {
-                        "in": {
-                            "greeting": "string"
-                            },
-                        "out": {
-                            "greeting": "string"
+                            "get-balance": {
+                                "in": {
+                                    "greeting": "string"
+                                },
+                                "out": {
+                                    "greeting": "string"
+                                }
                             }
                         }
-                    }
-                }""".trimIndent()) } )
+                    }""".trimIndent()
+                )
+            })
+        } catch (e: PrivilegedActionException) {
+            throw e.exception
+        }
     }
 
     private fun facadeLookup(facadeId: FacadeId) : Facade = facadeLookup(facadeId.toString())

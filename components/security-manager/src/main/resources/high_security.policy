@@ -21,7 +21,6 @@ ALLOW {
 [org.osgi.service.condpermadmin.BundleLocationCondition "FLOW/*"]
 
 (java.lang.RuntimePermission "accessClassInPackage.net.corda.v5.*" "")
-(java.lang.RuntimePermission "accessClassInPackage.net.corda.flow.application.services.impl.interop.*" "")
 (org.osgi.framework.PackagePermission "net.corda.v5.*" "import")
 (org.osgi.framework.ServicePermission "net.corda.v5.*" "get")
 (org.osgi.framework.ServicePermission "(location=FLOW/*)" "get")

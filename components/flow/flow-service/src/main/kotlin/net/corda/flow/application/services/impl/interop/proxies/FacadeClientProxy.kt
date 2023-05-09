@@ -18,6 +18,7 @@ import java.lang.reflect.InvocationHandler
 import java.lang.reflect.Method
 import java.lang.reflect.Proxy
 import java.security.AccessController
+import java.security.PrivilegedActionException
 import java.security.PrivilegedExceptionAction
 
 object FacadeProxies {
@@ -35,9 +36,13 @@ object FacadeProxies {
                            requestProcessor: (FacadeRequest) -> FacadeResponse): T {
         val binding = FacadeInterfaceBindings.bind(facade, interfaceType)
         val proxy = FacadeClientProxy(binding, TypeConverter(jsonMarshaller), requestProcessor)
-
+        val classLoader = try {
+            AccessController.doPrivileged(PrivilegedExceptionAction { interfaceType.classLoader })
+        } catch (e: PrivilegedActionException) {
+            throw e.exception
+        }
         return Proxy.newProxyInstance(
-            AccessController.doPrivileged(PrivilegedExceptionAction {  interfaceType.classLoader }),
+            classLoader,
             arrayOf(interfaceType),
             proxy
         ) as T
