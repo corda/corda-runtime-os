@@ -70,7 +70,7 @@ class TokenBalanceQueryTests {
 
     private val tokenQueryBalanceFlowName = "com.r3.corda.demo.utxo.TokenBalanceQueryFlow"
 
-    private val rpcStartArgs = mapOf(
+    private val tokenQueryBalanceRpcStartArgs = mapOf(
         "tokenType" to "com.r3.corda.demo.utxo.contract.CoinState",
         "issuerBankX500" to charlieX500,
         "currency" to "USD"
@@ -117,7 +117,7 @@ class TokenBalanceQueryTests {
     @Test
     fun `Token Query balance - Ensure balance is zero`() {
 
-        val flowRequestId = startRpcFlow(aliceHoldingId, rpcStartArgs, tokenQueryBalanceFlowName)
+        val flowRequestId = startRpcFlow(aliceHoldingId, tokenQueryBalanceRpcStartArgs, tokenQueryBalanceFlowName)
 
         val tokenQueryBalanceFlowResponse = awaitRpcFlowFinished(aliceHoldingId, flowRequestId)
         assertThat(tokenQueryBalanceFlowResponse.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
