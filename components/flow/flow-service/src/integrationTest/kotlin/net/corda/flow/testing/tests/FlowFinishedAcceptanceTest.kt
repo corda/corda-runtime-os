@@ -5,7 +5,6 @@ import net.corda.data.flow.output.FlowStates
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.testing.context.FlowServiceTestBase
 import net.corda.flow.testing.context.initiateSingleFlow
-import net.corda.flow.testing.fakes.FlowFiberCacheOperation
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -100,7 +99,6 @@ class FlowFinishedAcceptanceTest : FlowServiceTestBase() {
                 wakeUpEvent()
                 flowStatus(FlowStates.RUNNING)
                 expectFlowFiberCacheContainsKey(BOB_HOLDING_IDENTITY, REQUEST_ID1)
-                expectFlowFiberCacheOperationsForKey(BOB_HOLDING_IDENTITY, REQUEST_ID1, listOf(FlowFiberCacheOperation.PUT))
             }
         }
 
@@ -115,8 +113,6 @@ class FlowFinishedAcceptanceTest : FlowServiceTestBase() {
                 flowStatus(FlowStates.COMPLETED, result = DONE)
                 scheduleFlowMapperCleanupEvents(FlowKey(REQUEST_ID1, BOB_HOLDING_IDENTITY).toString())
                 expectFlowFiberCacheDoesNotContainKey(BOB_HOLDING_IDENTITY, REQUEST_ID1)
-                expectFlowFiberCacheOperationsForKey(BOB_HOLDING_IDENTITY, REQUEST_ID1,
-                    listOf(FlowFiberCacheOperation.PUT, FlowFiberCacheOperation.REMOVE))
             }
         }
     }

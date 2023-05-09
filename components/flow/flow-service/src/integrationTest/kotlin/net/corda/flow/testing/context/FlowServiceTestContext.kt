@@ -7,9 +7,9 @@ import com.typesafe.config.ConfigFactory
 import java.nio.ByteBuffer
 import java.time.Instant
 import java.util.UUID
+import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.cpiinfo.read.fake.CpiInfoReadServiceFake
 import net.corda.crypto.core.SecureHashImpl
-import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.KeyValuePairList
 import net.corda.data.flow.FlowInitiatorType
@@ -32,16 +32,14 @@ import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.fiber.ClientStartedFlow
 import net.corda.flow.fiber.FlowFiberImpl
 import net.corda.flow.fiber.FlowIORequest
+import net.corda.flow.fiber.cache.FlowFiberCache
 import net.corda.flow.pipeline.factory.FlowEventProcessorFactory
 import net.corda.flow.testing.fakes.FakeClientRequestBody
 import net.corda.flow.testing.fakes.FakeFlow
-import net.corda.flow.testing.fakes.FakeFlowFiberCache
 import net.corda.flow.testing.fakes.FakeFlowFiberFactory
 import net.corda.flow.testing.fakes.FakeMembershipGroupReaderProvider
 import net.corda.flow.testing.fakes.FakeSandboxGroupContextComponent
-import net.corda.flow.testing.tests.ALICE_HOLDING_IDENTITY
-import net.corda.flow.testing.tests.BOB_HOLDING_IDENTITY
-import net.corda.flow.testing.tests.CHARLIE_HOLDING_IDENTITY
+import net.corda.flow.testing.tests.ALL_TEST_VIRTUAL_NODES
 import net.corda.flow.testing.tests.FLOW_NAME
 import net.corda.flow.utils.KeyValueStore
 import net.corda.flow.utils.emptyKeyValuePairList
@@ -93,8 +91,8 @@ class FlowServiceTestContext @Activate constructor(
     val sandboxGroupContextComponent: FakeSandboxGroupContextComponent,
     @Reference(service = VirtualNodeInfoReadServiceFake::class)
     val virtualNodeInfoReadService: VirtualNodeInfoReadServiceFake,
-    @Reference(service = FakeFlowFiberCache::class)
-    val flowFiberCache: FakeFlowFiberCache,
+    @Reference(service = FlowFiberCache::class)
+    val flowFiberCache: FlowFiberCache,
 ) : StepSetup, ThenSetup {
 
     private companion object {
@@ -417,7 +415,7 @@ class FlowServiceTestContext @Activate constructor(
     }
 
     override fun resetFlowFiberCache() {
-        flowFiberCache.reset(listOf(ALICE_HOLDING_IDENTITY, BOB_HOLDING_IDENTITY, CHARLIE_HOLDING_IDENTITY))
+        ALL_TEST_VIRTUAL_NODES.forEach { flowFiberCache.remove(it) }
     }
 
     fun clearTestRuns() {

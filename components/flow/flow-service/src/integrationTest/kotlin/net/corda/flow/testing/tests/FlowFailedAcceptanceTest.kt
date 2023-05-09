@@ -6,7 +6,6 @@ import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.pipeline.exceptions.FlowProcessingExceptionTypes.FLOW_FAILED
 import net.corda.flow.testing.context.FlowServiceTestBase
 import net.corda.flow.testing.context.initiateSingleFlow
-import net.corda.flow.testing.fakes.FlowFiberCacheOperation
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -49,7 +48,6 @@ class FlowFailedAcceptanceTest : FlowServiceTestBase() {
         then {
             expectOutputForFlow(FLOW_ID1) {
                 expectFlowFiberCacheContainsKey(ALICE_HOLDING_IDENTITY, REQUEST_ID1)
-                expectFlowFiberCacheOperationsForKey(ALICE_HOLDING_IDENTITY, REQUEST_ID1, listOf(FlowFiberCacheOperation.PUT))
             }
         }
 
@@ -64,10 +62,6 @@ class FlowFailedAcceptanceTest : FlowServiceTestBase() {
                 flowStatus(FlowStates.FAILED, errorType = FLOW_FAILED, errorMessage = EXCEPTION.message)
                 scheduleFlowMapperCleanupEvents(FlowKey(REQUEST_ID1, ALICE_HOLDING_IDENTITY).toString())
                 expectFlowFiberCacheDoesNotContainKey(ALICE_HOLDING_IDENTITY, REQUEST_ID1)
-                expectFlowFiberCacheOperationsForKey(
-                    ALICE_HOLDING_IDENTITY, REQUEST_ID1,
-                    listOf(FlowFiberCacheOperation.PUT, FlowFiberCacheOperation.REMOVE)
-                )
             }
         }
     }
