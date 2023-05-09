@@ -1,18 +1,20 @@
 package net.corda.cli.plugins.packaging.aws.kms;
 
-import lombok.NonNull;
 import net.corda.cli.plugins.packaging.aws.kms.signature.KmsSignature;
 import net.corda.cli.plugins.packaging.aws.kms.signature.KmsSigningAlgorithm;
+import org.jetbrains.annotations.NotNull;
 import software.amazon.awssdk.services.kms.KmsClient;
 
 import java.security.Provider;
 import java.util.Collections;
+import java.util.Objects;
 import java.util.stream.Stream;
 
 public class KmsProvider extends Provider {
 
-    public KmsProvider(@NonNull KmsClient kmsClient) {
+    public KmsProvider(@NotNull KmsClient kmsClient) {
         super("KMS", "software.amazon.awssdk.services.kms.jce", "AWS KMS Provider");
+        Objects.requireNonNull(kmsClient);
         registerSignatures(kmsClient);
     }
 

@@ -1,7 +1,7 @@
 package net.corda.cli.plugins.packaging.aws.kms.signature;
 
-import lombok.NonNull;
 import net.corda.cli.plugins.packaging.aws.kms.KmsKey;
+import org.jetbrains.annotations.NotNull;
 import software.amazon.awssdk.core.SdkBytes;
 import software.amazon.awssdk.services.kms.KmsClient;
 import software.amazon.awssdk.services.kms.model.MessageType;
@@ -17,6 +17,7 @@ import java.security.ProviderException;
 import java.security.PublicKey;
 import java.security.SignatureException;
 import java.security.SignatureSpi;
+import java.util.Objects;
 
 public class KmsSignature extends SignatureSpi {
 
@@ -28,7 +29,9 @@ public class KmsSignature extends SignatureSpi {
 
     private KmsKey key;
 
-    public KmsSignature(@NonNull KmsClient kmsClient, @NonNull KmsSigningAlgorithm kmsSigningAlgorithm) {
+    public KmsSignature(@NotNull KmsClient kmsClient, @NotNull KmsSigningAlgorithm kmsSigningAlgorithm) {
+        Objects.requireNonNull(kmsClient);
+        Objects.requireNonNull(kmsSigningAlgorithm);
         this.kmsClient = kmsClient;
         this.signingAlgorithmSpec = kmsSigningAlgorithm.getSigningAlgorithmSpec();
         initMessageDigest(kmsSigningAlgorithm.getDigestAlgorithm());
