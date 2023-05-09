@@ -7,20 +7,21 @@ import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.cipher.suite.PlatformDigestService
 import net.corda.crypto.client.CryptoOpsClient
-import net.corda.crypto.client.CryptoOpsProxyClient
 import net.corda.crypto.config.impl.signingService
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.persistence.HSMStore
 import net.corda.crypto.persistence.db.model.CryptoEntities
-import net.corda.crypto.service.CryptoOpsBusService
 import net.corda.crypto.service.CryptoServiceFactory
 import net.corda.crypto.service.HSMRegistrationBusService
 import net.corda.crypto.service.HSMService
 import net.corda.crypto.service.impl.SigningServiceImpl
 import net.corda.crypto.service.impl.bus.CryptoFlowOpsBusProcessor
+import net.corda.crypto.service.impl.bus.CryptoOpsBusProcessor
 import net.corda.crypto.softhsm.SoftCryptoServiceProvider
 import net.corda.crypto.softhsm.impl.SigningRepositoryFactoryImpl
+import net.corda.data.crypto.wire.ops.rpc.RpcOpsRequest
+import net.corda.data.crypto.wire.ops.rpc.RpcOpsResponse
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.schema.CordaDb
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
@@ -38,6 +39,7 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
+import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.orm.JpaEntitiesRegistry
@@ -67,14 +69,10 @@ class CryptoProcessorImpl @Activate constructor(
     private val configurationReadService: ConfigurationReadService,
     @Reference(service = HSMStore::class)
     private val hsmStore: HSMStore,
-    @Reference(service = CryptoOpsBusService::class)
-    private val cryptoOspService: CryptoOpsBusService,
     @Reference(service = SoftCryptoServiceProvider::class)
     private val softCryptoServiceProvider: SoftCryptoServiceProvider,
     @Reference(service = CryptoOpsClient::class)
     private val cryptoOpsClient: CryptoOpsClient,
-    @Reference(service = CryptoOpsProxyClient::class)
-    private val cryptoOpsProxyClient: CryptoOpsProxyClient,
     @Reference(service = CryptoServiceFactory::class)
     private val cryptoServiceFactory: CryptoServiceFactory,
     @Reference(service = HSMService::class)
@@ -86,7 +84,7 @@ class CryptoProcessorImpl @Activate constructor(
     @Reference(service = DbConnectionManager::class)
     private val dbConnectionManager: DbConnectionManager,
     @Reference(service = VirtualNodeInfoReadService::class)
-    private val vnodeInfo: VirtualNodeInfoReadService,
+    private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
     @Reference(service = SubscriptionFactory::class)
     private val subscriptionFactory: SubscriptionFactory,
     @Reference(service = ExternalEventResponseFactory::class)
@@ -119,14 +117,13 @@ class CryptoProcessorImpl @Activate constructor(
     private val dependentComponents = DependentComponents.of(
         ::configurationReadService,
         ::hsmStore,
-        ::cryptoOspService,
         ::cryptoOpsClient,
         ::softCryptoServiceProvider,
         ::cryptoServiceFactory,
         ::hsmService,
         ::hsmRegistration,
         ::dbConnectionManager,
-        ::vnodeInfo,
+        ::virtualNodeInfoReadService,
     )
 
     private val lifecycleCoordinator =
@@ -232,13 +229,12 @@ class CryptoProcessorImpl @Activate constructor(
 
     private fun startBusProcessors(event: ConfigChangedEvent) {
         val cryptoConfig = event.config.getConfig(CRYPTO_CONFIG)
-        val groupName = "crypto.ops.flow"
-        // now we can create the subscriptions and bus processors
-        logger.info("Starting processing on ${groupName} ${Schemas.Crypto.FLOW_OPS_MESSAGE_TOPIC}")
+
+        // first make the signing service object, which both processors will consume
         val signingService = SigningServiceImpl(
             cryptoServiceFactory, SigningRepositoryFactoryImpl(
                 dbConnectionManager,
-                vnodeInfo,
+                virtualNodeInfoReadService,
                 jpaEntitiesRegistry,
                 keyEncodingService,
                 digestService,
@@ -249,16 +245,38 @@ class CryptoProcessorImpl @Activate constructor(
             config = cryptoConfig.signingService()
         )
 
+        // make both the processors
         val flowOpsProcessor = CryptoFlowOpsBusProcessor(signingService, externalEventResponseFactory, event)
-        val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
+        val rpcOpsProcessor = CryptoOpsBusProcessor(signingService, cryptoConfig)
 
-        val subscription = subscriptionFactory.createDurableSubscription(
-            subscriptionConfig = SubscriptionConfig(groupName, Schemas.Crypto.FLOW_OPS_MESSAGE_TOPIC),
+        // now make both the subscriptions
+        val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
+        val flowGroupName = "crypto.ops.flow"
+        val flowOpsSubscription = subscriptionFactory.createDurableSubscription(
+            subscriptionConfig = SubscriptionConfig(flowGroupName, Schemas.Crypto.FLOW_OPS_MESSAGE_TOPIC),
             processor = flowOpsProcessor,
             messagingConfig = messagingConfig,
             partitionAssignmentListener = null
         )
-        subscription.start()
+        val rpcGroupName = "crypto.ops.rpc"
+        val rpcClientName = "crypto.ops.rpc"
+        val rpcOpsSubscription = subscriptionFactory.createRPCSubscription(
+            rpcConfig = RPCConfig(
+                groupName = rpcGroupName,
+                clientName = rpcClientName,
+                requestTopic = Schemas.Crypto.RPC_OPS_MESSAGE_TOPIC,
+                requestType = RpcOpsRequest::class.java,
+                responseType = RpcOpsResponse::class.java
+            ),
+            responderProcessor = rpcOpsProcessor,
+            messagingConfig = messagingConfig
+        )
+
+        // and start the subscriptions
+        logger.info("Starting processing on ${flowGroupName} ${Schemas.Crypto.FLOW_OPS_MESSAGE_TOPIC}")
+        flowOpsSubscription.start()
+        logger.info("Starting processing on ${rpcGroupName} ${Schemas.Crypto.RPC_OPS_MESSAGE_TOPIC}")
+        rpcOpsSubscription.start()
     }
 
     private fun setStatus(status: LifecycleStatus, coordinator: LifecycleCoordinator) {
