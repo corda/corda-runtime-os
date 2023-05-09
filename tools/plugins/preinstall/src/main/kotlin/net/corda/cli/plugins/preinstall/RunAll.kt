@@ -30,20 +30,20 @@ class RunAll : Callable<Int> {
         val report = PreInstallPlugin.Report()
 
         val limitsCMD = CheckLimits()
-        val limitsArgs = mutableListOf<String>()
+        limitsCMD.path = path
 
         val postgresCMD = CheckPostgres()
-        val postgresArgs = mutableListOf<String>()
-        namespace?.let{ postgresArgs.add("-n$it") }
+        postgresCMD.path = path
+        namespace?.let{ postgresCMD.namespace = it }
 
         val kafkaCMD = CheckKafka()
-        val kafkaArgs = mutableListOf<String>()
-        namespace?.let{ kafkaArgs.add("-n$it") }
-        kafkaArgs.add("-t$timeout")
+        kafkaCMD.path = path
+        namespace?.let{ kafkaCMD.namespace = it }
+        kafkaCMD.timeout = timeout
 
-        CommandLine(limitsCMD).execute(path, *limitsArgs.toTypedArray())
-        CommandLine(postgresCMD).execute(path, *postgresArgs.toTypedArray())
-        CommandLine(kafkaCMD).execute(path, *kafkaArgs.toTypedArray())
+        limitsCMD.call()
+        postgresCMD.call()
+        kafkaCMD.call()
 
         report.addEntries(limitsCMD.report)
         report.addEntries(postgresCMD.report)

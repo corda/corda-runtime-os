@@ -80,6 +80,7 @@ class CheckPostgres : Callable<Int>, PluginContext() {
         // Try connecting to the DB URL using supplied credentials
         connect(postgresUrl, username, password)
 
+        // If the bootstrap credentials exist, try connecting to the DB URL using them
         if (bootstrapUsername != null && bootstrapUsername != username && bootstrapPassword != null) {
             connect(postgresUrl, bootstrapUsername!!, bootstrapPassword!!)
         }
