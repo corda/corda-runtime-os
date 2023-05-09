@@ -1,4 +1,4 @@
-package software.amazon.awssdk.services.kms.jce.provider;
+package net.corda.cli.plugins.packaging.aws.kms;
 
 import java.security.PublicKey;
 
