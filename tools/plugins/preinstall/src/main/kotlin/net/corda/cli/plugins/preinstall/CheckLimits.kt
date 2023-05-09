@@ -134,7 +134,6 @@ class CheckLimits : Callable<Int>, PluginContext() {
             defaultRequests = it.requests
         }
 
-        yaml.resources?.let { checkResources(it, "resources") }
         yaml.bootstrap?.let { checkResources(it.resources, "bootstrap") }
         yaml.workers?.db?.let { checkResources(it.resources, "DB") }
         yaml.workers?.flow?.let { checkResources(it.resources, "flow") }
@@ -144,7 +143,9 @@ class CheckLimits : Callable<Int>, PluginContext() {
         yaml.workers?.p2pGateway?.let { checkResources(it.resources, "P2P gateway") }
 
         if (!resourceRequestsChecked) {
-            logger.info("No resource requests or limits were found.")
+            yaml.resources?.let { checkResources(it, "resources") } ?: run {
+                logger.info("No resource requests or limits were found.")
+            }
         }
 
         return if (report.testsPassed()) {
