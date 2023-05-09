@@ -115,7 +115,7 @@ class TokenBalanceQueryTests {
     }
 
     @Test
-    fun `Token Query balance - Ensure balance is zero`() {
+    fun `Token Query Balance - Ensure balance is zero`() {
 
         val flowRequestId = startRpcFlow(aliceHoldingId, tokenQueryBalanceRpcStartArgs, tokenQueryBalanceFlowName)
 
@@ -129,7 +129,7 @@ class TokenBalanceQueryTests {
     }
 
     @Test
-    fun `Token Query balance - Create 10 Coins`() {
+    fun `Token Query Balance - Create 10 coins`() {
         val rpcStartArgs = mapOf(
             "issuerBankX500" to charlieX500,
             "currency" to "USD",
@@ -149,7 +149,7 @@ class TokenBalanceQueryTests {
     }
 
     @Test
-    fun `Token Query balance - Ensure balance is equal to 10`() {
+    fun `Token Query Balance - Ensure balance is equal to 10`() {
         val rpcStartArgs = emptyMap<String,String>()
 
         val flowRequestId = startRpcFlow(
@@ -165,7 +165,7 @@ class TokenBalanceQueryTests {
     }
 
     @Test
-    fun `Token Query balance - Claim token`() {
+    fun `Token Query Balance - Claim token`() {
         val rpcStartArgs = emptyMap<String,String>()
 
         val flowRequestId = startRpcFlow(
@@ -181,7 +181,7 @@ class TokenBalanceQueryTests {
     }
 
     @Test
-    fun `Token Query balance - Ensure balance is equal to 5`() {
+    fun `Token Query Balance - Ensure balance is equal to 5`() {
         val rpcStartArgs = emptyMap<String,String>()
 
         val flowRequestId = startRpcFlow(
@@ -195,49 +195,4 @@ class TokenBalanceQueryTests {
         val utxoFlowResult = awaitRpcFlowFinished(aliceHoldingId, flowRequestId)
         assertThat(utxoFlowResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
     }
-
-    @Test
-    fun `Utxo Token - Spend Coins`() {
-
-        val rpcStartArgs = mapOf(
-            "issuerBankX500" to charlieX500,
-            "currency" to "USD",
-            "maxCoinsToUse" to 1,
-            "targetAmount" to 20,
-        )
-
-        val flowRequestId = startRpcFlow(
-            aliceHoldingId,
-            rpcStartArgs,
-            "com.r3.corda.demo.utxo.token.SpendCoinFlow"
-        )
-
-        val utxoFlowResult = awaitRpcFlowFinished(aliceHoldingId, flowRequestId)
-        assertThat(utxoFlowResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
-    }
-
-    data class TestUtxoStateResult(val testField: String, val participants: List<ByteArray>)
-
-    data class UtxoTransactionResult(
-        val id: SecureHash,
-        val states: List<TestUtxoStateResult>,
-        val participants: List<ByteArray>
-    )
-
-    data class FindTransactionResponse(
-        val transaction: UtxoTransactionResult?,
-        val errorMessage: String?
-    )
-
-    data class EvolveResponse(
-        val transactionId: String?,
-        val errorMessage: String?)
-
-    data class PeekTransactionResponse(
-        val inputs: List<TestUtxoStateResult>,
-        val outputs: List<TestUtxoStateResult>,
-        val errorMessage: String?
-    )
-
-    data class CustomQueryFlowResponse(val results: List<String>)
 }
