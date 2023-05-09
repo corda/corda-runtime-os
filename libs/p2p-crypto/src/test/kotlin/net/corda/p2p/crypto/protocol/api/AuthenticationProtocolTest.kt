@@ -9,15 +9,12 @@ import net.corda.v5.crypto.SignatureSpec
 import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.junit.jupiter.api.Test
-import org.mockito.Mockito
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import java.security.KeyPair
 import java.security.KeyPairGenerator
 import java.security.Signature
 import java.util.UUID
-import net.corda.data.p2p.gateway.certificates.RevocationCheckRequest
-import net.corda.data.p2p.gateway.certificates.RevocationCheckResponse
 
 class AuthenticationProtocolTest {
 
