@@ -17,7 +17,6 @@ import net.corda.applications.workers.rest.utils.onboardMgm
 import net.corda.applications.workers.rest.utils.setSslConfiguration
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 import java.nio.file.Path
@@ -25,7 +24,6 @@ import java.nio.file.Path
 /**
  * Three clusters are required for running this test. See `resources/RunNetworkTests.md` for more details.
  */
-@Disabled("CORE-13288: Tests are disabled until there is a solution in place")
 class MultiClusterDynamicNetworkTest {
     @TempDir
     lateinit var tempDir: Path
