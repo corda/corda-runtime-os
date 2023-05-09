@@ -6,6 +6,7 @@ import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
@@ -104,5 +105,17 @@ class UtilsTest {
         val aliceSignerSummaryHash = sequenceOf(ALICE_CERT).signerSummaryHash()
         val aliceV2SignerSummaryHash = sequenceOf(ALICE_V2_CERT).signerSummaryHash()
         assertEquals(aliceSignerSummaryHash, aliceV2SignerSummaryHash)
+    }
+
+    @Test
+    fun `deterministically serializes X500 attributes`() {
+        val aliceCert = mockCert("CN=Alice,OU=R3,O=Corda,L=Dublin,C=IE")
+        val aliceCertDiffOrder = mockCert("C=IE, OU=R3, CN=Alice,O=Corda,L=Dublin")
+        val aliceX500Name = aliceCert.subjectX500Principal.name
+        val aliceV2X500Name = aliceCertDiffOrder.subjectX500Principal.name
+        assertNotEquals(aliceX500Name, aliceV2X500Name)
+        val aliceSignerSummaryHash = sequenceOf(aliceCert).signerSummaryHash()
+        val aliceDiffOrderSignerSummaryHash = sequenceOf(aliceCertDiffOrder).signerSummaryHash()
+        assertEquals(aliceSignerSummaryHash, aliceDiffOrderSignerSummaryHash)
     }
 }
