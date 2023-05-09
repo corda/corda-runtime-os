@@ -121,7 +121,7 @@ interface FlowRestResource : RestResource {
             clientRequestId: The unique ID supplied by the client when the flow was created.
             flowId: The internal unique ID for the flow.
             flowStatus: The current state of the executing flow.
-            jsonFlowResult: The result returned from a completed flow, only set when the flow status is 'COMPLETED' otherwise null.
+            json: The result returned from a completed flow, only set when the flow status is 'COMPLETED' otherwise null.
             flowError: The details of the error that caused a flow to fail, only set when the flow status is 'FAILED' otherwise null.
             timestamp: The timestamp of when the status was last updated (in UTC)
             """
