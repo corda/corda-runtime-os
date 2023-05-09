@@ -61,6 +61,7 @@ class SessionErrorExecutor(
                 log.warn(errorMsg + "Forwarding event.")
                 flowMapperState.status = FlowMapperStateType.ERROR
                 if (messageDirection == MessageDirection.OUTBOUND) {
+                    val errorMessage = (sessionEvent.payload as SessionError).errorMessage?.errorMessage
                     FlowMapperResult(
                         flowMapperState, listOf(
                             createP2PRecord(
@@ -68,7 +69,7 @@ class SessionErrorExecutor(
                                 SessionError(
                                     ExceptionEnvelope(
                                         "FlowMapper-SessionError",
-                                        "Received SessionError with sessionId $sessionId"
+                                         "Received SessionError with sessionId $sessionId, Error: $errorMessage"
                                     )
                                 ),
                                 instant,

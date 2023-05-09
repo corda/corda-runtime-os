@@ -1,7 +1,9 @@
 package net.corda.flow.pipeline.handlers.waiting.sessions
 
+import net.corda.data.ExceptionEnvelope
 import java.nio.ByteBuffer
 import net.corda.data.flow.event.SessionEvent
+import net.corda.data.flow.event.session.SessionError
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.data.flow.state.waiting.SessionData
@@ -47,13 +49,15 @@ class SessionDataWaitingForHandler @Activate constructor(
                 flowSessionManager.getSessionsWithNextMessageClose(checkpoint, waitingFor.sessionIds - receivedSessions)
             val terminatedSessions = erroredSessions + closingSessionEvents
 
+            val sessionErrorMsg = ((context.inputEvent.payload as SessionEvent).payload as? SessionError)?.errorMessage.toString()
+
             when {
                 unconfirmedSessions.isNotEmpty() -> FlowContinuation.Continue
                 receivedSessionEvents.size == waitingFor.sessionIds.size -> {
                     resumeWithIncomingPayloads(receivedSessionEvents)
                 }
                 terminatedSessions.isNotEmpty() -> {
-                    resumeWithErrorIfAllSessionsReceivedEvents(waitingFor, terminatedSessions, receivedSessionEvents)
+                    resumeWithErrorIfAllSessionsReceivedEvents(waitingFor, terminatedSessions, receivedSessionEvents, sessionErrorMsg)
                 }
                 else -> FlowContinuation.Continue
             }
@@ -91,14 +95,17 @@ class SessionDataWaitingForHandler @Activate constructor(
         waitingFor: SessionData,
         terminatedSessions: List<SessionState>,
         receivedSessionDataEvents: List<Pair<SessionState, SessionEvent>>,
+        errorMessage: String? = null
     ): FlowContinuation {
         return if (haveAllSessionsReceivedEvents(waitingFor, terminatedSessions, receivedSessionDataEvents)) {
             flowSessionManager.acknowledgeReceivedEvents(receivedSessionDataEvents)
             val sessionIdsToStatuses = terminatedSessions.map { "${it.sessionId} - ${it.status}" }
+
             FlowContinuation.Error(
                 CordaRuntimeException(
-                    "Failed to receive due to sessions with terminated statuses: $sessionIdsToStatuses. " +
-                            "$PROTOCOL_MISMATCH_HINT"
+                    errorMessage
+                        ?: ("Failed to receive due to sessions with terminated statuses: $sessionIdsToStatuses. " +
+                                "$PROTOCOL_MISMATCH_HINT")
                 )
             )
         } else {
