@@ -29,12 +29,6 @@ import java.util.UUID
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.persistence.EntityTransaction
-import javax.persistence.TypedQuery
-import javax.persistence.criteria.CriteriaBuilder
-import javax.persistence.criteria.CriteriaQuery
-import javax.persistence.criteria.Path
-import javax.persistence.criteria.Predicate
-import javax.persistence.criteria.Root
 
 class QueryRegistrationRequestHandlerTest {
     private val holdingIdentity = HoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", "groupId")
@@ -54,17 +48,8 @@ class QueryRegistrationRequestHandlerTest {
         on { get(CordaDb.Vault.persistenceUnitName) } doReturn entitySet
     }
     private val entityTransaction = mock<EntityTransaction>()
-    private val registrationIdPath = mock<Path<String>>()
     private val registrationId = "id"
-    private val root = mock<Root<RegistrationRequestEntity>> {
-        on { get<String>("registrationId") } doReturn registrationIdPath
-    }
-    private val predicate = mock<Predicate>()
-    private val query = mock<CriteriaQuery<RegistrationRequestEntity>> {
-        on { from(RegistrationRequestEntity::class.java) } doReturn root
-        on { select(root) } doReturn mock
-        on { where(predicate) } doReturn mock
-    }
+
     private val keyValuePairListDeserializer = mock<CordaAvroDeserializer<KeyValuePairList>> {
         on { deserialize(serialisedMemberContext) } doReturn memberContext
         on { deserialize(serialisedRegistrationContext) } doReturn registrationContext
@@ -72,16 +57,8 @@ class QueryRegistrationRequestHandlerTest {
     private val serializationFactory = mock<CordaAvroSerializationFactory> {
         on { createAvroDeserializer(any(), eq(KeyValuePairList::class.java)) } doReturn keyValuePairListDeserializer
     }
-
-    private val criteriaBuilder = mock<CriteriaBuilder> {
-        on { createQuery(RegistrationRequestEntity::class.java) } doReturn query
-        on { equal(registrationIdPath, registrationId) } doReturn predicate
-    }
-    private val actualQuery = mock<TypedQuery<RegistrationRequestEntity>>()
-    private val entityManager = mock<EntityManager> {
+    private val entityManager = mock<EntityManager>{
         on { transaction } doReturn entityTransaction
-        on { criteriaBuilder } doReturn criteriaBuilder
-        on { createQuery(query) } doReturn actualQuery
     }
     private val entityManagerFactory = mock<EntityManagerFactory> {
         on { createEntityManager() } doReturn entityManager
@@ -104,33 +81,31 @@ class QueryRegistrationRequestHandlerTest {
     private val context = mock<MembershipRequestContext> {
         on { holdingIdentity } doReturn holdingIdentity
     }
-    val request = QueryRegistrationRequest(
-        registrationId
-    )
+    val request = QueryRegistrationRequest(registrationId)
 
     private val handler = QueryRegistrationRequestHandler(service)
 
     @Test
     fun `invoke return the correct response when entity was found`() {
-        whenever(actualQuery.resultList).doReturn(
-            listOf(
-                RegistrationRequestEntity(
-                    registrationId,
-                    shortHash.value,
-                    "SENT_TO_MGM",
-                    Instant.ofEpochSecond(500),
-                    Instant.ofEpochSecond(600),
-                    serialisedMemberContext,
-                    memberSignatureKey,
-                    memberSignatureContent,
-                    memberSignatureSpec,
-                    serialisedRegistrationContext,
-                    registrationSignatureKey,
-                    registrationSignatureContent,
-                    registrationContextSignatureSpec,
-                    0L,
-                    "test reason"
-                )
+        whenever(
+            entityManager.find(eq(RegistrationRequestEntity::class.java), eq(registrationId))
+        ).doReturn(
+            RegistrationRequestEntity(
+                registrationId,
+                shortHash.value,
+                "SENT_TO_MGM",
+                Instant.ofEpochSecond(500),
+                Instant.ofEpochSecond(600),
+                serialisedMemberContext,
+                memberSignatureKey,
+                memberSignatureContent,
+                memberSignatureSpec,
+                serialisedRegistrationContext,
+                registrationSignatureKey,
+                registrationSignatureContent,
+                registrationContextSignatureSpec,
+                0L,
+                "test reason"
             )
         )
 
@@ -163,9 +138,9 @@ class QueryRegistrationRequestHandlerTest {
 
     @Test
     fun `invoke return empty response when entity was not found`() {
-        whenever(actualQuery.resultList).doReturn(
-            emptyList()
-        )
+        whenever(
+            entityManager.find(eq(RegistrationRequestEntity::class.java), eq(registrationId))
+        ).doReturn(null)
 
         val result = handler.invoke(context, request)
 
