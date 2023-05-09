@@ -20,6 +20,8 @@ keytool -genkeypair -keyalg EC -alias ca1 -dname 'CN=Corda Dev CA1, OU=R3, O=Cor
 keytool -genkeypair -keyalg EC -alias ca2 -dname 'CN=Corda Dev CA2, OU=R3, O=Corda, L=Dublin, C=IE' \
         -validity 3650 -keypass ${KEYPASS} -keystore ca2.p12 -storetype ${STORETYPE} -storepass ${STOREPASS}
 # Alice
+# The below extended X500 attributes (OID.1.3.6.1.4.1.311.60.2.1.3=GB, OID.2.5.4.15=Private, SERIALNUMBER=10103259) are added to
+# reproduce https://r3-cev.atlassian.net/browse/CORE-13267?search_id=c82bd00d-88ef-4e14-afe7-23696efac4a4.
 keytool -genkeypair -keyalg EC -alias alice -dname 'CN=Alice, OU=R3, O=Corda, L=Dublin, C=IE, OID.1.3.6.1.4.1.311.60.2.1.3=GB, OID.2.5.4.15=Private, SERIALNUMBER=10103259' \
         -validity 3650 -keypass ${KEYPASS} -keystore alice.p12 -storetype ${STORETYPE} -storepass ${STOREPASS}
 # Bob
