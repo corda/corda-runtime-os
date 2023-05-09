@@ -37,7 +37,7 @@ class TestSubCommands {
 
     @Test
     fun testKafkaFileParsing() {
-        val path = "./src/test/resources/KafkaTestSaslScram.yaml"
+        val path = "./src/test/resources/KafkaTestBadConnection.yaml"
         val kafka = CheckKafka()
         CommandLine(kafka).execute(path)
 
@@ -242,6 +242,11 @@ class TestSubCommands {
             props.saslUsername = "sasl-user"
             props.saslPassword = "sasl-pass"
             props.saslMechanism = yaml.kafka.sasl.mechanism
+            props.tlsEnabled = yaml.kafka.tls.enabled
+            props.truststoreFile = "-----BEGIN CERTIFICATE-----"
+            props.truststorePassword = "truststore-pass"
+            props.truststoreType = yaml.kafka.tls.truststore!!.type
+
 
             val config = props.getKafkaProperties()
             config["default.api.timeout.ms"] = 1
