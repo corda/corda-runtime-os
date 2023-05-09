@@ -1,4 +1,4 @@
-package software.amazon.awssdk.services.kms.jce.util.csr;
+package net.corda.cli.plugins.packaging.aws.kms.utils.csr;
 
 import lombok.Builder;
 import lombok.Getter;

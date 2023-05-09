@@ -1,6 +1,5 @@
-package software.amazon.awssdk.services.kms.jce.util.crt;
+package net.corda.cli.plugins.packaging.aws.kms.utils.crt;
 
-import software.amazon.awssdk.services.kms.jce.provider.signature.KmsSigningAlgorithm;
 import org.bouncycastle.cert.X509CertificateHolder;
 import org.bouncycastle.cert.X509v3CertificateBuilder;
 import org.bouncycastle.openssl.PEMParser;
@@ -9,6 +8,7 @@ import org.bouncycastle.operator.ContentSigner;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 import org.bouncycastle.pkcs.PKCS10CertificationRequest;
 import org.bouncycastle.util.io.pem.PemObject;
+import software.amazon.awssdk.services.kms.jce.provider.signature.KmsSigningAlgorithm;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;

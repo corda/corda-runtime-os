@@ -1,10 +1,10 @@
-package software.amazon.awssdk.services.kms.jce.provider.ec;
+package net.corda.cli.plugins.packaging.aws.kms.ec;
 
-import software.amazon.awssdk.services.kms.jce.provider.KmsKey;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import software.amazon.awssdk.services.kms.jce.provider.KmsKey;
 
 import java.math.BigInteger;
 import java.security.interfaces.ECPrivateKey;

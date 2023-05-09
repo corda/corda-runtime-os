@@ -1,4 +1,4 @@
-package software.amazon.awssdk.services.kms.jce.provider.rsa;
+package net.corda.cli.plugins.packaging.aws.kms.rsa;
 
 import lombok.NonNull;
 import lombok.SneakyThrows;

@@ -1,4 +1,4 @@
-package software.amazon.awssdk.services.kms.jce.provider.signature;
+package net.corda.cli.plugins.packaging.aws.kms.signature;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

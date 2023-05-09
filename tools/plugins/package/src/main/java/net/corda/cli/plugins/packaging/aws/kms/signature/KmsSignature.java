@@ -1,15 +1,22 @@
-package software.amazon.awssdk.services.kms.jce.provider.signature;
+package net.corda.cli.plugins.packaging.aws.kms.signature;
 
-import software.amazon.awssdk.services.kms.jce.provider.KmsKey;
 import lombok.NonNull;
 import software.amazon.awssdk.core.SdkBytes;
 import software.amazon.awssdk.services.kms.KmsClient;
+import software.amazon.awssdk.services.kms.jce.provider.KmsKey;
 import software.amazon.awssdk.services.kms.model.MessageType;
 import software.amazon.awssdk.services.kms.model.SignRequest;
 import software.amazon.awssdk.services.kms.model.SigningAlgorithmSpec;
 import software.amazon.awssdk.services.kms.model.VerifyRequest;
 
-import java.security.*;
+import java.security.InvalidParameterException;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
+import java.security.ProviderException;
+import java.security.PublicKey;
+import java.security.SignatureException;
+import java.security.SignatureSpi;
 
 public class KmsSignature extends SignatureSpi {
 

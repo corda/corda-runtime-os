@@ -1,4 +1,4 @@
-package software.amazon.awssdk.services.kms.jce.provider.ec;
+package net.corda.cli.plugins.packaging.aws.kms.ec;
 
 import lombok.NonNull;
 import lombok.SneakyThrows;

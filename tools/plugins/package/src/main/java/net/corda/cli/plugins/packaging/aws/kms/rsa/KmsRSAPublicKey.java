@@ -1,10 +1,10 @@
-package software.amazon.awssdk.services.kms.jce.provider.rsa;
+package net.corda.cli.plugins.packaging.aws.kms.rsa;
 
-import software.amazon.awssdk.services.kms.jce.provider.KmsPublicKey;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import software.amazon.awssdk.services.kms.jce.provider.KmsPublicKey;
 
 import java.math.BigInteger;
 import java.security.interfaces.RSAPublicKey;
