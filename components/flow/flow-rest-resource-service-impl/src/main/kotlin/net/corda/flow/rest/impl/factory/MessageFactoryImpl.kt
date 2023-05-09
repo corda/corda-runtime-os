@@ -9,10 +9,12 @@ import net.corda.data.flow.output.FlowStates
 import net.corda.data.flow.output.FlowStatus
 import net.corda.data.virtualnode.VirtualNodeInfo
 import net.corda.flow.rest.factory.MessageFactory
+import net.corda.flow.rest.v1.types.response.FlowResultResponse
 import net.corda.flow.rest.v1.types.response.FlowStateErrorResponse
 import net.corda.flow.rest.v1.types.response.FlowStatusResponse
 import net.corda.flow.utils.keyValuePairListOf
 import net.corda.rest.json.serialization.JsonObjectAsString
+import net.corda.rest.response.ResponseEntity
 import net.corda.virtualnode.toCorda
 import org.osgi.service.component.annotations.Component
 import java.time.Instant
@@ -75,6 +77,31 @@ class MessageFactoryImpl : MessageFactory {
             this.flowStatus = FlowStates.START_REQUESTED
             this.createdTimestamp = now
             this.lastUpdateTimestamp = now
+        }
+    }
+
+    override fun createFlowResultResponse(flowStatus: FlowStatus): ResponseEntity<FlowResultResponse> {
+        val flowResultResponse = FlowResultResponse(
+            flowStatus.key.identity.toCorda().shortHash.value,
+            flowStatus.key.id,
+            flowStatus.flowId,
+            flowStatus.flowStatus.toString(),
+            flowStatus.result?.let { JsonObjectAsString(it) },
+            flowStatus.error?.let {
+                FlowStateErrorResponse(
+                    it.errorType,
+                    it.errorMessage
+                )
+            },
+            flowStatus.lastUpdateTimestamp
+        )
+
+        return when (flowStatus.flowStatus) {
+            FlowStates.START_REQUESTED, FlowStates.RUNNING, FlowStates.RETRYING -> ResponseEntity.accepted(
+                flowResultResponse
+            )
+
+            else -> ResponseEntity.ok(flowResultResponse)
         }
     }
 }
