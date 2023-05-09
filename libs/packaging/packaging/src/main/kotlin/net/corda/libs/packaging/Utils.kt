@@ -78,8 +78,6 @@ fun Sequence<Certificate>.signerSummaryHash(): SecureHash {
 }
 
 private val X500_NAME_SUPPORTED_ATTRIBUTES = linkedSetOf("CN", "OU", "O", "L", "ST", "C")
-// Converting to `ArrayList` for quick `indexOf` lookup
-private val X500_NAME_SUPPORTED_ATTRIBUTES_LIST = ArrayList(X500_NAME_SUPPORTED_ATTRIBUTES)
 
 private fun LdapName.filterSupportedAttributes(): String {
     val includedAttributes = rdns.filter {
@@ -87,8 +85,8 @@ private fun LdapName.filterSupportedAttributes(): String {
     }
 
     val sorted = includedAttributes.sortedWith { rdn1, rdn2 ->
-        X500_NAME_SUPPORTED_ATTRIBUTES_LIST.indexOf(rdn1.type) -
-                X500_NAME_SUPPORTED_ATTRIBUTES_LIST.indexOf(rdn2.type)
+        X500_NAME_SUPPORTED_ATTRIBUTES.indexOf(rdn1.type) -
+                X500_NAME_SUPPORTED_ATTRIBUTES.indexOf(rdn2.type)
     }
 
     return LdapName(sorted).toString()
