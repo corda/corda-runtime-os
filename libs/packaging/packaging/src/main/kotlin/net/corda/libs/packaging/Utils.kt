@@ -78,7 +78,7 @@ fun Sequence<Certificate>.signerSummaryHash(): SecureHash {
 }
 
 private val X500_NAME_SUPPORTED_ATTRIBUTES = linkedSetOf("CN", "OU", "O", "L", "ST", "C")
-// Converting to list for quick `indexOf` lookup
+// Converting to `ArrayList` for quick `indexOf` lookup
 private val X500_NAME_SUPPORTED_ATTRIBUTES_LIST = ArrayList(X500_NAME_SUPPORTED_ATTRIBUTES)
 
 private fun LdapName.filterSupportedAttributes(): String {
