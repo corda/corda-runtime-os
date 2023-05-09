@@ -11,7 +11,6 @@ import java.io.File
 private val mapper = ObjectMapper()
 
 const val REGISTRATION_KEY_PRE_AUTH = "corda.auth.token"
-const val REGISTRATION_INVALID = "INVALID"
 const val REGISTRATION_DECLINED = "DECLINED"
 const val REGISTRATION_APPROVED = "APPROVED"
 const val REGISTRATION_SUBMITTED = "SUBMITTED"
@@ -194,20 +193,11 @@ fun ClusterInfo.waitForRegistrationStatus(
                 }
             }
             condition {
-                val foundStatus = if (registrationId != null) {
-                    it.toJson().get("registrationStatus")?.textValue()
+                if (registrationId != null) {
+                    it.toJson().get("registrationStatus")?.textValue() == registrationStatus
                 } else {
-                    it.toJson().firstOrNull()?.get("registrationStatus")?.textValue()
+                    it.toJson().firstOrNull()?.get("registrationStatus")?.textValue() == registrationStatus
                 }
-                foundStatus == registrationStatus
-            }
-            immediateFailCondition {
-                val foundStatus = if (registrationId != null) {
-                    it.toJson().get("registrationStatus")?.textValue()
-                } else {
-                    it.toJson().firstOrNull()?.get("registrationStatus")?.textValue()
-                }
-                foundStatus == REGISTRATION_DECLINED || foundStatus == REGISTRATION_INVALID
             }
             failMessage("Registration was not completed for $holdingIdentityShortHash")
         }
