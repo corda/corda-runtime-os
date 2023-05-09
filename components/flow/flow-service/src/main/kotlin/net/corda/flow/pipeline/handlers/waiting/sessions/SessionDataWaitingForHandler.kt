@@ -48,7 +48,7 @@ class SessionDataWaitingForHandler @Activate constructor(
                 flowSessionManager.getSessionsWithNextMessageClose(checkpoint, waitingFor.sessionIds - receivedSessions)
             val terminatedSessions = erroredSessions + closingSessionEvents
 
-            val sessionErrorMsg = ((context.inputEvent.payload as SessionEvent).payload as? SessionError)?.errorMessage.toString()
+            val sessionErrorMsg = ((context.inputEvent.payload as? SessionEvent)?.payload as? SessionError)?.errorMessage.toString()
 
             when {
                 unconfirmedSessions.isNotEmpty() -> FlowContinuation.Continue
