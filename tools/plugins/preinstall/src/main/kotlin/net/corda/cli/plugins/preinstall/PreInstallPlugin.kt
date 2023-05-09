@@ -71,7 +71,7 @@ class PreInstallPlugin : Plugin() {
             val credential: String? = values.value
 
             if (secretKey.isNullOrEmpty() || secretName.isNullOrEmpty())  {
-                if (!credential.isNullOrEmpty()) {
+                if (!credential.isNullOrEmpty() && secretName.isNullOrEmpty()) {
                     return credential
                 }
                 throw SecretException("No value $credential and no secret $secretName with key $secretKey could be parsed.")
