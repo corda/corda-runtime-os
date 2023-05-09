@@ -29,8 +29,8 @@ import java.util.concurrent.TimeoutException
 internal class MembershipPersistenceOperationImpl<T>(
     private val sender: RPCSender<MembershipPersistenceRequest, MembershipPersistenceResponse>?,
     private val request: MembershipPersistenceRequest,
-    private val convertResult: (Any?) -> Either<T, String>,
-    private val clock: Clock
+    private val clock: Clock,
+    private val convertResult: (Any?) -> Either<T, String>
 ) : MembershipPersistenceOperation<T> {
     private companion object {
         const val RPC_TIMEOUT_MS = 10000L
