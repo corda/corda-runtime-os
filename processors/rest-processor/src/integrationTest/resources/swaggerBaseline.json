@@ -4465,23 +4465,9 @@
             "example" : "string"
           },
           "flowResult" : {
-            "description" : "Can be any value - string, number, boolean, array or object.",
+            "type" : "string",
             "nullable" : true,
-            "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}",
-            "anyOf" : [ {
-              "type" : "string"
-            }, {
-              "type" : "number"
-            }, {
-              "type" : "integer",
-              "format" : "int32"
-            }, {
-              "type" : "boolean"
-            }, {
-              "type" : "array"
-            }, {
-              "type" : "object"
-            } ]
+            "example" : "string"
           },
           "flowStatus" : {
             "type" : "string",
