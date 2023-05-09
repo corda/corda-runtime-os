@@ -30,8 +30,6 @@ ALLOW {
 
 (net.corda.internal.serialization.amqp.CustomSerializerPermission "FLOW")
 
-(java.lang.reflect.ReflectPermission "suppressAccessChecks" "")
-
 } "Allow public packages and services for FLOW Sandbox"
 
 DENY {
@@ -59,6 +57,7 @@ DENY {
 (java.lang.management.ManagementPermission "control" "")
 (java.lang.management.ManagementPermission "monitor" "")
 (java.lang.RuntimePermission "createClassLoader" "")
+(java.lang.RuntimePermission "getClassLoader" "")
 (java.lang.RuntimePermission "setContextClassLoader" "")
 (java.lang.RuntimePermission "enableContextClassLoaderOverride" "")
 (java.lang.RuntimePermission "closeClassLoader" "")
@@ -143,6 +142,7 @@ DENY {
 (java.lang.RuntimePermission "getFileSystemAttributes" "")
 (java.lang.RuntimePermission "readFileDescriptor" "")
 (java.lang.RuntimePermission "writeFileDescriptor" "")
+(java.lang.RuntimePermission "accessDeclaredMembers" "")
 (java.lang.reflect.ReflectPermission "suppressAccessChecks" "")
 (java.lang.reflect.ReflectPermission "newProxyInPackage.*" "")
 
@@ -274,6 +274,7 @@ DENY {
 (java.lang.RuntimePermission "getFileSystemAttributes" "")
 (java.lang.RuntimePermission "readFileDescriptor" "")
 (java.lang.RuntimePermission "writeFileDescriptor" "")
+(java.lang.RuntimePermission "accessDeclaredMembers" "")
 (java.lang.reflect.ReflectPermission "suppressAccessChecks" "")
 (java.lang.reflect.ReflectPermission "newProxyInPackage.*" "")
 
@@ -405,6 +406,7 @@ DENY {
 (java.lang.RuntimePermission "getFileSystemAttributes" "")
 (java.lang.RuntimePermission "readFileDescriptor" "")
 (java.lang.RuntimePermission "writeFileDescriptor" "")
+(java.lang.RuntimePermission "accessDeclaredMembers" "")
 (java.lang.reflect.ReflectPermission "suppressAccessChecks" "")
 (java.lang.reflect.ReflectPermission "newProxyInPackage.*" "")
 

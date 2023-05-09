@@ -17,6 +17,8 @@ import net.corda.v5.application.interop.parameters.TypedParameterValue
 import java.lang.reflect.InvocationHandler
 import java.lang.reflect.Method
 import java.lang.reflect.Proxy
+import java.security.AccessController
+import java.security.PrivilegedExceptionAction
 
 object FacadeProxies {
 
@@ -35,7 +37,7 @@ object FacadeProxies {
         val proxy = FacadeClientProxy(binding, TypeConverter(jsonMarshaller), requestProcessor)
 
         return Proxy.newProxyInstance(
-            interfaceType.classLoader,
+            AccessController.doPrivileged(PrivilegedExceptionAction {  interfaceType.classLoader }),
             arrayOf(interfaceType),
             proxy
         ) as T

@@ -21,6 +21,8 @@ import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.base.types.MemberX500Name
 import org.slf4j.LoggerFactory
+import java.security.AccessController
+import java.security.PrivilegedExceptionAction
 
 @Component(service = [FacadeService::class, UsedByFlow::class], scope = PROTOTYPE)
 class FacadeServiceImpl @Activate constructor(
@@ -54,7 +56,7 @@ class FacadeServiceImpl @Activate constructor(
 
     @Suppress("UNUSED_PARAMETER")
     private fun facadeLookup(facadeId: String) : Facade {
-        return FacadeReaders.JSON.read(
+        return AccessController.doPrivileged(PrivilegedExceptionAction { FacadeReaders.JSON.read(
         """{ "id": "/com/r3/tokens/sample/v1.0",
                 "commands": { 
                     "say-hello": {
@@ -74,7 +76,7 @@ class FacadeServiceImpl @Activate constructor(
                             }
                         }
                     }
-                }""".trimIndent())
+                }""".trimIndent()) } )
     }
 
     private fun facadeLookup(facadeId: FacadeId) : Facade = facadeLookup(facadeId.toString())
@@ -84,7 +86,7 @@ class MessagingDispatcher(private var flowMessaging: FlowMessaging, private val 
     private val alias: MemberX500Name, val aliasGroupId: String) : (FacadeRequest) -> FacadeResponse {
     override fun invoke(request: FacadeRequest): FacadeResponse {
         val payload = jsonMarshallingService.format(request)
-        val response = flowMessaging.callFacade(alias, request.facadeId.toString(), request.methodName, payload)
+        val response = flowMessaging.callFacade(alias, aliasGroupId, request.facadeId.toString(), request.methodName, payload)
         return jsonMarshallingService.parse(response, FacadeResponseImpl::class.java)
     }
 }
