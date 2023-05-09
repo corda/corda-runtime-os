@@ -16,20 +16,21 @@ import net.corda.crypto.core.fullIdHash
 import net.corda.crypto.core.toByteArray
 import net.corda.crypto.hes.EphemeralKeyPairEncryptor
 import net.corda.crypto.hes.HybridEncryptionParams
-import net.corda.data.CordaAvroSerializationFactory
-import net.corda.data.CordaAvroSerializer
+import net.corda.avro.serialization.CordaAvroSerializationFactory
+import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.crypto.wire.CryptoSigningKey
+import net.corda.data.membership.SignedData
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.p2p.MembershipRegistrationRequest
 import net.corda.data.membership.p2p.UnauthenticatedRegistrationRequest
 import net.corda.data.membership.p2p.UnauthenticatedRegistrationRequestHeader
 import net.corda.data.p2p.app.AppMessage
 import net.corda.data.p2p.app.MembershipStatusFilter
-import net.corda.data.p2p.app.UnauthenticatedMessage
-import net.corda.data.p2p.app.UnauthenticatedMessageHeader
+import net.corda.data.p2p.app.OutboundUnauthenticatedMessage
+import net.corda.data.p2p.app.OutboundUnauthenticatedMessageHeader
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.lifecycle.LifecycleCoordinator
@@ -73,6 +74,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.ecdhKey
 import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
 import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.TlsType
+import net.corda.membership.lib.registration.PRE_AUTH_TOKEN
 import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidationException
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidatorFactory
@@ -109,6 +111,7 @@ import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
+import java.security.PublicKey
 import java.util.UUID
 
 @Suppress("LongParameterList")
@@ -158,7 +161,6 @@ class DynamicMemberRegistrationService @Activate constructor(
         val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         val clock: Clock = UTCClock()
 
-        const val PUBLICATION_TIMEOUT_SECONDS = 30L
         const val SESSION_KEY_ID = "$PARTY_SESSION_KEYS.id"
         const val LEDGER_KEY_ID = "$LEDGER_KEYS.%s.id"
         const val NOTARY_KEY_ID = "corda.notary.keys.%s.id"
@@ -169,6 +171,8 @@ class DynamicMemberRegistrationService @Activate constructor(
         val ledgerIdRegex = LEDGER_KEY_ID.format("[0-9]+").toRegex()
         val sessionKeyIdRegex = SESSION_KEY_ID.format("([0-9]+)").toRegex()
         val notaryProtocolVersionsRegex = NOTARY_SERVICE_PROTOCOL_VERSIONS.format("[0-9]+").toRegex()
+
+        val REGISTRATION_CONTEXT_FIELDS = setOf(PRE_AUTH_TOKEN)
     }
 
     // for watching the config changes
@@ -281,8 +285,9 @@ class DynamicMemberRegistrationService @Activate constructor(
                 throw InvalidMembershipRegistrationException("Registration failed. ${customFieldsValid.reason}")
             }
             return try {
+                val memberId = member.shortHash
                 val roles = MemberRole.extractRolesFromContext(context)
-                val notaryKeys = generateNotaryKeys(context, member.shortHash.value)
+                val notaryKeys = generateNotaryKeys(context, memberId.value)
                 logger.debug("Member roles: {}, notary keys: {}", roles, notaryKeys)
                 val memberContext = buildMemberContext(
                     context,
@@ -292,24 +297,14 @@ class DynamicMemberRegistrationService @Activate constructor(
                     notaryKeys,
                 ).toSortedMap()
                     .toWire()
-                val serializedMemberContext = keyValuePairListSerializer.serialize(memberContext)
-                    ?: throw IllegalArgumentException("Failed to serialize the member context for this request.")
-                val firstSessionKeyKey = String.format(PARTY_SESSION_KEYS_PEM, 0)
-                val publicKey =
-                    keyEncodingService.decodePublicKey(memberContext.items.first { it.key == firstSessionKeyKey }.value)
-                val firstSessionKeySpecKey = String.format(SESSION_KEYS_SIGNATURE_SPEC, 0)
-                val signatureSpec = memberContext.items.first { it.key == firstSessionKeySpecKey }.value
-                val memberSignature = cryptoOpsClient.sign(
-                    member.shortHash.value,
-                    publicKey,
-                    SignatureSpecImpl(signatureSpec),
-                    serializedMemberContext
-                ).let {
-                    CryptoSignatureWithKey(
-                        ByteBuffer.wrap(keyEncodingService.encodeAsByteArray(it.by)),
-                        ByteBuffer.wrap(it.bytes)
-                    )
-                }
+                val registrationContext = buildRegistrationContext(context)
+
+                val publicKey = keyEncodingService.decodePublicKey(memberContext.getFirst(PARTY_SESSION_KEYS_PEM))
+                val signatureSpec = memberContext.getFirst(SESSION_KEYS_SIGNATURE_SPEC)
+
+                val signedMemberContext = sign(memberId, publicKey, signatureSpec, memberContext)
+                val signedRegistrationContext = sign(memberId, publicKey, signatureSpec, registrationContext)
+
                 val groupReader = membershipGroupReaderProvider.getGroupReader(member)
                 val mgm = groupReader.lookup().firstOrNull { it.isMgm }
                     ?: throw IllegalArgumentException("Failed to look up MGM information.")
@@ -325,9 +320,8 @@ class DynamicMemberRegistrationService @Activate constructor(
 
                 val message = MembershipRegistrationRequest(
                     registrationId.toString(),
-                    ByteBuffer.wrap(serializedMemberContext),
-                    memberSignature,
-                    CryptoSignatureSpec(signatureSpec, null, null),
+                    signedMemberContext,
+                    signedRegistrationContext,
                     serialInfo,
                 )
 
@@ -343,16 +337,17 @@ class DynamicMemberRegistrationService @Activate constructor(
                             keyEncodingService.encodeAsByteArray(ek)
                     val salt = aad + keyEncodingService.encodeAsByteArray(sk)
                     latestHeader = UnauthenticatedRegistrationRequestHeader(
+                        mgm.holdingIdentity.toAvro(),
                         ByteBuffer.wrap(salt), ByteBuffer.wrap(aad), keyEncodingService.encodeAsString(ek)
                     )
                     HybridEncryptionParams(salt, aad)
                 }
 
-                val messageHeader = UnauthenticatedMessageHeader(
+                val messageHeader = OutboundUnauthenticatedMessageHeader(
                     mgm.holdingIdentity.toAvro(),
                     member.toAvro(),
                     MEMBERSHIP_P2P_SUBSYSTEM,
-                    "Register-${member.shortHash.value}-${UUID.randomUUID()}",
+                    "Register-${memberId.value}-${UUID.randomUUID()}",
                 )
                 val request = UnauthenticatedRegistrationRequest(
                     latestHeader,
@@ -365,7 +360,7 @@ class DynamicMemberRegistrationService @Activate constructor(
                     ),
                     // holding identity ID is used as topic key to be able to ensure serial processing of registration
                     // for the same member.
-                    member.shortHash.value
+                    memberId.value
                 )
 
                 val commands = membershipPersistenceClient.persistRegistrationRequest(
@@ -374,9 +369,8 @@ class DynamicMemberRegistrationService @Activate constructor(
                         status = RegistrationStatus.SENT_TO_MGM,
                         registrationId = registrationId.toString(),
                         requester = member,
-                        memberContext = ByteBuffer.wrap(serializedMemberContext),
-                        signature = memberSignature,
-                        signatureSpec = CryptoSignatureSpec(signatureSpec, null, null),
+                        memberContext = signedMemberContext,
+                        registrationContext = signedRegistrationContext,
                         serial = serialInfo,
                     )
                 ).createAsyncCommands()
@@ -407,6 +401,13 @@ class DynamicMemberRegistrationService @Activate constructor(
             publisher.close()
         }
 
+        private fun buildRegistrationContext(
+            context: Map<String, String>
+        ) = context.filter {
+            REGISTRATION_CONTEXT_FIELDS.contains(it.key)
+        }.toSortedMap().toWire()
+
+
         private fun buildMemberContext(
             context: Map<String, String>,
             registrationId: UUID,
@@ -417,7 +418,10 @@ class DynamicMemberRegistrationService @Activate constructor(
             val cpi = virtualNodeInfoReadService.get(member)?.cpiIdentifier
                 ?: throw CordaRuntimeException("Could not find virtual node info for member ${member.shortHash}")
             val filteredContext = context.filterNot {
-                it.key.startsWith(LEDGER_KEYS) || it.key.startsWith(SESSION_KEYS) || it.key.startsWith(SERIAL)
+                it.key.startsWith(LEDGER_KEYS)
+                        || it.key.startsWith(SESSION_KEYS)
+                        || it.key.startsWith(SERIAL)
+                        || REGISTRATION_CONTEXT_FIELDS.contains(it.key)
             }
             val tlsSubject = getTlsSubject(member)
             val sessionKeyContext = generateSessionKeyData(context, member.shortHash.value)
@@ -606,7 +610,7 @@ class DynamicMemberRegistrationService @Activate constructor(
         }
 
         private fun buildUnauthenticatedP2PRequest(
-            messageHeader: UnauthenticatedMessageHeader,
+            messageHeader: OutboundUnauthenticatedMessageHeader,
             payload: ByteBuffer,
             topicKey: String,
         ): Record<String, AppMessage> {
@@ -614,7 +618,7 @@ class DynamicMemberRegistrationService @Activate constructor(
                 Schemas.P2P.P2P_OUT_TOPIC,
                 topicKey,
                 AppMessage(
-                    UnauthenticatedMessage(
+                    OutboundUnauthenticatedMessage(
                         messageHeader,
                         payload
                     )
@@ -682,5 +686,36 @@ class DynamicMemberRegistrationService @Activate constructor(
         )
         _publisher?.start()
         activate(coordinator)
+    }
+
+    private fun serialize(context: KeyValuePairList) = keyValuePairListSerializer.serialize(context)
+        ?: throw IllegalArgumentException("Failed to serialize the KeyValuePairList for this request.")
+
+    private fun KeyValuePairList.getFirst(key: String): String = key.format(0).let { firstKey ->
+        items.first { it.key == firstKey }.value
+    }
+
+    private fun sign(
+        shortHash: ShortHash,
+        publicKey: PublicKey,
+        signatureSpec: String,
+        data: KeyValuePairList
+    ): SignedData {
+        val serialised = serialize(data)
+        return cryptoOpsClient.sign(
+            shortHash.value,
+            publicKey,
+            SignatureSpecImpl(signatureSpec),
+            serialised
+        ).let {
+            SignedData(
+                ByteBuffer.wrap(serialised),
+                CryptoSignatureWithKey(
+                    ByteBuffer.wrap(keyEncodingService.encodeAsByteArray(it.by)),
+                    ByteBuffer.wrap(it.bytes)
+                ),
+                CryptoSignatureSpec(signatureSpec, null, null),
+            )
+        }
     }
 }

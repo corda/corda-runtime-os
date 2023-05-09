@@ -1,5 +1,6 @@
 package net.corda.processors.db.internal.reconcile.db
 
+import java.util.stream.Stream
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -8,12 +9,9 @@ import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
-import net.corda.lifecycle.StopEvent
-import net.corda.processors.db.internal.reconcile.db.DbReconcilerReader.GetRecordsErrorEvent
 import net.corda.reconciliation.ReconcilerReader
 import net.corda.reconciliation.VersionedRecord
 import org.slf4j.LoggerFactory
-import java.util.stream.Stream
 
 /**
  * A [DbReconcilerReader] for database data that map to compacted topics data. This class is a [Lifecycle] and therefore
@@ -51,7 +49,6 @@ class DbReconcilerReader<K : Any, V : Any>(
         when (event) {
             is StartEvent -> onStartEvent(coordinator)
             is RegistrationStatusChangeEvent -> onRegistrationStatusChangeEvent(event, coordinator)
-            is GetRecordsErrorEvent -> onGetRecordsErrorEvent(event, coordinator)
         }
     }
 
@@ -61,20 +58,9 @@ class DbReconcilerReader<K : Any, V : Any>(
 
     private fun onRegistrationStatusChangeEvent(
         event: RegistrationStatusChangeEvent,
-        coordinator: LifecycleCoordinator
+        coordinator: LifecycleCoordinator,
     ) {
         coordinator.updateStatus(event.status)
-    }
-
-    @Suppress("UNUSED_PARAMETER")
-    private fun onGetRecordsErrorEvent(event: GetRecordsErrorEvent, coordinator: LifecycleCoordinator) {
-        logger.warn("Processing a ${GetRecordsErrorEvent::class.java.name}")
-        // TODO CORE-7792  based on exception determine component's next state
-        //  i.e if transient exception or not -> DOWN or ERROR
-//        when (event.exception) {
-//        }
-        // For now just stopping it with errored false
-        coordinator.postEvent(StopEvent())
     }
 
     /**
@@ -97,7 +83,6 @@ class DbReconcilerReader<K : Any, V : Any>(
                 }
             } catch (e: Exception) {
                 logger.warn("Error while retrieving DB records for reconciliation", e)
-                coordinator.postEvent(GetRecordsErrorEvent(e))
                 throw e
             }
         }.flatMap { i -> i }
@@ -113,6 +98,4 @@ class DbReconcilerReader<K : Any, V : Any>(
     override fun stop() {
         coordinator.stop()
     }
-
-    internal class GetRecordsErrorEvent(val exception: Exception) : LifecycleEvent
 }

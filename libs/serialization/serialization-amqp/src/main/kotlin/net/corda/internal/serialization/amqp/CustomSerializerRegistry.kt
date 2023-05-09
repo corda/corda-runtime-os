@@ -111,14 +111,14 @@ class CachingCustomSerializerRegistry(
         sandboxGroup: SandboxGroup
     ) : this(descriptorBasedSerializerRegistry, emptySet(), sandboxGroup)
 
-    companion object {
-        val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+    private companion object {
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     override val customSerializerNames: List<String>
         get() = customSerializers.map { serializer ->
             if (serializer is CorDappCustomSerializer) serializer.toString()
-            else "${serializer::class.java} - Classloader: ${serializer::class.java.classLoader}"
+            else "$serializer - Classloader: ${serializer::class.java.classLoader}"
         }
 
     private data class CustomSerializerIdentifier(val actualTypeIdentifier: TypeIdentifier, val declaredTypeIdentifier: TypeIdentifier)

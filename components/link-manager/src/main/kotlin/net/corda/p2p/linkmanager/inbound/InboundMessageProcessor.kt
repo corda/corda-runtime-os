@@ -16,7 +16,7 @@ import net.corda.data.p2p.MessageAck
 import net.corda.data.p2p.SessionPartitions
 import net.corda.data.p2p.app.AppMessage
 import net.corda.data.p2p.app.AuthenticatedMessage
-import net.corda.data.p2p.app.UnauthenticatedMessage
+import net.corda.data.p2p.app.InboundUnauthenticatedMessage
 import net.corda.data.p2p.crypto.AuthenticatedDataMessage
 import net.corda.data.p2p.crypto.AuthenticatedEncryptedDataMessage
 import net.corda.data.p2p.crypto.InitiatorHandshakeMessage
@@ -33,7 +33,6 @@ import net.corda.data.p2p.markers.AppMessageMarker
 import net.corda.data.p2p.markers.LinkManagerReceivedMarker
 import net.corda.metrics.CordaMetrics
 import net.corda.schema.Schemas
-import net.corda.utilities.Either
 import net.corda.utilities.debug
 import net.corda.utilities.time.Clock
 import net.corda.virtualnode.toCorda
@@ -73,31 +72,18 @@ internal class InboundMessageProcessor(
                 is ResponderHelloMessage, is ResponderHandshakeMessage, is InitiatorHandshakeMessage, is InitiatorHelloMessage -> {
                     processSessionMessage(message)
                 }
-                is UnauthenticatedMessage -> {
+                is InboundUnauthenticatedMessage -> {
                     logger.info( //TODO info level for Interop Team, revert to debug as part of CORE-10683
                         "Processing unauthenticated message ${payload.header.messageId}"
                     )
                     recordInboundMessagesMetric(payload)
-                    val validationResult = networkMessagingValidator.validateInbound(
-                        payload.header.source.toCorda(),
-                        payload.header.destination.toCorda()
+                    listOf(
+                        Record(
+                            Schemas.P2P.P2P_IN_TOPIC,
+                            LinkManager.generateKey(),
+                            AppMessage(payload)
+                        )
                     )
-                    when(validationResult) {
-                        is Either.Left -> {
-                            listOf(
-                                Record(
-                                    Schemas.P2P.P2P_IN_TOPIC,
-                                    LinkManager.generateKey(),
-                                    AppMessage(payload)
-                                )
-                            )
-                        }
-                        is Either.Right -> {
-                            logger.warn("Dropped unauthenticated message. Network membership is not valid for " +
-                                    "messaging because ${validationResult.b}")
-                            emptyList()
-                        }
-                    }
                 }
                 else -> {
                     logger.error("Received unknown payload type ${message.payload::class.java.simpleName}. The message was discarded.")
@@ -309,21 +295,26 @@ internal class InboundMessageProcessor(
         }
     }
 
-    private fun recordInboundMessagesMetric(message: UnauthenticatedMessage) {
-        message.header.let {
-            recordInboundMessagesMetric(it.source.x500Name, it.destination.x500Name, it.source.groupId,
-                it.subsystem, message::class.java.simpleName)
-        }
+    private fun recordInboundMessagesMetric(message: InboundUnauthenticatedMessage) {
+        recordInboundMessagesMetric(null, null, null,
+            message.header.subsystem, message::class.java.simpleName)
     }
 
-    private fun recordInboundMessagesMetric(source: String, dest: String, group: String, subsystem: String, messageType: String) {
-        CordaMetrics.Metric.InboundMessageCount.builder()
-            .withTag(CordaMetrics.Tag.SourceVirtualNode, source)
-            .withTag(CordaMetrics.Tag.DestinationVirtualNode, dest)
-            .withTag(CordaMetrics.Tag.MembershipGroup, group)
-            .withTag(CordaMetrics.Tag.MessagingSubsystem, subsystem)
-            .withTag(CordaMetrics.Tag.MessageType, messageType)
-            .build().increment()
+    private fun recordInboundMessagesMetric(source: String?, dest: String?, group: String?, subsystem: String, messageType: String) {
+        val builder = CordaMetrics.Metric.InboundMessageCount.builder()
+        listOf(
+            CordaMetrics.Tag.SourceVirtualNode to source,
+            CordaMetrics.Tag.DestinationVirtualNode to dest,
+            CordaMetrics.Tag.MembershipGroup to group,
+            CordaMetrics.Tag.MessagingSubsystem to subsystem,
+            CordaMetrics.Tag.MessageType to messageType,
+        ).forEach {
+            val value = it.second
+            if (value != null) {
+                builder.withTag(it.first, value)
+            }
+        }
+        builder.build().increment()
     }
 
     private fun <T> checkAllowedCommunication(

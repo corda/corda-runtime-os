@@ -6,6 +6,8 @@ import java.security.KeyPairGenerator
 import kotlin.reflect.full.primaryConstructor
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.core.parseSecureHash
+import net.corda.ledger.common.data.transaction.WireTransaction
+import net.corda.ledger.common.testkit.getWireTransactionExample
 import net.corda.ledger.utxo.data.state.EncumbranceGroupImpl
 import net.corda.ledger.utxo.data.state.StateAndRefImpl
 import net.corda.ledger.utxo.data.state.TransactionStateImpl
@@ -14,6 +16,7 @@ import net.corda.sandboxgroupcontext.RequireSandboxAMQP.AMQP_SERIALIZATION_SERVI
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.sandboxgroupcontext.SandboxGroupType
 import net.corda.sandboxgroupcontext.getObjectByKey
+import net.corda.sandboxgroupcontext.getSandboxSingletonService
 import net.corda.testing.sandboxes.SandboxSetup
 import net.corda.testing.sandboxes.fetchService
 import net.corda.testing.sandboxes.lifecycle.AllTestsLifecycle
@@ -197,6 +200,39 @@ class AMQPSerializationTest {
                 assertEquals(LABEL, fieldValue<String>(contractState, "tag"))
                 assertEquals(STATE_CLASS_NAME, contractState::class.java.name)
             }
+        }
+    }
+
+    @ParameterizedTest
+    @EnumSource(SandboxGroupType::class)
+    @DisplayName("Serialize & Deserialize WireTransaction: {0}")
+    fun testSerializeAndDeserializeWireTransaction(sandboxGroupType: SandboxGroupType) {
+        var origWireTx: WireTransaction? = null
+        var serializedBytes: SerializedBytes<WireTransaction>? = null
+
+        // Create a WireTransaction, and then serialise it.
+        virtualNode.withSandbox(CONTRACT_CPB, sandboxGroupType) { _, ctx ->
+            val serializationService = ctx.getSerializationService()
+
+            origWireTx = getWireTransactionExample(
+                digestService = ctx.getSandboxSingletonService(),
+                merkleTreeProvider = ctx.getSandboxSingletonService(),
+                jsonMarshallingService = ctx.getSandboxSingletonService(),
+                jsonValidator = ctx.getSandboxSingletonService()
+            )
+
+            serializedBytes = serializationService.serialize(origWireTx!!)
+        }
+
+        // Deserialize the WireTransaction inside a new sandbox.
+        virtualNode.withSandbox(CONTRACT_CPB, sandboxGroupType) { _, ctx ->
+            val serializationService = ctx.getSerializationService()
+            val wireTx = serializationService.deserialize(
+                serializedBytes ?: fail("No bytes to deserialize!"),
+                WireTransaction::class.java
+            )
+
+            assertEquals(origWireTx, wireTx)
         }
     }
 

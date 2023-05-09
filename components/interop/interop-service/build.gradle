@@ -16,6 +16,7 @@ dependencies {
     implementation project(":libs:lifecycle:lifecycle")
     implementation project(":libs:messaging:messaging")
     implementation project(":libs:flows:session-manager")
+    implementation project(':libs:serialization:serialization-avro')
     implementation project(":components:link-manager")
     implementation project(':components:domino-logic')
     implementation project(':components:membership:membership-group-read')

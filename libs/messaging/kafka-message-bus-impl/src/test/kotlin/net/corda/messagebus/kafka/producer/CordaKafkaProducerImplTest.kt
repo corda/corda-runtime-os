@@ -13,6 +13,7 @@ import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.exception.CordaMessageAPIProducerRequiresReset
 import net.corda.messaging.kafka.subscription.generateMockConsumerRecordList
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.apache.kafka.clients.consumer.CommitFailedException
 import org.apache.kafka.clients.consumer.Consumer
 import org.apache.kafka.clients.consumer.ConsumerGroupMetadata
@@ -28,6 +29,7 @@ import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.fail
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import org.mockito.Mockito
 import org.mockito.Mockito.atLeastOnce
@@ -43,6 +45,7 @@ import org.mockito.kotlin.whenever
 
 class CordaKafkaProducerImplTest {
 
+    private val serializationErrorDoesNotThrowConfig = ResolvedProducerConfig("clientId", true, "prefix", false)
     private val transactionalConfig = ResolvedProducerConfig("clientId", true, "prefix")
     private val asyncConfig = ResolvedProducerConfig("clientIdAsync", false, "prefix")
     private val consumerConfig = ResolvedConsumerConfig("group", "clientId", "prefix")
@@ -431,4 +434,15 @@ class CordaKafkaProducerImplTest {
         verify(producer, times(1)).close()
         verify(metricsBinder, times(1)).close()
     }
+
+    @Test
+    fun `when sending a record fails via the producer and flag is set not to throw, no errors are thrown`() {
+        cordaKafkaProducer = CordaKafkaProducerImpl(serializationErrorDoesNotThrowConfig, producer, chunkSerializerService, metricsBinder,)
+
+        val callback = mock<CordaProducer.Callback>()
+        doThrow(CordaRuntimeException("")).whenever(producer)
+            .send(eq(ProducerRecord(record.topic, record.key, record.value)), any())
+        assertDoesNotThrow {  cordaKafkaProducer.send(record, callback) }
+    }
+
 }

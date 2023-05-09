@@ -57,7 +57,7 @@ internal class NetworkMessagingValidator(private val membershipGroupReaderProvid
             Either.Right(
                 "network membership status for the source identity (with name ${source.x500Name} in " +
                         "group ${source.x500Name}) is (${sourceMemberInfo?.status}) and the destination's (with name " +
-                        "${destination.x500Name} in group ${destination.x500Name}) network membership status is " +
+                        "${destination.x500Name} in group ${destination.groupId}) network membership status is " +
                         "(${destinationMemberInfo?.status})."
             )
         } else {
@@ -80,8 +80,8 @@ internal class NetworkMessagingValidator(private val membershipGroupReaderProvid
         is Either.Left -> func()
         is Either.Right -> {
             logger.warn(
-                "Failed validation for allowed messaging from [${destination.x500Name}] to " +
-                        "[${source.x500Name}] in group [${source.groupId}] because ${result.b}"
+                "Failed validation for allowed messaging from [${source.x500Name}] to " +
+                        "[${destination.x500Name}] in group [${source.groupId}] because ${result.b}"
             )
             null
         }

@@ -17,6 +17,7 @@ import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.osgi.service.component.annotations.ReferenceScope.PROTOTYPE_REQUIRED
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 import java.util.function.Predicate
 
@@ -26,7 +27,7 @@ import java.util.function.Predicate
     scope = PROTOTYPE,
 )
 class FilteredTransactionFactoryImpl @Activate constructor(
-    @Reference(service = JsonMarshallingService::class)
+    @Reference(service = JsonMarshallingService::class, scope = PROTOTYPE_REQUIRED)
     private val jsonMarshallingService: JsonMarshallingService,
     @Reference(service = MerkleTreeProvider::class)
     private val merkleTreeProvider: MerkleTreeProvider,

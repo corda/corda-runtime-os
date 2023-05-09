@@ -8,6 +8,7 @@ import net.corda.data.crypto.SecureHash
 import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.identity.HoldingIdentity
+import net.corda.data.membership.SignedData
 import net.corda.data.membership.command.registration.RegistrationCommand
 import net.corda.data.membership.command.registration.member.ProcessMemberVerificationRequest
 import net.corda.data.membership.command.registration.mgm.ProcessMemberVerificationResponse
@@ -24,11 +25,12 @@ import net.corda.data.membership.p2p.VerificationResponse
 import net.corda.data.p2p.app.AppMessage
 import net.corda.data.p2p.app.AuthenticatedMessage
 import net.corda.data.p2p.app.AuthenticatedMessageHeader
+import net.corda.data.p2p.app.InboundUnauthenticatedMessage
+import net.corda.data.p2p.app.InboundUnauthenticatedMessageHeader
 import net.corda.data.p2p.app.MembershipStatusFilter
-import net.corda.data.p2p.app.UnauthenticatedMessage
-import net.corda.data.p2p.app.UnauthenticatedMessageHeader
 import net.corda.data.sync.BloomFilter
 import net.corda.membership.impl.p2p.MembershipP2PProcessor.Companion.MEMBERSHIP_P2P_SUBSYSTEM
+import net.corda.membership.lib.MemberInfoExtension
 import net.corda.membership.lib.MemberInfoExtension.Companion.ecdhKey
 import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
 import net.corda.membership.read.MembershipGroupReader
@@ -37,6 +39,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.Membership.REGISTRATION_COMMAND_TOPIC
 import net.corda.schema.Schemas.Membership.SYNCHRONIZATION_TOPIC
 import net.corda.schema.registry.AvroSchemaRegistry
+import net.corda.schema.registry.deserialize
 import net.corda.test.util.time.TestClock
 import net.corda.v5.membership.MGMContext
 import net.corda.v5.membership.MemberContext
@@ -73,32 +76,40 @@ class MembershipP2PProcessorTest {
     private fun String.toByteBuffer() = ByteBuffer.wrap(toByteArray())
     private val avroSchemaRegistry: AvroSchemaRegistry = mock()
 
-    private val memberContext = ByteBuffer.wrap(byteArrayOf(1, 2, 3))
     private val testSig =
         CryptoSignatureWithKey("ABC".toByteBuffer(), "DEF".toByteBuffer())
     private val testSigSpec = CryptoSignatureSpec("", null, null)
+    private val memberContext = SignedData(
+        ByteBuffer.wrap(byteArrayOf(1, 2, 3)),
+        testSig,
+        testSigSpec
+    )
+    private val registrationContext = SignedData(
+        ByteBuffer.wrap(byteArrayOf(4, 5, 6)),
+        testSig,
+        testSigSpec
+    )
     private val registrationId = UUID.randomUUID().toString()
     private val registrationRequest = MembershipRegistrationRequest(
         registrationId,
         memberContext,
-        testSig,
-        testSigSpec,
+        registrationContext,
         0L,
     )
     private val registrationReqMsgPayload = registrationRequest.toByteBuffer()
     private val memberKey: PublicKey = mock()
     private val memberKeyPem = "-----BEGIN PUBLIC KEY-----encoded-memberKey-----END PUBLIC KEY-----"
+    private val groupId = "1f5e558c-dd87-438f-a57f-21e69c1e0b88"
+    private val mgm = HoldingIdentity("C=GB, L=London, O=MGM", groupId)
     private val unauthenticatedRegistrationRequest = UnauthenticatedRegistrationRequest(
         UnauthenticatedRegistrationRequestHeader(
-            ByteBuffer.wrap(SALT_BYTES), ByteBuffer.wrap(AAD_BYTES), memberKeyPem
+            mgm, ByteBuffer.wrap(SALT_BYTES), ByteBuffer.wrap(AAD_BYTES), memberKeyPem
         ),
         registrationReqMsgPayload
     )
     private val unauthenticatedRegMsgPayload = unauthenticatedRegistrationRequest.toByteBuffer()
-    private val groupId = "1f5e558c-dd87-438f-a57f-21e69c1e0b88"
     private val member = HoldingIdentity("C=GB, L=London, O=Alice", groupId)
     private val mgmKey: PublicKey = mock()
-    private val mgm = HoldingIdentity("C=GB, L=London, O=MGM", groupId)
     private val memberProvidedContext: MemberContext = mock()
     private val mgmProvidedContext: MGMContext = mock()
     private val mgmInfo: MemberInfo = mock {
@@ -107,7 +118,6 @@ class MembershipP2PProcessorTest {
         on { ecdhKey } doReturn mgmKey
         on { isMgm } doReturn true
     }
-
     private val verificationRequest = VerificationRequest(
         registrationId,
         KeyValuePairList(listOf(KeyValuePair("A", "B")))
@@ -183,6 +193,15 @@ class MembershipP2PProcessorTest {
 
     @Test
     fun `Registration request as unauthenticated message is processed as expected`() {
+        val context = KeyValuePairList(
+            listOf(
+                KeyValuePair(
+                    MemberInfoExtension.PARTY_NAME,
+                    member.x500Name,
+                ),
+            ),
+        )
+        whenever(avroSchemaRegistry.deserialize<KeyValuePairList>(memberContext.data)).doReturn(context)
         val result = processUnauthMsgPayload(unauthenticatedRegMsgPayload)
 
         with(result) {
@@ -197,8 +216,8 @@ class MembershipP2PProcessorTest {
                 val value = this.first().value as RegistrationCommand
                 it.assertThat(value.command).isInstanceOf(StartRegistration::class.java)
                 val command = value.command as StartRegistration
-                it.assertThat(command.destination).isEqualTo(mgm)
-                it.assertThat(command.source).isEqualTo(member)
+                it.assertThat(command.destination.toCorda()).isEqualTo(mgm.toCorda())
+                it.assertThat(command.source.toCorda()).isEqualTo(member.toCorda())
                 it.assertThat(command.memberRegistrationRequest).isEqualTo(registrationRequest)
             }
         }
@@ -206,16 +225,8 @@ class MembershipP2PProcessorTest {
 
     @Test
     fun `Registration request on a non-membership subsystem returns no output records`() {
-        val result = processUnauthMsgPayload(unauthenticatedRegMsgPayload, mgm, member, "BAD_SUBSYSTEM")
+        val result = processUnauthMsgPayload(unauthenticatedRegMsgPayload, "BAD_SUBSYSTEM")
         assertThat(result).isEmpty()
-    }
-
-    @Test
-    fun `Registration request as authenticated message throws exception`() {
-        val appMessage = createAuthMsg(unauthenticatedRegMsgPayload)
-        assertThrows<UnsupportedOperationException> {
-            membershipP2PProcessor.onNext(listOf(Record(TOPIC, KEY, appMessage)))
-        }
     }
 
     @Test
@@ -273,7 +284,7 @@ class MembershipP2PProcessorTest {
 
     @Test
     fun `Verification request as unauthenticated message throws exception`() {
-        val appMessage = createUnauthMsg(verificationReqMsgPayload, member, mgm)
+        val appMessage = createUnauthMsg(verificationReqMsgPayload)
         assertThrows<UnsupportedOperationException> {
             membershipP2PProcessor.onNext(listOf(Record(TOPIC, KEY, appMessage)))
         }
@@ -338,20 +349,16 @@ class MembershipP2PProcessorTest {
 
     private fun createUnauthMsg(
         payload: ByteBuffer,
-        destination: HoldingIdentity =mgm,
-        source: HoldingIdentity = member,
         subsystem: String = MEMBERSHIP_P2P_SUBSYSTEM
     ) = with(payload) {
         mockPayloadDeserialization()
-        asUnauthenticatedAppMessagePayload(destination, source, subsystem)
+        asUnauthenticatedAppMessagePayload(subsystem)
     }
     private fun processUnauthMsgPayload(
         payload: ByteBuffer,
-        destination: HoldingIdentity = mgm,
-        source: HoldingIdentity = member,
         subsystem: String = MEMBERSHIP_P2P_SUBSYSTEM
     ) = membershipP2PProcessor.onNext(
-        listOf(Record(TOPIC, KEY, createUnauthMsg(payload, destination, source, subsystem)))
+        listOf(Record(TOPIC, KEY, createUnauthMsg(payload, subsystem)))
     )
 
     private fun createAuthMsg(payload: ByteBuffer, destination: HoldingIdentity = mgm, source: HoldingIdentity = member) =
@@ -368,14 +375,12 @@ class MembershipP2PProcessorTest {
     )
 
     private fun ByteBuffer.asUnauthenticatedAppMessagePayload(
-        destination: HoldingIdentity = mgm,
-        source: HoldingIdentity = member,
         subsystem: String = MEMBERSHIP_P2P_SUBSYSTEM
     ): AppMessage {
         return AppMessage(
-            UnauthenticatedMessage(
-                UnauthenticatedMessageHeader(
-                    destination, source, subsystem, "messageId"
+            InboundUnauthenticatedMessage(
+                InboundUnauthenticatedMessageHeader(
+                    subsystem, "messageId"
                 ),
                 this
             )

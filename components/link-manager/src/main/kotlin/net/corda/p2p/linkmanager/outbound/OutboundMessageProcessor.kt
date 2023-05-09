@@ -5,7 +5,9 @@ import net.corda.data.p2p.AuthenticatedMessageAndKey
 import net.corda.data.p2p.SessionPartitions
 import net.corda.data.p2p.app.AppMessage
 import net.corda.data.p2p.app.AuthenticatedMessage
-import net.corda.data.p2p.app.UnauthenticatedMessage
+import net.corda.data.p2p.app.InboundUnauthenticatedMessage
+import net.corda.data.p2p.app.InboundUnauthenticatedMessageHeader
+import net.corda.data.p2p.app.OutboundUnauthenticatedMessage
 import net.corda.data.p2p.markers.AppMessageMarker
 import net.corda.data.p2p.markers.Component
 import net.corda.data.p2p.markers.LinkManagerDiscardedMarker
@@ -106,7 +108,7 @@ internal class OutboundMessageProcessor(
                 processAuthenticatedMessage(AuthenticatedMessageAndKey(message, event.key))
                     .also { recordOutboundMessagesMetric(message) }
             }
-            is UnauthenticatedMessage -> {
+            is OutboundUnauthenticatedMessage -> {
                 processUnauthenticatedMessage(message)
                     .also { recordOutboundMessagesMetric(message) }
             }
@@ -170,7 +172,7 @@ internal class OutboundMessageProcessor(
         return outResult ?: inResult
     }
 
-    private fun processUnauthenticatedMessage(message: UnauthenticatedMessage): List<Record<String, *>> {
+    private fun processUnauthenticatedMessage(message: OutboundUnauthenticatedMessage): List<Record<String, *>> {
         logger.debug { "Processing outbound message ${message.header.messageId} to ${message.header.destination}." }
 
         val discardReason = checkSourceAndDestinationValid(
@@ -189,11 +191,18 @@ internal class OutboundMessageProcessor(
             message.header.source.toCorda(),
             message.header.destination.toCorda()
         )
+        val inboundMessage = InboundUnauthenticatedMessage(
+            InboundUnauthenticatedMessageHeader(
+                message.header.subsystem,
+                message.header.messageId,
+            ),
+            message.payload,
+        )
         if (linkManagerHostingMap.isHostedLocally(message.header.destination.toCorda())) {
             //TODO new log statement added temporarily for Interop Team, revert to debug as part of CORE-10683
             logger.info("Sending outbound message hosted locally ${message.header.messageId} from ${message.header.source} " +
                     "to ${message.header.destination}.")
-            return listOf(Record(Schemas.P2P.P2P_IN_TOPIC, LinkManager.generateKey(), AppMessage(message)))
+            return listOf(Record(Schemas.P2P.P2P_IN_TOPIC, LinkManager.generateKey(), AppMessage(inboundMessage)))
         } else if (destMemberInfo != null) {
             val source = message.header.source.toCorda()
             val groupPolicy = groupPolicyProvider.getGroupPolicy(source)
@@ -206,7 +215,7 @@ internal class OutboundMessageProcessor(
                 return emptyList()
             }
 
-            val linkOutMessage = MessageConverter.linkOutFromUnauthenticatedMessage(message, destMemberInfo, groupPolicy)
+            val linkOutMessage = MessageConverter.linkOutFromUnauthenticatedMessage(inboundMessage, source, destMemberInfo, groupPolicy)
             //TODO logger info level and source identity added temporarily for Interop Team, revert to debug as part of CORE-10683
             logger.info ("Sending outbound message ${message.header.messageId} to ${message.header.destination} " +
                     "for ${linkOutMessage.header.address}." )
@@ -377,7 +386,7 @@ internal class OutboundMessageProcessor(
         }
     }
 
-    private fun recordOutboundMessagesMetric(message: UnauthenticatedMessage) {
+    private fun recordOutboundMessagesMetric(message: OutboundUnauthenticatedMessage) {
         message.header.let {
             recordOutboundMessagesMetric(it.source.x500Name, it.destination.x500Name, it.source.groupId,
                 it.subsystem, message::class.java.simpleName)

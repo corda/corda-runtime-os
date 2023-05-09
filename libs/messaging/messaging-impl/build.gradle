@@ -19,6 +19,7 @@ dependencies {
     implementation project(":libs:schema-registry:schema-registry")
     implementation project(":libs:configuration:configuration-core")
     implementation project(':libs:utilities')
+    implementation project(":libs:serialization:serialization-avro")
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation "net.corda:corda-avro-schema"

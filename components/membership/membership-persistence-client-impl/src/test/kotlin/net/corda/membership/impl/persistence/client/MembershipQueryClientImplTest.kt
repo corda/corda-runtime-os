@@ -19,6 +19,7 @@ import net.corda.data.membership.db.request.query.QueryPreAuthToken
 import net.corda.data.membership.db.response.MembershipPersistenceResponse
 import net.corda.data.membership.db.response.MembershipResponseContext
 import net.corda.data.membership.db.response.query.ApprovalRulesQueryResponse
+import net.corda.data.membership.db.response.query.ErrorKind
 import net.corda.data.membership.db.response.query.GroupPolicyQueryResponse
 import net.corda.data.membership.db.response.query.MemberInfoQueryResponse
 import net.corda.data.membership.db.response.query.MemberSignature
@@ -331,7 +332,7 @@ class MembershipQueryClientImplTest {
     @Test
     fun `failed request for all member info is correct`() {
         postConfigChangedEvent()
-        mockPersistenceResponse(PersistenceFailedResponse("Error"))
+        mockPersistenceResponse(PersistenceFailedResponse("Error", ErrorKind.GENERAL))
 
         assertThat(membershipQueryClient.queryMemberInfo(ourHoldingIdentity)).isInstanceOf(
             MembershipQueryResult.Failure::class.java
@@ -352,7 +353,7 @@ class MembershipQueryClientImplTest {
     @Test
     fun `failed request for list of member info is correct`() {
         postConfigChangedEvent()
-        mockPersistenceResponse(PersistenceFailedResponse("Error"))
+        mockPersistenceResponse(PersistenceFailedResponse("Error", ErrorKind.GENERAL))
 
         assertThat(membershipQueryClient.queryMemberInfo(ourHoldingIdentity, listOf(ourHoldingIdentity))).isInstanceOf(
             MembershipQueryResult.Failure::class.java
@@ -545,7 +546,7 @@ class MembershipQueryClientImplTest {
                 CompletableFuture.completedFuture(
                     MembershipPersistenceResponse(
                         context,
-                        PersistenceFailedResponse("oops")
+                        PersistenceFailedResponse("oops", ErrorKind.GENERAL)
                     )
                 )
             }
@@ -599,6 +600,12 @@ class MembershipQueryClientImplTest {
                         ByteBuffer.wrap("ct1".toByteArray())
                     ),
                     CryptoSignatureSpec("dummy", null, null),
+                    KeyValuePairList(emptyList()),
+                    CryptoSignatureWithKey(
+                        ByteBuffer.wrap("pk2".toByteArray()),
+                        ByteBuffer.wrap("ct2".toByteArray())
+                    ),
+                    CryptoSignatureSpec("dummy2", null, null),
                     "test reason",
                     0L,
                 )
@@ -687,7 +694,7 @@ class MembershipQueryClientImplTest {
                 CompletableFuture.completedFuture(
                     MembershipPersistenceResponse(
                         context,
-                        PersistenceFailedResponse("oops")
+                        PersistenceFailedResponse("oops", ErrorKind.GENERAL)
                     )
                 )
             }
@@ -740,6 +747,12 @@ class MembershipQueryClientImplTest {
                         ByteBuffer.wrap("ct1".toByteArray())
                     ),
                     CryptoSignatureSpec("dummy1", null, null),
+                    KeyValuePairList(emptyList()),
+                    CryptoSignatureWithKey(
+                        ByteBuffer.wrap("pk3".toByteArray()),
+                        ByteBuffer.wrap("ct3".toByteArray())
+                    ),
+                    CryptoSignatureSpec("dummy3", null, null),
                     "test reason 1",
                     0L,
                 ),
@@ -755,6 +768,12 @@ class MembershipQueryClientImplTest {
                         ByteBuffer.wrap("ct2".toByteArray())
                     ),
                     CryptoSignatureSpec("dummy2", null, null),
+                    KeyValuePairList(emptyList()),
+                    CryptoSignatureWithKey(
+                        ByteBuffer.wrap("pk4".toByteArray()),
+                        ByteBuffer.wrap("ct4".toByteArray())
+                    ),
+                    CryptoSignatureSpec("dummy4", null, null),
                     "test reason 2",
                     1L,
                 ),
@@ -819,7 +838,7 @@ class MembershipQueryClientImplTest {
                 CompletableFuture.completedFuture(
                     MembershipPersistenceResponse(
                         context,
-                        PersistenceFailedResponse("oops")
+                        PersistenceFailedResponse("oops", ErrorKind.GENERAL)
                     )
                 )
             }
@@ -915,7 +934,7 @@ class MembershipQueryClientImplTest {
                 CompletableFuture.completedFuture(
                     buildResponse(
                         context,
-                        PersistenceFailedResponse("Error")
+                        PersistenceFailedResponse("Error", ErrorKind.GENERAL)
                     )
                 )
             }
@@ -1001,7 +1020,7 @@ class MembershipQueryClientImplTest {
                 CompletableFuture.completedFuture(
                     MembershipPersistenceResponse(
                         context,
-                        PersistenceFailedResponse("oops")
+                        PersistenceFailedResponse("oops", ErrorKind.GENERAL)
                     )
                 )
             }
@@ -1172,7 +1191,7 @@ class MembershipQueryClientImplTest {
                 CompletableFuture.completedFuture(
                     MembershipPersistenceResponse(
                         context,
-                        PersistenceFailedResponse("oops")
+                        PersistenceFailedResponse("oops", ErrorKind.GENERAL)
                     )
                 )
             }
