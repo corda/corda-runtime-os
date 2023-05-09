@@ -156,7 +156,9 @@ class InteropAliasProcessor(
         identityMappingCache[entry.holdingIdentity.x500Name.toString()] = info
         val newIdentity = entry
         val holdIdentity = newIdentity.holdingIdentity.toCorda()
-        if (!holdIdentity.x500Name.organization.contains("Alias")) {
+        val commonName = holdIdentity.x500Name.commonName
+        if (!holdIdentity.x500Name.organization.contains("Alias")
+                    && (commonName == null || !commonName.contains("Alias"))) {
             val syntheticName = addAliasSubstringToOrganisationName(newIdentity.holdingIdentity.toCorda())
             val syntheticIdentities = listOf(createHostedAliasIdentity(syntheticName))
             logger.info("Adding hosted alias=$syntheticIdentities")
