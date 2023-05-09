@@ -1,6 +1,5 @@
 package net.corda.flow.pipeline.handlers.waiting.sessions
 
-import net.corda.data.ExceptionEnvelope
 import java.nio.ByteBuffer
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.session.SessionError
