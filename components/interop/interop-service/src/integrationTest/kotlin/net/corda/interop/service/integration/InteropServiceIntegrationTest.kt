@@ -100,8 +100,9 @@ class InteropServiceIntegrationTest {
     }
 
     val groupId = "3dfc0aae-be7c-44c2-aa4f-4d0d7145cf08"
-    val sourceIdentity = HoldingIdentity("CN=Alice, O=Alice Corp, L=LDN, C=GB", groupId)
-    val destinationIdentity = HoldingIdentity("CN=Alice Alias, O=Alice Corp, L=LDN, C=GB", groupId)
+    val sourceIdentity = HoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", groupId)
+    val destinationIdentity = HoldingIdentity("CN=Alice, O=Alice Corp, L=LDN, C=GB", groupId)
+    val destinationAliasIdentity = HoldingIdentity("CN=Alice Alias, O=Alice Corp, L=LDN, C=GB", groupId)
 
     private fun messagesToPublish(session: String) : List<Record<*,*>> {
         val interopMessage: ByteBuffer = ByteBuffer.wrap(
@@ -132,11 +133,11 @@ class InteropServiceIntegrationTest {
         ))
 
         val inboundSessionEvent = SessionEvent(
-            MessageDirection.INBOUND, Instant.now(), session, 1, destinationIdentity, sourceIdentity, 0, listOf(),
+            MessageDirection.INBOUND, Instant.now(), session, 1, destinationAliasIdentity, sourceIdentity, 0, listOf(),
             SessionInit(sourceIdentity.toString(), null, contextUserProperties, emptyKeyValuePairList(), emptyKeyValuePairList(), interopMessage))
 
         val outboundSessionEvent = SessionEvent(
-            MessageDirection.OUTBOUND, Instant.now(), session, 2, destinationIdentity, sourceIdentity, 0, listOf(),
+            MessageDirection.OUTBOUND, Instant.now(), session, 2, destinationAliasIdentity, sourceIdentity, 0, listOf(),
             SessionInit(sourceIdentity.toString(), null, contextUserProperties, emptyKeyValuePairList(), emptyKeyValuePairList(), interopMessage))
 
         val inboundMsg = Record(Schemas.Flow.FLOW_INTEROP_EVENT_TOPIC, session, FlowMapperEvent(inboundSessionEvent))
@@ -150,7 +151,9 @@ class InteropServiceIntegrationTest {
         val publisher = publisherFactory.createPublisher(PublisherConfig("client1"), bootConfig)
         // Test config updates don't break Interop Service
         republishConfig(publisher)
+        // Need to publish at least 2 identities in order to trigger InteropAliasProcessor to create synthetic aliases
         publisher.publish(listOf(createHostedAliasIdentity(sourceIdentity.toCorda())))
+        publisher.publish(listOf(createHostedAliasIdentity(destinationIdentity.toCorda())))
         val session = "session1"
         //TODO revisit sleep in CORE-12134
         Thread.sleep(30000)
