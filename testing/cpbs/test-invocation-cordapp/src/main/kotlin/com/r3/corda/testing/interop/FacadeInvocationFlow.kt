@@ -28,20 +28,24 @@ class FacadeInvocationFlow : ClientStartableFlow {
 
     @Suspendable
     override fun call(requestBody: ClientRequestBody): String {
-        log.info("Starting")
+        log.info("FacadeInvocationFlow.call() starting")
 
         val args = requestBody.getRequestBodyAsMap(jsonMarshallingService, String::class.java, String::class.java)
 
+        val interopGroupId = getArgument(args, "interopGroupId")
         val facadeId = getArgument(args, "facadeId")
         val methodName = getArgument(args, "methodName")
         val alias = MemberX500Name.parse(getArgument(args,"alias"))
         val payload = getArgument(args, "payload")
 
-        log.info("Calling '$methodName@$facadeId' with payload '$payload' to '$alias'")
-        val client : SampleTokensFacade = facadeService.getClientProxy(facadeId, SampleTokensFacade::class.java, alias, "")
+        log.info("Calling facade method '$methodName@$facadeId' with payload '$payload' to $alias")
+
+        val client : SampleTokensFacade = facadeService.getClientProxy(facadeId, SampleTokensFacade::class.java, alias, interopGroupId)
         val responseObject = client.getHello(payload)
         val response = responseObject.result.toString()
-        log.info("End, received '$response'")
+
+        log.info("Facade responded with '$response'")
+        log.info("FacadeInvocationFlow.call() ending")
 
         return response
     }

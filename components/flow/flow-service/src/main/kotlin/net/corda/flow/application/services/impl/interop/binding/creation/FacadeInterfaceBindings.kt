@@ -16,7 +16,6 @@ object FacadeInterfaceBindings {
 
     /**
      * Bind a [Facade] to a JVM interface.
-     *
      * @param facade The [Facade] to bind.
      * @param boundInterface The [Class] to bind the facade to.
      * @return A [FacadeInterfaceBinding] which maps methods in the bound interface to methods in the facade.

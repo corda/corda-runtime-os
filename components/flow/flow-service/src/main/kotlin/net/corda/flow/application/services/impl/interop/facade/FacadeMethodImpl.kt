@@ -1,8 +1,8 @@
 package net.corda.flow.application.services.impl.interop.facade
 
+import net.corda.v5.application.interop.facade.Facade
 import net.corda.v5.application.interop.facade.FacadeId
 import net.corda.v5.application.interop.facade.FacadeMethod
-import net.corda.v5.application.interop.facade.FacadeMethodType
 import net.corda.v5.application.interop.facade.FacadeRequest
 import net.corda.v5.application.interop.facade.FacadeResponse
 import net.corda.v5.application.interop.parameters.TypedParameter
@@ -10,7 +10,6 @@ import net.corda.v5.application.interop.parameters.TypedParameterValue
 
 /**
  * A [FacadeMethod] is a method of a [Facade].
- *
  * @param facadeId The [FacadeId] of the owning facade.
  * @param name The name of the method
  * @param inParameters the input parameters of the method.
@@ -19,7 +18,7 @@ import net.corda.v5.application.interop.parameters.TypedParameterValue
 data class FacadeMethodImpl(
     private val facadeId: FacadeId,
     private val name: String,
-    private val type: FacadeMethodType,
+    private val type: FacadeMethod.FacadeMethodType,
     private val inParameters: List<TypedParameter<*>>,
     private val outParameters: List<TypedParameter<*>>
 ) : FacadeMethod {
@@ -34,7 +33,6 @@ data class FacadeMethodImpl(
 
     /**
      * Obtain the in parameter with the given name.
-     *
      * @param parameterName The name of the parameter to obtain.
      * @param expectedType The expected type of the parameter.
      */
@@ -56,7 +54,6 @@ data class FacadeMethodImpl(
 
     /**
      * Get the in parameter with the given name, without checking that its type matches an expected type.
-     *
      * @param parameterName: The name of the parameter to obtain.
      */
     override fun untypedInParameter(parameterName: String): TypedParameter<*>? {
@@ -65,7 +62,6 @@ data class FacadeMethodImpl(
 
     /**
      * Obtain the out parameter with the given name.
-     *
      * @param parameterName The name of the parameter to obtain.
      * @param expectedType The expected type of the parameter.
      */
@@ -86,7 +82,6 @@ data class FacadeMethodImpl(
 
     /**
      * Create a [FacadeRequest] for this method.
-     *
      * @param parameterValues The parameter values to pass to the method.
      */
     override fun request(vararg parameterValues: TypedParameterValue<*>): FacadeRequest {
@@ -95,7 +90,6 @@ data class FacadeMethodImpl(
 
     /**
      * Create a [FacadeResponse] for this method.
-     *
      * @param parameterValues The parameter values to return from the method.
      */
     override fun response(vararg parameterValues: TypedParameterValue<*>): FacadeResponse {
@@ -110,7 +104,7 @@ data class FacadeMethodImpl(
         return name
     }
 
-    override fun getType(): FacadeMethodType {
+    override fun getType(): FacadeMethod.FacadeMethodType {
         return type
     }
 

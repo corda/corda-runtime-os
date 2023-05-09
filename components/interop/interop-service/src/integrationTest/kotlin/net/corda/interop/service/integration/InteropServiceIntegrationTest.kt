@@ -3,6 +3,8 @@ package net.corda.interop.service.integration
 import com.typesafe.config.ConfigValueFactory
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.CordaAvroSerializationFactory
+import net.corda.data.KeyValuePair
+import net.corda.data.KeyValuePairList
 import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.data.flow.event.MessageDirection
@@ -123,13 +125,19 @@ class InteropServiceIntegrationTest {
             )
         )
 
+        val contextUserProperties = KeyValuePairList(listOf(
+            KeyValuePair("INTEROP_FACADE_ID", "org.corda.interop/platform/hello-interop/v1.0"),
+            KeyValuePair("INTEROP_FACADE_METHOD", "say-hello"),
+            KeyValuePair("INTEROP_GROUP_ID", "fake_group_id")
+        ))
+
         val inboundSessionEvent = SessionEvent(
             MessageDirection.INBOUND, Instant.now(), session, 1, destinationIdentity, sourceIdentity, 0, listOf(),
-            SessionInit(sourceIdentity.toString(), null, emptyKeyValuePairList(), emptyKeyValuePairList(), emptyKeyValuePairList(), interopMessage))
+            SessionInit(sourceIdentity.toString(), null, contextUserProperties, emptyKeyValuePairList(), emptyKeyValuePairList(), interopMessage))
 
         val outboundSessionEvent = SessionEvent(
             MessageDirection.OUTBOUND, Instant.now(), session, 2, destinationIdentity, sourceIdentity, 0, listOf(),
-            SessionInit(sourceIdentity.toString(), null, emptyKeyValuePairList(), emptyKeyValuePairList(), emptyKeyValuePairList(), interopMessage))
+            SessionInit(sourceIdentity.toString(), null, contextUserProperties, emptyKeyValuePairList(), emptyKeyValuePairList(), interopMessage))
 
         val inboundMsg = Record(Schemas.Flow.FLOW_INTEROP_EVENT_TOPIC, session, FlowMapperEvent(inboundSessionEvent))
         val outboundMsg = Record(Schemas.Flow.FLOW_INTEROP_EVENT_TOPIC, session, FlowMapperEvent(outboundSessionEvent))

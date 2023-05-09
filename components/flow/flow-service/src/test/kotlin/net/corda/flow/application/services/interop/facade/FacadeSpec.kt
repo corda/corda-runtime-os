@@ -11,7 +11,7 @@ import net.corda.flow.application.services.impl.interop.facade.FacadeReaders
 import net.corda.flow.application.services.impl.interop.parameters.TypeParameters
 import net.corda.flow.application.services.impl.interop.parameters.TypedParameterImpl
 import net.corda.v5.application.interop.facade.FacadeId
-import net.corda.v5.application.interop.facade.FacadeMethodType
+import net.corda.v5.application.interop.facade.FacadeMethod
 import net.corda.v5.application.interop.parameters.ParameterTypeLabel
 import java.math.BigDecimal
 
@@ -19,10 +19,7 @@ class FacadeSpec : DescribeSpec({
 
     describe("A facade") {
 
-        val inputStream = this::class.java.getResourceAsStream("/sampleFacades/tokens-facade.json")
-        checkNotNull(inputStream) { "Failed to load JSON facade schema from $inputStream" }
-        println(inputStream)
-        val facade = FacadeReaders.JSON.read(inputStream)
+        val facade = FacadeReaders.JSON.read(this::class.java.getResourceAsStream("/sampleFacades/tokens-facade.json")!!)
         val getBalance = facade.method("get-balance")
         val denomination = getBalance.inParameter("denomination", String::class.java)
         val balance = getBalance.outParameter("balance", BigDecimal::class.java)
@@ -33,7 +30,7 @@ class FacadeSpec : DescribeSpec({
             getBalance should {
                 it.facadeId shouldBe facade.facadeId
                 it.name shouldBe "get-balance"
-                it.type shouldBe FacadeMethodType.QUERY
+                it.type shouldBe FacadeMethod.FacadeMethodType.QUERY
             }
 
             denomination shouldBe TypedParameterImpl(
@@ -44,7 +41,6 @@ class FacadeSpec : DescribeSpec({
             balance shouldBe TypedParameterImpl(
                 "balance",
                 TypeParameters<Any>().of(ParameterTypeLabel.DECIMAL.typeName)
-               //TODO originally it was using "Java's" implied "name" field of an enum
             )
         }
 

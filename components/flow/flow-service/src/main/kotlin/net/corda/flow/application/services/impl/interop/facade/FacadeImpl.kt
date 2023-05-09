@@ -23,7 +23,6 @@ data class FacadeImpl(private val facadeId: FacadeId, private val methods: List<
 
     /**
      * Get the method with the given name.
-     *
      * @param name The name of the method to get.
      */
     override fun method(name: String): FacadeMethod =
@@ -31,23 +30,19 @@ data class FacadeImpl(private val facadeId: FacadeId, private val methods: List<
 
     /**
      * Obtain a request to invoke the method with the given name, with the given parameter values.
-     *
      * @param methodName The name of the method to invoke.
      * @param inParameters The parameter values to pass to the method.
      */
     override fun request(methodName: String?, vararg inParameters: TypedParameterValue<*>?): FacadeRequest {
-        //TODO address !!
         return method(methodName!!).request(*inParameters)
     }
 
     /**
      * Obtain a response to an invocation of the method with the given name, with the given parameter values.
-     *
      * @param methodName The name of the method that was invoked.
      * @param outParameters The values of the out parameters of the method.
      */
     override fun response(methodName: String?, vararg outParameters: TypedParameterValue<*>?): FacadeResponse {
-        //TODO address !!
         return method(methodName!!).response(*outParameters)
     }
 }

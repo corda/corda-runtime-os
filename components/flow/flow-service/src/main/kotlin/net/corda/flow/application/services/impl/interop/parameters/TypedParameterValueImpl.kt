@@ -7,7 +7,6 @@ import net.corda.v5.application.interop.parameters.TypedParameterValue
  * The value of a [TypedParameter].
  *
  * Cannot be constructed unless the types of the parameter and value agree.
- *
  * @param parameter The parameter to which this value belongs.
  * @value The value of the parameter.
  */

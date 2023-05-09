@@ -2,14 +2,15 @@ package net.corda.flow.application.services.impl.interop.facade
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize
 import com.fasterxml.jackson.databind.annotation.JsonSerialize
+import net.corda.v5.application.interop.facade.Facade
 import net.corda.v5.application.interop.facade.FacadeId
+import net.corda.v5.application.interop.facade.FacadeMethod
 import net.corda.v5.application.interop.facade.FacadeRequest
 import net.corda.v5.application.interop.parameters.TypedParameter
 import net.corda.v5.application.interop.parameters.TypedParameterValue
 
 /**
  * A [FacadeRequest] is a request to invoke a [FacadeMethod] on a [Facade].
- *
  * @param facadeId The id of the facade to which the method belongs.
  * @param methodName The name of the method to invoke.
  * @param inParameters The parameter values to pass to the method.
@@ -37,7 +38,6 @@ data class FacadeRequestImpl(
 
     /**
      * Get the value of a parameter by name.
-     *
      * @param parameter The parameter to get the value of.
      */
     @Suppress("UNCHECKED_CAST")

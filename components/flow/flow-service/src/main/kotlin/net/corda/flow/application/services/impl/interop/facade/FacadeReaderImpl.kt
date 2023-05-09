@@ -7,7 +7,6 @@ import net.corda.flow.application.services.impl.interop.parameters.TypedParamete
 import net.corda.v5.application.interop.facade.Facade
 import net.corda.v5.application.interop.facade.FacadeId
 import net.corda.v5.application.interop.facade.FacadeMethod
-import net.corda.v5.application.interop.facade.FacadeMethodType
 import net.corda.v5.application.interop.facade.FacadeReader
 import java.io.Reader
 import net.corda.v5.application.interop.parameters.ParameterType
@@ -31,7 +30,6 @@ object FacadeReaders {
 
 /**
  * A [JacksonFacadeReader] reads a [Facade] from a JSON input source, using Jackson.
- *
  * @param mapper The [ObjectMapper] to use for reading the JSON.
  */
 class JacksonFacadeReader(val deserialiser: (Reader) -> FacadeDefinition) : FacadeReader {
@@ -44,11 +42,11 @@ class JacksonFacadeReader(val deserialiser: (Reader) -> FacadeDefinition) : Faca
             ?: emptyMap()
 
         val queries = facadeJson.queries?.map { (id, methodJson) ->
-            parseFacadeMethod(facadeId, id, FacadeMethodType.QUERY, aliases, methodJson)
+            parseFacadeMethod(facadeId, id, FacadeMethod.FacadeMethodType.QUERY, aliases, methodJson)
         } ?: emptyList()
 
         val commands = facadeJson.commands?.map { (id, methodJson) ->
-            parseFacadeMethod(facadeId, id, FacadeMethodType.COMMAND, aliases, methodJson)
+            parseFacadeMethod(facadeId, id, FacadeMethod.FacadeMethodType.COMMAND, aliases, methodJson)
         } ?: emptyList()
 
         return FacadeImpl(
@@ -60,7 +58,7 @@ class JacksonFacadeReader(val deserialiser: (Reader) -> FacadeDefinition) : Faca
     private fun parseFacadeMethod(
         facadeId: FacadeId,
         id: String,
-        methodType: FacadeMethodType,
+        methodType: FacadeMethod.FacadeMethodType,
         aliases: Map<String, ParameterType<Any>>,
         methodJson: FacadeMethodDefinition? // A method with neither in nor out parameters will have no methodJson
     ): FacadeMethod {

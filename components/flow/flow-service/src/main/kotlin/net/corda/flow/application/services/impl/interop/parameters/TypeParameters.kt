@@ -9,7 +9,7 @@ import java.time.ZonedDateTime
 import java.util.*
 
 /**
- * A [TypeParameters] is the type of a [TypedParameterImpl]. It is always one of a small set of primitive types, or
+ * A [TypeParameters] is the type of [TypedParameterImpl]. It is always one of a small set of primitive types, or
  * a [QualifiedType] qualifying a primitive type with a [TypeQualifier] which identifies a more complex type.
  */
 class TypeParameters<T> {
@@ -27,7 +27,6 @@ class TypeParameters<T> {
      * Parse a [TypeParameters] from a string in the format "type" or "type (qualifier)".
      *
      * The accepted types are "boolean", "string", "decimal", "uuid", "timestamp", "bytes" and "json".
-     *
      * @param typeString The string to parse.
      */
     fun <T : Any> of(typeString: String): ParameterType<T> = of(typeString, emptyMap())
@@ -37,7 +36,6 @@ class TypeParameters<T> {
      *
      * The accepted types are "boolean", "string", "decimal", "uuid", "timestamp", "bytes" and "json", or aliases
      * defined in the supplied [Map].
-     *
      * @param typeString The string to parse.
      * @param aliases A map of type aliases.
      */
@@ -61,6 +59,7 @@ class TypeParameters<T> {
         else QualifiedType(rawType, TypeQualifier.of(qualifierString))
     }
 
+    //TODO Quick fix, consider refactoring to a neater solution to wire RawParameterType with ParameterTypeLabel
     @Suppress("UNCHECKED_CAST")
     private fun <T : Any> parseRawParameterType(typeName: String): ParameterType<T> {
         return when (typeName) {

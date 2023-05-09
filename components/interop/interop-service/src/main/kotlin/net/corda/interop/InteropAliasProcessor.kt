@@ -28,6 +28,8 @@ class InteropAliasProcessor(
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
+        private const val INTEROP_GROUP_ID = "3dfc0aae-be7c-44c2-aa4f-4d0d7145cf08"
+
         @JvmStatic
         var identityMappingCache = ConcurrentHashMap<String, HoldingIdentity>()
 
@@ -60,7 +62,7 @@ class InteropAliasProcessor(
 
         fun createAliasMemberInfo(alias: HoldingIdentity, real: HoldingIdentity, group: List<HoldingIdentity>):
                 List<Record<String, PersistentMemberInfo>> {
-            val groupId = InteropProcessor.INTEROP_GROUP_ID
+            val groupId = INTEROP_GROUP_ID
             val memberContext = listOf(
                 KeyValuePair(MemberInfoExtension.PARTY_NAME, alias.x500Name.toString()),
                 KeyValuePair(String.format(MemberInfoExtension.URL_KEY, "0"), "http://localhost:8080"),
@@ -93,7 +95,7 @@ class InteropAliasProcessor(
                     Schemas.Membership.MEMBER_LIST_TOPIC,
                     "${viewOwningMember.shortHash}-${alias.shortHash.value}",
                     PersistentMemberInfo(
-                        viewOwningMember.copy(groupId = InteropProcessor.INTEROP_GROUP_ID).toAvro(),
+                        viewOwningMember.copy(groupId = INTEROP_GROUP_ID).toAvro(),
                         KeyValuePairList(memberContext),
                         KeyValuePairList(mgmContext)
                     )
@@ -103,9 +105,7 @@ class InteropAliasProcessor(
 
         fun createHostedAliasIdentity(holdingIdentity: HoldingIdentity): Record<String, HostedIdentityEntry> {
             val hostedIdentity = HostedIdentityEntry(
-                net.corda.data.identity.HoldingIdentity(holdingIdentity.x500Name.toString(),
-                    InteropProcessor.INTEROP_GROUP_ID
-                ),
+                net.corda.data.identity.HoldingIdentity(holdingIdentity.x500Name.toString(), INTEROP_GROUP_ID),
                 holdingIdentity.shortHash.value,
                 listOf(DUMMY_CERTIFICATE),
                 HostedIdentitySessionKeyAndCert(DUMMY_PUBLIC_SESSION_KEY, null),
