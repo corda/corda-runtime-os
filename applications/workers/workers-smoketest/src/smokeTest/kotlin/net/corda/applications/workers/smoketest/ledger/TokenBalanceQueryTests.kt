@@ -86,10 +86,10 @@ class TokenBalanceQueryTests {
 
         val flowRequestId = startRpcFlow(aliceHoldingId, tokenQueryBalanceRpcStartArgs, tokenQueryBalanceFlowName)
 
-        val tokenQueryBalanceFlowResponse = awaitRpcFlowFinished(aliceHoldingId, flowRequestId)
-        assertThat(tokenQueryBalanceFlowResponse.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+        val flowResult = awaitRpcFlowFinished(aliceHoldingId, flowRequestId)
+        assertThat(flowResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
 
-        return convertToTokenQueryBalanceResponseMsg(tokenQueryBalanceFlowResponse.flowResult!!)
+        return convertToTokenQueryBalanceResponseMsg(flowResult.flowResult!!)
     }
 
 
@@ -150,8 +150,8 @@ class TokenBalanceQueryTests {
             "com.r3.corda.demo.utxo.token.CreateCoinFlow"
         )
 
-        val utxoFlowResult = awaitRpcFlowFinished(aliceHoldingId, flowRequestId)
-        assertThat(utxoFlowResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+        val flowResult = awaitRpcFlowFinished(aliceHoldingId, flowRequestId)
+        assertThat(flowResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
     }
 
     @Test
@@ -172,10 +172,8 @@ class TokenBalanceQueryTests {
             "com.r3.corda.demo.utxo.UtxoBackchainResolutionDemoFlow"
         )
 
-        println("claiming token coins for bank = ${charlieHoldingId} vnode = ${aliceHoldingId}")
-
-        val utxoFlowResult = awaitRpcFlowFinished(aliceHoldingId, flowRequestId)
-        assertThat(utxoFlowResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+        val flowResult = awaitRpcFlowFinished(aliceHoldingId, flowRequestId)
+        assertThat(flowResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
     }
 
     @Test
@@ -190,7 +188,7 @@ class TokenBalanceQueryTests {
 
         println("claiming token coins for bank = ${charlieHoldingId} vnode = ${aliceHoldingId}")
 
-        val utxoFlowResult = awaitRpcFlowFinished(aliceHoldingId, flowRequestId)
-        assertThat(utxoFlowResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+        val flowResult = awaitRpcFlowFinished(aliceHoldingId, flowRequestId)
+        assertThat(flowResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
     }
 }
