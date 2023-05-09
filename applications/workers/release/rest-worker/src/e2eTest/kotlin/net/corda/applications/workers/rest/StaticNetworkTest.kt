@@ -12,6 +12,7 @@ import net.corda.applications.workers.rest.utils.getCa
 import net.corda.applications.workers.rest.utils.getMemberName
 import net.corda.applications.workers.rest.utils.onboardStaticMembers
 import net.corda.data.identity.HoldingIdentity
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.io.TempDir
