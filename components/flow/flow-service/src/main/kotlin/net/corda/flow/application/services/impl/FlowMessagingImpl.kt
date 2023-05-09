@@ -67,7 +67,7 @@ class FlowMessagingImpl @Activate constructor(
         methodName: String,
         payload: String
     ): String {
-         val session = createInteropFlowSession(memberName, interopGroupId, facadeId, methodName)
+        val session = createInteropFlowSession(memberName, interopGroupId, facadeId, methodName)
         return session.sendAndReceive(String::class.java, payload)
     }
 
