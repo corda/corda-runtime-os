@@ -20,7 +20,7 @@ keytool -genkeypair -keyalg EC -alias ca1 -dname 'CN=Corda Dev CA1, OU=R3, O=Cor
 # Alice version 1
 keytool -genkeypair -keyalg EC -alias alice -dname 'CN=Alice, OU=R3, O=Corda, L=Dublin, C=IE, OID.1.3.6.1.4.1.311.60.2.1.3=GB, OID.2.5.4.15=Private, SERIALNUMBER=10103259' \
         -validity 3650 -keypass ${KEYPASS} -keystore alice.p12 -storetype ${STORETYPE} -storepass ${STOREPASS}
-# Alice version 2 (Same X500 attributes as above but different SERIALNUMBER)
+# Alice version 2 (same X500 attributes as above but different SERIALNUMBER)
 keytool -genkeypair -keyalg EC -alias alice -dname 'CN=Alice, OU=R3, O=Corda, L=Dublin, C=IE, OID.1.3.6.1.4.1.311.60.2.1.3=GB, OID.2.5.4.15=Private, SERIALNUMBER=10103258' \
         -validity 3650 -keypass ${KEYPASS} -keystore alice-v2.p12 -storetype ${STORETYPE} -storepass ${STOREPASS}
 
