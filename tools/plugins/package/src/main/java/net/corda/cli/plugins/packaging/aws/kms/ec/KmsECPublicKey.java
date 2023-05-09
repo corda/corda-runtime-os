@@ -3,7 +3,7 @@ package net.corda.cli.plugins.packaging.aws.kms.ec;
 import lombok.AccessLevel;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import software.amazon.awssdk.services.kms.jce.provider.KmsPublicKey;
+import net.corda.cli.plugins.packaging.aws.kms.KmsPublicKey;
 
 import java.security.interfaces.ECPublicKey;
 import java.security.spec.ECParameterSpec;

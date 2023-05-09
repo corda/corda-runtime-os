@@ -1,6 +1,8 @@
 package net.corda.cli.plugins.packaging.aws.kms;
 
 import lombok.NonNull;
+import net.corda.cli.plugins.packaging.aws.kms.signature.KmsSignature;
+import net.corda.cli.plugins.packaging.aws.kms.signature.KmsSigningAlgorithm;
 import software.amazon.awssdk.services.kms.KmsClient;
 
 import java.security.Provider;

@@ -1,5 +1,6 @@
 package net.corda.cli.plugins.packaging.aws.kms.utils.crt;
 
+import net.corda.cli.plugins.packaging.aws.kms.signature.KmsSigningAlgorithm;
 import org.bouncycastle.cert.X509CertificateHolder;
 import org.bouncycastle.cert.X509v3CertificateBuilder;
 import org.bouncycastle.openssl.PEMParser;
@@ -8,7 +9,6 @@ import org.bouncycastle.operator.ContentSigner;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 import org.bouncycastle.pkcs.PKCS10CertificationRequest;
 import org.bouncycastle.util.io.pem.PemObject;
-import software.amazon.awssdk.services.kms.jce.provider.signature.KmsSigningAlgorithm;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -27,7 +27,7 @@ public abstract class SelfSignedCrtGenerator {
 
     /**
      * Generate Self Signed Certificate for the CSR that was previously generated.
-     * @see software.amazon.awssdk.services.kms.jce.util.csr.CsrGenerator
+     * @see net.corda.cli.plugins.packaging.aws.kms.utils.csr.CsrGenerator
      *
      * @param keyPair
      * @param csr

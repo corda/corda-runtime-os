@@ -3,7 +3,7 @@ package net.corda.cli.plugins.packaging.aws.kms.rsa;
 import lombok.AccessLevel;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import software.amazon.awssdk.services.kms.jce.provider.KmsKey;
+import net.corda.cli.plugins.packaging.aws.kms.KmsKey;
 
 import java.math.BigInteger;
 import java.security.interfaces.RSAPrivateKey;
