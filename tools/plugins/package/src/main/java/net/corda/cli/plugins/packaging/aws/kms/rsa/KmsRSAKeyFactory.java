@@ -1,14 +1,15 @@
 package net.corda.cli.plugins.packaging.aws.kms.rsa;
 
 import lombok.NonNull;
-import lombok.SneakyThrows;
 import software.amazon.awssdk.services.kms.KmsClient;
 import software.amazon.awssdk.services.kms.model.GetPublicKeyRequest;
 import software.amazon.awssdk.services.kms.model.GetPublicKeyResponse;
 
 import java.security.KeyFactory;
 import java.security.KeyPair;
+import java.security.NoSuchAlgorithmException;
 import java.security.interfaces.RSAPublicKey;
+import java.security.spec.InvalidKeySpecException;
 import java.security.spec.X509EncodedKeySpec;
 
 public abstract class KmsRSAKeyFactory {
@@ -66,8 +67,7 @@ public abstract class KmsRSAKeyFactory {
      * @param keyId
      * @return
      */
-    @SneakyThrows
-    public static KmsRSAPublicKey getPublicKey(@NonNull KmsClient kmsClient, @NonNull String keyId) {
+    public static KmsRSAPublicKey getPublicKey(@NonNull KmsClient kmsClient, @NonNull String keyId) throws NoSuchAlgorithmException, InvalidKeySpecException {
         GetPublicKeyRequest getPublicKeyRequest = GetPublicKeyRequest.builder().keyId(keyId).build();
         GetPublicKeyResponse getPublicKeyResponse = kmsClient.getPublicKey(getPublicKeyRequest);
 
