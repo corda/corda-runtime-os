@@ -10,10 +10,11 @@ import net.corda.data.flow.FlowKey
 import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.fiber.FlowFiberImpl
 import net.corda.flow.fiber.cache.FlowFiberCache
+import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
 
 @Suppress("unused")
-@Component(name = "flow-fiber-cache", service = [FlowFiberCache::class])
+@Component(service = [FlowFiberCache::class])
 class FlowFiberCacheImpl @Activate constructor() : FlowFiberCache {
 
     private companion object {
@@ -45,15 +46,13 @@ class FlowFiberCacheImpl @Activate constructor() : FlowFiberCache {
     }
 
     override fun remove(keys: Collection<FlowKey>) {
-        logger.info("Removing ${keys.size} flow fibers from flow fiber cache: ${keys.joinToString()}")
-//        logger.debug { "Removing ${keys.size} flow fibers from flow fiber cache: ${keys.joinToString()}" }
+        logger.debug { "Removing ${keys.size} flow fibers from flow fiber cache: ${keys.joinToString()}" }
         cache.invalidateAll(keys)
         cache.cleanUp()
     }
 
     override fun remove(holdingIdentity: HoldingIdentity) {
-        logger.info("Flow fiber cache removing holdingIdentity $holdingIdentity")
-//        logger.debug { "Flow fiber cache removing holdingIdentity $holdingIdentity" }
+        logger.debug { "Flow fiber cache removing holdingIdentity $holdingIdentity" }
         val keysToInvalidate = cache.asMap().keys.filter { holdingIdentity == it.identity }
         cache.invalidateAll(keysToInvalidate)
         cache.cleanUp()
