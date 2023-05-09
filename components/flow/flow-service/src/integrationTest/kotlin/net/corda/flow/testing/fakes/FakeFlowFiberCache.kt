@@ -4,13 +4,19 @@ import net.corda.data.flow.FlowKey
 import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.fiber.FlowFiberImpl
 import net.corda.flow.fiber.cache.FlowFiberCache
+import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
+import org.osgi.service.component.annotations.Reference
+import org.osgi.service.component.propertytypes.ServiceRanking
 
+@ServiceRanking(Int.MAX_VALUE)
 @Component(service = [FlowFiberCache::class, FakeFlowFiberCache::class])
-class FakeFlowFiberCache : FlowFiberCache {
+class FakeFlowFiberCache @Activate constructor(
+    @Reference(service = FlowFiberCache::class, target = "(component.name=flow-fiber-cache)")
+    val cache: FlowFiberCache
+) : FlowFiberCache {
 
     private var tracker = mutableMapOf<FlowKey, MutableList<FlowFiberCacheOperation>>()
-    private var cache = mutableMapOf<FlowKey, FlowFiberImpl>()
 
     private fun track(key: FlowKey, op: FlowFiberCacheOperation) {
         tracker.merge(key, mutableListOf(op)) { old, new ->
@@ -21,11 +27,11 @@ class FakeFlowFiberCache : FlowFiberCache {
 
     override fun put(key: FlowKey, fiber: FlowFiberImpl) {
         track(key, FlowFiberCacheOperation.PUT)
-        cache[key] = fiber
+        cache.put(key, fiber)
     }
 
     override fun get(key: FlowKey): FlowFiberImpl? {
-        return cache[key]
+        return cache.get(key)
     }
 
     override fun remove(key: FlowKey) {
@@ -41,12 +47,12 @@ class FakeFlowFiberCache : FlowFiberCache {
     }
 
     override fun remove(holdingIdentity: HoldingIdentity) {
-        cache.keys
+        tracker.keys
             .filter { it.identity == holdingIdentity }
             .forEach {
                 track(it, FlowFiberCacheOperation.REMOVE)
-                cache.remove(it)
             }
+        cache.remove(holdingIdentity)
     }
 
     /**
@@ -56,9 +62,9 @@ class FakeFlowFiberCache : FlowFiberCache {
         return tracker[key]
     }
 
-    fun reset() {
+    fun reset(holdingIdentities: List<HoldingIdentity>) {
         tracker = mutableMapOf()
-        cache = mutableMapOf()
+        holdingIdentities.forEach { cache.remove(it) }
     }
 }
 

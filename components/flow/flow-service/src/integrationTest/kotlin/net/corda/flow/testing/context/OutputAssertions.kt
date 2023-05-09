@@ -84,9 +84,9 @@ interface OutputAssertions {
 
     fun expectFlowFiberCacheContainsKey(holdingId: HoldingIdentity, flowId: String)
 
-    fun expectFlowFiberCacheDoesNotContain(holdingId: HoldingIdentity, flowId: String)
+    fun expectFlowFiberCacheDoesNotContainKey(holdingId: HoldingIdentity, flowId: String)
 
-    fun expectFlowFiberCacheOperations(holdingId: HoldingIdentity, flowId: String, expected: List<FlowFiberCacheOperation>)
+    fun expectFlowFiberCacheOperationsForKey(holdingId: HoldingIdentity, flowId: String, expected: List<FlowFiberCacheOperation>)
 }
 
 inline fun <reified T: Throwable> OutputAssertions.flowResumedWithError() = flowResumedWithError(T::class.java)

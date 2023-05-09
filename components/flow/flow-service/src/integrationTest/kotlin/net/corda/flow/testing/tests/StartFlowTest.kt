@@ -35,7 +35,7 @@ class StartFlowTest : FlowServiceTestBase() {
                 wakeUpEvent()
                 flowStatus(FlowStates.RUNNING)
                 expectFlowFiberCacheContainsKey(BOB_HOLDING_IDENTITY, REQUEST_ID1)
-                expectFlowFiberCacheOperations(BOB_HOLDING_IDENTITY, REQUEST_ID1, listOf(FlowFiberCacheOperation.PUT))
+                expectFlowFiberCacheOperationsForKey(BOB_HOLDING_IDENTITY, REQUEST_ID1, listOf(FlowFiberCacheOperation.PUT))
             }
         }
 
@@ -48,8 +48,8 @@ class StartFlowTest : FlowServiceTestBase() {
             expectOutputForFlow(FLOW_ID1) {
                 flowStatus(FlowStates.COMPLETED, result = "hello")
                 nullStateRecord()
-                expectFlowFiberCacheDoesNotContain(BOB_HOLDING_IDENTITY, REQUEST_ID1)
-                expectFlowFiberCacheOperations(BOB_HOLDING_IDENTITY, REQUEST_ID1,
+                expectFlowFiberCacheDoesNotContainKey(BOB_HOLDING_IDENTITY, REQUEST_ID1)
+                expectFlowFiberCacheOperationsForKey(BOB_HOLDING_IDENTITY, REQUEST_ID1,
                     listOf(FlowFiberCacheOperation.PUT, FlowFiberCacheOperation.REMOVE))
             }
         }

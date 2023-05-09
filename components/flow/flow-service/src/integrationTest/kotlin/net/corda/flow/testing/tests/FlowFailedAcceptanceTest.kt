@@ -36,7 +36,6 @@ class FlowFailedAcceptanceTest : FlowServiceTestBase() {
             sessionInitiatedIdentity(BOB_HOLDING_IDENTITY)
 
             initiatingToInitiatedFlow(PROTOCOL, FAKE_FLOW_NAME, FAKE_FLOW_NAME)
-            resetFlowFiberCache()
         }
     }
 
@@ -50,7 +49,7 @@ class FlowFailedAcceptanceTest : FlowServiceTestBase() {
         then {
             expectOutputForFlow(FLOW_ID1) {
                 expectFlowFiberCacheContainsKey(ALICE_HOLDING_IDENTITY, REQUEST_ID1)
-                expectFlowFiberCacheOperations(ALICE_HOLDING_IDENTITY, REQUEST_ID1, listOf(FlowFiberCacheOperation.PUT))
+                expectFlowFiberCacheOperationsForKey(ALICE_HOLDING_IDENTITY, REQUEST_ID1, listOf(FlowFiberCacheOperation.PUT))
             }
         }
 
@@ -64,8 +63,8 @@ class FlowFailedAcceptanceTest : FlowServiceTestBase() {
                 nullStateRecord()
                 flowStatus(FlowStates.FAILED, errorType = FLOW_FAILED, errorMessage = EXCEPTION.message)
                 scheduleFlowMapperCleanupEvents(FlowKey(REQUEST_ID1, ALICE_HOLDING_IDENTITY).toString())
-                expectFlowFiberCacheDoesNotContain(ALICE_HOLDING_IDENTITY, REQUEST_ID1)
-                expectFlowFiberCacheOperations(
+                expectFlowFiberCacheDoesNotContainKey(ALICE_HOLDING_IDENTITY, REQUEST_ID1)
+                expectFlowFiberCacheOperationsForKey(
                     ALICE_HOLDING_IDENTITY, REQUEST_ID1,
                     listOf(FlowFiberCacheOperation.PUT, FlowFiberCacheOperation.REMOVE)
                 )
@@ -85,7 +84,7 @@ class FlowFailedAcceptanceTest : FlowServiceTestBase() {
                 nullStateRecord()
                 flowStatus(FlowStates.FAILED, errorType = FLOW_FAILED, errorMessage = EXCEPTION.message)
                 scheduleFlowMapperCleanupEvents(INITIATED_SESSION_ID_1)
-                expectFlowFiberCacheDoesNotContain(ALICE_HOLDING_IDENTITY, REQUEST_ID1)
+                expectFlowFiberCacheDoesNotContainKey(ALICE_HOLDING_IDENTITY, REQUEST_ID1)
             }
         }
     }
@@ -110,7 +109,7 @@ class FlowFailedAcceptanceTest : FlowServiceTestBase() {
                 nullStateRecord()
                 flowStatus(FlowStates.FAILED, errorType = FLOW_FAILED, errorMessage = EXCEPTION.message)
                 scheduleFlowMapperCleanupEvents(FlowKey(REQUEST_ID1, ALICE_HOLDING_IDENTITY).toString(), SESSION_ID_1)
-                expectFlowFiberCacheDoesNotContain(ALICE_HOLDING_IDENTITY, REQUEST_ID1)
+                expectFlowFiberCacheDoesNotContainKey(ALICE_HOLDING_IDENTITY, REQUEST_ID1)
             }
         }
     }

@@ -39,6 +39,9 @@ import net.corda.flow.testing.fakes.FakeFlowFiberCache
 import net.corda.flow.testing.fakes.FakeFlowFiberFactory
 import net.corda.flow.testing.fakes.FakeMembershipGroupReaderProvider
 import net.corda.flow.testing.fakes.FakeSandboxGroupContextComponent
+import net.corda.flow.testing.tests.ALICE_HOLDING_IDENTITY
+import net.corda.flow.testing.tests.BOB_HOLDING_IDENTITY
+import net.corda.flow.testing.tests.CHARLIE_HOLDING_IDENTITY
 import net.corda.flow.testing.tests.FLOW_NAME
 import net.corda.flow.utils.KeyValueStore
 import net.corda.flow.utils.emptyKeyValuePairList
@@ -414,7 +417,7 @@ class FlowServiceTestContext @Activate constructor(
     }
 
     override fun resetFlowFiberCache() {
-        flowFiberCache.reset()
+        flowFiberCache.reset(listOf(ALICE_HOLDING_IDENTITY, BOB_HOLDING_IDENTITY, CHARLIE_HOLDING_IDENTITY))
     }
 
     fun clearTestRuns() {
@@ -462,7 +465,7 @@ class FlowServiceTestContext @Activate constructor(
         cpiInfoReadService.reset()
         sandboxGroupContextComponent.reset()
         membershipGroupReaderProvider.reset()
-        flowFiberCache.reset()
+        resetFlowFiberCache()
     }
 
     private fun createAndAddSessionEvent(

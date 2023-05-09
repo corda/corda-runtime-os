@@ -414,7 +414,7 @@ class OutputAssertionsImpl(
         }
     }
 
-    override fun expectFlowFiberCacheDoesNotContain(holdingId: HoldingIdentity, flowId: String) {
+    override fun expectFlowFiberCacheDoesNotContainKey(holdingId: HoldingIdentity, flowId: String) {
         asserts.add {
             assertNull(
                 flowFiberCache.get(FlowKey(flowId, holdingId)),
@@ -423,7 +423,7 @@ class OutputAssertionsImpl(
         }
     }
 
-    override fun expectFlowFiberCacheOperations(holdingId: HoldingIdentity, flowId: String, expected: List<FlowFiberCacheOperation>) {
+    override fun expectFlowFiberCacheOperationsForKey(holdingId: HoldingIdentity, flowId: String, expected: List<FlowFiberCacheOperation>) {
         asserts.add {
             assertEquals(
                 expected,

@@ -11,7 +11,7 @@
     -Djava.util.logging.config.file=${.}/logging.properties,\
     -Djava.io.tmpdir=${task.temporaryDir},\
     --illegal-access=deny,\
-    --add-opens=java.base/java.lang=ALL-UNNAMED
+    --add-opens, 'java.base/java.lang=ALL-UNNAMED'
 
 -runsystempackages: \
     javax.xml.stream;version=1.0.0,\
@@ -23,7 +23,6 @@
     co.paralleluniverse.quasar.verbose=false
 
 -runrequires: \
-    bnd.identity;id='co.paralleluniverse.quasar-core',\
     bnd.identity;id='flow-service-tests',\
     bnd.identity;id='net.corda.flow-service',\
     bnd.identity;id='net.corda.application-impl',\

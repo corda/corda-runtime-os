@@ -9,27 +9,27 @@ import net.corda.flow.fiber.FlowFiberImpl
  */
 interface FlowFiberCache {
     /**
-     * Put a flow fiber into the cache keyed by the given flowId.
+     * Put a flow fiber into the cache keyed by the given [FlowKey].
      */
     fun put(key: FlowKey, fiber: FlowFiberImpl)
 
     /**
-     * Get a flow fiber from the cache with the given flowId, or else return null.
+     * Get a flow fiber from the cache with the given [FlowKey], or else return null.
      */
     fun get(key: FlowKey): FlowFiberImpl?
 
     /**
-     * Invalidate and remove a flow fiber from the cache with the give flow identifier.
+     * Invalidate and remove a flow fiber from the cache with the given [FlowKey].
      */
     fun remove(key: FlowKey)
 
     /**
-     * Invalidate and remove flow fiber from the cache with the give flow identifiers.
+     * Invalidate and remove flow fiber from the cache with the given [FlowKey]s.
      */
     fun remove(keys: Collection<FlowKey>)
 
     /**
-     * Invalidate and remove all flow fibers from the cache for the given holding identity.
+     * Invalidate and remove all flow fibers from the cache for the given [HoldingIdentity].
      */
     fun remove(holdingIdentity: HoldingIdentity)
 }

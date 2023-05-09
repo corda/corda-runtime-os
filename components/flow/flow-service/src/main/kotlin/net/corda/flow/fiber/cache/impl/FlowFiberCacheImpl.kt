@@ -13,7 +13,7 @@ import net.corda.flow.fiber.cache.FlowFiberCache
 import org.slf4j.LoggerFactory
 
 @Suppress("unused")
-@Component(service = [FlowFiberCache::class])
+@Component(name = "flow-fiber-cache", service = [FlowFiberCache::class])
 class FlowFiberCacheImpl @Activate constructor() : FlowFiberCache {
 
     private companion object {

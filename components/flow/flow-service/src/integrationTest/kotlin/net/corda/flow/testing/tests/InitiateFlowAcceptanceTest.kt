@@ -28,7 +28,6 @@ class InitiateFlowAcceptanceTest : FlowServiceTestBase() {
 
             sessionInitiatingIdentity(ALICE_HOLDING_IDENTITY)
             sessionInitiatedIdentity(BOB_HOLDING_IDENTITY)
-            resetFlowFiberCache()
         }
     }
 
@@ -43,7 +42,7 @@ class InitiateFlowAcceptanceTest : FlowServiceTestBase() {
             expectOutputForFlow(FLOW_ID1) {
                 sessionInitEvents(SESSION_ID_1)
                 expectFlowFiberCacheContainsKey(ALICE_HOLDING_IDENTITY, REQUEST_ID1)
-                expectFlowFiberCacheOperations(ALICE_HOLDING_IDENTITY, REQUEST_ID1, listOf(FlowFiberCacheOperation.PUT))
+                expectFlowFiberCacheOperationsForKey(ALICE_HOLDING_IDENTITY, REQUEST_ID1, listOf(FlowFiberCacheOperation.PUT))
             }
         }
     }
@@ -65,7 +64,7 @@ class InitiateFlowAcceptanceTest : FlowServiceTestBase() {
     @Test
     fun `Requesting counterparty info from the flow engine that has already sent a session init event does not send another SessionInit`
                 () {
-        `given` {
+        given {
             startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
                 .suspendsWith(FlowIORequest.Send(mapOf(SessionInfo(SESSION_ID_1, initiatedIdentityMemberName) to DATA_MESSAGE_0)))
         }
@@ -120,7 +119,7 @@ class InitiateFlowAcceptanceTest : FlowServiceTestBase() {
                 flowStatus(FlowStates.RUNNING)
                 sessionConfirmEvents(INITIATED_SESSION_ID_1)
                 expectFlowFiberCacheContainsKey(BOB_HOLDING_IDENTITY, INITIATED_SESSION_ID_1)
-                expectFlowFiberCacheOperations(BOB_HOLDING_IDENTITY, INITIATED_SESSION_ID_1, listOf(FlowFiberCacheOperation.PUT))
+                expectFlowFiberCacheOperationsForKey(BOB_HOLDING_IDENTITY, INITIATED_SESSION_ID_1, listOf(FlowFiberCacheOperation.PUT))
             }
         }
     }

@@ -4,6 +4,7 @@ import net.corda.flow.application.sessions.SessionInfo
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.testing.context.FlowServiceTestBase
 import net.corda.flow.testing.context.initiateTwoFlows
+import net.corda.flow.testing.fakes.FlowFiberCacheOperation
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -54,6 +55,8 @@ class SendAndReceiveAcceptanceTest : FlowServiceTestBase() {
         then {
             expectOutputForFlow(FLOW_ID1) {
                 sessionDataEvents(SESSION_ID_1 to DATA_MESSAGE_1, SESSION_ID_2 to DATA_MESSAGE_2)
+                expectFlowFiberCacheOperationsForKey(ALICE_HOLDING_IDENTITY, REQUEST_ID1,
+                    listOf(FlowFiberCacheOperation.PUT, FlowFiberCacheOperation.PUT, FlowFiberCacheOperation.PUT))
             }
         }
     }

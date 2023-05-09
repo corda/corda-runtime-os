@@ -35,7 +35,6 @@ class FlowFinishedAcceptanceTest : FlowServiceTestBase() {
             sessionInitiatedIdentity(BOB_HOLDING_IDENTITY)
 
             initiatingToInitiatedFlow(PROTOCOL, FAKE_FLOW_NAME, FAKE_FLOW_NAME)
-            resetFlowFiberCache()
         }
     }
 
@@ -101,7 +100,7 @@ class FlowFinishedAcceptanceTest : FlowServiceTestBase() {
                 wakeUpEvent()
                 flowStatus(FlowStates.RUNNING)
                 expectFlowFiberCacheContainsKey(BOB_HOLDING_IDENTITY, REQUEST_ID1)
-                expectFlowFiberCacheOperations(BOB_HOLDING_IDENTITY, REQUEST_ID1, listOf(FlowFiberCacheOperation.PUT))
+                expectFlowFiberCacheOperationsForKey(BOB_HOLDING_IDENTITY, REQUEST_ID1, listOf(FlowFiberCacheOperation.PUT))
             }
         }
 
@@ -115,8 +114,8 @@ class FlowFinishedAcceptanceTest : FlowServiceTestBase() {
                 nullStateRecord()
                 flowStatus(FlowStates.COMPLETED, result = DONE)
                 scheduleFlowMapperCleanupEvents(FlowKey(REQUEST_ID1, BOB_HOLDING_IDENTITY).toString())
-                expectFlowFiberCacheDoesNotContain(BOB_HOLDING_IDENTITY, REQUEST_ID1)
-                expectFlowFiberCacheOperations(BOB_HOLDING_IDENTITY, REQUEST_ID1,
+                expectFlowFiberCacheDoesNotContainKey(BOB_HOLDING_IDENTITY, REQUEST_ID1)
+                expectFlowFiberCacheOperationsForKey(BOB_HOLDING_IDENTITY, REQUEST_ID1,
                     listOf(FlowFiberCacheOperation.PUT, FlowFiberCacheOperation.REMOVE))
             }
         }
@@ -133,7 +132,7 @@ class FlowFinishedAcceptanceTest : FlowServiceTestBase() {
             expectOutputForFlow(FLOW_ID1) {
                 nullStateRecord()
                 flowStatus(FlowStates.COMPLETED, result = DONE)
-                expectFlowFiberCacheDoesNotContain(BOB_HOLDING_IDENTITY, INITIATED_SESSION_ID_1)
+                expectFlowFiberCacheDoesNotContainKey(BOB_HOLDING_IDENTITY, INITIATED_SESSION_ID_1)
             }
         }
     }
@@ -158,7 +157,7 @@ class FlowFinishedAcceptanceTest : FlowServiceTestBase() {
                 nullStateRecord()
                 flowStatus(FlowStates.COMPLETED, result = DONE)
                 scheduleFlowMapperCleanupEvents(FlowKey(REQUEST_ID1, ALICE_HOLDING_IDENTITY).toString(), SESSION_ID_1)
-                expectFlowFiberCacheDoesNotContain(ALICE_HOLDING_IDENTITY, REQUEST_ID1)
+                expectFlowFiberCacheDoesNotContainKey(ALICE_HOLDING_IDENTITY, REQUEST_ID1)
             }
         }
     }

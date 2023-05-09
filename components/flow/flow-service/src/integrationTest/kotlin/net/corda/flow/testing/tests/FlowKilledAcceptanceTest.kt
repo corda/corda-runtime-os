@@ -30,7 +30,6 @@ class FlowKilledAcceptanceTest : FlowServiceTestBase() {
             sessionInitiatedIdentity(BOB_HOLDING_IDENTITY)
 
             initiatingToInitiatedFlow(PROTOCOL, FAKE_FLOW_NAME, FAKE_FLOW_NAME)
-            resetFlowFiberCache()
         }
     }
 
@@ -44,7 +43,7 @@ class FlowKilledAcceptanceTest : FlowServiceTestBase() {
             expectOutputForFlow(FLOW_ID1) {
                 nullStateRecord()
                 flowKilledStatus(flowTerminatedReason = "Flow operational status is INACTIVE")
-                expectFlowFiberCacheDoesNotContain(BOB_HOLDING_IDENTITY, REQUEST_ID1)
+                expectFlowFiberCacheDoesNotContainKey(BOB_HOLDING_IDENTITY, REQUEST_ID1)
             }
         }
     }
@@ -61,7 +60,7 @@ class FlowKilledAcceptanceTest : FlowServiceTestBase() {
                 nullStateRecord()
                 flowKilledStatus(flowTerminatedReason = "Flow operational status is INACTIVE")
                 scheduleFlowMapperCleanupEvents(INITIATED_SESSION_ID_1)
-                expectFlowFiberCacheDoesNotContain(BOB_HOLDING_IDENTITY, REQUEST_ID1)
+                expectFlowFiberCacheDoesNotContainKey(BOB_HOLDING_IDENTITY, REQUEST_ID1)
             }
         }
     }
@@ -79,7 +78,7 @@ class FlowKilledAcceptanceTest : FlowServiceTestBase() {
                 wakeUpEvent()
                 flowStatus(FlowStates.RUNNING)
                 expectFlowFiberCacheContainsKey(ALICE_HOLDING_IDENTITY, REQUEST_ID1)
-                expectFlowFiberCacheOperations(ALICE_HOLDING_IDENTITY, REQUEST_ID1, listOf(FlowFiberCacheOperation.PUT))
+                expectFlowFiberCacheOperationsForKey(ALICE_HOLDING_IDENTITY, REQUEST_ID1, listOf(FlowFiberCacheOperation.PUT))
             }
         }
 
@@ -95,8 +94,8 @@ class FlowKilledAcceptanceTest : FlowServiceTestBase() {
             expectOutputForFlow(FLOW_ID1) {
                 nullStateRecord()
                 flowKilledStatus(flowTerminatedReason = "Flow operational status is INACTIVE")
-                expectFlowFiberCacheDoesNotContain(ALICE_HOLDING_IDENTITY, REQUEST_ID1)
-                expectFlowFiberCacheOperations(ALICE_HOLDING_IDENTITY, REQUEST_ID1,
+                expectFlowFiberCacheDoesNotContainKey(ALICE_HOLDING_IDENTITY, REQUEST_ID1)
+                expectFlowFiberCacheOperationsForKey(ALICE_HOLDING_IDENTITY, REQUEST_ID1,
                     listOf(FlowFiberCacheOperation.PUT, FlowFiberCacheOperation.REMOVE))
             }
         }
