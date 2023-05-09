@@ -1,6 +1,6 @@
 package net.corda.applications.workers.smoketest.websocket.client
 
-import net.corda.e2etest.utilities.CLUSTER_URI
+import net.corda.e2etest.utilities.DEFAULT_CLUSTER
 import net.corda.e2etest.utilities.PASSWORD
 import net.corda.e2etest.utilities.USERNAME
 import net.corda.e2etest.utilities.getOrThrow
@@ -58,7 +58,9 @@ class SmokeTestWebsocketClient(
 
     private companion object {
         val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
-        val baseWssPath = with(URI("wss", CLUSTER_URI.schemeSpecificPart, CLUSTER_URI.fragment)) { "${this}api/v1" }
+        val restUri = DEFAULT_CLUSTER.rest.uri
+        val baseWssUri = URI("wss", restUri.schemeSpecificPart, restUri.fragment)
+        val baseWssPath = "$baseWssUri/api/v1"
     }
 
     private val httpClient = HttpClient(SslContextFactory.Client(true))
