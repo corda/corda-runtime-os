@@ -74,7 +74,7 @@ class CheckPostgres : Callable<Int>, PluginContext() {
         }
 
         // Create the URL using DB host and port
-        val postgresUrl = "jdbc:postgresql://${yaml.db.cluster.host}:${yaml.db.cluster.port}/postgres"
+        val postgresUrl = "jdbc:postgresql://${yaml.db.cluster.host}:${yaml.db.cluster.port}/${yaml.db.cluster.database}"
         report.addEntry(PreInstallPlugin.ReportEntry("Create PostgreSQL URL with DB host", true))
 
         // Try connecting to the DB URL using supplied credentials

@@ -229,7 +229,9 @@ class PreInstallPlugin : Plugin() {
         @JsonProperty("host")
         val host: String,
         @JsonProperty("port")
-        val port: Int? = 5432
+        val port: Int? = 5432,
+        @JsonProperty("database")
+        val database: String? = "cordacluster"
     )
 
     @JsonIgnoreProperties(ignoreUnknown = true)
