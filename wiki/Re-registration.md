@@ -8,7 +8,7 @@ The instructions on this page assume you have completed the [Dynamic network mem
 
 Currently, updates to the member-provided context are limited to custom properties only. That is, a member may only add/remove/edit properties with the "ext." prefix. Changes to the Corda platform properties (keys with "corda." prefix) are not supported at the moment.
 
-A member may inspect its current member-provided context by either by performing a member lookup, or by looking up its latest registration request.
+A member may inspect its current member-provided context either by performing a member lookup, or by looking up its latest registration request.
 For example, to look up Alice:
 <details>
 <summary>Bash</summary>
@@ -43,7 +43,7 @@ Invoke-RestMethod -SkipCertificateCheck  -Headers @{Authorization=("Basic {0}" -
 ```
 </details>
 
-> Note: To retrieve information about key pairs belonging to a holding identity, use `curl --insecure -u admin:admin -X GET $API_URL/keys/$HOLDING_ID`.
+> Note: To retrieve information about key pairs (e.g. key ID required for the registration context) belonging to a holding identity, use `curl --insecure -u admin:admin -X GET $API_URL/keys/$HOLDING_ID`.
 
 # How To Re-register
 
@@ -179,7 +179,7 @@ $REGISTRATION_CONTEXT = @{
 The serial number may be retrieved from the MGM-provided context of the MemberInfo by performing a member lookup.
 > Note: For first-time registration the serial number should be 0 if provided.
 
-# Request Queue:
+# Request Queue
 
 If a member submits more than one registration request at the same time, the MGM will queue the requests and process them one by one, treating each subsequent request in the queue as a re-registration attempt.
 
