@@ -34,7 +34,6 @@ class TokenClaimQueryFlow : ClientStartableFlow {
     @CordaInject
     lateinit var tokenSelection: TokenSelection
 
-    @Suppress("LongMethod")
     @Suspendable
     override fun call(requestBody: ClientRequestBody): String {
         val tokenClaimQueryMsg =
