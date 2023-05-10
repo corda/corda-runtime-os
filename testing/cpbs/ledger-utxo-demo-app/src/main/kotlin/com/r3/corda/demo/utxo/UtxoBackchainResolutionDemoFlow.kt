@@ -1,10 +1,5 @@
 package com.r3.corda.demo.utxo
 
-import com.r3.corda.demo.utxo.contract.TestCommand
-import com.r3.corda.demo.utxo.contract.TestUtxoState
-import java.security.PublicKey
-import java.time.Instant
-import java.time.temporal.ChronoUnit
 import net.corda.v5.application.flows.ClientRequestBody
 import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.CordaInject
@@ -15,14 +10,14 @@ import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.messaging.FlowSession
-import net.corda.v5.base.annotations.Suspendable
-import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.crypto.SecureHash
-import net.corda.v5.ledger.common.NotaryLookup
-import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.UtxoLedgerService
+import com.r3.corda.demo.utxo.contract.TestCommand
+import com.r3.corda.demo.utxo.contract.TestUtxoState
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.security.PublicKey
+import java.time.Instant
+import java.time.temporal.ChronoUnit
 
 @InitiatingFlow(protocol = "utxo-backchain-resolution-protocol")
 class UtxoBackchainResolutionDemoFlow : ClientStartableFlow {
