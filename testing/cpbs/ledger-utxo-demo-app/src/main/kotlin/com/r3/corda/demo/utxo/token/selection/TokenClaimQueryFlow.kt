@@ -42,7 +42,6 @@ class TokenClaimQueryFlow : ClientStartableFlow {
         // Assume we are using a single notary
         val notary = notaryLookup.notaryServices.single()
 
-        // Create our selection criteria to select a minimum of 100 GBP worth of coins
         val selectionCriteria = TokenClaimCriteria(
             tokenClaimQueryMsg.tokenType,
             digestService.hash(tokenClaimQueryMsg.issuerBankX500.toByteArray(), DigestAlgorithmName.SHA2_256),
