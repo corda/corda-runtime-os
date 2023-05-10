@@ -103,7 +103,14 @@ class FlowSessionImpl(
         val request = FlowIORequest.SendAndReceive(mapOf(getSessionInfo() to serialize(payload)))
         val received = fiber.suspend(request)
         setSessionConfirmed()
-        return deserializeReceivedPayload(received, receiveType)
+
+        // We could call `.kotlin.javaObjectType` on non-primitive types too, and it would have no effect,
+        // but this check is added for clarity of intent
+        return if (receiveType.isPrimitive) {
+            deserializeReceivedPayload(received, receiveType.kotlin.javaObjectType)
+        } else {
+            deserializeReceivedPayload(received, receiveType)
+        }
     }
 
     @Suspendable
@@ -112,7 +119,14 @@ class FlowSessionImpl(
         val request = FlowIORequest.Receive(setOf(getSessionInfo()))
         val received = fiber.suspend(request)
         setSessionConfirmed()
-        return deserializeReceivedPayload(received, receiveType)
+
+        // We could call `.kotlin.javaObjectType` on non-primitive types too, and it would have no effect,
+        // but this check is added for clarity of intent
+        return if (receiveType.isPrimitive) {
+            deserializeReceivedPayload(received, receiveType.kotlin.javaObjectType)
+        } else {
+            deserializeReceivedPayload(received, receiveType)
+        }
     }
     @Suspendable
     override fun send(payload: Any) {
