@@ -1,21 +1,25 @@
 package net.corda.applications.workers.smoketest.ledger
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.databind.module.SimpleModule
 import com.fasterxml.jackson.module.kotlin.KotlinModule
 import java.math.BigDecimal
+import net.corda.e2etest.utilities.CLUSTER_URI
+import net.corda.e2etest.utilities.CODE_SIGNER_CERT
+import net.corda.e2etest.utilities.PASSWORD
 import net.corda.e2etest.utilities.RPC_FLOW_STATUS_SUCCESS
 import net.corda.e2etest.utilities.TEST_NOTARY_CPB_LOCATION
 import net.corda.e2etest.utilities.TEST_NOTARY_CPI_NAME
+import net.corda.e2etest.utilities.USERNAME
+import net.corda.e2etest.utilities.assertWithRetry
 import net.corda.e2etest.utilities.awaitRpcFlowFinished
+import net.corda.e2etest.utilities.cluster
 import net.corda.e2etest.utilities.conditionallyUploadCordaPackage
 import net.corda.e2etest.utilities.getHoldingIdShortHash
 import net.corda.e2etest.utilities.getOrCreateVirtualNodeFor
 import net.corda.e2etest.utilities.registerStaticMember
 import net.corda.e2etest.utilities.startRpcFlow
-import net.corda.v5.crypto.SecureHash
+import net.corda.utilities.seconds
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS
@@ -28,43 +32,41 @@ class TokenBalanceQueryTests {
         const val TEST_CPI_NAME = "ledger-utxo-demo-app"
         const val TEST_CPB_LOCATION = "/META-INF/ledger-utxo-demo-app.cpb"
 
+//        val objectMapper = ObjectMapper().apply {
+//            registerModule(KotlinModule.Builder().build())
+//            val module = SimpleModule()
+//            module.addSerializer(SecureHash::class.java, SecureHashSerializer)
+//            module.addDeserializer(SecureHash::class.java, SecureHashDeserializer)
+//            registerModule(module)
+//        }
+
+        const val testRunUniqueId = "1"//UUID.randomUUID()
+        const val groupId = "b3de5521-9aef-453f-9f94-62f0d86962a2"
+        const val cpiName = "${TEST_CPI_NAME}_$testRunUniqueId"
+        const val notaryCpiName = "${TEST_NOTARY_CPI_NAME}_$testRunUniqueId"
+
+        const val aliceX500 = "CN=Alice-${testRunUniqueId}, OU=Application, O=R3, L=London, C=GB"
+        const val bobX500 = "CN=Bob-${testRunUniqueId}, OU=Application, O=R3, L=London, C=GB"
+        const val notaryX500 = "CN=Notary-${testRunUniqueId}, OU=Application, O=R3, L=London, C=GB"
+
+        val aliceHoldingId: String = getHoldingIdShortHash(aliceX500, groupId)
+        val bobHoldingId: String = getHoldingIdShortHash(bobX500, groupId)
+        val notaryHoldingId: String = getHoldingIdShortHash(notaryX500, groupId)
+
+        val staticMemberList = listOf(
+            aliceX500,
+            bobX500,
+            notaryX500
+        )
+
         val objectMapper = ObjectMapper().apply {
             registerModule(KotlinModule.Builder().build())
-            val module = SimpleModule()
-            module.addSerializer(SecureHash::class.java, SecureHashSerializer)
-            module.addDeserializer(SecureHash::class.java, SecureHashDeserializer)
-            registerModule(module)
         }
+
+
+        const val tokenType = "com.r3.corda.demo.utxo.contract.CoinState"
+        const val currency = "USD"
     }
-
-    private val testRunUniqueId = "1"//UUID.randomUUID()
-    private val groupId = "b3de5521-9aef-453f-9f94-62f0d86962a2"
-    private val cpiName = "${TEST_CPI_NAME}_$testRunUniqueId"
-    private val notaryCpiName = "${TEST_NOTARY_CPI_NAME}_$testRunUniqueId"
-
-    private val aliceX500 = "CN=Alice-${testRunUniqueId}, OU=Application, O=R3, L=London, C=GB"
-    private val bobX500 = "CN=Bob-${testRunUniqueId}, OU=Application, O=R3, L=London, C=GB"
-    private val charlieX500 = "CN=Charlie-${testRunUniqueId}, OU=Application, O=R3, L=London, C=GB"
-    private val notaryX500 = "CN=Notary-${testRunUniqueId}, OU=Application, O=R3, L=London, C=GB"
-
-    private val aliceHoldingId: String = getHoldingIdShortHash(aliceX500, groupId)
-    private val bobHoldingId: String = getHoldingIdShortHash(bobX500, groupId)
-    private val charlieHoldingId: String = getHoldingIdShortHash(charlieX500, groupId)
-    private val notaryHoldingId: String = getHoldingIdShortHash(notaryX500, groupId)
-
-    private val objectMapper = ObjectMapper().apply {
-        registerModule(KotlinModule.Builder().build())
-    }
-
-    private val staticMemberList = listOf(
-        aliceX500,
-        bobX500,
-        charlieX500,
-        notaryX500
-    )
-
-    private val tokenType = "com.r3.corda.demo.utxo.contract.CoinState"
-    private val currency = "USD"
 
     private fun convertToTokenBalanceQueryResponseMsg(tokenBalanceQueryResponseMsgStr: String) =
         objectMapper.readValue(
@@ -84,7 +86,7 @@ class TokenBalanceQueryTests {
 
         val tokenBalanceQueryRpcStartArgs = mapOf(
             "tokenType" to tokenType,
-            "issuerBankX500" to charlieX500,
+            "issuerBankX500" to bobX500,
             "currency" to currency
         )
 
@@ -96,9 +98,29 @@ class TokenBalanceQueryTests {
         return convertToTokenBalanceQueryResponseMsg(flowResult.flowResult!!)
     }
 
+    @Test
+    fun `import codesigner certificate`() {
+        val retryTimeout = 120.seconds
+        val retryInterval = 1.seconds
 
-    @BeforeAll
-    fun beforeAll() {
+        cluster {
+            endpoint(
+                CLUSTER_URI,
+                USERNAME,
+                PASSWORD
+            )
+            assertWithRetry {
+                // Certificate upload can be slow in the combined worker, especially after it has just started up.
+                timeout(retryTimeout)
+                interval(retryInterval)
+                command { importCertificate(CODE_SIGNER_CERT, "code-signer", "cordadev") }
+                condition { it.code == 204 }
+            }
+        }
+    }
+
+    @Test
+    fun `setup`() {
         conditionallyUploadCordaPackage(
             cpiName,
             TEST_CPB_LOCATION,
@@ -114,17 +136,14 @@ class TokenBalanceQueryTests {
 
         val aliceActualHoldingId = getOrCreateVirtualNodeFor(aliceX500, cpiName)
         val bobActualHoldingId = getOrCreateVirtualNodeFor(bobX500, cpiName)
-        val charlieActualHoldingId = getOrCreateVirtualNodeFor(charlieX500, cpiName)
         val notaryActualHoldingId = getOrCreateVirtualNodeFor(notaryX500, notaryCpiName)
 
         assertThat(aliceActualHoldingId).isEqualTo(aliceHoldingId)
         assertThat(bobActualHoldingId).isEqualTo(bobHoldingId)
-        assertThat(charlieActualHoldingId).isEqualTo(charlieHoldingId)
         assertThat(notaryActualHoldingId).isEqualTo(notaryHoldingId)
 
         registerStaticMember(aliceHoldingId)
         registerStaticMember(bobHoldingId)
-        registerStaticMember(charlieHoldingId)
 
         registerStaticMember(notaryHoldingId, true)
     }
@@ -141,7 +160,7 @@ class TokenBalanceQueryTests {
     @Test
     fun `Token Query Balance - Create 10 coins`() {
         val rpcStartArgs = mapOf(
-            "issuerBankX500" to charlieX500,
+            "issuerBankX500" to bobX500,
             "currency" to "USD",
             "numberOfCoins" to 10,
             "valueOfCoin" to 1,
@@ -170,7 +189,7 @@ class TokenBalanceQueryTests {
     fun `Token Query Balance - Claim token`() {
         val rpcStartArgs = mapOf(
             "tokenType" to tokenType,
-            "issuerBankX500" to charlieX500,
+            "issuerBankX500" to bobX500,
             "currency" to currency,
             "targetAmount" to BigDecimal(5)
         )
@@ -189,11 +208,11 @@ class TokenBalanceQueryTests {
     }
 
     @Test
-    fun `Token Query Balance - Ensure balance is equal to 5`() {
+    fun `Token Query Balance - Ensure balance is equal to 5 but the balance including claimed tokens is 10`() {
         val tokenBalanceQuery = runTokenBalanceQueryFlow()
 
         assertThat(tokenBalanceQuery.balance).isEqualTo(BigDecimal(5))
-        assertThat(tokenBalanceQuery.balanceIncludingClaimedTokens).isEqualTo(BigDecimal(5))
+        assertThat(tokenBalanceQuery.balanceIncludingClaimedTokens).isEqualTo(BigDecimal(10))
     }
 }
 
