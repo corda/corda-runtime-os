@@ -11,7 +11,7 @@ import net.corda.crypto.impl.retrying.BackoffStrategy
 import net.corda.crypto.impl.retrying.CryptoRetryingExecutor
 import net.corda.crypto.impl.toMap
 import net.corda.crypto.impl.toSignatureSpec
-import net.corda.crypto.service.impl.SigningServiceImpl
+import net.corda.crypto.service.SigningService
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoRequestContext
@@ -37,7 +37,7 @@ import java.time.Instant
 import kotlin.math.sign
 
 class CryptoFlowOpsBusProcessor(
-    private val signingService: SigningServiceImpl,
+    private val signingService: SigningService,
     private val externalEventResponseFactory: ExternalEventResponseFactory,
     event: ConfigChangedEvent,
 ) : DurableProcessor<String, FlowOpsRequest> {
@@ -59,9 +59,6 @@ class CryptoFlowOpsBusProcessor(
         logger.trace { "onNext processing messages ${events.joinToString(",") { it.key }}" }
         return events.mapNotNull { onNext(it) }
     }
-
-    fun onNextSilent(events: List<Record<String, FlowOpsRequest>>): List<Record<*, *>> =
-        events.mapNotNull { onNext(it, false) }
 
     private fun onNext(event: Record<String, FlowOpsRequest>, logFailures: Boolean = true): Record<*, *>? {
         val request = event.value
