@@ -239,6 +239,10 @@ class ClusterBuilder {
     fun multipleFlowStatus(holdingIdentityShortHash: String) =
         get("/api/v1/flow/$holdingIdentityShortHash")
 
+    /** Get result of a flow execution */
+    fun flowResult(holdingIdentityShortHash: String, clientRequestId: String) =
+        get("/api/v1/flow/$holdingIdentityShortHash/$clientRequestId/result")
+
     /** Get status of multiple flows */
     fun runnableFlowClasses(holdingIdentityShortHash: String) =
         get("/api/v1/flowclass/$holdingIdentityShortHash")
