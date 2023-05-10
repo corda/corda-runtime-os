@@ -12,6 +12,7 @@ import net.corda.e2etest.utilities.RpcSmokeTestInput
 import net.corda.e2etest.utilities.TEST_NOTARY_CPB_LOCATION
 import net.corda.e2etest.utilities.TEST_NOTARY_CPI_NAME
 import net.corda.e2etest.utilities.awaitRestFlowResult
+import net.corda.e2etest.utilities.awaitRpcFlowFinished
 import net.corda.e2etest.utilities.conditionallyUploadCordaPackage
 import net.corda.e2etest.utilities.configWithDefaultsNode
 import net.corda.e2etest.utilities.getConfig
