@@ -4,6 +4,7 @@ import net.corda.data.flow.output.FlowStates
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.testing.context.FlowServiceTestBase
 import net.corda.schema.configuration.FlowConfig
+import net.corda.virtualnode.OperationalStatus
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.parallel.Execution
@@ -47,6 +48,34 @@ class StartFlowTest : FlowServiceTestBase() {
                 flowStatus(FlowStates.COMPLETED, result = "hello")
                 nullStateRecord()
                 flowFiberCacheDoesNotContainKey(BOB_HOLDING_IDENTITY, REQUEST_ID1)
+            }
+        }
+    }
+
+    @Test
+    fun `RPC Start Flow - Flow throws FlowMarkedForKillException if startFlowOperationalStatus is INACTIVE`() {
+
+        given {
+            virtualNode(CPI1, CHARLIE_HOLDING_IDENTITY, flowStartOperationalStatus = OperationalStatus.INACTIVE)
+            cpkMetadata(CPI1, CPK1, CPK1_CHECKSUM)
+            sandboxCpk(CPK1_CHECKSUM)
+            membershipGroupFor(CHARLIE_HOLDING_IDENTITY)
+        }
+
+        `when` {
+            startFlowEventReceived(FLOW_ID1, REQUEST_ID1, CHARLIE_HOLDING_IDENTITY, CPI1, "flow start data")
+                .suspendsWith(FlowIORequest.InitialCheckpoint)
+        }
+
+        then {
+            expectOutputForFlow(FLOW_ID1) {
+                nullStateRecord()
+                noFlowEvents()
+                flowStatus(
+                    state = FlowStates.KILLED,
+//                    errorType = FlowProcessingExceptionTypes.FLOW_FAILED,
+//                    errorMessage = "'flowStartOperationalStatus is INACTIVE, new flows cannot be started for ${CHARLIE_HOLDING_IDENTITY.x500Name}"
+                )
             }
         }
     }
