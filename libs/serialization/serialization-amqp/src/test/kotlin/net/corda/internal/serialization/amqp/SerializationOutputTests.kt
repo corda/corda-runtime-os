@@ -307,23 +307,59 @@ class SerializationOutputTests {
     }
 
     @Test
-    fun `test primitive float`() {
-        val obj = 10.0f
-        serdes(obj)
+    fun `test primitive boolean`() {
+        val input = true
+        val output = serdes(input)
+        assertEquals(input, output)
+    }
+
+    @Test
+    fun `test primitive byte`() {
+        val input: Byte = 1
+        val output = serdes(input)
+        assertEquals(input, output)
+    }
+
+    @Test
+    fun `test primitive char`() {
+        val input: Char = 'a'
+        val output = serdes(input)
+        assertEquals(input, output)
+    }
+
+    @Test
+    fun `test primitive short`() {
+        val input: Short = 10
+        val output = serdes(input)
+        assertEquals(input, output)
     }
 
     @Test
     fun `test primitive int`() {
-        val obj = 5
-        assert(obj.javaClass == Int::class.java)
-        serdes(obj)
+        val input = 5
+        val output = serdes(input)
+        assertEquals(input, output)
     }
 
     @Test
-    fun `test boxed integer`() {
-        val obj = Integer.valueOf(5)
-        assert(obj.javaClass == Integer::class.java)
-        serdes(obj)
+    fun `test primitive long`() {
+        val input: Long = 10000000000
+        val output = serdes(input)
+        assertEquals(input, output)
+    }
+
+    @Test
+    fun `test primitive float`() {
+        val input = 10.0f
+        val output = serdes(input)
+        assertEquals(input, output)
+    }
+
+    @Test
+    fun `test primitive double`() {
+        val input = 3.14
+        val output = serdes(input)
+        assertEquals(input, output)
     }
 
     @Test
