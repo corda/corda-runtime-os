@@ -37,7 +37,6 @@ class TokenClaimQueryFlow : ClientStartableFlow {
     @Suppress("LongMethod")
     @Suspendable
     override fun call(requestBody: ClientRequestBody): String {
-        log.info("Filipe -")
         val tokenClaimQueryMsg =
             requestBody.getRequestBodyAs(jsonMarshallingService, TokenClaimMsg::class.java)
 
@@ -69,5 +68,4 @@ class TokenClaimQueryFlow : ClientStartableFlow {
     )
 
     private class TokenClaimResponseMsg(val tokenClaimed: Boolean)
-
 }
