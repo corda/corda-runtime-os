@@ -10,7 +10,8 @@ class PackagePluginWrapper : Plugin() {
     @Extension
     @CommandLine.Command(
         name = "package",
-        subcommands = [CreateCpiV2::class, Verify::class, CreateCpb::class, SignCpx::class],
+        subcommands = [CreateCpiV2::class, Verify::class, CreateCpb::class, SignCpx::class, ListAwsKmsKeys::class,
+            SignCpxWithKmsKey::class],
         description = ["Plugin for CPB, CPI operations."]
     )
     class PackagePlugin : CordaCliPlugin
