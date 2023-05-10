@@ -1,6 +1,7 @@
 package net.corda.libs.packaging
 
 import net.corda.crypto.core.SecureHashImpl
+import net.corda.libs.packaging.TestUtils.filterAndSortX500Attributes
 import net.corda.libs.packaging.testutils.TestUtils
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.DigestAlgorithmName
@@ -65,7 +66,7 @@ class UtilsTest {
         val algoName = DigestAlgorithmName.SHA2_256.name
         val md = MessageDigest.getInstance(algoName)
         certs
-            .map { it.subjectX500Principal.name.toByteArray().hash() }
+            .map { filterAndSortX500Attributes(it.subjectX500Principal.name).toByteArray().hash() }
             .sortedWith(secureHashComparator)
             .map(SecureHash::toString)
             .map(String::toByteArray)

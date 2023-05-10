@@ -2,6 +2,7 @@ package net.corda.libs.packaging
 
 import jdk.security.jarsigner.JarSigner
 import net.corda.crypto.core.SecureHashImpl
+import net.corda.libs.packaging.TestUtils.filterAndSortX500Attributes
 import net.corda.libs.packaging.core.exception.CordappManifestException
 import net.corda.libs.packaging.core.exception.DependencyMetadataException
 import net.corda.libs.packaging.core.exception.PackagingException
@@ -38,6 +39,7 @@ import java.util.zip.ZipEntry
 import java.util.zip.ZipFile
 import java.util.zip.ZipInputStream
 import java.util.zip.ZipOutputStream
+import javax.naming.ldap.LdapName
 import kotlin.io.path.name
 
 // This is to avoid extracting the CPK archive in every single test case,
@@ -70,7 +72,9 @@ class CPKTests {
             sha256Name,
             run {
                 val md = MessageDigest.getInstance(sha256Name)
-                md.update(cordaDevCert.subjectX500Principal.name.toByteArray())
+                md.update(
+                    filterAndSortX500Attributes(cordaDevCert.subjectX500Principal.name).toByteArray()
+                )
                 md.digest()
             }
         )

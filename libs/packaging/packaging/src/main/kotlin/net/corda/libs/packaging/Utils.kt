@@ -77,7 +77,7 @@ fun Sequence<Certificate>.signerSummaryHash(): SecureHash {
         ?: throw IllegalArgumentException("Summary Hash cannot be null. There must be at least one valid signature")
 }
 
-private val X500_NAME_SUPPORTED_ATTRIBUTES = linkedSetOf("CN", "OU", "O", "L", "ST", "C")
+internal val X500_NAME_SUPPORTED_ATTRIBUTES = linkedSetOf("CN", "OU", "O", "L", "ST", "C")
 
 private fun LdapName.filterSupportedAttributes(): String {
     val includedAttributes = rdns.filter {
