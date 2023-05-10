@@ -1,19 +1,23 @@
 package net.corda.cli.plugins.packaging.aws.kms.rsa;
 
-import lombok.AccessLevel;
-import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
 import net.corda.cli.plugins.packaging.aws.kms.KmsPublicKey;
+import org.jetbrains.annotations.NotNull;
 
 import java.math.BigInteger;
 import java.security.interfaces.RSAPublicKey;
+import java.util.Objects;
 
-@RequiredArgsConstructor(access = AccessLevel.PACKAGE)
 public class KmsRSAPublicKey implements KmsPublicKey, RSAPublicKey {
 
-    @NonNull
+    @NotNull
     private final String id;
     private final RSAPublicKey publicKey;
+
+    public KmsRSAPublicKey(String id, RSAPublicKey publicKey) {
+        Objects.requireNonNull(id);
+        this.id = id;
+        this.publicKey = publicKey;
+    }
 
     public String getId() {
         return id;

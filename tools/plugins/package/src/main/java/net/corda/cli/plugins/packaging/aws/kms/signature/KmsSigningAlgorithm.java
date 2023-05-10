@@ -1,9 +1,7 @@
 package net.corda.cli.plugins.packaging.aws.kms.signature;
 
-import lombok.AllArgsConstructor;
 import software.amazon.awssdk.services.kms.model.SigningAlgorithmSpec;
 
-@AllArgsConstructor
 public enum KmsSigningAlgorithm {
 
     RSASSA_PSS_SHA_256("RSASSA-PSS/SHA256", "SHA-256", SigningAlgorithmSpec.RSASSA_PSS_SHA_256),
@@ -21,6 +19,12 @@ public enum KmsSigningAlgorithm {
     private final String algorithm;
     private final String digestAlgorithm;
     private final SigningAlgorithmSpec signingAlgorithmSpec;
+
+    KmsSigningAlgorithm(String algorithm, String digestAlgorithm, SigningAlgorithmSpec signingAlgorithmSpec) {
+        this.algorithm = algorithm;
+        this.digestAlgorithm = digestAlgorithm;
+        this.signingAlgorithmSpec = signingAlgorithmSpec;
+    }
 
     public String getAlgorithm() {
         return algorithm;

@@ -1,9 +1,8 @@
 package net.corda.cli.plugins.packaging.aws.kms;
 
-import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
 import net.corda.cli.plugins.packaging.aws.kms.ec.KmsECKeyFactory;
 import net.corda.cli.plugins.packaging.aws.kms.rsa.KmsRSAKeyFactory;
+import org.jetbrains.annotations.NotNull;
 import software.amazon.awssdk.services.kms.KmsClient;
 import software.amazon.awssdk.services.kms.model.AliasListEntry;
 import software.amazon.awssdk.services.kms.model.DescribeKeyResponse;
@@ -24,14 +23,19 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.Enumeration;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-@RequiredArgsConstructor
 public class KmsKeyStore extends KeyStoreSpi {
 
-    @NonNull
+    @NotNull
     private final KmsClient kmsClient;
+
+    public KmsKeyStore(KmsClient kmsClient) {
+        Objects.requireNonNull(kmsClient);
+        this.kmsClient = kmsClient;
+    }
 
     @Override
     public Enumeration<String> engineAliases() {

@@ -1,20 +1,24 @@
 package net.corda.cli.plugins.packaging.aws.kms.ec;
 
-import lombok.AccessLevel;
-import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
 import net.corda.cli.plugins.packaging.aws.kms.KmsPublicKey;
+import org.jetbrains.annotations.NotNull;
 
 import java.security.interfaces.ECPublicKey;
 import java.security.spec.ECParameterSpec;
 import java.security.spec.ECPoint;
+import java.util.Objects;
 
-@RequiredArgsConstructor(access = AccessLevel.PACKAGE)
 public class KmsECPublicKey implements KmsPublicKey, ECPublicKey {
 
-    @NonNull
+    @NotNull
     private final String id;
     private final ECPublicKey publicKey;
+
+    public KmsECPublicKey(String id, ECPublicKey publicKey) {
+        Objects.requireNonNull(id);
+        this.id = id;
+        this.publicKey = publicKey;
+    }
 
     public String getId() {
         return id;

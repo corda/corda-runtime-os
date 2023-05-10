@@ -1,21 +1,24 @@
 package net.corda.cli.plugins.packaging.aws.kms.ec;
 
-import lombok.AccessLevel;
-import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
 import net.corda.cli.plugins.packaging.aws.kms.KmsKey;
+import org.jetbrains.annotations.NotNull;
 
 import java.math.BigInteger;
 import java.security.interfaces.ECPrivateKey;
 import java.security.spec.ECParameterSpec;
+import java.util.Objects;
 
-@RequiredArgsConstructor(access = AccessLevel.PACKAGE)
 public class KmsECPrivateKey implements KmsKey, ECPrivateKey {
 
-    @NonNull
+    @NotNull
     private final String id;
     private final String algorithm = "EC";
     private final String format = "PKCS#8";
+
+    public KmsECPrivateKey(String id) {
+        Objects.requireNonNull(id);
+        this.id = id;
+    }
 
     @Override
     public String getId() {
