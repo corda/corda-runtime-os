@@ -24,11 +24,6 @@ class TokenSelectionImpl @Activate constructor(
 
     @Suspendable
     override fun tryClaim(criteria: TokenClaimCriteria): TokenClaim? {
-        // This generates a message to try to claim the tokens based on the filter
-        // The message is sent by the external event executor and the response is also received by the executer
-        // The `execute` is a blocking call and will return when the message is received or an exception is raised
-        // after a timeout
-        // The flow goes to sleep until the response arrives
         return externalEventExecutor.execute(
             TokenClaimQueryExternalEventFactory::class.java,
             criteria
