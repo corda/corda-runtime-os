@@ -72,24 +72,50 @@ public class CsrInfo {
 
     // Builder class
     public static class CsrInfoBuilder {
+        private String cn;
+        private String ou;
+        private String o;
+        private String l;
+        private String st;
+        private String c;
+        private String mail;
 
-        private final String cn;
-        private final String ou;
-        private final String o;
-        private final String l;
-        private final String st;
-        private final String c;
-        private final String mail;
+        public CsrInfoBuilder() {
+        }
 
-
-        public CsrInfoBuilder(String cn, String ou, String o, String l, String st, String c, String mail) {
+        public CsrInfoBuilder cn(String cn) {
             this.cn = cn;
+            return this;
+        }
+
+        public CsrInfoBuilder ou(String ou) {
             this.ou = ou;
+            return this;
+        }
+
+        public CsrInfoBuilder o(String o) {
             this.o = o;
+            return this;
+        }
+
+        public CsrInfoBuilder l(String l) {
             this.l = l;
+            return this;
+        }
+
+        public CsrInfoBuilder st(String st) {
             this.st = st;
+            return this;
+        }
+
+        public CsrInfoBuilder c(String c) {
             this.c = c;
+            return this;
+        }
+
+        public CsrInfoBuilder mail(String mail) {
             this.mail = mail;
+            return this;
         }
 
         public CsrInfo build() {
