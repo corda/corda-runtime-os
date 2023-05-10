@@ -60,7 +60,7 @@ class CryptoFlowOpsBusProcessor(
         return events.mapNotNull { onNext(it) }
     }
 
-    private fun onNext(event: Record<String, FlowOpsRequest>, logFailures: Boolean = true): Record<*, *>? {
+    private fun onNext(event: Record<String, FlowOpsRequest>): Record<*, *>? {
         val request = event.value
         if (request == null) {
             logger.error("Unexpected null payload for event with the key={} in topic={}", event.key, event.topic)
@@ -106,12 +106,10 @@ class CryptoFlowOpsBusProcessor(
                     }
                 }
             } catch (throwable: Throwable) {
-                if (logFailures) {
-                    logger.error(
-                        "Failed to handle ${request.request::class.java.name} for tenant ${request.context.tenantId}",
-                        throwable
-                    )
-                }
+                logger.error(
+                    "Failed to handle ${request.request::class.java.name} for tenant ${request.context.tenantId}",
+                    throwable
+                )
                 externalEventResponseFactory.platformError(request.flowExternalEventContext, throwable)
             }
         }
