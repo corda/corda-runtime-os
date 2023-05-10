@@ -24,7 +24,6 @@ class TokenBalanceQueryExternalEventFactory @Activate constructor() :
 
     override val responseType = TokenBalanceQueryResult::class.java
 
-    // Method that sends the message
     override fun createExternalEvent(
         checkpoint: FlowCheckpoint,
         flowExternalEventContext: ExternalEventContext,
@@ -46,7 +45,6 @@ class TokenBalanceQueryExternalEventFactory @Activate constructor() :
         return ExternalEventRecord(Schemas.Services.TOKEN_CACHE_EVENT, key, TokenPoolCacheEvent(key, balanceQuery))
     }
 
-    // Callback that is invoked when the reply is received
     override fun resumeWith(checkpoint: FlowCheckpoint, response: TokenBalanceQueryResult): TokenBalance {
         return TokenBalanceImpl(response.balance.toBigDecimal(), response.balanceIncludingClaimedTokens.toBigDecimal())
     }
