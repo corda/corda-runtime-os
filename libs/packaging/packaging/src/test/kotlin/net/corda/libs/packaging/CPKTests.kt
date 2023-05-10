@@ -39,7 +39,6 @@ import java.util.zip.ZipEntry
 import java.util.zip.ZipFile
 import java.util.zip.ZipInputStream
 import java.util.zip.ZipOutputStream
-import javax.naming.ldap.LdapName
 import kotlin.io.path.name
 
 // This is to avoid extracting the CPK archive in every single test case,
