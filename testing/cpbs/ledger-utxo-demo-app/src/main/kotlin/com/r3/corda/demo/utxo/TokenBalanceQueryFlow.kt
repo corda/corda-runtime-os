@@ -5,6 +5,7 @@ import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.application.flows.ClientRequestBody
 import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.CordaInject
+import net.corda.v5.application.flows.InitiatingFlow
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.crypto.DigestAlgorithmName
@@ -16,7 +17,7 @@ import net.corda.v5.ledger.utxo.token.selection.TokenSelection
 import net.corda.v5.membership.NotaryInfo
 import org.slf4j.LoggerFactory
 
-
+@InitiatingFlow(protocol = "token-balance-query-flow-protocol")
 class TokenBalanceQueryFlow : ClientStartableFlow {
 
     private companion object {
@@ -37,37 +38,37 @@ class TokenBalanceQueryFlow : ClientStartableFlow {
 
     @Suspendable
     override fun call(requestBody: ClientRequestBody): String {
-        val tokenQueryBalanceMsg =
-            requestBody.getRequestBodyAs(marshallingService, TokenQueryBalanceMsg::class.java)
+        val tokenBalanceQueryMsg =
+            requestBody.getRequestBodyAs(marshallingService, TokenBalanceQueryMsg::class.java)
 
         // Assume we are using a single notary
         val notary = notaryLookup.notaryServices.single()
 
-        val balanceQueryCriteria = genTokenBalanceQueryCriteria(tokenQueryBalanceMsg, notary)
+        val balanceQueryCriteria = genTokenBalanceQueryCriteria(tokenBalanceQueryMsg, notary)
         val tokenBalance = tokenSelection.queryBalance(balanceQueryCriteria)!!
 
         return tokenBalance.toResult().toJsonStr()
     }
 
     private fun TokenBalance.toResult() =
-        TokenQueryBalanceResponseMsg(balance, balanceIncludingClaimedTokens)
+        TokenBalanceQueryResponseMsg(balance, balanceIncludingClaimedTokens)
 
-    private fun TokenQueryBalanceResponseMsg.toJsonStr() =
+    private fun TokenBalanceQueryResponseMsg.toJsonStr() =
         marshallingService.format(this)
 
-    private fun genTokenBalanceQueryCriteria(tokenQueryBalanceMsg: TokenQueryBalanceMsg, notary: NotaryInfo) =
+    private fun genTokenBalanceQueryCriteria(tokenBalanceQueryMsg: TokenBalanceQueryMsg, notary: NotaryInfo) =
         TokenBalanceCriteria(
             UtxoTokenPoolKey(
-                tokenQueryBalanceMsg.tokenType,
-                digestService.hash(tokenQueryBalanceMsg.issuerBankX500.toByteArray(), DigestAlgorithmName.SHA2_256),
-                tokenQueryBalanceMsg.currency
+                tokenBalanceQueryMsg.tokenType,
+                digestService.hash(tokenBalanceQueryMsg.issuerBankX500.toByteArray(), DigestAlgorithmName.SHA2_256),
+                tokenBalanceQueryMsg.currency
             ),
             notary.name
         )
 
-    private data class TokenQueryBalanceMsg(val tokenType: String, val issuerBankX500: String, val currency: String)
+    private data class TokenBalanceQueryMsg(val tokenType: String, val issuerBankX500: String, val currency: String)
 
-    private data class TokenQueryBalanceResponseMsg(
+    private data class TokenBalanceQueryResponseMsg(
         val balance: BigDecimal,
         val balanceIncludingClaimedTokens: BigDecimal
     )

@@ -85,9 +85,6 @@ class CreateCoinFlow : ClientStartableFlow {
             }
 
             val notary = notaryLookup.notaryServices.first()
-//            val notaryKey = memberLookup.lookup().single {
-//                it.memberProvidedContext["corda.notary.service.name"] == notary.name.toString()
-//            }.ledgerKeys.first()
 
             log.info("Creating transaction...")
             val txBuilder = utxoLedgerService.createTransactionBuilder()
