@@ -44,6 +44,7 @@ import kotlin.math.min
  * - [generateResponderHello]
  * - [generateHandshakeSecrets]
  * - [validatePeerHandshakeMessage]
+ * - [validateEncryptedExtensions]
  * - [generateOurHandshakeMessage]
  * - [getSession]
  *
@@ -210,6 +211,9 @@ class AuthenticationProtocolResponder(
         }
     }
 
+    /**
+     * Validates the protocol mode and certificate (if any).
+     */
     fun validateEncryptedExtensions(
         checkMode: CertificateCheckMode,
         supportedModes: Set<ProtocolMode>,
