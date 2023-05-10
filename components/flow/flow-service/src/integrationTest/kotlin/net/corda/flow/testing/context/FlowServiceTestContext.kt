@@ -172,25 +172,6 @@ class FlowServiceTestContext @Activate constructor(
         )
     }
 
-//    override fun virtualNode(cpiId: String, holdingId: HoldingIdentity, flowOperationalStatus: OperationalStatus) {
-//        val emptyUUID = UUID(0, 0)
-//
-//        virtualNodeInfoReadService.addOrUpdate(
-//            VirtualNodeInfo(
-//                holdingId.toCorda(),
-//                getCpiIdentifier(cpiId),
-//                emptyUUID,
-//                emptyUUID,
-//                emptyUUID,
-//                emptyUUID,
-//                emptyUUID,
-//                emptyUUID,
-//                timestamp = Instant.now(),
-//                flowOperationalStatus = flowOperationalStatus
-//            )
-//        )
-//    }
-
     override fun cpkMetadata(cpiId: String, cpkId: String, cpkChecksum: SecureHash) {
         val cordAppManifest = CordappManifest(
             "",

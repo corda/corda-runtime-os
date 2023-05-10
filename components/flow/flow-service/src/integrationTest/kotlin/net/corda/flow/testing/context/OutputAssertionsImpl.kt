@@ -285,7 +285,9 @@ class OutputAssertionsImpl(
     }
 
     override fun flowStatus(state: FlowStates, result: String?, errorType: String?, errorMessage: String?) {
+
         asserts.add { testRun ->
+            println("flow response: ${testRun.response}")
             assertNotNull(testRun.response)
             assertTrue(
                 testRun.response!!.responseEvents.any {

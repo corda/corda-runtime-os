@@ -11,8 +11,6 @@ interface StepSetup {
 
     val initiatedIdentityMemberName: MemberX500Name
 
-//    fun virtualNode(cpiId: String, holdingId: HoldingIdentity, flowOperationalStatus: OperationalStatus = OperationalStatus.ACTIVE)
-
     fun virtualNode(
         cpiId: String,
         holdingId: HoldingIdentity,
