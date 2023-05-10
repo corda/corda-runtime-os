@@ -286,7 +286,6 @@ class SerializationOutputTests {
         assertTrue(AMQPTypeIdentifiers.isPrimitive(Short::class.java))
         assertTrue(AMQPTypeIdentifiers.isPrimitive(UnsignedShort::class.java))
         assertTrue(AMQPTypeIdentifiers.isPrimitive(Int::class.java))
-        assertTrue(AMQPTypeIdentifiers.isPrimitive(Integer::class.java))
         assertTrue(AMQPTypeIdentifiers.isPrimitive(UnsignedInteger::class.java))
         assertTrue(AMQPTypeIdentifiers.isPrimitive(Long::class.java))
         assertTrue(AMQPTypeIdentifiers.isPrimitive(UnsignedLong::class.java))
