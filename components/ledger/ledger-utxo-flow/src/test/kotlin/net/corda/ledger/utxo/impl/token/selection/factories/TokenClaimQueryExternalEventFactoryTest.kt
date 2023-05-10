@@ -1,7 +1,5 @@
 package net.corda.ledger.utxo.impl.token.selection.impl.factories
 
-import java.math.BigDecimal
-import java.nio.ByteBuffer
 import net.corda.data.KeyValuePairList
 import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.ledger.utxo.token.selection.data.Token
@@ -26,6 +24,8 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
+import java.math.BigDecimal
+import java.nio.ByteBuffer
 
 class TokenClaimQueryExternalEventFactoryTest {
     private val tokenType = "tt"
