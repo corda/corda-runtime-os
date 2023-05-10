@@ -1,4 +1,4 @@
-package com.r3.corda.demo.utxo
+package com.r3.corda.demo.utxo.token.selection
 
 import java.math.BigDecimal
 import net.corda.v5.application.crypto.DigestService
@@ -60,13 +60,14 @@ class TokenClaimQueryFlow : ClientStartableFlow {
 
     private fun TokenClaimResponseMsg.toJsonStr() =
         jsonMarshallingService.format(this)
+
+    private class TokenClaimMsg(
+        val tokenType: String,
+        val issuerBankX500: String,
+        val currency: String,
+        val targetAmount: BigDecimal
+    )
+
+    private class TokenClaimResponseMsg(val tokenClaimed: Boolean)
+
 }
-
-private class TokenClaimMsg(
-    val tokenType: String,
-    val issuerBankX500: String,
-    val currency: String,
-    val targetAmount: BigDecimal
-)
-
-private class TokenClaimResponseMsg(val tokenClaimed: Boolean)

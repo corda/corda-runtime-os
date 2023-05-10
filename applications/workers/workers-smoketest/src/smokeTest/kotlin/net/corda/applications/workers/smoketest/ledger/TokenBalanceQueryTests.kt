@@ -72,7 +72,7 @@ class TokenBalanceQueryTests {
 
     private fun runTokenBalanceQueryFlow(): TokenBalanceQueryResponseMsg {
 
-        val tokenBalanceQueryFlowName = "com.r3.corda.demo.utxo.TokenBalanceQueryFlow"
+        val tokenBalanceQueryFlowName = "com.r3.corda.demo.utxo.token.selection.TokenBalanceQueryFlow"
 
         val tokenBalanceQueryRpcStartArgs = mapOf(
             "tokenType" to tokenType,
@@ -170,7 +170,7 @@ class TokenBalanceQueryTests {
         val flowRequestId = startRpcFlow(
             aliceHoldingId,
             rpcStartArgs,
-            "com.r3.corda.demo.utxo.TokenClaimQueryFlow"
+            "com.r3.corda.demo.utxo.token.selection.TokenClaimQueryFlow"
         )
 
         val flowResult = awaitRpcFlowFinished(aliceHoldingId, flowRequestId)

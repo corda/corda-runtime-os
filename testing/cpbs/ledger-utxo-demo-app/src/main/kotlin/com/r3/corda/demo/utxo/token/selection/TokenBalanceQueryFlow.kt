@@ -1,4 +1,4 @@
-package com.r3.corda.demo.utxo
+package com.r3.corda.demo.utxo.token.selection
 
 import java.math.BigDecimal
 import net.corda.v5.application.crypto.DigestService
