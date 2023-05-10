@@ -13,7 +13,11 @@ ext {
 group 'net.corda.cli.deployment'
 
 dependencies {
+    compileOnly "org.jetbrains:annotations:$jetbrainsAnnotationsVersion"
     compileOnly "net.corda.cli.host:api:$pluginHostVersion"
+
+    implementation platform("software.amazon.awssdk:bom:$awsSdkVersion")
+    implementation 'software.amazon.awssdk:kms'
 
     implementation project(':libs:packaging:packaging-verify')
     implementation project(':libs:membership:schema-validation')
