@@ -51,7 +51,16 @@ import java.io.NotSerializableException
 import java.math.BigDecimal
 import java.time.DayOfWeek
 import java.time.Month
-import java.util.*
+import java.util.Currency
+import java.util.Date
+import java.util.EnumMap
+import java.util.NavigableMap
+import java.util.Objects
+import java.util.Random
+import java.util.SortedSet
+import java.util.TreeMap
+import java.util.TreeSet
+import java.util.UUID
 
 object AckWrapper {
     @CordaSerializable
