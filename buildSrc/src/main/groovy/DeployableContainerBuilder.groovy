@@ -268,7 +268,7 @@ abstract class DeployableContainerBuilder extends DefaultTask {
         }
         builder.addEnvironmentVariable('LOG4J_CONFIG_FILE', 'log4j2-console.xml')
         builder.addEnvironmentVariable('ENABLE_LOG4J2_DEBUG', 'false')
-        builder.addEnvironmentVariable('CONSOLE_LOG_LEVEL', 'trace')
+        builder.addEnvironmentVariable('CONSOLE_LOG_LEVEL', 'info')
 
         if (!targetPlatform.get().empty) {
             logger.quiet("Forcing Jib to use ${targetPlatform.get()} platform")
