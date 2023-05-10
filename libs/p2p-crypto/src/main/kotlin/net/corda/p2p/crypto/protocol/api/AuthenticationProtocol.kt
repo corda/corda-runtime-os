@@ -137,17 +137,14 @@ abstract class AuthenticationProtocol(private val certificateValidatorFactory: (
         expectedPeerPublicKey: PublicKey,
         messageName: String
     ) {
-        val certificateValidator = when(certificateCheckMode) {
-            is CertificateCheckMode.NoCertificate -> null
-            is CertificateCheckMode.CheckCertificate -> certificateValidatorFactory(
-                certificateCheckMode.revocationCheckMode,
-                certificateCheckMode.truststore,
-                certificateCheckMode.revocationChecker
-            )
-        }
-        if (certificateCheckMode != CertificateCheckMode.NoCertificate) {
+        if (certificateCheckMode is CertificateCheckMode.CheckCertificate) {
             if (peerCertificate != null) {
-                certificateValidator!!.validate(
+                val certificateValidator = certificateValidatorFactory(
+                    certificateCheckMode.revocationCheckMode,
+                    certificateCheckMode.truststore,
+                    certificateCheckMode.revocationChecker
+                )
+                certificateValidator.validate(
                     peerCertificate,
                     peerX500Name,
                     expectedPeerPublicKey
