@@ -257,7 +257,7 @@ class UtxoBackchainResolutionDemoFlow : ClientStartableFlow {
             for (session in sessions) {
                 session.receive(String::class.java)
             }
-
+            
             return "SUCCESS"
         } catch (e: Exception) {
             log.warn("Failed to process UTXO backchain resolution demo flow for request body '$requestBody' because:'${e.message}'")
