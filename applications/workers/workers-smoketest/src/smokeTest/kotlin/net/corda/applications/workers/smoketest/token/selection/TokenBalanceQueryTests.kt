@@ -1,4 +1,4 @@
-package net.corda.applications.workers.smoketest.ledger
+package net.corda.applications.workers.smoketest.token.selection
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.KotlinModule
@@ -36,9 +36,9 @@ class TokenBalanceQueryTests {
         val cpiName = "${TEST_CPI_NAME}_$testRunUniqueId"
         val notaryCpiName = "${TEST_NOTARY_CPI_NAME}_$testRunUniqueId"
 
-        val aliceX500 = "CN=Alice-${testRunUniqueId}, OU=Application, O=R3, L=London, C=GB"
-        val bobX500 = "CN=Bob-${testRunUniqueId}, OU=Application, O=R3, L=London, C=GB"
-        val notaryX500 = "CN=Notary-${testRunUniqueId}, OU=Application, O=R3, L=London, C=GB"
+        val aliceX500 = "CN=Alice-$testRunUniqueId, OU=Application, O=R3, L=London, C=GB"
+        val bobX500 = "CN=Bob-$testRunUniqueId, OU=Application, O=R3, L=London, C=GB"
+        val notaryX500 = "CN=Notary-$testRunUniqueId, OU=Application, O=R3, L=London, C=GB"
 
         val aliceHoldingId: String = getHoldingIdShortHash(aliceX500, groupId)
         val bobHoldingId: String = getHoldingIdShortHash(bobX500, groupId)
