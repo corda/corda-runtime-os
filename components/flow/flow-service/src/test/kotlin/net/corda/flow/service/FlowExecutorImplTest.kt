@@ -4,7 +4,6 @@ import com.typesafe.config.ConfigValueFactory
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.state.checkpoint.Checkpoint
 import net.corda.flow.pipeline.factory.FlowEventProcessorFactory
-import net.corda.flow.scheduler.FlowWakeUpScheduler
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.lifecycle.LifecycleCoordinator
@@ -36,7 +35,7 @@ class FlowExecutorImplTest {
     private val coordinatorFactory = mock<LifecycleCoordinatorFactory>()
     private val flowEventProcessorFactory = mock<FlowEventProcessorFactory>()
     private val subscriptionFactory = mock<SubscriptionFactory>()
-    private val flowWakeUpScheduler = mock<FlowWakeUpScheduler>()
+    private val flowExecutorRebalanceListener = mock<FlowExecutorRebalanceListener>()
     private val toMessagingConfig: (Map<String, SmartConfig>) -> SmartConfig = {
         messagingConfig
     }
@@ -175,7 +174,7 @@ class FlowExecutorImplTest {
             coordinatorFactory,
             subscriptionFactory,
             flowEventProcessorFactory,
-            flowWakeUpScheduler,
+            flowExecutorRebalanceListener,
             toMessagingConfig
         )
     }

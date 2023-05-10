@@ -91,10 +91,12 @@ interface FlowIORequest<out R> {
      * Indicates a flow has been suspended
      * @property fiber serialized fiber state at the point of suspension.
      * @property output the IO request that caused the suspension.
+     * @property cacheableFiber optional fiber to cache for performance improvements.
      */
     data class FlowSuspended<SUSPENDRETURN>(
         val fiber: ByteBuffer,
-        val output: FlowIORequest<SUSPENDRETURN>
+        val output: FlowIORequest<SUSPENDRETURN>,
+        val cacheableFiber: FlowFiberImpl? = null
     ) : FlowIORequest<Unit>
 
     data class ExternalEvent(
