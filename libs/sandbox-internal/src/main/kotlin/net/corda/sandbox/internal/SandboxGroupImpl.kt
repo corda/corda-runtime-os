@@ -47,6 +47,17 @@ internal class SandboxGroupImpl(
         cpk.mainBundle to cpk.cpkMetadata
     })
 
+    private val primitiveTypes = mapOf(
+        "boolean" to Boolean::class.javaPrimitiveType,
+        "byte" to Byte::class.javaPrimitiveType,
+        "char" to Char::class.javaPrimitiveType,
+        "short" to Short::class.javaPrimitiveType,
+        "int" to Int::class.javaPrimitiveType,
+        "long" to Long::class.javaPrimitiveType,
+        "float" to Float::class.javaPrimitiveType,
+        "double" to Double::class.javaPrimitiveType
+    )
+
     override fun loadClassFromPublicBundles(className: String): Class<*>? {
         val clazz = publicSandboxes
             .flatMap(Sandbox::publicBundles)
@@ -101,7 +112,8 @@ internal class SandboxGroupImpl(
         return when (classTag.classType) {
             ClassType.NonBundleClass -> {
                 try {
-                    bundleUtils.loadClassFromSystemBundle(className)
+                    primitiveTypes.getOrDefault(className, null)
+                        ?: bundleUtils.loadClassFromSystemBundle(className)
                 } catch (e: ClassNotFoundException) {
                     throw SandboxException(
                         "Class $className was not from a bundle, and could not be found in the system classloader."
