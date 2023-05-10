@@ -688,8 +688,12 @@ class DynamicMemberRegistrationService @Activate constructor(
         activate(coordinator)
     }
 
-    private fun serialize(context: KeyValuePairList) = keyValuePairListSerializer.serialize(context)
-        ?: throw IllegalArgumentException("Failed to serialize the KeyValuePairList for this request.")
+    private fun serialize(context: KeyValuePairList) = try {
+        keyValuePairListSerializer.serialize(context)
+            ?: throw IllegalArgumentException("Failed to serialize the KeyValuePairList for this request.")
+    } catch (ex: CordaRuntimeException) {
+        throw IllegalArgumentException("Failed to serialize the KeyValuePairList for this request.", ex)
+    }
 
     private fun KeyValuePairList.getFirst(key: String): String = key.format(0).let { firstKey ->
         items.first { it.key == firstKey }.value

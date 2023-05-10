@@ -14,6 +14,7 @@ import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.membership.lib.toMap
 import net.corda.virtualnode.toCorda
 import javax.persistence.LockModeType
+import net.corda.v5.base.exceptions.CordaRuntimeException
 
 internal class PersistGroupParametersInitialSnapshotHandler(
     persistenceHandlerServices: PersistenceHandlerServices
@@ -26,9 +27,15 @@ internal class PersistGroupParametersInitialSnapshotHandler(
         }
 
     private fun serializeProperties(context: KeyValuePairList): ByteArray {
-        return serializer.serialize(context) ?: throw MembershipPersistenceException(
-            "Failed to serialize key value pair list."
-        )
+        return try {
+            serializer.serialize(context) ?: throw MembershipPersistenceException(
+                "Failed to serialize key value pair list."
+            )
+        } catch (ex: CordaRuntimeException) {
+            throw MembershipPersistenceException(
+                "Failed to serialize key value pair list.", ex
+            )
+        }
     }
 
     private val deserializer: CordaAvroDeserializer<KeyValuePairList> =

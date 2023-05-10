@@ -59,10 +59,14 @@ class P2pRecordsFactory(
         id: String = UUID.randomUUID().toString(),
         filter: MembershipStatusFilter = MembershipStatusFilter.ACTIVE,
     ): Record<String, AppMessage> {
-        val data = cordaAvroSerializationFactory.createAvroSerializer<T> {
-            logger.warn("Serialization failed")
-        }.serialize(content)
-            ?: throw CordaRuntimeException("Could not serialize $content")
+        val data = try {
+            cordaAvroSerializationFactory.createAvroSerializer<T> {
+                logger.warn("Serialization failed")
+            }.serialize(content)
+                ?: throw CordaRuntimeException("Could not serialize $content")
+        } catch (ex: CordaRuntimeException) {
+            throw CordaRuntimeException("Could not serialize $content", ex)
+        }
         val header = AuthenticatedMessageHeader.newBuilder()
             .setDestination(destination)
             .setSource(source)

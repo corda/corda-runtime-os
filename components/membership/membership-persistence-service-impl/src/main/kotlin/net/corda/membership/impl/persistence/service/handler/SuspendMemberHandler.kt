@@ -28,6 +28,7 @@ import net.corda.utilities.mapNotNull
 import net.corda.utilities.time.Clock
 import kotlin.streams.toList
 import javax.persistence.PessimisticLockException
+import net.corda.v5.base.exceptions.CordaRuntimeException
 
 internal class SuspendMemberHandler(
     persistenceHandlerServices: PersistenceHandlerServices,
@@ -59,9 +60,15 @@ internal class SuspendMemberHandler(
         suspensionActivationEntityOperationsFactory(clock, keyValuePairListDeserializer, keyValuePairListSerializer)
 
     private fun serializeProperties(context: KeyValuePairList): ByteArray {
-        return keyValuePairListSerializer.serialize(context) ?: throw MembershipPersistenceException(
-            "Failed to serialize key value pair list."
-        )
+        return try {
+            keyValuePairListSerializer.serialize(context) ?: throw MembershipPersistenceException(
+                "Failed to serialize key value pair list."
+            )
+        } catch (ex: CordaRuntimeException) {
+            throw MembershipPersistenceException(
+                "Failed to serialize key value pair list.", ex
+            )
+        }
     }
     override fun invoke(context: MembershipRequestContext, request: SuspendMember): SuspendMemberResponse {
         val (updatedMemberInfo, updatedGroupParameters) = transaction(context.holdingIdentity.toCorda().shortHash) { em ->

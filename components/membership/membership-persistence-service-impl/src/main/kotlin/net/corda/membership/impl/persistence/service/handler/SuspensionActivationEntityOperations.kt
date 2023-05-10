@@ -17,6 +17,7 @@ import net.corda.utilities.time.Clock
 import javax.persistence.EntityManager
 import javax.persistence.LockModeType
 import javax.persistence.PessimisticLockException
+import net.corda.v5.base.exceptions.CordaRuntimeException
 
 internal class SuspensionActivationEntityOperations(
     private val clock: Clock,
@@ -55,7 +56,7 @@ internal class SuspensionActivationEntityOperations(
         return member
     }
 
-    @Suppress("LongParameterList")
+    @Suppress("LongParameterList", "ThrowsCount")
     fun updateStatus(
         em: EntityManager,
         memberName: String,
@@ -74,8 +75,12 @@ internal class SuspensionActivationEntityOperations(
                 else -> it
             }
         })
-        val serializedMgmContext = keyValuePairListSerializer.serialize(mgmContext)
-            ?: throw MembershipPersistenceException("Failed to serialize the MGM-provided context.")
+        val serializedMgmContext = try {
+            keyValuePairListSerializer.serialize(mgmContext)
+                ?: throw MembershipPersistenceException("Failed to serialize the MGM-provided context.")
+        } catch (ex: CordaRuntimeException) {
+            throw MembershipPersistenceException("Failed to serialize the MGM-provided context.", ex)
+        }
 
         em.merge(
             MemberInfoEntity(

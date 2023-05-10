@@ -331,11 +331,20 @@ class StaticMemberRegistrationService(
         }
     }
 
+    @Suppress("ThrowsCount")
     private fun persistRegistrationRequest(registrationId: UUID, memberInfo: MemberInfo) {
-        val memberContext = keyValuePairListSerializer.serialize(memberInfo.memberProvidedContext.toAvro())
-            ?: throw IllegalArgumentException("Failed to serialize the member context for this request.")
-        val registrationContext = keyValuePairListSerializer.serialize(KeyValuePairList(emptyList()))
-            ?: throw IllegalArgumentException("Failed to serialize the registration context for this request.")
+        val memberContext = try {
+            keyValuePairListSerializer.serialize(memberInfo.memberProvidedContext.toAvro())
+                ?: throw IllegalArgumentException("Failed to serialize the member context for this request.")
+        } catch(ex: CordaRuntimeException) {
+            throw IllegalArgumentException("Failed to serialize the member context for this request.", ex)
+        }
+        val registrationContext = try {
+            keyValuePairListSerializer.serialize(KeyValuePairList(emptyList()))
+                ?: throw IllegalArgumentException("Failed to serialize the registration context for this request.")
+        } catch(ex: CordaRuntimeException) {
+            throw IllegalArgumentException("Failed to serialize the registration context for this request.", ex)
+        }
         persistenceClient.persistRegistrationRequest(
             viewOwningIdentity = memberInfo.holdingIdentity,
             registrationRequest = RegistrationRequest(

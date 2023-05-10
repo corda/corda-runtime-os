@@ -9,6 +9,7 @@ import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.MODIFIED_
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.membership.network.writer.staticnetwork.StaticNetworkInfoMappingUtils.toAvro
 import javax.persistence.LockModeType
+import net.corda.v5.base.exceptions.CordaRuntimeException
 
 internal class UpdateStaticNetworkInfoHandler(
     persistenceHandlerServices: PersistenceHandlerServices
@@ -46,8 +47,12 @@ internal class UpdateStaticNetworkInfoHandler(
             if (persistedVersion == proposedVersion) {
                 // Update persisted group params.
                 if (!groupParametersAreEqual(persistedGroupParams, proposedGroupParams)) {
-                    entity.groupParameters = serializer.serialize(proposedGroupParams)
-                        ?: throw MembershipPersistenceException("Could not serialize new group parameters.")
+                    entity.groupParameters = try {
+                        serializer.serialize(proposedGroupParams)
+                            ?: throw MembershipPersistenceException("Could not serialize new group parameters.")
+                    } catch (ex: CordaRuntimeException) {
+                        throw MembershipPersistenceException("Could not serialize new group parameters.", ex)
+                    }
                     em.merge(entity)
                     em.flush()
                 }

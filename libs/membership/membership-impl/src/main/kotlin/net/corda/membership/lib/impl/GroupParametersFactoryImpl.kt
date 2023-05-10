@@ -23,6 +23,7 @@ import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import net.corda.data.membership.SignedGroupParameters as AvroGroupParameters
+import net.corda.v5.base.exceptions.CordaRuntimeException
 
 @Component(service = [GroupParametersFactory::class])
 class GroupParametersFactoryImpl @Activate constructor(
@@ -61,8 +62,11 @@ class GroupParametersFactoryImpl @Activate constructor(
         )
     }
 
-    override fun create(parameters: KeyValuePairList): UnsignedGroupParameters =
-        avroSerializer.serialize(parameters)?.toUnsignedGroupParameters() ?: throw FailedGroupParametersSerialization
+    override fun create(parameters: KeyValuePairList): UnsignedGroupParameters = try {
+        avroSerializer.serialize(parameters)?.toUnsignedGroupParameters() ?: throw FailedGroupParametersSerialization()
+    } catch (ex: CordaRuntimeException) {
+        throw FailedGroupParametersSerialization(ex)
+    }
 
 
     private fun ByteArray.toUnsignedGroupParameters(): UnsignedGroupParameters {
@@ -72,7 +76,7 @@ class GroupParametersFactoryImpl @Activate constructor(
         )
     }
 
-    private fun AvroGroupParameters.toCorda() = mgmSignature?.let {signature ->
+    private fun AvroGroupParameters.toCorda() = mgmSignature?.let { signature ->
         mgmSignatureSpec?.let { spec ->
             SignedGroupParametersImpl(
                 groupParameters.array(),

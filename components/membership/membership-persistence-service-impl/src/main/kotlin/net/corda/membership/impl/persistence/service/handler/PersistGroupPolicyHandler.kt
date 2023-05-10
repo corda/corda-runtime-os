@@ -9,6 +9,7 @@ import net.corda.membership.datamodel.GroupPolicyEntity
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.virtualnode.toCorda
 import javax.persistence.LockModeType
+import net.corda.v5.base.exceptions.CordaRuntimeException
 
 internal class PersistGroupPolicyHandler(
     persistenceHandlerServices: PersistenceHandlerServices
@@ -18,14 +19,21 @@ internal class PersistGroupPolicyHandler(
             logger.error("Failed to serialize key value pair list.")
         }
     private val keyValuePairListDeserializer: CordaAvroDeserializer<KeyValuePairList> =
-        cordaAvroSerializationFactory.createAvroDeserializer (
+        cordaAvroSerializationFactory.createAvroDeserializer(
             { logger.error("Failed to deserialize key value pair list.") },
             KeyValuePairList::class.java
         )
+
     private fun serializeProperties(context: KeyValuePairList): ByteArray {
-        return keyValuePairListSerializer.serialize(context) ?: throw MembershipPersistenceException(
-            "Failed to serialize key value pair list."
-        )
+        return try {
+            keyValuePairListSerializer.serialize(context) ?: throw MembershipPersistenceException(
+                "Failed to serialize key value pair list."
+            )
+        } catch (ex: CordaRuntimeException) {
+            throw MembershipPersistenceException(
+                "Failed to serialize key value pair list.", ex
+            )
+        }
     }
 
     override fun invoke(context: MembershipRequestContext, request: PersistGroupPolicy) {

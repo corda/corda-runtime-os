@@ -19,6 +19,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.lib.registration.RegistrationStatusExt.canMoveToStatus
 import net.corda.virtualnode.toCorda
 import javax.persistence.LockModeType
+import net.corda.v5.base.exceptions.CordaRuntimeException
 
 internal class UpdateMemberAndRegistrationRequestToApprovedHandler(
     persistenceHandlerServices: PersistenceHandlerServices
@@ -67,8 +68,12 @@ internal class UpdateMemberAndRegistrationRequestToApprovedHandler(
                 }
             )
 
-            val serializedMgmContext = keyValuePairListSerializer.serialize(mgmContext)
-                ?: throw MembershipPersistenceException("Can not serialize the mgm context")
+            val serializedMgmContext = try {
+                keyValuePairListSerializer.serialize(mgmContext)
+                    ?: throw MembershipPersistenceException("Can not serialize the mgm context")
+            } catch (ex: CordaRuntimeException) {
+                throw MembershipPersistenceException("Can not serialize the mgm context", ex)
+            }
 
             em.merge(
                 MemberInfoEntity(

@@ -100,16 +100,22 @@ class NetworkInfoDBWriterImpl(
                 .genKeyPair()
                 .let { it.public.encoded to it.private.encoded }
 
-            val serializedParams = serializer.serialize(
-                KeyValuePairList(
-                    listOf(
-                        KeyValuePair(EPOCH_KEY, "1"),
-                        KeyValuePair(MODIFIED_TIME_KEY, clock.instant().toString())
+            val serializedParams = try {
+                serializer.serialize(
+                    KeyValuePairList(
+                        listOf(
+                            KeyValuePair(EPOCH_KEY, "1"),
+                            KeyValuePair(MODIFIED_TIME_KEY, clock.instant().toString())
+                        )
                     )
+                ) ?: throw CordaRuntimeException(
+                    "Failed to serialize KeyValuePairList for static network group parameters."
                 )
-            ) ?: throw CordaRuntimeException(
-                "Failed to serialize KeyValuePairList for static network group parameters."
-            )
+            } catch (ex: CordaRuntimeException) {
+                throw CordaRuntimeException(
+                    "Failed to serialize KeyValuePairList for static network group parameters.", ex
+                )
+            }
 
             StaticNetworkInfoEntity(
                 groupId,
