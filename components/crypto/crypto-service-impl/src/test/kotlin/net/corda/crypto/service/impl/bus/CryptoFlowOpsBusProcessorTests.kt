@@ -230,7 +230,7 @@ import kotlin.test.assertTrue
          ): Results<R, S> {
          val indices = 0..(flowOpCallbacks.size - 1)
          val capturedTenantIds: MutableList<String> = mutableListOf()
-         var lookedUpSigningKeys = mutableListOf<List<String>>() // the secure hashes passed into the signing service
+         val lookedUpSigningKeys = mutableListOf<List<String>>() // the secure hashes passed into the signing service
          val recordKeys = flowOpCallbacks.map {
              UUID.randomUUID().toString()
          } // UUIDs for the flow op records that are passed into the crypto flow ops processor
