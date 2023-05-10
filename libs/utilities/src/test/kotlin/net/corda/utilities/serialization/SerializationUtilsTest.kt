@@ -1,7 +1,6 @@
 package net.corda.utilities.serialization
 
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow

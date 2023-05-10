@@ -1,7 +1,6 @@
 package net.corda.messagebus.db.producer
 
 import java.util.UUID
-import kotlin.math.abs
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.messagebus.api.CordaTopicPartition
 import net.corda.messagebus.api.consumer.CordaConsumer
@@ -18,9 +17,9 @@ import net.corda.messagebus.db.serialization.MessageHeaderSerializer
 import net.corda.messagebus.db.util.WriteOffsets
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.utilities.serialization.wrapWithNullErrorHandling
-import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import kotlin.math.abs
 
 @Suppress("TooManyFunctions")
 class CordaTransactionalDBProducerImpl(
