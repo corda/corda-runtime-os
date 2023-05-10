@@ -2,9 +2,11 @@ package net.corda.membership.impl.network.writer.staticnetwork
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.node.ObjectNode
+import java.security.KeyPairGenerator
+import javax.persistence.EntityManager
+import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.core.fullId
-import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.libs.packaging.Cpi
@@ -29,6 +31,7 @@ import net.corda.membership.network.writer.NetworkInfoWriter
 import net.corda.membership.network.writer.staticnetwork.StaticNetworkUtils.mgmSignatureSpec
 import net.corda.membership.network.writer.staticnetwork.StaticNetworkUtils.mgmSigningKeyAlgorithm
 import net.corda.membership.network.writer.staticnetwork.StaticNetworkUtils.mgmSigningKeyProvider
+import net.corda.utilities.serialization.wrapWithNullErrorHandling
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -36,8 +39,6 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
-import java.security.KeyPairGenerator
-import javax.persistence.EntityManager
 
 @Component(service = [NetworkInfoWriter::class])
 class NetworkInfoDBWriterImpl(
@@ -100,7 +101,10 @@ class NetworkInfoDBWriterImpl(
                 .genKeyPair()
                 .let { it.public.encoded to it.private.encoded }
 
-            val serializedParams = try {
+            val serializedParams = wrapWithNullErrorHandling(
+                "Failed to serialize KeyValuePairList for static network group parameters.",
+                CordaRuntimeException::class.java
+            ) {
                 serializer.serialize(
                     KeyValuePairList(
                         listOf(
@@ -108,12 +112,6 @@ class NetworkInfoDBWriterImpl(
                             KeyValuePair(MODIFIED_TIME_KEY, clock.instant().toString())
                         )
                     )
-                ) ?: throw CordaRuntimeException(
-                    "Failed to serialize KeyValuePairList for static network group parameters."
-                )
-            } catch (ex: CordaRuntimeException) {
-                throw CordaRuntimeException(
-                    "Failed to serialize KeyValuePairList for static network group parameters.", ex
                 )
             }
 

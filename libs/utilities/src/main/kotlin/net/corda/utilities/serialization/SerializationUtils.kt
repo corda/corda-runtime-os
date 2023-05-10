@@ -2,6 +2,7 @@
 package net.corda.utilities.serialization
 
 import net.corda.v5.application.serialization.SerializationService
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.serialization.SerializedBytes
 
 /**
@@ -26,4 +27,23 @@ inline fun <reified T : Any> SerializationService.deserialize(serializedBytes: S
  */
 inline fun <reified T : Any> SerializationService.deserialize(bytes: ByteArray): T {
     return this.deserialize(bytes, T::class.java)
+}
+
+
+/**
+ * Wrap with null error handling
+ *
+ * @param T The return type expected
+ * @param E The exception type to throw
+ * @param message The message to pass tot the exception on failure
+ * @param exClazz The exception class
+ * @param f the block to wrap
+ * @return type T
+ */
+inline fun <reified T: Any, E: Exception>wrapWithNullErrorHandling(message: String, exClazz: Class<E>, f: () -> T?): T = try {
+    f()?: throw exClazz.getDeclaredConstructor().newInstance(message)
+} catch (ex: CordaRuntimeException) {
+    throw exClazz.getDeclaredConstructor().newInstance(message, ex)
+} catch (ex: Exception) {
+    throw CordaRuntimeException(message, ex)
 }

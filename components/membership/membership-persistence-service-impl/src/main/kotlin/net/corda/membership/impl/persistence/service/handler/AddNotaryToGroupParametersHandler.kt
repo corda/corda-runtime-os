@@ -1,5 +1,7 @@
 package net.corda.membership.impl.persistence.service.handler
 
+import javax.persistence.EntityManager
+import javax.persistence.LockModeType
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.KeyValuePairList
@@ -17,10 +19,8 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.notaryDetails
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.membership.lib.toMap
 import net.corda.membership.lib.toSortedMap
+import net.corda.utilities.serialization.wrapWithNullErrorHandling
 import net.corda.virtualnode.toCorda
-import javax.persistence.EntityManager
-import javax.persistence.LockModeType
-import net.corda.v5.base.exceptions.CordaRuntimeException
 import kotlin.streams.asSequence
 
 internal class AddNotaryToGroupParametersHandler(
@@ -47,12 +47,11 @@ internal class AddNotaryToGroupParametersHandler(
     private val notaryUpdater = GroupParametersNotaryUpdater(keyEncodingService, clock)
 
     private fun serializeProperties(context: KeyValuePairList): ByteArray {
-        return try {
-            keyValuePairListSerializer.serialize(context) ?: throw MembershipPersistenceException(
-                "Failed to serialize key value pair list."
-            )
-        } catch (ex: CordaRuntimeException) {
-            throw MembershipPersistenceException("Failed to serialize key value pair list.", ex)
+        return wrapWithNullErrorHandling(
+            "Failed to serialize key value pair list.",
+            MembershipPersistenceException::class.java
+        ) {
+            keyValuePairListSerializer.serialize(context)
         }
     }
 

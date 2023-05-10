@@ -1,9 +1,10 @@
 package net.corda.membership.lib.impl
 
-import net.corda.crypto.cipher.suite.KeyEncodingService
-import net.corda.crypto.core.DigitalSignatureWithKey
-import net.corda.crypto.cipher.suite.SignatureSpecImpl
+import net.corda.data.membership.SignedGroupParameters as AvroGroupParameters
 import net.corda.avro.serialization.CordaAvroSerializationFactory
+import net.corda.crypto.cipher.suite.KeyEncodingService
+import net.corda.crypto.cipher.suite.SignatureSpecImpl
+import net.corda.crypto.core.DigitalSignatureWithKey
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
@@ -15,6 +16,7 @@ import net.corda.membership.lib.UnsignedGroupParameters
 import net.corda.membership.lib.exceptions.FailedGroupParametersDeserialization
 import net.corda.membership.lib.exceptions.FailedGroupParametersSerialization
 import net.corda.membership.lib.toMap
+import net.corda.utilities.serialization.wrapWithNullErrorHandling
 import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.crypto.SignatureSpec
 import org.osgi.service.component.annotations.Activate
@@ -22,8 +24,6 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import net.corda.data.membership.SignedGroupParameters as AvroGroupParameters
-import net.corda.v5.base.exceptions.CordaRuntimeException
 
 @Component(service = [GroupParametersFactory::class])
 class GroupParametersFactoryImpl @Activate constructor(
@@ -62,10 +62,11 @@ class GroupParametersFactoryImpl @Activate constructor(
         )
     }
 
-    override fun create(parameters: KeyValuePairList): UnsignedGroupParameters = try {
-        avroSerializer.serialize(parameters)?.toUnsignedGroupParameters() ?: throw FailedGroupParametersSerialization()
-    } catch (ex: CordaRuntimeException) {
-        throw FailedGroupParametersSerialization(ex)
+    override fun create(parameters: KeyValuePairList): UnsignedGroupParameters = wrapWithNullErrorHandling(
+        "Failed to serialize the GroupParameters to KeyValuePairList",
+        FailedGroupParametersSerialization::class.java
+    ) {
+        avroSerializer.serialize(parameters)?.toUnsignedGroupParameters()
     }
 
 

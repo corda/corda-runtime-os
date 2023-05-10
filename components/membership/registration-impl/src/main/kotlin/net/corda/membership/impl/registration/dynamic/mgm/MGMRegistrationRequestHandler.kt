@@ -1,5 +1,7 @@
 package net.corda.membership.impl.registration.dynamic.mgm
 
+import java.nio.ByteBuffer
+import java.util.UUID
 import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureSpec
@@ -13,11 +15,9 @@ import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.registration.InvalidMembershipRegistrationException
+import net.corda.utilities.serialization.wrapWithNullErrorHandling
 import net.corda.virtualnode.HoldingIdentity
 import org.slf4j.LoggerFactory
-import java.nio.ByteBuffer
-import java.util.UUID
-import net.corda.v5.base.exceptions.CordaRuntimeException
 
 internal class MGMRegistrationRequestHandler(
     cordaAvroSerializationFactory: CordaAvroSerializationFactory,
@@ -81,15 +81,11 @@ internal class MGMRegistrationRequestHandler(
         }
     }
 
-    private fun serialize(data: KeyValuePairList) = try {
+    private fun serialize(data: KeyValuePairList) = wrapWithNullErrorHandling(
+        "Failed to serialize the member context for this request.",
+        InvalidMembershipRegistrationException::class.java
+    ) {
         keyValuePairListSerializer.serialize(data)
-            ?: throw InvalidMembershipRegistrationException(
-                "Failed to serialize the member context for this request."
-            )
-    } catch (ex: CordaRuntimeException) {
-        throw InvalidMembershipRegistrationException(
-            "Failed to serialize the member context for this request.", ex
-        )
     }
 
 }

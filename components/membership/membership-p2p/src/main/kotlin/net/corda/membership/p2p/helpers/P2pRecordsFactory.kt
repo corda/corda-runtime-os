@@ -16,6 +16,7 @@ import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
 import java.time.temporal.ChronoUnit
 import java.util.UUID
+import net.corda.utilities.serialization.wrapWithNullErrorHandling
 
 class P2pRecordsFactory(
     private val cordaAvroSerializationFactory: CordaAvroSerializationFactory,
@@ -59,13 +60,10 @@ class P2pRecordsFactory(
         id: String = UUID.randomUUID().toString(),
         filter: MembershipStatusFilter = MembershipStatusFilter.ACTIVE,
     ): Record<String, AppMessage> {
-        val data = try {
+        val data = wrapWithNullErrorHandling("Could not serialize $content", CordaRuntimeException::class.java) {
             cordaAvroSerializationFactory.createAvroSerializer<T> {
                 logger.warn("Serialization failed")
             }.serialize(content)
-                ?: throw CordaRuntimeException("Could not serialize $content")
-        } catch (ex: CordaRuntimeException) {
-            throw CordaRuntimeException("Could not serialize $content", ex)
         }
         val header = AuthenticatedMessageHeader.newBuilder()
             .setDestination(destination)

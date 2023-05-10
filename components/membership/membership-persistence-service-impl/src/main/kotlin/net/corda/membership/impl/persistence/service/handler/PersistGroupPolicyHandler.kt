@@ -1,5 +1,6 @@
 package net.corda.membership.impl.persistence.service.handler
 
+import javax.persistence.LockModeType
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.KeyValuePairList
@@ -7,9 +8,8 @@ import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.data.membership.db.request.command.PersistGroupPolicy
 import net.corda.membership.datamodel.GroupPolicyEntity
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
+import net.corda.utilities.serialization.wrapWithNullErrorHandling
 import net.corda.virtualnode.toCorda
-import javax.persistence.LockModeType
-import net.corda.v5.base.exceptions.CordaRuntimeException
 
 internal class PersistGroupPolicyHandler(
     persistenceHandlerServices: PersistenceHandlerServices
@@ -25,14 +25,11 @@ internal class PersistGroupPolicyHandler(
         )
 
     private fun serializeProperties(context: KeyValuePairList): ByteArray {
-        return try {
-            keyValuePairListSerializer.serialize(context) ?: throw MembershipPersistenceException(
-                "Failed to serialize key value pair list."
-            )
-        } catch (ex: CordaRuntimeException) {
-            throw MembershipPersistenceException(
-                "Failed to serialize key value pair list.", ex
-            )
+        return wrapWithNullErrorHandling(
+            "Failed to serialize key value pair list.",
+            MembershipPersistenceException::class.java
+        ) {
+            keyValuePairListSerializer.serialize(context)
         }
     }
 

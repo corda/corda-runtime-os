@@ -1,5 +1,8 @@
 package net.corda.membership.impl.persistence.service.handler
 
+import javax.persistence.EntityManager
+import javax.persistence.LockModeType
+import javax.persistence.PessimisticLockException
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.KeyValuePair
@@ -13,11 +16,8 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.SERIAL
 import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.lib.exceptions.InvalidEntityUpdateException
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
+import net.corda.utilities.serialization.wrapWithNullErrorHandling
 import net.corda.utilities.time.Clock
-import javax.persistence.EntityManager
-import javax.persistence.LockModeType
-import javax.persistence.PessimisticLockException
-import net.corda.v5.base.exceptions.CordaRuntimeException
 
 internal class SuspensionActivationEntityOperations(
     private val clock: Clock,
@@ -47,7 +47,8 @@ internal class SuspensionActivationEntityOperations(
             require(member.serialNumber == it) {
                 throw InvalidEntityUpdateException(
                     "The provided serial number '$expectedSerial' does not match the current version '${member.serialNumber}' of " +
-                        "MemberInfo for member '$memberName'.")
+                            "MemberInfo for member '$memberName'."
+                )
             }
         }
         require(member.status == expectedStatus) {
@@ -56,7 +57,7 @@ internal class SuspensionActivationEntityOperations(
         return member
     }
 
-    @Suppress("LongParameterList", "ThrowsCount")
+    @Suppress("LongParameterList")
     fun updateStatus(
         em: EntityManager,
         memberName: String,
@@ -75,11 +76,11 @@ internal class SuspensionActivationEntityOperations(
                 else -> it
             }
         })
-        val serializedMgmContext = try {
+        val serializedMgmContext = wrapWithNullErrorHandling(
+            "Failed to serialize the MGM-provided context.",
+            MembershipPersistenceException::class.java
+        ) {
             keyValuePairListSerializer.serialize(mgmContext)
-                ?: throw MembershipPersistenceException("Failed to serialize the MGM-provided context.")
-        } catch (ex: CordaRuntimeException) {
-            throw MembershipPersistenceException("Failed to serialize the MGM-provided context.", ex)
         }
 
         em.merge(

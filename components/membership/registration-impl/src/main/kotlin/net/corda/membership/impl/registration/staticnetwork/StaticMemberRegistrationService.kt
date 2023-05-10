@@ -1,5 +1,9 @@
 package net.corda.membership.impl.registration.staticnetwork
 
+import java.nio.ByteBuffer
+import java.util.UUID
+import net.corda.avro.serialization.CordaAvroSerializationFactory
+import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.client.CryptoOpsClient
@@ -7,8 +11,6 @@ import net.corda.crypto.client.hsm.HSMRegistrationClient
 import net.corda.crypto.core.CryptoConsts.Categories.LEDGER
 import net.corda.crypto.core.CryptoConsts.Categories.NOTARY
 import net.corda.crypto.core.CryptoConsts.Categories.SESSION_INIT
-import net.corda.avro.serialization.CordaAvroSerializationFactory
-import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
@@ -76,6 +78,7 @@ import net.corda.schema.Schemas.Membership.MEMBER_LIST_TOPIC
 import net.corda.schema.Schemas.P2P.P2P_HOSTED_IDENTITIES_TOPIC
 import net.corda.schema.membership.MembershipSchema.RegistrationContextSchema
 import net.corda.utilities.concurrent.SecManagerForkJoinPool
+import net.corda.utilities.serialization.wrapWithNullErrorHandling
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -91,8 +94,6 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.nio.ByteBuffer
-import java.util.UUID
 
 @Suppress("LongParameterList")
 @Component(service = [MemberRegistrationService::class])
@@ -331,19 +332,18 @@ class StaticMemberRegistrationService(
         }
     }
 
-    @Suppress("ThrowsCount")
     private fun persistRegistrationRequest(registrationId: UUID, memberInfo: MemberInfo) {
-        val memberContext = try {
+        val memberContext = wrapWithNullErrorHandling(
+            "Failed to serialize the member context for this request.",
+            IllegalArgumentException::class.java
+        ) {
             keyValuePairListSerializer.serialize(memberInfo.memberProvidedContext.toAvro())
-                ?: throw IllegalArgumentException("Failed to serialize the member context for this request.")
-        } catch(ex: CordaRuntimeException) {
-            throw IllegalArgumentException("Failed to serialize the member context for this request.", ex)
         }
-        val registrationContext = try {
+        val registrationContext = wrapWithNullErrorHandling(
+            "Failed to serialize the registration context for this request.",
+            IllegalArgumentException::class.java
+        ) {
             keyValuePairListSerializer.serialize(KeyValuePairList(emptyList()))
-                ?: throw IllegalArgumentException("Failed to serialize the registration context for this request.")
-        } catch(ex: CordaRuntimeException) {
-            throw IllegalArgumentException("Failed to serialize the registration context for this request.", ex)
         }
         persistenceClient.persistRegistrationRequest(
             viewOwningIdentity = memberInfo.holdingIdentity,
