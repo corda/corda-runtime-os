@@ -83,7 +83,7 @@ class EntityManagerFactoryFactoryImpl(
             //
             // TODO - statistics integration isn't working in OSGi.
             // https://r3-cev.atlassian.net/browse/CORE-7168
-            //"hibernate.generate_statistics" to true.toString(),
+            "hibernate.generate_statistics" to true.toString(),
             "javax.persistence.validation.mode" to "none"
         ).toProperties()
         props[AvailableSettings.CLASSLOADERS] = classLoaders
