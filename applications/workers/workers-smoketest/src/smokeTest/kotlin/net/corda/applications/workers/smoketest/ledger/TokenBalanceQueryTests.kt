@@ -37,11 +37,6 @@ class TokenBalanceQueryTests {
         }
     }
 
-    private data class TokenBalanceQueryResponseMsg(
-        val balance: BigDecimal,
-        val balanceIncludingClaimedTokens: BigDecimal
-    )
-
     private val testRunUniqueId = "1"//UUID.randomUUID()
     private val groupId = "b3de5521-9aef-453f-9f94-62f0d86962a2"
     private val cpiName = "${TEST_CPI_NAME}_$testRunUniqueId"
@@ -68,10 +63,19 @@ class TokenBalanceQueryTests {
         notaryX500
     )
 
+    private val tokenType = "com.r3.corda.demo.utxo.contract.CoinState"
+    private val currency = "USD"
+
     private fun convertToTokenBalanceQueryResponseMsg(tokenBalanceQueryResponseMsgStr: String) =
         objectMapper.readValue(
             tokenBalanceQueryResponseMsgStr,
             TokenBalanceQueryResponseMsg::class.java
+        )
+
+    private fun convertToTokenClaimResponseMsg(tokenClaimResponseMsgStr: String) =
+        objectMapper.readValue(
+            tokenClaimResponseMsgStr,
+            TokenClaimResponseMsg::class.java
         )
 
     private fun runTokenBalanceQueryFlow(): TokenBalanceQueryResponseMsg {
@@ -79,9 +83,9 @@ class TokenBalanceQueryTests {
         val tokenBalanceQueryFlowName = "com.r3.corda.demo.utxo.TokenBalanceQueryFlow"
 
         val tokenBalanceQueryRpcStartArgs = mapOf(
-            "tokenType" to "com.r3.corda.demo.utxo.contract.CoinState",
+            "tokenType" to tokenType,
             "issuerBankX500" to charlieX500,
-            "currency" to "USD"
+            "currency" to currency
         )
 
         val flowRequestId = startRpcFlow(aliceHoldingId, tokenBalanceQueryRpcStartArgs, tokenBalanceQueryFlowName)
@@ -164,7 +168,12 @@ class TokenBalanceQueryTests {
 
     @Test
     fun `Token Query Balance - Claim token`() {
-        val rpcStartArgs = emptyMap<String,String>()
+        val rpcStartArgs = mapOf(
+            "tokenType" to tokenType,
+            "issuerBankX500" to charlieX500,
+            "currency" to currency,
+            "targetAmount" to BigDecimal(5)
+        )
 
         val flowRequestId = startRpcFlow(
             aliceHoldingId,
@@ -174,21 +183,23 @@ class TokenBalanceQueryTests {
 
         val flowResult = awaitRpcFlowFinished(aliceHoldingId, flowRequestId)
         assertThat(flowResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+
+        val tokenClaimResponseMsg = convertToTokenClaimResponseMsg(flowResult.flowResult!!)
+        assertThat(tokenClaimResponseMsg.tokenClaimed).isTrue()
     }
 
     @Test
     fun `Token Query Balance - Ensure balance is equal to 5`() {
-        val rpcStartArgs = emptyMap<String,String>()
+        val tokenBalanceQuery = runTokenBalanceQueryFlow()
 
-        val flowRequestId = startRpcFlow(
-            aliceHoldingId,
-            rpcStartArgs,
-            "com.r3.corda.demo.utxo.UtxoBackchainResolutionDemoFlow"
-        )
-
-        println("claiming token coins for bank = ${charlieHoldingId} vnode = ${aliceHoldingId}")
-
-        val flowResult = awaitRpcFlowFinished(aliceHoldingId, flowRequestId)
-        assertThat(flowResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+        assertThat(tokenBalanceQuery.balance).isEqualTo(BigDecimal(5))
+        assertThat(tokenBalanceQuery.balanceIncludingClaimedTokens).isEqualTo(BigDecimal(5))
     }
 }
+
+private data class TokenBalanceQueryResponseMsg(
+    val balance: BigDecimal,
+    val balanceIncludingClaimedTokens: BigDecimal
+)
+
+private class TokenClaimResponseMsg(val tokenClaimed: Boolean)
