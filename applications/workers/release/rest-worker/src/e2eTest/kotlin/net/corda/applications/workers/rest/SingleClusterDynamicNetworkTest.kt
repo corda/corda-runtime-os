@@ -19,7 +19,6 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 import java.nio.file.Path
 
-@Tag("Unstable")
 class SingleClusterDynamicNetworkTest {
     @TempDir
     lateinit var tempDir: Path
@@ -32,6 +31,7 @@ class SingleClusterDynamicNetworkTest {
 
     private val mgm = cordaCluster.createTestMember("Mgm")
 
+    @Tag("Unstable")
     @Test
     fun `Create mgm and allow members to join the group`() {
         onboardSingleClusterGroup()

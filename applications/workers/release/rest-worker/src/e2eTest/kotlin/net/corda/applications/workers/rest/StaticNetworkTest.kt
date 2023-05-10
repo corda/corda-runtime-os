@@ -21,7 +21,6 @@ import java.nio.file.Path
 import java.util.*
 import java.util.concurrent.TimeUnit
 
-@Tag("Unstable")
 class StaticNetworkTest {
     @TempDir
     lateinit var tempDir: Path
@@ -32,6 +31,7 @@ class StaticNetworkTest {
         addMembers((3..4).map { createTestMember("Member$it") })
     }
 
+    @Tag("Unstable")
     @Test
     fun `register members`() {
         onboardStaticGroup(tempDir)
