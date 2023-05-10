@@ -1,8 +1,5 @@
 package net.corda.cli.plugins.packaging.aws.kms.utils.csr;
 
-import lombok.Builder;
-
-@Builder
 public class CsrInfo {
 
     private final String cn;
@@ -60,6 +57,43 @@ public class CsrInfo {
         if (value != null) {
             if (builder.length() > 0) builder.append(", ");
             builder.append(attribute).append("=").append(value);
+        }
+    }
+
+    private CsrInfo(CsrInfoBuilder builder) {
+        this.cn = builder.cn;
+        this.ou = builder.ou;
+        this.o = builder.o;
+        this.l = builder.l;
+        this.st = builder.st;
+        this.c = builder.c;
+        this.mail = builder.mail;
+    }
+
+    // Builder class
+    public static class CsrInfoBuilder {
+
+        private final String cn;
+        private final String ou;
+        private final String o;
+        private final String l;
+        private final String st;
+        private final String c;
+        private final String mail;
+
+
+        public CsrInfoBuilder(String cn, String ou, String o, String l, String st, String c, String mail) {
+            this.cn = cn;
+            this.ou = ou;
+            this.o = o;
+            this.l = l;
+            this.st = st;
+            this.c = c;
+            this.mail = mail;
+        }
+
+        public CsrInfo build() {
+            return new CsrInfo(this);
         }
     }
 }
