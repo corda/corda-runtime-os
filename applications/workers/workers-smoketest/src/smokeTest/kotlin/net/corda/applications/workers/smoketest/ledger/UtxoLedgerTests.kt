@@ -3,6 +3,7 @@ package net.corda.applications.workers.smoketest.ledger
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.module.SimpleModule
 import com.fasterxml.jackson.module.kotlin.KotlinModule
+import java.util.UUID
 import net.corda.e2etest.utilities.RPC_FLOW_STATUS_SUCCESS
 import net.corda.e2etest.utilities.TEST_NOTARY_CPB_LOCATION
 import net.corda.e2etest.utilities.TEST_NOTARY_CPI_NAME
@@ -36,8 +37,8 @@ class UtxoLedgerTests {
         }
     }
 
-    private val testRunUniqueId = "1"//UUID.randomUUID()
-    private val groupId = "b3de5521-9aef-453f-9f94-62f0d86962a2"
+    private val testRunUniqueId = UUID.randomUUID()
+    private val groupId = UUID.randomUUID().toString()
     private val cpiName = "${TEST_CPI_NAME}_$testRunUniqueId"
     private val notaryCpiName = "${TEST_NOTARY_CPI_NAME}_$testRunUniqueId"
 
@@ -88,48 +89,6 @@ class UtxoLedgerTests {
         registerStaticMember(charlieHoldingId)
 
         registerStaticMember(notaryHoldingId, true)
-    }
-
-    @Test
-    fun `Utxo Token - Create 10 Coins`() {
-        val rpcStartArgs = mapOf(
-            "issuerBankX500" to charlieX500,
-            "currency" to "USD",
-            "numberOfCoins" to 10,
-            "valueOfCoin" to 5,
-            "tag" to "simple coin"
-        )
-
-        val utxoFlowRequestId = startRpcFlow(
-            aliceHoldingId,
-            rpcStartArgs,
-            "com.r3.corda.demo.utxo.token.CreateCoinFlow"
-        )
-
-        println("creating coins for bank = ${charlieHoldingId} vnode = ${aliceHoldingId}")
-
-        val utxoFlowResult = awaitRpcFlowFinished(aliceHoldingId, utxoFlowRequestId)
-        assertThat(utxoFlowResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
-    }
-
-    @Test
-    fun `Utxo Token - Spend Coins`() {
-
-        val rpcStartArgs = mapOf(
-            "issuerBankX500" to charlieX500,
-            "currency" to "USD",
-            "maxCoinsToUse" to 1,
-            "targetAmount" to 20,
-        )
-
-        val utxoFlowRequestId = startRpcFlow(
-            aliceHoldingId,
-            rpcStartArgs,
-            "com.r3.corda.demo.utxo.token.SpendCoinFlow"
-        )
-
-        val utxoFlowResult = awaitRpcFlowFinished(aliceHoldingId, utxoFlowRequestId)
-        assertThat(utxoFlowResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
     }
 
     @Test
