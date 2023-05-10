@@ -24,7 +24,7 @@ public abstract class KmsRSAKeyFactory {
      * @param keyId
      * @return
      */
-    public static KeyPair getKeyPair(@NotNull KmsClient kmsClient, @NotNull String keyId) {
+    public static KeyPair getKeyPair(@NotNull KmsClient kmsClient, @NotNull String keyId) throws NoSuchAlgorithmException, InvalidKeySpecException {
         Objects.requireNonNull(kmsClient);
         Objects.requireNonNull(keyId);
         return new KeyPair(getPublicKey(kmsClient, keyId), getPrivateKey(keyId));
