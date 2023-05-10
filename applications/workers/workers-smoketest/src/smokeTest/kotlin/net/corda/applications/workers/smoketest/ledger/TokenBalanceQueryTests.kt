@@ -3,6 +3,7 @@ package net.corda.applications.workers.smoketest.ledger
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.KotlinModule
 import java.math.BigDecimal
+import java.util.UUID
 import net.corda.e2etest.utilities.CLUSTER_URI
 import net.corda.e2etest.utilities.CODE_SIGNER_CERT
 import net.corda.e2etest.utilities.PASSWORD
@@ -20,6 +21,7 @@ import net.corda.e2etest.utilities.registerStaticMember
 import net.corda.e2etest.utilities.startRpcFlow
 import net.corda.utilities.seconds
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS
@@ -32,22 +34,14 @@ class TokenBalanceQueryTests {
         const val TEST_CPI_NAME = "ledger-utxo-demo-app"
         const val TEST_CPB_LOCATION = "/META-INF/ledger-utxo-demo-app.cpb"
 
-//        val objectMapper = ObjectMapper().apply {
-//            registerModule(KotlinModule.Builder().build())
-//            val module = SimpleModule()
-//            module.addSerializer(SecureHash::class.java, SecureHashSerializer)
-//            module.addDeserializer(SecureHash::class.java, SecureHashDeserializer)
-//            registerModule(module)
-//        }
+        val testRunUniqueId = UUID.randomUUID().toString()
+        val groupId = UUID.randomUUID().toString()
+        val cpiName = "${TEST_CPI_NAME}_$testRunUniqueId"
+        val notaryCpiName = "${TEST_NOTARY_CPI_NAME}_$testRunUniqueId"
 
-        const val testRunUniqueId = "1"//UUID.randomUUID()
-        const val groupId = "b3de5521-9aef-453f-9f94-62f0d86962a2"
-        const val cpiName = "${TEST_CPI_NAME}_$testRunUniqueId"
-        const val notaryCpiName = "${TEST_NOTARY_CPI_NAME}_$testRunUniqueId"
-
-        const val aliceX500 = "CN=Alice-${testRunUniqueId}, OU=Application, O=R3, L=London, C=GB"
-        const val bobX500 = "CN=Bob-${testRunUniqueId}, OU=Application, O=R3, L=London, C=GB"
-        const val notaryX500 = "CN=Notary-${testRunUniqueId}, OU=Application, O=R3, L=London, C=GB"
+        val aliceX500 = "CN=Alice-${testRunUniqueId}, OU=Application, O=R3, L=London, C=GB"
+        val bobX500 = "CN=Bob-${testRunUniqueId}, OU=Application, O=R3, L=London, C=GB"
+        val notaryX500 = "CN=Notary-${testRunUniqueId}, OU=Application, O=R3, L=London, C=GB"
 
         val aliceHoldingId: String = getHoldingIdShortHash(aliceX500, groupId)
         val bobHoldingId: String = getHoldingIdShortHash(bobX500, groupId)
@@ -62,7 +56,6 @@ class TokenBalanceQueryTests {
         val objectMapper = ObjectMapper().apply {
             registerModule(KotlinModule.Builder().build())
         }
-
 
         const val tokenType = "com.r3.corda.demo.utxo.contract.CoinState"
         const val currency = "USD"
@@ -99,6 +92,7 @@ class TokenBalanceQueryTests {
     }
 
     @Test
+    @Order(1)
     fun `import codesigner certificate`() {
         val retryTimeout = 120.seconds
         val retryInterval = 1.seconds
@@ -120,6 +114,7 @@ class TokenBalanceQueryTests {
     }
 
     @Test
+    @Order(2)
     fun `setup`() {
         conditionallyUploadCordaPackage(
             cpiName,
@@ -149,6 +144,7 @@ class TokenBalanceQueryTests {
     }
 
     @Test
+    @Order(3)
     fun `Token Query Balance - Ensure balance is zero`() {
 
         val tokenBalanceQuery = runTokenBalanceQueryFlow()
@@ -158,6 +154,7 @@ class TokenBalanceQueryTests {
     }
 
     @Test
+    @Order(10)
     fun `Token Query Balance - Create 10 coins`() {
         val rpcStartArgs = mapOf(
             "issuerBankX500" to bobX500,
@@ -178,6 +175,7 @@ class TokenBalanceQueryTests {
     }
 
     @Test
+    @Order(11)
     fun `Token Query Balance - Ensure balance is equal to 10`() {
         val tokenBalanceQuery = runTokenBalanceQueryFlow()
 
@@ -186,6 +184,7 @@ class TokenBalanceQueryTests {
     }
 
     @Test
+    @Order(12)
     fun `Token Query Balance - Claim token`() {
         val rpcStartArgs = mapOf(
             "tokenType" to tokenType,
@@ -208,6 +207,7 @@ class TokenBalanceQueryTests {
     }
 
     @Test
+    @Order(13)
     fun `Token Query Balance - Ensure balance is equal to 5 but the balance including claimed tokens is 10`() {
         val tokenBalanceQuery = runTokenBalanceQueryFlow()
 
