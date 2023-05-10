@@ -17,11 +17,12 @@ import net.corda.applications.workers.rest.utils.setSslConfiguration
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Disabled
+import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 import java.nio.file.Path
 
-@Disabled("CORE-13288: Tests are disabled until there is a solution in place")
+@Tag("Unstable")
 class SessionCertificateTest {
     @TempDir
     lateinit var tempDir: Path
