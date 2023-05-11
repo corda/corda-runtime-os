@@ -1,7 +1,7 @@
 package net.corda.messaging.rocks
 
-import net.corda.data.CordaAvroDeserializer
-import net.corda.data.CordaAvroSerializer
+import net.corda.avro.serialization.CordaAvroDeserializer
+import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.messaging.subscription.factory.MapFactory
 import net.corda.rocks.db.api.StorageManager
 

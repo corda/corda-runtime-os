@@ -1,8 +1,8 @@
 package net.corda.messaging.rocks
 
+import net.corda.avro.serialization.CordaAvroDeserializer
+import net.corda.avro.serialization.CordaAvroSerializer
 import java.util.concurrent.ConcurrentHashMap
-import net.corda.data.CordaAvroDeserializer
-import net.corda.data.CordaAvroSerializer
 import net.corda.rocks.db.api.StorageManager
 
 class RocksMutableMapImpl <K: Any, V: Any> (

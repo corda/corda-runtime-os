@@ -1,6 +1,6 @@
 package net.corda.messaging.rocks
 
-import net.corda.data.CordaAvroSerializationFactory
+import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.subscription.factory.MapFactory
 import net.corda.rocks.db.api.StorageManager

@@ -18,9 +18,9 @@ import net.corda.utilities.debug
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.util.concurrent.ArrayBlockingQueue
-import java.util.concurrent.CompletableFuture
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
+
 
 /**
  * Publisher will use a [CordaProducer] to communicate with the message bus. Failed producers are closed and recreated.
