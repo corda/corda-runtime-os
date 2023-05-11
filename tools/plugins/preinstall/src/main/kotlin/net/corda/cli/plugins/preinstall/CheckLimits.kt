@@ -65,10 +65,11 @@ class CheckLimits : Callable<Int>, PluginContext() {
     }
 
     // use the checkResource function to check each individual resource
-    private fun checkResources(resources: ResourceConfig, name: String) {
+    private fun checkResources(resources: ResourceConfig?, name: String) {
         resourceRequestsChecked = true
-        val requests: ResourceValues? = resources.requests ?: defaultRequests
-        val limits: ResourceValues? = resources.limits ?: defaultLimits
+
+        val requests: ResourceValues? = resources?.requests ?: defaultRequests
+        val limits: ResourceValues? = resources?.limits ?: defaultLimits
 
         logger.info("${name.uppercase()}:")
 
@@ -107,10 +108,10 @@ class CheckLimits : Callable<Int>, PluginContext() {
                 checkResource(requests.cpu!!, limits.cpu!!)
             }
 
-            report.addEntry(ReportEntry("Parse resource strings", true))
+            report.addEntry(ReportEntry("Parse \"$name\" resource strings", true))
             report.addEntry(ReportEntry("$name requests do not exceed limits", true))
         } catch(e: IllegalArgumentException) {
-            report.addEntry(ReportEntry("Parse resource strings", false, e))
+            report.addEntry(ReportEntry("Parse \"$name\" resource strings", false, e))
             return
         } catch (e: ResourceLimitsExceededException) {
             report.addEntry(ReportEntry("$name requests do not exceed limits", false, e))
@@ -134,19 +135,13 @@ class CheckLimits : Callable<Int>, PluginContext() {
             defaultRequests = it.requests
         }
 
-        yaml.bootstrap?.resources?.let { checkResources(it, "bootstrap") }
-        yaml.workers?.db?.resources?.let { checkResources(it, "DB") }
-        yaml.workers?.flow?.resources?.let { checkResources(it, "flow") }
-        yaml.workers?.membership?.resources?.let { checkResources(it, "membership") }
-        yaml.workers?.rest?.resources?.let { checkResources(it, "rest") }
-        yaml.workers?.p2pLinkManager?.resources?.let { checkResources(it, "P2P link manager") }
-        yaml.workers?.p2pGateway?.resources?.let { checkResources(it, "P2P gateway") }
-
-        if (!resourceRequestsChecked) {
-            yaml.resources?.let { checkResources(it, "resources") } ?: run {
-                logger.info("No resource requests or limits were found.")
-            }
-        }
+        checkResources(yaml.bootstrap?.resources, "bootstrap")
+        checkResources(yaml.workers?.db?.resources, "DB")
+        checkResources(yaml.workers?.flow?.resources, "flow")
+        checkResources(yaml.workers?.membership?.resources, "membership")
+        checkResources(yaml.workers?.rest?.resources, "rest")
+        checkResources(yaml.workers?.p2pLinkManager?.resources, "P2P link manager")
+        checkResources(yaml.workers?.p2pGateway?.resources, "P2P gateway")
 
         return if (report.testsPassed()) {
             logger.info(report.toString())

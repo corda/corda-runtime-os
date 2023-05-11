@@ -60,7 +60,7 @@ class TestSubCommands {
         val limits = CheckLimits()
         val ret = CommandLine(limits).execute(path)
 
-        assertTrue(limits.report.toString().contains("resources requests do not exceed limits: FAILED"))
+        assertTrue(limits.report.toString().contains("bootstrap requests do not exceed limits: FAILED"))
         assertEquals(1, ret)
     }
 
@@ -70,7 +70,7 @@ class TestSubCommands {
         val limits = CheckLimits()
         val ret = CommandLine(limits).execute(path)
 
-        assertTrue(limits.report.toString().contains("Parse resource strings: FAILED"))
+        assertTrue(limits.report.toString().contains("Parse \"bootstrap\" resource strings: FAILED"))
         assertEquals(1, ret)
     }
 
@@ -80,7 +80,7 @@ class TestSubCommands {
         val limits = CheckLimits()
         val ret = CommandLine(limits).execute(path)
 
-        assertTrue(limits.report.toString().contains("Parse resource strings: PASSED"))
+        assertTrue(limits.report.toString().contains("Parse \"bootstrap\" resource strings: PASSED"))
         assertEquals(0, ret)
     }
 
