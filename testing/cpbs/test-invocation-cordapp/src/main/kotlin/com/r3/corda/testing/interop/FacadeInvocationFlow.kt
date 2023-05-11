@@ -37,7 +37,7 @@ class FacadeInvocationFlow : ClientStartableFlow {
 //        val alice = "CN=Alice Gold Alias, O=Alice Corp, L=LDN, C=GB";
 //        val groupName = "Inter-Gold-Silver-Platinum-Group"
 //        val aliasMemberInfo = remoteAliasLookUpService.get("$alice@$groupName")
-        val aliasMemberInfo = remoteAliasLookUpService.get("CN=Alice Gold Alias, O=Alice Corp, L=LDN, C=GB@Inter-Gold-Silver-Platinum-Group")
+        val aliasMemberInfo = remoteAliasLookUpService.get("CN=Alice Gold Alias, O=Alice Corp, L=LDN, C=GB@Interop-Gold-Silver-Bronze-Group")
         log.info("**************** aliasMemberInfo : $aliasMemberInfo")
 
         val args = requestBody.getRequestBodyAsMap(jsonMarshallingService, String::class.java, String::class.java)
