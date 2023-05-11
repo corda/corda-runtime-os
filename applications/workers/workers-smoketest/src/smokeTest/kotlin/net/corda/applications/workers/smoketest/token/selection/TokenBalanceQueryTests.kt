@@ -15,16 +15,12 @@ import net.corda.e2etest.utilities.registerStaticMember
 import net.corda.e2etest.utilities.startRpcFlow
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeAll
-import org.junit.jupiter.api.MethodOrderer
-import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS
-import org.junit.jupiter.api.TestMethodOrder
 
 @Suppress("Unused", "FunctionName")
 @TestInstance(PER_CLASS)
-@TestMethodOrder(MethodOrderer.OrderAnnotation::class)
 class TokenBalanceQueryTests {
 
     private companion object {
@@ -109,7 +105,6 @@ class TokenBalanceQueryTests {
     }
 
     @Test
-    @Order(1)
     fun `ensure it is possible to send a balance query request and receive a response`() {
         // Start the flow that will send the request and receive the response
         val tokenBalanceQuery = runTokenBalanceQueryFlow()
