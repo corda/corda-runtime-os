@@ -69,6 +69,11 @@ class PagedFindQueryTest {
     }
 
     @Test
+    fun `setLimit cannot be zero`() {
+        assertThatThrownBy { query.setLimit(0) }.isInstanceOf(IllegalArgumentException::class.java)
+    }
+
+    @Test
     fun `setOffset cannot be negative`() {
         assertThatThrownBy { query.setOffset(-1) }.isInstanceOf(IllegalArgumentException::class.java)
     }
