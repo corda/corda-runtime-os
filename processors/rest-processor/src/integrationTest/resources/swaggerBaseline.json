@@ -888,6 +888,54 @@
         }
       }
     },
+    "/flow/{holdingidentityshorthash}/{clientrequestid}/result" : {
+      "get" : {
+        "tags" : [ "Flow Management API" ],
+        "description" : "This method gets the result of the specified flow instance execution.",
+        "operationId" : "get_flow__holdingidentityshorthash___clientrequestid__result",
+        "parameters" : [ {
+          "name" : "holdingidentityshorthash",
+          "in" : "path",
+          "description" : "The short hash of the holding identity; obtained during node registration",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The short hash of the holding identity; obtained during node registration",
+            "nullable" : false,
+            "example" : "string"
+          }
+        }, {
+          "name" : "clientrequestid",
+          "in" : "path",
+          "description" : "Client provided flow identifier",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "Client provided flow identifier",
+            "nullable" : false,
+            "example" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "\n            The result of the flow instance, including:\n            \n            holdingIdentityShortHash: The short form hash of the Holding Identity\n            clientRequestId: The unique ID supplied by the client when the flow was created.\n            flowId: The internal unique ID for the flow.\n            flowStatus: The current state of the executing flow.\n            json: The result returned from a completed flow, only set when the flow status is 'COMPLETED' otherwise null.\n            flowError: The details of the error that caused a flow to fail, only set when the flow status is 'FAILED' otherwise null.\n            timestamp: The timestamp of when the status was last updated (in UTC)\n            ",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/FlowResultResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    },
     "/flowclass/getprotocolversion" : {
       "get" : {
         "tags" : [ "Flow Info API" ],
@@ -4328,6 +4376,60 @@
           }
         },
         "description" : "Details of the virtual node to be created"
+      },
+      "FlowResultResponse" : {
+        "required" : [ "flowStatus", "holdingIdentityShortHash", "timestamp" ],
+        "type" : "object",
+        "properties" : {
+          "clientRequestId" : {
+            "type" : "string",
+            "nullable" : true,
+            "example" : "string"
+          },
+          "flowError" : {
+            "$ref" : "#/components/schemas/FlowStateErrorResponse"
+          },
+          "flowId" : {
+            "type" : "string",
+            "nullable" : true,
+            "example" : "string"
+          },
+          "flowStatus" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "holdingIdentityShortHash" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "json" : {
+            "description" : "Can be any value - string, number, boolean, array or object.",
+            "nullable" : true,
+            "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}",
+            "anyOf" : [ {
+              "type" : "string"
+            }, {
+              "type" : "number"
+            }, {
+              "type" : "integer",
+              "format" : "int32"
+            }, {
+              "type" : "boolean"
+            }, {
+              "type" : "array"
+            }, {
+              "type" : "object"
+            } ]
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "datetime",
+            "nullable" : false,
+            "example" : "2022-06-24T10:15:30Z"
+          }
+        }
       },
       "FlowStateErrorResponse" : {
         "required" : [ "message", "type" ],

@@ -224,7 +224,7 @@ class SandboxGroupContextCacheTest {
     @Test
     fun `when remove also close`() {
         val listener = mock<EvictionListener>()
-        val cache = SandboxGroupContextCacheImpl(10).apply {
+        val cache = SandboxGroupContextCacheImpl(1).apply {
             assertTrue(addEvictionListener(vNodeContext1.sandboxGroupType, listener))
         }
         val sandboxContext1 = mockSandboxContext()
@@ -233,12 +233,12 @@ class SandboxGroupContextCacheTest {
         assertThat(ref).isNotNull
         val completion = cache.remove(vNodeContext1.copy())
             ?: fail("No sandbox for $vNodeContext1")
-        verify(listener).onEviction(eq(vNodeContext1))
 
         eventually(duration = ofSeconds(TIMEOUT)) {
             assertThat(cache.evictedContextsToBeClosed).isEqualTo(1)
             assertThat(completion.isDone).isFalse
         }
+        verify(listener).onEviction(eq(vNodeContext1))
 
         ref = null
 
@@ -353,6 +353,9 @@ class SandboxGroupContextCacheTest {
         verify(listener, never()).onEviction(any())
 
         val completion = cache.flush()
+        eventually(duration = ofSeconds(TIMEOUT)) {
+            assertThat(cache.evictedContextsToBeClosed).isEqualTo(2)
+        }
         assertThat(completion.isDone).isFalse
         verify(listener).onEviction(vNodeContext1)
         verify(listener).onEviction(vNodeContext2)
