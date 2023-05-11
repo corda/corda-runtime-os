@@ -14,6 +14,7 @@ import net.corda.flow.state.FlowCheckpoint
 import net.corda.ledger.utxo.impl.token.selection.factories.TokenBalanceQueryExternalEventFactory
 import net.corda.ledger.utxo.impl.token.selection.impl.ALICE_X500_HOLDING_ID
 import net.corda.ledger.utxo.impl.token.selection.impl.BOB_X500_NAME
+import net.corda.ledger.utxo.impl.token.selection.impl.TokenBalanceImpl
 import net.corda.ledger.utxo.impl.token.selection.impl.toSecureHash
 import net.corda.schema.Schemas.Services.TOKEN_CACHE_EVENT
 import net.corda.v5.ledger.utxo.observer.UtxoTokenPoolKey
@@ -58,28 +59,29 @@ class TokenClaimQueryExternalEventFactoryTest {
             TokenPoolCacheEvent(key, expectedBalanceQuery)
         )
 
-        val target = TokenBalanceQueryExternalEventFactory()
-
-        val result = target.createExternalEvent(checkpoint, flowExternalEventContext, parameters)
+        val result = TokenBalanceQueryExternalEventFactory().createExternalEvent(
+            checkpoint,
+            flowExternalEventContext,
+            parameters
+        )
 
         assertThat(result).isEqualTo(expectedExternalEventRecord)
     }
 
     @Test
     fun `resumeWith returns the balance of the token pool`() {
-        val balanceBigDecimal = BigDecimal(2.0)
-        val balanceTokenAmount = balanceBigDecimal.toTokenAmount()
+        val expectedTokenBalance = TokenBalanceImpl(BigDecimal(1.0), BigDecimal(2.0))
 
         val response = TokenBalanceQueryResult().apply {
             this.poolKey = key
-            this.balance = balanceTokenAmount
+            this.balance = expectedTokenBalance.balance.toTokenAmount()
+            this.balanceIncludingClaimedTokens = expectedTokenBalance.balanceIncludingClaimedTokens.toTokenAmount()
         }
 
-        val target = TokenBalanceQueryExternalEventFactory()
+        val result = TokenBalanceQueryExternalEventFactory().resumeWith(checkpoint, response)
 
-        val result = target.resumeWith(checkpoint, response)
-
-        assertThat(result).isEqualTo(balanceBigDecimal)
+        assertThat(result.balance).isEqualTo(expectedTokenBalance.balance)
+        assertThat(result.balanceIncludingClaimedTokens).isEqualTo(expectedTokenBalance.balanceIncludingClaimedTokens)
     }
 
     private fun BigDecimal.toTokenAmount() = TokenAmount.newBuilder()

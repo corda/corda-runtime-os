@@ -2,11 +2,13 @@ package net.corda.ledger.utxo.token.cache.handlers
 
 import java.math.BigDecimal
 import net.corda.data.flow.event.FlowEvent
+import net.corda.ledger.utxo.impl.token.selection.impl.TokenBalanceImpl
 import net.corda.ledger.utxo.token.cache.entities.BalanceQuery
 import net.corda.ledger.utxo.token.cache.entities.PoolCacheState
 import net.corda.ledger.utxo.token.cache.entities.TokenCache
 import net.corda.ledger.utxo.token.cache.factories.RecordFactory
 import net.corda.messaging.api.records.Record
+import net.corda.v5.ledger.utxo.token.selection.TokenBalance
 
 class TokenBalanceQueryEventHandler(
     private val recordFactory: RecordFactory,
@@ -29,13 +31,17 @@ class TokenBalanceQueryEventHandler(
         )
     }
 
-    private fun calculateTokenBalance(tokenCache: TokenCache, state: PoolCacheState): BigDecimal {
-        var selectedAmount = BigDecimal.ZERO
+    private fun calculateTokenBalance(tokenCache: TokenCache, state: PoolCacheState): TokenBalance {
+        var balance = BigDecimal.ZERO
+        var balanceIncludingClaimedTokens = BigDecimal.ZERO
 
-        tokenCache.filter { !state.isTokenClaimed(it.stateRef) }.forEach {
-            selectedAmount += it.amount
+        tokenCache.forEach {
+            if(!state.isTokenClaimed(it.stateRef) ) {
+                balance += it.amount
+            }
+            balanceIncludingClaimedTokens += it.amount
         }
 
-        return selectedAmount
+        return TokenBalanceImpl(balance, balanceIncludingClaimedTokens)
     }
 }

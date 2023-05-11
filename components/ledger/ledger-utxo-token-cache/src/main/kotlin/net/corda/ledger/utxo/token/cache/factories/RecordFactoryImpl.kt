@@ -12,6 +12,7 @@ import net.corda.data.ledger.utxo.token.selection.key.TokenPoolCacheKey
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
 import net.corda.ledger.utxo.token.cache.entities.CachedToken
 import net.corda.messaging.api.records.Record
+import net.corda.v5.ledger.utxo.token.selection.TokenBalance
 
 class RecordFactoryImpl(private val externalEventResponseFactory: ExternalEventResponseFactory) : RecordFactory {
 
@@ -57,11 +58,12 @@ class RecordFactoryImpl(private val externalEventResponseFactory: ExternalEventR
         flowId: String,
         externalEventRequestId: String,
         poolKey: TokenPoolCacheKey,
-        tokenBalance: BigDecimal
+        tokenBalance: TokenBalance
     ): Record<String, FlowEvent> {
         val payload = TokenBalanceQueryResult().apply {
             this.poolKey = poolKey
-            this.balance = tokenBalance.toTokenAmount()
+            this.balance = tokenBalance.balance.toTokenAmount()
+            this.balanceIncludingClaimedTokens = tokenBalance.balanceIncludingClaimedTokens.toTokenAmount()
         }
 
         return externalEventResponseFactory.success(externalEventRequestId, flowId, payload)
