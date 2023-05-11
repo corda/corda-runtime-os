@@ -41,6 +41,10 @@ import javax.crypto.KeyAgreement
 import javax.crypto.Mac
 import javax.crypto.SecretKey
 import javax.crypto.spec.SecretKeySpec
+import net.corda.crypto.utils.PemCertificate
+import net.corda.data.p2p.gateway.certificates.RevocationCheckRequest
+import net.corda.data.p2p.gateway.certificates.RevocationCheckResponse
+import net.corda.v5.base.types.MemberX500Name
 
 /**
  * A base, abstract class containing the core utilities for the session authentication protocol.
@@ -49,7 +53,9 @@ import javax.crypto.spec.SecretKeySpec
  *
  * For the detailed spec of the authentication protocol, refer to the corresponding design document.
  */
-abstract class AuthenticationProtocol(certificateCheckMode: CertificateCheckMode) {
+abstract class AuthenticationProtocol(private val certificateValidatorFactory: (revocationCheckMode: RevocationCheckMode,
+                                       pemTrustStore: List<PemCertificate>,
+                                       checkRevocation: (RevocationCheckRequest) -> RevocationCheckResponse) -> CertificateValidator){
     protected var myPrivateDHKey: PrivateKey? = null
     protected var myPublicDHKey: ByteArray? = null
     protected var peerPublicDHKey: PublicKey? = null
@@ -74,14 +80,7 @@ abstract class AuthenticationProtocol(certificateCheckMode: CertificateCheckMode
     protected val hmac = Mac.getInstance(HMAC_ALGO, provider)
     protected val aesCipher = Cipher.getInstance(CIPHER_ALGO, provider)
     protected val messageDigest = MessageDigest.getInstance(HASH_ALGO, provider)
-    protected val certificateValidator = when(certificateCheckMode) {
-        is CertificateCheckMode.NoCertificate -> null
-        is CertificateCheckMode.CheckCertificate -> CertificateValidator(
-            certificateCheckMode.revocationCheckMode,
-            certificateCheckMode.truststore,
-            certificateCheckMode.revocationChecker
-        )
-    }
+
     private val hkdfGenerator = HKDFBytesGenerator(messageDigest.convertToBCDigest())
 
     fun getSignature(signatureSpec: SignatureSpec): Signature {
@@ -129,6 +128,31 @@ abstract class AuthenticationProtocol(certificateCheckMode: CertificateCheckMode
                                                                     RESPONDER_SESSION_NONCE_INFO, CIPHER_NONCE_SIZE_BYTES)
 
         return SharedSessionSecrets(initiatorEncryptionKey, responderEncryptionKey, initiatorNonce, responderNonce)
+    }
+
+    protected fun validateCertificate(
+        certificateCheckMode: CertificateCheckMode,
+        peerCertificate: List<String>?,
+        peerX500Name: MemberX500Name,
+        expectedPeerPublicKey: PublicKey,
+        messageName: String
+    ) {
+        if (certificateCheckMode is CertificateCheckMode.CheckCertificate) {
+            if (peerCertificate != null) {
+                val certificateValidator = certificateValidatorFactory(
+                    certificateCheckMode.revocationCheckMode,
+                    certificateCheckMode.truststore,
+                    certificateCheckMode.revocationChecker
+                )
+                certificateValidator.validate(
+                    peerCertificate,
+                    peerX500Name,
+                    expectedPeerPublicKey
+                )
+            } else {
+                throw InvalidPeerCertificate("No peer certificate was sent in the $messageName.")
+            }
+        }
     }
 
     /**
