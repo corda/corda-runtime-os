@@ -134,13 +134,13 @@ class CheckLimits : Callable<Int>, PluginContext() {
             defaultRequests = it.requests
         }
 
-        yaml.bootstrap?.let { checkResources(it.resources, "bootstrap") }
-        yaml.workers?.db?.let { checkResources(it.resources, "DB") }
-        yaml.workers?.flow?.let { checkResources(it.resources, "flow") }
-        yaml.workers?.membership?.let { checkResources(it.resources, "membership") }
-        yaml.workers?.rest?.let { checkResources(it.resources, "rest") }
-        yaml.workers?.p2pLinkManager?.let { checkResources(it.resources, "P2P link manager") }
-        yaml.workers?.p2pGateway?.let { checkResources(it.resources, "P2P gateway") }
+        yaml.bootstrap?.resources?.let { checkResources(it, "bootstrap") }
+        yaml.workers?.db?.resources?.let { checkResources(it, "DB") }
+        yaml.workers?.flow?.resources?.let { checkResources(it, "flow") }
+        yaml.workers?.membership?.resources?.let { checkResources(it, "membership") }
+        yaml.workers?.rest?.resources?.let { checkResources(it, "rest") }
+        yaml.workers?.p2pLinkManager?.resources?.let { checkResources(it, "P2P link manager") }
+        yaml.workers?.p2pGateway?.resources?.let { checkResources(it, "P2P gateway") }
 
         if (!resourceRequestsChecked) {
             yaml.resources?.let { checkResources(it, "resources") } ?: run {

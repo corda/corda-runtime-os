@@ -297,7 +297,7 @@ class PreInstallPlugin : Plugin() {
     @JsonIgnoreProperties(ignoreUnknown = true)
     data class Resources(
         @JsonProperty("resources")
-        val resources: ResourceConfig
+        val resources: ResourceConfig?
     )
 
     data class ResourceConfig(
