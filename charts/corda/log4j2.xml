@@ -19,7 +19,7 @@
         <Logger name="org.apache.aries.spifly" level="warn" />
         <Logger name="org.apache.kafka" level="warn" />
         <Logger name="org.eclipse.jetty" level="warn" />
-        <Logger name="org.hibernate" level="warn" />
+        <Logger name="org.hibernate" level="info" />
         <Logger name="org.hibernate.stat" level="debug" />
         <Logger name="org.hibernate.engine.internal.StatisticalLoggingSessionEventListener" level="info" />
         <Logger name="org.hibernate.SQL" level="debug" />
