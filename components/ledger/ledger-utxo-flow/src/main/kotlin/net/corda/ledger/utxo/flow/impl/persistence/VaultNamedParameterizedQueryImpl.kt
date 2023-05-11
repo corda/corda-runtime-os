@@ -28,7 +28,7 @@ class VaultNamedParameterizedQueryImpl<T>(
     }
 
     override fun setLimit(limit: Int): VaultNamedParameterizedQuery<T> {
-        require (limit >= 0) { "Limit cannot be negative" }
+        require (limit > 0) { "Limit cannot be negative or zero" }
         this.limit = limit
         return this
     }
