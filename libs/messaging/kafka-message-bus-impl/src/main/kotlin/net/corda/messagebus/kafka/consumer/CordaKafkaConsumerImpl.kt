@@ -1,5 +1,6 @@
 package net.corda.messagebus.kafka.consumer
 
+import io.micrometer.core.instrument.binder.MeterBinder
 import net.corda.data.chunking.Chunk
 import net.corda.data.chunking.ChunkKey
 import net.corda.messagebus.api.CordaTopicPartition
@@ -16,6 +17,7 @@ import net.corda.messagebus.kafka.utils.toTopicPartitions
 import net.corda.messaging.api.chunking.ConsumerChunkDeserializerService
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
+import net.corda.metrics.CordaMetrics
 import net.corda.utilities.trace
 import org.apache.kafka.clients.consumer.CommitFailedException
 import org.apache.kafka.clients.consumer.Consumer
@@ -47,10 +49,14 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
     private val consumer: Consumer<Any, Any>,
     private var defaultListener: CordaConsumerRebalanceListener? = null,
     private val chunkDeserializerService: ConsumerChunkDeserializerService<K, V>,
+    private val consumerMetricsBinder : MeterBinder,
 ) : CordaConsumer<K, V> {
-
     private var currentAssignment = mutableSetOf<Int>()
     private val bufferedRecords = mutableMapOf<Int, List<ConsumerRecord<Any, Any>>>()
+
+    init {
+        consumerMetricsBinder.bindTo(CordaMetrics.registry)
+    }
 
     private companion object {
         private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -61,6 +67,8 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
             consumer.close()
         } catch (ex: Exception) {
             log.error("CordaKafkaConsumer failed to close consumer from group ${config.group}.", ex)
+        } finally {
+            (consumerMetricsBinder as? AutoCloseable)?.close()
         }
     }
 

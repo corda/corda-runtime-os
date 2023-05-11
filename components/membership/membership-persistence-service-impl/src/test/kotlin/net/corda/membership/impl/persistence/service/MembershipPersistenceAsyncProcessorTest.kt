@@ -161,7 +161,7 @@ class MembershipPersistenceAsyncProcessorTest {
 
     @Test
     fun `last retry will set the DLQ flag`() {
-        whenever(handlers.handle(any())).doThrow(OptimisticLockException("Nop"))
+        whenever(handlers.handle(any())).doThrow(RecoverableException("Nop"))
 
         val reply = processor.onNext(
             MembershipPersistenceAsyncRequestState(

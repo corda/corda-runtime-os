@@ -30,6 +30,8 @@ import java.security.PublicKey
 import java.security.spec.X509EncodedKeySpec
 import java.time.Instant
 import javax.crypto.AEADBadTagException
+import net.corda.data.p2p.gateway.certificates.RevocationCheckRequest
+import net.corda.data.p2p.gateway.certificates.RevocationCheckResponse
 
 /**
  * The initiator side of the session authentication protocol.
@@ -51,13 +53,18 @@ import javax.crypto.AEADBadTagException
  * This class is not thread-safe, which means clients that want to use it from different threads need to perform external synchronisation.
  */
 @Suppress("LongParameterList")
-class AuthenticationProtocolInitiator(val sessionId: String,
-                                      private val supportedModes: Set<ProtocolMode>,
-                                      private val ourMaxMessageSize: Int,
-                                      private val ourPublicKey: PublicKey,
-                                      private val groupId: String,
-                                      private val certificateCheckMode: CertificateCheckMode
-): AuthenticationProtocol(certificateCheckMode) {
+class AuthenticationProtocolInitiator(
+    val sessionId: String,
+    private val supportedModes: Set<ProtocolMode>,
+    private val ourMaxMessageSize: Int,
+    private val ourPublicKey: PublicKey,
+    private val groupId: String,
+    private val certificateCheckMode: CertificateCheckMode,
+    certificateValidatorFactory: (revocationCheckMode: RevocationCheckMode,
+                                  pemTrustStore: List<PemCertificate>,
+                                  checkRevocation: (RevocationCheckRequest) -> RevocationCheckResponse) -> CertificateValidator =
+    { revocationCheckMode, pemTrustStore, checkRevocation -> CertificateValidator(revocationCheckMode, pemTrustStore, checkRevocation) }
+): AuthenticationProtocol(certificateValidatorFactory) {
 
     init {
         require(supportedModes.isNotEmpty()) { "At least one supported mode must be provided." }
@@ -86,7 +93,7 @@ class AuthenticationProtocolInitiator(val sessionId: String,
 
             val commonHeader = CommonHeader(MessageType.INITIATOR_HELLO, PROTOCOL_VERSION, sessionId, 0, Instant.now().toEpochMilli())
             val identity = InitiatorHandshakeIdentity(ByteBuffer.wrap(hash(ourPublicKey)), groupId)
-            initiatorHelloMessage = InitiatorHelloMessage(commonHeader, ByteBuffer.wrap(myPublicDHKey!!), supportedModes.toList(), identity)
+            initiatorHelloMessage = InitiatorHelloMessage(commonHeader, ByteBuffer.wrap(myPublicDHKey!!), identity)
             step = Step.SENT_MY_DH_KEY
             initiatorHelloMessage!!
         }
@@ -95,11 +102,6 @@ class AuthenticationProtocolInitiator(val sessionId: String,
     fun receiveResponderHello(responderHelloMsg: ResponderHelloMessage) {
         return transition(Step.SENT_MY_DH_KEY, Step.RECEIVED_PEER_DH_KEY, {}) {
             responderHelloMessage = responderHelloMsg
-            selectedMode = responderHelloMsg.selectedMode
-            if (!supportedModes.contains(selectedMode)) {
-                throw InvalidSelectedModeError("The mode selected by the responder ($selectedMode) " +
-                        "was not amongst the ones we proposed ($supportedModes).")
-            }
             initiatorHelloToResponderHelloBytes = initiatorHelloMessage!!.toByteBuffer().array() +
                     responderHelloMessage!!.toByteBuffer().array()
             peerPublicDHKey = ephemeralKeyFactory.generatePublic(X509EncodedKeySpec(responderHelloMsg.responderPublicKey.array()))
@@ -130,7 +132,7 @@ class AuthenticationProtocolInitiator(val sessionId: String,
             val initiatorRecordHeaderBytes = initiatorRecordHeader.toByteBuffer().array()
             val responderPublicKeyHash = ByteBuffer.wrap(hash(theirPublicKey))
             val initiatorHandshakePayload = InitiatorHandshakePayload(
-                InitiatorEncryptedExtensions(responderPublicKeyHash, groupId, ourMaxMessageSize, ourCertificates),
+                InitiatorEncryptedExtensions(responderPublicKeyHash, groupId, ourMaxMessageSize, ourCertificates, supportedModes.toList()),
                 ByteBuffer.wrap(hash(ourPublicKey)),
                 ByteBuffer.allocate(0),
                 ByteBuffer.allocate(0)
@@ -226,25 +228,18 @@ class AuthenticationProtocolInitiator(val sessionId: String,
                 }
                 agreedMaxMessageSize = this
             }
-            validateCertificate(responderHandshakePayload, theirX500Name, theirPublicKey)
-        }
-    }
-
-    private fun validateCertificate(
-        responderHandshakePayload: ResponderHandshakePayload,
-        theirX500Name: MemberX500Name,
-        theirPublicKey: PublicKey,
-    ) {
-        if (certificateCheckMode != CertificateCheckMode.NoCertificate) {
-            if (responderHandshakePayload.responderEncryptedExtensions.responderCertificate != null) {
-                certificateValidator!!.validate(
-                    responderHandshakePayload.responderEncryptedExtensions.responderCertificate,
-                    theirX500Name,
-                    theirPublicKey
-                )
-            } else {
-                throw InvalidPeerCertificate("No peer certificate was sent in the responder handshake message.")
+            selectedMode = responderHandshakePayload.responderEncryptedExtensions.selectedMode
+            if (!supportedModes.contains(selectedMode)) {
+                throw InvalidSelectedModeError("The mode selected by the responder ($selectedMode) " +
+                        "was not amongst the ones we proposed ($supportedModes).")
             }
+            validateCertificate(
+                certificateCheckMode,
+                responderHandshakePayload.responderEncryptedExtensions.responderCertificate,
+                theirX500Name,
+                theirPublicKey,
+                "responder handshake message"
+            )
         }
     }
 

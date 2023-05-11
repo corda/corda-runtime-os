@@ -7,6 +7,8 @@ import net.corda.crypto.test.certificates.generation.FileSystemCertificatesAutho
 import net.corda.crypto.test.certificates.generation.KeysFactoryDefinitions
 import net.corda.crypto.test.certificates.generation.toPem
 import net.corda.rest.ResponseCode
+import net.corda.schema.configuration.ConfigKeys.P2P_GATEWAY_CONFIG
+import net.corda.utilities.seconds
 import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.openssl.PEMParser
 import org.bouncycastle.pkcs.PKCS10CertificationRequest
@@ -40,22 +42,22 @@ fun FileSystemCertificatesAuthority.generateCert(csrPem: String): String {
  * Attempt to generate a CSR for a key. This calls the REST API for a given cluster and returns the generate CSR as a
  * PEM string.
  */
-fun generateCsr(
-    clusterInfo: ClusterInfo,
+fun ClusterInfo.generateCsr(
     x500Name: String,
     keyId: String,
     tenantId: String = "p2p",
     addHostToSubjectAlternativeNames: Boolean = true
-) = cluster(clusterInfo) {
+) = cluster {
     val payload = mutableMapOf<String, Any>(
         "x500Name" to x500Name
     ).apply {
         if (addHostToSubjectAlternativeNames) {
-            put("subjectAlternativeNames", listOf(clusterInfo.p2p.host))
+            put("subjectAlternativeNames", listOf(this@generateCsr.p2p.host))
         }
     }
 
     assertWithRetry {
+        interval(1.seconds)
         command { post("/api/v1/certificates/$tenantId/$keyId", ObjectMapper().writeValueAsString(payload)) }
         condition { it.code == ResponseCode.OK.statusCode }
     }.body
@@ -64,16 +66,26 @@ fun generateCsr(
 /**
  * Imports a certificate to a given Corda cluster from file.
  */
-fun importCertificate(
-    clusterInfo: ClusterInfo,
+fun ClusterInfo.importCertificate(
     file: File,
     usage: String,
     alias: String
 ) {
-    cluster(clusterInfo) {
+    cluster {
         assertWithRetry {
+            interval(1.seconds)
             command { importCertificate(file, usage, alias) }
             condition { it.code == ResponseCode.NO_CONTENT.statusCode }
         }
     }
+}
+
+/**
+ * Disable certificate revocation checks.
+ */
+fun ClusterInfo.disableCertificateRevocationChecks() {
+    updateConfig(
+        "{ \"sslConfig\": { \"revocationCheck\": { \"mode\": \"OFF\" }  }  }",
+        P2P_GATEWAY_CONFIG
+    )
 }

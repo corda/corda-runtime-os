@@ -888,6 +888,54 @@
         }
       }
     },
+    "/flow/{holdingidentityshorthash}/{clientrequestid}/result" : {
+      "get" : {
+        "tags" : [ "Flow Management API" ],
+        "description" : "This method gets the result of the specified flow instance execution.",
+        "operationId" : "get_flow__holdingidentityshorthash___clientrequestid__result",
+        "parameters" : [ {
+          "name" : "holdingidentityshorthash",
+          "in" : "path",
+          "description" : "The short hash of the holding identity; obtained during node registration",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The short hash of the holding identity; obtained during node registration",
+            "nullable" : false,
+            "example" : "string"
+          }
+        }, {
+          "name" : "clientrequestid",
+          "in" : "path",
+          "description" : "Client provided flow identifier",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "Client provided flow identifier",
+            "nullable" : false,
+            "example" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "\n            The result of the flow instance, including:\n            \n            holdingIdentityShortHash: The short form hash of the Holding Identity\n            clientRequestId: The unique ID supplied by the client when the flow was created.\n            flowId: The internal unique ID for the flow.\n            flowStatus: The current state of the executing flow.\n            json: The result returned from a completed flow, only set when the flow status is 'COMPLETED' otherwise null.\n            flowError: The details of the error that caused a flow to fail, only set when the flow status is 'FAILED' otherwise null.\n            timestamp: The timestamp of when the status was last updated (in UTC)\n            ",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/FlowResultResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    },
     "/flowclass/getprotocolversion" : {
       "get" : {
         "tags" : [ "Flow Info API" ],
@@ -1137,52 +1185,6 @@
                   "allOf" : [ {
                     "$ref" : "#/components/schemas/HsmAssociationInfo"
                   } ]
-                }
-              }
-            }
-          },
-          "401" : {
-            "description" : "Unauthorized"
-          },
-          "403" : {
-            "description" : "Forbidden"
-          }
-        }
-      },
-      "post" : {
-        "tags" : [ "HSM API" ],
-        "description" : "This method enables you to assign a hardware-backed HSM to the tenant for the specified category.",
-        "operationId" : "post_hsm__tenantid___category_",
-        "parameters" : [ {
-          "name" : "tenantid",
-          "in" : "path",
-          "description" : "Can either be a holding identity ID, the value 'p2p' for a cluster-level tenant of the P2P services, or the value 'rest' for a cluster-level tenant of the REST",
-          "required" : true,
-          "schema" : {
-            "type" : "string",
-            "description" : "Can either be a holding identity ID, the value 'p2p' for a cluster-level tenant of the P2P services, or the value 'rest' for a cluster-level tenant of the REST",
-            "nullable" : false,
-            "example" : "string"
-          }
-        }, {
-          "name" : "category",
-          "in" : "path",
-          "description" : "The category of the HSM; can be the value 'ACCOUNTS', 'CI', 'LEDGER', 'NOTARY', 'SESSION_INIT', 'TLS', or 'JWT_KEY'",
-          "required" : true,
-          "schema" : {
-            "type" : "string",
-            "description" : "The category of the HSM; can be the value 'ACCOUNTS', 'CI', 'LEDGER', 'NOTARY', 'SESSION_INIT', 'TLS', or 'JWT_KEY'",
-            "nullable" : false,
-            "example" : "string"
-          }
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "\n            The HSM association details including:\n            id: the unique identifier of the HSM association\n            hsmId: the HSM identifier included into the association\n            category: the category of the HSM; can be the value 'ACCOUNTS', 'CI', 'LEDGER', 'NOTARY', 'SESSION_INIT', \n                'TLS', or 'JWT_KEY'\n            masterKeyAlias: optional master key alias to be used on HSM\n            deprecatedAt: time when the association was deprecated, epoch time in seconds; \n                value of 0 means the association is active",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/HsmAssociationInfo"
                 }
               }
             }
@@ -1775,7 +1777,7 @@
         }, {
           "name" : "statuses",
           "in" : "query",
-          "description" : "List of statuses (\"ACTIVE\", \"SUSPENDED\") to filter members by. Only an MGM can view suspended members.",
+          "description" : "List of statuses (\"ACTIVE\", \"SUSPENDED\") to filter members by. By default, only ACTIVE members are filtered. Only an MGM can view suspended members.",
           "required" : false,
           "schema" : {
             "uniqueItems" : false,
@@ -1898,7 +1900,7 @@
         } ],
         "responses" : {
           "200" : {
-            "description" : "\n            The registration status information, including:\n            registrationId: the registration request ID\n            registrationSent: the date and the when the registration progress started; \n                value of null indicated that registration has not started yet\n            registrationUpdated: the date and the when the registration has been last updated    \n            registrationStatus: the status of the registration request; \n                possible values are \"NEW\", \"PENDING_MEMBER_VERIFICATION\", \"PENDING_MANUAL_APPROVAL\", \n                \"PENDING_AUTO_APPROVAL\", \"DECLINED\", or \"APPROVED\"\n            memberInfoSubmitted: the properties submitted to MGM during the registration     \n        ",
+            "description" : "\n            The registration status information, including:\n            registrationId: the registration request ID\n            registrationSent: the date and the when the registration progress started; \n                value of null indicated that registration has not started yet\n            registrationUpdated: the date and the when the registration has been last updated    \n            registrationStatus: the status of the registration request;\n                possible values are \"NEW\", \"SENT_TO_MGM\", \"RECEIVED_BY_MGM\", \"PENDING_MEMBER_VERIFICATION\", \"PENDING_MANUAL_APPROVAL\",\n                \"PENDING_AUTO_APPROVAL\", \"DECLINED\", \"INVALID\", \"FAILED\" or \"APPROVED\"\n            memberInfoSubmitted: the properties submitted to MGM during the registration     \n        ",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -1997,7 +1999,7 @@
         } ],
         "responses" : {
           "200" : {
-            "description" : "\n            The registration status information, including:\n            registrationId: the registration request ID\n            registrationSent: the date and the when the registration progress started; \n                value of null indicated that registration has not started yet\n            registrationUpdated: the date and the when the registration has been last updated    \n            registrationStatus: the status of the registration request; \n                possible values are \"NEW\", \"PENDING_MEMBER_VERIFICATION\", \"PENDING_MANUAL_APPROVAL\", \n                \"PENDING_AUTO_APPROVAL\", \"DECLINED\", or \"APPROVED\"\n            memberInfoSubmitted: the properties submitted to MGM during the registration     \n        ",
+            "description" : "\n            The registration status information, including:\n            registrationId: the registration request ID\n            registrationSent: the date and the when the registration progress started; \n                value of null indicated that registration has not started yet\n            registrationUpdated: the date and the when the registration has been last updated    \n            registrationStatus: the status of the registration request;\n                possible values are \"NEW\", \"SENT_TO_MGM\", \"RECEIVED_BY_MGM\", \"PENDING_MEMBER_VERIFICATION\", \"PENDING_MANUAL_APPROVAL\",\n                \"PENDING_AUTO_APPROVAL\", \"DECLINED\", \"INVALID\", \"FAILED\" or \"APPROVED\"\n            memberInfoSubmitted: the properties submitted to MGM during the registration     \n        ",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -2034,6 +2036,47 @@
                 }
               }
             }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    },
+    "/mgm/{holdingidentityshorthash}/activate" : {
+      "post" : {
+        "tags" : [ "MGM API" ],
+        "description" : "",
+        "operationId" : "post_mgm__holdingidentityshorthash__activate",
+        "parameters" : [ {
+          "name" : "holdingidentityshorthash",
+          "in" : "path",
+          "description" : "The holding identity ID of the MGM of the membership group",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The holding identity ID of the MGM of the membership group",
+            "nullable" : false,
+            "example" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "description" : "requestBody",
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/SuspensionActivationParameters"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "Success"
           },
           "401" : {
             "description" : "Unauthorized"
@@ -2799,6 +2842,47 @@
                 }
               }
             }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    },
+    "/mgm/{holdingidentityshorthash}/suspend" : {
+      "post" : {
+        "tags" : [ "MGM API" ],
+        "description" : "",
+        "operationId" : "post_mgm__holdingidentityshorthash__suspend",
+        "parameters" : [ {
+          "name" : "holdingidentityshorthash",
+          "in" : "path",
+          "description" : "The holding identity ID of the MGM of the membership group",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The holding identity ID of the MGM of the membership group",
+            "nullable" : false,
+            "example" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "description" : "requestBody",
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/SuspensionActivationParameters"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "Success"
           },
           "401" : {
             "description" : "Unauthorized"
@@ -4293,6 +4377,60 @@
         },
         "description" : "Details of the virtual node to be created"
       },
+      "FlowResultResponse" : {
+        "required" : [ "flowStatus", "holdingIdentityShortHash", "timestamp" ],
+        "type" : "object",
+        "properties" : {
+          "clientRequestId" : {
+            "type" : "string",
+            "nullable" : true,
+            "example" : "string"
+          },
+          "flowError" : {
+            "$ref" : "#/components/schemas/FlowStateErrorResponse"
+          },
+          "flowId" : {
+            "type" : "string",
+            "nullable" : true,
+            "example" : "string"
+          },
+          "flowStatus" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "holdingIdentityShortHash" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "json" : {
+            "description" : "Can be any value - string, number, boolean, array or object.",
+            "nullable" : true,
+            "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}",
+            "anyOf" : [ {
+              "type" : "string"
+            }, {
+              "type" : "number"
+            }, {
+              "type" : "integer",
+              "format" : "int32"
+            }, {
+              "type" : "boolean"
+            }, {
+              "type" : "array"
+            }, {
+              "type" : "object"
+            } ]
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "datetime",
+            "nullable" : false,
+            "example" : "2022-06-24T10:15:30Z"
+          }
+        }
+      },
       "FlowStateErrorResponse" : {
         "required" : [ "message", "type" ],
         "type" : "object",
@@ -4898,7 +5036,7 @@
             "type" : "object",
             "nullable" : false,
             "example" : "SENT_TO_MGM",
-            "enum" : [ "NEW", "SENT_TO_MGM", "RECEIVED_BY_MGM", "PENDING_MEMBER_VERIFICATION", "PENDING_MANUAL_APPROVAL", "PENDING_AUTO_APPROVAL", "DECLINED", "INVALID", "APPROVED" ]
+            "enum" : [ "NEW", "SENT_TO_MGM", "RECEIVED_BY_MGM", "PENDING_MEMBER_VERIFICATION", "PENDING_MANUAL_APPROVAL", "PENDING_AUTO_APPROVAL", "DECLINED", "INVALID", "FAILED", "APPROVED" ]
           },
           "registrationUpdated" : {
             "type" : "string",
@@ -4992,6 +5130,7 @@
             "example" : "string"
           },
           "inactiveResponseType" : {
+            "type" : "object",
             "nullable" : false,
             "example" : "IGNORE",
             "enum" : [ "ERROR", "IGNORE" ]
@@ -5086,6 +5225,29 @@
             }
           }
         }
+      },
+      "SuspensionActivationParameters" : {
+        "required" : [ "x500Name" ],
+        "type" : "object",
+        "properties" : {
+          "reason" : {
+            "type" : "string",
+            "nullable" : true,
+            "example" : "string"
+          },
+          "serialNumber" : {
+            "type" : "integer",
+            "format" : "int64",
+            "nullable" : true,
+            "example" : 0
+          },
+          "x500Name" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          }
+        },
+        "description" : "Parameters for suspending or activating a member."
       },
       "UpdateConfigParameters" : {
         "required" : [ "config", "schemaVersion", "section", "version" ],

@@ -11,9 +11,9 @@ import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.core.bytes
 import net.corda.crypto.core.toAvro
 import net.corda.crypto.hes.StableKeyPairDecryptor
-import net.corda.data.CordaAvroDeserializer
-import net.corda.data.CordaAvroSerializationFactory
-import net.corda.data.CordaAvroSerializer
+import net.corda.avro.serialization.CordaAvroDeserializer
+import net.corda.avro.serialization.CordaAvroSerializationFactory
+import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.config.Configuration
@@ -24,6 +24,7 @@ import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.identity.HoldingIdentity
 import net.corda.data.membership.PersistentGroupParameters
 import net.corda.data.membership.PersistentMemberInfo
+import net.corda.data.membership.SignedData
 import net.corda.data.membership.SignedGroupParameters
 import net.corda.data.membership.SignedMemberInfo
 import net.corda.data.membership.p2p.DistributionMetaData
@@ -55,8 +56,8 @@ import net.corda.membership.impl.synchronisation.dummy.TestGroupReaderProvider
 import net.corda.membership.impl.synchronisation.dummy.TestLocallyHostedIdentitiesService
 import net.corda.membership.impl.synchronisation.dummy.TestMembershipPersistenceClient
 import net.corda.membership.impl.synchronisation.dummy.TestMembershipQueryClient
-import net.corda.membership.lib.EPOCH_KEY
-import net.corda.membership.lib.MODIFIED_TIME_KEY
+import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.EPOCH_KEY
+import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.MODIFIED_TIME_KEY
 import net.corda.membership.lib.MemberInfoExtension
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
@@ -485,8 +486,8 @@ class SynchronisationIntegrationTest {
             it.assertThat(membershipPackage.memberships.memberships).hasSize(2)
                 .allSatisfy {
                     val member = memberInfoFactory.create(
-                        keyValueDeserializer.deserialize(it.memberContext.array())!!.toSortedMap(),
-                        keyValueDeserializer.deserialize(it.mgmContext.array())!!.toSortedMap()
+                        keyValueDeserializer.deserialize(it.memberContext.data.array())!!.toSortedMap(),
+                        keyValueDeserializer.deserialize(it.mgmContext.data.array())!!.toSortedMap()
                     )
                     assertThat(member.name.toString()).isIn(members)
                     assertThat(member.groupId).isEqualTo(groupId)
@@ -529,15 +530,19 @@ class SynchronisationIntegrationTest {
                 )
             }
             SignedMemberInfo.newBuilder()
-                .setMemberContext(ByteBuffer.wrap(memberInfo))
-                .setMgmContext(ByteBuffer.wrap(keyValueSerializer.serialize(it.mgmProvidedContext.toAvro())))
-                .setMemberSignature(memberSignature)
-                .setMemberSignatureSpec(
-                    CryptoSignatureSpec(memberSignatureSpec.signatureName, null, null)
+                .setMemberContext(
+                    SignedData(
+                        ByteBuffer.wrap(memberInfo),
+                        memberSignature,
+                        CryptoSignatureSpec(memberSignatureSpec.signatureName, null, null)
+                    )
                 )
-                .setMgmSignature(mgmSignature)
-                .setMgmSignatureSpec(
-                    CryptoSignatureSpec(mgmSignatureSpec.signatureName, null, null)
+                .setMgmContext(
+                    SignedData(
+                        ByteBuffer.wrap(keyValueSerializer.serialize(it.mgmProvidedContext.toAvro())),
+                        mgmSignature,
+                        CryptoSignatureSpec(mgmSignatureSpec.signatureName, null, null)
+                    )
                 )
                 .build()
         }

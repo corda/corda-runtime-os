@@ -175,7 +175,7 @@ spec:
               {{- if .debug.enabled }}
                 -agentlib:jdwp=transport=dt_socket,server=y,address=5005,suspend={{ if .debug.suspend }}y{{ else }}n{{ end }}
               {{- end -}}
-              {{- if  .profiling.enabled }}
+              {{- if .profiling.enabled }}
                 -agentpath:/opt/override/libyjpagent.so=exceptions=disable,port=10045,listen=all,dir=/dumps/profile/snapshots,logdir=/dumps/profile/logs
               {{- end -}}
               {{- if $.Values.heapDumpOnOutOfMemoryError }}
@@ -184,9 +184,6 @@ spec:
               {{- end -}}
               {{- if .verifyInstrumentation }}
                 -Dco.paralleluniverse.fibers.verifyInstrumentation=true
-              {{- end -}}
-              {{- if $.Values.kafka.sasl.enabled }}
-                -Djava.security.auth.login.config=/etc/config/jaas.conf
               {{- end }}
           - name: LOG4J_CONFIG_FILE
             {{- if .logging.override }}
@@ -198,12 +195,53 @@ spec:
             value: {{ $.Values.logging.format | quote }}
           - name: CONSOLE_LOG_LEVEL
             value: {{ .logging.level | default $.Values.logging.level | quote }}
+          {{- if $.Values.kafka.sasl.enabled }}
+            {{- $username := .kafka.sasl.username }}
+          - name: SASL_USERNAME
+            {{- if $username.valueFrom.secretKeyRef.name }}
+            valueFrom:
+              secretKeyRef:
+                name: {{ $username.valueFrom.secretKeyRef.name | quote }}
+                key: {{ required (printf "Must specify %s.kafka.sasl.username.valueFrom.secretKeyRef.key" $worker) $username.valueFrom.secretKeyRef.key | quote }}
+            {{- else if $username.value }}
+            value: {{ $username.value | quote }}
+            {{- else if $.Values.kafka.sasl.username.valueFrom.secretKeyRef.name }}
+            valueFrom:
+              secretKeyRef:
+                name: {{ $.Values.kafka.sasl.username.valueFrom.secretKeyRef.name | quote }}
+                key: {{ required "Must specify kafka.sasl.username.valueFrom.secretKeyRef.key" $.Values.kafka.sasl.username.valueFrom.secretKeyRef.key | quote }}
+            {{- else }}
+            value: {{ required (printf "Must specify workers.%s.kafka.sasl.username.value, workers.%s.kafka.sasl.username.valueFrom.secretKeyRef.name, kafka.sasl.username.value, or kafka.sasl.username.valueFrom.secretKeyRef.name" $worker $worker) $.Values.kafka.sasl.username.value }}
+            {{- end }}
+            {{- $password := .kafka.sasl.password }}
+          - name: SASL_PASSWORD
+            {{- if $password.valueFrom.secretKeyRef.name }}
+            valueFrom:
+              secretKeyRef:
+                name: {{ $password.valueFrom.secretKeyRef.name | quote }}
+                key: {{ required (printf "Must specify %s.kafka.sasl.password.valueFrom.secretKeyRef.key" $worker) $password.valueFrom.secretKeyRef.key | quote }}
+            {{- else if $password.value }}
+            value: {{ $password.value | quote }}
+            {{- else if $.Values.kafka.sasl.password.valueFrom.secretKeyRef.name }}
+            valueFrom:
+              secretKeyRef:
+                name: {{ $.Values.kafka.sasl.password.valueFrom.secretKeyRef.name | quote }}
+                key: {{ required "Must specify kafka.sasl.password.valueFrom.secretKeyRef.key" $.Values.kafka.sasl.password.valueFrom.secretKeyRef.key | quote }}
+            {{- else }}
+            value: {{ required (printf "Must specify workers.%s.kafka.sasl.password.value, workers.%s.kafka.sasl.password.valueFrom.secretKeyRef.name, kafka.sasl.password.value, or kafka.sasl.password.valueFrom.secretKeyRef.name" $worker $worker) $.Values.kafka.sasl.password.value }}
+            {{- end }}
+          {{- end }}
         {{- include "corda.configSaltAndPassphraseEnv" $ | nindent 10 }}
         {{- if $optionalArgs.clusterDbAccess }}
         {{- include "corda.clusterDbEnv" $ | nindent 10 }}
         {{- end }}
         args:
+          - "--workspace-dir=/work"
+          - "--temp-dir=/tmp"
           - "-mbootstrap.servers={{ include "corda.kafkaBootstrapServers" $ }}"
+          {{- if $.Values.kafka.sasl.enabled }}
+          - "-msasl.jaas.config=org.apache.kafka.common.security.{{- if eq $.Values.kafka.sasl.mechanism "PLAIN" }}plain.PlainLoginModule{{- else }}scram.ScramLoginModule{{- end }} required username=\"$(SASL_USERNAME)\" password=\"$(SASL_PASSWORD)\";"
+          {{- end }}
           - "--topic-prefix={{ $.Values.kafka.topicPrefix }}"
           {{- if $.Values.kafka.tls.enabled }}
           {{- if $.Values.kafka.sasl.enabled }}
@@ -238,14 +276,15 @@ spec:
           - {{ $arg | quote }}
           {{- end }}
         volumeMounts:
+          - mountPath: "/tmp"
+            name: "tmp"
+            readOnly: false
+          - mountPath: "/work"
+            name: "work"
+            readOnly: false
           {{- if and $.Values.kafka.tls.enabled $.Values.kafka.tls.truststore.valueFrom.secretKeyRef.name }}
           - mountPath: "/certs"
             name: "certs"
-            readOnly: true
-          {{- end }}
-          {{- if $.Values.kafka.sasl.enabled  }}
-          - mountPath: "/etc/config"
-            name: "jaas-conf"
             readOnly: true
           {{- end }}
           {{- if .tls }}
@@ -257,6 +296,7 @@ spec:
           - mountPath: /dumps
             name: dumps
             subPathExpr: $(K8S_POD_NAME)
+            readOnly: false
           {{- end }}
           {{- include "corda.log4jVolumeMount" $ | nindent 10 }}
         ports:
@@ -297,72 +337,11 @@ spec:
           failureThreshold: 20
           timeoutSeconds: 5
         {{- end }}
-      initContainers:
-        {{- if $.Values.kafka.sasl.enabled }}
-        - name: create-sasl-jaas-conf
-          image: {{ include "corda.workerImage" ( list $ . ) }}
-          imagePullPolicy:  {{ $.Values.imagePullPolicy }}
-          env:
-            {{- if $.Values.kafka.sasl.enabled }}
-              {{- $username := .kafka.sasl.username }}
-            - name: SASL_USERNAME
-              {{- if $username.valueFrom.secretKeyRef.name }}
-              valueFrom:
-                secretKeyRef:
-                  name: {{ $username.valueFrom.secretKeyRef.name | quote }}
-                  key: {{ required (printf "Must specify %s.kafka.sasl.username.valueFrom.secretKeyRef.key" $worker) $username.valueFrom.secretKeyRef.key | quote }}
-              {{- else if $username.value }}
-              value: {{ $username.value | quote }}
-              {{- else if $.Values.kafka.sasl.username.valueFrom.secretKeyRef.name }}
-              valueFrom:
-                secretKeyRef:
-                  name: {{ $.Values.kafka.sasl.username.valueFrom.secretKeyRef.name | quote }}
-                  key: {{ required "Must specify kafka.sasl.username.valueFrom.secretKeyRef.key" $.Values.kafka.sasl.username.valueFrom.secretKeyRef.key | quote }}
-              {{- else }}
-              value: {{ required (printf "Must specify workers.%s.kafka.sasl.username.value, workers.%s.kafka.sasl.username.valueFrom.secretKeyRef.name, kafka.sasl.username.value, or kafka.sasl.username.valueFrom.secretKeyRef.name" $worker $worker) $.Values.kafka.sasl.username.value }}
-              {{- end }}
-              {{- $password := .kafka.sasl.password }}
-            - name: SASL_PASSWORD
-              {{- if $password.valueFrom.secretKeyRef.name }}
-              valueFrom:
-                secretKeyRef:
-                  name: {{ $password.valueFrom.secretKeyRef.name | quote }}
-                  key: {{ required (printf "Must specify %s.kafka.sasl.password.valueFrom.secretKeyRef.key" $worker) $password.valueFrom.secretKeyRef.key | quote }}
-              {{- else if $password.value }}
-              value: {{ $password.value | quote }}
-              {{- else if $.Values.kafka.sasl.password.valueFrom.secretKeyRef.name }}
-              valueFrom:
-                secretKeyRef:
-                  name: {{ $.Values.kafka.sasl.password.valueFrom.secretKeyRef.name | quote }}
-                  key: {{ required "Must specify kafka.sasl.password.valueFrom.secretKeyRef.key" $.Values.kafka.sasl.password.valueFrom.secretKeyRef.key | quote }}
-              {{- else }}
-              value: {{ required (printf "Must specify workers.%s.kafka.sasl.password.value, workers.%s.kafka.sasl.password.valueFrom.secretKeyRef.name, kafka.sasl.password.value, or kafka.sasl.password.valueFrom.secretKeyRef.name" $worker $worker) $.Values.kafka.sasl.password.value }}
-              {{- end }}
-            {{- end }}
-          {{- include "corda.containerSecurityContext" $ | nindent 10 }}
-          command:
-          - /bin/bash
-          - -c
-          args:
-            - |
-                cat <<EOF > /etc/config/jaas.conf
-                KafkaClient {
-                    {{- if eq $.Values.kafka.sasl.mechanism "PLAIN" }}
-                    org.apache.kafka.common.security.plain.PlainLoginModule required
-                    {{- else }}
-                    org.apache.kafka.common.security.scram.ScramLoginModule required
-                    {{- end }}
-                    username="$SASL_USERNAME"
-                    password="$SASL_PASSWORD";
-                };
-                EOF
-          volumeMounts:
-          - mountPath: "/etc/config"
-            name: "jaas-conf"
-            readOnly: false
-          {{- include "corda.bootstrapResources" $ | nindent 10 }}
-        {{- end }}
       volumes:
+        - name: tmp
+          emptyDir: {}
+        - name: work
+          emptyDir: {}
         {{- if and $.Values.kafka.tls.enabled $.Values.kafka.tls.truststore.valueFrom.secretKeyRef.name }}
         - name: certs
           secret:
@@ -383,10 +362,6 @@ spec:
               - key: {{ .tls.ca.secretKey | quote }}
                 path: "ca.crt"
         {{- end -}}
-        {{- if $.Values.kafka.sasl.enabled  }}
-        - name: jaas-conf
-          emptyDir: {}
-        {{- end }}
         {{- if $.Values.dumpHostPath }}
         - name: dumps
           hostPath:

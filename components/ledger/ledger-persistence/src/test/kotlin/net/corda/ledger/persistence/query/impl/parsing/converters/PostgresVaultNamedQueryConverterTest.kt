@@ -1,31 +1,33 @@
 package net.corda.ledger.persistence.query.impl.parsing.converters
 
-import net.corda.ledger.persistence.query.impl.parsing.And
-import net.corda.ledger.persistence.query.impl.parsing.As
-import net.corda.ledger.persistence.query.impl.parsing.Equals
-import net.corda.ledger.persistence.query.impl.parsing.From
-import net.corda.ledger.persistence.query.impl.parsing.GreaterThan
-import net.corda.ledger.persistence.query.impl.parsing.GreaterThanEquals
-import net.corda.ledger.persistence.query.impl.parsing.In
-import net.corda.ledger.persistence.query.impl.parsing.IsNotNull
-import net.corda.ledger.persistence.query.impl.parsing.IsNull
-import net.corda.ledger.persistence.query.impl.parsing.JsonArrayOrObjectAsText
-import net.corda.ledger.persistence.query.impl.parsing.JsonCast
-import net.corda.ledger.persistence.query.impl.parsing.JsonKeyExists
-import net.corda.ledger.persistence.query.impl.parsing.LeftParentheses
-import net.corda.ledger.persistence.query.impl.parsing.LessThan
-import net.corda.ledger.persistence.query.impl.parsing.LessThanEquals
-import net.corda.ledger.persistence.query.impl.parsing.NotEquals
-import net.corda.ledger.persistence.query.impl.parsing.Number
-import net.corda.ledger.persistence.query.impl.parsing.Or
-import net.corda.ledger.persistence.query.impl.parsing.Parameter
-import net.corda.ledger.persistence.query.impl.parsing.ParameterEnd
-import net.corda.ledger.persistence.query.impl.parsing.PathReference
-import net.corda.ledger.persistence.query.impl.parsing.PathReferenceWithSpaces
-import net.corda.ledger.persistence.query.impl.parsing.RightParentheses
-import net.corda.ledger.persistence.query.impl.parsing.Select
-import net.corda.ledger.persistence.query.impl.parsing.Token
-import net.corda.ledger.persistence.query.impl.parsing.Where
+import net.corda.ledger.persistence.query.parsing.And
+import net.corda.ledger.persistence.query.parsing.As
+import net.corda.ledger.persistence.query.parsing.Equals
+import net.corda.ledger.persistence.query.parsing.From
+import net.corda.ledger.persistence.query.parsing.GreaterThan
+import net.corda.ledger.persistence.query.parsing.GreaterThanEquals
+import net.corda.ledger.persistence.query.parsing.In
+import net.corda.ledger.persistence.query.parsing.IsNotNull
+import net.corda.ledger.persistence.query.parsing.IsNull
+import net.corda.ledger.persistence.query.parsing.JsonArrayOrObjectAsText
+import net.corda.ledger.persistence.query.parsing.JsonCast
+import net.corda.ledger.persistence.query.parsing.JsonField
+import net.corda.ledger.persistence.query.parsing.JsonKeyExists
+import net.corda.ledger.persistence.query.parsing.LeftParentheses
+import net.corda.ledger.persistence.query.parsing.LessThan
+import net.corda.ledger.persistence.query.parsing.LessThanEquals
+import net.corda.ledger.persistence.query.parsing.NotEquals
+import net.corda.ledger.persistence.query.parsing.Number
+import net.corda.ledger.persistence.query.parsing.Or
+import net.corda.ledger.persistence.query.parsing.Parameter
+import net.corda.ledger.persistence.query.parsing.ParameterEnd
+import net.corda.ledger.persistence.query.parsing.PathReference
+import net.corda.ledger.persistence.query.parsing.PathReferenceWithSpaces
+import net.corda.ledger.persistence.query.parsing.RightParentheses
+import net.corda.ledger.persistence.query.parsing.Select
+import net.corda.ledger.persistence.query.parsing.Token
+import net.corda.ledger.persistence.query.parsing.Where
+import net.corda.ledger.persistence.query.parsing.converters.PostgresVaultNamedQueryConverter
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
@@ -66,6 +68,19 @@ class PostgresVaultNamedQueryConverterTest {
         val expression = listOf(Number("1"))
         postgresVaultNamedQueryParser.convert(output, expression)
         assertThat(output.toString()).isEqualTo("1")
+    }
+
+    @Test
+    fun `JsonField is appended to the output with a space on either side`() {
+        val expression =
+            listOf(
+                PATH_REFERENCE,
+                JsonField(),
+                PATH_REFERENCE
+            )
+
+        postgresVaultNamedQueryParser.convert(output, expression)
+        assertThat(output.toString()).isEqualTo("${PATH_REFERENCE.ref} -> ${PATH_REFERENCE.ref}")
     }
 
     @Test
@@ -213,14 +228,14 @@ class PostgresVaultNamedQueryConverterTest {
     fun `JsonCast is appended directly to the output with no spaces`() {
         val expression = listOf(JsonCast("int"))
         postgresVaultNamedQueryParser.convert(output, expression)
-        assertThat(output.toString()).isEqualTo("::int")
+        assertThat(output.toString()).isEqualTo("\\:\\:int")
     }
 
     @Test
     fun `JsonKeyExists is appended to the output with a space on either side`() {
         val expression = listOf(JsonKeyExists())
         postgresVaultNamedQueryParser.convert(output, expression)
-        assertThat(output.toString()).isEqualTo(" ? ")
+        assertThat(output.toString()).isEqualTo(" \\?\\? ")
     }
 
     @Test

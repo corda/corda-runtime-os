@@ -276,14 +276,15 @@ interface MembershipPersistenceClient : Lifecycle {
      * @param serialNumber Serial number of the member's [MemberInfo].
      * @param reason Reason for suspension.
      *
-     * @return Membership persistence operation with the updated [MemberInfo].
+     * @return Membership persistence operation with the updated [MemberInfo] and the updated [InternalGroupParameters] (or null if not
+     * updated).
      */
     fun suspendMember(
         viewOwningIdentity: HoldingIdentity,
         memberX500Name: MemberX500Name,
         serialNumber: Long?,
         reason: String?,
-    ): MembershipPersistenceOperation<PersistentMemberInfo>
+    ): MembershipPersistenceOperation<Pair<PersistentMemberInfo, InternalGroupParameters?>>
 
     /**
      * Activates a previously suspended member.
@@ -293,14 +294,15 @@ interface MembershipPersistenceClient : Lifecycle {
      * @param serialNumber Serial number of the member's [MemberInfo].
      * @param reason Reason for activation.
      *
-     * @return Membership persistence operation with the updated [MemberInfo].
+     * @return Membership persistence operation with the updated [MemberInfo] and the updated [InternalGroupParameters] (or null if not
+     * updated).
      */
     fun activateMember(
         viewOwningIdentity: HoldingIdentity,
         memberX500Name: MemberX500Name,
         serialNumber: Long?,
         reason: String?,
-    ): MembershipPersistenceOperation<PersistentMemberInfo>
+    ): MembershipPersistenceOperation<Pair<PersistentMemberInfo, InternalGroupParameters?>>
 
     /**
      * Update an existing static network info configuration in the cluster DB. The initial snapshot for a static

@@ -3,18 +3,20 @@ package net.corda.membership.lib.impl
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.core.DigitalSignatureWithKey
 import net.corda.crypto.cipher.suite.SignatureSpecImpl
-import net.corda.data.CordaAvroSerializationFactory
+import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.membership.lib.GroupParametersFactory
 import net.corda.membership.lib.InternalGroupParameters
+import net.corda.membership.lib.SignedGroupParameters
 import net.corda.membership.lib.UnsignedGroupParameters
 import net.corda.membership.lib.exceptions.FailedGroupParametersDeserialization
 import net.corda.membership.lib.exceptions.FailedGroupParametersSerialization
 import net.corda.membership.lib.toMap
 import net.corda.v5.base.types.LayeredPropertyMap
+import net.corda.v5.crypto.SignatureSpec
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -45,6 +47,19 @@ class GroupParametersFactoryImpl @Activate constructor(
     }, KeyValuePairList::class.java)
 
     override fun create(parameters: AvroGroupParameters): InternalGroupParameters = parameters.toCorda()
+
+    override fun create(
+        bytes: ByteArray,
+        signature: DigitalSignatureWithKey,
+        signatureSpec: SignatureSpec
+    ): SignedGroupParameters {
+        return SignedGroupParametersImpl(
+            bytes,
+            signature,
+            signatureSpec,
+            ::deserializeLayeredPropertyMap
+        )
+    }
 
     override fun create(parameters: KeyValuePairList): UnsignedGroupParameters =
         avroSerializer.serialize(parameters)?.toUnsignedGroupParameters() ?: throw FailedGroupParametersSerialization

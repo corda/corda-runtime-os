@@ -1,5 +1,6 @@
 package net.corda.messaging.subscription.consumer.builder
 
+import java.util.concurrent.ConcurrentHashMap
 import net.corda.messagebus.api.configuration.ConsumerConfig
 import net.corda.messagebus.api.configuration.ProducerConfig
 import net.corda.messagebus.api.constants.ConsumerRoles
@@ -19,7 +20,6 @@ import net.corda.messaging.subscription.consumer.listener.StateAndEventConsumerR
 import net.corda.messaging.subscription.factory.MapFactory
 import net.corda.rocks.db.api.StorageManagerFactory
 import net.corda.schema.Schemas.getStateAndEventStateTopic
-import net.corda.utilities.debug
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -40,9 +40,16 @@ class StateAndEventBuilderImpl @Activate constructor(
 
     private val log = LoggerFactory.getLogger(this::class.java)
 
-    override fun createProducer(config: ResolvedSubscriptionConfig): CordaProducer {
-        val producerConfig = ProducerConfig(config.clientId, config.instanceId, true, ProducerRoles.SAE_PRODUCER)
-        return cordaProducerBuilder.createProducer(producerConfig, config.messageBusConfig)
+    override fun createProducer(
+        config: ResolvedSubscriptionConfig,
+        onSerializationError: ((ByteArray) -> Unit)?
+    ): CordaProducer {
+        val producerConfig = ProducerConfig(config.clientId, config.instanceId, true, ProducerRoles.SAE_PRODUCER, false)
+        return cordaProducerBuilder.createProducer(
+            producerConfig,
+            config.messageBusConfig,
+            onSerializationError
+        )
     }
 
     override fun <K : Any, S : Any, E : Any> createStateEventConsumerAndRebalanceListener(
@@ -54,7 +61,6 @@ class StateAndEventBuilderImpl @Activate constructor(
         onStateError: (ByteArray) -> Unit,
         onEventError: (ByteArray) -> Unit,
     ): Pair<StateAndEventConsumer<K, S, E>, StateAndEventConsumerRebalanceListener> {
-
         val mapFactory: MapFactory<K, S> = mapFactoryBuilder.create(
             storageManagerFactory.getStorageManger(config.messageBusConfig),
             config.messageBusConfig,
@@ -63,10 +69,24 @@ class StateAndEventBuilderImpl @Activate constructor(
             sClazz,
         )
 
-        val stateConsumerConfig = ConsumerConfig(config.group, "${config.clientId}-stateConsumer", ConsumerRoles.SAE_STATE)
-        val stateConsumer = cordaConsumerBuilder.createConsumer(stateConsumerConfig, config.messageBusConfig, kClazz, sClazz, onStateError)
-        val eventConsumerConfig = ConsumerConfig(config.group, "${config.clientId}-eventConsumer", ConsumerRoles.SAE_EVENT)
-        val eventConsumer = cordaConsumerBuilder.createConsumer(eventConsumerConfig, config.messageBusConfig, kClazz, eClazz, onEventError)
+        val stateConsumerConfig =
+            ConsumerConfig(config.group, "${config.clientId}-stateConsumer", ConsumerRoles.SAE_STATE)
+        val stateConsumer = cordaConsumerBuilder.createConsumer(
+            stateConsumerConfig,
+            config.messageBusConfig,
+            kClazz,
+            sClazz,
+            onStateError
+        )
+        val eventConsumerConfig =
+            ConsumerConfig(config.group, "${config.clientId}-eventConsumer", ConsumerRoles.SAE_EVENT)
+        val eventConsumer = cordaConsumerBuilder.createConsumer(
+            eventConsumerConfig,
+            config.messageBusConfig,
+            kClazz,
+            eClazz,
+            onEventError
+        )
         validateConsumers(config, stateConsumer, eventConsumer)
 
         val partitionState =
@@ -97,11 +117,10 @@ class StateAndEventBuilderImpl @Activate constructor(
             eventConsumer.getPartitions(config.topic)
         if (statePartitions.size != eventPartitions.size) {
             val errorMsg = "Mismatch between state and event partitions."
-            log.debug {
-                errorMsg + "\n" +
-                        "state: ${statePartitions.joinToString()}\n" +
-                        "event: ${eventPartitions.joinToString()}"
-            }
+            log.warn(
+                errorMsg + " state : ${statePartitions.joinToString()}" +
+                        ", event: ${eventPartitions.joinToString()}"
+            )
             throw CordaRuntimeException(errorMsg)
         }
     }

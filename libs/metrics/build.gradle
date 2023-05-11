@@ -15,11 +15,12 @@ dependencies {
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation 'org.slf4j:slf4j-api'
 
-    api ("io.micrometer:micrometer-core:$micrometerVersion") {
+    api ("net.corda.micrometer:micrometer-core:$micrometerVersion") {
         // we don't need these in classpath, so excluding them to reduce dependencies.
         exclude group: 'org.latencyutils', module: 'LatencyUtils'
     }
 
     testImplementation "org.assertj:assertj-core:$assertjVersion"
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 }

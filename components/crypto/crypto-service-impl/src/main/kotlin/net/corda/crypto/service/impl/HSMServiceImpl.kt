@@ -7,13 +7,11 @@ import net.corda.crypto.component.impl.AbstractConfigurableComponent
 import net.corda.crypto.component.impl.DependenciesTracker
 import net.corda.crypto.config.impl.MasterKeyPolicy
 import net.corda.crypto.config.impl.PrivateKeyPolicy
-import net.corda.crypto.config.impl.hsmService
+import net.corda.crypto.config.impl.hsm
 import net.corda.crypto.config.impl.toCryptoConfig
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoConsts.SOFT_HSM_ID
 import net.corda.crypto.core.InvalidParamsException
-import net.corda.crypto.impl.retrying.BackoffStrategy
-import net.corda.crypto.impl.retrying.CryptoRetryingExecutor
 import net.corda.crypto.persistence.HSMStore
 import net.corda.crypto.service.CryptoServiceFactory
 import net.corda.crypto.service.HSMService
@@ -72,46 +70,15 @@ class HSMServiceImpl @Activate constructor(
                 this[CryptoConsts.HSMContext.PREFERRED_PRIVATE_KEY_POLICY_KEY] == policy
         }
 
-        private val config = event.config.toCryptoConfig()
+        private val hsmConfig = event.config.toCryptoConfig().hsm()
 
-        private val hsmConfig = config.hsmService()
-
-        private val hsmMap = HSMMap(config, store)
-
-        private val executor = CryptoRetryingExecutor(
-            logger,
-            BackoffStrategy.createBackoff(hsmConfig.downstreamMaxAttempts, listOf(100L))
-        )
-
+        // TODO the below API needs to be removed as part of removing multi hsm concept
+        //  as per https://r3-cev.atlassian.net/browse/CORE-10562
+        @Suppress("unused_parameter")
         fun assignHSM(tenantId: String, category: String, context: Map<String, String>): HSMAssociationInfo {
             logger.info("assignHSM(tenant={}, category={})", tenantId, category)
-            if(hsmMap.isOnlySoftHSM) {
-                logger.warn("There is only SOFT HSM configured, will assign that.")
-                return assignSoftHSM(tenantId, category)
-            }
-            val existing = store.findTenantAssociation(tenantId, category)
-            if(existing != null) {
-                logger.warn(
-                    "The ${existing.hsmId} HSM already assigned for tenant={}, category={}",
-                    tenantId,
-                    category)
-                ensureWrappingKey(existing)
-                return existing
-            }
-            val stats = hsmMap.getHSMStats(category).filter { s -> s.allUsages < s.capacity }
-            val chosen = if (context.isPreferredPrivateKeyPolicy(CryptoConsts.HSMContext.PREFERRED_PRIVATE_KEY_POLICY_ALIASED)) {
-                tryChooseAliased(stats)
-            } else {
-                tryChooseAny(stats)
-            }
-            val association = store.associate(
-                tenantId = tenantId,
-                category = category,
-                hsmId = chosen.hsmId,
-                masterKeyPolicy = hsmMap.getMasterKeyPolicy(chosen.hsmId)
-            )
-            ensureWrappingKey(association)
-            return association
+            logger.warn("There is only SOFT HSM configured, will assign that.")
+            return assignSoftHSM(tenantId, category)
         }
 
         fun assignSoftHSM(tenantId: String, category: String): HSMAssociationInfo {
@@ -129,7 +96,8 @@ class HSMServiceImpl @Activate constructor(
                 tenantId = tenantId,
                 category = category,
                 hsmId = SOFT_HSM_ID,
-                masterKeyPolicy = hsmMap.getMasterKeyPolicy(SOFT_HSM_ID)
+                // Defaulting the below to what it used be in crypto default config - but it probably needs be removed now
+                masterKeyPolicy = MasterKeyPolicy.UNIQUE
             )
             ensureWrappingKey(association)
             return association
@@ -141,21 +109,19 @@ class HSMServiceImpl @Activate constructor(
         }
 
         private fun ensureWrappingKey(association: HSMAssociationInfo) {
-            if (hsmMap.getMasterKeyPolicy(association.hsmId) == MasterKeyPolicy.UNIQUE) {
-                require(!association.masterKeyAlias.isNullOrBlank()) {
-                    "The master key alias is not specified."
-                }
-
-                val cryptoService = cryptoServiceFactory.getInstance(association.hsmId)
-                cryptoService.createWrappingKey(
-                    failIfExists = false,
-                    wrappingKeyAlias = association.masterKeyAlias
-                        ?: throw InvalidParamsException("no masterKeyAlias in association"),
-                    context = mapOf(
-                        CRYPTO_TENANT_ID to association.tenantId
-                    )
-                )
+            require(!association.masterKeyAlias.isNullOrBlank()) {
+                "The master key alias is not specified."
             }
+
+            val cryptoService = cryptoServiceFactory.getInstance(association.hsmId)
+            cryptoService.createWrappingKey(
+                failIfExists = false,
+                wrappingKeyAlias = association.masterKeyAlias
+                    ?: throw InvalidParamsException("no masterKeyAlias in association"),
+                context = mapOf(
+                    CRYPTO_TENANT_ID to association.tenantId
+                )
+            )
         }
 
         private fun tryChooseAliased(stats: List<HSMStats>): HSMStats =

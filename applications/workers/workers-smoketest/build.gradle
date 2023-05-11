@@ -54,7 +54,7 @@ kotlin {
 dependencies {
     // NO CORDA DEPENDENCIES!!
     implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion"
-    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.4.2"
+    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:$kotlinCoroutinesVersion"
 
     // Avoid having the schema names and keys scattered across projects
     smokeTestImplementation "net.corda:corda-config-schema:$cordaApiVersion"
@@ -64,7 +64,6 @@ dependencies {
     cpis project(path: ':testing:cpbs:test-cordapp', configuration: 'cordaCPB')
     cpis project(path: ':testing:cpbs:ledger-consensual-demo-app', configuration: 'cordaCPB')
     cpis project(path: ':testing:cpbs:ledger-utxo-demo-app', configuration: 'cordaCPB')
-    cpis project(path: ':testing:cpbs:mgm', configuration: 'cordaCPB')
     upgradeTestingCpiV1 project(path: ':testing:cpbs:test-cordapp-for-vnode-upgrade-testing-v1', configuration: 'cordaCPB')
     upgradeTestingCpiV2 project(path: ':testing:cpbs:test-cordapp-for-vnode-upgrade-testing-v2', configuration: 'cordaCPB')
 
@@ -116,7 +115,6 @@ tasks.register('smokeTest', Test) {
     classpath = project.sourceSets["smokeTest"].runtimeClasspath
 
     def combinedWorker = project.getProperties().getOrDefault("isCombinedWorker",false)
-    systemProperty "restEndpointUrl", project.getProperties().getOrDefault("restEndpointUrl","https://localhost:8888/")
 
     // Note these port values have to match what is setup as part of port forwarding at cluster bootstrap time.
     // E.g. during Jenkins pipeline setup.

@@ -28,6 +28,7 @@ dependencies {
     implementation project(":libs:messaging:message-bus")
     implementation project(":libs:schema-registry:schema-registry")
     implementation project(':libs:utilities')
+    implementation project(":libs:serialization:serialization-avro")
 
     runtimeOnly project(':libs:db:db-orm-impl')
     runtimeOnly project(':libs:schema-registry:schema-registry-impl')
@@ -35,6 +36,7 @@ dependencies {
 
     testImplementation project(":testing:test-utilities")
     testImplementation "org.assertj:assertj-core:$assertjVersion"
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 
     testRuntimeOnly 'org.osgi:osgi.core'

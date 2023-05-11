@@ -8,15 +8,13 @@ import net.corda.libs.configuration.secret.SecretEncryptionUtil
 import net.corda.libs.configuration.secret.SecretsCreateService
 import org.pf4j.Extension
 import org.pf4j.Plugin
-import org.pf4j.PluginWrapper
 import picocli.CommandLine
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
 import picocli.CommandLine.Parameters
 import java.lang.IllegalArgumentException
 
-
-class SecretConfigPlugin(wrapper: PluginWrapper) : Plugin(wrapper) {
+class SecretConfigPlugin : Plugin() {
     @Extension
     @Command(
         name = "secret-config",

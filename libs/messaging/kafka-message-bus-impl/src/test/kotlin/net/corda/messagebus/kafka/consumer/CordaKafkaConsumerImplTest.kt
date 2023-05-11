@@ -1,5 +1,6 @@
 package net.corda.messagebus.kafka.consumer
 
+import io.micrometer.core.instrument.binder.kafka.KafkaClientMetrics
 import net.corda.data.chunking.Chunk
 import net.corda.data.chunking.ChunkKey
 import net.corda.messagebus.api.CordaTopicPartition
@@ -58,6 +59,7 @@ class CordaKafkaConsumerImplTest {
     private lateinit var consumer: MockConsumer<Any, Any>
     private lateinit var partition: TopicPartition
     private val avroSchemaRegistry: AvroSchemaRegistry = mock()
+    private val metricsBinder: KafkaClientMetrics = mock()
     private val chunkDeserializerService: ConsumerChunkDeserializerService<String, String> = mock()
     private val consumerRecord = CordaConsumerRecord("prefixtopic", 1, 1, "key", "value", 0)
     private val consumerConfig = ResolvedConsumerConfig("group", "clientId", PREFIX)
@@ -93,6 +95,7 @@ class CordaKafkaConsumerImplTest {
             consumerParam,
             listenerParam,
             chunkDeserializerService,
+            metricsBinder
         )
     }
 
@@ -159,16 +162,18 @@ class CordaKafkaConsumerImplTest {
 
         cordaKafkaConsumer.close()
         verify(consumer, times(1)).close()
+        verify(metricsBinder, times(1)).close()
     }
 
     @Test
-    fun testCloseFailNoException() {
+    fun noExceptionThrownAndMetricBinderClosedWhenConsumerCloseThrowsException() {
         consumer = mock()
         doThrow(KafkaException()).whenever(consumer).close()
         cordaKafkaConsumer = createConsumer(consumer)
 
         cordaKafkaConsumer.close()
         verify(consumer, times(1)).close()
+        verify(metricsBinder, times(1)).close()
     }
 
     @Test

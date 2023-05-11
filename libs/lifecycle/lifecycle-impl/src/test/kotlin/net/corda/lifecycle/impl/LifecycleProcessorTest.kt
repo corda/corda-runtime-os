@@ -1,5 +1,8 @@
 package net.corda.lifecycle.impl
 
+import java.util.concurrent.Delayed
+import java.util.concurrent.ScheduledFuture
+import java.util.concurrent.TimeUnit
 import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.ErrorEvent
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -28,9 +31,6 @@ import org.mockito.Mockito.verify
 import org.mockito.kotlin.any
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
-import java.util.concurrent.Delayed
-import java.util.concurrent.ScheduledFuture
-import java.util.concurrent.TimeUnit
 
 class LifecycleProcessorTest {
 
@@ -663,13 +663,15 @@ class LifecycleProcessorTest {
     }
 
     @Test
-    fun `processClose will close all the timers`() {
+    fun `processClose will close all the timers and remove from registry`() {
         val state: LifecycleStateManager = mock()
+        val registry = mock<LifecycleRegistryCoordinatorAccess>()
+
         whenever(state.nextBatch()).thenReturn(listOf(CloseCoordinator()))
-        val processor = LifecycleProcessor(NAME, state, mock(), mock(), mock())
+        val processor = LifecycleProcessor(NAME, state, registry, mock(), mock())
 
         processor.processEvents(mock(), mock())
-
+        verify(registry, times(1)).removeCoordinator(any())
         verify(state).cancelAllTimer()
     }
 

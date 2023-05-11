@@ -2,6 +2,7 @@ package net.corda.flow.application.sessions
 
 import net.corda.data.KeyValuePairList
 import net.corda.data.flow.state.session.SessionState
+import net.corda.data.flow.state.session.SessionStateType
 import net.corda.flow.ALICE_X500_NAME
 import net.corda.flow.application.serialization.DeserializedWrongAMQPObjectException
 import net.corda.flow.application.serialization.SerializationServiceInternal
@@ -18,6 +19,8 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.EnumSource
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
@@ -209,6 +212,21 @@ class FlowSessionImplTest {
 
         assertEquals("protocol", info.protocol())
         assertEquals(1, info.protocolVersion())
+    }
+
+    @ParameterizedTest
+    @EnumSource(
+        value = SessionStateType::class,
+        names = ["ERROR", "CLOSED"]
+    )
+    fun `Send, receive, sendAndReceive will throw if session state is CLOSED or ERROR`(testStatus: SessionStateType) {
+        whenever(mockFlowFiberService.flowCheckpoint.getSessionState(SESSION_ID)).thenReturn(SessionState().apply { status =
+            testStatus })
+        val session = createInitiatingSession()
+
+        assertThrows<CordaRuntimeException> { session.send(HI) }
+        assertThrows<CordaRuntimeException> { session.receive(String::class.java) }
+        assertThrows<CordaRuntimeException> { session.sendAndReceive(String::class.java, HI) }
     }
 
     private fun testSessionProps(): KeyValuePairList {

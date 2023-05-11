@@ -1,11 +1,6 @@
 plugins {
     id 'corda.common-publishing'
     id 'java'
-    id 'corda.javadoc-generation'
-}
-
-ext {
-    releasable = true
 }
 
 group 'net.corda.cli.deployment'
@@ -144,7 +139,8 @@ tasks.register('publishOSGiImage', DeployableContainerBuilder) {
     if (project.hasProperty('cliBaseTag')) {
         baseImageTag = cliBaseTag
     } else {
-        it.baseImageTag = (cordaCliIncluded) ? "latest-local" : "unstable"
+        String cliVersion = pluginHostVersion.replaceAll(/(.*\d)\D*$/, '$1') // drop suffix i.e beta-+
+        it.baseImageTag = (cordaCliIncluded) ? "latest-local-${cliVersion}" : "unstable-${cliVersion}"
     }
 
     if (project.hasProperty('useDockerDaemon')) {

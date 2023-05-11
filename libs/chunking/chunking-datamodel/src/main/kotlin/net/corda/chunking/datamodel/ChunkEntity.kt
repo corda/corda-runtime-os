@@ -16,8 +16,6 @@ data class ChunkEntity(
     @Id
     @Column(name = "request_id", nullable = false)
     val requestId: String,
-    @Column(name = "filename", nullable = true)
-    var fileName: String?,
     @Column(name = "checksum", nullable = true)
     var checksum: String?,
     @Id
@@ -35,7 +33,6 @@ data class ChunkEntity(
         other as ChunkEntity
 
         if (requestId != other.requestId) return false
-        if (fileName != other.fileName) return false
         if (checksum != other.checksum) return false
         if (partNumber != other.partNumber) return false
         if (offset != other.offset) return false
@@ -46,7 +43,6 @@ data class ChunkEntity(
 
     override fun hashCode(): Int {
         var result = requestId.hashCode()
-        result = 31 * result + (fileName?.hashCode() ?: 0)
         result = 31 * result + (checksum?.hashCode() ?: 0)
         result = 31 * result + partNumber
         result = 31 * result + offset.hashCode()

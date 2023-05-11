@@ -15,6 +15,7 @@ import java.time.Instant
 data class UniquenessCheckRequestInternal constructor(
     val txId: SecureHash,
     val rawTxId: String,
+    val originatorX500Name: String,
     val inputStates: List<UniquenessCheckStateRef>,
     val referenceStates: List<UniquenessCheckStateRef>,
     val numOutputStates: Int,
@@ -45,6 +46,7 @@ data class UniquenessCheckRequestInternal constructor(
                 return UniquenessCheckRequestInternal(
                     parseSecureHash(txId),
                     txId,
+                    originatorX500Name,
                     inputStates?.map { it.toStateRef() } ?: emptyList(),
                     referenceStates?.map { it.toStateRef() } ?: emptyList(),
                     numOutputStates,

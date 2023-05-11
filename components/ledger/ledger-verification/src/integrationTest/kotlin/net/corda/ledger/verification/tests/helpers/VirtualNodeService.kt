@@ -28,7 +28,7 @@ class VirtualNodeService @Activate constructor(
     }
 
     init {
-        sandboxGroupContextComponent.initCaches(2)
+        sandboxGroupContextComponent.resizeCaches(2)
     }
 
     fun load(resourceName: String): VirtualNodeInfo {

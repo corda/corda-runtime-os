@@ -1,8 +1,10 @@
 package net.corda.virtualnode.write.db.impl.writer.asyncoperation.handlers
 
+import java.time.Instant
 import net.corda.data.virtualnode.VirtualNodeCreateRequest
 import net.corda.data.virtualnode.VirtualNodeOperationStatus
 import net.corda.db.connection.manager.VirtualNodeDbType
+import net.corda.libs.external.messaging.ExternalMessagingRouteConfigGenerator
 import net.corda.libs.virtualnode.datamodel.dto.VirtualNodeOperationStateDto
 import net.corda.membership.lib.grouppolicy.GroupPolicyParser
 import net.corda.messaging.api.publisher.Publisher
@@ -17,7 +19,6 @@ import net.corda.virtualnode.write.db.impl.writer.asyncoperation.VirtualNodeAsyn
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.factories.RecordFactory
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.services.CreateVirtualNodeService
 import org.slf4j.Logger
-import java.time.Instant
 
 @Suppress("LongParameterList")
 internal class CreateVirtualNodeOperationHandler(
@@ -26,6 +27,7 @@ internal class CreateVirtualNodeOperationHandler(
     private val recordFactory: RecordFactory,
     private val policyParser: GroupPolicyParser,
     private val statusPublisher: Publisher,
+    private val externalMessagingRouteConfigGenerator: ExternalMessagingRouteConfigGenerator,
     private val logger: Logger
 ) : VirtualNodeAsyncOperationHandler<VirtualNodeCreateRequest> {
 
@@ -85,18 +87,24 @@ internal class CreateVirtualNodeOperationHandler(
                 }
             }
 
+            val externalMessagingRouteConfig = externalMessagingRouteConfigGenerator.generateNewConfig(
+                holdingId,
+                cpiMetadata.cpiId,
+                cpiMetadata.cpksMetadata
+            )
+
             val vNodeConnections = execLog.measureExecTime("persist holding ID and virtual node") {
                 createVirtualNodeService.persistHoldingIdAndVirtualNode(
                     holdingId,
                     vNodeDbs,
-                    cpiMetadata.id,
+                    cpiMetadata.cpiId,
                     request.updateActor,
-                    externalMessagingRouteConfig = null
+                    externalMessagingRouteConfig
                 )
             }
 
-            val mgmInfo = if(!GroupPolicyParser.isStaticNetwork(cpiMetadata.groupPolicy)) {
-                policyParser.getMgmInfo(holdingId, cpiMetadata.groupPolicy)
+            val mgmInfo = if (!GroupPolicyParser.isStaticNetwork(cpiMetadata.groupPolicy!!)) {
+                policyParser.getMgmInfo(holdingId, cpiMetadata.groupPolicy!!)
             } else {
                 null
             }
@@ -111,9 +119,9 @@ internal class CreateVirtualNodeOperationHandler(
             records.add(
                 recordFactory.createVirtualNodeInfoRecord(
                     holdingId,
-                    cpiMetadata.id,
+                    cpiMetadata.cpiId,
                     vNodeConnections,
-                    externalMessagingRouteConfig = null
+                    externalMessagingRouteConfig
                 )
             )
 
@@ -158,7 +166,10 @@ internal class CreateVirtualNodeOperationHandler(
         }
     }
 
-    private fun getAvroStatusObject(requestId: String, status: VirtualNodeOperationStateDto): VirtualNodeOperationStatus {
+    private fun getAvroStatusObject(
+        requestId: String,
+        status: VirtualNodeOperationStateDto
+    ): VirtualNodeOperationStatus {
         val now = Instant.now()
         return VirtualNodeOperationStatus.newBuilder()
             .setRequestId(requestId)

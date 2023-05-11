@@ -19,16 +19,13 @@ interface ChunkBuilderService {
      * @param checksum checksum for the full bytes received in the previous chunks
      * @param offset offset for data
      * @param properties properties associated with this chunk
-     * @param fileName file name
      */
     fun buildFinalChunk(
         identifier: String,
         chunkNumber: Int,
         checksum: SecureHash,
         offset: Long,
-        properties: KeyValuePairList? = null,
-        //TODO - remove these CORE-9481
-        fileName: String? = null,
+        properties: KeyValuePairList? = null
     ) : Chunk
 
     /**
@@ -38,15 +35,12 @@ interface ChunkBuilderService {
      * @param byteBuffer the bytes to send as part of this chunk
      * @param offset offset for data
      * @param properties properties associated with this chunk
-     * @param fileName file name
      */
     fun buildChunk(
         identifier: String,
         chunkNumber: Int,
         byteBuffer: ByteBuffer,
         offset: Long,
-        properties: KeyValuePairList? = null,
-        //TODO - remove these CORE-9481
-        fileName: String? = null,
+        properties: KeyValuePairList? = null
     ) : Chunk
 }

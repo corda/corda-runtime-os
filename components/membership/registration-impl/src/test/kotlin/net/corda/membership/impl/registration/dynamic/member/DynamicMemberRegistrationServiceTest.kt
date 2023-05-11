@@ -15,8 +15,8 @@ import net.corda.crypto.core.DigitalSignatureWithKey
 import net.corda.crypto.core.ShortHash
 import net.corda.crypto.hes.EncryptedDataWithKey
 import net.corda.crypto.hes.EphemeralKeyPairEncryptor
-import net.corda.data.CordaAvroSerializationFactory
-import net.corda.data.CordaAvroSerializer
+import net.corda.avro.serialization.CordaAvroSerializationFactory
+import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
@@ -24,7 +24,7 @@ import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.p2p.MembershipRegistrationRequest
 import net.corda.data.p2p.app.AppMessage
-import net.corda.data.p2p.app.UnauthenticatedMessage
+import net.corda.data.p2p.app.OutboundUnauthenticatedMessage
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.platform.PlatformInfoProvider
@@ -70,6 +70,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.URL_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.ecdhKey
 import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
 import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
+import net.corda.membership.lib.registration.PRE_AUTH_TOKEN
 import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidationException
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidator
@@ -265,9 +266,9 @@ class DynamicMemberRegistrationServiceTest {
     private val configurationReadService: ConfigurationReadService = mock {
         on { registerComponentForUpdates(eq(coordinator), any()) } doReturn configHandle
     }
-    private var memberContextCaptor: KArgumentCaptor<KeyValuePairList> = argumentCaptor()
+    private var contextCaptor: KArgumentCaptor<KeyValuePairList> = argumentCaptor()
     private val keyValuePairListSerializer: CordaAvroSerializer<Any> = mock {
-        on { serialize(memberContextCaptor.capture()) } doReturn MEMBER_CONTEXT_BYTES
+        on { serialize(contextCaptor.capture()) } doReturn MEMBER_CONTEXT_BYTES
     }
     private val registrationRequestSerializer: CordaAvroSerializer<Any> = mock {
         on { serialize(any()) } doReturn REQUEST_BYTES
@@ -355,6 +356,7 @@ class DynamicMemberRegistrationServiceTest {
         "corda.endpoints.0.protocolVersion" to "1",
         "corda.ledger.keys.0.id" to LEDGER_KEY_ID,
         "corda.ledger.keys.0.signature.spec" to SignatureSpecs.ECDSA_SHA512.signatureName,
+        PRE_AUTH_TOKEN to UUID(0, 1).toString()
     )
 
     @AfterEach
@@ -411,7 +413,7 @@ class DynamicMemberRegistrationServiceTest {
                 it.assertThat(publishedMessage.topic).isEqualTo(Schemas.P2P.P2P_OUT_TOPIC)
                 it.assertThat(publishedMessage.key).isEqualTo(memberId.value)
                 val unauthenticatedMessagePublished =
-                    (publishedMessage.value as AppMessage).message as UnauthenticatedMessage
+                    (publishedMessage.value as AppMessage).message as OutboundUnauthenticatedMessage
                 it.assertThat(unauthenticatedMessagePublished.header.source).isEqualTo(member.toAvro())
                 it.assertThat(unauthenticatedMessagePublished.header.destination).isEqualTo(mgm.toAvro())
                 it.assertThat(unauthenticatedMessagePublished.payload).isEqualTo(ByteBuffer.wrap(UNAUTH_REQUEST_BYTES))
@@ -426,10 +428,11 @@ class DynamicMemberRegistrationServiceTest {
             val capturedContext = argumentCaptor<KeyValuePairList>()
             val capturedRequest = argumentCaptor<MembershipRegistrationRequest>()
             registrationService.register(registrationResultId, member, context)
-            verify(keyValuePairListSerializer).serialize(capturedContext.capture())
+            verify(keyValuePairListSerializer, times(2)).serialize(capturedContext.capture())
             verify(registrationRequestSerializer).serialize(capturedRequest.capture())
             SoftAssertions.assertSoftly {
                 it.assertThat(capturedContext.firstValue.toMap()).doesNotContainKey(SERIAL)
+                it.assertThat(capturedContext.secondValue.toMap()).doesNotContainKey(SERIAL)
                 it.assertThat(capturedRequest.firstValue.serial).isEqualTo(0)
             }
         }
@@ -475,13 +478,13 @@ class DynamicMemberRegistrationServiceTest {
             val capturedRequest = argumentCaptor<RegistrationRequest>()
             registrationService.register(registrationResultId, member, context)
             verify(membershipPersistenceClient).persistRegistrationRequest(eq(member), capturedRequest.capture())
-            assertThat(capturedRequest.firstValue.signature).isEqualTo(
+            assertThat(capturedRequest.firstValue.memberContext.signature).isEqualTo(
                 CryptoSignatureWithKey(
                     ByteBuffer.wrap(keyEncodingService.encodeAsByteArray(mockSignature.by)),
                     ByteBuffer.wrap(mockSignature.bytes)
                 )
             )
-            assertThat(capturedRequest.firstValue.signatureSpec.signatureName)
+            assertThat(capturedRequest.firstValue.memberContext.signatureSpec.signatureName)
                 .isEqualTo(SignatureSpecs.ECDSA_SHA512.signatureName)
         }
 
@@ -505,12 +508,12 @@ class DynamicMemberRegistrationServiceTest {
         }
 
         @Test
-        fun `registration context is constructed as expected`() {
+        fun `contexts are constructed as expected`() {
             postConfigChangedEvent()
             registrationService.start()
             registrationService.register(registrationResultId, member, context)
 
-            val memberContext = assertDoesNotThrow { memberContextCaptor.firstValue }
+            val memberContext = assertDoesNotThrow { contextCaptor.firstValue }
 
             assertThat(memberContext.items.map { it.key }).containsExactlyInAnyOrder(
                 GROUP_ID,
@@ -530,6 +533,9 @@ class DynamicMemberRegistrationServiceTest {
                 LEDGER_KEY_HASHES_KEY.format(0),
                 LEDGER_KEY_SIGNATURE_SPEC.format(0)
             )
+
+            val registrationContext = assertDoesNotThrow { contextCaptor.secondValue }
+            assertThat(registrationContext.items.map { it.key }).containsExactlyInAnyOrder(PRE_AUTH_TOKEN)
         }
 
         @Test
@@ -547,7 +553,7 @@ class DynamicMemberRegistrationServiceTest {
             registrationService.start()
             registrationService.register(registrationResultId, member, context)
 
-            val memberContext = assertDoesNotThrow { memberContextCaptor.firstValue }
+            val memberContext = assertDoesNotThrow { contextCaptor.firstValue }
 
             assertThat(memberContext.items).contains(
                 KeyValuePair(
@@ -616,7 +622,7 @@ class DynamicMemberRegistrationServiceTest {
 
             registrationService.register(registrationResultId, member, context)
 
-            assertThat(memberContextCaptor.firstValue.toMap())
+            assertThat(contextCaptor.firstValue.toMap())
                 .containsAllEntriesOf(
                     keys.associate {
                         "corda.session.keys.${it.index}.pem" to it.keyId.value
@@ -1046,6 +1052,22 @@ class DynamicMemberRegistrationServiceTest {
             registrationService.start()
 
             assertThrows<InvalidMembershipRegistrationException> {
+                registrationService.register(registrationResultId, member, testProperties)
+            }
+        }
+
+        @Test
+        fun `ledger keys are optional when notary role is set`() {
+            postConfigChangedEvent()
+            val testProperties =
+                context.filterNot { it.key.startsWith("corda.ledger") } + mapOf(
+                    String.format(ROLES_PREFIX, 0) to "notary",
+                    NOTARY_SERVICE_NAME to "O=MyNotaryService, L=London, C=GB",
+                    "corda.notary.keys.0.id" to NOTARY_KEY_ID,
+                )
+            registrationService.start()
+
+            assertDoesNotThrow {
                 registrationService.register(registrationResultId, member, testProperties)
             }
         }

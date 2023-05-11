@@ -34,9 +34,11 @@ import net.corda.rest.security.CURRENT_REST_CONTEXT
 import net.corda.rest.security.RestAuthContext
 import net.corda.rest.ws.DuplexChannel
 import net.corda.test.util.identity.createTestHoldingIdentity
+import net.corda.utilities.MDC_CLIENT_ID
 import net.corda.virtualnode.OperationalStatus
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertInstanceOf
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -138,7 +140,7 @@ class FlowRestResourceImplTest {
             key = FlowKey()
         })
         whenever(publisherFactory.createPublisher(any(), any())).thenReturn(publisher)
-        whenever(publisher.publish(any())).thenReturn(listOf(CompletableFuture<Unit>().apply { complete(Unit) }))
+        whenever(publisher.batchPublish(any())).thenReturn(CompletableFuture<Unit>().apply { complete(Unit) })
 
         val restAuthContext = mock<RestAuthContext>().apply {
             whenever(principal).thenReturn(loginName)
@@ -263,6 +265,7 @@ class FlowRestResourceImplTest {
     @Test
     fun `start flow event triggers successfully`() {
         val flowRestResource = createFlowRestResource()
+        val platformPropertiesCaptor = argumentCaptor<Map<String, String>>()
 
         whenever(messageFactory.createFlowStatusResponse(any())).thenReturn(mock())
 
@@ -271,11 +274,13 @@ class FlowRestResourceImplTest {
         verify(virtualNodeInfoReadService, times(1)).getByHoldingIdentityShortHash(any())
         verify(cpiInfoReadService, times(1)).get(any())
         verify(flowStatusCacheService, times(1)).getStatus(any(), any())
-        verify(messageFactory, times(1)).createStartFlowEvent(any(), any(), any(), any(), any())
+        verify(messageFactory, times(1)).createStartFlowEvent(any(), any(), any(), any(), platformPropertiesCaptor.capture())
         verify(messageFactory, times(1)).createStartFlowStatus(any(), any(), any())
-        verify(publisher, times(1)).publish(any())
+        verify(publisher, times(1)).batchPublish(any())
         verify(messageFactory, times(1)).createStartFlowStatus(any(), any(), any())
         verify(fatalErrorFunction, never()).invoke()
+
+        assertEquals(clientRequestId, platformPropertiesCaptor.firstValue[MDC_CLIENT_ID])
     }
 
     @Test
@@ -387,7 +392,7 @@ class FlowRestResourceImplTest {
     fun `start flow throws flowRestResourceServiceException exception when publish fails synchronously`() {
         val flowRestResource = createFlowRestResource()
 
-        doThrow(CordaMessageAPIIntermittentException("")).whenever(publisher).publish(any())
+        doThrow(CordaMessageAPIIntermittentException("")).whenever(publisher).batchPublish(any())
         assertThrows<InternalServerException> {
             flowRestResource.startFlow(VALID_SHORT_HASH, StartFlowParameters(clientRequestId, FLOW1, TestJsonObject()))
         }
@@ -396,7 +401,7 @@ class FlowRestResourceImplTest {
         verify(flowStatusCacheService, times(1)).getStatus(any(), any())
         verify(messageFactory, times(1)).createStartFlowEvent(any(), any(), any(), any(), any())
         verify(messageFactory, times(1)).createStartFlowStatus(any(), any(), any())
-        verify(publisher, times(1)).publish(any())
+        verify(publisher, times(1)).batchPublish(any())
         verify(messageFactory, times(1)).createStartFlowStatus(any(), any(), any())
         verify(fatalErrorFunction, never()).invoke()
     }
@@ -404,11 +409,11 @@ class FlowRestResourceImplTest {
     @Test
     fun `start flow throws FlowRestResourceServiceException exception when publish fails asynchronously`() {
         val flowRestResource = createFlowRestResource()
-        whenever(publisher.publish(any())).thenReturn(listOf(CompletableFuture<Unit>().apply {
+        whenever(publisher.batchPublish(any())).thenReturn(CompletableFuture<Unit>().apply {
             completeExceptionally(
                 CordaMessageAPIIntermittentException("")
             )
-        }))
+        })
 
         assertThrows<InternalServerException> {
             flowRestResource.startFlow(VALID_SHORT_HASH, StartFlowParameters(clientRequestId, FLOW1, TestJsonObject()))
@@ -418,7 +423,7 @@ class FlowRestResourceImplTest {
         verify(flowStatusCacheService, times(1)).getStatus(any(), any())
         verify(messageFactory, times(1)).createStartFlowEvent(any(), any(), any(), any(), any())
         verify(messageFactory, times(1)).createStartFlowStatus(any(), any(), any())
-        verify(publisher, times(1)).publish(any())
+        verify(publisher, times(1)).batchPublish(any())
         verify(messageFactory, times(1)).createStartFlowStatus(any(), any(), any())
         verify(fatalErrorFunction, never()).invoke()
     }
@@ -427,7 +432,7 @@ class FlowRestResourceImplTest {
     fun `start flow always returns error after synchronous fatal failure`() {
         val flowRestResource = createFlowRestResource()
 
-        doThrow(CordaMessageAPIFatalException("")).whenever(publisher).publish(any())
+        doThrow(CordaMessageAPIFatalException("")).whenever(publisher).batchPublish(any())
         assertThrows<InternalServerException> {
             flowRestResource.startFlow(VALID_SHORT_HASH, StartFlowParameters(clientRequestId, FLOW1, TestJsonObject()))
         }
@@ -436,7 +441,7 @@ class FlowRestResourceImplTest {
         verify(flowStatusCacheService, times(1)).getStatus(any(), any())
         verify(messageFactory, times(1)).createStartFlowEvent(any(), any(), any(), any(), any())
         verify(messageFactory, times(1)).createStartFlowStatus(any(), any(), any())
-        verify(publisher, times(1)).publish(any())
+        verify(publisher, times(1)).batchPublish(any())
         verify(messageFactory, times(1)).createStartFlowStatus(any(), any(), any())
         verify(fatalErrorFunction, times(1)).invoke()
 
@@ -451,7 +456,7 @@ class FlowRestResourceImplTest {
         verify(flowStatusCacheService, times(1)).getStatus(any(), any())
         verify(messageFactory, times(1)).createStartFlowEvent(any(), any(), any(), any(), any())
         verify(messageFactory, times(1)).createStartFlowStatus(any(), any(), any())
-        verify(publisher, times(1)).publish(any())
+        verify(publisher, times(1)).batchPublish(any())
         verify(messageFactory, times(1)).createStartFlowStatus(any(), any(), any())
         verify(fatalErrorFunction, times(1)).invoke()
     }
@@ -459,11 +464,11 @@ class FlowRestResourceImplTest {
     @Test
     fun `start flow always returns error after asynchronous fatal failure`() {
         val flowRestResource = createFlowRestResource()
-        whenever(publisher.publish(any())).thenReturn(listOf(CompletableFuture<Unit>().apply {
+        whenever(publisher.batchPublish(any())).thenReturn(CompletableFuture<Unit>().apply {
             completeExceptionally(
                 CordaMessageAPIFatalException("")
             )
-        }))
+        })
 
         assertThrows<InternalServerException> {
             flowRestResource.startFlow(VALID_SHORT_HASH, StartFlowParameters(clientRequestId, FLOW1, TestJsonObject()))
@@ -473,7 +478,7 @@ class FlowRestResourceImplTest {
         verify(flowStatusCacheService, times(1)).getStatus(any(), any())
         verify(messageFactory, times(1)).createStartFlowEvent(any(), any(), any(), any(), any())
         verify(messageFactory, times(1)).createStartFlowStatus(any(), any(), any())
-        verify(publisher, times(1)).publish(any())
+        verify(publisher, times(1)).batchPublish(any())
         verify(messageFactory, times(1)).createStartFlowStatus(any(), any(), any())
         verify(fatalErrorFunction, times(1)).invoke()
 
@@ -488,7 +493,7 @@ class FlowRestResourceImplTest {
         verify(flowStatusCacheService, times(1)).getStatus(any(), any())
         verify(messageFactory, times(1)).createStartFlowEvent(any(), any(), any(), any(), any())
         verify(messageFactory, times(1)).createStartFlowStatus(any(), any(), any())
-        verify(publisher, times(1)).publish(any())
+        verify(publisher, times(1)).batchPublish(any())
         verify(messageFactory, times(1)).createStartFlowStatus(any(), any(), any())
         verify(fatalErrorFunction, times(1)).invoke()
     }

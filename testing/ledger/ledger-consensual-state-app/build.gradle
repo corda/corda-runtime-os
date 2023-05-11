@@ -1,10 +1,11 @@
 plugins {
+    id 'org.jetbrains.kotlin.jvm'
     id 'net.corda.plugins.cordapp-cpb2'
 }
 
 cordapp {
-    targetPlatformVersion platformVersion as Integer
-    minimumPlatformVersion platformVersion as Integer
+    targetPlatformVersion platformVersion.toInteger()
+    minimumPlatformVersion platformVersion.toInteger()
     workflow {
         name "Corda ledger consensual test state app"
         versionId 1
@@ -14,5 +15,6 @@ cordapp {
 
 dependencies {
     cordaProvided platform("net.corda:corda-api:$cordaApiVersion")
+    cordaProvided 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     cordaProvided 'net.corda:corda-ledger-consensual'
 }

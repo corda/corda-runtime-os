@@ -9,9 +9,11 @@ import net.corda.data.p2p.SessionPartitions
 import net.corda.data.p2p.app.AppMessage
 import net.corda.data.p2p.app.AuthenticatedMessage
 import net.corda.data.p2p.app.AuthenticatedMessageHeader
+import net.corda.data.p2p.app.InboundUnauthenticatedMessage
+import net.corda.data.p2p.app.InboundUnauthenticatedMessageHeader
 import net.corda.data.p2p.app.MembershipStatusFilter
-import net.corda.data.p2p.app.UnauthenticatedMessage
-import net.corda.data.p2p.app.UnauthenticatedMessageHeader
+import net.corda.data.p2p.app.OutboundUnauthenticatedMessage
+import net.corda.data.p2p.app.OutboundUnauthenticatedMessageHeader
 import net.corda.p2p.crypto.protocol.api.AuthenticatedSession
 import net.corda.p2p.crypto.protocol.api.AuthenticationResult
 import net.corda.p2p.linkmanager.hosting.LinkManagerHostingMap
@@ -24,9 +26,11 @@ import net.corda.data.p2p.markers.LinkManagerDiscardedMarker
 import net.corda.data.p2p.markers.LinkManagerReceivedMarker
 import net.corda.data.p2p.markers.LinkManagerProcessedMarker
 import net.corda.data.p2p.markers.TtlExpiredMarker
+import net.corda.p2p.linkmanager.membership.NetworkMessagingValidator
 import net.corda.schema.Schemas
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.test.util.time.MockTimeFacilitiesProvider
+import net.corda.utilities.Either
 import net.corda.utilities.seconds
 import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
@@ -72,6 +76,11 @@ class OutboundMessageProcessorTest {
         on { serial } doReturn serialNumber
     }
 
+    private val networkMessagingValidator = mock<NetworkMessagingValidator> {
+        on { validateInbound(any(), any()) } doReturn Either.Left(Unit)
+        on { validateOutbound(any(), any()) } doReturn Either.Left(Unit)
+    }
+
     private val processor = OutboundMessageProcessor(
         sessionManager,
         hostingMap,
@@ -80,6 +89,7 @@ class OutboundMessageProcessorTest {
         assignedListener,
         messagesPendingSession,
         mockTimeFacilitiesProvider.clock,
+        networkMessagingValidator
     )
 
     @Test
@@ -236,10 +246,133 @@ class OutboundMessageProcessorTest {
     }
 
     @Test
+    fun `authenticated messages are dropped if membership messaging validation fails`() {
+        whenever(
+            networkMessagingValidator.validateOutbound(any(), any())
+        ).doReturn(Either.Right("foo-bar"))
+        val payload = "test"
+        val authenticatedMsg = AuthenticatedMessage(
+            AuthenticatedMessageHeader(
+                remoteIdentity.toAvro(),
+                myIdentity.toAvro(),
+                null,
+                "message-id",
+                "trace-id",
+                "system-1",
+                MembershipStatusFilter.ACTIVE
+            ),
+            ByteBuffer.wrap(payload.toByteArray())
+        )
+        val appMessage = AppMessage(authenticatedMsg)
+
+        val records = processor.onNext(
+            listOf(
+                EventLogRecord(
+                    Schemas.P2P.P2P_OUT_TOPIC,
+                    "key",
+                    appMessage,
+                    1,
+                    0
+                )
+            )
+        )
+
+        assertThat(records.filter { it.topic == Schemas.P2P.P2P_IN_TOPIC }).isEmpty()
+        val markers = records.filter { it.topic == Schemas.P2P.P2P_OUT_MARKERS }.map { it.value }
+            .filterIsInstance<AppMessageMarker>()
+        val discardedMarkers = markers.map { it.marker }.filterIsInstance<LinkManagerDiscardedMarker>()
+        assertThat(discardedMarkers).hasSize(1)
+        assertThat(discardedMarkers.single().message.message).isEqualTo(appMessage.message)
+        assertThat(discardedMarkers.single().reason).contains("foo-bar")
+    }
+
+    @Test
+    fun `authenticated messages are dropped if inbound membership messaging validation for message to locally host identity fails`() {
+        whenever(
+            networkMessagingValidator.validateInbound(any(), any())
+        ).doReturn(Either.Right("foo-bar"))
+        val payload = "test"
+        val authenticatedMsg = AuthenticatedMessage(
+            AuthenticatedMessageHeader(
+                localIdentity.toAvro(),
+                myIdentity.toAvro(),
+                null,
+                "message-id",
+                "trace-id",
+                "system-1",
+                MembershipStatusFilter.ACTIVE
+            ),
+            ByteBuffer.wrap(payload.toByteArray())
+        )
+        val appMessage = AppMessage(authenticatedMsg)
+
+        val records = processor.onNext(
+            listOf(
+                EventLogRecord(
+                    Schemas.P2P.P2P_OUT_TOPIC,
+                    "key",
+                    appMessage,
+                    1,
+                    0
+                )
+            )
+        )
+
+        assertThat(records.filter { it.topic == Schemas.P2P.P2P_IN_TOPIC }).isEmpty()
+        val markers = records.filter { it.topic == Schemas.P2P.P2P_OUT_MARKERS }.map { it.value }
+            .filterIsInstance<AppMessageMarker>()
+        val discardedMarkers = markers.map { it.marker }.filterIsInstance<LinkManagerDiscardedMarker>()
+        assertThat(discardedMarkers).hasSize(1)
+        assertThat(discardedMarkers.single().message.message).isEqualTo(appMessage.message)
+        assertThat(discardedMarkers.single().reason).contains("foo-bar")
+    }
+
+    @Test
+    fun `authenticated messages are dropped if outbound membership messaging validation for message to locally host identity fails`() {
+        whenever(
+            networkMessagingValidator.validateOutbound(any(), any())
+        ).doReturn(Either.Right("foo-bar"))
+        val payload = "test"
+        val authenticatedMsg = AuthenticatedMessage(
+            AuthenticatedMessageHeader(
+                localIdentity.toAvro(),
+                myIdentity.toAvro(),
+                null,
+                "message-id",
+                "trace-id",
+                "system-1",
+                MembershipStatusFilter.ACTIVE
+            ),
+            ByteBuffer.wrap(payload.toByteArray())
+        )
+        val appMessage = AppMessage(authenticatedMsg)
+
+        val records = processor.onNext(
+            listOf(
+                EventLogRecord(
+                    Schemas.P2P.P2P_OUT_TOPIC,
+                    "key",
+                    appMessage,
+                    1,
+                    0
+                )
+            )
+        )
+
+        assertThat(records.filter { it.topic == Schemas.P2P.P2P_IN_TOPIC }).isEmpty()
+        val markers = records.filter { it.topic == Schemas.P2P.P2P_OUT_MARKERS }.map { it.value }
+            .filterIsInstance<AppMessageMarker>()
+        val discardedMarkers = markers.map { it.marker }.filterIsInstance<LinkManagerDiscardedMarker>()
+        assertThat(discardedMarkers).hasSize(1)
+        assertThat(discardedMarkers.single().message.message).isEqualTo(appMessage.message)
+        assertThat(discardedMarkers.single().reason).contains("foo-bar")
+    }
+
+    @Test
     fun `if destination identity is hosted locally, unauthenticated messages are looped back`() {
         val payload = "test"
-        val unauthenticatedMsg = UnauthenticatedMessage(
-            UnauthenticatedMessageHeader(
+        val unauthenticatedMsg = OutboundUnauthenticatedMessage(
+            OutboundUnauthenticatedMessageHeader(
                 myIdentity.toAvro(),
                 localIdentity.toAvro(),
                 "subsystem",
@@ -258,18 +391,25 @@ class OutboundMessageProcessorTest {
             )
         )
 
+        val expectedMessage = InboundUnauthenticatedMessage(
+            InboundUnauthenticatedMessageHeader(
+                unauthenticatedMsg.header.subsystem,
+                unauthenticatedMsg.header.messageId,
+            ),
+            unauthenticatedMsg.payload,
+        )
         assertThat(records).hasSize(1).allMatch {
             it.topic == Schemas.P2P.P2P_IN_TOPIC
         }.allMatch {
-            it.value == appMessage
+            (it.value as? AppMessage)?.message == expectedMessage
         }
     }
 
     @Test
     fun `onNext forwards unauthenticated messages directly to link out topic`() {
         val payload = "test"
-        val unauthenticatedMsg = UnauthenticatedMessage(
-            UnauthenticatedMessageHeader(
+        val unauthenticatedMsg = OutboundUnauthenticatedMessage(
+            OutboundUnauthenticatedMessageHeader(
                 remoteIdentity.toAvro(),
                 myIdentity.toAvro(),
                 "subsystem",
@@ -291,18 +431,25 @@ class OutboundMessageProcessorTest {
             )
         )
 
+        val expectedMessage = InboundUnauthenticatedMessage(
+            InboundUnauthenticatedMessageHeader(
+                unauthenticatedMsg.header.subsystem,
+                unauthenticatedMsg.header.messageId,
+            ),
+            unauthenticatedMsg.payload,
+        )
         assertThat(records).hasSize(1).allMatch {
             it.topic == Schemas.P2P.LINK_OUT_TOPIC
         }.allMatch {
-            (it.value as? LinkOutMessage)?.payload == unauthenticatedMsg
+            (it.value as? LinkOutMessage)?.payload == expectedMessage
         }
     }
 
     @Test
     fun `unauthenticated messages are dropped if source is invalid X500 name`() {
         val payload = "test"
-        val unauthenticatedMsg = UnauthenticatedMessage(
-            UnauthenticatedMessageHeader(
+        val unauthenticatedMsg = OutboundUnauthenticatedMessage(
+            OutboundUnauthenticatedMessageHeader(
                 remoteIdentity.toAvro(),
                 HoldingIdentity(
                     "Invalid name",
@@ -333,8 +480,8 @@ class OutboundMessageProcessorTest {
     @Test
     fun `unauthenticated messages are dropped if destination is invalid X500 name`() {
         val payload = "test"
-        val unauthenticatedMsg = UnauthenticatedMessage(
-            UnauthenticatedMessageHeader(
+        val unauthenticatedMsg = OutboundUnauthenticatedMessage(
+            OutboundUnauthenticatedMessageHeader(
                 HoldingIdentity(
                     "Invalid name",
                     myIdentity.groupId,
@@ -365,8 +512,8 @@ class OutboundMessageProcessorTest {
     @Test
     fun `unauthenticated messages are dropped if source and destination are in different groups`() {
         val payload = "test"
-        val unauthenticatedMsg = UnauthenticatedMessage(
-            UnauthenticatedMessageHeader(
+        val unauthenticatedMsg = OutboundUnauthenticatedMessage(
+            OutboundUnauthenticatedMessageHeader(
                 remoteIdentity.copy(groupId = "Group-other").toAvro(),
                 myIdentity.toAvro(),
                 "subsystem",
@@ -394,8 +541,8 @@ class OutboundMessageProcessorTest {
     @Test
     fun `unauthenticated messages are dropped if destination identity is not in the members map or locally hosted`() {
         val payload = "test"
-        val unauthenticatedMsg = UnauthenticatedMessage(
-            UnauthenticatedMessageHeader(
+        val unauthenticatedMsg = OutboundUnauthenticatedMessage(
+            OutboundUnauthenticatedMessageHeader(
                 HoldingIdentity("CN=PartyE, O=Corp, L=LDN, C=GB", "Group"),
                 myIdentity.toAvro(),
                 "subsystem",
@@ -434,13 +581,110 @@ class OutboundMessageProcessorTest {
             assignedListener,
             messagesPendingSession,
             mockTimeFacilitiesProvider.clock,
+            networkMessagingValidator,
         )
 
         val payload = "test"
-        val unauthenticatedMsg = UnauthenticatedMessage(
-            UnauthenticatedMessageHeader(
+        val unauthenticatedMsg = OutboundUnauthenticatedMessage(
+            OutboundUnauthenticatedMessageHeader(
                 remoteIdentity.toAvro(),
                 myIdentity.toAvro(),
+                "subsystem",
+                "messageId",
+            ),
+            ByteBuffer.wrap(payload.toByteArray()),
+        )
+        val appMessage = AppMessage(unauthenticatedMsg)
+
+        val records = processor.onNext(
+            listOf(
+                EventLogRecord(
+                    Schemas.P2P.P2P_OUT_TOPIC,
+                    "key",
+                    appMessage,
+                    1,
+                    0
+                )
+            )
+        )
+
+        assertThat(records).isEmpty()
+    }
+
+    @Test
+    fun `unauthenticated messages are dropped if network membership validation fails when sending to remote identity`() {
+        whenever(
+            networkMessagingValidator.validateOutbound(any(), any())
+        ).doReturn(Either.Right("foo-bar"))
+        val payload = "test"
+        val unauthenticatedMsg = OutboundUnauthenticatedMessage(
+            OutboundUnauthenticatedMessageHeader(
+                remoteIdentity.toAvro(),
+                localIdentity.toAvro(),
+                "subsystem",
+                "messageId",
+            ),
+            ByteBuffer.wrap(payload.toByteArray()),
+        )
+        val appMessage = AppMessage(unauthenticatedMsg)
+
+        val records = processor.onNext(
+            listOf(
+                EventLogRecord(
+                    Schemas.P2P.P2P_OUT_TOPIC,
+                    "key",
+                    appMessage,
+                    1,
+                    0
+                )
+            )
+        )
+
+        assertThat(records).isEmpty()
+    }
+
+    @Test
+    fun `unauthenticated messages are dropped if inbound network membership validation fails when destination is local`() {
+        whenever(
+            networkMessagingValidator.validateInbound(any(), any())
+        ).doReturn(Either.Right("foo-bar"))
+        val payload = "test"
+        val unauthenticatedMsg = OutboundUnauthenticatedMessage(
+            OutboundUnauthenticatedMessageHeader(
+                myIdentity.toAvro(),
+                localIdentity.toAvro(),
+                "subsystem",
+                "messageId",
+            ),
+            ByteBuffer.wrap(payload.toByteArray()),
+        )
+        val appMessage = AppMessage(unauthenticatedMsg)
+
+        val records = processor.onNext(
+            listOf(
+                EventLogRecord(
+                    Schemas.P2P.P2P_OUT_TOPIC,
+                    "key",
+                    appMessage,
+                    1,
+                    0
+                )
+            )
+        )
+
+        assertThat(records).isEmpty()
+    }
+
+    @Test
+    fun `unauthenticated messages are dropped if outbound network membership validation fails when destination is local`() {
+        whenever(
+            networkMessagingValidator.validateOutbound(any(), any())
+        ).doReturn(Either.Right("foo-bar"))
+        val payload = "test"
+        val unauthenticatedMsg = OutboundUnauthenticatedMessage(
+            OutboundUnauthenticatedMessageHeader(
+                myIdentity.toAvro(),
+                localIdentity.toAvro(),
                 "subsystem",
                 "messageId",
             ),
@@ -996,8 +1240,8 @@ class OutboundMessageProcessorTest {
     @Test
     fun `unauthenticated messages are dropped if source ID is not locally hosted`() {
         val payload = "test"
-        val unauthenticatedMsg = UnauthenticatedMessage(
-            UnauthenticatedMessageHeader(
+        val unauthenticatedMsg = OutboundUnauthenticatedMessage(
+            OutboundUnauthenticatedMessageHeader(
                 HoldingIdentity("CN=PartyC, O=Corp, L=LDN, C=GB", "Group"),
                 HoldingIdentity("CN=PartyE, O=Corp, L=LDN, C=GB", "Group"),
                 "subsystem",

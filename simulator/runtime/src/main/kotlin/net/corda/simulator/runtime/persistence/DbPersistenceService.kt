@@ -141,13 +141,25 @@ class DbPersistenceService(member : MemberX500Name) : CloseablePersistenceServic
                 mapOf()
             )
         ) : ParameterizedQuery<T> {
-            override fun execute(): List<T> {
-                return emf.transaction { em ->
-                    val query = em.createNamedQuery(queryName, entityClass)
-                        .setFirstResult(context.offset)
-                        .setMaxResults(context.limit)
-                    context.parameters.entries.fold(query) { q, (key, value) -> q.setParameter(key, value) }.resultList
+            override fun execute(): PagedQuery.ResultSet<T> {
+                val resultSet = SimResultSetImpl(context.limit, context.offset) {
+                    emf.transaction { em ->
+                        val query = em.createNamedQuery(queryName, entityClass)
+                            .setFirstResult(context.offset)
+                            .setMaxResults(context.limit)
+
+                        val results = context.parameters.entries.fold(query) { q, (key, value) ->
+                            q.setParameter(
+                                key,
+                                value
+                            )
+                        }.resultList
+
+                        ResultSetExecutor.Results(results, results.size)
+                    }
                 }
+                resultSet.next()
+                return resultSet
             }
 
             override fun setLimit(limit: Int): ParameterizedQuery<T> {
@@ -184,18 +196,26 @@ class DbPersistenceService(member : MemberX500Name) : CloseablePersistenceServic
             private val entityClass: Class<T>,
             private val context: QueryContext = QueryContext(0, Int.MAX_VALUE, mapOf())
         ) : PagedQuery<T> {
-            override fun execute(): List<T> {
-                try {
-                    return emf.guard {
-                        val query = it.createQuery("FROM ${entityClass.simpleName} e")
-                            .setFirstResult(context.offset)
-                            .setMaxResults(context.limit)
-                        @Suppress("UNCHECKED_CAST")
-                        query.resultList as List<T>
-                    }
-                } catch (e: ClassCastException) {
-                    throw CordaPersistenceException("The result of the query was not an $entityClass", e)
+
+            override fun execute(): PagedQuery.ResultSet<T> {
+                val resultSet = SimResultSetImpl(context.limit, context.offset) {
+                    val results =
+                        try {
+                            emf.guard {
+                                val query = it.createQuery("FROM ${entityClass.simpleName} e")
+                                    .setFirstResult(context.offset)
+                                    .setMaxResults(context.limit)
+                                @Suppress("UNCHECKED_CAST")
+                                query.resultList as List<T>
+                            }
+                        } catch (e: ClassCastException) {
+                            throw CordaPersistenceException("The result of the query was not an $entityClass", e)
+                        }
+
+                    ResultSetExecutor.Results(results, results.size)
                 }
+                resultSet.next()
+                return resultSet
             }
 
             override fun setLimit(limit: Int): PagedQuery<T> {

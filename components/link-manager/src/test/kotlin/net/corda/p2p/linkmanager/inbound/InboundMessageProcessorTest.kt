@@ -1,6 +1,5 @@
 package net.corda.p2p.linkmanager.inbound
 
-import net.corda.messaging.api.records.EventLogRecord
 import net.corda.data.p2p.AuthenticatedMessageAck
 import net.corda.data.p2p.AuthenticatedMessageAndKey
 import net.corda.data.p2p.DataMessagePayload
@@ -15,8 +14,8 @@ import net.corda.data.p2p.app.AppMessage
 import net.corda.data.p2p.app.AuthenticatedMessage
 import net.corda.data.p2p.app.AuthenticatedMessageHeader
 import net.corda.data.p2p.app.MembershipStatusFilter
-import net.corda.data.p2p.app.UnauthenticatedMessage
-import net.corda.data.p2p.app.UnauthenticatedMessageHeader
+import net.corda.data.p2p.app.InboundUnauthenticatedMessage
+import net.corda.data.p2p.app.InboundUnauthenticatedMessageHeader
 import net.corda.data.p2p.crypto.AuthenticatedDataMessage
 import net.corda.data.p2p.crypto.AuthenticatedEncryptedDataMessage
 import net.corda.data.p2p.crypto.CommonHeader
@@ -25,15 +24,17 @@ import net.corda.data.p2p.crypto.InitiatorHelloMessage
 import net.corda.data.p2p.crypto.MessageType
 import net.corda.data.p2p.crypto.ResponderHandshakeMessage
 import net.corda.data.p2p.crypto.ResponderHelloMessage
+import net.corda.data.p2p.markers.AppMessageMarker
+import net.corda.data.p2p.markers.LinkManagerReceivedMarker
+import net.corda.messaging.api.records.EventLogRecord
 import net.corda.p2p.crypto.protocol.api.AuthenticatedEncryptionSession
 import net.corda.p2p.crypto.protocol.api.AuthenticatedSession
 import net.corda.p2p.crypto.protocol.api.AuthenticationResult
 import net.corda.p2p.crypto.protocol.api.EncryptionResult
+import net.corda.p2p.linkmanager.membership.NetworkMessagingValidator
 import net.corda.p2p.linkmanager.sessions.SessionManager
 import net.corda.p2p.linkmanager.utilities.LoggingInterceptor
 import net.corda.p2p.linkmanager.utilities.mockMembersAndGroups
-import net.corda.data.p2p.markers.AppMessageMarker
-import net.corda.data.p2p.markers.LinkManagerReceivedMarker
 import net.corda.schema.Schemas.P2P.LINK_IN_TOPIC
 import net.corda.schema.Schemas.P2P.LINK_OUT_TOPIC
 import net.corda.schema.Schemas.P2P.P2P_IN_TOPIC
@@ -41,6 +42,7 @@ import net.corda.schema.Schemas.P2P.P2P_OUT_MARKERS
 import net.corda.schema.Schemas.P2P.SESSION_OUT_PARTITIONS
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.test.util.time.MockTimeFacilitiesProvider
+import net.corda.utilities.Either
 import net.corda.utilities.seconds
 import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
@@ -49,7 +51,9 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
+import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
@@ -80,12 +84,21 @@ class InboundMessageProcessorTest {
     )
     private val loggingInterceptor = LoggingInterceptor.setupLogging()
 
+    private val networkMessagingValidator = mock<NetworkMessagingValidator> {
+        on { invokeIfValidInbound<Unit>(any(), any(), any()) } doAnswer {
+            @Suppress("unchecked_cast")
+            (it.arguments[2] as (() -> Unit)).invoke()
+        }
+        on { validateInbound(any(), any()) } doReturn Either.Left(Unit)
+    }
+
     private val processor = InboundMessageProcessor(
         sessionManager,
         membersAndGroups.second,
         membersAndGroups.first,
         assignedListener,
-        mockTimeFacilitiesProvider.clock
+        mockTimeFacilitiesProvider.clock,
+        networkMessagingValidator
     )
 
     private val status = MembershipStatusFilter.ACTIVE
@@ -358,6 +371,63 @@ class InboundMessageProcessorTest {
                 .hasSize(1)
                 .contains("Received message with SessionId = Session for which there is no active session. The message was discarded.")
         }
+
+        @Test
+        fun `AuthenticatedDataMessage with Inbound session which fails membership messaging validation will drop messages`() {
+            whenever(
+                networkMessagingValidator.invokeIfValidInbound<Unit>(any(), any(), any())
+            ).doAnswer {
+                // do nothing to mimic failed validation
+            }
+
+            whenever(sessionManager.getSessionById(any())).thenReturn(
+                SessionManager.SessionDirection.Inbound(
+                    SessionManager.Counterparties(remoteIdentity, myIdentity),
+                    mock<AuthenticatedSession>()
+                )
+            )
+            val dataMessage = AuthenticatedDataMessage(
+                commonHeader,
+                ByteBuffer.wrap("payload".toByteArray()),
+                ByteBuffer.wrap("authTag".toByteArray())
+            )
+
+            val records = processor.onNext(
+                listOf(EventLogRecord(LINK_IN_TOPIC, "key", LinkInMessage(dataMessage), 0, 0))
+            )
+
+            assertThat(records).isEmpty()
+            verify(networkMessagingValidator).invokeIfValidInbound<Unit>(eq(myIdentity), eq(remoteIdentity), any())
+        }
+
+        @Test
+        fun `AuthenticatedDataMessage with Outbound session which fails membership messaging validation will drop messages`() {
+            whenever(
+                networkMessagingValidator.invokeIfValidInbound<Unit>(any(), any(), any())
+            ).doAnswer {
+                // do nothing to mimic failed validation
+            }
+
+            whenever(sessionManager.getSessionById(any())).thenReturn(
+                SessionManager.SessionDirection.Outbound(
+                    SessionManager.Counterparties(remoteIdentity, myIdentity),
+                    mock<AuthenticatedSession>()
+                )
+            )
+            val dataMessage = AuthenticatedDataMessage(
+                commonHeader,
+                ByteBuffer.wrap("payload".toByteArray()),
+                ByteBuffer.wrap("authTag".toByteArray())
+            )
+
+            val records = processor.onNext(
+                listOf(EventLogRecord(LINK_IN_TOPIC, "key", LinkInMessage(dataMessage), 0, 0))
+            )
+
+            assertThat(records).isEmpty()
+            verify(sessionManager, never()).messageAcknowledged(any())
+            verify(networkMessagingValidator).invokeIfValidInbound<Unit>(eq(myIdentity), eq(remoteIdentity), any())
+        }
     }
 
     @Nested
@@ -601,6 +671,67 @@ class InboundMessageProcessorTest {
                 false
             }
         }
+
+        @Test
+        fun `receiving data message with Inbound session that fails membership messaging validation will not produce any messages`() {
+            whenever(
+                networkMessagingValidator.invokeIfValidInbound<Unit>(any(), any(), any())
+            ).doAnswer {
+                // do nothing to mimic failed validation
+            }
+
+            val dataMessage = AuthenticatedEncryptedDataMessage(
+                commonHeader,
+                ByteBuffer.wrap("authTag".toByteArray()),
+                ByteBuffer.wrap("encryptedPayload".toByteArray())
+            )
+
+            whenever(sessionManager.getSessionById(any())).thenReturn(
+                SessionManager.SessionDirection.Inbound(
+                    SessionManager.Counterparties(remoteIdentity, myIdentity),
+                    mock<AuthenticatedEncryptionSession>()
+                )
+            )
+
+            val records = processor.onNext(
+                listOf(EventLogRecord(LINK_IN_TOPIC, "key", LinkInMessage(dataMessage), 0, 0))
+            )
+
+            assertThat(records).isEmpty()
+            verify(sessionManager, never()).inboundSessionEstablished(anyOrNull())
+            verify(networkMessagingValidator).invokeIfValidInbound<Unit>(eq(myIdentity), eq(remoteIdentity), any())
+        }
+
+        @Test
+        fun `receiving data message with Outbound session that fails membership messaging validation will not produce any messages`() {
+            whenever(
+                networkMessagingValidator.invokeIfValidInbound<Unit>(any(), any(), any())
+            ).doAnswer {
+                // do nothing to mimic failed validation
+            }
+
+            val dataMessage = AuthenticatedEncryptedDataMessage(
+                commonHeader,
+                ByteBuffer.wrap("authTag".toByteArray()),
+                ByteBuffer.wrap("encryptedPayload".toByteArray())
+            )
+
+            whenever(sessionManager.getSessionById(any())).thenReturn(
+                SessionManager.SessionDirection.Outbound(
+                    SessionManager.Counterparties(remoteIdentity, myIdentity),
+                    mock<AuthenticatedEncryptionSession>()
+                )
+            )
+
+            val records = processor.onNext(
+                listOf(EventLogRecord(LINK_IN_TOPIC, "key", LinkInMessage(dataMessage), 0, 0))
+            )
+
+            assertThat(records).isEmpty()
+            verify(sessionManager, never()).inboundSessionEstablished(anyOrNull())
+            verify(sessionManager, never()).messageAcknowledged(any())
+            verify(networkMessagingValidator).invokeIfValidInbound<Unit>(eq(myIdentity), eq(remoteIdentity), any())
+        }
     }
 
     @Nested
@@ -744,29 +875,30 @@ class InboundMessageProcessorTest {
         }
     }
 
-    @Test
-    fun `UnauthenticatedMessage will produce message in P2P in topic`() {
-        val unauthenticatedMessageHeader = mock<UnauthenticatedMessageHeader> {
-            on { messageId } doReturn "messageId"
-            on { source } doReturn myIdentity.toAvro()
-            on { destination } doReturn remoteIdentity.toAvro()
-            on { subsystem } doReturn "application-v1"
-        }
-        val unauthenticatedMessage = mock<UnauthenticatedMessage> {
-            on { header } doReturn unauthenticatedMessageHeader
-        }
-        val message = LinkInMessage(unauthenticatedMessage)
+    @Nested
+    inner class InboundUnauthenticatedMessageTests {
+        @Test
+        fun `InboundUnauthenticatedMessage will produce message in P2P in topic`() {
+            val inboundUnauthenticatedMessageHeader = mock<InboundUnauthenticatedMessageHeader> {
+                on { messageId } doReturn "messageId"
+                on { subsystem } doReturn "application-v1"
+            }
+            val inboundUnauthenticatedMessage = mock<InboundUnauthenticatedMessage> {
+                on { header } doReturn inboundUnauthenticatedMessageHeader
+            }
+            val message = LinkInMessage(inboundUnauthenticatedMessage)
 
-        val records = processor.onNext(
-            listOf(
-                EventLogRecord(LINK_IN_TOPIC, "key", message, 0, 0),
+            val records = processor.onNext(
+                listOf(
+                    EventLogRecord(LINK_IN_TOPIC, "key", message, 0, 0),
+                )
             )
-        )
 
-        assertThat(records).hasSize(1).anySatisfy {
-            assertThat(it.topic).isEqualTo(P2P_IN_TOPIC)
-            assertThat(it.value).isInstanceOf(AppMessage::class.java)
-            assertThat((it.value as AppMessage).message).isEqualTo(unauthenticatedMessage)
+            assertThat(records).hasSize(1).anySatisfy {
+                assertThat(it.topic).isEqualTo(P2P_IN_TOPIC)
+                assertThat(it.value).isInstanceOf(AppMessage::class.java)
+                assertThat((it.value as AppMessage).message).isEqualTo(inboundUnauthenticatedMessage)
+            }
         }
     }
 }

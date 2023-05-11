@@ -24,6 +24,7 @@ import net.corda.sandboxgroupcontext.VirtualNodeContext
 import net.corda.sandboxgroupcontext.getObjectByKey
 import net.corda.sandboxgroupcontext.putObjectByKey
 import net.corda.sandboxgroupcontext.service.CacheControl
+import net.corda.sandboxgroupcontext.service.EvictionListener
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.crypto.SecureHash
 import org.osgi.framework.Bundle
@@ -70,6 +71,7 @@ typealias SatisfiedServiceReferences = Map<String, SortedMap<ServiceReference<*>
  * This is a per-process service, but it must return the "same instance" for a given [VirtualNodeContext]
  * in EVERY process.
  */
+@Suppress("TooManyFunctions")
 @Component(service = [ SandboxGroupContextService::class ])
 @RequireSandboxCrypto
 @RequireSandboxHooks
@@ -114,39 +116,14 @@ class SandboxGroupContextServiceImpl @Activate constructor(
                 logger.debug("Ignoring exception", e)
             }
         }
-
-        private val DUMMY_CACHE = object : SandboxGroupContextCache {
-            override val capacities: Map<SandboxGroupType, Long>
-                get() = SandboxGroupType.values().associateWith { 0 }
-
-            override fun remove(virtualNodeContext: VirtualNodeContext)
-                = throw IllegalStateException("remove: SandboxGroupContextService is not ready.")
-
-            override fun get(
-                virtualNodeContext: VirtualNodeContext,
-                createFunction: (VirtualNodeContext) -> CloseableSandboxGroupContext
-            ) = throw IllegalStateException("get: SandboxGroupContextService is not ready.")
-
-            override fun resize(sandboxGroupType: SandboxGroupType, newCapacity: Long): SandboxGroupContextCache {
-                val newCapacities = capacities.toMutableMap()
-                newCapacities[sandboxGroupType] = newCapacity
-                return SandboxGroupContextCacheImpl(newCapacities)
-            }
-
-            override fun waitFor(completion: CompletableFuture<*>, duration: Duration) = true
-            override fun flush() = CompletableFuture.completedFuture(true)
-            override fun close() {}
-        }
     }
 
-    private var cache: SandboxGroupContextCache = DUMMY_CACHE
+    private val cache = SandboxGroupContextCacheImpl(0)
 
-    override fun initCache(type: SandboxGroupType, capacity: Long) {
+    override fun resizeCache(type: SandboxGroupType, capacity: Long) {
         if (capacity != cache.capacities[type]) {
-            val oldCache = cache
-            cache = oldCache.resize(type, capacity)
-            oldCache.close()
-            logger.info("Sandbox cache capacity changed from {} to {}", oldCache.capacities, capacity)
+            logger.info("Changing Sandbox cache capacity for type {} from {} to {}", type, cache.capacities[type], capacity)
+            cache.resize(type, capacity)
         }
     }
 
@@ -161,6 +138,14 @@ class SandboxGroupContextServiceImpl @Activate constructor(
 
     override fun remove(virtualNodeContext: VirtualNodeContext): CompletableFuture<*>? {
         return cache.remove(virtualNodeContext)
+    }
+
+    override fun addEvictionListener(type: SandboxGroupType, listener: EvictionListener): Boolean {
+        return cache.addEvictionListener(type, listener)
+    }
+
+    override fun removeEvictionListener(type: SandboxGroupType, listener: EvictionListener): Boolean {
+        return cache.removeEvictionListener(type, listener)
     }
 
     override fun getOrCreate(

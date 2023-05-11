@@ -30,16 +30,23 @@ class SecureHashImpl(
     override fun toString() = "$algorithm$DELIMITER${toHexString()}"
 }
 
-fun parseSecureHash(algoNameAndHexString: String): SecureHash {
+fun parseSecureHashAlgoName(algoNameAndHexString: String): String {
     val idx = algoNameAndHexString.indexOf(DELIMITER)
-    return if (idx == -1) {
+    if (idx == -1) {
         throw IllegalArgumentException("Provided string: $algoNameAndHexString should be of format algorithm:hexadecimal")
-    } else {
-        val algorithm = algoNameAndHexString.substring(0, idx)
-        val value = algoNameAndHexString.substring(idx + 1)
-        val data = ByteArrays.parseAsHex(value)
-        SecureHashImpl(algorithm, data)
     }
+    return algoNameAndHexString.substring(0, idx)
+}
+
+fun parseSecureHashHexString(algoNameAndHexString: String): String {
+    val algoName = parseSecureHashAlgoName(algoNameAndHexString)
+    return algoNameAndHexString.substring(algoName.length + 1)
+}
+
+fun parseSecureHash(algoNameAndHexString: String): SecureHash {
+    val algoName = parseSecureHashAlgoName(algoNameAndHexString)
+    val hexString = algoNameAndHexString.substring(algoName.length + 1)
+    return SecureHashImpl(algoName, ByteArrays.parseAsHex(hexString))
 }
 
 val SecureHash.bytes: ByteArray

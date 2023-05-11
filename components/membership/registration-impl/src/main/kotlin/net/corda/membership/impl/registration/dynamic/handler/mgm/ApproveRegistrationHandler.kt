@@ -1,6 +1,6 @@
 package net.corda.membership.impl.registration.dynamic.handler.mgm
 
-import net.corda.data.CordaAvroSerializationFactory
+import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.actions.request.DistributeMemberInfo
 import net.corda.data.membership.actions.request.MembershipActionsRequest
@@ -10,6 +10,7 @@ import net.corda.data.membership.command.registration.mgm.DeclineRegistration
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.p2p.SetOwnRegistrationStatus
 import net.corda.data.membership.state.RegistrationState
+import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.layeredpropertymap.toAvro
 import net.corda.membership.groupparams.writer.service.GroupParametersWriterService
 import net.corda.membership.impl.registration.dynamic.handler.MemberTypeChecker
@@ -123,7 +124,8 @@ internal class ApproveRegistrationHandler(
                 content = SetOwnRegistrationStatus(
                     registrationId,
                     RegistrationStatus.APPROVED
-                )
+                ),
+                filter = MembershipStatusFilter.ACTIVE_OR_SUSPENDED
             )
 
             listOf(memberRecord, persistApproveMessage, distributionAction)

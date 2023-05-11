@@ -1,5 +1,6 @@
 package net.corda.rest.client
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import net.corda.rest.client.config.RestClientConfig
 import net.corda.rest.server.config.models.RestServerSettings
 import net.corda.rest.server.impl.RestServerImpl
@@ -34,6 +35,7 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import kotlin.test.fail
 import net.corda.rest.HttpFileUpload
+import net.corda.rest.JsonObject
 import net.corda.rest.test.TestFileUploadAPI
 import net.corda.rest.test.TestFileUploadImpl
 import net.corda.rest.test.utils.ChecksumUtil.generateChecksum
@@ -362,6 +364,21 @@ internal class RestClientIntegrationTest : RestIntegrationTestBase() {
                     it.assertThat(deleteUsingPath("MyId")).isEqualTo("Deleted using id: MyId")
 
                     it.assertThat(deleteUsingQuery("MyQuery")).isEqualTo("Deleted using query: MyQuery")
+
+                    val jsonMapper = ObjectMapper()
+                    class TestJsonObject(stringContent: String) : JsonObject {
+                        override val escapedJson by lazy {
+                            jsonMapper.writeValueAsString(stringContent)
+                        }
+                    }
+
+                    val jsonBody = """{"content":{"nested":{"id":"myId","name":"TestName","amount":20}}}"""
+                    val csvBody = """{"content":"aVery,Long,String"}"""
+
+                    listOf(csvBody, jsonBody).forEach { body ->
+                        it.assertThat(putInputEcho(TestEntityRestResource.EchoParams(TestJsonObject(body))).content.escapedJson)
+                            .isEqualTo(body)
+                    }
                 }
             }
         }

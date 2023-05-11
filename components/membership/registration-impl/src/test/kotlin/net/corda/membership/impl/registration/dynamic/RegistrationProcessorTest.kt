@@ -1,13 +1,14 @@
 package net.corda.membership.impl.registration.dynamic
 
-import net.corda.data.CordaAvroDeserializer
-import net.corda.data.CordaAvroSerializationFactory
-import net.corda.data.CordaAvroSerializer
+import net.corda.avro.serialization.CordaAvroDeserializer
+import net.corda.avro.serialization.CordaAvroSerializationFactory
+import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.identity.HoldingIdentity
+import net.corda.data.membership.SignedData
 import net.corda.data.membership.command.registration.RegistrationCommand
 import net.corda.data.membership.command.registration.member.ProcessMemberVerificationRequest
 import net.corda.data.membership.command.registration.mgm.StartRegistration
@@ -70,16 +71,26 @@ class  RegistrationProcessorTest {
         const val testTopicKey = "key"
 
         val memberContext = KeyValuePairList(listOf(KeyValuePair("key", "value")))
+        val registrationContext = KeyValuePairList(listOf(KeyValuePair("key-2", "value-2")))
         val signature = CryptoSignatureWithKey(
             ByteBuffer.wrap("456".toByteArray()),
             ByteBuffer.wrap("789".toByteArray())
         )
+        val signedMemberContext = SignedData(
+            memberContext.toByteBuffer(),
+            signature,
+            CryptoSignatureSpec("", null, null)
+        )
+        val signedRegistrationContext = SignedData(
+            registrationContext.toByteBuffer(),
+            signature,
+            CryptoSignatureSpec("", null, null)
+        )
         val registrationRequest =
             MembershipRegistrationRequest(
                 registrationId,
-                memberContext.toByteBuffer(),
-                signature,
-                CryptoSignatureSpec("", null, null),
+                signedMemberContext,
+                signedRegistrationContext,
                 0L,
             )
 
@@ -223,8 +234,9 @@ class  RegistrationProcessorTest {
     fun `start registration command - onNext can be called for start registration command`() {
         val result = processor.onNext(null, Record(testTopic, testTopicKey, startRegistrationCommand))
         assertThat(result.updatedState).isNotNull
-        assertThat(result.responseEvents).isNotEmpty.hasSize(2)
-        assertThat((result.responseEvents.first().value as? RegistrationCommand)?.command)
+        val events = result.responseEvents
+        assertThat(events).isNotEmpty.hasSize(3)
+        assertThat(events.firstNotNullOf { it.value as? RegistrationCommand }.command)
             .isNotNull
             .isInstanceOf(VerifyMember::class.java)
     }
