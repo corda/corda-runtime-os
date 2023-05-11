@@ -1,5 +1,7 @@
 package net.corda.orm.impl
 
+import java.security.AccessController
+import java.security.PrivilegedAction
 import net.corda.db.core.CloseableDataSource
 import net.corda.orm.DdlManage
 import net.corda.orm.EntityManagerConfiguration
@@ -95,7 +97,9 @@ class EntityManagerFactoryFactoryImpl(
             configuration.dataSource
         )
 
-        val entityManagerFactory = entityManagerFactoryBuilderFactory(persistenceUnitInfo).build()
+        val entityManagerFactory = AccessController.doPrivileged(PrivilegedAction {
+            entityManagerFactoryBuilderFactory(persistenceUnitInfo).build()
+        })
         return EntityManagerFactoryWrapper(entityManagerFactory, configuration.dataSource)
     }
 }
