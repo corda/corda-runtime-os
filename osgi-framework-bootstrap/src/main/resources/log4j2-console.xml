@@ -15,7 +15,7 @@
         <Logger name="org.apache.kafka" level="warn" />
         <Logger name="io.javalin.Javalin" level="warn" />
         <Logger name="org.eclipse.jetty" level="warn" />
-        <Logger name="org.hibernate" level="debug" />
+        <Logger name="org.hibernate" level="warn" />
 
         <!-- default to warn only for OSGi logging -->
         <Logger name="net.corda.osgi.framework.OSGiFrameworkWrap" level="warn" />

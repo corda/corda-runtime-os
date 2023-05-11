@@ -39,7 +39,7 @@
         <Logger name="org.apache.aries.spifly" level="warn" />
         <Logger name="org.apache.kafka" level="warn" />
         <Logger name="org.eclipse.jetty" level="warn" />
-        <Logger name="org.hibernate" level="debug" />
+        <Logger name="org.hibernate" level="warn" />
         <Logger name="org.pf4j" level="warn" />
 
         <!-- default to warn only for OSGi logging -->
