@@ -13,6 +13,7 @@ import net.corda.data.membership.db.request.command.PersistGroupParametersInitia
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.schema.CordaDb
 import net.corda.membership.datamodel.GroupParametersEntity
+import net.corda.membership.impl.persistence.service.EntityManagersPool
 import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.EPOCH_KEY
 import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.MODIFIED_TIME_KEY
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
@@ -89,6 +90,17 @@ class PersistGroupParametersInitialSnapshotHandlerTest {
     private val keyEncodingService: KeyEncodingService = mock {
         on { encodeAsByteArray(any()) } doReturn "test-key".toByteArray()
     }
+    private val pool = mock<EntityManagersPool> {
+        on {
+            getEntityManagerInfo(
+                any(),
+                any<(EntityManagerFactory) -> Any?>(),
+            )
+        } doAnswer {
+            val block = it.getArgument<(EntityManagerFactory) -> Any?>(1)
+            block(entityManagerFactory)
+        }
+    }
     private val persistenceHandlerServices = mock<PersistenceHandlerServices> {
         on { cordaAvroSerializationFactory } doReturn serializationFactory
         on { virtualNodeInfoReadService } doReturn nodeInfoReadService
@@ -96,6 +108,7 @@ class PersistGroupParametersInitialSnapshotHandlerTest {
         on { dbConnectionManager } doReturn connectionManager
         on { clock } doReturn clock
         on { keyEncodingService } doReturn keyEncodingService
+        on { entityManagersPool } doReturn pool
     }
     private val handler = PersistGroupParametersInitialSnapshotHandler(persistenceHandlerServices)
 

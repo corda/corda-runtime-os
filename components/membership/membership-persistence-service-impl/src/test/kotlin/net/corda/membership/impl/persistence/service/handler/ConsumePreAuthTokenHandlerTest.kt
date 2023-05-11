@@ -9,6 +9,7 @@ import net.corda.data.membership.preauth.PreAuthTokenStatus.CONSUMED
 import net.corda.data.membership.preauth.PreAuthTokenStatus.REVOKED
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.membership.datamodel.PreAuthTokenEntity
+import net.corda.membership.impl.persistence.service.EntityManagersPool
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.test.util.time.TestClock
@@ -23,6 +24,7 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
+import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
@@ -68,12 +70,24 @@ class ConsumePreAuthTokenHandlerTest {
     private val jpaEntitiesRegistry: JpaEntitiesRegistry = mock {
         on { get(any()) } doReturn mock()
     }
+    private val pool = mock<EntityManagersPool> {
+        on {
+            getEntityManagerInfo(
+                any(),
+                any<(EntityManagerFactory) -> Any?>(),
+            )
+        } doAnswer {
+            val block = it.getArgument<(EntityManagerFactory) -> Any?>(1)
+            block(emf)
+        }
+    }
 
     private val persistenceHandlerServices: PersistenceHandlerServices = mock {
         on { clock } doReturn clock
         on { virtualNodeInfoReadService } doReturn virtualNodeInfoReadService
         on { dbConnectionManager } doReturn dbConnectionManager
         on { jpaEntitiesRegistry } doReturn jpaEntitiesRegistry
+        on { entityManagersPool } doReturn pool
     }
 
     private val handler: ConsumePreAuthTokenHandler = ConsumePreAuthTokenHandler(persistenceHandlerServices)

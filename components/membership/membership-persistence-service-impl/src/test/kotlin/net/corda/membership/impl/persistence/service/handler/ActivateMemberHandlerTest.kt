@@ -43,9 +43,11 @@ import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.persistence.EntityTransaction
 import net.corda.data.membership.SignedGroupParameters
+import net.corda.membership.impl.persistence.service.EntityManagersPool
 import net.corda.membership.lib.MemberInfoExtension
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
+import org.mockito.kotlin.doAnswer
 import javax.persistence.PessimisticLockException
 
 class ActivateMemberHandlerTest {
@@ -82,6 +84,17 @@ class ActivateMemberHandlerTest {
     private val serializedMgmContext = "1234".toByteArray()
     private val memberInfoEntity = mock<MemberInfoEntity> {
         on { mgmContext } doReturn serializedMgmContext
+    }
+    private val pool = mock<EntityManagersPool> {
+        on {
+            getEntityManagerInfo(
+                any(),
+                any<(EntityManagerFactory) -> Any?>(),
+            )
+        } doAnswer {
+            val block = it.getArgument<(EntityManagerFactory) -> Any?>(1)
+            block(emf)
+        }
     }
     private val mgmContext = KeyValuePairList(
         listOf(
@@ -137,6 +150,7 @@ class ActivateMemberHandlerTest {
         on { jpaEntitiesRegistry } doReturn jpaEntitiesRegistry
         on { cordaAvroSerializationFactory } doReturn cordaAvroSerializationFactory
         on { memberInfoFactory } doReturn memberInfoFactory
+        on { entityManagersPool } doReturn pool
     }
 
     private val addNotaryToGroupParametersHandler = mock<AddNotaryToGroupParametersHandler>()

@@ -16,12 +16,10 @@ import net.corda.applications.workers.rest.utils.onboardMgm
 import net.corda.applications.workers.rest.utils.setSslConfiguration
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 import java.nio.file.Path
-
 
 class SessionCertificateTest {
     @TempDir

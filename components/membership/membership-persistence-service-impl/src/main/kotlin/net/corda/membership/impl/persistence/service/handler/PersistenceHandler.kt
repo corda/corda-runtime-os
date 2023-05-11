@@ -8,8 +8,8 @@ import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.schema.CordaDb
 import net.corda.libs.platform.PlatformInfoProvider
+import net.corda.membership.impl.persistence.service.EntityManagersPool
 import net.corda.membership.lib.MemberInfoFactory
-import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.membership.mtls.allowed.list.service.AllowedCertificatesReaderWriterService
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.utils.transaction
@@ -34,7 +34,6 @@ internal abstract class BasePersistenceHandler<REQUEST, RESPONSE>(
 
     private val dbConnectionManager get() = persistenceHandlerServices.dbConnectionManager
     private val jpaEntitiesRegistry get() = persistenceHandlerServices.jpaEntitiesRegistry
-    private val virtualNodeInfoReadService get() = persistenceHandlerServices.virtualNodeInfoReadService
     val clock get() = persistenceHandlerServices.clock
     val cordaAvroSerializationFactory get() = persistenceHandlerServices.cordaAvroSerializationFactory
     val memberInfoFactory get() = persistenceHandlerServices.memberInfoFactory
@@ -43,16 +42,8 @@ internal abstract class BasePersistenceHandler<REQUEST, RESPONSE>(
     val allowedCertificatesReaderWriterService get() = persistenceHandlerServices.allowedCertificatesReaderWriterService
 
     fun <R> transaction(holdingIdentityShortHash: ShortHash, block: (EntityManager) -> R): R {
-        val virtualNodeInfo = virtualNodeInfoReadService.getByHoldingIdentityShortHash(holdingIdentityShortHash)
-            ?: throw MembershipPersistenceException(
-                "Virtual node info can't be retrieved for " +
-                        "holding identity ID $holdingIdentityShortHash"
-            )
-        val factory = getEntityManagerFactory(virtualNodeInfo)
-        return try {
-            factory.transaction(block)
-        } finally {
-            factory.close()
+        return persistenceHandlerServices.entityManagersPool.getEntityManagerInfo(holdingIdentityShortHash) {
+            it.transaction(block)
         }
     }
 
@@ -87,4 +78,13 @@ internal data class PersistenceHandlerServices(
     val keyEncodingService: KeyEncodingService,
     val platformInfoProvider: PlatformInfoProvider,
     val allowedCertificatesReaderWriterService: AllowedCertificatesReaderWriterService,
-)
+) {
+    val entityManagersPool by lazy {
+        EntityManagersPool(
+            clock,
+            dbConnectionManager,
+            jpaEntitiesRegistry,
+            virtualNodeInfoReadService,
+        )
+    }
+}

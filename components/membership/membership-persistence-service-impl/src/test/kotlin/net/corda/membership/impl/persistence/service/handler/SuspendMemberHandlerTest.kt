@@ -45,6 +45,7 @@ import javax.persistence.criteria.Predicate
 import javax.persistence.criteria.Root
 import net.corda.crypto.cipher.suite.SignatureSpecs
 import net.corda.membership.datamodel.GroupParametersEntity
+import net.corda.membership.impl.persistence.service.EntityManagersPool
 import net.corda.membership.lib.GroupParametersNotaryUpdater
 import net.corda.membership.lib.MemberInfoExtension
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_SUSPENDED
@@ -204,6 +205,17 @@ class SuspendMemberHandlerTest {
     private val memberInfoFactory = mock<MemberInfoFactory> {
         on { create(persistentMemberInfo) } doReturn memberInfo
     }
+    private val pool = mock<EntityManagersPool> {
+        on {
+            getEntityManagerInfo(
+                any(),
+                any<(EntityManagerFactory) -> Any?>(),
+            )
+        } doAnswer {
+            val block = it.getArgument<(EntityManagerFactory) -> Any?>(1)
+            block(emf)
+        }
+    }
     private val persistenceHandlerServices: PersistenceHandlerServices = mock {
         on { clock } doReturn clock
         on { virtualNodeInfoReadService } doReturn virtualNodeInfoReadService
@@ -212,6 +224,7 @@ class SuspendMemberHandlerTest {
         on { cordaAvroSerializationFactory } doReturn cordaAvroSerializationFactory
         on { memberInfoFactory } doReturn memberInfoFactory
         on { keyEncodingService } doReturn mock()
+        on { entityManagersPool } doReturn pool
     }
     private val notaryUpdater = mock<GroupParametersNotaryUpdater>()
     private val handler: SuspendMemberHandler = SuspendMemberHandler(persistenceHandlerServices, notaryUpdater) { _, _, _, ->

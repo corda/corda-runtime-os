@@ -188,10 +188,8 @@ class QueryMemberInfoHandlerTest {
         }
         verify(jpaEntitiesRegistry).get(any())
         verify(entityManagerFactory).createEntityManager()
-        verify(entityManagerFactory).close()
         verify(entityTransaction).begin()
         verify(entityTransaction).commit()
-        verify(entityManager).close()
     }
 
     @Test
@@ -216,10 +214,8 @@ class QueryMemberInfoHandlerTest {
         }
         verify(jpaEntitiesRegistry).get(any())
         verify(entityManagerFactory).createEntityManager()
-        verify(entityManagerFactory).close()
         verify(entityTransaction).begin()
         verify(entityTransaction).commit()
-        verify(entityManager).close()
     }
 
     @Test
@@ -255,10 +251,8 @@ class QueryMemberInfoHandlerTest {
         }
         verify(jpaEntitiesRegistry).get(any())
         verify(entityManagerFactory).createEntityManager()
-        verify(entityManagerFactory).close()
         verify(entityTransaction).begin()
         verify(entityTransaction).commit()
-        verify(entityManager).close()
     }
 
     @Test
@@ -284,10 +278,8 @@ class QueryMemberInfoHandlerTest {
         }
         verify(jpaEntitiesRegistry).get(any())
         verify(entityManagerFactory).createEntityManager()
-        verify(entityManagerFactory).close()
         verify(entityTransaction).begin()
         verify(entityTransaction).commit()
-        verify(entityManager).close()
     }
 
 }

@@ -8,6 +8,7 @@ import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.schema.CordaDb
 import net.corda.membership.datamodel.ApprovalRulesEntity
 import net.corda.membership.datamodel.ApprovalRulesEntityPrimaryKey
+import net.corda.membership.impl.persistence.service.EntityManagersPool
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.JpaEntitiesSet
@@ -20,6 +21,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doNothing
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
@@ -71,10 +73,22 @@ class DeleteApprovalRuleHandlerTest {
             )
         } doReturn entityManagerFactory
     }
+    private val pool = mock<EntityManagersPool> {
+        on {
+            getEntityManagerInfo(
+                any(),
+                any<(EntityManagerFactory) -> Any?>(),
+            )
+        } doAnswer {
+            val block = it.getArgument<(EntityManagerFactory) -> Any?>(1)
+            block(entityManagerFactory)
+        }
+    }
     private val persistenceHandlerServices = mock<PersistenceHandlerServices> {
         on { virtualNodeInfoReadService } doReturn nodeInfoReadService
         on { jpaEntitiesRegistry } doReturn registry
         on { dbConnectionManager } doReturn connectionManager
+        on { entityManagersPool } doReturn pool
     }
     private val context = mock<MembershipRequestContext> {
         on { holdingIdentity } doReturn HoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", "group")

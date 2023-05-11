@@ -15,6 +15,7 @@ import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.schema.CordaDb
 import net.corda.membership.datamodel.GroupParametersEntity
 import net.corda.membership.datamodel.MemberInfoEntity
+import net.corda.membership.impl.persistence.service.EntityManagersPool
 import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.EPOCH_KEY
 import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.MODIFIED_TIME_KEY
 import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.NOTARY_SERVICE_KEYS_KEY
@@ -216,6 +217,17 @@ class AddNotaryToGroupParametersHandlerTest {
     private lateinit var otherNotaryContext: MemberContext
     private lateinit var otherNotaryEntity: MemberInfoEntity
     private lateinit var otherNotary: MemberInfo
+    private val pool = mock<EntityManagersPool> {
+        on {
+            getEntityManagerInfo(
+                any(),
+                any<(EntityManagerFactory) -> Any?>(),
+            )
+        } doAnswer {
+            val block = it.getArgument<(EntityManagerFactory) -> Any?>(1)
+            block(entityManagerFactory)
+        }
+    }
     private val persistenceHandlerServices = mock<PersistenceHandlerServices> {
         on { cordaAvroSerializationFactory } doReturn serializationFactory
         on { virtualNodeInfoReadService } doReturn nodeInfoReadService
@@ -224,6 +236,7 @@ class AddNotaryToGroupParametersHandlerTest {
         on { clock } doReturn clock
         on { keyEncodingService } doReturn keyEncodingService
         on { memberInfoFactory } doReturn memberInfoFactory
+        on { entityManagersPool } doReturn pool
     }
     private val handler = AddNotaryToGroupParametersHandler(persistenceHandlerServices)
 
@@ -265,9 +278,7 @@ class AddNotaryToGroupParametersHandlerTest {
         handler.invoke(requestContext, request)
 
         verify(entityManagerFactory).createEntityManager()
-        verify(entityManagerFactory).close()
         verify(entityManager).transaction
-        verify(registry).get(eq(CordaDb.Vault.persistenceUnitName))
         verify(keyValuePairListSerializer).serialize(
             KeyValuePairList(
                 listOf(
@@ -299,9 +310,7 @@ class AddNotaryToGroupParametersHandlerTest {
         handler.invoke(requestContext, request)
 
         verify(entityManagerFactory).createEntityManager()
-        verify(entityManagerFactory).close()
         verify(entityManager).transaction
-        verify(registry).get(eq(CordaDb.Vault.persistenceUnitName))
         verify(keyValuePairListSerializer).serialize(
             KeyValuePairList(
                 listOf(
@@ -355,9 +364,7 @@ class AddNotaryToGroupParametersHandlerTest {
         handler.invoke(requestContext, request)
 
         verify(entityManagerFactory).createEntityManager()
-        verify(entityManagerFactory).close()
         verify(entityManager).transaction
-        verify(registry).get(eq(CordaDb.Vault.persistenceUnitName))
         verify(entityManager, times(0)).persist(any())
     }
 
