@@ -31,15 +31,17 @@ class TokenBalanceQueryExternalEventFactory @Activate constructor() :
     ): ExternalEventRecord {
         val key = TokenPoolCacheKey().apply {
             this.shortHolderId = checkpoint.holdingIdentity.shortHash.value
-            this.tokenType = parameters.utxoTokenPoolKey.tokenType
-            this.issuerHash = parameters.utxoTokenPoolKey.issuerHash.toString()
-            this.symbol = parameters.utxoTokenPoolKey.symbol
+            this.tokenType = parameters.tokenType
+            this.issuerHash = parameters.issuerHash.toString()
+            this.symbol = parameters.symbol
             this.notaryX500Name = parameters.notaryX500Name.toString()
         }
 
         val balanceQuery = TokenBalanceQuery().apply {
             this.poolKey = key
             this.requestContext = flowExternalEventContext
+            this.ownerHash = parameters.ownerHash?.toString()
+            this.tagRegex = parameters.tagRegex
         }
 
         return ExternalEventRecord(Schemas.Services.TOKEN_CACHE_EVENT, key, TokenPoolCacheEvent(key, balanceQuery))

@@ -17,7 +17,6 @@ import net.corda.ledger.utxo.impl.token.selection.impl.BOB_X500_NAME
 import net.corda.ledger.utxo.impl.token.selection.impl.TokenBalanceImpl
 import net.corda.ledger.utxo.impl.token.selection.impl.toSecureHash
 import net.corda.schema.Schemas.Services.TOKEN_CACHE_EVENT
-import net.corda.v5.ledger.utxo.observer.UtxoTokenPoolKey
 import net.corda.v5.ledger.utxo.token.selection.TokenBalanceCriteria
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -46,7 +45,7 @@ class TokenBalanceQueryExternalEventFactoryTest {
 
         val flowExternalEventContext = ExternalEventContext("r1", "f1", KeyValuePairList())
 
-        val parameters = TokenBalanceCriteria(UtxoTokenPoolKey(tokenType, issuerHash, symbol), notaryX500Name)
+        val parameters = TokenBalanceCriteria(tokenType, issuerHash, notaryX500Name, symbol)
 
         val expectedBalanceQuery = TokenBalanceQuery().apply {
             this.poolKey = key
