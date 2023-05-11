@@ -19,7 +19,6 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS
 
-@Suppress("Unused", "FunctionName")
 @TestInstance(PER_CLASS)
 class TokenBalanceQueryTests {
 
