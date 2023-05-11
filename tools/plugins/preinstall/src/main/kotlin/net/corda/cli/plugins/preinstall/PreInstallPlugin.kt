@@ -65,30 +65,30 @@ class PreInstallPlugin : Plugin() {
 
         // get the credentials (.value) or credentials from a secret (.valueFrom.secretKeyRef...) from a SecretValues
         // object, and a namespace (if the credential is in a secret)
+        @Suppress("ThrowsCount")
         fun getCredential(values: SecretValues, namespace: String?): String {
             val secretKey: String? = values.valueFrom?.secretKeyRef?.key
             val secretName: String? = values.valueFrom?.secretKeyRef?.name
             val credential: String? = values.value
 
-            if (secretKey.isNullOrEmpty() || secretName.isNullOrEmpty())  {
-                if (!credential.isNullOrEmpty() && secretName.isNullOrEmpty() && secretKey.isNullOrEmpty()) {
+            if (secretName.isNullOrEmpty())  {
+                if (!credential.isNullOrEmpty()) {
                     return credential
                 }
                 throw SecretException("No value $credential and no secret $secretName with key $secretKey could be parsed.")
             }
-            val encoded = getSecret(secretName, secretKey, namespace) ?: run {
+            val encoded = getSecret(secretName, secretKey, namespace) ?:
                 throw SecretException("Secret $secretName has no key $secretKey.")
-            }
             return String(Base64.getDecoder().decode(encoded))
         }
 
-        private fun getSecret(secretName: String, secretKey: String, namespace: String?): String? {
+        private fun getSecret(secretName: String, secretKey: String?, namespace: String?): String? {
+            if (secretKey.isNullOrEmpty()) {
+                throw SecretException("No secret $secretName with key $secretKey could be parsed.")
+            }
             return try {
                 val secret: Secret = if (namespace != null) {
-                    val names = client.namespaces().list().items.map { item -> item.metadata.name}
-                    if (!names.contains(namespace)) {
-                        throw SecretException("Namespace $namespace does not exist.")
-                    }
+                    checkNamespace(namespace)
                     client.secrets().inNamespace(namespace).withName(secretName).get()
                 } else {
                     client.secrets().withName(secretName).get()
@@ -96,6 +96,13 @@ class PreInstallPlugin : Plugin() {
                 secret.data[secretKey]
             } catch (e: KubernetesClientException) {
                 throw SecretException("Could not read secret $secretName with key $secretKey.", e)
+            }
+        }
+
+        private fun checkNamespace(namespace: String) {
+            val names = client.namespaces().list().items.map { item -> item.metadata.name}
+            if (!names.contains(namespace)) {
+                throw SecretException("Namespace $namespace does not exist.")
             }
         }
     }
