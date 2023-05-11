@@ -134,7 +134,7 @@ class FlowFiberImpl(
                 .withTag(CordaMetrics.Tag.FlowClass, getExecutionContext().flowCheckpoint.flowStartContext.flowClassName)
                 .build()
                 .recordCallable {
-                    getExecutionContext().sandboxGroupContext.checkpointSerializer.serialize(this)
+                    getExecutionContext().sandboxGroupContext.checkpointSerializer.serialize(fiber)
                 }!!
             flowCompletion.complete(FlowIORequest.FlowSuspended(ByteBuffer.wrap(fiberState), request, fiber.prepareForCaching()))
         }
