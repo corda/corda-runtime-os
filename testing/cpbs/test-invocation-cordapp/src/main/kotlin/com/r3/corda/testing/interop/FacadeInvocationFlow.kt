@@ -34,11 +34,11 @@ class FacadeInvocationFlow : ClientStartableFlow {
     @Suspendable
     override fun call(requestBody: ClientRequestBody): String {
         log.info("FacadeInvocationFlow.call() starting")
-//        val alice = "CN=Alice Gold Alias, O=Alice Corp, L=LDN, C=GB";
-//        val groupName = "Inter-Gold-Silver-Platinum-Group"
-//        val aliasMemberInfo = remoteAliasLookUpService.get("$alice@$groupName")
-        val aliasMemberInfo = remoteAliasLookUpService.get("CN=Alice Gold Alias, O=Alice Corp, L=LDN, C=GB@Interop-Gold-Silver-Bronze-Group")
-        log.info("**************** aliasMemberInfo : $aliasMemberInfo")
+
+        val alice = "CN=Alice Gold Alias, O=Alice Corp, L=LDN, C=GB";
+        val groupName = "Interop-Gold-Silver-Bronze-Group"
+        val aliasMemberInfo = remoteAliasLookUpService.get("$alice@$groupName")
+        log.info("AliasMemberInfo for Alice Gold Alias : $aliasMemberInfo")
 
         val args = requestBody.getRequestBodyAsMap(jsonMarshallingService, String::class.java, String::class.java)
 

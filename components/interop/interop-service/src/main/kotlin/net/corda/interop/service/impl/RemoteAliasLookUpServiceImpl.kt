@@ -1,9 +1,9 @@
 package net.corda.interop.service.impl
 
 import net.corda.sandbox.type.UsedByFlow
+import net.corda.v5.application.interop.AliasMemberInfo
+import net.corda.v5.application.interop.InteropGroupInfo
 import net.corda.v5.application.interop.RemoteAliasLookUpService
-import net.corda.v5.interop.AliasMemberInfo
-import net.corda.v5.interop.InteropGroupInfo
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component

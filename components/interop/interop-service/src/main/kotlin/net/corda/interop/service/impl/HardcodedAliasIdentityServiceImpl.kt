@@ -1,9 +1,9 @@
 package net.corda.interop.service.impl
 
 import net.corda.interop.service.AliasIdentityDataService
-import net.corda.v5.interop.AliasMemberInfo
-import net.corda.v5.interop.HoldingIdAliasGroupInfo
-import net.corda.v5.interop.InteropGroupInfo
+import net.corda.v5.application.interop.AliasMemberInfo
+import net.corda.v5.application.interop.HoldingIdAliasGroupInfo
+import net.corda.v5.application.interop.InteropGroupInfo
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import java.util.UUID
@@ -14,56 +14,54 @@ class HardcodedAliasIdentityDataServiceImpl @Activate constructor() : AliasIdent
         val aliceGroups = listOf(
             GroupData(
                 "3dfc0aae-be7c-44c2-aa4f-4d0d7145cf08", //This is hardcoded groupId for existing texts.
-                "Interop-Gold-Silver-Bronze-Group",
-                listOf(
+                "Interop-Gold-Silver-Bronze-Group", listOf(
                     NetworkFacadeData(
-                        "Gold",
-                        listOf(
-                            "org.corda.interop/platform/hello-interop/v1.0",
+                        "Gold", listOf(
+                            "org.corda.interop/platform/hello-interop/v1.0", "org.corda.interop/platform/tokens/v1.0"
+                        )
+                    ), NetworkFacadeData(
+                        "Silver", listOf(
                             "org.corda.interop/platform/tokens/v1.0"
                         )
-                    ),
-                    NetworkFacadeData(
-                        "Silver",
-                        listOf(
-                            "org.corda.interop/platform/tokens/v1.0"
-                        )
-                    ),
-                    NetworkFacadeData(
-                        "Bronze",
-                        listOf(
+                    ), NetworkFacadeData(
+                        "Bronze", listOf(
                             "org.corda.interop/platform/tokens/v1.0"
                         )
                     )
                 )
-            ),
-            GroupData(
-                "abc0aae-be7c-44c2-aa4f-4d0d7145cabc",
-                "Interop-UKBank-EUBank-Group",
-                listOf(
+            ), GroupData(
+                "abc0aae-be7c-44c2-aa4f-4d0d7145cabc", "Interop-UKBank-EUBank-Group", listOf(
                     NetworkFacadeData(
-                        "UKBank",
-                        listOf(
+                        "UKBank", listOf(
                             "org.corda.interop/platform/hello-interop/v1.0"
                         )
-                    ),
-                    NetworkFacadeData(
-                        "EUBank",
-                        listOf(
+                    ), NetworkFacadeData(
+                        "EUBank", listOf(
                             "org.corda.interop/platform/tokens/v1.0"
                         )
                     )
                 )
             )
         )
-        return HoldingIdAliasGroupInfo("Alice", aliceGroups).groups
+        return HoldingIdAliasGroupInfoImpl("Alice", aliceGroups).groups
     }
 }
 
-data class GroupData(val groupId: String, val groupName: String, val networks: List<NetworkFacadeData>)
-data class NetworkFacadeData(val network: String, val facadeIds: List<String>)
-data class HoldingIdAliasGroupInfo(private val member: String, val groupData: List<GroupData>) :
-    HoldingIdAliasGroupInfo {
+data class GroupData(
+    val groupId: String,
+    val groupName: String,
+    val networks: List<NetworkFacadeData>
+)
+
+data class NetworkFacadeData(
+    val network: String,
+    val facadeIds: List<String>
+)
+
+data class HoldingIdAliasGroupInfoImpl(
+    private val member: String,
+    val groupData: List<GroupData>
+) : HoldingIdAliasGroupInfo {
     override fun getShortHash(): String {
         return "ANYSHORTHASH"
     }
