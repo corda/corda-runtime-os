@@ -151,7 +151,7 @@ class InteropServiceIntegrationTest {
         val publisher = publisherFactory.createPublisher(PublisherConfig("client1"), bootConfig)
         // Test config updates don't break Interop Service
         republishConfig(publisher)
-        // Need to publish at least 2 identities, in order fot InteropAliasProcessor to create synthetic aliases
+        // Need to publish at least 2 identities in order to trigger InteropAliasProcessor to create synthetic aliases
         publisher.publish(listOf(createHostedAliasIdentity(sourceIdentity.toCorda())))
         publisher.publish(listOf(createHostedAliasIdentity(destinationIdentity.toCorda())))
         val session = "session1"

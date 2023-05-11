@@ -65,7 +65,12 @@ inline fun <reified T : Any> Facade.getClientProxy(
     jsonMarshaller: JsonMarshaller,
     noinline requestProcessor: (FacadeRequest) -> FacadeResponse): T =
     FacadeProxies.getClientProxy(this, T::class.java, jsonMarshaller, requestProcessor)
- fun <T> Facade.getClientProxy(
+
+/**
+ * Kotlin convenience method for creating a client proxy with the provided [JsonMarshaller]
+ * and the provided request processor.
+ */
+fun <T> Facade.getClientProxy(
     jsonMarshaller: JsonMarshaller,
     expectedClass: Class<T>,
     requestProcessor: (FacadeRequest) -> FacadeResponse): T =
