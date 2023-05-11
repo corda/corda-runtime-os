@@ -10,7 +10,6 @@ import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.ledger.common.NotaryLookup
-import net.corda.v5.ledger.utxo.observer.UtxoTokenPoolKey
 import net.corda.v5.ledger.utxo.token.selection.TokenBalance
 import net.corda.v5.ledger.utxo.token.selection.TokenBalanceCriteria
 import net.corda.v5.ledger.utxo.token.selection.TokenSelection
@@ -58,12 +57,10 @@ class TokenBalanceQueryFlow : ClientStartableFlow {
 
     private fun genTokenBalanceQueryCriteria(tokenBalanceQueryMsg: TokenBalanceQueryMsg, notary: NotaryInfo) =
         TokenBalanceCriteria(
-            UtxoTokenPoolKey(
-                tokenBalanceQueryMsg.tokenType,
-                digestService.hash(tokenBalanceQueryMsg.issuerBankX500.toByteArray(), DigestAlgorithmName.SHA2_256),
-                tokenBalanceQueryMsg.currency
-            ),
-            notary.name
+            tokenBalanceQueryMsg.tokenType,
+            digestService.hash(tokenBalanceQueryMsg.issuerBankX500.toByteArray(), DigestAlgorithmName.SHA2_256),
+            notary.name,
+            tokenBalanceQueryMsg.currency
         )
 
     private data class TokenBalanceQueryMsg(val tokenType: String, val issuerBankX500: String, val currency: String)
