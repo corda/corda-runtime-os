@@ -1,5 +1,6 @@
 package net.corda.cli.plugins.packaging
 
+import net.corda.cli.plugins.packaging.aws.kms.ec.KmsECKeyFactory
 import net.corda.cli.plugins.packaging.aws.kms.rsa.KmsRSAKeyFactory
 import software.amazon.awssdk.auth.credentials.ProfileCredentialsProvider
 import software.amazon.awssdk.regions.Region
@@ -23,9 +24,12 @@ fun getKmsClient(): KmsClient {
         .build()
 }
 
-fun getPrivateKey(keyId: String): PrivateKey {
+fun getRSAPrivateKey(keyId: String): PrivateKey {
     return KmsRSAKeyFactory.getPrivateKey(keyId)
+}
 
+fun getECPrivateKey(keyId: String): PrivateKey {
+    return KmsECKeyFactory.getPrivateKey(keyId)
 }
 
 fun listAllKeys(kmsClient: KmsClient) {

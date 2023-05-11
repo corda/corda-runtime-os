@@ -37,6 +37,7 @@ class SignCpxWithKmsKey : Runnable {
                 cpxFilePath,
                 signedCpxPath,
                 signWithKmsOptions.keyId,
+                signWithKmsOptions.keyType,
                 signWithKmsOptions.sigFile,
                 signWithKmsOptions.tsaUrl
             )
@@ -48,6 +49,7 @@ class SignCpxWithKmsKey : Runnable {
                     removedSignaturesCpx,
                     signedCpxPath,
                     signWithKmsOptions.keyId,
+                    signWithKmsOptions.keyType,
                     signWithKmsOptions.sigFile,
                     signWithKmsOptions.tsaUrl
                 )

@@ -2,22 +2,26 @@ package net.corda.cli.plugins.packaging.signing
 
 import jdk.security.jarsigner.JarSigner
 import net.corda.cli.plugins.packaging.aws.kms.KmsProvider
+import net.corda.cli.plugins.packaging.aws.kms.ec.KmsECKeyFactory
 import net.corda.cli.plugins.packaging.aws.kms.rsa.KmsRSAKeyFactory
-import net.corda.cli.plugins.packaging.aws.kms.rsa.KmsRSAKeyFactory.getPrivateKey
 import net.corda.cli.plugins.packaging.aws.kms.signature.KmsSigningAlgorithm
 import net.corda.cli.plugins.packaging.aws.kms.utils.crt.SelfSignedCrtGenerator
 import net.corda.cli.plugins.packaging.aws.kms.utils.csr.CsrGenerator
 import net.corda.cli.plugins.packaging.aws.kms.utils.csr.CsrInfo
 import net.corda.cli.plugins.packaging.closeKmsClient
 import net.corda.cli.plugins.packaging.convertStringToX509Cert
+import net.corda.cli.plugins.packaging.getECPrivateKey
 import net.corda.cli.plugins.packaging.getKmsClient
+import net.corda.cli.plugins.packaging.getRSAPrivateKey
 import net.corda.libs.packaging.verify.SigningHelpers.isSigningRelated
 import java.io.File
 import java.net.URI
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardOpenOption
+import java.security.KeyPair
 import java.security.KeyStore
+import java.security.PrivateKey
 import java.security.Security
 import java.security.cert.Certificate
 import java.security.cert.CertificateFactory
@@ -69,10 +73,12 @@ internal object SigningHelpers {
         }
     }
 
+    @Suppress("LongParameterList")
     fun signWithKms(
         unsignedInputCpx: Path,
         signedOutputCpx: Path,
         keyId: String,
+        keyType: String,
         signerName: String,
         tsaUrl: String?
     ) {
@@ -84,13 +90,29 @@ internal object SigningHelpers {
             ).use { signedCpi ->
 
                 val kmsClient = getKmsClient()
-
                 val kmsProvider = KmsProvider(kmsClient)
                 Security.addProvider(kmsProvider) // It is important to register the provider!
 
-                val privateKey = getPrivateKey(keyId)
-                val keyPair = KmsRSAKeyFactory.getKeyPair(kmsClient, keyId)
-                val kmsSigningAlgorithm = KmsSigningAlgorithm.RSASSA_PKCS1_V1_5_SHA_256
+                var keyPair: KeyPair
+                var kmsSigningAlgorithm: KmsSigningAlgorithm
+                var privateKey: PrivateKey
+                var jarsignerSignatureAlgorithm: String
+
+                when (keyType) {
+                    "RSA" -> {
+                        privateKey = getRSAPrivateKey(keyId)
+                        keyPair = KmsRSAKeyFactory.getKeyPair(kmsClient, keyId)
+                        kmsSigningAlgorithm = KmsSigningAlgorithm.RSASSA_PKCS1_V1_5_SHA_256
+                        jarsignerSignatureAlgorithm = "SHA256withRSA"
+                    }
+                    "EC" -> {
+                        privateKey = getECPrivateKey(keyId)
+                        keyPair = KmsECKeyFactory.getKeyPair(kmsClient, keyId)
+                        kmsSigningAlgorithm = KmsSigningAlgorithm.ECDSA_SHA_256
+                        jarsignerSignatureAlgorithm = "SHA256withECDSA"
+                    }
+                    else -> throw IllegalArgumentException("Unsupported key type.")
+                }
 
                 // create a self sign cert from the key pair
                 val csrInfo = CsrInfo.CsrInfoBuilder()
@@ -104,11 +126,12 @@ internal object SigningHelpers {
                     .build()
 
                 val csr = CsrGenerator.generate(keyPair, csrInfo, kmsSigningAlgorithm)
+                println("CSR:\n$csr")
                 val validity = 365 //In days
 
-                // UTF-8 string of self signed cert
+                // UTF-8 string of self-signed cert
                 val crt = SelfSignedCrtGenerator.generate(keyPair, csr, kmsSigningAlgorithm, validity)
-                println(crt)
+                println("Certificate:\n$crt")
 
                 val certificateChain = listOf(convertStringToX509Cert(crt))
                 val certPath = buildCertPath(certificateChain)
@@ -116,7 +139,7 @@ internal object SigningHelpers {
                 // Create JarSigner
                 val builder = JarSigner.Builder(privateKey, certPath)
                     .signerName(signerName)
-                    .signatureAlgorithm("SHA256withRSA", kmsProvider)
+                    .signatureAlgorithm(jarsignerSignatureAlgorithm, kmsProvider)
 
                 // Use timestamp server if provided
                 tsaUrl?.let { builder.tsa(URI(it)) }
