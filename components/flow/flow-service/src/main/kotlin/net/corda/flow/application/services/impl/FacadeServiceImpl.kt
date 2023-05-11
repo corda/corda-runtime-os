@@ -11,7 +11,7 @@ import net.corda.v5.application.interop.facade.Facade
 import net.corda.v5.application.interop.facade.FacadeId
 import net.corda.v5.application.interop.facade.FacadeRequest
 import net.corda.v5.application.interop.facade.FacadeResponse
-import net.corda.v5.application.interop.facade.FacadeService
+import net.corda.v5.application.interop.FacadeService
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -37,7 +37,7 @@ class FacadeServiceImpl @Activate constructor(
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
-    override fun <T : Any?> getClientProxy(facadeId: String?, expectedType: Class<T>?, alias: MemberX500Name?, interopGroup: String?): T {
+    override fun <T : Any?> getFacade(facadeId: String?, expectedType: Class<T>?, alias: MemberX500Name?, interopGroup: String?): T {
         logger.info("Creating Proxy for: $facadeId, $expectedType, $alias, $interopGroup")
         val facade = facadeLookup(facadeId!!)
         val marshaller = JacksonJsonMarshallerAdaptor(jsonMarshallingService)
@@ -45,7 +45,7 @@ class FacadeServiceImpl @Activate constructor(
         return facade.getClientProxy(marshaller, expectedType!!, transportLayer)
     }
 
-    override fun dispatch(target: Any?, request: String?): String {
+    override fun dispatchFacadeRequest(target: Any?, request: String?): String {
         logger.info("Dispatching: ${target!!::class.java}, $request")
         val facadeRequest = jsonMarshallingService.parse(request!!, FacadeRequestImpl::class.java)
         val facade = facadeLookup(facadeRequest.facadeId)

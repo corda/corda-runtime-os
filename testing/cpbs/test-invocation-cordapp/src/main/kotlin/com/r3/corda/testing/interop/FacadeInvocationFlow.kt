@@ -4,7 +4,7 @@ import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.InitiatingFlow
 import net.corda.v5.application.flows.ClientRequestBody
-import net.corda.v5.application.interop.facade.FacadeService
+import net.corda.v5.application.interop.FacadeService
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.types.MemberX500Name
@@ -40,7 +40,7 @@ class FacadeInvocationFlow : ClientStartableFlow {
 
         log.info("Calling facade method '$methodName@$facadeId' with payload '$payload' to $alias")
 
-        val client : SampleTokensFacade = facadeService.getClientProxy(facadeId, SampleTokensFacade::class.java, alias, interopGroupId)
+        val client : SampleTokensFacade = facadeService.getFacade(facadeId, SampleTokensFacade::class.java, alias, interopGroupId)
         val responseObject = client.getHello(payload)
         val response = responseObject.result.toString()
 
