@@ -99,6 +99,7 @@ class UpdateMemberAndRegistrationRequestToApprovedHandlerTest {
     }
     private val requestEntity = mock<RegistrationRequestEntity> {
         on { status } doReturn RegistrationStatus.SENT_TO_MGM.name
+        on { registrationId } doReturn "registrationId"
     }
     private val keyEncodingService: KeyEncodingService = mock()
     private val platformInfoProvider: PlatformInfoProvider = mock()
@@ -111,6 +112,7 @@ class UpdateMemberAndRegistrationRequestToApprovedHandlerTest {
         virtualNodeInfoReadService,
         keyEncodingService,
         platformInfoProvider,
+        mock(),
         mock(),
     )
     private val handler = UpdateMemberAndRegistrationRequestToApprovedHandler(service)

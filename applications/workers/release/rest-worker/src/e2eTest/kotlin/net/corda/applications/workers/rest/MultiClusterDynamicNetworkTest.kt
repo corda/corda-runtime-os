@@ -25,7 +25,6 @@ import java.nio.file.Path
 /**
  * Three clusters are required for running this test. See `resources/RunNetworkTests.md` for more details.
  */
-@Disabled("CORE-13288: Tests are disabled until there is a solution in place")
 class MultiClusterDynamicNetworkTest {
     @TempDir
     lateinit var tempDir: Path

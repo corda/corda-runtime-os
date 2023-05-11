@@ -41,6 +41,7 @@ import net.corda.data.membership.db.response.query.UpdateMemberAndRegistrationRe
 import net.corda.data.membership.p2p.MembershipRegistrationRequest
 import net.corda.data.membership.preauth.PreAuthToken
 import net.corda.layeredpropertymap.toAvro
+import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.membership.lib.GroupParametersFactory
@@ -453,4 +454,7 @@ class MembershipPersistenceClientImpl(
             else -> Either.Right("Unexpected response: $payload")
         }
     }
+
+    override fun unready() = Unit
+    override fun ready(messagingConfig: SmartConfig) = Unit
 }

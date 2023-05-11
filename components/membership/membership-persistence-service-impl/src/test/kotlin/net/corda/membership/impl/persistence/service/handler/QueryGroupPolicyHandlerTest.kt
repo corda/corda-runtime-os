@@ -101,6 +101,7 @@ class QueryGroupPolicyHandlerTest {
         keyEncodingService,
         platformInfoProvider,
         mock(),
+        mock(),
     )
 
     private lateinit var queryGroupPolicyHandler: QueryGroupPolicyHandler

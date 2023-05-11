@@ -1,5 +1,8 @@
 package net.corda.membership.impl.persistence.client
 
+import com.github.benmanes.caffeine.cache.Cache
+import com.github.benmanes.caffeine.cache.Caffeine
+import net.corda.cache.caffeine.CacheFactoryImpl
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
@@ -30,13 +33,19 @@ import net.corda.data.membership.db.response.query.StaticNetworkInfoQueryRespons
 import net.corda.data.membership.preauth.PreAuthToken
 import net.corda.data.membership.preauth.PreAuthTokenStatus
 import net.corda.layeredpropertymap.LayeredPropertyMapFactory
+import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.toMap
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.persistence.client.MembershipQueryResult
+import net.corda.messaging.api.processor.PubSubProcessor
 import net.corda.messaging.api.publisher.factory.PublisherFactory
+import net.corda.messaging.api.records.Record
+import net.corda.messaging.api.subscription.config.SubscriptionConfig
+import net.corda.messaging.api.subscription.factory.SubscriptionFactory
+import net.corda.schema.Schemas.Membership.MEMBERSHIP_REGISTRATION_REQUEST_STATE_TOPIC
 import net.corda.utilities.Either
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
@@ -46,17 +55,21 @@ import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro
 import net.corda.virtualnode.toCorda
+import net.corda.data.identity.HoldingIdentity as AvroHoldingIdentity
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
 import java.util.UUID
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.Future
 
 @Suppress("LongParameterList")
 @Component(service = [MembershipQueryClient::class])
 class MembershipQueryClientImpl(
     coordinatorFactory: LifecycleCoordinatorFactory,
     publisherFactory: PublisherFactory,
+    private val subscriptionFactory: SubscriptionFactory,
     configurationReadService: ConfigurationReadService,
     private val memberInfoFactory: MemberInfoFactory,
     clock: Clock,
@@ -68,22 +81,33 @@ class MembershipQueryClientImpl(
     configurationReadService,
     clock,
 ) {
-
     @Activate constructor(
         @Reference(service = LifecycleCoordinatorFactory::class)
         coordinatorFactory: LifecycleCoordinatorFactory,
         @Reference(service = PublisherFactory::class)
         publisherFactory: PublisherFactory,
+        @Reference(service = SubscriptionFactory::class)
+        subscriptionFactory: SubscriptionFactory,
         @Reference(service = ConfigurationReadService::class)
         configurationReadService: ConfigurationReadService,
         @Reference(service = MemberInfoFactory::class)
         memberInfoFactory: MemberInfoFactory,
         @Reference(service = LayeredPropertyMapFactory::class)
         layeredPropertyMapFactory: LayeredPropertyMapFactory,
-    ) : this(coordinatorFactory, publisherFactory, configurationReadService, memberInfoFactory, UTCClock(), layeredPropertyMapFactory)
+    ) : this(
+        coordinatorFactory,
+        publisherFactory,
+        subscriptionFactory,
+        configurationReadService,
+        memberInfoFactory,
+        UTCClock(),
+        layeredPropertyMapFactory,
+    )
 
     private companion object {
         val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        val SUBSCRIPTION_RESOURCE = "MembershipQueryClientImpl.RegistrationRequestStatusCache"
+        val SUBSCRIPTION_GROUP_NAME = "MembershipQueryClientImpl.RegistrationRequestStatusCache"
     }
 
     override val groupName = "membership.db.query.client.group"
@@ -114,10 +138,21 @@ class MembershipQueryClientImpl(
         viewOwningIdentity: HoldingIdentity,
         registrationId: String,
     ): MembershipQueryResult<RegistrationRequestDetails?> {
+        val key = CacheKey(
+            registrationId = registrationId,
+            holdingId = viewOwningIdentity,
+        )
+        val cachedValue = cache.getIfPresent(key)
+        if (cachedValue != null) {
+            return MembershipQueryResult.Success(cachedValue)
+        }
         return MembershipPersistenceRequest(
             buildMembershipRequestContext(viewOwningIdentity.toAvro()),
             QueryRegistrationRequest(registrationId),
         ).execute("retrieve registration request") { payload: RegistrationRequestQueryResponse ->
+            if (payload.registrationRequest != null) {
+                cache.put(key, payload.registrationRequest)
+            }
             payload.registrationRequest
         }
     }
@@ -239,5 +274,51 @@ class MembershipQueryClientImpl(
                 MembershipQueryResult.Failure(err)
             }
         }
+    }
+
+    override fun ready(messagingConfig: SmartConfig) {
+        coordinator.createManagedResource(SUBSCRIPTION_RESOURCE) {
+            subscriptionFactory.createPubSubSubscription(
+                subscriptionConfig = SubscriptionConfig(
+                    groupName = "$SUBSCRIPTION_GROUP_NAME-${UUID.randomUUID()}",
+                    eventTopic = MEMBERSHIP_REGISTRATION_REQUEST_STATE_TOPIC,
+                ),
+                messagingConfig = messagingConfig,
+                processor = CacheProcessor(),
+            )
+        }.start()
+    }
+
+    override fun unready() {
+        coordinator.closeManagedResources(
+            setOf(
+                SUBSCRIPTION_RESOURCE,
+            ),
+        )
+    }
+    private data class CacheKey(
+        val holdingId: HoldingIdentity,
+        val registrationId: String,
+    )
+    private val cache: Cache<CacheKey, RegistrationRequestDetails> = CacheFactoryImpl().build(
+        "RegistrationRequestStatusCache",
+        Caffeine.newBuilder()
+            .maximumSize(500),
+    )
+
+    private inner class CacheProcessor : PubSubProcessor<String, AvroHoldingIdentity> {
+        override fun onNext(event: Record<String, AvroHoldingIdentity>): Future<Unit> {
+            val done = CompletableFuture.completedFuture(Unit)
+            val holdingId = event.value ?: return done
+            val key = CacheKey(
+                holdingId.toCorda(),
+                event.key,
+            )
+            cache.invalidate(key)
+            return done
+        }
+
+        override val keyClass = String::class.java
+        override val valueClass = AvroHoldingIdentity::class.java
     }
 }

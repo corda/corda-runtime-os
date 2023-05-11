@@ -297,15 +297,18 @@ class MembershipPersistenceRPCProcessorTest {
     fun setUp() {
         processor = MembershipPersistenceRPCProcessor(
             HandlerFactories(
-                clock,
-                dbConnectionManager,
-                jpaEntitiesRegistry,
-                memberInfoFactory,
-                cordaAvroSerializationFactory,
-                virtualNodeInfoReadService,
-                keyEncodingService,
-                platformInfoProvider,
-                mock(),
+                PersistenceHandlerServices(
+                    clock,
+                    dbConnectionManager,
+                    jpaEntitiesRegistry,
+                    memberInfoFactory,
+                    cordaAvroSerializationFactory,
+                    virtualNodeInfoReadService,
+                    keyEncodingService,
+                    platformInfoProvider,
+                    mock(),
+                    mock(),
+                )
             )
         )
         responseFuture = CompletableFuture()

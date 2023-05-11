@@ -1,7 +1,5 @@
 package net.corda.membership.impl.persistence.service.handler
 
-import net.corda.crypto.cipher.suite.KeyEncodingService
-import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.data.membership.db.request.MembershipPersistenceRequest
 import net.corda.data.membership.db.request.command.ActivateMember
 import net.corda.data.membership.db.request.command.AddNotaryToGroupParameters
@@ -30,38 +28,12 @@ import net.corda.data.membership.db.request.query.QueryPreAuthToken
 import net.corda.data.membership.db.request.query.QueryRegistrationRequest
 import net.corda.data.membership.db.request.query.QueryRegistrationRequests
 import net.corda.data.membership.db.request.query.QueryStaticNetworkInfo
-import net.corda.db.connection.manager.DbConnectionManager
-import net.corda.libs.platform.PlatformInfoProvider
-import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
-import net.corda.membership.mtls.allowed.list.service.AllowedCertificatesReaderWriterService
-import net.corda.orm.JpaEntitiesRegistry
-import net.corda.utilities.time.Clock
-import net.corda.virtualnode.read.VirtualNodeInfoReadService
 
 @Suppress("LongParameterList")
 internal class HandlerFactories(
-    clock: Clock,
-    dbConnectionManager: DbConnectionManager,
-    jpaEntitiesRegistry: JpaEntitiesRegistry,
-    memberInfoFactory: MemberInfoFactory,
-    cordaAvroSerializationFactory: CordaAvroSerializationFactory,
-    virtualNodeInfoReadService: VirtualNodeInfoReadService,
-    keyEncodingService: KeyEncodingService,
-    platformInfoProvider: PlatformInfoProvider,
-    allowedCertificatesReaderWriterService: AllowedCertificatesReaderWriterService,
+    val persistenceHandlerServices: PersistenceHandlerServices,
 ) {
-    val persistenceHandlerServices = PersistenceHandlerServices(
-        clock,
-        dbConnectionManager,
-        jpaEntitiesRegistry,
-        memberInfoFactory,
-        cordaAvroSerializationFactory,
-        virtualNodeInfoReadService,
-        keyEncodingService,
-        platformInfoProvider,
-        allowedCertificatesReaderWriterService,
-    )
     private val handlerFactories: Map<Class<*>, () -> PersistenceHandler<out Any, out Any>> = mapOf(
         PersistRegistrationRequest::class.java to { PersistRegistrationRequestHandler(persistenceHandlerServices) },
         PersistMemberInfo::class.java to { PersistMemberInfoHandler(persistenceHandlerServices) },

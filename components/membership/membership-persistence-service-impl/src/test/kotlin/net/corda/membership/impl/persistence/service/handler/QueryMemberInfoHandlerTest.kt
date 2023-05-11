@@ -123,6 +123,7 @@ class QueryMemberInfoHandlerTest {
         keyEncodingService,
         platformInfoProvider,
         mock(),
+        mock(),
     )
     private lateinit var queryMemberInfoHandler: QueryMemberInfoHandler
 

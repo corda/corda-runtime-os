@@ -3,9 +3,12 @@ package net.corda.membership.impl.persistence.service.handler
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
+import net.corda.data.identity.HoldingIdentity
 import net.corda.data.membership.common.RegistrationRequestDetails
 import net.corda.membership.datamodel.RegistrationRequestEntity
 import net.corda.membership.impl.persistence.service.handler.RegistrationStatusHelper.toStatus
+import net.corda.messaging.api.records.Record
+import net.corda.schema.Schemas.Membership.MEMBERSHIP_REGISTRATION_REQUEST_STATE_TOPIC
 import java.nio.ByteBuffer
 
 internal abstract class BaseRequestStatusHandler<REQUEST, RESPONSE>(persistenceHandlerServices: PersistenceHandlerServices) :
@@ -52,5 +55,21 @@ internal abstract class BaseRequestStatusHandler<REQUEST, RESPONSE>(persistenceH
             .setReason(this.reason)
             .setSerial(this.serial)
             .build()
+    }
+
+    fun RegistrationRequestEntity?.publishRequestStatus(holdingIdentity: HoldingIdentity) {
+        if (this == null) {
+            return
+        }
+        val record = Record(
+            MEMBERSHIP_REGISTRATION_REQUEST_STATE_TOPIC,
+            this.registrationId,
+            holdingIdentity,
+        )
+        publisher.publish(
+            listOf(record),
+        ).forEach {
+            it.join()
+        }
     }
 }

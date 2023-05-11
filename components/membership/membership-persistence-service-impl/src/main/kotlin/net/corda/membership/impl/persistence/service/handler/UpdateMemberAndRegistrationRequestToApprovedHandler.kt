@@ -22,7 +22,7 @@ import javax.persistence.LockModeType
 
 internal class UpdateMemberAndRegistrationRequestToApprovedHandler(
     persistenceHandlerServices: PersistenceHandlerServices
-) : BasePersistenceHandler<
+) : BaseRequestStatusHandler<
     UpdateMemberAndRegistrationRequestToApproved,
     UpdateMemberAndRegistrationRequestResponse
     >(persistenceHandlerServices) {
@@ -98,6 +98,8 @@ internal class UpdateMemberAndRegistrationRequestToApprovedHandler(
             }
             registrationRequest.status = RegistrationStatus.APPROVED.name
             registrationRequest.lastModified = now
+
+            registrationRequest.publishRequestStatus(context.holdingIdentity)
 
             UpdateMemberAndRegistrationRequestResponse(
                 PersistentMemberInfo(

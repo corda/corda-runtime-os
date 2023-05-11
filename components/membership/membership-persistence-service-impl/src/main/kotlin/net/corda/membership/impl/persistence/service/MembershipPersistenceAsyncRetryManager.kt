@@ -2,15 +2,13 @@ package net.corda.membership.impl.persistence.service
 
 import net.corda.data.membership.db.request.async.MembershipPersistenceAsyncRequest
 import net.corda.data.membership.db.request.async.MembershipPersistenceAsyncRequestState
-import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.Resource
 import net.corda.lifecycle.TimerEvent
 import net.corda.lifecycle.createCoordinator
-import net.corda.messaging.api.publisher.config.PublisherConfig
-import net.corda.messaging.api.publisher.factory.PublisherFactory
+import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
 import net.corda.schema.Schemas.Membership.MEMBERSHIP_DB_ASYNC_TOPIC
@@ -22,24 +20,16 @@ import java.util.concurrent.TimeUnit
 
 internal class MembershipPersistenceAsyncRetryManager(
     coordinatorFactory: LifecycleCoordinatorFactory,
-    publisherFactory: PublisherFactory,
-    messagingConfig: SmartConfig,
+    private val publisher: Publisher,
     private val clock: Clock,
 ) :
     StateAndEventListener<String, MembershipPersistenceAsyncRequestState>, Resource {
 
     private companion object {
-        const val PUBLISHER_NAME = "MembershipPersistenceAsyncRetryManager"
         const val WAIT_BETWEEN_REQUESTS_IN_SECONDS = 2L
         val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
-    private val publisher = publisherFactory.createPublisher(
-        publisherConfig = PublisherConfig(PUBLISHER_NAME),
-        messagingConfig = messagingConfig,
-    ).also {
-        it.start()
-    }
     private val coordinator =
         coordinatorFactory.createCoordinator<MembershipPersistenceAsyncRetryManager> { event, _ ->
             eventHandler(event)
@@ -61,7 +51,7 @@ internal class MembershipPersistenceAsyncRetryManager(
             publisher.publish(
                 listOf(
                     event.event,
-                )
+                ),
             )
         }
     }
@@ -93,7 +83,7 @@ internal class MembershipPersistenceAsyncRetryManager(
         val durationInMillis = max(
             0,
             (state.lastFailedOn.toEpochMilli() + TimeUnit.SECONDS.toMillis(WAIT_BETWEEN_REQUESTS_IN_SECONDS)) -
-                (clock.instant().toEpochMilli())
+                (clock.instant().toEpochMilli()),
         )
         val event = Record(
             MEMBERSHIP_DB_ASYNC_TOPIC,

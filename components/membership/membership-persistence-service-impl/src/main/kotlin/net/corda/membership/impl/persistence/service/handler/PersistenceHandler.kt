@@ -11,6 +11,7 @@ import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.membership.mtls.allowed.list.service.AllowedCertificatesReaderWriterService
+import net.corda.messaging.api.publisher.Publisher
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.utils.transaction
 import net.corda.utilities.time.Clock
@@ -41,6 +42,7 @@ internal abstract class BasePersistenceHandler<REQUEST, RESPONSE>(
     val keyEncodingService get() = persistenceHandlerServices.keyEncodingService
     val platformInfoProvider get() = persistenceHandlerServices.platformInfoProvider
     val allowedCertificatesReaderWriterService get() = persistenceHandlerServices.allowedCertificatesReaderWriterService
+    val publisher get() = persistenceHandlerServices.publisher
 
     fun <R> transaction(holdingIdentityShortHash: ShortHash, block: (EntityManager) -> R): R {
         val virtualNodeInfo = virtualNodeInfoReadService.getByHoldingIdentityShortHash(holdingIdentityShortHash)
@@ -87,4 +89,5 @@ internal data class PersistenceHandlerServices(
     val keyEncodingService: KeyEncodingService,
     val platformInfoProvider: PlatformInfoProvider,
     val allowedCertificatesReaderWriterService: AllowedCertificatesReaderWriterService,
+    val publisher: Publisher,
 )

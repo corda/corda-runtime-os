@@ -10,7 +10,7 @@ import javax.persistence.LockModeType
 
 internal class PersistRegistrationRequestHandler(
     persistenceHandlerServices: PersistenceHandlerServices
-) : BasePersistenceHandler<PersistRegistrationRequest, Unit>(persistenceHandlerServices) {
+) : BaseRequestStatusHandler<PersistRegistrationRequest, Unit>(persistenceHandlerServices) {
 
     override fun invoke(context: MembershipRequestContext, request: PersistRegistrationRequest) {
         val registrationId = request.registrationRequest.registrationId
@@ -29,26 +29,28 @@ internal class PersistRegistrationRequestHandler(
                 )
                 return@transaction
             }
+            val entity = with(request.registrationRequest) {
+                RegistrationRequestEntity(
+                    registrationId = registrationId,
+                    holdingIdentityShortHash = request.registeringHoldingIdentity.toCorda().shortHash.value,
+                    status = request.status.toString(),
+                    created = now,
+                    lastModified = now,
+                    memberContext = memberContext.data.array(),
+                    memberContextSignatureKey = memberContext.signature.publicKey.array(),
+                    memberContextSignatureContent = memberContext.signature.bytes.array(),
+                    memberContextSignatureSpec = memberContext.signatureSpec.signatureName,
+                    registrationContext = registrationContext.data.array(),
+                    registrationContextSignatureKey = registrationContext.signature.publicKey.array(),
+                    registrationContextSignatureContent = registrationContext.signature.bytes.array(),
+                    registrationContextSignatureSpec = registrationContext.signatureSpec.signatureName,
+                    serial = serial,
+                )
+            }
             em.merge(
-                with(request.registrationRequest) {
-                    RegistrationRequestEntity(
-                        registrationId = registrationId,
-                        holdingIdentityShortHash = request.registeringHoldingIdentity.toCorda().shortHash.value,
-                        status = request.status.toString(),
-                        created = now,
-                        lastModified = now,
-                        memberContext = memberContext.data.array(),
-                        memberContextSignatureKey = memberContext.signature.publicKey.array(),
-                        memberContextSignatureContent = memberContext.signature.bytes.array(),
-                        memberContextSignatureSpec = memberContext.signatureSpec.signatureName,
-                        registrationContext = registrationContext.data.array(),
-                        registrationContextSignatureKey = registrationContext.signature.publicKey.array(),
-                        registrationContextSignatureContent = registrationContext.signature.bytes.array(),
-                        registrationContextSignatureSpec = registrationContext.signatureSpec.signatureName,
-                        serial = serial,
-                    )
-                }
+                entity,
             )
+            entity.publishRequestStatus(context.holdingIdentity)
         }
     }
 }

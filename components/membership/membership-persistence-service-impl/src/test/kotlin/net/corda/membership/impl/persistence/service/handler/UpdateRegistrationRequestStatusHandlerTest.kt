@@ -105,6 +105,7 @@ class UpdateRegistrationRequestStatusHandlerTest {
         keyEncodingService,
         platformInfoProvider,
         mock(),
+        mock(),
     )
     private lateinit var updateRegistrationRequestStatusHandler: UpdateRegistrationRequestStatusHandler
 
@@ -135,6 +136,7 @@ class UpdateRegistrationRequestStatusHandlerTest {
         val registrationId = "regId"
         val registrationRequestEntity = mock<RegistrationRequestEntity> {
             on { status } doReturn "SENT_TO_MGM"
+            on { this.registrationId } doReturn registrationId
         }
         whenever(
             entityManager.find(

@@ -48,6 +48,7 @@ import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.persistence.client.MembershipQueryResult
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
+import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.schema.Schemas.Membership.MEMBERSHIP_DB_RPC_TOPIC
 import net.corda.schema.configuration.ConfigKeys
@@ -95,6 +96,7 @@ class MembershipQueryClientImplTest {
     private val rpcSender: RPCSender<MembershipPersistenceRequest, MembershipPersistenceResponse> = mock()
     private val coordinator: LifecycleCoordinator = mock {
         on { followStatusChangesByName(any()) } doReturn registrationHandle
+        on { createManagedResource(any(), any<() -> Subscription<*, *>>()) } doReturn mock()
     }
     private val coordinatorFactory: LifecycleCoordinatorFactory = mock {
         on { createCoordinator(any(), any()) } doReturn coordinator
@@ -151,6 +153,7 @@ class MembershipQueryClientImplTest {
         membershipQueryClient = MembershipQueryClientImpl(
             coordinatorFactory,
             publisherFactory,
+            mock(),
             configurationReadService,
             memberInfoFactory,
             clock,

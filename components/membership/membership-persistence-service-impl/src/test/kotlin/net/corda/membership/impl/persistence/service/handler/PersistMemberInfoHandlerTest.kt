@@ -138,6 +138,7 @@ class PersistMemberInfoHandlerTest {
         keyEncodingService,
         platformInfoProvider,
         mock(),
+        mock(),
     )
     private lateinit var persistMemberInfoHandler: PersistMemberInfoHandler
 

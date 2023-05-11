@@ -22,9 +22,12 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.membership.impl.persistence.service.handler.HandlerFactories
+import net.corda.membership.impl.persistence.service.handler.PersistenceHandlerServices
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.mtls.allowed.list.service.AllowedCertificatesReaderWriterService
 import net.corda.membership.persistence.service.MembershipPersistenceService
+import net.corda.messaging.api.publisher.Publisher
+import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.RPCSubscription
 import net.corda.messaging.api.subscription.StateAndEventSubscription
@@ -79,6 +82,7 @@ class MembershipPersistenceServiceImpl @Activate constructor(
         const val GROUP_NAME = "membership.db.persistence"
         const val CLIENT_NAME = "membership.db.persistence"
         const val ASYNC_GROUP_NAME = "membership.db.persistence.async"
+        const val PUBLISHER_NAME = "MembershipPersistencePublisher"
 
         private val clock: Clock = UTCClock()
     }
@@ -92,6 +96,7 @@ class MembershipPersistenceServiceImpl @Activate constructor(
     private var dependencyServiceHandle: RegistrationHandle? = null
     private var subHandle: RegistrationHandle? = null
     private var configHandle: AutoCloseable? = null
+    private var publisher: Publisher? = null
 
     override val isRunning: Boolean
         get() = coordinator.isRunning
@@ -147,6 +152,8 @@ class MembershipPersistenceServiceImpl @Activate constructor(
         asyncSubscription = null
         retryManager?.close()
         retryManager = null
+        publisher?.close()
+        publisher = null
     }
 
     private fun handleRegistrationStatusChangedEvent(event: RegistrationStatusChangeEvent, coordinator: LifecycleCoordinator) {
@@ -173,7 +180,7 @@ class MembershipPersistenceServiceImpl @Activate constructor(
     }
 
     private val handlers by lazy {
-        HandlerFactories(
+        val services = PersistenceHandlerServices(
             clock,
             dbConnectionManager,
             jpaEntitiesRegistry,
@@ -183,6 +190,10 @@ class MembershipPersistenceServiceImpl @Activate constructor(
             keyEncodingService,
             platformInfoProvider,
             allowedCertificatesReaderWriterService,
+            publisher!!,
+        )
+        HandlerFactories(
+            services,
         )
     }
 
@@ -192,6 +203,14 @@ class MembershipPersistenceServiceImpl @Activate constructor(
         subHandle = null
         rpcSubscription?.close()
         val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
+        publisher?.close()
+        val publisher = publisherFactory.createPublisher(
+            publisherConfig = PublisherConfig(PUBLISHER_NAME),
+            messagingConfig = messagingConfig,
+        ).also {
+            it.start()
+        }
+        this.publisher = publisher
         val firstSubscription = subscriptionFactory.createRPCSubscription(
             rpcConfig = RPCConfig(
                 groupName = GROUP_NAME,
@@ -213,8 +232,7 @@ class MembershipPersistenceServiceImpl @Activate constructor(
         retryManager =
             MembershipPersistenceAsyncRetryManager(
                 coordinatorFactory = coordinatorFactory,
-                publisherFactory = publisherFactory,
-                messagingConfig = messagingConfig,
+                publisher = publisher,
                 clock = clock,
             )
         val secondSubscription = subscriptionFactory.createStateAndEventSubscription(

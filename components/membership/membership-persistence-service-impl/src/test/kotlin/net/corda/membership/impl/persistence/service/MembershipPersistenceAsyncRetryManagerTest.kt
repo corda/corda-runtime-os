@@ -8,7 +8,6 @@ import net.corda.lifecycle.LifecycleEventHandler
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.TimerEvent
 import net.corda.messaging.api.publisher.Publisher
-import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
 import net.corda.utilities.time.Clock
@@ -34,9 +33,6 @@ class MembershipPersistenceAsyncRetryManagerTest {
     private val publisher = mock<Publisher> {
         on { publish(any()) } doReturn emptyList()
     }
-    private val publisherFactory = mock<PublisherFactory> {
-        on { createPublisher(any(), any()) } doReturn publisher
-    }
     private val now = Instant.ofEpochMilli(300)
     private val clock = mock<Clock> {
         on { instant() } doReturn now
@@ -44,16 +40,10 @@ class MembershipPersistenceAsyncRetryManagerTest {
 
     private val manager = MembershipPersistenceAsyncRetryManager(
         coordinatorFactory,
-        publisherFactory,
-        mock(),
+        publisher,
         clock,
 
     )
-
-    @Test
-    fun `constructor start the publisher`() {
-        verify(publisher).start()
-    }
 
     @Test
     fun `constructor start the coordinator`() {

@@ -6,6 +6,7 @@ import net.corda.data.identity.HoldingIdentity
 import net.corda.data.membership.db.request.MembershipPersistenceRequest
 import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.data.membership.db.response.MembershipPersistenceResponse
+import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
@@ -38,7 +39,7 @@ abstract class AbstractPersistenceClient(
     abstract val groupName: String
     abstract val clientName: String
 
-    private val coordinator = coordinatorFactory.createCoordinator(
+    val coordinator = coordinatorFactory.createCoordinator(
         lifecycleCoordinatorName,
         ::handleEvent
     )
@@ -95,6 +96,7 @@ abstract class AbstractPersistenceClient(
                 configHandle = null
                 rpcSender?.close()
                 rpcSender = null
+                unready()
             }
             is RegistrationStatusChangeEvent -> {
                 when(event.status) {
@@ -114,6 +116,8 @@ abstract class AbstractPersistenceClient(
                 }
             }
             is ConfigChangedEvent -> {
+                val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
+                ready(messagingConfig)
                 rpcSender?.close()
                 rpcSender = publisherFactory.createRPCSender(
                     rpcConfig = RPCConfig(
@@ -123,7 +127,7 @@ abstract class AbstractPersistenceClient(
                         requestType = MembershipPersistenceRequest::class.java,
                         responseType = MembershipPersistenceResponse::class.java
                     ),
-                    messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
+                    messagingConfig = messagingConfig,
                 ).also {
                     it.start()
                 }
@@ -134,4 +138,7 @@ abstract class AbstractPersistenceClient(
             }
         }
     }
+
+    abstract fun ready(messagingConfig: SmartConfig)
+    abstract fun unready()
 }

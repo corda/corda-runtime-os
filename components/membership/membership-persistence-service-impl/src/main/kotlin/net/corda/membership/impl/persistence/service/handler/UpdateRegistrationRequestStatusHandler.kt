@@ -11,7 +11,7 @@ import javax.persistence.LockModeType
 
 internal class UpdateRegistrationRequestStatusHandler(
     persistenceHandlerServices: PersistenceHandlerServices
-) : BasePersistenceHandler<UpdateRegistrationRequestStatus, Unit>(persistenceHandlerServices) {
+) : BaseRequestStatusHandler<UpdateRegistrationRequestStatus, Unit>(persistenceHandlerServices) {
     override fun invoke(context: MembershipRequestContext, request: UpdateRegistrationRequestStatus) {
         transaction(context.holdingIdentity.toCorda().shortHash) { em ->
             val registrationRequest = em.find(
@@ -37,6 +37,7 @@ internal class UpdateRegistrationRequestStatusHandler(
                 registrationRequest.lastModified = clock.instant()
                 registrationRequest.reason = request.reason
                 em.merge(registrationRequest)
+                registrationRequest.publishRequestStatus(context.holdingIdentity)
             }
         }
     }
