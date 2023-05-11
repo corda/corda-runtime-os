@@ -26,21 +26,21 @@ class CheckPostgres : Callable<Int>, PluginContext() {
     var namespace: String? = null
     private val logger = getLogger()
 
-    private fun connect(postgresUrl: String, username: String, password: String) {
+    private fun connect(postgresUrl: String, username: String, password: String, credentialType: String) {
         try {
             Class.forName("org.postgresql.Driver")
             val connection = DriverManager.getConnection(postgresUrl, username, password)
             if (connection.isValid(0)) {
-                report.addEntry(PreInstallPlugin.ReportEntry("Connect to PostgreSQL", true))
+                report.addEntry(PreInstallPlugin.ReportEntry("Connect to PostgreSQL with $credentialType credentials", true))
             } else {
                 report.addEntry(PreInstallPlugin.ReportEntry(
-                    "Connect to PostgreSQL",
+                    "Connect to PostgreSQL with $credentialType credentials",
                     false,
                     Exception("Connection to PostgreSQL DB timed out.")
                 ))
             }
         } catch(e: SQLException) {
-            report.addEntry(PreInstallPlugin.ReportEntry("Connect to PostgreSQL", false, e))
+            report.addEntry(PreInstallPlugin.ReportEntry("Connect to PostgreSQL with $credentialType credentials", false, e))
         }
     }
 
@@ -78,11 +78,11 @@ class CheckPostgres : Callable<Int>, PluginContext() {
         report.addEntry(PreInstallPlugin.ReportEntry("Create PostgreSQL URL with DB host", true))
 
         // Try connecting to the DB URL using supplied credentials
-        connect(postgresUrl, username, password)
+        connect(postgresUrl, username, password, "DB")
 
         // If the bootstrap credentials exist, try connecting to the DB URL using them
         if (bootstrapUsername != null && bootstrapUsername != username && bootstrapPassword != null) {
-            connect(postgresUrl, bootstrapUsername!!, bootstrapPassword!!)
+            connect(postgresUrl, bootstrapUsername!!, bootstrapPassword!!, "bootstrap")
         }
 
         return if (report.testsPassed()) {
