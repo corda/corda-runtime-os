@@ -102,15 +102,10 @@ class FlowSessionImpl(
         verifySessionStatusNotErrorOrClose(sourceSessionId, flowFiberService)
         val request = FlowIORequest.SendAndReceive(mapOf(getSessionInfo() to serialize(payload)))
         val received = fiber.suspend(request)
+
         setSessionConfirmed()
 
-        // We could call `.kotlin.javaObjectType` on non-primitive types too, and it would have no effect,
-        // but this check is added for clarity of intent
-        return if (receiveType.isPrimitive) {
-            deserializeReceivedPayload(received, receiveType.kotlin.javaObjectType)
-        } else {
-            deserializeReceivedPayload(received, receiveType)
-        }
+        return processReceivedPayload(receiveType, received)
     }
 
     @Suspendable
@@ -118,15 +113,10 @@ class FlowSessionImpl(
         verifySessionStatusNotErrorOrClose(sourceSessionId, flowFiberService)
         val request = FlowIORequest.Receive(setOf(getSessionInfo()))
         val received = fiber.suspend(request)
+
         setSessionConfirmed()
 
-        // We could call `.kotlin.javaObjectType` on non-primitive types too, and it would have no effect,
-        // but this check is added for clarity of intent
-        return if (receiveType.isPrimitive) {
-            deserializeReceivedPayload(received, receiveType.kotlin.javaObjectType)
-        } else {
-            deserializeReceivedPayload(received, receiveType)
-        }
+        return processReceivedPayload(receiveType, received)
     }
     @Suspendable
     override fun send(payload: Any) {
@@ -149,6 +139,14 @@ class FlowSessionImpl(
 
     private fun serialize(payload: Any): ByteArray {
         return serializationService.serialize(payload).bytes
+    }
+
+    private fun <R : Any> processReceivedPayload(receiveType: Class<R>, received: Map<String, ByteArray>): R {
+        return if (receiveType.isPrimitive) {
+            deserializeReceivedPayload(received, receiveType.kotlin.javaObjectType)
+        } else {
+            deserializeReceivedPayload(received, receiveType)
+        }
     }
 
     private fun <R : Any> deserializeReceivedPayload(
