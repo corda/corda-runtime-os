@@ -177,15 +177,14 @@ inline fun <R> transactionExecutor(entityManager: EntityManager, block: (EntityM
                     "- $id " +
                     "- ${clock.instant().nano} "
             )
+            logger.info(
+                "DB investigation " +
+                        "- inline fun <R> transactionExecutor(entityManager: EntityManager, block: (EntityManager) -> R): R " +
+                        "- total " +
+                        "- $id " +
+                        "- ${clock.instant().minusNanos(start.nano.toLong()).nano}"
+            )
         }
-    }.also {
-        logger.info(
-            "DB investigation " +
-                    "- inline fun <R> transactionExecutor(entityManager: EntityManager, block: (EntityManager) -> R): R " +
-                    "- total " +
-                    "- $id " +
-                    "- ${clock.instant().minusNanos(start.nano.toLong()).nano}"
-        )
     }
 }
 
