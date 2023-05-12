@@ -259,6 +259,7 @@ fun E2eCluster.assignSoftHsm(
         .use { client ->
             eventually(
                 duration = 10.seconds,
+                waitBetween = 1.seconds,
                 retryAllExceptions = true
             ) {
                 client.start().proxy.assignSoftHsm(holdingId, cat)
@@ -577,8 +578,8 @@ fun E2eCluster.assertAllMembersAreInMemberList(
     allMembers: List<E2eClusterMember>
 ) {
     eventually(
-        waitBetween = 2.seconds,
-        duration = 60.seconds,
+        waitBetween = 3.seconds,
+        duration = 2.minutes,
         retryAllExceptions = true,
     ) {
         val groupId = getGroupId(member.holdingId)

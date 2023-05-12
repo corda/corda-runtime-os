@@ -4,7 +4,6 @@ import com.typesafe.config.ConfigValueFactory
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.state.checkpoint.Checkpoint
 import net.corda.flow.pipeline.factory.FlowEventProcessorFactory
-import net.corda.flow.scheduler.FlowWakeUpScheduler
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -34,7 +33,7 @@ class FlowExecutorImpl constructor(
     coordinatorFactory: LifecycleCoordinatorFactory,
     private val subscriptionFactory: SubscriptionFactory,
     private val flowEventProcessorFactory: FlowEventProcessorFactory,
-    private val flowWakeUpScheduler: FlowWakeUpScheduler,
+    private val flowExecutorRebalanceListener: FlowExecutorRebalanceListener,
     private val toMessagingConfig: (Map<String, SmartConfig>) -> SmartConfig
 ) : FlowExecutor {
 
@@ -46,13 +45,13 @@ class FlowExecutorImpl constructor(
         subscriptionFactory: SubscriptionFactory,
         @Reference(service = FlowEventProcessorFactory::class)
         flowEventProcessorFactory: FlowEventProcessorFactory,
-        @Reference(service = FlowWakeUpScheduler::class)
-        flowWakeUpScheduler: FlowWakeUpScheduler
+        @Reference(service = FlowExecutorRebalanceListener::class)
+        flowExecutorRebalanceListener: FlowExecutorRebalanceListener
     ) : this(
         coordinatorFactory,
         subscriptionFactory,
         flowEventProcessorFactory,
-        flowWakeUpScheduler,
+        flowExecutorRebalanceListener,
         { cfg -> cfg.getConfig(MESSAGING_CONFIG) }
     )
 
@@ -80,7 +79,7 @@ class FlowExecutorImpl constructor(
                 SubscriptionConfig(CONSUMER_GROUP, FLOW_EVENT_TOPIC),
                 flowEventProcessorFactory.create(flowConfig),
                 messagingConfig,
-                flowWakeUpScheduler
+                flowExecutorRebalanceListener
             )
 
             subscriptionRegistrationHandle = coordinator.followStatusChangesByName(
