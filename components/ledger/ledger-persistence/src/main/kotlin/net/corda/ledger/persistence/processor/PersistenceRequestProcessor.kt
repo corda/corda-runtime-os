@@ -8,6 +8,7 @@ import net.corda.ledger.persistence.common.UnsupportedLedgerTypeException
 import net.corda.ledger.persistence.common.UnsupportedRequestTypeException
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
+import net.corda.metrics.CordaMetrics
 import net.corda.persistence.common.EntitySandboxService
 import net.corda.persistence.common.ResponseFactory
 import net.corda.utilities.MDC_CLIENT_ID
@@ -50,28 +51,33 @@ class PersistenceRequestProcessor(
                         MDC_EXTERNAL_EVENT_ID to request.flowExternalEventContext.requestId
                     )
                 ) {
-                    try {
-                        val holdingIdentity = request.holdingIdentity.toCorda()
-                        val cpkFileHashes = request.flowExternalEventContext.contextProperties.items
-                            .filter { it.key.startsWith(CPK_FILE_CHECKSUM) }
-                            .map { it.value.toSecureHash() }
-                            .toSet()
+                    val persistenceTimer = CordaMetrics.Metric.PersistenceProcessorExecutionTime.builder()
+                        .forVirtualNode(request.holdingIdentity.toCorda().shortHash.value)
+                        .build()
+                    persistenceTimer.recordCallable<Iterable<Record<*, *>>> {
+                        try {
+                            val holdingIdentity = request.holdingIdentity.toCorda()
+                            val cpkFileHashes = request.flowExternalEventContext.contextProperties.items
+                                .filter { it.key.startsWith(CPK_FILE_CHECKSUM) }
+                                .map { it.value.toSecureHash() }
+                                .toSet()
 
-                        val sandbox = entitySandboxService.get(holdingIdentity, cpkFileHashes)
-                        delegatedRequestHandlerSelector.selectHandler(sandbox, request).execute()
-                    } catch (e: Exception) {
-                        listOf(
-                            when (e) {
-                                is UnsupportedLedgerTypeException,
-                                is UnsupportedRequestTypeException,
-                                is InconsistentLedgerStateException -> {
-                                    responseFactory.fatalErrorResponse(request.flowExternalEventContext, e)
+                            val sandbox = entitySandboxService.get(holdingIdentity, cpkFileHashes)
+                            delegatedRequestHandlerSelector.selectHandler(sandbox, request).execute()
+                        } catch (e: Exception) {
+                            listOf(
+                                when (e) {
+                                    is UnsupportedLedgerTypeException,
+                                    is UnsupportedRequestTypeException,
+                                    is InconsistentLedgerStateException -> {
+                                        responseFactory.fatalErrorResponse(request.flowExternalEventContext, e)
+                                    }
+                                    else -> {
+                                        responseFactory.errorResponse(request.flowExternalEventContext, e)
+                                    }
                                 }
-                                else -> {
-                                    responseFactory.errorResponse(request.flowExternalEventContext, e)
-                                }
-                            }
-                        )
+                            )
+                        }
                     }
                 }
             }
