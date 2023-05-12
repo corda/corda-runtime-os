@@ -36,9 +36,11 @@ import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.membership.mtls.allowed.list.service.AllowedCertificatesReaderWriterService
 import net.corda.orm.JpaEntitiesRegistry
+import net.corda.orm.utils.clock
 import net.corda.utilities.time.Clock
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.slf4j.LoggerFactory
+import java.util.UUID
 
 @Suppress("LongParameterList")
 internal class HandlerFactories(
@@ -107,18 +109,31 @@ internal class HandlerFactories(
     }
 
     fun handle(request: MembershipPersistenceRequest): Any? {
-        val startTime = persistenceHandlerServices.clock.instant()
-        return getHandler(request.request::class.java).invoke(request.context, request.request).also { _ ->
+        val start = clock.instant()
+        val id = UUID.randomUUID()
+        return getHandler(request.request::class.java).also {
             logger.info(
-                "Persistence operation " +
-                        request.request::class.java.simpleName +
-                        " with ID " +
-                        request.context.requestId +
-                        " took " +
-                        persistenceHandlerServices.clock.instant()
-                            .minusMillis(startTime.toEpochMilli())
-                            .toEpochMilli() +
-                        "ms"
+                "DB investigation " +
+                        "- fun handle(request: MembershipPersistenceRequest): Any? " +
+                        "- 1 " +
+                        "- $id " +
+                        "- ${clock.instant().nano} "
+            )
+        }.invoke(request.context, request.request).also { _ ->
+            logger.info(
+                "DB investigation " +
+                        "- fun handle(request: MembershipPersistenceRequest): Any? " +
+                        "- 2 " +
+                        "- $id " +
+                        "- ${clock.instant().nano} "
+            )
+
+            logger.info(
+                "DB investigation " +
+                        "- fun handle(request: MembershipPersistenceRequest): Any? " +
+                        "- total " +
+                        "- $id " +
+                        "- ${clock.instant().minusNanos(start.nano.toLong()).nano}"
             )
         }
     }

@@ -17,6 +17,7 @@ import net.corda.utilities.time.Clock
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.slf4j.LoggerFactory
+import java.util.UUID
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 
@@ -43,21 +44,93 @@ internal abstract class BasePersistenceHandler<REQUEST, RESPONSE>(
     val allowedCertificatesReaderWriterService get() = persistenceHandlerServices.allowedCertificatesReaderWriterService
 
     fun <R> transaction(holdingIdentityShortHash: ShortHash, block: (EntityManager) -> R): R {
+        val start = clock.instant()
+        val id = UUID.randomUUID()
+        logger.info(
+            "DB investigation " +
+                    "- fun <R> transaction(holdingIdentityShortHash: ShortHash, block: (EntityManager) -> R): R " +
+                    "- 1 " +
+                    "- $id " +
+                    "- ${clock.instant().nano} "
+        )
         val virtualNodeInfo = virtualNodeInfoReadService.getByHoldingIdentityShortHash(holdingIdentityShortHash)
             ?: throw MembershipPersistenceException(
                 "Virtual node info can't be retrieved for " +
                         "holding identity ID $holdingIdentityShortHash"
             )
+        logger.info(
+            "DB investigation " +
+                    "- fun <R> transaction(holdingIdentityShortHash: ShortHash, block: (EntityManager) -> R): R " +
+                    "- 2 " +
+                    "- $id " +
+                    "- ${clock.instant().nano} "
+        )
         val factory = getEntityManagerFactory(virtualNodeInfo)
+        logger.info(
+            "DB investigation " +
+                    "- fun <R> transaction(holdingIdentityShortHash: ShortHash, block: (EntityManager) -> R): R " +
+                    "- 3 " +
+                    "- $id " +
+                    "- ${clock.instant().nano} "
+        )
         return try {
-            factory.transaction(block)
+            factory.transaction(block).also {
+                logger.info(
+                "DB investigation " +
+                        "- fun <R> transaction(holdingIdentityShortHash: ShortHash, block: (EntityManager) -> R): R " +
+                        "- 4 " +
+                        "- $id " +
+                        "- ${clock.instant().nano} "
+            )
+            }
         } finally {
-            factory.close()
+            factory.close().also{
+                logger.info(
+                    "DB investigation " +
+                            "- fun <R> transaction(holdingIdentityShortHash: ShortHash, block: (EntityManager) -> R): R " +
+                            "- 5 " +
+                            "- $id " +
+                            "- ${clock.instant().nano} "
+                )
+            }
+        }.also {
+            logger.info(
+                "DB investigation " +
+                        "- fun <R> transaction(holdingIdentityShortHash: ShortHash, block: (EntityManager) -> R): R " +
+                        "- total " +
+                        "- $id " +
+                        "- ${clock.instant().minusNanos(start.nano.toLong()).nano}"
+            )
         }
     }
 
     fun <R> transaction(block: (EntityManager) -> R): R {
-        return dbConnectionManager.getClusterEntityManagerFactory().transaction(block)
+        val start = net.corda.orm.utils.clock.instant()
+        val id = UUID.randomUUID()
+        logger.info(
+            "DB investigation " +
+                    "- fun <R> transaction(block: (EntityManager) -> R): R " +
+                    "- 1 " +
+                    "- $id " +
+                    "- ${clock.instant().nano} "
+        )
+        return dbConnectionManager.getClusterEntityManagerFactory().also {
+            logger.info(
+                "DB investigation " +
+                        "- fun <R> transaction(block: (EntityManager) -> R): R " +
+                        "- 2 " +
+                        "- $id " +
+                        "- ${clock.instant().nano} "
+            )
+        }.transaction(block).also {
+            logger.info(
+                "DB investigation " +
+                        "- fun <R> transaction(block: (EntityManager) -> R): R " +
+                        "- total " +
+                        "- $id " +
+                        "- ${clock.instant().minusNanos(start.nano.toLong()).nano}"
+            )
+        }
     }
 
     fun retrieveSignatureSpec(signatureSpec: String) = if (signatureSpec.isEmpty()) {
@@ -67,13 +140,23 @@ internal abstract class BasePersistenceHandler<REQUEST, RESPONSE>(
     }
 
     private fun getEntityManagerFactory(info: VirtualNodeInfo): EntityManagerFactory {
+        val start = clock.instant()
+        val id = UUID.randomUUID()
         return dbConnectionManager.createEntityManagerFactory(
             connectionId = info.vaultDmlConnectionId,
             entitiesSet = jpaEntitiesRegistry.get(CordaDb.Vault.persistenceUnitName)
                 ?: throw java.lang.IllegalStateException(
                     "persistenceUnitName ${CordaDb.Vault.persistenceUnitName} is not registered."
                 )
-        )
+        ).also {
+            logger.info(
+                "DB investigation " +
+                        "- fun getEntityManagerFactory(info: VirtualNodeInfo): EntityManagerFactory " +
+                        "- total " +
+                        "- $id " +
+                        "- ${clock.instant().minusNanos(start.nano.toLong()).nano}"
+            )
+        }
     }
 }
 

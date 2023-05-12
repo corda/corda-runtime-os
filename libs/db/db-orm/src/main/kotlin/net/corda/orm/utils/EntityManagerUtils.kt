@@ -1,5 +1,8 @@
 package net.corda.orm.utils
 
+import net.corda.utilities.time.UTCClock
+import org.slf4j.LoggerFactory
+import java.util.UUID
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 
@@ -57,7 +60,32 @@ inline fun <R> EntityManager.use(block: (EntityManager) -> R): R {
  * @see use
  */
 inline fun <R> EntityManagerFactory.transaction(block: (EntityManager) -> R): R {
-    return createEntityManager().transaction(block)
+    val start = clock.instant()
+    val id = UUID.randomUUID()
+    logger.info(
+        "DB investigation " +
+                "- inline fun <R> EntityManagerFactory.transaction(block: (EntityManager) -> R): R " +
+                "- 1 " +
+                "- $id " +
+                "- ${clock.instant().nano} "
+    )
+    return createEntityManager().also{
+        logger.info(
+            "DB investigation " +
+                    "- inline fun <R> EntityManagerFactory.transaction(block: (EntityManager) -> R): R " +
+                    "- 2 " +
+                    "- $id " +
+                    "- ${clock.instant().nano} "
+        )
+    }.transaction(block).also {
+        logger.info(
+            "DB investigation " +
+                    "- inline fun <R> EntityManagerFactory.transaction(block: (EntityManager) -> R): R " +
+                    "- total " +
+                    "- $id " +
+                    "- ${clock.instant().minusNanos(start.nano.toLong()).nano}"
+        )
+    }
 }
 
 /**
@@ -90,21 +118,76 @@ inline fun <R> EntityManager.transaction(block: (EntityManager) -> R): R {
  * @see transaction
  */
 inline fun <R> transactionExecutor(entityManager: EntityManager, block: (EntityManager) -> R): R {
+    val start = clock.instant()
+    val id = UUID.randomUUID()
     entityManager.use { em ->
+        logger.info(
+            "DB investigation " +
+                    "- inline fun <R> transactionExecutor(entityManager: EntityManager, block: (EntityManager) -> R): R " +
+                    "- 1 " +
+                    "- $id " +
+                    "- ${clock.instant().nano} "
+        )
         val currentTransaction = em.transaction
+        logger.info(
+            "DB investigation " +
+                    "- inline fun <R> transactionExecutor(entityManager: EntityManager, block: (EntityManager) -> R): R " +
+                    "- 2 " +
+                    "- $id " +
+                    "- ${clock.instant().nano} "
+        )
         currentTransaction.begin()
-
+        logger.info(
+            "DB investigation " +
+                    "- inline fun <R> transactionExecutor(entityManager: EntityManager, block: (EntityManager) -> R): R " +
+                    "- 3 " +
+                    "- $id " +
+                    "- ${clock.instant().nano} "
+        )
         return try {
-            block(em)
+            block(em).also {
+                logger.info(
+                    "DB investigation " +
+                            "- inline fun <R> transactionExecutor(entityManager: EntityManager, block: (EntityManager) -> R): R " +
+                            "- 4 " +
+                            "- $id " +
+                            "- ${clock.instant().nano} "
+                )
+            }
         } catch (e: Exception) {
             currentTransaction.setRollbackOnly()
             throw e
         } finally {
+            logger.info(
+                "DB investigation " +
+                        "- inline fun <R> transactionExecutor(entityManager: EntityManager, block: (EntityManager) -> R): R " +
+                        "- 5 " +
+                        "- $id " +
+                        "- ${clock.instant().nano} "
+            )
             if (!currentTransaction.rollbackOnly) {
                 currentTransaction.commit()
             } else {
                 currentTransaction.rollback()
             }
+            logger.info(
+                "DB investigation " +
+                    "- inline fun <R> transactionExecutor(entityManager: EntityManager, block: (EntityManager) -> R): R " +
+                    "- 6 " +
+                    "- $id " +
+                    "- ${clock.instant().nano} "
+            )
         }
+    }.also {
+        logger.info(
+            "DB investigation " +
+                    "- inline fun <R> transactionExecutor(entityManager: EntityManager, block: (EntityManager) -> R): R " +
+                    "- total " +
+                    "- $id " +
+                    "- ${clock.instant().minusNanos(start.nano.toLong()).nano}"
+        )
     }
 }
+
+val clock = UTCClock()
+val logger = LoggerFactory.getLogger("EntityManagerUtils")

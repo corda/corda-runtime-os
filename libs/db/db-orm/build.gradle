@@ -10,6 +10,7 @@ dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
 
     implementation project(":libs:db:db-core")
+    implementation project(":libs:utilities")
 
     compileOnly "org.osgi:osgi.annotation"
     api "javax.persistence:javax.persistence-api"
