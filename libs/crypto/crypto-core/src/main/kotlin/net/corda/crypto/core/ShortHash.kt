@@ -72,9 +72,7 @@ class ShortHash private constructor(val value: String) {
 
         other as ShortHash
 
-        if (value != other.value) return false
-
-        return true
+        return value == other.value
     }
 
     override fun hashCode(): Int {

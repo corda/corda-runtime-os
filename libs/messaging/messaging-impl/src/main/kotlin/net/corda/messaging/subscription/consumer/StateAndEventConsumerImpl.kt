@@ -37,7 +37,7 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
         private val STATE_POLL_TIMEOUT = Duration.ofMillis(100)
 
         // Event poll timeout
-        private val EVENT_POLL_TIMEOUT = Duration.ofMillis(100)
+        private val EVENT_POLL_TIMEOUT = Duration.ofMillis(1000)
 
         private const val STATE_TOPIC_SUFFIX = ".state"
     }
