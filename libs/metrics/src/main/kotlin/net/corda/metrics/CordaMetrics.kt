@@ -188,6 +188,10 @@ object CordaMetrics {
         object UniquenessBackingStoreDbReadTime: Metric<Timer>("uniqueness.backingstore.db.read.time", CordaMetrics::timer)
 
         object PersistenceProcessingTime: Metric<Timer>("persistence.processing.time", CordaMetrics::timer)
+        /**
+         * The time taken for the verification processor to process a single event
+         */
+        object VerificationProcessorExecutionTime: Metric<Timer>("verification.processor.execution.time", CordaMetrics::timer)
     }
 
     /**
