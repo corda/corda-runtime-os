@@ -294,7 +294,6 @@ class CordaKafkaProducerImpl(
     private fun handleException(ex: Exception, operation: String, abortTransaction: Boolean) {
         val errorString = "$operation for CordaKafkaProducer with clientId ${config.clientId}"
         when (ex) {
-            is ProducerFencedException,
             is UnsupportedVersionException,
             is UnsupportedForMessageFormatException,
             is AuthorizationException,
@@ -302,6 +301,7 @@ class CordaKafkaProducerImpl(
                 throw CordaMessageAPIFatalException("FatalError occurred $errorString", ex)
             }
 
+            is ProducerFencedException,
             is IllegalStateException -> {
                 // It's not clear whether the producer is ok to abort and continue or not in this case, so play it safe
                 // and let the client know to create a new one.
