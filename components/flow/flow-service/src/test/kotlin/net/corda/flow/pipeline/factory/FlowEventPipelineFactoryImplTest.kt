@@ -14,7 +14,6 @@ import net.corda.flow.pipeline.handlers.events.FlowEventHandler
 import net.corda.flow.pipeline.handlers.requests.FlowRequestHandler
 import net.corda.flow.pipeline.handlers.waiting.FlowWaitingForHandler
 import net.corda.flow.pipeline.impl.FlowEventPipelineImpl
-import net.corda.flow.pipeline.metrics.FlowMetrics
 import net.corda.flow.pipeline.runner.FlowRunner
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.flow.state.impl.FlowCheckpointFactory
