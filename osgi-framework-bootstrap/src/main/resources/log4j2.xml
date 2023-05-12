@@ -56,7 +56,7 @@
             <AppenderRef ref="Console" level="info"/>
         </logger>
 
-        <logger name="net.corda.ledger" level="trace" additivity="false">
+        <logger name="net.corda.ledger" level="trace">
             <AppenderRef ref="Ledger-Detailed"/>
         </logger>
 
