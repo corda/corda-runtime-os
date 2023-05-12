@@ -9,6 +9,7 @@ import net.corda.flow.rest.impl.FlowRestExceptionConstants
 import net.corda.flow.rest.impl.flowstatus.websocket.WebSocketFlowStatusUpdateListener
 import net.corda.flow.rest.v1.FlowRestResource
 import net.corda.flow.rest.v1.types.request.StartFlowParameters
+import net.corda.flow.rest.v1.types.response.FlowResultResponse
 import net.corda.flow.rest.v1.types.response.FlowStatusResponse
 import net.corda.flow.rest.v1.types.response.FlowStatusResponses
 import net.corda.libs.configuration.SmartConfig
@@ -241,6 +242,20 @@ class FlowRestResourceImpl @Activate constructor(
         val vNode = getVirtualNode(holdingIdentityShortHash)
         val flowStatuses = flowStatusCacheService.getStatusesPerIdentity(vNode.holdingIdentity)
         return FlowStatusResponses(flowStatusResponses = flowStatuses.map { messageFactory.createFlowStatusResponse(it) })
+    }
+
+    override fun getFlowResult(
+        holdingIdentityShortHash: String,
+        clientRequestId: String
+    ): ResponseEntity<FlowResultResponse> {
+        val vNode = getVirtualNode(holdingIdentityShortHash)
+        val flowStatus = flowStatusCacheService.getStatus(clientRequestId, vNode.holdingIdentity)
+            ?: throw ResourceNotFoundException(
+                FlowRestExceptionConstants.FLOW_STATUS_NOT_FOUND.format(
+                    holdingIdentityShortHash, clientRequestId
+                )
+            )
+        return messageFactory.createFlowResultResponse(flowStatus)
     }
 
     override fun registerFlowStatusUpdatesFeed(

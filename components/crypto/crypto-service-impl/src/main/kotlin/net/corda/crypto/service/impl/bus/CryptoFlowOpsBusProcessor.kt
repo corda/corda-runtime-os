@@ -1,17 +1,23 @@
 package net.corda.crypto.service.impl.bus
 
 import net.corda.configuration.read.ConfigChangedEvent
-import net.corda.crypto.client.CryptoOpsProxyClient
 import net.corda.crypto.config.impl.flowBusProcessor
 import net.corda.crypto.config.impl.toCryptoConfig
+import net.corda.crypto.core.SecureHashImpl
+import net.corda.crypto.core.ShortHash
+import net.corda.crypto.core.publicKeyIdFromBytes
 import net.corda.crypto.flow.CryptoFlowOpsTransformer
 import net.corda.crypto.impl.retrying.BackoffStrategy
 import net.corda.crypto.impl.retrying.CryptoRetryingExecutor
 import net.corda.crypto.impl.toMap
+import net.corda.crypto.impl.toSignatureSpec
+import net.corda.crypto.service.SigningService
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoRequestContext
 import net.corda.data.crypto.wire.CryptoResponseContext
+import net.corda.data.crypto.wire.CryptoSignatureWithKey
+import net.corda.data.crypto.wire.CryptoSigningKeys
 import net.corda.data.crypto.wire.ops.flow.FlowOpsRequest
 import net.corda.data.crypto.wire.ops.flow.FlowOpsResponse
 import net.corda.data.crypto.wire.ops.flow.commands.SignFlowCommand
@@ -26,12 +32,14 @@ import net.corda.utilities.MDC_FLOW_ID
 import net.corda.utilities.trace
 import net.corda.utilities.withMDC
 import org.slf4j.LoggerFactory
+import java.nio.ByteBuffer
 import java.time.Instant
+import kotlin.math.sign
 
 class CryptoFlowOpsBusProcessor(
-    private val cryptoOpsClient: CryptoOpsProxyClient,
+    private val signingService: SigningService,
     private val externalEventResponseFactory: ExternalEventResponseFactory,
-    event: ConfigChangedEvent
+    event: ConfigChangedEvent,
 ) : DurableProcessor<String, FlowOpsRequest> {
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -108,30 +116,33 @@ class CryptoFlowOpsBusProcessor(
     }
 
     private fun handleRequest(request: Any, context: CryptoRequestContext): Any {
-        // What about if cryptoOpsClient has gone to DOWN or ERROR out at this point? 
-        // Then CryptoOpsClientComponent will throw AbstractComponentNotReadyFunction, and the retry logic
-        // will keep repeating it until timeout or the cryptoOpsClient potentially comes back. 
-
-        // For example, if we get an UnknownHostException from Kafka client code then the crypto ops client
-        // will be marked as DOWN or ERROR (depending on what catches it; certainly if it made it to the top of the
-        // TreadLooper it will cause the status to go to ERROR)
-
         return when (request) {
-            is FilterMyKeysFlowQuery ->
-                cryptoOpsClient.filterMyKeysProxy(
-                    tenantId = context.tenantId,
-                    candidateKeys = request.keys
+            is FilterMyKeysFlowQuery -> {
+                val keys = request.keys.map { ShortHash.of(publicKeyIdFromBytes(it.array())) }
+                signingService.lookupSigningKeysByPublicKeyShortHash(context.tenantId, keys)
+            }
+
+            is SignFlowCommand -> {
+                val publicKey = signingService.schemeMetadata.decodePublicKey(request.publicKey.array())
+                val signature = signingService.sign(
+                    context.tenantId,
+                    publicKey,
+                    request.signatureSpec.toSignatureSpec(signingService.schemeMetadata),
+                    request.bytes.array(),
+                    request.context.toMap()
                 )
-            is SignFlowCommand ->
-                cryptoOpsClient.signProxy(
-                    tenantId = context.tenantId,
-                    publicKey = request.publicKey,
-                    signatureSpec = request.signatureSpec,
-                    data = request.bytes,
-                    context = request.context
+                return CryptoSignatureWithKey(
+                    ByteBuffer.wrap(signingService.schemeMetadata.encodeAsByteArray(signature.by)),
+                    ByteBuffer.wrap(signature.bytes)
                 )
+            }
+
             is ByIdsFlowQuery ->
-                cryptoOpsClient.lookupKeysByFullIdsProxy(context.tenantId, request.fullKeyIds)
+                CryptoSigningKeys(signingService.lookupSigningKeysByPublicKeyHashes(
+                    context.tenantId,
+                    request.fullKeyIds.hashes.map { SecureHashImpl(it.algorithm, it.bytes.array()) }
+                ).map { it.toAvro() })
+
             else ->
                 throw IllegalArgumentException("Unknown request type ${request::class.java.name}")
         }
