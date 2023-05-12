@@ -14,6 +14,7 @@ import net.corda.membership.mtls.allowed.list.service.AllowedCertificatesReaderW
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.utils.transaction
 import net.corda.utilities.time.Clock
+import net.corda.utilities.time.UTCClock
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.slf4j.LoggerFactory
@@ -28,6 +29,7 @@ internal interface PersistenceHandler<REQUEST, RESPONSE> {
 internal abstract class BasePersistenceHandler<REQUEST, RESPONSE>(
     private val persistenceHandlerServices: PersistenceHandlerServices
 ) : PersistenceHandler<REQUEST, RESPONSE> {
+    private val myTestClock = UTCClock()
 
     companion object {
         val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -44,14 +46,14 @@ internal abstract class BasePersistenceHandler<REQUEST, RESPONSE>(
     val allowedCertificatesReaderWriterService get() = persistenceHandlerServices.allowedCertificatesReaderWriterService
 
     fun <R> transaction(holdingIdentityShortHash: ShortHash, block: (EntityManager) -> R): R {
-        val start = clock.instant()
+        val start = myTestClock.instant()
         val id = UUID.randomUUID()
         logger.info(
             "DB investigation " +
                     "- fun <R> transaction(holdingIdentityShortHash: ShortHash, block: (EntityManager) -> R): R " +
                     "- 1 " +
                     "- $id " +
-                    "- ${clock.instant().nano} "
+                    "- ${myTestClock.instant().nano} "
         )
         val virtualNodeInfo = virtualNodeInfoReadService.getByHoldingIdentityShortHash(holdingIdentityShortHash)
             ?: throw MembershipPersistenceException(
@@ -63,7 +65,7 @@ internal abstract class BasePersistenceHandler<REQUEST, RESPONSE>(
                     "- fun <R> transaction(holdingIdentityShortHash: ShortHash, block: (EntityManager) -> R): R " +
                     "- 2 " +
                     "- $id " +
-                    "- ${clock.instant().nano} "
+                    "- ${myTestClock.instant().nano} "
         )
         val factory = getEntityManagerFactory(virtualNodeInfo)
         logger.info(
@@ -71,7 +73,7 @@ internal abstract class BasePersistenceHandler<REQUEST, RESPONSE>(
                     "- fun <R> transaction(holdingIdentityShortHash: ShortHash, block: (EntityManager) -> R): R " +
                     "- 3 " +
                     "- $id " +
-                    "- ${clock.instant().nano} "
+                    "- ${myTestClock.instant().nano} "
         )
         return try {
             factory.transaction(block).also {
@@ -80,7 +82,7 @@ internal abstract class BasePersistenceHandler<REQUEST, RESPONSE>(
                         "- fun <R> transaction(holdingIdentityShortHash: ShortHash, block: (EntityManager) -> R): R " +
                         "- 4 " +
                         "- $id " +
-                        "- ${clock.instant().nano} "
+                        "- ${myTestClock.instant().nano} "
             )
             }
         } finally {
@@ -90,7 +92,7 @@ internal abstract class BasePersistenceHandler<REQUEST, RESPONSE>(
                             "- fun <R> transaction(holdingIdentityShortHash: ShortHash, block: (EntityManager) -> R): R " +
                             "- 5 " +
                             "- $id " +
-                            "- ${clock.instant().nano} "
+                            "- ${myTestClock.instant().nano} "
                 )
             }
         }.also {
@@ -99,7 +101,7 @@ internal abstract class BasePersistenceHandler<REQUEST, RESPONSE>(
                         "- fun <R> transaction(holdingIdentityShortHash: ShortHash, block: (EntityManager) -> R): R " +
                         "- total " +
                         "- $id " +
-                        "- ${clock.instant().minusNanos(start.nano.toLong()).nano}"
+                        "- ${myTestClock.instant().minusNanos(start.nano.toLong()).nano}"
             )
         }
     }
@@ -112,7 +114,7 @@ internal abstract class BasePersistenceHandler<REQUEST, RESPONSE>(
                     "- fun <R> transaction(block: (EntityManager) -> R): R " +
                     "- 1 " +
                     "- $id " +
-                    "- ${clock.instant().nano} "
+                    "- ${myTestClock.instant().nano} "
         )
         return dbConnectionManager.getClusterEntityManagerFactory().also {
             logger.info(
@@ -120,7 +122,7 @@ internal abstract class BasePersistenceHandler<REQUEST, RESPONSE>(
                         "- fun <R> transaction(block: (EntityManager) -> R): R " +
                         "- 2 " +
                         "- $id " +
-                        "- ${clock.instant().nano} "
+                        "- ${myTestClock.instant().nano} "
             )
         }.transaction(block).also {
             logger.info(
@@ -128,7 +130,7 @@ internal abstract class BasePersistenceHandler<REQUEST, RESPONSE>(
                         "- fun <R> transaction(block: (EntityManager) -> R): R " +
                         "- total " +
                         "- $id " +
-                        "- ${clock.instant().minusNanos(start.nano.toLong()).nano}"
+                        "- ${myTestClock.instant().minusNanos(start.nano.toLong()).nano}"
             )
         }
     }
@@ -140,7 +142,7 @@ internal abstract class BasePersistenceHandler<REQUEST, RESPONSE>(
     }
 
     private fun getEntityManagerFactory(info: VirtualNodeInfo): EntityManagerFactory {
-        val start = clock.instant()
+        val start = myTestClock.instant()
         val id = UUID.randomUUID()
         return dbConnectionManager.createEntityManagerFactory(
             connectionId = info.vaultDmlConnectionId,
@@ -154,7 +156,7 @@ internal abstract class BasePersistenceHandler<REQUEST, RESPONSE>(
                         "- fun getEntityManagerFactory(info: VirtualNodeInfo): EntityManagerFactory " +
                         "- total " +
                         "- $id " +
-                        "- ${clock.instant().minusNanos(start.nano.toLong()).nano}"
+                        "- ${myTestClock.instant().minusNanos(start.nano.toLong()).nano}"
             )
         }
     }
