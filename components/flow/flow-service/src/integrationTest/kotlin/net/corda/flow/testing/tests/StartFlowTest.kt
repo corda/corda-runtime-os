@@ -5,6 +5,7 @@ import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.testing.context.FlowServiceTestBase
 import net.corda.schema.configuration.FlowConfig
 import net.corda.virtualnode.OperationalStatus
+import net.corda.virtualnode.toCorda
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.parallel.Execution
@@ -76,11 +77,10 @@ class StartFlowTest : FlowServiceTestBase() {
             expectOutputForFlow(FLOW_ID1) {
                 nullStateRecord()
                 noFlowEvents()
-//                flowStatus(
-//                    state = FlowStates.KILLED,
-//                    errorType = FlowProcessingExceptionTypes.FLOW_FAILED,
-//                    errorMessage = "'flowStartOperationalStatus is INACTIVE, new flows cannot be started for ${CHARLIE_HOLDING_IDENTITY.x500Name}"
-//                )
+                flowStatus(
+                    state = FlowStates.KILLED,
+                    flowTerminatedReason = "flowStartOperationalStatus is INACTIVE, new flows cannot be started for virtual node with shortHash ${CHARLIE_HOLDING_IDENTITY.toCorda().shortHash}"
+                )
             }
         }
     }

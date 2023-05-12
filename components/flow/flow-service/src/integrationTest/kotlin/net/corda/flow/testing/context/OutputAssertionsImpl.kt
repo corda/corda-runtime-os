@@ -284,13 +284,12 @@ class OutputAssertionsImpl(
         }
     }
 
-    override fun flowStatus(state: FlowStates, result: String?, errorType: String?, errorMessage: String?) {
-
+    override fun flowStatus(state: FlowStates, result: String?, errorType: String?, errorMessage: String?, flowTerminatedReason: String?) {
         asserts.add { testRun ->
             assertNotNull(testRun.response)
             assertTrue(
                 testRun.response!!.responseEvents.any {
-                    matchStatusRecord(flowId, state, result, errorType, errorMessage, null, it)
+                    matchStatusRecord(flowId, state, result, errorType, errorMessage, flowTerminatedReason, it)
                 },
                 "Expected Flow Status: ${state}, result = ${result ?: "NA"}, errorType = ${errorType ?: "NA"}, error = ${errorMessage ?: "NA"}"
             )
@@ -325,7 +324,7 @@ class OutputAssertionsImpl(
         return filteredEvents
     }
 
-    private fun matchStatusRecord(
+    private fun  matchStatusRecord(
         flowId: String,
         state: FlowStates,
         result: String?,
