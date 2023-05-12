@@ -36,7 +36,6 @@ import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.membership.mtls.allowed.list.service.AllowedCertificatesReaderWriterService
 import net.corda.orm.JpaEntitiesRegistry
-import net.corda.orm.utils.clock
 import net.corda.utilities.time.Clock
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.slf4j.LoggerFactory
@@ -109,7 +108,7 @@ internal class HandlerFactories(
     }
 
     fun handle(request: MembershipPersistenceRequest): Any? {
-        val start = clock.instant()
+        val start = persistenceHandlerServices.clock.instant()
         val id = UUID.randomUUID()
         return getHandler(request.request::class.java).also {
             logger.info(
@@ -117,7 +116,7 @@ internal class HandlerFactories(
                         "- fun handle(request: MembershipPersistenceRequest): Any? " +
                         "- 1 " +
                         "- $id " +
-                        "- ${clock.instant().nano} "
+                        "- ${persistenceHandlerServices.clock.instant().nano} "
             )
         }.invoke(request.context, request.request).also { _ ->
             logger.info(
@@ -125,7 +124,7 @@ internal class HandlerFactories(
                         "- fun handle(request: MembershipPersistenceRequest): Any? " +
                         "- 2 " +
                         "- $id " +
-                        "- ${clock.instant().nano} "
+                        "- ${persistenceHandlerServices.clock.instant().nano} "
             )
 
             logger.info(
@@ -133,7 +132,7 @@ internal class HandlerFactories(
                         "- fun handle(request: MembershipPersistenceRequest): Any? " +
                         "- total " +
                         "- $id " +
-                        "- ${clock.instant().minusNanos(start.nano.toLong()).nano}"
+                        "- ${persistenceHandlerServices.clock.instant().minusNanos(start.nano.toLong()).nano}"
             )
         }
     }
