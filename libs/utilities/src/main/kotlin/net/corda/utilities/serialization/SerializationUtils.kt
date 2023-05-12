@@ -49,4 +49,4 @@ inline fun <reified T : Any> wrapWithNullErrorHandling(
     throw onErrorOrNull(ex)
 }
 
-class SerializationException : CordaRuntimeException("Failed to serialize")
+class SerializationException : CordaRuntimeException("Failed to serialize null value")

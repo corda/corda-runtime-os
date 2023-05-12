@@ -64,11 +64,8 @@ internal class SuspendMemberHandler(
 
     private fun serializeProperties(context: KeyValuePairList): ByteArray {
         return wrapWithNullErrorHandling({
-            throw MembershipPersistenceException(
-                "Failed to serialize key value pair list."
-            )
-        }
-        ) {
+            throw MembershipPersistenceException("Failed to serialize key value pair list.", it)
+        }) {
             keyValuePairListSerializer.serialize(context)
         }
     }

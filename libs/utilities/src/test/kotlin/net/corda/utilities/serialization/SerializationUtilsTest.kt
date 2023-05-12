@@ -18,14 +18,14 @@ class SerializationUtilsTest {
 
     @Test
     fun `test wrapWithNullErrorHandling - exception thrown`() {
-        val ex = assertThrows<CordaRuntimeException>(message = "Failed - Throws") {
-            wrapWithNullErrorHandling({
-                throw CordaRuntimeException("Failed - Throws")
-            }) { throw TestException("sub message") }
+        val ex = assertThrows<TestException>(message = "Failed - Throws") {
+            wrapWithNullErrorHandling(onErrorOrNull = {
+                throw TestException("Failed - Throws", it)
+            }){
+                throw CordaRuntimeException("This is the Cause")
+            }
         }
-
-        assertEquals(ex.cause!!::class.java, TestException::class.java)
-        assertEquals(ex.cause!!.message, "sub message")
+        assertEquals(CordaRuntimeException::class.java, ex.cause!!.javaClass)
     }
 
     @Test
@@ -41,4 +41,4 @@ class SerializationUtilsTest {
 
 }
 
-class TestException(message: String) : Exception(message)
+class TestException(message: String, cause: Exception) : Exception(message, cause)

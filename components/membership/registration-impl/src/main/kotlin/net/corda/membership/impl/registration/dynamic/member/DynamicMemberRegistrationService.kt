@@ -696,7 +696,7 @@ class DynamicMemberRegistrationService @Activate constructor(
     }
 
     private fun serialize(context: KeyValuePairList) = wrapWithNullErrorHandling({
-        throw IllegalArgumentException("Failed to serialize the KeyValuePairList for this request.")
+        throw IllegalArgumentException("Failed to serialize the KeyValuePairList for this request.", it)
     }) {
         keyValuePairListSerializer.serialize(context)
     }

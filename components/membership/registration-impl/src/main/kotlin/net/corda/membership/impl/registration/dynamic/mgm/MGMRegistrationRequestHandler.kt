@@ -82,7 +82,7 @@ internal class MGMRegistrationRequestHandler(
     }
 
     private fun serialize(data: KeyValuePairList) = wrapWithNullErrorHandling({
-        throw InvalidMembershipRegistrationException("Failed to serialize the member context for this request.")
+        throw InvalidMembershipRegistrationException("Failed to serialize the member context for this request.", it)
     }) {
         keyValuePairListSerializer.serialize(data)
     }

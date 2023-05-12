@@ -48,7 +48,7 @@ internal class UpdateStaticNetworkInfoHandler(
                 // Update persisted group params.
                 if (!groupParametersAreEqual(persistedGroupParams, proposedGroupParams)) {
                     entity.groupParameters = wrapWithNullErrorHandling({
-                        throw MembershipPersistenceException("Could not serialize new group parameters.")
+                        throw MembershipPersistenceException("Could not serialize new group parameters.", it)
                     }) {
                         serializer.serialize(proposedGroupParams)
                     }

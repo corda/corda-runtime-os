@@ -61,7 +61,7 @@ class P2pRecordsFactory(
         filter: MembershipStatusFilter = MembershipStatusFilter.ACTIVE,
     ): Record<String, AppMessage> {
         val data = wrapWithNullErrorHandling({
-            throw CordaRuntimeException("Could not serialize $content")
+            throw CordaRuntimeException("Could not serialize $content", it)
         }) {
             cordaAvroSerializationFactory.createAvroSerializer<T> {
                 logger.warn("Serialization failed")

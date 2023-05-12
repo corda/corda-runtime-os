@@ -77,7 +77,7 @@ internal class SuspensionActivationEntityOperations(
             }
         })
         val serializedMgmContext = wrapWithNullErrorHandling({
-            throw MembershipPersistenceException("Failed to serialize the MGM-provided context.")
+            throw MembershipPersistenceException("Failed to serialize the MGM-provided context.", it)
         }) {
             keyValuePairListSerializer.serialize(mgmContext)
         }
