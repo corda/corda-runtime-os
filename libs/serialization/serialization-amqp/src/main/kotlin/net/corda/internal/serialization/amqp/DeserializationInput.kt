@@ -176,7 +176,8 @@ class DeserializationInput constructor(
      * @param metadata The metadata for serialization.
      * @param type The expected type of the object.
      * @param context The serialization context.
-     * @return The serialized object.
+     *
+     * @return The deserialized object.
      */
     fun readObject(
         obj: Any,
@@ -216,7 +217,9 @@ class DeserializationInput constructor(
      *
      * @param obj The described type object representing the reference.
      * @param type The expected type of the referenced object.
-     * @return The referenced object.
+     *
+     * @return The deserialized referenced object.
+     *
      * @throws AMQPNotSerializableException if there is an issue with serialization.
      */
     private fun handleReferencedObject(obj: DescribedType, type: Type): Any {
@@ -254,7 +257,9 @@ class DeserializationInput constructor(
      * @param metadata The metadata associated with the serialization process.
      * @param type The expected type of the object.
      * @param context The serialization context.
+     *
      * @return The deserialized object.
+     *
      * @throws AMQPNotSerializableException
      */
     private fun handleDescribedType(
@@ -265,10 +270,10 @@ class DeserializationInput constructor(
         context: SerializationContext
     ): Any {
         // Look up serializer in factory by descriptor
-        val serializer = serializerFactory.get(obj.descriptor.toString(), serializationSchemas, metadata, context.currentSandboxGroup())
-        if (type != TypeIdentifier.UnknownType.getLocalType(context.currentSandboxGroup()) &&
-            serializer.type != type && !serializer.type.isSubClassOf(type) && !serializer.type.materiallyEquivalentTo(type)
-        ) {
+        val serializer = serializerFactory
+            .get(obj.descriptor.toString(), serializationSchemas, metadata, context.currentSandboxGroup())
+
+        if (isInvalidSerializationType(type, serializer.type, context)) {
             throw AMQPNotSerializableException(
                 type,
                 "Described type with descriptor ${obj.descriptor} was " +
@@ -277,6 +282,25 @@ class DeserializationInput constructor(
         }
 
         return serializer.readObject(obj.described, serializationSchemas, metadata, this, context)
+    }
+
+    /**
+     * Check if the given [Type] is an invalid serialization type by comparing it with the [expectedType].
+     *
+     * @param expectedType The expected type for serialization.
+     * @param actualType The type to check for validity.
+     *
+     * @return `true` if the [Type] is invalid, `false` otherwise.
+     */
+    private fun isInvalidSerializationType(
+        expectedType: Type,
+        actualType: Type,
+        context: SerializationContext
+    ): Boolean {
+        return expectedType != TypeIdentifier.UnknownType.getLocalType(context.currentSandboxGroup()) &&
+                actualType != expectedType &&
+                !actualType.isSubClassOf(expectedType) &&
+                !actualType.materiallyEquivalentTo(expectedType)
     }
 
     /**
@@ -290,6 +314,7 @@ class DeserializationInput constructor(
      * @param metadata The metadata associated with the serialization process.
      * @param type The type of the object.
      * @param context The serialization context.
+     *
      * @return The deserialized object.
      * @throws AMQPNotSerializableException
      */
