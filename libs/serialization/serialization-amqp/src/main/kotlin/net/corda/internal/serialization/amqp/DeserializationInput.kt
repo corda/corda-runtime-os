@@ -164,69 +164,154 @@ class DeserializationInput constructor(
         return if (obj == null) null else readObject(obj, serializationSchemas, metadata, type, context)
     }
 
-    @Suppress("NestedBlockDepth", "ComplexMethod")
+    /**
+     * Reads and handles the deserialization of an object.
+     *
+     * This function receives an object [obj] and delegates its deserialization to the correct handler.
+     * If the object is suitable for object reference (not a primitive type), it is stored in the object history.
+     * The resulting object is returned.
+     *
+     * @param obj The object to be serialized.
+     * @param serializationSchemas The serialization schemas.
+     * @param metadata The metadata for serialization.
+     * @param type The expected type of the object.
+     * @param context The serialization context.
+     * @return The serialized object.
+     */
     fun readObject(
         obj: Any,
         serializationSchemas: SerializationSchemas,
         metadata: Metadata,
         type: Type,
         context: SerializationContext
-    ): Any =
-        if (obj is DescribedType && ReferencedObject.DESCRIPTOR == obj.descriptor) {
-            // It must be a reference to an instance that has already been read, cheaply and quickly returning it by reference.
-            val objectIndex = (obj.described as UnsignedInteger).toInt()
-            if (objectIndex >= objectHistory.size)
-                throw AMQPNotSerializableException(
-                    type,
-                    "Retrieval of existing reference failed. Requested index $objectIndex " +
-                        "is outside of the bounds for the list of size: ${objectHistory.size}"
-                )
-
-            val objectRetrieved = objectHistory[objectIndex]
-            if (!objectRetrieved::class.java.isSubClassOf(type.asClass())) {
-                throw AMQPNotSerializableException(
-                    type,
-                    "Existing reference type mismatch. Expected: '$type', found: '${objectRetrieved::class.java}' " +
-                        "@ $objectIndex"
-                )
-            }
-            objectRetrieved
+    ): Any {
+        return if (obj is DescribedType && ReferencedObject.DESCRIPTOR == obj.descriptor) {
+            handleReferencedObject(obj, type)
         } else {
-            val sandboxGroup = context.currentSandboxGroup()
             val objectRead = when (obj) {
-                is DescribedType -> {
-                    // Look up serializer in factory by descriptor
-                    val serializer = serializerFactory.get(obj.descriptor.toString(), serializationSchemas, metadata, sandboxGroup)
-                    if (type != TypeIdentifier.UnknownType.getLocalType(sandboxGroup) && serializer.type != type && with(serializer.type) {
-                        !isSubClassOf(type) && !materiallyEquivalentTo(type)
-                    }
-                    ) {
-                        throw AMQPNotSerializableException(
-                            type,
-                            "Described type with descriptor ${obj.descriptor} was " +
-                                "expected to be of type $type but was ${serializer.type}"
-                        )
-                    }
-                    serializer.readObject(obj.described, serializationSchemas, metadata, this, context)
-                }
+                is DescribedType -> handleDescribedType(obj, serializationSchemas, metadata, type, context)
                 is Binary -> obj.array
-                else -> if ((type is Class<*>) && type.isPrimitive) {
-                    // this will be the case for primitive types like [boolean] et al.
-                    obj
-                } else {
-                    // these will be boxed primitive types
-                    serializerFactory.get(obj::class.java, type).readObject(obj, serializationSchemas, metadata, this, context)
-                }
+                else -> handlePrimitiveTypes(obj, serializationSchemas, metadata, type, context)
             }
 
-            // Store the reference in case we need it later on.
-            // Skip for primitive types as they are too small and overhead of referencing them will be much higher
-            // than their content
+            // Store the reference in case we need it later on. Skip for primitive types as they are
+            // too small and overhead of referencing them will be much higher than their content
             if (serializerFactory.isSuitableForObjectReference(objectRead.javaClass)) {
                 objectHistory.add(objectRead)
             }
+
             objectRead
         }
+    }
+
+    /**
+     * Handles the deserialization of a referenced object.
+     *
+     * This function receives a described type object [obj] representing a reference to an already read instance.
+     * We retrieve the [objectIndex] from [obj] to determine the reference to be retrieved. If the index is within
+     * the bounds of the object history, retrieve it, deserialize it, and return it.
+     *
+     * If the index is not in bounds, or the class of the retrieved object does not match the expected [type],
+     * throw an [AMQPNotSerializableException].
+     *
+     * @param obj The described type object representing the reference.
+     * @param type The expected type of the referenced object.
+     * @return The referenced object.
+     * @throws AMQPNotSerializableException if there is an issue with serialization.
+     */
+    private fun handleReferencedObject(obj: DescribedType, type: Type): Any {
+        // It must be a reference to an instance that has already been read, cheaply and quickly returning it by reference.
+        val objectIndex = (obj.described as UnsignedInteger).toInt()
+        if (objectIndex >= objectHistory.size) {
+            throw AMQPNotSerializableException(
+                type,
+                "Retrieval of existing reference failed. Requested index $objectIndex " +
+                        "is outside of the bounds for the list of size: ${objectHistory.size}"
+            )
+        }
+
+        val objectRetrieved = objectHistory[objectIndex]
+        if (!objectRetrieved::class.java.isSubClassOf(type.asClass())) {
+            throw AMQPNotSerializableException(
+                type,
+                "Existing reference type mismatch. Expected: '$type', found: '${objectRetrieved::class.java}' " +
+                        "@ $objectIndex"
+            )
+        }
+
+        return objectRetrieved
+    }
+
+    /**
+     * Handles the deserialization of described type objects.
+     *
+     * Retrieves a serializer from the [SerializerFactory] based on the descriptor of [obj]. If the serializer type
+     * matches the expected [type], we deserialize and return the object. Otherwise, an [AMQPNotSerializableException]
+     * is thrown.
+     *
+     * @param obj The described type object to be serialized.
+     * @param serializationSchemas The serialization schemas to be used.
+     * @param metadata The metadata associated with the serialization process.
+     * @param type The expected type of the object.
+     * @param context The serialization context.
+     * @return The deserialized object.
+     * @throws AMQPNotSerializableException
+     */
+    private fun handleDescribedType(
+        obj: DescribedType,
+        serializationSchemas: SerializationSchemas,
+        metadata: Metadata,
+        type: Type,
+        context: SerializationContext
+    ): Any {
+        // Look up serializer in factory by descriptor
+        val serializer = serializerFactory.get(obj.descriptor.toString(), serializationSchemas, metadata, context.currentSandboxGroup())
+        if (type != TypeIdentifier.UnknownType.getLocalType(context.currentSandboxGroup()) &&
+            serializer.type != type && !serializer.type.isSubClassOf(type) && !serializer.type.materiallyEquivalentTo(type)
+        ) {
+            throw AMQPNotSerializableException(
+                type,
+                "Described type with descriptor ${obj.descriptor} was " +
+                        "expected to be of type $type but was ${serializer.type}"
+            )
+        }
+
+        return serializer.readObject(obj.described, serializationSchemas, metadata, this, context)
+    }
+
+    /**
+     * Handles the deserialization of primitive types.
+     *
+     * If the type is primitive, the object is returned as is. Otherwise, we delegate to the appropriate serializer
+     * based on the object's class and the specified type. Special narrowing conversion is added for [Character] type.
+     *
+     * @param obj The object to be serialized.
+     * @param serializationSchemas The serialization schemas to be used.
+     * @param metadata The metadata associated with the serialization process.
+     * @param type The type of the object.
+     * @param context The serialization context.
+     * @return The deserialized object.
+     * @throws AMQPNotSerializableException
+     */
+    private fun handlePrimitiveTypes(
+        obj: Any,
+        serializationSchemas: SerializationSchemas,
+        metadata: Metadata,
+        type: Type,
+        context: SerializationContext
+    ): Any {
+        return if (type is Class<*> && type.isPrimitive) {
+            obj // this will be the case for primitive types like [boolean] et al.
+        } else {
+            // Special handling needed as [Char] is widened to an [Integer] in transit to allow negative values for EOF characters
+            // See: https://qpid.apache.org/releases/qpid-proton-j-0.33.8/api/org/apache/qpid/proton/codec/Data.html#putChar-int-
+            val actualType = if (type == Character::class.java && obj is Int) obj.toChar() else obj
+
+            // these will be boxed primitive types
+            serializerFactory.get(obj::class.java, type)
+                .readObject(actualType, serializationSchemas, metadata, this, context)
+        }
+    }
 
     /**
      * Currently performs checks aimed at:
