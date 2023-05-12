@@ -30,8 +30,7 @@ class StaticNetworkTest {
         addMember(createTestMember("Notary", NOTARY))
         addMembers((3..4).map { createTestMember("Member$it") })
     }
-
-    @Tag("Unstable")
+    
     @Test
     fun `register members`() {
         onboardStaticGroup(tempDir)

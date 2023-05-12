@@ -31,7 +31,6 @@ class SingleClusterDynamicNetworkTest {
 
     private val mgm = cordaCluster.createTestMember("Mgm")
 
-    @Tag("Unstable")
     @Test
     fun `Create mgm and allow members to join the group`() {
         onboardSingleClusterGroup()
