@@ -4,11 +4,11 @@ plugins {
 }
 
 description 'Animal CPB'
-group 'net.cordapp.testing.animals'
+group 'com.r3.corda.testing.animals'
 
 cordapp {
-    targetPlatformVersion platformVersion as Integer
-    minimumPlatformVersion platformVersion as Integer
+    targetPlatformVersion platformVersion.toInteger()
+    minimumPlatformVersion platformVersion.toInteger()
     workflow {
         name "Animals"
         versionId 1

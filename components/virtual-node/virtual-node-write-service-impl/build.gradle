@@ -49,6 +49,7 @@ dependencies {
     testImplementation project(':testing:db-testkit')
     testImplementation project(':testing:test-utilities')
 
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 
     testRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"

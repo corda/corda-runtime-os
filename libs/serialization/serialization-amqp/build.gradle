@@ -4,12 +4,6 @@ plugins {
     id 'corda.osgi-test-conventions'
     id 'corda.common-publishing'
     id 'corda.common-library'
-    id 'corda.javadoc-generation'
-}
-
-
-ext {
-    releasable = true
 }
 
 description 'Corda AMQP serialization library'
@@ -55,6 +49,7 @@ dependencies {
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
     testImplementation "org.hamcrest:hamcrest-library:$hamcrestVersion"
     testImplementation "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
     testRuntimeOnly 'org.osgi:osgi.core'

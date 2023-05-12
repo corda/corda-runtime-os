@@ -17,7 +17,6 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.membership.grouppolicy.GroupPolicyProvider
-import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.read.GroupParametersReaderService
 import net.corda.membership.read.MembershipGroupReaderProvider
@@ -62,9 +61,7 @@ class FlowProcessorImpl @Activate constructor(
     @Reference(service = GroupPolicyProvider::class)
     private val groupPolicyProvider: GroupPolicyProvider,
     @Reference(service = MembershipQueryClient::class)
-    private val membershipQueryClient: MembershipQueryClient,
-    @Reference(service = MembershipPersistenceClient::class)
-    private val membershipPersistenceClient: MembershipPersistenceClient
+    private val membershipQueryClient: MembershipQueryClient
 ) : FlowProcessor {
 
     private companion object {
@@ -83,8 +80,7 @@ class FlowProcessorImpl @Activate constructor(
         ::groupParametersReaderService,
         ::cpkReadService,
         ::groupPolicyProvider,
-        ::membershipQueryClient,
-        ::membershipPersistenceClient
+        ::membershipQueryClient
     ).with(tokenCacheComponentFactory.create(), TokenCacheComponent::class.java)
 
     private val lifecycleCoordinator =

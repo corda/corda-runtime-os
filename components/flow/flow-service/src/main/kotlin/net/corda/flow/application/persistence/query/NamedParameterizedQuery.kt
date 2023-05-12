@@ -1,14 +1,12 @@
 package net.corda.flow.application.persistence.query
 
-import java.nio.ByteBuffer
 import net.corda.flow.application.persistence.external.events.NamedQueryExternalEventFactory
 import net.corda.flow.application.persistence.external.events.NamedQueryParameters
 import net.corda.flow.application.persistence.wrapWithPersistenceException
 import net.corda.flow.external.events.executor.ExternalEventExecutor
-import net.corda.flow.persistence.ResultSetImpl
+import net.corda.flow.persistence.query.ResultSetFactory
 import net.corda.v5.application.persistence.PagedQuery
 import net.corda.v5.application.persistence.ParameterizedQuery
-import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
 
 /**
@@ -17,7 +15,7 @@ import net.corda.v5.base.annotations.Suspendable
 @Suppress("LongParameterList")
 class NamedParameterizedQuery<R : Any>(
     private val externalEventExecutor: ExternalEventExecutor,
-    private val serializationService: SerializationService,
+    private val resultSetFactory: ResultSetFactory,
     private val queryName: String,
     private var parameters: MutableMap<String, Any>,
     private var limit: Int,
@@ -49,19 +47,20 @@ class NamedParameterizedQuery<R : Any>(
 
     @Suspendable
     override fun execute(): PagedQuery.ResultSet<R> {
-        val deserialized = wrapWithPersistenceException {
-            externalEventExecutor.execute(
-                NamedQueryExternalEventFactory::class.java,
-                NamedQueryParameters(queryName, getSerializedParameters(parameters), offset, limit)
-            )
-        }.map { serializationService.deserialize(it.array(), expectedClass) }
-
-        return ResultSetImpl(deserialized)
-    }
-
-    private fun getSerializedParameters(parameters: Map<String, Any>) : Map<String, ByteBuffer> {
-        return parameters.mapValues {
-            ByteBuffer.wrap(serializationService.serialize(it.value).bytes)
+        val resultSet = resultSetFactory.create(
+            parameters,
+            limit,
+            offset,
+            expectedClass
+        ) @Suspendable { serializedParameters, offset ->
+            wrapWithPersistenceException {
+                externalEventExecutor.execute(
+                    NamedQueryExternalEventFactory::class.java,
+                    NamedQueryParameters(queryName, serializedParameters, offset, limit)
+                )
+            }
         }
+        resultSet.next()
+        return resultSet
     }
 }

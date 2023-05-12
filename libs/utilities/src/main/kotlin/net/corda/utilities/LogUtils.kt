@@ -7,6 +7,20 @@ import java.util.Collections
 import org.slf4j.Logger
 import org.slf4j.MDC
 
+/**
+ * Common logging Marker Names
+ */
+const val FLOW_TRACING_MARKER = "FLOW_TRACING"
+
+/**
+ * Common MDC properties used across corda.
+ */
+const val MDC_CLIENT_ID = "corda.client.id"
+const val MDC_FLOW_ID = "flow.id"
+const val MDC_VNODE_ID = "vnode.id"
+const val MDC_SESSION_EVENT_ID = "session.event.id"
+const val MDC_EXTERNAL_EVENT_ID = "corda.external.event.id"
+
 inline fun <T> logElapsedTime(label: String, logger: Logger, body: () -> T): T {
     // Use nanoTime as it's monotonic.
     val now = System.nanoTime()

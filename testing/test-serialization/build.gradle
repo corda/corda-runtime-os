@@ -20,5 +20,6 @@ dependencies {
     implementation project(':components:membership:membership-group-read')
     implementation project(":libs:virtual-node:sandbox-group-context")
 
+    implementation "org.mockito:mockito-core:$mockitoVersion"
     implementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 }

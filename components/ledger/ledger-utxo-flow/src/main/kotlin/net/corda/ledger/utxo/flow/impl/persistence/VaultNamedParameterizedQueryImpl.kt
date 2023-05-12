@@ -1,98 +1,89 @@
 package net.corda.ledger.utxo.flow.impl.persistence
 
 import net.corda.flow.external.events.executor.ExternalEventExecutor
-import net.corda.flow.persistence.ResultSetImpl
+import net.corda.flow.persistence.query.ResultSetFactory
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.VaultNamedQueryEventParams
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.VaultNamedQueryExternalEventFactory
+import net.corda.utilities.time.Clock
 import net.corda.v5.application.persistence.PagedQuery
-import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.ledger.utxo.query.VaultNamedParameterizedQuery
-import java.nio.ByteBuffer
 import java.time.Instant
 
 // TODO CORE-12032 use delegation to create this class
+@Suppress("LongParameterList")
 class VaultNamedParameterizedQueryImpl<T>(
     private val queryName: String,
     private val externalEventExecutor: ExternalEventExecutor,
-    private val serializationService: SerializationService,
-    private val resultClass: Class<T>
+    private val resultSetFactory: ResultSetFactory,
+    private var parameters: MutableMap<String, Any>,
+    private var limit: Int,
+    private var offset: Int,
+    private val resultClass: Class<T>,
+    private val clock: Clock
 ) : VaultNamedParameterizedQuery<T> {
 
     private companion object {
         const val TIMESTAMP_LIMIT_PARAM_NAME = "Corda_TimestampLimit"
     }
 
-    private var limit: Int? = null
-    private var offset: Int? = null
-    private val queryParams = mutableMapOf<String, Any>()
-
     override fun setLimit(limit: Int): VaultNamedParameterizedQuery<T> {
-        require(this.limit == null) { "Limit is already set." }
+        require (limit >= 0) { "Limit cannot be negative" }
         this.limit = limit
         return this
     }
 
     override fun setOffset(offset: Int): VaultNamedParameterizedQuery<T> {
-        require(this.offset == null) { "Offset is already set." }
+        require (offset >= 0) { "Offset cannot be negative" }
         this.offset = offset
         return this
     }
 
     override fun setParameter(name: String, value: Any): VaultNamedParameterizedQuery<T> {
-        require(queryParams[name] == null) { "Parameter with key $name is already set." }
-        queryParams[name] = value
+        parameters[name] = value
         return this
     }
 
-    override fun setParameters(parameters: MutableMap<String, Any>): VaultNamedParameterizedQuery<T> {
-        val existingParams = (queryParams - parameters).map { it.key }
-
-        require(existingParams.isEmpty()) { "Parameters with keys: $existingParams are already set." }
-        queryParams.putAll(parameters)
+    override fun setParameters(parameters: Map<String, Any>): VaultNamedParameterizedQuery<T> {
+        val timestampLimit = parameters[TIMESTAMP_LIMIT_PARAM_NAME]
+        this.parameters = parameters.toMutableMap()
+        if (timestampLimit != null) {
+            this.parameters[TIMESTAMP_LIMIT_PARAM_NAME] = timestampLimit
+        }
         return this
     }
 
     @Suspendable
     override fun execute(): PagedQuery.ResultSet<T> {
-        val offsetValue = offset
-        val limitValue = limit
-
-        require(offsetValue != null && offsetValue >= 0) {
-            "Offset needs to be provided and needs to be a positive number to execute the query."
-        }
-        require(limitValue != null && limitValue > 0) {
-            "Limit needs to be provided and needs to be a positive number to execute the query."
-        }
-
         getCreatedTimestampLimit()?.let {
-            require(it <= Instant.now()) {
+            require(it <= clock.instant()) {
                 "Timestamp limit must not be in the future."
             }
-        } ?: setCreatedTimestampLimit(Instant.now())
+        } ?: setCreatedTimestampLimit(clock.instant())
 
-        val results = externalEventExecutor.execute(
-            VaultNamedQueryExternalEventFactory::class.java,
-            VaultNamedQueryEventParams(queryName, getSerializedParameters(queryParams), offsetValue, limitValue)
-        )
-
-        return ResultSetImpl(
-            results.map { serializationService.deserialize(it.array(), resultClass) }
-        )
+        val resultSet = resultSetFactory.create(
+            parameters,
+            limit,
+            offset,
+            resultClass
+        ) @Suspendable { serializedParameters, offset ->
+            wrapWithPersistenceException {
+                externalEventExecutor.execute(
+                    VaultNamedQueryExternalEventFactory::class.java,
+                    VaultNamedQueryEventParams(queryName, serializedParameters, offset, limit)
+                )
+            }
+        }
+        resultSet.next()
+        return resultSet
     }
 
     override fun setCreatedTimestampLimit(timestampLimit: Instant): VaultNamedParameterizedQuery<T> {
         require(timestampLimit <= Instant.now()) { "Timestamp limit must not be in the future." }
 
-        queryParams[TIMESTAMP_LIMIT_PARAM_NAME] = timestampLimit
+        parameters[TIMESTAMP_LIMIT_PARAM_NAME] = timestampLimit
         return this
     }
 
-    private fun getCreatedTimestampLimit() = queryParams[TIMESTAMP_LIMIT_PARAM_NAME] as? Instant
-
-    private fun getSerializedParameters(parameters: Map<String, Any>) : Map<String, ByteBuffer> {
-        return parameters.mapValues {
-            ByteBuffer.wrap(serializationService.serialize(it.value).bytes)
-        }
-    }
+    private fun getCreatedTimestampLimit() = parameters[TIMESTAMP_LIMIT_PARAM_NAME] as? Instant
 }

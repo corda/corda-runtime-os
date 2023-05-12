@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import net.corda.v5.base.types.MemberX500Name
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.net.URI
 import java.security.MessageDigest
 import java.time.Duration
 import java.util.UUID
@@ -16,22 +15,23 @@ import java.util.concurrent.TimeoutException
 
 const val USERNAME = "admin"
 val PASSWORD = System.getenv("INITIAL_ADMIN_USER_PASSWORD") ?: "admin"
-const val GROUP_ID = "7c5d6948-e17b-44e7-9d1c-fa4a3f667cad"
 val testRunUniqueId: UUID = UUID.randomUUID()
 
 // Code signer certificate
 const val CODE_SIGNER_CERT = "/cordadevcodesign.pem"
+const val CODE_SIGNER_CERT_USAGE = "code-signer"
+const val CODE_SIGNER_CERT_ALIAS = "cordadev"
 
 // The CPB and CPI used in smoke tests
 const val TEST_NOTARY_CPI_NAME = "test-notary-server-cordapp"
 const val TEST_NOTARY_CPB_LOCATION = "/META-INF/notary-plugin-non-validating-server.cpb"
 
-val CLUSTER_URI = URI(System.getProperty("restEndpointUrl", "NONE"))
+val DEFAULT_CLUSTER: ClusterInfo = ClusterBInfo
 
 // BUG:  Not sure if we should be requiring clients to use a method similar to this because we
 // return a full hash (64 chars?) but the same API only accepts the first 12 chars.
-fun truncateLongHash(shortHash:String):String {
-    return shortHash.substring(0,12)
+fun truncateLongHash(shortHash: String): String {
+    return shortHash.substring(0, 12)
 }
 
 fun String.toJson(): JsonNode = ObjectMapper().readTree(this)
@@ -57,3 +57,10 @@ fun getHoldingIdShortHash(x500Name: String, groupId: String): String {
         .joinToString("") { byte -> "%02x".format(byte).uppercase() }
         .substring(0, 12)
 }
+
+/**
+ * Transform a string-string context map object represented as a [JsonNode] to a [Map].
+ */
+fun JsonNode.parseContextMap(): Map<String, String> = fields().asSequence().map {
+    it.key to it.value.textValue()
+}.toMap()

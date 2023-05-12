@@ -1,5 +1,6 @@
 package net.corda.rest.test
 
+import net.corda.rest.JsonObject
 import net.corda.rest.RestResource
 import net.corda.rest.annotations.HttpDELETE
 import net.corda.rest.annotations.HttpGET
@@ -34,4 +35,11 @@ interface TestEntityRestResource : RestResource {
 
     @HttpDELETE
     fun deleteUsingQuery(@RestQueryParameter query: String): String
+
+    data class EchoParams(val content: JsonObject)
+
+    data class EchoResponse(val content: JsonObject)
+
+    @HttpPUT(path = "inputEcho")
+    fun putInputEcho(@ClientRequestBodyParameter echoParams: EchoParams): EchoResponse
 }

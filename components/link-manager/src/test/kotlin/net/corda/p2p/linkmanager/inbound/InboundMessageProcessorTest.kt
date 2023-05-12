@@ -14,8 +14,8 @@ import net.corda.data.p2p.app.AppMessage
 import net.corda.data.p2p.app.AuthenticatedMessage
 import net.corda.data.p2p.app.AuthenticatedMessageHeader
 import net.corda.data.p2p.app.MembershipStatusFilter
-import net.corda.data.p2p.app.UnauthenticatedMessage
-import net.corda.data.p2p.app.UnauthenticatedMessageHeader
+import net.corda.data.p2p.app.InboundUnauthenticatedMessage
+import net.corda.data.p2p.app.InboundUnauthenticatedMessageHeader
 import net.corda.data.p2p.crypto.AuthenticatedDataMessage
 import net.corda.data.p2p.crypto.AuthenticatedEncryptedDataMessage
 import net.corda.data.p2p.crypto.CommonHeader
@@ -876,19 +876,17 @@ class InboundMessageProcessorTest {
     }
 
     @Nested
-    inner class UnauthenticatedMessageTests {
+    inner class InboundUnauthenticatedMessageTests {
         @Test
-        fun `UnauthenticatedMessage will produce message in P2P in topic`() {
-            val unauthenticatedMessageHeader = mock<UnauthenticatedMessageHeader> {
+        fun `InboundUnauthenticatedMessage will produce message in P2P in topic`() {
+            val inboundUnauthenticatedMessageHeader = mock<InboundUnauthenticatedMessageHeader> {
                 on { messageId } doReturn "messageId"
-                on { source } doReturn myIdentity.toAvro()
-                on { destination } doReturn remoteIdentity.toAvro()
                 on { subsystem } doReturn "application-v1"
             }
-            val unauthenticatedMessage = mock<UnauthenticatedMessage> {
-                on { header } doReturn unauthenticatedMessageHeader
+            val inboundUnauthenticatedMessage = mock<InboundUnauthenticatedMessage> {
+                on { header } doReturn inboundUnauthenticatedMessageHeader
             }
-            val message = LinkInMessage(unauthenticatedMessage)
+            val message = LinkInMessage(inboundUnauthenticatedMessage)
 
             val records = processor.onNext(
                 listOf(
@@ -899,36 +897,8 @@ class InboundMessageProcessorTest {
             assertThat(records).hasSize(1).anySatisfy {
                 assertThat(it.topic).isEqualTo(P2P_IN_TOPIC)
                 assertThat(it.value).isInstanceOf(AppMessage::class.java)
-                assertThat((it.value as AppMessage).message).isEqualTo(unauthenticatedMessage)
+                assertThat((it.value as AppMessage).message).isEqualTo(inboundUnauthenticatedMessage)
             }
         }
-
-        @Test
-        fun `UnauthenticatedMessage will not produce message in P2P in topic if messaging is not allowed`() {
-            whenever(
-                networkMessagingValidator.validateInbound(eq(myIdentity), eq(remoteIdentity))
-            ).doReturn(Either.Right("foo-bar"))
-            val unauthenticatedMessageHeader = mock<UnauthenticatedMessageHeader> {
-                on { messageId } doReturn "messageId"
-                on { source } doReturn myIdentity.toAvro()
-                on { destination } doReturn remoteIdentity.toAvro()
-                on { subsystem } doReturn "application-v1"
-            }
-            val unauthenticatedMessage = mock<UnauthenticatedMessage> {
-                on { header } doReturn unauthenticatedMessageHeader
-            }
-            val message = LinkInMessage(unauthenticatedMessage)
-
-            val records = processor.onNext(
-                listOf(
-                    EventLogRecord(LINK_IN_TOPIC, "key", message, 0, 0),
-                )
-            )
-
-            assertThat(records).isEmpty()
-            verify(networkMessagingValidator).validateInbound(eq(myIdentity), eq(remoteIdentity))
-        }
-
-
     }
 }

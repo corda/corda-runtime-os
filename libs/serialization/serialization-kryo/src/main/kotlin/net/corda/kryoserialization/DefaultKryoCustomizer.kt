@@ -18,6 +18,7 @@ import net.corda.kryoserialization.serializers.ClassSerializer
 import net.corda.kryoserialization.serializers.CordaClosureSerializer
 import net.corda.kryoserialization.serializers.IteratorSerializer
 import net.corda.kryoserialization.serializers.LazyMappedListSerializer
+import net.corda.kryoserialization.serializers.LinkedEntrySetSerializer
 import net.corda.kryoserialization.serializers.LinkedHashMapEntrySerializer
 import net.corda.kryoserialization.serializers.LinkedHashMapIteratorSerializer
 import net.corda.kryoserialization.serializers.LinkedListItrSerializer
@@ -101,8 +102,9 @@ class DefaultKryoCustomizer {
 
                 addDefaultSerializer(CertPath::class.java, CertPathSerializer)
 
-                register(java.lang.invoke.SerializedLambda::class.java)
-                addDefaultSerializer(ClosureSerializer.Closure::class.java, CordaClosureSerializer)
+                addDefaultSerializer(LinkedEntrySetSerializer.serializedType, LinkedEntrySetSerializer)
+
+                register(ClosureSerializer.Closure::class.java, CordaClosureSerializer)
 
                 addDefaultSerializer(Throwable::class.java, object: BaseSerializerFactory<ThrowableSerializer<*>>() {
                     override fun newSerializer(kryo: Kryo, type: Class<*>) = ThrowableSerializer(kryo, type)

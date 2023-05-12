@@ -10,7 +10,7 @@ import net.corda.data.packaging.CpkIdentifier as CpkIdentifierAvro
 /**
  * Uniquely identifies a CPK archive
  *
- * @property name The Bundle-SymbolicName of the main bundle inside the CPK
+ * @property name The Corda-CPK-Cordapp-Name given to the CPK
  * @property version The Bundle-Version of the main bundle inside the CPK
  * @property signerSummaryHash The hash of concatenation of the sorted hashes of the public keys of the
  *              signers of the CPK, null if the CPK isn't signed

@@ -6,12 +6,12 @@ import com.typesafe.config.ConfigRenderOptions
 import com.typesafe.config.ConfigValueFactory
 import net.corda.configuration.read.impl.ConfigurationReadServiceImpl
 import net.corda.crypto.cipher.suite.ParameterizedSignatureSpec
-import net.corda.crypto.cipher.suite.PublicKeyHash
 import net.corda.crypto.cipher.suite.schemes.ECDSA_SECP256R1_TEMPLATE
 import net.corda.crypto.cipher.suite.schemes.KeySchemeTemplate
 import net.corda.crypto.cipher.suite.schemes.RSA_TEMPLATE
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.core.DigitalSignatureWithKey
+import net.corda.crypto.core.fullIdHash
 import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.data.p2p.HostedIdentityEntry
@@ -83,6 +83,7 @@ import net.corda.test.util.eventually
 import net.corda.testing.p2p.certificates.Certificates
 import net.corda.utilities.seconds
 import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.membership.EndpointInfo
 import net.corda.v5.membership.MGMContext
@@ -105,6 +106,7 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.slf4j.LoggerFactory
 import java.io.StringWriter
+import java.net.ServerSocket
 import java.net.URL
 import java.nio.ByteBuffer
 import java.security.Key
@@ -159,7 +161,6 @@ class P2PLayerEndToEndTest {
         Host(
             listOf(aliceId),
             "www.alice.net",
-            10500,
             Certificates.truststoreCertificatePem,
             bootstrapConfig,
             false,
@@ -168,7 +169,6 @@ class P2PLayerEndToEndTest {
             Host(
                 listOf(chipId),
                 "chip.net",
-                10501,
                 Certificates.truststoreCertificatePem,
                 bootstrapConfig,
                 false,
@@ -211,7 +211,6 @@ class P2PLayerEndToEndTest {
         Host(
             listOf(receiverId),
             "www.receiver.net",
-            10502,
             Certificates.ecTrustStorePem,
             bootstrapConfig,
             false,
@@ -220,7 +219,6 @@ class P2PLayerEndToEndTest {
             Host(
                 listOf(senderId),
                 "www.sender.net",
-                10503,
                 Certificates.ecTrustStorePem,
                 bootstrapConfig,
                 false,
@@ -262,7 +260,6 @@ class P2PLayerEndToEndTest {
         Host(
             listOf(receiverId, senderId),
             "www.alice.net",
-            10500,
             Certificates.truststoreCertificatePem,
             bootstrapConfig,
             false,
@@ -296,7 +293,6 @@ class P2PLayerEndToEndTest {
         Host(
             listOf(aliceId),
             "www.alice.net",
-            10500,
             Certificates.truststoreCertificatePem,
             bootstrapConfig,
             false,
@@ -305,7 +301,6 @@ class P2PLayerEndToEndTest {
             Host(
                 listOf(chipId),
                 "chip.net",
-                10501,
                 Certificates.truststoreCertificatePem,
                 bootstrapConfig,
                 false,
@@ -479,12 +474,16 @@ class P2PLayerEndToEndTest {
     private class Host(
         ourIdentities: List<Identity>,
         p2pAddress: String,
-        p2pPort: Int,
         trustStoreURL: URL,
         private val bootstrapConfig: SmartConfig,
         checkRevocation: Boolean,
         keyTemplate: KeySchemeTemplate,
     ) : AutoCloseable {
+        private val p2pPort by lazy {
+            ServerSocket(0).use {
+                it.localPort
+            }
+        }
         private val endpointInfo = object: EndpointInfo {
             override fun getProtocolVersion() = ProtocolConstants.PROTOCOL_VERSION
             override fun getUrl() = "https://$p2pAddress:$p2pPort$URL_PATH"
@@ -628,7 +627,7 @@ class P2PLayerEndToEndTest {
             }
         }
         private val otherHostMembers = ConcurrentHashMap<MemberX500Name, MemberInfo>()
-        private val otherHostMembersByKey = ConcurrentHashMap<PublicKeyHash, MemberInfo>()
+        private val otherHostMembersByKey = ConcurrentHashMap<SecureHash, MemberInfo>()
         private val groupReader = mock<MembershipGroupReader> {
             on { lookup(any(), any()) } doAnswer {
                 otherHostMembers[it.getArgument(0)]
@@ -691,7 +690,7 @@ class P2PLayerEndToEndTest {
                 val identity = info.identity
                 val memberInfo = info.createMemberInfo(host.endpointInfo)
 
-                val keyHash = PublicKeyHash.calculate(info.keyPair.public)
+                val keyHash = info.keyPair.public.fullIdHash()
 
                 otherHostMembers[identity.name] = memberInfo
                 otherHostMembersByKey[keyHash] = memberInfo

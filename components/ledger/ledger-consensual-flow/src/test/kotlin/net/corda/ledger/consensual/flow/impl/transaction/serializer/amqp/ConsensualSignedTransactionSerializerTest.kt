@@ -5,6 +5,8 @@ import net.corda.ledger.consensual.test.ConsensualLedgerTest
 import net.corda.utilities.serialization.deserialize
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
+import java.io.NotSerializableException
 import kotlin.test.assertEquals
 
 class ConsensualSignedTransactionSerializerTest: ConsensualLedgerTest() {
@@ -22,5 +24,12 @@ class ConsensualSignedTransactionSerializerTest: ConsensualLedgerTest() {
             deserialized.id
         }
         assertEquals(consensualSignedTransactionExample.id, deserialized.id)
+    }
+
+    @Test
+    fun `Should fail to serialize ledger Tx`() {
+        assertThrows<NotSerializableException> {
+            serializationService.serialize(consensualSignedTransactionExample.toLedgerTransaction())
+        }
     }
 }

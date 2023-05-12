@@ -1,141 +1,186 @@
 package net.corda.ledger.utxo.flow.impl.persistence
 
 import net.corda.flow.external.events.executor.ExternalEventExecutor
+import net.corda.flow.persistence.query.ResultSetExecutor
+import net.corda.flow.persistence.query.ResultSetFactory
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.VaultNamedQueryExternalEventFactory
 import net.corda.utilities.days
-import net.corda.v5.application.serialization.SerializationService
-import net.corda.v5.ledger.utxo.query.VaultNamedParameterizedQuery
-import net.corda.v5.serialization.SerializedBytes
+import net.corda.utilities.time.Clock
+import net.corda.v5.application.persistence.CordaPersistenceException
+import net.corda.v5.application.persistence.PagedQuery.ResultSet
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatThrownBy
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
-import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
-import java.nio.ByteBuffer
+import org.mockito.kotlin.verify
+import org.mockito.kotlin.whenever
 import java.time.Instant
 
 class VaultNamedParameterizedQueryImplTest {
 
-    @Test
-    fun `Vault named parameterized query cannot set the same parameter twice`() {
-        val query = createQuery()
+    private companion object {
+        const val TIMESTAMP_LIMIT_PARAM_NAME = "Corda_TimestampLimit"
+        val now: Instant = Instant.now().minusSeconds(10)
+        val later: Instant = Instant.now().minusSeconds(10)
+        val results = listOf("A", "B")
+    }
 
-        query.setParameter("dummy", "dummy")
+    private val externalEventExecutor = mock<ExternalEventExecutor>()
+    private val resultSetFactory = mock<ResultSetFactory>()
+    private val resultSet = mock<ResultSet<Any>>()
+    private val clock = mock<Clock>()
+    private val resultSetExecutorCaptor = argumentCaptor<ResultSetExecutor<Any>>()
+    private val mapCaptor = argumentCaptor<Map<String, Any>>()
 
-        val ex = assertThrows<IllegalArgumentException> {
-            query.setParameter("dummy", "dummy")
-        }
+    private val query = VaultNamedParameterizedQueryImpl(
+        externalEventExecutor = externalEventExecutor,
+        resultSetFactory = resultSetFactory,
+        parameters = mutableMapOf(),
+        queryName = "",
+        limit = 1,
+        offset = 0,
+        resultClass = Any::class.java,
+        clock = clock
+    )
 
-        assertThat(ex).hasStackTraceContaining("Parameter with key dummy is already set.")
+    @BeforeEach
+    fun beforeEach() {
+        whenever(resultSetFactory.create(mapCaptor.capture(), any(), any(), any(), resultSetExecutorCaptor.capture())).thenReturn(resultSet)
+        whenever(resultSet.next()).thenReturn(results)
+        whenever(clock.instant()).thenReturn(later)
     }
 
     @Test
-    fun `Vault named parameterized query cannot set parameters from map if any of the parameters already set`() {
-        val query = createQuery()
+    fun `setLimit updates the limit`() {
+        query.execute()
+        verify(resultSetFactory).create(any(), eq(1), any(), any<Class<Any>>(), any())
 
-        query.setParameter("dummy", "dummy")
-
-        val ex = assertThrows<IllegalArgumentException> {
-            query.setParameters(mapOf("dummy" to "dummy", "dummy2" to "dummy2"))
-        }
-
-        assertThat(ex).hasStackTraceContaining("Parameters with keys: [dummy] are already set.")
-
-        query.setParameter("dummy2", "dummy2")
-
-        val ex2 = assertThrows<IllegalArgumentException> {
-            query.setParameters(mapOf("dummy" to "dummy", "dummy2" to "dummy2"))
-        }
-
-        assertThat(ex2).hasStackTraceContaining("Parameters with keys: [dummy, dummy2] are already set.")
+        query.setLimit(10)
+        query.execute()
+        verify(resultSetFactory).create(any(), eq(10), any(), any<Class<Any>>(), any())
     }
 
     @Test
-    fun `Vault named parameterized query cannot set offset twice`() {
-        val query = createQuery()
+    fun `setOffset updates the offset`() {
+        query.execute()
+        verify(resultSetFactory).create(any(), any(), eq(0), any<Class<Any>>(), any())
 
-        query.setOffset(100)
-
-        val ex = assertThrows<IllegalArgumentException> {
-            query.setOffset(100)
-        }
-
-        assertThat(ex).hasStackTraceContaining("Offset is already set.")
+        query.setOffset(10)
+        query.execute()
+        verify(resultSetFactory).create(any(), any(), eq(10), any<Class<Any>>(), any())
     }
 
     @Test
-    fun `Vault named parameterized query cannot set timestamp limit to a future date`() {
-        val query = createQuery()
-
-        val ex = assertThrows<IllegalArgumentException> {
-            query.setCreatedTimestampLimit(Instant.now().plusMillis(1.days.toMillis()))
-        }
-
-        assertThat(ex).hasStackTraceContaining("Timestamp limit must not be in the future.")
+    fun `setLimit cannot be negative`() {
+        assertThatThrownBy { query.setLimit(-1) }.isInstanceOf(IllegalArgumentException::class.java)
     }
 
     @Test
-    fun `Vault named parameterized query cannot be executed without a valid offset`() {
-        val query = createQuery()
+    fun `setOffset cannot be negative`() {
+        assertThatThrownBy { query.setOffset(-1) }.isInstanceOf(IllegalArgumentException::class.java)
+    }
 
-        val ex = assertThrows<IllegalArgumentException> {
-            query.execute()
-        }
+    @Test
+    fun `cannot set timestamp limit to a future date`() {
+        assertThatThrownBy { query.setCreatedTimestampLimit(Instant.now().plusMillis(1.days.toMillis())) }
+            .isInstanceOf(IllegalArgumentException::class.java)
+            .hasStackTraceContaining("Timestamp limit must not be in the future.")
+    }
 
-        assertThat(ex).hasStackTraceContaining(
-            "Offset needs to be provided and needs to be a positive number to execute the query."
+    @Test
+    fun `setting the timestamp limit adds it to the parameters`() {
+        val parameterNameOne = "one"
+        val parameterOne = "param one"
+        query.setParameter(parameterNameOne, parameterOne)
+        query.setCreatedTimestampLimit(now)
+
+        query.execute()
+        assertThat(mapCaptor.firstValue).containsAllEntriesOf(mapOf(parameterNameOne to parameterOne, TIMESTAMP_LIMIT_PARAM_NAME to now))
+    }
+
+    @Test
+    fun `execute sets the timestamp limit to now if not set when there are no other parameters`() {
+        query.execute()
+        verify(clock).instant()
+        assertThat(mapCaptor.firstValue).containsExactlyEntriesOf(mapOf(TIMESTAMP_LIMIT_PARAM_NAME to later))
+    }
+
+    @Test
+    fun `execute sets the timestamp limit to now if not set when there are other parameters`() {
+        val parameterNameOne = "one"
+        val parameterOne = "param one"
+        query.setParameter(parameterNameOne, parameterOne)
+        query.execute()
+        verify(clock).instant()
+        assertThat(mapCaptor.firstValue).containsExactlyEntriesOf(
+            mapOf(
+                parameterNameOne to parameterOne,
+                TIMESTAMP_LIMIT_PARAM_NAME to later
+            )
         )
     }
 
     @Test
-    fun `Vault named parameterized query cannot be executed without a valid limit`() {
-        val query = createQuery()
-        query.setOffset(0)
+    fun `setParameter sets a parameter`() {
+        val parameterNameOne = "one"
+        val parameterNameTwo = "two"
+        val parameterOne = "param one"
+        val parameterTwo = "param two"
+        query.setParameter(parameterNameOne, parameterOne)
+        query.setParameter(parameterNameTwo, parameterTwo)
 
-        val ex = assertThrows<IllegalArgumentException> {
-            query.execute()
-        }
-
-        assertThat(ex).hasStackTraceContaining(
-            "Limit needs to be provided and needs to be a positive number to execute the query."
-        )
+        query.execute()
+        assertThat(mapCaptor.firstValue).containsAllEntriesOf(mapOf(parameterNameOne to parameterOne, parameterNameTwo to parameterTwo))
     }
 
     @Test
-    fun `Vault named parameterized query can map result from database properly`() {
-        val query = createQuery()
+    fun `setParameters overwrites all parameters`() {
+        val parameterNameOne = "one"
+        val parameterNameTwo = "two"
+        val parameterNameThree = "three"
+        val parameterOne = "param one"
+        val parameterTwo = "param two"
+        val parameterThree = "param three"
+        val newParameters = mapOf(parameterNameTwo to parameterTwo, parameterNameThree to parameterThree)
 
-        query.setOffset(0)
-        query.setLimit(100)
+        query.setParameter(parameterNameOne, parameterOne)
+        query.setParameters(newParameters)
 
-        val resultSet = query.execute()
-
-        assertThat(resultSet.results).hasSize(1)
-        assertThat(resultSet.results.first()).isEqualTo("ABC")
+        query.execute()
+        assertThat(mapCaptor.firstValue).containsAllEntriesOf(newParameters)
     }
 
-    private fun createQuery(): VaultNamedParameterizedQuery<String> {
-        val dummyByteBuffer = ByteBuffer.wrap(ByteArray(0))
+    @Test
+    fun `execute creates a result set, gets the next page and returns the result set`() {
+        assertThat(query.execute()).isEqualTo(resultSet)
+        verify(resultSetFactory).create(any(), any(), any(), any<Class<Any>>(), any())
+        verify(resultSet).next()
+    }
 
-        val mockExternalEventExecutor = mock<ExternalEventExecutor> {
-            on { execute(eq(VaultNamedQueryExternalEventFactory::class.java), any()) } doReturn listOf(dummyByteBuffer)
-        }
+    @Test
+    fun `rethrows CordaRuntimeExceptions as CordaPersistenceExceptions`() {
+        whenever(externalEventExecutor.execute(any<Class<VaultNamedQueryExternalEventFactory>>(), any()))
+            .thenThrow(CordaRuntimeException("boom"))
 
-        val mockSerializedBytes = mock<SerializedBytes<Any>> {
-            on { bytes } doReturn ByteArray(0)
-        }
-        val mockSerializationService = mock<SerializationService> {
-            on { deserialize(eq(dummyByteBuffer.array()), eq(String::class.java)) } doReturn "ABC"
-            on { serialize<Any>(any()) } doReturn mockSerializedBytes
-        }
+        query.execute()
 
-        return VaultNamedParameterizedQueryImpl(
-            "DUMMY",
-            mockExternalEventExecutor,
-            mockSerializationService,
-            String::class.java
-        )
+        val resultSetExecutor = resultSetExecutorCaptor.firstValue
+        assertThatThrownBy { resultSetExecutor.execute(emptyMap(), 0) }.isInstanceOf(CordaPersistenceException::class.java)
+    }
+
+    @Test
+    fun `does not rethrow general exceptions as CordaPersistenceExceptions`() {
+        whenever(externalEventExecutor.execute(any<Class<VaultNamedQueryExternalEventFactory>>(), any()))
+            .thenThrow(IllegalStateException("boom"))
+
+        query.execute()
+
+        val resultSetExecutor = resultSetExecutorCaptor.firstValue
+        assertThatThrownBy { resultSetExecutor.execute(emptyMap(), 0) }.isInstanceOf(IllegalStateException::class.java)
     }
 }

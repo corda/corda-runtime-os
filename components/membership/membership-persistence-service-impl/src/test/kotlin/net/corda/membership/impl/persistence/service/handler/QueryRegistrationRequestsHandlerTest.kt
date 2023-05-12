@@ -1,7 +1,7 @@
 package net.corda.membership.impl.persistence.service.handler
 
-import net.corda.data.CordaAvroDeserializer
-import net.corda.data.CordaAvroSerializationFactory
+import net.corda.avro.serialization.CordaAvroDeserializer
+import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePairList
 import net.corda.data.identity.HoldingIdentity
 import net.corda.data.membership.common.RegistrationStatus
@@ -125,13 +125,18 @@ class QueryRegistrationRequestsHandlerTest {
                     byteArrayOf(4, 5),
                     byteArrayOf(6, 7),
                     "signatureSpec",
+                    byteArrayOf(8, 9, 10),
+                    byteArrayOf(11, 12),
+                    byteArrayOf(13, 14),
+                    "signatureSpec",
                     SERIAL,
                     "test reason"
                 )
             }
         )
 
-        val result = handler.invoke(context, QueryRegistrationRequests(null, RegistrationStatus.values().toList(), null))
+        val result =
+            handler.invoke(context, QueryRegistrationRequests(null, RegistrationStatus.values().toList(), null))
 
         assertThat(result.registrationRequests.map { it.registrationId })
             .containsAll(ids)
@@ -147,7 +152,11 @@ class QueryRegistrationRequestsHandlerTest {
             context,
             QueryRegistrationRequests(
                 null,
-                listOf(RegistrationStatus.PENDING_MANUAL_APPROVAL, RegistrationStatus.APPROVED, RegistrationStatus.DECLINED),
+                listOf(
+                    RegistrationStatus.PENDING_MANUAL_APPROVAL,
+                    RegistrationStatus.APPROVED,
+                    RegistrationStatus.DECLINED
+                ),
                 null
             )
         )
@@ -163,7 +172,7 @@ class QueryRegistrationRequestsHandlerTest {
     fun `invoke queries with correct predicates if X500 name specified in request`() {
         whenever(actualQuery.resultList).doReturn(emptyList())
         val captor = argumentCaptor<Predicate>()
-        whenever(query.where(captor.capture())).thenReturn(query)
+        whenever(query.where(captor.capture(), any())).thenReturn(query)
 
         handler.invoke(
             context,
@@ -192,6 +201,10 @@ class QueryRegistrationRequestsHandlerTest {
                     byteArrayOf(1, 2, 3),
                     byteArrayOf(4, 5),
                     byteArrayOf(6, 7),
+                    "signatureSpec",
+                    byteArrayOf(8, 9, 10),
+                    byteArrayOf(11, 12),
+                    byteArrayOf(13, 14),
                     "signatureSpec",
                     SERIAL,
                 )

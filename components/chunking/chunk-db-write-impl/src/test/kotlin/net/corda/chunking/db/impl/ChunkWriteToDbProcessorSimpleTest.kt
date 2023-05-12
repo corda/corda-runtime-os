@@ -20,7 +20,6 @@ import java.util.UUID
 class ChunkWriteToDbProcessorSimpleTest {
     companion object {
         private const val topic = "unused"
-        private const val fileName = "unused.txt"
         val validator = { _: RequestId -> parseSecureHash("SHA-256:1234567890") }
     }
 
@@ -33,7 +32,6 @@ class ChunkWriteToDbProcessorSimpleTest {
 
         val chunk = Chunk(
             requestId,
-            fileName,
             SecureHashImpl("foo", ByteArray(12)).toAvro(),
             0,
             0,
@@ -58,7 +56,6 @@ class ChunkWriteToDbProcessorSimpleTest {
 
         val chunk = Chunk(
             requestId,
-            fileName,
             SecureHashImpl("foo", ByteArray(12)).toAvro(),
             0,
             0,

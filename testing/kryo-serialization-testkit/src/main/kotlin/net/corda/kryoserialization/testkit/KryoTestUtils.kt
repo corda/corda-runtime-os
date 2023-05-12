@@ -10,12 +10,10 @@ import net.corda.sandbox.SandboxException
 import net.corda.sandbox.SandboxGroup
 import net.corda.serialization.checkpoint.CheckpointInternalCustomSerializer
 import net.corda.v5.serialization.SingletonSerializeAsToken
-import org.mockito.Mockito.`when`
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.mock
-import java.util.Arrays
-import java.util.Collections
+import org.mockito.kotlin.whenever
 
 fun createCheckpointSerializer(
     serializers: Map<Class<*>, CheckpointInternalCustomSerializer<*>> = emptyMap(),
@@ -40,27 +38,32 @@ fun createCheckpointSerializer(
 }
 
 fun mockSandboxGroup(taggedClasses: Set<Class<*>>): SandboxGroup {
-    val standardClasses = listOf(
-        String::class.java,
-        Class::class.java,
-        Arrays.asList("")::class.java,
-        ArrayList::class.java,
-        List::class.java,
-        Collections.singletonList("")::class.java,
-        ByteArray::class.java
-    )
-    return mock<SandboxGroup>().also {
+    return mock<SandboxGroup>().apply {
         var index = 0
-        val bundleClasses = (standardClasses + taggedClasses).associateBy { "${index++}" }
+        val bundleClasses = taggedClasses.associateByTo(mutableMapOf()) { "${index++}" }
         val tagCaptor = argumentCaptor<Class<*>>()
-        `when`(it.getStaticTag(tagCaptor.capture())).thenAnswer {
-            bundleClasses.keys.firstOrNull { value -> bundleClasses[value] == tagCaptor.lastValue }?.toString()
-                ?: throw SandboxException("Class ${tagCaptor.lastValue} was not loaded from any bundle.")
+        whenever(getStaticTag(tagCaptor.capture())).thenAnswer {
+            val clazz = tagCaptor.lastValue
+            if ((clazz.isJvmClass || clazz.isLambda) && (bundleClasses.putIfAbsent(index.toString(), clazz) == null)) {
+                ++index
+            }
+            bundleClasses.keys.firstOrNull { value -> bundleClasses[value] == clazz }?.toString()
+                ?: throw SandboxException("Class ${clazz.name} was not loaded from any bundle.")
         }
         val classCaptor = argumentCaptor<String>()
-        `when`(it.getClass(any(), classCaptor.capture())).thenAnswer {
-            bundleClasses[classCaptor.lastValue]
-                ?: throw SandboxException("Class ${tagCaptor.lastValue} was not loaded from any bundle.")
+        whenever(getClass(any(), classCaptor.capture())).thenAnswer {
+            val className = classCaptor.lastValue
+            bundleClasses[className]
+                ?: throw SandboxException("Class $className was not loaded from any bundle.")
         }
     }
 }
+
+private val Class<*>.isJvmClass: Boolean
+    get() = isJavaType || (isArray && componentType.isJavaType)
+
+private val Class<*>.isJavaType: Boolean
+    get() = isPrimitive || name.startsWith("java.")
+
+private val Class<*>.isLambda: Boolean
+    get() = isSynthetic && name.contains('/')

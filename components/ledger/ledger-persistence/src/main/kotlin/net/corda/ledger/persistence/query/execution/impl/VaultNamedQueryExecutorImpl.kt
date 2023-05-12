@@ -1,24 +1,21 @@
 package net.corda.ledger.persistence.query.execution.impl
 
-import net.corda.crypto.core.parseSecureHash
+import net.corda.data.KeyValuePair
+import net.corda.data.KeyValuePairList
 import net.corda.data.persistence.EntityResponse
 import net.corda.data.persistence.FindWithNamedQuery
 import net.corda.ledger.persistence.common.ComponentLeafDto
 import net.corda.ledger.persistence.query.data.VaultNamedQuery
 import net.corda.ledger.persistence.query.execution.VaultNamedQueryExecutor
 import net.corda.ledger.persistence.query.registration.VaultNamedQueryRegistry
-import net.corda.ledger.utxo.data.state.StateAndRefImpl
-import net.corda.ledger.utxo.data.state.TransactionStateImpl
-import net.corda.ledger.utxo.data.state.getEncumbranceGroup
 import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
-import net.corda.ledger.utxo.data.transaction.UtxoOutputInfoComponent
+import net.corda.ledger.utxo.data.transaction.UtxoTransactionOutputDto
 import net.corda.orm.utils.transaction
 import net.corda.persistence.common.exceptions.NullParameterException
 import net.corda.utilities.serialization.deserialize
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.StateAndRef
-import net.corda.v5.ledger.utxo.StateRef
 import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
 import javax.persistence.EntityManagerFactory
@@ -77,9 +74,10 @@ class VaultNamedQueryExecutorImpl(
         )?.results?.filterNotNull() ?: filteredAndTransformedResults
 
         // Return the filtered/transformed/collected (if present) result to the caller
-        return EntityResponse(
-            collectedResults.map { ByteBuffer.wrap(serializationService.serialize(it).bytes) }
-        )
+        return EntityResponse.newBuilder()
+            .setResults(collectedResults.map { ByteBuffer.wrap(serializationService.serialize(it).bytes) })
+            .setMetadata(KeyValuePairList(listOf(KeyValuePair("numberOfRowsFromQuery", contractStateResults.size.toString()))))
+            .build()
     }
 
     /**
@@ -100,13 +98,12 @@ class VaultNamedQueryExecutorImpl(
                             "$UTXO_TX_COMPONENT_TABLE AS tc " +
                             "JOIN $UTXO_VISIBLE_TX_TABLE AS visible_states " +
                                 "ON visible_states.transaction_id = tc.transaction_id " +
+                                "AND visible_states.leaf_idx = tc.leaf_idx " +
                             "$whereJson " +
                             "AND tc.group_idx IN (:groupIndices) " +
-                            "AND visible_states.created <= :$TIMESTAMP_LIMIT_PARAM_NAME",
+                            "AND visible_states.created <= :$TIMESTAMP_LIMIT_PARAM_NAME " +
+                            "ORDER BY tc.created, tc.transaction_id, tc.leaf_idx, tc.group_idx",
                     Tuple::class.java
-                ).setParameter("groupIndices", listOf(
-                    UtxoComponentGroup.OUTPUTS.ordinal,
-                    UtxoComponentGroup.OUTPUTS_INFO.ordinal)
                 )
 
                 request.parameters.filter { it.value != null }.forEach { rec ->
@@ -114,8 +111,17 @@ class VaultNamedQueryExecutorImpl(
                     query.setParameter(rec.key, serializationService.deserialize(bytes))
                 }
 
-                query.firstResult = request.offset
-                query.maxResults = request.limit
+            // Setting the parameter here prevents them from being set by CorDapp code.
+            query.setParameter(
+                "groupIndices",
+                listOf(
+                    UtxoComponentGroup.OUTPUTS.ordinal,
+                    UtxoComponentGroup.OUTPUTS_INFO.ordinal
+                )
+            )
+                // Each transaction will have two rows: outputs/outputs info so we need to multiply offset/result by 2
+                query.firstResult = request.offset * 2
+                query.maxResults = request.limit * 2
 
                 query.resultList as List<Tuple>
             }.map { t ->
@@ -138,13 +144,12 @@ class VaultNamedQueryExecutorImpl(
                 "Missing output info at index [${it.leafIndex}] for UTXO transaction with ID [${it.transactionId}]"
             }
 
-            val info = serializationService.deserialize<UtxoOutputInfoComponent>(serializedInfo.data)
-            val contractState = serializationService.deserialize<ContractState>(it.data)
-
-            StateAndRefImpl(
-                state = TransactionStateImpl(contractState, info.notaryName, info.notaryKey, info.getEncumbranceGroup()),
-                ref = StateRef(parseSecureHash(it.transactionId), it.leafIndex)
-            )
+            UtxoTransactionOutputDto(
+                it.transactionId,
+                it.leafIndex,
+                serializedInfo.data,
+                it.data
+            ).toStateAndRef(serializationService)
         } ?: emptyList()
     }
 

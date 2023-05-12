@@ -1,14 +1,6 @@
 plugins {
     id 'corda.common-library'
     id 'corda.common-publishing'
-    id 'corda.javadoc-generation'
-}
-
-// Temporary measure for DP2, required as a transitive dependency by simulator modules
-// This code marks this module as to be published externally.
-// TODO To be revisited prior to beta program.
-ext {
-    releasable = true
 }
 
 description 'Database Admin Implementation'
@@ -19,11 +11,18 @@ dependencies {
     compileOnly "org.osgi:osgi.annotation"
     implementation "org.slf4j:slf4j-api"
     compileOnly "org.osgi:org.osgi.service.component.annotations"
+
     implementation "org.liquibase:liquibase-core:$liquibaseVersion"
+    constraints {
+        implementation("org.yaml:snakeyaml:$snakeyamlVersion") {
+            because "required until liquibase-core updates it's internal version of snakeYaml, currently using 1.33 which has CVE-2022-1471"
+        }
+    }
 
     api project(":libs:db:db-admin")
 
     testImplementation "org.assertj:assertj-core:$assertjVersion"
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
 

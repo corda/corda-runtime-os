@@ -1,5 +1,6 @@
 package net.corda.ledger.persistence.utxo.impl
 
+import net.corda.data.KeyValuePairList
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.ledger.persistence.UtxoTransactionOutput
@@ -12,6 +13,7 @@ import net.corda.data.ledger.utxo.token.selection.key.TokenPoolCacheKey
 import net.corda.data.persistence.EntityResponse
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.persistence.utxo.UtxoOutputRecordFactory
+import net.corda.ledger.utxo.data.transaction.UtxoTransactionOutputDto
 import net.corda.messaging.api.records.Record
 import net.corda.persistence.common.ResponseFactory
 import net.corda.schema.Schemas.Services.TOKEN_CACHE_EVENT
@@ -64,7 +66,8 @@ class UtxoOutputRecordFactoryImpl(private val responseFactory: ResponseFactory) 
             externalEventContext,
             EntityResponse(
                 listOf(transactionContainer to status)
-                    .map { ByteBuffer.wrap(serializationService.serialize(it).bytes) }
+                    .map { ByteBuffer.wrap(serializationService.serialize(it).bytes) },
+                KeyValuePairList(emptyList())
             )
         )
     }
@@ -94,7 +97,7 @@ class UtxoOutputRecordFactoryImpl(private val responseFactory: ResponseFactory) 
     ): Record<String, FlowEvent> {
         return responseFactory.successResponse(
             externalEventContext,
-            EntityResponse(emptyList())
+            EntityResponse(emptyList(), KeyValuePairList(emptyList()))
         )
     }
 

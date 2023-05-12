@@ -19,8 +19,8 @@ import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.data.p2p.LinkOutHeader
 import net.corda.data.p2p.LinkOutMessage
 import net.corda.data.p2p.NetworkType
-import net.corda.data.p2p.app.UnauthenticatedMessage
-import net.corda.data.p2p.app.UnauthenticatedMessageHeader
+import net.corda.data.p2p.app.InboundUnauthenticatedMessage
+import net.corda.data.p2p.app.InboundUnauthenticatedMessageHeader
 import net.corda.p2p.gateway.messaging.ConnectionConfiguration
 import net.corda.p2p.gateway.messaging.DynamicKeyStore
 import net.corda.p2p.gateway.messaging.ReconfigurableConnectionManager
@@ -176,10 +176,8 @@ class OutboundMessageHandlerTest {
 
     @Test
     fun `onNext will write message to the client and return completed future`() {
-        val msgPayload = UnauthenticatedMessage.newBuilder().apply {
-            header = UnauthenticatedMessageHeader(
-                HoldingIdentity("A", "B"),
-                HoldingIdentity("C", "D"),
+        val msgPayload = InboundUnauthenticatedMessage.newBuilder().apply {
+            header = InboundUnauthenticatedMessageHeader(
                 "subsystem",
                 "messageId",
             )
@@ -211,10 +209,8 @@ class OutboundMessageHandlerTest {
     @Test
     fun `onNext will throw an exception if the handler is not ready`() {
         handlerStarted = false
-        val payload = UnauthenticatedMessage.newBuilder().apply {
-            header = UnauthenticatedMessageHeader(
-                HoldingIdentity("A", "B"),
-                HoldingIdentity("C", "D"),
+        val payload = InboundUnauthenticatedMessage.newBuilder().apply {
+            header = InboundUnauthenticatedMessageHeader(
                 "subsystem",
                 "messageId",
             )
@@ -236,10 +232,8 @@ class OutboundMessageHandlerTest {
 
     @Test
     fun `onNext will use the correct destination info for CORDA5`() {
-        val payload = UnauthenticatedMessage.newBuilder().apply {
-            header = UnauthenticatedMessageHeader(
-                HoldingIdentity("A", "B"),
-                HoldingIdentity("C", "D"),
+        val payload = InboundUnauthenticatedMessage.newBuilder().apply {
+            header = InboundUnauthenticatedMessageHeader(
                 "subsystem",
                 "messageId",
             )
@@ -287,10 +281,8 @@ class OutboundMessageHandlerTest {
         }
         whenever(commonComponents.dynamicKeyStore).doReturn(dynamicKeyStore)
         whenever(gatewayConfigReader.constructed().first().sslConfiguration).doReturn(sslConfig)
-        val payload = UnauthenticatedMessage.newBuilder().apply {
-            header = UnauthenticatedMessageHeader(
-                HoldingIdentity("A", "B"),
-                HoldingIdentity("C", "D"),
+        val payload = InboundUnauthenticatedMessage.newBuilder().apply {
+            header = InboundUnauthenticatedMessageHeader(
                 "subsystem",
                 "messageId",
             )
@@ -338,10 +330,8 @@ class OutboundMessageHandlerTest {
         }
         whenever(commonComponents.dynamicKeyStore).doReturn(dynamicKeyStore)
         whenever(gatewayConfigReader.constructed().first().sslConfiguration).doReturn(sslConfig)
-        val payload = UnauthenticatedMessage.newBuilder().apply {
-            header = UnauthenticatedMessageHeader(
-                HoldingIdentity("A", "B"),
-                HoldingIdentity("C", "D"),
+        val payload = InboundUnauthenticatedMessage.newBuilder().apply {
+            header = InboundUnauthenticatedMessageHeader(
                 "subsystem",
                 "messageId",
             )
@@ -365,10 +355,8 @@ class OutboundMessageHandlerTest {
 
     @Test
     fun `onNext will use the correct destination info for CORDA4`() {
-        val payload = UnauthenticatedMessage.newBuilder().apply {
-            header = UnauthenticatedMessageHeader(
-                HoldingIdentity("A", "B"),
-                HoldingIdentity("C", "D"),
+        val payload = InboundUnauthenticatedMessage.newBuilder().apply {
+            header = InboundUnauthenticatedMessageHeader(
                 "subsystem",
                 "messageId",
             )
@@ -403,10 +391,8 @@ class OutboundMessageHandlerTest {
 
     @Test
     fun `onNext will not send anything for invalid arguments`() {
-        val payload = UnauthenticatedMessage.newBuilder().apply {
-            header = UnauthenticatedMessageHeader(
-                HoldingIdentity("A", "B"),
-                HoldingIdentity("C", "D"),
+        val payload = InboundUnauthenticatedMessage.newBuilder().apply {
+            header = InboundUnauthenticatedMessageHeader(
                 "subsystem",
                 "messageId",
             )
@@ -430,10 +416,8 @@ class OutboundMessageHandlerTest {
 
     @Test
     fun `onNext will not send anything for invalid URL`() {
-        val msgPayload = UnauthenticatedMessage.newBuilder().apply {
-            header = UnauthenticatedMessageHeader(
-                HoldingIdentity("A", "B"),
-                HoldingIdentity("C", "D"),
+        val msgPayload = InboundUnauthenticatedMessage.newBuilder().apply {
+            header = InboundUnauthenticatedMessageHeader(
                 "subsystem",
                 "messageId",
             )
@@ -454,10 +438,8 @@ class OutboundMessageHandlerTest {
 
     @Test
     fun `onNext will not send anything for wrong scheme URL`() {
-        val msgPayload = UnauthenticatedMessage.newBuilder().apply {
-            header = UnauthenticatedMessageHeader(
-                HoldingIdentity("A", "B"),
-                HoldingIdentity("C", "D"),
+        val msgPayload = InboundUnauthenticatedMessage.newBuilder().apply {
+            header = InboundUnauthenticatedMessageHeader(
                 "subsystem",
                 "messageId",
             )
@@ -478,10 +460,8 @@ class OutboundMessageHandlerTest {
 
     @Test
     fun `onNext will get the trust store from the trust store map`() {
-        val payload = UnauthenticatedMessage.newBuilder().apply {
-            header = UnauthenticatedMessageHeader(
-                HoldingIdentity("A", "B"),
-                HoldingIdentity("C", "D"),
+        val payload = InboundUnauthenticatedMessage.newBuilder().apply {
+            header = InboundUnauthenticatedMessageHeader(
                 "subsystem",
                 "messageId",
             )
@@ -515,10 +495,8 @@ class OutboundMessageHandlerTest {
                 // simulate scenario where no response is received.
             }
         }
-        val msgPayload = UnauthenticatedMessage.newBuilder().apply {
-            header = UnauthenticatedMessageHeader(
-                HoldingIdentity("A", "B"),
-                HoldingIdentity("C", "D"),
+        val msgPayload = InboundUnauthenticatedMessage.newBuilder().apply {
+            header = InboundUnauthenticatedMessageHeader(
                 "subsystem",
                 "messageId",
             )
@@ -555,10 +533,8 @@ class OutboundMessageHandlerTest {
                 CompletableFuture.failedFuture(RuntimeException("some error happened"))
             }
         }
-        val msgPayload = UnauthenticatedMessage.newBuilder().apply {
-            header = UnauthenticatedMessageHeader(
-                HoldingIdentity("A", "B"),
-                HoldingIdentity("C", "D"),
+        val msgPayload = InboundUnauthenticatedMessage.newBuilder().apply {
+            header = InboundUnauthenticatedMessageHeader(
                 "subsystem",
                 "messageId",
             )
@@ -600,10 +576,8 @@ class OutboundMessageHandlerTest {
                 CompletableFuture.completedFuture(response)
             }
         }
-        val msgPayload = UnauthenticatedMessage.newBuilder().apply {
-            header = UnauthenticatedMessageHeader(
-                HoldingIdentity("A", "B"),
-                HoldingIdentity("C", "D"),
+        val msgPayload = InboundUnauthenticatedMessage.newBuilder().apply {
+            header = InboundUnauthenticatedMessageHeader(
                 "subsystem",
                 "messageId",
             )
@@ -643,10 +617,8 @@ class OutboundMessageHandlerTest {
                 CompletableFuture.completedFuture(response)
             }
         }
-        val msgPayload = UnauthenticatedMessage.newBuilder().apply {
-            header = UnauthenticatedMessageHeader(
-                HoldingIdentity("A", "B"),
-                HoldingIdentity("C", "D"),
+        val msgPayload = InboundUnauthenticatedMessage.newBuilder().apply {
+            header = InboundUnauthenticatedMessageHeader(
                 "subsystem",
                 "messageId",
             )

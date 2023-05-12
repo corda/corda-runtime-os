@@ -3,8 +3,8 @@ package net.corda.membership.impl.network.writer.staticnetwork
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.node.ObjectNode
 import net.corda.crypto.cipher.suite.KeyEncodingService
-import net.corda.data.CordaAvroSerializationFactory
-import net.corda.data.CordaAvroSerializer
+import net.corda.avro.serialization.CordaAvroSerializationFactory
+import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.KeyValuePairList
 import net.corda.libs.packaging.Cpi
 import net.corda.libs.packaging.core.CpiMetadata

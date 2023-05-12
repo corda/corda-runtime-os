@@ -8,8 +8,8 @@ import net.corda.crypto.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.crypto.core.bytes
 import net.corda.crypto.core.toAvro
 import net.corda.crypto.core.toCorda
-import net.corda.data.CordaAvroDeserializer
-import net.corda.data.CordaAvroSerializationFactory
+import net.corda.avro.serialization.CordaAvroDeserializer
+import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
@@ -294,19 +294,19 @@ class MemberSynchronisationServiceImpl internal constructor(
                 cancelCurrentRequestAndScheduleNewOne(viewOwningMember, mgm)
                 val updateMembersInfo = updates.membershipPackage.memberships.memberships.map { update ->
                     verifier.verify(
-                        update.memberSignature,
-                        update.memberSignatureSpec,
-                        update.memberContext.array()
+                        update.memberContext.signature,
+                        update.memberContext.signatureSpec,
+                        update.memberContext.data.array()
                     )
                     verifyMgmSignature(
-                        update.mgmSignature,
-                        update.mgmSignatureSpec,
-                        update.memberContext.array(),
-                        update.mgmContext.array(),
+                        update.mgmContext.signature,
+                        update.mgmContext.signatureSpec,
+                        update.memberContext.data.array(),
+                        update.mgmContext.data.array(),
                     )
-                    val memberContext = deserializer.deserialize(update.memberContext.array())
+                    val memberContext = deserializer.deserialize(update.memberContext.data.array())
                         ?: throw CordaRuntimeException("Invalid member context")
-                    val mgmContext = deserializer.deserialize(update.mgmContext.array())
+                    val mgmContext = deserializer.deserialize(update.mgmContext.data.array())
                         ?: throw CordaRuntimeException("Invalid MGM context")
                     memberInfoFactory.create(
                         memberContext.toSortedMap(),
@@ -338,9 +338,10 @@ class MemberSynchronisationServiceImpl internal constructor(
                 } else {
                     val knownMembers = groupReader.lookup(MembershipStatusFilter.ACTIVE_OR_SUSPENDED)
                         .filter { !it.isMgm }.associateBy { it.id }
-                    val updatedViewOwner = updateMembersInfo[viewOwningMember.shortHash.value]
-                    val expectedHash = if (updatedViewOwner?.status == MEMBER_STATUS_SUSPENDED) {
-                        merkleTreeGenerator.generateTree(listOf(updatedViewOwner)).root
+                    val viewOwnerShortHash = viewOwningMember.shortHash.value
+                    val latestViewOwnerMemberInfo = updateMembersInfo[viewOwnerShortHash] ?: knownMembers[viewOwnerShortHash]
+                    val expectedHash = if (latestViewOwnerMemberInfo?.status == MEMBER_STATUS_SUSPENDED) {
+                        merkleTreeGenerator.generateTree(listOf(latestViewOwnerMemberInfo)).root
                     } else {
                         val allMembers = knownMembers + updateMembersInfo
                         merkleTreeGenerator.generateTree(allMembers.values).root

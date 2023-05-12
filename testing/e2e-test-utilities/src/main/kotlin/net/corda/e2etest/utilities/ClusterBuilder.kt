@@ -16,7 +16,7 @@ import java.nio.file.Paths
 class ClusterBuilder {
     private var client: HttpsClient? = null
 
-    fun endpoint(uri: URI, username: String, password: String) {
+    private fun endpoint(uri: URI, username: String, password: String) {
         client = UnirestHttpsClient(uri, username, password)
     }
 
@@ -37,14 +37,13 @@ class ClusterBuilder {
 
     private fun uploadCpiResource(
         cmd: String,
-        resourceName: String,
+        cpbResourceName: String?,
         groupPolicy: String,
         cpiName: String,
         cpiVersion: String
     ): SimpleResponse {
-        val fileName = Paths.get(resourceName).fileName.toString()
-        return CpiLoader.get(resourceName, groupPolicy, cpiName, cpiVersion).use {
-            client!!.postMultiPart(cmd, emptyMap(), mapOf("upload" to HttpsClientFileUpload(it, fileName)))
+        return CpiLoader.get(cpbResourceName, groupPolicy, cpiName, cpiVersion).use {
+            client!!.postMultiPart(cmd, emptyMap(), mapOf("upload" to HttpsClientFileUpload(it, cpiName)))
         }
     }
 
@@ -87,36 +86,39 @@ class ClusterBuilder {
     fun importCertificate(file: File, usage: String, alias: String) =
         uploadCertificateFile("/api/v1/certificates/cluster/$usage", file, alias)
 
+    fun getCertificateChain(usage: String, alias: String) =
+        client!!.get("/api/v1/certificates/cluster/$usage/$alias")
+
     /** Assumes the resource *is* a CPB */
     fun cpbUpload(resourceName: String) = uploadUnmodifiedResource("/api/v1/cpi/", resourceName)
 
     /** Assumes the resource is a CPB and converts it to CPI by adding a group policy file */
     fun cpiUpload(
-        resourceName: String,
+        cpbResourceName: String,
         groupId: String,
         staticMemberNames: List<String>,
         cpiName: String,
         cpiVersion: String = "1.0.0.0-SNAPSHOT"
     ) = cpiUpload(
-        resourceName,
+        cpbResourceName,
         getDefaultStaticNetworkGroupPolicy(groupId, staticMemberNames),
         cpiName,
         cpiVersion
     )
 
     fun cpiUpload(
-        resourceName: String,
+        cpbResourceName: String?,
         groupPolicy: String,
         cpiName: String,
         cpiVersion: String = "1.0.0.0-SNAPSHOT"
-    ) = uploadCpiResource("/api/v1/cpi/", resourceName, groupPolicy, cpiName, cpiVersion)
+    ) = uploadCpiResource("/api/v1/cpi/", cpbResourceName, groupPolicy, cpiName, cpiVersion)
 
     fun updateVirtualNodeState(holdingIdHash: String, newState: String) =
         put("/api/v1/virtualnode/$holdingIdHash/state/$newState", "")
 
     /** Assumes the resource is a CPB and converts it to CPI by adding a group policy file */
     fun forceCpiUpload(
-        resourceName: String,
+        cpbResourceName: String?,
         groupId: String,
         staticMemberNames: List<String>,
         cpiName: String,
@@ -124,7 +126,7 @@ class ClusterBuilder {
     ) =
         uploadCpiResource(
             "/api/v1/maintenance/virtualnode/forcecpiupload/",
-            resourceName,
+            cpbResourceName,
             getDefaultStaticNetworkGroupPolicy(groupId, staticMemberNames),
             cpiName,
             cpiVersion
@@ -146,13 +148,12 @@ class ClusterBuilder {
     private fun registerMemberBody() =
         """{ "context": { "corda.key.scheme" : "CORDA.ECDSA.SECP256R1" } }""".trimMargin()
 
-    // TODO CORE-7248 Review once plugin loading logic is added
-    private fun registerNotaryBody() =
+    private fun registerNotaryBody(holdingIdShortHash: String) =
         """{ 
             |  "context": { 
             |    "corda.key.scheme" : "CORDA.ECDSA.SECP256R1", 
             |    "corda.roles.0" : "notary",
-            |    "corda.notary.service.name" : "O=MyNotaryService, L=London, C=GB",
+            |    "corda.notary.service.name" : "O=MyNotaryService-${holdingIdShortHash}, L=London, C=GB",
             |    "corda.notary.service.flow.protocol.name" : "com.r3.corda.notary.plugin.nonvalidating",
             |    "corda.notary.service.flow.protocol.version.0" : "1"
             |   } 
@@ -178,12 +179,16 @@ class ClusterBuilder {
     fun getVNodeStatus(requestId: String) = client!!.get("/api/v1/virtualnode/status/$requestId")
 
     /**
-     * Register a member to the network
+     * Register a member to the network.
+     *
+     * KNOWN LIMITATION: Registering a notary static member will currently always provision a new
+     * notary service. This is fine for now as we only support a 1-1 mapping from notary service to
+     * notary vnode. It will need revisiting when 1-* is supported.
      */
     fun registerStaticMember(holdingIdShortHash: String, isNotary: Boolean = false) =
         register(
             holdingIdShortHash,
-            if (isNotary) registerNotaryBody() else registerMemberBody()
+            if (isNotary) registerNotaryBody(holdingIdShortHash) else registerMemberBody()
         )
 
     fun register(holdingIdShortHash: String, registrationContext: String) =
@@ -233,6 +238,10 @@ class ClusterBuilder {
     /** Get status of multiple flows */
     fun multipleFlowStatus(holdingIdentityShortHash: String) =
         get("/api/v1/flow/$holdingIdentityShortHash")
+
+    /** Get result of a flow execution */
+    fun flowResult(holdingIdentityShortHash: String, clientRequestId: String) =
+        get("/api/v1/flow/$holdingIdentityShortHash/$clientRequestId/result")
 
     /** Get status of multiple flows */
     fun runnableFlowClasses(holdingIdentityShortHash: String) =
@@ -304,9 +313,8 @@ class ClusterBuilder {
         )
 }
 
-fun <T> cluster(initialize: ClusterBuilder.() -> T): T = ClusterBuilder().let(initialize)
+fun <T> cluster(initialize: ClusterBuilder.() -> T): T = DEFAULT_CLUSTER.cluster(initialize)
 
-fun <T> cluster(
-    clusterInfo: ClusterInfo,
+fun <T> ClusterInfo.cluster(
     initialize: ClusterBuilder.() -> T
-): T = ClusterBuilder().apply { init(clusterInfo) }.let(initialize)
+): T = ClusterBuilder().apply { init(this@cluster) }.let(initialize)

@@ -5,5 +5,5 @@ plugins {
 dependencies {
     compileOnly platform("net.corda:corda-api:$cordaApiVersion")
     compileOnly 'org.osgi:osgi.core'
-    compileOnly "org.jetbrains:annotations:$jetbrainsAnnotationsVersion"
+    compileOnly 'org.jetbrains:annotations'
 }
