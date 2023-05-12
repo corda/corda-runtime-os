@@ -40,6 +40,7 @@ class InitiateFlowAcceptanceTest : FlowServiceTestBase() {
         then {
             expectOutputForFlow(FLOW_ID1) {
                 sessionInitEvents(SESSION_ID_1)
+                flowFiberCacheContainsKey(ALICE_HOLDING_IDENTITY, REQUEST_ID1)
             }
         }
     }
@@ -61,7 +62,7 @@ class InitiateFlowAcceptanceTest : FlowServiceTestBase() {
     @Test
     fun `Requesting counterparty info from the flow engine that has already sent a session init event does not send another SessionInit`
                 () {
-        `given` {
+        given {
             startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
                 .suspendsWith(FlowIORequest.Send(mapOf(SessionInfo(SESSION_ID_1, initiatedIdentityMemberName) to DATA_MESSAGE_0)))
         }
@@ -115,6 +116,7 @@ class InitiateFlowAcceptanceTest : FlowServiceTestBase() {
                 flowResumedWith(Unit)
                 flowStatus(FlowStates.RUNNING)
                 sessionConfirmEvents(INITIATED_SESSION_ID_1)
+                flowFiberCacheContainsKey(BOB_HOLDING_IDENTITY, INITIATED_SESSION_ID_1)
             }
         }
     }

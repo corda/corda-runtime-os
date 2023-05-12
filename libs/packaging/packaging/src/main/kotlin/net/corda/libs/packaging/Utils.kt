@@ -14,6 +14,7 @@ import java.security.cert.X509Certificate
 import java.util.Arrays
 import java.util.jar.JarEntry
 import java.util.jar.Manifest
+import javax.naming.ldap.LdapName
 
 internal val secureHashComparator = Comparator.nullsFirst(
     Comparator.comparing(SecureHash::getAlgorithm)
@@ -69,11 +70,26 @@ fun Sequence<Certificate>.signerSummaryHash(): SecureHash {
         it as? X509Certificate
             ?: throw IllegalArgumentException("Certificate should be of type ${X509Certificate::class.java.name}")
         // NOTE: this should NOT use MemberX500Name as we don't need/want to apply Corda Member restrictions
-        it.subjectX500Principal.name.toByteArray().hash()
+        LdapName(it.subjectX500Principal.name).filterSupportedAttributes().toByteArray().hash()
     }.summaryHash()
 
     return summaryHash
         ?: throw IllegalArgumentException("Summary Hash cannot be null. There must be at least one valid signature")
+}
+
+internal val X500_NAME_SUPPORTED_ATTRIBUTES = linkedSetOf("CN", "OU", "O", "L", "ST", "C")
+
+private fun LdapName.filterSupportedAttributes(): String {
+    val includedAttributes = rdns.filter {
+        it.type in X500_NAME_SUPPORTED_ATTRIBUTES
+    }
+
+    val sorted = includedAttributes.sortedWith { rdn1, rdn2 ->
+        X500_NAME_SUPPORTED_ATTRIBUTES.indexOf(rdn1.type) -
+                X500_NAME_SUPPORTED_ATTRIBUTES.indexOf(rdn2.type)
+    }
+
+    return LdapName(sorted).toString()
 }
 
 fun Collection<Certificate>.signerSummaryHashForRequiredSigners(): SecureHash {
