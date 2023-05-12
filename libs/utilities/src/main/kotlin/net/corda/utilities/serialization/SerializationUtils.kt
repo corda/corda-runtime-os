@@ -39,7 +39,6 @@ inline fun <reified T : Any> SerializationService.deserialize(bytes: ByteArray):
  * @param f the block to wrap
  * @return type T
  */
-
 inline fun <reified T : Any> wrapWithNullErrorHandling(
     onErrorOrNull: (cause: Exception) -> Exception,
     f: () -> T?

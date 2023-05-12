@@ -33,7 +33,7 @@ internal class PersistMemberInfoHandler(
 
     private fun serializeContext(context: KeyValuePairList): ByteArray {
         return wrapWithNullErrorHandling({
-            throw MembershipPersistenceException("Failed to serialize key value pair list.", it)
+            MembershipPersistenceException("Failed to serialize key value pair list.", it)
         }) {
             keyValuePairListSerializer.serialize(context)
         }
