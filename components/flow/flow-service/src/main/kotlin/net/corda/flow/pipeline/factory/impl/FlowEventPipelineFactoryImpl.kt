@@ -125,7 +125,7 @@ class FlowEventPipelineFactoryImpl(
             flowGlobalPostProcessor,
             context,
             virtualNodeInfoReadService,
-            flowFiberCache
+            flowFiberCache,
             flowIORequestTypeConverter
         )
     }
