@@ -6,18 +6,22 @@ import net.corda.data.flow.state.checkpoint.Checkpoint
 import net.corda.flow.FLOW_ID_1
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.fiber.cache.FlowFiberCache
+import net.corda.flow.metrics.FlowIORequestTypeConverter
+import net.corda.flow.metrics.FlowMetricsFactory
 import net.corda.flow.pipeline.FlowGlobalPostProcessor
 import net.corda.flow.pipeline.factory.impl.FlowEventPipelineFactoryImpl
 import net.corda.flow.pipeline.handlers.events.FlowEventHandler
 import net.corda.flow.pipeline.handlers.requests.FlowRequestHandler
 import net.corda.flow.pipeline.handlers.waiting.FlowWaitingForHandler
 import net.corda.flow.pipeline.impl.FlowEventPipelineImpl
+import net.corda.flow.pipeline.metrics.FlowMetrics
 import net.corda.flow.pipeline.runner.FlowRunner
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.flow.state.impl.FlowCheckpointFactory
 import net.corda.flow.test.utils.buildFlowEventContext
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 
@@ -29,7 +33,11 @@ class FlowEventPipelineFactoryImplTest {
     private val flowCheckpoint = mock<FlowCheckpoint>()
     private val flowRunner = mock<FlowRunner>()
     private val flowEventContext = buildFlowEventContext(flowCheckpoint, flowEvent.payload)
-
+    private val flowMetrics = flowEventContext.flowMetrics
+    private val flowMetricsFactory= mock<FlowMetricsFactory>().apply {
+        whenever(create(any(),any())).thenReturn(flowMetrics)
+    }
+    private val flowIORequestTypeConverter = mock<FlowIORequestTypeConverter>()
     private val config = flowEventContext.config
     private val flowCheckpointFactory = mock<FlowCheckpointFactory>().also { factory ->
         whenever(factory.create(FLOW_ID_1, checkpoint, config)).thenReturn(flowCheckpoint)
@@ -57,6 +65,8 @@ class FlowEventPipelineFactoryImplTest {
         flowCheckpointFactory,
         mock(),
         flowFiberCache,
+        flowMetricsFactory,
+        flowIORequestTypeConverter,
         listOf(flowEventHandler),
         listOf(flowWaitingForHandler),
         listOf(flowRequestHandler)
@@ -64,6 +74,7 @@ class FlowEventPipelineFactoryImplTest {
 
     @Test
     fun `Creates a FlowEventPipeline instance`() {
+
         val expected = FlowEventPipelineImpl(
             mapOf(Wakeup::class.java to flowEventHandler),
             mapOf(net.corda.data.flow.state.waiting.Wakeup::class.java to flowWaitingForHandler),
@@ -72,9 +83,10 @@ class FlowEventPipelineFactoryImplTest {
             flowGlobalPostProcessor,
             flowEventContext,
             mock(),
-            flowFiberCache
+            flowFiberCache,
+            flowIORequestTypeConverter
         )
-        val result = factory.create(checkpoint, flowEvent, config, emptyMap())
+        val result = factory.create(checkpoint, flowEvent, config, emptyMap(),0)
         assertEquals(expected.context, result.context)
     }
 }
