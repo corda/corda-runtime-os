@@ -101,10 +101,9 @@ class NetworkInfoDBWriterImpl(
                 .genKeyPair()
                 .let { it.public.encoded to it.private.encoded }
 
-            val serializedParams = wrapWithNullErrorHandling(
-                "Failed to serialize KeyValuePairList for static network group parameters.",
-                CordaRuntimeException::class.java
-            ) {
+            val serializedParams = wrapWithNullErrorHandling({
+                throw CordaRuntimeException("Failed to serialize KeyValuePairList for static network group parameters.")
+            }) {
                 serializer.serialize(
                     KeyValuePairList(
                         listOf(

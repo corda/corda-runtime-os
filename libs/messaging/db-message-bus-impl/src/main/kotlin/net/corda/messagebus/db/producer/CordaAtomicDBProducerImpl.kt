@@ -54,7 +54,7 @@ class CordaAtomicDBProducerImpl(
             val offset = writeOffsets.getNextOffsetFor(CordaTopicPartition(record.topic, partition))
             try {
                 val serializedKey =
-                    wrapWithNullErrorHandling("Failed to serialize key", CordaMessageAPIFatalException::class.java) {
+                    wrapWithNullErrorHandling({ throw CordaMessageAPIFatalException("Failed to serialize key") }) {
                         serializer.serialize(record.key)
                     }
                 val serializedValue = if (record.value != null) {

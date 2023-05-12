@@ -62,10 +62,9 @@ class GroupParametersFactoryImpl @Activate constructor(
         )
     }
 
-    override fun create(parameters: KeyValuePairList): UnsignedGroupParameters = wrapWithNullErrorHandling(
-        "Failed to serialize the GroupParameters to KeyValuePairList",
-        FailedGroupParametersSerialization::class.java
-    ) {
+    override fun create(parameters: KeyValuePairList): UnsignedGroupParameters = wrapWithNullErrorHandling({
+        throw FailedGroupParametersSerialization("Failed to serialize the GroupParameters to KeyValuePairList")
+    }) {
         avroSerializer.serialize(parameters)?.toUnsignedGroupParameters()
     }
 

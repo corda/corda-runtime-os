@@ -68,10 +68,9 @@ internal class UpdateMemberAndRegistrationRequestToApprovedHandler(
                 }
             )
 
-            val serializedMgmContext = wrapWithNullErrorHandling(
-                "Can not serialize the mgm context",
-                MembershipPersistenceException::class.java
-            ) {
+            val serializedMgmContext = wrapWithNullErrorHandling({
+                throw MembershipPersistenceException("Can not serialize the mgm context")
+            }) {
                 keyValuePairListSerializer.serialize(mgmContext)
             }
 

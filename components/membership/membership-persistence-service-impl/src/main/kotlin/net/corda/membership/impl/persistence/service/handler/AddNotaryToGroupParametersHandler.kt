@@ -47,10 +47,9 @@ internal class AddNotaryToGroupParametersHandler(
     private val notaryUpdater = GroupParametersNotaryUpdater(keyEncodingService, clock)
 
     private fun serializeProperties(context: KeyValuePairList): ByteArray {
-        return wrapWithNullErrorHandling(
-            "Failed to serialize key value pair list.",
-            MembershipPersistenceException::class.java
-        ) {
+        return wrapWithNullErrorHandling( onErrorOrNull = {
+           throw MembershipPersistenceException("Failed to serialize key value pair list.", it)
+        }) {
             keyValuePairListSerializer.serialize(context)
         }
     }

@@ -73,7 +73,7 @@ class CordaTransactionalDBProducerImpl(
 
             try {
                 val serialisedKey =
-                    wrapWithNullErrorHandling("Failed to serialize key", CordaMessageAPIFatalException::class.java) {
+                    wrapWithNullErrorHandling({ throw CordaMessageAPIFatalException("Failed to serialize key") }) {
                         serializer.serialize(record.key)
                     }
                 val serialisedValue = if (record.value != null) {

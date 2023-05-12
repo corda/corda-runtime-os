@@ -25,10 +25,11 @@ internal class PersistGroupPolicyHandler(
         )
 
     private fun serializeProperties(context: KeyValuePairList): ByteArray {
-        return wrapWithNullErrorHandling(
-            "Failed to serialize key value pair list.",
-            MembershipPersistenceException::class.java
-        ) {
+        return wrapWithNullErrorHandling({
+            throw MembershipPersistenceException(
+                "Failed to serialize key value pair list."
+            )
+        }) {
             keyValuePairListSerializer.serialize(context)
         }
     }

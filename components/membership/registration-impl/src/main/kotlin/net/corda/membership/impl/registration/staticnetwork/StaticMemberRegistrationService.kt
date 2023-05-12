@@ -334,15 +334,11 @@ class StaticMemberRegistrationService(
 
     private fun persistRegistrationRequest(registrationId: UUID, memberInfo: MemberInfo) {
         val memberContext = wrapWithNullErrorHandling(
-            "Failed to serialize the member context for this request.",
-            IllegalArgumentException::class.java
-        ) {
+            { throw IllegalArgumentException("Failed to serialize the member context for this request.") }) {
             keyValuePairListSerializer.serialize(memberInfo.memberProvidedContext.toAvro())
         }
         val registrationContext = wrapWithNullErrorHandling(
-            "Failed to serialize the registration context for this request.",
-            IllegalArgumentException::class.java
-        ) {
+            { throw IllegalArgumentException("Failed to serialize the registration context for this request.") }) {
             keyValuePairListSerializer.serialize(KeyValuePairList(emptyList()))
         }
         persistenceClient.persistRegistrationRequest(

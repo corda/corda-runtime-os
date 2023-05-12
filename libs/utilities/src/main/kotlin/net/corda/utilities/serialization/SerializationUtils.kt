@@ -1,4 +1,5 @@
 @file:JvmName("SerializationUtils")
+
 package net.corda.utilities.serialization
 
 import net.corda.v5.application.serialization.SerializationService
@@ -34,16 +35,18 @@ inline fun <reified T : Any> SerializationService.deserialize(bytes: ByteArray):
  * Wrap with null error handling
  *
  * @param T The return type expected
- * @param E The exception type to throw
- * @param message The message to pass tot the exception on failure
- * @param exClazz The exception class
+ * @param onErrorOrNull what to throw on error or null
  * @param f the block to wrap
  * @return type T
  */
-inline fun <reified T: Any, E: Exception>wrapWithNullErrorHandling(message: String, exClazz: Class<E>, f: () -> T?): T = try {
-    f()?: throw exClazz.getDeclaredConstructor().newInstance(message)
-} catch (ex: CordaRuntimeException) {
-    throw exClazz.getDeclaredConstructor().newInstance(message, ex)
+
+inline fun <reified T : Any> wrapWithNullErrorHandling(
+    onErrorOrNull: (cause: Exception) -> Exception,
+    f: () -> T?
+): T = try {
+    f() ?: throw onErrorOrNull(SerializationException())
 } catch (ex: Exception) {
-    throw CordaRuntimeException(message, ex)
+    throw onErrorOrNull(ex)
 }
+
+class SerializationException : CordaRuntimeException("Failed to serialize")

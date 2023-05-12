@@ -12,17 +12,16 @@ class SerializationUtilsTest {
     @Test
     fun `test wrapWithNullErrorHandling - null value`() {
         assertThrows<CordaRuntimeException>(message = "Failed - null") {
-            wrapWithNullErrorHandling("Failed - null", CordaRuntimeException::class.java) { null }
+            wrapWithNullErrorHandling({ throw CordaRuntimeException("Failed - null") }) { null }
         }
     }
 
     @Test
     fun `test wrapWithNullErrorHandling - exception thrown`() {
         val ex = assertThrows<CordaRuntimeException>(message = "Failed - Throws") {
-            wrapWithNullErrorHandling(
-                "Failed - Throws",
-                CordaRuntimeException::class.java
-            ) { throw TestException("sub message") }
+            wrapWithNullErrorHandling({
+                throw CordaRuntimeException("Failed - Throws")
+            }) { throw TestException("sub message") }
         }
 
         assertEquals(ex.cause!!::class.java, TestException::class.java)
@@ -32,9 +31,11 @@ class SerializationUtilsTest {
     @Test
     fun `test wrapWithNullErrorHandling - no error`() {
         assertDoesNotThrow {
-            assertEquals("return value", wrapWithNullErrorHandling("never will be thrown", CordaRuntimeException::class.java) {
-                "return value"
-            })
+            assertEquals(
+                "return value",
+                wrapWithNullErrorHandling({ throw CordaRuntimeException("never will be thrown") }) {
+                    "return value"
+                })
         }
     }
 
