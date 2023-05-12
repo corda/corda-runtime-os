@@ -1,0 +1,13 @@
+plugins {
+    id 'corda.common-publishing'
+    id 'corda.common-library'
+}
+
+description 'Member group registration management API'
+
+dependencies {
+    compileOnly "org.osgi:osgi.annotation"
+    implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation project(":libs:lifecycle:lifecycle")
+}

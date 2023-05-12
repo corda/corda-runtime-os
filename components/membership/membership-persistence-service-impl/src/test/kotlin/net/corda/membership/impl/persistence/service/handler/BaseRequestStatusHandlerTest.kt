@@ -9,6 +9,7 @@ import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.membership.datamodel.RegistrationRequestEntity
+import net.corda.membership.db.lib.toDetails
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.SoftAssertions.assertSoftly
@@ -91,9 +92,7 @@ class BaseRequestStatusHandlerTest {
 
     @Test
     fun `toDetails returns the correct details`() {
-        val details = with(handler) {
-            entity.toDetails()
-        }
+        val details = entity.toDetails(handler.keyValuePairListDeserializer)
 
         assertSoftly {softly ->
             softly.assertThat(details.registrationId).isEqualTo(REGISTRATION_ID)
@@ -144,9 +143,7 @@ class BaseRequestStatusHandlerTest {
             REASON,
         )
 
-        val details = with(handler) {
-            entityWithEmptySignatureSpec.toDetails()
-        }
+        val details = entityWithEmptySignatureSpec.toDetails(handler.keyValuePairListDeserializer)
         assertThat(details.memberSignatureSpec)
             .isEqualTo(CryptoSignatureSpec(emptySpec, null, null))
     }
@@ -171,9 +168,7 @@ class BaseRequestStatusHandlerTest {
         )
 
         assertThrows<MembershipPersistenceException> {
-            with(handler) {
-                entityWithInvalidStatus.toDetails()
-            }
+            entityWithInvalidStatus.toDetails(handler.keyValuePairListDeserializer)
         }
     }
 
@@ -188,9 +183,7 @@ class BaseRequestStatusHandlerTest {
             )
         )
 
-        val details = with(handler) {
-            entity.toDetails()
-        }
+        val details = entity.toDetails(handler.keyValuePairListDeserializer)
 
         assertThat(details.registrationProtocolVersion).isEqualTo(122)
     }
@@ -206,9 +199,7 @@ class BaseRequestStatusHandlerTest {
             )
         )
 
-        val details = with(handler) {
-            entity.toDetails()
-        }
+        val details = entity.toDetails(handler.keyValuePairListDeserializer)
 
         assertThat(details.registrationProtocolVersion).isEqualTo(1)
     }
@@ -224,9 +215,7 @@ class BaseRequestStatusHandlerTest {
             )
         )
 
-        val details = with(handler) {
-            entity.toDetails()
-        }
+        val details = entity.toDetails(handler.keyValuePairListDeserializer)
 
         assertThat(details.registrationProtocolVersion).isEqualTo(1)
     }
@@ -241,9 +230,7 @@ class BaseRequestStatusHandlerTest {
             )
         )
 
-        val details = with(handler) {
-            entity.toDetails()
-        }
+        val details = entity.toDetails(handler.keyValuePairListDeserializer)
 
         assertThat(details.registrationProtocolVersion).isEqualTo(1)
     }
@@ -252,9 +239,7 @@ class BaseRequestStatusHandlerTest {
     fun `toDetails return default protocol version if context is null`() {
         whenever(keyValuePairListDeserializer.deserialize(memberContext)).doReturn(KeyValuePairList())
 
-        val details = with(handler) {
-            entity.toDetails()
-        }
+        val details = entity.toDetails(handler.keyValuePairListDeserializer)
 
         assertThat(details.registrationProtocolVersion).isEqualTo(1)
     }
@@ -279,9 +264,7 @@ class BaseRequestStatusHandlerTest {
             SERIAL,
         )
 
-        val details = with(handler) {
-            entity.toDetails()
-        }
+        val details = entity.toDetails(handler.keyValuePairListDeserializer)
 
         assertThat(details.reason).isNull()
     }

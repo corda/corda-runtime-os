@@ -1,0 +1,82 @@
+plugins {
+    id 'corda.common-publishing'
+    id 'corda.common-library'
+    //id 'corda.osgi-test-conventions'
+}
+
+description 'Registration service management implementations'
+
+dependencies {
+    compileOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
+    compileOnly 'org.osgi:org.osgi.service.component.annotations'
+    compileOnly "org.osgi:osgi.annotation"
+
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+
+    implementation project(":components:membership:registration-management")
+    implementation project(":components:configuration:configuration-read-service")
+    //implementation project(":components:crypto:crypto-client")
+    //implementation project(":components:crypto:crypto-client-hsm")
+    //implementation project(':components:crypto:crypto-hes')
+    implementation project(":components:membership:group-params-writer-service")
+    //implementation project(":components:membership:group-policy")
+    implementation project(":components:membership:membership-group-read")
+    implementation project(":components:membership:membership-persistence-client")
+    implementation project(':components:db:db-connection-manager')
+    implementation project(':components:membership:membership-p2p')
+    //implementation project(":components:membership:registration")
+    //implementation project(':components:membership:locally-hosted-identities-service')
+    implementation project(":components:virtual-node:virtual-node-info-read-service")
+    //implementation project(":libs:configuration:configuration-core")
+    //implementation project(':libs:crypto:cipher-suite')
+    //implementation project(":libs:crypto:crypto-core")
+    //implementation project(":libs:lifecycle:lifecycle")
+    //implementation project(":libs:membership:membership-impl")
+    //implementation project(":libs:membership:schema-validation")
+    implementation project(':libs:membership:membership-persistence-common')
+    implementation project(':libs:membership:membership-common')
+    implementation project(":libs:messaging:messaging")
+    implementation project(":libs:layered-property-map")
+    //implementation project(":libs:platform-info")
+    //implementation project(":libs:schema-registry:schema-registry")
+    implementation project(":libs:serialization:serialization-avro")
+    //implementation project(":libs:utilities")
+    implementation project(":libs:utilities")
+    //implementation project(":libs:virtual-node:virtual-node-info")
+
+    //implementation "com.typesafe:config:$typeSafeConfigVersion"
+    //implementation "net.corda:corda-base"
+    implementation 'net.corda:corda-db-schema'
+    implementation "net.corda:corda-config-schema"
+    //implementation "net.corda:corda-membership"
+    implementation "net.corda:corda-topic-schema"
+    implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
+
+    //testImplementation project(":libs:lifecycle:lifecycle-test-impl")
+    //testRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
+
+    //integrationTestImplementation project(':testing:db-message-bus-testkit')
+
+    //integrationTestRuntimeOnly project(':components:configuration:configuration-read-service-impl')
+    //integrationTestRuntimeOnly project(':components:crypto:crypto-client-hsm-impl')
+    //integrationTestRuntimeOnly project(':components:db:db-connection-manager-impl')
+    //integrationTestRuntimeOnly project(':components:membership:membership-group-read-impl')
+    //integrationTestRuntimeOnly project(':components:membership:membership-persistence-client-impl')
+    //integrationTestRuntimeOnly project(':libs:lifecycle:lifecycle-impl')
+    //integrationTestRuntimeOnly project(':libs:messaging:db-message-bus-impl')
+    //integrationTestRuntimeOnly project(':libs:messaging:messaging-impl')
+
+    //integrationTestRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
+    //integrationTestRuntimeOnly "org.ops4j.pax.jdbc:pax-jdbc-hsqldb:$paxJdbcVersion"
+    //integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
+
+    //testImplementation project(":libs:crypto:cipher-suite-impl")
+    //testImplementation project(":libs:crypto:crypto-impl")
+    //testImplementation project(":testing:layered-property-map-testkit")
+    //testImplementation project(":testing:test-utilities")
+
+    //testImplementation "org.apache.commons:commons-text:$commonsTextVersion"
+    //testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
+    //testImplementation "org.mockito:mockito-core:$mockitoVersion"
+    //testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+}

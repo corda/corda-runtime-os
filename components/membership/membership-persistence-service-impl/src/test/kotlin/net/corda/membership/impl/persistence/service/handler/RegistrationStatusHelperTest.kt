@@ -1,7 +1,7 @@
 package net.corda.membership.impl.persistence.service.handler
 
 import net.corda.data.membership.common.RegistrationStatus
-import net.corda.membership.impl.persistence.service.handler.RegistrationStatusHelper.toStatus
+import net.corda.membership.db.lib.RegistrationStatusHelper.toStatus
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test

@@ -29,6 +29,7 @@ import java.util.UUID
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.persistence.EntityTransaction
+import javax.persistence.LockModeType
 import javax.persistence.TypedQuery
 import javax.persistence.criteria.CriteriaBuilder
 import javax.persistence.criteria.CriteriaQuery
@@ -82,6 +83,13 @@ class QueryRegistrationRequestHandlerTest {
         on { transaction } doReturn entityTransaction
         on { criteriaBuilder } doReturn criteriaBuilder
         on { createQuery(query) } doReturn actualQuery
+        on {
+            find(
+                RegistrationRequestEntity::class.java,
+                registrationId,
+                LockModeType.PESSIMISTIC_WRITE,
+            )
+        } doReturn null
     }
     private val entityManagerFactory = mock<EntityManagerFactory> {
         on { createEntityManager() } doReturn entityManager
@@ -112,26 +120,30 @@ class QueryRegistrationRequestHandlerTest {
 
     @Test
     fun `invoke return the correct response when entity was found`() {
-        whenever(actualQuery.resultList).doReturn(
-            listOf(
-                RegistrationRequestEntity(
-                    registrationId,
-                    shortHash.value,
-                    "SENT_TO_MGM",
-                    Instant.ofEpochSecond(500),
-                    Instant.ofEpochSecond(600),
-                    serialisedMemberContext,
-                    memberSignatureKey,
-                    memberSignatureContent,
-                    memberSignatureSpec,
-                    serialisedRegistrationContext,
-                    registrationSignatureKey,
-                    registrationSignatureContent,
-                    registrationContextSignatureSpec,
-                    0L,
-                    "test reason"
-                )
-            )
+        whenever(
+            entityManager.find(
+                RegistrationRequestEntity::class.java,
+                registrationId,
+                LockModeType.PESSIMISTIC_WRITE,
+            ),
+        ).doReturn(
+            RegistrationRequestEntity(
+                registrationId,
+                shortHash.value,
+                "SENT_TO_MGM",
+                Instant.ofEpochSecond(500),
+                Instant.ofEpochSecond(600),
+                serialisedMemberContext,
+                memberSignatureKey,
+                memberSignatureContent,
+                memberSignatureSpec,
+                serialisedRegistrationContext,
+                registrationSignatureKey,
+                registrationSignatureContent,
+                registrationContextSignatureSpec,
+                0L,
+                "test reason",
+            ),
         )
 
         val result = handler.invoke(context, request)

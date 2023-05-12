@@ -38,6 +38,7 @@ import net.corda.membership.lib.GroupParametersFactory
 import net.corda.membership.mtls.allowed.list.service.AllowedCertificatesReaderWriterService
 import net.corda.membership.persistence.service.MembershipPersistenceService
 import net.corda.membership.read.GroupParametersReaderService
+import net.corda.membership.registration.management.RegistrationManagementService
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.permissions.model.RbacEntities
 import net.corda.permissions.storage.reader.PermissionStorageReaderService
@@ -113,6 +114,8 @@ class DBProcessorImpl @Activate constructor(
     private val membershipGroupPolicyValidator: MembershipGroupPolicyValidator,
     @Reference(service = AllowedCertificatesReaderWriterService::class)
     private val allowedCertificatesReaderWriterService: AllowedCertificatesReaderWriterService,
+    @Reference(service = RegistrationManagementService::class)
+    private val registrationManagementService: RegistrationManagementService,
 ) : DBProcessor {
     init {
         // define the different DB Entity Sets
@@ -164,6 +167,7 @@ class DBProcessorImpl @Activate constructor(
         ::groupParametersReaderService,
         ::membershipGroupPolicyValidator,
         ::allowedCertificatesReaderWriterService,
+        ::registrationManagementService,
     )
     private val lifecycleCoordinator = coordinatorFactory.createCoordinator<DBProcessorImpl>(dependentComponents, ::eventHandler)
 

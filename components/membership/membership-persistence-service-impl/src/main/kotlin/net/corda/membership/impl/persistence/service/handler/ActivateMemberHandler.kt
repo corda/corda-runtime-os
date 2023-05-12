@@ -10,6 +10,7 @@ import net.corda.data.membership.SignedGroupParameters
 import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.data.membership.db.request.command.ActivateMember
 import net.corda.data.membership.db.response.command.ActivateMemberResponse
+import net.corda.membership.db.lib.AddNotaryToGroupParametersService
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_SUSPENDED
 import net.corda.membership.lib.MemberInfoExtension.Companion.isNotary
@@ -20,8 +21,13 @@ import net.corda.virtualnode.toCorda
 
 internal class ActivateMemberHandler(
     persistenceHandlerServices: PersistenceHandlerServices,
-    private val addNotaryToGroupParametersHandler: AddNotaryToGroupParametersHandler
-        = AddNotaryToGroupParametersHandler(persistenceHandlerServices),
+    private val addNotaryToGroupParametersService: AddNotaryToGroupParametersService =
+        AddNotaryToGroupParametersService(
+            persistenceHandlerServices.clock,
+            persistenceHandlerServices.memberInfoFactory,
+            persistenceHandlerServices.cordaAvroSerializationFactory,
+            persistenceHandlerServices.keyEncodingService,
+        ),
     suspensionActivationEntityOperationsFactory:
         (clock: Clock, serializer: CordaAvroDeserializer<KeyValuePairList>, deserializer: CordaAvroSerializer<KeyValuePairList>)
         -> SuspensionActivationEntityOperations
@@ -79,7 +85,7 @@ internal class ActivateMemberHandler(
 
     private fun updateGroupParameters(em: EntityManager, memberInfo: PersistentMemberInfo): SignedGroupParameters {
         return try {
-            addNotaryToGroupParametersHandler.addNotaryToGroupParameters(em, memberInfo)
+            addNotaryToGroupParametersService.add(em, memberInfo)
         } catch (e: PessimisticLockException) {
             throw InvalidEntityUpdateException(
                 "Could not update member group parameters: ${e.message}",

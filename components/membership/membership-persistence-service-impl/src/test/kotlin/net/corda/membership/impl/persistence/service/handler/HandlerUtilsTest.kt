@@ -3,6 +3,8 @@ package net.corda.membership.impl.persistence.service.handler
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.data.KeyValuePairList
 import net.corda.membership.datamodel.GroupParametersEntity
+import net.corda.membership.db.lib.deserializeKeyValuePairList
+import net.corda.membership.db.lib.toAvro
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Nested

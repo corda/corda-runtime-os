@@ -18,7 +18,6 @@ import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.read.GroupParametersReaderService
 import net.corda.membership.read.MembershipGroupReaderProvider
-import net.corda.membership.registration.RegistrationManagementService
 import net.corda.membership.registration.RegistrationProxy
 import net.corda.membership.service.MemberOpsService
 import net.corda.membership.synchronisation.SynchronisationProxy
@@ -57,8 +56,6 @@ class MemberProcessorImpl @Activate constructor(
     private val membershipPersistenceClient: MembershipPersistenceClient,
     @Reference(service = MembershipQueryClient::class)
     private val membershipQueryClient: MembershipQueryClient,
-    @Reference(service = RegistrationManagementService::class)
-    private val registrationManagementService: RegistrationManagementService,
     @Reference(service = MembershipGroupReaderProvider::class)
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
     @Reference(service = SynchronisationProxy::class)
@@ -91,7 +88,6 @@ class MemberProcessorImpl @Activate constructor(
         ::membershipP2PReadService,
         ::membershipPersistenceClient,
         ::membershipQueryClient,
-        ::registrationManagementService,
         ::membershipGroupReaderProvider,
         ::synchronisationProxy,
         ::stableKeyPairDecryptor,

@@ -43,6 +43,7 @@ import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.persistence.EntityTransaction
 import net.corda.data.membership.SignedGroupParameters
+import net.corda.membership.db.lib.AddNotaryToGroupParametersService
 import net.corda.membership.lib.MemberInfoExtension
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
@@ -139,7 +140,7 @@ class ActivateMemberHandlerTest {
         on { memberInfoFactory } doReturn memberInfoFactory
     }
 
-    private val addNotaryToGroupParametersHandler = mock<AddNotaryToGroupParametersHandler>()
+    private val addNotaryToGroupParametersHandler = mock<AddNotaryToGroupParametersService>()
     private val handler: ActivateMemberHandler = ActivateMemberHandler(
         persistenceHandlerServices,
         addNotaryToGroupParametersHandler
@@ -159,7 +160,7 @@ class ActivateMemberHandlerTest {
     fun `invoke returns the correct data when member is not a notary`() {
         val result = invokeTestFunction()
 
-        verify(addNotaryToGroupParametersHandler, never()).addNotaryToGroupParameters(any(), any())
+        verify(addNotaryToGroupParametersHandler, never()).add(any(), any())
         assertThat(result.memberInfo).isEqualTo(persistentMemberInfo)
         assertThat(result.groupParameters).isNull()
     }
@@ -176,7 +177,7 @@ class ActivateMemberHandlerTest {
         }
         whenever(memberInfoFactory.create(persistentMemberInfo)).thenReturn(mockMemberInfo)
         val groupParameters = mock<SignedGroupParameters>()
-        whenever(addNotaryToGroupParametersHandler.addNotaryToGroupParameters(em, persistentMemberInfo)).doReturn(groupParameters)
+        whenever(addNotaryToGroupParametersHandler.add(em, persistentMemberInfo)).doReturn(groupParameters)
 
         val result = invokeTestFunction()
 
@@ -198,7 +199,7 @@ class ActivateMemberHandlerTest {
             on { entries } doReturn mapOf("$ROLES_PREFIX.1" to NOTARY_ROLE).entries
         }
         whenever(memberInfo.memberProvidedContext).doReturn(notaryMemberProvidedContext)
-        whenever(addNotaryToGroupParametersHandler.addNotaryToGroupParameters(any(), any())).doThrow(
+        whenever(addNotaryToGroupParametersHandler.add(any(), any())).doThrow(
             PessimisticLockException()
         )
 

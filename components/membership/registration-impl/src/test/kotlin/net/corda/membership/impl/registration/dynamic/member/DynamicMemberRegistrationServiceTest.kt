@@ -41,7 +41,7 @@ import net.corda.lifecycle.StopEvent
 import net.corda.membership.impl.registration.TEST_PLATFORM_VERSION
 import net.corda.membership.impl.registration.TEST_SOFTWARE_VERSION
 import net.corda.membership.impl.registration.buildTestVirtualNodeInfo
-import net.corda.membership.impl.registration.dynamic.verifiers.RegistrationContextCustomFieldsVerifier
+import net.corda.membership.lib.registration.RegistrationContextCustomFieldsVerifier
 import net.corda.membership.lib.MemberInfoExtension.Companion.ECDH_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEYS_KEY
@@ -329,7 +329,8 @@ class DynamicMemberRegistrationServiceTest {
         on { getSmartConfig(ConfigKeys.P2P_GATEWAY_CONFIG) } doReturn gatewayConfiguration
     }
     private val locallyHostedIdentitiesService = mock<LocallyHostedIdentitiesService>()
-    private val registrationContextCustomFieldsVerifier = Mockito.mockConstruction(RegistrationContextCustomFieldsVerifier::class.java) {
+    private val registrationContextCustomFieldsVerifier = Mockito.mockConstruction(
+        RegistrationContextCustomFieldsVerifier::class.java) {
         mock, _ -> whenever(mock.verify(context)).doReturn(RegistrationContextCustomFieldsVerifier.Result.Success)
     }
     private val registrationService = DynamicMemberRegistrationService(

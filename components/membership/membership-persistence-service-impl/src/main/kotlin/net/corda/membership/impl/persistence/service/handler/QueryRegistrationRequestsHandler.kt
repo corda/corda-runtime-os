@@ -4,6 +4,7 @@ import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.data.membership.db.request.query.QueryRegistrationRequests
 import net.corda.data.membership.db.response.query.RegistrationRequestsQueryResponse
 import net.corda.membership.datamodel.RegistrationRequestEntity
+import net.corda.membership.db.lib.toDetails
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toCorda
@@ -53,7 +54,7 @@ internal class QueryRegistrationRequestsHandler(persistenceHandlerServices: Pers
                     subList(0, request.limit)
                 } else {
                     this
-                }.map { it.toDetails() }
+                }.map { it.toDetails(keyValuePairListDeserializer) }
             }
             RegistrationRequestsQueryResponse(details)
         }
