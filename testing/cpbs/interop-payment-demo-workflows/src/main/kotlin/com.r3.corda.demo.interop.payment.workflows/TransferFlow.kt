@@ -58,8 +58,10 @@ class TransferFlow: ClientStartableFlow {
             val inputState = stateAndRef.state.contractState
 
             val myInfo = memberLookup.myInfo()
-            val ownerInfo = memberLookup.lookup(inputState.owner) ?: throw CordaRuntimeException("MemberLookup can't find current state owner.")
-            val newOwnerInfo = memberLookup.lookup(MemberX500Name.parse(flowArgs.newOwner)) ?: throw CordaRuntimeException("MemberLookup can't find new state owner.")
+            val ownerInfo = memberLookup.lookup(inputState.owner) ?:
+                throw CordaRuntimeException("MemberLookup can't find current state owner.")
+            val newOwnerInfo = memberLookup.lookup(MemberX500Name.parse(flowArgs.newOwner)) ?:
+                throw CordaRuntimeException("MemberLookup can't find new state owner.")
 
             if (myInfo.name != ownerInfo.name) {
                 throw CordaRuntimeException("Only the owner of a state can transfer it to a new owner.")
