@@ -126,7 +126,7 @@ class FlowFiberImpl(
     @Suspendable
     override fun <SUSPENDRETURN> suspend(request: FlowIORequest<SUSPENDRETURN>): SUSPENDRETURN {
         removeCurrentSandboxGroupContext()
-        parkAndCustomSerialize { fiber ->
+        parkAndCustomSerialize { _ ->
             resetLoggingContext()
             log.trace { "Parking..." }
             val fiberState = CordaMetrics.Metric.FlowFiberSerializationTime.builder()
@@ -134,9 +134,9 @@ class FlowFiberImpl(
                 .withTag(CordaMetrics.Tag.FlowClass, getExecutionContext().flowCheckpoint.flowStartContext.flowClassName)
                 .build()
                 .recordCallable {
-                    getExecutionContext().sandboxGroupContext.checkpointSerializer.serialize(fiber)
+                    getExecutionContext().sandboxGroupContext.checkpointSerializer.serialize(this)
                 }!!
-            flowCompletion.complete(FlowIORequest.FlowSuspended(ByteBuffer.wrap(fiberState), request, fiber.prepareForCaching()))
+            flowCompletion.complete(FlowIORequest.FlowSuspended(ByteBuffer.wrap(fiberState), request, prepareForCaching()))
         }
 
         resetLoggingContext()
@@ -162,11 +162,10 @@ class FlowFiberImpl(
      * Prepare the fiber for caching by removing unnecessary transient fields. These fields will be set
      * on the fiber after it is selected from the cache and resumed in [resume].
      */
-    private fun Fiber<*>.prepareForCaching(): FlowFiberImpl {
-        return (this as FlowFiberImpl).apply {
-            flowFiberExecutionContext = null
-            suspensionOutcome = null
-        }
+    private fun prepareForCaching(): FlowFiberImpl {
+        flowFiberExecutionContext = null
+        suspensionOutcome = null
+        return this
     }
 
     @Suspendable
