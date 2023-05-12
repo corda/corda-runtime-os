@@ -186,6 +186,11 @@ object CordaMetrics {
          * The time taken by the backing store to perform a single read operation from the database.
          */
         object UniquenessBackingStoreDbReadTime: Metric<Timer>("uniqueness.backingstore.db.read.time", CordaMetrics::timer)
+
+        /**
+         * The time taken for the verification processor to process a single event
+         */
+        object VerificationProcessorExecutionTime: Metric<Timer>("verification.processor.execution.time", CordaMetrics::timer)
     }
 
     /**

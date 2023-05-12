@@ -4,12 +4,13 @@ import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.flow.event.external.ExternalEventResponseErrorType
 import net.corda.flow.external.events.responses.exceptions.NotAllowedCpkException
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
+import net.corda.flow.utils.toMap
 import net.corda.ledger.utxo.verification.TransactionVerificationRequest
 import net.corda.ledger.verification.processor.VerificationRequestHandler
 import net.corda.ledger.verification.sandbox.VerificationSandboxService
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
-import net.corda.flow.utils.toMap
+import net.corda.metrics.CordaMetrics
 import net.corda.utilities.MDC_CLIENT_ID
 import net.corda.utilities.MDC_EXTERNAL_EVENT_ID
 import net.corda.utilities.trace
@@ -50,12 +51,17 @@ class VerificationRequestProcessor(
                         MDC_EXTERNAL_EVENT_ID to request.flowExternalEventContext.requestId
                     )
                 ) {
-                    try {
-                        val holdingIdentity = request.holdingIdentity.toCorda()
-                        val sandbox = verificationSandboxService.get(holdingIdentity, request.cpkMetadata)
-                        requestHandler.handleRequest(sandbox, request)
-                    } catch (e: Exception) {
-                        errorResponse(request.flowExternalEventContext, e)
+                    val verificationTimer = CordaMetrics.Metric.VerificationProcessorExecutionTime.builder()
+                        .forVirtualNode(request.holdingIdentity.toCorda().shortHash.value)
+                        .build()
+                    verificationTimer.recordCallable<Record<*, *>> {
+                        try {
+                            val holdingIdentity = request.holdingIdentity.toCorda()
+                            val sandbox = verificationSandboxService.get(holdingIdentity, request.cpkMetadata)
+                            requestHandler.handleRequest(sandbox, request)
+                        } catch (e: Exception) {
+                            errorResponse(request.flowExternalEventContext, e)
+                        }
                     }
                 }
             }
