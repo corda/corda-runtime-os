@@ -194,6 +194,8 @@ object CordaMetrics {
          * The time taken for the verification processor to process a single event
          */
         object VerificationProcessorExecutionTime: Metric<Timer>("verification.processor.execution.time", CordaMetrics::timer)
+
+        object CryptoProcessorExecutionTime: Metric<Timer>("crypto.flow.processor.execution.time", CordaMetrics::timer)
         /**
          * Time it took for an external event to complete.
          */
