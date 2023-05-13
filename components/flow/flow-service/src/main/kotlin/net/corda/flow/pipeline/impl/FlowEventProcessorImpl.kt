@@ -14,7 +14,9 @@ import net.corda.flow.pipeline.factory.FlowEventPipelineFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
+import net.corda.metrics.CordaMetrics
 import net.corda.schema.configuration.MessagingConfig.Subscription.PROCESSOR_TIMEOUT
+import net.corda.utilities.MDC_VNODE_ID
 import net.corda.utilities.withMDC
 import net.corda.utilities.debug
 import net.corda.utilities.trace
@@ -63,42 +65,54 @@ class FlowEventProcessorImpl(
             log.debug { "The incoming event record '${event}' contained a null FlowEvent, this event will be discarded" }
             return StateAndEventProcessor.Response(state, listOf())
         }
-
-        val pipeline = try {
-            log.trace { "Flow [${event.key}] Received event: ${flowEvent.payload::class.java} / ${flowEvent.payload}" }
-            flowEventPipelineFactory.create(state, flowEvent, config, mdcProperties)
-        } catch (t: Throwable) {
-            // Without a pipeline there's a limit to what can be processed.
-            return flowEventExceptionProcessor.process(t)
+        val holdingId = mdcProperties[MDC_VNODE_ID]
+        val flowEventTimer = if (holdingId != null) {
+            CordaMetrics.Metric.FlowEventProcessingTime.builder()
+                .forVirtualNode(holdingId)
+                .withTag(CordaMetrics.Tag.FlowEvent, event.value?.javaClass?.name ?: "")
+                .build()
+        } else {
+            CordaMetrics.Metric.FlowEventProcessingTime.builder()
+                .withTag(CordaMetrics.Tag.FlowEvent, event.value?.javaClass?.name ?: "")
+                .build()
         }
+        return flowEventTimer.recordCallable {
+            val pipeline = try {
+                log.trace { "Flow [${event.key}] Received event: ${flowEvent.payload::class.java} / ${flowEvent.payload}" }
+                flowEventPipelineFactory.create(state, flowEvent, config, mdcProperties)
+            } catch (t: Throwable) {
+                // Without a pipeline there's a limit to what can be processed.
+                return@recordCallable flowEventExceptionProcessor.process(t)
+            }
 
-        // flow result timeout must be lower than the processor timeout as the processor thread will be killed by the subscription consumer
-        // thread after this period and so this timeout would never be reached and given a chance to return otherwise.
-        val flowTimeout = (config.getLong(PROCESSOR_TIMEOUT) * 0.75).toLong()
-        return try {
-            flowEventContextConverter.convert(
-                pipeline
-                    .eventPreProcessing()
-                    .virtualNodeFlowOperationalChecks()
-                    .runOrContinue(flowTimeout)
-                    .setCheckpointSuspendedOn()
-                    .setWaitingFor()
-                    .requestPostProcessing()
-                    .globalPostProcessing()
-                    .context
-            )
-        } catch (e: FlowTransientException) {
-            flowEventExceptionProcessor.process(e, pipeline.context)
-        } catch (e: FlowEventException) {
-            flowEventExceptionProcessor.process(e, pipeline.context)
-        } catch (e: FlowPlatformException) {
-            flowEventExceptionProcessor.process(e, pipeline.context)
-        } catch (e: FlowFatalException) {
-            flowEventExceptionProcessor.process(e, pipeline.context)
-        } catch (e: FlowMarkedForKillException) {
-            flowEventExceptionProcessor.process(e, pipeline.context)
-        } catch (t: Throwable) {
-            flowEventExceptionProcessor.process(t)
-        }
+            // flow result timeout must be lower than the processor timeout as the processor thread will be killed by the subscription consumer
+            // thread after this period and so this timeout would never be reached and given a chance to return otherwise.
+            val flowTimeout = (config.getLong(PROCESSOR_TIMEOUT) * 0.75).toLong()
+            try {
+                flowEventContextConverter.convert(
+                    pipeline
+                        .eventPreProcessing()
+                        .virtualNodeFlowOperationalChecks()
+                        .runOrContinue(flowTimeout)
+                        .setCheckpointSuspendedOn()
+                        .setWaitingFor()
+                        .requestPostProcessing()
+                        .globalPostProcessing()
+                        .context
+                )
+            } catch (e: FlowTransientException) {
+                flowEventExceptionProcessor.process(e, pipeline.context)
+            } catch (e: FlowEventException) {
+                flowEventExceptionProcessor.process(e, pipeline.context)
+            } catch (e: FlowPlatformException) {
+                flowEventExceptionProcessor.process(e, pipeline.context)
+            } catch (e: FlowFatalException) {
+                flowEventExceptionProcessor.process(e, pipeline.context)
+            } catch (e: FlowMarkedForKillException) {
+                flowEventExceptionProcessor.process(e, pipeline.context)
+            } catch (t: Throwable) {
+                flowEventExceptionProcessor.process(t)
+            }
+        }!!
     }
 }

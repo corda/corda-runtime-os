@@ -196,6 +196,8 @@ object CordaMetrics {
         object VerificationProcessorExecutionTime: Metric<Timer>("verification.processor.execution.time", CordaMetrics::timer)
 
         object CryptoProcessorExecutionTime: Metric<Timer>("crypto.flow.processor.execution.time", CordaMetrics::timer)
+
+        object FlowEventProcessingTime: Metric<Timer>("flow.event.processing.time", CordaMetrics::timer)
         /**
          * Time it took for an external event to complete.
          */
@@ -298,7 +300,9 @@ object CordaMetrics {
         /**
          * Type of error raised in failure cases
          */
-        ErrorType("error.type")
+        ErrorType("error.type"),
+
+        FlowEvent("flow.event.type")
     }
 
     val registry: CompositeMeterRegistry = Metrics.globalRegistry
