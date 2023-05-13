@@ -193,10 +193,11 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                 log.debug { "Polling and processing events" }
                 var rebalanceOccurred = false
                 val records = stateAndEventConsumer.pollEvents()
-                batchSizeHistogram.record(records.size.toDouble())
+//                batchSizeHistogram.record(records.size.toDouble())
                 val batches = getEventsByBatch(records).iterator()
                 while (!rebalanceOccurred && batches.hasNext()) {
                     val batch = batches.next()
+                    batchSizeHistogram.record(records.size.toDouble())
                     rebalanceOccurred = tryProcessBatchOfEvents(batch)
                 }
                 keepProcessing = false // We only want to do one batch at a time
