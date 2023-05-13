@@ -1,8 +1,8 @@
 package net.corda.ledger.persistence.utxo.tests
 
 import net.corda.cpiinfo.read.CpiInfoReadService
-import net.corda.data.CordaAvroDeserializer
-import net.corda.data.CordaAvroSerializationFactory
+import net.corda.avro.serialization.CordaAvroDeserializer
+import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.flow.event.FlowEvent

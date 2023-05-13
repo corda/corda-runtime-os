@@ -1,12 +1,13 @@
 package net.corda.messaging.integration
 
+import java.util.UUID
 import net.corda.messaging.integration.IntegrationTestProperties.Companion.getBundleContext
 import net.corda.schema.Schemas.getStateAndEventDLQTopic
 import net.corda.schema.Schemas.getStateAndEventStateTopic
 
 class TopicTemplates {
     companion object {
-        const val TEST_TOPIC_PREFIX_VALUE = "testPrefix"
+        val TEST_TOPIC_PREFIX_VALUE = "testPrefix-${UUID.randomUUID()}-"
         private val TEST_TOPIC_PREFIX = if (getBundleContext().isDBBundle()) "" else TEST_TOPIC_PREFIX_VALUE
         const val COMPACTED_TOPIC1 = "CompactedTopic1"
         val COMPACTED_TOPIC1_TEMPLATE = """topics = [ 

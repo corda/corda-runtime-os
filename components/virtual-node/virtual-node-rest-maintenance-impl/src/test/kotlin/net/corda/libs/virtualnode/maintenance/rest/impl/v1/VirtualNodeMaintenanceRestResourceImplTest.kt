@@ -102,7 +102,7 @@ class VirtualNodeMaintenanceRestResourceImplTest {
             whenever(requestId) doReturn "something"
         }
         private val mockCpiUploadManager = mock<CpiUploadManager>().apply {
-            whenever(uploadCpi(any(), any(), any())) doReturn mockCpiResponse
+            whenever(uploadCpi(any(), any())) doReturn mockCpiResponse
         }
         private val mockCpiUploadService = mock<CpiUploadService>().apply {
             whenever(cpiUploadManager) doReturn mockCpiUploadManager
@@ -116,7 +116,6 @@ class VirtualNodeMaintenanceRestResourceImplTest {
 
             verify(mockCpiUploadService.cpiUploadManager)
                 .uploadCpi(
-                    any(),
                     any(),
                     any()
                 )

@@ -47,14 +47,14 @@ internal class ChunkWriteToDbProcessorTest {
 
     @Test
     fun `processor calls through to persist method`() {
-        val chunk = Chunk(randomString(), randomString(), null, 0, 0, ByteBuffer.wrap(ByteArray(256)), null)
+        val chunk = Chunk(randomString(), null, 0, 0, ByteBuffer.wrap(ByteArray(256)), null)
         processRequest(processor, chunk)
         verify(persistence).persistChunk(chunk)
     }
 
     @Test
     fun `processor calls through to publisher`() {
-        processRequest(processor, Chunk(randomString(), randomString(), null, 0, 0, ByteBuffer.wrap(ByteArray(256)), null))
+        processRequest(processor, Chunk(randomString(), null, 0, 0, ByteBuffer.wrap(ByteArray(256)), null))
         verify(persistence).persistChunk(any())
         verify(publisher).initialStatus(any())
     }

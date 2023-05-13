@@ -6,10 +6,12 @@ package net.corda.messagebus.db.configuration
  * @param jdbcUrl URL for database, set to null to use in-memory db
  * @param jdbcUser User for database
  * @param jdbcPass Password for database
+ * @param throwOnSerializationError Boolean to decide if we should throw on serialization error.
  */
 data class ResolvedProducerConfig(
     val clientId: String,
     val jdbcUrl: String?,
     val jdbcUser: String,
     val jdbcPass: String,
+    val throwOnSerializationError: Boolean = true
 )

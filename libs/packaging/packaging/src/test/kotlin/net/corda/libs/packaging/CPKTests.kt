@@ -2,6 +2,7 @@ package net.corda.libs.packaging
 
 import jdk.security.jarsigner.JarSigner
 import net.corda.crypto.core.SecureHashImpl
+import net.corda.libs.packaging.TestUtils.filterAndSortX500Attributes
 import net.corda.libs.packaging.core.exception.CordappManifestException
 import net.corda.libs.packaging.core.exception.DependencyMetadataException
 import net.corda.libs.packaging.core.exception.PackagingException
@@ -10,7 +11,6 @@ import net.corda.libs.packaging.internal.v2.CpkLoaderV2
 import net.corda.libs.packaging.testutils.TestUtils.ALICE
 import net.corda.utilities.outputStream
 import net.corda.utilities.readAll
-import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
 import org.junit.jupiter.api.Assertions
@@ -71,7 +71,9 @@ class CPKTests {
             sha256Name,
             run {
                 val md = MessageDigest.getInstance(sha256Name)
-                md.update(MemberX500Name.parse(cordaDevCert.subjectX500Principal.name).toString().toByteArray())
+                md.update(
+                    filterAndSortX500Attributes(cordaDevCert.subjectX500Principal.name).toByteArray()
+                )
                 md.digest()
             }
         )

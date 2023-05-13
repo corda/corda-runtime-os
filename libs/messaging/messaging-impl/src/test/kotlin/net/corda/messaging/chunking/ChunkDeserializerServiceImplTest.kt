@@ -5,7 +5,7 @@ import net.corda.chunking.Checksum
 import net.corda.chunking.impl.ChunkBuilderServiceImpl
 import net.corda.crypto.core.toAvro
 import net.corda.crypto.cipher.suite.PlatformDigestService
-import net.corda.data.CordaAvroDeserializer
+import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.data.chunking.Chunk
 import net.corda.data.chunking.ChunkKey
 import org.assertj.core.api.Assertions.assertThat

@@ -36,7 +36,6 @@ import net.corda.data.membership.db.response.command.PersistApprovalRuleResponse
 import net.corda.data.membership.db.response.command.PersistGroupParametersResponse
 import net.corda.data.membership.db.response.command.RevokePreAuthTokenResponse
 import net.corda.data.membership.db.response.command.SuspendMemberResponse
-import net.corda.data.membership.db.response.query.PersistenceFailedResponse
 import net.corda.data.membership.db.response.query.StaticNetworkInfoQueryResponse
 import net.corda.data.membership.db.response.query.UpdateMemberAndRegistrationRequestResponse
 import net.corda.data.membership.p2p.MembershipRegistrationRequest
@@ -229,19 +228,18 @@ class MembershipPersistenceClientImpl(
         logger.info("Persisting the member registration request.")
         val request = MembershipPersistenceRequest(
             buildMembershipRequestContext(viewOwningIdentity.toAvro()),
-            PersistRegistrationRequest(
-                registrationRequest.status,
-                registrationRequest.requester.toAvro(),
-                with(registrationRequest) {
+            with(registrationRequest) {
+                PersistRegistrationRequest(
+                    status,
+                    requester.toAvro(),
                     MembershipRegistrationRequest(
                         registrationId,
                         memberContext,
-                        signature,
-                        signatureSpec,
+                        registrationContext,
                         serial,
                     )
-                }
-            )
+                )
+            }
         )
         return request.operation(::nullToUnitConvertor)
     }
@@ -445,7 +443,6 @@ class MembershipPersistenceClientImpl(
     private fun nullToUnitConvertor(payload: Any?): Either<Unit, String> {
         return when (payload) {
             null -> Either.Left(Unit)
-            is PersistenceFailedResponse -> Either.Right(payload.errorMessage)
             else -> Either.Right("Unexpected response: $payload")
         }
     }
@@ -453,7 +450,6 @@ class MembershipPersistenceClientImpl(
     private inline fun <reified T, S> dataToResultConvertor(payload: Any?, toResult: (T) -> S): Either<S, String> {
         return when (payload) {
             is T -> Either.Left(toResult(payload))
-            is PersistenceFailedResponse -> Either.Right(payload.errorMessage)
             else -> Either.Right("Unexpected response: $payload")
         }
     }

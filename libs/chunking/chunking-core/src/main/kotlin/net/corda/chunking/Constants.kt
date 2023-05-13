@@ -12,5 +12,6 @@ class Constants {
         const val MAX_DB_CHUNK_SIZE = 8 * MB
         const val SECURE_HASH_VALIDATION_ERROR = "Checksums do not match, one or more of the chunks may be corrupt"
         const val SECURE_HASH_MISSING_ERROR = "Checksum is missing from the final chunk"
+        const val CHUNK_FILENAME_KEY = "ChunkFileName"
     }
 }

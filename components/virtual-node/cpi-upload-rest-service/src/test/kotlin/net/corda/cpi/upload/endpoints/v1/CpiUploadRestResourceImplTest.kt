@@ -1,6 +1,7 @@
 package net.corda.cpi.upload.endpoints.v1
 
 import net.corda.chunking.ChunkWriter
+import net.corda.chunking.Constants.Companion.CHUNK_FILENAME_KEY
 import net.corda.cpi.upload.endpoints.service.CpiUploadService
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.crypto.core.parseSecureHash
@@ -39,7 +40,7 @@ class CpiUploadRestResourceImplTest {
     @BeforeEach
     fun setUp() {
         val coordinator = mock<LifecycleCoordinator>().also {
-           whenever(it.isRunning).thenReturn(true)
+            whenever(it.isRunning).thenReturn(true)
         }
         coordinatorFactory = mock<LifecycleCoordinatorFactory>().also {
             whenever(it.createCoordinator(any(), any())).thenReturn(coordinator)
@@ -59,11 +60,13 @@ class CpiUploadRestResourceImplTest {
     fun `returns request id mapping to a CPI uploading if the CPI was uploaded successfully to Kafka`() {
         val cpiBytes = "dummyCPI".toByteArray()
         val cpiContent = ByteArrayInputStream(cpiBytes)
-        val cpiUploadRequestId = ChunkWriter.Request(UUID.randomUUID().toString(),
+        val cpiUploadRequestId = ChunkWriter.Request(
+            UUID.randomUUID().toString(),
             parseSecureHash("FOO:123456789012")
         )
 
-        whenever(cpiUploadManager.uploadCpi(any(), eq(cpiContent), eq(null))).thenReturn(cpiUploadRequestId)
+        val properties = mapOf<String, String?>(CHUNK_FILENAME_KEY to DUMMY_FILE_NAME)
+        whenever(cpiUploadManager.uploadCpi(eq(cpiContent), eq(properties))).thenReturn(cpiUploadRequestId)
 
         val httpResponse = cpiUploadRestResourceImpl.cpi(HttpFileUpload(cpiContent, DUMMY_FILE_NAME))
         assertNotNull(httpResponse)

@@ -96,16 +96,47 @@ internal class InMemorySessionReplayer(
 
     private fun replayMessage(
         messageReplay: SessionMessageReplay,
+        messageId: MessageId
     ) {
         val destinationMemberInfo = membershipGroupReaderProvider.lookup(
             messageReplay.sessionCounterparties.ourId,
-            messageReplay.sessionCounterparties.counterpartyId
+            messageReplay.sessionCounterparties.counterpartyId,
+            messageReplay.sessionCounterparties.status
         )
-        if (destinationMemberInfo == null || destinationMemberInfo.serial != messageReplay.sessionCounterparties.serial) {
-            logger.warn("Attempted to replay a session negotiation message (type ${messageReplay.message::class.java.simpleName})" +
-                " with peer ${messageReplay.sessionCounterparties.counterpartyId} with " +
-                    "serial ${messageReplay.sessionCounterparties.serial} " +
-                    "which is not in the members map. The message was not replayed.")
+        if (destinationMemberInfo == null) {
+            logger.warn(
+                "Attempted to replay a session negotiation message (type " +
+                        "${messageReplay.message::class.java.simpleName})" +
+                        " for session with ID ${messageReplay.sessionId}" +
+                        " between ${messageReplay.sessionCounterparties.ourId}" +
+                        " and peer ${messageReplay.sessionCounterparties.counterpartyId} with " +
+                        "status ${messageReplay.sessionCounterparties.status} " +
+                        "which is not in the members map. The message was not replayed."
+            )
+            return
+        }
+
+        if (destinationMemberInfo.serial != messageReplay.sessionCounterparties.serial) {
+            logger.warn(
+                "Attempted to replay a session negotiation message (type " +
+                        "${messageReplay.message::class.java.simpleName})" +
+                        " for session with ID ${messageReplay.sessionId}" +
+                        " between ${messageReplay.sessionCounterparties.ourId}" +
+                        " and peer ${messageReplay.sessionCounterparties.counterpartyId} with " +
+                        "serial ${messageReplay.sessionCounterparties.serial} " +
+                        "which is not in the members map. Member was found but with serial " +
+                        "${destinationMemberInfo.serial}. " +
+                        "The message was not replayed."
+            )
+            if(destinationMemberInfo.serial > messageReplay.sessionCounterparties.serial) {
+                logger.warn(
+                    "Replay message is attempting to use ${messageReplay.sessionCounterparties.counterpartyId}" +
+                            " with serial number ${messageReplay.sessionCounterparties.serial}, but the current serial " +
+                            "number ${destinationMemberInfo.serial} is higher so message will never send. " +
+                            "Dropping message replay."
+                )
+                removeMessageFromReplay(messageId, messageReplay.sessionCounterparties)
+            }
             return
         }
 

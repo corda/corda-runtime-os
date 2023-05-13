@@ -33,6 +33,7 @@ import net.corda.lifecycle.StopEvent
 import net.corda.membership.lib.InternalGroupParameters
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
+import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_SUSPENDED
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
 import net.corda.membership.lib.MemberInfoExtension.Companion.PLATFORM_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.PROTOCOL_VERSION
@@ -151,6 +152,8 @@ class MgmSynchronisationServiceImplTest {
     private val daisy = HoldingIdentity(daisyName, GROUP)
     private val mgmName = "C=GB, L=London, O=MGM"
     private val mgm = HoldingIdentity(mgmName, GROUP)
+    private val simonName = "C=GB, L=London, O=Simon"
+    private val simon = HoldingIdentity(simonName, GROUP)
 
     private val memberInfoFactory = MemberInfoFactoryImpl(
         LayeredPropertyMapMocks.createFactory(listOf(EndpointInfoConverter()))
@@ -160,6 +163,7 @@ class MgmSynchronisationServiceImplTest {
     private val aliceInfo = createMemberInfo(aliceName)
     private val bobInfo = createMemberInfo(bobName)
     private val daisyInfo = createMemberInfo(daisyName)
+    private val simonInfo = createMemberInfo(simonName, status = MEMBER_STATUS_SUSPENDED)
 
     private val memberInfos = listOf(mgmInfo, aliceInfo, bobInfo, daisyInfo)
     private val memberInfosWithoutMgm = listOf(aliceInfo, bobInfo, daisyInfo)
@@ -170,6 +174,7 @@ class MgmSynchronisationServiceImplTest {
         on { lookup(eq(MemberX500Name.parse(aliceName)), any()) } doReturn aliceInfo
         on { lookup(eq(MemberX500Name.parse(bobName)), any()) } doReturn bobInfo
         on { lookup(eq(MemberX500Name.parse(daisyName)), any()) } doReturn daisyInfo
+        on { lookup(MemberX500Name.parse(simonName), MembershipStatusFilter.ACTIVE_OR_SUSPENDED) } doReturn simonInfo
         on { groupParameters } doReturn groupParameters
     }
     private val groupReaderProvider: MembershipGroupReaderProvider = mock {
@@ -187,6 +192,7 @@ class MgmSynchronisationServiceImplTest {
     }
     private val merkleTreeGenerator: MerkleTreeGenerator = mock {
         on { generateTree(argThat { contains(aliceInfo) && size == 1 }) } doReturn matchingMerkleTree
+        on { generateTree(argThat { contains(simonInfo) && size == 1 }) } doReturn matchingMerkleTree
         on { generateTree(argThat { contains(bobInfo) && size == 1 }) } doReturn nonMatchingMerkleTree
         on { generateTree(argThat { contains(daisyInfo) && size == 1 }) } doReturn nonMatchingMerkleTree
         on {
@@ -200,6 +206,11 @@ class MgmSynchronisationServiceImplTest {
     private val membershipQueryClient: MembershipQueryClient = mock {
         on {
             queryMembersSignatures(eq(mgm.toCorda()), eq(listOf(bob.toCorda())))
+        } doReturn MembershipQueryResult.Success(
+            signature
+        )
+        on {
+            queryMembersSignatures(eq(mgm.toCorda()), eq(listOf(simon.toCorda())))
         } doReturn MembershipQueryResult.Success(
             signature
         )
@@ -220,8 +231,9 @@ class MgmSynchronisationServiceImplTest {
         on { createSigner(mgmInfo) } doReturn signer
     }
 
-    private val membershipPackage1 = mock<MembershipPackage>()
-    private val membershipPackage2 = mock<MembershipPackage>()
+    private val allMembershipPackage = mock<MembershipPackage>()
+    private val bobMembershipPackage = mock<MembershipPackage>()
+    private val simonMembershipPackage = mock<MembershipPackage>()
     private val membershipPackageFactory = mock<MembershipPackageFactory> {
         on {
             createMembershipPackage(
@@ -231,7 +243,7 @@ class MgmSynchronisationServiceImplTest {
                 any(),
                 any(),
             )
-        } doReturn membershipPackage1
+        } doReturn allMembershipPackage
         on {
             createMembershipPackage(
                 eq(signer),
@@ -240,32 +252,52 @@ class MgmSynchronisationServiceImplTest {
                 any(),
                 any(),
             )
-        } doReturn membershipPackage2
+        } doReturn bobMembershipPackage
+        on {
+            createMembershipPackage(
+                eq(signer),
+                eq(signature),
+                eq(listOf(simonInfo)),
+                any(),
+                any(),
+            )
+        } doReturn simonMembershipPackage
     }
 
-    private val record1 = mock<Record<String, AppMessage>>()
-    private val record2 = mock<Record<String, AppMessage>>()
+    private val allMembershipPackageRecord = mock<Record<String, AppMessage>>()
+    private val bobMembershipPackageRecord = mock<Record<String, AppMessage>>()
+    private val simonMembershipPackageRecord = mock<Record<String, AppMessage>>()
     private val p2pRecordsFactory = mock<P2pRecordsFactory> {
         on {
             createAuthenticatedMessageRecord(
                 any(),
                 any(),
-                eq(membershipPackage1),
+                eq(allMembershipPackage),
                 any(),
                 any(),
-                eq(MembershipStatusFilter.ACTIVE),
+                eq(MembershipStatusFilter.ACTIVE_OR_SUSPENDED),
             )
-        } doReturn record1
+        } doReturn allMembershipPackageRecord
         on {
             createAuthenticatedMessageRecord(
                 any(),
                 any(),
-                eq(membershipPackage2),
+                eq(bobMembershipPackage),
                 any(),
                 any(),
-                eq(MembershipStatusFilter.ACTIVE),
+                eq(MembershipStatusFilter.ACTIVE_OR_SUSPENDED),
             )
-        } doReturn record2
+        } doReturn bobMembershipPackageRecord
+        on {
+            createAuthenticatedMessageRecord(
+                any(),
+                any(),
+                eq(simonMembershipPackage),
+                any(),
+                any(),
+                eq(MembershipStatusFilter.ACTIVE_OR_SUSPENDED),
+            )
+        } doReturn simonMembershipPackageRecord
     }
     private val services = mock<MgmSynchronisationServiceImpl.InjectedServices> {
         on { publisherFactory } doReturn publisherFactory
@@ -301,7 +333,7 @@ class MgmSynchronisationServiceImplTest {
         )
     )
 
-    private fun createMemberInfo(name: String) = memberInfoFactory.create(
+    private fun createMemberInfo(name: String, status: String = MEMBER_STATUS_ACTIVE) = memberInfoFactory.create(
         sortedMapOf(
             GROUP_ID to GROUP,
             PARTY_NAME to name,
@@ -311,7 +343,7 @@ class MgmSynchronisationServiceImplTest {
             SOFTWARE_VERSION to "5.0.0"
         ),
         sortedMapOf(
-            STATUS to MEMBER_STATUS_ACTIVE
+            STATUS to status
         )
     )
 
@@ -484,10 +516,10 @@ class MgmSynchronisationServiceImplTest {
             any(),
             eq(groupParameters)
         )
-        verify(mockPublisher, times(1)).publish(eq(listOf(record1)))
+        verify(mockPublisher, times(1)).publish(eq(listOf(allMembershipPackageRecord)))
         val membersPublished = capturedList.firstValue
         assertThat(membersPublished.size).isEqualTo(3)
-        //assertThat(membersPublished).isEqualTo(listOf(aliceInfo, bobInfo, daisyInfo))
+        assertThat(membersPublished).isEqualTo(listOf(aliceInfo, bobInfo, daisyInfo))
         synchronisationService.stop()
     }
 
@@ -505,10 +537,31 @@ class MgmSynchronisationServiceImplTest {
             any(),
             eq(groupParameters)
         )
-        verify(mockPublisher, times(1)).publish(eq(listOf(record2)))
+        verify(mockPublisher, times(1)).publish(eq(listOf(bobMembershipPackageRecord)))
         val membersPublished = capturedList.firstValue
         assertThat(membersPublished.size).isEqualTo(1)
         assertThat(membersPublished).isEqualTo(listOf(bobInfo))
+        synchronisationService.stop()
+    }
+
+    @Test
+    fun `only the requesting member's info is sent when member is suspended`() {
+        postConfigChangedEvent()
+        synchronisationService.start()
+        val capturedList = argumentCaptor<List<MemberInfo>>()
+        val request = createRequest(simon)
+        synchronisationService.processSyncRequest(request)
+        verify(membershipPackageFactory, times(1)).createMembershipPackage(
+            any(),
+            any(),
+            capturedList.capture(),
+            any(),
+            eq(groupParameters)
+        )
+        verify(mockPublisher, times(1)).publish(eq(listOf(simonMembershipPackageRecord)))
+        val membersPublished = capturedList.firstValue
+        assertThat(membersPublished.size).isEqualTo(1)
+        assertThat(membersPublished).isEqualTo(listOf(simonInfo))
         synchronisationService.stop()
     }
 
