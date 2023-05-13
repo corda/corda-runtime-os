@@ -1111,6 +1111,7 @@
                             "properties": {
                                 "image": {},
                                 "javaOptions": {},
+                                "extraArgs": {},
                                 "annotations": {},
                                 "replicaCount": {},
                                 "debug": {},
@@ -1150,6 +1151,7 @@
                             "properties": {
                                 "image": {},
                                 "javaOptions": {},
+                                "extraArgs": {},
                                 "annotations": {},
                                 "replicaCount": {},
                                 "debug": {},
@@ -1219,6 +1221,7 @@
                             "properties": {
                                 "image": {},
                                 "javaOptions": {},
+                                "extraArgs": {},
                                 "annotations": {},
                                 "replicaCount": {},
                                 "debug": {},
@@ -1277,6 +1280,7 @@
                             "properties": {
                                 "image": {},
                                 "javaOptions": {},
+                                "extraArgs": {},
                                 "annotations": {},
                                 "replicaCount": {},
                                 "debug": {},
@@ -1301,6 +1305,7 @@
                             "properties": {
                                 "image": {},
                                 "javaOptions": {},
+                                "extraArgs": {},
                                 "annotations": {},
                                 "replicaCount": {},
                                 "debug": {},
@@ -1545,6 +1550,7 @@
                             "properties": {
                                 "image": {},
                                 "javaOptions": {},
+                                "extraArgs": {},
                                 "annotations": {},
                                 "replicaCount": {},
                                 "debug": {},
@@ -1596,6 +1602,7 @@
                             "properties": {
                                 "image": {},
                                 "javaOptions": {},
+                                "extraArgs": {},
                                 "annotations": {},
                                 "replicaCount": {},
                                 "debug": {},
@@ -1948,6 +1955,20 @@
                 },
                 "javaOptions": {
                     "type": "string"
+                },
+                "extraArgs": {
+                    "type": "array",
+                    "default": [],
+                    "title": "extra arguments",
+                    "items": {
+                        "type":"string"
+                    },
+                    "examples": [
+                        [
+                            "-mheartbeat.interval.ms=3000",
+                            "-msession.timeout.ms=45000"
+                        ]
+                    ]
                 },
                 "annotations": {
                     "type": "object",
