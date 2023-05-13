@@ -262,7 +262,7 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                 })
                 deadLetterRecords.clear()
             }
-            producer.sendRecordOffsetsToTransaction(eventConsumer, events.map { it })
+            producer.sendRecordOffsetsToTransaction(eventConsumer, events)
             producer.commitTransaction()
         }
         log.debug { "Processing events(keys: ${events.joinToString { it.key.toString() }}, size: ${events.size}) complete." }
