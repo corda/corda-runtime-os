@@ -4,11 +4,14 @@ import net.corda.data.flow.event.external.ExternalEventResponse
 import net.corda.flow.external.events.impl.ExternalEventManager
 import net.corda.flow.pipeline.events.FlowEventContext
 import net.corda.flow.pipeline.exceptions.FlowEventException
+import net.corda.metrics.CordaMetrics
 import net.corda.utilities.debug
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
+import java.time.Duration
+import java.time.Instant
 
 @Component(service = [FlowEventHandler::class])
 class ExternalEventResponseHandler @Activate constructor(
@@ -53,6 +56,13 @@ class ExternalEventResponseHandler @Activate constructor(
                         "for an ${ExternalEventResponse::class.simpleName}"
             )
         }
+
+        val externalEventDurationMs = Instant.now().toEpochMilli() - externalEventState.eventToSend.timestamp.toEpochMilli()
+        CordaMetrics.Metric.ExternalEventTime.builder()
+            .withTag(CordaMetrics.Tag.VirtualNode, checkpoint.holdingIdentity.shortHash.toString())
+            .withTag(CordaMetrics.Tag.FlowClass, checkpoint.flowStartContext.flowClassName)
+            .build()
+            .record(Duration.ofMillis(externalEventDurationMs))
 
         checkpoint.externalEventState = externalEventManager.processResponse(
             externalEventState,
