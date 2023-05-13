@@ -100,12 +100,10 @@ internal class SandboxGroupImpl(
 
     private val classToStaticTag = mutableMapOf<Class<*>, String>()
 //    private val classToEvolvableTag = mutableMapOf<Class<*>, String>()
-    private val tagToClass = mutableMapOf<String, Class<*>>()
+//    private val tagToClass = mutableMapOf<String, Class<*>>()
 
     override fun getClass(className: String, serialisedClassTag: String): Class<*> {
-        return tagToClass.computeIfAbsent(serialisedClassTag) {
-            getClassInternal(className, it)
-        }
+        return getClassInternal(className, serialisedClassTag)
     }
 
     @Suppress("ComplexMethod", "NestedBlockDepth")
