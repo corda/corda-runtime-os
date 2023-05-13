@@ -94,12 +94,12 @@ internal class SandboxGroupImpl(
         getClassTag(klass, isStaticTag = true)
     }
 
-    override fun getEvolvableTag(klass: Class<*>) = classToEvolvableTag.computeIfAbsent(klass) {
-        getClassTag(klass, isStaticTag = false)
-    }
+
+    override fun getEvolvableTag(klass: Class<*>) = getClassTag(klass, isStaticTag = false)
+
 
     private val classToStaticTag = mutableMapOf<Class<*>, String>()
-    private val classToEvolvableTag = mutableMapOf<Class<*>, String>()
+//    private val classToEvolvableTag = mutableMapOf<Class<*>, String>()
     private val tagToClass = mutableMapOf<String, Class<*>>()
 
     override fun getClass(className: String, serialisedClassTag: String): Class<*> {
