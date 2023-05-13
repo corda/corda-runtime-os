@@ -228,6 +228,12 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
     private fun tryProcessBatchOfEvents(events: List<CordaConsumerRecord<K, E>>): Boolean {
         val outputRecords = mutableListOf<Record<*, *>>()
         val updatedStates: MutableMap<Int, MutableMap<K, S?>> = mutableMapOf()
+        // Pre-populate the updated states map with the current states.
+        events.forEach {
+            updatedStates.computeIfAbsent(it.partition) { mutableMapOf() }.computeIfAbsent(it.key) { key ->
+                stateAndEventConsumer.getInMemoryStateValue(key)
+            }
+        }
 
         log.debug { "Processing events(keys: ${events.joinToString { it.key.toString() }}, size: ${events.size})" }
         try {
@@ -256,7 +262,7 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                 })
                 deadLetterRecords.clear()
             }
-            producer.sendRecordOffsetsToTransaction(eventConsumer, events.map { it })
+            producer.sendRecordOffsetsToTransaction(eventConsumer, events)
             producer.commitTransaction()
         }
         log.debug { "Processing events(keys: ${events.joinToString { it.key.toString() }}, size: ${events.size}) complete." }
@@ -272,7 +278,7 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
     ) {
         log.debug { "Processing event: $event" }
         val key = event.key
-        val state = stateAndEventConsumer.getInMemoryStateValue(key)
+        val state = updatedStates[event.partition]?.get(event.key)
         val partitionId = event.partition
         val thisEventUpdates = getUpdatesForEvent(state, event)
         val updatedState = thisEventUpdates?.updatedState
