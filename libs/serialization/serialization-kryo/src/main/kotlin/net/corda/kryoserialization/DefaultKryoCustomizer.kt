@@ -104,6 +104,7 @@ class DefaultKryoCustomizer {
 
                 addDefaultSerializer(LinkedEntrySetSerializer.serializedType, LinkedEntrySetSerializer)
 
+                register(java.lang.invoke.SerializedLambda::class.java)
                 register(ClosureSerializer.Closure::class.java, CordaClosureSerializer)
 
                 addDefaultSerializer(Throwable::class.java, object: BaseSerializerFactory<ThrowableSerializer<*>>() {
