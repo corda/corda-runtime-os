@@ -9,20 +9,21 @@ fun<K: Any, E : Any> getEventsByBatch(events: List<CordaConsumerRecord<K, E>>): 
     if (events.isEmpty()) {
         return emptyList()
     }
+    return listOf(events)
+//
+//    val keysInBatch = mutableSetOf<K>()
+//    val eventBatches = mutableListOf<MutableList<CordaConsumerRecord<K, E>>>(mutableListOf())
+//    events.forEach { event ->
+//        val eventKey = event.key
+//
+//        if (eventKey in keysInBatch) {
+//            keysInBatch.clear()
+//            eventBatches.add(mutableListOf())
+//        }
+//
+//        keysInBatch.add(eventKey)
+//        eventBatches.last().add(event)
+//    }
 
-    val keysInBatch = mutableSetOf<K>()
-    val eventBatches = mutableListOf<MutableList<CordaConsumerRecord<K, E>>>(mutableListOf())
-    events.forEach { event ->
-        val eventKey = event.key
-
-        if (eventKey in keysInBatch) {
-            keysInBatch.clear()
-            eventBatches.add(mutableListOf())
-        }
-
-        keysInBatch.add(eventKey)
-        eventBatches.last().add(event)
-    }
-
-    return eventBatches
+//    return eventBatches
 }
