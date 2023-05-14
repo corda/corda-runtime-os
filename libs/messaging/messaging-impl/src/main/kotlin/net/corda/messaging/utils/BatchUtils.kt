@@ -3,26 +3,15 @@ package net.corda.messaging.utils
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
 
 /**
- * Divide a list of [events] into batches such that 1 key does not have more than one entry per batch
+ * Subdivide a batch of events for more efficient processing.
+ *
+ * In the current implementation, this does nothing. In the future, the subbatching logic may ensure that all events on
+ * the same key are processed in order as part of the same sub-batch, to allow sub-batch processing to be parallelized.
  */
 fun<K: Any, E : Any> getEventsByBatch(events: List<CordaConsumerRecord<K, E>>): List<List<CordaConsumerRecord<K, E>>> {
     if (events.isEmpty()) {
         return emptyList()
     }
 
-    val keysInBatch = mutableSetOf<K>()
-    val eventBatches = mutableListOf<MutableList<CordaConsumerRecord<K, E>>>(mutableListOf())
-    events.forEach { event ->
-        val eventKey = event.key
-
-        if (eventKey in keysInBatch) {
-            keysInBatch.clear()
-            eventBatches.add(mutableListOf())
-        }
-
-        keysInBatch.add(eventKey)
-        eventBatches.last().add(event)
-    }
-
-    return eventBatches
+    return listOf(events)
 }
