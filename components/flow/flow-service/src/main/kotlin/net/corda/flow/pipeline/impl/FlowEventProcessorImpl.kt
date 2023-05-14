@@ -69,11 +69,11 @@ class FlowEventProcessorImpl(
         val flowEventTimer = if (holdingId != null) {
             CordaMetrics.Metric.FlowEventProcessingTime.builder()
                 .forVirtualNode(holdingId)
-                .withTag(CordaMetrics.Tag.FlowEvent, event.value?.javaClass?.name ?: "")
+                .withTag(CordaMetrics.Tag.FlowEvent, flowEvent.payload.javaClass.name)
                 .build()
         } else {
             CordaMetrics.Metric.FlowEventProcessingTime.builder()
-                .withTag(CordaMetrics.Tag.FlowEvent, event.value?.javaClass?.name ?: "")
+                .withTag(CordaMetrics.Tag.FlowEvent, flowEvent.payload.javaClass.name)
                 .build()
         }
         return flowEventTimer.recordCallable {
