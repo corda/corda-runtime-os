@@ -186,6 +186,22 @@ object CordaMetrics {
          * The time taken by the backing store to perform a single read operation from the database.
          */
         object UniquenessBackingStoreDbReadTime: Metric<Timer>("uniqueness.backingstore.db.read.time", CordaMetrics::timer)
+        /**
+         * The time taken for the persistence processor to process a single event
+         */
+        object PersistenceProcessorExecutionTime: Metric<Timer>("persistence.processor.execution.time", CordaMetrics::timer)
+        /**
+         * The time taken for the verification processor to process a single event
+         */
+        object VerificationProcessorExecutionTime: Metric<Timer>("verification.processor.execution.time", CordaMetrics::timer)
+
+        object CryptoProcessorExecutionTime: Metric<Timer>("crypto.flow.processor.execution.time", CordaMetrics::timer)
+
+        object FlowEventProcessingTime: Metric<Timer>("flow.event.processing.time", CordaMetrics::timer)
+        /**
+         * Time it took for an external event to complete.
+         */
+        object ExternalEventTime : Metric<Timer>("external.event.time", Metrics::timer)
     }
 
     /**
@@ -284,7 +300,9 @@ object CordaMetrics {
         /**
          * Type of error raised in failure cases
          */
-        ErrorType("error.type")
+        ErrorType("error.type"),
+
+        FlowEvent("flow.event.type")
     }
 
     val registry: CompositeMeterRegistry = Metrics.globalRegistry

@@ -166,7 +166,7 @@ internal class DeliveryTracker(
                         if (state != null) {
                             // if we receive multiple acknowledgements, it is possible the state might have been nullified already.
                             // Only the first one matters for calculating the end-to-end delivery latency anyway.
-                            recordDeliveryLatencyMetric(state)
+                            recordDeliveryLatencyMetric(state, marker.timestamp)
                         }
                         Response(null, emptyList())
                     }
@@ -184,9 +184,10 @@ internal class DeliveryTracker(
                 return Response(state, emptyList())
             }
 
-            private fun recordDeliveryLatencyMetric(state: AuthenticatedMessageDeliveryState) {
+            private fun recordDeliveryLatencyMetric(state: AuthenticatedMessageDeliveryState, deliveryTimestamp: Long) {
                 val originalProcessingTime = Instant.ofEpochMilli(state.timestamp)
-                val deliveryLatency = Duration.between(originalProcessingTime, Instant.now())
+                val deliveryTime = Instant.ofEpochMilli(deliveryTimestamp)
+                val deliveryLatency = Duration.between(originalProcessingTime, deliveryTime)
                 val header = state.message.message.header
                 CordaMetrics.Metric.OutboundMessageDeliveryLatency.builder()
                     .withTag(CordaMetrics.Tag.SourceVirtualNode, header.source.x500Name)

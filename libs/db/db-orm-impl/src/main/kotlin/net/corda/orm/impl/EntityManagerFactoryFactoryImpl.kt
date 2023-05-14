@@ -10,6 +10,8 @@ import org.hibernate.jpa.boot.internal.PersistenceUnitInfoDescriptor
 import org.hibernate.jpa.boot.spi.EntityManagerFactoryBuilder
 import org.osgi.service.component.annotations.Component
 import org.slf4j.LoggerFactory
+import java.security.AccessController
+import java.security.PrivilegedAction
 import javax.persistence.EntityManagerFactory
 import javax.persistence.spi.PersistenceUnitInfo
 
@@ -95,7 +97,9 @@ class EntityManagerFactoryFactoryImpl(
             configuration.dataSource
         )
 
-        val entityManagerFactory = entityManagerFactoryBuilderFactory(persistenceUnitInfo).build()
+        val entityManagerFactory = AccessController.doPrivileged(PrivilegedAction {
+            entityManagerFactoryBuilderFactory(persistenceUnitInfo).build()
+        })
         return EntityManagerFactoryWrapper(entityManagerFactory, configuration.dataSource)
     }
 }

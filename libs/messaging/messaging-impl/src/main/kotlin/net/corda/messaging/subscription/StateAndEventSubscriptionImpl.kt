@@ -193,10 +193,11 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                 log.debug { "Polling and processing events" }
                 var rebalanceOccurred = false
                 val records = stateAndEventConsumer.pollEvents()
-                batchSizeHistogram.record(records.size.toDouble())
+//                batchSizeHistogram.record(records.size.toDouble())
                 val batches = getEventsByBatch(records).iterator()
                 while (!rebalanceOccurred && batches.hasNext()) {
                     val batch = batches.next()
+                    batchSizeHistogram.record(batch.size.toDouble())
                     rebalanceOccurred = tryProcessBatchOfEvents(batch)
                 }
                 keepProcessing = false // We only want to do one batch at a time
@@ -227,6 +228,13 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
     private fun tryProcessBatchOfEvents(events: List<CordaConsumerRecord<K, E>>): Boolean {
         val outputRecords = mutableListOf<Record<*, *>>()
         val updatedStates: MutableMap<Int, MutableMap<K, S?>> = mutableMapOf()
+        // Pre-populate the updated states with the current in-memory state.
+        events.forEach {
+            val partitionMap = updatedStates.computeIfAbsent(it.partition) { mutableMapOf() }
+            partitionMap.computeIfAbsent(it.key) { key ->
+                stateAndEventConsumer.getInMemoryStateValue(key)
+            }
+        }
 
         log.debug { "Processing events(keys: ${events.joinToString { it.key.toString() }}, size: ${events.size})" }
         try {
@@ -255,7 +263,7 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                 })
                 deadLetterRecords.clear()
             }
-            producer.sendRecordOffsetsToTransaction(eventConsumer, events.map { it })
+            producer.sendRecordOffsetsToTransaction(eventConsumer, events)
             producer.commitTransaction()
         }
         log.debug { "Processing events(keys: ${events.joinToString { it.key.toString() }}, size: ${events.size}) complete." }
@@ -271,7 +279,7 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
     ) {
         log.debug { "Processing event: $event" }
         val key = event.key
-        val state = stateAndEventConsumer.getInMemoryStateValue(key)
+        val state = updatedStates[event.partition]?.get(event.key)
         val partitionId = event.partition
         val thisEventUpdates = getUpdatesForEvent(state, event)
         val updatedState = thisEventUpdates?.updatedState
@@ -283,7 +291,7 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                     "Sending state and event on key ${event.key} for topic ${event.topic} to dead letter queue. " +
                             "Processor failed to complete."
                 )
-                generateChunkKeyCleanupRecords(key, state, null, outputRecords)
+//                generateChunkKeyCleanupRecords(key, state, null, outputRecords)
                 outputRecords.add(generateDeadLetterRecord(event, state))
                 outputRecords.add(Record(stateTopic, key, null))
                 updatedStates.computeIfAbsent(partitionId) { mutableMapOf() }[key] = null
@@ -294,7 +302,7 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                     "Sending state and event on key ${event.key} for topic ${event.topic} to dead letter queue. " +
                             "Processor marked event for the dead letter queue"
                 )
-                generateChunkKeyCleanupRecords(key, state, null, outputRecords)
+//                generateChunkKeyCleanupRecords(key, state, null, outputRecords)
                 outputRecords.add(generateDeadLetterRecord(event, state))
                 outputRecords.add(Record(stateTopic, key, null))
                 updatedStates.computeIfAbsent(partitionId) { mutableMapOf() }[key] = null
@@ -305,7 +313,7 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
             }
 
             else -> {
-                generateChunkKeyCleanupRecords(key, state, updatedState, outputRecords)
+//                generateChunkKeyCleanupRecords(key, state, updatedState, outputRecords)
                 outputRecords.addAll(thisEventUpdates.responseEvents)
                 outputRecords.add(Record(stateTopic, key, updatedState))
                 updatedStates.computeIfAbsent(partitionId) { mutableMapOf() }[key] = updatedState
@@ -317,13 +325,13 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
     /**
      * If the new state requires old chunk keys to be cleared then generate cleanup records to set those ChunkKeys to null
      */
-    private fun generateChunkKeyCleanupRecords(key: K, state: S?, updatedState: S?, outputRecords: MutableList<Record<*, *>>) {
-        chunkSerializerService.getChunkKeysToClear(key, state, updatedState)?.let { chunkKeys ->
-            chunkKeys.map { chunkKey ->
-                outputRecords.add(Record(stateTopic, chunkKey, null))
-            }
-        }
-    }
+//    private fun generateChunkKeyCleanupRecords(key: K, state: S?, updatedState: S?, outputRecords: MutableList<Record<*, *>>) {
+//        chunkSerializerService.getChunkKeysToClear(key, state, updatedState)?.let { chunkKeys ->
+//            chunkKeys.map { chunkKey ->
+//                outputRecords.add(Record(stateTopic, chunkKey, null))
+//            }
+//        }
+//    }
 
     private fun getUpdatesForEvent(state: S?, event: CordaConsumerRecord<K, E>): StateAndEventProcessor.Response<S>? {
         val future = stateAndEventConsumer.waitForFunctionToFinish(
