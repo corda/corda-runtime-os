@@ -291,7 +291,7 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                     "Sending state and event on key ${event.key} for topic ${event.topic} to dead letter queue. " +
                             "Processor failed to complete."
                 )
-                generateChunkKeyCleanupRecords(key, state, null, outputRecords)
+//                generateChunkKeyCleanupRecords(key, state, null, outputRecords)
                 outputRecords.add(generateDeadLetterRecord(event, state))
                 outputRecords.add(Record(stateTopic, key, null))
                 updatedStates.computeIfAbsent(partitionId) { mutableMapOf() }[key] = null
@@ -302,7 +302,7 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                     "Sending state and event on key ${event.key} for topic ${event.topic} to dead letter queue. " +
                             "Processor marked event for the dead letter queue"
                 )
-                generateChunkKeyCleanupRecords(key, state, null, outputRecords)
+//                generateChunkKeyCleanupRecords(key, state, null, outputRecords)
                 outputRecords.add(generateDeadLetterRecord(event, state))
                 outputRecords.add(Record(stateTopic, key, null))
                 updatedStates.computeIfAbsent(partitionId) { mutableMapOf() }[key] = null
@@ -313,7 +313,7 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
             }
 
             else -> {
-                generateChunkKeyCleanupRecords(key, state, updatedState, outputRecords)
+//                generateChunkKeyCleanupRecords(key, state, updatedState, outputRecords)
                 outputRecords.addAll(thisEventUpdates.responseEvents)
                 outputRecords.add(Record(stateTopic, key, updatedState))
                 updatedStates.computeIfAbsent(partitionId) { mutableMapOf() }[key] = updatedState
@@ -325,13 +325,13 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
     /**
      * If the new state requires old chunk keys to be cleared then generate cleanup records to set those ChunkKeys to null
      */
-    private fun generateChunkKeyCleanupRecords(key: K, state: S?, updatedState: S?, outputRecords: MutableList<Record<*, *>>) {
-        chunkSerializerService.getChunkKeysToClear(key, state, updatedState)?.let { chunkKeys ->
-            chunkKeys.map { chunkKey ->
-                outputRecords.add(Record(stateTopic, chunkKey, null))
-            }
-        }
-    }
+//    private fun generateChunkKeyCleanupRecords(key: K, state: S?, updatedState: S?, outputRecords: MutableList<Record<*, *>>) {
+//        chunkSerializerService.getChunkKeysToClear(key, state, updatedState)?.let { chunkKeys ->
+//            chunkKeys.map { chunkKey ->
+//                outputRecords.add(Record(stateTopic, chunkKey, null))
+//            }
+//        }
+//    }
 
     private fun getUpdatesForEvent(state: S?, event: CordaConsumerRecord<K, E>): StateAndEventProcessor.Response<S>? {
         val future = stateAndEventConsumer.waitForFunctionToFinish(

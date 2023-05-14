@@ -100,10 +100,10 @@ class CordaKafkaProducerImpl(
      * @param partition partition to send to. defaults to null.
      */
     private fun sendRecord(record: CordaProducerRecord<*, *>, callback: CordaProducer.Callback? = null, partition: Int? = null) {
-        val chunkedRecords = chunkSerializerService.generateChunkedRecords(record)
-        if (chunkedRecords.isNotEmpty()) {
-            sendChunks(chunkedRecords, callback, partition)
-        } else {
+//        val chunkedRecords = chunkSerializerService.generateChunkedRecords(record)
+//        if (chunkedRecords.isNotEmpty()) {
+//            sendChunks(chunkedRecords, callback, partition)
+//        } else {
             try {
                 producer.send(record.toKafkaRecord(topicPrefix , partition), callback?.toKafkaCallback())
             } catch (ex: CordaRuntimeException) {
@@ -115,7 +115,7 @@ class CordaKafkaProducerImpl(
                     log.warn(msg, ex)
                 }
             }
-        }
+//        }
     }
 
     /**
