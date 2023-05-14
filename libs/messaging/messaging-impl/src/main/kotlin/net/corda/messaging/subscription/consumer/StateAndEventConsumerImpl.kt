@@ -31,13 +31,13 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
 
     companion object {
         //short timeout for poll of paused partitions when waiting for processor to finish
-        private val PAUSED_POLL_TIMEOUT = Duration.ofMillis(100)
+        private val PAUSED_POLL_TIMEOUT = Duration.ofMillis(10)
 
         //short timeout for state polling to not starve the event poller
         private val STATE_POLL_TIMEOUT = Duration.ofMillis(100)
 
         // Event poll timeout
-        private val EVENT_POLL_TIMEOUT = Duration.ofMillis(1000)
+        private val EVENT_POLL_TIMEOUT = Duration.ofMillis(10000)
 
         private const val STATE_TOPIC_SUFFIX = ".state"
     }
