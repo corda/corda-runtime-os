@@ -17,6 +17,7 @@ import java.util.Collections.unmodifiableSortedMap
 import java.util.SortedMap
 import java.util.TreeMap
 import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
 
 /**
  * An implementation of the [SandboxGroup] interface.
@@ -102,9 +103,16 @@ internal class SandboxGroupImpl(
         }
     }
 
-    override fun getStaticTag(klass: Class<*>) = getClassTag(klass, isStaticTag = true)
+    override fun getStaticTag(klass: Class<*>) = staticTagCache.computeIfAbsent(klass) {
+        getClassTag(klass, isStaticTag = true)
+    }
 
-    override fun getEvolvableTag(klass: Class<*>) = getClassTag(klass, isStaticTag = false)
+    override fun getEvolvableTag(klass: Class<*>) = evolvableTagCache.computeIfAbsent(klass) {
+        getClassTag(klass, isStaticTag = false)
+    }
+
+    private val staticTagCache = ConcurrentHashMap<Class<*>, String>()
+    private val evolvableTagCache = ConcurrentHashMap<Class<*>, String>()
 
     @Suppress("ComplexMethod", "NestedBlockDepth")
     override fun getClass(className: String, serialisedClassTag: String): Class<*> {
