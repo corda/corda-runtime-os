@@ -9,11 +9,8 @@ import software.amazon.awssdk.services.kms.model.KeyListEntry
 import software.amazon.awssdk.services.kms.model.KmsException
 import software.amazon.awssdk.services.kms.model.ListKeysRequest
 import software.amazon.awssdk.services.kms.model.ListKeysResponse
-import java.io.ByteArrayInputStream
-import java.io.InputStream
 import java.security.PrivateKey
-import java.security.cert.CertificateFactory
-import java.security.cert.X509Certificate
+import kotlin.system.exitProcess
 
 
 fun getKmsClient(): KmsClient {
@@ -40,23 +37,15 @@ fun listAllKeys(kmsClient: KmsClient) {
         val keysResponse: ListKeysResponse = kmsClient.listKeys(listKeysRequest)
         val keyListEntries: List<KeyListEntry> = keysResponse.keys()
         for (key in keyListEntries) {
-            System.out.println("The key ARN is: " + key.keyArn())
-            System.out.println("The key Id is: " + key.keyId())
+            println("The key ARN is: " + key.keyArn())
+            println("The key Id is: " + key.keyId())
         }
     } catch (e: KmsException) {
         System.err.println(e.message)
-        System.exit(1)
+        exitProcess(1)
     }
 }
 
 fun closeKmsClient(kmsClient: KmsClient) {
     kmsClient.close()
-}
-
-@Throws(Exception::class)
-fun convertStringToX509Cert(certificate: String): X509Certificate {
-    val targetStream: InputStream = ByteArrayInputStream(certificate.toByteArray())
-    return CertificateFactory
-        .getInstance("X509")
-        .generateCertificate(targetStream) as X509Certificate
 }
