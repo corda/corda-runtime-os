@@ -182,9 +182,9 @@ class MGMRegistrationService @Activate constructor(
                 val groupParameters = groupParametersPersistenceResult.getOrThrow()
                 groupParametersWriterService.put(member, groupParameters)
 
-                mgmRegistrationOutputPublisher.createRecords(mgmInfo.memberInfo)
-
                 expirationProcessor.scheduleProcessingOfExpiredRequests(member)
+
+                mgmRegistrationOutputPublisher.createRecords(mgmInfo.memberInfo)
             } catch (ex: MGMRegistrationContextValidationException) {
                 throw InvalidMembershipRegistrationException(ex.reason, ex)
             } catch (ex: MGMRegistrationMemberInfoHandlingException) {

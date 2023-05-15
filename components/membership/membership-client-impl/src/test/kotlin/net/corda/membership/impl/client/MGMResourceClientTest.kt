@@ -121,7 +121,7 @@ class MGMResourceClientTest {
         val RULE_TYPE = ApprovalRuleType.STANDARD
         val memberName = MemberX500Name.parse("CN=Bob,O=Bob,OU=Unit1,L=London,ST=State1,C=GB")
         val mgmX500Name = MemberX500Name.parse("CN=Alice,OU=Unit1,O=Alice,L=London,ST=State1,C=GB")
-        val holdingIdentity = createTestHoldingIdentity(mgmX500Name.toString(), GROUP)
+        val holdingIdentity = createTestHoldingIdentity(mgmX500Name.toString(), DEFAULT_MEMBER_GROUP_ID)
         val shortHash = ShortHash.of(HOLDING_IDENTITY_STRING)
         val clock = TestClock(Instant.ofEpochSecond(100))
 
@@ -849,7 +849,7 @@ class MGMResourceClientTest {
                 listOf(
                     Record(
                         Schemas.Membership.REGISTRATION_COMMAND_TOPIC,
-                        "$memberName-$GROUP",
+                        "$memberName-$DEFAULT_MEMBER_GROUP_ID",
                         RegistrationCommand(ApproveRegistration())
                     )
                 )
@@ -883,7 +883,7 @@ class MGMResourceClientTest {
                 listOf(
                     Record(
                         Schemas.Membership.REGISTRATION_COMMAND_TOPIC,
-                        "$memberName-$GROUP",
+                        "$memberName-$DEFAULT_MEMBER_GROUP_ID",
                         RegistrationCommand(DeclineRegistration(reason))
                     )
                 )
@@ -1007,7 +1007,7 @@ class MGMResourceClientTest {
                 listOf(
                     Record(
                         Schemas.Membership.REGISTRATION_COMMAND_TOPIC,
-                        "$memberName-$GROUP",
+                        "$memberName-$DEFAULT_MEMBER_GROUP_ID",
                         RegistrationCommand(DeclineRegistration("Force declined by MGM"))
                     )
                 )

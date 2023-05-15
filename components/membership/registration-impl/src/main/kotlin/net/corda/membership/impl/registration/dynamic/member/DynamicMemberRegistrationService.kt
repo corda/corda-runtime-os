@@ -1,5 +1,7 @@
 package net.corda.membership.impl.registration.dynamic.member
 
+import net.corda.avro.serialization.CordaAvroSerializationFactory
+import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationGetService
 import net.corda.configuration.read.ConfigurationReadService
@@ -16,8 +18,6 @@ import net.corda.crypto.core.fullIdHash
 import net.corda.crypto.core.toByteArray
 import net.corda.crypto.hes.EphemeralKeyPairEncryptor
 import net.corda.crypto.hes.HybridEncryptionParams
-import net.corda.avro.serialization.CordaAvroSerializationFactory
-import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
@@ -28,9 +28,6 @@ import net.corda.data.membership.p2p.MembershipRegistrationRequest
 import net.corda.data.membership.p2p.UnauthenticatedRegistrationRequest
 import net.corda.data.membership.p2p.UnauthenticatedRegistrationRequestHeader
 import net.corda.data.p2p.app.AppMessage
-import net.corda.data.p2p.app.MembershipStatusFilter
-import net.corda.data.p2p.app.UnauthenticatedMessage
-import net.corda.data.p2p.app.UnauthenticatedMessageHeader
 import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.data.p2p.app.OutboundUnauthenticatedMessage
 import net.corda.data.p2p.app.OutboundUnauthenticatedMessageHeader
@@ -313,7 +310,6 @@ class DynamicMemberRegistrationService @Activate constructor(
                 val signedMemberContext = sign(memberId, publicKey, signatureSpec, memberContext)
                 val signedRegistrationContext = sign(memberId, publicKey, signatureSpec, registrationContext)
 
-                val groupReader = membershipGroupReaderProvider.getGroupReader(member)
                 val mgm = groupReader.lookup().firstOrNull { it.isMgm }
                     ?: throw IllegalArgumentException("Failed to look up MGM information.")
 

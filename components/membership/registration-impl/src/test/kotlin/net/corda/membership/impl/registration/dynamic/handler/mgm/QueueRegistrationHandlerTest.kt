@@ -1,8 +1,7 @@
 package net.corda.membership.impl.registration.dynamic.handler.mgm
 
-import net.corda.data.crypto.wire.CryptoSignatureSpec
-import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.identity.HoldingIdentity
+import net.corda.data.membership.SignedData
 import net.corda.data.membership.command.registration.RegistrationCommand
 import net.corda.data.membership.command.registration.mgm.CheckForPendingRegistration
 import net.corda.data.membership.command.registration.mgm.QueueRegistration
@@ -21,7 +20,6 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
-import java.nio.ByteBuffer
 import java.util.UUID
 
 class QueueRegistrationHandlerTest {
@@ -37,12 +35,11 @@ class QueueRegistrationHandlerTest {
     private val member = HoldingIdentity(aliceName.toString(), groupId.toString())
     private val mgm = HoldingIdentity(mgmName.toString(), groupId.toString())
 
-    private val memberContext = mock<ByteBuffer>()
-    private val memberSignature = mock<CryptoSignatureWithKey>()
-    private val memberSignatureSpec = mock<CryptoSignatureSpec>()
+    private val memberContext = mock<SignedData>()
+    private val registrationContext = mock<SignedData>()
 
     private val registrationRequest =
-        MembershipRegistrationRequest(registrationId, memberContext, memberSignature, memberSignatureSpec, SERIAL)
+        MembershipRegistrationRequest(registrationId, memberContext, registrationContext, SERIAL)
     private val membershipPersistenceClient = mock<MembershipPersistenceClient> {
         on {
             persistRegistrationRequest(
@@ -52,11 +49,10 @@ class QueueRegistrationHandlerTest {
                     registrationRequest.registrationId,
                     member.toCorda(),
                     registrationRequest.memberContext,
-                    registrationRequest.memberSignature,
-                    registrationRequest.memberSignatureSpec,
+                    registrationRequest.registrationContext,
                     registrationRequest.serial,
                 ))
-            )
+            ).execute()
         } doReturn MembershipPersistenceResult.success()
     }
     private val inputCommand = RegistrationCommand(QueueRegistration(mgm, member, registrationRequest, 0))
@@ -80,7 +76,7 @@ class QueueRegistrationHandlerTest {
 
     @Test
     fun `retry if queueing the request failed`() {
-        whenever(membershipPersistenceClient.persistRegistrationRequest(any(), any()))
+        whenever(membershipPersistenceClient.persistRegistrationRequest(any(), any()).execute())
             .thenReturn(MembershipPersistenceResult.Failure("error happened"))
         with(handler.invoke(null, Record(TOPIC, KEY, inputCommand))) {
             assertThat(updatedState).isNull()

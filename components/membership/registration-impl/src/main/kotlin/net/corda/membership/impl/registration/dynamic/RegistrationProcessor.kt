@@ -72,6 +72,7 @@ class RegistrationProcessor(
             membershipPersistenceClient,
             membershipQueryClient,
             membershipGroupReaderProvider,
+            cordaAvroSerializationFactory,
         ),
         ApproveRegistration::class.java to ApproveRegistrationHandler(
             membershipPersistenceClient,

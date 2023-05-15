@@ -108,7 +108,10 @@ class  RegistrationProcessorTest {
                 1,
                 memberContext,
                 signature,
-                signatureSpec,
+                mock(),
+                mock(),
+                mock(),
+                mock(),
                 "",
                 SERIAL,
             )

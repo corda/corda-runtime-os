@@ -14,15 +14,14 @@ import net.corda.membership.lib.GroupParametersNotaryUpdater
 import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.NOTARY_SERVICE_NAME_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.lib.MemberInfoExtension.Companion.notaryDetails
+import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.membership.lib.toMap
 import net.corda.membership.lib.toSortedMap
-import net.corda.membership.lib.updateExistingNotaryService
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.toCorda
 import javax.persistence.EntityManager
 import javax.persistence.LockModeType
-import kotlin.streams.asSequence
 
 internal class AddNotaryToGroupParametersHandler(
     persistenceHandlerServices: PersistenceHandlerServices
@@ -107,7 +106,7 @@ internal class AddNotaryToGroupParametersHandler(
         }
 
             val parametersMap = deserializer.deserializeKeyValuePairList(previous.singleResult.parameters).toMap()
-            val notaryInfo = memberInfoFactory.create(request.notary)
+            val notaryInfo = memberInfoFactory.create(notaryMemberInfo)
             val notary = notaryInfo.notaryDetails
                 ?: throw MembershipPersistenceException(
                     "Cannot add notary to group parameters - notary details not found."
@@ -126,7 +125,7 @@ internal class AddNotaryToGroupParametersHandler(
                     it.status == MEMBER_STATUS_ACTIVE
                 }.map {
                     it.notaryDetails!!.serviceProtocolVersions.toHashSet()
-                }.asSequence().reduceOrNull { acc, it -> acc.apply { retainAll(it) } } ?: emptySet()
+                }.reduceOrNull { acc, it -> acc.apply { retainAll(it) } } ?: emptySet()
 
             notaryUpdater.updateExistingNotaryService(parametersMap, notary, notaryServiceNumber, currentProtocolVersions).apply {
                 first ?: return previous.singleResult.toAvro()

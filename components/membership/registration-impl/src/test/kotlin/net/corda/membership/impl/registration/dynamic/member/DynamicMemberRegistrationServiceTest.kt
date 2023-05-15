@@ -6,7 +6,6 @@ import net.corda.configuration.read.ConfigurationGetService
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.cipher.suite.SignatureSpecs
-import net.corda.crypto.cipher.suite.calculateHash
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.core.CryptoConsts.Categories.LEDGER
 import net.corda.crypto.core.CryptoConsts.Categories.NOTARY
@@ -18,6 +17,7 @@ import net.corda.crypto.hes.EncryptedDataWithKey
 import net.corda.crypto.hes.EphemeralKeyPairEncryptor
 import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.avro.serialization.CordaAvroSerializer
+import net.corda.crypto.core.fullIdHash
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
@@ -379,10 +379,10 @@ class DynamicMemberRegistrationServiceTest {
         URL_KEY.format(0) to "https://localhost:1080",
         PROTOCOL_VERSION.format(0) to "1",
         PARTY_SESSION_KEYS_PEM.format(0) to SESSION_KEY,
-        SESSION_KEYS_HASH.format(0) to sessionKey.calculateHash().value,
+        SESSION_KEYS_HASH.format(0) to sessionKey.fullIdHash().toString(),
         SESSION_KEYS_SIGNATURE_SPEC.format(0) to SignatureSpecs.ECDSA_SHA512.signatureName,
         LEDGER_KEYS_KEY.format(0) to LEDGER_KEY,
-        LEDGER_KEY_HASHES_KEY.format(0) to ledgerKey.calculateHash().value,
+        LEDGER_KEY_HASHES_KEY.format(0) to ledgerKey.fullIdHash().toString(),
         LEDGER_KEY_SIGNATURE_SPEC.format(0) to SignatureSpecs.ECDSA_SHA512.signatureName,
         REGISTRATION_ID to registrationResultId.toString(),
         PARTY_NAME to memberName.toString(),

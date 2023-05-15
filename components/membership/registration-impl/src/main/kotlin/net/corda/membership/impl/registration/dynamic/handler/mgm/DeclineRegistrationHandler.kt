@@ -1,6 +1,6 @@
 package net.corda.membership.impl.registration.dynamic.handler.mgm
 
-import net.corda.data.CordaAvroSerializationFactory
+import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.data.membership.command.registration.RegistrationCommand
 import net.corda.data.membership.command.registration.mgm.CheckForPendingRegistration
 import net.corda.data.membership.command.registration.mgm.DeclineRegistration
@@ -80,7 +80,7 @@ internal class DeclineRegistrationHandler(
         )
         return RegistrationHandlerResult(
             null,
-            listOf(persistDeclineMessage, commandToStartProcessingTheNextRequest)
+            listOf(memberDeclinedMessage, commandToStartProcessingTheNextRequest) + registrationRequestDeclinedCommand
         )
     }
 

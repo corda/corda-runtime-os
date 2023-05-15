@@ -1,7 +1,6 @@
 package net.corda.membership.impl.registration.dynamic.handler.mgm
 
 import net.corda.avro.serialization.CordaAvroSerializationFactory
-import net.corda.data.KeyValuePairList
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.command.registration.RegistrationCommand
 import net.corda.data.membership.command.registration.mgm.DeclineRegistration
@@ -34,10 +33,9 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.notaryDetails
 import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.SignedMemberInfo
-import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.lib.registration.RegistrationRequestHelpers.getPreAuthToken
-import net.corda.membership.p2p.helpers.P2pRecordsFactory
 import net.corda.membership.lib.toMap
+import net.corda.membership.p2p.helpers.P2pRecordsFactory
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.persistence.client.MembershipQueryClient
@@ -77,11 +75,6 @@ internal class StartRegistrationHandler(
         val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
-    private val keyValuePairListDeserializer =
-        cordaAvroSerializationFactory.createAvroDeserializer({
-            logger.error("Deserialization of registration request KeyValuePairList failed.")
-        }, KeyValuePairList::class.java)
-
     override val commandType = StartRegistration::class.java
 
     override fun invoke(state: RegistrationState?, key: String, command: StartRegistration): RegistrationHandlerResult {
@@ -109,7 +102,7 @@ internal class StartRegistrationHandler(
             logger.info("Updating the status of the registration request.")
             membershipPersistenceClient.setRegistrationRequestStatus(
                 mgmHoldingId, registrationId, RegistrationStatus.STARTED_PROCESSING_BY_MGM
-            ).also {
+            ).execute().also {
                 require(it as? MembershipPersistenceResult.Failure == null) {
                     "Failed to update the status of the registration request. Reason: " +
                             (it as MembershipPersistenceResult.Failure).errorMsg
@@ -270,17 +263,6 @@ internal class StartRegistrationHandler(
         }!!
     }
 
-    private fun StartRegistration.toRegistrationRequest(): RegistrationRequest {
-        return RegistrationRequest(
-            RegistrationStatus.RECEIVED_BY_MGM,
-            memberRegistrationRequest.registrationId,
-            source.toCorda(),
-            memberRegistrationRequest.memberContext,
-            memberRegistrationRequest.registrationContext,
-            memberRegistrationRequest.serial,
-        )
-    }
-
     private fun validateRoleInformation(mgmHoldingId: HoldingIdentity, member: MemberInfo) {
         val groupReader = membershipGroupReaderProvider.getGroupReader(mgmHoldingId)
         val groupParameters = groupReader.groupParameters
@@ -326,10 +308,10 @@ internal class StartRegistrationHandler(
     private fun validatePreAuthTokenUsage(
         mgmHoldingId: HoldingIdentity,
         pendingMemberInfo: MemberInfo,
-        registrationRequest: RegistrationRequest
+        registrationRequest: RegistrationRequestDetails
     ) {
         try {
-            registrationRequest.getPreAuthToken(keyValuePairListDeserializer)?.let {
+            registrationRequest.getPreAuthToken()?.let {
                 val result = membershipQueryClient.queryPreAuthTokens(
                     mgmHoldingIdentity = mgmHoldingId,
                     ownerX500Name = pendingMemberInfo.name,

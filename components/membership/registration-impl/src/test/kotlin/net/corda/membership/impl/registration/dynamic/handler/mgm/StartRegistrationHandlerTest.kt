@@ -8,18 +8,13 @@ import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.identity.HoldingIdentity
 import net.corda.data.membership.PersistentMemberInfo
-import net.corda.data.membership.SignedData
 import net.corda.data.membership.command.registration.RegistrationCommand
 import net.corda.data.membership.command.registration.mgm.DeclineRegistration
 import net.corda.data.membership.command.registration.mgm.StartRegistration
 import net.corda.data.membership.command.registration.mgm.VerifyMember
 import net.corda.data.membership.common.RegistrationRequestDetails
 import net.corda.data.membership.common.RegistrationStatus
-import net.corda.data.membership.common.RegistrationStatus
-import net.corda.data.membership.p2p.MembershipRegistrationRequest
-import net.corda.data.membership.p2p.SetOwnRegistrationStatus
 import net.corda.data.membership.preauth.PreAuthToken
-import net.corda.data.membership.state.RegistrationState
 import net.corda.data.membership.state.RegistrationState
 import net.corda.data.p2p.app.AppMessage
 import net.corda.membership.impl.registration.dynamic.handler.MemberTypeChecker
@@ -43,10 +38,9 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.notary.MemberNotaryDetails
 import net.corda.membership.lib.registration.PRE_AUTH_TOKEN
-import net.corda.membership.p2p.helpers.P2pRecordsFactory
 import net.corda.membership.lib.toMap
+import net.corda.membership.p2p.helpers.P2pRecordsFactory
 import net.corda.membership.persistence.client.MembershipPersistenceClient
-import net.corda.membership.persistence.client.MembershipPersistenceOperation
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.persistence.client.MembershipQueryResult
@@ -63,7 +57,6 @@ import net.corda.v5.membership.MemberContext
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
-import org.assertj.core.api.Assertions.fail
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -72,12 +65,12 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
-import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 import java.time.Instant
@@ -102,6 +95,7 @@ class StartRegistrationHandlerTest {
         const val testTopic = "topic"
         const val testTopicKey = "key"
 
+        val serialisedMemberContext = byteArrayOf(0)
         val memberContext = KeyValuePairList(
             listOf(
                 KeyValuePair("key", "value"),
@@ -109,6 +103,11 @@ class StartRegistrationHandlerTest {
                 KeyValuePair("apple", "pear"),
             )
         )
+        val serialisedRegistrationContext = byteArrayOf(1)
+        val registrationContext = mock<KeyValuePairList> {
+            on { items } doReturn emptyList()
+            on { toByteBuffer() } doReturn ByteBuffer.wrap(byteArrayOf(1))
+        }
 
         val startRegistrationCommand = RegistrationCommand(StartRegistration())
 
@@ -152,6 +151,13 @@ class StartRegistrationHandlerTest {
         on { status } doReturn MEMBER_STATUS_ACTIVE
         on { serial } doReturn 1L
     }
+    private val authenticatedMessageRecord = mock<Record<String, AppMessage>>()
+    private val p2pRecordsFactory = mock<P2pRecordsFactory> {
+        on {
+            createAuthenticatedMessageRecord(any(), any(), any(), anyOrNull(), any(), any())
+        } doReturn authenticatedMessageRecord
+    }
+
 
     private val mgmMemberContext: MemberContext = mock {
         on { parse(eq(GROUP_ID), eq(String::class.java)) } doReturn groupId
@@ -180,6 +186,10 @@ class StartRegistrationHandlerTest {
     private val registrationContextCustomFieldsVerifier = mock<RegistrationContextCustomFieldsVerifier> {
         on { verify(any()) } doReturn RegistrationContextCustomFieldsVerifier.Result.Success
     }
+    private val deserializer = mock<CordaAvroDeserializer<KeyValuePairList>> {
+        on { deserialize(eq(serialisedMemberContext)) } doReturn memberContext
+        on { deserialize(eq(serialisedRegistrationContext)) } doReturn registrationContext
+    }
 
     private val registrationRequest = createRegistrationRequest()
 
@@ -200,20 +210,30 @@ class StartRegistrationHandlerTest {
             ByteBuffer.wrap("789".toByteArray())
         ),
         CryptoSignatureSpec("", null, null),
+        registrationContext,
+        CryptoSignatureWithKey(
+            ByteBuffer.wrap("456".toByteArray()),
+            ByteBuffer.wrap("789".toByteArray())
+        ),
+        CryptoSignatureSpec("", null, null),
         "",
         serial,
     )
 
     @BeforeEach
     fun setUp() {
+        val cordaAvroSerializationFactory = mock<CordaAvroSerializationFactory> {
+            on { createAvroDeserializer(any(), eq(KeyValuePairList::class.java)) } doReturn deserializer
+        }
         memberInfoFactory = mock {
             on { create(any<SortedMap<String, String?>>(), any()) } doReturn pendingMemberInfo
         }
         membershipPersistenceClient = mock {
             on {
-                setRegistrationRequestStatus(any(), any(), eq(RegistrationStatus.STARTED_PROCESSING_BY_MGM), anyOrNull())
+                setRegistrationRequestStatus(any(), any(), eq(RegistrationStatus.STARTED_PROCESSING_BY_MGM),
+                    anyOrNull()).execute()
             } doReturn MembershipPersistenceResult.success()
-            on { persistMemberInfo(any(), any()) } doReturn MembershipPersistenceResult.success()
+            on { persistMemberInfo(any(), any()).execute() } doReturn MembershipPersistenceResult.success()
         }
         membershipQueryClient = mock {
             on {
@@ -234,6 +254,8 @@ class StartRegistrationHandlerTest {
             membershipPersistenceClient,
             membershipQueryClient,
             membershipGroupReaderProvider,
+            cordaAvroSerializationFactory,
+            p2pRecordsFactory,
             registrationContextCustomFieldsVerifier
         )
     }
@@ -298,7 +320,7 @@ class StartRegistrationHandlerTest {
 
     @Test
     fun `declined if updating the status of the registration request fails`() {
-        whenever(membershipPersistenceClient.setRegistrationRequestStatus(any(), any(), any(), anyOrNull()))
+        whenever(membershipPersistenceClient.setRegistrationRequestStatus(any(), any(), any(), anyOrNull()).execute())
             .doReturn(MembershipPersistenceResult.Failure("error"))
 
         with(handler.invoke(registrationState, Record(testTopic, testTopicKey, startRegistrationCommand))) {
@@ -484,7 +506,7 @@ class StartRegistrationHandlerTest {
 
     @Test
     fun `declined if member info fails to persist`() {
-        whenever(membershipPersistenceClient.persistMemberInfo(any(), any())).thenReturn(
+        whenever(membershipPersistenceClient.persistMemberInfo(any(), any()).execute()).thenReturn(
             MembershipPersistenceResult.Failure("error")
         )
         with(handler.invoke(registrationState, Record(testTopic, testTopicKey, startRegistrationCommand))) {

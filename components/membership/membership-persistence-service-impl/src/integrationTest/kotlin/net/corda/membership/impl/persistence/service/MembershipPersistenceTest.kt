@@ -1,14 +1,14 @@
 package net.corda.membership.impl.persistence.service
 
 import com.typesafe.config.ConfigFactory
+import net.corda.avro.serialization.CordaAvroDeserializer
+import net.corda.avro.serialization.CordaAvroSerializationFactory
+import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.cipher.suite.SignatureSpecs.RSA_SHA256
 import net.corda.crypto.core.DigitalSignatureWithKey
 import net.corda.crypto.core.fullIdHash
-import net.corda.avro.serialization.CordaAvroDeserializer
-import net.corda.avro.serialization.CordaAvroSerializationFactory
-import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.config.Configuration
@@ -888,7 +888,7 @@ class MembershipPersistenceTest {
         } + listOf(
             KeyValuePair(String.format(NOTARY_KEY_PEM, 0), oldNotaryKeyAsString),
             KeyValuePair(String.format(NOTARY_KEY_SPEC, 0), "SHA512withECDSA"),
-            KeyValuePair(String.format(NOTARY_KEY_HASH, 0), oldNotaryKey.calculateHash().value),
+            KeyValuePair(String.format(NOTARY_KEY_HASH, 0), oldNotaryKey.fullIdHash().toString()),
         )).sorted())
         val oldNotaryMgmContext = KeyValuePairList((memberContext.items.filterNot {
             it.key == SERIAL
