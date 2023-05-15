@@ -113,7 +113,8 @@ class DbConnectionOpsImpl(
             curr = clock.instant()
             logger.info(
                 "DB investigation " +
-                        "- override fun createEntityManagerFactory(connectionId: UUID, entitiesSet: JpaEntitiesSet): EntityManagerFactory " +
+                        "- override fun createEntityManagerFactory(connectionId: UUID, entitiesSet: " +
+                        "JpaEntitiesSet): EntityManagerFactory " +
                         "- 2 " +
                         "- $connectionId " +
                         "- Current: ${curr.nano} " +
@@ -123,7 +124,8 @@ class DbConnectionOpsImpl(
             )
             logger.info(
                 "DB investigation " +
-                        "- override fun createEntityManagerFactory(connectionId: UUID, entitiesSet: JpaEntitiesSet): EntityManagerFactory " +
+                        "- override fun createEntityManagerFactory(connectionId: UUID, entitiesSet: " +
+                        "JpaEntitiesSet): EntityManagerFactory " +
                         "- total " +
                         "- $connectionId " +
                         "- Since start: ${curr.nano - start.nano}ns" +

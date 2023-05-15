@@ -100,7 +100,8 @@ class EntityManagerFactoryFactoryImpl(
         curr = clock.instant()
         log.info(
             "DB investigation " +
-                    "- override fun create(persistenceUnitName: String, entities: List<String>, classLoaders: List<ClassLoader>, configuration: EntityManagerConfiguration): EntityManagerFactory " +
+                    "- override fun create(persistenceUnitName: String, entities: List<String>, classLoaders: " +
+                    "List<ClassLoader>, configuration: EntityManagerConfiguration): EntityManagerFactory " +
                     "- 1 " +
                     "- $id " +
                     "- Current: ${curr.nano} " +
@@ -119,7 +120,8 @@ class EntityManagerFactoryFactoryImpl(
         curr = clock.instant()
         log.info(
             "DB investigation " +
-                    "- override fun create(persistenceUnitName: String, entities: List<String>, classLoaders: List<ClassLoader>, configuration: EntityManagerConfiguration): EntityManagerFactory " +
+                    "- override fun create(persistenceUnitName: String, entities: List<String>, classLoaders: " +
+                    "List<ClassLoader>, configuration: EntityManagerConfiguration): EntityManagerFactory " +
                     "- 2 " +
                     "- $id " +
                     "- Current: ${curr.nano} " +
@@ -133,7 +135,8 @@ class EntityManagerFactoryFactoryImpl(
             curr = clock.instant()
             log.info(
                 "DB investigation " +
-                        "- override fun create(persistenceUnitName: String, entities: List<String>, classLoaders: List<ClassLoader>, configuration: EntityManagerConfiguration): EntityManagerFactory " +
+                        "- override fun create(persistenceUnitName: String, entities: List<String>, classLoaders: " +
+                        "List<ClassLoader>, configuration: EntityManagerConfiguration): EntityManagerFactory " +
                         "- 3 " +
                         "- $id " +
                         "- Current: ${curr.nano} " +
@@ -146,7 +149,8 @@ class EntityManagerFactoryFactoryImpl(
             curr = clock.instant()
             log.info(
                 "DB investigation " +
-                        "- override fun create(persistenceUnitName: String, entities: List<String>, classLoaders: List<ClassLoader>, configuration: EntityManagerConfiguration): EntityManagerFactory " +
+                        "- override fun create(persistenceUnitName: String, entities: List<String>, classLoaders: " +
+                        "List<ClassLoader>, configuration: EntityManagerConfiguration): EntityManagerFactory " +
                         "- 4 " +
                         "- $id " +
                         "- Current: ${curr.nano} " +
@@ -160,7 +164,8 @@ class EntityManagerFactoryFactoryImpl(
             curr = clock.instant()
             log.info(
                 "DB investigation " +
-                        "- override fun create(persistenceUnitName: String, entities: List<String>, classLoaders: List<ClassLoader>, configuration: EntityManagerConfiguration): EntityManagerFactory " +
+                        "- override fun create(persistenceUnitName: String, entities: List<String>, classLoaders: " +
+                        "List<ClassLoader>, configuration: EntityManagerConfiguration): EntityManagerFactory " +
                         "- 5 " +
                         "- $id " +
                         "- Current: ${curr.nano} " +
@@ -170,7 +175,8 @@ class EntityManagerFactoryFactoryImpl(
             )
             log.info(
                 "DB investigation " +
-                        "- override fun create(persistenceUnitName: String, entities: List<String>, classLoaders: List<ClassLoader>, configuration: EntityManagerConfiguration): EntityManagerFactory " +
+                        "- override fun create(persistenceUnitName: String, entities: List<String>, classLoaders: " +
+                        "List<ClassLoader>, configuration: EntityManagerConfiguration): EntityManagerFactory " +
                         "- total " +
                         "- $id " +
                         "- Since start: ${curr.nano - start.nano}ns" +
