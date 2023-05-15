@@ -53,7 +53,7 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
                 getExternalEvent(context, now) +
                 postProcessRetries(context)
 
-        context.flowMetrics.flowEventCompleted()
+        context.flowMetrics.flowEventCompleted(context.inputEvent.payload::class.java.name)
 
         return context.copy(outputRecords = context.outputRecords + outputRecords)
     }

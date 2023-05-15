@@ -83,7 +83,7 @@ class FlowEventPipelineImpl(
         // For now, we do this here as we need to be sure the flow start context exists, as for a
         // start flow event it won't exist until we have run the preProcess() for the start flow
         // event handler
-        context.flowMetrics.flowEventReceived()
+        context.flowMetrics.flowEventReceived(updatedContext.inputEventPayload::class.java.name)
 
         return this
     }
