@@ -74,7 +74,7 @@ class TransferFlow: ClientStartableFlow {
                 .setTimeWindowBetween(Instant.now(), Instant.now().plusMillis(Duration.ofDays(1).toMillis()))
                 .addInputState(stateAndRef.ref)
                 .addOutputState(outputState)
-                .addCommand(DeliveryContract.Settle())
+                .addCommand(DeliveryContract.Transfer())
                 .addSignatories(outputState.participants + listOf(myInfo.ledgerKeys[0]))
 
             val signedTransaction = txBuilder.toSignedTransaction()

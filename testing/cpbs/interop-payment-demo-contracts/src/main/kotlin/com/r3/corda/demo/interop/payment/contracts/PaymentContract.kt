@@ -9,7 +9,6 @@ import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 
 class PaymentContract : Contract {
     class Issue: Command
-    class Settle: Command
     class Transfer: Command
 
     override fun verify(transaction: UtxoLedgerTransaction) {
@@ -24,9 +23,6 @@ class PaymentContract : Contract {
         when (command) {
             is Issue -> {
                 "When command is Create there should be one and only one output state." using (transaction.outputContractStates.size == 1)
-            }
-            is Settle -> {
-                "When command is Update there should be one and only one output state." using (transaction.outputContractStates.size == 1)
             }
             is Transfer -> {
                 "When command is Update there should be one and only one output state." using (transaction.outputContractStates.size == 1)
