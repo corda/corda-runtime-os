@@ -6,7 +6,7 @@ plugins {
 cordapp {
     targetPlatformVersion platformVersion.toInteger()
     minimumPlatformVersion platformVersion.toInteger()
-    workflow {
+    contract {
         name "Interop payments demo contracts"
         versionId 1
         vendor "R3"
