@@ -70,7 +70,7 @@ class FinalizeResponderFlow: ResponderFlow {
             val finalizedSignedTransaction = ledgerService.receiveFinality(session) { ledgerTransaction ->
                 val state = ledgerTransaction.getOutputStates(DeliveryState::class.java).singleOrNull() ?:
                 throw CordaRuntimeException("Failed verification - transaction did not have exactly one output state.")
-
+                log.info("Output state id - ${state.linearId}") // Temporally added to suppress compilation warning
                 log.info("Verified the transaction - ${ledgerTransaction.id}")
             }
             log.info("Finished responder flow - ${finalizedSignedTransaction.transaction.id}")

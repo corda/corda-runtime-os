@@ -9,8 +9,6 @@ import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.base.annotations.Suspendable
-import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.ledger.common.NotaryLookup
 import net.corda.v5.ledger.utxo.UtxoLedgerService
 import org.slf4j.LoggerFactory
@@ -59,8 +57,7 @@ class IssueFlow : ClientStartableFlow {
                 participants = listOf(myInfo.ledgerKeys[0])
             )
 
-            val notary = notaryLookup.lookup(MemberX500Name.parse("CN=NotaryService, OU=Test Dept, O=R3, L=London, C=GB"))
-                ?: throw CordaRuntimeException("NotaryLookup can't find notary specified in flow arguments.")
+            val notary = notaryLookup.notaryServices.single()
 
             val txBuilder = ledgerService.createTransactionBuilder()
                 .setNotary(notary.name)
