@@ -1,5 +1,6 @@
 package net.corda.sandboxgroupcontext.impl
 
+import java.time.Duration.ofSeconds
 import net.corda.cpk.read.CpkReadService
 import net.corda.crypto.core.parseSecureHash
 import net.corda.libs.packaging.Cpk
@@ -8,6 +9,7 @@ import net.corda.sandboxgroupcontext.VirtualNodeContext
 import net.corda.sandboxgroupcontext.putUniqueObject
 import net.corda.sandboxgroupcontext.service.EvictionListener
 import net.corda.sandboxgroupcontext.service.impl.SandboxGroupContextServiceImpl
+import net.corda.test.util.eventually
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.HoldingIdentity
@@ -222,7 +224,9 @@ class SandboxGroupContextServiceImplTest {
             .isNotDone
         assertThat(service.remove(ctx1))
             .isNull()
-        verify(flowEvictionListener).onEviction(ctx1)
+        eventually(duration = ofSeconds(60)) {
+            verify(flowEvictionListener).onEviction(ctx1)
+        }
         verify(persistenceEvictionListener, never()).onEviction(any())
         verify(verificationEvictionListener, never()).onEviction(any())
     }
