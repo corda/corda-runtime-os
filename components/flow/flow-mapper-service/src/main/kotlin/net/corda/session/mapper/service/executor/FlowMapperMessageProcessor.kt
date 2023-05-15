@@ -47,10 +47,10 @@ class FlowMapperMessageProcessor(
         val value = event.value ?: return StateAndEventProcessor.Response(state, emptyList())
 
         CordaMetrics.Metric.FlowMapperEventLag.builder()
-            .withTag(CordaMetrics.Tag.FlowEvent, value::class.java.name)
+            .withTag(CordaMetrics.Tag.FlowEvent, value.payload::class.java.name)
             .build().record(Duration.ofMillis(clock.instant().toEpochMilli() - event.timestamp))
         val eventProcessingTimer = CordaMetrics.Metric.FlowMapperEventProcessingTime.builder()
-            .withTag(CordaMetrics.Tag.FlowEvent, value::class.java.name)
+            .withTag(CordaMetrics.Tag.FlowEvent, value.payload::class.java.name)
             .build()
         return eventProcessingTimer.recordCallable {
             if (!isExpiredSessionEvent(value)) {
