@@ -148,6 +148,38 @@ object CordaMetrics {
          */
         object FlowEventSuspensionWaitTime : Metric<Timer>("flow.event.suspension.wait.time", CordaMetrics::timer)
 
+        /**
+         * Flow mapper metrics
+         *
+         * Time to process a single message in the flow mapper
+         */
+        object FlowMapperEventProcessingTime : Metric<Timer>("flow.mapper.event.processing.time", CordaMetrics::timer)
+
+        /**
+         * Count of events dropped due to deduplication of start events by the mapper.
+         */
+        object FlowMapperDeduplicationCount : Metric<Counter>("flow.mapper.deduplication.count", Metrics::counter)
+
+        /**
+         * Count of new states being created.
+         */
+        object FlowMapperCreationCount : Metric<Counter>("flow.mapper.creation.count", Metrics::counter)
+
+        /**
+         * Count of states being cleaned up.
+         */
+        object FlowMapperCleanupCount : Metric<Counter>("flow.mapper.cleanup.count", Metrics::counter)
+
+        /**
+         * Time taken between a mapper event being published and processed.
+         */
+        object FlowMapperEventLag : Metric<Timer>("flow.mapper.event.lag", CordaMetrics::timer)
+
+        /**
+         * Count of expired session events dropped by the mapper.
+         */
+        object FlowMapperExpiredSessionEventCount : Metric<Counter>("flow.mapper.expired.session.event.count", Metrics::counter)
+
 
         /**
          * P2P Metrics
