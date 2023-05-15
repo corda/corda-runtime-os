@@ -36,18 +36,18 @@ object FacadeProxies {
                            requestProcessor: (FacadeRequest) -> FacadeResponse): T {
         val binding = FacadeInterfaceBindings.bind(facade, interfaceType)
         val proxy = FacadeClientProxy(binding, TypeConverter(jsonMarshaller), requestProcessor)
-        val classLoader = try {
-            AccessController.doPrivileged(PrivilegedExceptionAction { interfaceType.classLoader })
+        return try {
+            AccessController.doPrivileged(PrivilegedExceptionAction {
+                Proxy.newProxyInstance(
+                    interfaceType.classLoader,
+                    arrayOf(interfaceType),
+                    proxy
+                ) as T
+            })
         } catch (e: PrivilegedActionException) {
             throw e.exception
         }
-        return Proxy.newProxyInstance(
-            classLoader,
-            arrayOf(interfaceType),
-            proxy
-        ) as T
     }
-
 }
 
 /**
