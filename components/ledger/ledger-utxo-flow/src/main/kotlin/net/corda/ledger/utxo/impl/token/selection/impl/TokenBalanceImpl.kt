@@ -4,13 +4,13 @@ import java.math.BigDecimal
 import java.util.Objects
 import net.corda.v5.ledger.utxo.token.selection.TokenBalance
 
-class TokenBalanceImpl(private val balance: BigDecimal, private val balanceIncludingClaimedTokens: BigDecimal) : TokenBalance {
-    override fun getBalance(): BigDecimal {
-        return balance
+class TokenBalanceImpl(private val availableBalance: BigDecimal, private val totalBalance: BigDecimal) : TokenBalance {
+    override fun getAvailableBalance(): BigDecimal {
+        return availableBalance
     }
 
-    override fun getBalanceIncludingClaimedTokens(): BigDecimal {
-        return balanceIncludingClaimedTokens
+    override fun getTotalbalance(): BigDecimal {
+        return totalBalance
     }
 
     override fun equals(other: Any?): Boolean {
@@ -19,13 +19,13 @@ class TokenBalanceImpl(private val balance: BigDecimal, private val balanceInclu
 
         other as TokenBalanceImpl
 
-        return Objects.equals(balance, other.balance)
-                && Objects.equals(balanceIncludingClaimedTokens, other.balanceIncludingClaimedTokens)
+        return Objects.equals(availableBalance, other.availableBalance)
+                && Objects.equals(totalBalance, other.totalBalance)
     }
 
     override fun hashCode(): Int {
-        var result = balance.hashCode()
-        result = 31 * result + balanceIncludingClaimedTokens.hashCode()
+        var result = availableBalance.hashCode()
+        result = 31 * result + totalBalance.hashCode()
         return result
     }
 }

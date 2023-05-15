@@ -66,7 +66,7 @@ class TokenBalanceQueryEventHandlerTest {
     }
 
     @Test
-    fun `the correct balance is calculated - balance and balanceIncludingClaimedTokens are the same`() {
+    fun `the correct balance is calculated - balance availableBalance totalBalance are the same`() {
         val target = TokenBalanceQueryEventHandler(recordFactory)
         val balanceQuery = createBalanceQuery()
         whenever(recordFactory.getBalanceResponse(any(), any(), any(), any())).thenReturn(balanceQueryResult)
@@ -84,7 +84,7 @@ class TokenBalanceQueryEventHandlerTest {
     }
 
     @Test
-    fun `the correct balance is calculated - balance and balanceIncludingClaimedTokens are different`() {
+    fun `the correct balance is calculated - availableBalance and totalBalance are different`() {
         val target = TokenBalanceQueryEventHandler(recordFactory)
         val balanceQuery = createBalanceQuery()
         whenever(recordFactory.getBalanceResponse(any(), any(), any(), any())).thenReturn(balanceQueryResult)

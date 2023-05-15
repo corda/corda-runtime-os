@@ -33,16 +33,16 @@ class TokenBalanceQueryEventHandler(
     }
 
     private fun calculateTokenBalance(tokenCache: TokenCache, state: PoolCacheState, event: BalanceQuery): TokenBalance {
-        var balance = BigDecimal.ZERO
-        var balanceIncludingClaimedTokens = BigDecimal.ZERO
+        var availableBalance = BigDecimal.ZERO
+        var totalBalance = BigDecimal.ZERO
 
         for (token in filterStrategy.filterTokens(tokenCache, event)) {
             if(!state.isTokenClaimed(token.stateRef) ) {
-                balance += token.amount
+                availableBalance += token.amount
             }
-            balanceIncludingClaimedTokens += token.amount
+            totalBalance += token.amount
         }
 
-        return TokenBalanceImpl(balance, balanceIncludingClaimedTokens)
+        return TokenBalanceImpl(availableBalance, totalBalance)
     }
 }

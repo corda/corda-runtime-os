@@ -74,13 +74,13 @@ class TokenBalanceQueryExternalEventFactoryTest {
         val response = TokenBalanceQueryResult().apply {
             this.poolKey = key
             this.balance = expectedTokenBalance.balance.toTokenAmount()
-            this.balanceIncludingClaimedTokens = expectedTokenBalance.balanceIncludingClaimedTokens.toTokenAmount()
+            this.totalBalance = expectedTokenBalance.totalBalance.toTokenAmount()
         }
 
         val result = TokenBalanceQueryExternalEventFactory().resumeWith(checkpoint, response)
 
-        assertThat(result.balance).isEqualTo(expectedTokenBalance.balance)
-        assertThat(result.balanceIncludingClaimedTokens).isEqualTo(expectedTokenBalance.balanceIncludingClaimedTokens)
+        assertThat(result.availableBalance).isEqualTo(expectedTokenBalance.availableBalance)
+        assertThat(result.totalBalance).isEqualTo(expectedTokenBalance.totalBalance)
     }
 
     private fun BigDecimal.toTokenAmount() = TokenAmount.newBuilder()

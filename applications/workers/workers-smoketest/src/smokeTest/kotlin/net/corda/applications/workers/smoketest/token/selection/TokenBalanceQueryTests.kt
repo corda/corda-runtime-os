@@ -109,12 +109,12 @@ class TokenBalanceQueryTests {
         val tokenBalanceQuery = runTokenBalanceQueryFlow()
 
         // Check that the balance of the token cache is zero since no token has been created
-        assertThat(tokenBalanceQuery.balance).isEqualTo(BigDecimal.ZERO)
-        assertThat(tokenBalanceQuery.balanceIncludingClaimedTokens).isEqualTo(BigDecimal.ZERO)
+        assertThat(tokenBalanceQuery.availableBalance).isEqualTo(BigDecimal.ZERO)
+        assertThat(tokenBalanceQuery.totalBalance).isEqualTo(BigDecimal.ZERO)
     }
 }
 
 private data class TokenBalanceQueryResponseMsg(
-    val balance: BigDecimal,
-    val balanceIncludingClaimedTokens: BigDecimal
+    val availableBalance: BigDecimal,
+    val totalBalance: BigDecimal
 )

@@ -48,7 +48,7 @@ class TokenBalanceQueryExternalEventFactory @Activate constructor() :
     }
 
     override fun resumeWith(checkpoint: FlowCheckpoint, response: TokenBalanceQueryResult): TokenBalance {
-        return TokenBalanceImpl(response.balance.toBigDecimal(), response.balanceIncludingClaimedTokens.toBigDecimal())
+        return TokenBalanceImpl(response.availableBalance.toBigDecimal(), response.totalBalance.toBigDecimal())
     }
 
     private fun TokenAmount.toBigDecimal() =

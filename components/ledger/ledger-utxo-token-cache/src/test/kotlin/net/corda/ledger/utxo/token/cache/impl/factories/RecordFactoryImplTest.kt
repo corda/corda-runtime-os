@@ -79,8 +79,8 @@ class RecordFactoryImplTest {
 
         val expectedResponse = TokenBalanceQueryResult().apply {
             this.poolKey = POOL_CACHE_KEY
-            this.balance = BigDecimal(1.0).toTokenAmount()
-            this.balanceIncludingClaimedTokens = BigDecimal(2.0).toTokenAmount()
+            this.availableBalance = BigDecimal(1.0).toTokenAmount()
+            this.totalBalance = BigDecimal(2.0).toTokenAmount()
 
         }
         val response = Record<String, FlowEvent>("", "", null)

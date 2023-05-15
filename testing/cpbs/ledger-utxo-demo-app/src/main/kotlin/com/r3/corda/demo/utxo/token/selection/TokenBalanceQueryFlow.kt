@@ -50,7 +50,7 @@ class TokenBalanceQueryFlow : ClientStartableFlow {
     }
 
     private fun TokenBalance.toResult() =
-        TokenBalanceQueryResponseMsg(balance, balanceIncludingClaimedTokens)
+        TokenBalanceQueryResponseMsg(availableBalance, totalBalance)
 
     private fun TokenBalanceQueryResponseMsg.toJsonStr() =
         marshallingService.format(this)
@@ -66,7 +66,7 @@ class TokenBalanceQueryFlow : ClientStartableFlow {
     private data class TokenBalanceQueryMsg(val tokenType: String, val issuerBankX500: String, val currency: String)
 
     private data class TokenBalanceQueryResponseMsg(
-        val balance: BigDecimal,
-        val balanceIncludingClaimedTokens: BigDecimal
+        val availableBalance: BigDecimal,
+        val totalBalance: BigDecimal
     )
 }

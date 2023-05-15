@@ -62,8 +62,8 @@ class RecordFactoryImpl(private val externalEventResponseFactory: ExternalEventR
     ): Record<String, FlowEvent> {
         val payload = TokenBalanceQueryResult().apply {
             this.poolKey = poolKey
-            this.balance = tokenBalance.balance.toTokenAmount()
-            this.balanceIncludingClaimedTokens = tokenBalance.balanceIncludingClaimedTokens.toTokenAmount()
+            this.availableBalance = tokenBalance.availableBalance.toTokenAmount()
+            this.totalBalance = tokenBalance.totalBalance.toTokenAmount()
         }
 
         return externalEventResponseFactory.success(externalEventRequestId, flowId, payload)
