@@ -206,6 +206,26 @@ object CordaMetrics {
          * The time taken by crypto operations.
          */
         object CryptoOpsProcessorExecutionTime: Metric<Timer>("crypto.processor.execution.time", CordaMetrics::timer)
+
+        /**
+         * The time taken by crypto operations.
+         */
+        object WrappingKeyCreationTimer: Metric<Timer>("crypto.wrapping.key.creation.time", CordaMetrics::timer)
+
+        /**
+         * The time taken to create entity manager factories.
+         */
+        object EntityManagerFactoryCreationTimer: Metric<Timer>("entity.manager.factory.creation.time", CordaMetrics::timer)
+
+        /**
+         * The time taken to create entity manager factories.
+         */
+        object SoftCryptoSignTimer: Metric<Timer>("soft.crypto.sign.time", CordaMetrics::timer)
+
+        /**
+         * The time taken to create entity manager factories.
+         */
+        object CryptoSigningKeyLookupTimer: Metric<Timer>("crypto.signing.key.lookup.time", CordaMetrics::timer)
     }
 
     /**
@@ -298,6 +318,8 @@ object CordaMetrics {
          * successful vs failed results.
          */
         ResultType("result.type"),
+
+        SigningKeyLookupMethod("lookup.method"),
 
         /**
          * Boolean value indicating whether the metric relates to a duplicate request. Used by the
