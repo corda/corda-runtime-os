@@ -7,10 +7,12 @@ import net.corda.ledger.utxo.token.cache.entities.BalanceQuery
 import net.corda.ledger.utxo.token.cache.entities.PoolCacheState
 import net.corda.ledger.utxo.token.cache.entities.TokenCache
 import net.corda.ledger.utxo.token.cache.factories.RecordFactory
+import net.corda.ledger.utxo.token.cache.services.TokenFilterStrategy
 import net.corda.messaging.api.records.Record
 import net.corda.v5.ledger.utxo.token.selection.TokenBalance
 
 class TokenBalanceQueryEventHandler(
+    private val filterStrategy: TokenFilterStrategy,
     private val recordFactory: RecordFactory,
 ) : TokenEventHandler<BalanceQuery> {
 
@@ -20,7 +22,7 @@ class TokenBalanceQueryEventHandler(
         event: BalanceQuery
     ): Record<String, FlowEvent> {
 
-        val tokenBalance = calculateTokenBalance(tokenCache, state)
+        val tokenBalance = calculateTokenBalance(tokenCache, state, event)
 
         return recordFactory.getBalanceResponse(
             event.flowId,
@@ -30,15 +32,15 @@ class TokenBalanceQueryEventHandler(
         )
     }
 
-    private fun calculateTokenBalance(tokenCache: TokenCache, state: PoolCacheState): TokenBalance {
+    private fun calculateTokenBalance(tokenCache: TokenCache, state: PoolCacheState, event: BalanceQuery): TokenBalance {
         var balance = BigDecimal.ZERO
         var balanceIncludingClaimedTokens = BigDecimal.ZERO
 
-        tokenCache.forEach {
-            if(!state.isTokenClaimed(it.stateRef) ) {
-                balance += it.amount
+        for (token in filterStrategy.filterTokens(tokenCache, event)) {
+            if(!state.isTokenClaimed(token.stateRef) ) {
+                balance += token.amount
             }
-            balanceIncludingClaimedTokens += it.amount
+            balanceIncludingClaimedTokens += token.amount
         }
 
         return TokenBalanceImpl(balance, balanceIncludingClaimedTokens)

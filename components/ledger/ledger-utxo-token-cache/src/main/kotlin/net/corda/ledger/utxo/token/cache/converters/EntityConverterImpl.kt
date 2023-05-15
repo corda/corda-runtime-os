@@ -59,6 +59,8 @@ class EntityConverterImpl : EntityConverter {
         return BalanceQuery(
             tokenBalanceQuery.requestContext.requestId,
             tokenBalanceQuery.requestContext.flowId,
+            tokenBalanceQuery.tagRegex,
+            tokenBalanceQuery.ownerHash,
             avroPoolKey
         )
     }

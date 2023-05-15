@@ -44,7 +44,7 @@ class TokenCacheComponentFactory @Activate constructor(
             createHandler(TokenClaimQueryEventHandler(tokenFilterStrategy, recordFactory)),
             createHandler(TokenClaimReleaseEventHandler(recordFactory)),
             createHandler(TokenLedgerChangeEventHandler()),
-            createHandler(TokenBalanceQueryEventHandler(recordFactory)),
+            createHandler(TokenBalanceQueryEventHandler(tokenFilterStrategy, recordFactory)),
         )
 
         val tokenCacheEventHandlerFactory = TokenCacheEventProcessorFactoryImpl(

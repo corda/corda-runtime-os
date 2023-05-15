@@ -1,13 +1,21 @@
 package net.corda.ledger.utxo.token.cache.entities
 
-import net.corda.data.ledger.utxo.token.selection.key.TokenPoolCacheKey
 import java.math.BigDecimal
+import net.corda.data.ledger.utxo.token.selection.key.TokenPoolCacheKey
 
 data class ClaimQuery(
     val externalEventRequestId: String,
     val flowId: String,
     val targetAmount: BigDecimal,
-    val tagRegex: String?,
-    val ownerHash: String?,
+    private val tagRegex: String?,
+    private val ownerHash: String?,
     override val poolKey: TokenPoolCacheKey
-):TokenEvent
+): TokenFilter {
+    override fun getTagRegex(): String? {
+        return tagRegex
+    }
+
+    override fun getOwnerHash(): String? {
+        return ownerHash
+    }
+}
