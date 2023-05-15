@@ -4,6 +4,7 @@ import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.external.ExternalEventContext
+import net.corda.data.ledger.persistence.FindTransaction
 import net.corda.data.ledger.persistence.LedgerPersistenceRequest
 import net.corda.data.ledger.persistence.LedgerTypes
 import net.corda.ledger.persistence.ALICE_X500_HOLDING_ID
@@ -107,6 +108,7 @@ class PersistenceRequestProcessorTest {
                 requestId, "f1", KeyValuePairList(listOf(KeyValuePair("key", "value")))
             )
             ledgerType = LedgerTypes.CONSENSUAL
+            request = FindTransaction()
             holdingIdentity = ALICE_X500_HOLDING_ID
         }
     }
