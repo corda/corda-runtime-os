@@ -43,7 +43,7 @@ class HardcodedFacadeToFlowMapperServiceImpl @Activate constructor() : InteropFa
         methodName: String
     ): FacadeFlowMapping? = try {
         // TODO : Now we are using hardcoded facade definition and it will be replaced with real one in next milestone
-        val content = this::class.java.getResource("/dummy-facade-to-flow-config.json")?.readText().toString()
+        val content = this::class.java.getResource("/tokens-facade-to-flow-config.json")?.readText().toString()
         mapper.readValue(content, FacadeFlowMapping::class.java)
     } catch (e: Exception) {
         throw IllegalStateException(
