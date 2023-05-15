@@ -163,7 +163,8 @@ internal class MessageBusConfigResolver(private val smartConfigFactory: SmartCon
             producerConfig.clientId,
             jdbcProperties.jdbcUrl,
             jdbcProperties.username,
-            jdbcProperties.password
+            jdbcProperties.password,
+            producerConfig.throwOnSerializationError
         )
     }
 

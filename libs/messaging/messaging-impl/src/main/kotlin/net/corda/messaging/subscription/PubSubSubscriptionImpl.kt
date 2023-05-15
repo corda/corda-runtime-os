@@ -13,6 +13,7 @@ import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.processor.PubSubProcessor
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.config.ResolvedSubscriptionConfig
+import net.corda.messaging.constants.MetricsConstants
 import net.corda.messaging.subscription.consumer.listener.PubSubConsumerRebalanceListener
 import net.corda.messaging.utils.toRecord
 import net.corda.metrics.CordaMetrics
@@ -49,9 +50,9 @@ internal class PubSubSubscriptionImpl<K : Any, V : Any>(
             "topic ${config.topic}."
 
     private val processorMeter = CordaMetrics.Metric.MessageProcessorTime.builder()
-        .withTag(CordaMetrics.Tag.MessagePatternType, "PubSub")
+        .withTag(CordaMetrics.Tag.MessagePatternType, MetricsConstants.PUB_SUB_PATTERN_TYPE)
         .withTag(CordaMetrics.Tag.MessagePatternClientId, config.clientId)
-        .withTag(CordaMetrics.Tag.OperationName, "onNext")
+        .withTag(CordaMetrics.Tag.OperationName, MetricsConstants.ON_NEXT_OPERATION)
         .build()
 
     override val isRunning: Boolean

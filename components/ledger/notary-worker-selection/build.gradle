@@ -9,9 +9,10 @@ dependencies {
     compileOnly 'org.osgi:osgi.annotation'
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
 
-    implementation 'net.corda:corda-ledger-common'
+    api platform("net.corda:corda-api:$cordaApiVersion")
+    api 'org.jetbrains.kotlin:kotlin-osgi-bundle'
+    api 'net.corda:corda-ledger-common'
 
-    implementation platform("net.corda:corda-api:$cordaApiVersion")
-
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 }

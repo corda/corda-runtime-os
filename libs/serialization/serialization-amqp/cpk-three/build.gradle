@@ -25,9 +25,9 @@ dependencies {
 
 tasks.named('jar', Jar) {
     osgi {
-        // We only want to export packages 'net.cordapp.bundle3'
-        // and 'net.cordapp.bundle5'.
-        // 'net.cordapp.bundle2' must be a private package.
+        // We only want to export packages 'com.r3.corda.testing.bundle3'
+        // and 'com.r3.corda.testing.bundle5'.
+        // 'com.r3.corda.testing.bundle2' must be a private package.
         autoExport = false
     }
     archiveBaseName = 'TestSerializable3-workflows'

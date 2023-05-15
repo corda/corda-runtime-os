@@ -8,8 +8,8 @@ import net.corda.data.p2p.LinkOutHeader
 import net.corda.data.p2p.LinkOutMessage
 import net.corda.data.p2p.MessageAck
 import net.corda.data.p2p.NetworkType
+import net.corda.data.p2p.app.InboundUnauthenticatedMessage
 import net.corda.data.p2p.app.MembershipStatusFilter
-import net.corda.data.p2p.app.UnauthenticatedMessage
 import net.corda.data.p2p.crypto.AuthenticatedDataMessage
 import net.corda.data.p2p.crypto.AuthenticatedEncryptedDataMessage
 import net.corda.membership.grouppolicy.GroupPolicyProvider
@@ -115,7 +115,7 @@ class MessageConverter {
                 session,
                 groupPolicyProvider,
                 membershipGroupReaderProvider,
-                MembershipStatusFilter.ACTIVE_IF_PRESENT_OR_PENDING,
+                MembershipStatusFilter.ACTIVE_OR_SUSPENDED_IF_PRESENT_OR_PENDING,
             )
         }
 
@@ -174,12 +174,11 @@ class MessageConverter {
         }
 
         fun linkOutFromUnauthenticatedMessage(
-            message: UnauthenticatedMessage,
+            message: InboundUnauthenticatedMessage,
+            source: HoldingIdentity,
             destMemberInfo: MemberInfo,
             groupPolicy: GroupPolicy,
         ): LinkOutMessage {
-            val source = message.header.source.toCorda()
-
             return createLinkOutMessage(
                 message,
                 source,

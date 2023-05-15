@@ -136,11 +136,6 @@ class UtxoTransactionBuilderVerifierTest {
     }
 
     @Test
-    fun `throws an exception if the notary is not allowed`() {
-        // TODO CORE-8956 Check the notary is in the group parameters whitelist
-    }
-
-    @Test
     fun `throws an exception if the same input state appears twice`() {
         whenever(transactionBuilder.inputStateRefs).thenReturn(listOf(stateRef, stateRef))
         assertThatThrownBy { verifier.verify() }

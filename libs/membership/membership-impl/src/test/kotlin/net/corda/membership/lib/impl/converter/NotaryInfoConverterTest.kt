@@ -5,6 +5,7 @@ import net.corda.crypto.core.CompositeKeyProvider
 import net.corda.crypto.impl.converter.PublicKeyConverter
 import net.corda.layeredpropertymap.testkit.LayeredPropertyMapMocks
 import net.corda.v5.base.exceptions.ValueNotFoundException
+import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.CompositeKeyNodeAndWeight
 import net.corda.v5.membership.NotaryInfo
@@ -12,6 +13,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.SoftAssertions.assertSoftly
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
@@ -40,8 +42,8 @@ class NotaryInfoConverterTest {
             CompositeKeyNodeAndWeight(it, 1)
         }
         val compositeKeyProvider: CompositeKeyProvider = mock {
-            on { create(eq(weightedKeys), eq(null)) } doReturn compositeKeyForNonEmptyKeys
-            on { create(eq(emptyList()), eq(null)) } doReturn compositeKeyForEmptyKeys
+            on { create(eq(weightedKeys), any()) } doReturn compositeKeyForNonEmptyKeys
+            on { create(eq(emptyList()), any()) } doReturn compositeKeyForEmptyKeys
         }
 
         val correctContext = sortedMapOf(
@@ -95,9 +97,11 @@ class NotaryInfoConverterTest {
         }
     }
 
+    private class TestContext(map: LayeredPropertyMap) : LayeredPropertyMap by map
+
     private fun convertToNotaryInfo(context: SortedMap<String, String>): NotaryInfo =
         converters.find { it.type == NotaryInfo::class.java }?.convert(
-            LayeredPropertyMapMocks.createConversionContext<LayeredContextImpl>(
+            LayeredPropertyMapMocks.createConversionContext<TestContext>(
                 context,
                 converters,
                 ""

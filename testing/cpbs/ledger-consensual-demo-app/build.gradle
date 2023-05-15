@@ -1,10 +1,11 @@
 plugins {
+    id 'org.jetbrains.kotlin.jvm'
     id 'net.corda.plugins.cordapp-cpb2'
 }
 
 cordapp {
-    targetPlatformVersion platformVersion as Integer
-    minimumPlatformVersion platformVersion as Integer
+    targetPlatformVersion platformVersion.toInteger()
+    minimumPlatformVersion platformVersion.toInteger()
     workflow {
         name "Consensual Ledger demo app"
         versionId 1
@@ -14,6 +15,7 @@ cordapp {
 
 dependencies {
     cordaProvided platform("net.corda:corda-api:$cordaApiVersion")
+    cordaProvided 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     cordaProvided 'net.corda:corda-ledger-consensual'
 
     cordapp project(':testing:cpbs:ledger-consensual-demo-contract')
@@ -21,7 +23,7 @@ dependencies {
     testImplementation project(":libs:application:application-impl")
     testImplementation project(':libs:crypto:crypto-core')
     testImplementation project(":libs:sandbox-types")
-    testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 }
 

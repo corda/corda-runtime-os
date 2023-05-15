@@ -2,7 +2,6 @@ package net.corda.session.manager.impl.processor
 
 import java.time.Instant
 import net.corda.data.flow.event.SessionEvent
-import net.corda.data.flow.event.session.SessionConfirm
 import net.corda.data.flow.state.session.SessionState
 import net.corda.session.manager.impl.SessionEventProcessor
 import net.corda.session.manager.impl.processor.helper.generateErrorSessionStateFromSessionEvent
@@ -18,7 +17,6 @@ class SessionConfirmProcessorSend(
     private val key: Any,
     private val sessionState: SessionState?,
     private val sessionEvent: SessionEvent,
-    private val sessionConfirm: SessionConfirm,
     private val instant: Instant
 ) : SessionEventProcessor {
 

@@ -7,6 +7,7 @@ import net.corda.crypto.test.certificates.generation.FileSystemCertificatesAutho
 import net.corda.crypto.test.certificates.generation.KeysFactoryDefinitions
 import net.corda.crypto.test.certificates.generation.toPem
 import net.corda.rest.ResponseCode
+import net.corda.schema.configuration.ConfigKeys.P2P_GATEWAY_CONFIG
 import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.openssl.PEMParser
 import org.bouncycastle.pkcs.PKCS10CertificationRequest
@@ -74,4 +75,14 @@ fun ClusterInfo.importCertificate(
             condition { it.code == ResponseCode.NO_CONTENT.statusCode }
         }
     }
+}
+
+/**
+ * Disable certificate revocation checks.
+ */
+fun ClusterInfo.disableCertificateRevocationChecks() {
+    updateConfig(
+        "{ \"sslConfig\": { \"revocationCheck\": { \"mode\": \"OFF\" }  }  }",
+        P2P_GATEWAY_CONFIG
+    )
 }

@@ -1,5 +1,7 @@
 package net.corda.virtualnode.write.db.impl.tests
 
+import java.time.Instant
+import javax.persistence.EntityManagerFactory
 import net.corda.crypto.core.parseSecureHash
 import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
@@ -9,17 +11,15 @@ import net.corda.libs.configuration.datamodel.ConfigurationEntities
 import net.corda.libs.cpi.datamodel.CpiEntities
 import net.corda.libs.cpi.datamodel.entities.CpiMetadataEntity
 import net.corda.libs.packaging.core.CpiIdentifier
+import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.libs.virtualnode.datamodel.VirtualNodeEntities
 import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
 import net.corda.orm.utils.transaction
-import net.corda.virtualnode.write.db.impl.writer.CpiMetadataLite
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeEntityRepository
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
-import java.util.*
-import javax.persistence.EntityManagerFactory
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 internal class VirtualNodeEntityRepositoryTest {
@@ -68,21 +68,26 @@ internal class VirtualNodeEntityRepositoryTest {
         val hexFileChecksum = "123456ABCDEF123456"
         val fileChecksum = "TEST:$hexFileChecksum"
         val signerSummaryHash = "TEST:121212121212"
-        val cpiId = CpiIdentifier("Test CPI", "1.0", parseSecureHash(signerSummaryHash))
-        val expectedCpiMetadata =
-            CpiMetadataLite(cpiId, parseSecureHash(fileChecksum), "Test Group ID", "Test Group Policy")
+        val expectedCpiMetadata = CpiMetadata(
+            CpiIdentifier("Test CPI", "1.0", parseSecureHash(signerSummaryHash)),
+                parseSecureHash(fileChecksum),
+                emptySet(),
+                "Test Group Policy",
+                0,
+                Instant.now()
+        )
 
         val cpiMetadataEntity = with(expectedCpiMetadata) {
             CpiMetadataEntity(
-                id.name,
-                id.version,
+                cpiId.name,
+                cpiId.version,
                 signerSummaryHash,
                 "TestFile",
                 fileChecksum,
                 "Test Group Policy",
                 "Test Group ID",
                 "Request ID",
-                emptySet(),
+                emptySet()
             )
         }
 
@@ -92,32 +97,39 @@ internal class VirtualNodeEntityRepositoryTest {
 
         // Search by full file checksum
         var cpiMetadata = repository.getCpiMetadataByChecksum(fileChecksum)
+            ?.copy(timestamp = expectedCpiMetadata.timestamp) // Ignore the timestamp comparison
         Assertions.assertThat(cpiMetadata).isEqualTo(expectedCpiMetadata)
 
         // Search by hex file checksum
         cpiMetadata = repository.getCpiMetadataByChecksum(fileChecksum)
+            ?.copy(timestamp = expectedCpiMetadata.timestamp) // Ignore the timestamp comparison
         Assertions.assertThat(cpiMetadata).isEqualTo(expectedCpiMetadata)
 
         // Search by partial file checksum
         // We should not match anything less than the 12-char 'short hash'
         cpiMetadata = repository.getCpiMetadataByChecksum("56ABCD")
+            ?.copy(timestamp = expectedCpiMetadata.timestamp) // Ignore the timestamp comparison
         Assertions.assertThat(cpiMetadata).isNotEqualTo(expectedCpiMetadata)
 
         // Search by partial file checksum using different case
         // We should not match anything less than the 12-char 'short hash'
         cpiMetadata = repository.getCpiMetadataByChecksum("56AbCd")
+            ?.copy(timestamp = expectedCpiMetadata.timestamp) // Ignore the timestamp comparison
         Assertions.assertThat(cpiMetadata).isNotEqualTo(expectedCpiMetadata)
 
         // Search by partial file checksum
         cpiMetadata = repository.getCpiMetadataByChecksum("123456ABCDEF")
+            ?.copy(timestamp = expectedCpiMetadata.timestamp) // Ignore the timestamp comparison
         Assertions.assertThat(cpiMetadata).isEqualTo(expectedCpiMetadata)
 
         // Search by partial file checksum using different case
         cpiMetadata = repository.getCpiMetadataByChecksum("123456AbCdEf")
+            ?.copy(timestamp = expectedCpiMetadata.timestamp) // Ignore the timestamp comparison
         Assertions.assertThat(cpiMetadata).isEqualTo(expectedCpiMetadata)
 
-        // Noll returned if not found
+        // Null returned if not found
         cpiMetadata = repository.getCpiMetadataByChecksum("111111")
+            ?.copy(timestamp = expectedCpiMetadata.timestamp) // Ignore the timestamp comparison
         Assertions.assertThat(cpiMetadata).isNull()
     }
 
@@ -129,12 +141,12 @@ internal class VirtualNodeEntityRepositoryTest {
         val cpiId = CpiIdentifier("Test CPI 2", "2.0", parseSecureHash(signerSummaryHash))
         val mgmGroupId = "Test Group ID 2"
         val groupPolicy = "Test Group Policy 2"
-        val expectedCpiMetadata = CpiMetadataLite(cpiId, parseSecureHash(fileChecksum), mgmGroupId, groupPolicy)
+        val expectedCpiMetadata = CpiMetadata(cpiId, parseSecureHash(fileChecksum), emptySet(), groupPolicy, 0, Instant.now())
 
         val cpiMetadataEntity = with(expectedCpiMetadata) {
             CpiMetadataEntity(
-                id.name,
-                id.version,
+                cpiId.name,
+                cpiId.version,
                 signerSummaryHash,
                 "TestFile",
                 fileChecksum,
@@ -151,7 +163,8 @@ internal class VirtualNodeEntityRepositoryTest {
 
         Assertions.assertThat(repository.getCpiMetadataByChecksum("")).isNull()
         Assertions.assertThat(repository.getCpiMetadataByChecksum("123456")).isNull()
-        Assertions.assertThat(repository.getCpiMetadataByChecksum(hexFileChecksum.substring(0, 12)))
+        Assertions.assertThat(repository.getCpiMetadataByChecksum(hexFileChecksum.substring(0, 12))
+            ?.copy(timestamp = expectedCpiMetadata.timestamp))  // Ignore the timestamp comparison
             .isEqualTo(expectedCpiMetadata)
     }
 }

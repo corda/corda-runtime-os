@@ -1,17 +1,11 @@
 package com.r3.corda.notary.plugin.nonvalidating.client
 
-import com.r3.corda.notary.plugin.common.NotarizationRequest
 import com.r3.corda.notary.plugin.common.NotarizationResponse
-import com.r3.corda.notary.plugin.common.generateRequestSignature
 import com.r3.corda.notary.plugin.nonvalidating.api.NonValidatingNotarizationPayload
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
-import net.corda.v5.application.crypto.SignatureSpecService
-import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.InitiatingFlow
-import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowMessaging
-import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.types.MemberX500Name
@@ -38,41 +32,20 @@ class NonValidatingNotaryClientFlowImpl(
     private lateinit var flowMessaging: FlowMessaging
 
     @CordaInject
-    private lateinit var memberLookupService: MemberLookup
-
-    @CordaInject
-    private lateinit var serializationService: SerializationService
-
-    @CordaInject
-    private lateinit var signingService: SigningService
-
-    @CordaInject
     private lateinit var utxoLedgerService: UtxoLedgerService
-
-    @CordaInject
-    private lateinit var signatureSpecService: SignatureSpecService
 
     /**
      * Constructor used for testing to initialize the necessary services
      */
     @VisibleForTesting
-    @Suppress("LongParameterList")
     internal constructor(
         stx: UtxoSignedTransaction,
         notary: MemberX500Name,
         flowMessaging: FlowMessaging,
-        memberLookupService: MemberLookup,
-        serializationService: SerializationService,
-        signingService: SigningService,
-        utxoLedgerService: UtxoLedgerService,
-        signatureSpecService: SignatureSpecService
+        utxoLedgerService: UtxoLedgerService
     ): this(stx, notary) {
         this.flowMessaging = flowMessaging
-        this.serializationService = serializationService
-        this.memberLookupService = memberLookupService
-        this.signingService = signingService
         this.utxoLedgerService = utxoLedgerService
-        this.signatureSpecService = signatureSpecService
     }
 
     /**
@@ -135,23 +108,6 @@ class NonValidatingNotaryClientFlowImpl(
             .withTimeWindow()
             .build()
 
-        val notarizationRequest = NotarizationRequest(
-            stx.inputStateRefs,
-            stx.id
-        )
-
-        val requestSignature = generateRequestSignature(
-            notarizationRequest,
-            memberLookupService.myInfo(),
-            serializationService,
-            signingService,
-            signatureSpecService
-        )
-
-        return NonValidatingNotarizationPayload(
-            filteredTx,
-            requestSignature,
-            stx.notaryKey
-        )
+        return NonValidatingNotarizationPayload(filteredTx, stx.notaryKey)
     }
 }

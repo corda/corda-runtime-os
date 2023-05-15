@@ -73,7 +73,7 @@ class RestServerJsonObjectTest : RestServerTestBase() {
     """.trimIndent()
 
     private val expectedObjectResponse = """
-        {"id":"aaa123","obj":"{\"message\":\"Hey Mars\",\"planetaryOnly\":\"true\",\"target\":\"C=GB, L=FOURTH, O=MARS, OU=PLANET\"}"}
+        {"id":"aaa123","obj":{"message":"Hey Mars","planetaryOnly":"true","target":"C=GB, L=FOURTH, O=MARS, OU=PLANET"}}
     """.trimIndent()
 
     private val stringEscapedMapPayload = """
@@ -102,7 +102,7 @@ class RestServerJsonObjectTest : RestServerTestBase() {
     """.trimIndent()
 
     private val expectedMapResponse = """
-        {"id":"aaa123","obj":"{\"1\":{\"message\":\"Hey Mars\",\"planetaryOnly\":\"true\",\"target\":\"C=GB, L=FOURTH, O=MARS, OU=PLANET\"},\"2\":{\"message\":\"Hey Pluto\",\"planetaryOnly\":\"false\",\"target\":\"C=GB, L=FOURTH, O=PLUTO, OU=NON_PLANET\"}}"}
+        {"id":"aaa123","obj":{"1":{"message":"Hey Mars","planetaryOnly":"true","target":"C=GB, L=FOURTH, O=MARS, OU=PLANET"},"2":{"message":"Hey Pluto","planetaryOnly":"false","target":"C=GB, L=FOURTH, O=PLUTO, OU=NON_PLANET"}}}
     """.trimIndent()
 
     private val stringEscapedArrayPayload = """
@@ -131,7 +131,7 @@ class RestServerJsonObjectTest : RestServerTestBase() {
     """.trimIndent()
 
     private val expectedArrayResponse = """
-        {"id":"aaa123","obj":"[{\"message\":\"Hey Mars\",\"planetaryOnly\":\"true\",\"target\":\"C=GB, L=FOURTH, O=MARS, OU=PLANET\"},{\"message\":\"Hey Pluto\",\"planetaryOnly\":\"false\",\"target\":\"C=GB, L=FOURTH, O=PLUTO, OU=NON_PLANET\"}]"}
+        {"id":"aaa123","obj":[{"message":"Hey Mars","planetaryOnly":"true","target":"C=GB, L=FOURTH, O=MARS, OU=PLANET"},{"message":"Hey Pluto","planetaryOnly":"false","target":"C=GB, L=FOURTH, O=PLUTO, OU=NON_PLANET"}]}
     """.trimIndent()
 
     @Test

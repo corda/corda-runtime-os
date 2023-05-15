@@ -23,10 +23,11 @@ import net.corda.membership.impl.registration.dynamic.handler.MissingRegistratio
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandlerResult
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_PENDING
-import net.corda.membership.lib.MemberInfoExtension.Companion.PRE_AUTH_TOKEN
 import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
+import net.corda.membership.lib.registration.PRE_AUTH_TOKEN
 import net.corda.membership.p2p.helpers.P2pRecordsFactory
 import net.corda.membership.persistence.client.MembershipPersistenceClient
+import net.corda.membership.persistence.client.MembershipPersistenceOperation
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.persistence.client.MembershipQueryResult
@@ -64,6 +65,7 @@ class ProcessMemberVerificationResponseHandlerTest {
         const val TOPIC = "dummyTopic"
         const val APPROVE_ALL_STRING = "^*"
         const val APPROVE_NONE_STRING = "^ThisShouldNotMatchAnyKey$"
+        const val REGISTRATION_KEY = "member"
         const val MEMBER_KEY = "member"
         const val ADDITIONAL_TEST_KEY = "corda.additional.test.key"
         const val ADDITIONAL_TEST_VALUE = "corda.additional.test.value"
@@ -89,16 +91,26 @@ class ProcessMemberVerificationResponseHandlerTest {
         member,
         mgm
     )
+    private val setRegistrationRequestStatusCommands = listOf(
+        Record(
+            "topic",
+            "key",
+            "value",
+        ),
+    )
+    private val operation = mock<MembershipPersistenceOperation<Unit>> {
+        on { createAsyncCommands() } doReturn setRegistrationRequestStatusCommands
+    }
 
     private val membershipPersistenceClient = mock<MembershipPersistenceClient> {
         on {
             setRegistrationRequestStatus(
-                eq(mgm.toCorda()),
-                eq(REGISTRATION_ID),
-                eq(RegistrationStatus.PENDING_AUTO_APPROVAL),
+                any(),
+                any(),
+                any(),
                 anyOrNull()
             )
-        } doReturn MembershipPersistenceResult.success()
+        } doReturn operation
     }
     private val manuallyApproveAllRule = mock<ApprovalRuleDetails> {
         on { ruleRegex } doReturn APPROVE_ALL_STRING
@@ -114,8 +126,13 @@ class ProcessMemberVerificationResponseHandlerTest {
     private val memberContext = mock<KeyValuePairList> {
         on { items } doReturn memberContextKeyValues
     }
+    private val registrationContextKeyValues = emptyList<KeyValuePair>()
+    private val registrationContext = mock<KeyValuePairList> {
+        on { items } doReturn registrationContextKeyValues
+    }
     private val requestStatus = mock<RegistrationRequestDetails> {
         on { memberProvidedContext } doReturn memberContext
+        on { registrationContext } doReturn registrationContext
     }
     private val membershipQueryClient = mock<MembershipQueryClient> {
         on {
@@ -167,8 +184,9 @@ class ProcessMemberVerificationResponseHandlerTest {
         verifySetOwnRegistrationStatus(RegistrationStatus.PENDING_AUTO_APPROVAL)
         verifyGetApprovalRules(ApprovalRuleType.STANDARD)
 
-        assertThat(result.outputStates).hasSize(2)
+        assertThat(result.outputStates).hasSize(3)
             .contains(record)
+            .containsAll(setRegistrationRequestStatusCommands)
             .anyMatch {
                 val value = it.value
                 it.key == expectedRegistrationTopicKey &&
@@ -188,7 +206,7 @@ class ProcessMemberVerificationResponseHandlerTest {
         verifySetOwnRegistrationStatus(RegistrationStatus.PENDING_MANUAL_APPROVAL)
         verifyGetApprovalRules(ApprovalRuleType.STANDARD)
 
-        assertThat(result.outputStates).hasSize(1)
+        assertThat(result.outputStates).hasSize(2)
         assertUpdatedState(result)
     }
 
@@ -270,23 +288,34 @@ class ProcessMemberVerificationResponseHandlerTest {
         private fun mockConsumeToken(
             result: MembershipPersistenceResult<Unit> = MembershipPersistenceResult.success()
         ) {
+            val operation = object : MembershipPersistenceOperation<Unit> {
+                override fun execute(): MembershipPersistenceResult<Unit> = result
+
+                override fun createAsyncCommands(): Collection<Record<*, *>> {
+                    return emptyList()
+                }
+            }
             whenever(
                 membershipPersistenceClient.consumePreAuthToken(
                     mgm.toCorda(),
                     member.toCorda().x500Name,
                     preAuthToken
                 )
-            ).doReturn(result)
+            ).doReturn(operation)
+        }
+
+        private fun mockMemberContext(
+            additionalContextItem: KeyValuePair
+        ) {
+            whenever(memberContext.items).doReturn(registrationContextKeyValues + additionalContextItem)
         }
 
         private fun mockPreAuthTokenInRegistrationContext(
-            token: String = preAuthToken.toString(),
-            additionalContextItem: KeyValuePair? = null
+            token: String = preAuthToken.toString()
         ) {
-            val context = memberContextKeyValues +
-                    KeyValuePair(PRE_AUTH_TOKEN, token) +
-                    additionalContextItem
-            whenever(memberContext.items).doReturn(context.filterNotNull())
+            val context = registrationContextKeyValues +
+                    KeyValuePair(PRE_AUTH_TOKEN, token)
+            whenever(registrationContext.items).doReturn(context.filterNotNull())
         }
 
         @Suppress("MaxLineLength")
@@ -299,7 +328,7 @@ class ProcessMemberVerificationResponseHandlerTest {
 
             val result = invokeTestFunction()
 
-            assertThat(result.outputStates).hasSize(1)
+            assertThat(result.outputStates).hasSize(2)
             assertUpdatedState(result)
 
             verifyGetApprovalRules(ApprovalRuleType.PREAUTH)
@@ -322,7 +351,7 @@ class ProcessMemberVerificationResponseHandlerTest {
 
             val result = invokeTestFunction()
 
-            assertThat(result.outputStates).hasSize(1)
+            assertThat(result.outputStates).hasSize(2)
             assertUpdatedState(result)
 
             verifyGetApprovalRules(ApprovalRuleType.PREAUTH)
@@ -338,14 +367,13 @@ class ProcessMemberVerificationResponseHandlerTest {
 
             mockConsumeToken()
             mockQueryToken(MembershipQueryResult.Success(listOf(mockToken)))
-            mockPreAuthTokenInRegistrationContext(
-                additionalContextItem = KeyValuePair(ADDITIONAL_TEST_KEY, ADDITIONAL_TEST_VALUE)
-            )
+            mockPreAuthTokenInRegistrationContext()
+            mockMemberContext(KeyValuePair(ADDITIONAL_TEST_KEY, ADDITIONAL_TEST_VALUE))
             mockApprovalRules(ApprovalRuleType.PREAUTH, manuallyApproveTestKeyRule)
 
             val result = invokeTestFunction()
 
-            assertThat(result.outputStates).hasSize(1)
+            assertThat(result.outputStates).hasSize(2)
             assertUpdatedState(result)
 
             verifyGetApprovalRules(ApprovalRuleType.PREAUTH)
@@ -363,14 +391,13 @@ class ProcessMemberVerificationResponseHandlerTest {
 
             mockConsumeToken()
             mockQueryToken(MembershipQueryResult.Success(listOf(mockToken)))
-            mockPreAuthTokenInRegistrationContext(
-                additionalContextItem = KeyValuePair(ADDITIONAL_TEST_KEY, "$ADDITIONAL_TEST_VALUE.changed")
-            )
+            mockPreAuthTokenInRegistrationContext()
+            mockMemberContext(KeyValuePair(ADDITIONAL_TEST_KEY, "$ADDITIONAL_TEST_VALUE.changed"))
             mockApprovalRules(ApprovalRuleType.PREAUTH, manuallyApproveTestKeyRule)
 
             val result = invokeTestFunction()
 
-            assertThat(result.outputStates).hasSize(1)
+            assertThat(result.outputStates).hasSize(2)
             assertUpdatedState(result)
 
             verifyGetApprovalRules(ApprovalRuleType.PREAUTH)
@@ -387,7 +414,7 @@ class ProcessMemberVerificationResponseHandlerTest {
 
             val result = invokeTestFunction()
 
-            assertThat(result.outputStates).hasSize(2)
+            assertThat(result.outputStates).hasSize(3)
             assertUpdatedState(result)
 
             verifyGetApprovalRules(ApprovalRuleType.PREAUTH)
@@ -416,7 +443,7 @@ class ProcessMemberVerificationResponseHandlerTest {
 
             val result = invokeTestFunction()
 
-            assertThat(result.outputStates).hasSize(1)
+            assertThat(result.outputStates).hasSize(2)
             assertUpdatedState(result)
 
             verifyGetApprovalRules(ApprovalRuleType.PREAUTH)

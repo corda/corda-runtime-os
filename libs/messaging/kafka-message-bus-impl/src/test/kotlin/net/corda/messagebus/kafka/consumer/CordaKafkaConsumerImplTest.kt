@@ -1,6 +1,6 @@
 package net.corda.messagebus.kafka.consumer
 
-import java.time.Duration
+import io.micrometer.core.instrument.binder.kafka.KafkaClientMetrics
 import net.corda.data.chunking.Chunk
 import net.corda.data.chunking.ChunkKey
 import net.corda.messagebus.api.CordaTopicPartition
@@ -48,6 +48,7 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
+import java.time.Duration
 
 class CordaKafkaConsumerImplTest {
     private lateinit var cordaKafkaConsumer: CordaKafkaConsumerImpl<String, String>
@@ -58,9 +59,15 @@ class CordaKafkaConsumerImplTest {
     private lateinit var consumer: MockConsumer<Any, Any>
     private lateinit var partition: TopicPartition
     private val avroSchemaRegistry: AvroSchemaRegistry = mock()
+    private val metricsBinder: KafkaClientMetrics = mock()
     private val chunkDeserializerService: ConsumerChunkDeserializerService<String, String> = mock()
     private val consumerRecord = CordaConsumerRecord("prefixtopic", 1, 1, "key", "value", 0)
-    private val consumerConfig = ResolvedConsumerConfig("group", "clientId", "prefix")
+    private val consumerConfig = ResolvedConsumerConfig("group", "clientId", PREFIX)
+
+    private companion object {
+        private const val TOPIC = "topic"
+        private const val PREFIX = "prefix"
+    }
 
     @BeforeEach
     fun beforeEach() {
@@ -88,6 +95,7 @@ class CordaKafkaConsumerImplTest {
             consumerParam,
             listenerParam,
             chunkDeserializerService,
+            metricsBinder
         )
     }
 
@@ -154,16 +162,18 @@ class CordaKafkaConsumerImplTest {
 
         cordaKafkaConsumer.close()
         verify(consumer, times(1)).close()
+        verify(metricsBinder, times(1)).close()
     }
 
     @Test
-    fun testCloseFailNoException() {
+    fun noExceptionThrownAndMetricBinderClosedWhenConsumerCloseThrowsException() {
         consumer = mock()
         doThrow(KafkaException()).whenever(consumer).close()
         cordaKafkaConsumer = createConsumer(consumer)
 
         cordaKafkaConsumer.close()
         verify(consumer, times(1)).close()
+        verify(metricsBinder, times(1)).close()
     }
 
     @Test
@@ -605,6 +615,29 @@ class CordaKafkaConsumerImplTest {
         assertThat(secondResult.size).isEqualTo(10)
         verify(consumer, times(2)).poll(Mockito.any(Duration::class.java))
         verify(chunkDeserializerService, times(2)).assembleChunks(any<Map<ChunkKey, Chunk>>())
+    }
+
+    @Test
+    fun `consumer rebalance listener forwards events with topic prefix stripped`() {
+        val rebalanceListener = object : CordaConsumerRebalanceListener {
+            override fun onPartitionsRevoked(partitions: Collection<CordaTopicPartition>) {
+                partitions.forEach {
+                    assertThat(it.topic).isEqualTo(TOPIC)
+                }
+            }
+
+            override fun onPartitionsAssigned(partitions: Collection<CordaTopicPartition>) {
+                partitions.forEach {
+                    assertThat(it.topic).isEqualTo(TOPIC)
+                }
+            }
+        }
+
+        val kafkaListener = rebalanceListener.toKafkaListener(PREFIX)
+        val topicPartitions = (0..1).map { TopicPartition("$PREFIX$TOPIC", it) }
+        kafkaListener.onPartitionsAssigned(topicPartitions)
+        kafkaListener.onPartitionsRevoked(topicPartitions)
+        kafkaListener.onPartitionsLost(topicPartitions)
     }
 
     private fun commitOffsetForConsumer(offsetCommit: Long) {

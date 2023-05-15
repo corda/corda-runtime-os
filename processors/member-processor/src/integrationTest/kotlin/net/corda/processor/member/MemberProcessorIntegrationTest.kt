@@ -81,7 +81,7 @@ import javax.persistence.EntityManagerFactory
 @ExtendWith(ServiceExtension::class, DBSetup::class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class MemberProcessorIntegrationTest {
-    companion object {
+    private companion object {
         const val CLIENT_ID = "member-processor-integration-test"
 
         @InjectService(timeout = 5000L)

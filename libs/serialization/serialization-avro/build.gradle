@@ -1,0 +1,15 @@
+plugins {
+    id 'biz.aQute.bnd.builder'
+    id 'corda.common-library'
+    id 'corda.common-publishing'
+}
+
+description 'AVRO Serializer and Deserializer'
+
+dependencies {
+    compileOnly "org.osgi:osgi.annotation"
+    compileOnly "org.osgi:org.osgi.service.component.annotations"
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+
+    implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
+}

@@ -1,6 +1,7 @@
 package net.corda.flow.application.persistence.query
 
 import net.corda.flow.external.events.executor.ExternalEventExecutor
+import net.corda.flow.persistence.query.ResultSetFactory
 import net.corda.sandbox.type.SandboxConstants.CORDA_UNINJECTABLE_SERVICE
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.v5.application.persistence.PagedQuery
@@ -55,8 +56,8 @@ interface PagedQueryFactory {
 internal class PagedQueryFactoryImpl @Activate constructor(
     @Reference(service = ExternalEventExecutor::class)
     private val externalEventExecutor: ExternalEventExecutor,
-    @Reference(service = SerializationService::class)
-    private val serializationService: SerializationService,
+    @Reference(service = ResultSetFactory::class)
+    private val resultSetFactory: ResultSetFactory
 ) : PagedQueryFactory, UsedByFlow {
 
     override fun <R : Any> createNamedParameterizedQuery(
@@ -65,7 +66,7 @@ internal class PagedQueryFactoryImpl @Activate constructor(
     ): NamedParameterizedQuery<R> {
         return NamedParameterizedQuery(
             externalEventExecutor = externalEventExecutor,
-            serializationService = serializationService,
+            resultSetFactory = resultSetFactory,
             queryName = queryName,
             parameters = mutableMapOf(),
             limit = Int.MAX_VALUE,
@@ -78,7 +79,7 @@ internal class PagedQueryFactoryImpl @Activate constructor(
     override fun <R : Any> createPagedFindQuery(entityClass: Class<R>): PagedFindQuery<R> {
         return PagedFindQuery(
             externalEventExecutor = externalEventExecutor,
-            serializationService = serializationService,
+            resultSetFactory = resultSetFactory,
             entityClass = entityClass,
             limit = Int.MAX_VALUE,
             offset = 0

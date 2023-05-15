@@ -34,9 +34,10 @@ dependencies {
     implementation project(":libs:platform-info")
     implementation project(':libs:virtual-node:virtual-node-info')
     implementation project(':libs:utilities')
+    implementation project(':libs:serialization:serialization-avro')
 
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
-    testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
     testImplementation project(':testing:test-utilities')
 

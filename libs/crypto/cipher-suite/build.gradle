@@ -1,11 +1,6 @@
 plugins {
     id 'corda.common-library'
     id 'corda.common-publishing'
-    id 'corda.javadoc-generation'
-}
-
-ext {
-    releasable = true
 }
 
 description 'Corda Cipher Suite'
@@ -28,6 +23,7 @@ dependencies {
     testImplementation "org.assertj:assertj-core:$assertjVersion"
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
     testImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 }
 

@@ -1,5 +1,7 @@
 package net.corda.messaging.emulation.publisher
 
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.atomic.AtomicInteger
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.messaging.api.exception.CordaRPCAPISenderException
@@ -11,10 +13,9 @@ import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.atomic.AtomicInteger
 
 class RPCSenderImplTest {
     private val rpcTopicService: RPCTopicService = mock()
@@ -53,6 +54,22 @@ class RPCSenderImplTest {
         Assertions.assertThat(requestCompletion).isInstanceOf(CompletableFuture::class.java)
 
         verify(rpcTopicService, times(1)).publish("test", request, requestCompletion)
+    }
+
+    @Test
+    fun `Close should call close and not stop`() {
+        val rpcSender = RPCSenderImpl(
+            getConfig(),
+            rpcTopicService,
+            lifecycleCoordinatorFactory,
+            clientIdCounter.getAndIncrement().toString()
+        )
+
+        rpcSender.close()
+
+        verify(lifecycleCoordinator, times(1)).close()
+        verify(lifecycleCoordinator, never()).stop()
+        verify(lifecycleCoordinator, never()).updateStatus(any(), any())
     }
 
     private fun getConfig(): RPCConfig<String, String> {

@@ -7,12 +7,13 @@ import net.corda.crypto.client.hsm.HSMRegistrationClient
 import net.corda.crypto.core.CryptoConsts.Categories.LEDGER
 import net.corda.crypto.core.CryptoConsts.Categories.NOTARY
 import net.corda.crypto.core.CryptoConsts.Categories.SESSION_INIT
-import net.corda.data.CordaAvroSerializationFactory
-import net.corda.data.CordaAvroSerializer
+import net.corda.avro.serialization.CordaAvroSerializationFactory
+import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.PersistentMemberInfo
+import net.corda.data.membership.SignedData
 import net.corda.data.membership.StaticNetworkInfo
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.p2p.HostedIdentityEntry
@@ -215,7 +216,7 @@ class StaticMemberRegistrationService(
         registrationId: UUID,
         member: HoldingIdentity,
         context: Map<String, String>
-    ) {
+    ): Collection<Record<*, *>> {
         if (!isRunning || coordinator.status == LifecycleStatus.DOWN) {
             throw MembershipRegistrationException(
                 "Registration failed. Reason: StaticMemberRegistrationService is not running/down."
@@ -271,6 +272,8 @@ class StaticMemberRegistrationService(
             persistGroupParameters(memberInfo, staticMemberList)
 
             persistRegistrationRequest(registrationId, memberInfo)
+
+            return emptyList()
         } catch (e: InvalidMembershipRegistrationException) {
             logger.warn("Registration failed. Reason:", e)
             throw e
@@ -331,18 +334,30 @@ class StaticMemberRegistrationService(
     private fun persistRegistrationRequest(registrationId: UUID, memberInfo: MemberInfo) {
         val memberContext = keyValuePairListSerializer.serialize(memberInfo.memberProvidedContext.toAvro())
             ?: throw IllegalArgumentException("Failed to serialize the member context for this request.")
+        val registrationContext = keyValuePairListSerializer.serialize(KeyValuePairList(emptyList()))
+            ?: throw IllegalArgumentException("Failed to serialize the registration context for this request.")
         persistenceClient.persistRegistrationRequest(
             viewOwningIdentity = memberInfo.holdingIdentity,
             registrationRequest = RegistrationRequest(
                 status = RegistrationStatus.APPROVED,
                 registrationId = registrationId.toString(),
                 requester = memberInfo.holdingIdentity,
-                memberContext = ByteBuffer.wrap(memberContext),
-                signature = CryptoSignatureWithKey(
-                    ByteBuffer.wrap(byteArrayOf()),
-                    ByteBuffer.wrap(byteArrayOf())
+                memberContext = SignedData(
+                    ByteBuffer.wrap(memberContext),
+                    CryptoSignatureWithKey(
+                        ByteBuffer.wrap(byteArrayOf()),
+                        ByteBuffer.wrap(byteArrayOf())
+                    ),
+                    CryptoSignatureSpec("", null, null)
                 ),
-                signatureSpec = CryptoSignatureSpec("", null, null),
+                registrationContext = SignedData(
+                    ByteBuffer.wrap(registrationContext),
+                    CryptoSignatureWithKey(
+                        ByteBuffer.wrap(byteArrayOf()),
+                        ByteBuffer.wrap(byteArrayOf())
+                    ),
+                    CryptoSignatureSpec("", null, null)
+                ),
                 serial = 0L,
             )
         ).getOrThrow()
@@ -431,6 +446,7 @@ class StaticMemberRegistrationService(
                 hsmRegistrationClient.assignSoftHSM(memberId, SESSION_INIT)
                 keysFactory.getOrGenerateKeyPair(SESSION_INIT)
             }
+
             SessionKeyPolicy.COMBINED -> {
                 ledgerKey
             }

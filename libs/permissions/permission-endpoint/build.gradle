@@ -18,6 +18,6 @@ dependencies {
     implementation project(":libs:permissions:permission-manager")
     implementation project(":libs:lifecycle:lifecycle")
 
-    testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 }

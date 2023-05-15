@@ -9,6 +9,7 @@ import net.corda.ledger.common.flow.transaction.factory.TransactionMetadataFacto
 import net.corda.ledger.consensual.data.transaction.ConsensualComponentGroup
 import net.corda.ledger.consensual.data.transaction.ConsensualLedgerTransactionImpl
 import net.corda.ledger.consensual.data.transaction.TRANSACTION_META_DATA_CONSENSUAL_LEDGER_VERSION
+import net.corda.ledger.consensual.data.transaction.consensualComponentGroupStructure
 import net.corda.ledger.consensual.data.transaction.verifier.verifyMetadata
 import net.corda.ledger.consensual.flow.impl.transaction.ConsensualSignedTransactionImpl
 import net.corda.ledger.consensual.flow.impl.transaction.verifier.ConsensualLedgerTransactionVerifier
@@ -25,6 +26,7 @@ import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.osgi.service.component.annotations.ReferenceScope.PROTOTYPE_REQUIRED
 import org.osgi.service.component.annotations.ServiceScope
 import java.time.Instant
 
@@ -44,9 +46,9 @@ class ConsensualSignedTransactionFactoryImpl @Activate constructor(
     private val wireTransactionFactory: WireTransactionFactory,
     @Reference(service = CurrentSandboxGroupContext::class)
     private val currentSandboxGroupContext: CurrentSandboxGroupContext,
-    @Reference(service = JsonMarshallingService::class)
+    @Reference(service = JsonMarshallingService::class, scope = PROTOTYPE_REQUIRED)
     private val jsonMarshallingService: JsonMarshallingService,
-    @Reference(service = JsonValidator::class)
+    @Reference(service = JsonValidator::class, scope = PROTOTYPE_REQUIRED)
     private val jsonValidator: JsonValidator,
 ) : ConsensualSignedTransactionFactory, UsedByFlow, SingletonSerializeAsToken {
 
@@ -96,7 +98,7 @@ class ConsensualSignedTransactionFactoryImpl @Activate constructor(
     private fun consensualMetadata() = mapOf(
         TransactionMetadataImpl.LEDGER_MODEL_KEY to ConsensualLedgerTransactionImpl::class.java.name,
         TransactionMetadataImpl.LEDGER_VERSION_KEY to TRANSACTION_META_DATA_CONSENSUAL_LEDGER_VERSION,
-        TransactionMetadataImpl.NUMBER_OF_COMPONENT_GROUPS to ConsensualComponentGroup.values().size
+        TransactionMetadataImpl.COMPONENT_GROUPS_KEY to consensualComponentGroupStructure
     )
 
     private fun serializeMetadata(metadata: TransactionMetadata): ByteArray =

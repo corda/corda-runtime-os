@@ -4,14 +4,13 @@ import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.core.ShortHash
 import net.corda.crypto.impl.toWire
-import net.corda.data.CordaAvroSerializationFactory
-import net.corda.data.CordaAvroSerializer
+import net.corda.avro.serialization.CordaAvroSerializationFactory
+import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.async.request.MembershipAsyncRequest
-import net.corda.data.membership.async.request.RegistrationAsyncRequest
 import net.corda.data.membership.common.RegistrationRequestDetails
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.libs.configuration.SmartConfig
@@ -33,8 +32,10 @@ import net.corda.membership.client.dto.RegistrationRequestStatusDto
 import net.corda.membership.client.dto.RegistrationStatusDto
 import net.corda.membership.client.dto.SubmittedRegistrationStatus
 import net.corda.membership.lib.MemberInfoExtension
+import net.corda.membership.lib.registration.PRE_AUTH_TOKEN
 import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.persistence.client.MembershipPersistenceClient
+import net.corda.membership.persistence.client.MembershipPersistenceOperation
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.persistence.client.MembershipQueryResult
@@ -68,6 +69,7 @@ import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 import java.time.Instant
+import java.util.UUID
 import java.util.concurrent.CompletableFuture
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
@@ -120,8 +122,11 @@ class MemberResourceClientTest {
     private val configurationReadService: ConfigurationReadService = mock {
         on { registerComponentForUpdates(any(), any()) } doReturn configHandle
     }
+    private val operation = mock<MembershipPersistenceOperation<Unit>> {
+        on { execute() } doReturn MembershipPersistenceResult.success()
+    }
     private val membershipPersistenceClient = mock<MembershipPersistenceClient> {
-        on { persistRegistrationRequest(any(), any()) } doReturn MembershipPersistenceResult.success()
+        on { persistRegistrationRequest(any(), any()) } doReturn operation
     }
     private val signatureWithKey: CryptoSignatureWithKey = mock()
     private val signatureSpec: CryptoSignatureSpec = mock()
@@ -312,6 +317,9 @@ class MemberResourceClientTest {
                     KeyValuePairList(listOf(KeyValuePair("key", "value"))),
                     signatureWithKey,
                     signatureSpec,
+                    KeyValuePairList(emptyList()),
+                    signatureWithKey,
+                    signatureSpec,
                     null,
                     SERIAL,
                 ),
@@ -325,6 +333,9 @@ class MemberResourceClientTest {
                     KeyValuePairList(listOf(KeyValuePair("key 2", "value 2"))),
                     signatureWithKey,
                     signatureSpec,
+                    KeyValuePairList(emptyList()),
+                    signatureWithKey,
+                    signatureSpec,
                     null,
                     SERIAL,
                 ),
@@ -336,6 +347,9 @@ class MemberResourceClientTest {
                     "holdingId3",
                     1,
                     KeyValuePairList(listOf(KeyValuePair("key 3", "value 3"))),
+                    signatureWithKey,
+                    signatureSpec,
+                    KeyValuePairList(emptyList()),
                     signatureWithKey,
                     signatureSpec,
                     null,
@@ -433,6 +447,9 @@ class MemberResourceClientTest {
                 "holdingId1",
                 1,
                 KeyValuePairList(listOf(KeyValuePair("key", "value"))),
+                signatureWithKey,
+                signatureSpec,
+                KeyValuePairList(emptyList()),
                 signatureWithKey,
                 signatureSpec,
                 null,
@@ -538,7 +555,7 @@ class MemberResourceClientTest {
                 assertThat(record.topic).isEqualTo(MEMBERSHIP_ASYNC_REQUEST_TOPIC)
                 assertThat(record.key.toString()).isEqualTo(HOLDING_IDENTITY_ID)
                 val value = record.value as? MembershipAsyncRequest
-                val request = value?.request as? RegistrationAsyncRequest
+                val request = value?.request
                 assertThat(request?.holdingIdentityId).isEqualTo(HOLDING_IDENTITY_ID)
                 assertThat(request?.context).isEqualTo(mapOf("property" to "test").toWire())
             }
@@ -587,22 +604,37 @@ class MemberResourceClientTest {
         memberOpsClient.start()
         setUpConfig()
 
-        memberOpsClient.startRegistration(holdingIdentityId, context)
+        val expectedMemberContext = mapOf("property" to "test")
+        val expectedRegistrationContext = mapOf(PRE_AUTH_TOKEN to UUID(0, 1).toString())
+        val inputContext = expectedMemberContext + expectedRegistrationContext
+
+        val serialisedMemberContext = "member-context".toByteArray()
+        val serialisedRegistrationContext = "registration-context".toByteArray()
+
+        whenever(
+            keyValuePairListSerializer.serialize(expectedMemberContext.toWire())
+        ).doReturn(serialisedMemberContext)
+        whenever(
+            keyValuePairListSerializer.serialize(expectedRegistrationContext.toWire())
+        ).doReturn(serialisedRegistrationContext)
+
+        memberOpsClient.startRegistration(holdingIdentityId, inputContext)
 
         verify(membershipPersistenceClient).persistRegistrationRequest(
             eq(holdingIdentity),
             argThat {
                 status == RegistrationStatus.NEW &&
                     requester == holdingIdentity &&
-                    memberContext == ByteBuffer.wrap(byteArrayOf(1, 2, 3))
+                    memberContext.data == ByteBuffer.wrap(serialisedMemberContext) &&
+                    registrationContext.data == ByteBuffer.wrap(serialisedRegistrationContext)
             },
         )
     }
 
     @Test
     fun `startRegistration will be successful if persistence failed`() {
-        whenever(membershipPersistenceClient.persistRegistrationRequest(any(), any()))
-            .doReturn(MembershipPersistenceResult.Failure("Ooops"))
+        whenever(operation.execute())
+            .doReturn(MembershipPersistenceResult.Failure("Oops"))
         memberOpsClient.start()
         setUpConfig()
 
@@ -610,6 +642,24 @@ class MemberResourceClientTest {
 
         assertThat(result.registrationStatus).isEqualTo(SubmittedRegistrationStatus.SUBMITTED)
         assertThat(result.availableNow).isEqualTo(false)
+    }
+
+    @Test
+    fun `startRegistration will try to post async command to persistence layer if sync command failed`() {
+        val record = Record(
+            "topic",
+            "key",
+            4
+        )
+        whenever(operation.execute())
+            .doReturn(MembershipPersistenceResult.Failure("Oops"))
+        whenever(operation.createAsyncCommands()).doReturn(listOf(record))
+        memberOpsClient.start()
+        setUpConfig()
+
+        memberOpsClient.startRegistration(holdingIdentityId, context)
+
+        verify(asyncPublisher).publish(listOf(record))
     }
 
     @Test

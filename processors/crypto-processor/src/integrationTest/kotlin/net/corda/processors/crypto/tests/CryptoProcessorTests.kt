@@ -21,7 +21,7 @@ import net.corda.crypto.hes.EphemeralKeyPairEncryptor
 import net.corda.crypto.hes.HybridEncryptionParams
 import net.corda.crypto.hes.StableKeyPairDecryptor
 import net.corda.crypto.persistence.db.model.CryptoEntities
-import net.corda.data.CordaAvroSerializationFactory
+import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePairList
 import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationSchemaVersion
@@ -72,7 +72,6 @@ import net.corda.test.util.eventually
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256R1_CODE_NAME
-import net.corda.v5.crypto.KeySchemeCodes.X25519_CODE_NAME
 import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
@@ -84,7 +83,6 @@ import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeAll
-import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments

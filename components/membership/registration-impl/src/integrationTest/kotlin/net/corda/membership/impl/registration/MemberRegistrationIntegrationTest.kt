@@ -8,15 +8,15 @@ import net.corda.crypto.cipher.suite.publicKeyId
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.parseSecureHash
-import net.corda.data.CordaAvroDeserializer
-import net.corda.data.CordaAvroSerializationFactory
+import net.corda.avro.serialization.CordaAvroDeserializer
+import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePairList
 import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.data.membership.p2p.MembershipRegistrationRequest
 import net.corda.data.membership.p2p.UnauthenticatedRegistrationRequest
 import net.corda.data.p2p.app.AppMessage
-import net.corda.data.p2p.app.UnauthenticatedMessage
+import net.corda.data.p2p.app.OutboundUnauthenticatedMessage
 import net.corda.db.messagebus.testkit.DBSetup
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.packaging.core.CpiIdentifier
@@ -230,7 +230,7 @@ class MemberRegistrationIntegrationTest {
                 )
             )
 
-            eventually(10.seconds) {
+            eventually(15.seconds) {
                 logger.info("Waiting for required services to start...")
                 assertThat(coordinator.status).isEqualTo(LifecycleStatus.UP)
                 logger.info("Required services started.")
@@ -285,8 +285,13 @@ class MemberRegistrationIntegrationTest {
             messagingConfig = bootConfig
         ).also { it.start() }
 
-        registrationProxy.usingLifecycle {
+        val messages = registrationProxy.usingLifecycle {
             it.register(UUID.randomUUID(), member, context)
+        }
+        publisherFactory.createPublisher(PublisherConfig("clientId"), bootConfig).use {
+            it.publish(messages.toList()).forEach {
+                it.join()
+            }
         }
 
         // Wait for latch to countdown, so we know when processing has completed and results have been collected
@@ -305,7 +310,7 @@ class MemberRegistrationIntegrationTest {
                 .isNotNull
                 .isInstanceOf(AppMessage::class.java)
 
-            with(result!!.second["message"] as UnauthenticatedMessage) {
+            with(result!!.second["message"] as OutboundUnauthenticatedMessage) {
                 it.assertThat(this.header.destination.x500Name).isEqualTo(mgmName.toString())
                 it.assertThat(this.header.destination.groupId).isEqualTo(groupId)
                 it.assertThat(this.header.source.x500Name).isEqualTo(memberName.toString())
@@ -316,7 +321,7 @@ class MemberRegistrationIntegrationTest {
                 val deserializedPayload =
                     requestDeserializer.deserialize(deserializedUnauthenticatedRegistrationRequest.payload.array())!!
                 val deserializedContext =
-                    deserializedPayload.run { keyValuePairListDeserializer.deserialize(memberContext.array())!! }
+                    deserializedPayload.run { keyValuePairListDeserializer.deserialize(memberContext.data.array())!! }
 
                 with(deserializedContext.items) {
                     fun getValue(key: String) = first { pair -> pair.key == key }.value

@@ -10,7 +10,6 @@ import net.corda.libs.packaging.internal.v2.CpkLoaderV2
 import net.corda.libs.packaging.testutils.TestUtils.ALICE
 import net.corda.utilities.outputStream
 import net.corda.utilities.readAll
-import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
 import org.junit.jupiter.api.Assertions
@@ -71,7 +70,7 @@ class CPKTests {
             sha256Name,
             run {
                 val md = MessageDigest.getInstance(sha256Name)
-                md.update(MemberX500Name.parse(cordaDevCert.subjectX500Principal.name).toString().toByteArray())
+                md.update(cordaDevCert.subjectX500Principal.name.toByteArray())
                 md.digest()
             }
         )
@@ -81,14 +80,14 @@ class CPKTests {
     fun setup(@TempDir junitTestDir: Path) {
         testDir = junitTestDir
 
-        workflowCPKPath = Path.of(URI(System.getProperty("net.cordapp.packaging.test.workflow.cpk")))
+        workflowCPKPath = Path.of(URI(System.getProperty("com.r3.corda.packaging.test.workflow.cpk")))
         processedWorkflowCPKPath = testDir.resolve(workflowCPKPath.fileName)
         workflowCPK = Files.newInputStream(workflowCPKPath).use {
             CpkReader.readCpk(it, processedWorkflowCPKPath, workflowCPKPath.toString())
         }
-        cordappJarPath = Path.of(URI(System.getProperty("net.cordapp.packaging.test.workflow.cordapp")))
+        cordappJarPath = Path.of(URI(System.getProperty("com.r3.corda.packaging.test.workflow.cordapp")))
         nonJarFile = Files.createFile(testDir.resolve("someFile.bin"))
-        workflowCPKLibraries = System.getProperty("net.cordapp.packaging.test.workflow.libs").split(' ')
+        workflowCPKLibraries = System.getProperty("com.r3.corda.packaging.test.workflow.libs").split(' ')
             .stream().map { jarFilePath ->
                 val filePath = Path.of(URI(jarFilePath))
                 Path.of(PackagingConstants.CPK_LIB_FOLDER_V2).resolve(filePath.fileName)

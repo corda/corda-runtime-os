@@ -53,7 +53,7 @@ class HttpServerTest {
     }
     private val serverChannel = mock<Channel>()
     private val serverChannelInitializer = argumentCaptor<ChannelInitializer<SocketChannel>>()
-    private val groups = mutableListOf<NioEventLoopGroup>()
+    private val group = mock<NioEventLoopGroup>()
 
     private val keyManagerFactory = mockStatic(KeyManagerFactory::class.java).also {
         val factory = mock<KeyManagerFactory> {
@@ -73,19 +73,22 @@ class HttpServerTest {
         whenever(mock.childHandler(serverChannelInitializer.capture())).doReturn(mock)
         whenever(mock.bind(any<String>(), any())) doReturn channelFuture
     }
-    private val groupFactory = mockConstruction(NioEventLoopGroup::class.java) { mock, _ ->
-        whenever(mock.terminationFuture()).doReturn(mock())
-        groups.add(mock)
-    }
 
     @AfterEach
     fun cleanUp() {
         serverBootstrap.close()
         keyManagerFactory.close()
-        groupFactory.close()
     }
 
-    private val server = HttpServer(listener, maxRequestSize, configuration, KeyStoreWithPassword(mock(), ""), null)
+    private val server = HttpServer(
+        listener,
+        maxRequestSize,
+        configuration,
+        KeyStoreWithPassword(mock(), ""),
+        null,
+    ) {
+        group
+    }
 
     @Test
     fun `write will throw an exception if the channel is not opened`() {
@@ -171,7 +174,7 @@ class HttpServerTest {
     fun `start will setup server correctly`() {
         server.start()
 
-        verify(serverBootstrap.constructed().first()).group(groups[0], groups[1])
+        verify(serverBootstrap.constructed().first()).group(group, group)
         verify(serverBootstrap.constructed().first()).channel(NioServerSocketChannel::class.java)
     }
 
@@ -201,8 +204,7 @@ class HttpServerTest {
 
         server.close()
 
-        verify(groups[0]).shutdownGracefully()
-        verify(groups[1]).shutdownGracefully()
+        verify(group, times(2)).shutdownGracefully()
     }
 
     @Test

@@ -1,5 +1,6 @@
 package net.corda.messagebus.kafka.producer
 
+import io.micrometer.core.instrument.binder.kafka.KafkaClientMetrics
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messagebus.api.producer.CordaProducer
 import net.corda.messagebus.api.producer.CordaProducerRecord
@@ -12,10 +13,11 @@ import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.exception.CordaMessageAPIProducerRequiresReset
 import net.corda.messaging.kafka.subscription.generateMockConsumerRecordList
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.apache.kafka.clients.consumer.CommitFailedException
 import org.apache.kafka.clients.consumer.Consumer
 import org.apache.kafka.clients.consumer.ConsumerGroupMetadata
-import org.apache.kafka.clients.producer.Producer
+import org.apache.kafka.clients.producer.MockProducer
 import org.apache.kafka.clients.producer.ProducerRecord
 import org.apache.kafka.common.KafkaException
 import org.apache.kafka.common.errors.InterruptException
@@ -27,6 +29,7 @@ import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.fail
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import org.mockito.Mockito
 import org.mockito.Mockito.atLeastOnce
@@ -42,24 +45,27 @@ import org.mockito.kotlin.whenever
 
 class CordaKafkaProducerImplTest {
 
+    private val serializationErrorDoesNotThrowConfig = ResolvedProducerConfig("clientId", true, "prefix", false)
     private val transactionalConfig = ResolvedProducerConfig("clientId", true, "prefix")
     private val asyncConfig = ResolvedProducerConfig("clientIdAsync", false, "prefix")
     private val consumerConfig = ResolvedConsumerConfig("group", "clientId", "prefix")
-    private val producer: Producer<Any, Any> = mock()
     private val consumer: Consumer<Any, Any> = mock()
+    private lateinit var producer: MockProducer<Any, Any>
+    private val metricsBinder: KafkaClientMetrics = mock()
     private val chunkSerializerService: ChunkSerializerService = mock()
     private val consumerChunkDeserializerService: ConsumerChunkDeserializerService<Any, Any> = mock()
     private val mockedCallback: CordaProducer.Callback = mock()
     private val cordaConsumer =
-        CordaKafkaConsumerImpl(consumerConfig, consumer, null, consumerChunkDeserializerService)
+        CordaKafkaConsumerImpl(consumerConfig, consumer, null, consumerChunkDeserializerService, metricsBinder)
     private lateinit var cordaKafkaProducer: CordaKafkaProducerImpl
 
     private val record: CordaProducerRecord<Any, Any> = CordaProducerRecord("topic", "key", "value")
 
     @BeforeEach
     fun setup() {
+        producer = mock()
         doReturn(ConsumerGroupMetadata("")).whenever(consumer).groupMetadata()
-        cordaKafkaProducer = CordaKafkaProducerImpl(transactionalConfig, producer, chunkSerializerService)
+        cordaKafkaProducer = CordaKafkaProducerImpl(transactionalConfig, producer, chunkSerializerService, metricsBinder)
     }
 
     @Test
@@ -357,7 +363,7 @@ class CordaKafkaProducerImplTest {
 
     @Test
     fun `Trying to send chunks with an async producer throws a fatal exception and executes callback`() {
-        cordaKafkaProducer = CordaKafkaProducerImpl(asyncConfig, producer, chunkSerializerService)
+        cordaKafkaProducer = CordaKafkaProducerImpl(asyncConfig, producer, chunkSerializerService, metricsBinder)
 
         whenever(chunkSerializerService.generateChunkedRecords(any())).thenReturn(listOf(record, record))
         assertThrows<CordaMessageAPIFatalException> {
@@ -368,7 +374,7 @@ class CordaKafkaProducerImplTest {
 
     @Test
     fun `Trying to send chunks to partition with an async producer throws a fatal exception and executes callback`() {
-        cordaKafkaProducer = CordaKafkaProducerImpl(asyncConfig, producer, chunkSerializerService)
+        cordaKafkaProducer = CordaKafkaProducerImpl(asyncConfig, producer, chunkSerializerService, metricsBinder)
         whenever(chunkSerializerService.generateChunkedRecords(any())).thenReturn(listOf(record, record))
         assertThrows<CordaMessageAPIFatalException> {
             cordaKafkaProducer.send(record, 1, mockedCallback)
@@ -378,7 +384,7 @@ class CordaKafkaProducerImplTest {
 
     @Test
     fun `Send large records chunks to partition with a transactional producer sends chunks`() {
-        cordaKafkaProducer = CordaKafkaProducerImpl(transactionalConfig, producer, chunkSerializerService)
+        cordaKafkaProducer = CordaKafkaProducerImpl(transactionalConfig, producer, chunkSerializerService, metricsBinder)
         whenever(chunkSerializerService.generateChunkedRecords(any())).thenReturn(listOf(record, record))
         cordaKafkaProducer.sendRecords(listOf(record))
         verify(producer, times(2)).send(any())
@@ -416,5 +422,27 @@ class CordaKafkaProducerImplTest {
     fun testClose() {
         cordaKafkaProducer.close()
         verify(producer, times(1)).close()
+        verify(metricsBinder, times(1)).close()
     }
+
+    @Test
+    fun noExceptionThrownAndMetricBinderClosedWhenConsumerCloseThrowsException() {
+        doThrow(KafkaException()).whenever(producer).close()
+        cordaKafkaProducer = CordaKafkaProducerImpl(transactionalConfig, producer, chunkSerializerService, metricsBinder)
+
+        cordaKafkaProducer.close()
+        verify(producer, times(1)).close()
+        verify(metricsBinder, times(1)).close()
+    }
+
+    @Test
+    fun `when sending a record fails via the producer and flag is set not to throw, no errors are thrown`() {
+        cordaKafkaProducer = CordaKafkaProducerImpl(serializationErrorDoesNotThrowConfig, producer, chunkSerializerService, metricsBinder,)
+
+        val callback = mock<CordaProducer.Callback>()
+        doThrow(CordaRuntimeException("")).whenever(producer)
+            .send(eq(ProducerRecord(record.topic, record.key, record.value)), any())
+        assertDoesNotThrow {  cordaKafkaProducer.send(record, callback) }
+    }
+
 }

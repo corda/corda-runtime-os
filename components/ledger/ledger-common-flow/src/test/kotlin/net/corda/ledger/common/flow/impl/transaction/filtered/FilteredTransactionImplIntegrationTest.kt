@@ -99,7 +99,7 @@ class FilteredTransactionImplIntegrationTest {
                 ComponentGroupFilterParameters.SizeProof(4),
                 ComponentGroupFilterParameters.AuditProof(5, Any::class.java) { it is MyClassC },
                 ComponentGroupFilterParameters.AuditProof(6, Any::class.java) { it is MyClassC },
-                ComponentGroupFilterParameters.SizeProof(10),
+                ComponentGroupFilterParameters.SizeProof(9),
             )
         )
 

@@ -16,14 +16,14 @@ import net.corda.v5.crypto.SecureHash
 internal data class EvolvableTagImplV1(
     override val classType: ClassType,
     override val classBundleName: String,
-    override val mainBundleName: String,
+    override val cordaCpkCordappName: String,
     override val cpkSignerSummaryHash: SecureHash?
 ) : EvolvableTag() {
     override val version: Int = ClassTagV1.VERSION
 
     companion object {
         private const val ENTRIES_LENGTH = 6
-        private const val MAIN_BUNDLE_NAME_IDX = 4
+        private const val CORDA_CPK_CORDAPP_NAME_IDX = 4
         private const val CPK_PUBLIC_KEY_HASHES_IDX = 5
 
         /** Deserialises an [EvolvableTagImplV1] class tag. */
@@ -48,7 +48,7 @@ internal data class EvolvableTagImplV1(
             return EvolvableTagImplV1(
                 classType,
                 classTagEntries[CLASS_BUNDLE_NAME_IDX],
-                classTagEntries[MAIN_BUNDLE_NAME_IDX],
+                classTagEntries[CORDA_CPK_CORDAPP_NAME_IDX],
                 cpkSignerSummaryHash
             )
         }
@@ -63,7 +63,7 @@ internal data class EvolvableTagImplV1(
         entries[CLASS_TAG_VERSION_IDX] = version
         entries[CLASS_TYPE_IDX] = classTypeToString(classType)
         entries[CLASS_BUNDLE_NAME_IDX] = classBundleName
-        entries[MAIN_BUNDLE_NAME_IDX] = mainBundleName
+        entries[CORDA_CPK_CORDAPP_NAME_IDX] = cordaCpkCordappName
         entries[CPK_PUBLIC_KEY_HASHES_IDX] = cpkSignerSummaryHash
 
         return entries.joinToString(CLASS_TAG_DELIMITER)

@@ -13,6 +13,7 @@ import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.config.ResolvedSubscriptionConfig
+import net.corda.messaging.constants.MetricsConstants
 import net.corda.messaging.subscription.factory.MapFactory
 import net.corda.messaging.utils.toRecord
 import net.corda.metrics.CordaMetrics
@@ -37,15 +38,15 @@ internal class CompactedSubscriptionImpl<K : Any, V : Any>(
     private var latestValues: MutableMap<K, V>? = null
 
     private val processorMeter = CordaMetrics.Metric.MessageProcessorTime.builder()
-        .withTag(CordaMetrics.Tag.MessagePatternType, "Compacted")
+        .withTag(CordaMetrics.Tag.MessagePatternType, MetricsConstants.COMPACTED_PATTERN_TYPE)
         .withTag(CordaMetrics.Tag.MessagePatternClientId, config.clientId)
-        .withTag(CordaMetrics.Tag.OperationName, "onNext")
+        .withTag(CordaMetrics.Tag.OperationName, MetricsConstants.ON_NEXT_OPERATION)
         .build()
 
     private val snapshotMeter = CordaMetrics.Metric.MessageProcessorTime.builder()
-        .withTag(CordaMetrics.Tag.MessagePatternType, "Compacted")
+        .withTag(CordaMetrics.Tag.MessagePatternType, MetricsConstants.COMPACTED_PATTERN_TYPE)
         .withTag(CordaMetrics.Tag.MessagePatternClientId, config.clientId)
-        .withTag(CordaMetrics.Tag.OperationName, "onSnapshot")
+        .withTag(CordaMetrics.Tag.OperationName, MetricsConstants.ON_SNAPSHOT_OPERATION)
         .build()
 
     override fun close() = threadLooper.close()

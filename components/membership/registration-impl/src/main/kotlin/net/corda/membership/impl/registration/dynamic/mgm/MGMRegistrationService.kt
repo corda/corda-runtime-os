@@ -1,13 +1,11 @@
 package net.corda.membership.impl.registration.dynamic.mgm
 
-import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationGetService
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.client.CryptoOpsClient
-import net.corda.data.CordaAvroSerializationFactory
+import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.layeredpropertymap.LayeredPropertyMapFactory
-import net.corda.libs.configuration.helper.getConfig
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -28,11 +26,7 @@ import net.corda.membership.registration.ExpirationProcessor
 import net.corda.membership.registration.InvalidMembershipRegistrationException
 import net.corda.membership.registration.MemberRegistrationService
 import net.corda.membership.registration.NotReadyMembershipRegistrationException
-import net.corda.messaging.api.publisher.Publisher
-import net.corda.messaging.api.publisher.config.PublisherConfig
-import net.corda.messaging.api.publisher.factory.PublisherFactory
-import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
-import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
+import net.corda.messaging.api.records.Record
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
 import net.corda.virtualnode.HoldingIdentity
@@ -40,17 +34,11 @@ import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
 import java.util.UUID
 
 @Suppress("LongParameterList")
 @Component(service = [MemberRegistrationService::class])
 class MGMRegistrationService @Activate constructor(
-    @Reference(service = PublisherFactory::class)
-    private val publisherFactory: PublisherFactory,
-    @Reference(service = ConfigurationReadService::class)
-    private val configurationReadService: ConfigurationReadService,
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = CryptoOpsClient::class)
@@ -83,31 +71,16 @@ class MGMRegistrationService @Activate constructor(
     /**
      * Private interface used for implementation swapping in response to lifecycle events.
      */
-    private interface InnerRegistrationService : AutoCloseable {
+    private interface InnerRegistrationService {
         fun register(
             registrationId: UUID,
             member: HoldingIdentity,
             context: Map<String, String>
-        )
+        ): Collection<Record<*, *>>
     }
-
-    private companion object {
-        val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
-    }
-
-    // for watching the config changes
-    private var configHandle: AutoCloseable? = null
 
     // for checking the components' health
     private var componentHandle: RegistrationHandle? = null
-
-    private var _publisher: Publisher? = null
-
-    /**
-     * Publisher for Kafka messaging. Recreated after every [MESSAGING_CONFIG] change.
-     */
-    private val publisher: Publisher
-        get() = _publisher ?: throw IllegalArgumentException("Publisher is not initialized.")
 
     // Component lifecycle coordinator
     private val coordinator = coordinatorFactory.createCoordinator(lifecycleCoordinatorName, ::handleEvent)
@@ -134,7 +107,6 @@ class MGMRegistrationService @Activate constructor(
 
     private fun deactivate(coordinator: LifecycleCoordinator) {
         coordinator.updateStatus(LifecycleStatus.DOWN)
-        impl.close()
         impl = InactiveImpl
     }
 
@@ -152,8 +124,6 @@ class MGMRegistrationService @Activate constructor(
         ) = throw NotReadyMembershipRegistrationException(
             "Registration failed. Reason: MGMRegistrationService is not running."
         )
-
-        override fun close() = Unit
     }
 
     private inner class ActiveImpl : InnerRegistrationService {
@@ -181,14 +151,14 @@ class MGMRegistrationService @Activate constructor(
             layeredPropertyMapFactory,
             membershipPersistenceClient,
         )
-        private val mgmRegistrationOutputPublisher = MGMRegistrationOutputPublisher { publisher }
+        private val mgmRegistrationOutputPublisher = MGMRegistrationOutputPublisher()
 
         override fun register(
             registrationId: UUID,
             member: HoldingIdentity,
             context: Map<String, String>
-        ) {
-            try {
+        ): Collection<Record<*, *>> {
+            return try {
                 mgmRegistrationRequestHandler.throwIfRegistrationAlreadyApproved(member)
                 mgmRegistrationContextValidator.validate(context)
 
@@ -202,6 +172,7 @@ class MGMRegistrationService @Activate constructor(
                 // Persist group parameters snapshot
                 val groupParametersPersistenceResult =
                     membershipPersistenceClient.persistGroupParametersInitialSnapshot(member)
+                        .execute()
                 if (groupParametersPersistenceResult is MembershipPersistenceResult.Failure) {
                     throw NotReadyMembershipRegistrationException(groupParametersPersistenceResult.errorMsg)
                 }
@@ -211,7 +182,7 @@ class MGMRegistrationService @Activate constructor(
                 val groupParameters = groupParametersPersistenceResult.getOrThrow()
                 groupParametersWriterService.put(member, groupParameters)
 
-                mgmRegistrationOutputPublisher.publish(mgmInfo.memberInfo)
+                mgmRegistrationOutputPublisher.createRecords(mgmInfo.memberInfo)
 
                 expirationProcessor.scheduleProcessingOfExpiredRequests(member)
             } catch (ex: MGMRegistrationContextValidationException) {
@@ -230,10 +201,6 @@ class MGMRegistrationService @Activate constructor(
                 throw NotReadyMembershipRegistrationException("Registration failed. Reason: ${e.message}", e)
             }
         }
-
-        override fun close() {
-            publisher.close()
-        }
     }
 
     private fun handleEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
@@ -241,7 +208,6 @@ class MGMRegistrationService @Activate constructor(
             is StartEvent -> handleStartEvent(coordinator)
             is StopEvent -> handleStopEvent(coordinator)
             is RegistrationStatusChangeEvent -> handleRegistrationChangeEvent(event, coordinator)
-            is ConfigChangedEvent -> handleConfigChange(event, coordinator)
         }
     }
 
@@ -260,10 +226,6 @@ class MGMRegistrationService @Activate constructor(
         deactivate(coordinator)
         componentHandle?.close()
         componentHandle = null
-        configHandle?.close()
-        configHandle = null
-        _publisher?.close()
-        _publisher = null
     }
 
     private fun handleRegistrationChangeEvent(
@@ -272,30 +234,12 @@ class MGMRegistrationService @Activate constructor(
     ) {
         when (event.status) {
             LifecycleStatus.UP -> {
-                configHandle?.close()
-                configHandle = configurationReadService.registerComponentForUpdates(
-                    coordinator,
-                    setOf(BOOT_CONFIG, MESSAGING_CONFIG)
-                )
+                activate(coordinator)
             }
 
             else -> {
                 deactivate(coordinator)
-                configHandle?.close()
             }
         }
-    }
-
-    // re-creates the publisher with the new config
-    // sets the lifecycle status to UP when the publisher is ready for the first time
-    private fun handleConfigChange(event: ConfigChangedEvent, coordinator: LifecycleCoordinator) {
-        logger.info("Handling config changed event.")
-        _publisher?.close()
-        _publisher = publisherFactory.createPublisher(
-            PublisherConfig("mgm-registration-service"),
-            event.config.getConfig(MESSAGING_CONFIG)
-        )
-        _publisher?.start()
-        activate(coordinator)
     }
 }

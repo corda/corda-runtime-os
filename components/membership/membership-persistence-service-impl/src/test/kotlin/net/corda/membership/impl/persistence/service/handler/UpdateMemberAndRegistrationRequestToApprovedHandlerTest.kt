@@ -1,9 +1,9 @@
 package net.corda.membership.impl.persistence.service.handler
 
 import net.corda.crypto.cipher.suite.KeyEncodingService
-import net.corda.data.CordaAvroDeserializer
-import net.corda.data.CordaAvroSerializationFactory
-import net.corda.data.CordaAvroSerializer
+import net.corda.avro.serialization.CordaAvroDeserializer
+import net.corda.avro.serialization.CordaAvroSerializationFactory
+import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.identity.HoldingIdentity
@@ -168,10 +168,13 @@ class UpdateMemberAndRegistrationRequestToApprovedHandlerTest {
 
     @Test
     fun `invoke throws exception if request can not be found`() {
+        whenever(keyValuePairListDeserializer.deserialize(mgmContextBytes)).doReturn(
+            KeyValuePairList(listOf(KeyValuePair(STATUS, MEMBER_STATUS_PENDING))),
+        )
         mockMemberInfoEntity()
         mockRegistrationRequestEntity(null)
-        val context = MembershipRequestContext(clock.instant(), requestId, member,)
-        val request = UpdateMemberAndRegistrationRequestToApproved(member, requestId,)
+        val context = MembershipRequestContext(clock.instant(), requestId, member)
+        val request = UpdateMemberAndRegistrationRequestToApproved(member, requestId)
 
         assertThrows<MembershipPersistenceException> {
             handler.invoke(context, request)

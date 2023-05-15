@@ -14,6 +14,7 @@ import net.corda.v5.crypto.merkle.MerkleProof
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.osgi.service.component.annotations.ReferenceScope.PROTOTYPE_REQUIRED
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 
 @Component(
@@ -22,17 +23,21 @@ import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
     scope = PROTOTYPE
 )
 class FilteredTransactionSerializer @Activate constructor(
-    @Reference(service = JsonMarshallingService::class)
+    @Reference(service = JsonMarshallingService::class, scope = PROTOTYPE_REQUIRED)
     private val jsonMarshallingService: JsonMarshallingService,
     @Reference(service = MerkleTreeProvider::class)
     private val merkleTreeProvider: MerkleTreeProvider
 ) : BaseProxySerializer<FilteredTransaction, FilteredTransactionProxy>(), UsedByFlow {
 
-    override val proxyType = FilteredTransactionProxy::class.java
+    override val proxyType
+        get() = FilteredTransactionProxy::class.java
 
-    override val type = FilteredTransaction::class.java
+    override val type
+        get() = FilteredTransaction::class.java
 
-    override val withInheritance = true
+    override val withInheritance
+        // FilteredTransaction is an interface.
+        get() = true
 
     override fun toProxy(obj: FilteredTransaction): FilteredTransactionProxy {
         return FilteredTransactionProxy(obj.id, obj.topLevelMerkleProof, obj.filteredComponentGroups)
