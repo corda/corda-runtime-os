@@ -67,7 +67,7 @@ echo "Step Group Policy for $cpi and Identity ${identity1[@]}"
 ./build/generatedScripts/corda-cli.sh mgm groupPolicy "--name=${identity1[@]:0:1}" "--name=${identity1[@]:1:1}" "--name=${identity1[@]:2:1}" --endpoint-protocol=1 --endpoint="http://localhost:1080" > "../register-member/$groupPolicyFile.json"
 cd ..
 echo "Installing cpi for group $cpi"
-cd corda-runtime-osls
+cd corda-runtime-os
 ./gradlew testing:cpbs:interop-delivery-demo-workflows:cpb -x test
 ./gradlew notary-plugins:notary-plugin-non-validating:notary-plugin-non-validating-server:cpb -x test
 
