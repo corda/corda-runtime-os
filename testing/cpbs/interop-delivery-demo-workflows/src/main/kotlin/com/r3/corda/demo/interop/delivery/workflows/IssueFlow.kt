@@ -48,12 +48,12 @@ class IssueFlow : ClientStartableFlow {
             val flowArgs = requestBody.getRequestBodyAs(jsonMarshallingService, IssueFlowArgs::class.java)
 
             val myInfo = memberLookup.myInfo()
-
+            val stateId = UUID.randomUUID()
             val iou = DeliveryState(
                 amount = flowArgs.amount.toInt(),
                 issuer = myInfo.name,
                 owner = myInfo.name,
-                linearId = UUID.randomUUID(),
+                linearId = stateId,
                 participants = listOf(myInfo.ledgerKeys[0])
             )
 
@@ -68,8 +68,9 @@ class IssueFlow : ClientStartableFlow {
 
             val signedTransaction = txBuilder.toSignedTransaction()
 
-            return flowEngine.subFlow(FinalizeFlow(signedTransaction, listOf()))
+            val transactionId = flowEngine.subFlow(FinalizeFlow(signedTransaction, listOf()))
 
+            return "[ \"transactionId\": \"$transactionId\", \"stateId\": \"$stateId\" ]"
         } catch (e: Exception) {
             log.warn("Failed to process utxo flow for request body '$requestBody' because: '${e.message}'")
             throw e
