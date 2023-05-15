@@ -117,7 +117,7 @@ class CryptoFlowOpsBusProcessor(
         // will be marked as DOWN or ERROR (depending on what catches it; certainly if it made it to the top of the
         // TreadLooper it will cause the status to go to ERROR)
 
-        return CordaMetrics.Metric.CryptoProcessorExecutionTime.builder()
+        return CordaMetrics.Metric.CryptoFlowOpsProcessorExecutionTime.builder()
             .withTag(CordaMetrics.Tag.OperationName, request::class.java.simpleName)
             .build()
             .recordCallable<Any> {

@@ -200,7 +200,12 @@ object CordaMetrics {
         /**
          * The time taken by crypto flow operations.
          */
-        object CryptoProcessorExecutionTime: Metric<Timer>("crypto.flow.processor.execution.time", CordaMetrics::timer)
+        object CryptoFlowOpsProcessorExecutionTime: Metric<Timer>("crypto.flow.processor.execution.time", CordaMetrics::timer)
+
+        /**
+         * The time taken by crypto operations.
+         */
+        object CryptoOpsProcessorExecutionTime: Metric<Timer>("crypto.processor.execution.time", CordaMetrics::timer)
     }
 
     /**
