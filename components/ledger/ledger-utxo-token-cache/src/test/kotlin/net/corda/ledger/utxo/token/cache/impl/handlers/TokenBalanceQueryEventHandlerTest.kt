@@ -10,6 +10,7 @@ import net.corda.ledger.utxo.token.cache.entities.TokenCache
 import net.corda.ledger.utxo.token.cache.factories.RecordFactory
 import net.corda.ledger.utxo.token.cache.handlers.TokenBalanceQueryEventHandler
 import net.corda.ledger.utxo.token.cache.impl.POOL_CACHE_KEY
+import net.corda.ledger.utxo.token.cache.services.SimpleTokenFilterStrategy
 import net.corda.messaging.api.records.Record
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -50,7 +51,7 @@ class TokenBalanceQueryEventHandlerTest {
 
     @Test
     fun `empty cache should return a balance equal to zero`() {
-        val target = TokenBalanceQueryEventHandler(recordFactory)
+        val target = TokenBalanceQueryEventHandler(SimpleTokenFilterStrategy(), recordFactory)
         val balanceQuery = createBalanceQuery()
         whenever(recordFactory.getBalanceResponse(any(), any(), any(), any())).thenReturn(balanceQueryResult)
 
@@ -67,7 +68,7 @@ class TokenBalanceQueryEventHandlerTest {
 
     @Test
     fun `the correct balance is calculated - balance availableBalance totalBalance are the same`() {
-        val target = TokenBalanceQueryEventHandler(recordFactory)
+        val target = TokenBalanceQueryEventHandler(SimpleTokenFilterStrategy(), recordFactory)
         val balanceQuery = createBalanceQuery()
         whenever(recordFactory.getBalanceResponse(any(), any(), any(), any())).thenReturn(balanceQueryResult)
         cachedTokens += token99
@@ -85,7 +86,7 @@ class TokenBalanceQueryEventHandlerTest {
 
     @Test
     fun `the correct balance is calculated - availableBalance and totalBalance are different`() {
-        val target = TokenBalanceQueryEventHandler(recordFactory)
+        val target = TokenBalanceQueryEventHandler(SimpleTokenFilterStrategy(), recordFactory)
         val balanceQuery = createBalanceQuery()
         whenever(recordFactory.getBalanceResponse(any(), any(), any(), any())).thenReturn(balanceQueryResult)
         cachedTokens += token99
@@ -107,7 +108,7 @@ class TokenBalanceQueryEventHandlerTest {
     }
 
     private fun createBalanceQuery(): BalanceQuery {
-        return BalanceQuery(balanceId, flowId, POOL_CACHE_KEY)
+        return BalanceQuery(balanceId, flowId, null, null, POOL_CACHE_KEY)
     }
 }
 
