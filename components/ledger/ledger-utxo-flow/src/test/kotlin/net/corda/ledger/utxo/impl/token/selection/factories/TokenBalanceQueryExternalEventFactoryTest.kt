@@ -73,7 +73,7 @@ class TokenBalanceQueryExternalEventFactoryTest {
 
         val response = TokenBalanceQueryResult().apply {
             this.poolKey = key
-            this.balance = expectedTokenBalance.balance.toTokenAmount()
+            this.availableBalance = expectedTokenBalance.availableBalance.toTokenAmount()
             this.totalBalance = expectedTokenBalance.totalBalance.toTokenAmount()
         }
 
