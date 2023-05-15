@@ -60,27 +60,48 @@ class FacadeServiceImpl @Activate constructor(
         return try {
             AccessController.doPrivileged(PrivilegedExceptionAction {
                 FacadeReaders.JSON.read(
-                    """{ 
-                        "id": "/com/r3/tokens/sample/v1.0",
-                        "commands": { 
-                            "say-hello": {
-                                "in": {
-                                    "greeting": "string"
-                                },
-                                "out": {
-                                    "greeting": "string"
-                                }
-                            },
-                            "get-balance": {
-                                "in": {
-                                    "greeting": "string"
-                                },
-                                "out": {
-                                    "greeting": "string"
-                                }
-                            }
-                        }
-                    }""".trimIndent()
+                    """{
+  "id": "org.corda.interop/platform/tokens/v2.0",
+  "aliases": {
+    "denomination": "string (org.corda.interop/platform/tokens/types/denomination/1.0)"
+  },
+  "queries": {
+    "get-balance": {
+      "in": {
+        "denomination": "denomination"
+      },
+      "out": {
+        "balance": "decimal"
+      }
+    }
+  },
+  "commands": {
+    "reserve-tokens": {
+      "in": {
+        "denomination": "denomination",
+        "amount": "decimal",
+        "ttl-ms": "decimal"
+      },
+      "out": {
+        "reservation-ref": "uuid",
+        "expiration-timestamp": "timestamp"
+      }
+    },
+    "release-reserved-tokens": {
+      "in": {
+        "reservation-ref": "uuid"
+      }
+    },
+    "spend-reserved-tokens": {
+      "in": {
+        "reservation-ref": "uuid",
+        "transaction-ref": "uuid",
+        "recipient": "string"
+      }
+    }
+  }
+}
+""".trimIndent()
                 )
             })
         } catch (e: PrivilegedActionException) {
