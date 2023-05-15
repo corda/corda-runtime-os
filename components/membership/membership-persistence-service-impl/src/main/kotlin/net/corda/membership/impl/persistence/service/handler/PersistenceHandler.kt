@@ -18,6 +18,7 @@ import net.corda.utilities.time.UTCClock
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.slf4j.LoggerFactory
+import java.time.Instant
 import java.util.UUID
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
@@ -47,62 +48,89 @@ internal abstract class BasePersistenceHandler<REQUEST, RESPONSE>(
 
     fun <R> transaction(holdingIdentityShortHash: ShortHash, block: (EntityManager) -> R): R {
         val start = myTestClock.instant()
+        var curr: Instant
+        var last = start
         val id = UUID.randomUUID()
+        curr = myTestClock.instant()
         logger.info(
             "DB investigation " +
                     "- fun <R> transaction(holdingIdentityShortHash: ShortHash, block: (EntityManager) -> R): R " +
                     "- 1 " +
                     "- $id " +
-                    "- ${myTestClock.instant().nano} "
+                    "- Current: ${curr.nano} " +
+                    "- Since last checkpoint: ${curr.nano - last.nano}ns" +
+                    "- Since last checkpoint: ${curr.toEpochMilli() - last.toEpochMilli()}ms" +
+                    "- Since last checkpoint: ${curr.epochSecond - last.epochSecond}s"
         )
+        last = curr
         val virtualNodeInfo = virtualNodeInfoReadService.getByHoldingIdentityShortHash(holdingIdentityShortHash)
             ?: throw MembershipPersistenceException(
                 "Virtual node info can't be retrieved for " +
                         "holding identity ID $holdingIdentityShortHash"
             )
+        curr = myTestClock.instant()
         logger.info(
             "DB investigation " +
                     "- fun <R> transaction(holdingIdentityShortHash: ShortHash, block: (EntityManager) -> R): R " +
                     "- 2 " +
                     "- $id " +
-                    "- ${myTestClock.instant().nano} "
+                    "- Current: ${curr.nano} " +
+                    "- Since last checkpoint: ${curr.nano - last.nano}ns" +
+                    "- Since last checkpoint: ${curr.toEpochMilli() - last.toEpochMilli()}ms" +
+                    "- Since last checkpoint: ${curr.epochSecond - last.epochSecond}s"
         )
+        last = curr
         val factory = getEntityManagerFactory(virtualNodeInfo)
+        curr = myTestClock.instant()
         logger.info(
             "DB investigation " +
                     "- fun <R> transaction(holdingIdentityShortHash: ShortHash, block: (EntityManager) -> R): R " +
                     "- 3 " +
                     "- $id " +
-                    "- ${myTestClock.instant().nano} "
+                    "- Current: ${curr.nano} " +
+                    "- Since last checkpoint: ${curr.nano - last.nano}ns" +
+                    "- Since last checkpoint: ${curr.toEpochMilli() - last.toEpochMilli()}ms" +
+                    "- Since last checkpoint: ${curr.epochSecond - last.epochSecond}s"
         )
+        last = curr
         return try {
             factory.transaction(block).also {
+                curr = myTestClock.instant()
                 logger.info(
-                "DB investigation " +
-                        "- fun <R> transaction(holdingIdentityShortHash: ShortHash, block: (EntityManager) -> R): R " +
-                        "- 4 " +
-                        "- $id " +
-                        "- ${myTestClock.instant().nano} "
-            )
+                    "DB investigation " +
+                            "- fun <R> transaction(holdingIdentityShortHash: ShortHash, block: (EntityManager) -> R): R " +
+                            "- 4 " +
+                            "- $id " +
+                            "- Current: ${curr.nano} " +
+                            "- Since last checkpoint: ${curr.nano - last.nano}ns" +
+                            "- Since last checkpoint: ${curr.toEpochMilli() - last.toEpochMilli()}ms" +
+                            "- Since last checkpoint: ${curr.epochSecond - last.epochSecond}s"
+                )
+                last = curr
             }
         } finally {
             factory.close().also{
+                curr = myTestClock.instant()
                 logger.info(
                     "DB investigation " +
                             "- fun <R> transaction(holdingIdentityShortHash: ShortHash, block: (EntityManager) -> R): R " +
                             "- 5 " +
                             "- $id " +
-                            "- ${myTestClock.instant().nano} "
+                            "- Current: ${curr.nano} " +
+                            "- Since last checkpoint: ${curr.nano - last.nano}ns" +
+                            "- Since last checkpoint: ${curr.toEpochMilli() - last.toEpochMilli()}ms" +
+                            "- Since last checkpoint: ${curr.epochSecond - last.epochSecond}s"
+                )
+                logger.info(
+                    "DB investigation " +
+                            "- fun <R> transaction(holdingIdentityShortHash: ShortHash, block: (EntityManager) -> R): R " +
+                            "- total " +
+                            "- $id " +
+                            "- Since start: ${curr.nano - start.nano}ns" +
+                            "- Since start: ${curr.toEpochMilli() - start.toEpochMilli()}ms" +
+                            "- Since start: ${curr.epochSecond - start.epochSecond}s"
                 )
             }
-        }.also {
-            logger.info(
-                "DB investigation " +
-                        "- fun <R> transaction(holdingIdentityShortHash: ShortHash, block: (EntityManager) -> R): R " +
-                        "- total " +
-                        "- $id " +
-                        "- ${myTestClock.instant().minusNanos(start.nano.toLong()).nano}"
-            )
         }
     }
 
@@ -151,12 +179,15 @@ internal abstract class BasePersistenceHandler<REQUEST, RESPONSE>(
                     "persistenceUnitName ${CordaDb.Vault.persistenceUnitName} is not registered."
                 )
         ).also {
+            val curr = myTestClock.instant()
             logger.info(
                 "DB investigation " +
                         "- fun getEntityManagerFactory(info: VirtualNodeInfo): EntityManagerFactory " +
                         "- total " +
                         "- $id " +
-                        "- ${myTestClock.instant().minusNanos(start.nano.toLong()).nano}"
+                        "- Since start: ${curr.nano - start.nano}ns" +
+                        "- Since start: ${curr.toEpochMilli() - start.toEpochMilli()}ms" +
+                        "- Since start: ${curr.epochSecond - start.epochSecond}s"
             )
         }
     }

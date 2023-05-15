@@ -2,6 +2,7 @@ package net.corda.orm.utils
 
 import net.corda.utilities.time.UTCClock
 import org.slf4j.LoggerFactory
+import java.time.Instant
 import java.util.UUID
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
@@ -62,28 +63,41 @@ inline fun <R> EntityManager.use(block: (EntityManager) -> R): R {
 inline fun <R> EntityManagerFactory.transaction(block: (EntityManager) -> R): R {
     val start = clock.instant()
     val id = UUID.randomUUID()
-    logger.info(
-        "DB investigation " +
-                "- inline fun <R> EntityManagerFactory.transaction(block: (EntityManager) -> R): R " +
-                "- 1 " +
-                "- $id " +
-                "- ${clock.instant().nano} "
-    )
+    var curr: Instant
+    var last = start
     return createEntityManager().also{
+        curr = clock.instant()
+        logger.info(
+            "DB investigation " +
+                    "- inline fun <R> EntityManagerFactory.transaction(block: (EntityManager) -> R): R " +
+                    "- 1 " +
+                    "- $id " +
+                    "- Current: ${curr.nano} " +
+                    "- Since last checkpoint: ${curr.nano - last.nano}ns" +
+                    "- Since last checkpoint: ${curr.toEpochMilli() - last.toEpochMilli()}ms" +
+                    "- Since last checkpoint: ${curr.epochSecond - last.epochSecond}s"
+        )
+        last = curr
+    }.transaction(block).also {
+        curr = clock.instant()
         logger.info(
             "DB investigation " +
                     "- inline fun <R> EntityManagerFactory.transaction(block: (EntityManager) -> R): R " +
                     "- 2 " +
                     "- $id " +
-                    "- ${clock.instant().nano} "
+                    "- Current: ${curr.nano} " +
+                    "- Since last checkpoint: ${curr.nano - last.nano}ns" +
+                    "- Since last checkpoint: ${curr.toEpochMilli() - last.toEpochMilli()}ms" +
+                    "- Since last checkpoint: ${curr.epochSecond - last.epochSecond}s"
         )
-    }.transaction(block).also {
         logger.info(
             "DB investigation " +
                     "- inline fun <R> EntityManagerFactory.transaction(block: (EntityManager) -> R): R " +
                     "- total " +
                     "- $id " +
-                    "- ${clock.instant().minusNanos(start.nano.toLong()).nano}"
+                    "- Since start: ${curr.nano - start.nano}ns" +
+                    "- Since start: ${curr.toEpochMilli() - start.toEpochMilli()}ms" +
+                    "- Since start: ${curr.epochSecond - start.epochSecond}s"
         )
     }
 }
@@ -119,70 +133,103 @@ inline fun <R> EntityManager.transaction(block: (EntityManager) -> R): R {
  */
 inline fun <R> transactionExecutor(entityManager: EntityManager, block: (EntityManager) -> R): R {
     val start = clock.instant()
+    var curr: Instant
+    var last = start
     val id = UUID.randomUUID()
     entityManager.use { em ->
+        curr = clock.instant()
         logger.info(
             "DB investigation " +
                     "- inline fun <R> transactionExecutor(entityManager: EntityManager, block: (EntityManager) -> R): R " +
                     "- 1 " +
                     "- $id " +
-                    "- ${clock.instant().nano} "
+                    "- Current: ${curr.nano} " +
+                    "- Since last checkpoint: ${curr.nano - last.nano}ns" +
+                    "- Since last checkpoint: ${curr.toEpochMilli() - last.toEpochMilli()}ms" +
+                    "- Since last checkpoint: ${curr.epochSecond - last.epochSecond}s"
         )
+        last = curr
         val currentTransaction = em.transaction
+        curr = clock.instant()
         logger.info(
             "DB investigation " +
                     "- inline fun <R> transactionExecutor(entityManager: EntityManager, block: (EntityManager) -> R): R " +
                     "- 2 " +
                     "- $id " +
-                    "- ${clock.instant().nano} "
+                    "- Current: ${curr.nano} " +
+                    "- Since last checkpoint: ${curr.nano - last.nano}ns" +
+                    "- Since last checkpoint: ${curr.toEpochMilli() - last.toEpochMilli()}ms" +
+                    "- Since last checkpoint: ${curr.epochSecond - last.epochSecond}s"
         )
+        last = curr
         currentTransaction.begin()
+        curr = clock.instant()
         logger.info(
             "DB investigation " +
                     "- inline fun <R> transactionExecutor(entityManager: EntityManager, block: (EntityManager) -> R): R " +
                     "- 3 " +
                     "- $id " +
-                    "- ${clock.instant().nano} "
+                    "- Current: ${curr.nano} " +
+                    "- Since last checkpoint: ${curr.nano - last.nano}ns" +
+                    "- Since last checkpoint: ${curr.toEpochMilli() - last.toEpochMilli()}ms" +
+                    "- Since last checkpoint: ${curr.epochSecond - last.epochSecond}s"
         )
+        last = curr
         return try {
             block(em).also {
+                curr = clock.instant()
                 logger.info(
                     "DB investigation " +
                             "- inline fun <R> transactionExecutor(entityManager: EntityManager, block: (EntityManager) -> R): R " +
                             "- 4 " +
                             "- $id " +
-                            "- ${clock.instant().nano} "
+                            "- Current: ${curr.nano} " +
+                            "- Since last checkpoint: ${curr.nano - last.nano}ns" +
+                            "- Since last checkpoint: ${curr.toEpochMilli() - last.toEpochMilli()}ms" +
+                            "- Since last checkpoint: ${curr.epochSecond - last.epochSecond}s"
                 )
+                last = curr
             }
         } catch (e: Exception) {
             currentTransaction.setRollbackOnly()
             throw e
         } finally {
+            curr = clock.instant()
             logger.info(
                 "DB investigation " +
                         "- inline fun <R> transactionExecutor(entityManager: EntityManager, block: (EntityManager) -> R): R " +
                         "- 5 " +
                         "- $id " +
-                        "- ${clock.instant().nano} "
+                        "- Current: ${curr.nano} " +
+                        "- Since last checkpoint: ${curr.nano - last.nano}ns" +
+                        "- Since last checkpoint: ${curr.toEpochMilli() - last.toEpochMilli()}ms" +
+                        "- Since last checkpoint: ${curr.epochSecond - last.epochSecond}s"
             )
+            last = curr
             if (!currentTransaction.rollbackOnly) {
                 currentTransaction.commit()
             } else {
                 currentTransaction.rollback()
             }
+            curr = clock.instant()
             logger.info(
                 "DB investigation " +
-                    "- inline fun <R> transactionExecutor(entityManager: EntityManager, block: (EntityManager) -> R): R " +
-                    "- 6 " +
-                    "- $id " +
-                    "- ${clock.instant().nano} "
+                        "- inline fun <R> transactionExecutor(entityManager: EntityManager, block: (EntityManager) -> R): R " +
+                        "- 6 " +
+                        "- $id " +
+                        "- Current: ${curr.nano} " +
+                        "- Since last checkpoint: ${curr.nano - last.nano}ns" +
+                        "- Since last checkpoint: ${curr.toEpochMilli() - last.toEpochMilli()}ms" +
+                        "- Since last checkpoint: ${curr.epochSecond - last.epochSecond}s"
             )
             logger.info(
                 "DB investigation " +
                         "- inline fun <R> transactionExecutor(entityManager: EntityManager, block: (EntityManager) -> R): R " +
                         "- total " +
                         "- $id " +
-                        "- ${clock.instant().minusNanos(start.nano.toLong()).nano}"
+                        "- Since start: ${curr.nano - start.nano}ns" +
+                        "- Since start: ${curr.toEpochMilli() - start.toEpochMilli()}ms" +
+                        "- Since start: ${curr.epochSecond - start.epochSecond}s"
             )
         }
     }
