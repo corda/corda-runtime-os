@@ -1,9 +1,9 @@
 package net.corda.interop.service.impl
 
 import net.corda.interop.service.AliasIdentityDataService
-import net.corda.v5.application.interop.AliasMemberInfo
-import net.corda.v5.application.interop.HoldingIdAliasGroupInfo
-import net.corda.v5.application.interop.InteropGroupInfo
+import net.corda.v5.interop.AliasMemberInfo
+import net.corda.v5.interop.HoldingIdAliasGroupInfo
+import net.corda.v5.interop.InteropGroupInfo
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import java.util.UUID
@@ -16,15 +16,15 @@ class HardcodedAliasIdentityDataServiceImpl @Activate constructor() : AliasIdent
                 "3dfc0aae-be7c-44c2-aa4f-4d0d7145cf08", //This is hardcoded groupId for existing texts.
                 "Interop-Gold-Silver-Bronze-Group", listOf(
                     NetworkFacadeData(
-                        "Gold", listOf(
+                        "Gold", "Gold.cpi", listOf(
                             "org.corda.interop/platform/hello-interop/v1.0", "org.corda.interop/platform/tokens/v1.0"
                         )
                     ), NetworkFacadeData(
-                        "Silver", listOf(
+                        "Silver", "Silver.cpi", listOf(
                             "org.corda.interop/platform/tokens/v1.0"
                         )
                     ), NetworkFacadeData(
-                        "Bronze", listOf(
+                        "Bronze", "Bronze.cpi", listOf(
                             "org.corda.interop/platform/tokens/v1.0"
                         )
                     )
@@ -32,11 +32,11 @@ class HardcodedAliasIdentityDataServiceImpl @Activate constructor() : AliasIdent
             ), GroupData(
                 "abc0aae-be7c-44c2-aa4f-4d0d7145cabc", "Interop-UKBank-EUBank-Group", listOf(
                     NetworkFacadeData(
-                        "UKBank", listOf(
+                        "UKBank", "UKBank.cpi", listOf(
                             "org.corda.interop/platform/hello-interop/v1.0"
                         )
                     ), NetworkFacadeData(
-                        "EUBank", listOf(
+                        "EUBank", "EUBank.cpi", listOf(
                             "org.corda.interop/platform/tokens/v1.0"
                         )
                     )
@@ -55,6 +55,7 @@ data class GroupData(
 
 data class NetworkFacadeData(
     val network: String,
+    val cpiName: String,
     val facadeIds: List<String>
 )
 
@@ -87,7 +88,7 @@ data class DummyGroup(
     }
 
     override fun getMembers(): MutableList<AliasMemberInfo> {
-        return networks.map { DummyAliasMemberInfo(member, it.network, groupName, it.facadeIds) }.toMutableList()
+        return networks.map { DummyAliasMemberInfo(member, it.network, groupName, it.cpiName, it.facadeIds) }.toMutableList()
     }
 }
 
@@ -95,6 +96,7 @@ data class DummyAliasMemberInfo(
     private val member: String,
     private val network: String,
     private val groupName: String,
+    private val cpiName: String,
     private val facadeIds: List<String>
 ) : AliasMemberInfo {
     override fun getX500Name(): String {
@@ -102,11 +104,11 @@ data class DummyAliasMemberInfo(
     }
 
     override fun getCpiName(): String {
-        return "$network-CPI.cpi"
+        return cpiName
     }
 
     override fun getIdentifier(): String {
-        return "$x500Name@$groupName";
+        return "$x500Name@$cpiName";
     }
 
     override fun getFacadeIds(): List<String> {

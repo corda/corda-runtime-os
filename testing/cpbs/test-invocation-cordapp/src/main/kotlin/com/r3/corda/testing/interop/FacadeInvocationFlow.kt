@@ -36,9 +36,12 @@ class FacadeInvocationFlow : ClientStartableFlow {
         log.info("FacadeInvocationFlow.call() starting")
 
         val alice = "CN=Alice Gold Alias, O=Alice Corp, L=LDN, C=GB";
-        val groupName = "Interop-Gold-Silver-Bronze-Group"
-        val aliasMemberInfo = remoteAliasLookUpService.get("$alice@$groupName")
+        val cpiName = "Gold.cpi"
+        val aliasMemberInfo = remoteAliasLookUpService.lookup(alice, cpiName)
         log.info("AliasMemberInfo for Alice Gold Alias : $aliasMemberInfo")
+
+        val aliasMembers = remoteAliasLookUpService.lookup("org.corda.interop/platform/tokens/v1.0")
+        log.info("AliasMemberInfo list for facadeId : $aliasMembers")
 
         val args = requestBody.getRequestBodyAsMap(jsonMarshallingService, String::class.java, String::class.java)
 

@@ -30,6 +30,7 @@ dependencies {
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
     implementation "net.corda:corda-application"
+    implementation 'net.corda:corda-interop'
 
     implementation project(":libs:membership:membership-common")
     implementation "com.typesafe:config:$typeSafeConfigVersion"
