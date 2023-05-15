@@ -119,7 +119,7 @@ class RegistrationManagementServiceImpl @Activate constructor(
                     setOf(
                         LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
                         LifecycleCoordinatorName.forComponent<MembershipGroupReaderProvider>(),
-                        //LifecycleCoordinatorName.forComponent<MembershipPersistenceClient>(),
+                        LifecycleCoordinatorName.forComponent<MembershipPersistenceClient>(),
                         LifecycleCoordinatorName.forComponent<DbConnectionManager>(),
                         LifecycleCoordinatorName.forComponent<VirtualNodeInfoReadService>(),
                     ),

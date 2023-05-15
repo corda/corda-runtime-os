@@ -20,6 +20,7 @@ dependencies {
     implementation project(':components:membership:membership-group-read')
     implementation project(':components:membership:membership-persistence-service')
     implementation project(':components:membership:registration-management')
+    implementation project(":components:membership:membership-persistence-client")
     implementation project(':components:permissions:permission-storage-reader-service')
     implementation project(':components:permissions:permission-storage-writer-service')
     implementation project(':components:persistence:entity-processor-service')
