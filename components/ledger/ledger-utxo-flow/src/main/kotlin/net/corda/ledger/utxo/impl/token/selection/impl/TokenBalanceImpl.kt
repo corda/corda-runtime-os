@@ -9,7 +9,7 @@ class TokenBalanceImpl(private val availableBalance: BigDecimal, private val tot
         return availableBalance
     }
 
-    override fun getTotalbalance(): BigDecimal {
+    override fun getTotalBalance(): BigDecimal {
         return totalBalance
     }
 
