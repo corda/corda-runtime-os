@@ -18,6 +18,7 @@ import net.corda.applications.workers.rest.utils.setSslConfiguration
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Disabled
+import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 import java.nio.file.Path
@@ -60,6 +61,7 @@ class MultiClusterDynamicNetworkTest {
         assertThat(clusterC.members).hasSize(1)
     }
 
+    @Tag("Unstable")
     @Test
     fun `Create mgm and allow members to join the group - one way TLS`() {
         onboardMultiClusterGroup(false)

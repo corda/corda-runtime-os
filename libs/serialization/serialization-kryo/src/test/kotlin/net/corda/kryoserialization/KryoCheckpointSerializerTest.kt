@@ -17,6 +17,7 @@ import net.corda.sandbox.SandboxGroup
 import net.corda.serialization.checkpoint.CheckpointInternalCustomSerializer
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
@@ -24,12 +25,14 @@ import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.io.Externalizable
+import java.io.Serializable
 import java.time.Instant
 import java.time.ZoneOffset
 import java.time.chrono.Chronology
 import java.time.zone.ZoneRules
 import java.util.LinkedList
 import java.util.concurrent.Executors
+import java.util.function.Function
 
 internal class KryoCheckpointSerializerTest {
 
@@ -184,6 +187,76 @@ internal class KryoCheckpointSerializerTest {
         assertThat(tested)
             .isEqualTo(tester)
             .isNotSameAs(tester)
+    }
+
+    @Test
+    fun `test non-serializable lambdas`() {
+        val sandboxGroup = mockSandboxGroup(setOf(this::class.java))
+        val serializer = KryoCheckpointSerializer(
+            DefaultKryoCustomizer.customize(
+                kryo = getQuasarKryo(CordaClassResolver(sandboxGroup)),
+                serializers = emptyMap(),
+                classSerializer = ClassSerializer(sandboxGroup)
+            )
+        )
+
+        val tester = Function<Any, String> { x -> "Hello $x, hash=${x.hashCode()}" }
+        assertThatThrownBy { serializer.serialize(tester) }
+            .isInstanceOf(IllegalArgumentException::class.java)
+            .hasMessageStartingWith("Unable to serialize Java Lambda expression, unless explicitly declared ")
+    }
+
+    fun interface SerializableFunction<T, R> : Function<T, R>, Serializable
+
+    data class LambdaField(val message: String)
+
+    @Test
+    fun `test serializable lambdas`() {
+        val sandboxGroup = mockSandboxGroup(setOf(this::class.java, LambdaField::class.java))
+        val serializer = KryoCheckpointSerializer(
+            DefaultKryoCustomizer.customize(
+                kryo = getQuasarKryo(CordaClassResolver(sandboxGroup)),
+                serializers = emptyMap(),
+                classSerializer = ClassSerializer(sandboxGroup)
+            )
+        )
+
+        val obj = LambdaField("Something Extra")
+        val tester = SerializableFunction<Any, String> { x -> "Hello $x, obj=$obj" }
+        val bytes = serializer.serialize(tester)
+        val tested = serializer.deserialize(bytes, Any::class.java)
+
+        assertThat(tested)
+            .isNotSameAs(tester)
+            .isInstanceOf(SerializableFunction::class.java)
+        @Suppress("unchecked_cast")
+        assertEquals(tester.apply("TEST"), (tested as SerializableFunction<Any, *>).apply("TEST").toString())
+    }
+
+    class TypeWithLambda(private val function: SerializableFunction<Any, String>) {
+        fun apply(obj: Any) = function.apply(obj)
+    }
+
+    @Test
+    fun `test object with serializable lambda`() {
+        val sandboxGroup = mockSandboxGroup(setOf(this::class.java, TypeWithLambda::class.java, LambdaField::class.java))
+        val serializer = KryoCheckpointSerializer(
+            DefaultKryoCustomizer.customize(
+                kryo = getQuasarKryo(CordaClassResolver(sandboxGroup)),
+                serializers = emptyMap(),
+                classSerializer = ClassSerializer(sandboxGroup)
+            )
+        )
+
+        val obj = LambdaField("Something Extra")
+        val tester = TypeWithLambda { x -> "Hello $x, obj=$obj" }
+        val bytes = serializer.serialize(tester)
+        val tested = serializer.deserialize(bytes, TypeWithLambda::class.java)
+
+        assertThat(tested)
+            .isNotNull()
+            .isNotSameAs(tester)
+        assertEquals(tester.apply("TEST"), tested.apply("TEST"))
     }
 
     class ChildOfArrayList<T>(size: Int) : ArrayList<T>(size) {

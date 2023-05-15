@@ -135,8 +135,8 @@ class FlowFiberImpl(
                 .build()
                 .recordCallable {
                     getExecutionContext().sandboxGroupContext.checkpointSerializer.serialize(this)
-                }
-            flowCompletion.complete(FlowIORequest.FlowSuspended(ByteBuffer.wrap(fiberState), request))
+                }!!
+            flowCompletion.complete(FlowIORequest.FlowSuspended(ByteBuffer.wrap(fiberState), request, prepareForCaching()))
         }
 
         resetLoggingContext()
@@ -156,6 +156,16 @@ class FlowFiberImpl(
                 })
             else -> throw IllegalStateException(FiberExceptionConstants.INVALID_FLOW_RETURN)
         }
+    }
+
+    /**
+     * Prepare the fiber for caching by removing unnecessary transient fields. These fields will be set
+     * on the fiber after it is selected from the cache and resumed in [resume].
+     */
+    private fun prepareForCaching(): FlowFiberImpl {
+        flowFiberExecutionContext = null
+        suspensionOutcome = null
+        return this
     }
 
     @Suspendable

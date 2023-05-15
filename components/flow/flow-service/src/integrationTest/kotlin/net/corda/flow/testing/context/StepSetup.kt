@@ -86,4 +86,6 @@ interface StepSetup {
         requestId: String,
         errorType: ExternalEventResponseErrorType
     ): FlowIoRequestSetup
+
+    fun resetFlowFiberCache()
 }

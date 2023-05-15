@@ -10,7 +10,6 @@ import com.fasterxml.jackson.databind.JsonSerializer
 import com.fasterxml.jackson.databind.SerializerProvider
 import com.fasterxml.jackson.databind.node.ValueNode
 import net.corda.rest.JsonObject
-import net.corda.rest.json.serialization.impl.JsonObjectAsString
 
 
 object JsonObjectSerializer : JsonSerializer<JsonObject>() {
