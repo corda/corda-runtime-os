@@ -5,6 +5,7 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 import net.corda.simulator.exceptions.ResponderFlowException
+import net.corda.simulator.runtime.utils.requireAMQPSerializable
 import net.corda.v5.application.messaging.FlowInfo
 import net.corda.v5.application.messaging.FlowSession
 import org.slf4j.LoggerFactory
@@ -27,8 +28,8 @@ class BaseInitiatorFlowSession(
     flowContextProperties: SimFlowContextProperties
 ) : BlockingQueueFlowSession(flowDetails, from, to, flowContextProperties), InitiatorFlowSession {
 
-    companion object {
-        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
+    private companion object {
+        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     private var responderSessionClosed: Boolean = false
@@ -39,6 +40,7 @@ class BaseInitiatorFlowSession(
      * @param payload The payload to send to the counterparty.
      */
     override fun send(payload: Any) {
+        requireAMQPSerializable(payload::class.java)
         rethrowAnyResponderError()
         state.closedCheck()
         to.put(payload)

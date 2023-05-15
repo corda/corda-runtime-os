@@ -14,6 +14,7 @@ import net.corda.v5.application.crypto.DigitalSignatureMetadata
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.persistence.PersistenceService
 import net.corda.v5.application.serialization.SerializationService
+import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.crypto.SecureHash
@@ -35,6 +36,7 @@ import java.util.Objects
  * Simulator implementation of [UtxoSignedTransaction]
  */
 @Suppress("LongParameterList", "TooManyFunctions")
+@CordaSerializable
 class UtxoSignedTransactionBase(
     private val signatures: List<DigitalSignatureAndMetadata>,
     private val ledgerInfo: UtxoStateLedgerInfo,

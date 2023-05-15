@@ -3,6 +3,7 @@ package net.corda.simulator.runtime.messaging
 import net.corda.simulator.SimulatorConfiguration
 import net.corda.simulator.exceptions.SessionAlreadyClosedException
 import net.corda.simulator.runtime.testflows.PingAckMessage
+import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.types.MemberX500Name
 import org.hamcrest.MatcherAssert.assertThat
 import org.hamcrest.Matchers.`is`
@@ -26,6 +27,9 @@ import kotlin.concurrent.thread
 
 @Timeout(value = 5, unit = TimeUnit.SECONDS)
 class BlockingQueueFlowSessionTest {
+
+    @CordaSerializable
+    data class Payload(val message: String)
 
     private val sender = MemberX500Name.parse("CN=IRunCorDapps, OU=Application, O=R3, L=London, C=GB")
     private val receiver = MemberX500Name.parse("CN=IRunCorDappsToo, OU=Application, O=R3, L=London, C=GB")
@@ -101,11 +105,11 @@ class BlockingQueueFlowSessionTest {
         initiatorSession.close()
 
         // Then subsequent calls should error
-        assertThrows<SessionAlreadyClosedException> { initiatorSession.send("ping-ack") }
-        assertThrows<SessionAlreadyClosedException> { initiatorSession.receive(Any::class.java) }
+        assertThrows<SessionAlreadyClosedException> { initiatorSession.send(Payload("ping-ack")) }
+        assertThrows<SessionAlreadyClosedException> { initiatorSession.receive(Payload::class.java) }
 
-        assertThrows<SessionAlreadyClosedException> { responderSession.send("ping-ack") }
-        assertThrows<SessionAlreadyClosedException> { responderSession.receive(Any::class.java) }
+        assertThrows<SessionAlreadyClosedException> { responderSession.send(Payload("ping-ack")) }
+        assertThrows<SessionAlreadyClosedException> { responderSession.receive(Payload::class.java) }
 
         // Except for closing again
         assertDoesNotThrow { initiatorSession.close() }
@@ -137,7 +141,7 @@ class BlockingQueueFlowSessionTest {
 
         // Then the session should time out from any receive
         assertThrows<TimeoutException> {
-            sendingSession.receive(Any::class.java)
+            sendingSession.receive(Payload::class.java)
         }
     }
 

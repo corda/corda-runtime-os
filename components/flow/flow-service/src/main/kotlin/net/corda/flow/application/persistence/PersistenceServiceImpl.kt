@@ -1,6 +1,7 @@
 package net.corda.flow.application.persistence
 
 import java.nio.ByteBuffer
+import javax.persistence.Entity
 import net.corda.flow.application.persistence.external.events.FindExternalEventFactory
 import net.corda.flow.application.persistence.external.events.FindParameters
 import net.corda.flow.application.persistence.external.events.MergeExternalEventFactory
@@ -36,7 +37,7 @@ class PersistenceServiceImpl @Activate constructor(
 
     @Suspendable
     override fun <R : Any> find(entityClass: Class<R>, primaryKey: Any): R? {
-        requireBoxedType(entityClass)
+        requireEntityType(entityClass)
         return wrapWithPersistenceException {
             externalEventExecutor.execute(
                 FindExternalEventFactory::class.java,
@@ -47,7 +48,7 @@ class PersistenceServiceImpl @Activate constructor(
 
     @Suspendable
     override fun <R : Any> find(entityClass: Class<R>, primaryKeys: List<*>): List<R> {
-        requireBoxedType(entityClass)
+        requireEntityType(entityClass)
         return wrapWithPersistenceException {
             externalEventExecutor.execute(
                 FindExternalEventFactory::class.java,
@@ -58,13 +59,13 @@ class PersistenceServiceImpl @Activate constructor(
 
     @Suspendable
     override fun <R : Any> findAll(entityClass: Class<R>): PagedQuery<R> {
-        requireBoxedType(entityClass)
+        requireEntityType(entityClass)
         return pagedQueryFactory.createPagedFindQuery(entityClass)
     }
 
     @Suspendable
     override fun <R : Any> merge(entity: R): R? {
-        requireBoxedType(entity.javaClass)
+        requireEntityType(entity::class.java)
         return wrapWithPersistenceException {
             externalEventExecutor.execute(
                 MergeExternalEventFactory::class.java,
@@ -76,7 +77,7 @@ class PersistenceServiceImpl @Activate constructor(
     @Suspendable
     override fun <R : Any> merge(entities: List<R>): List<R> {
         return if (entities.isNotEmpty()) {
-            requireBoxedType(entities)
+            requireEntityTypes(entities)
             val mergedEntities = wrapWithPersistenceException {
                 externalEventExecutor.execute(
                     MergeExternalEventFactory::class.java,
@@ -96,7 +97,7 @@ class PersistenceServiceImpl @Activate constructor(
 
     @Suspendable
     override fun persist(entity: Any) {
-        requireBoxedType(entity.javaClass)
+        requireEntityType(entity.javaClass)
         wrapWithPersistenceException {
             externalEventExecutor.execute(
                 PersistExternalEventFactory::class.java,
@@ -108,7 +109,7 @@ class PersistenceServiceImpl @Activate constructor(
     @Suspendable
     override fun persist(entities: List<*>) {
         if (entities.isNotEmpty()) {
-            requireBoxedType(entities)
+            requireEntityTypes(entities)
             wrapWithPersistenceException {
                 externalEventExecutor.execute(
                     PersistExternalEventFactory::class.java,
@@ -120,7 +121,7 @@ class PersistenceServiceImpl @Activate constructor(
 
     @Suspendable
     override fun remove(entity: Any) {
-        requireBoxedType(entity.javaClass)
+        requireEntityType(entity::class.java)
         wrapWithPersistenceException {
             externalEventExecutor.execute(
                 RemoveExternalEventFactory::class.java,
@@ -132,7 +133,7 @@ class PersistenceServiceImpl @Activate constructor(
     @Suspendable
     override fun remove(entities: List<*>) {
         if (entities.isNotEmpty()) {
-            requireBoxedType(entities)
+            requireEntityTypes(entities)
             wrapWithPersistenceException {
                 externalEventExecutor.execute(
                     RemoveExternalEventFactory::class.java,
@@ -147,21 +148,21 @@ class PersistenceServiceImpl @Activate constructor(
         queryName: String,
         entityClass: Class<T>
     ): ParameterizedQuery<T> {
-        requireBoxedType(entityClass)
+        requireEntityType(entityClass)
         return pagedQueryFactory.createNamedParameterizedQuery(queryName, entityClass)
     }
 
     /**
      * Required to prevent class cast exceptions during AMQP serialization of primitive types.
      */
-    private fun requireBoxedType(type: Class<*>) {
-        require(!type.isPrimitive) { "Cannot perform persistence operation on primitive type ${type.name}" }
+    private fun requireEntityType(entity: Class<out Any>) {
+        require(entity.isAnnotationPresent(Entity::class.java)) { "Type ${entity.name} must be JPA entity." }
     }
 
-    private fun requireBoxedType(objects: List<*>) {
+    private fun requireEntityTypes(objects: List<*>) {
         for (obj in objects) {
             if (obj != null) {
-                requireBoxedType(obj.javaClass)
+                requireEntityType(obj::class.java)
             }
         }
     }

@@ -2,6 +2,7 @@ package net.corda.simulator.runtime.messaging
 
 import net.corda.simulator.exceptions.ResponderFlowException
 import net.corda.simulator.exceptions.SessionAlreadyClosedException
+import net.corda.simulator.runtime.utils.requireAMQPSerializable
 import net.corda.v5.application.flows.FlowContextProperties
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.types.MemberX500Name
@@ -65,7 +66,7 @@ abstract class BlockingQueueFlowSession(
      */
     override fun <R : Any> receive(receiveType: Class<R>): R {
         state.closedCheck()
-        requireBoxedType(receiveType)
+        requireAMQPSerializable(receiveType)
         val start = configuration.clock.instant()
         while (true) {
             checkTimeout(start)
@@ -91,10 +92,6 @@ abstract class BlockingQueueFlowSession(
         }
     }
 
-    private fun requireBoxedType(type: Class<*>) {
-        require(!type.isPrimitive) { "Cannot receive primitive type $type" }
-    }
-
     /**
      * @param receiveType The class of the received payload.
      * @param payload The payload to send.
@@ -103,7 +100,7 @@ abstract class BlockingQueueFlowSession(
      * @see [BlockingQueueFlowSession.receive] for details of thrown exceptions.
      */
     override fun <R : Any> sendAndReceive(receiveType: Class<R>, payload: Any): R {
-        requireBoxedType(receiveType)
+        requireAMQPSerializable(receiveType)
         send(payload)
         return receive(receiveType)
     }

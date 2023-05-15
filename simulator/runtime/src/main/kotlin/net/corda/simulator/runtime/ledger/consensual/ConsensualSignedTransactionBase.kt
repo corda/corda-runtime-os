@@ -12,6 +12,7 @@ import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.crypto.DigitalSignatureMetadata
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.serialization.SerializationService
+import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
 import net.corda.v5.ledger.consensual.ConsensualState
@@ -22,6 +23,7 @@ import java.security.PublicKey
 import java.time.Instant
 import java.util.Objects
 
+@CordaSerializable
 class ConsensualSignedTransactionBase(
     private val signatures: List<DigitalSignatureAndMetadata>,
     private val ledgerTransactionInfo: ConsensualStateLedgerInfo,

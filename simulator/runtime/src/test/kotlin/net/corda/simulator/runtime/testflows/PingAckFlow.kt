@@ -9,6 +9,7 @@ import net.corda.v5.application.flows.ResponderFlow
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.messaging.FlowSession
+import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.types.MemberX500Name
 
@@ -38,4 +39,5 @@ class PingAckResponderFlow : ResponderFlow {
     }
 }
 
+@CordaSerializable
 data class PingAckMessage(val message: String)

@@ -12,14 +12,17 @@ import net.corda.v5.application.flows.ResponderFlow
 import net.corda.v5.application.flows.SubFlow
 import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.messaging.FlowSession
+import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.annotations.Suspendable
-import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.junit.jupiter.api.Assertions.assertInstanceOf
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 
 class SessionManagementTest {
+
+    @CordaSerializable
+    data class Payload(val message: String)
 
     companion object {
 
@@ -35,7 +38,7 @@ class SessionManagementTest {
             @Suspendable
             override fun call(requestBody: ClientRequestBody): String {
                 val session = flowMessaging.initiateFlow(bob)
-                session.send(Unit)
+                session.send(Payload("hello"))
                 return ""
             }
         }
@@ -47,7 +50,7 @@ class SessionManagementTest {
 
             @Suspendable
             override fun call(session: FlowSession) {
-                session.receive(Any::class.java)
+                session.receive(Payload::class.java)
                 flowEngine.subFlow(SendingOnSubFlow())
 
             }
@@ -61,7 +64,7 @@ class SessionManagementTest {
             @Suspendable
             override fun call(): String {
                 val session = flowMessaging.initiateFlow(charlie)
-                session.receive(Any::class.java)
+                session.receive(Payload::class.java)
                 return ""
             }
         }
@@ -71,7 +74,7 @@ class SessionManagementTest {
 
             override fun call(session: FlowSession) {
                 Thread.sleep(200)
-                session.send(Any::class.java)
+                session.send(Payload("hello"))
                 finished = true
             }
         }

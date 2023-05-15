@@ -1,6 +1,7 @@
 package net.corda.flow.application.versioning.impl.sessions
 
 import net.corda.flow.application.sessions.FlowSessionInternal
+import net.corda.flow.application.sessions.utils.requireAMQPSerializable
 import net.corda.utilities.reflection.castIfPossible
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
@@ -45,6 +46,7 @@ class VersionReceivingFlowSessionImpl(
     }
 
     private fun <R: Any> getInitialPayload(receiveType: Class<R>): R {
+        requireAMQPSerializable(receiveType)
         val payload = serializationService.deserialize(initialSerializedPayload, receiveType)
         return receiveType.castIfPossible(payload) ?: throw CordaRuntimeException(
             "Expecting to receive a $receiveType but received a ${initialSerializedPayload::class.java.name} instead, payload: " +

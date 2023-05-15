@@ -17,6 +17,7 @@ import net.corda.flow.utils.mutableKeyValuePairList
 import net.corda.internal.serialization.SerializedBytesImpl
 import net.corda.v5.application.messaging.FlowContextPropertiesBuilder
 import net.corda.v5.application.messaging.FlowSession
+import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
 import org.assertj.core.api.Assertions.assertThat
@@ -37,18 +38,22 @@ import org.mockito.kotlin.whenever
 @Suppress("MaxLineLength")
 class FlowMessagingImplTest {
 
+    @CordaSerializable
+    data class Payload(val message: String)
+
     private companion object {
         const val SESSION_ID_ONE = "one"
         const val SESSION_ID_TWO = "two"
         const val SESSION_ID_THREE = "three"
         const val SESSION_ID_FOUR = "four"
         const val SESSION_ID_FIVE = "five"
-        const val PAYLOAD_ONE = "payload one"
-        const val PAYLOAD_TWO = "payload two"
-        const val PAYLOAD_THREE = "payload three"
-        const val PAYLOAD_FOUR = "payload four"
-        const val PAYLOAD_FIVE = "payload five"
         const val FLOW_NAME = "flow name"
+
+        val PAYLOAD_ONE = Payload("payload one")
+        val PAYLOAD_TWO = Payload("payload two")
+        val PAYLOAD_THREE = Payload("payload three")
+        val PAYLOAD_FOUR = Payload("payload four")
+        val PAYLOAD_FIVE = Payload("payload five")
 
         val SERIALIZED_PAYLOAD_ONE = byteArrayOf(1)
         val SERIALIZED_PAYLOAD_TWO = byteArrayOf(2)
@@ -90,19 +95,19 @@ class FlowMessagingImplTest {
 
     @BeforeEach
     fun beforeEach() {
-        whenever(serializationService.deserializeAndCheckType(SERIALIZED_PAYLOAD_ONE, Any::class.java)).thenReturn(
+        whenever(serializationService.deserializeAndCheckType(SERIALIZED_PAYLOAD_ONE, Payload::class.java)).thenReturn(
             PAYLOAD_ONE
         )
-        whenever(serializationService.deserializeAndCheckType(SERIALIZED_PAYLOAD_TWO, Any::class.java)).thenReturn(
+        whenever(serializationService.deserializeAndCheckType(SERIALIZED_PAYLOAD_TWO, Payload::class.java)).thenReturn(
             PAYLOAD_TWO
         )
-        whenever(serializationService.deserializeAndCheckType(SERIALIZED_PAYLOAD_THREE, Any::class.java)).thenReturn(
+        whenever(serializationService.deserializeAndCheckType(SERIALIZED_PAYLOAD_THREE, Payload::class.java)).thenReturn(
             PAYLOAD_THREE
         )
-        whenever(serializationService.deserializeAndCheckType(SERIALIZED_PAYLOAD_FOUR, Any::class.java)).thenReturn(
+        whenever(serializationService.deserializeAndCheckType(SERIALIZED_PAYLOAD_FOUR, Payload::class.java)).thenReturn(
             PAYLOAD_FOUR
         )
-        whenever(serializationService.deserializeAndCheckType(SERIALIZED_PAYLOAD_FIVE, Any::class.java)).thenReturn(
+        whenever(serializationService.deserializeAndCheckType(SERIALIZED_PAYLOAD_FIVE, Payload::class.java)).thenReturn(
             PAYLOAD_FIVE
         )
 
@@ -213,21 +218,21 @@ class FlowMessagingImplTest {
                 SESSION_ID_TWO to SERIALIZED_PAYLOAD_TWO
             )
         )
-        val results = flowMessaging.receiveAll(Any::class.java, setOf(normalSessionOne, versionSendingSessionOne))
+        val results = flowMessaging.receiveAll(Payload::class.java, setOf(normalSessionOne, versionSendingSessionOne))
         assertThat(results).isEqualTo(listOf(PAYLOAD_ONE, PAYLOAD_TWO))
         verify(mockFlowFiberService.flowFiber).suspend(any<FlowIORequest.Receive>())
     }
 
     @Test
     fun `receiveAll with only version receiving sessions that have not received their initial payloads does not suspend the flow and returns the initial payloads`() {
-        whenever(versionReceivingSessionOne.getInitialPayloadIfNotAlreadyReceived(Any::class.java)).thenReturn(
+        whenever(versionReceivingSessionOne.getInitialPayloadIfNotAlreadyReceived(Payload::class.java)).thenReturn(
             PAYLOAD_ONE
         )
-        whenever(versionReceivingSessionTwo.getInitialPayloadIfNotAlreadyReceived(Any::class.java)).thenReturn(
+        whenever(versionReceivingSessionTwo.getInitialPayloadIfNotAlreadyReceived(Payload::class.java)).thenReturn(
             PAYLOAD_TWO
         )
         val results =
-            flowMessaging.receiveAll(Any::class.java, setOf(versionReceivingSessionOne, versionReceivingSessionTwo))
+            flowMessaging.receiveAll(Payload::class.java, setOf(versionReceivingSessionOne, versionReceivingSessionTwo))
         assertThat(results).isEqualTo(listOf(PAYLOAD_ONE, PAYLOAD_TWO))
         verify(mockFlowFiberService.flowFiber, never()).suspend(any<FlowIORequest.Receive>())
     }
@@ -243,7 +248,7 @@ class FlowMessagingImplTest {
         whenever(versionReceivingSessionOne.getInitialPayloadIfNotAlreadyReceived(Any::class.java)).thenReturn(null)
         whenever(versionReceivingSessionTwo.getInitialPayloadIfNotAlreadyReceived(Any::class.java)).thenReturn(null)
         val results =
-            flowMessaging.receiveAll(Any::class.java, setOf(versionReceivingSessionOne, versionReceivingSessionTwo))
+            flowMessaging.receiveAll(Payload::class.java, setOf(versionReceivingSessionOne, versionReceivingSessionTwo))
         assertThat(results).isEqualTo(listOf(PAYLOAD_FOUR, PAYLOAD_FIVE))
         verify(mockFlowFiberService.flowFiber).suspend(any<FlowIORequest.Receive>())
     }
@@ -256,14 +261,14 @@ class FlowMessagingImplTest {
                 SESSION_ID_TWO to SERIALIZED_PAYLOAD_TWO
             )
         )
-        whenever(versionReceivingSessionOne.getInitialPayloadIfNotAlreadyReceived(Any::class.java)).thenReturn(
+        whenever(versionReceivingSessionOne.getInitialPayloadIfNotAlreadyReceived(Payload::class.java)).thenReturn(
             PAYLOAD_FOUR
         )
-        whenever(versionReceivingSessionTwo.getInitialPayloadIfNotAlreadyReceived(Any::class.java)).thenReturn(
+        whenever(versionReceivingSessionTwo.getInitialPayloadIfNotAlreadyReceived(Payload::class.java)).thenReturn(
             PAYLOAD_FIVE
         )
         val results = flowMessaging.receiveAll(
-            Any::class.java,
+            Payload::class.java,
             setOf(normalSessionOne, versionSendingSessionOne, versionReceivingSessionOne, versionReceivingSessionTwo)
         )
         assertThat(results).isEqualTo(listOf(PAYLOAD_ONE, PAYLOAD_TWO, PAYLOAD_FOUR, PAYLOAD_FIVE))
@@ -281,10 +286,10 @@ class FlowMessagingImplTest {
                 SESSION_ID_FIVE to SERIALIZED_PAYLOAD_FIVE
             )
         )
-        whenever(versionReceivingSessionOne.getInitialPayloadIfNotAlreadyReceived(Any::class.java)).thenReturn(null)
-        whenever(versionReceivingSessionTwo.getInitialPayloadIfNotAlreadyReceived(Any::class.java)).thenReturn(null)
+        whenever(versionReceivingSessionOne.getInitialPayloadIfNotAlreadyReceived(Payload::class.java)).thenReturn(null)
+        whenever(versionReceivingSessionTwo.getInitialPayloadIfNotAlreadyReceived(Payload::class.java)).thenReturn(null)
         val results = flowMessaging.receiveAll(
-            Any::class.java,
+            Payload::class.java,
             setOf(normalSessionOne, versionSendingSessionOne, versionReceivingSessionOne, versionReceivingSessionTwo)
         )
         assertThat(results).isEqualTo(listOf(PAYLOAD_ONE, PAYLOAD_TWO, PAYLOAD_FOUR, PAYLOAD_FIVE))
@@ -299,7 +304,7 @@ class FlowMessagingImplTest {
 
     @Test
     fun `receiveAll with no sessions does not suspend the flow and returns an empty list`() {
-        val results = flowMessaging.receiveAll(Any::class.java, emptySet())
+        val results = flowMessaging.receiveAll(Payload::class.java, emptySet())
         assertThat(results).isEqualTo(emptyList<Any>())
         verify(mockFlowFiberService.flowFiber, never()).suspend(any<FlowIORequest.Receive>())
     }
@@ -320,7 +325,7 @@ class FlowMessagingImplTest {
             )
         )
         val results =
-            flowMessaging.receiveAll(Any::class.java, setOf(versionSendingSessionOne, versionSendingSessionTwo))
+            flowMessaging.receiveAll(Payload::class.java, setOf(versionSendingSessionOne, versionSendingSessionTwo))
         assertThat(results).isEqualTo(listOf(PAYLOAD_ONE, PAYLOAD_TWO))
         verify(mockFlowFiberService.flowFiber).suspend(any<FlowIORequest.Send>())
         assertThat(multiUseCaptor.firstValue).isExactlyInstanceOf(FlowIORequest.Send::class.java)
@@ -343,7 +348,7 @@ class FlowMessagingImplTest {
             )
         )
         val results =
-            flowMessaging.receiveAll(Any::class.java, setOf(versionSendingSessionOne, versionSendingSessionTwo))
+            flowMessaging.receiveAll(Payload::class.java, setOf(versionSendingSessionOne, versionSendingSessionTwo))
         assertThat(results).isEqualTo(listOf(PAYLOAD_ONE, PAYLOAD_TWO))
         verify(mockFlowFiberService.flowFiber, never()).suspend(any<FlowIORequest.Send>())
     }
@@ -356,8 +361,8 @@ class FlowMessagingImplTest {
         whenever(versionSendingSessionTwo.getVersioningPayloadToSend()).thenReturn(
             SERIALIZED_AGREED_VERSION_AND_PAYLOAD_TWO
         )
-        whenever(versionReceivingSessionOne.getInitialPayloadIfNotAlreadyReceived(Any::class.java)).thenReturn(null)
-        whenever(versionReceivingSessionTwo.getInitialPayloadIfNotAlreadyReceived(Any::class.java)).thenReturn(
+        whenever(versionReceivingSessionOne.getInitialPayloadIfNotAlreadyReceived(Payload::class.java)).thenReturn(null)
+        whenever(versionReceivingSessionTwo.getInitialPayloadIfNotAlreadyReceived(Payload::class.java)).thenReturn(
             PAYLOAD_FIVE
         )
         whenever(mockFlowFiberService.flowFiber.suspend(multiUseCaptor.capture())).thenReturn(
@@ -370,7 +375,7 @@ class FlowMessagingImplTest {
             )
         )
         val results = flowMessaging.receiveAll(
-            Any::class.java,
+            Payload::class.java,
             setOf(
                 normalSessionOne,
                 versionSendingSessionOne,
@@ -398,7 +403,7 @@ class FlowMessagingImplTest {
                 SESSION_ID_FOUR to SERIALIZED_PAYLOAD_FOUR
             )
         )
-        val results = flowMessaging.receiveAll(Any::class.java, setOf(normalSessionOne, versionReceivingSessionOne))
+        val results = flowMessaging.receiveAll(Payload::class.java, setOf(normalSessionOne, versionReceivingSessionOne))
         assertThat(results).isEqualTo(listOf(PAYLOAD_ONE, PAYLOAD_FOUR))
         verify(mockFlowFiberService.flowFiber, never()).suspend(any<FlowIORequest.Send>())
     }
@@ -413,8 +418,8 @@ class FlowMessagingImplTest {
         )
         val results = flowMessaging.receiveAllMap(
             mapOf(
-                normalSessionOne to Any::class.java,
-                versionSendingSessionOne to Any::class.java
+                normalSessionOne to Payload::class.java,
+                versionSendingSessionOne to Payload::class.java
             )
         )
         assertThat(results).isEqualTo(mapOf(normalSessionOne to PAYLOAD_ONE, versionSendingSessionOne to PAYLOAD_TWO))
@@ -423,17 +428,17 @@ class FlowMessagingImplTest {
 
     @Test
     fun `receiveAllMap with only version receiving sessions that have not received their initial payloads does not suspend the flow and returns the initial payloads`() {
-        whenever(versionReceivingSessionOne.getInitialPayloadIfNotAlreadyReceived(Any::class.java)).thenReturn(
+        whenever(versionReceivingSessionOne.getInitialPayloadIfNotAlreadyReceived(Payload::class.java)).thenReturn(
             PAYLOAD_ONE
         )
-        whenever(versionReceivingSessionTwo.getInitialPayloadIfNotAlreadyReceived(Any::class.java)).thenReturn(
+        whenever(versionReceivingSessionTwo.getInitialPayloadIfNotAlreadyReceived(Payload::class.java)).thenReturn(
             PAYLOAD_TWO
         )
         val results =
             flowMessaging.receiveAllMap(
                 mapOf(
-                    versionReceivingSessionOne to Any::class.java,
-                    versionReceivingSessionTwo to Any::class.java
+                    versionReceivingSessionOne to Payload::class.java,
+                    versionReceivingSessionTwo to Payload::class.java
                 )
             )
         assertThat(results).isEqualTo(
@@ -453,13 +458,13 @@ class FlowMessagingImplTest {
                 SESSION_ID_FIVE to SERIALIZED_PAYLOAD_FIVE
             )
         )
-        whenever(versionReceivingSessionOne.getInitialPayloadIfNotAlreadyReceived(Any::class.java)).thenReturn(null)
-        whenever(versionReceivingSessionTwo.getInitialPayloadIfNotAlreadyReceived(Any::class.java)).thenReturn(null)
+        whenever(versionReceivingSessionOne.getInitialPayloadIfNotAlreadyReceived(Payload::class.java)).thenReturn(null)
+        whenever(versionReceivingSessionTwo.getInitialPayloadIfNotAlreadyReceived(Payload::class.java)).thenReturn(null)
         val results =
             flowMessaging.receiveAllMap(
                 mapOf(
-                    versionReceivingSessionOne to Any::class.java,
-                    versionReceivingSessionTwo to Any::class.java
+                    versionReceivingSessionOne to Payload::class.java,
+                    versionReceivingSessionTwo to Payload::class.java
                 )
             )
         assertThat(results).isEqualTo(
@@ -479,18 +484,18 @@ class FlowMessagingImplTest {
                 SESSION_ID_TWO to SERIALIZED_PAYLOAD_TWO
             )
         )
-        whenever(versionReceivingSessionOne.getInitialPayloadIfNotAlreadyReceived(Any::class.java)).thenReturn(
+        whenever(versionReceivingSessionOne.getInitialPayloadIfNotAlreadyReceived(Payload::class.java)).thenReturn(
             PAYLOAD_FOUR
         )
-        whenever(versionReceivingSessionTwo.getInitialPayloadIfNotAlreadyReceived(Any::class.java)).thenReturn(
+        whenever(versionReceivingSessionTwo.getInitialPayloadIfNotAlreadyReceived(Payload::class.java)).thenReturn(
             PAYLOAD_FIVE
         )
         val results = flowMessaging.receiveAllMap(
             mapOf(
-                normalSessionOne to Any::class.java,
-                versionSendingSessionOne to Any::class.java,
-                versionReceivingSessionOne to Any::class.java,
-                versionReceivingSessionTwo to Any::class.java
+                normalSessionOne to Payload::class.java,
+                versionSendingSessionOne to Payload::class.java,
+                versionReceivingSessionOne to Payload::class.java,
+                versionReceivingSessionTwo to Payload::class.java
             )
         )
         assertThat(results).isEqualTo(
@@ -519,10 +524,10 @@ class FlowMessagingImplTest {
         whenever(versionReceivingSessionTwo.getInitialPayloadIfNotAlreadyReceived(Any::class.java)).thenReturn(null)
         val results = flowMessaging.receiveAllMap(
             mapOf(
-                normalSessionOne to Any::class.java,
-                versionSendingSessionOne to Any::class.java,
-                versionReceivingSessionOne to Any::class.java,
-                versionReceivingSessionTwo to Any::class.java
+                normalSessionOne to Payload::class.java,
+                versionSendingSessionOne to Payload::class.java,
+                versionReceivingSessionOne to Payload::class.java,
+                versionReceivingSessionTwo to Payload::class.java
             )
         )
         assertThat(results).isEqualTo(
@@ -566,8 +571,8 @@ class FlowMessagingImplTest {
         )
         val results = flowMessaging.receiveAllMap(
             mapOf(
-                versionSendingSessionOne to Any::class.java,
-                versionSendingSessionTwo to Any::class.java
+                versionSendingSessionOne to Payload::class.java,
+                versionSendingSessionTwo to Payload::class.java
             )
         )
         assertThat(results).isEqualTo(
@@ -598,8 +603,8 @@ class FlowMessagingImplTest {
         )
         val results = flowMessaging.receiveAllMap(
             mapOf(
-                versionSendingSessionOne to Any::class.java,
-                versionSendingSessionTwo to Any::class.java
+                versionSendingSessionOne to Payload::class.java,
+                versionSendingSessionTwo to Payload::class.java
             )
         )
         assertThat(results).isEqualTo(
@@ -619,8 +624,8 @@ class FlowMessagingImplTest {
         whenever(versionSendingSessionTwo.getVersioningPayloadToSend()).thenReturn(
             SERIALIZED_AGREED_VERSION_AND_PAYLOAD_TWO
         )
-        whenever(versionReceivingSessionOne.getInitialPayloadIfNotAlreadyReceived(Any::class.java)).thenReturn(null)
-        whenever(versionReceivingSessionTwo.getInitialPayloadIfNotAlreadyReceived(Any::class.java)).thenReturn(
+        whenever(versionReceivingSessionOne.getInitialPayloadIfNotAlreadyReceived(Payload::class.java)).thenReturn(null)
+        whenever(versionReceivingSessionTwo.getInitialPayloadIfNotAlreadyReceived(Payload::class.java)).thenReturn(
             PAYLOAD_FIVE
         )
         whenever(mockFlowFiberService.flowFiber.suspend(multiUseCaptor.capture())).thenReturn(
@@ -634,11 +639,11 @@ class FlowMessagingImplTest {
         )
         val results = flowMessaging.receiveAllMap(
             mapOf(
-                normalSessionOne to Any::class.java,
-                versionSendingSessionOne to Any::class.java,
-                versionSendingSessionTwo to Any::class.java,
-                versionReceivingSessionOne to Any::class.java,
-                versionReceivingSessionTwo to Any::class.java
+                normalSessionOne to Payload::class.java,
+                versionSendingSessionOne to Payload::class.java,
+                versionSendingSessionTwo to Payload::class.java,
+                versionReceivingSessionOne to Payload::class.java,
+                versionReceivingSessionTwo to Payload::class.java
             )
         )
         assertThat(results).isEqualTo(
@@ -670,8 +675,8 @@ class FlowMessagingImplTest {
         )
         val results = flowMessaging.receiveAllMap(
             mapOf(
-                normalSessionOne to Any::class.java,
-                versionReceivingSessionOne to Any::class.java
+                normalSessionOne to Payload::class.java,
+                versionReceivingSessionOne to Payload::class.java
             )
         )
         assertThat(results).isEqualTo(
@@ -938,7 +943,7 @@ class FlowMessagingImplTest {
         whenever(sessionState.status).thenReturn(sessionStateType)
 
         assertThrows<CordaRuntimeException> {
-            flowMessaging.receiveAll(Any::class.java, setOf(normalSessionOne, versionSendingSessionOne))
+            flowMessaging.receiveAll(Payload::class.java, setOf(normalSessionOne, versionSendingSessionOne))
         }
     }
 
@@ -954,8 +959,8 @@ class FlowMessagingImplTest {
         assertThrows<CordaRuntimeException> {
             flowMessaging.receiveAllMap(
                 mapOf(
-                    normalSessionOne to Any::class.java,
-                    versionSendingSessionOne to Any::class.java
+                    normalSessionOne to Payload::class.java,
+                    versionSendingSessionOne to Payload::class.java
                 )
             )
         }

@@ -7,6 +7,8 @@ import net.corda.flow.application.serialization.SerializationServiceInternal
 import net.corda.flow.application.sessions.FlowSessionInternal
 import net.corda.flow.application.sessions.SessionInfo
 import net.corda.flow.application.sessions.factory.FlowSessionFactory
+import net.corda.flow.application.sessions.utils.verifySessionStatusNotErrorOrClose
+import net.corda.flow.application.sessions.utils.requireAMQPSerializable
 import net.corda.flow.application.versioning.impl.sessions.VersionReceivingFlowSession
 import net.corda.flow.application.versioning.impl.sessions.VersionSendingFlowSession
 import net.corda.flow.fiber.FlowFiber
@@ -25,7 +27,6 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 import java.util.UUID
-import net.corda.flow.application.sessions.utils.SessionUtils.verifySessionStatusNotErrorOrClose
 
 @Suppress("TooManyFunctions")
 @Component(service = [FlowMessaging::class, UsedByFlow::class], scope = PROTOTYPE)
@@ -55,8 +56,6 @@ class FlowMessagingImpl @Activate constructor(
 
     @Suspendable
     override fun <R : Any> receiveAll(receiveType: Class<out R>, sessions: Set<FlowSession>): List<R> {
-        requireBoxedType(receiveType)
-
         @Suppress("unchecked_cast")
         val flowSessionInternals = sessions as Set<FlowSessionInternal>
 
@@ -88,7 +87,7 @@ class FlowMessagingImpl @Activate constructor(
     @Suspendable
     override fun receiveAllMap(sessions: Map<FlowSession, Class<out Any>>): Map<FlowSession, Any> {
         val flowSessionInternals = sessions.mapKeys {
-            requireBoxedType(it.value)
+            requireAMQPSerializable(it.value)
             it.key as FlowSessionInternal
         }
 
@@ -125,7 +124,7 @@ class FlowMessagingImpl @Activate constructor(
 
     @Suspendable
     override fun sendAll(payload: Any, sessions: Set<FlowSession>) {
-        requireBoxedType(payload::class.java)
+        requireAMQPSerializable(payload::class.java)
         if (sessions.isEmpty()) {
             return
         }
@@ -149,7 +148,7 @@ class FlowMessagingImpl @Activate constructor(
             return
         }
         val sessionPayload = payloadsPerSession.map { (session, payload) ->
-            requireBoxedType(payload::class.java)
+            requireAMQPSerializable(payload::class.java)
             val flowSessionInternal = session as FlowSessionInternal
             verifySessionStatusNotErrorOrClose(session.getSessionId(), flowFiberService)
             flowSessionInternal.getSessionInfo() to when (session) {
@@ -203,13 +202,6 @@ class FlowMessagingImpl @Activate constructor(
 
     private fun serialize(payload: Any): ByteArray {
         return serializationService.serialize(payload).bytes
-    }
-
-    /**
-     * Required to prevent class cast exceptions during AMQP serialization of primitive types.
-     */
-    private fun requireBoxedType(type: Class<*>) {
-        require(!type.isPrimitive) { "Cannot receive primitive type $type" }
     }
 
     private fun <R : Any> deserializeReceivedPayload(

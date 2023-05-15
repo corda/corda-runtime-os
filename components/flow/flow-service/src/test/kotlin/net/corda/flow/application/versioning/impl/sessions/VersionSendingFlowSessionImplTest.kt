@@ -5,6 +5,7 @@ import net.corda.flow.application.versioning.impl.AgreedVersion
 import net.corda.flow.application.versioning.impl.AgreedVersionAndPayload
 import net.corda.internal.serialization.SerializedBytesImpl
 import net.corda.v5.application.serialization.SerializationService
+import net.corda.v5.base.annotations.CordaSerializable
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -19,10 +20,13 @@ import org.mockito.kotlin.whenever
 
 class VersionSendingFlowSessionImplTest {
 
+    @CordaSerializable
+    data class Payload(val message: String)
+
     private companion object {
-        const val PAYLOAD = "payload"
-        const val ANOTHER_PAYLOAD = "another payload"
         const val VERSION = 1
+        val PAYLOAD = Payload("payload")
+        val ANOTHER_PAYLOAD = Payload("another payload")
         val ADDITIONAL_CONTEXT = linkedMapOf<String, Any>("key" to "value")
         val SERIALIZED_PAYLOAD = byteArrayOf(1, 1, 1, 1)
         val SERIALIZED_ANOTHER_PAYLOAD = byteArrayOf(2, 2, 2, 2)
@@ -40,8 +44,8 @@ class VersionSendingFlowSessionImplTest {
         whenever(serializationService.serialize(ANOTHER_PAYLOAD)).thenReturn(SerializedBytesImpl(SERIALIZED_ANOTHER_PAYLOAD))
         whenever(serializationService.serialize(any<AgreedVersionAndPayload>()))
             .thenReturn(SerializedBytesImpl(SERIALIZED_VERSION_AND_PAYLOAD))
-        whenever(delegate.sendAndReceive(eq(Any::class.java), any())).thenReturn(PAYLOAD)
-        whenever(delegate.receive(Any::class.java)).thenReturn(PAYLOAD)
+        whenever(delegate.sendAndReceive(eq(Payload::class.java), any())).thenReturn(PAYLOAD)
+        whenever(delegate.receive(Payload::class.java)).thenReturn(PAYLOAD)
     }
 
     @Test
@@ -53,22 +57,22 @@ class VersionSendingFlowSessionImplTest {
 
     @Test
     fun `sends versioning information along with the payload the first time a sendAndReceive is called`() {
-        session.sendAndReceive(Any::class.java, PAYLOAD)
+        session.sendAndReceive(Payload::class.java, PAYLOAD)
         verify(delegate).sendAndReceive(
-            Any::class.java,
+            Payload::class.java,
             AgreedVersionAndPayload(AgreedVersion(VERSION, ADDITIONAL_CONTEXT), SERIALIZED_PAYLOAD)
         )
-        verify(delegate, never()).sendAndReceive(Any::class.java, PAYLOAD)
+        verify(delegate, never()).sendAndReceive(Payload::class.java, PAYLOAD)
     }
 
     @Test
     fun `sends versioning information separately the first time a receive is called`() {
-        session.receive(Any::class.java)
+        session.receive(Payload::class.java)
         verify(delegate).sendAndReceive(
-            Any::class.java,
+            Payload::class.java,
             AgreedVersionAndPayload(AgreedVersion(VERSION, ADDITIONAL_CONTEXT), serializedPayload = null)
         )
-        verify(delegate, never()).receive(Any::class.java)
+        verify(delegate, never()).receive(Payload::class.java)
     }
 
     @Test
@@ -108,8 +112,8 @@ class VersionSendingFlowSessionImplTest {
 
     @Test
     fun `does not send versioning information when calling send after the session has done a sendAndReceive`() {
-        session.sendAndReceive(Any::class.java, PAYLOAD)
-        verify(delegate, never()).sendAndReceive(Any::class.java, PAYLOAD)
+        session.sendAndReceive(Payload::class.java, PAYLOAD)
+        verify(delegate, never()).sendAndReceive(Payload::class.java, PAYLOAD)
         session.send(ANOTHER_PAYLOAD)
         verify(delegate, never()).send(AgreedVersionAndPayload(AgreedVersion(VERSION, ADDITIONAL_CONTEXT), SERIALIZED_ANOTHER_PAYLOAD))
         verify(delegate).send(ANOTHER_PAYLOAD)
@@ -117,8 +121,8 @@ class VersionSendingFlowSessionImplTest {
 
     @Test
     fun `does not send versioning information when calling send after the session has done a receive`() {
-        session.receive(Any::class.java)
-        verify(delegate, never()).receive(Any::class.java)
+        session.receive(Payload::class.java)
+        verify(delegate, never()).receive(Payload::class.java)
         session.send(ANOTHER_PAYLOAD)
         verify(delegate, never()).send(AgreedVersionAndPayload(AgreedVersion(VERSION, ADDITIONAL_CONTEXT), SERIALIZED_ANOTHER_PAYLOAD))
         verify(delegate).send(ANOTHER_PAYLOAD)
@@ -154,89 +158,89 @@ class VersionSendingFlowSessionImplTest {
     fun `does not send versioning information when calling sendAndReceive after the session has done a send`() {
         session.send(PAYLOAD)
         verify(delegate, never()).send(PAYLOAD)
-        session.sendAndReceive(Any::class.java, ANOTHER_PAYLOAD)
+        session.sendAndReceive(Payload::class.java, ANOTHER_PAYLOAD)
         verify(delegate, never()).sendAndReceive(
-            Any::class.java,
+            Payload::class.java,
             AgreedVersionAndPayload(
                 AgreedVersion(VERSION, ADDITIONAL_CONTEXT),
                 SERIALIZED_ANOTHER_PAYLOAD
             )
         )
-        verify(delegate).sendAndReceive(Any::class.java, ANOTHER_PAYLOAD)
+        verify(delegate).sendAndReceive(Payload::class.java, ANOTHER_PAYLOAD)
     }
 
     @Test
     fun `does not send versioning information when calling sendAndReceive after the session has done a sendAndReceive`() {
-        session.sendAndReceive(Any::class.java, PAYLOAD)
-        verify(delegate, never()).sendAndReceive(Any::class.java, PAYLOAD)
-        session.sendAndReceive(Any::class.java, ANOTHER_PAYLOAD)
+        session.sendAndReceive(Payload::class.java, PAYLOAD)
+        verify(delegate, never()).sendAndReceive(Payload::class.java, PAYLOAD)
+        session.sendAndReceive(Payload::class.java, ANOTHER_PAYLOAD)
         verify(delegate, never()).sendAndReceive(
-            Any::class.java,
+            Payload::class.java,
             AgreedVersionAndPayload(
                 AgreedVersion(VERSION, ADDITIONAL_CONTEXT),
                 SERIALIZED_ANOTHER_PAYLOAD
             )
         )
-        verify(delegate).sendAndReceive(Any::class.java, ANOTHER_PAYLOAD)
+        verify(delegate).sendAndReceive(Payload::class.java, ANOTHER_PAYLOAD)
     }
 
     @Test
     fun `does not send versioning information when calling sendAndReceive after the session has done a receive`() {
-        session.receive(Any::class.java)
-        verify(delegate, never()).receive(Any::class.java)
-        session.sendAndReceive(Any::class.java, ANOTHER_PAYLOAD)
+        session.receive(Payload::class.java)
+        verify(delegate, never()).receive(Payload::class.java)
+        session.sendAndReceive(Payload::class.java, ANOTHER_PAYLOAD)
         verify(delegate, never()).sendAndReceive(
-            Any::class.java,
+            Payload::class.java,
             AgreedVersionAndPayload(
                 AgreedVersion(VERSION, ADDITIONAL_CONTEXT),
                 SERIALIZED_ANOTHER_PAYLOAD
             )
         )
-        verify(delegate).sendAndReceive(Any::class.java, ANOTHER_PAYLOAD)
+        verify(delegate).sendAndReceive(Payload::class.java, ANOTHER_PAYLOAD)
     }
 
     @Test
     fun `does not send versioning information when calling sendAndReceive after close is called`() {
         session.close()
-        session.sendAndReceive(Any::class.java, ANOTHER_PAYLOAD)
+        session.sendAndReceive(Payload::class.java, ANOTHER_PAYLOAD)
         verify(delegate, never()).sendAndReceive(
-            Any::class.java,
+            Payload::class.java,
             AgreedVersionAndPayload(
                 AgreedVersion(VERSION, ADDITIONAL_CONTEXT),
                 SERIALIZED_ANOTHER_PAYLOAD
             )
         )
-        verify(delegate).sendAndReceive(Any::class.java, ANOTHER_PAYLOAD)
+        verify(delegate).sendAndReceive(Payload::class.java, ANOTHER_PAYLOAD)
     }
 
     @Test
     fun `does not send versioning information when calling sendAndReceive after getPayloadToSend is called`() {
         session.getPayloadToSend(SERIALIZED_PAYLOAD)
         verify(serializationService).serialize(any<AgreedVersionAndPayload>())
-        session.sendAndReceive(Any::class.java, ANOTHER_PAYLOAD)
+        session.sendAndReceive(Payload::class.java, ANOTHER_PAYLOAD)
         verify(delegate, never()).sendAndReceive(
-            Any::class.java,
+            Payload::class.java,
             AgreedVersionAndPayload(
                 AgreedVersion(VERSION, ADDITIONAL_CONTEXT),
                 SERIALIZED_ANOTHER_PAYLOAD
             )
         )
-        verify(delegate).sendAndReceive(Any::class.java, ANOTHER_PAYLOAD)
+        verify(delegate).sendAndReceive(Payload::class.java, ANOTHER_PAYLOAD)
     }
 
     @Test
     fun `does not send versioning information when calling sendAndReceive after getVersioningPayloadToSend is called`() {
         session.getVersioningPayloadToSend()
         verify(serializationService).serialize(any<AgreedVersionAndPayload>())
-        session.sendAndReceive(Any::class.java, ANOTHER_PAYLOAD)
+        session.sendAndReceive(Payload::class.java, ANOTHER_PAYLOAD)
         verify(delegate, never()).sendAndReceive(
-            Any::class.java,
+            Payload::class.java,
             AgreedVersionAndPayload(
                 AgreedVersion(VERSION, ADDITIONAL_CONTEXT),
                 SERIALIZED_ANOTHER_PAYLOAD
             )
         )
-        verify(delegate).sendAndReceive(Any::class.java, ANOTHER_PAYLOAD)
+        verify(delegate).sendAndReceive(Payload::class.java, ANOTHER_PAYLOAD)
     }
 
     @Test
@@ -244,56 +248,56 @@ class VersionSendingFlowSessionImplTest {
         session.send(PAYLOAD)
         verify(delegate, never()).send(PAYLOAD)
         verify(delegate).send(any<AgreedVersionAndPayload>())
-        session.receive(Any::class.java)
+        session.receive(Payload::class.java)
         verify(delegate).send(any<AgreedVersionAndPayload>())
-        verify(delegate).receive(Any::class.java)
+        verify(delegate).receive(Payload::class.java)
     }
 
     @Test
     fun `does not send versioning information when calling receive after the session has done a sendAndReceive`() {
-        session.sendAndReceive(Any::class.java, PAYLOAD)
-        verify(delegate, never()).sendAndReceive(Any::class.java, PAYLOAD)
-        verify(delegate).sendAndReceive(eq(Any::class.java), any<AgreedVersionAndPayload>())
-        session.receive(Any::class.java)
-        verify(delegate).sendAndReceive(eq(Any::class.java), any<AgreedVersionAndPayload>())
-        verify(delegate).receive(Any::class.java)
+        session.sendAndReceive(Payload::class.java, PAYLOAD)
+        verify(delegate, never()).sendAndReceive(Payload::class.java, PAYLOAD)
+        verify(delegate).sendAndReceive(eq(Payload::class.java), any<AgreedVersionAndPayload>())
+        session.receive(Payload::class.java)
+        verify(delegate).sendAndReceive(eq(Payload::class.java), any<AgreedVersionAndPayload>())
+        verify(delegate).receive(Payload::class.java)
     }
 
     @Test
     fun `does not send versioning information when calling receive after the session has done a receive`() {
-        session.receive(Any::class.java)
-        verify(delegate, never()).receive(Any::class.java)
-        verify(delegate).sendAndReceive(eq(Any::class.java), any<AgreedVersionAndPayload>())
-        session.receive(Any::class.java)
-        verify(delegate).sendAndReceive(eq(Any::class.java), any<AgreedVersionAndPayload>())
-        verify(delegate).receive(Any::class.java)
+        session.receive(Payload::class.java)
+        verify(delegate, never()).receive(Payload::class.java)
+        verify(delegate).sendAndReceive(eq(Payload::class.java), any<AgreedVersionAndPayload>())
+        session.receive(Payload::class.java)
+        verify(delegate).sendAndReceive(eq(Payload::class.java), any<AgreedVersionAndPayload>())
+        verify(delegate).receive(Payload::class.java)
     }
 
     @Test
     fun `does not send versioning information when calling receive after close is called`() {
         session.close()
         verify(delegate).send(any<AgreedVersionAndPayload>())
-        session.receive(Any::class.java)
+        session.receive(Payload::class.java)
         verify(delegate).send(any<AgreedVersionAndPayload>())
-        verify(delegate).receive(Any::class.java)
+        verify(delegate).receive(Payload::class.java)
     }
 
     @Test
     fun `does not send versioning information when calling receive after getPayloadToSend is called`() {
         session.getPayloadToSend(SERIALIZED_PAYLOAD)
         verify(serializationService).serialize(any<AgreedVersionAndPayload>())
-        session.receive(Any::class.java)
+        session.receive(Payload::class.java)
         verify(serializationService).serialize(any<AgreedVersionAndPayload>())
-        verify(delegate).receive(Any::class.java)
+        verify(delegate).receive(Payload::class.java)
     }
 
     @Test
     fun `does not send versioning information when calling receive after getVersioningPayloadToSend is called`() {
         session.getVersioningPayloadToSend()
         verify(serializationService).serialize(any<AgreedVersionAndPayload>())
-        session.receive(Any::class.java)
+        session.receive(Payload::class.java)
         verify(serializationService).serialize(any<AgreedVersionAndPayload>())
-        verify(delegate).receive(Any::class.java)
+        verify(delegate).receive(Payload::class.java)
     }
 
     @Test
@@ -308,9 +312,9 @@ class VersionSendingFlowSessionImplTest {
 
     @Test
     fun `does not send versioning information when calling close after the session has done a sendAndReceive`() {
-        session.sendAndReceive(Any::class.java, PAYLOAD)
-        verify(delegate, never()).sendAndReceive(Any::class.java, PAYLOAD)
-        verify(delegate).sendAndReceive(eq(Any::class.java), any<AgreedVersionAndPayload>())
+        session.sendAndReceive(Payload::class.java, PAYLOAD)
+        verify(delegate, never()).sendAndReceive(Payload::class.java, PAYLOAD)
+        verify(delegate).sendAndReceive(eq(Payload::class.java), any<AgreedVersionAndPayload>())
         session.close()
         verify(delegate, never()).send(any<AgreedVersionAndPayload>())
         verify(delegate).close()
@@ -318,9 +322,9 @@ class VersionSendingFlowSessionImplTest {
 
     @Test
     fun `does not send versioning information when calling close after the session has done a receive`() {
-        session.receive(Any::class.java)
-        verify(delegate, never()).receive(Any::class.java)
-        verify(delegate).sendAndReceive(eq(Any::class.java), any<AgreedVersionAndPayload>())
+        session.receive(Payload::class.java)
+        verify(delegate, never()).receive(Payload::class.java)
+        verify(delegate).sendAndReceive(eq(Payload::class.java), any<AgreedVersionAndPayload>())
         session.close()
         verify(delegate, never()).send(any<AgreedVersionAndPayload>())
         verify(delegate).close()
@@ -364,16 +368,16 @@ class VersionSendingFlowSessionImplTest {
 
     @Test
     fun `returns the passed in payload when calling getPayloadToSend after the session has done a sendAndReceive`() {
-        session.sendAndReceive(Any::class.java, PAYLOAD)
-        verify(delegate, never()).sendAndReceive(Any::class.java, PAYLOAD)
+        session.sendAndReceive(Payload::class.java, PAYLOAD)
+        verify(delegate, never()).sendAndReceive(Payload::class.java, PAYLOAD)
         assertThat(session.getPayloadToSend(SERIALIZED_PAYLOAD)).isEqualTo(SERIALIZED_PAYLOAD)
         verify(serializationService, never()).serialize(any<AgreedVersionAndPayload>())
     }
 
     @Test
     fun `returns the passed in payload when calling getPayloadToSend after the session has done a receive`() {
-        session.receive(Any::class.java)
-        verify(delegate, never()).receive(Any::class.java)
+        session.receive(Payload::class.java)
+        verify(delegate, never()).receive(Payload::class.java)
         assertThat(session.getPayloadToSend(SERIALIZED_PAYLOAD)).isEqualTo(SERIALIZED_PAYLOAD)
         verify(serializationService, never()).serialize(any<AgreedVersionAndPayload>())
     }
@@ -421,16 +425,16 @@ class VersionSendingFlowSessionImplTest {
 
     @Test
     fun `returns null when calling getVersioningPayloadToSend after the session has done a sendAndReceive`() {
-        session.sendAndReceive(Any::class.java, PAYLOAD)
-        verify(delegate, never()).sendAndReceive(Any::class.java, PAYLOAD)
+        session.sendAndReceive(Payload::class.java, PAYLOAD)
+        verify(delegate, never()).sendAndReceive(Payload::class.java, PAYLOAD)
         assertThat(session.getVersioningPayloadToSend()).isNull()
         verify(serializationService, never()).serialize(any<AgreedVersionAndPayload>())
     }
 
     @Test
     fun `returns null when calling getVersioningPayloadToSend after the session has done a receive`() {
-        session.receive(Any::class.java)
-        verify(delegate, never()).receive(Any::class.java)
+        session.receive(Payload::class.java)
+        verify(delegate, never()).receive(Payload::class.java)
         assertThat(session.getVersioningPayloadToSend()).isNull()
         verify(serializationService, never()).serialize(any<AgreedVersionAndPayload>())
     }

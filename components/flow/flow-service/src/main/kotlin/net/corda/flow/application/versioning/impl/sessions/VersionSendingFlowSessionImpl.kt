@@ -1,6 +1,7 @@
 package net.corda.flow.application.versioning.impl.sessions
 
 import net.corda.flow.application.sessions.FlowSessionInternal
+import net.corda.flow.application.sessions.utils.requireAMQPSerializable
 import net.corda.flow.application.versioning.impl.AgreedVersion
 import net.corda.flow.application.versioning.impl.AgreedVersionAndPayload
 import net.corda.v5.application.serialization.SerializationService
@@ -110,6 +111,7 @@ class VersionSendingFlowSessionImpl(
     }
 
     private fun getPayloadToSend(payload: Any): Any {
+        requireAMQPSerializable(payload::class.java)
         return if (hasSentInitialPayload) {
             payload
         } else {

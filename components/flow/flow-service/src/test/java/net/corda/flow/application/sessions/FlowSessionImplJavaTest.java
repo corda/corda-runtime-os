@@ -14,10 +14,12 @@ import net.corda.flow.pipeline.sandbox.SandboxDependencyInjector;
 import net.corda.flow.state.FlowCheckpoint;
 import net.corda.flow.state.FlowContext;
 import net.corda.internal.serialization.SerializedBytesImpl;
+import net.corda.internal.serialization.amqp.AMQPNotSerializableException;
 import net.corda.membership.read.MembershipGroupReader;
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext;
 import net.corda.serialization.checkpoint.CheckpointSerializer;
 import net.corda.v5.application.messaging.FlowSession;
+import net.corda.v5.base.annotations.CordaSerializable;
 import net.corda.v5.base.types.MemberX500Name;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
@@ -35,6 +37,10 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 public class FlowSessionImplJavaTest {
+
+    @CordaSerializable
+    public static class Payload {
+    }
 
     private final FlowSandboxGroupContext flowSandboxGroupContext = mock(FlowSandboxGroupContext.class);
     private final SerializationServiceInternal serializationService = mock(SerializationServiceInternal.class);
@@ -110,7 +116,7 @@ public class FlowSessionImplJavaTest {
     public void beforeEach() {
         Map<String, byte[]> received = new HashMap<>();
         received.put("session id", new byte[]{1, 2, 3});
-        when(serializationService.serialize(any())).thenReturn(new SerializedBytesImpl(new byte[]{1, 2, 3}));
+        when(serializationService.serialize(any())).thenReturn(new SerializedBytesImpl<>(new byte[]{1, 2, 3}));
         when(serializationService.deserializeAndCheckType(any(byte[].class), any())).thenReturn(1);
         when(flowSandboxGroupContext.getDependencyInjector()).thenReturn(sandboxDependencyInjector);
         when(flowSandboxGroupContext.getCheckpointSerializer()).thenReturn(checkpointSerializer);
@@ -118,22 +124,23 @@ public class FlowSessionImplJavaTest {
     }
 
     @Test
-    public void passingABoxedTypeToSendAndReceiveWillNotThrowAnException() {
-        session.sendAndReceive(Integer.class, 1);
+    public void passingASerializableTypeToSendAndReceiveWillNotThrowAnException() {
+        session.sendAndReceive(Payload.class, new Payload());
     }
 
     @Test
     public void passingAPrimitiveReceiveTypeToSendAndReceiveWillThrowAnException() {
-        assertThrows(IllegalArgumentException.class, () -> session.sendAndReceive(int.class, 1));
+        assertThrows(AMQPNotSerializableException.class, () -> session.sendAndReceive(int.class, new Payload()));
+        assertThrows(AMQPNotSerializableException.class, () -> session.sendAndReceive(Payload.class, 1));
     }
 
     @Test
-    public void passingABoxedTypeToReceiveWillNotThrowAnException() {
-        session.receive(Integer.class);
+    public void passingASerializableTypeToReceiveWillNotThrowAnException() {
+        session.receive(Payload.class);
     }
 
     @Test
     public void passingAPrimitiveReceiveTypeToReceiveWillThrowAnException() {
-        assertThrows(IllegalArgumentException.class, () -> session.receive(int.class));
+        assertThrows(AMQPNotSerializableException.class, () -> session.receive(int.class));
     }
 }

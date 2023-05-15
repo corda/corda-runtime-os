@@ -8,6 +8,7 @@ import net.corda.ledger.utxo.data.transaction.verifier.verifyMetadata
 import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoLedgerTransactionFactory
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.serialization.SerializationService
+import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.CompositeKey
@@ -25,6 +26,7 @@ import java.security.PublicKey
 import java.util.Objects
 
 @Suppress("TooManyFunctions")
+@CordaSerializable
 data class UtxoSignedTransactionImpl(
     private val serializationService: SerializationService,
     private val transactionSignatureServiceInternal: TransactionSignatureServiceInternal,

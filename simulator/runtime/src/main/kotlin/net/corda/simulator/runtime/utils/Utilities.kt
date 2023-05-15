@@ -1,5 +1,6 @@
 package net.corda.simulator.runtime.utils
 
+import net.corda.internal.serialization.amqp.AMQPNotSerializableException
 import net.corda.simulator.SimulatorConfiguration
 import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.application.crypto.DigitalSignatureVerificationService
@@ -15,6 +16,7 @@ import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.persistence.PersistenceService
 import net.corda.v5.application.serialization.SerializationService
+import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.ledger.common.NotaryLookup
 import net.corda.v5.ledger.consensual.ConsensualLedgerService
@@ -113,3 +115,19 @@ val availableAPIs = setOf(
     NotaryLookup::class.java,
     DigestService::class.java
 )
+
+/**
+ * @param clazz This class must be AMQP serializable.
+ */
+@Suppress("ComplexCondition")
+fun requireAMQPSerializable(clazz: Class<*>) {
+    if (!clazz.isAnnotationPresent(CordaSerializable::class.java)
+            && !clazz.isInterface
+            && !clazz.isEnum
+            && !Collection::class.java.isAssignableFrom(clazz)
+            && !Map::class.java.isAssignableFrom(clazz)) {
+        throw AMQPNotSerializableException(
+            clazz,
+            "Class \"${clazz.name}\" is not annotated with @CordaSerializable.")
+    }
+}

@@ -4,6 +4,7 @@ import net.corda.simulator.exceptions.NoRegisteredResponderException
 import net.corda.simulator.runtime.flows.FlowAndProtocol
 import net.corda.simulator.runtime.flows.FlowFactory
 import net.corda.simulator.runtime.flows.FlowServicesInjector
+import net.corda.simulator.runtime.utils.requireAMQPSerializable
 import net.corda.v5.application.flows.FlowContextProperties
 import net.corda.v5.application.messaging.FlowContextPropertiesBuilder
 import net.corda.v5.application.messaging.FlowMessaging
@@ -46,8 +47,8 @@ class ConcurrentFlowMessaging(
 
     private val openedSessions = mutableListOf<SessionPair>()
 
-    companion object {
-        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
+    private companion object {
+        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     /**
@@ -130,12 +131,12 @@ class ConcurrentFlowMessaging(
      * Not yet implemented.
      */
     override fun <R : Any> receiveAll(receiveType: Class<out R>, sessions: Set<FlowSession>): List<R> {
-        requireBoxedType(receiveType)
+        requireAMQPSerializable(receiveType)
         return sessions.map { it.receive(receiveType) }
     }
 
     override fun receiveAllMap(sessions: Map<FlowSession, Class<out Any>>): Map<FlowSession, Any> {
-        sessions.mapKeys { requireBoxedType(it.value) }
+        sessions.mapKeys { requireAMQPSerializable(it.value) }
         return sessions.mapValues { it.key.receive(it.value) }
     }
 
@@ -145,10 +146,6 @@ class ConcurrentFlowMessaging(
 
     override fun sendAllMap(payloadsPerSession: Map<FlowSession, Any>) {
         payloadsPerSession.keys.forEach { it.send(payloadsPerSession[it]!!) }
-    }
-
-    private fun requireBoxedType(type: Class<*>) {
-        require(!type.isPrimitive) { "Cannot receive primitive type $type" }
     }
 
     override fun close() {

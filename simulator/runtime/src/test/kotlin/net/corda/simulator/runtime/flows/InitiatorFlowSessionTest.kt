@@ -5,6 +5,7 @@ import net.corda.simulator.factories.SimulatorConfigurationBuilder
 import net.corda.simulator.runtime.messaging.BaseInitiatorFlowSession
 import net.corda.simulator.runtime.messaging.FlowContext
 import net.corda.simulator.runtime.messaging.SimFlowContextProperties
+import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.types.MemberX500Name
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -15,6 +16,9 @@ class InitiatorFlowSessionTest {
 
     private val sender = MemberX500Name.parse("CN=IRunCorDapps, OU=Application, O=R3, L=London, C=GB")
     private val flowCallConfiguration = SimulatorConfigurationBuilder.create().build()
+
+    @CordaSerializable
+    data class Payload(val message: String)
 
     @Test
     fun `initiators should throw an exception if receivedException is set`() {
@@ -38,17 +42,17 @@ class InitiatorFlowSessionTest {
 
         // Then it should throw in that receive
         assertThrows<ResponderFlowException> {
-            sendingSession.receive(Any::class.java)
+            sendingSession.receive(Payload::class.java)
         }
 
         // Or in any subsequent send
         assertThrows<ResponderFlowException> {
-            sendingSession.send(Unit)
+            sendingSession.send(Payload("hello"))
         }
 
         // Or any subsequent receive
         assertThrows<ResponderFlowException> {
-            sendingSession.receive(Any::class.java)
+            sendingSession.receive(Payload::class.java)
         }
 
         // Or when we try to close the session

@@ -1,6 +1,7 @@
 package net.corda.flow.application.persistence
 
 import java.nio.ByteBuffer
+import javax.persistence.Entity
 import net.corda.flow.application.persistence.external.events.AbstractPersistenceExternalEventFactory
 import net.corda.flow.application.persistence.external.events.FindExternalEventFactory
 import net.corda.flow.application.persistence.external.events.MergeExternalEventFactory
@@ -213,5 +214,6 @@ class PersistenceServiceImplTest {
         verify(pagedQueryFactory).createNamedParameterizedQuery<TestObject>(any(), any())
     }
 
+    @Entity
     class TestObject
 }

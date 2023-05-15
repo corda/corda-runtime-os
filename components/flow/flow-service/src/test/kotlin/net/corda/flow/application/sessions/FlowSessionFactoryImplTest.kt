@@ -8,6 +8,7 @@ import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.state.asFlowContext
 import net.corda.internal.serialization.SerializedBytesImpl
 import net.corda.v5.application.messaging.FlowContextPropertiesBuilder
+import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
@@ -22,9 +23,12 @@ import org.mockito.kotlin.whenever
 
 class FlowSessionFactoryImplTest {
 
+    @CordaSerializable
+    data class Payload(val message: String)
+
     private companion object {
         const val SESSION_ID = "session id"
-        const val HI = "hi"
+        val HI = Payload("hi")
     }
 
     private val contextMap = mapOf("key" to "value")
@@ -38,7 +42,7 @@ class FlowSessionFactoryImplTest {
     @BeforeEach
     fun setup() {
         serializationService.apply {
-            whenever(serialize(HI)).thenReturn(SerializedBytesImpl(HI.toByteArray()))
+            whenever(serialize(HI)).thenReturn(SerializedBytesImpl(HI.message.toByteArray()))
         }
     }
 

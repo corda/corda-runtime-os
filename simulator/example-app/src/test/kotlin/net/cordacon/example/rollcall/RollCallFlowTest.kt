@@ -22,7 +22,7 @@ class RollCallFlowTest {
 
     companion object {
         private fun receiveAndSendResponse(session: FlowSession, response: String) {
-            session.receive(Any::class.java)
+            session.receive(RollCallRequest::class.java)
             session.send(RollCallResponse(response))
         }
     }

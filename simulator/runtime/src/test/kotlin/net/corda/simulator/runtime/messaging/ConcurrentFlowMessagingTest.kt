@@ -10,6 +10,7 @@ import net.corda.simulator.runtime.testflows.PingAckMessage
 import net.corda.simulator.runtime.testflows.PingAckResponderFlow
 import net.corda.v5.application.flows.ResponderFlow
 import net.corda.v5.application.messaging.FlowSession
+import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.types.MemberX500Name
 import org.hamcrest.MatcherAssert.assertThat
 import org.hamcrest.Matchers.`is`
@@ -175,7 +176,7 @@ class ConcurrentFlowMessagingTest {
         // When we receive on the sending flow
         // Then it should rethrow the error (note Real Corda will not contain the original error)
         assertThrows<ResponderFlowException> {
-            sendingSession.sendAndReceive(Any::class.java, PingAckMessage("Ping"))
+            sendingSession.sendAndReceive(Message::class.java, PingAckMessage("Ping"))
         }
     }
 
@@ -242,7 +243,7 @@ class ConcurrentFlowMessagingTest {
 
         // When we call the responder session and wait for it to close (closing our initiator session will wait)
         val session = flowMessaging.initiateFlow(receiverX500)
-        session.receive(Any::class.java)
+        session.receive(Message::class.java)
         session.close()
 
         // Then the responder session should have been closed without timeout
@@ -434,5 +435,7 @@ class ConcurrentFlowMessagingTest {
             session.send(Unit)
         }
     }
+
+    @CordaSerializable
     data class Message(val message: String)
 }

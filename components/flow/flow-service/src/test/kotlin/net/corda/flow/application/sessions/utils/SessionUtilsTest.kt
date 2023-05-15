@@ -37,7 +37,7 @@ class SessionUtilsTest {
 
         whenever(sessionState.status).thenReturn(sessionStateType)
         assertThrows<CordaRuntimeException> {
-            SessionUtils.verifySessionStatusNotErrorOrClose(SESSION_ID, flowFiberService)
+            verifySessionStatusNotErrorOrClose(SESSION_ID, flowFiberService)
         }
     }
 
@@ -46,7 +46,7 @@ class SessionUtilsTest {
     fun `verifySessionStatusNotErrorOrClose doesnt throw on all types`(sessionStateType: SessionStateType) {
         whenever(sessionState.status).thenReturn(sessionStateType)
         assertDoesNotThrow {
-            SessionUtils.verifySessionStatusNotErrorOrClose(SESSION_ID, flowFiberService)
+            verifySessionStatusNotErrorOrClose(SESSION_ID, flowFiberService)
         }
     }
 }
