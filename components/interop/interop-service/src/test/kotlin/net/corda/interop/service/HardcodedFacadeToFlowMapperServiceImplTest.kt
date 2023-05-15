@@ -24,7 +24,7 @@ internal class HardcodedFacadeToFlowMapperServiceImplTest {
     fun verifyGetFlowNameReturnTheFlowNameFromDummyFileIfVNodeInfoIsNotPresent() {
         //given
         val holdingIdentity = HoldingIdentity(ALICE_ALTER_EGO_X500_NAME, "test-group")
-        val facadeId = "org.corda.interop/platform/hello-interop/v1.0"
+        val facadeId = "/com/r3/tokens/sample/v1.0"
         val facadeMethod = "say-hello"
 
         //when

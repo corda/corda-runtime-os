@@ -26,6 +26,9 @@ import java.lang.reflect.Parameter
 import java.lang.reflect.ParameterizedType
 import java.math.BigDecimal
 import java.nio.ByteBuffer
+import java.security.AccessController
+import java.security.PrivilegedActionException
+import java.security.PrivilegedExceptionAction
 import java.time.ZonedDateTime
 import java.util.*
 import java.util.UUID
@@ -94,8 +97,14 @@ internal class InterfaceBindingContext(val facade: Facade, private val boundInte
                     "${facade.facadeId.unversionedName}, but facade has version ${facade.facadeId.version}"
         }
 
-        val boundMethods = boundInterface.declaredMethods.mapNotNull { method ->
-            getMethodBinding(method, defaultBoundVersions)
+        val boundMethods = try {
+            AccessController.doPrivileged(PrivilegedExceptionAction {
+                boundInterface.declaredMethods.mapNotNull { method ->
+                    getMethodBinding(method, defaultBoundVersions)
+                }
+            })
+        } catch (e: PrivilegedActionException) {
+            throw e.exception
         }
 
         return FacadeInterfaceBinding(
