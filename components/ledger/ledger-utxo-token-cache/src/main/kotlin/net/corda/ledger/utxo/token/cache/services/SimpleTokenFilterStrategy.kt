@@ -6,12 +6,12 @@ import net.corda.ledger.utxo.token.cache.entities.TokenFilter
 class SimpleTokenFilterStrategy : TokenFilterStrategy {
 
     override fun filterTokens(cachedTokenSource: Iterable<CachedToken>, tokenFilter: TokenFilter): Iterable<CachedToken> {
-        if (tokenFilter.getTagRegex() == null && tokenFilter.getOwnerHash() == null) {
+        if (tokenFilter.tagRegex == null && tokenFilter.ownerHash == null) {
             return cachedTokenSource
         }
 
-        val tagMatcher = createTagMatcher(tokenFilter.getTagRegex())
-        val ownerMatcher = createOwnerMatcher(tokenFilter.getOwnerHash())
+        val tagMatcher = createTagMatcher(tokenFilter.tagRegex)
+        val ownerMatcher = createOwnerMatcher(tokenFilter.ownerHash)
 
         return cachedTokenSource.filter {
             tagMatcher(it.tag) && ownerMatcher(it.ownerHash)
