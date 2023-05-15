@@ -46,6 +46,11 @@ object CordaMetrics {
         object MessageProcessorTime : Metric<Timer>("messaging.processor.time", CordaMetrics::timer)
 
         /**
+         * Time it took to execute a message pattern processor
+         */
+        object MessageSnapshotReadTime : Metric<Timer>("messaging.snapshot.read", CordaMetrics::timer)
+
+        /**
          * The size of batches of messages received in a poll from the message bus.
          */
         object MessageBatchSize : Metric<DistributionSummary>("messaging.batch.size", Metrics::summary)
@@ -61,6 +66,16 @@ object CordaMetrics {
         object MessagePollTime : Metric<Timer>("messaging.poll.time", CordaMetrics::timer)
 
         /**
+         * The count of messaging consumers created
+         */
+        object MessagingConsumerCreatedCount : Metric<Counter>("messaging.consumer.created", Metrics::counter)
+
+        /**
+         * The count of messaging consumers closed
+         */
+        object MessagingConsumerClosedCount : Metric<Counter>("messaging.consumer.closed", Metrics::counter)
+
+        /**
          * FLOW METRICS
          *
          * Time it took for a flow to complete successfully or to error.
@@ -70,22 +85,22 @@ object CordaMetrics {
         /**
          * Metric for flow fiber serialization.
          */
-        object FlowFiberSerializationTime : Metric<Timer>("flow.fiber.serialization.time", Metrics::timer)
+        object FlowFiberSerializationTime : Metric<Timer>("flow.fiber.serialization.time", CordaMetrics::timer)
 
         /**
          * Metric for flow fiber deserialization.
          */
-        object FlowFiberDeserializationTime : Metric<Timer>("flow.fiber.deserialization.time", Metrics::timer)
+        object FlowFiberDeserializationTime : Metric<Timer>("flow.fiber.deserialization.time", CordaMetrics::timer)
 
         /**
          * Metric for lag between flow start event between the REST API and the flow processor.
          */
-        object FlowStartLag : Metric<Timer>("flow.start.lag", Metrics::timer)
+        object FlowStartLag : Metric<Timer>("flow.start.lag", CordaMetrics::timer)
 
         /**
          * Metric for the time taken to execute the flow (excluding any start lag)
          */
-        object FlowExecutionTime : Metric<Timer>("flow.execution.time", Metrics::timer)
+        object FlowExecutionTime : Metric<Timer>("flow.execution.time", CordaMetrics::timer)
 
         /**
          * Number of flows completed.
@@ -95,12 +110,12 @@ object CordaMetrics {
         /**
          * Metric for lag between flow event publication and processing.
          */
-        object FlowEventLagTime : Metric<Timer>("flow.event.lag", Metrics::timer)
+        object FlowEventLagTime : Metric<Timer>("flow.event.lag", CordaMetrics::timer)
 
         /**
          * Metric for the time taken to execute the flow (excluding any start lag)
          */
-        object FlowEventPipelineExecutionTime : Metric<Timer>("flow.event.pipeline.execution.time", Metrics::timer)
+        object FlowEventPipelineExecutionTime : Metric<Timer>("flow.event.pipeline.execution.time", CordaMetrics::timer)
 
         /**
          * Number of flow pipeline execution events.
@@ -110,7 +125,7 @@ object CordaMetrics {
         /**
          * Metric for the time taken to execute the flow (excluding any start lag)
          */
-        object FlowEventFiberExecutionTime : Metric<Timer>("flow.event.fiber.execution.time", Metrics::timer)
+        object FlowEventFiberExecutionTime : Metric<Timer>("flow.event.fiber.execution.time", CordaMetrics::timer)
 
         /**
          * Number of flow fiber execution events.
@@ -121,23 +136,23 @@ object CordaMetrics {
         /**
          * Metric for the time taken to execute the flow (excluding any start lag)
          */
-        object FlowPipelineExecutionTime : Metric<Timer>("flow.pipeline.execution.time", Metrics::timer)
+        object FlowPipelineExecutionTime : Metric<Timer>("flow.pipeline.execution.time", CordaMetrics::timer)
 
         /**
          * Metric for the time taken to execute the flow (excluding any start lag)
          */
-        object FlowFiberExecutionTime : Metric<Timer>("flow.fiber.execution.time", Metrics::timer)
+        object FlowFiberExecutionTime : Metric<Timer>("flow.fiber.execution.time", CordaMetrics::timer)
 
 
         /**
          * Metric for total time taken waiting to awake from a suspension
          */
-        object FlowSuspensionWaitTime : Metric<Timer>("flow.suspension.wait.time", Metrics::timer)
+        object FlowSuspensionWaitTime : Metric<Timer>("flow.suspension.wait.time", CordaMetrics::timer)
 
         /**
          * Metric for the time taken waiting to awake from a suspension
          */
-        object FlowEventSuspensionWaitTime : Metric<Timer>("flow.event.suspension.wait.time", Metrics::timer)
+        object FlowEventSuspensionWaitTime : Metric<Timer>("flow.event.suspension.wait.time", CordaMetrics::timer)
 
         /**
          * Number of flow suspensions
@@ -313,6 +328,16 @@ object CordaMetrics {
          * Message pattern clientId for which the metric is applicable.
          */
         MessagePatternClientId("messagepattern.clientid"),
+
+        /**
+         * Messaging consumer group name
+         */
+        MessagingConsumerGroup("messaging.consumer.group"),
+
+        /**
+         * Messaging topic name
+         */
+        MessagingTopicName("messaging.topic.name"),
 
         /**
          * Flow class for which the metric is applicable.
