@@ -149,8 +149,8 @@ echo "Installing notary=$VARIABLE, service name=$GROUP1_NOTARY_SERVICE_NAME"
     --storepass "keystore password" \
     --key "signing key 1"
 
-sleep 20
 NOTARY_CPI_ID=$(curl --insecure -u admin:admin -F "upload=@./notary$cpi.cpi" https://localhost:8888/api/v1/cpi/ | jq -r .id)
+sleep 20
 echo "CPI_ID FOR notary$cpi=$NOTARY_CPI_ID"
 printf "\n"
 NOTARY_CPI_CHECKSUM=$(curl --insecure -u admin:admin "https://localhost:8888/api/v1/cpi/status/$NOTARY_CPI_ID" | jq -r .cpiFileChecksum)
