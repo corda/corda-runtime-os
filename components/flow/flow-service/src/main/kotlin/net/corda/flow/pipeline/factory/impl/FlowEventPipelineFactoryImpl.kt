@@ -3,10 +3,12 @@ package net.corda.flow.pipeline.factory.impl
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.state.checkpoint.Checkpoint
 import net.corda.flow.fiber.FlowIORequest
+import net.corda.flow.metrics.FlowIORequestTypeConverter
+import net.corda.flow.metrics.FlowMetricsFactory
 import net.corda.flow.fiber.cache.FlowFiberCache
+import net.corda.flow.pipeline.events.FlowEventContext
 import net.corda.flow.pipeline.FlowEventPipeline
 import net.corda.flow.pipeline.FlowGlobalPostProcessor
-import net.corda.flow.pipeline.events.FlowEventContext
 import net.corda.flow.pipeline.factory.FlowEventPipelineFactory
 import net.corda.flow.pipeline.handlers.events.FlowEventHandler
 import net.corda.flow.pipeline.handlers.requests.FlowRequestHandler
@@ -30,6 +32,8 @@ class FlowEventPipelineFactoryImpl(
     private val flowCheckpointFactory: FlowCheckpointFactory,
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
     private val flowFiberCache: FlowFiberCache,
+    private val flowMetricsFactory: FlowMetricsFactory,
+    private val flowIORequestTypeConverter: FlowIORequestTypeConverter,
     flowEventHandlers: List<FlowEventHandler<out Any>>,
     flowWaitingForHandlers: List<FlowWaitingForHandler<out Any>>,
     flowRequestHandlers: List<FlowRequestHandler<out FlowIORequest<*>>>
@@ -71,12 +75,18 @@ class FlowEventPipelineFactoryImpl(
         virtualNodeInfoReadService: VirtualNodeInfoReadService,
         @Reference(service = FlowFiberCache::class)
         flowFiberCache: FlowFiberCache,
+        @Reference(service = FlowMetricsFactory::class)
+        flowMetricsFactory: FlowMetricsFactory,
+        @Reference(service = FlowIORequestTypeConverter::class)
+        flowIORequestTypeConverter: FlowIORequestTypeConverter
     ) : this(
         flowRunner,
         flowGlobalPostProcessor,
         flowCheckpointFactory,
         virtualNodeInfoReadService,
         flowFiberCache,
+        flowMetricsFactory,
+        flowIORequestTypeConverter,
         mutableListOf(),
         mutableListOf(),
         mutableListOf()
@@ -86,16 +96,27 @@ class FlowEventPipelineFactoryImpl(
         checkpoint: Checkpoint?,
         event: FlowEvent,
         config: SmartConfig,
-        mdcProperties: Map<String, String>)
-    : FlowEventPipeline {
+        mdcProperties: Map<String, String>,
+        eventRecordTimestamp: Long
+    ): FlowEventPipeline {
+        val flowCheckpoint = flowCheckpointFactory.create(event.flowId, checkpoint, config)
+
+        val metrics = try {
+            flowMetricsFactory.create(eventRecordTimestamp, flowCheckpoint)
+        } catch (e: Exception) {
+            throw e
+        }
+
         val context = FlowEventContext<Any>(
-            checkpoint = flowCheckpointFactory.create(event.flowId, checkpoint, config),
+            checkpoint = flowCheckpoint,
             inputEvent = event,
             inputEventPayload = event.payload,
             config = config,
             outputRecords = emptyList(),
-            mdcProperties = mdcProperties
+            mdcProperties = mdcProperties,
+            flowMetrics = metrics
         )
+
         return FlowEventPipelineImpl(
             flowEventHandlerMap,
             flowWaitingForHandlerMap,
@@ -104,7 +125,8 @@ class FlowEventPipelineFactoryImpl(
             flowGlobalPostProcessor,
             context,
             virtualNodeInfoReadService,
-            flowFiberCache
+            flowFiberCache,
+            flowIORequestTypeConverter
         )
     }
 }
