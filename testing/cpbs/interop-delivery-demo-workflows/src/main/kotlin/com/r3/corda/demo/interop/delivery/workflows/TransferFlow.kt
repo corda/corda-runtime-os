@@ -75,7 +75,7 @@ class TransferFlow: ClientStartableFlow {
                 .addInputState(stateAndRef.ref)
                 .addOutputState(outputState)
                 .addCommand(DeliveryContract.Transfer())
-                .addSignatories(outputState.participants + listOf(myInfo.ledgerKeys[0]))
+                .addSignatories(outputState.participants)
 
             val signedTransaction = txBuilder.toSignedTransaction()
 
