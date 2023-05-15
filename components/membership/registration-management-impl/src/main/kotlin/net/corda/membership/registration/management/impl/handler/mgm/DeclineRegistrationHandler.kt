@@ -7,21 +7,20 @@ import net.corda.data.membership.p2p.SetOwnRegistrationStatus
 import net.corda.data.membership.state.RegistrationState
 import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.libs.configuration.SmartConfig
+import net.corda.membership.db.lib.UpdateRegistrationRequestStatusService
 import net.corda.membership.p2p.helpers.P2pRecordsFactory
 import net.corda.membership.p2p.helpers.P2pRecordsFactory.Companion.getTtlMinutes
-import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.registration.management.impl.handler.MemberTypeChecker
 import net.corda.membership.registration.management.impl.handler.MissingRegistrationStateException
 import net.corda.membership.registration.management.impl.handler.RegistrationHandler
 import net.corda.membership.registration.management.impl.handler.RegistrationHandlerResult
 import net.corda.schema.configuration.MembershipConfig.TtlsConfig.DECLINE_REGISTRATION
 import net.corda.utilities.time.Clock
-import net.corda.virtualnode.toCorda
 import org.slf4j.LoggerFactory
 
 @Suppress("LongParameterList")
 internal class DeclineRegistrationHandler(
-    private val membershipPersistenceClient: MembershipPersistenceClient,
+    private val updateRegistrationRequestStatusService: UpdateRegistrationRequestStatusService,
     clock: Clock,
     cordaAvroSerializationFactory: CordaAvroSerializationFactory,
     private val memberTypeChecker: MemberTypeChecker,
@@ -51,12 +50,12 @@ internal class DeclineRegistrationHandler(
             logger.warn("Trying to decline registration request: '$registrationId' by ${declinedBy.x500Name} which is not an MGM")
         }
         logger.info("Declining registration request: '$registrationId' for ${declinedMember.x500Name} - ${command.reason}")
-        val registrationRequestDeclinedCommand = membershipPersistenceClient.setRegistrationRequestStatus(
-            viewOwningIdentity = declinedBy.toCorda(),
+        val registrationRequestDeclinedCommand = updateRegistrationRequestStatusService.createCommand(
+            viewOwningIdentity = declinedBy,
             registrationId = registrationId,
             registrationRequestStatus = RegistrationStatus.DECLINED,
             reason = command.reason
-        ).createAsyncCommands()
+        )
         val memberDeclinedMessage = p2pRecordsFactory.createAuthenticatedMessageRecord(
             source = declinedBy,
             destination = declinedMember,

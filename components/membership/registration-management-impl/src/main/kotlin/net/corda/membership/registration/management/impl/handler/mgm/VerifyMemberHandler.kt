@@ -11,10 +11,10 @@ import net.corda.data.membership.p2p.VerificationRequest
 import net.corda.data.membership.state.RegistrationState
 import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.libs.configuration.SmartConfig
+import net.corda.membership.db.lib.UpdateRegistrationRequestStatusService
 import net.corda.membership.p2p.helpers.P2pRecordsFactory
 import net.corda.membership.p2p.helpers.P2pRecordsFactory.Companion.getTtlMinutes
 import net.corda.membership.p2p.helpers.TtlIdsFactory
-import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.registration.management.impl.handler.MemberTypeChecker
 import net.corda.membership.registration.management.impl.handler.MissingRegistrationStateException
 import net.corda.membership.registration.management.impl.handler.RegistrationHandler
@@ -24,14 +24,13 @@ import net.corda.schema.Schemas
 import net.corda.schema.configuration.MembershipConfig.TtlsConfig.VERIFY_MEMBER_REQUEST
 import net.corda.utilities.time.Clock
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.virtualnode.toCorda
 import org.slf4j.LoggerFactory
 
 @Suppress("LongParameterList")
 internal class VerifyMemberHandler(
     clock: Clock,
     cordaAvroSerializationFactory: CordaAvroSerializationFactory,
-    private val membershipPersistenceClient: MembershipPersistenceClient,
+    private val updateRegistrationRequestStatusService: UpdateRegistrationRequestStatusService,
     private val memberTypeChecker: MemberTypeChecker,
     private val membershipConfig: SmartConfig,
     private val p2pRecordsFactory: P2pRecordsFactory = P2pRecordsFactory(
@@ -60,11 +59,11 @@ internal class VerifyMemberHandler(
                     "Could not verify registration request: '$registrationId' member ${member.x500Name} - Can not be an MGM."
                 )
             }
-            val setRegistrationRequestStatusCommand = membershipPersistenceClient.setRegistrationRequestStatus(
-                mgm.toCorda(),
+            val setRegistrationRequestStatusCommand = updateRegistrationRequestStatusService.createCommand(
+                mgm,
                 registrationId,
                 RegistrationStatus.PENDING_MEMBER_VERIFICATION
-            ).createAsyncCommands()
+            )
             setRegistrationRequestStatusCommand +
                     p2pRecordsFactory.createAuthenticatedMessageRecord(
                         mgm,

@@ -35,7 +35,6 @@ import net.corda.membership.lib.registration.RegistrationContextCustomFieldsVeri
 import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.lib.registration.RegistrationRequestHelpers.getPreAuthToken
 import net.corda.membership.p2p.helpers.P2pRecordsFactory
-import net.corda.membership.persistence.client.MembershipQueryResult
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.membership.registration.management.impl.DbTransactionFactory
 import net.corda.membership.registration.management.impl.handler.MemberTypeChecker
@@ -367,7 +366,7 @@ internal class StartRegistrationHandler(
                 logger.info(this, e)
                 throw InvalidRegistrationRequestException(this)
             }
-        } catch (e: MembershipQueryResult.QueryException) {
+        } catch (e: Exception) {
             with("Registration failed due to failure to query configured pre-auth tokens.") {
                 logger.info(this, e)
                 throw InvalidRegistrationRequestException(this)

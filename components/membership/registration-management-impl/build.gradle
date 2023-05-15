@@ -21,7 +21,6 @@ dependencies {
     implementation project(":components:membership:group-params-writer-service")
     //implementation project(":components:membership:group-policy")
     implementation project(":components:membership:membership-group-read")
-    implementation project(":components:membership:membership-persistence-client")
     implementation project(':components:db:db-connection-manager')
     implementation project(':components:membership:membership-p2p')
     //implementation project(":components:membership:registration")

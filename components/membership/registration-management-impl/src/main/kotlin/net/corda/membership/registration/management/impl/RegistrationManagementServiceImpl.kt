@@ -21,7 +21,6 @@ import net.corda.lifecycle.createCoordinator
 import net.corda.membership.groupparams.writer.service.GroupParametersWriterService
 import net.corda.membership.lib.GroupParametersFactory
 import net.corda.membership.lib.MemberInfoFactory
-import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.membership.registration.management.RegistrationManagementService
 import net.corda.messaging.api.subscription.StateAndEventSubscription
@@ -55,8 +54,6 @@ class RegistrationManagementServiceImpl @Activate constructor(
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
     @Reference(service = CordaAvroSerializationFactory::class)
     private val cordaAvroSerializationFactory: CordaAvroSerializationFactory,
-    @Reference(service = MembershipPersistenceClient::class)
-    private val membershipPersistenceClient: MembershipPersistenceClient,
     @Reference(service = GroupParametersWriterService::class)
     private val groupParametersWriterService: GroupParametersWriterService,
     @Reference(service = VirtualNodeInfoReadService::class)
@@ -119,7 +116,6 @@ class RegistrationManagementServiceImpl @Activate constructor(
                     setOf(
                         LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
                         LifecycleCoordinatorName.forComponent<MembershipGroupReaderProvider>(),
-                        LifecycleCoordinatorName.forComponent<MembershipPersistenceClient>(),
                         LifecycleCoordinatorName.forComponent<DbConnectionManager>(),
                         LifecycleCoordinatorName.forComponent<VirtualNodeInfoReadService>(),
                     ),
@@ -180,7 +176,6 @@ class RegistrationManagementServiceImpl @Activate constructor(
                         memberInfoFactory,
                         membershipGroupReaderProvider,
                         cordaAvroSerializationFactory,
-                        membershipPersistenceClient,
                         membershipConfig,
                         groupParametersWriterService,
                         transactionsFactory,

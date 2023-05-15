@@ -12,10 +12,10 @@ import net.corda.data.membership.command.registration.mgm.StartRegistration
 import net.corda.data.membership.command.registration.mgm.VerifyMember
 import net.corda.data.membership.state.RegistrationState
 import net.corda.libs.configuration.SmartConfig
+import net.corda.membership.db.lib.UpdateRegistrationRequestStatusService
 import net.corda.membership.groupparams.writer.service.GroupParametersWriterService
 import net.corda.membership.lib.GroupParametersFactory
 import net.corda.membership.lib.MemberInfoFactory
-import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.membership.registration.management.impl.handler.MemberTypeChecker
 import net.corda.membership.registration.management.impl.handler.MissingRegistrationStateException
@@ -39,7 +39,6 @@ internal class RegistrationProcessor(
     memberInfoFactory: MemberInfoFactory,
     membershipGroupReaderProvider: MembershipGroupReaderProvider,
     cordaAvroSerializationFactory: CordaAvroSerializationFactory,
-    membershipPersistenceClient: MembershipPersistenceClient,
     membershipConfig: SmartConfig,
     groupParametersWriterService: GroupParametersWriterService,
     transactionFactory: DbTransactionFactory,
@@ -56,6 +55,8 @@ internal class RegistrationProcessor(
     }
 
     private val memberTypeChecker = MemberTypeChecker(membershipGroupReaderProvider)
+
+    private val updateRegistrationRequestStatusService = UpdateRegistrationRequestStatusService(clock)
 
     private val handlers = mapOf<Class<*>, RegistrationHandler<*>>(
         StartRegistration::class.java to StartRegistrationHandler(
@@ -78,7 +79,7 @@ internal class RegistrationProcessor(
             keyEncodingService,
         ),
         DeclineRegistration::class.java to DeclineRegistrationHandler(
-            membershipPersistenceClient,
+            updateRegistrationRequestStatusService,
             clock,
             cordaAvroSerializationFactory,
             memberTypeChecker,
@@ -88,18 +89,18 @@ internal class RegistrationProcessor(
         ProcessMemberVerificationRequest::class.java to ProcessMemberVerificationRequestHandler(
             clock,
             cordaAvroSerializationFactory,
-            membershipPersistenceClient,
+            updateRegistrationRequestStatusService,
             memberTypeChecker,
         ),
         VerifyMember::class.java to VerifyMemberHandler(
             clock,
             cordaAvroSerializationFactory,
-            membershipPersistenceClient,
+            updateRegistrationRequestStatusService,
             memberTypeChecker,
             membershipConfig,
         ),
         ProcessMemberVerificationResponse::class.java to ProcessMemberVerificationResponseHandler(
-            membershipPersistenceClient,
+            updateRegistrationRequestStatusService,
             clock,
             cordaAvroSerializationFactory,
             memberTypeChecker,
@@ -108,7 +109,7 @@ internal class RegistrationProcessor(
             membershipGroupReaderProvider,
         ),
         PersistMemberRegistrationState::class.java to PersistMemberRegistrationStateHandler(
-            membershipPersistenceClient,
+            updateRegistrationRequestStatusService,
         ),
     )
 

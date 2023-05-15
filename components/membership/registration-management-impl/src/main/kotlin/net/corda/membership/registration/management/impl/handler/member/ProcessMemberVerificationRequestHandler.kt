@@ -7,26 +7,25 @@ import net.corda.data.membership.command.registration.member.ProcessMemberVerifi
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.p2p.VerificationResponse
 import net.corda.data.membership.state.RegistrationState
+import net.corda.membership.db.lib.UpdateRegistrationRequestStatusService
 import net.corda.membership.p2p.helpers.P2pRecordsFactory
-import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.registration.management.impl.handler.MemberTypeChecker
 import net.corda.membership.registration.management.impl.handler.RegistrationHandler
 import net.corda.membership.registration.management.impl.handler.RegistrationHandlerResult
 import net.corda.membership.registration.management.impl.handler.VerificationResponseKeys.FAILURE_REASONS
 import net.corda.membership.registration.management.impl.handler.VerificationResponseKeys.VERIFIED
 import net.corda.utilities.time.Clock
-import net.corda.virtualnode.toCorda
 import org.slf4j.LoggerFactory
 
 internal class ProcessMemberVerificationRequestHandler(
     clock: Clock,
     cordaAvroSerializationFactory: CordaAvroSerializationFactory,
-    private val membershipPersistenceClient: MembershipPersistenceClient,
+    private val updateRegistrationRequestStatusService: UpdateRegistrationRequestStatusService,
     private val memberTypeChecker: MemberTypeChecker,
     private val p2pRecordsFactory: P2pRecordsFactory = P2pRecordsFactory(
         cordaAvroSerializationFactory,
         clock,
-    )
+        ),
 ) : RegistrationHandler<ProcessMemberVerificationRequest> {
     private companion object {
         val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -50,11 +49,11 @@ internal class ProcessMemberVerificationRequestHandler(
 
         val registrationId = command.verificationRequest.registrationId
 
-        val commands = membershipPersistenceClient.setRegistrationRequestStatus(
-            member.toCorda(),
+        val commands = updateRegistrationRequestStatusService.createCommand(
+            member,
             registrationId,
             RegistrationStatus.PENDING_MEMBER_VERIFICATION,
-        ).createAsyncCommands()
+        )
 
         return RegistrationHandlerResult(
             null,
@@ -64,10 +63,10 @@ internal class ProcessMemberVerificationRequestHandler(
                     mgm,
                     VerificationResponse(
                         registrationId,
-                        KeyValuePairList(payload)
-                    )
-                )
-            ) + commands
+                        KeyValuePairList(payload),
+                    ),
+                ),
+            ) + commands,
         )
     }
 }

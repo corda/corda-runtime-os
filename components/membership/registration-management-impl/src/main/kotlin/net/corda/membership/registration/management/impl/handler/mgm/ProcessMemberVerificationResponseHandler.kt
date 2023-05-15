@@ -17,6 +17,7 @@ import net.corda.membership.db.lib.ConsumePreAuthTokenService
 import net.corda.membership.db.lib.QueryApprovalRulesService
 import net.corda.membership.db.lib.QueryPreAuthTokenService
 import net.corda.membership.db.lib.QueryRegistrationRequestService
+import net.corda.membership.db.lib.UpdateRegistrationRequestStatusService
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_PENDING
 import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.lib.approval.RegistrationRule
@@ -25,7 +26,6 @@ import net.corda.membership.lib.registration.PRE_AUTH_TOKEN
 import net.corda.membership.lib.toMap
 import net.corda.membership.p2p.helpers.P2pRecordsFactory
 import net.corda.membership.p2p.helpers.P2pRecordsFactory.Companion.getTtlMinutes
-import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.membership.registration.management.impl.DbTransactionFactory
 import net.corda.membership.registration.management.impl.handler.MemberTypeChecker
@@ -45,7 +45,7 @@ import org.slf4j.LoggerFactory
 
 @Suppress("LongParameterList")
 internal class ProcessMemberVerificationResponseHandler(
-    private val membershipPersistenceClient: MembershipPersistenceClient,
+    private val updateRegistrationRequestStatusService: UpdateRegistrationRequestStatusService,
     clock: Clock,
     cordaAvroSerializationFactory: CordaAvroSerializationFactory,
     private val memberTypeChecker: MemberTypeChecker,
@@ -100,11 +100,11 @@ internal class ProcessMemberVerificationResponseHandler(
             }
 
             val status = getNextRegistrationStatus(transactionFactory, mgm, member, registrationId)
-            val setRegistrationRequestStatusCommands = membershipPersistenceClient.setRegistrationRequestStatus(
-                mgm.toCorda(),
+            val setRegistrationRequestStatusCommands = updateRegistrationRequestStatusService.createCommand(
+                mgm,
                 registrationId,
                 status,
-            ).createAsyncCommands()
+            )
             val persistStatusMessage = p2pRecordsFactory.createAuthenticatedMessageRecord(
                 source = mgm,
                 destination = member,
