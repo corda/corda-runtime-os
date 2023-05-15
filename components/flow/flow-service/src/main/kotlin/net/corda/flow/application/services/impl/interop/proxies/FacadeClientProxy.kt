@@ -17,6 +17,9 @@ import net.corda.v5.application.interop.parameters.TypedParameterValue
 import java.lang.reflect.InvocationHandler
 import java.lang.reflect.Method
 import java.lang.reflect.Proxy
+import java.security.AccessController
+import java.security.PrivilegedActionException
+import java.security.PrivilegedExceptionAction
 
 object FacadeProxies {
 
@@ -33,14 +36,18 @@ object FacadeProxies {
                            requestProcessor: (FacadeRequest) -> FacadeResponse): T {
         val binding = FacadeInterfaceBindings.bind(facade, interfaceType)
         val proxy = FacadeClientProxy(binding, TypeConverter(jsonMarshaller), requestProcessor)
-
-        return Proxy.newProxyInstance(
-            interfaceType.classLoader,
-            arrayOf(interfaceType),
-            proxy
-        ) as T
+        return try {
+            AccessController.doPrivileged(PrivilegedExceptionAction {
+                Proxy.newProxyInstance(
+                    interfaceType.classLoader,
+                    arrayOf(interfaceType),
+                    proxy
+                ) as T
+            })
+        } catch (e: PrivilegedActionException) {
+            throw e.exception
+        }
     }
-
 }
 
 /**
@@ -58,6 +65,16 @@ inline fun <reified T : Any> Facade.getClientProxy(
     jsonMarshaller: JsonMarshaller,
     noinline requestProcessor: (FacadeRequest) -> FacadeResponse): T =
     FacadeProxies.getClientProxy(this, T::class.java, jsonMarshaller, requestProcessor)
+
+/**
+ * Kotlin convenience method for creating a client proxy with the provided [JsonMarshaller]
+ * and the provided request processor.
+ */
+fun <T> Facade.getClientProxy(
+    jsonMarshaller: JsonMarshaller,
+    expectedClass: Class<T>,
+    requestProcessor: (FacadeRequest) -> FacadeResponse): T =
+    FacadeProxies.getClientProxy(this, expectedClass, jsonMarshaller, requestProcessor)
 
 /**
  * Exception thrown if for some reason we can't dispatch a method call on a client proxy to create a [FacadeRequest],

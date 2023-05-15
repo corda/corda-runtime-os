@@ -9,6 +9,7 @@ import net.corda.flow.application.services.impl.interop.binding.creation.FacadeI
 import net.corda.flow.application.services.impl.interop.parameters.TypeConverter
 import net.corda.flow.application.services.impl.interop.proxies.FacadeMethodDispatchException
 import net.corda.flow.application.services.impl.interop.proxies.JacksonJsonMarshaller
+import net.corda.flow.application.services.impl.interop.proxies.JsonMarshaller
 import net.corda.v5.application.interop.binding.BindsFacade
 import net.corda.v5.application.interop.binding.FacadeVersions
 import net.corda.v5.application.interop.binding.InteropAction
@@ -46,6 +47,9 @@ fun Any.buildDispatcher(facade: Facade, typeConverter: TypeConverter): FacadeSer
 
 fun Any.buildDispatcher(facade: Facade): FacadeServerDispatcher =
     buildDispatcher(facade, TypeConverter(JacksonJsonMarshaller(ObjectMapper().registerKotlinModule())))
+
+fun Any.buildDispatcher(facade: Facade, marshaller: JsonMarshaller): FacadeServerDispatcher =
+    buildDispatcher(facade, TypeConverter(marshaller))
 
 class FacadeServerDispatcher(
     val typeConverter: TypeConverter,
