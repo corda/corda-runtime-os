@@ -165,7 +165,7 @@ sleep 20
 SHORT=$(curl --insecure -u admin:admin -X GET "https://localhost:8888/api/v1/virtualnode/status/$REQUEST_ID" -H 'accept: application/json' | jq -r .resourceId)
 echo "$VARIABLE=$SHORT"
 printf "\n"
-curl --insecure -u admin:admin -d '{ "memberRegistrationRequest": { "context": { "corda.key.scheme": "CORDA.ECDSA.SECP256R1", "corda.roles.0" : "notary", "corda.notary.service.name" : "'$GROUP1_NOTARY_SERVICE_NAME'", "corda.notary.service.flow.protocol.name" : "com.r3.corda.notary.plugin.nonvalidating", "corda.notary.service.flow.protocol.version.0": "1" } } }' "https://localhost:8888/api/v1/membership/$SHORT"
+curl --insecure -u admin:admin -d '{ "memberRegistrationRequest": { "context": { "corda.key.scheme": "CORDA.ECDSA.SECP256R1", "corda.roles.0" : "notary", "corda.notary.service.name" : "'"$GROUP1_NOTARY_SERVICE_NAME"'", "corda.notary.service.flow.protocol.name" : "com.r3.corda.notary.plugin.nonvalidating", "corda.notary.service.flow.protocol.version.0": "1" } } }' "https://localhost:8888/api/v1/membership/$SHORT"
 curl --insecure -u admin:admin -X GET "https://localhost:8888/api/v1/members/$SHORT"
 
 
