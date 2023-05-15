@@ -9,7 +9,10 @@ import net.corda.libs.configuration.helper.getConfig
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
+import net.corda.metrics.CordaMetrics
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
+import net.corda.virtualnode.HoldingIdentity
+import net.corda.virtualnode.toCorda
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -61,8 +64,9 @@ class FlowWakeUpSchedulerImpl constructor(
     private fun scheduleTasks(checkpoints: Collection<Checkpoint>) {
         checkpoints.forEach {
             val id = it.flowId
+            val holdingIdShortHash = it.flowState.flowStartContext.identity.toCorda().shortHash.toString()
             val scheduledWakeUp = scheduledExecutorService.schedule(
-                { publishWakeUp(id) },
+                { publishWakeUp(id, holdingIdShortHash) },
                 it.pipelineState.maxFlowSleepDuration.toLong(),
                 TimeUnit.MILLISECONDS
             )
@@ -78,7 +82,10 @@ class FlowWakeUpSchedulerImpl constructor(
         }
     }
 
-    private fun publishWakeUp(flowId: String) {
+    private fun publishWakeUp(flowId: String, holdingIdentity: String) {
+        CordaMetrics.Metric.FlowScheduledWakeupCount.builder()
+            .forVirtualNode(holdingIdentity)
+            .build().increment()
         publisher?.publish(listOf(flowRecordFactory.createFlowEventRecord(flowId, Wakeup())))
     }
 }

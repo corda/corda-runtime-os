@@ -131,10 +131,15 @@ object CordaMetrics {
          *
          * Number of flow event suspensions can be inferred from the count of events recorded for this metric.
          */
-        object FlowEventSuspensionWaitTime : Metric<Timer>("flow.event.suspension.wait.time", Metrics::timer)
+        object FlowEventSuspensionWaitTime : Metric<Timer>("flow.event.suspension.wait.time", CordaMetrics::timer)
 
         /**
-         * Flow mapper metrics
+         * Number of times a scheduled wakeup is published for flows.
+         */
+        object FlowScheduledWakeupCount : Metric<Counter>("flow.scheduled.wakeup.count", Metrics::counter)
+
+        /**
+         * FLOW MAPPER METRICS
          *
          * Time to process a single message in the flow mapper
          */
