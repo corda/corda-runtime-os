@@ -7,15 +7,7 @@ data class ClaimQuery(
     val externalEventRequestId: String,
     val flowId: String,
     val targetAmount: BigDecimal,
-    private val tagRegex: String?,
-    private val ownerHash: String?,
+    override val tagRegex: String?,
+    override val ownerHash: String?,
     override val poolKey: TokenPoolCacheKey
-): TokenFilter {
-    override fun getTagRegex(): String? {
-        return tagRegex
-    }
-
-    override fun getOwnerHash(): String? {
-        return ownerHash
-    }
-}
+): TokenFilter

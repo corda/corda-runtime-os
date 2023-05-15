@@ -5,10 +5,10 @@ interface TokenFilter: TokenEvent {
     /**
      * @return Returns the regular expression for a tag which the tokens will be matched against.
      */
-    fun getTagRegex(): String?
+    val tagRegex: String?
 
     /**
      * @return Returns the owner's hash which the tokens will be match against.
      */
-    fun getOwnerHash(): String?
+    val ownerHash: String?
 }

@@ -5,15 +5,8 @@ import net.corda.data.ledger.utxo.token.selection.key.TokenPoolCacheKey
 data class BalanceQuery(
     val externalEventRequestId: String,
     val flowId: String,
-    private val tagRegex: String?,
-    private val ownerHash: String?,
+    override val tagRegex: String?,
+    override val ownerHash: String?,
     override val poolKey: TokenPoolCacheKey,
-) : TokenFilter {
-    override fun getTagRegex(): String? {
-        return tagRegex
-    }
+) : TokenFilter
 
-    override fun getOwnerHash(): String? {
-        return ownerHash
-    }
-}
