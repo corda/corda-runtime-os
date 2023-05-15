@@ -15,17 +15,16 @@ class PaymentContract : Contract {
 
         val command = transaction.commands.singleOrNull() ?: throw CordaRuntimeException("Requires a single command.")
 
-        "The output state should have two and only two participants." using {
-            val output = transaction.outputContractStates.first() as PaymentState
-            output.participants.size == 2
-        }
+        "There should be only one output state" using { transaction.outputContractStates.size == 1 }
+
+        val outputState = transaction.outputContractStates.first() as PaymentState
 
         when (command) {
             is Issue -> {
-                "When command is Create there should be one and only one output state." using (transaction.outputContractStates.size == 1)
+                "When command is Issue there should be exactly one participant." using (outputState.participants.size == 1)
             }
             is Transfer -> {
-                "When command is Update there should be one and only one output state." using (transaction.outputContractStates.size == 1)
+                "When command is Transfer there should be exactly two participants." using (outputState.participants.size == 2)
             }
             else -> {
                 throw CordaRuntimeException("Command not allowed.")
