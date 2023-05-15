@@ -9,8 +9,8 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 
 @Component(service = [RemoteAliasLookUpService::class, UsedByFlow::class], scope = PROTOTYPE)
-class RemoteAliasLookUpServiceImpl @Activate constructor() : RemoteAliasLookUpService, UsedByFlow,
-    SingletonSerializeAsToken {
+class RemoteAliasLookUpServiceImpl @Activate constructor() :
+    RemoteAliasLookUpService, UsedByFlow, SingletonSerializeAsToken {
 
     override fun lookup(x500Name : String, cpiName: String): AliasMemberInfo? {
         return getAliasMemberData().firstOrNull { memberInfo ->
