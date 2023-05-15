@@ -32,9 +32,9 @@ class FlowMetricsImpl(
         )
     }
 
-    override fun flowEventReceived(){
+    override fun flowEventReceived(flowEventType: String){
         // Record the event lag
-        flowMetricsRecord.recordFlowEventLag(eventReceivedTimestampMillis - recordTimestamp)
+        flowMetricsRecord.recordFlowEventLag(eventReceivedTimestampMillis - recordTimestamp, flowEventType)
     }
 
     override fun flowStarted() {
@@ -73,9 +73,9 @@ class FlowMetricsImpl(
         currentState.suspensionTimestampMillis = clock.nowInMillis()
     }
 
-    override fun flowEventCompleted() {
+    override fun flowEventCompleted(flowEventType: String) {
         val pipelineExecutionTime = clock.instant().toEpochMilli() - eventReceivedTimestampMillis
-        flowMetricsRecord.recordPipelineExecution(pipelineExecutionTime)
+        flowMetricsRecord.recordPipelineExecution(pipelineExecutionTime, flowEventType)
         currentState.totalPipelineExecutionTime += pipelineExecutionTime
         flowCheckpoint.setMetricsState(objectMapper.writeValueAsString(currentState))
     }

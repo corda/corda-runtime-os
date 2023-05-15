@@ -1,7 +1,7 @@
 package net.corda.flow.pipeline.metrics
 
 interface FlowMetrics {
-    fun flowEventReceived()
+    fun flowEventReceived(flowEventType: String)
 
     fun flowStarted()
 
@@ -11,7 +11,7 @@ interface FlowMetrics {
 
     fun flowFiberExitedWithSuspension(suspensionOperationName: String?)
 
-    fun flowEventCompleted()
+    fun flowEventCompleted(flowEventType: String)
 
     fun flowCompletedSuccessfully()
 

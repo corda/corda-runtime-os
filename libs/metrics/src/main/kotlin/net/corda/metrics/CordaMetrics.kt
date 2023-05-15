@@ -83,14 +83,11 @@ object CordaMetrics {
         object FlowStartLag : Metric<Timer>("flow.start.lag", Metrics::timer)
 
         /**
-         * Metric for the time taken to execute the flow (excluding any start lag)
+         * Metric for the time taken to execute the flow (excluding any start lag).
+         *
+         * Total count of flows executed can be obtained by the number of events recorded for this metric.
          */
         object FlowExecutionTime : Metric<Timer>("flow.execution.time", Metrics::timer)
-
-        /**
-         * Number of flows completed.
-         */
-        object FlowExecutionCount : Metric<Counter>("flow.execution.count", Metrics::counter)
 
         /**
          * Metric for lag between flow event publication and processing.
@@ -99,23 +96,18 @@ object CordaMetrics {
 
         /**
          * Metric for the time taken to execute the flow (excluding any start lag)
+         *
+         * Number of pipeline events processed can be inferred from the count of events recorded for this metric.
          */
         object FlowEventPipelineExecutionTime : Metric<Timer>("flow.event.pipeline.execution.time", Metrics::timer)
 
-        /**
-         * Number of flow pipeline execution events.
-         */
-        object FlowEventPipelineExecutionCount : Metric<Counter>("flow.event.pipeline.execution", Metrics::counter)
 
         /**
          * Metric for the time taken to execute the flow (excluding any start lag)
+         *
+         * Number of fiber execution events processed can be inferred from the count of events recorded for this metric.
          */
         object FlowEventFiberExecutionTime : Metric<Timer>("flow.event.fiber.execution.time", Metrics::timer)
-
-        /**
-         * Number of flow fiber execution events.
-         */
-        object FlowEventFiberExecutionCount : Metric<Counter>("flow.event.fiber.execution", Metrics::counter)
 
 
         /**
@@ -136,13 +128,11 @@ object CordaMetrics {
 
         /**
          * Metric for the time taken waiting to awake from a suspension
+         *
+         * Number of flow event suspensions can be inferred from the count of events recorded for this metric.
          */
         object FlowEventSuspensionWaitTime : Metric<Timer>("flow.event.suspension.wait.time", Metrics::timer)
 
-        /**
-         * Number of flow suspensions
-         */
-        object FlowSuspensionWaitCount : Metric<Counter>("flow.suspension.wait.count", Metrics::counter)
 
         /**
          * P2P Metrics
@@ -320,9 +310,14 @@ object CordaMetrics {
         FlowClass("flow.class"),
 
         /**
-         * Flow class for which the metric is applicable.
+         * The flow suspension action this metric was recorded for.
          */
         FlowSuspensionAction("flow.suspension.action"),
+
+        /**
+         * The flow event type this metric was recorded for.
+         */
+        FlowEvent("flow.event"),
 
         /**
          * The status of the operation. Can be used to indicate whether an operation was successful or failed.
