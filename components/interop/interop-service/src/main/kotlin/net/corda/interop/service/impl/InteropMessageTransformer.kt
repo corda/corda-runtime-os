@@ -2,8 +2,8 @@ package net.corda.interop.service.impl
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import net.corda.data.interop.InteropMessage
-import net.corda.interop.data.FacadeRequest
-import net.corda.interop.data.FacadeResponse
+import net.corda.v5.application.interop.facade.FacadeRequest
+import net.corda.v5.application.interop.facade.FacadeResponse
 
 class InteropMessageTransformer {
     companion object {
