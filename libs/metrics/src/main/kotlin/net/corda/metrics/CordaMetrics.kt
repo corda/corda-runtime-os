@@ -70,36 +70,36 @@ object CordaMetrics {
         /**
          * Metric for flow fiber serialization.
          */
-        object FlowFiberSerializationTime : Metric<Timer>("flow.fiber.serialization.time", Metrics::timer)
+        object FlowFiberSerializationTime : Metric<Timer>("flow.fiber.serialization.time", CordaMetrics::timer)
 
         /**
          * Metric for flow fiber deserialization.
          */
-        object FlowFiberDeserializationTime : Metric<Timer>("flow.fiber.deserialization.time", Metrics::timer)
+        object FlowFiberDeserializationTime : Metric<Timer>("flow.fiber.deserialization.time", CordaMetrics::timer)
 
         /**
          * Metric for lag between flow start event between the REST API and the flow processor.
          */
-        object FlowStartLag : Metric<Timer>("flow.start.lag", Metrics::timer)
+        object FlowStartLag : Metric<Timer>("flow.start.lag", CordaMetrics::timer)
 
         /**
          * Metric for the time taken to execute the flow (excluding any start lag).
          *
          * Total count of flows executed can be obtained by the number of events recorded for this metric.
          */
-        object FlowExecutionTime : Metric<Timer>("flow.execution.time", Metrics::timer)
+        object FlowExecutionTime : Metric<Timer>("flow.execution.time", CordaMetrics::timer)
 
         /**
          * Metric for lag between flow event publication and processing.
          */
-        object FlowEventLagTime : Metric<Timer>("flow.event.lag", Metrics::timer)
+        object FlowEventLagTime : Metric<Timer>("flow.event.lag", CordaMetrics::timer)
 
         /**
          * Metric for the time taken to execute the flow (excluding any start lag)
          *
          * Number of pipeline events processed can be inferred from the count of events recorded for this metric.
          */
-        object FlowEventPipelineExecutionTime : Metric<Timer>("flow.event.pipeline.execution.time", Metrics::timer)
+        object FlowEventPipelineExecutionTime : Metric<Timer>("flow.event.pipeline.execution.time", CordaMetrics::timer)
 
 
         /**
@@ -107,24 +107,24 @@ object CordaMetrics {
          *
          * Number of fiber execution events processed can be inferred from the count of events recorded for this metric.
          */
-        object FlowEventFiberExecutionTime : Metric<Timer>("flow.event.fiber.execution.time", Metrics::timer)
+        object FlowEventFiberExecutionTime : Metric<Timer>("flow.event.fiber.execution.time", CordaMetrics::timer)
 
 
         /**
          * Metric for the time taken to execute the flow (excluding any start lag)
          */
-        object FlowPipelineExecutionTime : Metric<Timer>("flow.pipeline.execution.time", Metrics::timer)
+        object FlowPipelineExecutionTime : Metric<Timer>("flow.pipeline.execution.time", CordaMetrics::timer)
 
         /**
          * Metric for the time taken to execute the flow (excluding any start lag)
          */
-        object FlowFiberExecutionTime : Metric<Timer>("flow.fiber.execution.time", Metrics::timer)
+        object FlowFiberExecutionTime : Metric<Timer>("flow.fiber.execution.time", CordaMetrics::timer)
 
 
         /**
          * Metric for total time taken waiting to awake from a suspension
          */
-        object FlowSuspensionWaitTime : Metric<Timer>("flow.suspension.wait.time", Metrics::timer)
+        object FlowSuspensionWaitTime : Metric<Timer>("flow.suspension.wait.time", CordaMetrics::timer)
 
         /**
          * Metric for the time taken waiting to awake from a suspension
@@ -132,6 +132,38 @@ object CordaMetrics {
          * Number of flow event suspensions can be inferred from the count of events recorded for this metric.
          */
         object FlowEventSuspensionWaitTime : Metric<Timer>("flow.event.suspension.wait.time", Metrics::timer)
+
+        /**
+         * Flow mapper metrics
+         *
+         * Time to process a single message in the flow mapper
+         */
+        object FlowMapperEventProcessingTime : Metric<Timer>("flow.mapper.event.processing.time", CordaMetrics::timer)
+
+        /**
+         * Count of events dropped due to deduplication of start events by the mapper.
+         */
+        object FlowMapperDeduplicationCount : Metric<Counter>("flow.mapper.deduplication.count", Metrics::counter)
+
+        /**
+         * Count of new states being created.
+         */
+        object FlowMapperCreationCount : Metric<Counter>("flow.mapper.creation.count", Metrics::counter)
+
+        /**
+         * Count of states being cleaned up.
+         */
+        object FlowMapperCleanupCount : Metric<Counter>("flow.mapper.cleanup.count", Metrics::counter)
+
+        /**
+         * Time taken between a mapper event being published and processed.
+         */
+        object FlowMapperEventLag : Metric<Timer>("flow.mapper.event.lag", CordaMetrics::timer)
+
+        /**
+         * Count of expired session events dropped by the mapper.
+         */
+        object FlowMapperExpiredSessionEventCount : Metric<Counter>("flow.mapper.expired.session.event.count", Metrics::counter)
 
 
         /**

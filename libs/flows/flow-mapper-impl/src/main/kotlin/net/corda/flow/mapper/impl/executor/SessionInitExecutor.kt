@@ -11,6 +11,7 @@ import net.corda.flow.mapper.FlowMapperResult
 import net.corda.flow.mapper.executor.FlowMapperEventExecutor
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.records.Record
+import net.corda.metrics.CordaMetrics
 import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
 
@@ -33,6 +34,9 @@ class SessionInitExecutor(
 
     override fun execute(): FlowMapperResult {
         return if (flowMapperState == null) {
+            CordaMetrics.Metric.FlowMapperCreationCount.builder()
+                .withTag(CordaMetrics.Tag.FlowEvent, sessionInit::class.java.name)
+                .build().increment()
             processSessionInit(sessionEvent, sessionInit)
         } else {
             //duplicate
@@ -40,8 +44,12 @@ class SessionInitExecutor(
             if(messageDirection == MessageDirection.OUTBOUND){
                 sessionInit.flowId = null
                 FlowMapperResult(flowMapperState, listOf(Record(outputTopic, eventKey, sessionEvent)))
+            } else {
+                CordaMetrics.Metric.FlowMapperDeduplicationCount.builder()
+                    .withTag(CordaMetrics.Tag.FlowEvent, sessionInit::class.java.name)
+                    .build().increment()
+                FlowMapperResult(flowMapperState, emptyList())
             }
-            else FlowMapperResult(flowMapperState, emptyList())
         }
     }
 
