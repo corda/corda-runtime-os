@@ -13,7 +13,7 @@
         },
         {
           "facade-method": "reserve-tokens",
-          "flow-name": "com.r3.corda.demo.interop.payment.workflows.interop.TokensFlow"
+          "flow-name": "com.r3.corda.demo.interop.tokens.workflows.interop.TokensFlow"
         }
       ]
     },
