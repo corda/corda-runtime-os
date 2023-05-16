@@ -72,10 +72,11 @@ class CreateScript(
 
     override fun run() {
         val topicConfigs = create!!.getTopicConfigs()
+        val partitions = create!!.getPartitionsForTopics(topicConfigs)
 
         val topics = topicConfigs.flatMap { topicConfig: Create.TopicConfig ->
             val topicName = create!!.getTopicName(topicConfig)
-            val topicScripts = createTopicScripts(topicName, create!!.partitionOverride, create!!.replicaOverride, topicConfig.config)
+            val topicScripts = createTopicScripts(topicName, partitions[topicConfig.name]!!, create!!.replicaOverride, topicConfig.config)
             val acls = createACLs(topicName, topicConfig.consumers, topicConfig.producers)
             topicScripts + acls
         }

@@ -28,16 +28,16 @@ class Create(
     var replicaOverride: Short = 1
 
     @CommandLine.Option(
-        names = ["-p", "--partitions"],
-        description = ["Override partition count globally"]
-    )
-    var partitionOverride: Int = 1
-
-    @CommandLine.Option(
         names = ["-u", "--user"],
         description = ["One or more Corda workers and their respective Kafka users e.g. -u crypto=Charlie -u rest=Rob"]
     )
     var kafkaUsers: Map<String, String> = emptyMap()
+
+    @CommandLine.Option(
+        names = ["-c", "--counts"],
+        description = ["One or more Corda workers and their respective replica counts e.g. -c crypto=3 -c rest=5"]
+    )
+    var workerCounts: Map<String, Int> = emptyMap()
 
     data class TopicConfig(
         val name: String,
@@ -95,6 +95,25 @@ class Create(
     private fun getUsersForProcessor(processor: String): Set<String> {
         val workers = workersForProcessor[processor] ?: throw IllegalStateException("Unknown processor $processor")
         return workers.mapNotNull { worker -> kafkaUsers[worker] }.toSet()
+    }
+
+    fun getPartitionsForTopics(topicConfigs: List<TopicConfig>): Map<String, Int> {
+        val topicConfigMap = topicConfigs.associateBy { it.name }
+        return topicConfigMap.mapValues { getPartitionsForTopic(it.value, topicConfigMap) }
+    }
+    private fun getPartitionsForTopic(topicConfig: Create.TopicConfig, topicConfigMap: Map<String, Create.TopicConfig>): Int =
+        if (topicConfig.name.endsWith(".dlq")) 1
+        else if (topicConfig.name.endsWith(".state")) {
+            val eventTopicName = topicConfig.name.slice(0 until topicConfig.name.length - ".state".length)
+            val eventTopicConfig = topicConfigMap[eventTopicName]
+                ?: throw IllegalStateException("No corresponding event topic for state topic ${topicConfig.name}")
+            getPartitionsForTopic(eventTopicConfig, topicConfigMap)
+        } else if (topicConfig.config["cleanup.policy"] == "compact") 1
+        else topicConfig.consumers.sumOf { getWorkerCountForProcessor(it) }
+
+    private fun getWorkerCountForProcessor(processor: String): Int {
+        val workers = workersForProcessor[processor] ?: throw IllegalStateException("Unknown processor $processor")
+        return workers.sumOf { workerCounts[it] ?: 0 }
     }
 
     fun collectJars(

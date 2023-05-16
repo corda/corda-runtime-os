@@ -133,7 +133,9 @@ spec:
               {{- end }}
             {{- end }}
             '-r', '{{ .Values.bootstrap.kafka.replicas }}',
-            '-p', '{{ .Values.bootstrap.kafka.partitions }}',
+            {{- range $k, $v := .Values.workers }}
+            '-c', '{{ printf "%s=%v" $k $v.replicaCount }}',
+            {{- end }}
             'connect'{{- if .Values.bootstrap.kafka.cleanup }},
             '-d'
             {{- end }}

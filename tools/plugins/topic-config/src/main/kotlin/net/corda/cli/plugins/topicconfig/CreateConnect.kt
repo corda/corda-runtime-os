@@ -78,7 +78,7 @@ class CreateConnect : Runnable {
 
     private fun createTopicsWithRetry(client: Admin, topicConfigs: List<Create.TopicConfig>) {
         val topics = getTopics(topicConfigs).toMutableMap()
-        println("Creating topics: ${topics.keys.joinToString { it }}")
+        println("Creating ${topics.size} topics with ${topics.values.sumOf { it.numPartitions() }} partitions: ${topics.values.joinToString { "${it.name()} (${it.numPartitions()})" }}")
         val end = LocalDateTime.now().plusSeconds(wait)
         while (true) {
             if (topics.isEmpty()) {
@@ -134,10 +134,11 @@ class CreateConnect : Runnable {
             (consumerEntries + producerEntries).map { AclBinding(pattern, it) }
         }
 
-    fun getTopics(topicConfigs: List<Create.TopicConfig>) =
-        topicConfigs.map { topicConfig: Create.TopicConfig ->
-            topicConfig.name to NewTopic(topicConfig.name, create!!.partitionOverride, create!!.replicaOverride)
-                .configs(topicConfig.config)
-        }.toMap()
+    fun getTopics(topicConfigs: List<Create.TopicConfig>): Map<String, NewTopic> {
+        val partitions = create!!.getPartitionsForTopics(topicConfigs)
+        return topicConfigs.associate { it.name to
+            NewTopic(it.name, partitions[it.name]!!, create!!.replicaOverride).configs(it.config)
+        }.filterValues { it.numPartitions() > 0 }
+    }
 
 }

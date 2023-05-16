@@ -110,6 +110,7 @@ class CreateScriptTest {
         createScript.create = Create()
         createScript.create!!.topic = TopicPlugin.Topic()
         createScript.create!!.kafkaUsers = mapOf("crypto" to "Chris", "db" to "Dan", "flow" to "Fiona", "membership" to "Mo")
+        createScript.create!!.workerCounts = mapOf("crypto" to 1, "db" to 1, "flow" to 1, "membership" to 1)
         return createScript
     }
 }
