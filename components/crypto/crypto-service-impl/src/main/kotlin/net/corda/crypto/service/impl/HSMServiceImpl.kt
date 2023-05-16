@@ -6,9 +6,6 @@ import net.corda.crypto.cipher.suite.CRYPTO_TENANT_ID
 import net.corda.crypto.component.impl.AbstractConfigurableComponent
 import net.corda.crypto.component.impl.DependenciesTracker
 import net.corda.crypto.config.impl.MasterKeyPolicy
-import net.corda.crypto.config.impl.PrivateKeyPolicy
-import net.corda.crypto.config.impl.hsm
-import net.corda.crypto.config.impl.toCryptoConfig
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoConsts.SOFT_HSM_ID
 import net.corda.crypto.core.InvalidParamsException
@@ -48,10 +45,7 @@ class HSMServiceImpl @Activate constructor(
     configKeys = setOf(CRYPTO_CONFIG)
 ), HSMService {
     override fun createActiveImpl(event: ConfigChangedEvent): Impl =
-        Impl(logger, event, store, cryptoServiceFactory)
-
-    override fun assignHSM(tenantId: String, category: String, context: Map<String, String>): HSMAssociationInfo =
-        impl.assignHSM(tenantId, category, context)
+        Impl(logger, store, cryptoServiceFactory)
 
     override fun assignSoftHSM(tenantId: String, category: String): HSMAssociationInfo =
         impl.assignSoftHSM(tenantId, category)
@@ -61,24 +55,12 @@ class HSMServiceImpl @Activate constructor(
 
     class Impl(
         private val logger: Logger,
-        event: ConfigChangedEvent,
         private val store: HSMStore,
         private val cryptoServiceFactory: CryptoServiceFactory,
     ) : DownstreamAlwaysUpAbstractImpl() {
         companion object {
             private fun Map<String, String>.isPreferredPrivateKeyPolicy(policy: String): Boolean =
                 this[CryptoConsts.HSMContext.PREFERRED_PRIVATE_KEY_POLICY_KEY] == policy
-        }
-
-        private val hsmConfig = event.config.toCryptoConfig().hsm()
-
-        // TODO the below API needs to be removed as part of removing multi hsm concept
-        //  as per https://r3-cev.atlassian.net/browse/CORE-10562
-        @Suppress("unused_parameter")
-        fun assignHSM(tenantId: String, category: String, context: Map<String, String>): HSMAssociationInfo {
-            logger.info("assignHSM(tenant={}, category={})", tenantId, category)
-            logger.warn("There is only SOFT HSM configured, will assign that.")
-            return assignSoftHSM(tenantId, category)
         }
 
         fun assignSoftHSM(tenantId: String, category: String): HSMAssociationInfo {
@@ -123,18 +105,5 @@ class HSMServiceImpl @Activate constructor(
                 )
             )
         }
-
-        private fun tryChooseAliased(stats: List<HSMStats>): HSMStats =
-            stats.filter {
-                it.privateKeyPolicy == PrivateKeyPolicy.ALIASED ||
-                        it.privateKeyPolicy == PrivateKeyPolicy.BOTH
-            }.minByOrNull { s ->
-                s.allUsages
-            } ?: tryChooseAny(stats)
-
-        private fun tryChooseAny(stats: List<HSMStats>): HSMStats =
-            stats.minByOrNull { s ->
-                s.allUsages
-            } ?: throw IllegalStateException("There is no available HSMs.")
     }
 }
