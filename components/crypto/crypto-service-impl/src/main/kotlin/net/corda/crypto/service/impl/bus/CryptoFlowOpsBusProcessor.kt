@@ -20,6 +20,7 @@ import net.corda.data.crypto.wire.ops.flow.queries.FilterMyKeysFlowQuery
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
+import net.corda.metrics.CordaMetrics
 import net.corda.utilities.MDC_CLIENT_ID
 import net.corda.utilities.MDC_EXTERNAL_EVENT_ID
 import net.corda.utilities.MDC_FLOW_ID
@@ -116,25 +117,33 @@ class CryptoFlowOpsBusProcessor(
         // will be marked as DOWN or ERROR (depending on what catches it; certainly if it made it to the top of the
         // TreadLooper it will cause the status to go to ERROR)
 
-        return when (request) {
-            is FilterMyKeysFlowQuery ->
-                cryptoOpsClient.filterMyKeysProxy(
-                    tenantId = context.tenantId,
-                    candidateKeys = request.keys
-                )
-            is SignFlowCommand ->
-                cryptoOpsClient.signProxy(
-                    tenantId = context.tenantId,
-                    publicKey = request.publicKey,
-                    signatureSpec = request.signatureSpec,
-                    data = request.bytes,
-                    context = request.context
-                )
-            is ByIdsFlowQuery ->
-                cryptoOpsClient.lookupKeysByFullIdsProxy(context.tenantId, request.fullKeyIds)
-            else ->
-                throw IllegalArgumentException("Unknown request type ${request::class.java.name}")
-        }
+        return CordaMetrics.Metric.CryptoFlowOpsProcessorExecutionTime.builder()
+            .withTag(CordaMetrics.Tag.OperationName, request::class.java.simpleName)
+            .build()
+            .recordCallable<Any> {
+                when (request) {
+                    is FilterMyKeysFlowQuery ->
+                        cryptoOpsClient.filterMyKeysProxy(
+                            tenantId = context.tenantId,
+                            candidateKeys = request.keys
+                        )
+
+                    is SignFlowCommand ->
+                        cryptoOpsClient.signProxy(
+                            tenantId = context.tenantId,
+                            publicKey = request.publicKey,
+                            signatureSpec = request.signatureSpec,
+                            data = request.bytes,
+                            context = request.context
+                        )
+
+                    is ByIdsFlowQuery ->
+                        cryptoOpsClient.lookupKeysByFullIdsProxy(context.tenantId, request.fullKeyIds)
+
+                    else ->
+                        throw IllegalArgumentException("Unknown request type ${request::class.java.name}")
+                }
+            }!!
     }
 
     private fun getRequestExpireAt(request: FlowOpsRequest): Instant =
