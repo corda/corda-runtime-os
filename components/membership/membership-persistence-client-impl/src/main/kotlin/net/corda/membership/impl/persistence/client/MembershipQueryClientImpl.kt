@@ -142,8 +142,10 @@ class MembershipQueryClientImpl(
             registrationId = registrationId,
             holdingId = viewOwningIdentity,
         )
+        val start = System.currentTimeMillis()
         val cachedValue = cache.getIfPresent(key)
         if (cachedValue != null) {
+            logger.info("QQQ queryRegistrationRequest (cached) took ${System.currentTimeMillis() - start}")
             return MembershipQueryResult.Success(cachedValue)
         }
         return MembershipPersistenceRequest(
@@ -154,6 +156,8 @@ class MembershipQueryClientImpl(
                 cache.put(key, payload.registrationRequest)
             }
             payload.registrationRequest
+        }.also {
+            logger.info("QQQ queryRegistrationRequest (uncached) took ${System.currentTimeMillis() - start}")
         }
     }
 
