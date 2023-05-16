@@ -35,7 +35,6 @@ import net.corda.utilities.withMDC
 import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
 import java.time.Instant
-import kotlin.math.sign
 
 class CryptoFlowOpsBusProcessor(
     private val signingService: SigningService,
@@ -77,24 +76,34 @@ class CryptoFlowOpsBusProcessor(
         )
 
         return withMDC(mdc) {
-            logger.info("Handling ${request.request::class.java.name} for tenant ${request.context.tenantId}")
+            val requestPayload = request.request
+            logger.info("Handling ${requestPayload::class.java.name} for tenant ${request.context.tenantId}")
 
             try {
                 if (Instant.now() >= expireAt) {
-                    logger.warn("Event ${request.request::class.java.name} for tenant ${request.context.tenantId} " +
-                            "is no longer valid, expired at $expireAt")
+                    logger.warn(
+                        "Event ${requestPayload::class.java.name} for tenant ${request.context.tenantId} " +
+                                "is no longer valid, expired at $expireAt"
+                    )
                     externalEventResponseFactory.transientError(
                         request.flowExternalEventContext,
                         ExceptionEnvelope("Expired", "Expired at $expireAt")
                     )
                 } else {
                     val response = executor.executeWithRetry {
-                        handleRequest(request.request, request.context)
+                        CordaMetrics.Metric.CryptoFlowOpsProcessorExecutionTime.builder()
+                            .withTag(CordaMetrics.Tag.OperationName, requestPayload::class.java.simpleName)
+                            .build()
+                            .recordCallable {
+                                handleRequest(requestPayload, request.context)
+                            }
                     }
 
                     if (Instant.now() >= expireAt) {
-                        logger.warn("Event ${request.request::class.java.name} for tenant ${request.context.tenantId} " +
-                                "is no longer valid, expired at $expireAt")
+                        logger.warn(
+                            "Event ${requestPayload::class.java.name} for tenant ${request.context.tenantId} " +
+                                    "is no longer valid, expired at $expireAt"
+                        )
                         externalEventResponseFactory.transientError(
                             request.flowExternalEventContext,
                             ExceptionEnvelope("Expired", "Expired at $expireAt")
@@ -108,7 +117,7 @@ class CryptoFlowOpsBusProcessor(
                 }
             } catch (throwable: Throwable) {
                 logger.error(
-                    "Failed to handle ${request.request::class.java.name} for tenant ${request.context.tenantId}",
+                    "Failed to handle ${requestPayload::class.java.name} for tenant ${request.context.tenantId}",
                     throwable
                 )
                 externalEventResponseFactory.platformError(request.flowExternalEventContext, throwable)
@@ -117,41 +126,35 @@ class CryptoFlowOpsBusProcessor(
     }
 
     private fun handleRequest(request: Any, context: CryptoRequestContext): Any {
-        return CordaMetrics.Metric.CryptoFlowOpsProcessorExecutionTime.builder()
-            .withTag(CordaMetrics.Tag.OperationName, request::class.java.simpleName)
-            .build()
-            .recordCallable<Any> {
-                when (request) {
-                    is FilterMyKeysFlowQuery -> {
-                        val keys = request.keys.map { ShortHash.of(publicKeyIdFromBytes(it.array())) }
-                        signingService.lookupSigningKeysByPublicKeyShortHash(context.tenantId, keys)
-                    }
+        return when (request) {
+            is FilterMyKeysFlowQuery -> {
+                val keys = request.keys.map { ShortHash.of(publicKeyIdFromBytes(it.array())) }
+                signingService.lookupSigningKeysByPublicKeyShortHash(context.tenantId, keys)
+            }
 
-                    is SignFlowCommand -> {
-                        val publicKey = signingService.schemeMetadata.decodePublicKey(request.publicKey.array())
-                        val signature = signingService.sign(
-                            context.tenantId,
-                            publicKey,
-                            request.signatureSpec.toSignatureSpec(signingService.schemeMetadata),
-                            request.bytes.array(),
-                            request.context.toMap()
-                        )
-                        return CryptoSignatureWithKey(
-                            ByteBuffer.wrap(signingService.schemeMetadata.encodeAsByteArray(signature.by)),
-                            ByteBuffer.wrap(signature.bytes)
-                        )
-                    }
+            is SignFlowCommand -> {
+                val publicKey = signingService.schemeMetadata.decodePublicKey(request.publicKey.array())
+                val signature = signingService.sign(
+                    context.tenantId,
+                    publicKey,
+                    request.signatureSpec.toSignatureSpec(signingService.schemeMetadata),
+                    request.bytes.array(),
+                    request.context.toMap()
+                )
+                CryptoSignatureWithKey(
+                    ByteBuffer.wrap(signingService.schemeMetadata.encodeAsByteArray(signature.by)),
+                    ByteBuffer.wrap(signature.bytes)
+                )
+            }
 
-                    is ByIdsFlowQuery ->
-                        CryptoSigningKeys(signingService.lookupSigningKeysByPublicKeyHashes(
-                            context.tenantId,
-                            request.fullKeyIds.hashes.map { SecureHashImpl(it.algorithm, it.bytes.array()) }
-                        ).map { it.toAvro() })
+            is ByIdsFlowQuery ->
+                CryptoSigningKeys(signingService.lookupSigningKeysByPublicKeyHashes(
+                    context.tenantId,
+                    request.fullKeyIds.hashes.map { SecureHashImpl(it.algorithm, it.bytes.array()) }
+                ).map { it.toAvro() })
 
-                    else ->
-                        throw IllegalArgumentException("Unknown request type ${request::class.java.name}")
-                }
-            }!!
+            else -> throw IllegalArgumentException("Unknown request type ${request::class.java.name}")
+        }
     }
 
     private fun getRequestExpireAt(request: FlowOpsRequest): Instant =
