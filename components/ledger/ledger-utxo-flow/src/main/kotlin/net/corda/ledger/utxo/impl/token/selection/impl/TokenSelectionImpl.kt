@@ -1,9 +1,12 @@
 package net.corda.ledger.utxo.impl.token.selection.impl
 
 import net.corda.flow.external.events.executor.ExternalEventExecutor
+import net.corda.ledger.utxo.impl.token.selection.factories.TokenBalanceQueryExternalEventFactory
 import net.corda.ledger.utxo.impl.token.selection.factories.TokenClaimQueryExternalEventFactory
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.v5.base.annotations.Suspendable
+import net.corda.v5.ledger.utxo.token.selection.TokenBalance
+import net.corda.v5.ledger.utxo.token.selection.TokenBalanceCriteria
 import net.corda.v5.ledger.utxo.token.selection.TokenClaim
 import net.corda.v5.ledger.utxo.token.selection.TokenClaimCriteria
 import net.corda.v5.ledger.utxo.token.selection.TokenSelection
@@ -23,6 +26,14 @@ class TokenSelectionImpl @Activate constructor(
     override fun tryClaim(criteria: TokenClaimCriteria): TokenClaim? {
         return externalEventExecutor.execute(
             TokenClaimQueryExternalEventFactory::class.java,
+            criteria
+        )
+    }
+
+    @Suspendable
+    override fun queryBalance(criteria: TokenBalanceCriteria): TokenBalance {
+        return externalEventExecutor.execute(
+            TokenBalanceQueryExternalEventFactory::class.java,
             criteria
         )
     }

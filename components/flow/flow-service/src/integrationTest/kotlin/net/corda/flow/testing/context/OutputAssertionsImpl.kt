@@ -3,6 +3,7 @@ package net.corda.flow.testing.context
 import java.nio.ByteBuffer
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializer
+import net.corda.data.flow.FlowKey
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.Wakeup
@@ -20,6 +21,7 @@ import net.corda.data.flow.state.checkpoint.Checkpoint
 import net.corda.data.identity.HoldingIdentity
 import net.corda.data.persistence.EntityRequest
 import net.corda.flow.fiber.FlowContinuation
+import net.corda.flow.fiber.cache.FlowFiberCache
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
@@ -40,6 +42,7 @@ class OutputAssertionsImpl(
     private val flowId: String,
     private val sessionInitiatingIdentity: HoldingIdentity? = null,
     private val sessionInitiatedIdentity: HoldingIdentity? = null,
+    private val flowFiberCache: FlowFiberCache,
 ) : OutputAssertions {
 
     private companion object {
@@ -398,6 +401,23 @@ class OutputAssertionsImpl(
                     matchStatusRecord(flowId, FlowStates.KILLED, null, null, null, flowTerminatedReason, it)
                 },
                 "Expected Flow Status: KILLED result = null, errorType = null, error = null, processingTerminatedReason: $flowTerminatedReason"
+            )
+        }
+    }
+
+    override fun flowFiberCacheContainsKey(holdingId: HoldingIdentity, flowId: String) {
+        asserts.add {
+            assertNotNull(
+                flowFiberCache.get(FlowKey(flowId, holdingId)),
+                "Expected flow fiber cache to contain flowKey: $flowId, $holdingId.")
+        }
+    }
+
+    override fun flowFiberCacheDoesNotContainKey(holdingId: HoldingIdentity, flowId: String) {
+        asserts.add {
+            assertNull(
+                flowFiberCache.get(FlowKey(flowId, holdingId)),
+                "Expected flow fiber cache to not contain flowKey: $flowId, $holdingId"
             )
         }
     }
