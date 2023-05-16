@@ -1,7 +1,7 @@
 @Library('corda-shared-build-pipeline-steps@5.1') _
 
 endToEndPipeline(
-    assembleAndCompile: false,
+    assembleAndCompile: true,
     dailyBuildCron: '',
     multiCluster: true,
     gradleTestTargetsToExecute: ['smokeTest', 'e2eTest'],
