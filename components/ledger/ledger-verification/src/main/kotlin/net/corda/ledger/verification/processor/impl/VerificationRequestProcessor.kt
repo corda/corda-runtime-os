@@ -2,6 +2,7 @@ package net.corda.ledger.verification.processor.impl
 
 import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.flow.event.external.ExternalEventResponseErrorType
+import net.corda.data.ledger.persistence.LedgerTypes
 import net.corda.flow.external.events.responses.exceptions.NotAllowedCpkException
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
 import net.corda.flow.utils.toMap
@@ -61,10 +62,11 @@ class VerificationRequestProcessor(
                     } catch (e: Exception) {
                         errorResponse(request.flowExternalEventContext, e)
                     }.also {
-                        CordaMetrics.Metric.UtxoLedgerTransactionVerificationTime
+                        CordaMetrics.Metric.LedgerTransactionVerificationTime
                             .builder()
                             .forVirtualNode(holdingIdentity.shortHash.toString())
                             .withTag(CordaMetrics.Tag.FlowId, request.flowExternalEventContext.flowId)
+                            .withTag(CordaMetrics.Tag.LedgerType, LedgerTypes.UTXO.toString())
                             .build()
                             .record(Duration.between(startTime, Instant.now()))
                     }
