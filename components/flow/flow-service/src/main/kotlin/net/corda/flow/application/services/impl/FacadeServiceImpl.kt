@@ -98,7 +98,15 @@ class FacadeServiceImpl @Activate constructor(
         "transaction-ref": "uuid",
         "recipient": "string"
       }
-    }
+    },
+    "hello": {
+       "in": {
+          "greeting": "string"
+       },
+       "out": {
+          "greeting": "string"
+          }
+       }
   }
 }
 """.trimIndent()

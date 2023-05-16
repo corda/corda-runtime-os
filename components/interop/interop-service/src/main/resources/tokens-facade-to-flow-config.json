@@ -31,6 +31,10 @@
         {
           "facade-method": "spend-reserved-tokens",
           "flow-name": "com.r3.corda.demo.interop.payment.workflows.interop.TokensFlow"
+        },
+        {
+          "facade-method": "hello",
+          "flow-name": "com.r3.corda.testing.interop.FacadeInvocationResponderFlow"
         }
       ]
     }

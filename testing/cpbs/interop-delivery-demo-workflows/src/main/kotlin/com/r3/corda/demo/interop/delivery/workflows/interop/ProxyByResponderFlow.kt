@@ -1,12 +1,10 @@
 package com.r3.corda.demo.interop.delivery.workflows.interop
 
-import com.r3.corda.demo.interop.delivery.contracts.DeliveryContract
 import com.r3.corda.demo.interop.delivery.states.DeliveryState
 import com.r3.corda.demo.interop.delivery.workflows.TransferFlowArgs
 import net.corda.v5.application.flows.ClientRequestBody
 import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.CordaInject
-import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.flows.InitiatedBy
 import net.corda.v5.application.flows.InitiatingFlow
 import net.corda.v5.application.flows.ResponderFlow
@@ -21,12 +19,10 @@ import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.ledger.utxo.UtxoLedgerService
 import org.slf4j.LoggerFactory
 import java.math.BigDecimal
-import java.time.Duration
-import java.time.Instant
 
 
-@InitiatingFlow(protocol = "payments-transfer-protocol")
-class SwapFlow: ClientStartableFlow {
+@InitiatingFlow(protocol = "proxy-by-responder-flow-transfer-protocol")
+class ProxyByResponderFlow: ClientStartableFlow {
 
     private companion object {
         val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -40,9 +36,6 @@ class SwapFlow: ClientStartableFlow {
 
     @CordaInject
     lateinit var ledgerService: UtxoLedgerService
-
-    @CordaInject
-    lateinit var flowEngine: FlowEngine
 
     @CordaInject
     lateinit var flowMessaging: FlowMessaging
@@ -76,32 +69,10 @@ class SwapFlow: ClientStartableFlow {
                 throw CordaRuntimeException("Only the owner of a state can transfer it to a new owner.")
             }
 
-            val outputState = inputState.withNewOwner(newOwnerInfo.name, listOf(ownerInfo.ledgerKeys[0], newOwnerInfo.ledgerKeys[0]))
-
-            val txBuilder = ledgerService.createTransactionBuilder()
-                .setNotary(stateAndRef.state.notaryName)
-                .setTimeWindowBetween(Instant.now(), Instant.now().plusMillis(Duration.ofDays(1).toMillis()))
-                .addInputState(stateAndRef.ref)
-                .addOutputState(outputState)
-                .addCommand(DeliveryContract.Transfer())
-                .addSignatories(outputState.participants)
-
-            val signedTransaction = txBuilder.toSignedTransaction()
-
-            //val result = flowEngine.subFlow(FinalizeFlow(signedTransaction, listOf(ownerInfo.name, newOwnerInfo.name)))
-
             val session = flowMessaging.initiateFlow(newOwnerInfo.name)
             session.send(Payment(toReserve = BigDecimal(100)))
 
-            val finalizationResult = ledgerService.finalize(
-                signedTransaction,
-                listOf(session)
-            )
-            val result = finalizationResult.transaction.id.toString().also {
-                log.info("Telsa Success! Response: $it")
-            }
-
-            return result
+            return "SUCCESS"
         } catch (e: Exception) {
             log.warn("Failed to process utxo flow for request body '$requestBody' because: '${e.message}'")
             throw e
@@ -109,21 +80,15 @@ class SwapFlow: ClientStartableFlow {
     }
 }
 
-@InitiatedBy(protocol = "payments-transfer-protocol")
-class SwapResponderFlow : ResponderFlow {
+@InitiatedBy(protocol = "proxy-by-responder-flow-transfer-protocol")
+class ProxyByResponderFlowResponder : ResponderFlow {
 
     private companion object {
         val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     @CordaInject
-    lateinit var utxoLedgerService: UtxoLedgerService
-
-    @CordaInject
     lateinit var facadeService: FacadeService
-
-    @CordaInject
-    lateinit var memberLookup: MemberLookup
 
     @Suspendable
     override fun call(session: FlowSession) {
@@ -131,7 +96,7 @@ class SwapResponderFlow : ResponderFlow {
             val msg = session.receive(Payment::class.java)
             log.info("Received message: $msg")
 
-            val myAlias = MemberX500Name.parse("C=GB, L=London, O=Bob Alias") //memberLookup.myInfo().name
+            val myAlias = MemberX500Name.parse("C=GB, L=London, O=Bob Alias")
             val facadeId = "org.corda.interop/platform/tokens/v2.0"
             log.info("Interop call: $facadeId, $myAlias, ${msg.interopGroupId}")
             val client : TokensFacade = facadeService.getFacade(facadeId, TokensFacade::class.java, myAlias, msg.interopGroupId)
@@ -139,14 +104,8 @@ class SwapResponderFlow : ResponderFlow {
             val response = responseObject.result.toString()
             log.info(response)
 
-            val finalizationResult = utxoLedgerService.receiveFinality(session) { ledgerTransaction ->
-                val state = ledgerTransaction.outputContractStates.first() as DeliveryState
-                log.info("Verified the transaction/state - ${ledgerTransaction.id}/${state.linearId}")
-            }
-            log.info("Finished responder flow - ${finalizationResult.transaction.id}")
         } catch (e: Exception) {
             log.warn("Exceptionally finished responder flow", e)
         }
-
     }
 }

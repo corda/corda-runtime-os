@@ -35,13 +35,15 @@ class FacadeInvocationFlow : ClientStartableFlow {
         val interopGroupId = getArgument(args, "interopGroupId")
         val facadeId = getArgument(args, "facadeId")
         val methodName = getArgument(args, "methodName")
-        val alias = MemberX500Name.parse(getArgument(args,"alias"))
-        val payload = getArgument(args, "payload")
+        val alias = MemberX500Name.parse(getArgument(args, "alias"))
+        val greeting = getArgument(args, "payload")
 
-        log.info("Calling facade method '$methodName@$facadeId' with payload '$payload' to $alias")
+        log.info("Calling facade method '$methodName@$facadeId' with payload '$greeting' to $alias")
 
-        val client : SampleTokensFacade = facadeService.getFacade(facadeId, SampleTokensFacade::class.java, alias, interopGroupId)
-        val responseObject = client.getHello(payload)
+        val client: SampleTokensFacade =
+            facadeService.getFacade(facadeId, SampleTokensFacade::class.java, alias, interopGroupId)
+
+        val responseObject = client.getHello(greeting)
         val response = responseObject.result.toString()
 
         log.info("Facade responded with '$response'")

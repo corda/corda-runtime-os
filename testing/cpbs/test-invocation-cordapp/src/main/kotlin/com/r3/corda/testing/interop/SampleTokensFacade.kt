@@ -6,12 +6,10 @@ import net.corda.v5.application.interop.binding.FacadeVersions
 import net.corda.v5.application.interop.binding.InteropAction
 import net.corda.v5.application.interop.binding.QualifiedWith
 
-@BindsFacade("/com/r3/tokens/sample")
-@FacadeVersions("v1.0")
+@BindsFacade("org.corda.interop/platform/tokens")
+@FacadeVersions("v1.0", "v2.0")
 interface SampleTokensFacade {
-    @BindsFacadeMethod("say-hello")
+    @BindsFacadeMethod("hello")
     fun getHello(greeting: String): @QualifiedWith("greeting") InteropAction<String>
 
-    @BindsFacadeMethod("get-balance")
-    fun getBalance(greeting: String): @QualifiedWith("greeting") InteropAction<String>
 }
