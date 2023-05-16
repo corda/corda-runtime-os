@@ -2,7 +2,7 @@
 
 endToEndPipeline(
     assembleAndCompile: true,
-    dailyBuildCron: '',
+    dailyBuildCron: 'H 03 * * *',
     multiCluster: true,
     gradleTestTargetsToExecute: ['smokeTest', 'e2eTest'],
     usePackagedCordaHelmChart: false,
