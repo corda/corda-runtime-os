@@ -19,6 +19,9 @@ import java.util.UUID
 
 data class IssueFlowArgs(val amount: String)
 
+data class IssueFlowResult(val transactionId: String, val stateId: String)
+
+
 class IssueFlow : ClientStartableFlow {
 
     private companion object {
@@ -49,7 +52,7 @@ class IssueFlow : ClientStartableFlow {
 
             val myInfo = memberLookup.myInfo()
 
-            val iou = PaymentState(
+            val outputState = PaymentState(
                 amount = flowArgs.amount.toInt(),
                 issuer = myInfo.name,
                 owner = myInfo.name,
@@ -62,13 +65,15 @@ class IssueFlow : ClientStartableFlow {
             val txBuilder = ledgerService.createTransactionBuilder()
                 .setNotary(notary.name)
                 .setTimeWindowBetween(Instant.now(), Instant.now().plusMillis(Duration.ofDays(1).toMillis()))
-                .addOutputState(iou)
+                .addOutputState(outputState)
                 .addCommand(PaymentContract.Issue())
-                .addSignatories(iou.participants)
+                .addSignatories(outputState.participants)
 
             val signedTransaction = txBuilder.toSignedTransaction()
 
-            return flowEngine.subFlow(FinalizeFlow(signedTransaction, listOf()))
+            val transactionId = flowEngine.subFlow(FinalizeFlow(signedTransaction, listOf()))
+
+            return jsonMarshallingService.format(IssueFlowResult(transactionId, outputState.linearId.toString()))
 
         } catch (e: Exception) {
             log.warn("Failed to process utxo flow for request body '$requestBody' because: '${e.message}'")

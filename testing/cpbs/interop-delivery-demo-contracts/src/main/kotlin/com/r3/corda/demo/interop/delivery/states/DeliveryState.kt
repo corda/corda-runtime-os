@@ -8,6 +8,14 @@ import java.security.PublicKey
 import java.util.UUID
 
 
+// Required for serialisation
+data class DehydratedDeliveryState(
+    val amount: Int,
+    val issuerName: String,
+    val ownerName: String,
+    val participants: List<ByteArray>
+)
+
 @BelongsToContract(DeliveryContract::class)
 data class DeliveryState (
     val amount: Int,
@@ -16,6 +24,11 @@ data class DeliveryState (
     val linearId: UUID,
     private val participants: List<PublicKey>
 ) : ContractState {
+
+    fun dehydrate(): DehydratedDeliveryState {
+        val participantBytes = participants.map { it.encoded }
+        return DehydratedDeliveryState(amount, issuer.toString(), owner.toString(), participantBytes)
+    }
 
     fun withNewOwner(newOwner: MemberX500Name, newParticipants: List<PublicKey>): DeliveryState {
         return DeliveryState(amount, owner, newOwner, linearId, newParticipants)

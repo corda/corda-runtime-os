@@ -20,6 +20,9 @@ import java.util.UUID
 
 data class TransferFlowArgs(val newOwner: String, val stateId: UUID)
 
+data class TransferFlowResult(val transactionId: String, val stateId: String)
+
+
 class TransferFlow: ClientStartableFlow {
 
     private companion object {
@@ -79,7 +82,9 @@ class TransferFlow: ClientStartableFlow {
 
             val signedTransaction = txBuilder.toSignedTransaction()
 
-            return flowEngine.subFlow(FinalizeFlow(signedTransaction, listOf(ownerInfo.name,newOwnerInfo.name)))
+            val transactionId = flowEngine.subFlow(FinalizeFlow(signedTransaction, listOf(ownerInfo.name, newOwnerInfo.name)))
+
+            return jsonMarshallingService.format(TransferFlowResult(transactionId, outputState.linearId.toString()))
 
         } catch (e: Exception) {
             log.warn("Failed to process utxo flow for request body '$requestBody' because: '${e.message}'")
