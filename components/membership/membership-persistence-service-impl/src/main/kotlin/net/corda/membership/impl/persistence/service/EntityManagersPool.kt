@@ -3,7 +3,6 @@ package net.corda.membership.impl.persistence.service
 import net.corda.crypto.core.ShortHash
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.schema.CordaDb
-import net.corda.membership.impl.persistence.service.handler.BasePersistenceHandler
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.utilities.minutes
