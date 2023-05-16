@@ -18,6 +18,7 @@ import net.corda.v5.application.interop.parameters.ParameterType
 import net.corda.v5.application.interop.parameters.ParameterTypeLabel
 import net.corda.v5.application.interop.parameters.TypeQualifier
 import net.corda.v5.application.interop.parameters.TypedParameter
+import net.corda.v5.base.annotations.Suspendable
 import java.beans.Introspector
 import java.beans.PropertyDescriptor
 import java.lang.reflect.AnnotatedElement
@@ -78,7 +79,7 @@ internal abstract class BindingContext<T> {
  */
 internal class InterfaceBindingContext(val facade: Facade, private val boundInterface: Class<*>) :
     BindingContext<FacadeInterfaceBinding>() {
-
+    @Suspendable
     override fun createBinding(): FacadeInterfaceBinding {
         // The interface must be annotated with @BindsFacade
         val boundFacadeName = boundInterface.readAnnotation<BindsFacade>().orFail {
@@ -113,7 +114,7 @@ internal class InterfaceBindingContext(val facade: Facade, private val boundInte
             boundMethods
         )
     }
-
+    @Suspendable
     private fun getMethodBinding(method: Method, defaultBoundVersions: Set<String>):
             FacadeMethodBinding? {
         // Ignore methods that are not annotated with @BindsFacadeMethod.
@@ -444,7 +445,7 @@ private class DataClassOutParametersBindingContext(
         "$parent"
 
 }
-
+@Suspendable
 private inline fun <reified T : Annotation> AnnotatedElement.readAnnotation(): T? =
     if (isAnnotationPresent(T::class.java)) getAnnotation(T::class.java) else null
 

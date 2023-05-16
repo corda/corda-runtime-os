@@ -3,6 +3,7 @@ package com.r3.corda.demo.interop.tokens.workflows.interop
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.interop.binding.InteropAction
 import net.corda.v5.application.membership.MemberLookup
+import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.types.MemberX500Name
 import org.slf4j.LoggerFactory
 import java.math.BigDecimal
@@ -28,6 +29,7 @@ class TokensFlow(initialBalances: Map<String, BigDecimal>, private val timeserve
     private val reservations = mutableMapOf<UUID, Reservation>()
     val spendHistory = mutableListOf<Spend>()
 
+    @Suspendable
     override fun getBalance(denomination: String): InteropAction<Double> {
         val totalBalance = balances[denomination] ?: BigDecimal(0)
         var now = timeserver()
@@ -39,12 +41,14 @@ class TokensFlow(initialBalances: Map<String, BigDecimal>, private val timeserve
         return InteropAction.ServerResponse(totalBalance.toDouble() - reserved)
     }
 
+    @Suspendable
     override fun reserveTokensV1(denomination: String, amount: BigDecimal): InteropAction<UUID> {
         log.info("reserveTokensV1 $denomination $amount")
         return InteropAction.ServerResponse(reserveTokensV2(denomination, amount, 24 * 60 * 1000)
             .result.reservationRef)
     }
 
+    @Suspendable
     override fun reserveTokensV2(
         denomination: String,
         amount: BigDecimal,
@@ -59,12 +63,14 @@ class TokensFlow(initialBalances: Map<String, BigDecimal>, private val timeserve
         return InteropAction.ServerResponse(TokenReservation(ref, expirationTimestamp))
     }
 
+    @Suspendable
     override fun releaseReservedTokens(reservationRef: UUID): InteropAction<Unit> {
         reservations.remove(reservationRef)
 
         return InteropAction.ServerResponse(Unit)
     }
 
+    @Suspendable
     override fun spendReservedTokens(
         reservationRef: UUID,
         transactionRef: UUID,

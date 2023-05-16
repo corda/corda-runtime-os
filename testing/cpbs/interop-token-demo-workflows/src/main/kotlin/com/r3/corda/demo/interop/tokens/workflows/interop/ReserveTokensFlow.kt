@@ -18,6 +18,7 @@ class ReserveTokensFlow : ClientStartableFlow {
     private companion object {
         val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
+        @Suspendable
         private fun getArgument(args: Map<String, String>, key: String): String {
             return checkNotNull(args[key]) { "Missing argument '$key'" }
         }
