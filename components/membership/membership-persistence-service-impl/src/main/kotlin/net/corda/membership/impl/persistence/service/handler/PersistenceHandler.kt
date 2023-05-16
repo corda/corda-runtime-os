@@ -58,9 +58,9 @@ internal abstract class BasePersistenceHandler<REQUEST, RESPONSE>(
                     "- 1 " +
                     "- $id " +
                     "- Current: ${curr.nano} " +
-                    "- Since last checkpoint: ${curr.nano - last.nano}ns" +
-                    "- Since last checkpoint: ${curr.toEpochMilli() - last.toEpochMilli()}ms" +
-                    "- Since last checkpoint: ${curr.epochSecond - last.epochSecond}s"
+                    "- Since last checkpoint: ${curr.minusNanos(last.nano.toLong()).nano}ns " +
+                    "- Since last checkpoint: ${curr.toEpochMilli() - last.toEpochMilli()}ms " +
+                    "- Since last checkpoint: ${curr.epochSecond - last.epochSecond}s "
         )
         last = curr
         val virtualNodeInfo = virtualNodeInfoReadService.getByHoldingIdentityShortHash(holdingIdentityShortHash)
@@ -75,7 +75,7 @@ internal abstract class BasePersistenceHandler<REQUEST, RESPONSE>(
                     "- 2 " +
                     "- $id " +
                     "- Current: ${curr.nano} " +
-                    "- Since last checkpoint: ${curr.nano - last.nano}ns" +
+                    "- Since last checkpoint: ${curr.minusNanos(last.nano.toLong()).nano}ns " +
                     "- Since last checkpoint: ${curr.toEpochMilli() - last.toEpochMilli()}ms" +
                     "- Since last checkpoint: ${curr.epochSecond - last.epochSecond}s"
         )
@@ -88,7 +88,7 @@ internal abstract class BasePersistenceHandler<REQUEST, RESPONSE>(
                     "- 3 " +
                     "- $id " +
                     "- Current: ${curr.nano} " +
-                    "- Since last checkpoint: ${curr.nano - last.nano}ns" +
+                    "- Since last checkpoint: ${curr.minusNanos(last.nano.toLong()).nano}ns " +
                     "- Since last checkpoint: ${curr.toEpochMilli() - last.toEpochMilli()}ms" +
                     "- Since last checkpoint: ${curr.epochSecond - last.epochSecond}s"
         )
@@ -102,7 +102,7 @@ internal abstract class BasePersistenceHandler<REQUEST, RESPONSE>(
                             "- 4 " +
                             "- $id " +
                             "- Current: ${curr.nano} " +
-                            "- Since last checkpoint: ${curr.nano - last.nano}ns" +
+                            "- Since last checkpoint: ${curr.minusNanos(last.nano.toLong()).nano}ns " +
                             "- Since last checkpoint: ${curr.toEpochMilli() - last.toEpochMilli()}ms" +
                             "- Since last checkpoint: ${curr.epochSecond - last.epochSecond}s"
                 )
@@ -117,7 +117,7 @@ internal abstract class BasePersistenceHandler<REQUEST, RESPONSE>(
                             "- 5 " +
                             "- $id " +
                             "- Current: ${curr.nano} " +
-                            "- Since last checkpoint: ${curr.nano - last.nano}ns" +
+                            "- Since last checkpoint: ${curr.minusNanos(last.nano.toLong()).nano }ns" +
                             "- Since last checkpoint: ${curr.toEpochMilli() - last.toEpochMilli()}ms" +
                             "- Since last checkpoint: ${curr.epochSecond - last.epochSecond}s"
                 )
@@ -126,8 +126,8 @@ internal abstract class BasePersistenceHandler<REQUEST, RESPONSE>(
                             "- fun <R> transaction(holdingIdentityShortHash: ShortHash, block: (EntityManager) -> R): R " +
                             "- total " +
                             "- $id " +
-                            "- Since start: ${curr.nano - start.nano}ns" +
-                            "- Since start: ${curr.toEpochMilli() - start.toEpochMilli()}ms" +
+                            "- Since start: ${curr.minusNanos(start.nano.toLong()).nano}ns " +
+                            "- Since start: ${curr.toEpochMilli() - start.toEpochMilli()}ms " +
                             "- Since start: ${curr.epochSecond - start.epochSecond}s"
                 )
             }
@@ -185,7 +185,7 @@ internal abstract class BasePersistenceHandler<REQUEST, RESPONSE>(
                         "- fun getEntityManagerFactory(info: VirtualNodeInfo): EntityManagerFactory " +
                         "- total " +
                         "- $id " +
-                        "- Since start: ${curr.nano - start.nano}ns" +
+                        "- Since start: ${curr.minusNanos(start.nano.toLong()).nano}ns" +
                         "- Since start: ${curr.toEpochMilli() - start.toEpochMilli()}ms" +
                         "- Since start: ${curr.epochSecond - start.epochSecond}s"
             )

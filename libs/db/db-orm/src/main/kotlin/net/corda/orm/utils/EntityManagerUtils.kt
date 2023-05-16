@@ -73,7 +73,7 @@ inline fun <R> EntityManagerFactory.transaction(block: (EntityManager) -> R): R 
                     "- 1 " +
                     "- $id " +
                     "- Current: ${curr.nano} " +
-                    "- Since last checkpoint: ${curr.nano - last.nano}ns" +
+                    "- Since last checkpoint: ${curr.minusNanos(last.nano.toLong()).nano}ns " +
                     "- Since last checkpoint: ${curr.toEpochMilli() - last.toEpochMilli()}ms" +
                     "- Since last checkpoint: ${curr.epochSecond - last.epochSecond}s"
         )
@@ -86,7 +86,7 @@ inline fun <R> EntityManagerFactory.transaction(block: (EntityManager) -> R): R 
                     "- 2 " +
                     "- $id " +
                     "- Current: ${curr.nano} " +
-                    "- Since last checkpoint: ${curr.nano - last.nano}ns" +
+                    "- Since last checkpoint: ${curr.minusNanos(last.nano.toLong()).nano}ns " +
                     "- Since last checkpoint: ${curr.toEpochMilli() - last.toEpochMilli()}ms" +
                     "- Since last checkpoint: ${curr.epochSecond - last.epochSecond}s"
         )
@@ -95,7 +95,7 @@ inline fun <R> EntityManagerFactory.transaction(block: (EntityManager) -> R): R 
                     "- inline fun <R> EntityManagerFactory.transaction(block: (EntityManager) -> R): R " +
                     "- total " +
                     "- $id " +
-                    "- Since start: ${curr.nano - start.nano}ns" +
+                    "- Since start: ${curr.minusNanos(start.nano.toLong()).nano}ns " +
                     "- Since start: ${curr.toEpochMilli() - start.toEpochMilli()}ms" +
                     "- Since start: ${curr.epochSecond - start.epochSecond}s"
         )
@@ -144,7 +144,7 @@ inline fun <R> transactionExecutor(entityManager: EntityManager, block: (EntityM
                     "- 1 " +
                     "- $id " +
                     "- Current: ${curr.nano} " +
-                    "- Since last checkpoint: ${curr.nano - last.nano}ns" +
+                    "- Since last checkpoint: ${curr.minusNanos(last.nano.toLong()).nano}ns " +
                     "- Since last checkpoint: ${curr.toEpochMilli() - last.toEpochMilli()}ms" +
                     "- Since last checkpoint: ${curr.epochSecond - last.epochSecond}s"
         )
@@ -157,7 +157,7 @@ inline fun <R> transactionExecutor(entityManager: EntityManager, block: (EntityM
                     "- 2 " +
                     "- $id " +
                     "- Current: ${curr.nano} " +
-                    "- Since last checkpoint: ${curr.nano - last.nano}ns" +
+                    "- Since last checkpoint: ${curr.minusNanos(last.nano.toLong()).nano}ns " +
                     "- Since last checkpoint: ${curr.toEpochMilli() - last.toEpochMilli()}ms" +
                     "- Since last checkpoint: ${curr.epochSecond - last.epochSecond}s"
         )
@@ -170,7 +170,7 @@ inline fun <R> transactionExecutor(entityManager: EntityManager, block: (EntityM
                     "- 3 " +
                     "- $id " +
                     "- Current: ${curr.nano} " +
-                    "- Since last checkpoint: ${curr.nano - last.nano}ns" +
+                    "- Since last checkpoint: ${curr.minusNanos(last.nano.toLong()).nano}ns " +
                     "- Since last checkpoint: ${curr.toEpochMilli() - last.toEpochMilli()}ms" +
                     "- Since last checkpoint: ${curr.epochSecond - last.epochSecond}s"
         )
@@ -184,7 +184,7 @@ inline fun <R> transactionExecutor(entityManager: EntityManager, block: (EntityM
                             "- 4 " +
                             "- $id " +
                             "- Current: ${curr.nano} " +
-                            "- Since last checkpoint: ${curr.nano - last.nano}ns" +
+                            "- Since last checkpoint: ${curr.minusNanos(last.nano.toLong()).nano}ns " +
                             "- Since last checkpoint: ${curr.toEpochMilli() - last.toEpochMilli()}ms" +
                             "- Since last checkpoint: ${curr.epochSecond - last.epochSecond}s"
                 )
@@ -201,7 +201,7 @@ inline fun <R> transactionExecutor(entityManager: EntityManager, block: (EntityM
                         "- 5 " +
                         "- $id " +
                         "- Current: ${curr.nano} " +
-                        "- Since last checkpoint: ${curr.nano - last.nano}ns" +
+                        "- Since last checkpoint: ${curr.minusNanos(last.nano.toLong()).nano}ns" +
                         "- Since last checkpoint: ${curr.toEpochMilli() - last.toEpochMilli()}ms" +
                         "- Since last checkpoint: ${curr.epochSecond - last.epochSecond}s"
             )
@@ -218,7 +218,7 @@ inline fun <R> transactionExecutor(entityManager: EntityManager, block: (EntityM
                         "- 6 " +
                         "- $id " +
                         "- Current: ${curr.nano} " +
-                        "- Since last checkpoint: ${curr.nano - last.nano}ns" +
+                        "- Since last checkpoint: ${curr.minusNanos(last.nano.toLong()).nano}ns" +
                         "- Since last checkpoint: ${curr.toEpochMilli() - last.toEpochMilli()}ms" +
                         "- Since last checkpoint: ${curr.epochSecond - last.epochSecond}s"
             )
@@ -227,7 +227,7 @@ inline fun <R> transactionExecutor(entityManager: EntityManager, block: (EntityM
                         "- inline fun <R> transactionExecutor(entityManager: EntityManager, block: (EntityManager) -> R): R " +
                         "- total " +
                         "- $id " +
-                        "- Since start: ${curr.nano - start.nano}ns" +
+                        "- Since start: ${curr.minusNanos(start.nano.toLong()).nano}ns " +
                         "- Since start: ${curr.toEpochMilli() - start.toEpochMilli()}ms" +
                         "- Since start: ${curr.epochSecond - start.epochSecond}s"
             )

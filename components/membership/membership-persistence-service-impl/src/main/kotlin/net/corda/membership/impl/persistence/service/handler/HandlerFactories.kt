@@ -122,7 +122,7 @@ internal class HandlerFactories(
                         "- $id " +
                         "- Request: ${request.request::class.java.simpleName} " +
                         "- Current: ${persistenceHandlerServices.clock.instant().nano} " +
-                        "- Since last checkpoint: ${curr.nano - last.nano}ns" +
+                        "- Since last checkpoint: ${curr.minusNanos(last.nano.toLong()).nano}ns " +
                         "- Since last checkpoint: ${curr.toEpochMilli() - last.toEpochMilli()}ms" +
                         "- Since last checkpoint: ${curr.epochSecond - last.epochSecond}s"
             )
@@ -136,7 +136,7 @@ internal class HandlerFactories(
                         "- $id " +
                         "- Request: ${request.request::class.java.simpleName} " +
                         "- Current: ${curr.nano} " +
-                        "- Since last checkpoint: ${curr.nano - last.nano}ns" +
+                        "- Since last checkpoint: ${curr.minusNanos(last.nano.toLong()).nano}ns " +
                         "- Since last checkpoint: ${curr.toEpochMilli() - last.toEpochMilli()}ms" +
                         "- Since last checkpoint: ${curr.epochSecond - last.epochSecond}s"
             )
@@ -147,7 +147,7 @@ internal class HandlerFactories(
                         "- total " +
                         "- $id " +
                         "- Request: ${request.request::class.java.simpleName} " +
-                        "- Since start: ${curr.nano - start.nano}ns" +
+                        "- Since start: ${curr.minusNanos(start.nano.toLong()).nano}ns " +
                         "- Since start: ${curr.toEpochMilli() - start.toEpochMilli()}ms" +
                         "- Since start: ${curr.epochSecond - start.epochSecond}s"
             )
