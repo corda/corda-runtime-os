@@ -386,6 +386,11 @@ object CordaMetrics {
         FlowClass("flow.class"),
 
         /**
+         * Flow Id for which the metric is applicable.
+         */
+        FlowId("flow.id"),
+
+        /**
          * The flow suspension action this metric was recorded for.
          */
         FlowSuspensionAction("flow.suspension.action"),
