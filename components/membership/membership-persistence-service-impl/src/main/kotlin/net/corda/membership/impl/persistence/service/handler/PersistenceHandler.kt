@@ -75,19 +75,20 @@ internal abstract class BasePersistenceHandler<REQUEST, RESPONSE>(
                         "- Since last checkpoint: ${curr.epochSecond - last.epochSecond}s "
             )
             last = curr
-            it.transaction(block)
-            curr = myTestClock.instant()
-            logger.info(
-                "DB investigation " +
-                        "- fun <R> transaction(holdingIdentityShortHash: ShortHash, block: (EntityManager) -> R): R " +
-                        "- 2 " +
-                        "- $id " +
-                        "- Current: ${curr.nano} " +
-                        "- Since last checkpoint: ${curr.minusNanos(last.nano.toLong()).nano}ns " +
-                        "- Since last checkpoint: ${curr.toEpochMilli() - last.toEpochMilli()}ms " +
-                        "- Since last checkpoint: ${curr.epochSecond - last.epochSecond}s "
-            )
-            last = curr
+            it.transaction(block).also {
+                curr = myTestClock.instant()
+                logger.info(
+                    "DB investigation " +
+                            "- fun <R> transaction(holdingIdentityShortHash: ShortHash, block: (EntityManager) -> R): R " +
+                            "- 2 " +
+                            "- $id " +
+                            "- Current: ${curr.nano} " +
+                            "- Since last checkpoint: ${curr.minusNanos(last.nano.toLong()).nano}ns " +
+                            "- Since last checkpoint: ${curr.toEpochMilli() - last.toEpochMilli()}ms " +
+                            "- Since last checkpoint: ${curr.epochSecond - last.epochSecond}s "
+                )
+                last = curr
+            }
         }.also {
             curr = myTestClock.instant()
             logger.info(
