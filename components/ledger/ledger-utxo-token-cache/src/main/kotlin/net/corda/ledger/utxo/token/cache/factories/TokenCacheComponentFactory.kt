@@ -5,6 +5,7 @@ import net.corda.flow.external.events.responses.factory.ExternalEventResponseFac
 import net.corda.ledger.utxo.token.cache.converters.EntityConverterImpl
 import net.corda.ledger.utxo.token.cache.converters.EventConverterImpl
 import net.corda.ledger.utxo.token.cache.entities.TokenEvent
+import net.corda.ledger.utxo.token.cache.handlers.TokenBalanceQueryEventHandler
 import net.corda.ledger.utxo.token.cache.handlers.TokenClaimQueryEventHandler
 import net.corda.ledger.utxo.token.cache.handlers.TokenClaimReleaseEventHandler
 import net.corda.ledger.utxo.token.cache.handlers.TokenEventHandler
@@ -43,6 +44,7 @@ class TokenCacheComponentFactory @Activate constructor(
             createHandler(TokenClaimQueryEventHandler(tokenFilterStrategy, recordFactory)),
             createHandler(TokenClaimReleaseEventHandler(recordFactory)),
             createHandler(TokenLedgerChangeEventHandler()),
+            createHandler(TokenBalanceQueryEventHandler(tokenFilterStrategy, recordFactory)),
         )
 
         val tokenCacheEventHandlerFactory = TokenCacheEventProcessorFactoryImpl(
