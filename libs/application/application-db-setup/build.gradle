@@ -9,11 +9,14 @@ dependencies {
     compileOnly 'org.osgi:osgi.core'
     compileOnly 'org.osgi:osgi.annotation'
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
+    compileOnly "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
+    compileOnly "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:$jacksonVersion"
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation 'net.corda:corda-base'
     implementation 'net.corda:corda-db-schema'
     implementation 'net.corda:corda-config-schema'
+    implementation "net.corda:corda-topic-schema"
 
     implementation project(':libs:configuration:configuration-core')
     implementation project(':libs:configuration:configuration-datamodel')

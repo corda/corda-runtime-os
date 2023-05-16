@@ -1,5 +1,10 @@
 package net.corda.application.dbsetup
 
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
+import com.fasterxml.jackson.module.kotlin.KotlinFeature
+import com.fasterxml.jackson.module.kotlin.KotlinModule
+import com.fasterxml.jackson.module.kotlin.readValue
 import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
 import net.corda.db.core.DbPrivilege
@@ -7,7 +12,13 @@ import net.corda.db.core.OSGiDataSourceFactory
 import net.corda.db.schema.CordaDb
 import net.corda.db.schema.DbSchema
 import net.corda.libs.configuration.SmartConfigFactory
+import org.osgi.framework.FrameworkUtil
 import org.slf4j.LoggerFactory
+import java.net.URL
+import java.net.URLDecoder
+import java.nio.charset.Charset
+import java.util.jar.JarEntry
+import java.util.jar.JarFile
 
 // TODO This class bootstraps database, duplicating functionality available via CLI
 // As it duplicates some classes from tools/plugins/initial-config/src/main/kotlin/net/corda/cli/plugin/, it requires
@@ -50,6 +61,17 @@ class PostgresDbSetup(
         "$dbUrl?user=$superUser&password=$superUserPassword"
     }
 
+    private val mapper: ObjectMapper = ObjectMapper(YAMLFactory()).registerModule(
+        KotlinModule.Builder()
+            .withReflectionCacheSize(512)
+            .configure(KotlinFeature.NullToEmptyCollection, true)
+            .configure(KotlinFeature.NullToEmptyMap, true)
+            .configure(KotlinFeature.NullIsSameAsDefault, false)
+            .configure(KotlinFeature.SingletonSupport, false)
+            .configure(KotlinFeature.StrictNullChecks, false)
+            .build()
+    )
+
     override fun run() {
         if (!dbInitialised()) {
             log.info("Initialising DB.")
@@ -58,9 +80,74 @@ class PostgresDbSetup(
             populateConfigDb()
             createUserConfig("admin", "admin")
             createDbUsersAndGrants()
+            createTopics()
         } else {
             log.info("Table config.config exists in $dbSuperUserUrl, skipping DB initialisation.")
         }
+    }
+
+    fun createTopics() {
+        val resourceGetter: (String) -> List<URL> = { path ->
+            val bundle = FrameworkUtil.getBundle(net.corda.schema.Schemas::class.java)
+            bundle.getResources(path).toList().filterNotNull()
+        }
+        val files: List<URL> = resourceGetter("net/corda/schema")
+
+        @Suppress("UNCHECKED_CAST")
+        val topicDefinitions: List<TopicDefinitions> =
+            extractResourcesFromJars(files, listOf("yml", "yaml")).values.toList() as List<TopicDefinitions>
+        val topicConfigs = topicDefinitions.flatMap { it: TopicDefinitions ->
+            it.topics.values
+        }
+        log.info("Files list here\n $files")
+        log.info("topic definitions list here\n $topicDefinitions")
+        log.info("topicConfigs list here\n$topicConfigs")
+        var count = 0
+        for (topicValue in topicConfigs) {
+            count+=1
+            log.info("Here is topic $count from the list = ${topicValue.name}")
+        }
+        log.info("Here is the total from the list: $count")
+    }
+    data class TopicConfig(
+        val name: String,
+        val consumers: List<String>,
+        val producers: List<String>,
+        val config: Map<String, String> = emptyMap()
+    )
+    data class TopicDefinitions(
+        val topics: Map<String, TopicConfig>
+    )
+    fun collectJars(
+        files: List<URL>,
+        jarFactory: (String) -> JarFile = ::JarFile
+    ): List<JarFile> {
+        return files
+            .filter { it.protocol == "jar" }
+            .map {
+                val jarPath = it.path.substringAfter("file:").substringBeforeLast("!")
+                jarFactory(URLDecoder.decode(jarPath, Charset.defaultCharset()))
+            }
+    }
+
+    fun extractResourcesFromJars(
+        files: List<URL>,
+        extensions: List<String>,
+        jars: List<JarFile> = collectJars(files),
+        getEntries: (JarFile) -> List<JarEntry> = { jar: JarFile -> jar.entries().toList() }
+    ): Map<String, *> {
+        return jars.flatMap { jar: JarFile ->
+            val yamlFiles = getEntries(jar).filter {
+                extensions.contains(it.name.substringAfterLast("."))
+            }
+
+            yamlFiles.map { entry: JarEntry ->
+                val data: String = jar.getInputStream(entry)
+                    .bufferedReader(Charset.defaultCharset()).use { it.readText() }
+                val parsedData: TopicDefinitions = mapper.readValue(data)
+                entry.name to parsedData
+            }
+        }.toMap()
     }
 
     private fun populateConfigDb() {
