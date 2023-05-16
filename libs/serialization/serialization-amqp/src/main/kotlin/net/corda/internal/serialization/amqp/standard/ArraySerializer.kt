@@ -122,13 +122,14 @@ open class ArraySerializer(override val type: Type, factory: LocalSerializerFact
 }
 
 // Boxed Character arrays required a specialisation to handle the type conversion properly when populating
-// the array since Kotlin won't allow an implicit cast from Int (as they're stored as 16bit ints) to Char
+// the array since Kotlin won't allow an implicit cast from Int (as they're stored as 16bit ints) to Char.
+// This type conversion is handled by [CharacterAsIntegerSerializer].
 class CharArraySerializer(factory: LocalSerializerFactory) : ArraySerializer(Array<Char>::class.java, factory) {
     override fun <T> List<T>.toArrayOfType(type: Type): Any {
         val elementType = type.asClass()
         val list = this
         return java.lang.reflect.Array.newInstance(elementType, this.size).apply {
-            (0..lastIndex).forEach { java.lang.reflect.Array.set(this, it, (list[it] as Int).toChar()) }
+            (0..lastIndex).forEach { java.lang.reflect.Array.set(this, it, list[it]) }
         }
     }
 }
