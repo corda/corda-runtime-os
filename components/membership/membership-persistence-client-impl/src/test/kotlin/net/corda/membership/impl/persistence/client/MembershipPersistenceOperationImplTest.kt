@@ -11,6 +11,7 @@ import net.corda.data.membership.db.response.query.PersistenceFailedResponse
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.schema.Schemas.Membership.MEMBERSHIP_DB_ASYNC_TOPIC
+import net.corda.test.util.time.TestClock
 import net.corda.utilities.Either
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.assertj.core.api.Assertions.assertThat
@@ -52,9 +53,11 @@ class MembershipPersistenceOperationImplTest {
     private val sender = mock<RPCSender<MembershipPersistenceRequest, MembershipPersistenceResponse>> {
         on { sendRequest(any()) } doReturn CompletableFuture.completedFuture(response)
     }
+    private val clock = TestClock(Instant.ofEpochSecond(100))
     private val operation = MembershipPersistenceOperationImpl(
         sender,
-        request
+        request,
+        clock,
     ) {
         Either.Left(5)
     }
@@ -92,6 +95,7 @@ class MembershipPersistenceOperationImplTest {
             val operation = MembershipPersistenceOperationImpl(
                 null,
                 request,
+                clock,
             ) {
                 Either.Left(5)
             }
@@ -155,6 +159,7 @@ class MembershipPersistenceOperationImplTest {
             val operation = MembershipPersistenceOperationImpl(
                 sender,
                 request,
+                clock,
             ) {
                 payload = it
                 Either.Left(43)
@@ -170,6 +175,7 @@ class MembershipPersistenceOperationImplTest {
             val operation = MembershipPersistenceOperationImpl<Int>(
                 sender,
                 request,
+                clock,
             ) {
                 throw IllegalArgumentException("nop")
             }
@@ -186,6 +192,7 @@ class MembershipPersistenceOperationImplTest {
             val operation = MembershipPersistenceOperationImpl<Int>(
                 sender,
                 request,
+                clock,
             ) {
                 throw CordaRuntimeException("nop")
             }

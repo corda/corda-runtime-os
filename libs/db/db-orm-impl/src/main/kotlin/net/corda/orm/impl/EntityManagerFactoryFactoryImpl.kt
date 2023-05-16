@@ -10,6 +10,8 @@ import org.hibernate.jpa.boot.internal.PersistenceUnitInfoDescriptor
 import org.hibernate.jpa.boot.spi.EntityManagerFactoryBuilder
 import org.osgi.service.component.annotations.Component
 import org.slf4j.LoggerFactory
+import java.time.Instant
+import java.util.UUID
 import javax.persistence.EntityManagerFactory
 import javax.persistence.spi.PersistenceUnitInfo
 
@@ -28,6 +30,7 @@ class EntityManagerFactoryFactoryImpl(
     companion object {
         private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
+    private val clock = java.time.Clock.systemUTC()
 
     /**
      * [EntityManagerFactory] wrapper that closes [CloseableDataSource] when wrapped [EntityManagerFactory] is closed
@@ -71,6 +74,10 @@ class EntityManagerFactoryFactoryImpl(
         classLoaders: List<ClassLoader>,
         configuration: EntityManagerConfiguration
     ): EntityManagerFactory {
+        val start = clock.instant()
+        var curr: Instant
+        var last = start
+        val id = UUID.randomUUID()
         log.info("Creating for $persistenceUnitName")
 
         val props = mapOf(
@@ -83,10 +90,26 @@ class EntityManagerFactoryFactoryImpl(
             //
             // TODO - statistics integration isn't working in OSGi.
             // https://r3-cev.atlassian.net/browse/CORE-7168
-            //"hibernate.generate_statistics" to true.toString(),
+            "hibernate.generate_statistics" to true.toString(),
+            "hibernate.show_sql" to true.toString(),
+            "hibernate.format_sql" to true.toString(),
             "javax.persistence.validation.mode" to "none"
         ).toProperties()
         props[AvailableSettings.CLASSLOADERS] = classLoaders
+
+        curr = clock.instant()
+        log.info(
+            "DB investigation " +
+                    "- override fun create(persistenceUnitName: String, entities: List<String>, classLoaders: " +
+                    "List<ClassLoader>, configuration: EntityManagerConfiguration): EntityManagerFactory " +
+                    "- 1 " +
+                    "- $id " +
+                    "- Current: ${curr.nano} " +
+                    "- Since last checkpoint: ${curr.minusNanos(last.nano.toLong()).nano}ns " +
+                    "- Since last checkpoint: ${curr.toEpochMilli() - last.toEpochMilli()}ms" +
+                    "- Since last checkpoint: ${curr.epochSecond - last.epochSecond}s"
+        )
+        last = curr
 
         val persistenceUnitInfo = CustomPersistenceUnitInfo(
             persistenceUnitName,
@@ -94,9 +117,73 @@ class EntityManagerFactoryFactoryImpl(
             props,
             configuration.dataSource
         )
+        curr = clock.instant()
+        log.info(
+            "DB investigation " +
+                    "- override fun create(persistenceUnitName: String, entities: List<String>, classLoaders: " +
+                    "List<ClassLoader>, configuration: EntityManagerConfiguration): EntityManagerFactory " +
+                    "- 2 " +
+                    "- $id " +
+                    "- Current: ${curr.nano} " +
+                    "- Since last checkpoint: ${curr.minusNanos(last.nano.toLong()).nano}ns " +
+                    "- Since last checkpoint: ${curr.toEpochMilli() - last.toEpochMilli()}ms" +
+                    "- Since last checkpoint: ${curr.epochSecond - last.epochSecond}s"
+        )
+        last = curr
 
-        val entityManagerFactory = entityManagerFactoryBuilderFactory(persistenceUnitInfo).build()
-        return EntityManagerFactoryWrapper(entityManagerFactory, configuration.dataSource)
+        val entityManagerFactory = entityManagerFactoryBuilderFactory(persistenceUnitInfo).also {
+            curr = clock.instant()
+            log.info(
+                "DB investigation " +
+                        "- override fun create(persistenceUnitName: String, entities: List<String>, classLoaders: " +
+                        "List<ClassLoader>, configuration: EntityManagerConfiguration): EntityManagerFactory " +
+                        "- 3 " +
+                        "- $id " +
+                        "- Current: ${curr.nano} " +
+                        "- Since last checkpoint: ${curr.minusNanos(last.nano.toLong()).nano}ns " +
+                        "- Since last checkpoint: ${curr.toEpochMilli() - last.toEpochMilli()}ms" +
+                        "- Since last checkpoint: ${curr.epochSecond - last.epochSecond}s"
+            )
+            last = curr
+        }.build().also {
+            curr = clock.instant()
+            log.info(
+                "DB investigation " +
+                        "- override fun create(persistenceUnitName: String, entities: List<String>, classLoaders: " +
+                        "List<ClassLoader>, configuration: EntityManagerConfiguration): EntityManagerFactory " +
+                        "- 4 " +
+                        "- $id " +
+                        "- Current: ${curr.nano} " +
+                        "- Since last checkpoint: ${curr.minusNanos(last.nano.toLong()).nano}ns " +
+                        "- Since last checkpoint: ${curr.toEpochMilli() - last.toEpochMilli()}ms" +
+                        "- Since last checkpoint: ${curr.epochSecond - last.epochSecond}s"
+            )
+            last = curr
+        }
+        return EntityManagerFactoryWrapper(entityManagerFactory, configuration.dataSource).also {
+            curr = clock.instant()
+            log.info(
+                "DB investigation " +
+                        "- override fun create(persistenceUnitName: String, entities: List<String>, classLoaders: " +
+                        "List<ClassLoader>, configuration: EntityManagerConfiguration): EntityManagerFactory " +
+                        "- 5 " +
+                        "- $id " +
+                        "- Current: ${curr.nano} " +
+                        "- Since last checkpoint: ${curr.minusNanos(last.nano.toLong()).nano}ns " +
+                        "- Since last checkpoint: ${curr.toEpochMilli() - last.toEpochMilli()}ms" +
+                        "- Since last checkpoint: ${curr.epochSecond - last.epochSecond}s"
+            )
+            log.info(
+                "DB investigation " +
+                        "- override fun create(persistenceUnitName: String, entities: List<String>, classLoaders: " +
+                        "List<ClassLoader>, configuration: EntityManagerConfiguration): EntityManagerFactory " +
+                        "- total " +
+                        "- $id " +
+                        "- Since start: ${curr.minusNanos(start.nano.toLong()).nano}ns " +
+                        "- Since start: ${curr.toEpochMilli() - start.toEpochMilli()}ms " +
+                        "- Since start: ${curr.epochSecond - start.epochSecond}s"
+            )
+        }
     }
 }
 

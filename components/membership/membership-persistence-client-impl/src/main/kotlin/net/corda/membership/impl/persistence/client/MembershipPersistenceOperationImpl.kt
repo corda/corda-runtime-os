@@ -11,6 +11,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.Membership.MEMBERSHIP_DB_ASYNC_TOPIC
 import net.corda.utilities.Either
 import net.corda.utilities.concurrent.getOrThrow
+import net.corda.utilities.time.Clock
 import org.slf4j.LoggerFactory
 import java.time.Duration
 import java.util.concurrent.TimeoutException
@@ -28,7 +29,8 @@ import java.util.concurrent.TimeoutException
 internal class MembershipPersistenceOperationImpl<T>(
     private val sender: RPCSender<MembershipPersistenceRequest, MembershipPersistenceResponse>?,
     private val request: MembershipPersistenceRequest,
-    private val convertResult: (Any?) -> Either<T, String>,
+    private val clock: Clock,
+    private val convertResult: (Any?) -> Either<T, String>
 ) : MembershipPersistenceOperation<T> {
     private companion object {
         const val RPC_TIMEOUT_MS = 10000L
@@ -37,16 +39,22 @@ internal class MembershipPersistenceOperationImpl<T>(
 
     fun send(): Either<T, MembershipPersistenceResult.Failure<T>> {
         if (sender == null) {
-            val failureReason = "Persistence client could not send persistence request because the RPC sender has not been initialised."
+            val failureReason = "Persistence client could not send persistence request because the RPC sender " +
+                    "has not been initialised."
             logger.warn(failureReason)
             return Either.Right(MembershipPersistenceResult.Failure(failureReason))
         }
         val requestId = request.context.requestId
-        logger.info("Sending membership persistence RPC request ID: $requestId.")
+        logger.info(
+            "Sending membership persistence RPC request ${request.request::class.java.simpleName} with ID: $requestId."
+        )
         return try {
+            val sendTime = clock.instant()
             val response = sender
                 .sendRequest(request)
                 .getOrThrow(Duration.ofMillis(RPC_TIMEOUT_MS))
+            logger.info("Persistence operation ${request.request::class.java.simpleName} with ID $requestId took " +
+                    "${clock.instant().minusMillis(sendTime.toEpochMilli()).toEpochMilli()}ms")
             val payload = response.payload
             val context = response.context
             if (context.holdingIdentity != request.context.holdingIdentity) {

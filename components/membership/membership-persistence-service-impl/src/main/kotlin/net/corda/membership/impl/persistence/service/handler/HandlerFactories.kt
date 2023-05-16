@@ -38,6 +38,9 @@ import net.corda.membership.mtls.allowed.list.service.AllowedCertificatesReaderW
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.utilities.time.Clock
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
+import org.slf4j.LoggerFactory
+import java.time.Instant
+import java.util.UUID
 
 @Suppress("LongParameterList")
 internal class HandlerFactories(
@@ -51,6 +54,9 @@ internal class HandlerFactories(
     platformInfoProvider: PlatformInfoProvider,
     allowedCertificatesReaderWriterService: AllowedCertificatesReaderWriterService,
 ) {
+    companion object {
+        private val logger = LoggerFactory.getLogger(this::class.java)
+    }
     val persistenceHandlerServices = PersistenceHandlerServices(
         clock,
         dbConnectionManager,
@@ -103,6 +109,48 @@ internal class HandlerFactories(
     }
 
     fun handle(request: MembershipPersistenceRequest): Any? {
-        return getHandler(request.request::class.java).invoke(request.context, request.request)
+        val start = persistenceHandlerServices.clock.instant()
+        var curr: Instant
+        var last = start
+        val id = UUID.randomUUID()
+        return getHandler(request.request::class.java).also {
+            curr = persistenceHandlerServices.clock.instant()
+            logger.info(
+                "DB investigation " +
+                        "- fun handle(request: MembershipPersistenceRequest): Any? " +
+                        "- 1 " +
+                        "- $id " +
+                        "- Request: ${request.request::class.java.simpleName} " +
+                        "- Current: ${persistenceHandlerServices.clock.instant().nano} " +
+                        "- Since last checkpoint: ${curr.minusNanos(last.nano.toLong()).nano}ns " +
+                        "- Since last checkpoint: ${curr.toEpochMilli() - last.toEpochMilli()}ms" +
+                        "- Since last checkpoint: ${curr.epochSecond - last.epochSecond}s"
+            )
+            last = curr
+        }.invoke(request.context, request.request).also { _ ->
+            curr = persistenceHandlerServices.clock.instant()
+            logger.info(
+                "DB investigation " +
+                        "- fun handle(request: MembershipPersistenceRequest): Any? " +
+                        "- 2 " +
+                        "- $id " +
+                        "- Request: ${request.request::class.java.simpleName} " +
+                        "- Current: ${curr.nano} " +
+                        "- Since last checkpoint: ${curr.minusNanos(last.nano.toLong()).nano}ns " +
+                        "- Since last checkpoint: ${curr.toEpochMilli() - last.toEpochMilli()}ms" +
+                        "- Since last checkpoint: ${curr.epochSecond - last.epochSecond}s"
+            )
+
+            logger.info(
+                "DB investigation " +
+                        "- fun handle(request: MembershipPersistenceRequest): Any? " +
+                        "- total " +
+                        "- $id " +
+                        "- Request: ${request.request::class.java.simpleName} " +
+                        "- Since start: ${curr.minusNanos(start.nano.toLong()).nano}ns " +
+                        "- Since start: ${curr.toEpochMilli() - start.toEpochMilli()}ms" +
+                        "- Since start: ${curr.epochSecond - start.epochSecond}s"
+            )
+        }
     }
 }

@@ -59,7 +59,8 @@ abstract class AbstractPersistenceClient(
         return MembershipPersistenceOperationImpl(
             rpcSender,
             this,
-            convertResult,
+            clock,
+            convertResult
         )
     }
 

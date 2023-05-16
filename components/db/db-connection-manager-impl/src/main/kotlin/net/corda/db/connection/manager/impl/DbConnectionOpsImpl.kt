@@ -12,7 +12,9 @@ import net.corda.orm.EntityManagerFactoryFactory
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.JpaEntitiesSet
 import net.corda.utilities.debug
+import net.corda.utilities.time.UTCClock
 import org.slf4j.LoggerFactory
+import java.time.Instant
 import java.util.UUID
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
@@ -29,6 +31,8 @@ class DbConnectionOpsImpl(
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
+
+    private val clock = UTCClock()
 
     override fun getClusterDataSource(): CloseableDataSource =
         dbConnectionsRepository.getClusterDataSource()
@@ -83,13 +87,52 @@ class DbConnectionOpsImpl(
     override fun createEntityManagerFactory(connectionId: UUID, entitiesSet: JpaEntitiesSet):
             EntityManagerFactory {
         logger.info("Loading DB connection details for $connectionId")
+        val start = clock.instant()
+        var curr: Instant
+        var last = start
+
         val dataSource = dbConnectionsRepository.create(connectionId) ?:
         throw DBConfigurationException("Details for $connectionId cannot be found")
+        curr = clock.instant()
+        logger.info(
+            "DB investigation " +
+                    "- override fun createEntityManagerFactory(connectionId: UUID, entitiesSet: JpaEntitiesSet): EntityManagerFactory " +
+                    "- 1 " +
+                    "- $connectionId " +
+                    "- Current: ${curr.nano} " +
+                    "- Since last checkpoint: ${curr.minusNanos(last.nano.toLong()).nano}ns " +
+                    "- Since last checkpoint: ${curr.toEpochMilli() - last.toEpochMilli()}ms" +
+                    "- Since last checkpoint: ${curr.epochSecond - last.epochSecond}s"
+        )
+        last = curr
         return entityManagerFactoryFactory.create(
             connectionId.toString(),
             entitiesSet.classes.toList(),
             DbEntityManagerConfiguration(dataSource),
-        )
+        ).also {
+            curr = clock.instant()
+            logger.info(
+                "DB investigation " +
+                        "- override fun createEntityManagerFactory(connectionId: UUID, entitiesSet: " +
+                        "JpaEntitiesSet): EntityManagerFactory " +
+                        "- 2 " +
+                        "- $connectionId " +
+                        "- Current: ${curr.nano} " +
+                        "- Since last checkpoint: ${curr.minusNanos(last.nano.toLong()).nano}ns " +
+                        "- Since last checkpoint: ${curr.toEpochMilli() - last.toEpochMilli()}ms" +
+                        "- Since last checkpoint: ${curr.epochSecond - last.epochSecond}s"
+            )
+            logger.info(
+                "DB investigation " +
+                        "- override fun createEntityManagerFactory(connectionId: UUID, entitiesSet: " +
+                        "JpaEntitiesSet): EntityManagerFactory " +
+                        "- total " +
+                        "- $connectionId " +
+                        "- Since start: ${curr.minusNanos(start.nano.toLong()).nano}ns " +
+                        "- Since start: ${curr.toEpochMilli() - start.toEpochMilli()}ms" +
+                        "- Since start: ${curr.epochSecond - start.epochSecond}s"
+            )
+        }
     }
 
     private fun createManagerFactory(name: String, dataSource: CloseableDataSource): EntityManagerFactory {
