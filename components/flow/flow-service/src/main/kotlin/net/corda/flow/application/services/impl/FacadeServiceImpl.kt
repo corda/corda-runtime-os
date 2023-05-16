@@ -55,61 +55,113 @@ class FacadeServiceImpl @Activate constructor(
         return jsonMarshallingService.format(facadeResponse)
     }
 
-    @Suppress("UNUSED_PARAMETER")
     private fun facadeLookup(facadeId: String): Facade {
+        val facades = mapOf(
+            "org.corda.interop/platform/tokens/v2.0" to
+                    """{
+                      "id": "org.corda.interop/platform/tokens/v2.0",
+                      "aliases": {
+                        "denomination": "string (org.corda.interop/platform/tokens/types/denomination/1.0)"
+                      },
+                      "queries": {
+                        "get-balance": {
+                          "in": {
+                            "denomination": "denomination"
+                          },
+                          "out": {
+                            "balance": "decimal"
+                          }
+                        }
+                      },
+                      "commands": {
+                        "reserve-tokens": {
+                          "in": {
+                            "denomination": "denomination",
+                            "amount": "decimal",
+                            "ttl-ms": "decimal"
+                          },
+                          "out": {
+                            "reservation-ref": "uuid",
+                            "expiration-timestamp": "timestamp"
+                          }
+                        },
+                        "release-reserved-tokens": {
+                          "in": {
+                            "reservation-ref": "uuid"
+                          }
+                        },
+                        "spend-reserved-tokens": {
+                          "in": {
+                            "reservation-ref": "uuid",
+                            "transaction-ref": "uuid",
+                            "recipient": "string"
+                          }
+                        },
+                        "hello": {
+                           "in": {
+                              "greeting": "string"
+                           },
+                           "out": {
+                              "greeting": "string"
+                              }
+                           }
+                      }
+                    }""".trimIndent(),
+            "org.corda.interop/platform/tokens/v1.0" to
+                    """
+                        {
+                          "id": "org.corda.interop/platform/tokens/v1.0",
+                          "aliases": {
+                            "denomination": "string (org.corda.interop/platform/tokens/types/denomination/1.0)"
+                          },
+                          "queries": {
+                            "get-balance": {
+                              "in": {
+                                "denomination": "denomination"
+                              },
+                              "out": {
+                                "balance": "decimal"
+                              }
+                            }
+                          },
+                          "commands": {
+                            "hello": {
+                                    "in": {
+                                        "greeting": "string"
+                                    },
+                                    "out": {
+                                        "greeting": "string"
+                                    }
+                                },
+                            "reserve-tokens": {
+                              "in": {
+                                "denomination": "denomination",
+                                "amount": "decimal"
+                              },
+                              "out": {
+                                "reservation-ref": "uuid"
+                              }
+                            },
+                            "release-reserved-tokens": {
+                              "in": {
+                                "reservation-ref": "uuid"
+                              }
+                            },
+                            "spend-reserved-tokens": {
+                              "in": {
+                                "reservation-ref": "uuid",
+                                "transaction-ref": "uuid",
+                                "recipient": "string"
+                              }
+                            }
+                          }
+                        }
+                    """.trimIndent()
+        )
         return try {
             AccessController.doPrivileged(PrivilegedExceptionAction {
                 FacadeReaders.JSON.read(
-                    """{
-  "id": "org.corda.interop/platform/tokens/v2.0",
-  "aliases": {
-    "denomination": "string (org.corda.interop/platform/tokens/types/denomination/1.0)"
-  },
-  "queries": {
-    "get-balance": {
-      "in": {
-        "denomination": "denomination"
-      },
-      "out": {
-        "balance": "decimal"
-      }
-    }
-  },
-  "commands": {
-    "reserve-tokens": {
-      "in": {
-        "denomination": "denomination",
-        "amount": "decimal",
-        "ttl-ms": "decimal"
-      },
-      "out": {
-        "reservation-ref": "uuid",
-        "expiration-timestamp": "timestamp"
-      }
-    },
-    "release-reserved-tokens": {
-      "in": {
-        "reservation-ref": "uuid"
-      }
-    },
-    "spend-reserved-tokens": {
-      "in": {
-        "reservation-ref": "uuid",
-        "transaction-ref": "uuid",
-        "recipient": "string"
-      }
-    },
-    "hello": {
-       "in": {
-          "greeting": "string"
-       },
-       "out": {
-          "greeting": "string"
-          }
-       }
-  }
-}
-""".trimIndent()
+                    facades.get(facadeId) ?: facades.get("org.corda.interop/platform/tokens/v2.0")!!
                 )
             })
         } catch (e: PrivilegedActionException) {

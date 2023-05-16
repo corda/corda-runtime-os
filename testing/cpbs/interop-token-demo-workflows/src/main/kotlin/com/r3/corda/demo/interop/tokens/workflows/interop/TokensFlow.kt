@@ -4,6 +4,7 @@ import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.interop.binding.InteropAction
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.base.types.MemberX500Name
+import org.slf4j.LoggerFactory
 import java.math.BigDecimal
 import java.time.ZonedDateTime
 import java.time.temporal.ChronoUnit
@@ -15,6 +16,10 @@ data class Spend(val reservation: Reservation, val transactionRef: UUID, val rec
 
 class TokensFlow(initialBalances: Map<String, BigDecimal>, private val timeserver: () -> ZonedDateTime) :
      FacadeDispatcherFlow(), TokensFacade {
+
+    private companion object {
+        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
+    }
 
     @CordaInject
     lateinit var memberLookup: MemberLookup
@@ -35,6 +40,7 @@ class TokensFlow(initialBalances: Map<String, BigDecimal>, private val timeserve
     }
 
     override fun reserveTokensV1(denomination: String, amount: BigDecimal): InteropAction<UUID> {
+        log.info("reserveTokensV1 $denomination $amount")
         return InteropAction.ServerResponse(reserveTokensV2(denomination, amount, 24 * 60 * 1000)
             .result.reservationRef)
     }
@@ -44,6 +50,7 @@ class TokensFlow(initialBalances: Map<String, BigDecimal>, private val timeserve
         amount: BigDecimal,
         timeToLiveMs: Long
     ): InteropAction<TokenReservation> {
+        log.info("reserveTokensV2 $denomination $amount")
         val ref = UUID.randomUUID()
         val expirationTimestamp = timeserver().plus(timeToLiveMs, ChronoUnit.MILLIS)
 

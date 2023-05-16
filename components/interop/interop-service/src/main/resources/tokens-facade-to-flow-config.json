@@ -1,15 +1,19 @@
 {
   "facade-flow-mapping": [
     {
-      "facade-id": "/com/r3/tokens/sample/v1.0",
+      "facade-id": "org.corda.interop/platform/tokens/v1.0",
       "facade-method-mapping": [
         {
-          "facade-method": "say-hello",
-          "flow-name": "com.r3.corda.testing.interop.FacadeInvocationResponderFlow"
+          "facade-method": "hello",
+          "flow-name": "com.r3.corda.demo.interop.tokens.workflows.interop.TokensFlow"
         },
         {
           "facade-method": "get-balance",
-          "flow-name": "com.r3.corda.testing.interop.FacadeInvocationResponderFlow"
+          "flow-name": "com.r3.corda.demo.interop.tokens.workflows.interop.TokensFlow"
+        },
+        {
+          "facade-method": "reserve-tokens",
+          "flow-name": "com.r3.corda.demo.interop.payment.workflows.interop.TokensFlow"
         }
       ]
     },
@@ -18,23 +22,23 @@
       "facade-method-mapping": [
         {
           "facade-method": "get-balance",
-          "flow-name": "com.r3.corda.demo.interop.payment.workflows.interop.TokensFlow"
+          "flow-name": "com.r3.corda.demo.interop.tokens.workflows.interop.TokensFlow"
         },
         {
           "facade-method": "reserve-tokens",
-          "flow-name": "com.r3.corda.demo.interop.payment.workflows.interop.TokensFlow"
+          "flow-name": "com.r3.corda.demo.interop.tokens.workflows.interop.TokensFlow"
         },
         {
           "facade-method": "release-reserved-tokens",
-          "flow-name": "com.r3.corda.demo.interop.payment.workflows.interop.TokensFlow"
+          "flow-name": "com.r3.corda.demo.interop.tokens.workflows.interop.TokensFlow"
         },
         {
           "facade-method": "spend-reserved-tokens",
-          "flow-name": "com.r3.corda.demo.interop.payment.workflows.interop.TokensFlow"
+          "flow-name": "com.r3.corda.demo.interop.tokens.workflows.interop.TokensFlow"
         },
         {
           "facade-method": "hello",
-          "flow-name": "com.r3.corda.testing.interop.FacadeInvocationResponderFlow"
+          "flow-name": "com.r3.corda.demo.interop.tokens.workflows.interop.TokensFlow"
         }
       ]
     }
