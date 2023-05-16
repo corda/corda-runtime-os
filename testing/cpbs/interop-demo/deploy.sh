@@ -68,11 +68,11 @@ echo "Step Group Policy for $cpi and Identity ${identity1[@]}"
 cd ..
 echo "Installing cpi for group $cpi"
 cd corda-runtime-os
-./gradlew testing:cpbs:interop-delivery-demo-workflows:cpb -x test
+./gradlew testing:cpbs:interop-token-demo-workflows:cpb -x test
 ./gradlew notary-plugins:notary-plugin-non-validating:notary-plugin-non-validating-server:cpb -x test
 
 cd ../register-member
-cp ../corda-runtime-os/testing/cpbs/interop-delivery-demo-workflows/build/libs/interop-delivery-demo-workflows-5.1.0-INTEROP.0-SNAPSHOT-package.cpb ./
+cp ../corda-runtime-os/testing/cpbs/interop-token-demo-workflows/build/libs/interop-token-demo-workflows-5.1.0-INTEROP.0-SNAPSHOT-package.cpb ./
 cp ../corda-runtime-os/notary-plugins/notary-plugin-non-validating/notary-plugin-non-validating-server/build/libs/notary-plugin-non-validating-server-5.1.0-INTEROP.0-SNAPSHOT-package.cpb ./
 
 cat > gradle-plugin-default-key.pem << EOF
@@ -98,7 +98,7 @@ keytool -exportcert -rfc -alias "signing key 1" -keystore signingkeys.pfx -store
 curl --insecure -u admin:admin -X PUT -F alias="signingkey1-2022" -F certificate=@signingkey1.pem https://localhost:8888/api/v1/certificates/cluster/code-signer
 pwd
 ../corda-cli-plugin-host/build/generatedScripts/corda-cli.sh package create-cpi \
-    --cpb interop-delivery-demo-workflows-5.1.0-INTEROP.0-SNAPSHOT-package.cpb \
+    --cpb interop-token-demo-workflows-5.1.0-INTEROP.0-SNAPSHOT-package.cpb \
     --group-policy "$groupPolicyFile.json" \
     --cpi-name "$cpi" \
     --cpi-version "1.0.0.0-SNAPSHOT" \
@@ -182,12 +182,11 @@ cd ../corda-cli-plugin-host
 echo "Installing cpi for group $cpi"
 printf "\n"
 cd ../corda-runtime-os
-./gradlew testing:cpbs:interop-payment-demo-workflows:cpb -x test
 cd ../register-member
-cp ../corda-runtime-os/testing/cpbs/interop-payment-demo-workflows/build/libs/interop-payment-demo-workflows-5.1.0-INTEROP.0-SNAPSHOT-package.cpb ./
+cp ../corda-runtime-os/testing/cpbs/interop-token-demo-workflows/build/libs/interop-token-demo-workflows-5.1.0-INTEROP.0-SNAPSHOT-package.cpb ./
 cd ../register-member
 ../corda-cli-plugin-host/build/generatedScripts/corda-cli.sh package create-cpi \
-    --cpb interop-payment-demo-workflows-5.1.0-INTEROP.0-SNAPSHOT-package.cpb \
+    --cpb interop-token-demo-workflows-5.1.0-INTEROP.0-SNAPSHOT-package.cpb \
     --group-policy "$groupPolicyFile.json" \
     --cpi-name "$cpi" \
     --cpi-version "1.0.0.0-SNAPSHOT" \
@@ -226,7 +225,7 @@ curl --insecure -u admin:admin -X POST \
   "https://localhost:8888/api/v1/flow/$ALICE_HASH" \
   -H 'accept: application/json' -H 'Content-Type: application/json' \
   -d '{"clientRequestId": "'$clientRequestId'",
-  "flowClassName": "com.r3.corda.demo.interop.delivery.workflows.IssueFlow",
+  "flowClassName": "com.r3.corda.demo.interop.tokens.workflows.IssueFlow",
   "requestBody": {
   "amount" : 100
 }}}'
