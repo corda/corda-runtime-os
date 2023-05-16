@@ -113,6 +113,16 @@ object CordaMetrics {
         object InboundSessionCount: Metric<SettableGauge>("p2p.session.inbound", CordaMetrics::settableGauge)
 
         /**
+         * The time taken by verification processor to verify a ledger transaction.
+         */
+        object LedgerTransactionVerificationTime: Metric<Timer>("ledger.transaction.verification.time", CordaMetrics::timer)
+
+        /**
+         * The time taken by ledger persistence processor to perform persistence operation.
+         */
+        object LedgerPersistenceExecutionTime: Metric<Timer>("ledger.persistence.execution.time", CordaMetrics::timer)
+
+        /**
          * The time taken from requesting a uniqueness check to a response being received from the perspective of
          * a client (requesting) node.
          */
@@ -252,6 +262,11 @@ object CordaMetrics {
          * The destination virtual node in peer-to-peer communication.
          */
         DestinationVirtualNode("virtualnode.destination"),
+
+        /**
+         * The ledger type.
+         */
+        LedgerType("ledger.type"),
 
         /**
          * The membership group within which peer-to-peer communication happens.
