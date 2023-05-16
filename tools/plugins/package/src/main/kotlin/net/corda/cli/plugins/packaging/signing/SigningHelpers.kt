@@ -6,6 +6,7 @@ import net.corda.cli.plugins.packaging.closeKmsClient
 import net.corda.cli.plugins.packaging.getECPrivateKey
 import net.corda.cli.plugins.packaging.getKmsClient
 import net.corda.cli.plugins.packaging.getRSAPrivateKey
+import net.corda.cli.plugins.packaging.isRsaKeyType
 import net.corda.libs.packaging.verify.SigningHelpers.isSigningRelated
 import java.io.File
 import java.io.InputStream
@@ -14,7 +15,6 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardOpenOption
 import java.security.KeyStore
-import java.security.PrivateKey
 import java.security.Security
 import java.security.cert.Certificate
 import java.security.cert.CertificateFactory
@@ -73,7 +73,6 @@ internal object SigningHelpers {
         signedOutputCpx: Path,
         certChain: Path,
         keyId: String,
-        keyType: String,
         signerName: String,
         tsaUrl: String?
     ) {
@@ -88,20 +87,9 @@ internal object SigningHelpers {
                 val kmsProvider = KmsProvider(kmsClient)
                 Security.addProvider(kmsProvider) // It is important to register the provider!
 
-                var privateKey: PrivateKey
-                var jarsignerSignatureAlgorithm: String
-
-                when (keyType) {
-                    "RSA" -> {
-                        privateKey = getRSAPrivateKey(keyId)
-                        jarsignerSignatureAlgorithm = "SHA256withRSA"
-                    }
-                    "EC" -> {
-                        privateKey = getECPrivateKey(keyId)
-                        jarsignerSignatureAlgorithm = "SHA256withECDSA"
-                    }
-                    else -> throw IllegalArgumentException("Unsupported key type.")
-                }
+                val keyIsRsa = isRsaKeyType(kmsClient, keyId)
+                val privateKey = if (keyIsRsa) { getRSAPrivateKey(keyId) } else { getECPrivateKey(keyId) }
+                val jarsignerSignatureAlgorithm = if (keyIsRsa) { "SHA256withRSA" } else { "SHA256withECDSA" }
 
                 val certChainString = convertFileToX509Cert(certChain)
                 val certificateChain = listOf(certChainString)

@@ -42,7 +42,6 @@ class SignCpxWithKmsKey : Runnable {
                 signedCpxPath,
                 certChainPath,
                 signWithKmsOptions.keyId,
-                signWithKmsOptions.keyType,
                 signWithKmsOptions.sigFile,
                 signWithKmsOptions.tsaUrl
             )
@@ -55,7 +54,6 @@ class SignCpxWithKmsKey : Runnable {
                     signedCpxPath,
                     certChainPath,
                     signWithKmsOptions.keyId,
-                    signWithKmsOptions.keyType,
                     signWithKmsOptions.sigFile,
                     signWithKmsOptions.tsaUrl
                 )

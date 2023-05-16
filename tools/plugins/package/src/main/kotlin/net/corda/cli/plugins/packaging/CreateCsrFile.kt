@@ -8,7 +8,6 @@ import net.corda.cli.plugins.packaging.aws.kms.utils.csr.CsrGenerator
 import net.corda.cli.plugins.packaging.aws.kms.utils.csr.CsrInfo
 import picocli.CommandLine
 import java.io.File
-import java.security.KeyPair
 import java.security.Security
 
 @CommandLine.Command(
@@ -18,13 +17,10 @@ import java.security.Security
 
 class CreateCsrFile : Runnable {
 
-    @CommandLine.Option(names = ["--key", "-k"], required = true, description = ["Key id of AWS KMS key."])
+    @CommandLine.Option(names = ["--key", "-k"], required = true, description = ["Key id of AWS KMS key"])
     lateinit var keyId: String
 
-    @CommandLine.Option(names = ["--key-type"], required = true, description = ["Key type - RSA or EC"])
-    lateinit var keyType: String
-
-    @CommandLine.Option(names = ["--file", "-f"], required = true, description = ["File to store CSR file."])
+    @CommandLine.Option(names = ["--file", "-f"], required = true, description = ["File to store CSR file"])
     lateinit var csrFile: String
 
     @CommandLine.Option(names = ["--cn"], description = ["Common name"])
@@ -52,26 +48,13 @@ class CreateCsrFile : Runnable {
         val csrFilePath = FileHelpers.requireFileDoesNotExist(csrFile)
 
         val kmsClient = getKmsClient()
-
         val kmsProvider = KmsProvider(kmsClient)
         Security.addProvider(kmsProvider) // It is important to register the provider!
 
-        var keyPair: KeyPair
-        var kmsSigningAlgorithm: KmsSigningAlgorithm
+        val keyIsRsa = isRsaKeyType(kmsClient, keyId)
+        val keyPair = if (keyIsRsa) { KmsRSAKeyFactory.getKeyPair(kmsClient, keyId) } else { KmsECKeyFactory.getKeyPair(kmsClient, keyId) }
+        val kmsSigningAlgorithm = if (keyIsRsa) { KmsSigningAlgorithm.RSASSA_PKCS1_V1_5_SHA_256 } else { KmsSigningAlgorithm.ECDSA_SHA_256 }
 
-        when (keyType) {
-            "RSA" -> {
-                keyPair = KmsRSAKeyFactory.getKeyPair(kmsClient, keyId)
-                kmsSigningAlgorithm = KmsSigningAlgorithm.RSASSA_PKCS1_V1_5_SHA_256
-            }
-            "EC" -> {
-                keyPair = KmsECKeyFactory.getKeyPair(kmsClient, keyId)
-                kmsSigningAlgorithm = KmsSigningAlgorithm.ECDSA_SHA_256
-            }
-            else -> throw IllegalArgumentException("Unsupported key type.")
-        }
-
-        // create a self sign cert from the key pair
         val csrInfo = CsrInfo.CsrInfoBuilder()
             .cn(commonName) //Common Name
             .ou(organizationalUnit) //Department Name / Organizational Unit
@@ -82,10 +65,7 @@ class CreateCsrFile : Runnable {
             .mail(mail) //Email address
             .build()
 
-
         val csr = CsrGenerator.generate(keyPair, csrInfo, kmsSigningAlgorithm)
-        println(csr)
-
         File(csrFilePath.toString()).writeText(csr)
 
         closeKmsClient(kmsClient)

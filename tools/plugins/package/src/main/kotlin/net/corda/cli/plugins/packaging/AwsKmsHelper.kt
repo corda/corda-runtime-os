@@ -5,6 +5,7 @@ import net.corda.cli.plugins.packaging.aws.kms.rsa.KmsRSAKeyFactory
 import software.amazon.awssdk.auth.credentials.ProfileCredentialsProvider
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.kms.KmsClient
+import software.amazon.awssdk.services.kms.model.DescribeKeyRequest
 import software.amazon.awssdk.services.kms.model.KeyListEntry
 import software.amazon.awssdk.services.kms.model.KmsException
 import software.amazon.awssdk.services.kms.model.ListKeysRequest
@@ -48,4 +49,13 @@ fun listAllKeys(kmsClient: KmsClient) {
 
 fun closeKmsClient(kmsClient: KmsClient) {
     kmsClient.close()
+}
+
+fun isRsaKeyType(kmsClient: KmsClient, keyId: String): Boolean {
+    val describeKeyResponse = kmsClient.describeKey { builder: DescribeKeyRequest.Builder -> builder.keyId(keyId) }
+    check(describeKeyResponse.keyMetadata().hasSigningAlgorithms()) { "Unsupported Key type. Only signing keys are supported." }
+
+    return describeKeyResponse.keyMetadata().signingAlgorithmsAsStrings().stream().filter { a: String ->
+        a.startsWith("RSA")
+    }.findAny().isPresent
 }

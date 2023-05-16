@@ -10,9 +10,6 @@ class SignWithKmsOptions {
     @CommandLine.Option(names = ["--key", "-k"], required = true, description = ["Key id of AWS KMS key"])
     lateinit var keyId: String
 
-    @CommandLine.Option(names = ["--key-type"], required = true, description = ["Key type - RSA or EC"])
-    lateinit var keyType: String
-
     @CommandLine.Option(names = ["--tsa", "-t"], description = ["Time Stamping Authority (TSA) URL"])
     var tsaUrl: String? = null
 
