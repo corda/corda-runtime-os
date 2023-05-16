@@ -16,15 +16,15 @@ class HardcodedAliasIdentityDataServiceImpl @Activate constructor() : AliasIdent
                 "3dfc0aae-be7c-44c2-aa4f-4d0d7145cf08", //This is hardcoded groupId for existing texts.
                 "Interop-Gold-Silver-Bronze-Group", listOf(
                     NetworkFacadeData(
-                        "Gold", "GOLD-CPI", listOf(
+                        "Gold", "Gold Trading", listOf(
                             "org.corda.interop/platform/hello-interop/v1.0", "org.corda.interop/platform/tokens/v1.0"
                         )
                     ), NetworkFacadeData(
-                        "Silver", "SILVER-CPI", listOf(
+                        "Silver", "Silver Trading", listOf(
                             "org.corda.interop/platform/hello-interop/v1.0"
                         )
                     ), NetworkFacadeData(
-                        "Bronze", "BRONZE-CPI", listOf(
+                        "Bronze", "Bronze Trading", listOf(
                             "org.corda.interop/platform/tokens/v1.0"
                         )
                     )
@@ -32,11 +32,11 @@ class HardcodedAliasIdentityDataServiceImpl @Activate constructor() : AliasIdent
             ), GroupData(
                 "abc0aae-be7c-44c2-aa4f-4d0d7145cabc", "Interop-UKBank-EUBank-Group", listOf(
                     NetworkFacadeData(
-                        "UKBank", "UKBank.cpi", listOf(
+                        "UKBank", "UK Bank Payment", listOf(
                             "org.corda.interop/platform/hello-interop/v1.0"
                         )
                     ), NetworkFacadeData(
-                        "EUBank", "EUBank.cpi", listOf(
+                        "EUBank", "EU Bank Payment", listOf(
                             "org.corda.interop/platform/tokens/v1.0"
                         )
                     )
