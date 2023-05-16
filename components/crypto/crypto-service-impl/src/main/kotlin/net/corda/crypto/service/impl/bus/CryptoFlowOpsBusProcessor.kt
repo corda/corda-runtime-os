@@ -34,6 +34,7 @@ import net.corda.utilities.trace
 import net.corda.utilities.withMDC
 import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
+import java.time.Duration
 import java.time.Instant
 
 class CryptoFlowOpsBusProcessor(
@@ -77,6 +78,7 @@ class CryptoFlowOpsBusProcessor(
 
         return withMDC(mdc) {
             val requestPayload = request.request
+            val startTime = Instant.now()
             logger.info("Handling ${requestPayload::class.java.name} for tenant ${request.context.tenantId}")
 
             try {
@@ -91,12 +93,7 @@ class CryptoFlowOpsBusProcessor(
                     )
                 } else {
                     val response = executor.executeWithRetry {
-                        CordaMetrics.Metric.CryptoFlowOpsProcessorExecutionTime.builder()
-                            .withTag(CordaMetrics.Tag.OperationName, requestPayload::class.java.simpleName)
-                            .build()
-                            .recordCallable {
-                                handleRequest(requestPayload, request.context)
-                            }
+                        handleRequest(requestPayload, request.context)
                     }
 
                     if (Instant.now() >= expireAt) {
@@ -121,6 +118,11 @@ class CryptoFlowOpsBusProcessor(
                     throwable
                 )
                 externalEventResponseFactory.platformError(request.flowExternalEventContext, throwable)
+            }.also {
+                CordaMetrics.Metric.CryptoFlowOpsProcessorExecutionTime.builder()
+                    .withTag(CordaMetrics.Tag.OperationName, requestPayload::class.java.simpleName)
+                    .build()
+                    .record(Duration.between(startTime, Instant.now()))
             }
         }
     }
