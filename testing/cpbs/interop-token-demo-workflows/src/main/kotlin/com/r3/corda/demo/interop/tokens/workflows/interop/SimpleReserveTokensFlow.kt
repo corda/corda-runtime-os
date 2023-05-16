@@ -1,20 +1,16 @@
 package com.r3.corda.demo.interop.tokens.workflows.interop
 
-import com.r3.corda.demo.interop.tokens.states.TokenState
 import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.ClientRequestBody
 import net.corda.v5.application.interop.FacadeService
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.base.annotations.Suspendable
-import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.ledger.utxo.UtxoLedgerService
 import org.slf4j.LoggerFactory
 import java.math.BigDecimal
-import java.util.*
 
-class ReserveTokensFlow : ClientStartableFlow {
+class SimpleReserveTokensFlow : ClientStartableFlow {
     private companion object {
         val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
@@ -29,14 +25,9 @@ class ReserveTokensFlow : ClientStartableFlow {
     @CordaInject
     lateinit var facadeService: FacadeService
 
-    @CordaInject
-    lateinit var ledgerService: UtxoLedgerService
-
     @Suspendable
     override fun call(requestBody: ClientRequestBody): String {
-        log.info("ReserveTokensFlow.call() starting ...")
-
-        val unconsumedStates = ledgerService.findUnconsumedStatesByType(TokenState::class.java)
+        log.info("SimpleReserveTokensFlow.call() starting test 8")
 
         val args = requestBody.getRequestBodyAsMap(jsonMarshallingService, String::class.java, String::class.java)
 
@@ -47,17 +38,6 @@ class ReserveTokensFlow : ClientStartableFlow {
 
         log.info("Calling facade method '$facadeId' with payload '$uuid' to $alias")
 
-        val stateId = UUID.fromString(uuid)
-        val unconsumedStatesWithId = unconsumedStates.filter { it.state.contractState.linearId == stateId }
-
-        if (unconsumedStatesWithId.size != 1) {
-            throw CordaRuntimeException("Multiple or zero states with id '$stateId' found")
-        }
-
-        val stateAndRef = unconsumedStatesWithId.first()
-        val inputState = stateAndRef.state.contractState
-        log.info("inputState ${inputState.participants}")
-
         val client: TokensFacade =
             facadeService.getFacade(facadeId, TokensFacade::class.java, alias, interopGroupId)
 
@@ -65,7 +45,7 @@ class ReserveTokensFlow : ClientStartableFlow {
         val response = responseObject.result.toString()
 
         log.info("Facade responded with '$response'")
-        log.info("ReserveTokensFlow.call() ending")
+        log.info("SimpleReserveTokensFlow.call() ending")
 
         return response
     }
