@@ -50,7 +50,9 @@ class CreateConnectTest {
 
     @Test
     fun `validate new compacted topic with multiple consumers has only one partition`() {
-        assertThat(command().getTopics(listOf(Create.TopicConfig("topic", listOf("db", "flow"), emptyList(), mapOf("cleanup.policy" to "compact")))))
+        assertThat(command().getTopics(listOf(
+                Create.TopicConfig("topic", listOf("db", "flow"), emptyList(), mapOf("cleanup.policy" to "compact")))
+            ))
             .containsEntry("topic", NewTopic("topic", 1, 1).configs(mapOf("cleanup.policy" to "compact")))
     }
 

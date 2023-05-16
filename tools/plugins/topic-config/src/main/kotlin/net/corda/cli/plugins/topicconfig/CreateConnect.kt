@@ -78,7 +78,8 @@ class CreateConnect : Runnable {
 
     private fun createTopicsWithRetry(client: Admin, topicConfigs: List<Create.TopicConfig>) {
         val topics = getTopics(topicConfigs).toMutableMap()
-        println("Creating ${topics.size} topics with ${topics.values.sumOf { it.numPartitions() }} partitions: ${topics.values.joinToString { "${it.name()} (${it.numPartitions()})" }}")
+        println("Creating ${topics.size} topics with ${topics.values.sumOf { it.numPartitions() }} total partitions")
+        println("Topics to be created: ${topics.values.joinToString { "${it.name()} (${it.numPartitions()})" }}")
         val end = LocalDateTime.now().plusSeconds(wait)
         while (true) {
             if (topics.isEmpty()) {
