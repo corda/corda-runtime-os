@@ -5,14 +5,12 @@ import net.corda.crypto.config.impl.hsmRegistrationBusProcessor
 import net.corda.crypto.config.impl.toCryptoConfig
 import net.corda.crypto.impl.retrying.BackoffStrategy
 import net.corda.crypto.impl.retrying.CryptoRetryingExecutor
-import net.corda.crypto.impl.toMap
 import net.corda.crypto.service.HSMService
 import net.corda.data.crypto.wire.CryptoNoContentValue
 import net.corda.data.crypto.wire.CryptoRequestContext
 import net.corda.data.crypto.wire.CryptoResponseContext
 import net.corda.data.crypto.wire.hsm.registration.HSMRegistrationRequest
 import net.corda.data.crypto.wire.hsm.registration.HSMRegistrationResponse
-import net.corda.data.crypto.wire.hsm.registration.commands.AssignHSMCommand
 import net.corda.data.crypto.wire.hsm.registration.commands.AssignSoftHSMCommand
 import net.corda.data.crypto.wire.hsm.registration.queries.AssignedHSMQuery
 import net.corda.messaging.api.processor.RPCResponderProcessor
@@ -57,7 +55,6 @@ class HSMRegistrationBusProcessor(
 
     private fun handleRequest(request: Any, context: CryptoRequestContext): Any {
         return when (request) {
-            is AssignHSMCommand -> hsmService.assignHSM(context.tenantId, request.category, request.context.toMap())
             is AssignSoftHSMCommand -> hsmService.assignSoftHSM(context.tenantId, request.category)
             is AssignedHSMQuery -> hsmService.findAssignedHSM(context.tenantId, request.category) ?: CryptoNoContentValue()
             else -> throw IllegalArgumentException("Unknown request type ${request::class.java.name}")
