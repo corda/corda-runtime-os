@@ -14,6 +14,7 @@ import net.corda.membership.datamodel.PreAuthTokenEntity
 import net.corda.membership.datamodel.RegistrationRequestEntity
 import net.corda.membership.db.lib.RegistrationStatusHelper.toStatus
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
+import net.corda.utilities.serialization.wrapWithNullErrorHandling
 import java.nio.ByteBuffer
 
 private const val DEFAULT_REGISTRATION_PROTOCOL_VERSION = 1
@@ -52,9 +53,11 @@ fun CordaAvroDeserializer<KeyValuePairList>.deserializeKeyValuePairList(
 fun CordaAvroSerializer<KeyValuePairList>.serializeKeyValuePairList(
     content: KeyValuePairList,
 ): ByteArray {
-    return serialize(content) ?: throw MembershipPersistenceException(
-        "Failed to serialize key value pair list.",
-    )
+    return wrapWithNullErrorHandling({
+        MembershipPersistenceException("Failed to serialize key value pair list.", it)
+    }) {
+        this.serialize(content)
+    }
 }
 fun retrieveSignatureSpec(signatureSpec: String) = if (signatureSpec.isEmpty()) {
     CryptoSignatureSpec("", null, null)

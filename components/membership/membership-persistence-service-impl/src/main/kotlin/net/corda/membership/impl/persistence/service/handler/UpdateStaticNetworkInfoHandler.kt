@@ -1,5 +1,6 @@
 package net.corda.membership.impl.persistence.service.handler
 
+import javax.persistence.LockModeType
 import net.corda.data.KeyValuePairList
 import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.data.membership.db.request.command.UpdateStaticNetworkInfo
@@ -9,7 +10,7 @@ import net.corda.membership.db.lib.deserializeKeyValuePairList
 import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.MODIFIED_TIME_KEY
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.membership.network.writer.staticnetwork.StaticNetworkInfoMappingUtils.toAvro
-import javax.persistence.LockModeType
+import net.corda.utilities.serialization.wrapWithNullErrorHandling
 
 internal class UpdateStaticNetworkInfoHandler(
     persistenceHandlerServices: PersistenceHandlerServices
@@ -47,8 +48,11 @@ internal class UpdateStaticNetworkInfoHandler(
             if (persistedVersion == proposedVersion) {
                 // Update persisted group params.
                 if (!groupParametersAreEqual(persistedGroupParams, proposedGroupParams)) {
-                    entity.groupParameters = serializer.serialize(proposedGroupParams)
-                        ?: throw MembershipPersistenceException("Could not serialize new group parameters.")
+                    entity.groupParameters = wrapWithNullErrorHandling({
+                        MembershipPersistenceException("Could not serialize new group parameters.", it)
+                    }) {
+                        serializer.serialize(proposedGroupParams)
+                    }
                     em.merge(entity)
                     em.flush()
                 }
@@ -56,8 +60,10 @@ internal class UpdateStaticNetworkInfoHandler(
                 if (persistedVersion == proposedVersion + 1
                     && groupParametersAreEqual(persistedGroupParams, proposedGroupParams)
                 ) {
-                    logger.info("Attempted to update the group parameters for a static network but they are " +
-                            "unchanged. Returning the previously persisted version.")
+                    logger.info(
+                        "Attempted to update the group parameters for a static network but they are " +
+                                "unchanged. Returning the previously persisted version."
+                    )
                 } else {
                     throw MembershipPersistenceException(
                         "Current persisted version of the static network information does not match the version in " +

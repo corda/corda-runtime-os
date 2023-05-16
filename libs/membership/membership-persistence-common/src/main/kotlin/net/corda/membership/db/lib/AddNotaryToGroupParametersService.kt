@@ -16,6 +16,7 @@ import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.membership.lib.toMap
 import net.corda.membership.lib.toSortedMap
+import net.corda.utilities.serialization.wrapWithNullErrorHandling
 import net.corda.utilities.time.Clock
 import org.slf4j.LoggerFactory
 import javax.persistence.EntityManager
@@ -124,8 +125,10 @@ class AddNotaryToGroupParametersService(
     }
 
     private fun serializeProperties(context: KeyValuePairList): ByteArray {
-        return keyValuePairListSerializer.serialize(context) ?: throw MembershipPersistenceException(
-            "Failed to serialize key value pair list.",
-        )
+        return wrapWithNullErrorHandling(onErrorOrNull = {
+            MembershipPersistenceException("Failed to serialize key value pair list.", it)
+        }) {
+            keyValuePairListSerializer.serialize(context)
+        }
     }
 }

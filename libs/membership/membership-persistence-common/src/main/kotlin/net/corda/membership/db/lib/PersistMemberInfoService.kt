@@ -14,6 +14,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.membership.lib.toMap
+import net.corda.utilities.serialization.wrapWithNullErrorHandling
 import net.corda.utilities.time.Clock
 import org.slf4j.LoggerFactory
 import javax.persistence.EntityManager
@@ -93,6 +94,13 @@ class PersistMemberInfoService(
                 memberInfo.serial,
             )
             em.merge(entity)
+        }
+    }
+    private fun serializeContext(context: KeyValuePairList): ByteArray {
+        return wrapWithNullErrorHandling({
+            MembershipPersistenceException("Failed to serialize key value pair list.", it)
+        }) {
+            keyValuePairListSerializer.serialize(context)
         }
     }
 }

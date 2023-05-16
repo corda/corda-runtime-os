@@ -16,6 +16,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTI
 import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.membership.lib.registration.RegistrationStatusExt.canMoveToStatus
+import net.corda.utilities.serialization.wrapWithNullErrorHandling
 import net.corda.utilities.time.Clock
 import org.slf4j.LoggerFactory
 import javax.persistence.EntityManager
@@ -70,8 +71,11 @@ class ApproveMemberAndRegistrationRequestService(
             },
         )
 
-        val serializedMgmContext = keyValuePairListSerializer.serialize(mgmContext)
-            ?: throw MembershipPersistenceException("Can not serialize the mgm context")
+        val serializedMgmContext = wrapWithNullErrorHandling({
+            MembershipPersistenceException("Can not serialize the mgm context", it)
+        }) {
+            keyValuePairListSerializer.serialize(mgmContext)
+        }
 
         em.merge(
             MemberInfoEntity(
