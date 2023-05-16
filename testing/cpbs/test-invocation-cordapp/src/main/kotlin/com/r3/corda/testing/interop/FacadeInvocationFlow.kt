@@ -34,21 +34,21 @@ class FacadeInvocationFlow : ClientStartableFlow {
     override fun call(requestBody: ClientRequestBody): String {
         log.info("FacadeInvocationFlow.call() starting")
 
-        val alice = "CN=Alice Gold Alias, O=Alice Corp, L=LDN, C=GB";
-        val cpiName = "Gold.cpi"
-        val aliasMemberInfo = remoteAliasLookUpService.lookup(alice, cpiName)
-        log.info("AliasMemberInfo for Alice Gold Alias : $aliasMemberInfo")
-
-        val aliasMembers = remoteAliasLookUpService.lookup("org.corda.interop/platform/tokens/v1.0")
-        log.info("AliasMemberInfo list for facadeId : $aliasMembers")
-
         val args = requestBody.getRequestBodyAsMap(jsonMarshallingService, String::class.java, String::class.java)
 
         val interopGroupId = getArgument(args, "interopGroupId")
         val facadeId = getArgument(args, "facadeId")
         val methodName = getArgument(args, "methodName")
         val alias = MemberX500Name.parse(getArgument(args,"alias"))
+        val cpiName = getArgument(args, "cpiName")
         val payload = getArgument(args, "payload")
+
+        val aliasMemberInfo = remoteAliasLookUpService.lookup(alias.toString(), cpiName)
+        log.info("AliasMemberInfo for $alias  : $aliasMemberInfo")
+
+        val aliasMembers = remoteAliasLookUpService.lookup(facadeId)
+        log.info("AliasMemberInfo list for facadeId : $aliasMembers")
+
 
         log.info("Calling facade method '$methodName@$facadeId' with payload '$payload' to $alias")
 

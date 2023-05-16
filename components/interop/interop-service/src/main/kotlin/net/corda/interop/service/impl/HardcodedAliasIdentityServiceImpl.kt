@@ -16,15 +16,15 @@ class HardcodedAliasIdentityDataServiceImpl @Activate constructor() : AliasIdent
                 "3dfc0aae-be7c-44c2-aa4f-4d0d7145cf08", //This is hardcoded groupId for existing texts.
                 "Interop-Gold-Silver-Bronze-Group", listOf(
                     NetworkFacadeData(
-                        "Gold", "Gold.cpi", listOf(
+                        "Gold", "GOLD-CPI", listOf(
                             "org.corda.interop/platform/hello-interop/v1.0", "org.corda.interop/platform/tokens/v1.0"
                         )
                     ), NetworkFacadeData(
-                        "Silver", "Silver.cpi", listOf(
-                            "org.corda.interop/platform/tokens/v1.0"
+                        "Silver", "SILVER-CPI", listOf(
+                            "org.corda.interop/platform/hello-interop/v1.0"
                         )
                     ), NetworkFacadeData(
-                        "Bronze", "Bronze.cpi", listOf(
+                        "Bronze", "BRONZE-CPI", listOf(
                             "org.corda.interop/platform/tokens/v1.0"
                         )
                     )
@@ -43,7 +43,7 @@ class HardcodedAliasIdentityDataServiceImpl @Activate constructor() : AliasIdent
                 )
             )
         )
-        return HoldingIdAliasGroupInfoImpl("Alice", aliceGroups).groups
+        return HoldingIdAliasGroupInfoImpl("Bob", aliceGroups).groups
     }
 }
 
@@ -100,7 +100,7 @@ data class DummyAliasMemberInfo(
     private val facadeIds: List<String>
 ) : AliasMemberInfo {
     override fun getX500Name(): String {
-        return "CN=$member $network Alias, O=$member Corp, L=LDN, C=GB"
+        return "O=$member Alias, L=London, C=GB"
     }
 
     override fun getCpiName(): String {
