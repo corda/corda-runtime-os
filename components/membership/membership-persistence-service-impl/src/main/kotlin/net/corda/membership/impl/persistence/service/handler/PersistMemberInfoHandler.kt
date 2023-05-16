@@ -1,20 +1,21 @@
 package net.corda.membership.impl.persistence.service.handler
 
+import javax.persistence.LockModeType
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.KeyValuePairList
 import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.data.membership.db.request.command.PersistMemberInfo
 import net.corda.membership.datamodel.MemberInfoEntity
-import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_PENDING
 import net.corda.membership.datamodel.MemberInfoEntityPrimaryKey
 import net.corda.membership.lib.MemberInfoExtension
+import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_PENDING
 import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
 import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.membership.lib.toMap
+import net.corda.utilities.serialization.wrapWithNullErrorHandling
 import net.corda.virtualnode.toCorda
-import javax.persistence.LockModeType
 
 internal class PersistMemberInfoHandler(
     persistenceHandlerServices: PersistenceHandlerServices
@@ -25,15 +26,17 @@ internal class PersistMemberInfoHandler(
             logger.error("Failed to serialize key value pair list.")
         }
     private val keyValuePairListDeserializer: CordaAvroDeserializer<KeyValuePairList> =
-        cordaAvroSerializationFactory.createAvroDeserializer (
+        cordaAvroSerializationFactory.createAvroDeserializer(
             { logger.error("Failed to deserialize key value pair list.") },
             KeyValuePairList::class.java
         )
 
     private fun serializeContext(context: KeyValuePairList): ByteArray {
-        return keyValuePairListSerializer.serialize(context) ?: throw MembershipPersistenceException(
-            "Failed to serialize key value pair list."
-        )
+        return wrapWithNullErrorHandling({
+            MembershipPersistenceException("Failed to serialize key value pair list.", it)
+        }) {
+            keyValuePairListSerializer.serialize(context)
+        }
     }
 
     private fun deserialize(data: ByteArray): KeyValuePairList {
@@ -62,12 +65,18 @@ internal class PersistMemberInfoHandler(
                         val currentMemberContext = deserialize(currentMemberInfo.memberContext)
                         val currentMgmContext = deserialize(currentMemberInfo.mgmContext)
                         if (currentMemberContext.items != it.persistentMemberInfo.memberContext.items) {
-                            throw MembershipPersistenceException("Cannot update member info with same serial number " +
-                                "(${memberInfo.serial}): member context differs from original.")
+                            throw MembershipPersistenceException(
+                                "Cannot update member info with same serial number " +
+                                        "(${memberInfo.serial}): member context differs from original."
+                            )
                         }
-                        if (currentMgmContext.toMap().removeTime() != it.persistentMemberInfo.mgmContext.toMap().removeTime()) {
-                            throw MembershipPersistenceException("Cannot update member info with same serial number " +
-                                "(${memberInfo.serial}): mgm context differs from original.")
+                        if (currentMgmContext.toMap().removeTime() != it.persistentMemberInfo.mgmContext.toMap()
+                                .removeTime()
+                        ) {
+                            throw MembershipPersistenceException(
+                                "Cannot update member info with same serial number " +
+                                        "(${memberInfo.serial}): mgm context differs from original."
+                            )
                         }
                         return@forEach
                     }
@@ -90,7 +99,8 @@ internal class PersistMemberInfoHandler(
             }
         }
     }
-    private fun Map<String, String>.removeTime(): Map<String, String>  = this.filterKeys {
+
+    private fun Map<String, String>.removeTime(): Map<String, String> = this.filterKeys {
         it != MemberInfoExtension.CREATION_TIME && it != MemberInfoExtension.MODIFIED_TIME
     }
 }

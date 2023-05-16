@@ -1,5 +1,6 @@
 package net.corda.membership.impl.persistence.service.handler
 
+import javax.persistence.LockModeType
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.KeyValuePair
@@ -12,8 +13,8 @@ import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.EPOCH_KEY
 import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.MODIFIED_TIME_KEY
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.membership.lib.toMap
+import net.corda.utilities.serialization.wrapWithNullErrorHandling
 import net.corda.virtualnode.toCorda
-import javax.persistence.LockModeType
 
 internal class PersistGroupParametersInitialSnapshotHandler(
     persistenceHandlerServices: PersistenceHandlerServices
@@ -26,9 +27,11 @@ internal class PersistGroupParametersInitialSnapshotHandler(
         }
 
     private fun serializeProperties(context: KeyValuePairList): ByteArray {
-        return serializer.serialize(context) ?: throw MembershipPersistenceException(
-            "Failed to serialize key value pair list."
-        )
+        return wrapWithNullErrorHandling({
+            MembershipPersistenceException("Failed to serialize key value pair list.", it)
+        }) {
+            serializer.serialize(context)
+        }
     }
 
     private val deserializer: CordaAvroDeserializer<KeyValuePairList> =
@@ -58,7 +61,8 @@ internal class PersistGroupParametersInitialSnapshotHandler(
                 LockModeType.PESSIMISTIC_WRITE
             )
             if (currentGroupParameters != null) {
-                val currentParameters = deserializer.deserializeKeyValuePairList(currentGroupParameters.parameters).toMap()
+                val currentParameters =
+                    deserializer.deserializeKeyValuePairList(currentGroupParameters.parameters).toMap()
                 if (currentParameters.removeTime() != groupParameters.toMap().removeTime()) {
                     throw MembershipPersistenceException(
                         "Group parameters initial snapshot already exist with different parameters."
