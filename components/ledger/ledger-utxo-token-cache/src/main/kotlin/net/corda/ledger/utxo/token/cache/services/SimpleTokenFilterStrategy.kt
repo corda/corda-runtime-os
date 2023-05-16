@@ -1,17 +1,17 @@
 package net.corda.ledger.utxo.token.cache.services
 
 import net.corda.ledger.utxo.token.cache.entities.CachedToken
-import net.corda.ledger.utxo.token.cache.entities.ClaimQuery
+import net.corda.ledger.utxo.token.cache.entities.TokenFilter
 
 class SimpleTokenFilterStrategy : TokenFilterStrategy {
 
-    override fun filterTokens(cachedTokenSource: Iterable<CachedToken>, claimQuery: ClaimQuery): Iterable<CachedToken> {
-        if (claimQuery.tagRegex == null && claimQuery.ownerHash == null) {
+    override fun filterTokens(cachedTokenSource: Iterable<CachedToken>, tokenFilter: TokenFilter): Iterable<CachedToken> {
+        if (tokenFilter.tagRegex == null && tokenFilter.ownerHash == null) {
             return cachedTokenSource
         }
 
-        val tagMatcher = createTagMatcher(claimQuery.tagRegex)
-        val ownerMatcher = createOwnerMatcher(claimQuery.ownerHash)
+        val tagMatcher = createTagMatcher(tokenFilter.tagRegex)
+        val ownerMatcher = createOwnerMatcher(tokenFilter.ownerHash)
 
         return cachedTokenSource.filter {
             tagMatcher(it.tag) && ownerMatcher(it.ownerHash)
