@@ -81,7 +81,7 @@ class FlowKilledAcceptanceTest : FlowServiceTestBase() {
         }
 
         given {
-            virtualNode(CPI1, ALICE_HOLDING_IDENTITY, OperationalStatus.INACTIVE)
+            virtualNode(CPI1, ALICE_HOLDING_IDENTITY, flowOperationalStatus = OperationalStatus.INACTIVE)
         }
 
         `when` {
