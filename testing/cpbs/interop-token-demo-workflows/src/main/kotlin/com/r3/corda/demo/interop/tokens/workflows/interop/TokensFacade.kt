@@ -6,6 +6,7 @@ import net.corda.v5.application.interop.binding.BindsFacadeParameter
 import net.corda.v5.application.interop.binding.FacadeVersions
 import net.corda.v5.application.interop.binding.InteropAction
 import net.corda.v5.application.interop.binding.QualifiedWith
+import net.corda.v5.base.annotations.Suspendable
 import java.math.BigDecimal
 import java.time.ZonedDateTime
 import java.util.*
@@ -25,14 +26,17 @@ data class TokenReservation(
 interface TokensFacade {
 
     @BindsFacadeMethod
+    @Suspendable
     fun getBalance(@Denomination denomination: String): @QualifiedWith("foo") InteropAction<Double>
 
     @FacadeVersions("v1.0")
     @BindsFacadeMethod("reserve-tokens")
+    @Suspendable
     fun reserveTokensV1(@Denomination denomination: String, amount: BigDecimal): InteropAction<UUID>
 
     @FacadeVersions("v2.0")
     @BindsFacadeMethod("reserve-tokens")
+    @Suspendable
     fun reserveTokensV2(
         @Denomination denomination: String,
         amount: BigDecimal,
@@ -40,9 +44,11 @@ interface TokensFacade {
     ): InteropAction<TokenReservation>
 
     @BindsFacadeMethod
+    @Suspendable
     fun releaseReservedTokens(reservationRef: UUID): InteropAction<Unit>
 
     @BindsFacadeMethod
+    @Suspendable
     fun spendReservedTokens(
         reservationRef: UUID,
         transactionRef: UUID,
