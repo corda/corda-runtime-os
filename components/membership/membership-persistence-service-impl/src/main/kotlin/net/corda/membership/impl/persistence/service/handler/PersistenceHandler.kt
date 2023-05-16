@@ -67,7 +67,7 @@ internal abstract class BasePersistenceHandler<REQUEST, RESPONSE>(
             logger.info(
                 "DB investigation " +
                         "- fun <R> transaction(holdingIdentityShortHash: ShortHash, block: (EntityManager) -> R): R " +
-                        "- 1 " +
+                        "- 2 " +
                         "- $id " +
                         "- Current: ${curr.nano} " +
                         "- Since last checkpoint: ${curr.minusNanos(last.nano.toLong()).nano}ns " +
@@ -80,7 +80,7 @@ internal abstract class BasePersistenceHandler<REQUEST, RESPONSE>(
                 logger.info(
                     "DB investigation " +
                             "- fun <R> transaction(holdingIdentityShortHash: ShortHash, block: (EntityManager) -> R): R " +
-                            "- 2 " +
+                            "- 3 " +
                             "- $id " +
                             "- Current: ${curr.nano} " +
                             "- Since last checkpoint: ${curr.minusNanos(last.nano.toLong()).nano}ns " +
@@ -94,7 +94,7 @@ internal abstract class BasePersistenceHandler<REQUEST, RESPONSE>(
             logger.info(
                 "DB investigation " +
                         "- fun <R> transaction(holdingIdentityShortHash: ShortHash, block: (EntityManager) -> R): R " +
-                        "- 3 " +
+                        "- 4 " +
                         "- $id " +
                         "- Current: ${curr.nano} " +
                         "- Since last checkpoint: ${curr.minusNanos(last.nano.toLong()).nano }ns" +
