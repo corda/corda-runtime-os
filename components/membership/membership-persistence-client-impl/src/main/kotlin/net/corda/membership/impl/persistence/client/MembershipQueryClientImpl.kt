@@ -114,11 +114,14 @@ class MembershipQueryClientImpl(
         viewOwningIdentity: HoldingIdentity,
         registrationId: String,
     ): MembershipQueryResult<RegistrationRequestDetails?> {
+        val start = System.currentTimeMillis()
         return MembershipPersistenceRequest(
             buildMembershipRequestContext(viewOwningIdentity.toAvro()),
             QueryRegistrationRequest(registrationId),
         ).execute("retrieve registration request") { payload: RegistrationRequestQueryResponse ->
             payload.registrationRequest
+        }.also {
+            println("QQQ queryRegistrationRequest duration: ${System.currentTimeMillis() - start}")
         }
     }
 
