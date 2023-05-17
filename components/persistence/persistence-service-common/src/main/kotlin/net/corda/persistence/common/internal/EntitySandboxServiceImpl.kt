@@ -156,7 +156,7 @@ class EntitySandboxServiceImpl @Activate constructor(
         // NOTE: this is create and not getOrCreate as the dbConnectionManager does not cache vault EMFs.
         // This is because sandboxes themselves are caches, so the EMF will be cached and cleaned up
         // as part of that.
-        val entityManagerFactory = dbConnectionManager.getOrCreateEntityManagerFactory(
+        val entityManagerFactory = dbConnectionManager.createEntityManagerFactory(
             virtualNode.vaultDmlConnectionId,
             entitiesSet
         )
@@ -166,7 +166,7 @@ class EntitySandboxServiceImpl @Activate constructor(
 
         return AutoCloseable {
             logger.debug("Closing EntityManagerFactory for {}", entitiesSet.persistenceUnitName)
-            //entityManagerFactory.close()
+            entityManagerFactory.close()
         }
     }
 
