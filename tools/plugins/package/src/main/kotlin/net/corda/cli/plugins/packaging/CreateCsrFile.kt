@@ -12,14 +12,14 @@ import java.security.Security
 
 @CommandLine.Command(
     name = "create-csr",
-    description = ["Create a CSR file using KMS key"]
+    description = ["Create a CSR for a KMS signing key"]
 )
 class CreateCsrFile : Runnable {
 
     @CommandLine.Option(names = ["--key", "-k"], required = true, description = ["Key id of AWS KMS key"])
     lateinit var keyId: String
 
-    @CommandLine.Option(names = ["--file", "-f"], required = true, description = ["File to store CSR file"])
+    @CommandLine.Option(names = ["--file", "-f"], required = true, description = ["File to store the CSR"])
     lateinit var csrFile: String
 
     @CommandLine.Option(names = ["--cn"], description = ["Common name"])
@@ -32,10 +32,10 @@ class CreateCsrFile : Runnable {
     var organization: String? = null
 
     @CommandLine.Option(names = ["--l"], description = ["Town/City"])
-    var location: String? = null
+    var locality: String? = null
 
     @CommandLine.Option(names = ["--st"], description = ["Province, Region, County or State"])
-    var county: String? = null
+    var state: String? = null
 
     @CommandLine.Option(names = ["--c"], description = ["Country"])
     var country: String? = null
@@ -58,8 +58,8 @@ class CreateCsrFile : Runnable {
             .cn(commonName) //Common Name
             .ou(organizationalUnit) //Department Name / Organizational Unit
             .o(organization) //Business name / Organization
-            .l(location) //Town / City
-            .st(county) //Province, Region, County or State
+            .l(locality) //Town / City
+            .st(state) //Province, Region, County or State
             .c(country) //Country
             .mail(mail) //Email address
             .build()
