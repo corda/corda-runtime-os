@@ -51,7 +51,6 @@ class CryptoOpsClientComponent @Activate constructor(
     configurationReadService: ConfigurationReadService,
     @Reference(service = PlatformDigestService::class)
     private val digestService: PlatformDigestService,
-    private val rpcRetries: Int = 3,
 ) : AbstractConfigurableComponent<CryptoOpsClientComponent.Impl>(
     coordinatorFactory = coordinatorFactory,
     myName = LifecycleCoordinatorName.forComponent<CryptoOpsClient>(),
@@ -63,13 +62,31 @@ class CryptoOpsClientComponent @Activate constructor(
     ),
     configKeys = setOf(MESSAGING_CONFIG, CRYPTO_CONFIG)
 ), CryptoOpsClient, CryptoOpsProxyClient {
+    constructor(
+        coordinatorFactory: LifecycleCoordinatorFactory,
+        publisherFactory: PublisherFactory,
+        schemeMetadata: CipherSchemeMetadata,
+        configurationReadService: ConfigurationReadService,
+        digestService: PlatformDigestService,
+        retriesLimit: Int,
+    ) : this(
+        coordinatorFactory,
+        publisherFactory,
+        schemeMetadata,
+        configurationReadService,
+        digestService
+    ) {
+        retries = retriesLimit
+    }
+
     companion object {
         const val CLIENT_ID = "crypto.ops.rpc.client"
         const val GROUP_NAME = "crypto.ops.rpc.client"
+        var retries = 3
     }
 
     override fun createActiveImpl(event: ConfigChangedEvent): Impl =
-        Impl(publisherFactory, schemeMetadata, digestService, event, rpcRetries)
+        Impl(publisherFactory, schemeMetadata, digestService, event, retries)
 
     override fun getSupportedSchemes(tenantId: String, category: String): List<String> =
         impl.ops.getSupportedSchemes(tenantId, category)
@@ -196,7 +213,7 @@ class CryptoOpsClientComponent @Activate constructor(
         schemeMetadata: CipherSchemeMetadata,
         digestService: PlatformDigestService,
         event: ConfigChangedEvent,
-        rpcRetries: Int,
+        retries: Int = 3,
     ) : AbstractImpl {
         private val sender: RPCSender<RpcOpsRequest, RpcOpsResponse> = publisherFactory.createRPCSender(
             RPCConfig(
@@ -213,7 +230,7 @@ class CryptoOpsClientComponent @Activate constructor(
             schemeMetadata,
             sender,
             digestService,
-            rpcRetries
+            rpcRetries = retries
         )
 
         override val downstream: DependenciesTracker = DependenciesTracker.Default(setOf(sender.subscriptionName))

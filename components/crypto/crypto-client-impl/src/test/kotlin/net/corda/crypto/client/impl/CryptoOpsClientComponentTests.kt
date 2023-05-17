@@ -118,7 +118,7 @@ class TestExecutionContext {
         schemeMetadata = schemeMetadata,
         configurationReadService = configurationReadService,
         digestService = mock(),
-        rpcRetries = 0
+        0
     )
 }
 
