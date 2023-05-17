@@ -15,6 +15,8 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.RegisterExtension
 import org.junit.jupiter.api.io.TempDir
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.ValueSource
 import org.osgi.framework.BundleContext
 import org.osgi.framework.Constants.SYSTEM_BUNDLE_ID
 import org.osgi.framework.FrameworkUtil
@@ -116,5 +118,18 @@ class SandboxClassTagTests {
 
         assertEquals(systemBundleClass, sandboxFactory.group1.getClass(systemBundleClass.name, staticTag))
         assertEquals(systemBundleClass, sandboxFactory.group1.getClass(systemBundleClass.name, evolvableTag))
+    }
+
+    @ParameterizedTest
+    @ValueSource(classes = [ Long::class, Int::class, Short::class, Byte::class, Char::class, Boolean::class, Double::class, Float::class ])
+    fun `can handle primitive types`(primitiveType: Class<*>) {
+        val sandboxGroup = sandboxFactory.group1
+
+        val primitiveTag = sandboxGroup.getStaticTag(primitiveType)
+        assertEquals(primitiveType, sandboxGroup.getClass(primitiveType.name, primitiveTag))
+
+        val boxedType = primitiveType.kotlin.javaObjectType
+        val boxedTag = sandboxGroup.getStaticTag(boxedType)
+        assertEquals(boxedType, sandboxGroup.getClass(boxedType.name, boxedTag))
     }
 }
