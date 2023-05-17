@@ -12,6 +12,7 @@ import net.corda.sandbox.internal.sandbox.Sandbox
 import net.corda.sandbox.internal.utilities.BundleUtils
 import org.osgi.framework.Bundle
 import org.slf4j.LoggerFactory
+import java.util.Collections.unmodifiableMap
 import java.util.Collections.unmodifiableSortedMap
 import java.util.SortedMap
 import java.util.TreeMap
@@ -36,6 +37,17 @@ internal class SandboxGroupImpl(
 
     private companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+
+        private val primitiveTypes = unmodifiableMap(setOf(
+            Long::class.java,
+            Int::class.java,
+            Short::class.java,
+            Byte::class.java,
+            Char::class.java,
+            Boolean::class.java,
+            Double::class.java,
+            Float::class.java
+        ).associateBy(Class<*>::getName))
 
         private fun Throwable.withSuppressed(exceptions: Iterable<Throwable>): Throwable {
             exceptions.forEach(::addSuppressed)
@@ -101,7 +113,7 @@ internal class SandboxGroupImpl(
         return when (classTag.classType) {
             ClassType.NonBundleClass -> {
                 try {
-                    bundleUtils.loadClassFromSystemBundle(className)
+                    primitiveTypes[className] ?: bundleUtils.loadClassFromSystemBundle(className)
                 } catch (e: ClassNotFoundException) {
                     throw SandboxException(
                         "Class $className was not from a bundle, and could not be found in the system classloader."
