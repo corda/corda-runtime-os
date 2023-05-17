@@ -69,8 +69,10 @@ class HikariDataSourceFactory(
         if (minimumPoolSize != null) {
             conf.minimumIdle = minimumPoolSize
         }
-        if (maximumPoolSize != minimumPoolSize) {
+        if ((minimumPoolSize != null) && (maximumPoolSize != minimumPoolSize)) {
             conf.idleTimeout = idleTimeout.toMillis()
+        } else {
+            conf.idleTimeout = 0
         }
         conf.maxLifetime = maxLifetime.toMillis()
         if(Duration.ZERO != keepaliveTime)

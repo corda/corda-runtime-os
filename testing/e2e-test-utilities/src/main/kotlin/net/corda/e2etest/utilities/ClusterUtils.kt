@@ -127,7 +127,11 @@ fun ClusterInfo.getOrCreateVirtualNodeFor(
 
         // Wait for the vNode creation to propagate through the system before moving on
         eventually(duration = Duration.ofSeconds(30)) {
-            assertThat(getVNode(holdingId).code).isNotEqualTo(404)
+            val node = getVNode(holdingId)
+            assertThat(node.code).isNotEqualTo(404)
+            assertThat(node.toJson()["cryptoDmlConnectionId"]?.textValue())
+                .isNotNull()
+                .isNotBlank()
         }
 
         holdingId
