@@ -2,10 +2,9 @@ package net.corda.cli.plugins.packaging.signing
 
 import jdk.security.jarsigner.JarSigner
 import net.corda.cli.plugins.packaging.aws.kms.KmsProvider
-import net.corda.cli.plugins.packaging.closeKmsClient
-import net.corda.cli.plugins.packaging.getECPrivateKey
+import net.corda.cli.plugins.packaging.aws.kms.ec.KmsECKeyFactory
+import net.corda.cli.plugins.packaging.aws.kms.rsa.KmsRSAKeyFactory
 import net.corda.cli.plugins.packaging.getKmsClient
-import net.corda.cli.plugins.packaging.getRSAPrivateKey
 import net.corda.cli.plugins.packaging.isRsaKeyType
 import net.corda.libs.packaging.verify.SigningHelpers.isSigningRelated
 import java.io.File
@@ -88,7 +87,7 @@ internal object SigningHelpers {
                 Security.addProvider(kmsProvider) // It is important to register the provider!
 
                 val keyIsRsa = isRsaKeyType(kmsClient, keyId)
-                val privateKey = if (keyIsRsa) { getRSAPrivateKey(keyId) } else { getECPrivateKey(keyId) }
+                val privateKey = if (keyIsRsa) { KmsRSAKeyFactory.getPrivateKey(keyId) } else { KmsECKeyFactory.getPrivateKey(keyId) }
                 val jarsignerSignatureAlgorithm = if (keyIsRsa) { "SHA256withRSA" } else { "SHA256withECDSA" }
 
                 val certChainString = convertFileToX509Cert(certChain)
@@ -108,7 +107,7 @@ internal object SigningHelpers {
                     .build()
                     .sign(unsignedCpi, signedCpi)
 
-                closeKmsClient(kmsClient)
+                kmsClient.close()
             }
         }
     }

@@ -68,6 +68,6 @@ class CreateCsrFile : Runnable {
         val csr = CsrGenerator.generate(keyPair, csrInfo, kmsSigningAlgorithm)
         File(csrFilePath.toString()).writeText(csr)
 
-        closeKmsClient(kmsClient)
+        kmsClient.close()
     }
 }
