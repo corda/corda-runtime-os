@@ -49,6 +49,12 @@ internal class CompactedSubscriptionImpl<K : Any, V : Any>(
         .withTag(CordaMetrics.Tag.OperationName, MetricsConstants.ON_SNAPSHOT_OPERATION)
         .build()
 
+    private val snapshotReadTimeMeter = CordaMetrics.Metric.MessageSnapshotReadTime.builder()
+        .withTag(CordaMetrics.Tag.MessagePatternClientId, config.clientId)
+        .withTag(CordaMetrics.Tag.MessagingConsumerGroup, config.group)
+        .withTag(CordaMetrics.Tag.MessagingTopicName, config.topic)
+        .build()
+
     override fun close() = threadLooper.close()
 
     override fun start() {
@@ -119,35 +125,39 @@ internal class CompactedSubscriptionImpl<K : Any, V : Any>(
     }
 
     private fun pollAndProcessSnapshot(consumer: CordaConsumer<K, V>) {
-        val partitions = consumer.assignment()
-        val endOffsets = consumer.endOffsets(partitions)
-        val snapshotEnds = endOffsets.toMutableMap()
-        consumer.seekToBeginning(partitions)
+        val snapshotData = snapshotReadTimeMeter.recordCallable {
+            val partitions = consumer.assignment()
+            val endOffsets = consumer.endOffsets(partitions)
+            val snapshotEnds = endOffsets.toMutableMap()
+            consumer.seekToBeginning(partitions)
 
-        val currentData = getLatestValues()
-        currentData.clear()
+            val currentData = getLatestValues()
+            currentData.clear()
 
-        while (snapshotEnds.isNotEmpty()) {
-            val consumerRecords = consumer.poll(config.pollTimeout)
+            while (snapshotEnds.isNotEmpty()) {
+                val consumerRecords = consumer.poll(config.pollTimeout)
 
-            consumerRecords.forEach {
-                val value = it.value
-                if (value != null) {
-                    currentData[it.key] = value
-                } else {
-                    currentData.remove(it.key)
+                consumerRecords.forEach {
+                    val value = it.value
+                    if (value != null) {
+                        currentData[it.key] = value
+                    } else {
+                        currentData.remove(it.key)
+                    }
+                }
+
+                for (offsets in endOffsets) {
+                    val partition = offsets.key
+                    if (consumer.position(partition) >= offsets.value) {
+                        snapshotEnds.remove(partition)
+                    }
                 }
             }
 
-            for (offsets in endOffsets) {
-                val partition = offsets.key
-                if (consumer.position(partition) >= offsets.value) {
-                    snapshotEnds.remove(partition)
-                }
-            }
+            currentData
         }
 
-        snapshotMeter.recordCallable { processor.onSnapshot(currentData) }
+        snapshotMeter.recordCallable { processor.onSnapshot(snapshotData!!) }
     }
 
     private fun pollAndProcessRecords(consumer: CordaConsumer<K, V>) {

@@ -49,13 +49,14 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
     private val consumer: Consumer<Any, Any>,
     private var defaultListener: CordaConsumerRebalanceListener? = null,
     private val chunkDeserializerService: ConsumerChunkDeserializerService<K, V>,
-    private val consumerMetricsBinder : MeterBinder,
+    private val consumerMetricsBinder: MeterBinder,
 ) : CordaConsumer<K, V> {
     private var currentAssignment = mutableSetOf<Int>()
     private val bufferedRecords = mutableMapOf<Int, List<ConsumerRecord<Any, Any>>>()
 
     init {
         consumerMetricsBinder.bindTo(CordaMetrics.registry)
+        recordConsumerCreated()
     }
 
     private companion object {
@@ -69,6 +70,7 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
             log.error("CordaKafkaConsumer failed to close consumer from group ${config.group}.", ex)
         } finally {
             (consumerMetricsBinder as? AutoCloseable)?.close()
+            recordConsumerClosed()
         }
     }
 
@@ -714,6 +716,20 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
                 }
             }
         }
+    }
+
+    private fun recordConsumerCreated() {
+        CordaMetrics.Metric.MessagingConsumerCreatedCount.builder()
+            .withTag(CordaMetrics.Tag.MessagingConsumerGroup, config.group)
+            .withTag(CordaMetrics.Tag.MessagePatternClientId, config.clientId)
+            .build().increment()
+    }
+
+    private fun recordConsumerClosed() {
+        CordaMetrics.Metric.MessagingConsumerClosedCount.builder()
+            .withTag(CordaMetrics.Tag.MessagingConsumerGroup, config.group)
+            .withTag(CordaMetrics.Tag.MessagePatternClientId, config.clientId)
+            .build().increment()
     }
 
     internal fun groupMetadata(): ConsumerGroupMetadata {
