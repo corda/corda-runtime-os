@@ -46,11 +46,21 @@ class HsmRestResourceImplTest {
     @Nested
     inner class ApiTests {
         @Test
-        fun `assignedHsm returns null if no HSM found`() {
+        fun `assignedHsm returns 404 if no HSM found`() {
             whenever(hsmRegistrationClient.findHSM(tenantId, TLS)).doReturn(null)
 
-            assertThrows<ResourceNotFoundException> { ops.assignedHsm(tenantId, "tls") }
+            val e = assertThrows<ResourceNotFoundException> { ops.assignedHsm(tenantId, "tls") }
+            assertThat(e.message).contains("No association found for tenant ${tenantId} category tls")
         }
+
+        @Test
+        fun `assignedHsm returns 404 if category is not known`() {
+            whenever(hsmRegistrationClient.findHSM(tenantId, "Bob")).doReturn(null)
+
+            val e = assertThrows<ResourceNotFoundException> { ops.assignedHsm(tenantId, "Bob") }
+            assertThat(e.message).contains("Invalid category: BOB")
+        }
+
 
         @Test
         fun `assignedHsm calls the client with upper case`() {
