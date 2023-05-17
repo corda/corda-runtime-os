@@ -13,13 +13,15 @@ import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.persistence.HSMStore
 import net.corda.crypto.persistence.db.model.CryptoEntities
 import net.corda.crypto.service.CryptoServiceFactory
-import net.corda.crypto.service.HSMRegistrationBusService
 import net.corda.crypto.service.HSMService
 import net.corda.crypto.service.impl.SigningServiceImpl
 import net.corda.crypto.service.impl.bus.CryptoFlowOpsBusProcessor
 import net.corda.crypto.service.impl.bus.CryptoOpsBusProcessor
+import net.corda.crypto.service.impl.bus.HSMRegistrationBusProcessor
 import net.corda.crypto.softhsm.SoftCryptoServiceProvider
 import net.corda.crypto.softhsm.impl.SigningRepositoryFactoryImpl
+import net.corda.data.crypto.wire.hsm.registration.HSMRegistrationRequest
+import net.corda.data.crypto.wire.hsm.registration.HSMRegistrationResponse
 import net.corda.data.crypto.wire.ops.rpc.RpcOpsRequest
 import net.corda.data.crypto.wire.ops.rpc.RpcOpsResponse
 import net.corda.db.connection.manager.DbConnectionManager
@@ -77,8 +79,6 @@ class CryptoProcessorImpl @Activate constructor(
     private val cryptoServiceFactory: CryptoServiceFactory,
     @Reference(service = HSMService::class)
     private val hsmService: HSMService,
-    @Reference(service = HSMRegistrationBusService::class)
-    private val hsmRegistration: HSMRegistrationBusService,
     @Reference(service = JpaEntitiesRegistry::class)
     private val entitiesRegistry: JpaEntitiesRegistry,
     @Reference(service = DbConnectionManager::class)
@@ -121,7 +121,6 @@ class CryptoProcessorImpl @Activate constructor(
         ::softCryptoServiceProvider,
         ::cryptoServiceFactory,
         ::hsmService,
-        ::hsmRegistration,
         ::dbConnectionManager,
         ::virtualNodeInfoReadService,
     )
@@ -245,11 +244,13 @@ class CryptoProcessorImpl @Activate constructor(
             config = cryptoConfig.signingService()
         )
 
-        // make both the processors
+        // make the processors
         val flowOpsProcessor = CryptoFlowOpsBusProcessor(signingService, externalEventResponseFactory, event)
         val rpcOpsProcessor = CryptoOpsBusProcessor(signingService, cryptoConfig)
+        val hsmRegistrationProcessor = HSMRegistrationBusProcessor(hsmService, event)
 
-        // now make both the subscriptions
+        // TODO I think we need to close the below subscriptions in case of re-creations
+        // now make the subscriptions
         val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
         val flowGroupName = "crypto.ops.flow"
         val flowOpsSubscription = subscriptionFactory.createDurableSubscription(
@@ -272,11 +273,27 @@ class CryptoProcessorImpl @Activate constructor(
             messagingConfig = messagingConfig
         )
 
+        val hsmRegGroupName = "crypto.hsm.rpc.registration"
+        val hsmRegClientName = "crypto.hsm.rpc.registration"
+        val hsmRegSubscription = subscriptionFactory.createRPCSubscription(
+            rpcConfig = RPCConfig(
+                groupName = hsmRegGroupName,
+                clientName = hsmRegClientName,
+                requestTopic = Schemas.Crypto.RPC_HSM_REGISTRATION_MESSAGE_TOPIC,
+                requestType = HSMRegistrationRequest::class.java,
+                responseType = HSMRegistrationResponse::class.java
+            ),
+            responderProcessor = hsmRegistrationProcessor,
+            messagingConfig = messagingConfig
+        )
+
         // and start the subscriptions
-        logger.trace("Starting processing on ${flowGroupName} ${Schemas.Crypto.FLOW_OPS_MESSAGE_TOPIC}")
+        logger.trace("Starting processing on $flowGroupName ${Schemas.Crypto.FLOW_OPS_MESSAGE_TOPIC}")
         flowOpsSubscription.start()
-        logger.trace("Starting processing on ${rpcGroupName} ${Schemas.Crypto.RPC_OPS_MESSAGE_TOPIC}")
+        logger.trace("Starting processing on $rpcGroupName ${Schemas.Crypto.RPC_OPS_MESSAGE_TOPIC}")
         rpcOpsSubscription.start()
+        logger.trace("Starting processing on $hsmRegGroupName ${Schemas.Crypto.RPC_HSM_REGISTRATION_MESSAGE_TOPIC}")
+        hsmRegSubscription.start()
     }
 
     private fun setStatus(status: LifecycleStatus, coordinator: LifecycleCoordinator) {
