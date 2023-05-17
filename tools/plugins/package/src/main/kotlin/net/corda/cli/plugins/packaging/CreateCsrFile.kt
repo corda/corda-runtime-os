@@ -14,7 +14,6 @@ import java.security.Security
     name = "create-csr",
     description = ["Create a CSR file using KMS key"]
 )
-
 class CreateCsrFile : Runnable {
 
     @CommandLine.Option(names = ["--key", "-k"], required = true, description = ["Key id of AWS KMS key"])
