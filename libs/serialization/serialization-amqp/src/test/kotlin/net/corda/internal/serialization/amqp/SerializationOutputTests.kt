@@ -95,7 +95,19 @@ class SerializationOutputTests {
     data class TestDouble(val d: Double)
 
     @CordaSerializable
+    data class TestLong(val l: Long)
+
+    @CordaSerializable
+    data class TestInt(val i: Int)
+
+    @CordaSerializable
     data class TestShort(val s: Short)
+
+    @CordaSerializable
+    data class TestByte(val b: Byte)
+
+    @CordaSerializable
+    data class TestChar(val c: Char)
 
     @CordaSerializable
     data class TestBoolean(val b: Boolean)
@@ -321,8 +333,32 @@ class SerializationOutputTests {
     }
 
     @Test
+    fun `test long`() {
+        val obj = TestLong(23923)
+        serdes(obj)
+    }
+
+    @Test
+    fun `test int`() {
+        val obj = TestInt(1)
+        serdes(obj)
+    }
+
+    @Test
     fun `test short`() {
         val obj = TestShort(1)
+        serdes(obj)
+    }
+
+    @Test
+    fun `test byte`() {
+        val obj = TestByte(1)
+        serdes(obj)
+    }
+
+    @Test
+    fun `test char`() {
+        val obj = TestChar('?')
         serdes(obj)
     }
 
@@ -330,6 +366,54 @@ class SerializationOutputTests {
     fun `test bool`() {
         val obj = TestBoolean(true)
         serdes(obj)
+    }
+
+    @Test
+    fun `test naked double`() {
+        val primitiveObj = 101.234
+        serdes(primitiveObj)
+    }
+
+    @Test
+    fun `test naked float`() {
+        val primitiveObj = 101.0f
+        serdes(primitiveObj)
+    }
+
+    @Test
+    fun `test naked long`() {
+        val primitiveObj = 9347347L
+        serdes(primitiveObj)
+    }
+
+    @Test
+    fun `test naked int`() {
+        val primitiveObj = 101
+        serdes(primitiveObj)
+    }
+
+    @Test
+    fun `test naked short`() {
+        val primitiveObj = 101.toShort()
+        serdes(primitiveObj)
+    }
+
+    @Test
+    fun `test naked byte`() {
+        val primitiveObj = 101.toByte()
+        serdes(primitiveObj)
+    }
+
+    @Test
+    fun `test naked char`() {
+        val primitiveObj = '?'
+        serdes(primitiveObj)
+    }
+
+    @Test
+    fun `test naked boolean`() {
+        val primitiveObj = true
+        serdes(primitiveObj)
     }
 
     @Test
