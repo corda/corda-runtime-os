@@ -83,8 +83,6 @@ class CryptoProcessorImpl @Activate constructor(
     private val subscriptionFactory: SubscriptionFactory,
     @Reference(service = ExternalEventResponseFactory::class)
     private val externalEventResponseFactory: ExternalEventResponseFactory,
-    @Reference(service = JpaEntitiesRegistry::class)
-    private val jpaEntitiesRegistry: JpaEntitiesRegistry,
     @Reference(service = KeyEncodingService::class)
     private val keyEncodingService: KeyEncodingService,
     @Reference(service = LayeredPropertyMapFactory::class)
@@ -101,7 +99,6 @@ class CryptoProcessorImpl @Activate constructor(
             CRYPTO_CONFIG
         )
     }
-
 
     init {
         entitiesRegistry.register(CordaDb.Crypto.persistenceUnitName, CryptoEntities.classes)
@@ -226,7 +223,7 @@ class CryptoProcessorImpl @Activate constructor(
             cryptoServiceFactory, SigningRepositoryFactoryImpl(
                 dbConnectionManager,
                 virtualNodeInfoReadService,
-                jpaEntitiesRegistry,
+                entitiesRegistry,
                 keyEncodingService,
                 digestService,
                 layeredPropertyMapFactory
@@ -326,4 +323,3 @@ class CryptoProcessorImpl @Activate constructor(
 
     class AssociateHSM : LifecycleEvent
 }
-
