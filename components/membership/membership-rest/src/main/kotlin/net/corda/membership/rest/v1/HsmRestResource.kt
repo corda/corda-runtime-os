@@ -35,7 +35,7 @@ interface HsmRestResource : RestResource {
      * @param category The category of the HSM; can be the value 'ACCOUNTS', 'CI', 'LEDGER', 'NOTARY', 'SESSION_INIT',
      * 'TLS', or 'JWT_KEY'.
      *
-     * @return Information on the assigned HSM, or null if no HSM is assigned.
+     * @return Information on the assigned HSM, or 404 if no HSM is assigned.
      */
     @HttpGET(
         path = "{tenantId}/{category}",

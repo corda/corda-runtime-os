@@ -49,13 +49,14 @@ class HsmRestResourceImplTest {
         fun `assignedHsm returns null if no HSM found`() {
             whenever(hsmRegistrationClient.findHSM(tenantId, TLS)).doReturn(null)
 
-            val hsm = ops.assignedHsm(tenantId, "tls")
-
-            assertThat(hsm).isNull()
+            assertThrows<ResourceNotFoundException> { ops.assignedHsm(tenantId, "tls") }
         }
 
         @Test
         fun `assignedHsm calls the client with upper case`() {
+            val association = HSMAssociationInfo("a", "b", "SOFT", NOTARY, "foo", 0L)
+            whenever(hsmRegistrationClient.findHSM(tenantId, NOTARY)).doReturn(association)
+
             ops.assignedHsm(tenantId, "Notary")
 
             verify(hsmRegistrationClient).findHSM(tenantId, NOTARY)
@@ -63,7 +64,9 @@ class HsmRestResourceImplTest {
 
         @Test
         fun `assignedHsm verify the tenantId`() {
-            ops.assignedHsm(tenantId, "Notary")
+            val association = HSMAssociationInfo("a", "b", "SOFT", CI, "foo", 0L)
+            whenever(hsmRegistrationClient.findHSM(tenantId, CI)).doReturn(association)
+            ops.assignedHsm(tenantId, CI)
 
             verify(virtualNodeInfoReadService).getByHoldingIdentityShortHash(tenantIdShortHash)
         }
@@ -140,7 +143,7 @@ class HsmRestResourceImplTest {
                 ),
             )
 
-            ops.assignSoftHsm(tenantId, "ci")
+            ops.assignSoftHsm(tenantId, CI)
 
             verify(virtualNodeInfoReadService).getByHoldingIdentityShortHash(tenantIdShortHash)
         }

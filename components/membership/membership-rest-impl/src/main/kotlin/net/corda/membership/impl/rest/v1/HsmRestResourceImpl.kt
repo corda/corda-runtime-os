@@ -58,7 +58,9 @@ class HsmRestResourceImpl @Activate constructor(
             "Find HSM",
             untranslatedExceptions = setOf(ResourceNotFoundException::class.java)
         ) {
-            hsmRegistrationClient.findHSM(tenantId, category.toCategory())?.expose()
+            hsmRegistrationClient.findHSM(tenantId, category.toCategory())?.expose() ?: throw ResourceNotFoundException(
+                "No association found for tenant ${tenantId} category ${category}"
+            )
         }
     }
 
