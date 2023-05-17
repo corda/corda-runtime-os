@@ -6,7 +6,6 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.cipher.suite.PlatformDigestService
-import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.config.impl.signingService
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoTenants
@@ -73,8 +72,6 @@ class CryptoProcessorImpl @Activate constructor(
     private val hsmStore: HSMStore,
     @Reference(service = SoftCryptoServiceProvider::class)
     private val softCryptoServiceProvider: SoftCryptoServiceProvider,
-    @Reference(service = CryptoOpsClient::class)
-    private val cryptoOpsClient: CryptoOpsClient,
     @Reference(service = CryptoServiceFactory::class)
     private val cryptoServiceFactory: CryptoServiceFactory,
     @Reference(service = HSMService::class)
@@ -117,7 +114,6 @@ class CryptoProcessorImpl @Activate constructor(
     private val dependentComponents = DependentComponents.of(
         ::configurationReadService,
         ::hsmStore,
-        ::cryptoOpsClient,
         ::softCryptoServiceProvider,
         ::cryptoServiceFactory,
         ::hsmService,
