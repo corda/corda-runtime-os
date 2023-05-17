@@ -66,7 +66,6 @@ class CertificatesServiceImpl internal constructor(
     }
 
     private var registrationHandle: AutoCloseable? = null
-    private var subscriptionRegistrationHandle: AutoCloseable? = null
     private var configHandle: Resource? = null
     private var rpcSubscription: Resource? = null
     private val coordinator = coordinatorFactory.createCoordinator<CertificatesService>(::handleEvent)
@@ -74,6 +73,7 @@ class CertificatesServiceImpl internal constructor(
     override fun start() {
         coordinator.start()
     }
+
     override fun stop() {
         coordinator.stop()
     }
@@ -90,13 +90,12 @@ class CertificatesServiceImpl internal constructor(
                     )
                 )
             }
+
             is StopEvent -> {
                 coordinator.updateStatus(
                     LifecycleStatus.DOWN,
                     "Component received stop event."
                 )
-                subscriptionRegistrationHandle?.close()
-                subscriptionRegistrationHandle = null
                 registrationHandle?.close()
                 registrationHandle = null
                 configHandle?.close()
@@ -104,37 +103,23 @@ class CertificatesServiceImpl internal constructor(
                 rpcSubscription?.close()
                 rpcSubscription = null
             }
+
             is RegistrationStatusChangeEvent -> {
-                if (event.registration == registrationHandle) {
-                    configHandle?.close()
-                    if (event.status == LifecycleStatus.UP) {
-                        configHandle = configurationReadService.registerComponentForUpdates(
-                            coordinator,
-                            setOf(ConfigKeys.BOOT_CONFIG, ConfigKeys.MESSAGING_CONFIG)
-                        )
-                    } else {
-                        configHandle = null
-                        rpcSubscription?.close()
-                        rpcSubscription = null
-                    }
-                } else if (event.registration == subscriptionRegistrationHandle) {
-                    if (event.status == LifecycleStatus.UP) {
-                        coordinator.updateStatus(
-                            LifecycleStatus.UP,
-                            "Ready."
-                        )
-                    } else {
-                        coordinator.updateStatus(
-                            event.status,
-                            "Subscription went down."
-                        )
-                    }
+                configHandle?.close()
+                if (event.status == LifecycleStatus.UP) {
+                    configHandle = configurationReadService.registerComponentForUpdates(
+                        coordinator,
+                        setOf(ConfigKeys.BOOT_CONFIG, ConfigKeys.MESSAGING_CONFIG)
+                    )
                 } else {
-                    logger.warn("Unexpected event $event.")
+                    configHandle = null
+                    rpcSubscription?.close()
+                    rpcSubscription = null
                 }
+                coordinator.updateStatus(event.status)
             }
+
             is ConfigChangedEvent -> {
-                subscriptionRegistrationHandle?.close()
                 rpcSubscription?.close()
                 rpcSubscription = subscriptionFactory.createRPCSubscription(
                     rpcConfig = RPCConfig(
@@ -147,10 +132,10 @@ class CertificatesServiceImpl internal constructor(
                     responderProcessor = CertificatesProcessor(client),
                     messagingConfig = event.config.getConfig(ConfigKeys.MESSAGING_CONFIG),
                 ).also {
-                    subscriptionRegistrationHandle = coordinator.followStatusChangesByName(setOf(it.subscriptionName))
                     it.start()
                 }
             }
+
             else -> {
                 logger.warn("Unexpected event $event.")
             }
