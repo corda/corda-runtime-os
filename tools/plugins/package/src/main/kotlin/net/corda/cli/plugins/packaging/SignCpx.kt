@@ -1,11 +1,12 @@
 package net.corda.cli.plugins.packaging
 
-import java.nio.file.Files
 import net.corda.cli.plugins.packaging.FileHelpers.requireFileDoesNotExist
 import net.corda.cli.plugins.packaging.FileHelpers.requireFileExists
 import net.corda.cli.plugins.packaging.signing.SigningHelpers
+import net.corda.cli.plugins.packaging.signing.SigningHelpers.checkInputParametersForSigning
 import net.corda.cli.plugins.packaging.signing.SigningOptions
 import picocli.CommandLine
+import java.nio.file.Files
 
 @CommandLine.Command(
     name = "sign",
@@ -28,36 +29,86 @@ class SignCpx : Runnable {
     @CommandLine.Mixin
     var signingOptions = SigningOptions()
 
+    @Suppress("NestedBlockDepth")
     override fun run() {
+        checkInputParametersForSigning(signingOptions.keyStoreFileName, signingOptions.keyStorePass,
+            signingOptions.keyProvider, signingOptions.certChain)
         val cpxFilePath = requireFileExists(cpxFile)
         val signedCpxPath = requireFileDoesNotExist(outputSignedCpxFile)
 
-        if (multipleSignatures) {
-            SigningHelpers.sign(
-                cpxFilePath,
-                signedCpxPath,
-                signingOptions.keyStoreFileName,
-                signingOptions.keyStorePass,
-                signingOptions.keyAlias,
-                signingOptions.sigFile,
-                signingOptions.tsaUrl
-            )
-        } else {
-            val removedSignaturesCpx = Files.createTempFile("removedSignaturesCpx", null)
-            try {
-                SigningHelpers.removeSignatures(cpxFilePath, removedSignaturesCpx)
-                SigningHelpers.sign(
-                    removedSignaturesCpx,
-                    signedCpxPath,
-                    signingOptions.keyStoreFileName,
-                    signingOptions.keyStorePass,
-                    signingOptions.keyAlias,
-                    signingOptions.sigFile,
-                    signingOptions.tsaUrl
-                )
-            } finally {
-                Files.deleteIfExists(removedSignaturesCpx)
+        when (signingOptions.keyProvider) {
+            "local" -> {
+                if (multipleSignatures) {
+                    signingOptions.keyStoreFileName?.let {
+                        signingOptions.keyStorePass?.let { it1 ->
+                            SigningHelpers.sign(
+                                cpxFilePath,
+                                signedCpxPath,
+                                it,
+                                it1,
+                                signingOptions.keyAlias,
+                                signingOptions.sigFile,
+                                signingOptions.tsaUrl
+                            )
+                        }
+                    }
+                } else {
+                    val removedSignaturesCpx = Files.createTempFile("removedSignaturesCpx", null)
+                    try {
+                        SigningHelpers.removeSignatures(cpxFilePath, removedSignaturesCpx)
+                        signingOptions.keyStoreFileName?.let {
+                            signingOptions.keyStorePass?.let { it1 ->
+                                SigningHelpers.sign(
+                                    removedSignaturesCpx,
+                                    signedCpxPath,
+                                    it,
+                                    it1,
+                                    signingOptions.keyAlias,
+                                    signingOptions.sigFile,
+                                    signingOptions.tsaUrl
+                                )
+                            }
+                        }
+                    } finally {
+                        Files.deleteIfExists(removedSignaturesCpx)
+                    }
+                }
+            }
+            "KMS" -> {
+                val certChainPath = signingOptions.certChain?.let { requireFileExists(it) }
+
+                if (multipleSignatures) {
+                    if (certChainPath != null) {
+                        SigningHelpers.signWithKms(
+                            cpxFilePath,
+                            signedCpxPath,
+                            certChainPath,
+                            signingOptions.keyAlias,
+                            signingOptions.sigFile,
+                            signingOptions.tsaUrl
+                        )
+                    }
+                } else {
+                    val removedSignaturesCpx = Files.createTempFile("removedSignaturesCpx", null)
+                    try {
+                        SigningHelpers.removeSignatures(cpxFilePath, removedSignaturesCpx)
+                        if (certChainPath != null) {
+                            SigningHelpers.signWithKms(
+                                removedSignaturesCpx,
+                                signedCpxPath,
+                                certChainPath,
+                                signingOptions.keyAlias,
+                                signingOptions.sigFile,
+                                signingOptions.tsaUrl
+                            )
+                        }
+                    } finally {
+                        Files.deleteIfExists(removedSignaturesCpx)
+                    }
+                }
             }
         }
+
+
     }
 }

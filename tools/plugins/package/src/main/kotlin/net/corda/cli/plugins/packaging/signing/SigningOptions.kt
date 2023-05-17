@@ -6,14 +6,20 @@ import picocli.CommandLine
  * Signing Options to be used by any command that does signing.
  */
 class SigningOptions {
-    @CommandLine.Option(names = ["--keystore", "-s"], required = true, description = ["Keystore holding signing keys"])
-    lateinit var keyStoreFileName: String
+    @CommandLine.Option(names = ["--keystore", "-s"], description = ["Keystore holding signing keys"])
+    var keyStoreFileName: String? = null
 
-    @CommandLine.Option(names = ["--storepass", "--password", "-p"], required = true, description = ["Keystore password"])
-    lateinit var keyStorePass: String
+    @CommandLine.Option(names = ["--storepass", "--password", "-p"], description = ["Keystore password"])
+    var keyStorePass: String? = null
 
-    @CommandLine.Option(names = ["--key", "-k"], required = true, description = ["Key alias"])
+    @CommandLine.Option(names = ["--key", "-k"], required = true, description = ["Key alias or keyId if using AWS KMS"])
     lateinit var keyAlias: String
+
+    @CommandLine.Option(names = ["--key-provider", "-r"], description = ["Key provider: local or KMS"])
+    var keyProvider: String = "local"
+
+    @CommandLine.Option(names = ["--crt-chain"], description = ["Certificate chain"])
+    var certChain: String? = null
 
     @CommandLine.Option(names = ["--tsa", "-t"], description = ["Time Stamping Authority (TSA) URL"])
     var tsaUrl: String? = null

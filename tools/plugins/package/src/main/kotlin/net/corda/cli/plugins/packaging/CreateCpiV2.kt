@@ -1,10 +1,18 @@
 package net.corda.cli.plugins.packaging
 
+import net.corda.cli.plugins.packaging.FileHelpers.requireFileDoesNotExist
+import net.corda.cli.plugins.packaging.FileHelpers.requireFileExists
+import net.corda.cli.plugins.packaging.signing.CertificateLoader.readCertificates
+import net.corda.cli.plugins.packaging.signing.SigningHelpers
+import net.corda.cli.plugins.packaging.signing.SigningOptions
+import net.corda.libs.packaging.verify.PackageType
+import net.corda.libs.packaging.verify.VerifierBuilder
+import net.corda.libs.packaging.verify.internal.VerifierFactory
+import picocli.CommandLine
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
 import java.io.File
 import java.io.FileInputStream
-import java.lang.IllegalArgumentException
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardOpenOption.READ
@@ -13,15 +21,6 @@ import java.util.jar.Attributes
 import java.util.jar.JarEntry
 import java.util.jar.JarOutputStream
 import java.util.jar.Manifest
-import net.corda.cli.plugins.packaging.FileHelpers.requireFileDoesNotExist
-import net.corda.cli.plugins.packaging.FileHelpers.requireFileExists
-import net.corda.cli.plugins.packaging.signing.SigningHelpers
-import net.corda.cli.plugins.packaging.signing.SigningOptions
-import net.corda.cli.plugins.packaging.signing.CertificateLoader.readCertificates
-import net.corda.libs.packaging.verify.PackageType
-import net.corda.libs.packaging.verify.VerifierBuilder
-import net.corda.libs.packaging.verify.internal.VerifierFactory
-import picocli.CommandLine
 
 /**
  * Filename of group policy within jar file
@@ -87,7 +86,7 @@ class CreateCpiV2 : Runnable {
      */
     override fun run() {
         // Check input files exist
-        requireFileExists(signingOptions.keyStoreFileName)
+        signingOptions.keyStoreFileName?.let { requireFileExists(it) }
 
         val groupPolicyString = if (groupPolicyFileName == READ_FROM_STDIN)
             System.`in`.readAllBytes().toString(Charsets.UTF_8)
@@ -140,7 +139,11 @@ class CreateCpiV2 : Runnable {
             .format(VerifierFactory.FORMAT_2)
             .name(cpbPath.toString())
             .inputStream(FileInputStream(cpbPath.toString()))
-            .trustedCerts(readCertificates(signingOptions.keyStoreFileName, signingOptions.keyStorePass))
+            .trustedCerts(signingOptions.keyStoreFileName?.let { signingOptions.keyStorePass?.let { it1 ->
+                readCertificates(it,
+                    it1
+                )
+            } })
             .build()
             .verify()
     }
@@ -157,15 +160,19 @@ class CreateCpiV2 : Runnable {
             buildUnsignedCpi(cpbPath, unsignedCpi, groupPolicy)
 
             // Sign CPI jar
-            SigningHelpers.sign(
-                unsignedCpi,
-                outputFilePath,
-                signingOptions.keyStoreFileName,
-                signingOptions.keyStorePass,
-                signingOptions.keyAlias,
-                signingOptions.sigFile,
-                signingOptions.tsaUrl
-            )
+            signingOptions.keyStoreFileName?.let {
+                signingOptions.keyStorePass?.let { it1 ->
+                    SigningHelpers.sign(
+                        unsignedCpi,
+                        outputFilePath,
+                        it,
+                        it1,
+                        signingOptions.keyAlias,
+                        signingOptions.sigFile,
+                        signingOptions.tsaUrl
+                    )
+                }
+            }
         } finally {
             // Delete temp file
             Files.deleteIfExists(unsignedCpi)

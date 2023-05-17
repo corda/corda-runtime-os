@@ -1,20 +1,20 @@
 package net.corda.cli.plugins.packaging
 
-import java.nio.file.Files
-import java.nio.file.Path
-import picocli.CommandLine.Command
-import picocli.CommandLine.Option
-import java.nio.file.StandardOpenOption.WRITE
-import java.nio.file.StandardOpenOption.READ
-import java.util.jar.Attributes
-import java.util.jar.JarEntry
-import java.util.jar.JarOutputStream
-import java.util.jar.Manifest
 import net.corda.cli.plugins.packaging.FileHelpers.requireFileDoesNotExist
 import net.corda.cli.plugins.packaging.FileHelpers.requireFileExists
 import net.corda.cli.plugins.packaging.signing.SigningHelpers
 import net.corda.cli.plugins.packaging.signing.SigningOptions
 import picocli.CommandLine
+import picocli.CommandLine.Command
+import picocli.CommandLine.Option
+import java.nio.file.Files
+import java.nio.file.Path
+import java.nio.file.StandardOpenOption.READ
+import java.nio.file.StandardOpenOption.WRITE
+import java.util.jar.Attributes
+import java.util.jar.JarEntry
+import java.util.jar.JarOutputStream
+import java.util.jar.Manifest
 
 @Command(
     name = "create-cpb",
@@ -54,21 +54,26 @@ class CreateCpb : Runnable {
         private val CPB_UPGRADE = Attributes.Name("Corda-CPB-Upgrade")
     }
 
+    @Suppress("NestedBlockDepth")
     override fun run() {
         val unsignedCpb = Files.createTempFile("buildCPB", null)
         try {
             buildUnsignedCpb(unsignedCpb, cpks)
             val cpbPath = requireFileDoesNotExist(outputCpbFileName)
 
-            SigningHelpers.sign(
-                unsignedCpb,
-                cpbPath,
-                signingOptions.keyStoreFileName,
-                signingOptions.keyStorePass,
-                signingOptions.keyAlias,
-                signingOptions.sigFile,
-                signingOptions.tsaUrl
-            )
+            signingOptions.keyStoreFileName?.let {
+                signingOptions.keyStorePass?.let { it1 ->
+                    SigningHelpers.sign(
+                        unsignedCpb,
+                        cpbPath,
+                        it,
+                        it1,
+                        signingOptions.keyAlias,
+                        signingOptions.sigFile,
+                        signingOptions.tsaUrl
+                    )
+                }
+            }
         } finally {
             Files.deleteIfExists(unsignedCpb)
         }

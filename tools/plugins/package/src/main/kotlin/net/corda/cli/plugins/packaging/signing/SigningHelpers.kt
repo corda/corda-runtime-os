@@ -164,4 +164,17 @@ internal object SigningHelpers {
             .getInstance(STANDARD_CERT_FACTORY_TYPE)
             .generateCertificate(targetStream) as X509Certificate
     }
+
+    fun checkInputParametersForSigning(keyStoreFileName: String?, keyStorePass: String?, keyProvider: String, certChain: String?) {
+        when (keyProvider) {
+            "local" -> {
+                require(!keyStoreFileName.isNullOrBlank()) { "When using local key, keystore has to be specified." }
+                require(!keyStorePass.isNullOrBlank()) { "When using local key, keystore password has to be specified." }
+            }
+            "KMS" -> {
+                require(!certChain.isNullOrBlank()) { "When using AWS KMS key, signing certificate/chain has to be specified." }
+            }
+        }
+
+    }
 }
