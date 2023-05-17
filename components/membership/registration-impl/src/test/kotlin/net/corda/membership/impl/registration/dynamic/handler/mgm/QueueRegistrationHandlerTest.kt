@@ -9,6 +9,7 @@ import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.p2p.MembershipRegistrationRequest
 import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.persistence.client.MembershipPersistenceClient
+import net.corda.membership.persistence.client.MembershipPersistenceOperation
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.messaging.api.records.Record
 import net.corda.v5.base.types.MemberX500Name
@@ -40,6 +41,8 @@ class QueueRegistrationHandlerTest {
 
     private val registrationRequest =
         MembershipRegistrationRequest(registrationId, memberContext, registrationContext, SERIAL)
+
+    private val mockPersistenceOperation = mock<MembershipPersistenceOperation<Unit>>()
     private val membershipPersistenceClient = mock<MembershipPersistenceClient> {
         on {
             persistRegistrationRequest(
@@ -52,8 +55,8 @@ class QueueRegistrationHandlerTest {
                     registrationRequest.registrationContext,
                     registrationRequest.serial,
                 ))
-            ).execute()
-        } doReturn MembershipPersistenceResult.success()
+            )
+        } doReturn mockPersistenceOperation
     }
     private val inputCommand = RegistrationCommand(QueueRegistration(mgm, member, registrationRequest, 0))
 
@@ -61,6 +64,7 @@ class QueueRegistrationHandlerTest {
 
     @Test
     fun `invoke returns check pending registration command as next step`() {
+        whenever(mockPersistenceOperation.execute()).thenReturn(MembershipPersistenceResult.success())
         with(handler.invoke(null, Record(TOPIC, KEY, inputCommand))) {
             assertThat(updatedState).isNull()
             assertThat(outputStates.size).isEqualTo(1)
@@ -76,8 +80,10 @@ class QueueRegistrationHandlerTest {
 
     @Test
     fun `retry if queueing the request failed`() {
-        whenever(membershipPersistenceClient.persistRegistrationRequest(any(), any()).execute())
-            .thenReturn(MembershipPersistenceResult.Failure("error happened"))
+        whenever(mockPersistenceOperation.getOrThrow()).thenThrow(
+            MembershipPersistenceResult.PersistenceRequestException(MembershipPersistenceResult.Failure<Unit>("error"))
+        )
+        whenever(membershipPersistenceClient.persistRegistrationRequest(any(), any())).thenReturn(mockPersistenceOperation)
         with(handler.invoke(null, Record(TOPIC, KEY, inputCommand))) {
             assertThat(updatedState).isNull()
             assertThat(outputStates.size).isEqualTo(1)

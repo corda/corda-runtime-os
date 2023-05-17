@@ -41,6 +41,7 @@ import net.corda.schema.Schemas.Membership.SYNCHRONIZATION_TOPIC
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.schema.registry.deserialize
 import net.corda.test.util.time.TestClock
+import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.membership.MGMContext
 import net.corda.v5.membership.MemberContext
 import net.corda.v5.membership.MemberInfo
@@ -100,7 +101,7 @@ class MembershipP2PProcessorTest {
     private val memberKey: PublicKey = mock()
     private val memberKeyPem = "-----BEGIN PUBLIC KEY-----encoded-memberKey-----END PUBLIC KEY-----"
     private val groupId = "1f5e558c-dd87-438f-a57f-21e69c1e0b88"
-    private val mgm = HoldingIdentity("C=GB, L=London, O=MGM", groupId)
+    private val mgm = HoldingIdentity(MemberX500Name.parse("C=GB, L=London, O=MGM").toString(), groupId)
     private val unauthenticatedRegistrationRequest = UnauthenticatedRegistrationRequest(
         UnauthenticatedRegistrationRequestHeader(
             mgm, ByteBuffer.wrap(SALT_BYTES), ByteBuffer.wrap(AAD_BYTES), memberKeyPem
@@ -108,7 +109,7 @@ class MembershipP2PProcessorTest {
         registrationReqMsgPayload
     )
     private val unauthenticatedRegMsgPayload = unauthenticatedRegistrationRequest.toByteBuffer()
-    private val member = HoldingIdentity("C=GB, L=London, O=Alice", groupId)
+    private val member = HoldingIdentity(MemberX500Name.parse("C=GB, L=London, O=Alice").toString(), groupId)
     private val mgmKey: PublicKey = mock()
     private val memberProvidedContext: MemberContext = mock()
     private val mgmProvidedContext: MGMContext = mock()

@@ -130,8 +130,10 @@ class AddNotaryToGroupParametersHandlerTest {
         on { get<String>("epoch") } doReturn mock<Path<String>>()
     }
     private val statusPath = mock<Path<String>>()
+    private val memberX500NamePath = mock<Path<String>>()
     private val memberRoot = mock<Root<MemberInfoEntity>> {
         on { get<String>("status") } doReturn statusPath
+        on { get<String>("memberX500Name") } doReturn memberX500NamePath
     }
     private val order = mock<Order>()
     private val query = mock<CriteriaQuery<GroupParametersEntity>> {
@@ -144,13 +146,15 @@ class AddNotaryToGroupParametersHandlerTest {
     private val memberCriteriaQuery = mock<CriteriaQuery<MemberInfoEntity>> {
         on { from(MemberInfoEntity::class.java) } doReturn memberRoot
         on { select(memberRoot) } doReturn mock
-        on { where(any()) } doReturn mock
+        on { where(equalPredicate, notEqualPredicate) } doReturn mock
+        on { where(any(), any()) } doReturn mock
     }
     private val criteriaBuilder = mock<CriteriaBuilder> {
         on { createQuery(GroupParametersEntity::class.java) } doReturn query
         on { createQuery(MemberInfoEntity::class.java) } doReturn memberCriteriaQuery
         on { desc(any()) } doReturn order
-        on { equal(statusPath, MEMBER_STATUS_ACTIVE) } doReturn mock()
+        on { equal(statusPath, MEMBER_STATUS_ACTIVE) } doReturn equalPredicate
+        on { notEqual(eq(memberX500NamePath), any<String>()) } doReturn notEqualPredicate
     }
     private val entityManager = mock<EntityManager> {
         on { persist(any<GroupParametersEntity>()) } doAnswer {}
@@ -250,7 +254,7 @@ class AddNotaryToGroupParametersHandlerTest {
             on { serial } doReturn 1L
         }
         whenever(memberInfoFactory.create(any(), any<SortedMap<String, String?>>())).doReturn(otherNotary)
-        whenever(membersQuery.resultStream).doReturn(listOf(otherNotaryEntity).stream())
+        whenever(membersQuery.resultList).doReturn(listOf(otherNotaryEntity))
         whenever(keyValuePairListDeserializer.deserialize(any())).doReturn(
             KeyValuePairList(listOf(
                 KeyValuePair(EPOCH_KEY, EPOCH.toString()),

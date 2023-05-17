@@ -52,12 +52,14 @@ internal class AddNotaryToGroupParametersHandler(
         )
     }
 
-    private fun getLatestMemberList(entityManager: EntityManager): Collection<MemberInfo> {
+    private fun getLatestMemberList(entityManager: EntityManager, notary: MemberInfo): Collection<MemberInfo> {
         val criteriaBuilder = entityManager.criteriaBuilder
         val memberQueryBuilder = criteriaBuilder.createQuery(MemberInfoEntity::class.java)
         val root = memberQueryBuilder.from(MemberInfoEntity::class.java)
         val memberQuery = memberQueryBuilder.select(root)
-            .where(criteriaBuilder.equal(root.get<String>("status"), MEMBER_STATUS_ACTIVE))
+            .where(criteriaBuilder.equal(root.get<String>("status"), MEMBER_STATUS_ACTIVE),
+                criteriaBuilder.notEqual(root.get<String>("memberX500Name"), notary.name.toString())
+            )
         return entityManager.createQuery(memberQuery).setLockMode(LockModeType.PESSIMISTIC_WRITE).resultList.map {
             memberInfoFactory.create(
                 deserializer.deserializeKeyValuePairList(it.memberContext).toSortedMap(),
@@ -115,7 +117,7 @@ internal class AddNotaryToGroupParametersHandler(
             val notaryServiceNumber = parametersMap.entries.firstOrNull { it.value == notaryServiceName }?.run {
                 notaryServiceRegex.find(key)?.groups?.get(1)?.value?.toIntOrNull()
             }
-            val otherMembers = getLatestMemberList(em).filterNot { it.name == notaryInfo.name }
+            val otherMembers = getLatestMemberList(em, notaryInfo)
             checkAgainstLatestMemberList(notaryInfo, notaryServiceName, otherMembers)
             val (epoch, groupParameters) = if (notaryServiceNumber != null) {
                 // Add notary to existing notary service, or update notary with rotated keys

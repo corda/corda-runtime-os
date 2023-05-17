@@ -228,6 +228,27 @@ class PersistRegistrationRequestHandlerTest {
     }
 
     @Test
+    fun `invoke will not merge anything if the status is the same`() {
+        val status = mock<RegistrationRequestEntity> {
+            on { status } doReturn "SENT_TO_MGM"
+        }
+        whenever(
+            entityManager.find(
+                RegistrationRequestEntity::class.java,
+                ourRegistrationId,
+                LockModeType.PESSIMISTIC_WRITE,
+            )
+        ).doReturn(status)
+
+        persistRegistrationRequestHandler.invoke(
+            getMemberRequestContext(),
+            getPersistRegistrationRequest()
+        )
+
+        verify(entityManager, never()).merge(any<RegistrationRequestEntity>())
+    }
+
+    @Test
     fun `invoke will merge if the status is in earlier state`() {
         val status = mock<RegistrationRequestEntity> {
             on { status } doReturn "NEW"

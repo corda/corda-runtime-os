@@ -22,12 +22,19 @@ internal class PersistRegistrationRequestHandler(
                 registrationId,
                 LockModeType.PESSIMISTIC_WRITE,
             )
-            if (currentStatus?.status?.toStatus()?.canMoveToStatus(request.status) == false) {
-                logger.info(
-                    "Registration request [$registrationId] has status: ${currentStatus.status}" +
-                        " can not move it to status ${request.status}"
-                )
-                return@transaction
+            currentStatus?.status?.toStatus()?.let {
+                if (it == request.status) {
+                    logger.info("Registration request [$registrationId] with status: ${currentStatus.status}" +
+                            " is already persisted. Persistence request was discarded.")
+                    return@transaction
+                }
+                if (!it.canMoveToStatus(request.status)) {
+                    logger.info(
+                        "Registration request [$registrationId] has status: ${currentStatus.status}" +
+                                " can not move it to status ${request.status}"
+                    )
+                    return@transaction
+                }
             }
             em.merge(
                 with(request.registrationRequest) {
