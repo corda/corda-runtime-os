@@ -4,11 +4,11 @@ import net.corda.data.membership.db.request.async.MembershipPersistenceAsyncRequ
 import net.corda.data.membership.db.request.async.MembershipPersistenceAsyncRequestState
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.Resource
 import net.corda.lifecycle.TimerEvent
-import net.corda.lifecycle.createCoordinator
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
@@ -19,6 +19,7 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.lang.Long.max
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicInteger
 
 internal class MembershipPersistenceAsyncRetryManager(
     coordinatorFactory: LifecycleCoordinatorFactory,
@@ -32,6 +33,7 @@ internal class MembershipPersistenceAsyncRetryManager(
         const val PUBLISHER_NAME = "MembershipPersistenceAsyncRetryManager"
         const val WAIT_BETWEEN_REQUESTS_IN_SECONDS = 2L
         val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        val instanceIndex = AtomicInteger(0)
     }
 
     private val publisher = publisherFactory.createPublisher(
@@ -41,7 +43,12 @@ internal class MembershipPersistenceAsyncRetryManager(
         it.start()
     }
     private val coordinator =
-        coordinatorFactory.createCoordinator<MembershipPersistenceAsyncRetryManager> { event, _ ->
+        coordinatorFactory.createCoordinator(
+            LifecycleCoordinatorName(
+                this::class.java.simpleName,
+                instanceId = instanceIndex.incrementAndGet().toString(),
+            ),
+        ) { event, _ ->
             eventHandler(event)
         }.also {
             it.start()
