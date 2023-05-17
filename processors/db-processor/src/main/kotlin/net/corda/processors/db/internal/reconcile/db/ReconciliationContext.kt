@@ -49,7 +49,7 @@ class VirtualNodeReconciliationContext(
     private var entityManager: EntityManager? = null
 
     private fun getOrCreateEntityManagerFactory() = entityManagerFactory
-        ?: dbConnectionManager.createEntityManagerFactory(virtualNodeInfo.vaultDmlConnectionId, jpaEntitiesSet)
+        ?: dbConnectionManager.getOrCreateEntityManagerFactory(virtualNodeInfo.vaultDmlConnectionId, jpaEntitiesSet)
             .also { entityManagerFactory = it }
 
     override fun getOrCreateEntityManager(): EntityManager = entityManager
@@ -58,7 +58,7 @@ class VirtualNodeReconciliationContext(
 
     override fun close() {
         entityManager?.close()
-        entityManagerFactory?.close()
+        //entityManagerFactory?.close()
         entityManager = null
         entityManagerFactory = null
     }

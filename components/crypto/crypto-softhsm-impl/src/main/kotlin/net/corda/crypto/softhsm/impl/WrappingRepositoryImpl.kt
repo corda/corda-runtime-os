@@ -21,7 +21,7 @@ class WrappingRepositoryImpl(
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
-    override fun close() = entityManagerFactory.close()
+    override fun close() = Unit
 
     override fun saveKey(alias: String, key: WrappingKeyInfo): WrappingKeyInfo =
         entityManagerFactory.createEntityManager().use {

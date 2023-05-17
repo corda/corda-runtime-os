@@ -31,7 +31,7 @@ class HSMRepositoryImpl(
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
-    override fun close() = entityManagerFactory.close()
+    override fun close() = Unit
 
     override fun findTenantAssociation(tenantId: String, category: String): HSMAssociationInfo? =
         entityManagerFactory.createEntityManager().use {

@@ -46,7 +46,7 @@ class SigningRepositoryImpl(
     private val digestService: PlatformDigestService,
     private val layeredPropertyMapFactory: LayeredPropertyMapFactory,
 ) : SigningRepository {
-    override fun close() = entityManagerFactory.close()
+    override fun close() = Unit
 
     // TODO - share code between the two save*Key methods
     /**

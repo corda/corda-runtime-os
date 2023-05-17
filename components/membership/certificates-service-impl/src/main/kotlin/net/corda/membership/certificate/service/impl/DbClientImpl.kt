@@ -97,19 +97,15 @@ internal class DbClientImpl(
     ): T {
         val node = virtualNodeInfoReadService.getByHoldingIdentityShortHash(holdingIdentityId)
             ?: throw NoSuchNode(holdingIdentityId)
-        val factory = dbConnectionManager.createEntityManagerFactory(
+        val factory = dbConnectionManager.getOrCreateEntityManagerFactory(
             connectionId = node.vaultDmlConnectionId,
             entitiesSet = jpaEntitiesRegistry.get(CordaDb.Vault.persistenceUnitName)
                 ?: throw IllegalStateException(
                     "persistenceUnitName ${CordaDb.Vault.persistenceUnitName} is not registered."
                 )
         )
-        return try {
-            val processor = NodeCertificateProcessor(factory, usage)
-            block.invoke(processor)
-        } finally {
-            factory.close()
-        }
+        val processor = NodeCertificateProcessor(factory, usage)
+        return block.invoke(processor)
     }
 
     override fun importCertificates(

@@ -70,7 +70,7 @@ class HSMStoreImpl @Activate constructor(
         private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
     ) : DownstreamAlwaysUpAbstractImpl() {
 
-        fun openRepository(): HSMRepository = HSMRepositoryImpl(
+        private fun openRepository(): HSMRepository = HSMRepositoryImpl(
                 getEntityManagerFactory(
                     CryptoTenants.CRYPTO,
                     dbConnectionManager,
@@ -81,11 +81,11 @@ class HSMStoreImpl @Activate constructor(
             )
 
         fun findTenantAssociation(tenantId: String, category: String): HSMAssociationInfo? =
-            openRepository().use {
+            openRepository().let {
                 it.findTenantAssociation(tenantId, category)
             }
 
-        fun getHSMUsage(): List<HSMUsage> = openRepository().use {
+        fun getHSMUsage(): List<HSMUsage> = openRepository().let {
             it.getHSMUsage()
         }
 
@@ -95,7 +95,7 @@ class HSMStoreImpl @Activate constructor(
             category: String,
             hsmId: String,
             masterKeyPolicy: MasterKeyPolicy,
-        ): HSMAssociationInfo = openRepository().use {
+        ): HSMAssociationInfo = openRepository().let {
             it.associate(tenantId, category, hsmId, masterKeyPolicy)
         }
 
