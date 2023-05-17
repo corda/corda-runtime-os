@@ -104,7 +104,7 @@ class PersistMemberInfoHandlerTest {
     }
 
     private val dbConnectionManager: DbConnectionManager = mock {
-        on { createEntityManagerFactory(
+        on { getOrCreateEntityManagerFactory(
             eq(vaultDmlConnectionId),
             any()) } doReturn entityManagerFactory
     }
@@ -194,7 +194,6 @@ class PersistMemberInfoHandlerTest {
             assertThat(firstValue).isEqualTo(ourHoldingIdentity.shortHash)
         }
         verify(entityManagerFactory).createEntityManager()
-        verify(entityManagerFactory).close()
         verify(entityManager).transaction
         verify(jpaEntitiesRegistry).get(eq(CordaDb.Vault.persistenceUnitName))
         with(argumentCaptor<PersistentMemberInfo>()) {

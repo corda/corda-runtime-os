@@ -54,7 +54,7 @@ class QueryGroupPolicyHandlerTest {
 
     private val vaultDmlConnectionId = UUID(0, 33)
     private val dbConnectionManager: DbConnectionManager = mock {
-        on { createEntityManagerFactory(
+        on { getOrCreateEntityManagerFactory(
             eq(vaultDmlConnectionId),
             any()
         ) } doReturn entityManagerFactory

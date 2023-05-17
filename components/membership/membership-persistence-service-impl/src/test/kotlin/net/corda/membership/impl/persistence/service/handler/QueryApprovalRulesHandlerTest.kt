@@ -84,7 +84,7 @@ class QueryApprovalRulesHandlerTest {
     }
     private val connectionManager = mock<DbConnectionManager> {
         on {
-            createEntityManagerFactory(
+            getOrCreateEntityManagerFactory(
                 vaultDmlConnectionId,
                 entitySet
             )

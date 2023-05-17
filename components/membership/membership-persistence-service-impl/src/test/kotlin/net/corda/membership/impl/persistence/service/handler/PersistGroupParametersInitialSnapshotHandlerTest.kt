@@ -79,7 +79,7 @@ class PersistGroupParametersInitialSnapshotHandlerTest {
     }
     private val connectionManager = mock<DbConnectionManager> {
         on {
-            createEntityManagerFactory(
+            getOrCreateEntityManagerFactory(
                 vaultDmlConnectionId,
                 entitySet
             )

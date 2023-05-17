@@ -165,7 +165,7 @@ class AddNotaryToGroupParametersHandlerTest {
     }
     private val connectionManager = mock<DbConnectionManager> {
         on {
-            createEntityManagerFactory(
+            getOrCreateEntityManagerFactory(
                 vaultDmlConnectionId,
                 entitySet
             )
@@ -265,7 +265,6 @@ class AddNotaryToGroupParametersHandlerTest {
         handler.invoke(requestContext, request)
 
         verify(entityManagerFactory).createEntityManager()
-        verify(entityManagerFactory).close()
         verify(entityManager).transaction
         verify(registry).get(eq(CordaDb.Vault.persistenceUnitName))
         verify(keyValuePairListSerializer).serialize(
@@ -299,7 +298,6 @@ class AddNotaryToGroupParametersHandlerTest {
         handler.invoke(requestContext, request)
 
         verify(entityManagerFactory).createEntityManager()
-        verify(entityManagerFactory).close()
         verify(entityManager).transaction
         verify(registry).get(eq(CordaDb.Vault.persistenceUnitName))
         verify(keyValuePairListSerializer).serialize(
@@ -355,7 +353,6 @@ class AddNotaryToGroupParametersHandlerTest {
         handler.invoke(requestContext, request)
 
         verify(entityManagerFactory).createEntityManager()
-        verify(entityManagerFactory).close()
         verify(entityManager).transaction
         verify(registry).get(eq(CordaDb.Vault.persistenceUnitName))
         verify(entityManager, times(0)).persist(any())

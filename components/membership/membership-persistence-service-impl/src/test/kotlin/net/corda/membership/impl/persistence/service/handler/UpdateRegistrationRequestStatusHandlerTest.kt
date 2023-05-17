@@ -73,7 +73,7 @@ class UpdateRegistrationRequestStatusHandlerTest {
 
     private val dbConnectionManager: DbConnectionManager = mock {
         on {
-            createEntityManagerFactory(
+            getOrCreateEntityManagerFactory(
                 eq(vaultDmlConnectionId),
                 any()
             )

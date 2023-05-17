@@ -263,7 +263,7 @@ class MembershipPersistenceRPCProcessorTest {
 
     private val dbConnectionManager: DbConnectionManager = mock {
         on {
-            createEntityManagerFactory(
+            getOrCreateEntityManagerFactory(
                 eq(vaultDmlConnectionId),
                 any()
             )

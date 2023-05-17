@@ -84,7 +84,7 @@ class PersistRegistrationRequestHandlerTest {
 
     private val dbConnectionManager: DbConnectionManager = mock {
         on {
-            createEntityManagerFactory(
+            getOrCreateEntityManagerFactory(
                 eq(vaultDmlConnectionId),
                 any()
             )
@@ -175,7 +175,6 @@ class PersistRegistrationRequestHandlerTest {
             assertThat(firstValue).isEqualTo(ourHoldingIdentity.shortHash)
         }
         verify(entityManagerFactory).createEntityManager()
-        verify(entityManagerFactory).close()
         verify(entityManager).transaction
         verify(jpaEntitiesRegistry).get(eq(CordaDb.Vault.persistenceUnitName))
         verify(memberInfoFactory, never()).create(any())

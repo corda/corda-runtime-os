@@ -137,7 +137,7 @@ class SuspendMemberHandlerTest {
         on { createEntityManager() } doReturn em
     }
     private val dbConnectionManager: DbConnectionManager = mock {
-        on { createEntityManagerFactory(any(), any()) } doReturn emf
+        on { getOrCreateEntityManagerFactory(any<UUID>(), any()) } doReturn emf
     }
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService = mock {
         on { getByHoldingIdentityShortHash(holdingIdentity.shortHash) } doReturn ourVirtualNodeInfo
