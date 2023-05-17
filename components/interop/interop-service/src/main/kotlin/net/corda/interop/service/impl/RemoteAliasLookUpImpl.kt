@@ -13,10 +13,8 @@ class RemoteAliasLookUpImpl @Activate constructor() :
     RemoteAliasLookUp, UsedByFlow, SingletonSerializeAsToken {
 
     override fun lookup(x500Name : String, cpiName: String): AliasMemberInfo? {
-        return getAliasMemberData().firstOrNull { memberInfo ->
-            memberInfo.identifier.equals(
-                "$x500Name@$cpiName"
-            )
+        return getAliasMemberData().firstOrNull {
+            it.identifier == "$x500Name@$cpiName"
         }
     }
 

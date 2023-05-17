@@ -68,12 +68,12 @@ data class HoldingIdAliasGroupInfoImpl(
     }
 
     override fun getGroups(): MutableList<InteropGroupInfo> {
-        return groupData.map { DummyGroup(member, it.groupId, it.groupName, it.networks) }.toMutableList()
+        return groupData.map { GroupInfo(member, it.groupId, it.groupName, it.networks) }.toMutableList()
     }
 
 }
 
-data class DummyGroup(
+data class GroupInfo (
     private val member: String,
     private val groupId: String,
     private val groupName: String,
@@ -88,11 +88,11 @@ data class DummyGroup(
     }
 
     override fun getMembers(): MutableList<AliasMemberInfo> {
-        return networks.map { DummyAliasMemberInfo(member, it.network, groupName, it.cpiName, it.facadeIds) }.toMutableList()
+        return networks.map { AliasMember(member, it.network, groupName, it.cpiName, it.facadeIds) }.toMutableList()
     }
 }
 
-data class DummyAliasMemberInfo(
+data class AliasMember (
     private val member: String,
     private val network: String,
     private val groupName: String,
