@@ -10,7 +10,7 @@ import javax.persistence.criteria.Predicate
 
 internal class QueryPreAuthTokenHandler(persistenceHandlerServices: PersistenceHandlerServices) :
     BasePersistenceHandler<QueryPreAuthToken, PreAuthTokenQueryResponse>(persistenceHandlerServices) {
-
+    override val operation: String = QueryPreAuthToken::class.java.simpleName
     override fun invoke(context: MembershipRequestContext, request: QueryPreAuthToken): PreAuthTokenQueryResponse {
         return transaction(context.holdingIdentity.toCorda().shortHash) { em ->
             val criteriaBuilder = em.criteriaBuilder

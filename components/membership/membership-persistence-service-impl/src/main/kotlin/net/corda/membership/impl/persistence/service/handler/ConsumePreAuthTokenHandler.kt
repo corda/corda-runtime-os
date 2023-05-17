@@ -11,7 +11,7 @@ import javax.persistence.LockModeType
 
 internal class ConsumePreAuthTokenHandler(persistenceHandlerServices: PersistenceHandlerServices) :
     BasePersistenceHandler<ConsumePreAuthToken, Unit>(persistenceHandlerServices) {
-
+    override val operation: String = ConsumePreAuthToken::class.java.simpleName
     override fun invoke(context: MembershipRequestContext, request: ConsumePreAuthToken) {
         val requestReceived = clock.instant()
         logger.info("Consuming pre-auth token with ID ${request.tokenId}")

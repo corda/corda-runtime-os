@@ -12,6 +12,7 @@ import net.corda.virtualnode.toCorda
 internal class QueryGroupPolicyHandler(
     persistenceHandlerServices: PersistenceHandlerServices
 ) : BasePersistenceHandler<QueryGroupPolicy, GroupPolicyQueryResponse>(persistenceHandlerServices) {
+    override val operation: String = QueryGroupPolicy::class.java.simpleName
     private val keyValuePairListDeserializer: CordaAvroDeserializer<KeyValuePairList> by lazy {
         cordaAvroSerializationFactory.createAvroDeserializer(
             {

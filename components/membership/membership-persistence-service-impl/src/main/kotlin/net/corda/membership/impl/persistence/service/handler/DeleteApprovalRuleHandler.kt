@@ -11,6 +11,7 @@ import net.corda.virtualnode.toCorda
 internal class DeleteApprovalRuleHandler(
     persistenceHandlerServices: PersistenceHandlerServices
 ) : BasePersistenceHandler<DeleteApprovalRule, DeleteApprovalRuleResponse>(persistenceHandlerServices) {
+    override val operation: String = DeleteApprovalRule::class.java.simpleName
     override fun invoke(context: MembershipRequestContext, request: DeleteApprovalRule): DeleteApprovalRuleResponse {
         logger.info("Deleting approval rule.")
         return transaction(context.holdingIdentity.toCorda().shortHash) { em ->

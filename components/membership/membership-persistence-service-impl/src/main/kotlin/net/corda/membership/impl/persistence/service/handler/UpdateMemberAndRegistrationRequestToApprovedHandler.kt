@@ -27,6 +27,7 @@ internal class UpdateMemberAndRegistrationRequestToApprovedHandler(
         UpdateMemberAndRegistrationRequestToApproved,
         UpdateMemberAndRegistrationRequestResponse
         >(persistenceHandlerServices) {
+    override val operation: String = UpdateMemberAndRegistrationRequestToApproved::class.java.simpleName
 
     private val keyValuePairListDeserializer: CordaAvroDeserializer<KeyValuePairList> by lazy {
         cordaAvroSerializationFactory.createAvroDeserializer(

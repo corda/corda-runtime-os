@@ -14,6 +14,7 @@ import net.corda.virtualnode.toCorda
 internal class PersistGroupPolicyHandler(
     persistenceHandlerServices: PersistenceHandlerServices
 ) : BasePersistenceHandler<PersistGroupPolicy, Unit>(persistenceHandlerServices) {
+    override val operation: String = PersistGroupPolicy::class.java.simpleName
     private val keyValuePairListSerializer: CordaAvroSerializer<KeyValuePairList> =
         cordaAvroSerializationFactory.createAvroSerializer {
             logger.error("Failed to serialize key value pair list.")

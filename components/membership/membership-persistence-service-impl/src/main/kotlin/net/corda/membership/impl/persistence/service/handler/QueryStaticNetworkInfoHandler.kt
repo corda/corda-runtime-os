@@ -10,7 +10,7 @@ import net.corda.membership.network.writer.staticnetwork.StaticNetworkInfoMappin
 internal class QueryStaticNetworkInfoHandler(
     persistenceHandlerServices: PersistenceHandlerServices
 ) : BasePersistenceHandler<QueryStaticNetworkInfo, StaticNetworkInfoQueryResponse>(persistenceHandlerServices) {
-
+    override val operation: String = QueryStaticNetworkInfo::class.java.simpleName
     private val deserializer = cordaAvroSerializationFactory.createAvroDeserializer({
         logger.error("Failed to deserialize KeyValuePairList.")
     }, KeyValuePairList::class.java)

@@ -1,5 +1,6 @@
 package net.corda.membership.impl.persistence.service.handler
 
+import io.micrometer.core.instrument.Timer
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.core.ShortHash
 import net.corda.avro.serialization.CordaAvroSerializationFactory
@@ -21,6 +22,11 @@ import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 
 internal interface PersistenceHandler<REQUEST, RESPONSE> {
+    /**
+     * Persistence operation identifier for logging and metrics purposes.
+     */
+    val operation: String
+
     fun invoke(context: MembershipRequestContext, request: REQUEST): RESPONSE?
 }
 
@@ -42,22 +48,28 @@ internal abstract class BasePersistenceHandler<REQUEST, RESPONSE>(
     val platformInfoProvider get() = persistenceHandlerServices.platformInfoProvider
     val allowedCertificatesReaderWriterService get() = persistenceHandlerServices.allowedCertificatesReaderWriterService
 
+    private val transactionTimer by lazy {
+        persistenceHandlerServices.transactionTimerFactory(operation)
+    }
+
     fun <R> transaction(holdingIdentityShortHash: ShortHash, block: (EntityManager) -> R): R {
-        val virtualNodeInfo = virtualNodeInfoReadService.getByHoldingIdentityShortHash(holdingIdentityShortHash)
-            ?: throw MembershipPersistenceException(
-                "Virtual node info can't be retrieved for " +
-                        "holding identity ID $holdingIdentityShortHash"
-            )
-        val factory = getEntityManagerFactory(virtualNodeInfo)
-        return try {
-            factory.transaction(block)
-        } finally {
-            factory.close()
-        }
+            val virtualNodeInfo = virtualNodeInfoReadService.getByHoldingIdentityShortHash(holdingIdentityShortHash)
+                ?: throw MembershipPersistenceException(
+                    "Virtual node info can't be retrieved for " +
+                            "holding identity ID $holdingIdentityShortHash"
+                )
+            val factory = getEntityManagerFactory(virtualNodeInfo)
+            return try {
+                transactionTimer.recordCallable { factory.transaction(block).also{println(it != null)}}!!
+            } finally {
+                factory.close()
+            }
     }
 
     fun <R> transaction(block: (EntityManager) -> R): R {
-        return dbConnectionManager.getClusterEntityManagerFactory().transaction(block)
+        return dbConnectionManager.getClusterEntityManagerFactory().let {
+            transactionTimer.recordCallable { it.transaction(block) }!!
+        }
     }
 
     fun retrieveSignatureSpec(signatureSpec: String) = if (signatureSpec.isEmpty()) {
@@ -87,4 +99,5 @@ internal data class PersistenceHandlerServices(
     val keyEncodingService: KeyEncodingService,
     val platformInfoProvider: PlatformInfoProvider,
     val allowedCertificatesReaderWriterService: AllowedCertificatesReaderWriterService,
+    val transactionTimerFactory: (String) -> Timer
 )
