@@ -26,6 +26,7 @@ import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
+import java.util.UUID
 import javax.persistence.EntityManagerFactory
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -71,7 +72,7 @@ internal class CertificatesServiceImplTest {
         }
         val dbConnectionManagerMock = mock<DbConnectionManager>().apply {
             whenever(getClusterEntityManagerFactory()) doReturn entityManagerFactory
-            whenever(createEntityManagerFactory(any(), any())) doAnswer {
+            whenever(getOrCreateEntityManagerFactory(any<UUID>(), any())) doAnswer {
                 EntityManagerFactoryFactoryImpl().create(
                     "test_vnode_unit",
                     CertificateEntities.vnodeClasses.toList(),
