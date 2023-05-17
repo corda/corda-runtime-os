@@ -77,9 +77,28 @@ import kotlin.test.assertFalse
 import kotlin.test.assertNotSame
 import kotlin.test.assertTrue
 
-val schemeMetadata = CipherSchemeMetadataImpl()
+// If we have this setup in companion objects we have initialisation loop problem with ExecutionContext,
+// so we simply make them all file level read only declarations. No need to make private in test code.
 
-private class ExecutionContext {
+val schemeMetadata = CipherSchemeMetadataImpl()
+val knownTenantId = toHex(UUID.randomUUID().toString().toByteArray().sha256Bytes()).take(12)
+val knownAlias = UUID.randomUUID().toString()
+val knownOperationContext = mapOf(
+    UUID.randomUUID().toString() to UUID.randomUUID().toString()
+)
+val knownRawOperationContext = KeyValuePairList(
+    knownOperationContext.map {
+        KeyValuePair(it.key, it.value)
+    }
+)
+
+// most tests can share an execution context, so make one at file level to use in most cases
+val context = TestExecutionContext()
+val coordinatorFactory = context.coordinatorFactory
+val sender = context.sender
+val component = context.component
+
+class TestExecutionContext {
     val coordinatorFactory = TestLifecycleCoordinatorFactoryImpl()
     val configurationReadService: TestConfigurationReadService = TestConfigurationReadService(
         coordinatorFactory
@@ -98,7 +117,8 @@ private class ExecutionContext {
         publisherFactory = publisherFactory,
         schemeMetadata = schemeMetadata,
         configurationReadService = configurationReadService,
-        digestService = mock()
+        digestService = mock(),
+        rpcRetries = 0
     )
 }
 
@@ -110,20 +130,6 @@ class CryptoOpsClientComponentTests {
         fun knownCordaRPCAPIResponderExceptions(): List<Class<*>> =
             exceptionFactories.keys.map { Class.forName(it) }
 
-        private val knownTenantId = toHex(UUID.randomUUID().toString().toByteArray().sha256Bytes()).take(12)
-        private val knownAlias = UUID.randomUUID().toString()
-        private val knownOperationContext = mapOf(
-            UUID.randomUUID().toString() to UUID.randomUUID().toString()
-        )
-        private val knownRawOperationContext = KeyValuePairList(
-            knownOperationContext.map {
-                KeyValuePair(it.key, it.value)
-            }
-        )
-        private val context = ExecutionContext()
-        private val coordinatorFactory = context.coordinatorFactory
-        private val sender = context.sender
-        private val component = context.component
     }
 
     private fun setupCompletedResponse(respFactory: (RpcOpsRequest) -> Any) {
@@ -1010,7 +1016,7 @@ class CryptoOpsClientComponentTests {
 
     @Test
     fun `Should cleanup created resources when component is stopped`() {
-        val my = ExecutionContext()
+        val my = TestExecutionContext()
         assertFalse(my.component.isRunning)
         assertThrows(IllegalStateException::class.java) {
             my.component.impl.ops
@@ -1031,7 +1037,7 @@ class CryptoOpsClientComponentTests {
 
     @Test
     fun `Should go UP and DOWN as its config reader goes UP and DOWN`() {
-        val my = ExecutionContext()
+        val my = TestExecutionContext()
         assertFalse(my.component.isRunning)
         assertThrows(IllegalStateException::class.java) {
             my.component.impl.ops
@@ -1056,7 +1062,7 @@ class CryptoOpsClientComponentTests {
 
     @Test
     fun `Should go UP and DOWN as its downstream dependencies go UP and DOWN`() {
-        val my = ExecutionContext()
+        val my = TestExecutionContext()
         assertFalse(my.component.isRunning)
         assertThrows(IllegalStateException::class.java) {
             my.component.impl.ops
@@ -1081,7 +1087,7 @@ class CryptoOpsClientComponentTests {
 
     @Test
     fun `Should recreate active implementation on config change`() {
-        val my = ExecutionContext()
+        val my = TestExecutionContext()
         assertFalse(my.component.isRunning)
         assertThrows(IllegalStateException::class.java) {
             my.component.impl.ops
