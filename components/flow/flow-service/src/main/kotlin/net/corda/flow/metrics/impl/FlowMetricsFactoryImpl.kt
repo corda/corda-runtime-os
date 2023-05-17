@@ -13,7 +13,7 @@ class FlowMetricsFactoryImpl : FlowMetricsFactory {
     override fun create(eventRecordTimestamp: Long, flowCheckpoint: FlowCheckpoint): FlowMetrics {
         return FlowMetricsImpl(
             UTCClock(),
-            FlowMetricsRecordImpl(flowCheckpoint),
+            FlowMetricsRecorderImpl(flowCheckpoint),
             flowCheckpoint,
             eventRecordTimestamp
         )

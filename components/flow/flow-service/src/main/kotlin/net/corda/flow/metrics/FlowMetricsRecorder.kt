@@ -1,6 +1,6 @@
 package net.corda.flow.metrics
 
-interface FlowMetricsRecord {
+interface FlowMetricsRecorder {
     fun recordFlowEventLag(lagMilli: Long, flowEventType: String)
     fun recordFlowStartLag(lagMilli: Long)
     fun recordFlowSuspensionCompletion(operationName: String, executionTimeMilli: Long)

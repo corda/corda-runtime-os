@@ -1,13 +1,13 @@
 package net.corda.flow.metrics.impl
 
-import net.corda.flow.metrics.FlowMetricsRecord
+import net.corda.flow.metrics.FlowMetricsRecorder
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.metrics.CordaMetrics
 import java.time.Duration
 
-class FlowMetricsRecordImpl(
+class FlowMetricsRecorderImpl(
     private val flowCheckpoint: FlowCheckpoint
-) : FlowMetricsRecord {
+) : FlowMetricsRecorder {
 
     override fun recordFlowEventLag(lagMilli: Long, flowEventType: String) {
         CordaMetrics.Metric.FlowEventLagTime.builder()

@@ -3,13 +3,13 @@ package net.corda.flow.metrics.impl
 import com.fasterxml.jackson.databind.ObjectMapper
 import net.corda.data.flow.output.FlowStates
 import net.corda.flow.pipeline.metrics.FlowMetrics
-import net.corda.flow.metrics.FlowMetricsRecord
+import net.corda.flow.metrics.FlowMetricsRecorder
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.utilities.time.Clock
 
 class FlowMetricsImpl(
     private val clock: Clock,
-    private val flowMetricsRecord: FlowMetricsRecord,
+    private val flowMetricsRecorder: FlowMetricsRecorder,
     private val flowCheckpoint: FlowCheckpoint,
     private val recordTimestamp: Long
 ) : FlowMetrics {
@@ -34,14 +34,14 @@ class FlowMetricsImpl(
 
     override fun flowEventReceived(flowEventType: String){
         // Record the event lag
-        flowMetricsRecord.recordFlowEventLag(eventReceivedTimestampMillis - recordTimestamp, flowEventType)
+        flowMetricsRecorder.recordFlowEventLag(eventReceivedTimestampMillis - recordTimestamp, flowEventType)
     }
 
     override fun flowStarted() {
         currentState.flowProcessingStartTime = clock.nowInMillis()
 
         flowCheckpoint.flowStartContext.createdTimestamp?.let {
-            flowMetricsRecord.recordFlowStartLag(clock.nowInMillis() - it.toEpochMilli())
+            flowMetricsRecorder.recordFlowStartLag(clock.nowInMillis() - it.toEpochMilli())
         }
     }
 
@@ -51,7 +51,7 @@ class FlowMetricsImpl(
         // If we were waiting on a suspension then record the wait time.
         if (currentState.suspensionAction != null && currentState.suspensionTimestampMillis != null) {
             val flowSuspensionTime = clock.nowInMillis() - currentState.suspensionTimestampMillis!!
-            flowMetricsRecord.recordFlowSuspensionCompletion(currentState.suspensionAction!!, flowSuspensionTime)
+            flowMetricsRecorder.recordFlowSuspensionCompletion(currentState.suspensionAction!!, flowSuspensionTime)
             currentState.totalSuspensionTime += flowSuspensionTime
             currentState.suspensionAction = null
             currentState.suspensionTimestampMillis = null
@@ -60,7 +60,7 @@ class FlowMetricsImpl(
 
     override fun flowFiberExited() {
         fiberExecutionTime = clock.nowInMillis() - fiberStartTime
-        flowMetricsRecord.recordFiberExecution(fiberExecutionTime)
+        flowMetricsRecorder.recordFiberExecution(fiberExecutionTime)
         currentState.totalFiberExecutionTime += fiberExecutionTime
         currentState.suspensionCount++
         currentState.suspensionAction = null
@@ -75,7 +75,7 @@ class FlowMetricsImpl(
 
     override fun flowEventCompleted(flowEventType: String) {
         val pipelineExecutionTime = clock.instant().toEpochMilli() - eventReceivedTimestampMillis
-        flowMetricsRecord.recordPipelineExecution(pipelineExecutionTime, flowEventType)
+        flowMetricsRecorder.recordPipelineExecution(pipelineExecutionTime, flowEventType)
         currentState.totalPipelineExecutionTime += pipelineExecutionTime
         flowCheckpoint.setMetricsState(objectMapper.writeValueAsString(currentState))
     }
@@ -90,10 +90,10 @@ class FlowMetricsImpl(
 
     private fun recordFlowCompleted(completionStatus: String) {
         val flowCompletionTime = clock.instant().toEpochMilli() - currentState.flowProcessingStartTime
-        flowMetricsRecord.recordFlowCompletion(flowCompletionTime, completionStatus)
-        flowMetricsRecord.recordTotalSuspensionTime(currentState.totalSuspensionTime)
-        flowMetricsRecord.recordTotalFiberExecutionTime(currentState.totalFiberExecutionTime)
-        flowMetricsRecord.recordTotalPipelineExecutionTime(currentState.totalPipelineExecutionTime)
+        flowMetricsRecorder.recordFlowCompletion(flowCompletionTime, completionStatus)
+        flowMetricsRecorder.recordTotalSuspensionTime(currentState.totalSuspensionTime)
+        flowMetricsRecorder.recordTotalFiberExecutionTime(currentState.totalFiberExecutionTime)
+        flowMetricsRecorder.recordTotalPipelineExecutionTime(currentState.totalPipelineExecutionTime)
     }
 
     private fun Clock.nowInMillis(): Long {

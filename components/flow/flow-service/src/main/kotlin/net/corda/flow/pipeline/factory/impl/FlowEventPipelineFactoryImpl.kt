@@ -101,11 +101,7 @@ class FlowEventPipelineFactoryImpl(
     ): FlowEventPipeline {
         val flowCheckpoint = flowCheckpointFactory.create(event.flowId, checkpoint, config)
 
-        val metrics = try {
-            flowMetricsFactory.create(eventRecordTimestamp, flowCheckpoint)
-        } catch (e: Exception) {
-            throw e
-        }
+        val metrics = flowMetricsFactory.create(eventRecordTimestamp, flowCheckpoint)
 
         val context = FlowEventContext<Any>(
             checkpoint = flowCheckpoint,
