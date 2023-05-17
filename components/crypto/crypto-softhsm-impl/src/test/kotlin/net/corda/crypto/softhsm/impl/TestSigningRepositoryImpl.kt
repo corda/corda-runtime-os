@@ -14,9 +14,11 @@ import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoMoreInteractions
+import java.util.UUID
 
 class TestSigningRepositoryImpl {
 
@@ -63,7 +65,7 @@ class TestSigningRepositoryImpl {
         }
         val dbConnectionManager = mock<DbConnectionManager> {
             on { getOrCreateEntityManagerFactory(any<CordaDb>(), any()) } doReturn mock()
-            on { createEntityManagerFactory(any(), any()) } doReturn ownedEntityManagerFactory
+            on { getOrCreateEntityManagerFactory(any<UUID>(), any()) } doReturn ownedEntityManagerFactory
         }
         val virtualNodeInfoReadService = mock<VirtualNodeInfoReadService> {
             on { getByHoldingIdentityShortHash(any()) } doReturn virtualNodeInfo
@@ -102,9 +104,9 @@ class TestSigningRepositoryImpl {
         ).use {
             verify(ownedEntityManagerFactory, times(0)).close()
         } // try shorter, ShortHash bombs
-        verify(dbConnectionManager).createEntityManagerFactory(any(), any())
+        verify(dbConnectionManager).getOrCreateEntityManagerFactory(any<UUID>(), any())
         verifyNoMoreInteractions(dbConnectionManager)
-        verify(sharedEntityManagerFactory, times(0)).close()
-        verify(ownedEntityManagerFactory, times(1)).close()
+        verify(sharedEntityManagerFactory, never()).close()
+        verify(ownedEntityManagerFactory, never()).close()
     }
 }
