@@ -5,6 +5,7 @@ plugins {
 }
 
 dependencies {
+    implementation project(path: ':libs:metrics')
     compileOnly 'org.osgi:osgi.annotation'
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
 

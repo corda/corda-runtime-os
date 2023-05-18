@@ -14,9 +14,10 @@ import io.micrometer.core.instrument.Tag as micrometerTag
 
 
 object CordaMetrics {
-    sealed class Metric<T: Meter> (
+    sealed class Metric<T : Meter>(
         val metricsName: String,
-        private val meter: (String, Iterable<micrometerTag>) -> T) {
+        private val meter: (String, Iterable<micrometerTag>) -> T
+    ) {
 
         fun builder(): MeterBuilder<T> {
             return MeterBuilder(this.metricsName, this.meter)
@@ -28,10 +29,12 @@ object CordaMetrics {
          * Number of HTTP Requests.
          */
         object HttpRequestCount : Metric<Counter>("http.server.request", Metrics::counter)
+
         /**
          * HTTP Requests time.
          */
         object HttpRequestTime : Metric<Timer>("http.server.request.time", CordaMetrics::timer)
+
         /**
          * Time it took to create the sandbox
          */
@@ -58,59 +61,157 @@ object CordaMetrics {
         object MessagePollTime : Metric<Timer>("messaging.poll.time", CordaMetrics::timer)
 
         /**
-         * Time it took for a flow to complete sucessfully or to error.
+         * FLOW METRICS
+         *
+         * Time it took for a flow to complete successfully or to error.
          */
         object FlowRunTime : Metric<Timer>("flow.run.time", CordaMetrics::timer)
 
         /**
          * Metric for flow fiber serialization.
          */
-        object FlowFiberSerializationTime : Metric<Timer>("flow.fiber.serialization.time", Metrics::timer)
+        object FlowFiberSerializationTime : Metric<Timer>("flow.fiber.serialization.time", CordaMetrics::timer)
 
         /**
          * Metric for flow fiber deserialization.
          */
-        object FlowFiberDeserializationTime : Metric<Timer>("flow.fiber.deserialization.time", Metrics::timer)
+        object FlowFiberDeserializationTime : Metric<Timer>("flow.fiber.deserialization.time", CordaMetrics::timer)
 
         /**
+         * Metric for lag between flow start event between the REST API and the flow processor.
+         */
+        object FlowStartLag : Metric<Timer>("flow.start.lag", CordaMetrics::timer)
+
+        /**
+         * Metric for the time taken to execute the flow (excluding any start lag).
+         *
+         * Total count of flows executed can be obtained by the number of events recorded for this metric.
+         */
+        object FlowExecutionTime : Metric<Timer>("flow.execution.time", CordaMetrics::timer)
+
+        /**
+         * Metric for lag between flow event publication and processing.
+         */
+        object FlowEventLagTime : Metric<Timer>("flow.event.lag", CordaMetrics::timer)
+
+        /**
+         * Metric for the time taken to execute the flow (excluding any start lag)
+         *
+         * Number of pipeline events processed can be inferred from the count of events recorded for this metric.
+         */
+        object FlowEventPipelineExecutionTime : Metric<Timer>("flow.event.pipeline.execution.time", CordaMetrics::timer)
+
+
+        /**
+         * Metric for the time taken to execute the flow (excluding any start lag)
+         *
+         * Number of fiber execution events processed can be inferred from the count of events recorded for this metric.
+         */
+        object FlowEventFiberExecutionTime : Metric<Timer>("flow.event.fiber.execution.time", CordaMetrics::timer)
+
+
+        /**
+         * Metric for the time taken to execute the flow (excluding any start lag)
+         */
+        object FlowPipelineExecutionTime : Metric<Timer>("flow.pipeline.execution.time", CordaMetrics::timer)
+
+        /**
+         * Metric for the time taken to execute the flow (excluding any start lag)
+         */
+        object FlowFiberExecutionTime : Metric<Timer>("flow.fiber.execution.time", CordaMetrics::timer)
+
+
+        /**
+         * Metric for total time taken waiting to awake from a suspension
+         */
+        object FlowSuspensionWaitTime : Metric<Timer>("flow.suspension.wait.time", CordaMetrics::timer)
+
+        /**
+         * Metric for the time taken waiting to awake from a suspension
+         *
+         * Number of flow event suspensions can be inferred from the count of events recorded for this metric.
+         */
+        object FlowEventSuspensionWaitTime : Metric<Timer>("flow.event.suspension.wait.time", CordaMetrics::timer)
+
+        /**
+         * Number of times a scheduled wakeup is published for flows.
+         */
+        object FlowScheduledWakeupCount : Metric<Counter>("flow.scheduled.wakeup.count", Metrics::counter)
+
+        /**
+         * FLOW MAPPER METRICS
+         *
+         * Time to process a single message in the flow mapper
+         */
+        object FlowMapperEventProcessingTime : Metric<Timer>("flow.mapper.event.processing.time", CordaMetrics::timer)
+
+        /**
+         * Count of events dropped due to deduplication of start events by the mapper.
+         */
+        object FlowMapperDeduplicationCount : Metric<Counter>("flow.mapper.deduplication.count", Metrics::counter)
+
+        /**
+         * Count of new states being created.
+         */
+        object FlowMapperCreationCount : Metric<Counter>("flow.mapper.creation.count", Metrics::counter)
+
+        /**
+         * Count of states being cleaned up.
+         */
+        object FlowMapperCleanupCount : Metric<Counter>("flow.mapper.cleanup.count", Metrics::counter)
+
+        /**
+         * Time taken between a mapper event being published and processed.
+         */
+        object FlowMapperEventLag : Metric<Timer>("flow.mapper.event.lag", CordaMetrics::timer)
+
+        /**
+         * Count of expired session events dropped by the mapper.
+         */
+        object FlowMapperExpiredSessionEventCount : Metric<Counter>("flow.mapper.expired.session.event.count", Metrics::counter)
+
+
+        /**
+         * P2P Metrics
+         *
          * Number of outbound peer-to-peer data messages sent.
          */
-        object OutboundMessageCount: Metric<Counter>("p2p.message.outbound", Metrics::counter)
+        object OutboundMessageCount : Metric<Counter>("p2p.message.outbound", Metrics::counter)
 
         /**
          * Number of outbound peer-to-peer data messages replayed.
          */
-        object OutboundMessageReplayCount: Metric<Counter>("p2p.message.outbound.replayed", Metrics::counter)
+        object OutboundMessageReplayCount : Metric<Counter>("p2p.message.outbound.replayed", Metrics::counter)
 
         /**
          * Time it took for an outbound peer-to-peer message to be delivered end-to-end (from initial processing to acknowledgement).
          */
-        object OutboundMessageDeliveryLatency: Metric<Timer>("p2p.message.outbound.latency", CordaMetrics::timer)
+        object OutboundMessageDeliveryLatency : Metric<Timer>("p2p.message.outbound.latency", CordaMetrics::timer)
 
         /**
          * Number of outbound peer-to-peer data messages that were discarded because their TTL expired.
          */
-        object OutboundMessageTtlExpired: Metric<Counter>("p2p.message.outbound.expired", Metrics::counter)
+        object OutboundMessageTtlExpired : Metric<Counter>("p2p.message.outbound.expired", Metrics::counter)
 
         /**
          * Number of inbound peer-to-peer data messages received.
          */
-        object InboundMessageCount: Metric<Counter>("p2p.message.inbound", Metrics::counter)
+        object InboundMessageCount : Metric<Counter>("p2p.message.inbound", Metrics::counter)
 
         /**
          * Number of outbound peer-to-peer sessions that timed out (indicating communication issues with peers).
          */
-        object OutboundSessionTimeoutCount: Metric<Counter>("p2p.session.outbound.timeout", Metrics::counter)
+        object OutboundSessionTimeoutCount : Metric<Counter>("p2p.session.outbound.timeout", Metrics::counter)
 
         /**
          * Number of outbound peer-to-peer sessions.
          */
-        object OutboundSessionCount: Metric<SettableGauge>("p2p.session.outbound", CordaMetrics::settableGauge)
+        object OutboundSessionCount : Metric<SettableGauge>("p2p.session.outbound", CordaMetrics::settableGauge)
 
         /**
          * Number of inbound peer-to-peer sessions.
          */
-        object InboundSessionCount: Metric<SettableGauge>("p2p.session.inbound", CordaMetrics::settableGauge)
+        object InboundSessionCount : Metric<SettableGauge>("p2p.session.inbound", CordaMetrics::settableGauge)
 
         /**
          * The time taken by verification processor to verify a ledger transaction.
@@ -126,41 +227,46 @@ object CordaMetrics {
          * The time taken from requesting a uniqueness check to a response being received from the perspective of
          * a client (requesting) node.
          */
-        object LedgerUniquenessClientRunTime: Metric<Timer>("ledger.uniqueness.client.run.time", CordaMetrics::timer)
+        object LedgerUniquenessClientRunTime : Metric<Timer>("ledger.uniqueness.client.run.time", CordaMetrics::timer)
 
         /**
          * The overall time for the uniqueness checker to process a batch, inclusive of all sub-batches.
          */
-        object UniquenessCheckerBatchExecutionTime: Metric<Timer>("uniqueness.checker.batch.execution.time", CordaMetrics::timer)
+        object UniquenessCheckerBatchExecutionTime :
+            Metric<Timer>("uniqueness.checker.batch.execution.time", CordaMetrics::timer)
 
         /**
          * The number of requests in a batch processed by the uniqueness checker.
          */
-        object UniquenessCheckerBatchSize: Metric<DistributionSummary>("uniqueness.checker.batch.size", Metrics::summary)
+        object UniquenessCheckerBatchSize :
+            Metric<DistributionSummary>("uniqueness.checker.batch.size", Metrics::summary)
 
         /**
          * The time for the uniqueness checker to process a sub-batch, i.e. a partition of a batch segregated
          * by notary virtual node holding identity.
          */
-        object UniquenessCheckerSubBatchExecutionTime: Metric<Timer>("uniqueness.checker.subbatch.execution.time", CordaMetrics::timer)
+        object UniquenessCheckerSubBatchExecutionTime :
+            Metric<Timer>("uniqueness.checker.subbatch.execution.time", CordaMetrics::timer)
 
         /**
          * The number of requests in a sub-batch processed by the uniqueness checker.
          */
-        object UniquenessCheckerSubBatchSize: Metric<DistributionSummary>("uniqueness.checker.subbatch.size", Metrics::summary)
+        object UniquenessCheckerSubBatchSize :
+            Metric<DistributionSummary>("uniqueness.checker.subbatch.size", Metrics::summary)
 
         /**
          * Cumulative number of requests processed by the uniqueness checker, irrespective of batch.
          */
-        object UniquenessCheckerRequestCount: Metric<Counter>("uniqueness.checker.request.count", Metrics::counter)
+        object UniquenessCheckerRequestCount : Metric<Counter>("uniqueness.checker.request.count", Metrics::counter)
 
         /**
          * The overall execution time for a (uniqueness checker) backing store session, which includes retrieving
          * uniqueness database connection details, getting a database connection, as well as all database operations
          * (both read and write) carried out within a session context.
          */
-        object UniquenessBackingStoreSessionExecutionTime: Metric<Timer>(
-            "uniqueness.backingstore.session.execution.time", CordaMetrics::timer)
+        object UniquenessBackingStoreSessionExecutionTime : Metric<Timer>(
+            "uniqueness.backingstore.session.execution.time", CordaMetrics::timer
+        )
 
         /**
          * The execution time for a transaction within the context of a backing store session, which excludes
@@ -168,29 +274,33 @@ object CordaMetrics {
          * needs to be retried due to database exceptions, then the execution time covers the cumulative duration
          * of all retry attempts.
          */
-        object UniquenessBackingStoreTransactionExecutionTime: Metric<Timer>(
-            "uniqueness.backingstore.transaction.execution.time", CordaMetrics::timer)
+        object UniquenessBackingStoreTransactionExecutionTime : Metric<Timer>(
+            "uniqueness.backingstore.transaction.execution.time", CordaMetrics::timer
+        )
 
         /**
          * Cumulative number of errors raised by the backing store when executing a transaction. This is incremented
          * regardless of whether an expected or unexpected error is raised, and is incremented on each retry.
          */
-        object UniquenessBackingStoreTransactionErrorCount: Metric<Counter>(
-            "uniqueness.backingstore.transaction.error.count", Metrics::counter)
+        object UniquenessBackingStoreTransactionErrorCount : Metric<Counter>(
+            "uniqueness.backingstore.transaction.error.count", Metrics::counter
+        )
 
         /**
          * The number of attempts that were made by the backing store before a transaction ultimately succeeded. In
          * the event that a transaction was unsuccessful due to reaching the maximum number of attempts, this metric
          * is not updated.
          */
-        object UniquenessBackingStoreTransactionAttempts: Metric<DistributionSummary>(
-            "uniqueness.backingstore.transaction.attempts", Metrics::summary)
+        object UniquenessBackingStoreTransactionAttempts : Metric<DistributionSummary>(
+            "uniqueness.backingstore.transaction.attempts", Metrics::summary
+        )
 
         /**
          * The time taken by the backing store to commit a transaction (i.e. write) to the database. Only updated if
          * data is written to the database, so is not cumulative across retry attempts for a given transaction.
          */
-        object UniquenessBackingStoreDbCommitTime: Metric<Timer>("uniqueness.backingstore.db.commit.time", CordaMetrics::timer)
+        object UniquenessBackingStoreDbCommitTime :
+            Metric<Timer>("uniqueness.backingstore.db.commit.time", CordaMetrics::timer)
 
         /**
          * The time taken by the backing store to perform a single read operation from the database.
@@ -239,14 +349,17 @@ object CordaMetrics {
          * Address for which the metric is applicable.
          */
         Address("address"),
+
         /**
          * Type of the SandboxGroup to which the metric applies.
          */
         SandboxGroupType("sandbox.type"),
+
         /**
          * Source of metric.
          */
         WorkerType("worker.type"),
+
         /**
          * Virtual Node for which the metric is applicable.
          */
@@ -270,13 +383,22 @@ object CordaMetrics {
         /**
          * Flow class for which the metric is applicable.
          */
-        FlowClass("class"),
-
+        FlowClass("flow.class"),
 
         /**
          * Flow Id for which the metric is applicable.
          */
-        FlowId("id"),
+        FlowId("flow.id"),
+
+        /**
+         * The flow suspension action this metric was recorded for.
+         */
+        FlowSuspensionAction("flow.suspension.action"),
+
+        /**
+         * The flow event type this metric was recorded for.
+         */
+        FlowEvent("flow.event"),
 
         /**
          * The status of the operation. Can be used to indicate whether an operation was successful or failed.
@@ -349,11 +471,12 @@ object CordaMetrics {
                 override fun map(id: Meter.Id): Meter.Id {
                     // prefix all metrics with `corda`, except standard JVM and Process metrics
                     @Suppress("ComplexCondition")
-                    if(
+                    if (
                         id.name.startsWith("corda") ||
                         id.name.startsWith("jvm") ||
                         id.name.startsWith("system") ||
-                        id.name.startsWith("process")) {
+                        id.name.startsWith("process")
+                    ) {
                         return id
                     }
                     return id.withName("corda." + id.name)
@@ -377,7 +500,7 @@ object CordaMetrics {
             .register(registry)
     }
 
-    class MeterBuilder<T: Meter>(
+    class MeterBuilder<T : Meter>(
         val name: String,
         val func: (String, Iterable<micrometerTag>) -> T
     ) {
