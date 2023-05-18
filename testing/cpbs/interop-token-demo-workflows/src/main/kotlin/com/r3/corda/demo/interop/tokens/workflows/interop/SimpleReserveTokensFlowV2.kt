@@ -11,8 +11,8 @@ import net.corda.v5.base.types.MemberX500Name
 import org.slf4j.LoggerFactory
 import java.math.BigDecimal
 
-@InitiatingFlow(protocol = "SimpleReserveTokensFlow-protocol")
-class SimpleReserveTokensFlow : ClientStartableFlow {
+@InitiatingFlow(protocol = "SimpleReserveTokensFlow2-protocol")
+class SimpleReserveTokensFlowV2 : ClientStartableFlow {
     private companion object {
         val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
@@ -30,7 +30,7 @@ class SimpleReserveTokensFlow : ClientStartableFlow {
 
     @Suspendable
     override fun call(requestBody: ClientRequestBody): String {
-        log.info("SimpleReserveTokensFlow.call() starting test v1")
+        log.info("SimpleReserveTokensFlow.call() starting test v2")
 
         val args = requestBody.getRequestBodyAsMap(jsonMarshallingService, String::class.java, String::class.java)
 
@@ -44,7 +44,7 @@ class SimpleReserveTokensFlow : ClientStartableFlow {
         val client: TokensFacade =
             facadeService.getFacade(facadeId, TokensFacade::class.java, alias, interopGroupId)
 
-        val responseObject = client.reserveTokensV1("USD", BigDecimal(100))
+        val responseObject = client.reserveTokensV2("USD", BigDecimal(100), 100)
         val response = responseObject.result.toString()
 
         log.info("Facade responded with '$response'")

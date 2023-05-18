@@ -15,8 +15,7 @@ data class Reservation(val ref: UUID, val denomination: String, val amount: Doub
 data class Spend(val reservation: Reservation, val transactionRef: UUID, val recipient: String)
 
 
-class TokensFlow(initialBalances: Map<String, BigDecimal>, private val timeserver: () -> ZonedDateTime) :
-     FacadeDispatcherFlow(), TokensFacade {
+class TokensFlow: FacadeDispatcherFlow(), TokensFacade {
 
     private companion object {
         val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -24,8 +23,8 @@ class TokensFlow(initialBalances: Map<String, BigDecimal>, private val timeserve
 
     @CordaInject
     lateinit var memberLookup: MemberLookup
-
-    private var balances = initialBalances.toMutableMap()
+    private val timeserver : () -> ZonedDateTime = { ZonedDateTime.now() }
+    private var balances = mutableMapOf("USD" to BigDecimal(100), "EUR" to BigDecimal(100))
     private val reservations = mutableMapOf<UUID, Reservation>()
     val spendHistory = mutableListOf<Spend>()
 
