@@ -1,0 +1,7 @@
+resources:
+  requests:
+    memory: "-62000_MiB"
+    cpu: "12h"
+  limits:
+    memory: "not a number"
+    cpu: "1000gew"

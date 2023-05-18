@@ -22,6 +22,7 @@ fun ClusterInfo.conditionallyUploadCordaPackage(
 
 fun ClusterInfo.conditionallyUploadCpiSigningCertificate() = cluster {
     val hasCertificateChain = assertWithRetry {
+        interval(1.seconds)
         command { getCertificateChain(CODE_SIGNER_CERT_USAGE, CODE_SIGNER_CERT_ALIAS) }
         condition {
             it.code == ResponseCode.RESOURCE_NOT_FOUND.statusCode ||
@@ -165,6 +166,7 @@ fun ClusterInfo.createKeyFor(
     scheme: String
 ): String = cluster {
     val keyId = assertWithRetry {
+        interval(1.seconds)
         command { createKey(tenantId, alias, category, scheme) }
         condition {
             // Allow 409 also in case an error occurred when creating but creation was successful.
@@ -173,6 +175,7 @@ fun ClusterInfo.createKeyFor(
         failMessage("Failed to create key for holding id '$tenantId'")
     }.toJson()
     assertWithRetry {
+        interval(1.seconds)
         command { getKey(tenantId, keyId["id"].textValue()) }
         condition { it.code == 200 }
         failMessage("Failed to get key for holding id '$tenantId' and key id '$keyId'")

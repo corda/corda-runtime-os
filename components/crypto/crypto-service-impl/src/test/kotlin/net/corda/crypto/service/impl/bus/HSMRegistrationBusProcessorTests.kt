@@ -4,8 +4,6 @@ import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.crypto.cipher.suite.sha256Bytes
 import net.corda.crypto.config.impl.createDefaultCryptoConfig
 import net.corda.crypto.core.CryptoConsts
-import net.corda.crypto.core.CryptoConsts.HSMContext.PREFERRED_PRIVATE_KEY_POLICY_KEY
-import net.corda.crypto.core.CryptoConsts.HSMContext.PREFERRED_PRIVATE_KEY_POLICY_NONE
 import net.corda.crypto.service.HSMService
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
@@ -15,7 +13,6 @@ import net.corda.data.crypto.wire.CryptoResponseContext
 import net.corda.data.crypto.wire.hsm.HSMAssociationInfo
 import net.corda.data.crypto.wire.hsm.registration.HSMRegistrationRequest
 import net.corda.data.crypto.wire.hsm.registration.HSMRegistrationResponse
-import net.corda.data.crypto.wire.hsm.registration.commands.AssignHSMCommand
 import net.corda.data.crypto.wire.hsm.registration.commands.AssignSoftHSMCommand
 import net.corda.data.crypto.wire.hsm.registration.queries.AssignedHSMQuery
 import net.corda.data.crypto.wire.ops.rpc.commands.GenerateWrappingKeyRpcCommand
@@ -27,7 +24,6 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.Mockito
 import org.mockito.kotlin.any
-import org.mockito.kotlin.argThat
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
@@ -82,42 +78,6 @@ class HSMRegistrationBusProcessorTests {
                         expected.other.items.containsAll(actual.other.items)
             )
         }
-    }
-
-    @Test
-    fun `Should handle AssignHSMCommand`() {
-        val info = HSMAssociationInfo()
-        val hsmService = mock<HSMService> {
-            on { assignHSM(any(), any(), any()) } doReturn info
-        }
-        val processor = HSMRegistrationBusProcessor(hsmService, configEvent)
-        val context = createRequestContext()
-        val future = CompletableFuture<HSMRegistrationResponse>()
-        processor.onNext(
-            HSMRegistrationRequest(
-                context,
-                AssignHSMCommand(
-                    CryptoConsts.Categories.LEDGER,
-                    KeyValuePairList(
-                        listOf(
-                            KeyValuePair(PREFERRED_PRIVATE_KEY_POLICY_KEY, PREFERRED_PRIVATE_KEY_POLICY_NONE)
-                        )
-                    )
-                )
-            ),
-            future
-        )
-        val result = future.get()
-        assertResponseContext(context, result.context)
-        assertThat(result.response).isInstanceOf(HSMAssociationInfo::class.java)
-        assertSame(info, result.response)
-        Mockito.verify(hsmService, times(1)).assignHSM(
-            eq(tenantId),
-            eq(CryptoConsts.Categories.LEDGER),
-            argThat {
-                this[PREFERRED_PRIVATE_KEY_POLICY_KEY] == PREFERRED_PRIVATE_KEY_POLICY_NONE
-            }
-        )
     }
 
     @Test
@@ -221,7 +181,7 @@ class HSMRegistrationBusProcessorTests {
     fun `Should complete future exceptionally in case of service failure`() {
         val originalException = RuntimeException()
         val hsmService = mock<HSMService> {
-            on { assignHSM(any(), any(), any()) } doThrow originalException
+            on { assignSoftHSM(any(), any()) } doThrow originalException
         }
         val processor = HSMRegistrationBusProcessor(hsmService, configEvent)
         val context = createRequestContext()
@@ -229,13 +189,8 @@ class HSMRegistrationBusProcessorTests {
         processor.onNext(
             HSMRegistrationRequest(
                 context,
-                AssignHSMCommand(
-                    CryptoConsts.Categories.LEDGER,
-                    KeyValuePairList(
-                        listOf(
-                            KeyValuePair(PREFERRED_PRIVATE_KEY_POLICY_KEY, PREFERRED_PRIVATE_KEY_POLICY_NONE)
-                        )
-                    )
+                AssignSoftHSMCommand(
+                    CryptoConsts.Categories.LEDGER
                 )
             ),
             future
@@ -245,12 +200,9 @@ class HSMRegistrationBusProcessorTests {
         }
         assertNotNull(exception.cause)
         assertSame(originalException, exception.cause)
-        Mockito.verify(hsmService, times(1)).assignHSM(
+        Mockito.verify(hsmService, times(1)).assignSoftHSM(
             eq(tenantId),
-            eq(CryptoConsts.Categories.LEDGER),
-            argThat {
-                this[PREFERRED_PRIVATE_KEY_POLICY_KEY] == PREFERRED_PRIVATE_KEY_POLICY_NONE
-            }
+            eq(CryptoConsts.Categories.LEDGER)
         )
     }
 }
