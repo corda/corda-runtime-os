@@ -1,19 +1,27 @@
 package net.corda.cli.plugins.packaging.signing
 
+import jdk.security.jarsigner.JarSigner
+import net.corda.cli.plugins.packaging.aws.kms.KmsProvider
+import net.corda.cli.plugins.packaging.aws.kms.ec.KmsECKeyFactory
+import net.corda.cli.plugins.packaging.aws.kms.rsa.KmsRSAKeyFactory
+import net.corda.cli.plugins.packaging.getKmsClient
+import net.corda.cli.plugins.packaging.isRsaKeyType
+import net.corda.libs.packaging.verify.SigningHelpers.isSigningRelated
 import java.io.File
+import java.io.InputStream
 import java.net.URI
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardOpenOption
 import java.security.KeyStore
+import java.security.Security
 import java.security.cert.Certificate
 import java.security.cert.CertificateFactory
+import java.security.cert.X509Certificate
 import java.util.jar.JarInputStream
 import java.util.jar.JarOutputStream
 import java.util.jar.Manifest
 import java.util.zip.ZipFile
-import jdk.security.jarsigner.JarSigner
-import net.corda.libs.packaging.verify.SigningHelpers.isSigningRelated
 
 internal object SigningHelpers {
     /**
@@ -54,6 +62,51 @@ internal object SigningHelpers {
                 builder
                     .build()
                     .sign(unsignedCpi, signedCpi)
+            }
+        }
+    }
+
+    @Suppress("LongParameterList")
+    fun signWithKms(
+        unsignedInputCpx: Path,
+        signedOutputCpx: Path,
+        certFile: Path,
+        keyId: String,
+        signerName: String,
+        tsaUrl: String?
+    ) {
+        ZipFile(unsignedInputCpx.toFile()).use { unsignedCpi ->
+            Files.newOutputStream(
+                signedOutputCpx,
+                StandardOpenOption.WRITE,
+                StandardOpenOption.CREATE_NEW
+            ).use { signedCpi ->
+
+                val kmsClient = getKmsClient()
+                val kmsProvider = KmsProvider(kmsClient)
+                Security.addProvider(kmsProvider) // It is important to register the provider!
+
+                val keyIsRsa = isRsaKeyType(kmsClient, keyId)
+                val privateKey = if (keyIsRsa) { KmsRSAKeyFactory.getPrivateKey(keyId) } else { KmsECKeyFactory.getPrivateKey(keyId) }
+                val jarsignerSignatureAlgorithm = if (keyIsRsa) { "SHA256withRSA" } else { "SHA256withECDSA" }
+
+                val certChain = readCertFromFile(certFile)
+                val certPath = buildCertPath(listOf(certChain))
+
+                // Create JarSigner
+                val builder = JarSigner.Builder(privateKey, certPath)
+                    .signerName(signerName)
+                    .signatureAlgorithm(jarsignerSignatureAlgorithm, kmsProvider)
+
+                // Use timestamp server if provided
+                tsaUrl?.let { builder.tsa(URI(it)) }
+
+                // Sign CPx
+                builder
+                    .build()
+                    .sign(unsignedCpi, signedCpi)
+
+                kmsClient.close()
             }
         }
     }
@@ -103,4 +156,11 @@ internal object SigningHelpers {
         CertificateFactory
             .getInstance(STANDARD_CERT_FACTORY_TYPE)
             .generateCertPath(certificateChain)
+
+    private fun readCertFromFile(certificate: Path): X509Certificate {
+        val targetStream: InputStream = File(certificate.toUri()).inputStream()
+        return CertificateFactory
+            .getInstance(STANDARD_CERT_FACTORY_TYPE)
+            .generateCertificate(targetStream) as X509Certificate
+    }
 }
