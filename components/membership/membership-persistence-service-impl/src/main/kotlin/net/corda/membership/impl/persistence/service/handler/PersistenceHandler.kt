@@ -60,7 +60,7 @@ internal abstract class BasePersistenceHandler<REQUEST, RESPONSE>(
                 )
             val factory = getEntityManagerFactory(virtualNodeInfo)
             return try {
-                transactionTimer.recordCallable { factory.transaction(block).also{println(it != null)}}!!
+                transactionTimer.recordCallable { factory.transaction(block) }!!
             } finally {
                 factory.close()
             }
