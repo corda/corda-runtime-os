@@ -11,15 +11,15 @@ import java.io.File
 import java.security.Security
 
 @CommandLine.Command(
-    name = "create-csr",
+    name = "create-csr-for-kms-key",
     description = ["Create a CSR for a KMS signing key"]
 )
-class CreateCsrFile : Runnable {
+class CreateCsrForKmsKey : Runnable {
 
-    @CommandLine.Option(names = ["--key", "-k"], required = true, description = ["Key id of AWS KMS key"])
+    @CommandLine.Option(names = ["--key-id", "-k"], required = true, description = ["Key id of AWS KMS key"])
     lateinit var keyId: String
 
-    @CommandLine.Option(names = ["--file", "-f"], required = true, description = ["File to store the CSR"])
+    @CommandLine.Option(names = ["--csr-file", "-f"], required = true, description = ["File to store the CSR"])
     lateinit var csrFile: String
 
     @CommandLine.Option(names = ["--cn"], description = ["Common name"])

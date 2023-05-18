@@ -25,22 +25,19 @@ class SignCpxWithKmsKey : Runnable {
     @CommandLine.Option(names = ["--file", "-f"], required = true, description = ["Output signed CPI or CPB or CPK file name"])
     lateinit var outputSignedCpxFile: String
 
-    @CommandLine.Option(names = ["--crt-chain"], required = true, description = ["Certificate chain"])
-    lateinit var certChain: String
-
     @CommandLine.Mixin
     var signWithKmsOptions = SignWithKmsOptions()
 
     override fun run() {
         val cpxFilePath = requireFileExists(cpxFile)
         val signedCpxPath = requireFileDoesNotExist(outputSignedCpxFile)
-        val certChainPath = requireFileExists(certChain)
+        val certFilePath = requireFileExists(signWithKmsOptions.certFile)
 
         if (multipleSignatures) {
             SigningHelpers.signWithKms(
                 cpxFilePath,
                 signedCpxPath,
-                certChainPath,
+                certFilePath,
                 signWithKmsOptions.keyId,
                 signWithKmsOptions.sigFile,
                 signWithKmsOptions.tsaUrl
@@ -52,7 +49,7 @@ class SignCpxWithKmsKey : Runnable {
                 SigningHelpers.signWithKms(
                     removedSignaturesCpx,
                     signedCpxPath,
-                    certChainPath,
+                    certFilePath,
                     signWithKmsOptions.keyId,
                     signWithKmsOptions.sigFile,
                     signWithKmsOptions.tsaUrl

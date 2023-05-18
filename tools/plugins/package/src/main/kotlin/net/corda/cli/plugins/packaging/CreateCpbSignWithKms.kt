@@ -17,7 +17,7 @@ import java.util.jar.JarOutputStream
 import java.util.jar.Manifest
 
 @Command(
-    name = "create-cpb-with-kms",
+    name = "create-cpb-signed-with-kms",
     description = ["Creates a CPB from passed in CPK archives and signs with AWS KMS key."]
 )
 class CreateCpbSignWithKms : Runnable {
@@ -36,9 +36,6 @@ class CreateCpbSignWithKms : Runnable {
 
     @Option(names = ["--file", "-f"], required = true, description = ["Output CPB file name"])
     lateinit var outputCpbFileName: String
-
-    @CommandLine.Option(names = ["--crt-chain"], required = true, description = ["Certificate chain"])
-    lateinit var certChain: String
 
     @CommandLine.Mixin
     var signWithKmsOptions = SignWithKmsOptions()
@@ -62,12 +59,12 @@ class CreateCpbSignWithKms : Runnable {
         try {
             buildUnsignedCpb(unsignedCpb, cpks)
             val cpbPath = requireFileDoesNotExist(outputCpbFileName)
-            val certChainPath = requireFileExists(certChain)
+            val certFilePath = requireFileExists(signWithKmsOptions.certFile)
 
             SigningHelpers.signWithKms(
                 unsignedCpb,
                 cpbPath,
-                certChainPath,
+                certFilePath,
                 signWithKmsOptions.keyId,
                 signWithKmsOptions.sigFile,
                 signWithKmsOptions.tsaUrl
