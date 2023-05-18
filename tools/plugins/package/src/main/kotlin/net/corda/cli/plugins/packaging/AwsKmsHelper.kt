@@ -2,8 +2,6 @@ package net.corda.cli.plugins.packaging
 
 import net.corda.cli.plugins.packaging.aws.kms.ec.KmsECKeyFactory
 import net.corda.cli.plugins.packaging.aws.kms.rsa.KmsRSAKeyFactory
-import software.amazon.awssdk.auth.credentials.ProfileCredentialsProvider
-import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.kms.KmsClient
 import software.amazon.awssdk.services.kms.model.DescribeKeyRequest
 import software.amazon.awssdk.services.kms.model.KeyListEntry
@@ -15,10 +13,7 @@ import kotlin.system.exitProcess
 
 
 fun getKmsClient(): KmsClient {
-    val region: Region = Region.EU_WEST_2
     return KmsClient.builder()
-        .region(region)
-        .credentialsProvider(ProfileCredentialsProvider.create())
         .build()
 }
 

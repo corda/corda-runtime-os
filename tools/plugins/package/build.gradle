@@ -18,7 +18,6 @@ dependencies {
 
     implementation platform("software.amazon.awssdk:bom:$awsSdkVersion")
     implementation 'software.amazon.awssdk:kms'
-    implementation 'software.amazon.awssdk:sso'
 
     implementation project(':libs:packaging:packaging-verify')
     implementation project(':libs:membership:schema-validation')
