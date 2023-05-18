@@ -57,4 +57,13 @@ class DbConnectionOpsCachedImpl(
             delegate.getOrCreateEntityManagerFactory(name, privilege, entitiesSet)
         }
     }
+
+    override fun getOrCreateEntityManagerFactory(
+        connectionId: UUID,
+        entitiesSet: JpaEntitiesSet,
+    ): EntityManagerFactory {
+        return cache.computeIfAbsent(Pair(connectionId.toString(), DbPrivilege.DML)) {
+            delegate.createEntityManagerFactory(connectionId, entitiesSet)
+        }
+    }
 }

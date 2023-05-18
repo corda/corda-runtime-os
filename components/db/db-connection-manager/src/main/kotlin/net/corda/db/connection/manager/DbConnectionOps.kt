@@ -140,4 +140,15 @@ interface DbConnectionOps {
      * @return
      */
     fun createEntityManagerFactory(connectionId: UUID, entitiesSet: JpaEntitiesSet): EntityManagerFactory
+
+    /**
+     * Get an instance of DML [EntityManagerFactory] for the connection ID. Use cache or create one if necessary.
+     *
+     * @param connectionId The connection ID.
+     * @param entitiesSet Set of all entities managed by [javax.persistence.EntityManager]s created by the
+     *                  [EntityManagerFactory] returned
+     * @return [EntityManagerFactory] from cache, or created on demand.
+     * @throws [DBConfigurationException] if connection details for the requested DB does not exist.
+     */
+    fun getOrCreateEntityManagerFactory(connectionId: UUID, entitiesSet: JpaEntitiesSet): EntityManagerFactory
 }

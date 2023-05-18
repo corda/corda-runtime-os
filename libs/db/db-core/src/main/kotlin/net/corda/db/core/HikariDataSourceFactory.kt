@@ -38,7 +38,7 @@ class HikariDataSourceFactory(
         isAutoCommit: Boolean,
         isReadOnly: Boolean,
         maximumPoolSize: Int,
-        minimumPoolSize: Int,
+        minimumPoolSize: Int?,
         idleTimeout: Duration,
         maxLifetime: Duration,
         keepaliveTime: Duration,
@@ -66,8 +66,14 @@ class HikariDataSourceFactory(
         conf.isAutoCommit = isAutoCommit
         conf.isReadOnly = isReadOnly
         conf.maximumPoolSize = maximumPoolSize
-        conf.minimumIdle = minimumPoolSize
-        conf.idleTimeout = idleTimeout.toMillis()
+        if (minimumPoolSize != null) {
+            conf.minimumIdle = minimumPoolSize
+        }
+        if ((minimumPoolSize != null) && (maximumPoolSize != minimumPoolSize)) {
+            conf.idleTimeout = idleTimeout.toMillis()
+        } else {
+            conf.idleTimeout = 0
+        }
         conf.maxLifetime = maxLifetime.toMillis()
         if(Duration.ZERO != keepaliveTime)
             conf.keepaliveTime = keepaliveTime.toMillis()

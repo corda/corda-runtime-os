@@ -64,4 +64,12 @@ class LateInitDbConnectionOps: DbConnectionOps {
 
     override fun createEntityManagerFactory(connectionId: UUID, entitiesSet: JpaEntitiesSet):
             EntityManagerFactory = delegate.createEntityManagerFactory(connectionId, entitiesSet)
+
+    override fun getOrCreateEntityManagerFactory(
+        connectionId: UUID,
+        entitiesSet: JpaEntitiesSet,
+    ) = delegate.getOrCreateEntityManagerFactory(
+        connectionId,
+        entitiesSet,
+    )
 }
