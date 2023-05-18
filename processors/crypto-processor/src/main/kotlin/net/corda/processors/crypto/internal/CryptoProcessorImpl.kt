@@ -247,7 +247,6 @@ class CryptoProcessorImpl @Activate constructor(
         val rpcOpsProcessor = CryptoOpsBusProcessor(signingService, retryingConfig)
         val hsmRegistrationProcessor = HSMRegistrationBusProcessor(hsmService, retryingConfig)
 
-        // TODO I think we need to close the below subscriptions in case of re-creations
         // now make the subscriptions
         val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
         val flowGroupName = "crypto.ops.flow"
