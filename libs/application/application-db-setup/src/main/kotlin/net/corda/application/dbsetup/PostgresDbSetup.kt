@@ -12,14 +12,12 @@ import net.corda.db.core.OSGiDataSourceFactory
 import net.corda.db.schema.CordaDb
 import net.corda.db.schema.DbSchema
 import net.corda.libs.configuration.SmartConfigFactory
-import org.osgi.framework.Bundle
+import net.corda.messagebus.db.datamodel.TopicEntry
+import net.corda.messagebus.db.persistence.DBAccess.Companion.defaultNumPartitions
+import net.corda.utilities.debug
 import org.osgi.framework.FrameworkUtil
 import org.slf4j.LoggerFactory
-import java.net.URL
-import java.net.URLDecoder
 import java.nio.charset.Charset
-import java.util.jar.JarEntry
-import java.util.jar.JarFile
 
 // TODO This class bootstraps database, duplicating functionality available via CLI
 // As it duplicates some classes from tools/plugins/initial-config/src/main/kotlin/net/corda/cli/plugin/, it requires
@@ -88,45 +86,40 @@ class PostgresDbSetup(
     }
 
     fun createTopics() {
-
         val bundle = FrameworkUtil.getBundle(net.corda.schema.Schemas::class.java)
+        log.debug { "Got bundle $bundle for class (net.corda.schema.Schemas::class.java)" }
         val paths = bundle.getEntryPaths("net/corda/schema").toList()
-
-        log.info("Paths list here\n $paths")
-
+        log.debug { "Entry paths found at path \"net/corda/schema\" = $paths" }
         val resources = paths.filter { it.endsWith(".yaml") }.map {
             bundle.getResource(it)
         }
-
-        log.info("YAML files list here\n $resources")
-
-        val topicDefinitions =  resources.map {
+        log.debug { "Mapping bundle resources where path suffix = \".yaml\" to topicDefinitions, resources = $resources" }
+        val topicDefinitions = resources.map {
             val data: String = it.openStream()
                 .bufferedReader(Charset.defaultCharset()).use { it.readText() }
             val parsedData: TopicDefinitions = mapper.readValue(data)
             parsedData
         }
-
-        log.info("Files loaded as TopicDefinitions here\n $topicDefinitions")
-
-
         val topicConfigs = topicDefinitions.flatMap { it: TopicDefinitions ->
             it.topics.values
         }
-        log.info("TopicDefinitions loaded as topicConfigs here\n $topicConfigs")
-        var count = 0
-        for (topicValue in topicConfigs) {
-            count+=1
-            log.info("Here is topic $count from the list = ${topicValue.name}")
+        log.debug { "Mapping topicDefinitions to topicConfigs, topicDefinitions = $topicDefinitions \ntopicConfigs = $topicDefinitions" }
+        configConnection().use { connection ->
+            topicConfigs.map {
+                connection.createStatement().execute(
+                    TopicEntry(it.name, defaultNumPartitions).toInsertStatement()
+                )
+            }
         }
-        log.info("Here is the total from the list: $count")
     }
+
     data class TopicConfig(
         val name: String,
         val consumers: List<String>,
         val producers: List<String>,
         val config: Map<String, String> = emptyMap()
     )
+
     data class TopicDefinitions(
         val topics: Map<String, TopicConfig>
     )

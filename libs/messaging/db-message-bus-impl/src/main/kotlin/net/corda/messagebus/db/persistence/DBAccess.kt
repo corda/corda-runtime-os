@@ -33,12 +33,12 @@ class DBAccess(
 ) {
     // At the moment it's not easy to create partitions, so default value increased to 3 until tooling is available
     // (There are multiple consumers using the same group for some topics and some stay idle if there is only 1 partition)
-    private val defaultNumPartitions = 3
     private val autoCreate = true
 
     companion object {
         private val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         internal val ATOMIC_TRANSACTION = TransactionRecordEntry("Atomic Transaction", TransactionState.COMMITTED)
+        const val defaultNumPartitions = 3
     }
 
     fun close() {

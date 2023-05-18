@@ -11,9 +11,10 @@ import javax.persistence.Table
  * (ie. creating multiple [CordaTopicPartition]s for consumers to subscribe/assign to.
  */
 @Entity(name = "topic")
-@Table(name = "topic")
+@Table(name = "messagebus.topic")
 class TopicEntry(
     @Id
+    @Column(name = "topic")
     val topic: String,
 
     @Column(name = "num_partitions")

@@ -27,6 +27,9 @@ dependencies {
     implementation project(':libs:db:db-core')
     implementation project(':libs:permissions:permission-datamodel')
     implementation project(':libs:permissions:permission-password')
+    implementation project(':libs:messaging:db-message-bus-datamodel')
+    implementation project(':libs:messaging:db-message-bus-impl')
+    implementation project(':libs:utilities')
 }
 
 // NOTE:  supported jdbc drivers / database drivers are listed here.
