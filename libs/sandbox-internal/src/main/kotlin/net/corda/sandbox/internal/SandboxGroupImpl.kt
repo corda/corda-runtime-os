@@ -1,8 +1,15 @@
 package net.corda.sandbox.internal
 
+import java.util.Collections.unmodifiableMap
+import java.util.Collections.unmodifiableSortedMap
+import java.util.SortedMap
+import java.util.TreeMap
+import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
 import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.sandbox.SandboxException
 import net.corda.sandbox.SandboxGroup
+import net.corda.sandbox.internal.classtag.ClassTag
 import net.corda.sandbox.internal.classtag.ClassTagFactory
 import net.corda.sandbox.internal.classtag.ClassType
 import net.corda.sandbox.internal.classtag.EvolvableTag
@@ -12,12 +19,6 @@ import net.corda.sandbox.internal.sandbox.Sandbox
 import net.corda.sandbox.internal.utilities.BundleUtils
 import org.osgi.framework.Bundle
 import org.slf4j.LoggerFactory
-import java.util.Collections.unmodifiableMap
-import java.util.Collections.unmodifiableSortedMap
-import java.util.SortedMap
-import java.util.TreeMap
-import java.util.UUID
-import java.util.concurrent.ConcurrentHashMap
 
 /**
  * An implementation of the [SandboxGroup] interface.
@@ -111,12 +112,17 @@ internal class SandboxGroupImpl(
         getClassTag(klass, isStaticTag = false)
     }
 
+    private fun deserializeClassTag(serialisedClassTag: String) = classTagCache.computeIfAbsent(serialisedClassTag) {
+        classTagFactory.deserialise(it)
+    }
+
     private val staticTagCache = ConcurrentHashMap<Class<*>, String>()
     private val evolvableTagCache = ConcurrentHashMap<Class<*>, String>()
+    private val classTagCache = ConcurrentHashMap<String, ClassTag>()
 
     @Suppress("ComplexMethod", "NestedBlockDepth")
     override fun getClass(className: String, serialisedClassTag: String): Class<*> {
-        val classTag = classTagFactory.deserialise(serialisedClassTag)
+        val classTag = deserializeClassTag(serialisedClassTag)
 
         return when (classTag.classType) {
             ClassType.NonBundleClass -> {
