@@ -156,7 +156,7 @@ AWS Region has to be set in an AWS profile (`~/.aws/config`), e.g. `region = eu-
     --organization R3-test \
     --locality London \
     --state London \
-    --country UK \
+    --country GB \
     --mail test@mail.uk
 ```
 
