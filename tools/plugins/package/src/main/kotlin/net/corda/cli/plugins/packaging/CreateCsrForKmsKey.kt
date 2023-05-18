@@ -22,25 +22,25 @@ class CreateCsrForKmsKey : Runnable {
     @CommandLine.Option(names = ["--csr-file", "-f"], required = true, description = ["File to store the CSR"])
     lateinit var csrFile: String
 
-    @CommandLine.Option(names = ["--cn"], description = ["Common name"])
+    @CommandLine.Option(names = ["--common-name", "-n"], description = ["Common name"])
     var commonName: String? = null
 
-    @CommandLine.Option(names = ["--ou"], description = ["Department Name/Organizational Unit"])
+    @CommandLine.Option(names = ["--organizational-unit", "-d"], description = ["Department Name/Organizational Unit"])
     var organizationalUnit: String? = null
 
-    @CommandLine.Option(names = ["--o"], description = ["Business Name/Organization"])
+    @CommandLine.Option(names = ["--organization", "-o"], description = ["Business Name/Organization"])
     var organization: String? = null
 
-    @CommandLine.Option(names = ["--l"], description = ["Town/City"])
+    @CommandLine.Option(names = ["--locality", "-l"], description = ["Town/City"])
     var locality: String? = null
 
-    @CommandLine.Option(names = ["--st"], description = ["Province, Region, County or State"])
+    @CommandLine.Option(names = ["--state", "-s"], description = ["Province, Region, County or State"])
     var state: String? = null
 
-    @CommandLine.Option(names = ["--c"], description = ["Country"])
+    @CommandLine.Option(names = ["--country", "-c"], description = ["Country"])
     var country: String? = null
 
-    @CommandLine.Option(names = ["--mail"], description = ["Email address"])
+    @CommandLine.Option(names = ["--mail", "-m"], description = ["Email address"])
     var mail: String? = null
 
     override fun run() {
