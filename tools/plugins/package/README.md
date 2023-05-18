@@ -113,3 +113,56 @@ After QA, CorDapp developers will want to release sign their files. This command
 ```shell
 jarsigner -keystore signingkeys.pfx -storepass "keystore password" -verbose -certs  -verify output.cpi
 ```
+
+## AWS KMS Integration
+Private key stored in AWS KMS can be used for signing a CPx.
+
+### Requirements
+The following environment variables need to be set up log in to AWS:
+```shell
+export AWS_ACCESS_KEY_ID=<value>
+export AWS_SECRET_ACCESS_KEY=<value>
+export AWS_SESSION_TOKEN=<value>
+```
+AWS Region has to be set in an AWS profile (`~/.aws/config`), e.g. `region = eu-west-2`.
+
+### Sign CPx with AWS KMS key
+```shell
+./corda-cli.sh package sign-with-kms \
+    mycpb.cpb \
+    --file signed.cpb \
+    --key-id edb939dd-7e2f-4624-a691-f6f9c8f74aaa \
+    --cert-file cert.pem
+```
+
+### Build a CPB and sign with AWS KMS key
+```shell
+./corda-cli.sh package create-cpb-signed-with-kms \
+    mycpk0.cpk mycpk1.cpk \
+    --cpb-name manifest-attribute-cpb-name \
+    --cpb-version manifest-attribute-cpb-version \
+    --file output.cpb \
+    --key-id edb939dd-7e2f-4624-a691-f6f9c8f74aaa \
+    --cert-file cert.pem
+```
+
+### Create a CSR for a KMS signing key
+AWS CLI doesn't provide an option to generate a CSR for a KMS signing key. To be able to request a signing certificate,
+CSR needs to be created which can then be sent to a Certificate Authority who generates the signing certificate.
+User can then use this certificate to sign a CPx with the above commands.
+Alternatively self-signed certificate can also be used.
+```shell
+./corda-cli.sh package create-csr-for-kms-key \
+    --csr-file csr-file.csr \
+    --key-id edb939dd-7e2f-4624-a691-f6f9c8f74aaa \
+    --common-name R3-Preview \
+    --organizational-unit Engineering \
+    --organization R3-test \
+    --locality London \
+    --state London \
+    --country GB \
+    --mail test@mail.uk
+```
+
+### Verification
+Verification is done in a standard way using `corda-cli` or `jarsigner` mentioned in the previous section.
