@@ -194,7 +194,7 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
             if (!checkpoint.doesExist) {
                 val flowKey = (context.inputEvent.payload as StartFlow).startContext.statusKey
                 val statusRecord = createFlowKilledStatusRecordWithoutCheckpoint(
-                    checkpoint, exception.message ?: "No exception message provided.", flowKey
+                    checkpoint.flowId, flowKey, exception.message ?: "No exception message provided."
                 )
 
                 return@withEscalation flowEventContextConverter.convert(
@@ -265,11 +265,15 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
         }
     }
 
-    private fun createFlowKilledStatusRecordWithoutCheckpoint(checkpoint: FlowCheckpoint, message: String?, flowKey: FlowKey): List<Record<*, *>> {
+    private fun createFlowKilledStatusRecordWithoutCheckpoint(
+        flowId: String,
+        flowKey: FlowKey,
+        message: String?,
+    ): List<Record<*, *>> {
         val status = FlowStatus().apply{
             key = flowKey
             flowStatus = FlowStates.KILLED
-            flowId = checkpoint.flowId
+            this.flowId = flowId
             processingTerminatedReason = message
         }
 
