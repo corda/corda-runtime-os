@@ -70,7 +70,6 @@ class StartFlowTest : FlowServiceTestBase() {
 
         `when` {
             startFlowEventReceived(FLOW_ID1, REQUEST_ID1, CHARLIE_HOLDING_IDENTITY, CPI1, "flow start data")
-                .suspendsWith(FlowIORequest.InitialCheckpoint)
         }
 
         then {

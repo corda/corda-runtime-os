@@ -1,8 +1,11 @@
 package net.corda.flow.pipeline.impl
 
+import net.corda.data.flow.FlowKey
+import net.corda.data.flow.event.StartFlow
 import net.corda.data.flow.event.Wakeup
 import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.event.mapper.ScheduleCleanup
+import net.corda.data.flow.output.FlowStates
 import net.corda.data.flow.output.FlowStatus
 import net.corda.data.flow.state.checkpoint.Checkpoint
 import net.corda.data.flow.state.session.SessionState
@@ -189,11 +192,14 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
             val checkpoint = context.checkpoint
 
             if (!checkpoint.doesExist) {
+                val flowKey = (context.inputEvent.payload as StartFlow).startContext.statusKey
+                val statusRecord = createFlowKilledStatusRecordWithoutCheckpoint(
+                    checkpoint, exception.message ?: "No exception message provided.", flowKey
+                )
+
                 return@withEscalation flowEventContextConverter.convert(
                     context.copy(
-                        outputRecords = createFlowKilledStatusRecord(
-                            checkpoint, exception.message ?: "No exception message provided."
-                        ),
+                        outputRecords = statusRecord,
                         sendToDlq = false
                     )
                 )
@@ -258,6 +264,18 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
             flowMessageFactory.createFlowKilledStatusMessage(checkpoint, message)
         }
     }
+
+    private fun createFlowKilledStatusRecordWithoutCheckpoint(checkpoint: FlowCheckpoint, message: String?, flowKey: FlowKey): List<Record<*, *>> {
+        val status = FlowStatus().apply{
+            key = flowKey
+            flowStatus = FlowStates.KILLED
+            flowId = checkpoint.flowId
+            processingTerminatedReason = message
+        }
+
+        return listOf(flowRecordFactory.createFlowStatusRecord(status))
+    }
+
 
     private fun getScheduledCleanupExpiryTime(context: FlowEventContext<*>, now: Instant): Long {
         val flowCleanupTime = context.config.getLong(FlowConfig.SESSION_FLOW_CLEANUP_TIME)

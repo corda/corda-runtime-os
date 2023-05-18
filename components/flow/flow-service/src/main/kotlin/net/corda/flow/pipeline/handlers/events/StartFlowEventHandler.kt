@@ -31,16 +31,6 @@ class StartFlowEventHandler @Activate constructor(
     override fun preProcess(context: FlowEventContext<StartFlow>): FlowEventContext<StartFlow> {
         log.info("Flow [${context.checkpoint.flowId}] started")
 
-        checkpointInitializer.initialize(
-            context.checkpoint,
-            WaitingFor(WaitingForStartFlow),
-            context.inputEventPayload.startContext.identity.toCorda(),
-        ) {
-            context.inputEventPayload.startContext
-        }
-
-        context.flowMetrics.flowStarted()
-
         val holdingIdentity = context.inputEventPayload.startContext.identity.toCorda()
         val virtualNodeInfo = virtualNodeInfoReadService.get(holdingIdentity)
 
@@ -50,6 +40,16 @@ class StartFlowEventHandler @Activate constructor(
                         "shortHash ${holdingIdentity.shortHash}"
             )
         }
+
+        checkpointInitializer.initialize(
+            context.checkpoint,
+            WaitingFor(WaitingForStartFlow),
+            context.inputEventPayload.startContext.identity.toCorda(),
+        ) {
+            context.inputEventPayload.startContext
+        }
+
+        context.flowMetrics.flowStarted()
 
         return context
     }

@@ -286,9 +286,11 @@ class OutputAssertionsImpl(
 
     override fun flowStatus(state: FlowStates, result: String?, errorType: String?, errorMessage: String?, flowTerminatedReason: String?) {
         asserts.add { testRun ->
+            println("flow response: ${testRun.response}")
             assertNotNull(testRun.response)
             assertTrue(
                 testRun.response!!.responseEvents.any {
+                    println(it)
                     matchStatusRecord(flowId, state, result, errorType, errorMessage, flowTerminatedReason, it)
                 },
                 "Expected Flow Status: ${state}, result = ${result ?: "NA"}, errorType = ${errorType ?: "NA"}, error = ${errorMessage ?: "NA"}"
