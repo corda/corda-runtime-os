@@ -149,7 +149,7 @@ AWS Region has to be set in an AWS profile (`~/.aws/config`), e.g. `region = eu-
 ### Create a CSR for a KMS signing key
 ```shell
 ./corda-cli.sh package create-csr-for-kms-key \
-    --file csr-file.csr \
+    --csr-file csr-file.csr \
     --key-id edb939dd-7e2f-4624-a691-f6f9c8f74aaa \ 
     --common-name R3-Preview \
     --organizational-unit Engineering \ 
