@@ -4,6 +4,7 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.config.impl.CACHING
 import net.corda.crypto.config.impl.DEFAULT
 import net.corda.crypto.config.impl.RETRYING
+import net.corda.crypto.persistence.HSMStore
 import net.corda.crypto.service.CryptoServiceFactory
 import net.corda.crypto.service.HSMService
 import net.corda.crypto.softhsm.SoftCryptoServiceProvider
@@ -114,6 +115,7 @@ class CryptoProcessorImplTest {
             addDependency<SoftCryptoServiceProvider>()
             addDependency<CryptoServiceFactory>()
             addDependency<HSMService>()
+            addDependency<HSMStore>()
             addDependency<JpaEntitiesRegistry>()
             addDependency<DbConnectionManager>()
             addDependency<VirtualNodeInfoReadService>()
