@@ -298,3 +298,7 @@ Then using [helm-docs](https://github.com/norwoodj/helm-docs), generate the READ
 ```shell
 helm-docs
 ```
+
+# Deploying Corda
+
+This directory also contains a script (`deploy.sh`) which can be used to deploy Corda to a k8s cluster. The environment deployed by the deploy script is configurable through yaml files. The base configuration for Corda comes from the `values.yaml` file at the top level directory of this repo. Resource limits are then set to align with the resource limits used in the e2e testing environment in the `corda-eks.yaml` file. The `debug.yaml` file, also in the top level directory, is used to override this with debug properties. For the prereqs, `prereqs-eks.yaml` is used to set the resource limits. Again, these limits are set to align with the e2e testing environment. 
