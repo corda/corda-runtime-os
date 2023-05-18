@@ -23,8 +23,11 @@ import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.chunking.MessagingChunkFactoryImpl
 import net.corda.messaging.publisher.factory.CordaPublisherFactory
+import net.corda.messaging.rocks.MapFactoryBuilderImpl
+import net.corda.messaging.rocks.TopicDataFactoryBuilder
 import net.corda.messaging.subscription.consumer.builder.StateAndEventBuilderImpl
 import net.corda.messaging.subscription.factory.CordaSubscriptionFactory
+import net.corda.rocks.db.impl.StorageManagerFactoryImpl
 import net.corda.schema.configuration.BootConfig
 import net.corda.schema.configuration.MessagingConfig
 import net.corda.schema.configuration.MessagingConfig.Bus.KAFKA_PROPERTIES_COMMON
@@ -73,10 +76,20 @@ class KafkaTestToolKit(
             LifecycleCoordinatorSchedulerFactoryImpl()
         )
     }
+
+    private val storageManagerFactory by lazy {
+        StorageManagerFactoryImpl()
+    }
+
+    private val topicDataFactory : TopicDataFactoryBuilder by lazy {
+        MapFactoryBuilderImpl(serializationFactory, storageManagerFactory)
+    }
+
     private val stateAndEventBuilder by lazy {
         StateAndEventBuilderImpl(
             consumerBuilder,
-            producerBuilder
+            producerBuilder,
+            topicDataFactory
         )
     }
 

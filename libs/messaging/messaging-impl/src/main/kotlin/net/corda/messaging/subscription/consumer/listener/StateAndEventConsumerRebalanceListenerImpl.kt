@@ -1,11 +1,12 @@
 package net.corda.messaging.subscription.consumer.listener
 
 import net.corda.messagebus.api.CordaTopicPartition
+import net.corda.messaging.api.subscription.data.TopicData
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
 import net.corda.messaging.config.ResolvedSubscriptionConfig
 import net.corda.messaging.subscription.consumer.StateAndEventConsumer
 import net.corda.messaging.subscription.consumer.StateAndEventPartitionState
-import net.corda.messaging.subscription.factory.MapFactory
+import net.corda.messaging.subscription.factory.TopicDataFactory
 import net.corda.schema.Schemas.getStateAndEventStateTopic
 import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
@@ -13,7 +14,7 @@ import org.slf4j.LoggerFactory
 @Suppress("LongParameterList")
 internal class StateAndEventConsumerRebalanceListenerImpl<K : Any, S : Any, E : Any>(
     private val config: ResolvedSubscriptionConfig,
-    private val mapFactory: MapFactory<K, S>,
+    private val topicDataFactory: TopicDataFactory<K, S>,
     private val stateAndEventConsumer: StateAndEventConsumer<K, S, E>,
     private val partitionState: StateAndEventPartitionState<K, S>,
     private val stateAndEventListener: StateAndEventListener<K, S>? = null
@@ -43,7 +44,7 @@ internal class StateAndEventConsumerRebalanceListenerImpl<K : Any, S : Any, E : 
 
         statePartitions.forEach {
             currentStates.computeIfAbsent(it.partition) {
-                mapFactory.createMap()
+                topicDataFactory.create()
             }
         }
 
@@ -62,7 +63,7 @@ internal class StateAndEventConsumerRebalanceListenerImpl<K : Any, S : Any, E : 
         for (partitionId in removedPartitionIds) {
             stateAndEventListener?.onPartitionLost(getStatesForPartition(partitionId))
             currentStates[partitionId]?.let { partitionStates ->
-                mapFactory.destroyMap(partitionStates)
+                topicDataFactory.destroy(partitionStates)
             }
         }
 
@@ -91,12 +92,8 @@ internal class StateAndEventConsumerRebalanceListenerImpl<K : Any, S : Any, E : 
         }
     }
 
-    private fun getStatesForPartition(partitionId: Int): Map<K, S> {
-        val partitionStates = currentStates[partitionId]
-        return partitionStates?.keys?.mapNotNull { key ->
-            val state = partitionStates[key]
-            if (state != null) { Pair(key, state) } else { null }
-        }?.toMap() ?: emptyMap()
+    private fun getStatesForPartition(partitionId: Int): TopicData<K, S>? {
+        return currentStates[partitionId]
     }
 
     private fun CordaTopicPartition.toStateTopic() =

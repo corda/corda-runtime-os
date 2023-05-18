@@ -127,7 +127,7 @@ class StateSubscriptionTest {
     fun `gotStates will report synch for empty partition`() {
         stateSubscription.onPartitionsAssigned(listOf("topic" to 5))
 
-        verify(stateListener).onPartitionSynced(emptyMap())
+        verify(stateListener).onPartitionSynced(TopicDataImpl())
     }
 
     @Test
@@ -141,8 +141,10 @@ class StateSubscriptionTest {
         stateSubscription.gotStates(records)
 
         verify(stateListener).onPartitionSynced(
-            (0..3)
-                .associate { "key:$it" to "value:$it" }
+            TopicDataImpl(
+                (0..3)
+                    .associate { "key:$it" to "value:$it" }.toMutableMap()
+            )
         )
     }
 
@@ -158,9 +160,11 @@ class StateSubscriptionTest {
         stateSubscription.onPartitionsUnassigned(listOf("topic" to 4, "topic" to 6))
 
         verify(stateListener).onPartitionLost(
-            mapOf(
-                "key1" to "value1",
-                "key3" to "value3",
+            TopicDataImpl(
+                mutableMapOf(
+                    "key1" to "value1",
+                    "key3" to "value3",
+                )
             )
         )
     }

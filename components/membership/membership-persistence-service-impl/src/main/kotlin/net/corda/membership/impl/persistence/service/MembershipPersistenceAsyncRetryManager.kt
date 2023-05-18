@@ -12,6 +12,7 @@ import net.corda.lifecycle.createCoordinator
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
+import net.corda.messaging.api.subscription.data.TopicData
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
 import net.corda.schema.Schemas.Membership.MEMBERSHIP_DB_ASYNC_TOPIC
 import net.corda.utilities.time.Clock
@@ -71,18 +72,18 @@ internal class MembershipPersistenceAsyncRetryManager(
         coordinator.close()
     }
 
-    override fun onPartitionSynced(states: Map<String, MembershipPersistenceAsyncRequestState>) {
-        states.forEach(::addTimer)
+    override fun onPartitionSynced(states: TopicData<String, MembershipPersistenceAsyncRequestState>?) {
+        states?.iterate(::addTimer)
     }
 
-    override fun onPartitionLost(states: Map<String, MembershipPersistenceAsyncRequestState>) {
-        states.keys.forEach(::cancelTimer)
+    override fun onPartitionLost(states: TopicData<String, MembershipPersistenceAsyncRequestState>?) {
+        states?.iterate(::cancelTimer)
     }
 
     override fun onPostCommit(updatedStates: Map<String, MembershipPersistenceAsyncRequestState?>) {
         updatedStates.forEach { (key, state) ->
             if (state == null) {
-                cancelTimer(key)
+                cancelTimer(key, state)
             } else {
                 addTimer(key, state)
             }
@@ -106,7 +107,8 @@ internal class MembershipPersistenceAsyncRetryManager(
         }
     }
 
-    private fun cancelTimer(key: String) {
+    @Suppress("unused_parameter")
+    private fun cancelTimer(key: String, state: MembershipPersistenceAsyncRequestState?) {
         logger.info("Request $key will not be retried")
         coordinator.cancelTimer("retry-$key")
     }

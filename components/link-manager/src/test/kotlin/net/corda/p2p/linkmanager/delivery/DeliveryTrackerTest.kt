@@ -19,6 +19,8 @@ import net.corda.p2p.linkmanager.utilities.LoggingInterceptor
 import net.corda.data.p2p.markers.AppMessageMarker
 import net.corda.data.p2p.markers.LinkManagerProcessedMarker
 import net.corda.data.p2p.markers.LinkManagerReceivedMarker
+import net.corda.messaging.api.subscription.data.TopicData
+import net.corda.messaging.rocks.SimpleTopicDataImpl
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.virtualnode.toAvro
 import org.junit.jupiter.api.AfterEach
@@ -40,6 +42,7 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.time.Instant
 import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
 
 class DeliveryTrackerTest {
 
@@ -219,7 +222,7 @@ class DeliveryTrackerTest {
 
         val messageId = UUID.randomUUID().toString()
         val state = AuthenticatedMessageDeliveryState(messageAndKey, Instant.now().toEpochMilli())
-        listener.onPartitionSynced(mapOf(messageId to state))
+        listener.onPartitionSynced(createTopicData(mapOf(messageId to state)))
         @Suppress("UNCHECKED_CAST")
         verify(replayScheduler.constructed().last() as ReplayScheduler<SessionManager.Counterparties, AuthenticatedMessageAndKey>)
             .addForReplay(
@@ -239,7 +242,7 @@ class DeliveryTrackerTest {
         val messageId = UUID.randomUUID().toString()
 
         val state = AuthenticatedMessageDeliveryState(messageAndKey, Instant.now().toEpochMilli())
-        listener.onPartitionSynced(mapOf(messageId to state))
+        listener.onPartitionSynced(createTopicData(mapOf(messageId to state)))
         @Suppress("UNCHECKED_CAST")
         verify(replayScheduler.constructed().last() as ReplayScheduler<SessionManager.Counterparties, AuthenticatedMessageAndKey>)
             .addForReplay(
@@ -263,7 +266,7 @@ class DeliveryTrackerTest {
 
         val messageId = UUID.randomUUID().toString()
         val state = AuthenticatedMessageDeliveryState(messageAndKey, Instant.now().toEpochMilli())
-        listener.onPartitionSynced(mapOf(messageId to state))
+        listener.onPartitionSynced(createTopicData(mapOf(messageId to state)))
         @Suppress("UNCHECKED_CAST")
         verify(replayScheduler.constructed().last() as ReplayScheduler<SessionManager.Counterparties, AuthenticatedMessageAndKey>)
             .addForReplay(
@@ -273,10 +276,14 @@ class DeliveryTrackerTest {
                 eq(SessionManager.Counterparties(source, dest))
             )
 
-        listener.onPartitionLost(mapOf(messageId to state))
+        listener.onPartitionLost(createTopicData(mapOf(messageId to state)))
         @Suppress("UNCHECKED_CAST")
         verify(replayScheduler.constructed().last() as ReplayScheduler<SessionManager.Counterparties, AuthenticatedMessageAndKey>)
             .removeFromReplay(messageId, SessionManager.Counterparties(source, dest))
         tracker.stop()
+    }
+
+    private fun <K: Any, V: Any>  createTopicData(map: Map<K, V>) : TopicData<K, V> {
+        return SimpleTopicDataImpl(ConcurrentHashMap(map))
     }
 }

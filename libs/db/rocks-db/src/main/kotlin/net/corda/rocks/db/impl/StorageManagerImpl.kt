@@ -1,7 +1,5 @@
-package net.corda.rocks.db.api.impl
+package net.corda.rocks.db.impl
 
-import java.nio.file.Path
-import java.util.concurrent.ConcurrentHashMap
 import net.corda.libs.configuration.SmartConfig
 import net.corda.rocks.db.api.KeyValueOpType
 import net.corda.rocks.db.api.QueryProcessor
@@ -10,6 +8,7 @@ import net.corda.rocks.db.api.ReadResult
 import net.corda.rocks.db.api.StorageManager
 import net.corda.rocks.db.api.WriteOp
 import net.corda.schema.configuration.ConfigKeys.WORKSPACE_DIR
+import net.corda.utilities.debug
 import org.rocksdb.ColumnFamilyDescriptor
 import org.rocksdb.ColumnFamilyHandle
 import org.rocksdb.ColumnFamilyOptions
@@ -20,7 +19,12 @@ import org.rocksdb.RocksDB
 import org.rocksdb.Slice
 import org.rocksdb.WriteBatch
 import org.rocksdb.WriteOptions
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
+import java.nio.file.Path
+import java.util.concurrent.ConcurrentHashMap
 
+@Suppress("NestedBlockDepth", "TooManyFunctions")
 class StorageManagerImpl(config: SmartConfig) : StorageManager {
     private val dbFolder: Path = Path.of(config.getString(WORKSPACE_DIR))
     private val columnFamilyHandles = ConcurrentHashMap<String, ColumnFamilyHandle>()
@@ -28,16 +32,21 @@ class StorageManagerImpl(config: SmartConfig) : StorageManager {
     private var dbOptions: DBOptions? = null
     private var columnOptions: ColumnFamilyOptions? = null
 
+    private companion object {
+        val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+    }
     override fun estimateKeys(table: String): Int {
         return rocksDB?.getProperty(getColumnHandle(table), "rocksdb.estimate-num-keys" )?.toInt() ?: 0
     }
     override fun start() {
         if (rocksDB == null) {
+            logger.info("Starting rocks db engine...")
             val openResult = RocksDBHelper.initRocksDB(dbFolder.toAbsolutePath())
             rocksDB = openResult.rocksDB
             dbOptions = openResult.dbOptions
             columnOptions = openResult.columnOptions
             columnFamilyHandles.putAll(openResult.columnFamilyHandles)
+            logger.info("Rocks db engine started!")
         }
     }
 
@@ -148,9 +157,7 @@ class StorageManagerImpl(config: SmartConfig) : StorageManager {
                 rocksDB!!.newIterator(columnHandle, readOptions).use { iterator ->
                     iterator.seek(start)
                     while (iterator.isValid) {
-                        if (!processor.process(iterator.key(), iterator.value())) {
-                            break
-                        }
+                        processor.process(iterator.key(), iterator.value())
                         iterator.next()
                     }
                 }
@@ -162,6 +169,7 @@ class StorageManagerImpl(config: SmartConfig) : StorageManager {
     }
 
     override fun iterateAll(table: String, processor: QueryProcessor) {
+        logger.debug { "Iterating throw rocks table $table..." }
         require(rocksDB != null) {
             "No DB started"
         }
@@ -173,20 +181,20 @@ class StorageManagerImpl(config: SmartConfig) : StorageManager {
                 rocksDB!!.newIterator(columnHandle, readOptions).use { iterator ->
                     iterator.seekToFirst()
                     while (iterator.isValid) {
-                        if (!processor.process(iterator.key(), iterator.value())) {
-                            break
-                        }
+                        processor.process(iterator.key(), iterator.value())
                         iterator.next()
                     }
                 }
             }
         } finally {
+            logger.debug { "Iteration complete on table $table!" }
             rocksDB!!.releaseSnapshot(snapshot)
             snapshot.close()
         }
     }
 
     override fun flush(table: String) {
+        logger.debug { "Flushing table $table" }
         require(rocksDB != null) {
             "No DB started"
         }
@@ -197,6 +205,7 @@ class StorageManagerImpl(config: SmartConfig) : StorageManager {
     }
 
     override fun close() {
+        logger.debug { "Closing storage manager...." }
         for (handle in columnFamilyHandles.values) {
             handle.close()
         }
@@ -207,6 +216,6 @@ class StorageManagerImpl(config: SmartConfig) : StorageManager {
         columnOptions = null
         dbOptions?.close()
         dbOptions = null
+        logger.debug { "Storage manager closed!" }
     }
-
 }

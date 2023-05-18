@@ -1,10 +1,12 @@
 package net.corda.messaging.api.subscription.listener
 
+import net.corda.messaging.api.subscription.data.TopicData
+
 /**
  * Client hooks that can be injected into the state and event subscription.
  * This API allows for the client to keep track of all changes to the in-memory map of states used by the state and event subscription.
  */
-interface StateAndEventListener<K, S> {
+interface StateAndEventListener<K: Any, S: Any> {
 
     /**
      * List of [states] and keys assigned to the event consumer for a single partition.
@@ -12,13 +14,13 @@ interface StateAndEventListener<K, S> {
      * If the new partition has no states this method will not be called.
      * Any exception thrown within this method and not caught will cause the subscription to throw a fatal error.
      */
-    fun onPartitionSynced(states: Map<K, S>)
+    fun onPartitionSynced(states: TopicData<K, S>?)
 
     /**
      * List of [states] and keys for a partition that is unassigned from the event consumer.
      * Any exception thrown within this method and not caught will cause the subscription to throw a fatal error.
      */
-    fun onPartitionLost(states: Map<K, S>)
+    fun onPartitionLost(states: TopicData<K, S>?)
 
     /**
      * List of states and keys updated as part of a single transaction.

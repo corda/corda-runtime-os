@@ -9,6 +9,7 @@ import net.corda.libs.configuration.helper.getConfig
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
+import net.corda.messaging.api.subscription.data.TopicData
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -42,12 +43,24 @@ class FlowWakeUpSchedulerImpl constructor(
         publisher = publisherFactory.createPublisher(PublisherConfig("FlowWakeUpRestResource"), config.getConfig(MESSAGING_CONFIG))
     }
 
-    override fun onPartitionSynced(states: Map<String, Checkpoint>) {
-        scheduleTasks(states.values)
+    override fun onPartitionSynced(states: TopicData<String, Checkpoint>?) {
+        states?.iterate { _, value ->
+            val id = value.flowId
+            val scheduledWakeUp = scheduledExecutorService.schedule(
+                { publishWakeUp(id) },
+                value.pipelineState.maxFlowSleepDuration.toLong(),
+                TimeUnit.MILLISECONDS
+            )
+
+            val existingWakeUp = scheduledWakeUps.put(id, scheduledWakeUp)
+            existingWakeUp?.cancel(false)
+        }
     }
 
-    override fun onPartitionLost(states: Map<String, Checkpoint>) {
-        cancelScheduledWakeUps(states.keys)
+    override fun onPartitionLost(states: TopicData<String, Checkpoint>?) {
+        states?.iterate { key, _ ->
+            scheduledWakeUps.remove(key)?.cancel(false)
+        }
     }
 
     override fun onPostCommit(updatedStates: Map<String, Checkpoint?>) {
@@ -74,7 +87,6 @@ class FlowWakeUpSchedulerImpl constructor(
 
     private fun cancelScheduledWakeUps(flowIds:Collection<String>){
         flowIds.forEach {
-            scheduledWakeUps.remove(it)?.cancel(false)
         }
     }
 

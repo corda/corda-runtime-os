@@ -40,6 +40,7 @@ dependencies {
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
     testImplementation project(':testing:test-utilities')
+    testImplementation project(':libs:messaging:messaging-impl')
 
     integrationTestImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
 

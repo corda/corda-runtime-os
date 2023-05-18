@@ -5,6 +5,7 @@ import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.state.mapper.FlowMapperState
 import net.corda.data.flow.state.mapper.FlowMapperStateType
 import net.corda.messaging.api.records.Record
+import net.corda.messaging.api.subscription.data.TopicData
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
 import net.corda.schema.Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC
 import net.corda.utilities.debug
@@ -25,36 +26,36 @@ class FlowMapperListener(
         private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
-    override fun onPartitionSynced(states: Map<String, FlowMapperState>) {
-        log.trace { "Synced states $states" }
+    override fun onPartitionSynced(states: TopicData<String, FlowMapperState>?) {
+        log.trace { "Synced partition states ${states?.size}" }
+        states?.iterate(::partitionSyncedIterator)
+    }
+
+    private fun partitionSyncedIterator(key: String, state: FlowMapperState) {
         val currentTime = clock.millis()
-        for (stateEntry in states) {
-            val key = stateEntry.key
-            val state = stateEntry.value
-            val expiryTime = state.expiryTime
-            if (expiryTime != null && state.status == FlowMapperStateType.CLOSING) {
-                if (currentTime > expiryTime) {
-                    log.debug { "Clearing up expired state for synced key $key" }
-                    publisher?.publish(
-                        listOf(
-                            Record(
-                                FLOW_MAPPER_EVENT_TOPIC, key, FlowMapperEvent(
-                                    ExecuteCleanup()
-                                )
+        val expiryTime = state.expiryTime
+        if (expiryTime != null && state.status == FlowMapperStateType.CLOSING) {
+            if (currentTime > expiryTime) {
+                log.debug { "Clearing up expired state for synced key $key" }
+                publisher?.publish(
+                    listOf(
+                        Record(
+                            FLOW_MAPPER_EVENT_TOPIC, key, FlowMapperEvent(
+                                ExecuteCleanup()
                             )
                         )
                     )
-                } else {
-                    setupCleanupTimer(key, expiryTime)
-                }
+                )
+            } else {
+                setupCleanupTimer(key, expiryTime)
             }
         }
     }
 
-    override fun onPartitionLost(states: Map<String, FlowMapperState>) {
-        log.trace { "Lost partition states $states" }
-        for (stateEntry in states) {
-            scheduledTasks.remove(stateEntry.key)?.cancel(true)
+    override fun onPartitionLost(states: TopicData<String, FlowMapperState>?) {
+        log.trace { "Lost partition states ${states?.size}" }
+        states?.iterate { key, _ ->
+            scheduledTasks.remove(key)?.cancel(true)
         }
     }
 

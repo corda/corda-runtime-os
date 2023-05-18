@@ -3,6 +3,7 @@ package net.corda.session.mapper.service.executor
 import net.corda.data.flow.state.mapper.FlowMapperState
 import net.corda.data.flow.state.mapper.FlowMapperStateType
 import net.corda.messaging.api.publisher.Publisher
+import net.corda.messaging.rocks.SimpleTopicDataImpl
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
@@ -11,6 +12,7 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.time.Clock
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 
@@ -26,7 +28,7 @@ class FlowMapperListenerTest {
         val scheduledTaskState = generateScheduledTaskState(publisher, scheduledKeys)
         assertThat(scheduledTaskState.tasks.size).isEqualTo(3)
 
-        FlowMapperListener(scheduledTaskState, Clock.systemUTC()).onPartitionLost(states)
+        FlowMapperListener(scheduledTaskState, Clock.systemUTC()).onPartitionLost(SimpleTopicDataImpl(ConcurrentHashMap(states)))
 
         assertThat(scheduledTaskState.tasks.size).isEqualTo(0)
     }
@@ -42,7 +44,7 @@ class FlowMapperListenerTest {
         val scheduledTaskState = generateScheduledTaskState(publisher, emptyList())
         assertThat(scheduledTaskState.tasks.size).isEqualTo(0)
 
-        FlowMapperListener(scheduledTaskState, clock).onPartitionSynced(states)
+        FlowMapperListener(scheduledTaskState, clock).onPartitionSynced(SimpleTopicDataImpl(ConcurrentHashMap(states)))
 
         verify(publisher, times(3)).publish(any())
         assertThat(scheduledTaskState.tasks.size).isEqualTo(0)
@@ -59,7 +61,7 @@ class FlowMapperListenerTest {
         val scheduledTaskState = generateScheduledTaskState(publisher, emptyList())
         assertThat(scheduledTaskState.tasks.size).isEqualTo(0)
 
-        FlowMapperListener(scheduledTaskState, clock).onPartitionSynced(states)
+        FlowMapperListener(scheduledTaskState, clock).onPartitionSynced(SimpleTopicDataImpl(ConcurrentHashMap(states)))
 
         verify(publisher, times(0)).publish(any())
         assertThat(scheduledTaskState.tasks.size).isEqualTo(3)
@@ -79,7 +81,7 @@ class FlowMapperListenerTest {
         val scheduledTaskState = generateScheduledTaskState(publisher, emptyList())
         assertThat(scheduledTaskState.tasks.size).isEqualTo(0)
 
-        FlowMapperListener(scheduledTaskState, clock).onPartitionSynced(states)
+        FlowMapperListener(scheduledTaskState, clock).onPartitionSynced(SimpleTopicDataImpl(ConcurrentHashMap(states)))
 
         verify(publisher, times(0)).publish(any())
         assertThat(scheduledTaskState.tasks.size).isEqualTo(0)

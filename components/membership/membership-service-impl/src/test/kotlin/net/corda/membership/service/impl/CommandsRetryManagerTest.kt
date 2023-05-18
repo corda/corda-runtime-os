@@ -10,6 +10,7 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
+import net.corda.messaging.rocks.SimpleTopicDataImpl
 import net.corda.schema.Schemas.Membership.MEMBERSHIP_ASYNC_REQUEST_TOPIC
 import net.corda.utilities.time.UTCClock
 import org.assertj.core.api.Assertions.assertThat
@@ -25,6 +26,7 @@ import org.mockito.kotlin.same
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.time.Instant
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
@@ -81,7 +83,7 @@ class CommandsRetryManagerTest {
         val records = argumentCaptor<List<Record<*, *>>>()
         whenever(publisher.publish(records.capture())).doReturn(emptyList())
 
-        manager.onPartitionSynced(requests)
+        manager.onPartitionSynced(SimpleTopicDataImpl(ConcurrentHashMap(requests)))
 
         task.allValues.forEach {
             it.run()
@@ -108,9 +110,9 @@ class CommandsRetryManagerTest {
         val requests = (1..3).associate { requestIndex ->
             "request-$requestIndex" to mockState("request-$requestIndex")
         }
-        manager.onPartitionSynced(requests)
+        manager.onPartitionSynced(SimpleTopicDataImpl(ConcurrentHashMap(requests)))
 
-        manager.onPartitionLost(requests)
+        manager.onPartitionLost(SimpleTopicDataImpl(ConcurrentHashMap(requests)))
 
         verify(future, times(3)).cancel(false)
     }
@@ -120,7 +122,7 @@ class CommandsRetryManagerTest {
         val startRequests = mapOf(
             "requestId" to mockState("requestId"),
         )
-        manager.onPartitionSynced(startRequests)
+        manager.onPartitionSynced(SimpleTopicDataImpl(ConcurrentHashMap(startRequests)))
         val requests = mapOf(
             "requestId" to null,
         )

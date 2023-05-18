@@ -27,7 +27,6 @@ import net.corda.messaging.api.subscription.listener.StateAndEventListener
 import net.corda.messaging.config.MessagingConfigResolver
 import net.corda.messaging.config.ResolvedSubscriptionConfig
 import net.corda.messaging.constants.SubscriptionType
-import net.corda.messaging.rocks.MapFactoryBuilder
 import net.corda.messaging.subscription.CompactedSubscriptionImpl
 import net.corda.messaging.subscription.DurableSubscriptionImpl
 import net.corda.messaging.subscription.EventLogSubscriptionImpl
@@ -35,7 +34,6 @@ import net.corda.messaging.subscription.PubSubSubscriptionImpl
 import net.corda.messaging.subscription.RPCSubscriptionImpl
 import net.corda.messaging.subscription.StateAndEventSubscriptionImpl
 import net.corda.messaging.subscription.consumer.builder.StateAndEventBuilder
-import net.corda.rocks.db.api.StorageManagerFactory
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.MessagingConfig.MAX_ALLOWED_MSG_SIZE
 import org.osgi.service.component.annotations.Activate
@@ -109,7 +107,7 @@ class CordaSubscriptionFactory @Activate constructor(
         messagingConfig: SmartConfig,
     ): CompactedSubscription<K, V> {
         val config = getConfig(SubscriptionType.COMPACTED, subscriptionConfig, messagingConfig)
-        val mapFactory = object : MapFactory<K, V> {
+        val topicDataFactory = object : MapFactory<K, V> {
             override fun createMap(): MutableMap<K, V> = ConcurrentHashMap<K, V>()
             override fun destroyMap(map: MutableMap<K, V>) {
                 map.clear()
@@ -118,7 +116,7 @@ class CordaSubscriptionFactory @Activate constructor(
 
         return CompactedSubscriptionImpl(
             config,
-            mapFactory,
+            topicDataFactory,
             cordaConsumerBuilder,
             processor,
             lifecycleCoordinatorFactory

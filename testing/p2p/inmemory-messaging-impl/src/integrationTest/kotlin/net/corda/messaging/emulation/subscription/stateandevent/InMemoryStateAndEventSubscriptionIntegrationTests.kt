@@ -11,6 +11,7 @@ import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
+import net.corda.messaging.api.subscription.data.TopicData
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
@@ -204,10 +205,10 @@ class InMemoryStateAndEventSubscriptionIntegrationTests {
         val countDown = CountDownLatch(records.size)
         val latestStates = ConcurrentHashMap<Key, State?>()
         val listener = object : StateAndEventListener<Key, State> {
-            override fun onPartitionSynced(states: Map<Key, State>) {
+            override fun onPartitionSynced(states: TopicData<Key, State>?) {
             }
 
-            override fun onPartitionLost(states: Map<Key, State>) {
+            override fun onPartitionLost(states: TopicData<Key, State>?) {
             }
 
             override fun onPostCommit(updatedStates: Map<Key, State?>) {
@@ -280,17 +281,17 @@ class InMemoryStateAndEventSubscriptionIntegrationTests {
             Record(subscriptionConfig.eventTopic, Key(5), Event.INCREASE_STATE),
         )
         val countDown = CountDownLatch(2)
-        var lostStates: Map<Key, State>? = null
+        var lostStates: TopicData<Key, State>? = null
 
         val listener = object : StateAndEventListener<Key, State> {
-            override fun onPartitionSynced(states: Map<Key, State>) {
+            override fun onPartitionSynced(states: TopicData<Key, State>?) {
                 if (states == mapOf(Key(5) to State(10))) {
                     countDown.countDown()
                 }
             }
 
-            override fun onPartitionLost(states: Map<Key, State>) {
-                if (states.isNotEmpty()) {
+            override fun onPartitionLost(states: TopicData<Key, State>?) {
+                if (states != null && states.size > 0) {
                     lostStates = states
                 }
             }
@@ -331,6 +332,6 @@ class InMemoryStateAndEventSubscriptionIntegrationTests {
         assertThat(lostStates).isNull()
 
         subscription.close()
-        assertThat(lostStates).containsEntry(Key(5), State(11))
+        assertThat(lostStates?.get(Key(5))).isEqualTo(State(11))
     }
 }

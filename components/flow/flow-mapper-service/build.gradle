@@ -29,6 +29,7 @@ dependencies {
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 
     testImplementation project(":libs:lifecycle:lifecycle-test-impl")
+    testImplementation project(":libs:messaging:messaging-impl")
     testImplementation project(":testing:test-utilities")
     testImplementation project(":testing:flow:flow-utilities")
 

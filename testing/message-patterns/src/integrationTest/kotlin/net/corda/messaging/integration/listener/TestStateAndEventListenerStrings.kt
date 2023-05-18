@@ -1,5 +1,6 @@
 package net.corda.messaging.integration.listener
 
+import net.corda.messaging.api.subscription.data.TopicData
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
 import org.slf4j.LoggerFactory
 import java.util.concurrent.CountDownLatch
@@ -20,21 +21,29 @@ class TestStateAndEventListenerStrings(
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
-    override fun onPartitionSynced(states: Map<String, String>) {
-        logger.info("======== SYNCED PARTITION =======")
+    override fun onPartitionSynced(states: TopicData<String, String>?) {
         logger.info(states.toString())
         if (!expectedSyncState.isNullOrEmpty()) {
-            if (states == expectedSyncState) {
+            if (states != null && expectedStatesPresent(expectedSyncState, states)) {
                 syncPartitionLatch?.countDown()
             }
         }
     }
 
-    override fun onPartitionLost(states: Map<String, String>) {
-        logger.info("======== PARTITION LOST =======")
+    private fun expectedStatesPresent(expectedSyncState: Map<String, String>, states: TopicData<String, String>) : Boolean {
+        expectedSyncState.forEach {
+            if (states.get(it.key) != it.value) {
+                return false
+            }
+        }
+
+        return true
+    }
+
+    override fun onPartitionLost(states: TopicData<String, String>?) {
         logger.info(states.toString())
         if (!expectedPartitionLostState.isNullOrEmpty()) {
-            if (states == expectedPartitionLostState) {
+            if (states != null && expectedStatesPresent(expectedPartitionLostState, states)) {
                 losePartitionLatch?.countDown()
             }
         }
@@ -48,7 +57,6 @@ class TestStateAndEventListenerStrings(
         if (expectedCommitState?.contains(updatedStates) == true) {
             commitStateLatch?.countDown()
         }
-        logger.info("======== COMMIT =======")
         logger.info(updatedStates.toString())
         onCommitCount++
     }

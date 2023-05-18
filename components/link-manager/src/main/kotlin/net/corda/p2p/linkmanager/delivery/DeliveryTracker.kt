@@ -24,6 +24,7 @@ import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
+import net.corda.messaging.api.subscription.data.TopicData
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
 import net.corda.metrics.CordaMetrics
@@ -229,15 +230,15 @@ internal class DeliveryTracker(
                 }
             }
 
-            override fun onPartitionLost(states: Map<String, AuthenticatedMessageDeliveryState>) {
-                for ((key, state) in states) {
+            override fun onPartitionLost(states: TopicData<String, AuthenticatedMessageDeliveryState>?) {
+                states?.iterate { key, state ->
                     replayScheduler.removeFromReplay(key, counterpartiesFromState(state))
                     trackedCounterparties.remove(key)
                 }
             }
 
-            override fun onPartitionSynced(states: Map<String, AuthenticatedMessageDeliveryState>) {
-                for ((key, state) in states) {
+            override fun onPartitionSynced(states: TopicData<String, AuthenticatedMessageDeliveryState>?) {
+                states?.iterate { key, state ->
                     val sessionCounterparties = counterpartiesFromState(state)
                     trackedCounterparties[key] = sessionCounterparties
                     replayScheduler.addForReplay(state.timestamp, key, state.message, sessionCounterparties)

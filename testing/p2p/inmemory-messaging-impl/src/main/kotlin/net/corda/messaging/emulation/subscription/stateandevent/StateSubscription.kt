@@ -1,6 +1,7 @@
 package net.corda.messaging.emulation.subscription.stateandevent
 
 import net.corda.lifecycle.Lifecycle
+import net.corda.messaging.api.subscription.data.TopicData
 import net.corda.messaging.api.subscription.listener.PartitionAssignmentListener
 import net.corda.messaging.emulation.topic.model.Consumption
 import net.corda.messaging.emulation.topic.model.RecordMetadata
@@ -78,13 +79,14 @@ internal class StateSubscription<K : Any, S : Any>(
                 readyNotifier.signalAll()
             }
         }
-        fun createReportMap(): Map<K, S> {
-            return knownValues
+        fun createReportMap(): TopicData<K, S> {
+            val map =  knownValues
                 .filterValues {
                     it.state != null
                 }.mapValues {
                     it.value.state!!
-                }
+                }.toMutableMap()
+            return TopicDataImpl(map)
         }
     }
 

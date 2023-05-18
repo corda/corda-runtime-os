@@ -22,7 +22,3 @@ class ReadResult(
     val key: ByteArray,
     val value: ByteArray?
 )
-
-fun interface QueryProcessor {
-    fun process(key: ByteArray, value: ByteArray): Boolean
-}

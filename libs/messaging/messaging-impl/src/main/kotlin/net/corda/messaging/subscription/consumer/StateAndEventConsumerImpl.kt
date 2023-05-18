@@ -11,6 +11,7 @@ import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messagebus.api.consumer.CordaOffsetResetStrategy
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
+import net.corda.messaging.api.subscription.data.TopicData
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
 import net.corda.messaging.config.ResolvedSubscriptionConfig
 import net.corda.messaging.constants.MetricsConstants
@@ -159,7 +160,7 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
 
     override fun getInMemoryStateValue(key: K): S? {
         currentStates.forEach {
-            val state = it.value[key]
+            val state = it.value.get(key)
             if (state != null) {
                 return state
             }
@@ -348,8 +349,11 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
     }
 
     private fun updateInMemoryState(state: CordaConsumerRecord<K, S>) {
-        currentStates[state.partition]?.compute(state.key) { _, _ ->
-            state.value
+        val value = state.value
+        if (value == null) {
+            currentStates[state.partition]?.remove(state.key)
+        } else {
+            currentStates[state.partition]?.put(state.key, value)
         }
     }
 
@@ -368,7 +372,7 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
                     )
                 updatedStatesByKey[key] = value
                 if (value != null) {
-                    currentStatesByPartition[key] = value
+                    currentStatesByPartition.put(key, value)
                 } else {
                     currentStatesByPartition.remove(key)
                 }
@@ -428,12 +432,8 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
     private fun getNextPollIntervalCutoff(): Long {
         return System.currentTimeMillis() + (maxPollInterval / 2)
     }
-    private fun getStatesForPartition(partitionId: Int): Map<K, S> {
-        val partitionStates = currentStates[partitionId]
-        return partitionStates?.keys?.mapNotNull { key ->
-            val state = partitionStates[key]
-            if (state != null) { Pair(key, state) } else { null }
-        }?.toMap() ?: emptyMap()
+    private fun getStatesForPartition(partitionId: Int): TopicData<K, S>? {
+        return currentStates[partitionId]
     }
 
     private fun CordaTopicPartition.toStatePartition(): CordaTopicPartition {

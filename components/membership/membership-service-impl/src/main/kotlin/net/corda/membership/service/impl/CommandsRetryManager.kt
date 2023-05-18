@@ -11,6 +11,7 @@ import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
+import net.corda.messaging.api.subscription.data.TopicData
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
 import net.corda.schema.Schemas.Membership.MEMBERSHIP_ASYNC_REQUEST_TOPIC
 import net.corda.utilities.time.UTCClock
@@ -66,18 +67,18 @@ internal class CommandsRetryManager(
         publisher.close()
     }
 
-    override fun onPartitionSynced(states: Map<String, MembershipAsyncRequestState>) {
-        states.forEach(::addTimer)
+    override fun onPartitionSynced(states: TopicData<String, MembershipAsyncRequestState>?) {
+        states?.iterate(::addTimer)
     }
 
-    override fun onPartitionLost(states: Map<String, MembershipAsyncRequestState>) {
-        states.keys.forEach(::cancelTimers)
+    override fun onPartitionLost(states: TopicData<String, MembershipAsyncRequestState>?) {
+        states?.iterate(::cancelTimers)
     }
 
     override fun onPostCommit(updatedStates: Map<String, MembershipAsyncRequestState?>) {
         updatedStates.forEach { (requestId, state) ->
             if (state == null) {
-                cancelTimers(requestId)
+                cancelTimers(requestId, state)
             } else {
                 addTimer(requestId, state)
             }
@@ -107,7 +108,8 @@ internal class CommandsRetryManager(
         }
     }
 
-    private fun cancelTimers(requestId: String) {
+    @Suppress("unused_parameter")
+    private fun cancelTimers(requestId: String, membershipAsyncRequestState: MembershipAsyncRequestState?) {
         val future = timers.remove(requestId)
         if (future != null) {
             logger.debug("Request $requestId will not be retried")

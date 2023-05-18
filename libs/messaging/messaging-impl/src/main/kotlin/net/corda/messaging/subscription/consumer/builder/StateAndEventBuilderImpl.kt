@@ -1,6 +1,5 @@
 package net.corda.messaging.subscription.consumer.builder
 
-import java.util.concurrent.ConcurrentHashMap
 import net.corda.messagebus.api.configuration.ConsumerConfig
 import net.corda.messagebus.api.configuration.ProducerConfig
 import net.corda.messagebus.api.constants.ConsumerRoles
@@ -9,16 +8,16 @@ import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.api.consumer.builder.CordaConsumerBuilder
 import net.corda.messagebus.api.producer.CordaProducer
 import net.corda.messagebus.api.producer.builder.CordaProducerBuilder
+import net.corda.messaging.api.subscription.data.TopicData
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
 import net.corda.messaging.config.ResolvedSubscriptionConfig
-import net.corda.messaging.rocks.MapFactoryBuilder
+import net.corda.messaging.rocks.TopicDataFactoryBuilder
 import net.corda.messaging.subscription.consumer.StateAndEventConsumer
 import net.corda.messaging.subscription.consumer.StateAndEventConsumerImpl
 import net.corda.messaging.subscription.consumer.StateAndEventPartitionState
 import net.corda.messaging.subscription.consumer.listener.StateAndEventConsumerRebalanceListener
 import net.corda.messaging.subscription.consumer.listener.StateAndEventConsumerRebalanceListenerImpl
-import net.corda.messaging.subscription.factory.MapFactory
-import net.corda.rocks.db.api.StorageManagerFactory
+import net.corda.messaging.subscription.factory.TopicDataFactory
 import net.corda.schema.Schemas.getStateAndEventStateTopic
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.osgi.service.component.annotations.Activate
@@ -32,10 +31,8 @@ class StateAndEventBuilderImpl @Activate constructor(
     private val cordaConsumerBuilder: CordaConsumerBuilder,
     @Reference(service = CordaProducerBuilder::class)
     private val cordaProducerBuilder: CordaProducerBuilder,
-    @Reference(service = StorageManagerFactory::class)
-    private val storageManagerFactory: StorageManagerFactory,
-    @Reference(service = MapFactoryBuilder::class)
-    private val mapFactoryBuilder: MapFactoryBuilder
+    @Reference(service = TopicDataFactoryBuilder::class)
+    private val topicDataFactoryBuilder: TopicDataFactoryBuilder
 ) : StateAndEventBuilder {
 
     private val log = LoggerFactory.getLogger(this::class.java)
@@ -61,12 +58,11 @@ class StateAndEventBuilderImpl @Activate constructor(
         onStateError: (ByteArray) -> Unit,
         onEventError: (ByteArray) -> Unit,
     ): Pair<StateAndEventConsumer<K, S, E>, StateAndEventConsumerRebalanceListener> {
-        val mapFactory: MapFactory<K, S> = mapFactoryBuilder.create(
-            storageManagerFactory.getStorageManger(config.messageBusConfig),
+        val topicDataFactory: TopicDataFactory<K, S> = topicDataFactoryBuilder.create(
             config.messageBusConfig,
             config.clientId,
             kClazz,
-            sClazz,
+            sClazz
         )
 
         val stateConsumerConfig =
@@ -91,14 +87,14 @@ class StateAndEventBuilderImpl @Activate constructor(
 
         val partitionState =
             StateAndEventPartitionState(
-                mutableMapOf<Int, MutableMap<K,S>>()
+                mutableMapOf<Int, TopicData<K,S>>()
             )
 
         val stateAndEventConsumer =
             StateAndEventConsumerImpl(config, eventConsumer, stateConsumer, partitionState, stateAndEventListener)
         val rebalanceListener = StateAndEventConsumerRebalanceListenerImpl(
             config,
-            mapFactory,
+            topicDataFactory,
             stateAndEventConsumer,
             partitionState,
             stateAndEventListener

@@ -64,6 +64,7 @@ dependencies {
     implementation project(":libs:membership:membership-common")
     implementation project(":components:membership:membership-group-read")
 
+    testImplementation project(":libs:messaging:messaging-impl")
     testImplementation project(":testing:test-utilities")
     testImplementation project(":testing:p2p:certificates")
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
@@ -94,7 +95,6 @@ dependencies {
     integrationTestRuntimeOnly project(":libs:crypto:cipher-suite-impl")
     integrationTestRuntimeOnly project(":libs:lifecycle:lifecycle-impl")
     integrationTestRuntimeOnly project(":libs:messaging:db-topic-admin-impl")
-    integrationTestRuntimeOnly project(":libs:messaging:messaging-impl")
     integrationTestRuntimeOnly project(":libs:schema-registry:schema-registry-impl")
     integrationTestRuntimeOnly project(":components:crypto:crypto-client-impl")
     integrationTestRuntimeOnly project(":components:membership:membership-group-read-impl")

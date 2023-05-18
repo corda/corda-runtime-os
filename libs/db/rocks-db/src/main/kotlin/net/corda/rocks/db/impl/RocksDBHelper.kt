@@ -1,4 +1,4 @@
-package net.corda.rocks.db.api.impl
+package net.corda.rocks.db.impl
 
 import java.nio.file.Files
 import java.nio.file.Path
@@ -21,67 +21,6 @@ import org.rocksdb.Statistics
 object RocksDBHelper {
     init {
         RocksDB.loadLibrary()
-    }
-
-    data class DBOpenResult(
-        val rocksDB: RocksDB,
-        val dbOptions: DBOptions,
-        val columnOptions: ColumnFamilyOptions,
-        val columnFamilyHandles: Map<String, ColumnFamilyHandle>
-    )
-
-    fun createDbOptions(): DBOptions {
-        val sstFileManager = SstFileManager(Env.getDefault())
-        val statistics = Statistics()
-        return DBOptions()
-            .setCreateIfMissing(true)
-            .setCreateMissingColumnFamilies(true)
-            .setIncreaseParallelism(2)
-            .setInfoLogLevel(InfoLogLevel.INFO_LEVEL)
-            .setMaxTotalWalSize(0L)
-            .setStatistics(statistics)
-            .setSstFileManager(sstFileManager)
-            .setWalSizeLimitMB(0L)
-            .setMaxSubcompactions(1)
-    }
-
-    fun createOptions(dbOptions: DBOptions, cfOptions: ColumnFamilyOptions): Options {
-        val sstFileManager = SstFileManager(Env.getDefault())
-        val statistics = Statistics()
-        return Options(dbOptions, cfOptions)
-            .optimizeLevelStyleCompaction()
-            .setCompactionReadaheadSize(0)
-            .setCompactionStyle(CompactionStyle.LEVEL)
-            .setCreateIfMissing(false)
-            .setCreateMissingColumnFamilies(true)
-            .setIncreaseParallelism(2)
-            .setInfoLogLevel(InfoLogLevel.INFO_LEVEL)
-            .setMaxWriteBufferNumber(3)
-            .setNumLevels(4)
-            .setSstFileManager(sstFileManager)
-            .setStatistics(statistics)
-            .setTargetFileSizeMultiplier(2)
-            .setWalSizeLimitMB(0L)
-            .setWalTtlSeconds(0L)
-            .setMaxSubcompactions(1)
-    }
-
-    fun createColumnFamilyOptions(): ColumnFamilyOptions {
-        val bloomFilter = BloomFilter(10.0)
-        val tableConfig = BlockBasedTableConfig()
-            .setBlockCache(LRUCache(64 * 1024, 6))
-            .setFilterPolicy(bloomFilter)
-            .setBlockSizeDeviation(5)
-            .setBlockRestartInterval(10)
-            .setCacheIndexAndFilterBlocks(true)
-            .setBlockCacheCompressed(LRUCache(64 * 1000, 10))
-        return ColumnFamilyOptions()
-            .setCompactionStyle(CompactionStyle.LEVEL)
-            .setMaxWriteBufferNumber(2)
-            .setNumLevels(4)
-            .setTargetFileSizeMultiplier(2)
-            .setCompressionType(CompressionType.SNAPPY_COMPRESSION)
-            .setTableFormatConfig(tableConfig)
     }
 
     fun initRocksDB(dbPath: Path): DBOpenResult {
@@ -112,5 +51,69 @@ object RocksDBHelper {
             Pair(if (index < columnFamilies.size) String(columnFamilies[index]) else "default", columnFamilyHandle)
         }.toMap()
         return DBOpenResult(rocksDb, dbOptions, columnOptions, handleMap)
+    }
+
+    data class DBOpenResult(
+        val rocksDB: RocksDB,
+        val dbOptions: DBOptions,
+        val columnOptions: ColumnFamilyOptions,
+        val columnFamilyHandles: Map<String, ColumnFamilyHandle>
+    )
+
+    //TODO have this set via config
+    private fun createDbOptions(): DBOptions {
+        val sstFileManager = SstFileManager(Env.getDefault())
+        val statistics = Statistics()
+        return DBOptions()
+            .setCreateIfMissing(true)
+            .setCreateMissingColumnFamilies(true)
+            .setIncreaseParallelism(2)
+            .setInfoLogLevel(InfoLogLevel.INFO_LEVEL)
+            .setMaxTotalWalSize(0L)
+            .setStatistics(statistics)
+            .setSstFileManager(sstFileManager)
+            .setWalSizeLimitMB(0L)
+            .setMaxSubcompactions(1)
+    }
+
+    //TODO have this set via config
+    private fun createOptions(dbOptions: DBOptions, cfOptions: ColumnFamilyOptions): Options {
+        val sstFileManager = SstFileManager(Env.getDefault())
+        val statistics = Statistics()
+        return Options(dbOptions, cfOptions)
+            .optimizeLevelStyleCompaction()
+            .setCompactionReadaheadSize(0)
+            .setCompactionStyle(CompactionStyle.LEVEL)
+            .setCreateIfMissing(false)
+            .setCreateMissingColumnFamilies(true)
+            .setIncreaseParallelism(2)
+            .setInfoLogLevel(InfoLogLevel.INFO_LEVEL)
+            .setMaxWriteBufferNumber(3)
+            .setNumLevels(4)
+            .setSstFileManager(sstFileManager)
+            .setStatistics(statistics)
+            .setTargetFileSizeMultiplier(2)
+            .setWalSizeLimitMB(0L)
+            .setWalTtlSeconds(0L)
+            .setMaxSubcompactions(1)
+    }
+
+    //TODO have this set via config
+    private fun createColumnFamilyOptions(): ColumnFamilyOptions {
+        val bloomFilter = BloomFilter(10.0)
+        val tableConfig = BlockBasedTableConfig()
+            .setBlockCache(LRUCache(64 * 1024, 6))
+            .setFilterPolicy(bloomFilter)
+            .setBlockSizeDeviation(5)
+            .setBlockRestartInterval(10)
+            .setCacheIndexAndFilterBlocks(true)
+            .setBlockCacheCompressed(LRUCache(64 * 1000, 10))
+        return ColumnFamilyOptions()
+            .setCompactionStyle(CompactionStyle.LEVEL)
+            .setMaxWriteBufferNumber(2)
+            .setNumLevels(4)
+            .setTargetFileSizeMultiplier(2)
+            .setCompressionType(CompressionType.SNAPPY_COMPRESSION)
+            .setTableFormatConfig(tableConfig)
     }
 }

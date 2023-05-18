@@ -8,6 +8,7 @@ import net.corda.messaging.TOPIC_PREFIX
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
 import net.corda.messaging.constants.SubscriptionType
 import net.corda.messaging.createResolvedSubscriptionConfig
+import net.corda.messaging.rocks.SimpleTopicDataImpl
 import net.corda.schema.Schemas.getStateAndEventStateTopic
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -23,6 +24,7 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.time.Clock
 import java.time.Duration
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CountDownLatch
 
 class StateAndEventConsumerImplTest {
@@ -38,7 +40,7 @@ class StateAndEventConsumerImplTest {
         val partitionId = partitions.first().partition
         val partitionState =
             StateAndEventPartitionState<String, String>(
-                mutableMapOf(partitionId to mutableMapOf())
+                mutableMapOf(partitionId to SimpleTopicDataImpl())
             )
         val consumer =
             StateAndEventConsumerImpl(
@@ -59,14 +61,7 @@ class StateAndEventConsumerImplTest {
         val (stateAndEventListener, eventConsumer, stateConsumer, partitions) = setupMocks()
         val partitionId = partitions.first().partition
         val partitionState = StateAndEventPartitionState(
-            mutableMapOf(
-                partitionId to mutableMapOf(
-                    "key1" to Pair(
-                        Long.MIN_VALUE,
-                        "value1"
-                    )
-                )
-            )
+            mutableMapOf(partitionId to SimpleTopicDataImpl(ConcurrentHashMap(mutableMapOf("key1" to "value1"))))
         )
         val consumer =
             StateAndEventConsumerImpl(
@@ -87,7 +82,7 @@ class StateAndEventConsumerImplTest {
         val (stateAndEventListener, eventConsumer, stateConsumer, partitions) = setupMocks()
         val partitionId = partitions.first().partition
         val partitionState = StateAndEventPartitionState(
-            mutableMapOf(partitionId to mutableMapOf("key1" to Pair(Long.MIN_VALUE, "value1")))
+            mutableMapOf(partitionId to SimpleTopicDataImpl(ConcurrentHashMap(mutableMapOf("key1" to "value1"))))
         )
         val consumer =
             StateAndEventConsumerImpl(
@@ -115,7 +110,7 @@ class StateAndEventConsumerImplTest {
         val (stateAndEventListener, eventConsumer, stateConsumer, partitions) = setupMocks()
         val partitionId = partitions.first().partition
         val partitionState = StateAndEventPartitionState(
-            mutableMapOf(partitionId to mutableMapOf("key1" to Pair(Long.MIN_VALUE, "value1")))
+            mutableMapOf(partitionId to SimpleTopicDataImpl(ConcurrentHashMap(mutableMapOf("key1" to "value1"))))
         )
         val consumer =
             StateAndEventConsumerImpl(
@@ -142,7 +137,7 @@ class StateAndEventConsumerImplTest {
         verify(stateConsumer, times(4)).assignment()
         verify(stateConsumer, times(1)).poll(any())
         verify(stateConsumer, times(1)).poll(any())
-        verify(stateAndEventListener, times(1)).onPartitionSynced(mapOf("key1" to "value1"))
+        verify(stateAndEventListener, times(1)).onPartitionSynced(SimpleTopicDataImpl(ConcurrentHashMap(mutableMapOf("key1" to "value1"))))
     }
 
     @Test
@@ -150,7 +145,7 @@ class StateAndEventConsumerImplTest {
         val (stateAndEventListener, eventConsumer, stateConsumer, partitions) = setupMocks()
         val partitionId = partitions.first().partition
         val partitionState = StateAndEventPartitionState(
-            mutableMapOf(partitionId to mutableMapOf("key1" to Pair(Long.MIN_VALUE, "value1")))
+            mutableMapOf(partitionId to SimpleTopicDataImpl(ConcurrentHashMap(mutableMapOf("key1" to "value1"))))
         )
 
         val record = CordaConsumerRecord(TOPIC_PREFIX + TOPIC, partitionId, 0, "key1", "value1", 0)
@@ -177,9 +172,9 @@ class StateAndEventConsumerImplTest {
         val (stateAndEventListener, eventConsumer, stateConsumer, partitions) = setupMocks()
         val partitionId = partitions.first().partition
         val key = "key1"
-        val originalState = Pair(Long.MIN_VALUE, "value0")
+        val value = "value0"
         val partitionState = StateAndEventPartitionState(
-            mutableMapOf(partitionId to mutableMapOf(key to originalState))
+            mutableMapOf(partitionId to SimpleTopicDataImpl(ConcurrentHashMap(mutableMapOf(key to value))))
         )
 
         val record = CordaConsumerRecord(TOPIC_PREFIX + TOPIC, partitionId, 0, key, "value1", 0)
@@ -198,7 +193,7 @@ class StateAndEventConsumerImplTest {
         verify(stateConsumer, times(1)).poll(any())
         verify(stateConsumer, times(1)).poll(any())
         verify(stateAndEventListener, times(0)).onPartitionSynced(any())
-        assertThat(partitionState.currentStates[partitionId]!!["key1"]!!).isEqualTo(originalState)
+        assertThat(partitionState.currentStates[partitionId]!!.get(key)!!).isEqualTo(value)
     }
 
     @Test
@@ -206,7 +201,7 @@ class StateAndEventConsumerImplTest {
         val (stateAndEventListener, eventConsumer, stateConsumer, partitions) = setupMocks()
         val partitionId = partitions.first().partition
         val partitionState = StateAndEventPartitionState(
-            mutableMapOf(partitionId to mutableMapOf("key1" to Pair(Long.MIN_VALUE, "value1")))
+            mutableMapOf(partitionId to SimpleTopicDataImpl(ConcurrentHashMap(mutableMapOf("key1" to "value1"))))
         )
         val consumer = StateAndEventConsumerImpl(
             config,
@@ -502,7 +497,7 @@ class StateAndEventConsumerImplTest {
         )
 
         // Should notify that a partition was synced with no states
-        verify(listener).onPartitionSynced(mapOf())
+        verify(listener).onPartitionSynced(SimpleTopicDataImpl())
     }
 
     @Test

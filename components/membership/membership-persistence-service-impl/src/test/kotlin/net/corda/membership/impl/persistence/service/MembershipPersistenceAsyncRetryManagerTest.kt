@@ -10,6 +10,7 @@ import net.corda.lifecycle.TimerEvent
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
+import net.corda.messaging.rocks.SimpleTopicDataImpl
 import net.corda.schema.Schemas
 import net.corda.utilities.time.Clock
 import org.assertj.core.api.Assertions.assertThat
@@ -24,6 +25,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.time.Instant
+import java.util.concurrent.ConcurrentHashMap
 
 class MembershipPersistenceAsyncRetryManagerTest {
     private val handler = argumentCaptor<LifecycleEventHandler>()
@@ -88,7 +90,7 @@ class MembershipPersistenceAsyncRetryManagerTest {
             Instant.ofEpochMilli(300)
         )
 
-        manager.onPartitionSynced(mapOf("key" to state))
+        manager.onPartitionSynced(SimpleTopicDataImpl(ConcurrentHashMap(mapOf("key" to state))))
 
         verify(coordinator).setTimer(eq("retry-key"), eq(2000), any())
     }
@@ -102,7 +104,7 @@ class MembershipPersistenceAsyncRetryManagerTest {
             Instant.ofEpochMilli(300)
         )
 
-        manager.onPartitionLost(mapOf("key" to state))
+        manager.onPartitionLost(SimpleTopicDataImpl(ConcurrentHashMap(mapOf("key" to state))))
 
         verify(coordinator).cancelTimer(eq("retry-key"))
     }
