@@ -1,5 +1,6 @@
 package net.corda.flow.application.services.impl
 
+import co.paralleluniverse.fibers.Suspendable
 import net.corda.flow.application.services.impl.interop.dispatch.buildDispatcher
 import net.corda.flow.application.services.impl.interop.facade.FacadeReaders
 import net.corda.flow.application.services.impl.interop.facade.FacadeRequestImpl
@@ -37,6 +38,7 @@ class FacadeServiceImpl @Activate constructor(
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
+    @Suspendable
     override fun <T : Any?> getFacade(facadeId: String?, expectedType: Class<T>?, alias: MemberX500Name?, interopGroup: String?): T {
         logger.info("Creating Proxy for: $facadeId, $expectedType, $alias, $interopGroup")
         val facade = facadeLookup(facadeId!!)
@@ -45,6 +47,7 @@ class FacadeServiceImpl @Activate constructor(
         return facade.getClientProxy(marshaller, expectedType!!, transportLayer)
     }
 
+    @Suspendable
     override fun dispatchFacadeRequest(target: Any?, request: String?): String {
         logger.info("Dispatching: ${target!!::class.java}, $request")
         val facadeRequest = jsonMarshallingService.parse(request!!, FacadeRequestImpl::class.java)
@@ -56,6 +59,7 @@ class FacadeServiceImpl @Activate constructor(
     }
 
     @Suppress("UNUSED_PARAMETER")
+    @Suspendable
     private fun facadeLookup(facadeId: String): Facade {
         return try {
             AccessController.doPrivileged(PrivilegedExceptionAction {
