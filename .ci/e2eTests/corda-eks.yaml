@@ -1,6 +1,12 @@
 imagePullSecrets:
   - "docker-registry-cred"
 
+metrics:
+  podMonitor:
+    enabled: true
+    labels:
+      release: observability
+
 bootstrap:
   db:
     clientImage:
