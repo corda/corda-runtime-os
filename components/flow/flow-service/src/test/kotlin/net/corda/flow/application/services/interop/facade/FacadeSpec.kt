@@ -40,7 +40,7 @@ class FacadeSpec : DescribeSpec({
 
             balance shouldBe TypedParameterImpl(
                 "balance",
-                TypeParameters<Any>().of(ParameterTypeLabel.DECIMAL.typeName)
+                TypeParameters<Any>().of(ParameterTypeLabel.DECIMAL.name)
             )
         }
 
