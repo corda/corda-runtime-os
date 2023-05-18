@@ -137,7 +137,8 @@ class QueryMemberInfoHandlerTest {
         "sig-$otherX500Name".toByteArray(),
         "dummySignatureSpec",
         mgmContextBytes,
-        1L
+        1L,
+        isDeleted = false
     )
 
     @BeforeEach

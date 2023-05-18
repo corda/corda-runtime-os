@@ -1,6 +1,8 @@
 package net.corda.processors.db.internal
 
+import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.configuration.read.ConfigChangedEvent
+import net.corda.configuration.read.ConfigurationReadService
 import net.corda.configuration.read.reconcile.ConfigReconcilerReader
 import net.corda.configuration.write.publish.ConfigPublishService
 import net.corda.cpiinfo.read.CpiInfoReadService
@@ -12,10 +14,13 @@ import net.corda.membership.groupparams.writer.service.GroupParametersWriterServ
 import net.corda.membership.lib.GroupParametersFactory
 import net.corda.membership.mtls.allowed.list.service.AllowedCertificatesReaderWriterService
 import net.corda.membership.read.GroupParametersReaderService
+import net.corda.messaging.api.publisher.factory.PublisherFactory
+import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.processors.db.internal.reconcile.db.ConfigReconciler
 import net.corda.processors.db.internal.reconcile.db.CpiReconciler
 import net.corda.processors.db.internal.reconcile.db.GroupParametersReconciler
+import net.corda.processors.db.internal.reconcile.db.MemberInfoReconciler
 import net.corda.processors.db.internal.reconcile.db.MgmAllowedCertificateSubjectsReconciler
 import net.corda.processors.db.internal.reconcile.db.VirtualNodeReconciler
 import net.corda.reconciliation.ReconcilerFactory
@@ -23,6 +28,7 @@ import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.ReconciliationConfig.RECONCILIATION_CONFIG_INTERVAL_MS
 import net.corda.schema.configuration.ReconciliationConfig.RECONCILIATION_CPI_INFO_INTERVAL_MS
 import net.corda.schema.configuration.ReconciliationConfig.RECONCILIATION_GROUP_PARAMS_INTERVAL_MS
+import net.corda.schema.configuration.ReconciliationConfig.RECONCILIATION_MEMBER_INFO_INTERVAL_MS
 import net.corda.schema.configuration.ReconciliationConfig.RECONCILIATION_MTLS_MGM_ALLOWED_LIST_INTERVAL_MS
 import net.corda.schema.configuration.ReconciliationConfig.RECONCILIATION_VNODE_INFO_INTERVAL_MS
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
@@ -47,6 +53,10 @@ class Reconcilers(
     jpaEntitiesRegistry: JpaEntitiesRegistry,
     groupParametersFactory: GroupParametersFactory,
     allowedCertificatesReaderWriterService: AllowedCertificatesReaderWriterService,
+    serializationFactory: CordaAvroSerializationFactory,
+    subscriptionFactory: SubscriptionFactory,
+    publisherFactory: PublisherFactory,
+    configurationReadService: ConfigurationReadService
 ) {
     private val cpiReconciler = CpiReconciler(
         coordinatorFactory,
@@ -89,6 +99,17 @@ class Reconcilers(
         allowedCertificatesReaderWriterService,
         allowedCertificatesReaderWriterService,
     )
+    private val memberInfoReconciler = MemberInfoReconciler(
+        coordinatorFactory,
+        dbConnectionManager,
+        virtualNodeInfoReadService,
+        jpaEntitiesRegistry,
+        serializationFactory,
+        reconcilerFactory,
+        publisherFactory,
+        subscriptionFactory,
+        configurationReadService,
+    )
 
     fun stop() {
         cpiReconciler.stop()
@@ -96,6 +117,7 @@ class Reconcilers(
         configReconciler.stop()
         groupParametersReconciler.stop()
         mgmAllowedCertificateSubjectsReconciler.stop()
+        memberInfoReconciler.stop()
     }
 
     /**
@@ -118,6 +140,7 @@ class Reconcilers(
             RECONCILIATION_MTLS_MGM_ALLOWED_LIST_INTERVAL_MS,
             mgmAllowedCertificateSubjectsReconciler::updateInterval,
         )
+        smartConfig.updateIntervalWhenKeyIs(RECONCILIATION_MEMBER_INFO_INTERVAL_MS, memberInfoReconciler::updateInterval)
     }
 
     /** Convenience function to correctly set the interval when the key actually exists in the config */

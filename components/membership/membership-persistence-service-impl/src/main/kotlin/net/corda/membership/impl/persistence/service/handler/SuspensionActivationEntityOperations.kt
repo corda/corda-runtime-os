@@ -90,6 +90,7 @@ internal class SuspensionActivationEntityOperations(
                 currentMemberInfo.memberSignatureSpec,
                 serializedMgmContext,
                 updatedSerial,
+                isDeleted = false
             ),
         )
 

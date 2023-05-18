@@ -84,6 +84,7 @@ internal class PersistMemberInfoHandler(
                         it.memberSignatureSpec.signatureName,
                         serializeContext(it.persistentMemberInfo.mgmContext),
                         memberInfo.serial,
+                        isDeleted = false
                     )
                     em.merge(entity)
                 }

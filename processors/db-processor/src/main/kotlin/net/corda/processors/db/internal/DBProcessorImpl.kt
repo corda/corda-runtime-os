@@ -1,5 +1,6 @@
 package net.corda.processors.db.internal
 
+import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.chunking.datamodel.ChunkingEntities
 import net.corda.chunking.read.ChunkReadService
 import net.corda.configuration.read.ConfigChangedEvent
@@ -38,6 +39,8 @@ import net.corda.membership.lib.GroupParametersFactory
 import net.corda.membership.mtls.allowed.list.service.AllowedCertificatesReaderWriterService
 import net.corda.membership.persistence.service.MembershipPersistenceService
 import net.corda.membership.read.GroupParametersReaderService
+import net.corda.messaging.api.publisher.factory.PublisherFactory
+import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.permissions.model.RbacEntities
 import net.corda.permissions.storage.reader.PermissionStorageReaderService
@@ -113,6 +116,12 @@ class DBProcessorImpl @Activate constructor(
     private val membershipGroupPolicyValidator: MembershipGroupPolicyValidator,
     @Reference(service = AllowedCertificatesReaderWriterService::class)
     private val allowedCertificatesReaderWriterService: AllowedCertificatesReaderWriterService,
+    @Reference(service = CordaAvroSerializationFactory::class)
+    serializationFactory: CordaAvroSerializationFactory,
+    @Reference(service = SubscriptionFactory::class)
+    private val subscriptionFactory: SubscriptionFactory,
+    @Reference(service = PublisherFactory::class)
+    private val publisherFactory: PublisherFactory,
 ) : DBProcessor {
     init {
         // define the different DB Entity Sets
@@ -182,6 +191,10 @@ class DBProcessorImpl @Activate constructor(
         entitiesRegistry,
         groupParametersFactory,
         allowedCertificatesReaderWriterService,
+        serializationFactory,
+        subscriptionFactory,
+        publisherFactory,
+        configurationReadService
     )
 
     override fun start(bootConfig: SmartConfig) {

@@ -146,6 +146,7 @@ class QueryMemberSignatureHandlerTest {
                 "dummySignatureSpec",
                 "mgmContext".toByteArray(),
                 1L,
+                isDeleted = false
             )
         }
         whenever(keyValuePairListDeserializer.deserialize(any())).doAnswer {
@@ -204,6 +205,7 @@ class QueryMemberSignatureHandlerTest {
                 "dummySignatureSpec",
                 "mgmContext".toByteArray(),
                 1L,
+                isDeleted = false
             )
         }
 
