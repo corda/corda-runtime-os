@@ -115,7 +115,7 @@ jarsigner -keystore signingkeys.pfx -storepass "keystore password" -verbose -cer
 ```
 
 ## AWS KMS Integration
-Asymmetric key stored in AWS KMS can be used for signing a CPx.
+Private key stored in AWS KMS can be used for signing a CPx.
 
 ### Requirements
 The following environment variables need to be set up log in to AWS:
@@ -135,7 +135,7 @@ AWS Region has to be set in an AWS profile (`~/.aws/config`), e.g. `region = eu-
     --cert-file cert.pem
 ```
 
-### Build a CPB and signs with AWS KMS key
+### Build a CPB and sign with AWS KMS key
 ```shell
 ./corda-cli.sh package create-cpb-signed-with-kms \
     mycpk0.cpk mycpk1.cpk \
@@ -147,6 +147,10 @@ AWS Region has to be set in an AWS profile (`~/.aws/config`), e.g. `region = eu-
 ```
 
 ### Create a CSR for a KMS signing key
+AWS CLI doesn't provide an option to generate a CSR for a KMS signing key. To be able to request a signing certificate,
+CSR needs to be created which can then be sent to a Certificate Authority who generates the signing certificate.
+User can then use this certificate to sign a CPx with the above commands.
+Alternatively self-signed certificate can also be used.
 ```shell
 ./corda-cli.sh package create-csr-for-kms-key \
     --csr-file csr-file.csr \
