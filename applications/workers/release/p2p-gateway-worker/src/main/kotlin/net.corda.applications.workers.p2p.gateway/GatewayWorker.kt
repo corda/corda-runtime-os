@@ -11,6 +11,7 @@ import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.processors.p2p.gateway.GatewayProcessor
+import net.corda.tracing.setTracingServiceName
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -43,6 +44,7 @@ class GatewayWorker @Activate constructor(
     override fun startup(args: Array<String>) {
         logger.info("P2P Gateway worker starting.")
         logger.loggerStartupInfo(platformInfoProvider)
+        setTracingServiceName("P2P Gateway Worker")
 
         applicationBanner.show("P2P Gateway Worker", platformInfoProvider)
 

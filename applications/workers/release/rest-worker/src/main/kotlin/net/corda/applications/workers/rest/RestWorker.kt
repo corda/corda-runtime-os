@@ -19,6 +19,7 @@ import net.corda.processors.rest.RestProcessor
 import net.corda.schema.configuration.BootConfig
 import net.corda.schema.configuration.BootConfig.BOOT_REST_TLS_CRT_PATH
 import net.corda.schema.configuration.BootConfig.BOOT_REST_TLS_KEYSTORE_FILE_PATH
+import net.corda.tracing.setTracingServiceName
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -54,6 +55,7 @@ class RestWorker @Activate constructor(
     override fun startup(args: Array<String>) {
         logger.info("REST worker starting.")
         logger.loggerStartupInfo(platformInfoProvider)
+        setTracingServiceName("REST Worker")
 
         applicationBanner.show("REST Worker", platformInfoProvider)
 

@@ -21,6 +21,7 @@ import net.corda.processors.crypto.CryptoProcessor
 import net.corda.schema.configuration.BootConfig
 import net.corda.schema.configuration.BootConfig.BOOT_CRYPTO
 import net.corda.schema.configuration.BootConfig.BOOT_DB
+import net.corda.tracing.setTracingServiceName
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -55,6 +56,7 @@ class CryptoWorker @Activate constructor(
     override fun startup(args: Array<String>) {
         logger.info("Crypto worker starting.")
         logger.loggerStartupInfo(platformInfoProvider)
+        setTracingServiceName("Crypto Worker")
 
         applicationBanner.show("Crypto Worker", platformInfoProvider)
 
