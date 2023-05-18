@@ -29,6 +29,7 @@ import net.corda.processors.uniqueness.UniquenessProcessor
 import net.corda.processors.verification.VerificationProcessor
 import net.corda.schema.configuration.BootConfig
 import net.corda.schema.configuration.DatabaseConfig
+import net.corda.tracing.setTracingServiceName
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -87,6 +88,7 @@ class CombinedWorker @Activate constructor(
     override fun startup(args: Array<String>) {
         logger.info("Combined worker starting.")
         logger.loggerStartupInfo(platformInfoProvider)
+        setTracingServiceName("Combined Worker")
 
         applicationBanner.show("Combined Worker", platformInfoProvider)
 

@@ -18,6 +18,7 @@ import net.corda.osgi.api.Shutdown
 import net.corda.processors.db.DBProcessor
 import net.corda.processors.uniqueness.UniquenessProcessor
 import net.corda.schema.configuration.BootConfig.BOOT_DB
+import net.corda.tracing.setTracingServiceName
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -55,6 +56,7 @@ class DBWorker @Activate constructor(
     override fun startup(args: Array<String>) {
         logger.info("DB worker starting.")
         logger.loggerStartupInfo(platformInfoProvider)
+        setTracingServiceName("DB Worker")
 
         applicationBanner.show("DB Worker", platformInfoProvider)
 

@@ -20,20 +20,28 @@ import javax.servlet.DispatcherType
 
 private val spanHandler: SpanHandler = ZipkinSpanHandler
     .create(AsyncReporter.create(URLConnectionSender.create("http://localhost:9411/api/v2/spans")))
+
 private val braveCurrentTraceContext: ThreadLocalCurrentTraceContext = ThreadLocalCurrentTraceContext.newBuilder()
     .addScopeDecorator(MDCScopeDecorator.get())
     .build()
-private val tracing: Tracing = Tracing.newBuilder().currentTraceContext(braveCurrentTraceContext).supportsJoin(false)
-    .localServiceName("api-server")
-    .traceId128Bit(true)
-    .propagationFactory(
-        BaggagePropagation.newFactoryBuilder(B3Propagation.FACTORY)
-            .add(BaggagePropagationConfig.SingleBaggageField.remote(BaggageField.create("baggage_1")))
-            .add(BaggagePropagationConfig.SingleBaggageField.remote(BaggageField.create("baggage_2")))
-            .build()
-    )
-    .sampler(Sampler.ALWAYS_SAMPLE).addSpanHandler(spanHandler).build()
 
+private var serviceName = "unknown"
+fun setTracingServiceName(name: String) {
+    serviceName = name
+}
+
+private val tracing: Tracing by lazy {
+    Tracing.newBuilder().currentTraceContext(braveCurrentTraceContext).supportsJoin(false)
+        .localServiceName(serviceName)
+        .traceId128Bit(true)
+        .propagationFactory(
+            BaggagePropagation.newFactoryBuilder(B3Propagation.FACTORY)
+                .add(BaggagePropagationConfig.SingleBaggageField.remote(BaggageField.create("baggage_1")))
+                .add(BaggagePropagationConfig.SingleBaggageField.remote(BaggageField.create("baggage_2")))
+                .build()
+        )
+        .sampler(Sampler.ALWAYS_SAMPLE).addSpanHandler(spanHandler).build()
+}
 
 fun configureJavalinForTracing(config: JavalinConfig) {
     config.configureServletContextHandler { sch ->

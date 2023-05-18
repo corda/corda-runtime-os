@@ -14,6 +14,7 @@ import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.processors.member.MemberProcessor
+import net.corda.tracing.setTracingServiceName
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -48,6 +49,7 @@ class MemberWorker @Activate constructor(
     override fun startup(args: Array<String>) {
         logger.info("Member worker starting.")
         logger.loggerStartupInfo(platformInfoProvider)
+        setTracingServiceName("Member Worker")
 
         applicationBanner.show("Member Worker", platformInfoProvider)
 

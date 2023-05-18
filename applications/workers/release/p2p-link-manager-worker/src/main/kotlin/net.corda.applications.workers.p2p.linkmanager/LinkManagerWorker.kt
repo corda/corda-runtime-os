@@ -11,6 +11,7 @@ import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.processors.p2p.linkmanager.LinkManagerProcessor
+import net.corda.tracing.setTracingServiceName
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -43,6 +44,7 @@ class LinkManagerWorker @Activate constructor(
     override fun startup(args: Array<String>) {
         logger.info("P2P Link Manager worker starting.")
         logger.loggerStartupInfo(platformInfoProvider)
+        setTracingServiceName("P2P Link Manager Worker")
 
         applicationBanner.show("P2P Link Manager Worker", platformInfoProvider)
 
