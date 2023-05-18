@@ -41,6 +41,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.KArgumentCaptor
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argThat
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
@@ -90,7 +91,9 @@ class MembershipPersistenceServiceImplTest {
         } doReturn coordinator
         on {
             createCoordinator(
-                eq(LifecycleCoordinatorName.forComponent<MembershipPersistenceAsyncRetryManager>()),
+                argThat<LifecycleCoordinatorName> {
+                    this.componentName == MembershipPersistenceAsyncRetryManager::class.java.simpleName
+                },
                 any(),
             )
         } doReturn mock()
