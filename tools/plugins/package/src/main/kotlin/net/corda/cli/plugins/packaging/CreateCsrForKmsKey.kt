@@ -12,7 +12,7 @@ import java.security.Security
 
 @CommandLine.Command(
     name = "create-csr-for-kms-key",
-    description = ["Create a CSR for a KMS signing key"]
+    description = ["Create a CSR for a KMS signing key."]
 )
 class CreateCsrForKmsKey : Runnable {
 
