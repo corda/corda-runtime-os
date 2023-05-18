@@ -10,6 +10,7 @@ import net.corda.crypto.config.impl.retrying
 import net.corda.crypto.config.impl.signingService
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoTenants
+import net.corda.crypto.persistence.HSMStore
 import net.corda.crypto.persistence.db.model.CryptoEntities
 import net.corda.crypto.service.CryptoServiceFactory
 import net.corda.crypto.service.HSMService
@@ -67,6 +68,8 @@ class CryptoProcessorImpl @Activate constructor(
     private val coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = ConfigurationReadService::class)
     private val configurationReadService: ConfigurationReadService,
+    @Reference(service = HSMStore::class)
+    private val hsmStore: HSMStore,
     @Reference(service = SoftCryptoServiceProvider::class)
     private val softCryptoServiceProvider: SoftCryptoServiceProvider,
     @Reference(service = CryptoServiceFactory::class)
@@ -107,6 +110,7 @@ class CryptoProcessorImpl @Activate constructor(
 
     private val dependentComponents = DependentComponents.of(
         ::configurationReadService,
+        ::hsmStore,
         ::softCryptoServiceProvider,
         ::cryptoServiceFactory,
         ::hsmService,

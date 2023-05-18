@@ -127,6 +127,7 @@ class CryptoProcessorImplTest {
                 mock(),
                 mock(),
                 mock(),
+                mock(),
                 subscriptionFactory,
                 mock(),
                 mock(),

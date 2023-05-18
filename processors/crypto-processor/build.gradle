@@ -44,6 +44,8 @@ dependencies {
     implementation project(':libs:flows:external-event-responses')
     implementation project(":libs:serialization:serialization-avro")
 
+    integrationTestImplementation project(':components:crypto:crypto-client')
+    integrationTestImplementation project(":components:crypto:crypto-client-hsm")
     integrationTestImplementation project(':components:crypto:crypto-hes')
     integrationTestImplementation project(":libs:configuration:configuration-core")
     integrationTestImplementation project(":libs:crypto:crypto-core")
@@ -78,6 +80,8 @@ dependencies {
 
     integrationTestImplementation project(":testing:db-message-bus-testkit")
     integrationTestRuntimeOnly project(':libs:messaging:db-message-bus-impl')
+    integrationTestRuntimeOnly project(":components:crypto:crypto-client-impl")
+    integrationTestRuntimeOnly project(":components:crypto:crypto-client-hsm-impl")
     integrationTestRuntimeOnly project(":components:crypto:crypto-hes-core-impl")
     integrationTestRuntimeOnly project(":components:crypto:crypto-hes-impl")
     integrationTestRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
