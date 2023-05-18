@@ -105,5 +105,4 @@ class FacadeSpec : DescribeSpec({
             }
         }
     }
-
 })
