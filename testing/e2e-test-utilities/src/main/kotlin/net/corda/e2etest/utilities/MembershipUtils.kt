@@ -3,6 +3,7 @@ package net.corda.e2etest.utilities
 import com.fasterxml.jackson.databind.ObjectMapper
 import net.corda.e2etest.utilities.types.NetworkOnboardingMetadata
 import net.corda.rest.ResponseCode
+import net.corda.utilities.minutes
 import net.corda.utilities.seconds
 import net.corda.v5.base.types.MemberX500Name
 import java.io.File
@@ -126,6 +127,7 @@ fun ClusterInfo.configureNetworkParticipant(
 ) {
     return cluster {
         assertWithRetry {
+            interval(1.seconds)
             command { configureNetworkParticipant(holdingId, sessionKeyId) }
             condition { it.code == ResponseCode.NO_CONTENT.statusCode }
             failMessage("Failed to configure member '$holdingId' as a network participant")
@@ -149,6 +151,7 @@ fun ClusterInfo.register(
     )
 
     assertWithRetry {
+        interval(3.seconds)
         command { register(holdingIdentityShortHash, mapper.writeValueAsString(payload)) }
         condition {
             it.code == ResponseCode.OK.statusCode
@@ -181,8 +184,8 @@ fun ClusterInfo.waitForRegistrationStatus(
             // Use a fairly long timeout here to give plenty of time for the other side to respond. Longer
             // term this should be changed to not use the RPC message pattern and have the information available in a
             // cache on the REST worker, but for now this will have to suffice.
-            timeout(60.seconds)
-            interval(3.seconds)
+            timeout(3.minutes)
+            interval(5.seconds)
             command {
                 if (registrationId != null) {
                     getRegistrationStatus(holdingIdentityShortHash, registrationId)
@@ -216,6 +219,7 @@ fun ClusterInfo.registerStaticMember(
 ) {
     cluster {
         assertWithRetry {
+            interval(1.seconds)
             command { registerStaticMember(holdingIdentityShortHash, isNotary) }
             condition {
                 it.code == ResponseCode.OK.statusCode
@@ -228,7 +232,7 @@ fun ClusterInfo.registerStaticMember(
             // Use a fairly long timeout here to give plenty of time for the other side to respond. Longer
             // term this should be changed to not use the RPC message pattern and have the information available in a
             // cache on the REST worker, but for now this will have to suffice.
-            timeout(60.seconds)
+            timeout(1.minutes)
             interval(1.seconds)
             command { getRegistrationStatus(holdingIdentityShortHash) }
             condition {

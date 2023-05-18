@@ -1,5 +1,7 @@
 package net.corda.membership.impl.persistence.service.handler
 
+import javax.persistence.EntityManager
+import javax.persistence.LockModeType
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.KeyValuePairList
@@ -18,10 +20,9 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.membership.lib.toMap
 import net.corda.membership.lib.toSortedMap
+import net.corda.utilities.serialization.wrapWithNullErrorHandling
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.toCorda
-import javax.persistence.EntityManager
-import javax.persistence.LockModeType
 
 internal class AddNotaryToGroupParametersHandler(
     persistenceHandlerServices: PersistenceHandlerServices
@@ -47,9 +48,11 @@ internal class AddNotaryToGroupParametersHandler(
     private val notaryUpdater = GroupParametersNotaryUpdater(keyEncodingService, clock)
 
     private fun serializeProperties(context: KeyValuePairList): ByteArray {
-        return keyValuePairListSerializer.serialize(context) ?: throw MembershipPersistenceException(
-            "Failed to serialize key value pair list."
-        )
+        return wrapWithNullErrorHandling(onErrorOrNull = {
+            MembershipPersistenceException("Failed to serialize key value pair list.", it)
+        }) {
+            keyValuePairListSerializer.serialize(context)
+        }
     }
 
     private fun getLatestMemberList(entityManager: EntityManager, notary: MemberInfo): Collection<MemberInfo> {
@@ -91,7 +94,10 @@ internal class AddNotaryToGroupParametersHandler(
         return PersistGroupParametersResponse(persistedGroupParameters)
     }
 
-    internal fun addNotaryToGroupParameters(em: EntityManager, notaryMemberInfo: PersistentMemberInfo): SignedGroupParameters {
+    internal fun addNotaryToGroupParameters(
+        em: EntityManager,
+        notaryMemberInfo: PersistentMemberInfo
+    ): SignedGroupParameters {
         val criteriaBuilder = em.criteriaBuilder
         val queryBuilder = criteriaBuilder.createQuery(GroupParametersEntity::class.java)
         val root = queryBuilder.from(GroupParametersEntity::class.java)
@@ -129,7 +135,12 @@ internal class AddNotaryToGroupParametersHandler(
                     it.notaryDetails!!.serviceProtocolVersions.toHashSet()
                 }.reduceOrNull { acc, it -> acc.apply { retainAll(it) } } ?: emptySet()
 
-            notaryUpdater.updateExistingNotaryService(parametersMap, notary, notaryServiceNumber, currentProtocolVersions).apply {
+            notaryUpdater.updateExistingNotaryService(
+                parametersMap,
+                notary,
+                notaryServiceNumber,
+                currentProtocolVersions
+            ).apply {
                 first ?: return previous.singleResult.toAvro()
             }
         } else {

@@ -2,6 +2,9 @@ package net.corda.membership.impl.registration.dynamic.member
 
 import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.avro.serialization.CordaAvroSerializer
+import java.nio.ByteBuffer
+import java.security.PublicKey
+import java.util.UUID
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationGetService
 import net.corda.configuration.read.ConfigurationReadService
@@ -98,6 +101,7 @@ import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.schema.membership.MembershipSchema.RegistrationContextSchema
+import net.corda.utilities.serialization.wrapWithNullErrorHandling
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -112,9 +116,6 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.nio.ByteBuffer
-import java.security.PublicKey
-import java.util.UUID
 
 @Suppress("LongParameterList")
 @Component(service = [MemberRegistrationService::class])
@@ -282,7 +283,7 @@ class DynamicMemberRegistrationService @Activate constructor(
                 )
             }
             val customFieldsValid = registrationContextCustomFieldsVerifier.verify(context)
-            if (customFieldsValid is RegistrationContextCustomFieldsVerifier.Result.Failure)  {
+            if (customFieldsValid is RegistrationContextCustomFieldsVerifier.Result.Failure) {
                 logger.info(customFieldsValid.reason)
                 throw InvalidMembershipRegistrationException("Registration failed. ${customFieldsValid.reason}")
             }
@@ -461,14 +462,14 @@ class DynamicMemberRegistrationService @Activate constructor(
             return newRegistrationContext
         }
 
-        private fun getTlsSubject(member: HoldingIdentity) : Map<String, String> {
+        private fun getTlsSubject(member: HoldingIdentity): Map<String, String> {
             return if (TlsType.getClusterType(configurationGetService::getSmartConfig) == TlsType.MUTUAL) {
                 val info =
                     locallyHostedIdentitiesService.getIdentityInfo(member)
                         ?: throw CordaRuntimeException(
                             "Member $member is not locally hosted. " +
-                            "If it had been configured, please retry the registration in a few seconds. " +
-                            "If it had not been configured, please configure it using the network/setup API."
+                                    "If it had been configured, please retry the registration in a few seconds. " +
+                                    "If it had not been configured, please configure it using the network/setup API."
                         )
                 val certificate = info.tlsCertificates
                     .firstOrNull()
@@ -497,7 +498,12 @@ class DynamicMemberRegistrationService @Activate constructor(
                     require(orderVerifier.isOrdered(this, 3)) { "Provided notary key IDs are incorrectly numbered." }
                 }
                 context.keys.filter { notaryProtocolVersionsRegex.matches(it) }.apply {
-                    require(orderVerifier.isOrdered(this, 6)) { "Provided notary protocol versions are incorrectly numbered." }
+                    require(
+                        orderVerifier.isOrdered(
+                            this,
+                            6
+                        )
+                    ) { "Provided notary protocol versions are incorrectly numbered." }
                 }
             }
         }
@@ -538,11 +544,11 @@ class DynamicMemberRegistrationService @Activate constructor(
             }
             logger.info(
                 "Signature spec for key with ID: ${key.id} was not specified. Applying default signature spec " +
-                    "for ${key.schemeCodeName}."
+                        "for ${key.schemeCodeName}."
             )
             return key.spec ?: throw IllegalArgumentException(
                 "Could not find a suitable signature spec for ${key.schemeCodeName}. " +
-                    "Specify signature spec for key with ID: ${key.id} explicitly in the context."
+                        "Specify signature spec for key with ID: ${key.id} explicitly in the context."
             )
         }
 
@@ -684,6 +690,7 @@ class DynamicMemberRegistrationService @Activate constructor(
                     setOf(ConfigKeys.BOOT_CONFIG, MESSAGING_CONFIG)
                 )
             }
+
             else -> {
                 deactivate(coordinator)
                 configHandle?.close()
@@ -702,8 +709,11 @@ class DynamicMemberRegistrationService @Activate constructor(
         activate(coordinator)
     }
 
-    private fun serialize(context: KeyValuePairList) = keyValuePairListSerializer.serialize(context)
-        ?: throw IllegalArgumentException("Failed to serialize the KeyValuePairList for this request.")
+    private fun serialize(context: KeyValuePairList) = wrapWithNullErrorHandling({
+        IllegalArgumentException("Failed to serialize the KeyValuePairList for this request.", it)
+    }) {
+        keyValuePairListSerializer.serialize(context)
+    }
 
     private fun KeyValuePairList.getFirst(key: String): String = key.format(0).let { firstKey ->
         items.first { it.key == firstKey }.value

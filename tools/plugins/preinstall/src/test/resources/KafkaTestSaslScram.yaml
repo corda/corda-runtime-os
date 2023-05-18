@@ -1,0 +1,15 @@
+kafka:
+  bootstrapServers: "localhost:9093"
+  topicPrefix: ""
+  tls:
+    enabled: false
+  sasl:
+    mechanism: "SCRAM"
+    enabled: true
+    username:
+      value: "alice"
+    password:
+      valueFrom:
+        secretKeyRef:
+          name: "kafka-sasl"
+          key: "kafka-sasl-password"

@@ -1,6 +1,5 @@
 package net.corda.messagebus.db.producer
 
-import kotlin.math.abs
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.messagebus.api.CordaTopicPartition
 import net.corda.messagebus.api.consumer.CordaConsumer
@@ -13,7 +12,9 @@ import net.corda.messagebus.db.persistence.DBAccess.Companion.ATOMIC_TRANSACTION
 import net.corda.messagebus.db.serialization.MessageHeaderSerializer
 import net.corda.messagebus.db.util.WriteOffsets
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
+import net.corda.utilities.serialization.wrapWithNullErrorHandling
 import org.slf4j.LoggerFactory
+import kotlin.math.abs
 
 @Suppress("TooManyFunctions")
 class CordaAtomicDBProducerImpl(
@@ -52,8 +53,10 @@ class CordaAtomicDBProducerImpl(
         val dbRecords = recordsWithPartitions.mapNotNull { (partition, record) ->
             val offset = writeOffsets.getNextOffsetFor(CordaTopicPartition(record.topic, partition))
             try {
-                val serializedKey = serializer.serialize(record.key)
-                    ?: throw CordaMessageAPIFatalException("Serialized Key cannot be null")
+                val serializedKey =
+                    wrapWithNullErrorHandling({ CordaMessageAPIFatalException("Failed to serialize key", it) }) {
+                        serializer.serialize(record.key)
+                    }
                 val serializedValue = if (record.value != null) {
                     serializer.serialize(record.value!!)
                 } else {
