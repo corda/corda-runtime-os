@@ -1,5 +1,6 @@
 package net.corda.interop.service.impl
 
+import net.corda.interop.helper.HardcodedAliasIdentityHelper
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.v5.application.interop.RemoteAliasLookUp
 import net.corda.v5.interop.AliasMemberInfo
@@ -12,9 +13,9 @@ import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 class RemoteAliasLookUpImpl @Activate constructor() :
     RemoteAliasLookUp, UsedByFlow, SingletonSerializeAsToken {
 
-    override fun lookup(x500Name : String, cpiName: String): AliasMemberInfo? {
+    override fun lookup(x500Name : String, hostNetwork: String): AliasMemberInfo? {
         return getAliasMemberData().firstOrNull {
-            it.identifier == "$x500Name@$cpiName"
+            it.identifier == "$x500Name@$hostNetwork"
         }
     }
 
@@ -23,6 +24,6 @@ class RemoteAliasLookUpImpl @Activate constructor() :
     }
 
     private fun getAliasMemberData(): List<AliasMemberInfo> {
-        return HardcodedAliasIdentityDataServiceImpl().getAliasIdentityData().flatMap { it.members }.toList()
+        return HardcodedAliasIdentityHelper.getAliasIdentityData().flatMap { it.members }.toList()
     }
 }
