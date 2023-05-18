@@ -5,7 +5,7 @@ metrics:
   podMonitor:
     enabled: true
     labels:
-      release: observability
+      release: kube-prometheus-stack
 
 bootstrap:
   db:
