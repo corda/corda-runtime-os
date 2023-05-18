@@ -54,7 +54,7 @@ class TypeParameters<T> {
             return aliased as ParameterType<T>
         }
 
-        val rawType = parseRawParameterType<T>(rawTypeName.uppercase())
+        val rawType = parseRawParameterType<T>(rawTypeName)
         return if (qualifierString == null) rawType
         else QualifiedType(rawType, TypeQualifier.of(qualifierString))
     }
@@ -63,17 +63,17 @@ class TypeParameters<T> {
     @Suppress("UNCHECKED_CAST")
     private fun <T : Any> parseRawParameterType(typeName: String): ParameterType<T> {
         return when (typeName) {
-            ParameterTypeLabel.BOOLEAN.name -> RawParameterType<Boolean>(ParameterTypeLabel.BOOLEAN)
-            ParameterTypeLabel.STRING.name -> RawParameterType<String>(ParameterTypeLabel.STRING)
-            ParameterTypeLabel.DECIMAL.name -> RawParameterType<BigDecimal>(ParameterTypeLabel.DECIMAL)
-            ParameterTypeLabel.UUID.name -> RawParameterType<UUID>(ParameterTypeLabel.UUID)
-            ParameterTypeLabel.TIMESTAMP.name -> RawParameterType<ZonedDateTime>(ParameterTypeLabel.TIMESTAMP)
-            ParameterTypeLabel.BYTES.name -> RawParameterType<ByteBuffer>(ParameterTypeLabel.BYTES)
-            ParameterTypeLabel.JSON.name -> RawParameterType<String>(ParameterTypeLabel.JSON)
+            ParameterTypeLabel.BOOLEAN.typeName -> RawParameterType<Boolean>(ParameterTypeLabel.BOOLEAN)
+            ParameterTypeLabel.STRING.typeName -> RawParameterType<String>(ParameterTypeLabel.STRING)
+            ParameterTypeLabel.DECIMAL.typeName -> RawParameterType<BigDecimal>(ParameterTypeLabel.DECIMAL)
+            ParameterTypeLabel.UUID.typeName -> RawParameterType<UUID>(ParameterTypeLabel.UUID)
+            ParameterTypeLabel.TIMESTAMP.typeName -> RawParameterType<ZonedDateTime>(ParameterTypeLabel.TIMESTAMP)
+            ParameterTypeLabel.BYTES.typeName -> RawParameterType<ByteBuffer>(ParameterTypeLabel.BYTES)
+            ParameterTypeLabel.JSON.typeName -> RawParameterType<String>(ParameterTypeLabel.JSON)
 
             else -> throw IllegalArgumentException(
                 "Invalid raw parameter type: $typeName - " +
-                        "must be one of ${ParameterTypeLabel.values().map { it.name }}"
+                        "must be one of ${ParameterTypeLabel.values().map { it.typeName }}"
             )
         } as ParameterType<T>
     }

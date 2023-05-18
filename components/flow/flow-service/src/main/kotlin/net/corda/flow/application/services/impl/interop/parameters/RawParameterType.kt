@@ -30,6 +30,6 @@ data class RawParameterType<T>(private val typeLabel: ParameterTypeLabel) : Para
     }
 
     override fun toString(): String {
-        return typeLabel.name.lowercase()
+        return typeLabel.typeName
     }
 }

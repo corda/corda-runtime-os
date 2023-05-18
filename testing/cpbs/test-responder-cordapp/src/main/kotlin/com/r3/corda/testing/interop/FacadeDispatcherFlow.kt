@@ -1,14 +1,12 @@
 package com.r3.corda.testing.interop
 
 import net.corda.v5.application.flows.CordaInject
-import net.corda.v5.application.flows.InitiatedBy
 import net.corda.v5.application.flows.ResponderFlow
 import net.corda.v5.application.interop.FacadeService
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.annotations.Suspendable
 import org.slf4j.LoggerFactory
 
-@InitiatedBy(protocol = "dummy_protocol")
 open class FacadeDispatcherFlow : ResponderFlow {
 
     @CordaInject
