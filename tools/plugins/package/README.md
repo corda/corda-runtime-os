@@ -150,9 +150,9 @@ AWS Region has to be set in an AWS profile (`~/.aws/config`), e.g. `region = eu-
 ```shell
 ./corda-cli.sh package create-csr-for-kms-key \
     --csr-file csr-file.csr \
-    --key-id edb939dd-7e2f-4624-a691-f6f9c8f74aaa \ 
+    --key-id edb939dd-7e2f-4624-a691-f6f9c8f74aaa \
     --common-name R3-Preview \
-    --organizational-unit Engineering \ 
+    --organizational-unit Engineering \
     --organization R3-test \
     --locality London \
     --state London \
