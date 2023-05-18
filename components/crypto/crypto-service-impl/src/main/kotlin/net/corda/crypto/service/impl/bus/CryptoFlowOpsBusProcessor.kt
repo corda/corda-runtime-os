@@ -1,8 +1,6 @@
 package net.corda.crypto.service.impl.bus
 
-import net.corda.configuration.read.ConfigChangedEvent
-import net.corda.crypto.config.impl.flowBusProcessor
-import net.corda.crypto.config.impl.toCryptoConfig
+import net.corda.crypto.config.impl.RetryingConfig
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.core.ShortHash
 import net.corda.crypto.core.publicKeyIdFromBytes
@@ -40,7 +38,7 @@ import java.time.Instant
 class CryptoFlowOpsBusProcessor(
     private val signingService: SigningService,
     private val externalEventResponseFactory: ExternalEventResponseFactory,
-    event: ConfigChangedEvent,
+    config: RetryingConfig,
 ) : DurableProcessor<String, FlowOpsRequest> {
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -48,8 +46,6 @@ class CryptoFlowOpsBusProcessor(
 
     override val keyClass: Class<String> = String::class.java
     override val valueClass = FlowOpsRequest::class.java
-
-    private val config = event.config.toCryptoConfig().flowBusProcessor()
 
     private val executor = CryptoRetryingExecutor(
         logger,

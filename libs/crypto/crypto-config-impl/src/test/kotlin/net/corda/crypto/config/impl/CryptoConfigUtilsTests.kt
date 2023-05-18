@@ -48,15 +48,15 @@ class CryptoConfigUtilsTests {
         assertEquals("master-salt", wrappingKey1["salt"]!!.unwrapped())
         assertEquals("master-passphrase", wrappingKey1["passphrase"]!!.unwrapped())
         assertEquals("root1", wrappingKey1["alias"]!!.unwrapped())
-        val opsBusProcessor = config.opsBusProcessor()
+        val opsBusProcessor = config.retrying()
         assertEquals(3, opsBusProcessor.maxAttempts)
         assertEquals(1, opsBusProcessor.waitBetweenMills.size)
         assertEquals(200L, opsBusProcessor.waitBetweenMills[0])
-        val flowBusProcessor = config.flowBusProcessor()
+        val flowBusProcessor = config.retrying()
         assertEquals(3, flowBusProcessor.maxAttempts)
         assertEquals(1, flowBusProcessor.waitBetweenMills.size)
         assertEquals(200L, flowBusProcessor.waitBetweenMills[0])
-        val hsmRegistrationBusProcessor = config.hsmRegistrationBusProcessor()
+        val hsmRegistrationBusProcessor = config.retrying()
         assertEquals(3, hsmRegistrationBusProcessor.maxAttempts)
         assertEquals(1, hsmRegistrationBusProcessor.waitBetweenMills.size)
         assertEquals(200L, hsmRegistrationBusProcessor.waitBetweenMills[0])
@@ -80,15 +80,15 @@ class CryptoConfigUtilsTests {
         val softWorker = config.hsm()
         assertEquals(20000L, softWorker.retrying.attemptTimeoutMills)
         assertEquals(3, softWorker.retrying.maxAttempts)
-        val opsBusProcessor = config.opsBusProcessor()
+        val opsBusProcessor = config.retrying()
         assertEquals(3, opsBusProcessor.maxAttempts)
         assertEquals(1, opsBusProcessor.waitBetweenMills.size)
         assertEquals(200L, opsBusProcessor.waitBetweenMills[0])
-        val flowBusProcessor = config.flowBusProcessor()
+        val flowBusProcessor = config.retrying()
         assertEquals(3, flowBusProcessor.maxAttempts)
         assertEquals(1, flowBusProcessor.waitBetweenMills.size)
         assertEquals(200L, flowBusProcessor.waitBetweenMills[0])
-        val hsmRegistrationBusProcessor = config.hsmRegistrationBusProcessor()
+        val hsmRegistrationBusProcessor = config.retrying()
         assertEquals(3, hsmRegistrationBusProcessor.maxAttempts)
         assertEquals(1, hsmRegistrationBusProcessor.waitBetweenMills.size)
         assertEquals(200L, hsmRegistrationBusProcessor.waitBetweenMills[0])
@@ -138,7 +138,7 @@ class CryptoConfigUtilsTests {
     fun `Should throw IllegalStateException when ops operations are missing`() {
         val config = configFactory.create(ConfigFactory.empty())
         assertThrows<IllegalStateException> {
-            config.opsBusProcessor()
+            config.retrying()
         }
     }
 
@@ -146,7 +146,7 @@ class CryptoConfigUtilsTests {
     fun `Should throw IllegalStateException when flow ops operations are missing`() {
         val config = configFactory.create(ConfigFactory.empty())
         assertThrows<IllegalStateException> {
-            config.flowBusProcessor()
+            config.retrying()
         }
     }
 
@@ -154,7 +154,7 @@ class CryptoConfigUtilsTests {
     fun `Should throw IllegalStateException when hsm registration operations are missing`() {
         val config = configFactory.create(ConfigFactory.empty())
         assertThrows<IllegalStateException> {
-            config.opsBusProcessor()
+            config.retrying()
         }
     }
 
@@ -218,7 +218,7 @@ class CryptoConfigUtilsTests {
 
     @Test
     fun `BusProcessorConfig should throw IllegalStateException when maxAttempts is empty`() {
-        val config = CryptoBusProcessorConfig(
+        val config = RetryingConfig(
             configFactory.create(ConfigFactory.empty())
         )
         assertThrows<IllegalStateException> {
@@ -228,7 +228,7 @@ class CryptoConfigUtilsTests {
 
     @Test
     fun `BusProcessorConfig should throw IllegalStateException when waitBetweenMills is empty`() {
-        val config = CryptoBusProcessorConfig(
+        val config = RetryingConfig(
             configFactory.create(ConfigFactory.empty())
         )
         assertThrows<IllegalStateException> {
@@ -240,7 +240,7 @@ class CryptoConfigUtilsTests {
     fun `hsmRegistrationBusProcessor should throw IllegalStateException if value is not found`() {
         val config = configFactory.create(ConfigFactory.empty())
         assertThrows<IllegalStateException> {
-            config.hsmRegistrationBusProcessor()
+            config.retrying()
         }
     }
 
