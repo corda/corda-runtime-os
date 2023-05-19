@@ -352,6 +352,30 @@ object CordaMetrics {
             "membership.persistence.handler.time",
             CordaMetrics::timer
         )
+
+        /**
+         * The time taken by the backing store to perform a single read operation from the database.
+         */
+        object MembershipRegistrationHandlerExecutionTime: Metric<Timer>(
+            "membership.registration.handler.time",
+            CordaMetrics::timer
+        )
+
+        /**
+         * The time taken by the backing store to perform a single read operation from the database.
+         */
+        object MembershipActionsHandlerExecutionTime: Metric<Timer>(
+            "membership.actions.handler.time",
+            CordaMetrics::timer
+        )
+
+        /**
+         * The time taken by the backing store to perform a single read operation from the database.
+         */
+        object MembershipSynchronisationHandlerExecutionTime: Metric<Timer>(
+            "membership.sync.handler.time",
+            CordaMetrics::timer
+        )
     }
 
     /**

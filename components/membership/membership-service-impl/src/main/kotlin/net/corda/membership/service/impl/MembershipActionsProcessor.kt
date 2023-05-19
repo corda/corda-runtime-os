@@ -7,6 +7,8 @@ import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.data.membership.actions.request.DistributeMemberInfo
 import net.corda.data.membership.actions.request.MembershipActionsRequest
 import net.corda.libs.configuration.SmartConfig
+import net.corda.membership.lib.metrics.TimerMetricTypes
+import net.corda.membership.lib.metrics.getTimerMetric
 import net.corda.membership.locally.hosted.identities.LocallyHostedIdentitiesService
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.read.MembershipGroupReaderProvider
@@ -51,13 +53,18 @@ class MembershipActionsProcessor(
 
     private fun processEvent(event: Record<String, MembershipActionsRequest>): List<Record<String, *>> {
         event.value?.request?.let { request ->
-            return when (request) {
-                is DistributeMemberInfo -> distributeMemberInfoActionHandler.process(event.key, request)
-                else -> {
-                    logger.error("Received unimplemented membership action request.")
-                    emptyList()
+            return getTimerMetric(
+                TimerMetricTypes.ACTIONS,
+                request::class.java.simpleName
+            ).recordCallable {
+                when (request) {
+                    is DistributeMemberInfo -> distributeMemberInfoActionHandler.process(event.key, request)
+                    else -> {
+                        logger.error("Received unimplemented membership action request.")
+                        emptyList()
+                    }
                 }
-            }
+            }!!
         }
         return emptyList()
     }
