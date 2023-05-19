@@ -1,5 +1,6 @@
 package net.corda.p2p.gateway.messaging.internal
 
+import io.micrometer.core.instrument.Timer
 import io.netty.handler.codec.http.HttpResponseStatus
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.p2p.gateway.GatewayMessage
@@ -51,7 +52,6 @@ internal class OutboundMessageHandler(
     companion object {
         private val logger = LoggerFactory.getLogger(OutboundMessageHandler::class.java)
         private const val MAX_RETRIES = 1
-        private val outboundLatencyMetric = CordaMetrics.Metric.OutboundGatewayRequestLatency.builder().build()
     }
 
     private val gatewayConfigReader = GatewayConfigReader(lifecycleCoordinatorFactory, configurationReaderService)
@@ -228,11 +228,15 @@ internal class OutboundMessageHandler(
 
     private fun getRequestTimer(
         peerMessage: LinkOutMessage,
-        response: HttpResponse
-    ) = CordaMetrics.Metric.OutboundGatewayRequestLatency.builder()
-        .withTag(CordaMetrics.Tag.DestinationEndpoint, peerMessage.header.address)
-        .withTag(CordaMetrics.Tag.HttpResponseType, response.statusCode.code().toString())
-        .build()
+        response: HttpResponse?
+    ): Timer {
+        val builder = CordaMetrics.Metric.OutboundGatewayRequestLatency.builder()
+        builder.withTag(CordaMetrics.Tag.DestinationEndpoint, peerMessage.header.address)
+        if (response != null) {
+            builder.withTag(CordaMetrics.Tag.HttpResponseType, response.statusCode.code().toString())
+        }
+        return builder.build()
+    }
 
     private fun connectionConfig() = gatewayConfigReader.connectionConfig
 
