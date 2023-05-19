@@ -95,7 +95,7 @@ object CordaMetrics {
         object FlowEventLagTime : Metric<Timer>("flow.event.lag", CordaMetrics::timer)
 
         /**
-         * Metric for the time taken to execute the flow (excluding any start lag)
+         * Metric for the time taken to execute the pipeline (excluding any start lag)
          *
          * Number of pipeline events processed can be inferred from the count of events recorded for this metric.
          */
@@ -103,7 +103,7 @@ object CordaMetrics {
 
 
         /**
-         * Metric for the time taken to execute the flow (excluding any start lag)
+         * Metric for the time taken to execute the fiber (excluding any start lag)
          *
          * Number of fiber execution events processed can be inferred from the count of events recorded for this metric.
          */
@@ -116,7 +116,7 @@ object CordaMetrics {
         object FlowPipelineExecutionTime : Metric<Timer>("flow.pipeline.execution.time", CordaMetrics::timer)
 
         /**
-         * Metric for the time taken to execute the flow (excluding any start lag)
+         * Metric for the time taken to execute the fiber (excluding any start lag)
          */
         object FlowFiberExecutionTime : Metric<Timer>("flow.fiber.execution.time", CordaMetrics::timer)
 
