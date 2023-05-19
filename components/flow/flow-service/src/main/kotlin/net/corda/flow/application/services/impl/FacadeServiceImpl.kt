@@ -39,7 +39,12 @@ class FacadeServiceImpl @Activate constructor(
     }
 
     @Suspendable
-    override fun <T : Any?> getFacade(facadeId: String?, expectedType: Class<T>?, alias: MemberX500Name?, interopGroup: String?): T {
+    override fun <T : Any?> getFacade(
+        facadeId: String?,
+        expectedType: Class<T>?,
+        alias: MemberX500Name?,
+        interopGroup: String?
+    ): T {
         logger.info("Creating Proxy for: $facadeId, $expectedType, $alias, $interopGroup")
         val facade = facadeLookup(facadeId!!)
         val marshaller = JacksonJsonMarshallerAdaptor(jsonMarshallingService)
@@ -58,11 +63,9 @@ class FacadeServiceImpl @Activate constructor(
         return jsonMarshallingService.format(facadeResponse)
     }
 
-    @Suspendable
-    private fun facadeLookup(facadeId: String): Facade {
-        val facades = mapOf(
-            "org.corda.interop/platform/tokens/v3.0" to
-                    """{
+    private val hardcodedFacadesSpec = mapOf(
+        "org.corda.interop/platform/tokens/v3.0" to
+                """{
                       "id": "org.corda.interop/platform/tokens/v3.0",
                       "aliases": {
                         "denomination": "string (org.corda.interop/platform/tokens/types/denomination/1.0)"
@@ -111,8 +114,8 @@ class FacadeServiceImpl @Activate constructor(
                            }
                       }
                     }""".trimIndent(),
-            "org.corda.interop/platform/tokens/v2.0" to
-                    """{
+        "org.corda.interop/platform/tokens/v2.0" to
+                """{
                       "id": "org.corda.interop/platform/tokens/v2.0",
                       "aliases": {
                         "denomination": "string (org.corda.interop/platform/tokens/types/denomination/1.0)"
@@ -161,8 +164,8 @@ class FacadeServiceImpl @Activate constructor(
                            }
                       }
                     }""".trimIndent(),
-            "org.corda.interop/platform/tokens/v1.0" to
-                    """
+        "org.corda.interop/platform/tokens/v1.0" to
+                """
                         {
                           "id": "org.corda.interop/platform/tokens/v1.0",
                           "aliases": {
@@ -211,26 +214,33 @@ class FacadeServiceImpl @Activate constructor(
                           }
                         }
                     """.trimIndent()
-        )
+    )
+
+    @Suspendable
+    private fun facadeLookup(facadeId: String): Facade {
+        val spec = hardcodedFacadesSpec[facadeId]
+            ?: throw IllegalArgumentException("Facade $facadeId not found. Available facades: ${hardcodedFacadesSpec.keys}.")
         return try {
             AccessController.doPrivileged(PrivilegedExceptionAction {
-                FacadeReaders.JSON.read(
-                    facades.get(facadeId) ?: facades.get("org.corda.interop/platform/tokens/v2.0")!!
-                )
+                FacadeReaders.JSON.read(spec)
             })
         } catch (e: PrivilegedActionException) {
             throw e.exception
         }
     }
 
-    private fun facadeLookup(facadeId: FacadeId) : Facade = facadeLookup(facadeId.toString())
+    @Suspendable
+    private fun facadeLookup(facadeId: FacadeId): Facade = facadeLookup(facadeId.toString())
 }
 
-class MessagingDispatcher(private var flowMessaging: FlowMessaging, private val jsonMarshallingService: JsonMarshallingService,
-    private val alias: MemberX500Name, val aliasGroupId: String) : (FacadeRequest) -> FacadeResponse {
+class MessagingDispatcher(
+    private var flowMessaging: FlowMessaging, private val jsonMarshallingService: JsonMarshallingService,
+    private val alias: MemberX500Name, private val aliasGroupId: String
+) : (FacadeRequest) -> FacadeResponse {
     override fun invoke(request: FacadeRequest): FacadeResponse {
         val payload = jsonMarshallingService.format(request)
-        val response = flowMessaging.callFacade(alias, aliasGroupId, request.facadeId.toString(), request.methodName, payload)
+        val response =
+            flowMessaging.callFacade(alias, aliasGroupId, request.facadeId.toString(), request.methodName, payload)
         return jsonMarshallingService.parse(response, FacadeResponseImpl::class.java)
     }
 }
