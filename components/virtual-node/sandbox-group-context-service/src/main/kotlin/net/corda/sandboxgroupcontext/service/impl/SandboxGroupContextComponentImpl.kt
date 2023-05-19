@@ -71,6 +71,7 @@ class SandboxGroupContextComponentImpl @Activate constructor(
                 "net.corda.ledger-consensual",
                 "net.corda.ledger-utxo",
                 "net.corda.membership",
+                "net.corda.interop",
                 "net.corda.notary-plugin",
                 "net.corda.persistence",
                 "net.corda.serialization",
