@@ -224,6 +224,7 @@ class AddNotaryToGroupParametersHandlerTest {
         on { clock } doReturn clock
         on { keyEncodingService } doReturn keyEncodingService
         on { memberInfoFactory } doReturn memberInfoFactory
+        on { transactionTimerFactory } doReturn { transactionTimer }
     }
     private val handler = AddNotaryToGroupParametersHandler(persistenceHandlerServices)
 
