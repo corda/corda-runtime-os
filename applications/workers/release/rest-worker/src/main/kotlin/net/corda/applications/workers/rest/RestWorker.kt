@@ -20,6 +20,7 @@ import net.corda.schema.configuration.BootConfig
 import net.corda.schema.configuration.BootConfig.BOOT_REST_TLS_CRT_PATH
 import net.corda.schema.configuration.BootConfig.BOOT_REST_TLS_KEYSTORE_FILE_PATH
 import net.corda.tracing.setTracingServiceName
+import net.corda.tracing.shutdownTracing
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -80,6 +81,7 @@ class RestWorker @Activate constructor(
         logger.info("REST worker stopping.")
         processor.stop()
         workerMonitor.stop()
+        shutdownTracing()
     }
 }
 

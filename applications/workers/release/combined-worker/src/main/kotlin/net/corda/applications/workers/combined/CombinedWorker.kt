@@ -30,6 +30,7 @@ import net.corda.processors.verification.VerificationProcessor
 import net.corda.schema.configuration.BootConfig
 import net.corda.schema.configuration.DatabaseConfig
 import net.corda.tracing.setTracingServiceName
+import net.corda.tracing.shutdownTracing
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -178,6 +179,7 @@ class CombinedWorker @Activate constructor(
         gatewayProcessor.stop()
 
         workerMonitor.stop()
+        shutdownTracing()
     }
 }
 

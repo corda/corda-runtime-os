@@ -22,6 +22,7 @@ import net.corda.schema.configuration.BootConfig
 import net.corda.schema.configuration.BootConfig.BOOT_CRYPTO
 import net.corda.schema.configuration.BootConfig.BOOT_DB
 import net.corda.tracing.setTracingServiceName
+import net.corda.tracing.shutdownTracing
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -78,6 +79,7 @@ class CryptoWorker @Activate constructor(
         logger.info("Crypto worker stopping.")
         processor.stop()
         workerMonitor.stop()
+        shutdownTracing()
     }
 
     private fun buildBoostrapConfig(

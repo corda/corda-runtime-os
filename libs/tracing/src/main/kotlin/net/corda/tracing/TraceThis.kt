@@ -16,6 +16,15 @@ fun setTracingServiceName(serviceName: String) {
 }
 
 /**
+ * Close tracing system, flushing buffers before shutdown.
+ *
+ * Call this method to avoid losing events at shutdown.
+ */
+fun shutdownTracing() {
+    TracingState.close()
+}
+
+/**
  * Configure Javalin to read trace IDs from requests or generate new ones if missing.
  */
 fun configureJavalinForTracing(config: JavalinConfig) {

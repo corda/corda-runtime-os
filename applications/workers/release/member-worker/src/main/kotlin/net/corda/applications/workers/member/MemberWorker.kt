@@ -15,6 +15,7 @@ import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.processors.member.MemberProcessor
 import net.corda.tracing.setTracingServiceName
+import net.corda.tracing.shutdownTracing
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -69,6 +70,7 @@ class MemberWorker @Activate constructor(
         logger.info("Member worker stopping.")
         processor.stop()
         workerMonitor.stop()
+        shutdownTracing()
     }
 }
 
