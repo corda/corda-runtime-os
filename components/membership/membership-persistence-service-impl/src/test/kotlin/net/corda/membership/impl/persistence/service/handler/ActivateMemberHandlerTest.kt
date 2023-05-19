@@ -137,6 +137,7 @@ class ActivateMemberHandlerTest {
         on { jpaEntitiesRegistry } doReturn jpaEntitiesRegistry
         on { cordaAvroSerializationFactory } doReturn cordaAvroSerializationFactory
         on { memberInfoFactory } doReturn memberInfoFactory
+        on { transactionTimerFactory } doReturn { transactionTimer }
     }
 
     private val addNotaryToGroupParametersHandler = mock<AddNotaryToGroupParametersHandler>()
