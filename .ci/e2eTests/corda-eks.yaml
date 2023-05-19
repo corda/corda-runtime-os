@@ -6,12 +6,6 @@ bootstrap:
     clientImage:
       registry: docker-remotes.software.r3.com
 
-metrics:
-  podMonitor:
-    enabled: true
-    labels:
-      release: kube-prometheus-stack
-
 resources:
   requests:
     memory: "620Mi"
