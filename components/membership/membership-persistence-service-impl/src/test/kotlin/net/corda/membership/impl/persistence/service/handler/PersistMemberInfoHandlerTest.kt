@@ -1,7 +1,6 @@
 package net.corda.membership.impl.persistence.service.handler
 
 import net.corda.crypto.cipher.suite.KeyEncodingService
-import net.corda.crypto.core.ShortHash
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.avro.serialization.CordaAvroSerializer
@@ -15,7 +14,6 @@ import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.data.membership.db.request.command.PersistMemberInfo
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.schema.CordaDb
-import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.membership.datamodel.MemberInfoEntity
 import net.corda.membership.datamodel.MemberInfoEntityPrimaryKey
@@ -26,15 +24,12 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.orm.JpaEntitiesRegistry
-import net.corda.test.util.TestRandom
 import net.corda.test.util.time.TestClock
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.membership.MGMContext
 import net.corda.v5.membership.MemberContext
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
-import net.corda.virtualnode.VirtualNodeInfo
-import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -84,16 +79,6 @@ class PersistMemberInfoHandlerTest {
         on { status } doReturn MEMBER_STATUS_ACTIVE
         on { serial } doReturn SERIAL_NUMBER
     }
-    private val vaultDmlConnectionId = UUID(0, 1)
-
-    private val virtualNodeInfo = VirtualNodeInfo(
-        ourHoldingIdentity,
-        CpiIdentifier("TEST_CPI", "1.0", TestRandom.secureHash()),
-        vaultDmlConnectionId = vaultDmlConnectionId,
-        cryptoDmlConnectionId = UUID(0, 0),
-        uniquenessDmlConnectionId = UUID(0, 0),
-        timestamp = clock.instant()
-    )
 
     private val entityTransaction: EntityTransaction = mock()
     private val entityManager: EntityManager = mock {
@@ -104,9 +89,11 @@ class PersistMemberInfoHandlerTest {
     }
 
     private val dbConnectionManager: DbConnectionManager = mock {
-        on { createEntityManagerFactory(
-            eq(vaultDmlConnectionId),
-            any()) } doReturn entityManagerFactory
+        on { getOrCreateEntityManagerFactory(
+            any(),
+            any(),
+            any(),
+        ) } doReturn entityManagerFactory
     }
     private val jpaEntitiesRegistry: JpaEntitiesRegistry = mock {
         on { get(eq(CordaDb.Vault.persistenceUnitName)) } doReturn mock()
@@ -122,9 +109,6 @@ class PersistMemberInfoHandlerTest {
         on { createAvroSerializer<KeyValuePairList>(any()) } doReturn keyValueSerializer
         on { createAvroDeserializer<KeyValuePairList>(any(), any())} doReturn keyValuePairListDeserializer
     }
-    private val virtualNodeInfoReadService: VirtualNodeInfoReadService = mock {
-        on { getByHoldingIdentityShortHash(eq(ourHoldingIdentity.shortHash)) } doReturn virtualNodeInfo
-    }
     private val keyEncodingService: KeyEncodingService = mock()
     private val platformInfoProvider: PlatformInfoProvider = mock()
 
@@ -134,7 +118,6 @@ class PersistMemberInfoHandlerTest {
         jpaEntitiesRegistry,
         memberInfoFactory,
         cordaAvroSerializationFactory,
-        virtualNodeInfoReadService,
         keyEncodingService,
         platformInfoProvider,
         mock(),
@@ -175,7 +158,6 @@ class PersistMemberInfoHandlerTest {
 
         assertThat(result).isInstanceOf(Unit::class.java)
         verify(memberInfoFactory, never()).create(any())
-        verify(virtualNodeInfoReadService, never()).getByHoldingIdentityShortHash(any())
         verify(dbConnectionManager, never()).getOrCreateEntityManagerFactory(any(), any(), any())
         verify(jpaEntitiesRegistry, never()).get(any())
     }
@@ -189,12 +171,7 @@ class PersistMemberInfoHandlerTest {
         )
 
         assertThat(result).isInstanceOf(Unit::class.java)
-        with(argumentCaptor<ShortHash>()) {
-            verify(virtualNodeInfoReadService).getByHoldingIdentityShortHash(capture())
-            assertThat(firstValue).isEqualTo(ourHoldingIdentity.shortHash)
-        }
         verify(entityManagerFactory).createEntityManager()
-        verify(entityManagerFactory).close()
         verify(entityManager).transaction
         verify(jpaEntitiesRegistry).get(eq(CordaDb.Vault.persistenceUnitName))
         with(argumentCaptor<PersistentMemberInfo>()) {

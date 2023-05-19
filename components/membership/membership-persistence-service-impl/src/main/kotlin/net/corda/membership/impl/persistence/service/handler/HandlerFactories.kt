@@ -37,7 +37,6 @@ import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.membership.mtls.allowed.list.service.AllowedCertificatesReaderWriterService
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.utilities.time.Clock
-import net.corda.virtualnode.read.VirtualNodeInfoReadService
 
 @Suppress("LongParameterList")
 internal class HandlerFactories(
@@ -46,7 +45,6 @@ internal class HandlerFactories(
     jpaEntitiesRegistry: JpaEntitiesRegistry,
     memberInfoFactory: MemberInfoFactory,
     cordaAvroSerializationFactory: CordaAvroSerializationFactory,
-    virtualNodeInfoReadService: VirtualNodeInfoReadService,
     keyEncodingService: KeyEncodingService,
     platformInfoProvider: PlatformInfoProvider,
     allowedCertificatesReaderWriterService: AllowedCertificatesReaderWriterService,
@@ -57,7 +55,6 @@ internal class HandlerFactories(
         jpaEntitiesRegistry,
         memberInfoFactory,
         cordaAvroSerializationFactory,
-        virtualNodeInfoReadService,
         keyEncodingService,
         platformInfoProvider,
         allowedCertificatesReaderWriterService,

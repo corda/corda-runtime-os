@@ -23,8 +23,6 @@ import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.membership.MemberContext
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
-import net.corda.virtualnode.VirtualNodeInfo
-import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.assertThrows
@@ -43,7 +41,6 @@ import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.persistence.EntityTransaction
 import net.corda.data.membership.SignedGroupParameters
-import net.corda.membership.lib.MemberInfoExtension
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import javax.persistence.PessimisticLockException
@@ -58,9 +55,6 @@ class ActivateMemberHandlerTest {
     private val knownGroupId = UUID(0, 1).toString()
     private val knownX500Name = MemberX500Name.parse("O=Alice,L=London,C=GB")
     private val holdingIdentity = HoldingIdentity(knownX500Name, knownGroupId)
-    private val ourVirtualNodeInfo: VirtualNodeInfo = mock {
-        on { vaultDmlConnectionId } doReturn UUID(0, 1)
-    }
     private val clock: Clock = TestClock(Instant.ofEpochSecond(1))
 
     private val transaction: EntityTransaction = mock()
@@ -71,10 +65,7 @@ class ActivateMemberHandlerTest {
         on { createEntityManager() } doReturn em
     }
     private val dbConnectionManager: DbConnectionManager = mock {
-        on { createEntityManagerFactory(any(), any()) } doReturn emf
-    }
-    private val virtualNodeInfoReadService: VirtualNodeInfoReadService = mock {
-        on { getByHoldingIdentityShortHash(holdingIdentity.shortHash) } doReturn ourVirtualNodeInfo
+        on { getOrCreateEntityManagerFactory(any(), any(), any()) } doReturn emf
     }
     private val jpaEntitiesRegistry: JpaEntitiesRegistry = mock {
         on { get(any()) } doReturn mock()
@@ -110,7 +101,7 @@ class ActivateMemberHandlerTest {
     private val keyValuePairListSerializer = mock<CordaAvroSerializer<KeyValuePairList>> {
         on { serialize(any()) } doReturn byteArrayOf(0)
     }
-    private val keyValuePairListDeserializer = mock<CordaAvroDeserializer<KeyValuePairList>>() {
+    private val keyValuePairListDeserializer = mock<CordaAvroDeserializer<KeyValuePairList>> {
         on { deserialize(serializedMgmContext) } doReturn mgmContext
     }
     private val cordaAvroSerializationFactory = mock<CordaAvroSerializationFactory> {
@@ -132,7 +123,6 @@ class ActivateMemberHandlerTest {
     }
     private val persistenceHandlerServices: PersistenceHandlerServices = mock {
         on { clock } doReturn clock
-        on { virtualNodeInfoReadService } doReturn virtualNodeInfoReadService
         on { dbConnectionManager } doReturn dbConnectionManager
         on { jpaEntitiesRegistry } doReturn jpaEntitiesRegistry
         on { cordaAvroSerializationFactory } doReturn cordaAvroSerializationFactory
@@ -168,7 +158,7 @@ class ActivateMemberHandlerTest {
     fun `invoke returns the correct data when member is a notary`() {
         val mockMemberContext = mock<MemberContext> {
             on { entries } doReturn mapOf(
-                "${MemberInfoExtension.ROLES_PREFIX}.0" to MemberInfoExtension.NOTARY_ROLE
+                "$ROLES_PREFIX.0" to NOTARY_ROLE
             ).entries
         }
         val mockMemberInfo = mock<MemberInfo> {

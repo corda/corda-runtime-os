@@ -1,7 +1,6 @@
 package net.corda.membership.impl.persistence.service.handler
 
 import net.corda.crypto.cipher.suite.KeyEncodingService
-import net.corda.crypto.core.ShortHash
 import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.KeyValuePairList
@@ -14,17 +13,13 @@ import net.corda.data.membership.db.request.command.PersistRegistrationRequest
 import net.corda.data.membership.p2p.MembershipRegistrationRequest
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.schema.CordaDb
-import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.membership.datamodel.RegistrationRequestEntity
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.orm.JpaEntitiesRegistry
-import net.corda.test.util.TestRandom
 import net.corda.test.util.time.TestClock
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.HoldingIdentity
-import net.corda.virtualnode.VirtualNodeInfo
-import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -55,7 +50,6 @@ class PersistRegistrationRequestHandlerTest {
     )
     private val ourRegistrationId = UUID.randomUUID().toString()
     private val clock = TestClock(Instant.ofEpochSecond(0))
-    private val vaultDmlConnectionId = UUID(12, 0)
     private val memberContext = "89".toByteArray()
     private val memberContextSignatureKey = "123".toByteArray()
     private val memberContextSignatureContent = "456".toByteArray()
@@ -64,15 +58,6 @@ class PersistRegistrationRequestHandlerTest {
     private val registrationContextSignatureKey = "registrationContextSignatureKey".toByteArray()
     private val registrationContextSignatureContent = "registrationContextSignatureContent".toByteArray()
     private val registrationContextSignatureSpec = "registrationContextSignatureSpec"
-
-    private val virtualNodeInfo = VirtualNodeInfo(
-        ourHoldingIdentity,
-        CpiIdentifier("TEST_CPI", "1.0", TestRandom.secureHash()),
-        vaultDmlConnectionId = vaultDmlConnectionId,
-        cryptoDmlConnectionId = UUID(0, 0),
-        uniquenessDmlConnectionId = UUID(0, 0),
-        timestamp = clock.instant()
-    )
 
     private val entityTransaction: EntityTransaction = mock()
     private val entityManager: EntityManager = mock {
@@ -84,9 +69,10 @@ class PersistRegistrationRequestHandlerTest {
 
     private val dbConnectionManager: DbConnectionManager = mock {
         on {
-            createEntityManagerFactory(
-                eq(vaultDmlConnectionId),
-                any()
+            getOrCreateEntityManagerFactory(
+                any(),
+                any(),
+                any(),
             )
         } doReturn entityManagerFactory
     }
@@ -100,9 +86,6 @@ class PersistRegistrationRequestHandlerTest {
     private val cordaAvroSerializationFactory = mock<CordaAvroSerializationFactory> {
         on { createAvroSerializer<KeyValuePairList>(any()) } doReturn serializer
     }
-    private val virtualNodeInfoReadService: VirtualNodeInfoReadService = mock {
-        on { getByHoldingIdentityShortHash(eq(ourHoldingIdentity.shortHash)) } doReturn virtualNodeInfo
-    }
     private val keyEncodingService: KeyEncodingService = mock()
     private val platformInfoProvider: PlatformInfoProvider = mock()
 
@@ -112,7 +95,6 @@ class PersistRegistrationRequestHandlerTest {
         jpaEntitiesRegistry,
         memberInfoFactory,
         cordaAvroSerializationFactory,
-        virtualNodeInfoReadService,
         keyEncodingService,
         platformInfoProvider,
         mock(),
@@ -170,12 +152,7 @@ class PersistRegistrationRequestHandlerTest {
         )
 
         assertThat(result).isInstanceOf(Unit::class.java)
-        with(argumentCaptor<ShortHash>()) {
-            verify(virtualNodeInfoReadService).getByHoldingIdentityShortHash(capture())
-            assertThat(firstValue).isEqualTo(ourHoldingIdentity.shortHash)
-        }
         verify(entityManagerFactory).createEntityManager()
-        verify(entityManagerFactory).close()
         verify(entityManager).transaction
         verify(jpaEntitiesRegistry).get(eq(CordaDb.Vault.persistenceUnitName))
         verify(memberInfoFactory, never()).create(any())
