@@ -83,7 +83,7 @@ class BaseRequestStatusHandlerTest {
         on { cordaAvroSerializationFactory } doReturn serializationFactory
     }
     private val handler = object: BaseRequestStatusHandler<String, String>(persistenceHandlerServices) {
-        override val operation: String = "TestOperation"
+        override val operation = String::class.java
         override fun invoke(context: MembershipRequestContext, request: String): String {
             // Do nothing...
             return ""

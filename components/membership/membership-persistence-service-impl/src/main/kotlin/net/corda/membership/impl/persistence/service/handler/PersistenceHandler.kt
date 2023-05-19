@@ -53,17 +53,17 @@ internal abstract class BasePersistenceHandler<REQUEST, RESPONSE>(
     }
 
     fun <R> transaction(holdingIdentityShortHash: ShortHash, block: (EntityManager) -> R): R {
-            val virtualNodeInfo = virtualNodeInfoReadService.getByHoldingIdentityShortHash(holdingIdentityShortHash)
-                ?: throw MembershipPersistenceException(
-                    "Virtual node info can't be retrieved for " +
-                            "holding identity ID $holdingIdentityShortHash"
-                )
-            val factory = getEntityManagerFactory(virtualNodeInfo)
-            return try {
-                transactionTimer.recordCallable { factory.transaction(block) }!!
-            } finally {
-                factory.close()
-            }
+        val virtualNodeInfo = virtualNodeInfoReadService.getByHoldingIdentityShortHash(holdingIdentityShortHash)
+            ?: throw MembershipPersistenceException(
+                "Virtual node info can't be retrieved for " +
+                        "holding identity ID $holdingIdentityShortHash"
+            )
+        val factory = getEntityManagerFactory(virtualNodeInfo)
+        return try {
+            transactionTimer.recordCallable { factory.transaction(block) }!!
+        } finally {
+            factory.close()
+        }
     }
 
     fun <R> transaction(block: (EntityManager) -> R): R {
