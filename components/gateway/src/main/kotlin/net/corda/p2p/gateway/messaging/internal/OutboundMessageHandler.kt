@@ -14,6 +14,7 @@ import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.data.p2p.LinkOutMessage
 import net.corda.data.p2p.NetworkType
+import net.corda.metrics.CordaMetrics
 import net.corda.p2p.gateway.messaging.ReconfigurableConnectionManager
 import net.corda.p2p.gateway.messaging.TlsType
 import net.corda.p2p.gateway.messaging.http.DestinationInfo
@@ -50,6 +51,7 @@ internal class OutboundMessageHandler(
     companion object {
         private val logger = LoggerFactory.getLogger(OutboundMessageHandler::class.java)
         private const val MAX_RETRIES = 1
+        private val outboundLatencyMetric = CordaMetrics.Metric.OutboundGatewayRequestLatency.builder().build()
     }
 
     private val gatewayConfigReader = GatewayConfigReader(lifecycleCoordinatorFactory, configurationReaderService)
@@ -170,9 +172,12 @@ internal class OutboundMessageHandler(
             trustStore,
             clientCertificateKeyStore,
         )
+        val startTime = System.currentTimeMillis()
         val responseFuture = sendMessage(destinationInfo, gatewayMessage)
             .orTimeout(connectionConfig().responseTimeout.toMillis(), TimeUnit.MILLISECONDS)
         return responseFuture.whenCompleteAsync({ response, error ->
+            val requestLatency = System.currentTimeMillis() - startTime
+            getRequestTimer(peerMessage, response).record(requestLatency, TimeUnit.MILLISECONDS)
             handleResponse(PendingRequest(gatewayMessage, destinationInfo, responseFuture), response, error, MAX_RETRIES)
         }, retryThreadPool).thenApply {  }
 
@@ -220,6 +225,14 @@ internal class OutboundMessageHandler(
         logger.debug { "Sending message ${gatewayMessage.payload.javaClass} (${gatewayMessage.id}) to $destinationInfo." }
         return connectionManager.acquire(destinationInfo).write(avroSchemaRegistry.serialize(gatewayMessage).array())
     }
+
+    private fun getRequestTimer(
+        peerMessage: LinkOutMessage,
+        response: HttpResponse
+    ) = CordaMetrics.Metric.OutboundGatewayRequestLatency.builder()
+        .withTag(CordaMetrics.Tag.DestinationEndpoint, peerMessage.header.address)
+        .withTag(CordaMetrics.Tag.HttpResponseType, response.statusCode.code().toString())
+        .build()
 
     private fun connectionConfig() = gatewayConfigReader.connectionConfig
 

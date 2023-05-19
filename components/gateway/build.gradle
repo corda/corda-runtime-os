@@ -32,6 +32,7 @@ dependencies {
     implementation "commons-validator:commons-validator:$commonsVersion"
     implementation "com.github.ben-manes.caffeine:caffeine:$caffeineVersion"
     implementation project(':libs:schema-registry:schema-registry')
+    implementation project(":libs:metrics")
 
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
