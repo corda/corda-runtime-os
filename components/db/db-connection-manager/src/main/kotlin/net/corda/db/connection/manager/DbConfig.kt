@@ -34,10 +34,7 @@ fun DataSourceFactory.createFromConfig(config: SmartConfig): CloseableDataSource
     val driver = configWithFallback.getString(DatabaseConfig.JDBC_DRIVER)
     val jdbcUrl = configWithFallback.getString(DatabaseConfig.JDBC_URL)
     val maxPoolSize = configWithFallback.getInt(DatabaseConfig.DB_POOL_MAX_SIZE)
-    val minPoolSize = if(
-        configWithFallback.hasPath(DatabaseConfig.DB_POOL_MIN_SIZE)
-        && !configWithFallback.getIsNull(DatabaseConfig.DB_POOL_MIN_SIZE)
-    ) {
+    val minPoolSize = if(configWithFallback.hasPath(DatabaseConfig.DB_POOL_MIN_SIZE)) {
         configWithFallback.getInt(DatabaseConfig.DB_POOL_MIN_SIZE)
     } else {
         null
