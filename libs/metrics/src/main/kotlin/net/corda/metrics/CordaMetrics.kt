@@ -204,7 +204,7 @@ object CordaMetrics {
         )
 
         /**
-         * The time taken by the backing store to perform a single read operation from the database.
+         * Time taken by each stage of network registration.
          */
         object MembershipRegistrationHandlerExecutionTime: Metric<Timer>(
             "membership.registration.handler.time",
@@ -212,7 +212,7 @@ object CordaMetrics {
         )
 
         /**
-         * The time taken by the backing store to perform a single read operation from the database.
+         * Time taken by each membership actions handler (e.g. distribute network data).
          */
         object MembershipActionsHandlerExecutionTime: Metric<Timer>(
             "membership.actions.handler.time",
@@ -220,7 +220,7 @@ object CordaMetrics {
         )
 
         /**
-         * The time taken by the backing store to perform a single read operation from the database.
+         * Time taken to execute each stage of network synchronisation between members and the MGM.
          */
         object MembershipSynchronisationHandlerExecutionTime: Metric<Timer>(
             "membership.sync.handler.time",
