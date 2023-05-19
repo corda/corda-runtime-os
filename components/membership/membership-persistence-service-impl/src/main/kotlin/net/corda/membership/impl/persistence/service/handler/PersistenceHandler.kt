@@ -41,16 +41,13 @@ internal abstract class BasePersistenceHandler<REQUEST, RESPONSE>(
     private val dbConnectionManager get() = persistenceHandlerServices.dbConnectionManager
     private val jpaEntitiesRegistry get() = persistenceHandlerServices.jpaEntitiesRegistry
     private val virtualNodeInfoReadService get() = persistenceHandlerServices.virtualNodeInfoReadService
+    private val transactionTimer get() = persistenceHandlerServices.transactionTimerFactory(operation.simpleName)
     val clock get() = persistenceHandlerServices.clock
     val cordaAvroSerializationFactory get() = persistenceHandlerServices.cordaAvroSerializationFactory
     val memberInfoFactory get() = persistenceHandlerServices.memberInfoFactory
     val keyEncodingService get() = persistenceHandlerServices.keyEncodingService
     val platformInfoProvider get() = persistenceHandlerServices.platformInfoProvider
     val allowedCertificatesReaderWriterService get() = persistenceHandlerServices.allowedCertificatesReaderWriterService
-
-    private val transactionTimer by lazy {
-        persistenceHandlerServices.transactionTimerFactory(operation.simpleName)
-    }
 
     fun <R> transaction(holdingIdentityShortHash: ShortHash, block: (EntityManager) -> R): R {
         val virtualNodeInfo = virtualNodeInfoReadService.getByHoldingIdentityShortHash(holdingIdentityShortHash)

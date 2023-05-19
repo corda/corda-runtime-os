@@ -1,6 +1,5 @@
 package net.corda.membership.impl.persistence.service.handler
 
-import io.micrometer.core.instrument.Timer
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.data.membership.db.request.MembershipPersistenceRequest
@@ -41,7 +40,6 @@ import net.corda.metrics.CordaMetrics.Metric
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.utilities.time.Clock
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
-import java.util.concurrent.ConcurrentHashMap
 
 @Suppress("LongParameterList")
 internal class HandlerFactories(
@@ -98,26 +96,15 @@ internal class HandlerFactories(
         UpdateStaticNetworkInfo::class.java to { UpdateStaticNetworkInfoHandler(persistenceHandlerServices) },
     )
 
-    private val handlerTimers = ConcurrentHashMap<String, Timer>()
-    private val transactionTimers = ConcurrentHashMap<String, Timer>()
+    private fun getHandlerTimer(operation: String) = Metric.MembershipPersistenceHandler
+        .builder()
+        .withTag(CordaMetrics.Tag.OperationName, operation)
+        .build()
 
-    private fun getHandlerTimer(operation: String): Timer {
-        return handlerTimers.computeIfAbsent(operation) {
-            Metric.MembershipPersistenceHandler
-                .builder()
-                .withTag(CordaMetrics.Tag.OperationName, operation)
-                .build()
-        }
-    }
-
-    private fun getTransactionTimer(operation: String): Timer {
-        return transactionTimers.computeIfAbsent(operation) {
-            Metric.MembershipPersistenceTransaction
-                .builder()
-                .withTag(CordaMetrics.Tag.OperationName, operation)
-                .build()
-        }
-    }
+    private fun getTransactionTimer(operation: String) = Metric.MembershipPersistenceTransaction
+        .builder()
+        .withTag(CordaMetrics.Tag.OperationName, operation)
+        .build()
 
     private fun getHandler(requestClass: Class<*>): PersistenceHandler<Any, Any> {
         val factory = handlerFactories[requestClass] ?: throw MembershipPersistenceException(
