@@ -7,7 +7,6 @@ import brave.sampler.Sampler
 import zipkin2.reporter.AsyncReporter
 import zipkin2.reporter.brave.ZipkinSpanHandler
 import zipkin2.reporter.urlconnection.URLConnectionSender
-import java.net.URL
 import java.util.Stack
 
 /**
