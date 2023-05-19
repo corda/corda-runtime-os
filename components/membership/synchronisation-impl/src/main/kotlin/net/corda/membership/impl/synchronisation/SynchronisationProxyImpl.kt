@@ -1,5 +1,6 @@
 package net.corda.membership.impl.synchronisation
 
+import io.micrometer.core.instrument.Timer
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.membership.command.synchronisation.SynchronisationCommand
@@ -20,6 +21,8 @@ import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.lib.exceptions.BadGroupPolicyException
 import net.corda.membership.lib.exceptions.SynchronisationProtocolSelectionException
 import net.corda.membership.lib.exceptions.SynchronisationProtocolTypeException
+import net.corda.membership.lib.metrics.TimerMetricTypes
+import net.corda.membership.lib.metrics.getTimerMetric
 import net.corda.membership.synchronisation.MemberSynchronisationService
 import net.corda.membership.synchronisation.MgmSynchronisationService
 import net.corda.membership.synchronisation.SynchronisationException
@@ -313,18 +316,22 @@ class SynchronisationProxyImpl @Activate constructor(
 
     interface SynchronisationHandler<T> {
         fun invoke(event: Record<String, SynchronisationCommand>) {
-            val command = event.value?.command
-            if (commandType.isInstance(command)) {
-                @Suppress("unchecked_cast")
-                return invoke(command as T)
-            } else {
-                throw CordaRuntimeException("Invalid command: $command")
-            }
+            event.value?.command?.let { command ->
+                if (commandType.isInstance(command)) {
+                    @Suppress("unchecked_cast")
+                    return handlerTimer.recordCallable { invoke(command as T) }!!
+                } else {
+                    throw CordaRuntimeException("Invalid command: $command")
+                }
+            } ?: throw CordaRuntimeException("Command cannot be null.")
         }
 
         fun invoke(command: T)
 
         val commandType: Class<T>
+
+        val handlerTimer: Timer
+            get() = getTimerMetric(TimerMetricTypes.SYNC, commandType.simpleName)
     }
 
     private inner class ProcessMembershipUpdatesHandler : SynchronisationHandler<ProcessMembershipUpdates> {
