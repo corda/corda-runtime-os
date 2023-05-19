@@ -58,7 +58,7 @@ private fun <T> deserialize(
         val typeName = parameterValue["type"]?.asText() ?: throw IllegalArgumentException(
             "No parameter type given for parameter $name in ${node.toPrettyString()}"
         )
-        val type = TypeParameters<Any>().of<Any>(typeName)
+        val type = TypeParameters.of<Any>(typeName)
         val value = parameterValue["value"] ?: throw IllegalArgumentException(
             "No parameter value given for parameter $name in ${node.toPrettyString()}"
         )
