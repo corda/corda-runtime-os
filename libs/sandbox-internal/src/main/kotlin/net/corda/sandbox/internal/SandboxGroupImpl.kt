@@ -104,6 +104,10 @@ internal class SandboxGroupImpl(
         }
     }
 
+    private val staticTagCache = ConcurrentHashMap<Class<*>, String>()
+    private val evolvableTagCache = ConcurrentHashMap<Class<*>, String>()
+    private val loadedClassCache = ConcurrentHashMap<ClassTag, Class<*>>()
+
     override fun getStaticTag(klass: Class<*>) = staticTagCache.computeIfAbsent(klass) {
         getClassTag(klass, isStaticTag = true)
     }
@@ -112,18 +116,15 @@ internal class SandboxGroupImpl(
         getClassTag(klass, isStaticTag = false)
     }
 
-    private fun deserializeClassTag(serialisedClassTag: String) = classTagCache.computeIfAbsent(serialisedClassTag) {
-        classTagFactory.deserialise(it)
+    override fun getClass(className: String, serialisedClassTag: String): Class<*> {
+        val classTag = classTagFactory.deserialise(serialisedClassTag)
+        return loadedClassCache.computeIfAbsent(classTag) {
+            loadClassFromBundle(classTag, className, serialisedClassTag)
+        }
     }
 
-    private val staticTagCache = ConcurrentHashMap<Class<*>, String>()
-    private val evolvableTagCache = ConcurrentHashMap<Class<*>, String>()
-    private val classTagCache = ConcurrentHashMap<String, ClassTag>()
-
-    @Suppress("ComplexMethod", "NestedBlockDepth")
-    override fun getClass(className: String, serialisedClassTag: String): Class<*> {
-        val classTag = deserializeClassTag(serialisedClassTag)
-
+    @Suppress("ThrowsCount")
+    private fun loadClassFromBundle(classTag: ClassTag, className: String, serialisedClassTag: String): Class<*> {
         return when (classTag.classType) {
             ClassType.NonBundleClass -> {
                 try {
@@ -144,7 +145,7 @@ internal class SandboxGroupImpl(
                         cpkSandboxes.find {
                             it.cpkMetadata.cpkId.signerSummaryHash == classTag.cpkSignerSummaryHash &&
                                     (it.cpkMetadata.cpkId.name == classTag.cordaCpkCordappName || // CPK given names match or
-                                    it.mainBundle.symbolicName == classTag.classBundleName) // symbolic names of class bundle match
+                                            it.mainBundle.symbolicName == classTag.classBundleName) // symbolic names of class bundle match
                         }?.let { Pair(it, it.mainBundle.symbolicName) } // only load evolvable classes from the main bundle
                     }
                 } ?: throw SandboxException(
