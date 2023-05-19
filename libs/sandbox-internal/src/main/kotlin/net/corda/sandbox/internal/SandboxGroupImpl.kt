@@ -9,7 +9,6 @@ import java.util.concurrent.ConcurrentHashMap
 import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.sandbox.SandboxException
 import net.corda.sandbox.SandboxGroup
-import net.corda.sandbox.internal.classtag.ClassTag
 import net.corda.sandbox.internal.classtag.ClassTagFactory
 import net.corda.sandbox.internal.classtag.ClassType
 import net.corda.sandbox.internal.classtag.EvolvableTag
@@ -106,7 +105,6 @@ internal class SandboxGroupImpl(
 
     private val staticTagCache = ConcurrentHashMap<Class<*>, String>()
     private val evolvableTagCache = ConcurrentHashMap<Class<*>, String>()
-    private val loadedClassCache = ConcurrentHashMap<ClassTag, Class<*>>()
 
     override fun getStaticTag(klass: Class<*>) = staticTagCache.computeIfAbsent(klass) {
         getClassTag(klass, isStaticTag = true)
@@ -116,15 +114,10 @@ internal class SandboxGroupImpl(
         getClassTag(klass, isStaticTag = false)
     }
 
+    @Suppress("ComplexMethod", "NestedBlockDepth")
     override fun getClass(className: String, serialisedClassTag: String): Class<*> {
         val classTag = classTagFactory.deserialise(serialisedClassTag)
-        return loadedClassCache.computeIfAbsent(classTag) {
-            loadClassFromBundle(classTag, className, serialisedClassTag)
-        }
-    }
 
-    @Suppress("ThrowsCount")
-    private fun loadClassFromBundle(classTag: ClassTag, className: String, serialisedClassTag: String): Class<*> {
         return when (classTag.classType) {
             ClassType.NonBundleClass -> {
                 try {
