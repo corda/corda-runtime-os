@@ -36,7 +36,6 @@ fi
 
 helm registry login corda-os-docker.software.r3.com -u $CORDA_ARTIFACTORY_USERNAME -p $CORDA_ARTIFACTORY_PASSWORD
 helm registry login corda-os-docker-unstable.software.r3.com -u $CORDA_ARTIFACTORY_USERNAME -p $CORDA_ARTIFACTORY_PASSWORD
-helm registry login corda-os-docker-dev.software.r3.com -u $CORDA_ARTIFACTORY_USERNAME -p $CORDA_ARTIFACTORY_PASSWORD
 
 for namespace in ${namespaces[@]}; do
     deploy $namespace &
