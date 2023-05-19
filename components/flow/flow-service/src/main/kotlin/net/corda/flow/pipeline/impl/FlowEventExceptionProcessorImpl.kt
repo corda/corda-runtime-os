@@ -280,7 +280,6 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
         return listOf(flowRecordFactory.createFlowStatusRecord(status))
     }
 
-
     private fun getScheduledCleanupExpiryTime(context: FlowEventContext<*>, now: Instant): Long {
         val flowCleanupTime = context.config.getLong(FlowConfig.SESSION_FLOW_CLEANUP_TIME)
         return now.plusMillis(flowCleanupTime).toEpochMilli()
