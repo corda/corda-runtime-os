@@ -50,7 +50,7 @@ internal class PersistMemberInfoHandler(
         if (request.members.isNotEmpty()) {
             transaction(context.holdingIdentity.toCorda().shortHash) { em ->
                 request.members.forEach {
-                    val newMemberInfo = memberInfoFactory.create(it.persistentMemberInfo)
+                    val newMemberInfo = memberInfoFactory.createMemberInfo(it.persistentMemberInfo)
                     logger.info(
                         "Persisting member information representing ${newMemberInfo.name} as viewed " +
                                 "by ${context.holdingIdentity.x500Name} in group ${context.holdingIdentity.groupId}."

@@ -17,6 +17,7 @@ import net.corda.libs.external.messaging.serialization.ExternalMessagingRouteCon
 import net.corda.libs.virtualnode.datamodel.repository.HoldingIdentityRepositoryImpl
 import net.corda.libs.virtualnode.datamodel.repository.VirtualNodeRepository
 import net.corda.libs.virtualnode.datamodel.repository.VirtualNodeRepositoryImpl
+import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.grouppolicy.GroupPolicyParser
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
@@ -50,6 +51,7 @@ internal class VirtualNodeWriterFactory(
     private val virtualNodeDbAdmin: VirtualNodesDbAdmin,
     private val schemaMigrator: LiquibaseSchemaMigrator,
     private val groupPolicyParser: GroupPolicyParser,
+    private val memberInfoFactory: MemberInfoFactory,
     private val cpiCpkRepositoryFactory: CpiCpkRepositoryFactory,
     private val cpkDbChangeLogRepository: CpkDbChangeLogRepository = CpiCpkRepositoryFactory().createCpkDbChangeLogRepository(),
 ) {
@@ -120,7 +122,7 @@ internal class VirtualNodeWriterFactory(
                 virtualNodesDmlPoolConfig
             )
 
-        val recordFactory = RecordFactoryImpl(UTCClock())
+        val recordFactory = RecordFactoryImpl(UTCClock(), memberInfoFactory)
 
         val handlerMap = mutableMapOf<Class<*>, VirtualNodeAsyncOperationHandler<*>>(
             VirtualNodeUpgradeRequest::class.java to VirtualNodeUpgradeOperationHandler(

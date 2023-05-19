@@ -1,10 +1,8 @@
 package net.corda.membership.impl.persistence.service.handler
 
 import net.corda.crypto.cipher.suite.KeyEncodingService
-import net.corda.avro.serialization.CordaAvroDeserializer
-import net.corda.avro.serialization.CordaAvroSerializationFactory
-import net.corda.data.KeyValuePair
-import net.corda.data.KeyValuePairList
+import net.corda.crypto.core.ShortHash
+import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.data.membership.db.request.query.QueryMemberInfo
 import net.corda.db.connection.manager.DbConnectionManager
@@ -26,7 +24,6 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
-import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.time.Instant
@@ -54,9 +51,6 @@ class QueryMemberInfoHandlerTest {
 
     private val memberContextBytes = "123".toByteArray()
     private val mgmContextBytes = "456".toByteArray()
-    private val testKey = "KEY"
-    private val testMgmVal = "MGM"
-    private val testMemberVal = "MEMBER"
 
     private val entityTransaction: EntityTransaction = mock()
     private val entityManager: EntityManager = mock {
@@ -79,20 +73,6 @@ class QueryMemberInfoHandlerTest {
         on { get(eq(CordaDb.Vault.persistenceUnitName)) } doReturn mock()
     }
     private val memberInfoFactory: MemberInfoFactory = mock()
-    private val keyValueDeserializer: CordaAvroDeserializer<KeyValuePairList> = mock {
-        on { deserialize(eq(memberContextBytes)) } doReturn KeyValuePairList(
-            listOf(
-                KeyValuePair(
-                    testKey,
-                    testMemberVal
-                )
-            )
-        )
-        on { deserialize(eq(mgmContextBytes)) } doReturn KeyValuePairList(listOf(KeyValuePair(testKey, testMgmVal)))
-    }
-    private val cordaAvroSerializationFactory: CordaAvroSerializationFactory = mock {
-        on { createAvroDeserializer<KeyValuePairList>(any(), any()) } doReturn keyValueDeserializer
-    }
     private val keyEncodingService: KeyEncodingService = mock()
     private val platformInfoProvider: PlatformInfoProvider = mock()
     private val transactionTimerFactory = { _: String -> transactionTimer }
@@ -101,7 +81,7 @@ class QueryMemberInfoHandlerTest {
         dbConnectionManager,
         jpaEntitiesRegistry,
         memberInfoFactory,
-        cordaAvroSerializationFactory,
+        mock(),
         keyEncodingService,
         platformInfoProvider,
         mock(),
@@ -146,6 +126,14 @@ class QueryMemberInfoHandlerTest {
         val memberInfoQuery = mock<TypedQuery<MemberInfoEntity>>()
         whenever(entityManager.createQuery(any(), eq(MemberInfoEntity::class.java))).thenReturn(memberInfoQuery)
         whenever(memberInfoQuery.resultList).thenReturn(listOf(memberInfoEntity))
+        val persistentInfo = mock<PersistentMemberInfo>()
+        whenever(
+            memberInfoFactory.createPersistentMemberInfo(
+                ourHoldingIdentity.toAvro(),
+                memberContextBytes,
+                mgmContextBytes,
+            )
+        ).doReturn(persistentInfo)
 
         val requestContext = getMemberRequestContext()
         val result = queryMemberInfoHandler.invoke(
@@ -154,18 +142,12 @@ class QueryMemberInfoHandlerTest {
         )
 
         assertThat(result.members).isNotEmpty.hasSize(1)
-        with(result.members.first()) {
-            assertThat(viewOwningMember).isEqualTo(requestContext.holdingIdentity)
-            assertThat(memberContext.items.first { it.key == testKey }.value).isEqualTo(testMemberVal)
-            assertThat(mgmContext.items.first { it.key == testKey }.value).isEqualTo(testMgmVal)
-        }
+        assertThat(result.members.first()).isEqualTo(persistentInfo)
         verify(entityManager, never()).find<MemberInfoEntity>(any(), any())
         verify(entityManager).createQuery(any(), eq(MemberInfoEntity::class.java))
-        verify(cordaAvroSerializationFactory).createAvroDeserializer<KeyValuePairList>(any(), any())
-        with(argumentCaptor<ByteArray>()) {
-            verify(keyValueDeserializer, times(2)).deserialize(capture())
-            assertThat(firstValue).isEqualTo(memberContextBytes)
-            assertThat(secondValue).isEqualTo(mgmContextBytes)
+        with(argumentCaptor<ShortHash>()) {
+            verify(virtualNodeInfoReadService).getByHoldingIdentityShortHash(capture())
+            assertThat(firstValue).isEqualTo(ourHoldingIdentity.shortHash)
         }
         verify(jpaEntitiesRegistry).get(any())
         verify(entityManagerFactory).createEntityManager()
@@ -188,8 +170,11 @@ class QueryMemberInfoHandlerTest {
         assertThat(result.members).isEmpty()
         verify(entityManager, never()).find<MemberInfoEntity>(any(), any())
         verify(entityManager).createQuery(any(), eq(MemberInfoEntity::class.java))
-        verify(cordaAvroSerializationFactory, never()).createAvroDeserializer<KeyValuePairList>(any(), any())
-        verify(keyValueDeserializer, never()).deserialize(any())
+        verify(memberInfoFactory, never()).createPersistentMemberInfo(any(), any(), any())
+        with(argumentCaptor<ShortHash>()) {
+            verify(virtualNodeInfoReadService).getByHoldingIdentityShortHash(capture())
+            assertThat(firstValue).isEqualTo(ourHoldingIdentity.shortHash)
+        }
         verify(jpaEntitiesRegistry).get(any())
         verify(entityManagerFactory).createEntityManager()
         verify(entityTransaction).begin()
@@ -206,23 +191,25 @@ class QueryMemberInfoHandlerTest {
         whenever(
             entityManager.createQuery(any(), eq(MemberInfoEntity::class.java))
         ).thenReturn(memberInfoQuery)
+        val persistentInfo = mock<PersistentMemberInfo>()
+        whenever(
+            memberInfoFactory.createPersistentMemberInfo(
+                ourHoldingIdentity.toAvro(),
+                memberContextBytes,
+                mgmContextBytes,
+            )
+        ).doReturn(persistentInfo)
         val requestContext = getMemberRequestContext()
         val results = queryMemberInfoHandler.invoke(
             requestContext,
             getQueryMemberInfo(listOf(otherHoldingIdentity))
         )
         assertThat(results.members).isNotEmpty.hasSize(1)
-        with(results.members.first()) {
-            assertThat(viewOwningMember).isEqualTo(requestContext.holdingIdentity)
-            assertThat(memberContext.items.first { it.key == testKey }.value).isEqualTo(testMemberVal)
-            assertThat(mgmContext.items.first { it.key == testKey }.value).isEqualTo(testMgmVal)
-        }
+        assertThat(results.members.first()).isEqualTo(persistentInfo)
         verify(entityManager).createQuery(any(), eq(MemberInfoEntity::class.java))
-        verify(cordaAvroSerializationFactory).createAvroDeserializer<KeyValuePairList>(any(), any())
-        with(argumentCaptor<ByteArray>()) {
-            verify(keyValueDeserializer, times(2)).deserialize(capture())
-            assertThat(firstValue).isEqualTo(memberContextBytes)
-            assertThat(secondValue).isEqualTo(mgmContextBytes)
+        with(argumentCaptor<ShortHash>()) {
+            verify(virtualNodeInfoReadService).getByHoldingIdentityShortHash(capture())
+            assertThat(firstValue).isEqualTo(ourHoldingIdentity.shortHash)
         }
         verify(jpaEntitiesRegistry).get(any())
         verify(entityManagerFactory).createEntityManager()
@@ -246,8 +233,11 @@ class QueryMemberInfoHandlerTest {
         )
         assertThat(result.members).isEmpty()
         verify(entityManager).createQuery(any(), eq(MemberInfoEntity::class.java))
-        verify(cordaAvroSerializationFactory, never()).createAvroDeserializer<KeyValuePairList>(any(), any())
-        verify(keyValueDeserializer, never()).deserialize(any())
+        verify(memberInfoFactory, never()).createPersistentMemberInfo(any(), any(), any())
+        with(argumentCaptor<ShortHash>()) {
+            verify(virtualNodeInfoReadService).getByHoldingIdentityShortHash(capture())
+            assertThat(firstValue).isEqualTo(ourHoldingIdentity.shortHash)
+        }
         verify(jpaEntitiesRegistry).get(any())
         verify(entityManagerFactory).createEntityManager()
         verify(entityTransaction).begin()

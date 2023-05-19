@@ -165,8 +165,9 @@ class MemberSynchronisationServiceImplTest {
         on { groupId } doReturn GROUP_NAME
     }
     private val memberInfoFactory: MemberInfoFactory = mock {
-        on { create(any()) } doReturn participant
-        on { create(any<SortedMap<String, String?>>(), any()) } doReturn participant
+        on { createMemberInfo(any()) } doReturn participant
+        on { createMemberInfo(any<SortedMap<String, String?>>(), any()) } doReturn participant
+        on { createPersistentMemberInfo(any(), any()) } doReturn mock()
     }
     private val memberName = MemberX500Name("Alice", "London", "GB")
     private val member = HoldingIdentity(memberName, GROUP_NAME)

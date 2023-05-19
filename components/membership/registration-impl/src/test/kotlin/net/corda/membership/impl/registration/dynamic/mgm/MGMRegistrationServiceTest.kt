@@ -201,7 +201,6 @@ class MGMRegistrationServiceTest {
             PublicKeyHashConverter()
         )
     )
-    private val memberInfoFactory: MemberInfoFactory = MemberInfoFactoryImpl(layeredPropertyMapFactory)
     private val mockSignedGroupParameters: SignedGroupParameters = mock()
     private val statusUpdate = argumentCaptor<RegistrationRequest>()
     private val persistRegistrationRequestOperation = mock<MembershipPersistenceOperation<Unit>> {
@@ -238,6 +237,10 @@ class MGMRegistrationServiceTest {
     private val cordaAvroSerializationFactory = mock<CordaAvroSerializationFactory> {
         on { createAvroSerializer<KeyValuePairList>(any()) } doReturn keyValuePairListSerializer
     }
+    private val memberInfoFactory: MemberInfoFactory = MemberInfoFactoryImpl(
+        layeredPropertyMapFactory,
+        cordaAvroSerializationFactory,
+    )
     private val membershipSchemaValidator: MembershipSchemaValidator = mock()
     private val membershipSchemaValidatorFactory: MembershipSchemaValidatorFactory = mock {
         on { createValidator() } doReturn membershipSchemaValidator

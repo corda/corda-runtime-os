@@ -259,7 +259,6 @@ class StaticMemberRegistrationServiceTest {
             PublicKeyHashConverter()
         )
     )
-    private val memberInfoFactory: MemberInfoFactory = MemberInfoFactoryImpl(layeredPropertyMapFactory)
 
     private val hsmRegistrationClient: HSMRegistrationClient = mock()
 
@@ -286,6 +285,10 @@ class StaticMemberRegistrationServiceTest {
         on { createAvroSerializer<KeyValuePairList>(any()) } doReturn keyValuePairListSerializer
         on { createAvroDeserializer(any(), eq(KeyValuePairList::class.java)) } doReturn keyValuePairListDeserializer
     }
+    private val memberInfoFactory: MemberInfoFactory = MemberInfoFactoryImpl(
+        layeredPropertyMapFactory,
+        cordaAvroSerializationFactory,
+    )
 
     private val membershipSchemaValidator: MembershipSchemaValidator = mock()
     private val membershipSchemaValidatorFactory: MembershipSchemaValidatorFactory = mock {
@@ -416,7 +419,7 @@ class StaticMemberRegistrationServiceTest {
 
             assertEquals(Schemas.Membership.MEMBER_LIST_TOPIC, publishedInfo.topic)
             val persistentMemberPublished = publishedInfo.value as PersistentMemberInfo
-            val memberPublished = memberInfoFactory.create(
+            val memberPublished = memberInfoFactory.createMemberInfo(
                 persistentMemberPublished.memberContext.toSortedMap(),
                 persistentMemberPublished.mgmContext.toSortedMap()
             )
@@ -867,7 +870,7 @@ class StaticMemberRegistrationServiceTest {
 
             val persistentMemberPublished =
                 capturedPublishedList.firstValue.firstOrNull()?.value as PersistentMemberInfo
-            val memberInfo = memberInfoFactory.create(
+            val memberInfo = memberInfoFactory.createMemberInfo(
                 persistentMemberPublished.memberContext.toSortedMap(),
                 persistentMemberPublished.mgmContext.toSortedMap()
             )
@@ -907,7 +910,7 @@ class StaticMemberRegistrationServiceTest {
 
             val persistentMemberPublished =
                 capturedPublishedList.firstValue.firstOrNull()?.value as PersistentMemberInfo
-            val memberInfo = memberInfoFactory.create(
+            val memberInfo = memberInfoFactory.createMemberInfo(
                 persistentMemberPublished.memberContext.toSortedMap(),
                 persistentMemberPublished.mgmContext.toSortedMap()
             )

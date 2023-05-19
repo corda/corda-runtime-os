@@ -7,6 +7,7 @@ import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.membership.PersistentMemberInfo
+import net.corda.data.membership.SignedContexts
 import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.data.membership.db.request.command.SuspendMember
 import net.corda.data.membership.db.response.command.SuspendMemberResponse
@@ -245,7 +246,9 @@ class SuspendMemberHandlerTest {
             on { notaryDetails } doReturn memberNotaryDetails
             on { name } doReturn knownX500Name
         }
-        whenever(memberInfoFactory.create(persistentMemberInfo)).thenReturn(mockMemberInfo)
+        whenever(
+            memberInfoFactory.createPersistentMemberInfo(context.holdingIdentity, memberContextBytes, suspendedMgmContextBytes)
+        ).doReturn(mockMemberInfo)
         val updatedSerializedGroupParameters = mock<KeyValuePairList>()
         val serializedGroupParameters = "101112".toByteArray()
         whenever(keyValuePairListSerializer.serialize(updatedSerializedGroupParameters)).doReturn(serializedGroupParameters)

@@ -152,7 +152,7 @@ class MGMRegistrationService @Activate constructor(
             layeredPropertyMapFactory,
             membershipPersistenceClient,
         )
-        private val mgmRegistrationOutputPublisher = MGMRegistrationOutputPublisher()
+        private val mgmRegistrationOutputPublisher = MGMRegistrationOutputPublisher(memberInfoFactory)
 
         override fun register(
             registrationId: UUID,

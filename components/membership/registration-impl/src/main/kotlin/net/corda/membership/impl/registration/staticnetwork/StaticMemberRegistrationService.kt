@@ -504,7 +504,7 @@ class StaticMemberRegistrationService(
             MEMBER_CPI_VERSION to cpi.version,
         ) + optionalContext + customFields
 
-        val memberInfo = memberInfoFactory.create(
+        val memberInfo = memberInfoFactory.createMemberInfo(
             memberContext.toSortedMap(),
             sortedMapOf(
                 STATUS to staticMemberInfo.status,
@@ -518,10 +518,9 @@ class StaticMemberRegistrationService(
             Record(
                 MEMBER_LIST_TOPIC,
                 "${owningMemberHoldingIdentity.shortHash}-$memberId",
-                PersistentMemberInfo(
+                memberInfoFactory.createPersistentMemberInfo(
                     owningMemberHoldingIdentity.toAvro(),
-                    memberInfo.memberProvidedContext.toAvro(),
-                    memberInfo.mgmProvidedContext.toAvro()
+                    memberInfo,
                 )
             )
         }

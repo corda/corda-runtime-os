@@ -159,7 +159,7 @@ internal class MGMRegistrationMemberInfoHandler(
             MEMBER_CPI_NAME to cpi.name,
             MEMBER_CPI_VERSION to cpi.version,
         ) + optionalContext + sessionKeys
-        return memberInfoFactory.create(
+        return memberInfoFactory.createMemberInfo(
             memberContext = memberContext.toSortedMap(),
             mgmContext = sortedMapOf(
                 CREATION_TIME to now,

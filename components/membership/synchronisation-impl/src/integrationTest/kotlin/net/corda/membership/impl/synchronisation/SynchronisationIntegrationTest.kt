@@ -390,7 +390,7 @@ class SynchronisationIntegrationTest {
             sessionInitKey: PublicKey,
             isMgm: Boolean = false
         ): MemberInfo =
-            memberInfoFactory.create(
+            memberInfoFactory.createMemberInfo(
                 sortedMapOf(
                     MemberInfoExtension.PARTY_NAME to holdingIdentity.x500Name,
                     String.format(MemberInfoExtension.PARTY_SESSION_KEYS, 0) to keyEncodingService.encodeAsString(sessionInitKey),
@@ -483,9 +483,9 @@ class SynchronisationIntegrationTest {
             it.assertThat(membershipPackage.distributionType).isEqualTo(DistributionType.SYNC)
             it.assertThat(membershipPackage.memberships.memberships).hasSize(2)
                 .allSatisfy {
-                    val member = memberInfoFactory.create(
-                        keyValueDeserializer.deserialize(it.memberContext.data.array())!!.toSortedMap(),
-                        keyValueDeserializer.deserialize(it.mgmContext.data.array())!!.toSortedMap()
+                    val member = memberInfoFactory.createMemberInfo(
+                        keyValueDeserializer.deserialize(it.memberContext.array())!!.toSortedMap(),
+                        keyValueDeserializer.deserialize(it.mgmContext.array())!!.toSortedMap()
                     )
                     assertThat(member.name.toString()).isIn(members)
                     assertThat(member.groupId).isEqualTo(groupId)
@@ -643,7 +643,7 @@ class SynchronisationIntegrationTest {
                 .isInstanceOf(PersistentMemberInfo::class.java)
             with(result) {
                 it.assertThat(viewOwningMember).isEqualTo(requester)
-                val memberPublished = memberInfoFactory.create(
+                val memberPublished = memberInfoFactory.createMemberInfo(
                     memberContext.toSortedMap(),
                     mgmContext.toSortedMap()
                 )
