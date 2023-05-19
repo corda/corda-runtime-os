@@ -75,6 +75,7 @@ class DeleteApprovalRuleHandlerTest {
         on { virtualNodeInfoReadService } doReturn nodeInfoReadService
         on { jpaEntitiesRegistry } doReturn registry
         on { dbConnectionManager } doReturn connectionManager
+        on { transactionTimerFactory } doReturn { transactionTimer }
     }
     private val context = mock<MembershipRequestContext> {
         on { holdingIdentity } doReturn HoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", "group")
