@@ -64,8 +64,7 @@ internal class CordaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
     private var producer: CordaProducer? = null
 
     private val partitionListener = RPCConsumerRebalanceListener(
-        getRPCResponseTopic(config.topic),
-        "RPC Response listener",
+        config.clientId,
         futureTracker,
         threadLooper
     )

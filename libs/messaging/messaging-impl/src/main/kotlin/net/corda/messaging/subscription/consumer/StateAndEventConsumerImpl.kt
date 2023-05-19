@@ -49,7 +49,7 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
         thread
     }
 
-    private val log = LoggerFactory.getLogger(config.loggerName)
+    private val log = LoggerFactory.getLogger("${this.javaClass.name}-${config.clientId}")
 
     private val maxPollInterval = config.processorTimeout.toMillis()
     private val initialProcessorTimeout = maxPollInterval / 4

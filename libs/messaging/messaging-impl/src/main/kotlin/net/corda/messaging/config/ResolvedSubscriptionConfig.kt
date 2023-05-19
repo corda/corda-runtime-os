@@ -20,7 +20,7 @@ data class ResolvedSubscriptionConfig(
     val subscriptionType: SubscriptionType,
     val topic: String,
     val group: String,
-    val idCounter: Long,
+    val uniqueId: String,
     val instanceId: Int,
     val pollTimeout: Duration,
     val threadStopTimeout: Duration,
@@ -38,20 +38,20 @@ data class ResolvedSubscriptionConfig(
          * @param subscriptionType Type of subscription.
          * @param subscriptionConfig User configurable values for a subscription.
          * @param messagingConfig Messaging smart config.
-         * @param counter Client counter.
+         * @param uniqueId Unique id, used to uniquely identify the subscription.
          * @return concrete class containing all config values used by a subscription.
          */
         fun merge(
             subscriptionType: SubscriptionType,
             subscriptionConfig: SubscriptionConfig,
             messagingConfig: SmartConfig,
-            idCounter: Long
+            uniqueId: String
         ): ResolvedSubscriptionConfig {
             return ResolvedSubscriptionConfig(
                 subscriptionType,
                 subscriptionConfig.eventTopic,
                 subscriptionConfig.groupName,
-                idCounter,
+                uniqueId,
                 messagingConfig.getInt(INSTANCE_ID),
                 Duration.ofMillis(messagingConfig.getLong(POLL_TIMEOUT)),
                 Duration.ofMillis(messagingConfig.getLong(THREAD_STOP_TIMEOUT)),
@@ -64,7 +64,6 @@ data class ResolvedSubscriptionConfig(
         }
     }
 
-    val clientId = "$subscriptionType-$group-$topic-$idCounter"
-    val loggerName = clientId
+    val clientId = "$subscriptionType-$group-$topic-$uniqueId"
     val lifecycleCoordinatorName = LifecycleCoordinatorName("$topic-$subscriptionType-$group", clientId)
 }
