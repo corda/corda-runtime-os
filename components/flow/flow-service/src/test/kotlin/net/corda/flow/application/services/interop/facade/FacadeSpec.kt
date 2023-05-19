@@ -35,12 +35,12 @@ class FacadeSpec : DescribeSpec({
 
             denomination shouldBe TypedParameterImpl(
                 "denomination",
-                TypeParameters<Any>().of("string (org.corda.interop/platform/tokens/types/denomination/1.0) ")
+                TypeParameters.of("string (org.corda.interop/platform/tokens/types/denomination/1.0) ")
             )
 
             balance shouldBe TypedParameterImpl(
                 "balance",
-                TypeParameters<Any>().of(ParameterTypeLabel.DECIMAL.typeName)
+                TypeParameters.of(ParameterTypeLabel.DECIMAL.name)
             )
         }
 
@@ -105,5 +105,4 @@ class FacadeSpec : DescribeSpec({
             }
         }
     }
-
 })
