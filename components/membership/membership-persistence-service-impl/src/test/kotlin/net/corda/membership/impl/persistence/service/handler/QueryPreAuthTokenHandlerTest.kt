@@ -100,6 +100,7 @@ class QueryPreAuthTokenHandlerTest {
         on { dbConnectionManager } doReturn dbConnectionManager
         on { jpaEntitiesRegistry } doReturn jpaEntitiesRegistry
         on { allowedCertificatesReaderWriterService } doReturn writerToKafka
+        on { transactionTimerFactory } doReturn { transactionTimer }
     }
     private val handler = QueryPreAuthTokenHandler(persistenceHandlerServices)
     private val context = mock<MembershipRequestContext> {
