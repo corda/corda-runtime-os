@@ -7,7 +7,7 @@ import java.util.UUID
 
 class HardcodedAliasIdentityHelper {
     companion object {
-        fun getAliasIdentityData(): MutableList<InteropGroupInfo> {
+        fun getAliasIdentityData(): List<InteropGroupInfo> {
             val aliceGroups = listOf(
                 GroupData(
                     "3dfc0aae-be7c-44c2-aa4f-4d0d7145cf08", //This is hardcoded groupId for existing texts.
@@ -66,8 +66,8 @@ data class HoldingIdAliasGroupInfoImpl(
         return "ANYSHORTHASH"
     }
 
-    override fun getGroups(): MutableList<InteropGroupInfo> {
-        return groupData.map { GroupInfo(member, it.groupId, it.groupName, it.networks) }.toMutableList()
+    override fun getGroups(): List<InteropGroupInfo> {
+        return groupData.map { GroupInfo(member, it.groupId, it.groupName, it.networks) }
     }
 
 }
@@ -86,8 +86,8 @@ data class GroupInfo(
         return groupName
     }
 
-    override fun getMembers(): MutableList<AliasMemberInfo> {
-        return networks.map { AliasMember(member, it.network, groupName, it.hostNetwork, it.facadeIds) }.toMutableList()
+    override fun getMembers(): List<AliasMemberInfo> {
+        return networks.map { AliasMember(member, it.network, groupName, it.hostNetwork, it.facadeIds) }
     }
 }
 

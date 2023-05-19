@@ -5,10 +5,12 @@ import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.InitiatingFlow
 import net.corda.v5.application.flows.ClientRequestBody
 import net.corda.v5.application.interop.FacadeService
+import net.corda.v5.application.interop.RemoteAliasLookUp
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.types.MemberX500Name
 import org.slf4j.LoggerFactory
+import java.lang.IllegalArgumentException
 
 @InitiatingFlow(protocol = "invoke_facade_method")
 class FacadeInvocationFlow : ClientStartableFlow {
@@ -21,6 +23,9 @@ class FacadeInvocationFlow : ClientStartableFlow {
     }
 
     @CordaInject
+    lateinit var remoteAliasLookUp: RemoteAliasLookUp
+
+    @CordaInject
     lateinit var jsonMarshallingService: JsonMarshallingService
 
     @CordaInject
@@ -29,7 +34,6 @@ class FacadeInvocationFlow : ClientStartableFlow {
     @Suspendable
     override fun call(requestBody: ClientRequestBody): String {
         log.info("FacadeInvocationFlow.call() starting")
-
         val args = requestBody.getRequestBodyAsMap(jsonMarshallingService, String::class.java, String::class.java)
 
         val interopGroupId = getArgument(args, "interopGroupId")
@@ -37,8 +41,17 @@ class FacadeInvocationFlow : ClientStartableFlow {
         val methodName = getArgument(args, "methodName")
         val alias = MemberX500Name.parse(getArgument(args,"alias"))
         val payload = getArgument(args, "payload")
+        val hostNetwork = getArgument(args, "hostNetwork")
+
+        val aliasMember = remoteAliasLookUp.lookup(alias.toString(), hostNetwork)
+        log.info("AliasMemberInfo for $alias  : $aliasMember")
+
+        if(!aliasMember.facadeIds.contains(facadeId)) {
+            throw IllegalArgumentException("facade with facadeId : $facadeId is not supported by alias : $alias")
+        }
 
         log.info("Calling facade method '$methodName@$facadeId' with payload '$payload' to $alias")
+
         val client : SampleTokensFacade = facadeService.getFacade(facadeId, SampleTokensFacade::class.java, alias, interopGroupId)
         val responseObject = client.getHello(payload)
         val response = responseObject.result.toString()
