@@ -25,7 +25,7 @@ internal interface PersistenceHandler<REQUEST, RESPONSE> {
     /**
      * Persistence operation identifier for logging and metrics purposes.
      */
-    val operation: String
+    val operation: Class<REQUEST>
 
     fun invoke(context: MembershipRequestContext, request: REQUEST): RESPONSE?
 }
@@ -49,7 +49,7 @@ internal abstract class BasePersistenceHandler<REQUEST, RESPONSE>(
     val allowedCertificatesReaderWriterService get() = persistenceHandlerServices.allowedCertificatesReaderWriterService
 
     private val transactionTimer by lazy {
-        persistenceHandlerServices.transactionTimerFactory(operation)
+        persistenceHandlerServices.transactionTimerFactory(operation.simpleName)
     }
 
     fun <R> transaction(holdingIdentityShortHash: ShortHash, block: (EntityManager) -> R): R {

@@ -13,7 +13,7 @@ import javax.persistence.criteria.Predicate
 internal class QueryRegistrationRequestsHandler(persistenceHandlerServices: PersistenceHandlerServices)
     :BaseRequestStatusHandler<QueryRegistrationRequests, RegistrationRequestsQueryResponse>(persistenceHandlerServices)
 {
-    override val operation: String = QueryRegistrationRequests::class.java.simpleName
+    override val operation = QueryRegistrationRequests::class.java
     override fun invoke(
         context: MembershipRequestContext,
         request: QueryRegistrationRequests,

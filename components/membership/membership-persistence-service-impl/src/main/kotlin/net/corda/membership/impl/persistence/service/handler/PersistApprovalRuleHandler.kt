@@ -11,7 +11,7 @@ import net.corda.virtualnode.toCorda
 internal class PersistApprovalRuleHandler(
     persistenceHandlerServices: PersistenceHandlerServices
 ) : BasePersistenceHandler<PersistApprovalRule, PersistApprovalRuleResponse>(persistenceHandlerServices) {
-    override val operation: String = PersistApprovalRule::class.java.simpleName
+    override val operation = PersistApprovalRule::class.java
     override fun invoke(context: MembershipRequestContext, request: PersistApprovalRule): PersistApprovalRuleResponse {
         logger.info("Persisting approval rule.")
         return transaction(context.holdingIdentity.toCorda().shortHash) { em ->

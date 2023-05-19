@@ -9,7 +9,7 @@ import net.corda.virtualnode.toCorda
 internal class QueryRegistrationRequestHandler(persistenceHandlerServices: PersistenceHandlerServices)
     :BaseRequestStatusHandler<QueryRegistrationRequest, RegistrationRequestQueryResponse>(persistenceHandlerServices)
 {
-    override val operation: String = QueryRegistrationRequest::class.java.simpleName
+    override val operation = QueryRegistrationRequest::class.java
     override fun invoke(
         context: MembershipRequestContext,
         request: QueryRegistrationRequest,

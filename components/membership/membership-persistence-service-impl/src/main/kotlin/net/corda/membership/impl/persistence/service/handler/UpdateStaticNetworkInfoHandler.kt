@@ -14,7 +14,7 @@ import net.corda.utilities.serialization.wrapWithNullErrorHandling
 internal class UpdateStaticNetworkInfoHandler(
     persistenceHandlerServices: PersistenceHandlerServices
 ) : BasePersistenceHandler<UpdateStaticNetworkInfo, StaticNetworkInfoQueryResponse>(persistenceHandlerServices) {
-    override val operation: String = UpdateStaticNetworkInfo::class.java.simpleName
+    override val operation = UpdateStaticNetworkInfo::class.java
 
     private val deserializer = cordaAvroSerializationFactory.createAvroDeserializer({
         logger.error("Failed to deserialize KeyValuePairList.")

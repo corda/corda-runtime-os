@@ -10,7 +10,7 @@ import net.corda.virtualnode.toCorda
 internal class QueryApprovalRulesHandler(
     persistenceHandlerServices: PersistenceHandlerServices
 ) : BasePersistenceHandler<QueryApprovalRules, ApprovalRulesQueryResponse>(persistenceHandlerServices) {
-    override val operation: String = QueryApprovalRules::class.java.simpleName
+    override val operation = QueryApprovalRules::class.java
     override fun invoke(context: MembershipRequestContext, request: QueryApprovalRules): ApprovalRulesQueryResponse {
         logger.info("Retrieving approval rules.")
         return transaction(context.holdingIdentity.toCorda().shortHash) { em ->

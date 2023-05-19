@@ -12,7 +12,7 @@ import net.corda.virtualnode.toCorda
 internal class QueryMemberInfoHandler(
     persistenceHandlerServices: PersistenceHandlerServices
 ) : BasePersistenceHandler<QueryMemberInfo, MemberInfoQueryResponse>(persistenceHandlerServices) {
-    override val operation: String = QueryMemberInfo::class.java.simpleName
+    override val operation = QueryMemberInfo::class.java
     private val keyValuePairListDeserializer: CordaAvroDeserializer<KeyValuePairList> by lazy {
         cordaAvroSerializationFactory.createAvroDeserializer(
             {

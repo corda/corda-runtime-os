@@ -8,7 +8,7 @@ import net.corda.virtualnode.toCorda
 
 internal class AddPreAuthTokenHandler(persistenceHandlerServices: PersistenceHandlerServices) :
     BasePersistenceHandler<AddPreAuthToken, Unit>(persistenceHandlerServices) {
-    override val operation: String = AddPreAuthToken::class.java.simpleName
+    override val operation = AddPreAuthToken::class.java
     override fun invoke(context: MembershipRequestContext, request: AddPreAuthToken) {
         return transaction(context.holdingIdentity.toCorda().shortHash) { em ->
             em.persist(

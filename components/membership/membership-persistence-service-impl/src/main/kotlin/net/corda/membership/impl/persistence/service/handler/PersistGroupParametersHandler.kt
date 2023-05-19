@@ -15,7 +15,7 @@ import javax.persistence.LockModeType
 internal class PersistGroupParametersHandler(
     persistenceHandlerServices: PersistenceHandlerServices
 ) : BasePersistenceHandler<PersistGroupParameters, PersistGroupParametersResponse>(persistenceHandlerServices) {
-    override val operation: String = PersistGroupParameters::class.java.simpleName
+    override val operation = PersistGroupParameters::class.java
     private val deserializer: CordaAvroDeserializer<KeyValuePairList> =
         cordaAvroSerializationFactory.createAvroDeserializer(
             {

@@ -13,9 +13,3 @@ resources:
   limits:
     memory: "1250Mi"
     cpu: "1000m"
-
-metrics:
-  podMonitor:
-    enabled: true
-    labels:
-      release: kube-prometheus-stack

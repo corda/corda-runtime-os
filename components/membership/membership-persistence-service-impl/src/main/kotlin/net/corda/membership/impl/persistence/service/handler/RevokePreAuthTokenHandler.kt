@@ -12,7 +12,7 @@ import javax.persistence.LockModeType
 
 internal class RevokePreAuthTokenHandler(persistenceHandlerServices: PersistenceHandlerServices)
     : BasePersistenceHandler<RevokePreAuthToken, RevokePreAuthTokenResponse>(persistenceHandlerServices) {
-    override val operation: String = RevokePreAuthToken::class.java.simpleName
+    override val operation = RevokePreAuthToken::class.java
     companion object {
         fun PreAuthTokenEntity.toAvro(): PreAuthToken {
             return PreAuthToken(

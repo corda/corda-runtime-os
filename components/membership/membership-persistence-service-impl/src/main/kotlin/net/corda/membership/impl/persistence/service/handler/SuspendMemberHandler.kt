@@ -42,7 +42,7 @@ internal class SuspendMemberHandler(
         SuspensionActivationEntityOperations(clock, serializer, deserializer)
     }
 ) : BasePersistenceHandler<SuspendMember, SuspendMemberResponse>(persistenceHandlerServices) {
-    override val operation: String = SuspendMember::class.java.simpleName
+    override val operation = SuspendMember::class.java
     private companion object {
         val notaryServiceRegex = NOTARY_SERVICE_NAME_KEY.format("([0-9]+)").toRegex()
     }
