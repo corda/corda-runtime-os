@@ -21,7 +21,7 @@ deploy() {
      --wait
 
    echo Installing corda image $DOCKER_IMAGE_VERSION into $namespace
-   helm upgrade --install corda -n $namespace oci://corda-os-docker-dev.software.r3.com/helm-charts/pr-3906/corda \
+   helm upgrade --install corda -n $namespace oci://corda-os-docker.software.r3.com/helm-charts/release/os/5.0/corda \
      --set "imagePullSecrets={docker-registry-cred}" --set image.tag=$DOCKER_IMAGE_VERSION \
      --set image.registry="corda-os-docker.software.r3.com" --values $REPO_TOP_LEVEL_DIR/values.yaml \
      --values $REPO_TOP_LEVEL_DIR/debug.yaml --wait --version $CORDA_CHART_VERSION
