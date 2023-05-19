@@ -31,6 +31,15 @@ fun <K, V> wrapWithTracingProducer(kafkaProducer: Producer<K, V>): Producer<K, V
 }
 
 /**
+ * Close tracing system, flushing buffers before shutdown.
+ *
+ * Call this method to avoid losing events at shutdown.
+ */
+fun shutdownTracing() {
+    TracingState.close()
+}
+
+/**
  * Configure Javalin to read trace IDs from requests or generate new ones if missing.
  */
 fun configureJavalinForTracing(config: JavalinConfig) {

@@ -12,6 +12,7 @@ import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.processors.p2p.gateway.GatewayProcessor
 import net.corda.tracing.setTracingServiceName
+import net.corda.tracing.shutdownTracing
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -65,6 +66,7 @@ class GatewayWorker @Activate constructor(
         logger.info("P2P Gateway worker stopping.")
         gatewayProcessor.stop()
         workerMonitor.stop()
+        shutdownTracing()
     }
 }
 /** Additional parameters for the member worker are added here. */
