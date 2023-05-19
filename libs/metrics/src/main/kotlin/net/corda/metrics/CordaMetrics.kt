@@ -312,12 +312,12 @@ object CordaMetrics {
         ErrorType("error.type"),
 
         /**
-         * Source endpoint of a peer-to-peer message.
+         * Source endpoint of a peer-to-peer message or connection.
          */
         SourceEndpoint("endpoint.source"),
 
         /**
-         * Destination endpoint of a peer-to-peer message.
+         * Destination endpoint of a peer-to-peer message or connection.
          */
         DestinationEndpoint("endpoint.destination"),
 
