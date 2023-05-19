@@ -4,6 +4,7 @@ import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.event.MembershipEvent
 import net.corda.data.membership.event.registration.MgmOnboarded
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
+import net.corda.membership.lib.MemberInfoFactory
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
@@ -14,6 +15,7 @@ import net.corda.v5.membership.MGMContext
 import net.corda.v5.membership.MemberContext
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
+import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
@@ -45,6 +47,11 @@ class MGMRegistrationOutputPublisherTest {
         on { memberProvidedContext } doReturn memberContext
         on { name } doReturn holdingIdentity.x500Name
     }
+    private val persistentInfo = mock<PersistentMemberInfo>()
+    private val memberInfoFactory = mock<MemberInfoFactory> {
+        on { createPersistentMemberInfo(holdingIdentity.toAvro(), memberInfo) } doReturn persistentInfo
+    }
+
     private val recordPublishFuture: CompletableFuture<Unit> = mock {
         on { get(any(), any()) } doAnswer {}
     }
@@ -59,6 +66,7 @@ class MGMRegistrationOutputPublisherTest {
     private val publisherFactory = { publisher }
 
     private val mgmRegistrationOutputPublisher = MGMRegistrationOutputPublisher(
+        memberInfoFactory,
         publisherFactory
     )
 
@@ -104,13 +112,7 @@ class MGMRegistrationOutputPublisherTest {
                 .isEqualTo("$shortHash-$shortHash")
             assertThat(it.value).isInstanceOf(PersistentMemberInfo::class.java)
             val memberInfo = it.value as PersistentMemberInfo
-            val avroHoldingId = memberInfo.viewOwningMember
-            assertThat(
-                MemberX500Name.parse(avroHoldingId.x500Name)
-            ).isEqualTo(holdingIdentity.x500Name)
-            assertThat(
-                avroHoldingId.groupId
-            ).isEqualTo(holdingIdentity.groupId)
+            assertThat(memberInfo).isEqualTo(persistentInfo)
         }
     }
 

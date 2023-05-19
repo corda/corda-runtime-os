@@ -6,6 +6,7 @@ import net.corda.data.CordaAvroSerializer
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.membership.PersistentMemberInfo
+import net.corda.data.membership.SignedContexts
 import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.membership.datamodel.MemberInfoEntity
@@ -13,6 +14,7 @@ import net.corda.membership.datamodel.MemberInfoEntityPrimaryKey
 import net.corda.membership.lib.MemberInfoExtension
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_SUSPENDED
+import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.exceptions.InvalidEntityUpdateException
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.orm.JpaEntitiesRegistry
@@ -32,6 +34,7 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
+import java.nio.ByteBuffer
 import java.time.Instant
 import java.util.UUID
 import javax.persistence.EntityManager
@@ -93,12 +96,14 @@ class BaseSuspensionActivationHandlerTest {
             createAvroSerializer<KeyValuePairList>(any())
         } doReturn keyValuePairListSerializer
     }
+    private val memberInfoFactory = mock<MemberInfoFactory>()
     private val persistenceHandlerServices: PersistenceHandlerServices = mock {
         on { clock } doReturn clock
         on { virtualNodeInfoReadService } doReturn virtualNodeInfoReadService
         on { dbConnectionManager } doReturn dbConnectionManager
         on { jpaEntitiesRegistry } doReturn jpaEntitiesRegistry
         on { cordaAvroSerializationFactory } doReturn cordaAvroSerializationFactory
+        on { memberInfoFactory } doReturn memberInfoFactory
     }
 
     private val handler = object: BaseSuspensionActivationHandler<String, String>(persistenceHandlerServices) {
@@ -173,32 +178,40 @@ class BaseSuspensionActivationHandlerTest {
 
     @Test
     fun `changeMemberStatus returns the correct data`() {
+        val mgmContextBytes = byteArrayOf(1)
+        val suspendedMgmContextBytes = byteArrayOf(1)
+        val memberContextBytes = byteArrayOf(2)
         mockMemberInfoEntity(
-            mgmProvidedContext = byteArrayOf(1),
-            memberProvidedContext = byteArrayOf(2),
+            mgmProvidedContext = mgmContextBytes,
+            memberProvidedContext = memberContextBytes,
             memberStatus = MEMBER_STATUS_ACTIVE
         )
-        val mgmContext = KeyValuePairList(
-            listOf(
-                KeyValuePair("one", "1")
-            )
+        val deprecatedContext = KeyValuePairList(emptyList())
+        whenever(keyValuePairListDeserializer.deserialize(mgmContextBytes)).thenReturn(deprecatedContext)
+        whenever(keyValuePairListDeserializer.deserialize(memberContextBytes)).thenReturn(deprecatedContext)
+        whenever(keyValuePairListSerializer.serialize(any())).thenReturn(suspendedMgmContextBytes)
+
+        val expectedInfo = PersistentMemberInfo(
+            context.holdingIdentity,
+            deprecatedContext,
+            deprecatedContext,
+            SignedContexts(
+                ByteBuffer.wrap(mgmContextBytes),
+                ByteBuffer.wrap(memberContextBytes),
+            ),
         )
-        val memberContext = KeyValuePairList(
-            listOf(
-                KeyValuePair("two", "2")
+
+        whenever(
+            memberInfoFactory.createPersistentMemberInfo(
+                holdingIdentity.toAvro(),
+                memberContextBytes,
+                suspendedMgmContextBytes
             )
-        )
-        whenever(keyValuePairListDeserializer.deserialize(byteArrayOf(1))).thenReturn(mgmContext)
-        whenever(keyValuePairListDeserializer.deserialize(byteArrayOf(2))).thenReturn(memberContext)
+        ).thenReturn(expectedInfo)
 
         val result = invokeSuspend()
 
-        assertThat(result).isEqualTo(
-            PersistentMemberInfo(
-                context.holdingIdentity,
-                memberContext, mgmContext
-            )
-        )
+        assertThat(result).isEqualTo(expectedInfo)
     }
 
     @Test

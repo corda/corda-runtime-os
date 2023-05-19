@@ -87,10 +87,10 @@ internal abstract class BaseSuspensionActivationHandler<REQUEST, RESPONSE>(persi
                 )
             )
 
-            PersistentMemberInfo(
+            memberInfoFactory.createPersistentMemberInfo(
                 context.holdingIdentity,
-                keyValuePairListDeserializer.deserialize(member.memberContext),
-                mgmContext,
+                member.memberContext,
+                serializedMgmContext,
             )
         }
     }

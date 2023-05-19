@@ -1,8 +1,5 @@
 package net.corda.membership.impl.persistence.service.handler
 
-import net.corda.data.CordaAvroDeserializer
-import net.corda.data.KeyValuePairList
-import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.data.membership.db.request.query.QueryMemberInfo
 import net.corda.data.membership.db.response.query.MemberInfoQueryResponse
@@ -12,16 +9,6 @@ import net.corda.virtualnode.toCorda
 internal class QueryMemberInfoHandler(
     persistenceHandlerServices: PersistenceHandlerServices
 ) : BasePersistenceHandler<QueryMemberInfo, MemberInfoQueryResponse>(persistenceHandlerServices) {
-
-    private val keyValuePairListDeserializer: CordaAvroDeserializer<KeyValuePairList> by lazy {
-        cordaAvroSerializationFactory.createAvroDeserializer(
-            {
-                logger.error("Failed to deserialize key value pair list.")
-            },
-            KeyValuePairList::class.java
-        )
-    }
-
     override fun invoke(context: MembershipRequestContext, request: QueryMemberInfo): MemberInfoQueryResponse {
         logger.info("Querying for ${request.queryIdentities.size} identities")
         return if (request.queryIdentities.isEmpty()) {
@@ -58,9 +45,9 @@ internal class QueryMemberInfoHandler(
     }
 
     private fun MemberInfoEntity.toPersistentMemberInfo(viewOwningMember: net.corda.data.identity.HoldingIdentity) =
-        PersistentMemberInfo(
+        memberInfoFactory.createPersistentMemberInfo(
             viewOwningMember,
-            keyValuePairListDeserializer.deserialize(this.memberContext),
-            keyValuePairListDeserializer.deserialize(this.mgmContext)
+            memberContext,
+            mgmContext,
         )
 }

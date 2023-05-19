@@ -110,7 +110,7 @@ class MembershipQueryClientImplTest {
         on { registerComponentForUpdates(eq(coordinator), any()) } doReturn configHandle
     }
     private val memberInfoFactory: MemberInfoFactory = mock {
-        on { create(any()) } doReturn ourMemberInfo
+        on { createMemberInfo(any()) } doReturn ourMemberInfo
     }
     private val layeredPropertyMapFactory = LayeredPropertyMapMocks.createFactory(emptyList())
 

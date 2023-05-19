@@ -157,7 +157,7 @@ class MGMRegistrationMemberInfoHandlerTest {
         on { encodeAsString(any()) } doReturn EMPTY_STRING
     }
     private val memberInfoFactory: MemberInfoFactory = mock {
-        on { create(memberContextCaptor.capture(), mgmContextCaptor.capture()) } doReturn memberInfo
+        on { createMemberInfo(memberContextCaptor.capture(), mgmContextCaptor.capture()) } doReturn memberInfo
     }
     private val membershipPersistenceClient: MembershipPersistenceClient = mock {
         on {
@@ -225,7 +225,7 @@ class MGMRegistrationMemberInfoHandlerTest {
         }
 
         verify(membershipPersistenceClient).persistMemberInfo(any(), any())
-        verify(memberInfoFactory).create(any(), any<SortedMap<String, String?>>())
+        verify(memberInfoFactory).createMemberInfo(any(), any<SortedMap<String, String?>>())
         verify(platformInfoProvider).activePlatformVersion
         verify(platformInfoProvider).localWorkerSoftwareVersion
         verify(keyEncodingService, times(2)).encodeAsString(any())

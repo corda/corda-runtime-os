@@ -48,7 +48,7 @@ internal class PersistMemberInfoHandler(
             logger.info("Persisting member information.")
             transaction(context.holdingIdentity.toCorda().shortHash) { em ->
                 request.members.forEach {
-                    val memberInfo = memberInfoFactory.create(it.persistentMemberInfo)
+                    val memberInfo = memberInfoFactory.createMemberInfo(it.persistentMemberInfo)
                     val currentMemberInfo = em.find(
                         MemberInfoEntity::class.java,
                         MemberInfoEntityPrimaryKey(
@@ -61,11 +61,13 @@ internal class PersistMemberInfoHandler(
                     if (currentMemberInfo?.serialNumber == memberInfo.serial) {
                         val currentMemberContext = deserialize(currentMemberInfo.memberContext)
                         val currentMgmContext = deserialize(currentMemberInfo.mgmContext)
-                        if (currentMemberContext.items != it.persistentMemberInfo.memberContext.items) {
+                        val updatedMemberContext = deserialize(it.persistentMemberInfo.signedData.memberContext.array())
+                        val updatedMGMContext = deserialize(it.persistentMemberInfo.signedData.mgmContext.array())
+                        if (currentMemberContext.items != updatedMemberContext.items) {
                             throw MembershipPersistenceException("Cannot update member info with same serial number " +
                                 "(${memberInfo.serial}): member context differs from original.")
                         }
-                        if (currentMgmContext.toMap().removeTime() != it.persistentMemberInfo.mgmContext.toMap().removeTime()) {
+                        if (currentMgmContext.toMap().removeTime() != updatedMGMContext.toMap().removeTime()) {
                             throw MembershipPersistenceException("Cannot update member info with same serial number " +
                                 "(${memberInfo.serial}): mgm context differs from original.")
                         }

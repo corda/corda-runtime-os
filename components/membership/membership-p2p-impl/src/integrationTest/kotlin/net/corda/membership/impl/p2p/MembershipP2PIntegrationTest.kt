@@ -274,7 +274,7 @@ class MembershipP2PIntegrationTest {
             ECDSA_SECP256R1_CODE_NAME
         )
 
-        val mgm = memberInfoFactory.create(
+        val mgm = memberInfoFactory.createMemberInfo(
             sortedMapOf(
                 GROUP_ID to groupId,
                 PARTY_NAME to destination.x500Name.toString(),

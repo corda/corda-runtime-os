@@ -6,6 +6,7 @@ import net.corda.data.CordaAvroSerializer
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.membership.PersistentMemberInfo
+import net.corda.data.membership.SignedContexts
 import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.data.membership.db.request.command.SuspendMember
 import net.corda.data.membership.db.response.command.SuspendMemberResponse
@@ -13,6 +14,7 @@ import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.membership.datamodel.MemberInfoEntity
 import net.corda.membership.datamodel.MemberInfoEntityPrimaryKey
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
+import net.corda.membership.lib.MemberInfoFactory
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.test.util.time.TestClock
 import net.corda.utilities.time.Clock
@@ -28,6 +30,7 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
+import java.nio.ByteBuffer
 import java.time.Instant
 import java.util.UUID
 import javax.persistence.EntityManager
@@ -49,7 +52,11 @@ class SuspendMemberHandlerTest {
         memberX500Name = knownX500Name.toString(),
         false
     )
-    private val contextBytes = byteArrayOf(1, 10)
+    private val mgmContextBytes = byteArrayOf(1, 10)
+    private val suspendedMgmContextBytes = byteArrayOf(1, 11)
+    private val memberContextBytes = byteArrayOf(1, 5)
+    val mgmContext = KeyValuePairList(listOf(KeyValuePair("one", "1")))
+    val memberContext = KeyValuePairList(listOf(KeyValuePair("two", "2")))
     private val holdingIdentity = HoldingIdentity(knownX500Name, knownGroupId)
     private val ourVirtualNodeInfo: VirtualNodeInfo = mock {
         on { vaultDmlConnectionId } doReturn UUID(0, 1)
@@ -73,9 +80,12 @@ class SuspendMemberHandlerTest {
         on { get(any()) } doReturn mock()
     }
     private val keyValuePairListSerializer = mock<CordaAvroSerializer<KeyValuePairList>> {
-        on { serialize(any()) } doReturn byteArrayOf(0)
+        on { serialize(any()) } doReturn suspendedMgmContextBytes
     }
-    private val keyValuePairListDeserializer = mock<CordaAvroDeserializer<KeyValuePairList>>()
+    private val keyValuePairListDeserializer = mock<CordaAvroDeserializer<KeyValuePairList>> {
+        on { deserialize(mgmContextBytes) } doReturn mgmContext
+        on { deserialize(memberContextBytes) } doReturn memberContext
+    }
     private val cordaAvroSerializationFactory = mock<CordaAvroSerializationFactory> {
         on {
             createAvroDeserializer(
@@ -87,12 +97,14 @@ class SuspendMemberHandlerTest {
             createAvroSerializer<KeyValuePairList>(any())
         } doReturn keyValuePairListSerializer
     }
+    private val memberInfoFactory = mock<MemberInfoFactory>()
     private val persistenceHandlerServices: PersistenceHandlerServices = mock {
         on { clock } doReturn clock
         on { virtualNodeInfoReadService } doReturn virtualNodeInfoReadService
         on { dbConnectionManager } doReturn dbConnectionManager
         on { jpaEntitiesRegistry } doReturn jpaEntitiesRegistry
         on { cordaAvroSerializationFactory } doReturn cordaAvroSerializationFactory
+        on { memberInfoFactory } doReturn memberInfoFactory
     }
     private val handler: SuspendMemberHandler = SuspendMemberHandler(persistenceHandlerServices)
     private val context = MembershipRequestContext(
@@ -108,8 +120,8 @@ class SuspendMemberHandlerTest {
 
     @Suppress("LongParameterList")
     private fun mockMemberInfoEntity(
-        mgmProvidedContext: ByteArray = contextBytes,
-        memberProvidedContext: ByteArray = contextBytes,
+        mgmProvidedContext: ByteArray = mgmContextBytes,
+        memberProvidedContext: ByteArray = memberContextBytes,
         group: String? = knownGroupId,
         name: MemberX500Name? = knownX500Name,
         serial: Long? = SERIAL_NUMBER,
@@ -133,27 +145,24 @@ class SuspendMemberHandlerTest {
 
     @Test
     fun `invoke returns the correct data`() {
-        mockMemberInfoEntity(mgmProvidedContext = byteArrayOf(1), memberProvidedContext = byteArrayOf(2))
-        val mgmContext = KeyValuePairList(
-            listOf(
-                KeyValuePair("one", "1")
-            )
+        mockMemberInfoEntity()
+
+        val persistentMemberInfo = PersistentMemberInfo(
+            context.holdingIdentity,
+            memberContext,
+            mgmContext,
+            SignedContexts(
+                ByteBuffer.wrap(memberContextBytes),
+                ByteBuffer.wrap(mgmContextBytes),
+            ),
         )
-        val memberContext = KeyValuePairList(
-            listOf(
-                KeyValuePair("two", "2")
-            )
-        )
-        whenever(keyValuePairListDeserializer.deserialize(byteArrayOf(1))).thenReturn(mgmContext)
-        whenever(keyValuePairListDeserializer.deserialize(byteArrayOf(2))).thenReturn(memberContext)
+
+        whenever(
+            memberInfoFactory.createPersistentMemberInfo(context.holdingIdentity, memberContextBytes, suspendedMgmContextBytes)
+        ).doReturn(persistentMemberInfo)
 
         val result = invokeTestFunction()
 
-        assertThat(result.memberInfo).isEqualTo(
-            PersistentMemberInfo(
-                context.holdingIdentity,
-                memberContext, mgmContext
-            )
-        )
+        assertThat(result.memberInfo).isEqualTo(persistentMemberInfo)
     }
 }

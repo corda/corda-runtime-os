@@ -175,7 +175,7 @@ class  RegistrationProcessorTest {
     @BeforeEach
     fun setUp() {
         memberInfoFactory = mock {
-            on { create(any<SortedMap<String, String?>>(), any()) } doReturn memberInfo
+            on { createMemberInfo(any<SortedMap<String, String?>>(), any()) } doReturn memberInfo
         }
         membershipGroupReader = mock {
             on { lookup(eq(mgmX500Name), any()) } doReturn mgmMemberInfo

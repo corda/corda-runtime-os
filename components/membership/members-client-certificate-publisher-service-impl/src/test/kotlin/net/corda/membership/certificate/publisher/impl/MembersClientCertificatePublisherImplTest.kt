@@ -12,6 +12,7 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.Resource
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
+import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.P2PParameters
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.TlsType
 import net.corda.messaging.api.processor.CompactedProcessor
@@ -55,11 +56,13 @@ class MembersClientCertificatePublisherImplTest {
         } doReturn subscriber
     }
     private val configurationReadService = mock<ConfigurationReadService>()
+    private val memberInfoFactory = mock<MemberInfoFactory>()
 
     private val impl = MembersClientCertificatePublisherImpl(
         coordinatorFactory,
         subscriptionFactory,
-        configurationReadService
+        configurationReadService,
+        memberInfoFactory,
     )
 
     @Test

@@ -13,7 +13,6 @@ import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
-import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.command.synchronisation.member.ProcessMembershipUpdates
 import net.corda.data.membership.p2p.DistributionMetaData
 import net.corda.data.membership.p2p.MembershipPackage
@@ -38,7 +37,6 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
 import net.corda.membership.lib.MemberInfoExtension.Companion.sessionInitiationKeys
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.toSortedMap
-import net.corda.membership.lib.toWire
 import net.corda.membership.p2p.helpers.MerkleTreeGenerator
 import net.corda.membership.p2p.helpers.P2pRecordsFactory
 import net.corda.membership.p2p.helpers.Verifier
@@ -305,17 +303,16 @@ class MemberSynchronisationServiceImpl internal constructor(
                         ?: throw CordaRuntimeException("Invalid member context")
                     val mgmContext = deserializer.deserialize(update.mgmContext.array())
                         ?: throw CordaRuntimeException("Invalid MGM context")
-                    memberInfoFactory.create(
+                    memberInfoFactory.createMemberInfo(
                         memberContext.toSortedMap(),
                         mgmContext.toSortedMap()
                     )
                 }.associateBy { it.id }
 
                 val persistentMemberInfoRecords = updateMembersInfo.entries.map { (id, memberInfo) ->
-                    val persistentMemberInfo = PersistentMemberInfo(
+                    val persistentMemberInfo = memberInfoFactory.createPersistentMemberInfo(
                         viewOwningMember.toAvro(),
-                        memberInfo.memberProvidedContext.toWire(),
-                        memberInfo.mgmProvidedContext.toWire(),
+                        memberInfo
                     )
                     Record(
                         MEMBER_LIST_TOPIC,

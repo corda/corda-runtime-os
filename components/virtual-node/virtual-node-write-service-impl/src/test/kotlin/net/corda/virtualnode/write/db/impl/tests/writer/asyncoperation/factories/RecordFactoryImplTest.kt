@@ -1,7 +1,7 @@
 package net.corda.virtualnode.write.db.impl.tests.writer.asyncoperation.factories
 
 import net.corda.data.membership.PersistentMemberInfo
-import net.corda.layeredpropertymap.toAvro
+import net.corda.membership.lib.MemberInfoFactory
 import net.corda.schema.Schemas.Membership.MEMBER_LIST_TOPIC
 import net.corda.schema.Schemas.VirtualNode.VIRTUAL_NODE_INFO_TOPIC
 import net.corda.utilities.time.Clock
@@ -19,12 +19,14 @@ import net.corda.virtualnode.write.db.impl.writer.VirtualNodeDbConnections
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.factories.RecordFactoryImpl
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.time.Instant
 import java.util.UUID
 
 class RecordFactoryImplTest {
+    private val memberInfoFactory = mock<MemberInfoFactory>()
 
     @Test
     fun `create mgm info record`() {
@@ -43,19 +45,19 @@ class RecordFactoryImplTest {
             whenever(this.mgmProvidedContext).thenReturn(mgmProvidedContext)
         }
 
-        val expectedPayload = PersistentMemberInfo(
-            ALICE_HOLDING_ID1.toAvro(),
-            memberProvidedContext.toAvro(),
-            mgmProvidedContext.toAvro()
-        )
+        val persistentMemberInfo = mock<PersistentMemberInfo>()
 
-        val target = RecordFactoryImpl(mock())
+        whenever(
+            memberInfoFactory.createPersistentMemberInfo(ALICE_HOLDING_ID1.toAvro(), mgmMemberInfo)
+        ).doReturn(persistentMemberInfo)
+
+        val target = RecordFactoryImpl(mock(), memberInfoFactory)
 
         val result = target.createMgmInfoRecord(ALICE_HOLDING_ID1, mgmMemberInfo)
 
         assertThat(result.topic).isEqualTo(MEMBER_LIST_TOPIC)
         assertThat(result.key).isEqualTo("${ALICE_HOLDING_ID1.shortHash}-${MGM_HOLDING_ID1.shortHash}")
-        assertThat(result.value).isEqualTo(expectedPayload)
+        assertThat(result.value).isEqualTo(persistentMemberInfo)
     }
 
     @Test
@@ -86,7 +88,7 @@ class RecordFactoryImplTest {
                 timestamp = now,
             ).toAvro()
 
-        val target = RecordFactoryImpl(clock)
+        val target = RecordFactoryImpl(clock, memberInfoFactory)
 
         val result = target.createVirtualNodeInfoRecord(
             ALICE_HOLDING_ID1,

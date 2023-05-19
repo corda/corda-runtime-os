@@ -731,7 +731,7 @@ class MembershipPersistenceTest {
                 KeyValuePair(SERIAL, "1"),
             ).sorted()
         )
-        val notary = memberInfoFactory.create(memberContext.toSortedMap(), mgmContext.toSortedMap())
+        val notary = memberInfoFactory.createMemberInfo(memberContext.toSortedMap(), mgmContext.toSortedMap())
         val expectedGroupParameters = listOf(
             KeyValuePair(EPOCH_KEY, "51"),
             KeyValuePair(String.format(NOTARY_SERVICE_NAME_KEY, 0), notaryServiceName),
@@ -802,7 +802,7 @@ class MembershipPersistenceTest {
                 KeyValuePair(SERIAL, "1"),
             ).sorted()
         )
-        val notary = memberInfoFactory.create(memberContext.toSortedMap(), mgmContext.toSortedMap())
+        val notary = memberInfoFactory.createMemberInfo(memberContext.toSortedMap(), mgmContext.toSortedMap())
         vnodeEmf.transaction {
             it.createQuery("DELETE FROM GroupParametersEntity").executeUpdate()
             val entity = GroupParametersEntity(
@@ -896,7 +896,7 @@ class MembershipPersistenceTest {
                 KeyValuePair(MODIFIED_TIME_KEY, clock.instant().toString())
             ).sorted()
         )
-        val notary = memberInfoFactory.create(memberContext.toSortedMap(), mgmContext.toSortedMap())
+        val notary = memberInfoFactory.createMemberInfo(memberContext.toSortedMap(), mgmContext.toSortedMap())
         val oldNotaryKey = keyGenerator.genKeyPair().public
         val oldNotaryKeyAsString = keyEncodingService.encodeAsString(oldNotaryKey)
         val oldNotaryMemberContext = KeyValuePairList((memberContext.items.filterNot {
@@ -1566,7 +1566,7 @@ class MembershipPersistenceTest {
             viewOwningHoldingIdentity,
             listOf(
                 SignedMemberInfo(
-                    memberInfoFactory.create(
+                    memberInfoFactory.createMemberInfo(
                         memberContext.toSortedMap(),
                         mgmContext.toSortedMap()
                     ),

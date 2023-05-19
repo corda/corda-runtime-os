@@ -35,7 +35,6 @@ import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.TimerEvent
 import net.corda.membership.groupparams.writer.service.GroupParametersWriterService
 import net.corda.membership.lib.GroupParametersFactory
-import net.corda.membership.lib.MemberInfoExtension
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.IS_MGM
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
@@ -162,8 +161,9 @@ class MemberSynchronisationServiceImplTest {
         on { groupId } doReturn GROUP_NAME
     }
     private val memberInfoFactory: MemberInfoFactory = mock {
-        on { create(any()) } doReturn participant
-        on { create(any<SortedMap<String, String?>>(), any()) } doReturn participant
+        on { createMemberInfo(any()) } doReturn participant
+        on { createMemberInfo(any<SortedMap<String, String?>>(), any()) } doReturn participant
+        on { createPersistentMemberInfo(any(), any()) } doReturn mock()
     }
     private val memberName = MemberX500Name("Alice", "London", "GB")
     private val member = HoldingIdentity(memberName, GROUP_NAME)
@@ -363,8 +363,10 @@ class MemberSynchronisationServiceImplTest {
                 )
             )
         )
+        val publishedMemberInfo = argumentCaptor<MemberInfo>()
 
         synchronisationService.processMembershipUpdates(updates)
+        verify(memberInfoFactory).createPersistentMemberInfo(any(), publishedMemberInfo.capture())
 
         val publishedMemberList = capturedPublishedList.firstValue
         assertSoftly {
@@ -374,10 +376,9 @@ class MemberSynchronisationServiceImplTest {
             it.assertThat(publishedMember.topic).isEqualTo(MEMBER_LIST_TOPIC)
             it.assertThat(publishedMember.key).isEqualTo("${member.shortHash}-${participant.id}")
             it.assertThat(publishedMember.value).isInstanceOf(PersistentMemberInfo::class.java)
-            val value = publishedMember.value as? PersistentMemberInfo
-            val name = value?.memberContext?.items?.firstOrNull { item -> item.key == PARTY_NAME }?.value
-            it.assertThat(name).isEqualTo(participantName.toString())
-            it.assertThat(value?.mgmContext?.items).isEmpty()
+            val memberInfo = publishedMemberInfo.firstValue
+            it.assertThat(memberInfo.name).isEqualTo(participantName)
+            it.assertThat(memberInfo.mgmProvidedContext.entries).isEmpty()
         }
     }
 
@@ -598,7 +599,7 @@ class MemberSynchronisationServiceImplTest {
         val mgmContextMgm = mock<MGMContext> {
             on {
                 parseOrNull(
-                    MemberInfoExtension.IS_MGM,
+                    IS_MGM,
                     Boolean::class.javaObjectType
                 )
             } doReturn true
@@ -607,7 +608,7 @@ class MemberSynchronisationServiceImplTest {
             on { mgmProvidedContext } doReturn mgmContextMgm
         }
         val memberContext = mock<MemberContext> {
-            on { parse(MemberInfoExtension.GROUP_ID, String::class.java) } doReturn GROUP_NAME
+            on { parse(GROUP_ID, String::class.java) } doReturn GROUP_NAME
         }
         val memberInfo = mock<MemberInfo> {
             on { mgmProvidedContext } doReturn mgmProvidedContext

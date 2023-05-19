@@ -109,7 +109,7 @@ class MembershipQueryClientImpl(
             is MemberInfoQueryResponse -> {
                 logger.info("Found ${(result.payload as MemberInfoQueryResponse).members.size} results.")
                 MembershipQueryResult.Success(
-                    payload.members.map { memberInfoFactory.create(it) }
+                    payload.members.map { memberInfoFactory.createMemberInfo(it) }
                 )
             }
             is PersistenceFailedResponse -> {

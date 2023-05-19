@@ -8,6 +8,7 @@ import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.identity.HoldingIdentity
 import net.corda.data.membership.PersistentMemberInfo
+import net.corda.data.membership.SignedContexts
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.data.membership.db.request.command.UpdateMemberAndRegistrationRequestToApproved
@@ -42,6 +43,7 @@ import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.nio.ByteBuffer
 import java.time.Instant
 import java.util.UUID
 import javax.persistence.EntityManager
@@ -54,7 +56,7 @@ class UpdateMemberAndRegistrationRequestToApprovedHandlerTest {
     private val jpaEntitiesRegistry = mock<JpaEntitiesRegistry> {
         on { get(CordaDb.Vault.persistenceUnitName) } doReturn jpaEntitiesSet
     }
-    private val memberInfoFactory = mock<MemberInfoFactory>()
+
     private val keyValuePairListDeserializer = mock<CordaAvroDeserializer<KeyValuePairList>>()
     private val keyValuePairListSerializer = mock<CordaAvroSerializer<KeyValuePairList>> {
         on { serialize(any()) } doReturn byteArrayOf(0)
@@ -103,18 +105,6 @@ class UpdateMemberAndRegistrationRequestToApprovedHandlerTest {
     }
     private val keyEncodingService: KeyEncodingService = mock()
     private val platformInfoProvider: PlatformInfoProvider = mock()
-    private val service = PersistenceHandlerServices(
-        clock,
-        dbConnectionManager,
-        jpaEntitiesRegistry,
-        memberInfoFactory,
-        cordaAvroSerializationFactory,
-        virtualNodeInfoReadService,
-        keyEncodingService,
-        platformInfoProvider,
-        mock(),
-    )
-    private val handler = UpdateMemberAndRegistrationRequestToApprovedHandler(service)
 
     private val groupId = "group"
     private val member = HoldingIdentity("CN=Member, O=Corp, L=LDN, C=GB", groupId)
@@ -142,6 +132,42 @@ class UpdateMemberAndRegistrationRequestToApprovedHandlerTest {
     }
 
     private val requestId = "requestId"
+
+    private val deserialisedMemberContext = KeyValuePairList(listOf(KeyValuePair("one", "1")))
+    private val deserialisedMgmContext = KeyValuePairList(listOf(KeyValuePair("two", "2")))
+    private val persistentMemberInfo = PersistentMemberInfo(
+        member,
+        deserialisedMemberContext,
+        deserialisedMgmContext,
+        SignedContexts(
+            ByteBuffer.wrap(memberContextBytes),
+            ByteBuffer.wrap(mgmContextBytes),
+        ),
+    )
+    private val memberInfoFactory = mock<MemberInfoFactory> {
+        on { createPersistentMemberInfo(any(), any(), any()) } doReturn PersistentMemberInfo(
+            member,
+            deserialisedMemberContext,
+            deserialisedMgmContext,
+            SignedContexts(
+                ByteBuffer.wrap(memberContextBytes),
+                ByteBuffer.wrap(mgmContextBytes)
+            ),
+        )
+    }
+
+    private val service = PersistenceHandlerServices(
+        clock,
+        dbConnectionManager,
+        jpaEntitiesRegistry,
+        memberInfoFactory,
+        cordaAvroSerializationFactory,
+        virtualNodeInfoReadService,
+        keyEncodingService,
+        platformInfoProvider,
+        mock(),
+    )
+    private val handler = UpdateMemberAndRegistrationRequestToApprovedHandler(service)
 
     private fun mockMemberInfoEntity(entity: MemberInfoEntity? = memberInfoEntity) {
         whenever(
@@ -381,39 +407,16 @@ class UpdateMemberAndRegistrationRequestToApprovedHandlerTest {
 
     @Test
     fun `invoke returns the correct data`() {
-        val memberInfoEntity = mock<MemberInfoEntity> {
-            on { memberContext } doReturn byteArrayOf(1)
-            on { mgmContext } doReturn byteArrayOf(2)
-            on { groupId } doReturn member.groupId
-            on { memberX500Name } doReturn member.x500Name
-            on { memberSignatureKey } doReturn publicKey
-            on { memberSignatureContent } doReturn signatureContentBytes
-            on { memberSignatureSpec } doReturn signatureSpec
-        }
-        mockMemberInfoEntity(memberInfoEntity)
+        mockMemberInfoEntity()
         mockRegistrationRequestEntity()
         val context = MembershipRequestContext(clock.instant(), requestId, member,)
         val request = UpdateMemberAndRegistrationRequestToApproved(member, requestId,)
-        val mgmContext = KeyValuePairList(
-            listOf(
-                KeyValuePair("one", "1")
-            )
-        )
-        val memberContext = KeyValuePairList(
-            listOf(
-                KeyValuePair("two", "2")
-            )
-        )
-        whenever(keyValuePairListDeserializer.deserialize(byteArrayOf(1))).thenReturn(memberContext)
-        whenever(keyValuePairListDeserializer.deserialize(byteArrayOf(2))).thenReturn(mgmContext)
+
+        whenever(keyValuePairListDeserializer.deserialize(memberContextBytes)).thenReturn(deserialisedMemberContext)
+        whenever(keyValuePairListDeserializer.deserialize(mgmContextBytes)).thenReturn(deserialisedMgmContext)
 
         val result = handler.invoke(context, request)
 
-        assertThat(result.memberInfo).isEqualTo(
-            PersistentMemberInfo(
-                context.holdingIdentity,
-                memberContext, mgmContext
-            )
-        )
+        assertThat(result.memberInfo).isEqualTo(persistentMemberInfo)
     }
 }

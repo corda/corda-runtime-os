@@ -1,5 +1,6 @@
 package net.corda.membership.lib
 
+import net.corda.data.identity.HoldingIdentity
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.v5.membership.MGMContext
 import net.corda.v5.membership.MemberContext
@@ -20,7 +21,7 @@ interface MemberInfoFactory {
      *
      * @return A [MemberInfo] matching the input context maps.
      */
-    fun create(
+    fun createMemberInfo(
         memberContext: SortedMap<String, String?>,
         mgmContext: SortedMap<String, String?>
     ): MemberInfo
@@ -33,7 +34,7 @@ interface MemberInfoFactory {
      *
      * @return A [MemberInfo] matching the input contexts.
      */
-    fun create(
+    fun createMemberInfo(
         memberContext: MemberContext,
         mgmContext: MGMContext
     ): MemberInfo
@@ -46,7 +47,18 @@ interface MemberInfoFactory {
      *
      * @return A [MemberInfo] matching the input member information.
      */
-    fun create(
+    fun createMemberInfo(
         memberInfo: PersistentMemberInfo
     ): MemberInfo
+
+    fun createPersistentMemberInfo(
+        viewOwningMember: HoldingIdentity,
+        memberInfo: MemberInfo,
+    ): PersistentMemberInfo
+
+    fun createPersistentMemberInfo(
+        viewOwningMember: HoldingIdentity,
+        memberProvidedContext: ByteArray,
+        mgmProvidedContext: ByteArray,
+    ): PersistentMemberInfo
 }

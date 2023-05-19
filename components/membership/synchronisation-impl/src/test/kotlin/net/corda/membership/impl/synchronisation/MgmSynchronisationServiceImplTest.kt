@@ -5,6 +5,9 @@ import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.core.toCorda
+import net.corda.data.CordaAvroSerializationFactory
+import net.corda.data.CordaAvroSerializer
+import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.SecureHash
 import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
@@ -152,8 +155,15 @@ class MgmSynchronisationServiceImplTest {
     private val mgmName = "C=GB, L=London, O=MGM"
     private val mgm = HoldingIdentity(mgmName, GROUP)
 
+    private val keyValuePairListSerializer = mock<CordaAvroSerializer<KeyValuePairList>>()
+    private val cordaAvroSerializationFactory = mock<CordaAvroSerializationFactory> {
+        on {
+            createAvroSerializer<KeyValuePairList>(any())
+        } doReturn keyValuePairListSerializer
+    }
     private val memberInfoFactory = MemberInfoFactoryImpl(
-        LayeredPropertyMapMocks.createFactory(listOf(EndpointInfoConverter()))
+        LayeredPropertyMapMocks.createFactory(listOf(EndpointInfoConverter())),
+        cordaAvroSerializationFactory,
     )
 
     private val mgmInfo = createMemberInfo(mgmName)
@@ -301,7 +311,7 @@ class MgmSynchronisationServiceImplTest {
         )
     )
 
-    private fun createMemberInfo(name: String) = memberInfoFactory.create(
+    private fun createMemberInfo(name: String) = memberInfoFactory.createMemberInfo(
         sortedMapOf(
             GROUP_ID to GROUP,
             PARTY_NAME to name,

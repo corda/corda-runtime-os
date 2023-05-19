@@ -217,7 +217,7 @@ internal class StartRegistrationHandler(
         }
 
         val now = clock.instant().toString()
-        return memberInfoFactory.create(
+        return memberInfoFactory.createMemberInfo(
             memberContext.toSortedMap(),
             sortedMapOf(
                 CREATION_TIME to now,

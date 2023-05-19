@@ -129,10 +129,9 @@ class MembershipPersistenceClientImpl(
             PersistMemberInfo(
                 memberInfos.map {
                     PersistentSignedMemberInfo(
-                        PersistentMemberInfo(
+                        memberInfoFactory.createPersistentMemberInfo(
                             avroViewOwningIdentity,
-                            it.memberInfo.memberProvidedContext.toAvro(),
-                            it.memberInfo.mgmProvidedContext.toAvro(),
+                            it.memberInfo,
                         ),
                         it.memberSignature,
                         it.memberSignatureSpec,
@@ -215,10 +214,9 @@ class MembershipPersistenceClientImpl(
         val result = MembershipPersistenceRequest(
             buildMembershipRequestContext(viewOwningIdentity.toAvro()),
             AddNotaryToGroupParameters(
-                PersistentMemberInfo(
+                memberInfoFactory.createPersistentMemberInfo(
                     viewOwningIdentity.toAvro(),
-                    notary.memberProvidedContext.toAvro(),
-                    notary.mgmProvidedContext.toAvro()
+                    notary,
                 )
             )
         ).execute()
@@ -274,7 +272,7 @@ class MembershipPersistenceClientImpl(
 
         return when (val payload = result.payload) {
             is UpdateMemberAndRegistrationRequestResponse -> MembershipPersistenceResult.Success(
-                memberInfoFactory.create(payload.memberInfo)
+                memberInfoFactory.createMemberInfo(payload.memberInfo)
             )
 
             is PersistenceFailedResponse -> MembershipPersistenceResult.Failure(payload.errorMessage)

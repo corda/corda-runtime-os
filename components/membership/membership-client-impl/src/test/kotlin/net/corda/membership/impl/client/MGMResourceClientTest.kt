@@ -6,6 +6,9 @@ import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.core.ShortHash
 import net.corda.crypto.impl.converter.PublicKeyConverter
+import net.corda.data.CordaAvroDeserializer
+import net.corda.data.CordaAvroSerializer
+import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.membership.PersistentMemberInfo
@@ -160,13 +163,29 @@ class MGMResourceClientTest {
         PublicKeyConverter(keyEncodingService)
     )
 
-    private val memberInfoFactory = MemberInfoFactoryImpl(LayeredPropertyMapMocks.createFactory(converters))
+    private val keyValuePairListSerializer = mock<CordaAvroSerializer<KeyValuePairList>>()
+    private val keyValuePairListDeserializer = mock<CordaAvroDeserializer<KeyValuePairList>>()
+    private val cordaAvroSerializationFactory = mock<CordaAvroSerializationFactory> {
+        on {
+            createAvroDeserializer(
+                any(),
+                eq(KeyValuePairList::class.java)
+            )
+        } doReturn keyValuePairListDeserializer
+        on {
+            createAvroSerializer<KeyValuePairList>(any())
+        } doReturn keyValuePairListSerializer
+    }
+    private val memberInfoFactory = MemberInfoFactoryImpl(
+        LayeredPropertyMapMocks.createFactory(converters),
+        cordaAvroSerializationFactory
+    )
 
     private val alice = createMemberInfo(mgmX500Name.toString())
     private val bob = createMemberInfo(memberName.toString(), isMgm = false)
 
     @Suppress("SpreadOperator")
-    private fun createMemberInfo(name: String, isMgm: Boolean = true): MemberInfo = memberInfoFactory.create(
+    private fun createMemberInfo(name: String, isMgm: Boolean = true): MemberInfo = memberInfoFactory.createMemberInfo(
         sortedMapOf(
             PARTY_NAME to name,
             String.format(MemberInfoExtension.PARTY_SESSION_KEYS, 0) to KNOWN_KEY,

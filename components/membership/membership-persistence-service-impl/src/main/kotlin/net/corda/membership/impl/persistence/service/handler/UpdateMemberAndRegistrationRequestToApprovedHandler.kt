@@ -4,7 +4,6 @@ import net.corda.data.CordaAvroDeserializer
 import net.corda.data.CordaAvroSerializer
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
-import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.data.membership.db.request.command.UpdateMemberAndRegistrationRequestToApproved
@@ -108,11 +107,11 @@ internal class UpdateMemberAndRegistrationRequestToApprovedHandler(
             registrationRequest.lastModified = now
 
             UpdateMemberAndRegistrationRequestResponse(
-                PersistentMemberInfo(
+                memberInfoFactory.createPersistentMemberInfo(
                     context.holdingIdentity,
-                    keyValuePairListDeserializer.deserialize(member.memberContext),
-                    mgmContext,
-                ),
+                    member.memberContext,
+                    serializedMgmContext,
+                )
             )
         }
     }

@@ -196,7 +196,7 @@ class StartRegistrationHandlerTest {
     @BeforeEach
     fun setUp() {
         memberInfoFactory = mock {
-            on { create(any<SortedMap<String, String?>>(), any()) } doReturn pendingMemberInfo
+            on { createMemberInfo(any<SortedMap<String, String?>>(), any()) } doReturn pendingMemberInfo
         }
         membershipPersistenceClient = mock {
             on {
@@ -260,7 +260,7 @@ class StartRegistrationHandlerTest {
             .thenReturn(MembershipQueryResult.Success(createRegistrationRequest(serial = 10L)))
         val mgmContextCaptor = argumentCaptor<SortedMap<String, String?>>()
         handler.invoke(registrationState, Record(testTopic, testTopicKey, startRegistrationCommand))
-        verify(memberInfoFactory).create(any(), mgmContextCaptor.capture())
+        verify(memberInfoFactory).createMemberInfo(any(), mgmContextCaptor.capture())
         assertThat(mgmContextCaptor.firstValue[SERIAL]).isEqualTo("11")
     }
 
@@ -637,7 +637,7 @@ class StartRegistrationHandlerTest {
             on { mgmProvidedContext } doReturn memberMgmContext
         }
         whenever(memberMemberContext.parse<MemberNotaryDetails>("corda.notary")).thenReturn(notaryDetails)
-        whenever(memberInfoFactory.create(any<SortedMap<String, String?>>(), any())).thenReturn(bobInfo)
+        whenever(memberInfoFactory.createMemberInfo(any<SortedMap<String, String?>>(), any())).thenReturn(bobInfo)
         whenever(
             membershipQueryClient.queryMemberInfo(
                 mgmHoldingIdentity.toCorda(),
