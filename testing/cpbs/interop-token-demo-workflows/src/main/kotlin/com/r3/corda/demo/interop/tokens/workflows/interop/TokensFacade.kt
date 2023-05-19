@@ -21,8 +21,13 @@ data class TokenReservation(
     @BindsFacadeParameter("expiration-timestamp") val expires: ZonedDateTime
 )
 
+data class SimpleTokenReservation(
+    val reservationRef: UUID,
+    val message: String
+)
+
 @BindsFacade("org.corda.interop/platform/tokens")
-@FacadeVersions("v1.0", "v2.0")
+@FacadeVersions("v1.0", "v2.0", "v3.0")
 interface TokensFacade {
 
     @BindsFacadeMethod
@@ -42,6 +47,15 @@ interface TokensFacade {
         amount: BigDecimal,
         @BindsFacadeParameter("ttl-ms") timeToLiveMs: Long
     ): InteropAction<TokenReservation>
+
+    @FacadeVersions("v3.0")
+    @BindsFacadeMethod("reserve-tokens")
+    @Suspendable
+    fun reserveTokensV3(
+        @Denomination denomination: String,
+        amount: BigDecimal,
+        @BindsFacadeParameter("ttl-ms") timeToLiveMs: Long
+    ): InteropAction<SimpleTokenReservation>
 
     @BindsFacadeMethod
     @Suspendable

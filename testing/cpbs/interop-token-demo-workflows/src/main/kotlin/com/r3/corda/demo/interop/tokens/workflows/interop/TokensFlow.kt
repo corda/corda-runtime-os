@@ -62,6 +62,20 @@ class TokensFlow: FacadeDispatcherFlow(), TokensFacade {
         return InteropAction.ServerResponse(TokenReservation(ref, expirationTimestamp))
     }
 
+    override fun reserveTokensV3(
+        denomination: String,
+        amount: BigDecimal,
+        timeToLiveMs: Long
+    ): InteropAction<SimpleTokenReservation> {
+        log.info("reserveTokensV3 $denomination $amount")
+        val ref = UUID.randomUUID()
+        val expirationTimestamp = timeserver().plus(timeToLiveMs, ChronoUnit.MILLIS)
+
+        reservations[ref] = Reservation(ref, denomination, amount.toDouble(), expirationTimestamp)
+
+        return InteropAction.ServerResponse(SimpleTokenReservation(ref, "$denomination $amount"))
+    }
+
     @Suspendable
     override fun releaseReservedTokens(reservationRef: UUID): InteropAction<Unit> {
         reservations.remove(reservationRef)

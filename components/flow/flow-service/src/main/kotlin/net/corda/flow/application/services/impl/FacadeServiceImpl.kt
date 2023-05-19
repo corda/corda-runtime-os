@@ -57,6 +57,56 @@ class FacadeServiceImpl @Activate constructor(
 
     private fun facadeLookup(facadeId: String): Facade {
         val facades = mapOf(
+            "org.corda.interop/platform/tokens/v3.0" to
+                    """{
+                      "id": "org.corda.interop/platform/tokens/v3.0",
+                      "aliases": {
+                        "denomination": "string (org.corda.interop/platform/tokens/types/denomination/1.0)"
+                      },
+                      "queries": {
+                        "get-balance": {
+                          "in": {
+                            "denomination": "denomination"
+                          },
+                          "out": {
+                            "balance": "decimal"
+                          }
+                        }
+                      },
+                      "commands": {
+                        "reserve-tokens": {
+                          "in": {
+                            "denomination": "denomination",
+                            "amount": "decimal",
+                            "ttl-ms": "decimal"
+                          },
+                          "out": {
+                            "reservation-ref": "uuid",
+                            "message": "string"
+                          }
+                        },
+                        "release-reserved-tokens": {
+                          "in": {
+                            "reservation-ref": "uuid"
+                          }
+                        },
+                        "spend-reserved-tokens": {
+                          "in": {
+                            "reservation-ref": "uuid",
+                            "transaction-ref": "uuid",
+                            "recipient": "string"
+                          }
+                        },
+                        "hello": {
+                           "in": {
+                              "greeting": "string"
+                           },
+                           "out": {
+                              "greeting": "string"
+                              }
+                           }
+                      }
+                    }""".trimIndent(),
             "org.corda.interop/platform/tokens/v2.0" to
                     """{
                       "id": "org.corda.interop/platform/tokens/v2.0",

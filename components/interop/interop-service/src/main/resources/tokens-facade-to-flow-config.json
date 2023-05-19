@@ -41,6 +41,23 @@
           "flow-name": "com.r3.corda.demo.interop.tokens.workflows.interop.TokensFlow"
         }
       ]
+    },
+    {
+      "facade-id": "org.corda.interop/platform/tokens/v3.0",
+      "facade-method-mapping": [
+        {
+          "facade-method": "hello",
+          "flow-name": "com.r3.corda.demo.interop.tokens.workflows.interop.TokensFlow"
+        },
+        {
+          "facade-method": "get-balance",
+          "flow-name": "com.r3.corda.demo.interop.tokens.workflows.interop.TokensFlow"
+        },
+        {
+          "facade-method": "reserve-tokens",
+          "flow-name": "com.r3.corda.demo.interop.tokens.workflows.interop.TokensFlow"
+        }
+      ]
     }
   ]
 }
