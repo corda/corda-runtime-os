@@ -108,6 +108,7 @@ class SessionEventHandlerTest {
                 any(),
                 anyOrNull(),
                 any(),
+                any(),
                 any()
             )
         ).thenReturn(updatedSessionState)

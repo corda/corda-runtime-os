@@ -149,8 +149,8 @@ class FlowSessionManagerImplTest {
     fun `get session error event records`() {
         whenever(checkpoint.sessions).thenReturn(sessionsWithErrors)
 
-        whenever(sessionManager.getMessagesToSend(eq(errorSessionState1), any(), any(), any())).thenReturn(errorPairing1)
-        whenever(sessionManager.getMessagesToSend(eq(errorSessionState2), any(), any(), any())).thenReturn(errorPairing2)
+        whenever(sessionManager.getMessagesToSend(eq(errorSessionState1), any(), any(), any(), any())).thenReturn(errorPairing1)
+        whenever(sessionManager.getMessagesToSend(eq(errorSessionState2), any(), any(), any(), any())).thenReturn(errorPairing2)
 
         whenever(flowRecordFactory.createFlowMapperEventRecord(eq("s1"), eq(errorEvent1))).thenReturn(record1)
         whenever(flowRecordFactory.createFlowMapperEventRecord(eq("s2"), eq(errorEvent2))).thenReturn(record2)

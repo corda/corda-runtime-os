@@ -1,6 +1,7 @@
 package net.corda.flow.pipeline.events
 
 import net.corda.data.flow.event.FlowEvent
+import net.corda.data.flow.state.waiting.SessionData
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.records.Record
@@ -29,4 +30,14 @@ data class FlowEventContext<T>(
     val outputRecords: List<Record<*, *>>,
     val sendToDlq: Boolean = false,
     val mdcProperties: Map<String, String>
-)
+) {
+    fun partyWaitingForData(sessionId: String) =
+        checkpoint.waitingFor?.let {
+            when (val waitingFor = it.value) {
+                is SessionData -> waitingFor.sessionIds
+                else -> null
+            }
+        }?.let { waitingForSessionIds ->
+            sessionId in waitingForSessionIds
+        } ?: false
+}

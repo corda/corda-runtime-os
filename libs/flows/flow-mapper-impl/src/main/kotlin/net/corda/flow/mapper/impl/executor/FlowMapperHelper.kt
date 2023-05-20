@@ -108,6 +108,8 @@ fun createP2PRecord(
                 sessionEvent.initiatingIdentity,
                 sessionEvent.initiatedIdentity,
                 receivedSequenceNumber,
+                sessionEvent.sentMessagesAcknowledged,
+                sessionEvent.waitingForData,
                 emptyList(),
                 payload
             ),

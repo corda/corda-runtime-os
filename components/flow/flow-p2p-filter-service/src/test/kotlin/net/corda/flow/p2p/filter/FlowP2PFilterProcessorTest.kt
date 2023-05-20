@@ -52,6 +52,8 @@ class FlowP2PFilterProcessorTest {
             identity,
             identity,
             0,
+            false,
+            false,
             listOf(),
             SessionInit(
                 testValue,

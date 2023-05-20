@@ -31,11 +31,13 @@ interface SessionManager {
      * @param key The key on which the [sessionState] is stored for logging purposes.
      * @param sessionState The session state. This should be null in the case of [SessionInit]
      * @param event Session event to process.
+     * @param partyWaitingForData Indicates that party is waiting to receive data
      * @param instant Timestamp to be applied for any output messages.
      * @return Updated session state with any output messages added to the undelivered sent events queue
      * and any valid received messages added to the undelivered received events queue
      */
-    fun processMessageReceived(key: Any, sessionState: SessionState?, event: SessionEvent, instant: Instant): SessionState
+    fun processMessageReceived(key: Any, sessionState: SessionState?, event: SessionEvent, partyWaitingForData: Boolean,
+                               instant: Instant): SessionState
 
     /**
      * Process a session [event] to be sent to a counterparty, and output the updated session state.
@@ -81,10 +83,11 @@ interface SessionManager {
      * @param instant The time to check session events against when determining which messages need to be sent
      * @param config The config containing the flow session config values such as the resend time window
      * @param identity Identity of the calling party who owns the session state
+     * @param partyWaitingForData Indicates that party is waiting to receive data
      * @return The updated [SessionState] with SessionAcks removed as well as any messages to send to the counterparty.
      */
-    fun getMessagesToSend(sessionState: SessionState, instant: Instant, config: SmartConfig, identity: HoldingIdentity): Pair<SessionState,
-            List<SessionEvent>>
+    fun getMessagesToSend(sessionState: SessionState, instant: Instant, config: SmartConfig, identity: HoldingIdentity,
+                          partyWaitingForData: Boolean): Pair<SessionState, List<SessionEvent>>
 
     /**
      * Errors the passed [SessionState], returning the updated state.

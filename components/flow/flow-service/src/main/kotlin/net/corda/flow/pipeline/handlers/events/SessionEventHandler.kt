@@ -63,6 +63,7 @@ class SessionEventHandler @Activate constructor(
             sessionId,
             if (checkpoint.doesExist) checkpoint.getSessionState(sessionId) else null,
             sessionEvent,
+            context.partyWaitingForData(sessionId),
             now
         )
 

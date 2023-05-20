@@ -45,8 +45,21 @@ class FlowMapperEventExecutorFactoryImplTest {
     fun testSessionEventExecutor() {
         val executor = executorFactoryImpl.create(
             "",
-            FlowMapperEvent(SessionEvent(MessageDirection.INBOUND, Instant.now(), "", 1,
-                HoldingIdentity(), HoldingIdentity(), 0, listOf(), null)),
+            FlowMapperEvent(
+                SessionEvent(
+                    MessageDirection.INBOUND,
+                    Instant.now(),
+                    "",
+                    1,
+                    HoldingIdentity(),
+                    HoldingIdentity(),
+                    0,
+                    false,
+                    false,
+                    listOf(),
+                    null
+                )
+            ),
             null,
             SmartConfigImpl.empty(),
             Instant.now()
@@ -58,19 +71,24 @@ class FlowMapperEventExecutorFactoryImplTest {
     fun testSessionErrorExecutor() {
         val executor = executorFactoryImpl.create(
             "",
-            FlowMapperEvent(SessionEvent(
-                MessageDirection.INBOUND,
-                Instant.now(), "", 1,
-                HoldingIdentity(),
-                HoldingIdentity(),
-                0,
-                listOf(),
-                SessionError(
-                    ExceptionEnvelope(
-                        "FlowMapper-SessionError",
-                        "Received SessionError with sessionId 1"
+            FlowMapperEvent(
+                SessionEvent(
+                    MessageDirection.INBOUND,
+                    Instant.now(), "", 1,
+                    HoldingIdentity(),
+                    HoldingIdentity(),
+                    0,
+                    false,
+                    false,
+                    listOf(),
+                    SessionError(
+                        ExceptionEnvelope(
+                            "FlowMapper-SessionError",
+                            "Received SessionError with sessionId 1"
+                        )
                     )
-                ))),
+                )
+            ),
             null,
             SmartConfigImpl.empty(),
             Instant.now()

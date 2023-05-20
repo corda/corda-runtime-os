@@ -47,7 +47,8 @@ class FlowSessionManagerImpl @Activate constructor(
                     sessionState,
                     instant,
                     flowConfig,
-                    checkpoint.flowKey.identity
+                    checkpoint.flowKey.identity,
+                    partyWaitingForData = false
                 )
             }
             .flatMap { (_, events) -> events }

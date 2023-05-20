@@ -1,6 +1,5 @@
 package net.corda.flow.pipeline.impl
 
-import java.time.Instant
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.event.mapper.ScheduleCleanup
@@ -8,8 +7,8 @@ import net.corda.data.flow.output.FlowStatus
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.flow.external.events.impl.ExternalEventManager
-import net.corda.flow.pipeline.FlowGlobalPostProcessor
 import net.corda.flow.pipeline.events.FlowEventContext
+import net.corda.flow.pipeline.FlowGlobalPostProcessor
 import net.corda.flow.pipeline.exceptions.FlowPlatformException
 import net.corda.flow.pipeline.factory.FlowMessageFactory
 import net.corda.flow.pipeline.factory.FlowRecordFactory
@@ -24,6 +23,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
+import java.time.Instant
 
 @Component(service = [FlowGlobalPostProcessor::class])
 class FlowGlobalPostProcessorImpl @Activate constructor(
@@ -69,7 +69,8 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
                     sessionState,
                     now,
                     context.config,
-                    checkpoint.flowKey.identity
+                    checkpoint.flowKey.identity,
+                    context.partyWaitingForData(sessionState.sessionId)
                 )
             }
             .onEach { (updatedSessionState, _) ->

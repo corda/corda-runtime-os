@@ -29,7 +29,7 @@ class SessionDataWaitingForHandler @Activate constructor(
 
         return try {
             val receivedSessionEvents = flowSessionManager.getReceivedEvents(checkpoint, waitingFor.sessionIds)
-            val receivedSessions = receivedSessionEvents.map { (session, _) -> session.sessionId }
+            val receivedSessions = receivedSessionEvents.mapTo(mutableSetOf()) { (session, _) -> session.sessionId }
 
             val erroredSessions = flowSessionManager.getSessionsWithStatus(
                 checkpoint,

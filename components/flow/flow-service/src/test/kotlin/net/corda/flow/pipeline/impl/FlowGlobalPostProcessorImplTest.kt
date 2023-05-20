@@ -126,7 +126,8 @@ class FlowGlobalPostProcessorImplTest {
                 eq(sessionState1),
                 any(),
                 eq(testContext.config),
-                eq(ALICE_X500_HOLDING_IDENTITY)
+                eq(ALICE_X500_HOLDING_IDENTITY),
+                any()
             )
         ).thenReturn(sessionState1 to listOf(sessionEvent1, sessionEvent2))
         whenever(
@@ -134,7 +135,8 @@ class FlowGlobalPostProcessorImplTest {
                 eq(sessionState2),
                 any(),
                 eq(testContext.config),
-                eq(ALICE_X500_HOLDING_IDENTITY)
+                eq(ALICE_X500_HOLDING_IDENTITY),
+                any()
             )
         ).thenReturn(sessionState2 to listOf(sessionEvent3))
 
@@ -143,7 +145,8 @@ class FlowGlobalPostProcessorImplTest {
                 eq(sessionState3),
                 any(),
                 eq(testContext.config),
-                eq(ALICE_X500_HOLDING_IDENTITY)
+                eq(ALICE_X500_HOLDING_IDENTITY),
+                any()
             )
         ).thenReturn(sessionState3 to listOf(sessionEvent4))
 
