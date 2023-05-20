@@ -489,6 +489,9 @@ object CordaMetrics {
 
         LedgerContractName("ledger.contract.name"),
 
+        LedgerNotaryPluginProtocol("ledger.notary.plugin.protocol"),
+        LedgerNotaryPluginFlow("ledger.notary.plugin.flow"),
+
         /**
          * The membership group within which peer-to-peer communication happens.
          */
