@@ -12,7 +12,7 @@ import net.corda.db.core.OSGiDataSourceFactory
 import net.corda.db.schema.CordaDb
 import net.corda.db.schema.DbSchema
 import net.corda.libs.configuration.SmartConfigFactory
-import net.corda.messagebus.db.datamodel.TopicEntry
+import net.corda.messagebus.db.datamodel.TopicEntryForInsert
 import net.corda.messagebus.db.persistence.DBAccess.Companion.defaultNumPartitions
 import net.corda.utilities.debug
 import org.osgi.framework.FrameworkUtil
@@ -107,7 +107,7 @@ class PostgresDbSetup(
         configConnection().use { connection ->
             topicConfigs.map {
                 connection.createStatement().execute(
-                    TopicEntry(it.name, defaultNumPartitions).toInsertStatement()
+                    TopicEntryForInsert(it.name, defaultNumPartitions).toInsertStatement()
                 )
             }
         }
