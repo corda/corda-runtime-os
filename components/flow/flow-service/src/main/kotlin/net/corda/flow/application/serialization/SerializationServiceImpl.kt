@@ -1,12 +1,15 @@
 package net.corda.flow.application.serialization
 
+import io.micrometer.core.instrument.Timer
 import net.corda.flow.pipeline.exceptions.FlowFatalException
+import net.corda.metrics.CordaMetrics
 import net.corda.sandbox.type.SandboxConstants.CORDA_SYSTEM_SERVICE
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.sandboxgroupcontext.RequireSandboxAMQP.AMQP_SERIALIZATION_SERVICE
 import net.corda.sandboxgroupcontext.getObjectByKey
 import net.corda.utilities.reflection.castIfPossible
+import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.serialization.SerializedBytes
 import net.corda.v5.serialization.SingletonSerializeAsToken
@@ -18,13 +21,15 @@ import org.slf4j.LoggerFactory
 import java.io.NotSerializableException
 
 @Component(
-    service = [ SerializationService::class, SerializationServiceInternal::class, UsedByFlow::class ],
-    property = [ CORDA_SYSTEM_SERVICE ],
+    service = [SerializationService::class, SerializationServiceInternal::class, UsedByFlow::class],
+    property = [CORDA_SYSTEM_SERVICE],
     scope = PROTOTYPE
 )
 class SerializationServiceImpl @Activate constructor(
     @Reference(service = CurrentSandboxGroupContext::class)
-    private val currentSandboxGroupContext: CurrentSandboxGroupContext
+    private val currentSandboxGroupContext: CurrentSandboxGroupContext,
+    @Reference(service = FlowEngine::class)
+    private val flowEngine: FlowEngine
 ) : SerializationServiceInternal, UsedByFlow, SingletonSerializeAsToken {
 
     private companion object {
@@ -41,12 +46,24 @@ class SerializationServiceImpl @Activate constructor(
         }
 
     override fun <T : Any> serialize(obj: T): SerializedBytes<T> {
-        return serializationService.serialize(obj)
+        return CordaMetrics.Metric.Serialization.DeserializationTime
+            .builder()
+            .forVirtualNode(currentSandboxGroupContext.get().virtualNodeContext.holdingIdentity.shortHash.toString())
+            .withTag(CordaMetrics.Tag.FlowId, flowEngine.flowId.toString())
+            .withTag(CordaMetrics.Tag.SerializedClass, obj::class.java.name)
+            .build()
+            .recordCallable { serializationService.serialize(obj) } as SerializedBytes<T>
     }
 
     override fun <T : Any> deserialize(bytes: ByteArray, clazz: Class<T>): T {
         return try {
-            serializationService.deserialize(bytes, clazz)
+            CordaMetrics.Metric.Serialization.DeserializationTime
+                .builder()
+                .forVirtualNode(currentSandboxGroupContext.get().virtualNodeContext.holdingIdentity.shortHash.toString())
+                .withTag(CordaMetrics.Tag.FlowId, flowEngine.flowId.toString())
+                .withTag(CordaMetrics.Tag.SerializedClass, clazz.name)
+                .build()
+                .recordCallable { serializationService.deserialize(bytes, clazz) } as T
         } catch (e: NotSerializableException) {
             log.error("Failed to deserialize it into a ${clazz.name}", e)
             throw e

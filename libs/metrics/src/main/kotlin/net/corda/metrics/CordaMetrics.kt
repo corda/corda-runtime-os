@@ -491,6 +491,7 @@ object CordaMetrics {
 
         LedgerNotaryPluginProtocol("ledger.notary.plugin.protocol"),
         LedgerNotaryPluginFlow("ledger.notary.plugin.flow"),
+        SerializedClass("serialized.class"),
 
         /**
          * The membership group within which peer-to-peer communication happens.
