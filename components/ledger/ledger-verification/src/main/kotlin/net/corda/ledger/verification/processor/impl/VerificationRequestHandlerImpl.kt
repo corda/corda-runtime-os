@@ -11,6 +11,7 @@ import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionContainer
 import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionImpl
 import net.corda.ledger.utxo.data.transaction.WrappedUtxoWireTransaction
 import net.corda.ledger.utxo.transaction.verifier.UtxoLedgerTransactionVerifier
+import net.corda.ledger.utxo.transaction.verifier.UtxoLedgerTransactionVerifierMetricParameters
 import net.corda.ledger.verification.processor.VerificationRequestHandler
 import net.corda.ledger.verification.sandbox.impl.getSerializationService
 import net.corda.messaging.api.records.Record
@@ -30,7 +31,15 @@ class VerificationRequestHandlerImpl(private val responseFactory: ExternalEventR
         val transactionFactory = { request.getLedgerTransaction(serializationService) }
         val transaction = transactionFactory.invoke()
         return try {
-            UtxoLedgerTransactionVerifier(transactionFactory, transaction).verify()
+            UtxoLedgerTransactionVerifier(
+                transactionFactory,
+                transaction,
+                UtxoLedgerTransactionVerifierMetricParameters(
+                    sandbox.virtualNodeContext.holdingIdentity,
+                    request.flowExternalEventContext.flowId
+                )
+            ).verify()
+
             responseFactory.success(
                 request.flowExternalEventContext,
                 TransactionVerificationResult(TransactionVerificationStatus.VERIFIED).toAvro()

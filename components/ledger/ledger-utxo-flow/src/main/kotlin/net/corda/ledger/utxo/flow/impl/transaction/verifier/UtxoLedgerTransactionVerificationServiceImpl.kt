@@ -1,6 +1,7 @@
 package net.corda.ledger.utxo.flow.impl.transaction.verifier
 
 import net.corda.crypto.core.parseSecureHash
+import net.corda.data.ledger.persistence.LedgerTypes
 import net.corda.flow.external.events.executor.ExternalEventExecutor
 import net.corda.ledger.common.data.transaction.TransactionMetadataInternal
 import net.corda.ledger.utxo.data.transaction.TransactionVerificationStatus
@@ -12,8 +13,12 @@ import net.corda.ledger.utxo.flow.impl.transaction.verifier.external.events.Tran
 import net.corda.ledger.utxo.flow.impl.transaction.verifier.external.events.TransactionVerificationParameters
 import net.corda.ledger.utxo.transaction.verifier.SignedGroupParametersVerifier
 import net.corda.membership.lib.SignedGroupParameters
+import net.corda.metrics.CordaMetrics
+import net.corda.metrics.recordInline
 import net.corda.sandbox.type.SandboxConstants.CORDA_SYSTEM_SERVICE
 import net.corda.sandbox.type.UsedByFlow
+import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
+import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
@@ -23,6 +28,8 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 import java.nio.ByteBuffer
+import java.time.Duration
+import java.time.Instant
 
 @Component(
     service = [UtxoLedgerTransactionVerificationService::class, UsedByFlow::class],
@@ -39,32 +46,44 @@ class UtxoLedgerTransactionVerificationServiceImpl @Activate constructor(
     private val utxoLedgerGroupParametersPersistenceService: UtxoLedgerGroupParametersPersistenceService,
     @Reference(service = CurrentGroupParametersService::class)
     private val currentGroupParametersService: CurrentGroupParametersService,
+    @Reference(service = CurrentSandboxGroupContext::class)
+    private val currentSandboxGroupContext: CurrentSandboxGroupContext,
     @Reference(service = SignedGroupParametersVerifier::class)
-    private val signedGroupParametersVerifier: SignedGroupParametersVerifier
+    private val signedGroupParametersVerifier: SignedGroupParametersVerifier,
+    @Reference(service = FlowEngine::class)
+    private val flowEngine: FlowEngine
 ) : UtxoLedgerTransactionVerificationService, UsedByFlow, SingletonSerializeAsToken {
 
     @Suspendable
     override fun verify(transaction: UtxoLedgerTransaction) {
+        CordaMetrics.Metric.Ledger.TransactionVerificationFlowTime
+            .builder()
+            .forVirtualNode(currentSandboxGroupContext.get().virtualNodeContext.holdingIdentity.shortHash.toString())
+            .withTag(CordaMetrics.Tag.FlowId, flowEngine.flowId.toString())
+            .withTag(CordaMetrics.Tag.LedgerType, LedgerTypes.UTXO.toString())
+            .build()
+            .recordInline {
 
-        val signedGroupParameters = fetchAndVerifySignedGroupParameters(transaction)
-        verifyNotaryAllowed(transaction, signedGroupParameters)
+                val signedGroupParameters = fetchAndVerifySignedGroupParameters(transaction)
+                verifyNotaryAllowed(transaction, signedGroupParameters)
 
-        val verificationResult = externalEventExecutor.execute(
-            TransactionVerificationExternalEventFactory::class.java,
-            TransactionVerificationParameters(
-                serialize(transaction.toContainer()),
-                transaction.getCpkMetadata()
-            )
-        )
+                val verificationResult = externalEventExecutor.execute(
+                    TransactionVerificationExternalEventFactory::class.java,
+                    TransactionVerificationParameters(
+                        serialize(transaction.toContainer()),
+                        transaction.getCpkMetadata()
+                    )
+                )
 
-        if (verificationResult.status != TransactionVerificationStatus.VERIFIED) {
-            throw TransactionVerificationException(
-                transaction.id,
-                verificationResult.status,
-                verificationResult.errorType,
-                verificationResult.errorMessage
-            )
-        }
+                if (verificationResult.status != TransactionVerificationStatus.VERIFIED) {
+                    throw TransactionVerificationException(
+                        transaction.id,
+                        verificationResult.status,
+                        verificationResult.errorType,
+                        verificationResult.errorMessage
+                    )
+                }
+            }
     }
 
     @Suspendable

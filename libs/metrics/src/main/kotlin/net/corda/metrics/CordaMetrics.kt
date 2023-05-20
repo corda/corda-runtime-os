@@ -377,6 +377,32 @@ object CordaMetrics {
             "membership.persistence.handler.time",
             CordaMetrics::timer
         )
+
+        object CryptoOperationsFlowTime: Metric<Timer>("crypto.operations.flow.time", CordaMetrics::timer)
+
+        object Ledger {
+
+            object TransactionVerificationFlowTime : Metric<Timer>("ledger.transaction.verification.flow.time", CordaMetrics::timer)
+
+            object ContractionVerificationTime : Metric<Timer>("ledger.contract.verification.time", CordaMetrics::timer)
+
+            object ContractionVerificationContractTime : Metric<Timer>("ledger.contract.verification.contract.time", CordaMetrics::timer)
+
+            object ContractVerificationContractCount : Metric<DistributionSummary>("ledger.contract.verification.contract.count", Metrics::summary)
+
+            object PersistenceFlowTime : Metric<Timer>("ledger.persistence.flow.time", CordaMetrics::timer)
+
+            object BackchainResolutionChainLength : Metric<DistributionSummary>("ledger.backchain.resolution.chain.length", Metrics::summary)
+
+            object NotaryPluginSelectionTime : Metric<Timer>("ledger.notary.plugin.selection.time", CordaMetrics::timer)
+        }
+
+        object Serialization {
+
+            object SerializationTime : Metric<Timer>("serialization.amqp.serialization.time", CordaMetrics::timer)
+
+            object DeserializationTime : Metric<Timer>("serialization.amqp.deserialization.time", CordaMetrics::timer)
+        }
     }
 
     /**
@@ -460,6 +486,8 @@ object CordaMetrics {
          * The ledger type.
          */
         LedgerType("ledger.type"),
+
+        LedgerContractName("ledger.contract.name"),
 
         /**
          * The membership group within which peer-to-peer communication happens.

@@ -12,7 +12,8 @@ import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
  */
 class UtxoLedgerTransactionVerifier(
     private val transactionFactory: () -> UtxoLedgerTransaction,
-    private val transaction: UtxoLedgerTransaction = transactionFactory.invoke()
+    private val transaction: UtxoLedgerTransaction = transactionFactory.invoke(),
+    private val metricParameters: UtxoLedgerTransactionVerifierMetricParameters
 ) : UtxoTransactionVerifier() {
 
     override val subjectClass: String = UtxoLedgerTransaction::class.simpleName!!
@@ -20,7 +21,7 @@ class UtxoLedgerTransactionVerifier(
     fun verify() {
         verifyMetadata(transaction.metadata)
         verifyPlatformChecks()
-        verifyContracts(transactionFactory, transaction)
+        verifyContracts(transactionFactory, transaction, metricParameters)
     }
 
     private fun verifyPlatformChecks() {
