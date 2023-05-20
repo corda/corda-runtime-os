@@ -186,6 +186,22 @@ object CordaMetrics {
          * The time taken by the backing store to perform a single read operation from the database.
          */
         object UniquenessBackingStoreDbReadTime: Metric<Timer>("uniqueness.backingstore.db.read.time", CordaMetrics::timer)
+
+        /**
+         * Time taken for a membership persistence transaction to complete.
+         */
+        object MembershipPersistenceTransaction: Metric<Timer>(
+            "membership.persistence.transaction.time",
+            CordaMetrics::timer
+        )
+
+        /**
+         * Total time taken for a membership persistence handler to execute.
+         */
+        object MembershipPersistenceHandler: Metric<Timer>(
+            "membership.persistence.handler.time",
+            CordaMetrics::timer
+        )
     }
 
     /**
