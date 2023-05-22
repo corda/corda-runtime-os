@@ -163,6 +163,7 @@ class PersistGroupParametersHandlerTest {
         on { jpaEntitiesRegistry } doReturn registry
         on { dbConnectionManager } doReturn connectionManager
         on { clock } doReturn clock
+        on { transactionTimerFactory } doReturn { transactionTimer }
     }
     private val handler = PersistGroupParametersHandler(persistenceHandlerServices)
 

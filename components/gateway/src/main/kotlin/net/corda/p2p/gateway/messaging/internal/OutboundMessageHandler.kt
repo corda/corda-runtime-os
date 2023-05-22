@@ -1,5 +1,6 @@
 package net.corda.p2p.gateway.messaging.internal
 
+import io.micrometer.core.instrument.Timer
 import io.netty.handler.codec.http.HttpResponseStatus
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.p2p.gateway.GatewayMessage
@@ -14,6 +15,7 @@ import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.data.p2p.LinkOutMessage
 import net.corda.data.p2p.NetworkType
+import net.corda.metrics.CordaMetrics
 import net.corda.p2p.gateway.messaging.ReconfigurableConnectionManager
 import net.corda.p2p.gateway.messaging.TlsType
 import net.corda.p2p.gateway.messaging.http.DestinationInfo
@@ -170,9 +172,12 @@ internal class OutboundMessageHandler(
             trustStore,
             clientCertificateKeyStore,
         )
+        val startTime = System.currentTimeMillis()
         val responseFuture = sendMessage(destinationInfo, gatewayMessage)
             .orTimeout(connectionConfig().responseTimeout.toMillis(), TimeUnit.MILLISECONDS)
         return responseFuture.whenCompleteAsync({ response, error ->
+            val requestLatency = System.currentTimeMillis() - startTime
+            getRequestTimer(peerMessage, response).record(requestLatency, TimeUnit.MILLISECONDS)
             handleResponse(PendingRequest(gatewayMessage, destinationInfo, responseFuture), response, error, MAX_RETRIES)
         }, retryThreadPool).thenApply {  }
 
@@ -219,6 +224,18 @@ internal class OutboundMessageHandler(
     private fun sendMessage(destinationInfo: DestinationInfo, gatewayMessage: GatewayMessage): CompletableFuture<HttpResponse> {
         logger.debug { "Sending message ${gatewayMessage.payload.javaClass} (${gatewayMessage.id}) to $destinationInfo." }
         return connectionManager.acquire(destinationInfo).write(avroSchemaRegistry.serialize(gatewayMessage).array())
+    }
+
+    private fun getRequestTimer(
+        peerMessage: LinkOutMessage,
+        response: HttpResponse?
+    ): Timer {
+        val builder = CordaMetrics.Metric.OutboundGatewayRequestLatency.builder()
+        builder.withTag(CordaMetrics.Tag.DestinationEndpoint, peerMessage.header.address)
+        if (response != null) {
+            builder.withTag(CordaMetrics.Tag.HttpResponseType, response.statusCode.code().toString())
+        }
+        return builder.build()
     }
 
     private fun connectionConfig() = gatewayConfigReader.connectionConfig
