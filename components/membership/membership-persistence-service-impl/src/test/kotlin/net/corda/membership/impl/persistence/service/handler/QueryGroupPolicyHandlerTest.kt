@@ -8,17 +8,13 @@ import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.data.membership.db.request.query.QueryGroupPolicy
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.schema.CordaDb
-import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.membership.datamodel.GroupPolicyEntity
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.orm.JpaEntitiesRegistry
-import net.corda.test.util.TestRandom
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.test.util.time.TestClock
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.virtualnode.VirtualNodeInfo
-import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -52,11 +48,11 @@ class QueryGroupPolicyHandlerTest {
         on { createEntityManager() } doReturn entityManager
     }
 
-    private val vaultDmlConnectionId = UUID(0, 33)
     private val dbConnectionManager: DbConnectionManager = mock {
-        on { createEntityManagerFactory(
-            eq(vaultDmlConnectionId),
-            any()
+        on { getOrCreateEntityManagerFactory(
+            any(),
+            any(),
+            any(),
         ) } doReturn entityManagerFactory
     }
 
@@ -77,17 +73,6 @@ class QueryGroupPolicyHandlerTest {
         } doReturn keyValuePairListDeserializer
     }
 
-    private val virtualNodeInfo = VirtualNodeInfo(
-        holdingIdentity,
-        CpiIdentifier("TEST_CPI", "1.0", TestRandom.secureHash()),
-        vaultDmlConnectionId = vaultDmlConnectionId,
-        cryptoDmlConnectionId = UUID(0, 0),
-        uniquenessDmlConnectionId = UUID(0, 0),
-        timestamp = clock.instant()
-    )
-    private val virtualNodeInfoReadService: VirtualNodeInfoReadService = mock {
-        on { getByHoldingIdentityShortHash(eq(holdingIdentity.shortHash)) } doReturn virtualNodeInfo
-    }
     private val keyEncodingService: KeyEncodingService = mock()
     private val platformInfoProvider: PlatformInfoProvider = mock()
 
@@ -98,7 +83,6 @@ class QueryGroupPolicyHandlerTest {
         jpaEntitiesRegistry,
         memberInfoFactory,
         cordaAvroSerializationFactory,
-        virtualNodeInfoReadService,
         keyEncodingService,
         platformInfoProvider,
         mock(),

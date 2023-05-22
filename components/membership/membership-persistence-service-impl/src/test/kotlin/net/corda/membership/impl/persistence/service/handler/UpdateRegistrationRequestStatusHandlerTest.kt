@@ -9,18 +9,14 @@ import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.data.membership.db.request.command.UpdateRegistrationRequestStatus
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.schema.CordaDb
-import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.membership.datamodel.RegistrationRequestEntity
 import net.corda.membership.impl.persistence.service.RecoverableException
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.orm.JpaEntitiesRegistry
-import net.corda.test.util.TestRandom
 import net.corda.test.util.time.TestClock
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.HoldingIdentity
-import net.corda.virtualnode.VirtualNodeInfo
-import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toAvro
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -35,7 +31,6 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.time.Instant
-import java.util.UUID
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.persistence.EntityTransaction
@@ -54,16 +49,6 @@ class UpdateRegistrationRequestStatusHandlerTest {
         ourGroupId
     )
 
-    private val vaultDmlConnectionId = UUID(0, 11)
-    private val virtualNodeInfo = VirtualNodeInfo(
-        ourHoldingIdentity,
-        CpiIdentifier("TEST_CPI", "1.0", TestRandom.secureHash()),
-        vaultDmlConnectionId = vaultDmlConnectionId,
-        cryptoDmlConnectionId = UUID(0, 0),
-        uniquenessDmlConnectionId = UUID(0, 0),
-        timestamp = clock.instant()
-    )
-
     private val entityTransaction: EntityTransaction = mock()
     private val entityManager: EntityManager = mock {
         on { transaction } doReturn entityTransaction
@@ -75,9 +60,10 @@ class UpdateRegistrationRequestStatusHandlerTest {
 
     private val dbConnectionManager: DbConnectionManager = mock {
         on {
-            createEntityManagerFactory(
-                eq(vaultDmlConnectionId),
-                any()
+            getOrCreateEntityManagerFactory(
+                any(),
+                any(),
+                any(),
             )
         } doReturn entityManagerFactory
     }
@@ -91,9 +77,6 @@ class UpdateRegistrationRequestStatusHandlerTest {
     private val cordaAvroSerializationFactory = mock<CordaAvroSerializationFactory> {
         on { createAvroSerializer<KeyValuePairList>(any()) } doReturn serializer
     }
-    private val virtualNodeInfoReadService: VirtualNodeInfoReadService = mock {
-        on { getByHoldingIdentityShortHash(eq(ourHoldingIdentity.shortHash)) } doReturn virtualNodeInfo
-    }
     private val keyEncodingService: KeyEncodingService = mock()
     private val platformInfoProvider: PlatformInfoProvider = mock()
     private val transactionTimerFactory = { _: String -> transactionTimer }
@@ -103,7 +86,6 @@ class UpdateRegistrationRequestStatusHandlerTest {
         jpaEntitiesRegistry,
         memberInfoFactory,
         cordaAvroSerializationFactory,
-        virtualNodeInfoReadService,
         keyEncodingService,
         platformInfoProvider,
         mock(),

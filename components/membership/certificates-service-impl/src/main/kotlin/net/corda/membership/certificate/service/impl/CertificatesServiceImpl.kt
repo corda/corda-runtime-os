@@ -23,7 +23,6 @@ import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys
-import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -50,8 +49,6 @@ class CertificatesServiceImpl internal constructor(
         jpaEntitiesRegistry: JpaEntitiesRegistry,
         @Reference(service = ConfigurationReadService::class)
         configurationReadService: ConfigurationReadService,
-        @Reference(service = VirtualNodeInfoReadService::class)
-        virtualNodeInfoReadService: VirtualNodeInfoReadService,
     ) : this(
         coordinatorFactory,
         subscriptionFactory,
@@ -59,7 +56,6 @@ class CertificatesServiceImpl internal constructor(
         DbClientImpl(
             dbConnectionManager,
             jpaEntitiesRegistry,
-            virtualNodeInfoReadService,
         )
     )
 

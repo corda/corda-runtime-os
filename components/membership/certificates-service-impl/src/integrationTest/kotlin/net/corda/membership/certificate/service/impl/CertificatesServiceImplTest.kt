@@ -5,6 +5,7 @@ import net.corda.data.certificates.CertificateUsage
 import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
 import net.corda.db.connection.manager.DbConnectionManager
+import net.corda.db.core.DbPrivilege
 import net.corda.db.schema.DbSchema
 import net.corda.db.testkit.DbUtils
 import net.corda.membership.certificate.service.CertificatesService
@@ -15,8 +16,6 @@ import net.corda.membership.certificates.datamodel.ClusterCertificate
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
 import net.corda.orm.utils.transaction
-import net.corda.virtualnode.VirtualNodeInfo
-import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Test
@@ -24,6 +23,7 @@ import org.junit.jupiter.api.TestInstance
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import javax.persistence.EntityManagerFactory
@@ -63,15 +63,9 @@ internal class CertificatesServiceImplTest {
         val jpaEntitiesRegistryMock = mock<JpaEntitiesRegistry>().apply {
             whenever(get(any())) doReturn mock()
         }
-        val virtualNodeInfoMock = mock<VirtualNodeInfo>().apply {
-            whenever(vaultDmlConnectionId) doReturn mock()
-        }
-        val virtualNodeInfoReadServiceMock = mock<VirtualNodeInfoReadService>().apply {
-            whenever(getByHoldingIdentityShortHash(any())) doReturn virtualNodeInfoMock
-        }
         val dbConnectionManagerMock = mock<DbConnectionManager>().apply {
             whenever(getClusterEntityManagerFactory()) doReturn entityManagerFactory
-            whenever(createEntityManagerFactory(any(), any())) doAnswer {
+            whenever(getOrCreateEntityManagerFactory(any<String>(), eq(DbPrivilege.DML), any())) doAnswer {
                 EntityManagerFactoryFactoryImpl().create(
                     "test_vnode_unit",
                     CertificateEntities.vnodeClasses.toList(),
@@ -85,7 +79,7 @@ internal class CertificatesServiceImplTest {
             dbConnectionManagerMock,
             jpaEntitiesRegistryMock,
             mock(),
-            virtualNodeInfoReadServiceMock)
+        )
     }
 
     @Suppress("Unused")

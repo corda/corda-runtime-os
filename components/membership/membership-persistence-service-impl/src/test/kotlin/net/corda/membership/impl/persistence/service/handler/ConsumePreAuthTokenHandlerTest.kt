@@ -15,8 +15,6 @@ import net.corda.test.util.time.TestClock
 import net.corda.utilities.time.Clock
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.HoldingIdentity
-import net.corda.virtualnode.VirtualNodeInfo
-import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
@@ -43,9 +41,6 @@ class ConsumePreAuthTokenHandlerTest {
     private val ourGroupId = UUID(0, 1).toString()
     private val ourX500Name = MemberX500Name.parse("O=Alice,L=London,C=GB")
     private val ourHoldingIdentity = HoldingIdentity(ourX500Name, ourGroupId)
-    private val ourVirtualNodeInfo: VirtualNodeInfo = mock {
-        on { vaultDmlConnectionId } doReturn UUID(0, 1)
-    }
     private val clock: Clock = TestClock(Instant.ofEpochSecond(1))
 
     private val tokenIdentifier = UUID(0, 1)
@@ -60,10 +55,7 @@ class ConsumePreAuthTokenHandlerTest {
         on { createEntityManager() } doReturn em
     }
     private val dbConnectionManager: DbConnectionManager = mock {
-        on { createEntityManagerFactory(any(), any()) } doReturn emf
-    }
-    private val virtualNodeInfoReadService: VirtualNodeInfoReadService = mock {
-        on { getByHoldingIdentityShortHash(ourHoldingIdentity.shortHash) } doReturn ourVirtualNodeInfo
+        on { getOrCreateEntityManagerFactory(any(), any(), any()) } doReturn emf
     }
     private val jpaEntitiesRegistry: JpaEntitiesRegistry = mock {
         on { get(any()) } doReturn mock()
@@ -71,7 +63,6 @@ class ConsumePreAuthTokenHandlerTest {
 
     private val persistenceHandlerServices: PersistenceHandlerServices = mock {
         on { clock } doReturn clock
-        on { virtualNodeInfoReadService } doReturn virtualNodeInfoReadService
         on { dbConnectionManager } doReturn dbConnectionManager
         on { jpaEntitiesRegistry } doReturn jpaEntitiesRegistry
         on { transactionTimerFactory } doReturn { transactionTimer }
