@@ -4,6 +4,7 @@ import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.avro.serialization.CordaAvroSerializationFactory
+import net.corda.data.identity.HoldingIdentity
 import net.corda.data.membership.actions.request.DistributeMemberInfo
 import net.corda.data.membership.actions.request.MembershipActionsRequest
 import net.corda.libs.configuration.SmartConfig
@@ -16,6 +17,7 @@ import net.corda.membership.service.impl.actions.DistributeMemberInfoActionHandl
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.utilities.time.Clock
+import net.corda.virtualnode.toCorda
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -53,20 +55,38 @@ class MembershipActionsProcessor(
 
     private fun processEvent(event: Record<String, MembershipActionsRequest>): List<Record<String, *>> {
         event.value?.request?.let { request ->
-            return getTimerMetric(
-                TimerMetricTypes.ACTIONS,
-                request::class.java.simpleName
-            ).recordCallable {
-                when (request) {
-                    is DistributeMemberInfo -> distributeMemberInfoActionHandler.process(event.key, request)
+            return recordTimerMetric(request) {
+                when (it) {
+                    is DistributeMemberInfo -> distributeMemberInfoActionHandler.process(event.key, it)
                     else -> {
                         logger.error("Received unimplemented membership action request.")
                         emptyList()
                     }
                 }
-            }!!
+            }
         }
         return emptyList()
+    }
+
+    /**
+     * Required for each action type for allowing metrics to be tagged by virtual node ID.
+     */
+    private fun getOwnerHoldingId(request: Any): HoldingIdentity? {
+        return when (request) {
+            is DistributeMemberInfo -> request.mgm
+            else -> null
+        }
+    }
+
+    private fun recordTimerMetric(
+        request: Any,
+        func: (request: Any) -> List<Record<String, *>>
+    ): List<Record<String, *>> {
+        return getTimerMetric(
+            TimerMetricTypes.ACTIONS,
+            getOwnerHoldingId(request)?.toCorda()?.shortHash?.value,
+            request::class.java.simpleName
+        ).recordCallable { func(request) }!!
     }
 
     override val keyClass = String::class.java
