@@ -13,7 +13,6 @@ import net.corda.db.connection.manager.createDbConfig
 import net.corda.db.core.DbPrivilege
 import net.corda.db.core.DbPrivilege.DDL
 import net.corda.db.core.DbPrivilege.DML
-import net.corda.schema.configuration.DatabaseConfig
 import net.corda.virtualnode.write.db.impl.VirtualNodesDbAdmin
 import java.security.SecureRandom
 
@@ -26,11 +25,11 @@ internal class VirtualNodeDbFactoryImpl(
     private val schemaMigrator: LiquibaseSchemaMigrator
 ) : VirtualNodeDbFactory {
     private val smartConfigFactory = dbConnectionManager.clusterConfig.factory
-    private val adminJdbcUrl = dbConnectionManager.clusterConfig.getString(DatabaseConfig.JDBC_URL)
 
     companion object {
         private const val ddlMaxPoolSize = 1
-        private const val dmlMaxPoolSize = 1
+        private const val dmlMaxPoolSize = 10
+        private const val dmlMinPoolSize = 0
         private const val passwordLength = 64
         private val passwordSource = (('0'..'9') + ('A'..'Z') + ('a'..'z')).toCharArray()
         private val random = SecureRandom()
@@ -157,6 +156,10 @@ internal class VirtualNodeDbFactoryImpl(
                 DDL -> ddlMaxPoolSize
                 DML -> dmlMaxPoolSize
             }
+            val minPoolSize = when (dbPrivilege) {
+                DDL -> null
+                DML -> dmlMinPoolSize
+            }
 
             // Add reWriteBatchedInserts JDBC parameter for uniqueness db to enable Hibernate batching
             var jdbcUrl = virtualNodesDbAdmin.createJdbcUrl(getSchemaName(holdingIdentityShortHash))
@@ -169,6 +172,7 @@ internal class VirtualNodeDbFactoryImpl(
                 smartConfigFactory, user, password.concatToString(),
                 jdbcUrl = jdbcUrl,
                 maxPoolSize = maxPoolSize,
+                minPoolSize = minPoolSize,
                 key = "corda-vault-$holdingIdentityShortHash-database-password"
             )
             return DbConnectionImpl(
