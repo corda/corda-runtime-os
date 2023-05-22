@@ -224,6 +224,31 @@ object CordaMetrics {
         object LedgerPersistenceExecutionTime: Metric<Timer>("ledger.persistence.execution.time", CordaMetrics::timer)
 
         /**
+         * Time it took for an inbound request to the p2p gateway to be processed.
+         */
+        object InboundGatewayRequestLatency: Metric<Timer>("p2p.gateway.inbound.request.time", CordaMetrics::timer)
+
+        /**
+         * Time it took for an outbound request from the p2p gateway to be processed.
+         */
+        object OutboundGatewayRequestLatency: Metric<Timer>("p2p.gateway.outbound.request.time", CordaMetrics::timer)
+
+        /**
+         * Number of inbound connections established.
+         */
+        object InboundGatewayConnections: Metric<Counter>("p2p.gateway.inbound.tls.connections", Metrics::counter)
+
+        /**
+         * Number of outbound connections established.
+         */
+        object OutboundGatewayConnections: Metric<Counter>("p2p.gateway.outbound.tls.connections", Metrics::counter)
+
+        /**
+         * Time it took for gateway to process certificate revocation checks.
+         */
+        object GatewayRevocationChecksLatency: Metric<Timer>("p2p.gateway.cert.revocation.check.time", CordaMetrics::timer)
+
+        /**
          * The time taken from requesting a uniqueness check to a response being received from the perspective of
          * a client (requesting) node.
          */
@@ -453,7 +478,27 @@ object CordaMetrics {
         /**
          * Type of error raised in failure cases
          */
-        ErrorType("error.type")
+        ErrorType("error.type"),
+
+        /**
+         * Source endpoint of a peer-to-peer message or connection.
+         */
+        SourceEndpoint("endpoint.source"),
+
+        /**
+         * Destination endpoint of a peer-to-peer message or connection.
+         */
+        DestinationEndpoint("endpoint.destination"),
+
+        /**
+         * Response type (e.g. status code) of an HTTP request.
+         */
+        HttpResponseType("response.type"),
+
+        /**
+         * Result of a TLS connection (i.e. success or failure).
+         */
+        ConnectionResult("connection.result")
     }
 
     val registry: CompositeMeterRegistry = Metrics.globalRegistry
