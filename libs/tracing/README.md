@@ -87,10 +87,9 @@ Here we describe how to run the combined worker with a Kafka message bus and a t
     ```shell
     ./gradlew :applications:workers:release:combined-worker:clean :applications:workers:release:combined-worker:appJar -PbusImpl=kafka
     ```
-7. Set `CORDA_TRACING_SERVER_ZIPKIN_PROTOCOL` environment variable to http://localhost:9411
-8. Start the combined worker 
+7. Set `CORDA_TRACING_SERVER_ZIPKIN_PROTOCOL` environment variable to http://localhost:9411 and start the combined worker 
     ```bash
-    java -jar -Dco.paralleluniverse.fibers.verifyInstrumentation=true \
+    CORDA_TRACING_SERVER_ZIPKIN_PROTOCOL=http://localhost:9411 java -jar -Dco.paralleluniverse.fibers.verifyInstrumentation=true \
       ./applications/workers/release/combined-worker/build/bin/corda-combined-worker-*.jar \
       --instance-id=0 -mbus.busType=KAFKA -mbootstrap.servers=localhost:9092 \
       -spassphrase=password -ssalt=salt \
@@ -98,4 +97,4 @@ Here we describe how to run the combined worker with a Kafka message bus and a t
       -ddatabase.jdbc.directory=applications/workers/release/combined-worker/drivers \
       -ddatabase.jdbc.url=jdbc:postgresql://localhost:5432/cordacluster
     ```
-9. Visit http://localhost:3000/ to view the dashboard
+8. Visit http://localhost:3000/ to view the dashboard
