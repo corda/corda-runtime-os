@@ -346,9 +346,14 @@ object CordaMetrics {
      */
     enum class Tag(val value: String) {
         /**
-         * Address for which the metric is applicable.
+         * Uri for which the metric is applicable.
          */
-        Address("address"),
+        Uri("uri"),
+
+        /**
+         * Method name for which the metric is applicable.
+         */
+        Method("method"),
 
         /**
          * Type of the SandboxGroup to which the metric applies.
