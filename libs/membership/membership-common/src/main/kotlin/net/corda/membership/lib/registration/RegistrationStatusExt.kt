@@ -4,11 +4,6 @@ import net.corda.data.membership.common.RegistrationStatus
 
 object RegistrationStatusExt {
 
-    private const val FINAL_STATE_VALUE = 5
-
-    val RegistrationStatus.isFinalState: Boolean
-        get() = order == FINAL_STATE_VALUE
-
     val RegistrationStatus.order: Int
         get() =
             when (this) {
@@ -18,10 +13,10 @@ object RegistrationStatusExt {
                 RegistrationStatus.PENDING_MEMBER_VERIFICATION -> 3
                 RegistrationStatus.PENDING_MANUAL_APPROVAL -> 4
                 RegistrationStatus.PENDING_AUTO_APPROVAL -> 4
-                RegistrationStatus.DECLINED -> FINAL_STATE_VALUE
-                RegistrationStatus.INVALID -> FINAL_STATE_VALUE
-                RegistrationStatus.FAILED -> FINAL_STATE_VALUE
-                RegistrationStatus.APPROVED -> FINAL_STATE_VALUE
+                RegistrationStatus.DECLINED -> 5
+                RegistrationStatus.INVALID -> 5
+                RegistrationStatus.FAILED -> 5
+                RegistrationStatus.APPROVED -> 5
             }
 
     fun RegistrationStatus.canMoveToStatus(newStatus: RegistrationStatus): Boolean {

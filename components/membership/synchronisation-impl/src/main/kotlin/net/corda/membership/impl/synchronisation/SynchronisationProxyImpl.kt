@@ -319,7 +319,10 @@ class SynchronisationProxyImpl @Activate constructor(
             event.value?.command?.let { command ->
                 if (commandType.isInstance(command)) {
                     @Suppress("unchecked_cast")
-                    return handlerTimer.recordCallable { invoke(command as T) }!!
+                    return getTimerMetric(
+                        TimerMetricTypes.SYNC,
+                        commandType.simpleName
+                    ).recordCallable { invoke(command as T) }!!
                 } else {
                     throw CordaRuntimeException("Invalid command: $command")
                 }
@@ -329,9 +332,6 @@ class SynchronisationProxyImpl @Activate constructor(
         fun invoke(command: T)
 
         val commandType: Class<T>
-
-        val handlerTimer: Timer
-            get() = getTimerMetric(TimerMetricTypes.SYNC, commandType.simpleName)
     }
 
     private inner class ProcessMembershipUpdatesHandler : SynchronisationHandler<ProcessMembershipUpdates> {
