@@ -1,10 +1,12 @@
 package net.corda.flow.pipeline.impl
 
 import net.corda.data.flow.FlowKey
+import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.StartFlow
 import net.corda.data.flow.event.Wakeup
 import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.event.mapper.ScheduleCleanup
+import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.output.FlowStates
 import net.corda.data.flow.output.FlowStatus
 import net.corda.data.flow.state.checkpoint.Checkpoint
@@ -192,9 +194,10 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
             val checkpoint = context.checkpoint
 
             if (!checkpoint.doesExist) {
-                val flowKey = (context.inputEvent.payload as StartFlow).startContext.statusKey
                 val statusRecord = createFlowKilledStatusRecordWithoutCheckpoint(
-                    checkpoint.flowId, flowKey, exception.message ?: "No exception message provided."
+                    checkpoint.flowId,
+                    context,
+                    exception.message ?: "No exception message provided."
                 )
 
                 return@withEscalation flowEventContextConverter.convert(
@@ -267,17 +270,25 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
 
     private fun createFlowKilledStatusRecordWithoutCheckpoint(
         flowId: String,
-        flowKey: FlowKey,
+        context: FlowEventContext<*>,
         message: String?,
     ): List<Record<*, *>> {
-        val status = FlowStatus().apply{
-            key = flowKey
-            flowStatus = FlowStates.KILLED
-            this.flowId = flowId
-            processingTerminatedReason = message
-        }
+        val inputPayload = context.inputEvent.payload
 
-        return listOf(flowRecordFactory.createFlowStatusRecord(status))
+        return when (inputPayload) {
+            is StartFlow -> {
+                val status = FlowStatus().apply{
+                    key = inputPayload.startContext.statusKey
+                    flowStatus = FlowStates.KILLED
+                    this.flowId = flowId
+                    processingTerminatedReason = message
+                }
+                listOf(flowRecordFactory.createFlowStatusRecord(status))
+            }
+            else -> createFlowKilledStatusRecord(
+                context.checkpoint, message ?: "No exception message provided."
+            )
+        }
     }
 
     private fun getScheduledCleanupExpiryTime(context: FlowEventContext<*>, now: Instant): Long {
