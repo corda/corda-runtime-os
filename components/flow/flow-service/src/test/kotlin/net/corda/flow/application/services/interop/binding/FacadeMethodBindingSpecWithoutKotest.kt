@@ -48,9 +48,11 @@ interface MethodSignatureHasNonInteropActionReturnType {
     @BindsFacadeMethod
     fun getBalance(denomination: String): UUID
 }
+
 class FacadeMethodBindingSpecWithoutKotest {
     val facadeV1 = FacadeReaders.JSON.read(this::class.java.getResourceAsStream("/sampleFacades/tokens-facade.json")!!)
-    val facadeV2 = FacadeReaders.JSON.read(this::class.java.getResourceAsStream("/sampleFacades/tokens-facade_v2.json")!!)
+    val facadeV2 =
+        FacadeReaders.JSON.read(this::class.java.getResourceAsStream("/sampleFacades/tokens-facade_v2.json")!!)
     val bindingV1 = facadeV1.bindTo<TokensFacade>()
     val bindingV2 = facadeV2.bindTo<TokensFacade>()
 
@@ -66,10 +68,16 @@ class FacadeMethodBindingSpecWithoutKotest {
         assertEquals(facadeV2.method("get-balance"), bindingV2.bindingFor(TokensFacade::getBalance)!!.facadeMethod)
 
         assertNotNull(bindingV1.bindingFor(TokensFacade::reserveTokensV1))
-        assertEquals(facadeV1.method("reserve-tokens"), bindingV1.bindingFor(TokensFacade::reserveTokensV1)!!.facadeMethod)
+        assertEquals(
+            facadeV1.method("reserve-tokens"),
+            bindingV1.bindingFor(TokensFacade::reserveTokensV1)!!.facadeMethod
+        )
 
         assertNotNull(bindingV2.bindingFor(TokensFacade::reserveTokensV2))
-        assertEquals(facadeV2.method("reserve-tokens"), bindingV2.bindingFor(TokensFacade::reserveTokensV2)!!.facadeMethod)
+        assertEquals(
+            facadeV2.method("reserve-tokens"),
+            bindingV2.bindingFor(TokensFacade::reserveTokensV2)!!.facadeMethod
+        )
     }
 
     @Test
@@ -81,15 +89,27 @@ class FacadeMethodBindingSpecWithoutKotest {
     @Test
     fun `should bind methods with no out parameters`() {
         assertNotNull(bindingV2.bindingFor(TokensFacade::releaseReservedTokens))
-        assertEquals(FacadeOutParameterBindings.NoOutParameters, bindingV2.bindingFor(TokensFacade::releaseReservedTokens)!!.outParameterBindings)
+        assertEquals(
+            FacadeOutParameterBindings.NoOutParameters,
+            bindingV2.bindingFor(TokensFacade::releaseReservedTokens)!!.outParameterBindings
+        )
     }
 
     @Test
     fun `should bind methods with a single out parameter`() {
         val getBalance = facadeV2.method("get-balance")
         assertNotNull(bindingV2.bindingFor(TokensFacade::getBalance))
-        assertNotNull(bindingV2.bindingFor(TokensFacade::getBalance)!!.outParameterBindings as? FacadeOutParameterBindings.SingletonOutParameterBinding)
-        assertEquals(getBalance.outParameter("balance", BigDecimal::class.java), (bindingV2.bindingFor(TokensFacade::getBalance)!!.outParameterBindings as? FacadeOutParameterBindings.SingletonOutParameterBinding)!!.outParameter)
-        assertEquals(Double::class.javaObjectType, (bindingV2.bindingFor(TokensFacade::getBalance)!!.outParameterBindings as? FacadeOutParameterBindings.SingletonOutParameterBinding)!!.returnType)
+        assertNotNull(bindingV2.bindingFor(TokensFacade::getBalance)!!.outParameterBindings
+                as? FacadeOutParameterBindings.SingletonOutParameterBinding)
+        assertEquals(
+            getBalance.outParameter("balance", BigDecimal::class.java),
+            (bindingV2.bindingFor(TokensFacade::getBalance)!!.outParameterBindings
+                    as? FacadeOutParameterBindings.SingletonOutParameterBinding)!!.outParameter
+        )
+        assertEquals(
+            Double::class.javaObjectType,
+            (bindingV2.bindingFor(TokensFacade::getBalance)!!.outParameterBindings
+                    as? FacadeOutParameterBindings.SingletonOutParameterBinding)!!.returnType
+        )
     }
 }
