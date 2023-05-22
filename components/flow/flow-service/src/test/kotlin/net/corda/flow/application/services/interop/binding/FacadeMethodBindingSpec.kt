@@ -11,9 +11,6 @@ import net.corda.flow.application.services.impl.interop.binding.creation.bindTo
 import net.corda.flow.application.services.impl.interop.facade.FacadeReaders
 import net.corda.flow.application.services.interop.example.TokenReservation
 import net.corda.flow.application.services.interop.example.TokensFacade
-import net.corda.v5.application.interop.binding.BindsFacade
-import net.corda.v5.application.interop.binding.BindsFacadeMethod
-import net.corda.v5.application.interop.binding.InteropAction
 import java.math.BigDecimal
 import java.time.ZonedDateTime
 import java.util.*

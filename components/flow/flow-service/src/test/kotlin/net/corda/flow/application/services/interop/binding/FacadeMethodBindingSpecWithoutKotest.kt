@@ -6,7 +6,6 @@ import net.corda.flow.application.services.interop.example.TokensFacade
 import net.corda.v5.application.interop.binding.BindsFacade
 import net.corda.v5.application.interop.binding.BindsFacadeMethod
 import net.corda.v5.application.interop.binding.InteropAction
-import org.junit.jupiter.api.Test
 import java.util.*
 import kotlin.reflect.KClass
 
