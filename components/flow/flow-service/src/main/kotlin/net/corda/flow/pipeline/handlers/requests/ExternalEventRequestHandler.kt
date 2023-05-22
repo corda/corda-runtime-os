@@ -1,6 +1,5 @@
 package net.corda.flow.pipeline.handlers.requests
 
-import java.time.Instant
 import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.data.flow.state.waiting.external.ExternalEventResponse
@@ -9,9 +8,13 @@ import net.corda.flow.external.events.impl.factory.ExternalEventFactoryMap
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.pipeline.events.FlowEventContext
 import net.corda.flow.utils.keyValuePairListOf
+import net.corda.flow.utils.toKeyValuePairList
+import net.corda.flow.utils.toMap
+import net.corda.v5.application.flows.FlowContextPropertyKeys.CPK_FILE_CHECKSUM
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import java.time.Instant
 
 @Component(service = [FlowRequestHandler::class])
 class ExternalEventRequestHandler @Activate constructor(
@@ -34,10 +37,14 @@ class ExternalEventRequestHandler @Activate constructor(
         context: FlowEventContext<Any>,
         request: FlowIORequest.ExternalEvent
     ): FlowEventContext<Any> {
+        val cpkFileHashes = context.checkpoint.cpkFileHashes
+            .toKeyValuePairList(CPK_FILE_CHECKSUM)
+            .toMap()
+
         val flowExternalEventContext = ExternalEventContext.newBuilder()
             .setRequestId(request.requestId)
             .setFlowId(context.checkpoint.flowId)
-            .setContextProperties(keyValuePairListOf(request.contextProperties))
+            .setContextProperties(keyValuePairListOf(request.contextProperties + cpkFileHashes))
             .build()
 
         val eventRecord = externalEventFactoryMap.get(request.factoryClass.name)

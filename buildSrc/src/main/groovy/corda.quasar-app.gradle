@@ -91,6 +91,8 @@ osgiRun {
         'java.base/java.lang.invoke',\
         'java.base/java.nio',\
         'java.base/java.time',\
+        'java.base/java.time.chrono',\
+        'java.base/java.time.zone',\
         'java.base/java.util'
 }
 

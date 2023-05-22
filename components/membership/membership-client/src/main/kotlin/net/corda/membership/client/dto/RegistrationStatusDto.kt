@@ -10,5 +10,6 @@ enum class RegistrationStatusDto {
     PENDING_AUTO_APPROVAL,
     DECLINED,
     INVALID,
-    APPROVED
+    FAILED,
+    APPROVED,
 }

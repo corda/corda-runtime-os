@@ -1,26 +1,28 @@
 package net.corda.membership.impl.persistence.service.handler
 
-import net.corda.data.CordaAvroDeserializer
+import javax.persistence.LockModeType
+import net.corda.avro.serialization.CordaAvroDeserializer
+import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.KeyValuePairList
 import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.data.membership.db.request.command.PersistMemberInfo
 import net.corda.membership.datamodel.MemberInfoEntity
-import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_PENDING
 import net.corda.membership.datamodel.MemberInfoEntityPrimaryKey
 import net.corda.membership.lib.MemberInfoExtension
+import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_PENDING
 import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
 import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.membership.lib.toMap
+import net.corda.utilities.serialization.wrapWithNullErrorHandling
 import net.corda.virtualnode.toCorda
-import javax.persistence.LockModeType
 
 internal class PersistMemberInfoHandler(
     persistenceHandlerServices: PersistenceHandlerServices
 ) : BasePersistenceHandler<PersistMemberInfo, Unit>(persistenceHandlerServices) {
 
     private val keyValuePairListDeserializer: CordaAvroDeserializer<KeyValuePairList> =
-        cordaAvroSerializationFactory.createAvroDeserializer (
+        cordaAvroSerializationFactory.createAvroDeserializer(
             { logger.error("Failed to deserialize key value pair list.") },
             KeyValuePairList::class.java
         )
@@ -57,8 +59,10 @@ internal class PersistMemberInfoHandler(
                                 "(${memberInfo.serial}): member context differs from original.")
                         }
                         if (currentMgmContext.toMap().removeTime() != updatedMGMContext.toMap().removeTime()) {
-                            throw MembershipPersistenceException("Cannot update member info with same serial number " +
-                                "(${memberInfo.serial}): mgm context differs from original.")
+                            throw MembershipPersistenceException(
+                                "Cannot update member info with same serial number " +
+                                        "(${memberInfo.serial}): mgm context differs from original."
+                            )
                         }
                         return@forEach
                     }
@@ -81,7 +85,8 @@ internal class PersistMemberInfoHandler(
             }
         }
     }
-    private fun Map<String, String>.removeTime(): Map<String, String>  = this.filterKeys {
+
+    private fun Map<String, String>.removeTime(): Map<String, String> = this.filterKeys {
         it != MemberInfoExtension.CREATION_TIME && it != MemberInfoExtension.MODIFIED_TIME
     }
 }

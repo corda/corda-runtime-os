@@ -1,5 +1,6 @@
 package net.corda.cpiinfo.write.impl
 
+import java.util.concurrent.atomic.AtomicReference
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpiinfo.write.CpiInfoWriteService
@@ -51,7 +52,7 @@ class CpiInfoWriterComponentImpl @Activate constructor(
     override val lifecycleCoordinatorName = LifecycleCoordinatorName.forComponent<CpiInfoWriteService>()
 
     private val coordinator = coordinatorFactory.createCoordinator(lifecycleCoordinatorName, this)
-    private var publisher: Publisher? = null
+    private val publisher: AtomicReference<Publisher?> = AtomicReference()
     private var registration: RegistrationHandle? = null
     private var configSubscription: AutoCloseable? = null
 
@@ -63,12 +64,12 @@ class CpiInfoWriterComponentImpl @Activate constructor(
 
     /** Synchronous publish */
     private fun publish(records: List<Record<CpiIdentifierAvro, CpiMetadataAvro>>) {
-        if (publisher == null) {
+        if (publisher.get() == null) {
             log.error("Cpi Info Writer publisher is null, not publishing, this error will addressed in a later PR")
             return
         }
 
-        val futures = publisher!!.publish(records)
+        val futures = publisher.get()!!.publish(records)
 
         // Wait for the future (there should only be one) to complete.
         futures.forEach { it.get() }
@@ -104,16 +105,16 @@ class CpiInfoWriterComponentImpl @Activate constructor(
         configSubscription?.close()
         configSubscription = null
 
-        publisher?.close()
-        publisher = null
+        publisher.get()?.close()
+        publisher.set(null)
     }
 
     private fun onConfigChangedEvent(coordinator: LifecycleCoordinator, event: ConfigChangedEvent) {
         val config = event.config[ConfigKeys.MESSAGING_CONFIG] ?: return
         coordinator.updateStatus(LifecycleStatus.DOWN)
 
-        publisher?.close()
-        publisher = publisherFactory.createPublisher(PublisherConfig(CLIENT_ID), config)
+        publisher.get()?.close()
+        publisher.set(publisherFactory.createPublisher(PublisherConfig(CLIENT_ID), config))
         coordinator.updateStatus(LifecycleStatus.UP)
     }
 
@@ -126,8 +127,8 @@ class CpiInfoWriterComponentImpl @Activate constructor(
             coordinator.updateStatus(event.status)
             configSubscription?.close()
             configSubscription = null
-            publisher?.close()
-            publisher = null
+            publisher.get()?.close()
+            publisher.set(null)
         }
     }
 }

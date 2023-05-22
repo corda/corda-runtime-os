@@ -33,7 +33,9 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.URL_KEY
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.SignedMemberInfo
 import net.corda.membership.persistence.client.MembershipPersistenceClient
+import net.corda.membership.persistence.client.MembershipPersistenceOperation
 import net.corda.membership.persistence.client.MembershipPersistenceResult
+import net.corda.messaging.api.records.Record
 import net.corda.test.util.TestRandom
 import net.corda.test.util.time.TestClock
 import net.corda.utilities.time.Clock
@@ -159,10 +161,17 @@ class MGMRegistrationMemberInfoHandlerTest {
     private val memberInfoFactory: MemberInfoFactory = mock {
         on { createMemberInfo(memberContextCaptor.capture(), mgmContextCaptor.capture()) } doReturn memberInfo
     }
+    private val operation = mock<MembershipPersistenceOperation<Unit>> {
+        on { execute() } doReturn MembershipPersistenceResult.success()
+    }
     private val membershipPersistenceClient: MembershipPersistenceClient = mock {
         on {
             persistMemberInfo(eq(holdingIdentity), eq(listOf(signedMemberInfo)))
-        } doReturn MembershipPersistenceResult.success()
+        } doReturn Operation(MembershipPersistenceResult.success())
+
+        on {
+            persistRegistrationRequest(any(), any())
+        } doReturn operation
     }
 
     private val platformInfoProvider: PlatformInfoProvider = mock {
@@ -365,7 +374,7 @@ class MGMRegistrationMemberInfoHandlerTest {
             membershipPersistenceClient.persistMemberInfo(
                 eq(holdingIdentity), eq(listOf(signedMemberInfo))
             )
-        ).doReturn(MembershipPersistenceResult.Failure(""))
+        ).doReturn(Operation(MembershipPersistenceResult.Failure("")))
 
         assertThrows<MGMRegistrationMemberInfoHandlingException> {
             mgmRegistrationMemberInfoHandler.buildAndPersistMgmMemberInfo(
@@ -382,7 +391,7 @@ class MGMRegistrationMemberInfoHandlerTest {
     @Test
     fun `non EC algorithm ECDH key will cause an exception`() {
         val encryptedPublicKey = byteArrayOf(1, 2, 4)
-        val ecdhPublicKey = mock<PublicKey>() {
+        val ecdhPublicKey = mock<PublicKey> {
             on { encoded } doReturn EMPTY_STRING.toByteArray()
             on { algorithm } doReturn "RSA"
         }
@@ -487,6 +496,15 @@ class MGMRegistrationMemberInfoHandlerTest {
                 holdingIdentity,
                 validTestContext
             )
+        }
+    }
+    private class Operation(
+        private val value: MembershipPersistenceResult<Unit>
+    ) : MembershipPersistenceOperation<Unit> {
+        override fun execute() = value
+
+        override fun createAsyncCommands(): Collection<Record<*, *>> {
+            return emptyList()
         }
     }
 }

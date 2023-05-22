@@ -1,17 +1,12 @@
 package net.corda.messaging.subscription
 
-import java.nio.ByteBuffer
-import java.time.Clock
-import java.time.Duration
-import java.util.UUID
-import net.corda.data.CordaAvroSerializer
+import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.deadletter.StateAndEventDeadLetterRecord
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
-import net.corda.messagebus.api.consumer.CordaOffsetResetStrategy
 import net.corda.messagebus.api.producer.CordaProducer
 import net.corda.messagebus.api.producer.CordaProducerRecord
 import net.corda.messaging.api.chunking.ChunkSerializerService
@@ -22,6 +17,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.StateAndEventSubscription
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
 import net.corda.messaging.config.ResolvedSubscriptionConfig
+import net.corda.messaging.constants.MetricsConstants
 import net.corda.messaging.subscription.consumer.StateAndEventConsumer
 import net.corda.messaging.subscription.consumer.builder.StateAndEventBuilder
 import net.corda.messaging.subscription.consumer.listener.StateAndEventConsumerRebalanceListener
@@ -34,6 +30,9 @@ import net.corda.schema.Schemas.getStateAndEventDLQTopic
 import net.corda.schema.Schemas.getStateAndEventStateTopic
 import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
+import java.nio.ByteBuffer
+import java.time.Clock
+import java.util.*
 
 @Suppress("LongParameterList")
 internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
@@ -46,10 +45,6 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
     private val stateAndEventListener: StateAndEventListener<K, S>? = null,
     private val clock: Clock = Clock.systemUTC(),
 ) : StateAndEventSubscription<K, S, E> {
-
-    companion object {
-        private val EVENT_POLL_TIMEOUT = Duration.ofMillis(100)
-    }
 
     private val log = LoggerFactory.getLogger(config.loggerName)
 
@@ -83,9 +78,19 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
             "producerClientId ${config.clientId}."
 
     private val processorMeter = CordaMetrics.Metric.MessageProcessorTime.builder()
-        .withTag(CordaMetrics.Tag.MessagePatternType, "StateAndEvent")
+        .withTag(CordaMetrics.Tag.MessagePatternType, MetricsConstants.STATE_AND_EVENT_PATTERN_TYPE)
         .withTag(CordaMetrics.Tag.MessagePatternClientId, config.clientId)
-        .withTag(CordaMetrics.Tag.OperationName, "onNext")
+        .withTag(CordaMetrics.Tag.OperationName, MetricsConstants.ON_NEXT_OPERATION)
+        .build()
+
+    private val batchSizeHistogram = CordaMetrics.Metric.MessageBatchSize.builder()
+        .withTag(CordaMetrics.Tag.MessagePatternType, MetricsConstants.STATE_AND_EVENT_PATTERN_TYPE)
+        .withTag(CordaMetrics.Tag.MessagePatternClientId, config.clientId)
+        .build()
+
+    private val commitTimer = CordaMetrics.Metric.MessageCommitTime.builder()
+        .withTag(CordaMetrics.Tag.MessagePatternType, MetricsConstants.STATE_AND_EVENT_PATTERN_TYPE)
+        .withTag(CordaMetrics.Tag.MessagePatternClientId, config.clientId)
         .build()
 
     /**
@@ -117,7 +122,10 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
             attempts++
             try {
                 deadLetterRecords = mutableListOf()
-                nullableProducer = builder.createProducer(config)
+                nullableProducer = builder.createProducer(config) { data ->
+                    log.warn("Failed to serialize record from ${config.topic}")
+                    deadLetterRecords.add(data)
+                }
                 val (stateAndEventConsumerTmp, rebalanceListener) = builder.createStateEventConsumerAndRebalanceListener(
                     config,
                     processor.keyClass,
@@ -184,9 +192,12 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
             try {
                 log.debug { "Polling and processing events" }
                 var rebalanceOccurred = false
-                val batches = getEventsByBatch(eventConsumer.poll(EVENT_POLL_TIMEOUT)).iterator()
+                val records = stateAndEventConsumer.pollEvents()
+                batchSizeHistogram.record(records.size.toDouble())
+                val batches = getEventsByBatch(records).iterator()
                 while (!rebalanceOccurred && batches.hasNext()) {
-                    rebalanceOccurred = tryProcessBatchOfEvents(batches.next())
+                    val batch = batches.next()
+                    rebalanceOccurred = tryProcessBatchOfEvents(batch)
                 }
                 keepProcessing = false // We only want to do one batch at a time
             } catch (ex: Exception) {
@@ -218,31 +229,35 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         val updatedStates: MutableMap<Int, MutableMap<K, S?>> = mutableMapOf()
 
         log.debug { "Processing events(keys: ${events.joinToString { it.key.toString() }}, size: ${events.size})" }
-        for (event in events) {
-            try {
-                stateAndEventConsumer.resetPollInterval()
-                processEvent(event, outputRecords, updatedStates)
-            } catch (ex: StateAndEventConsumer.RebalanceInProgressException) {
-                log.warn ("Abandoning processing of events(keys: ${events.joinToString { it.key.toString() }}, " +
-                        "size: ${events.size}) due to rebalance", ex)
-                return true
+        try {
+            processorMeter.recordCallable {
+                for (event in events) {
+                    stateAndEventConsumer.resetPollInterval()
+                    processEvent(event, outputRecords, updatedStates)
+                }
             }
+        } catch (ex: StateAndEventConsumer.RebalanceInProgressException) {
+            log.warn ("Abandoning processing of events(keys: ${events.joinToString { it.key.toString() }}, " +
+                    "size: ${events.size}) due to rebalance", ex)
+            return true
         }
 
-        producer.beginTransaction()
-        producer.sendRecords(outputRecords.toCordaProducerRecords())
-        if (deadLetterRecords.isNotEmpty()) {
-            producer.sendRecords(deadLetterRecords.map {
-                CordaProducerRecord(
-                    getStateAndEventDLQTopic(eventTopic),
-                    UUID.randomUUID().toString(),
-                    it
-                )
-            })
-            deadLetterRecords.clear()
+        commitTimer.recordCallable {
+            producer.beginTransaction()
+            producer.sendRecords(outputRecords.toCordaProducerRecords())
+            if (deadLetterRecords.isNotEmpty()) {
+                producer.sendRecords(deadLetterRecords.map {
+                    CordaProducerRecord(
+                        getStateAndEventDLQTopic(eventTopic),
+                        UUID.randomUUID().toString(),
+                        it
+                    )
+                })
+                deadLetterRecords.clear()
+            }
+            producer.sendRecordOffsetsToTransaction(eventConsumer, events.map { it })
+            producer.commitTransaction()
         }
-        producer.sendRecordOffsetsToTransaction(eventConsumer, events.map { it })
-        producer.commitTransaction()
         log.debug { "Processing events(keys: ${events.joinToString { it.key.toString() }}, size: ${events.size}) complete." }
 
         stateAndEventConsumer.updateInMemoryStatePostCommit(updatedStates, clock)
@@ -311,12 +326,10 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
     }
 
     private fun getUpdatesForEvent(state: S?, event: CordaConsumerRecord<K, E>): StateAndEventProcessor.Response<S>? {
-        val future = processorMeter.recordCallable {
-            stateAndEventConsumer.waitForFunctionToFinish(
-                { processor.onNext(state, event.toRecord()) }, config.processorTimeout.toMillis(),
-                "Failed to finish within the time limit for state: $state and event: $event"
-            )
-        }!!
+        val future = stateAndEventConsumer.waitForFunctionToFinish(
+            { processor.onNext(state, event.toRecord()) }, config.processorTimeout.toMillis(),
+            "Failed to finish within the time limit for state: $state and event: $event"
+        )
         @Suppress("unchecked_cast")
         return future.tryGetResult() as? StateAndEventProcessor.Response<S>
     }
@@ -350,7 +363,7 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                         "producerClientId ${config.clientId}. " +
                         "Retrying poll and process. Attempts: $attempts."
             )
-            eventConsumer.resetToLastCommittedPositions(CordaOffsetResetStrategy.EARLIEST)
+            stateAndEventConsumer.resetEventOffsetPosition()
         } else {
             val message = "Failed to process records from topic $eventTopic, group ${config.group}, " +
                     "producerClientId ${config.clientId}. " +

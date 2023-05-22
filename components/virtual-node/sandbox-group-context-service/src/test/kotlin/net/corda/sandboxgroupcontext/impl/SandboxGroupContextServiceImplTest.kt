@@ -1,12 +1,15 @@
 package net.corda.sandboxgroupcontext.impl
 
+import java.time.Duration.ofSeconds
 import net.corda.cpk.read.CpkReadService
 import net.corda.crypto.core.parseSecureHash
 import net.corda.libs.packaging.Cpk
 import net.corda.sandboxgroupcontext.SandboxGroupType
 import net.corda.sandboxgroupcontext.VirtualNodeContext
 import net.corda.sandboxgroupcontext.putUniqueObject
+import net.corda.sandboxgroupcontext.service.EvictionListener
 import net.corda.sandboxgroupcontext.service.impl.SandboxGroupContextServiceImpl
+import net.corda.test.util.eventually
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.HoldingIdentity
@@ -15,8 +18,10 @@ import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
+import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
+import org.mockito.kotlin.verify
 import org.osgi.framework.BundleContext
 import org.osgi.service.component.runtime.ServiceComponentRuntime
 
@@ -67,7 +72,7 @@ class SandboxGroupContextServiceImplTest {
             scr,
             bundleContext
         )
-        service.initCaches(1)
+        service.resizeCaches(1)
         virtualNodeContext = createVirtualNodeContextForFlow(
             holdingIdentity,
             cpks.mapTo(mutableSetOf()) { it.metadata.fileChecksum }
@@ -147,7 +152,7 @@ class SandboxGroupContextServiceImplTest {
         val cpkService = CpkReadServiceFake(cpks1 + cpks2 + cpks3)
 
         val service = SandboxGroupContextServiceImpl(sandboxCreationService, cpkService, scr, bundleContext).apply {
-            initCaches(1)
+            resizeCaches(1)
         }
 
         val dog1 = Dog("Rover", "Woof!")
@@ -194,17 +199,36 @@ class SandboxGroupContextServiceImplTest {
     @Test
     fun `remove removes from cache`() {
         val holdingIdentity1 = createTestHoldingIdentity("CN=Foo, O=Foo Corp, L=LDN, C=GB", "bar")
-        val cpks1 = setOf(Helpers.mockTrivialCpk("MAIN1", "example", "1.0.0"))
+        val cpkChecksum = parseSecureHash("DUMMY:1234567890abcdef")
+        val cpks1 = setOf(Helpers.mockTrivialCpk("MAIN1", "example", "1.0.0", cpkChecksum))
         val ctx1 = createVirtualNodeContextForFlow(
             holdingIdentity1,
-            cpks1.map { parseSecureHash("DUMMY:1234567890abcdef") }.toSet()
+            cpks1.mapTo(linkedSetOf()) { cpkChecksum }
         )
         val sandboxCreationService = Helpers.mockSandboxCreationService(listOf(cpks1))
         val cpkService = CpkReadServiceFake(cpks1)
-        val service = SandboxGroupContextServiceImpl(sandboxCreationService, cpkService, scr, bundleContext)
+        val flowEvictionListener = mock<EvictionListener>()
+        val persistenceEvictionListener = mock<EvictionListener>()
+        val verificationEvictionListener = mock<EvictionListener>()
+        val service = SandboxGroupContextServiceImpl(sandboxCreationService, cpkService, scr, bundleContext).apply {
+            resizeCache(SandboxGroupType.FLOW, 1)
+            assertTrue(addEvictionListener(SandboxGroupType.FLOW, flowEvictionListener))
+            assertTrue(addEvictionListener(SandboxGroupType.PERSISTENCE, persistenceEvictionListener))
+            assertTrue(addEvictionListener(SandboxGroupType.VERIFICATION, verificationEvictionListener))
+        }
+        service.getOrCreate(ctx1) { _, _ -> AutoCloseable {} }
 
-        val ex = assertThrows<IllegalStateException> { service.remove(ctx1) }
-        assertThat(ex).hasMessageStartingWith("remove: ")
+        val completion = service.remove(ctx1)
+        assertThat(completion)
+            .isNotNull
+            .isNotDone
+        assertThat(service.remove(ctx1))
+            .isNull()
+        eventually(duration = ofSeconds(60)) {
+            verify(flowEvictionListener).onEviction(ctx1)
+        }
+        verify(persistenceEvictionListener, never()).onEviction(any())
+        verify(verificationEvictionListener, never()).onEviction(any())
     }
 
     @Test

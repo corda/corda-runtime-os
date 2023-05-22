@@ -148,8 +148,13 @@ class SandboxGroupImplTests {
     }
 
     @Test
-    fun `returns CPK class identified by a static tag`() {
+    fun `returns CPK library class identified by a static tag`() {
         assertEquals(cpkLibraryClass, sandboxGroupImpl.getClass(cpkLibraryClass.name, CPK_STATIC_TAG))
+    }
+
+    @Test
+    fun `returns CPK main class identified by an evolvable tag`() {
+        assertEquals(cpkClass, sandboxGroupImpl.getClass(cpkClass.name, CPK_EVOLVABLE_TAG))
     }
 
     @Test
@@ -208,7 +213,7 @@ private class StaticTagImpl(
 private class EvolvableTagImpl(
     override val classType: ClassType,
     override val classBundleName: String,
-    override val mainBundleName: String,
+    override val cordaCpkCordappName: String,
     override val cpkSignerSummaryHash: SecureHash?
 ) : EvolvableTag() {
     override val version = 1
@@ -231,8 +236,8 @@ private class DummyClassTagFactory(cpkMetadata: CpkMetadata) : ClassTagFactory {
     private val cpkEvolvableTag =
         EvolvableTagImpl(
             ClassType.CpkSandboxClass,
-            CPK_LIBRARY_BUNDLE_NAME,
             CPK_MAIN_BUNDLE_NAME,
+            CORDA_CPK_CORDAPP_NAME,
             cpkMetadata.cpkId.signerSummaryHash
         )
 
@@ -248,7 +253,7 @@ private class DummyClassTagFactory(cpkMetadata: CpkMetadata) : ClassTagFactory {
         )
 
     private val invalidSignersEvolvableTag =
-        EvolvableTagImpl(ClassType.CpkSandboxClass, CPK_LIBRARY_BUNDLE_NAME, CPK_MAIN_BUNDLE_NAME, randomSecureHash())
+        EvolvableTagImpl(ClassType.CpkSandboxClass, CPK_LIBRARY_BUNDLE_NAME, CORDA_CPK_CORDAPP_NAME, randomSecureHash())
 
     override fun createSerialisedTag(
         isStaticTag: Boolean,

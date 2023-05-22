@@ -31,6 +31,7 @@ dependencies {
     implementation project(":libs:db:db-orm")
 
     testImplementation "org.assertj:assertj-core:$assertjVersion"
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 
     testRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"

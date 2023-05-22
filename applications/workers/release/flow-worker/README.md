@@ -149,7 +149,7 @@ curl --insecure -u admin:admin -X 'POST' \
   'https://localhost:8888/api/v1/flow/3B8DECDDD6E2' \
   -d '{
     "clientRequestId": "request1",
-    "flowClassName": "net.cordapp.testing.testflows.MessagingFlow",
+    "flowClassName": "com.r3.corda.testing.testflows.MessagingFlow",
     "requestData": "{\"counterparty\": \"C=GB, L=London, O=Bob\"}"
 }'
 ```

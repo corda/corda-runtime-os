@@ -6,8 +6,6 @@ import net.corda.data.identity.HoldingIdentity
 import net.corda.data.membership.db.request.MembershipPersistenceRequest
 import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.data.membership.db.response.MembershipPersistenceResponse
-import net.corda.data.membership.db.response.MembershipResponseContext
-import net.corda.data.membership.db.response.query.PersistenceFailedResponse
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
@@ -25,12 +23,9 @@ import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
-import net.corda.utilities.concurrent.getOrThrow
+import net.corda.utilities.Either
 import net.corda.utilities.time.Clock
-import org.slf4j.LoggerFactory
-import java.time.Duration
 import java.util.UUID
-import java.util.concurrent.TimeoutException
 
 abstract class AbstractPersistenceClient(
     coordinatorFactory: LifecycleCoordinatorFactory,
@@ -39,11 +34,6 @@ abstract class AbstractPersistenceClient(
     private val configurationReadService: ConfigurationReadService,
     private val clock: Clock,
 ) : Lifecycle {
-
-    companion object {
-        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
-        const val RPC_TIMEOUT_MS = 10000L
-    }
 
     abstract val groupName: String
     abstract val clientName: String
@@ -63,54 +53,15 @@ abstract class AbstractPersistenceClient(
         holdingIdentity
     )
 
-    fun MembershipPersistenceRequest.execute(): MembershipPersistenceResponse {
-        val sender = rpcSender
-        if(sender == null) {
-            val failureReason = "Persistence client could not send persistence request because the RPC sender has not been initialised."
-            logger.warn(failureReason)
-            return persistenceFailureResponse(failureReason)
-        }
-        logger.info("Sending membership persistence RPC request.")
-
-        return try {
-            val response = sender
-                .sendRequest(this)
-                .getOrThrow(Duration.ofMillis(RPC_TIMEOUT_MS))
-
-            with(context) {
-                require(holdingIdentity == response.context.holdingIdentity) {
-                    "Holding identity in the response received does not match what was sent in the request."
-                }
-                require(requestTimestamp == response.context.requestTimestamp) {
-                    "Request timestamp in the response received does not match what was sent in the request."
-                }
-                require(requestId == response.context.requestId) {
-                    "Request ID in the response received does not match what was sent in the request."
-                }
-                require(requestTimestamp <= response.context.responseTimestamp) {
-                    "Response timestamp is before the request timestamp"
-                }
-            }
-            response
-        } catch (e: IllegalArgumentException) {
-            persistenceFailureResponse("Invalid response. ${e.message}")
-        } catch (e: TimeoutException) {
-            persistenceFailureResponse("Timeout waiting for response from membership persistence RPC request.")
-        } catch (e: Exception) {
-            persistenceFailureResponse("Exception occurred while sending RPC request. ${e.message}")
-        }
-    }
-
-    private fun MembershipPersistenceRequest.persistenceFailureResponse(message: String) =
-        MembershipPersistenceResponse(
-            MembershipResponseContext(
-                context.requestTimestamp,
-                context.requestId,
-                clock.instant(),
-                context.holdingIdentity
-            ),
-            PersistenceFailedResponse(message)
+    internal fun <T> MembershipPersistenceRequest.operation(
+        convertResult: (Any?) -> Either<T, String>,
+    ): MembershipPersistenceOperationImpl<T> {
+        return MembershipPersistenceOperationImpl(
+            rpcSender,
+            this,
+            convertResult,
         )
+    }
 
     override val isRunning: Boolean
         get() = coordinator.status == LifecycleStatus.UP

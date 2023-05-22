@@ -10,7 +10,7 @@ import net.corda.data.membership.p2p.VerificationRequest
 import net.corda.data.membership.p2p.VerificationResponse
 import net.corda.data.p2p.app.AppMessage
 import net.corda.data.p2p.app.AuthenticatedMessage
-import net.corda.data.p2p.app.UnauthenticatedMessage
+import net.corda.data.p2p.app.InboundUnauthenticatedMessage
 import net.corda.membership.impl.p2p.handler.MembershipPackageHandler
 import net.corda.membership.impl.p2p.handler.MembershipSyncRequestHandler
 import net.corda.membership.impl.p2p.handler.MessageHandler
@@ -102,22 +102,22 @@ class MembershipP2PProcessor(
 
     private fun Any.isMembershipSubsystem(): Boolean {
         return (this as? AuthenticatedMessage)?.isMembershipSubsystem() ?: false
-                || (this as? UnauthenticatedMessage)?.isMembershipSubsystem() ?: false
+                || (this as? InboundUnauthenticatedMessage)?.isMembershipSubsystem() ?: false
     }
 
     private fun AuthenticatedMessage.isMembershipSubsystem() = header.subsystem == MEMBERSHIP_P2P_SUBSYSTEM
-    private fun UnauthenticatedMessage.isMembershipSubsystem() = header.subsystem == MEMBERSHIP_P2P_SUBSYSTEM
+    private fun InboundUnauthenticatedMessage.isMembershipSubsystem() = header.subsystem == MEMBERSHIP_P2P_SUBSYSTEM
 
     private val Any.header: Any
         get() = (this as? AuthenticatedMessage)?.header
-            ?: (this as? UnauthenticatedMessage)?.header
+            ?: (this as? InboundUnauthenticatedMessage)?.header
             ?: throw UnsupportedOperationException(
                 "Tried to get header from message other than AuthenticatedMessage or UnauthenticatedMessage."
             )
 
     private val Any.payload: ByteBuffer
         get() = (this as? AuthenticatedMessage)?.payload
-            ?: (this as? UnauthenticatedMessage)?.payload
+            ?: (this as? InboundUnauthenticatedMessage)?.payload
             ?: throw UnsupportedOperationException(
                 "Tried to get payload from message other than AuthenticatedMessage or UnauthenticatedMessage."
             )

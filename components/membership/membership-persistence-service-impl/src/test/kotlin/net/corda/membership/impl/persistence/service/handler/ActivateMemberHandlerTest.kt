@@ -1,8 +1,8 @@
 package net.corda.membership.impl.persistence.service.handler
 
-import net.corda.data.CordaAvroDeserializer
-import net.corda.data.CordaAvroSerializationFactory
-import net.corda.data.CordaAvroSerializer
+import net.corda.avro.serialization.CordaAvroDeserializer
+import net.corda.avro.serialization.CordaAvroSerializationFactory
+import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.membership.PersistentMemberInfo
@@ -12,23 +12,31 @@ import net.corda.data.membership.db.request.command.ActivateMember
 import net.corda.data.membership.db.response.command.ActivateMemberResponse
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.membership.datamodel.MemberInfoEntity
-import net.corda.membership.datamodel.MemberInfoEntityPrimaryKey
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_SUSPENDED
+import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_ROLE
+import net.corda.membership.lib.MemberInfoExtension.Companion.ROLES_PREFIX
 import net.corda.membership.lib.MemberInfoFactory
+import net.corda.membership.lib.exceptions.InvalidEntityUpdateException
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.test.util.time.TestClock
 import net.corda.utilities.time.Clock
 import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.membership.MemberContext
+import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 import java.time.Instant
@@ -36,7 +44,11 @@ import java.util.UUID
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.persistence.EntityTransaction
-import javax.persistence.LockModeType
+import net.corda.data.membership.SignedGroupParameters
+import net.corda.membership.lib.MemberInfoExtension
+import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
+import net.corda.membership.lib.exceptions.MembershipPersistenceException
+import javax.persistence.PessimisticLockException
 
 class ActivateMemberHandlerTest {
 
@@ -47,16 +59,6 @@ class ActivateMemberHandlerTest {
 
     private val knownGroupId = UUID(0, 1).toString()
     private val knownX500Name = MemberX500Name.parse("O=Alice,L=London,C=GB")
-    private val primaryKey = MemberInfoEntityPrimaryKey(
-        groupId = knownGroupId,
-        memberX500Name = knownX500Name.toString(),
-        false
-    )
-    private val mgmContextBytes = byteArrayOf(1, 10)
-    private val activatedMgmContextBytes = byteArrayOf(1, 11)
-    private val memberContextBytes = byteArrayOf(1, 5)
-    private val mgmContext = KeyValuePairList(listOf(KeyValuePair("one", "1")))
-    private val memberContext = KeyValuePairList(listOf(KeyValuePair("two", "2")))
     private val holdingIdentity = HoldingIdentity(knownX500Name, knownGroupId)
     private val ourVirtualNodeInfo: VirtualNodeInfo = mock {
         on { vaultDmlConnectionId } doReturn UUID(0, 1)
@@ -79,12 +81,39 @@ class ActivateMemberHandlerTest {
     private val jpaEntitiesRegistry: JpaEntitiesRegistry = mock {
         on { get(any()) } doReturn mock()
     }
-    private val keyValuePairListSerializer = mock<CordaAvroSerializer<KeyValuePairList>> {
-        on { serialize(any()) } doReturn activatedMgmContextBytes
+    private val serializedMgmContext = "1234".toByteArray()
+    private val memberInfoEntity = mock<MemberInfoEntity> {
+        on { mgmContext } doReturn serializedMgmContext
     }
-    private val keyValuePairListDeserializer = mock<CordaAvroDeserializer<KeyValuePairList>> {
-        on { deserialize(mgmContextBytes) } doReturn mgmContext
-        on { deserialize(memberContextBytes) } doReturn memberContext
+    private val mgmContext = KeyValuePairList(
+        listOf(
+            KeyValuePair("one", "1")
+        )
+    )
+    private val persistentMemberInfo = mock<PersistentMemberInfo>()
+    private val suspensionActivationEntityOperations = mock<SuspensionActivationEntityOperations> {
+        on { findMember(
+            em,
+            holdingIdentity.x500Name.toString(),
+            holdingIdentity.groupId,
+            SERIAL_NUMBER,
+            MEMBER_STATUS_SUSPENDED
+        ) } doReturn memberInfoEntity
+        on { updateStatus(
+            em,
+            holdingIdentity.x500Name.toString(),
+            holdingIdentity.toAvro(),
+            memberInfoEntity,
+            mgmContext,
+            MEMBER_STATUS_ACTIVE
+        ) } doReturn persistentMemberInfo
+    }
+
+    private val keyValuePairListSerializer = mock<CordaAvroSerializer<KeyValuePairList>> {
+        on { serialize(any()) } doReturn byteArrayOf(0)
+    }
+    private val keyValuePairListDeserializer = mock<CordaAvroDeserializer<KeyValuePairList>>() {
+        on { deserialize(serializedMgmContext) } doReturn mgmContext
     }
     private val cordaAvroSerializationFactory = mock<CordaAvroSerializationFactory> {
         on {
@@ -97,7 +126,12 @@ class ActivateMemberHandlerTest {
             createAvroSerializer<KeyValuePairList>(any())
         } doReturn keyValuePairListSerializer
     }
-    private val memberInfoFactory = mock<MemberInfoFactory>()
+    private val memberInfo = mock<MemberInfo> {
+        on { memberProvidedContext } doReturn mock()
+    }
+    private val memberInfoFactory = mock<MemberInfoFactory> {
+        on { create(persistentMemberInfo) } doReturn memberInfo
+    }
     private val persistenceHandlerServices: PersistenceHandlerServices = mock {
         on { clock } doReturn clock
         on { virtualNodeInfoReadService } doReturn virtualNodeInfoReadService
@@ -106,7 +140,12 @@ class ActivateMemberHandlerTest {
         on { cordaAvroSerializationFactory } doReturn cordaAvroSerializationFactory
         on { memberInfoFactory } doReturn memberInfoFactory
     }
-    private val handler: ActivateMemberHandler = ActivateMemberHandler(persistenceHandlerServices)
+
+    private val addNotaryToGroupParametersHandler = mock<AddNotaryToGroupParametersHandler>()
+    private val handler: ActivateMemberHandler = ActivateMemberHandler(
+        persistenceHandlerServices,
+        addNotaryToGroupParametersHandler
+    ) { _, _, _ -> suspensionActivationEntityOperations }
     private val context = MembershipRequestContext(
         clock.instant(),
         UUID(0, 1).toString(),
@@ -118,50 +157,56 @@ class ActivateMemberHandlerTest {
         return handler.invoke(context, request)
     }
 
-    @Suppress("LongParameterList")
-    private fun mockMemberInfoEntity(
-        mgmProvidedContext: ByteArray = mgmContextBytes,
-        memberProvidedContext: ByteArray = memberContextBytes,
-        group: String? = knownGroupId,
-        name: MemberX500Name? = knownX500Name,
-        serial: Long? = SERIAL_NUMBER,
-        memberStatus: String = MEMBER_STATUS_SUSPENDED
-    ) {
-        val mockEntity = mock<MemberInfoEntity> {
-            on { mgmContext } doReturn mgmProvidedContext
-            on { memberContext } doReturn memberProvidedContext
-            on { groupId } doReturn group!!
-            on { memberX500Name } doReturn name.toString()
-            on { serialNumber } doReturn serial!!
-            on { status } doReturn memberStatus
-            on { memberSignatureKey } doReturn byteArrayOf(1)
-            on { memberSignatureContent } doReturn byteArrayOf(2)
-            on { memberSignatureSpec } doReturn ""
-        }
-        whenever(
-            em.find(eq(MemberInfoEntity::class.java), eq(primaryKey), eq(LockModeType.PESSIMISTIC_WRITE))
-        ).doReturn(mockEntity)
+    @Test
+    fun `invoke returns the correct data when member is not a notary`() {
+        val result = invokeTestFunction()
+
+        verify(addNotaryToGroupParametersHandler, never()).addNotaryToGroupParameters(any(), any())
+        assertThat(result.memberInfo).isEqualTo(persistentMemberInfo)
+        assertThat(result.groupParameters).isNull()
     }
 
     @Test
-    fun `invoke returns the correct data`() {
-        mockMemberInfoEntity()
-
-        val persistentMemberInfo = PersistentMemberInfo(
-            context.holdingIdentity,
-            memberContext,
-            mgmContext,
-            SignedContexts(
-                ByteBuffer.wrap(memberContextBytes),
-                ByteBuffer.wrap(mgmContextBytes),
-            ),
-        )
-        whenever(
-            memberInfoFactory.createPersistentMemberInfo(context.holdingIdentity, memberContextBytes, activatedMgmContextBytes)
-        ).doReturn(persistentMemberInfo)
+    fun `invoke returns the correct data when member is a notary`() {
+        val mockMemberContext = mock<MemberContext> {
+            on { entries } doReturn mapOf(
+                "${MemberInfoExtension.ROLES_PREFIX}.0" to MemberInfoExtension.NOTARY_ROLE
+            ).entries
+        }
+        val mockMemberInfo = mock<MemberInfo> {
+            on { memberProvidedContext } doReturn mockMemberContext
+        }
+        whenever(memberInfoFactory.create(persistentMemberInfo)).thenReturn(mockMemberInfo)
+        val groupParameters = mock<SignedGroupParameters>()
+        whenever(addNotaryToGroupParametersHandler.addNotaryToGroupParameters(em, persistentMemberInfo)).doReturn(groupParameters)
 
         val result = invokeTestFunction()
 
         assertThat(result.memberInfo).isEqualTo(persistentMemberInfo)
+        assertThat(result.groupParameters).isEqualTo(groupParameters)
     }
+
+    @Test
+    fun `invoke throws a MembershipPersistenceException if the mgmContext can't be deserialized`() {
+        whenever(keyValuePairListDeserializer.deserialize(serializedMgmContext)).thenReturn(null)
+        assertThrows<MembershipPersistenceException> {  invokeTestFunction() }.also {
+            assertThat(it).hasMessageContaining("Failed to deserialize")
+        }
+    }
+
+    @Test
+    fun `when updateGroupParameters throws a PessimisticLockException an InvalidEntityUpdateException is thrown`() {
+        val notaryMemberProvidedContext = mock<MemberContext> {
+            on { entries } doReturn mapOf("$ROLES_PREFIX.1" to NOTARY_ROLE).entries
+        }
+        whenever(memberInfo.memberProvidedContext).doReturn(notaryMemberProvidedContext)
+        whenever(addNotaryToGroupParametersHandler.addNotaryToGroupParameters(any(), any())).doThrow(
+            PessimisticLockException()
+        )
+
+        assertThrows<InvalidEntityUpdateException> {
+            invokeTestFunction()
+        }
+    }
+
 }

@@ -34,7 +34,8 @@ import net.corda.messaging.integration.getDummyRecords
 import net.corda.messaging.integration.getKafkaProperties
 import net.corda.messaging.integration.getStringRecords
 import net.corda.messaging.integration.getTopicConfig
-import net.corda.messaging.integration.processors.TestDurableDummyMessageProcessor
+import net.corda.messaging.integration.processors.TestBadSerializationDurableProcessor
+import net.corda.messaging.integration.processors.TestDLQDurableProcessor
 import net.corda.messaging.integration.processors.TestDurableProcessor
 import net.corda.messaging.integration.processors.TestDurableProcessorStrings
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
@@ -212,7 +213,7 @@ class DurableSubscriptionIntegrationTest {
         )
         val dlqDurableSub = subscriptionFactory.createDurableSubscription(
             SubscriptionConfig("$DURABLE_TOPIC3-group-dlq", DURABLE_TOPIC3_DLQ),
-            TestDurableDummyMessageProcessor(dlqLatch),
+            TestDLQDurableProcessor(dlqLatch),
             TEST_CONFIG,
             null
         )
@@ -301,6 +302,43 @@ class DurableSubscriptionIntegrationTest {
 
         assertTrue(latch.await(90, TimeUnit.SECONDS))
         durableSub1.close()
+    }
+
+    @Test
+    @Timeout(value = 30, unit = TimeUnit.SECONDS)
+    fun `Publish 10 serializable outputs and 1 which will fail serialization on output and then start durable subscription`() {
+        topicUtils.createTopics(getTopicConfig(DURABLE_TOPIC3_TEMPLATE))
+
+        publisherConfig = PublisherConfig(CLIENT_ID + DURABLE_TOPIC3, false)
+        publisher = publisherFactory.createPublisher(publisherConfig, TEST_CONFIG)
+        val futures = publisher.publish(getDemoRecords(DURABLE_TOPIC3, 10, 1))
+        assertThat(futures.size).isEqualTo(10)
+        futures.forEach { it.get(10, TimeUnit.SECONDS) }
+
+        publisher.close()
+
+        val latch = CountDownLatch(10)
+        val dlqLatch = CountDownLatch(1)
+        val durableSub = subscriptionFactory.createDurableSubscription(
+            SubscriptionConfig("$DURABLE_TOPIC3-group", DURABLE_TOPIC3),
+            TestBadSerializationDurableProcessor(latch, "$DURABLE_TOPIC3-output", badRecord = 5),
+            TEST_CONFIG,
+            null
+        )
+        val dlqDurableSub = subscriptionFactory.createDurableSubscription(
+            SubscriptionConfig("$DURABLE_TOPIC3-group-dlq", DURABLE_TOPIC3_DLQ),
+            TestDLQDurableProcessor(dlqLatch),
+            TEST_CONFIG,
+            null
+        )
+        durableSub.start()
+        dlqDurableSub.start()
+
+        assertTrue(latch.await(10, TimeUnit.SECONDS))
+        assertTrue(dlqLatch.await(10, TimeUnit.SECONDS))
+
+        dlqDurableSub.close()
+        durableSub.close()
     }
 
     private fun getLargeString(kiloBytes: Int) : String {

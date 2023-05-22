@@ -30,6 +30,13 @@ import org.mockito.kotlin.whenever
 import org.osgi.framework.Bundle
 import org.osgi.framework.BundleContext
 import org.osgi.framework.BundleException
+import org.osgi.framework.Version
+import org.osgi.framework.wiring.BundleCapability
+import org.osgi.framework.wiring.BundleRequirement
+import org.osgi.framework.wiring.BundleRevision
+import org.osgi.framework.wiring.BundleWiring
+import org.osgi.resource.Capability
+import org.osgi.resource.Requirement
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.InputStream
@@ -107,6 +114,7 @@ class SandboxServiceImplTests {
                     if (bundleName in notUninstallableBundles) throw BundleException("Uninstall")
                     uninstalledBundles.add(bundle)
                 }
+                whenever(bundle.adapt(BundleRevision::class.java)).thenReturn(DummyBundleRevision(bundle))
 
                 bundle
             }
@@ -280,8 +288,8 @@ class SandboxServiceImplTests {
         val sandboxOne = (sandboxGroupOne as SandboxGroupInternal).cpkSandboxes.single()
         val sandboxTwo = (sandboxGroupTwo as SandboxGroupInternal).cpkSandboxes.single()
 
-        val sandboxOneBundles = startedBundles.filter { bundle -> sandboxOne.containsBundle(bundle) }
-        val sandboxTwoBundles = startedBundles.filter { bundle -> sandboxTwo.containsBundle(bundle) }
+        val sandboxOneBundles = startedBundles.filter(sandboxOne::containsBundle)
+        val sandboxTwoBundles = startedBundles.filter(sandboxTwo::containsBundle)
 
         sandboxOneBundles.forEach { sandboxOneBundle ->
             sandboxTwoBundles.forEach { sandboxTwoBundle ->
@@ -297,8 +305,8 @@ class SandboxServiceImplTests {
         val sandboxOne = sandboxes[0] as SandboxImpl
         val sandboxTwo = sandboxes[1] as SandboxImpl
 
-        val sandboxOneBundles = startedBundles.filter { bundle -> sandboxOne.containsBundle(bundle) }
-        val sandboxTwoBundles = startedBundles.filter { bundle -> sandboxTwo.containsBundle(bundle) }
+        val sandboxOneBundles = startedBundles.filter(sandboxOne::containsBundle)
+        val sandboxTwoBundles = startedBundles.filter(sandboxTwo::containsBundle)
         val sandboxTwoPublicBundles = sandboxTwoBundles.filterTo(HashSet()) { bundle -> bundle in sandboxTwo.publicBundles }
         val sandboxTwoPrivateBundles = sandboxTwoBundles - sandboxTwoPublicBundles
 
@@ -319,8 +327,8 @@ class SandboxServiceImplTests {
         val sandboxOne = sandboxes[0] as CpkSandboxImpl
         val sandboxTwo = sandboxes[1] as CpkSandboxImpl
 
-        val sandboxOneBundles = startedBundles.filter { bundle -> sandboxOne.containsBundle(bundle) }
-        val sandboxTwoBundles = startedBundles.filter { bundle -> sandboxTwo.containsBundle(bundle) }
+        val sandboxOneBundles = startedBundles.filter(sandboxOne::containsBundle)
+        val sandboxTwoBundles = startedBundles.filter(sandboxTwo::containsBundle)
         val sandboxTwoMainBundle = sandboxTwo.mainBundle
         val sandboxTwoLibraryBundles = sandboxTwoBundles - sandboxTwoMainBundle
 
@@ -355,17 +363,19 @@ class SandboxServiceImplTests {
 
     @Test
     fun `a bundle only has visibility of public bundles in public sandboxes`() {
-        val publicMockBundle = mockBundle()
-        val privateMockBundle = mockBundle()
-        sandboxService.createPublicSandbox(setOf(publicMockBundle), setOf(privateMockBundle))
+        val publicPlatformBundle = mockBundle("public-platform-bundle")
+        val privatePlatformBundle = mockBundle("private-platform-bundle")
+        sandboxService.createPublicSandbox(setOf(publicPlatformBundle), setOf(privatePlatformBundle))
 
         val sandboxGroup = sandboxService.createSandboxGroup(setOf(cpkTwo))
         val sandbox = (sandboxGroup as SandboxGroupInternal).cpkSandboxes.single() as SandboxImpl
-        val sandboxBundles = startedBundles.filter { bundle -> sandbox.containsBundle(bundle) }
+        val sandboxBundles = startedBundles.filter(sandbox::containsBundle)
 
         sandboxBundles.forEach { sandboxOneBundle ->
-            assertTrue(sandboxService.hasVisibility(sandboxOneBundle, publicMockBundle))
-            assertFalse(sandboxService.hasVisibility(sandboxOneBundle, privateMockBundle))
+            assertTrue(sandboxService.hasVisibility(sandboxOneBundle, publicPlatformBundle))
+            assertFalse(sandboxService.hasVisibility(sandboxOneBundle, privatePlatformBundle))
+            assertFalse(sandboxService.hasVisibility(publicPlatformBundle, sandboxOneBundle))
+            assertFalse(sandboxService.hasVisibility(privatePlatformBundle, sandboxOneBundle))
         }
     }
 
@@ -581,5 +591,32 @@ private data class CpkAndContents(
         override fun getInputStream() = ByteArrayInputStream(cpkBytes.toByteArray())
         override fun getResourceAsStream(resourceName: String) = ByteArrayInputStream(ByteArray(0))
         override fun getMainBundle(): InputStream = ByteArrayInputStream(ByteArray(0))
+    }
+}
+
+private class DummyBundleRevision(private val bundle: Bundle): BundleRevision {
+    override fun getBundle(): Bundle = bundle
+    override fun getSymbolicName(): String = bundle.symbolicName
+    override fun getVersion(): Version = bundle.version
+    override fun getTypes(): Int = 0
+
+    override fun getCapabilities(namespace: String?): List<Capability> {
+        TODO("Not yet implemented")
+    }
+
+    override fun getRequirements(namespace: String?): List<Requirement> {
+        TODO("Not yet implemented")
+    }
+
+    override fun getDeclaredCapabilities(namespace: String?): List<BundleCapability> {
+        TODO("Not yet implemented")
+    }
+
+    override fun getDeclaredRequirements(namespace: String?): List<BundleRequirement> {
+        TODO("Not yet implemented")
+    }
+
+    override fun getWiring(): BundleWiring {
+        TODO("Not yet implemented")
     }
 }

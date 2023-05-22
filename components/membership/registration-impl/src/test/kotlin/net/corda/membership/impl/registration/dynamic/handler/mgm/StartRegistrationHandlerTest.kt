@@ -1,5 +1,7 @@
 package net.corda.membership.impl.registration.dynamic.handler.mgm
 
+import net.corda.avro.serialization.CordaAvroDeserializer
+import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureSpec
@@ -14,11 +16,13 @@ import net.corda.data.membership.common.RegistrationRequestDetails
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.preauth.PreAuthToken
 import net.corda.data.membership.state.RegistrationState
+import net.corda.data.p2p.app.AppMessage
 import net.corda.membership.impl.registration.dynamic.handler.MemberTypeChecker
 import net.corda.membership.impl.registration.dynamic.handler.MissingRegistrationStateException
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandler
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandlerResult
 import net.corda.membership.impl.registration.dynamic.verifiers.RegistrationContextCustomFieldsVerifier
+import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.NOTARY_SERVICE_NAME_KEY
 import net.corda.membership.lib.InternalGroupParameters
 import net.corda.membership.lib.MemberInfoExtension.Companion.CUSTOM_KEY_PREFIX
 import net.corda.membership.lib.MemberInfoExtension.Companion.ENDPOINTS
@@ -27,16 +31,17 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.IS_MGM
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_PENDING
 import net.corda.membership.lib.MemberInfoExtension.Companion.MODIFIED_TIME
-import net.corda.membership.lib.MemberInfoExtension.Companion.PRE_AUTH_TOKEN
 import net.corda.membership.lib.MemberInfoExtension.Companion.ROLES_PREFIX
 import net.corda.membership.lib.MemberInfoExtension.Companion.SERIAL
 import net.corda.membership.lib.MemberInfoExtension.Companion.endpoints
 import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.lib.MemberInfoFactory
-import net.corda.membership.lib.NOTARY_SERVICE_NAME_KEY
 import net.corda.membership.lib.notary.MemberNotaryDetails
+import net.corda.membership.lib.registration.PRE_AUTH_TOKEN
 import net.corda.membership.lib.toMap
+import net.corda.membership.p2p.helpers.P2pRecordsFactory
 import net.corda.membership.persistence.client.MembershipPersistenceClient
+import net.corda.membership.persistence.client.MembershipPersistenceOperation
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.persistence.client.MembershipQueryResult
@@ -61,7 +66,6 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
-import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
@@ -91,6 +95,7 @@ class StartRegistrationHandlerTest {
         const val testTopic = "topic"
         const val testTopicKey = "key"
 
+        val serialisedMemberContext = byteArrayOf(0)
         val memberContext = KeyValuePairList(
             listOf(
                 KeyValuePair("key", "value"),
@@ -98,6 +103,11 @@ class StartRegistrationHandlerTest {
                 KeyValuePair("apple", "pear"),
             )
         )
+        val serialisedRegistrationContext = byteArrayOf(1)
+        val registrationContext = mock<KeyValuePairList> {
+            on { items } doReturn emptyList()
+            on { toByteBuffer() } doReturn ByteBuffer.wrap(byteArrayOf(1))
+        }
 
         val startRegistrationCommand = RegistrationCommand(StartRegistration())
 
@@ -141,6 +151,13 @@ class StartRegistrationHandlerTest {
         on { status } doReturn MEMBER_STATUS_ACTIVE
         on { serial } doReturn 1L
     }
+    private val authenticatedMessageRecord = mock<Record<String, AppMessage>>()
+    private val p2pRecordsFactory = mock<P2pRecordsFactory> {
+        on {
+            createAuthenticatedMessageRecord(any(), any(), any(), anyOrNull(), any(), any())
+        } doReturn authenticatedMessageRecord
+    }
+
 
     private val mgmMemberContext: MemberContext = mock {
         on { parse(eq(GROUP_ID), eq(String::class.java)) } doReturn groupId
@@ -170,6 +187,13 @@ class StartRegistrationHandlerTest {
     private val registrationContextCustomFieldsVerifier = mock<RegistrationContextCustomFieldsVerifier> {
         on { verify(any()) } doReturn RegistrationContextCustomFieldsVerifier.Result.Success
     }
+    private val deserializer = mock<CordaAvroDeserializer<KeyValuePairList>> {
+        on { deserialize(eq(serialisedMemberContext)) } doReturn memberContext
+        on { deserialize(eq(serialisedRegistrationContext)) } doReturn registrationContext
+    }
+    private val mockOperation = mock<MembershipPersistenceOperation<Unit>> {
+        on { execute() } doReturn MembershipPersistenceResult.success()
+    }
 
     private val registrationRequest = createRegistrationRequest()
 
@@ -190,21 +214,31 @@ class StartRegistrationHandlerTest {
             ByteBuffer.wrap("789".toByteArray())
         ),
         CryptoSignatureSpec("", null, null),
+        registrationContext,
+        CryptoSignatureWithKey(
+            ByteBuffer.wrap("456".toByteArray()),
+            ByteBuffer.wrap("789".toByteArray())
+        ),
+        CryptoSignatureSpec("", null, null),
         "",
         serial,
     )
 
     @BeforeEach
     fun setUp() {
+        val cordaAvroSerializationFactory = mock<CordaAvroSerializationFactory> {
+            on { createAvroDeserializer(any(), eq(KeyValuePairList::class.java)) } doReturn deserializer
+        }
         memberInfoFactory = mock {
             on { createMemberInfo(any<SortedMap<String, String?>>(), any()) } doReturn pendingMemberInfo
             on { createPersistentMemberInfo(eq(mgmHoldingIdentity), eq(pendingMemberInfo)) } doReturn persistentMemberInfo
         }
         membershipPersistenceClient = mock {
             on {
-                setRegistrationRequestStatus(any(), any(), eq(RegistrationStatus.STARTED_PROCESSING_BY_MGM), anyOrNull())
-            } doReturn MembershipPersistenceResult.success()
-            on { persistMemberInfo(any(), any()) } doReturn MembershipPersistenceResult.success()
+                setRegistrationRequestStatus(any(), any(), eq(RegistrationStatus.STARTED_PROCESSING_BY_MGM),
+                    anyOrNull())
+            } doReturn mockOperation
+            on { persistMemberInfo(any(), any()) } doReturn mockOperation
         }
         membershipQueryClient = mock {
             on {
@@ -225,6 +259,8 @@ class StartRegistrationHandlerTest {
             membershipPersistenceClient,
             membershipQueryClient,
             membershipGroupReaderProvider,
+            cordaAvroSerializationFactory,
+            p2pRecordsFactory,
             registrationContextCustomFieldsVerifier
         )
     }
@@ -235,14 +271,14 @@ class StartRegistrationHandlerTest {
             assertThat(updatedState).isNotNull
             assertThat(updatedState!!.registrationId).isEqualTo(registrationId)
             assertThat(updatedState!!.registeringMember).isEqualTo(aliceHoldingIdentity)
-            assertThat(outputStates).isNotEmpty.hasSize(2)
+            assertThat(outputStates).isNotEmpty.hasSize(3)
 
             assertRegistrationStarted()
 
-            val registrationCommand = this.outputStates.first().value as RegistrationCommand
+            val registrationCommand = this.outputStates.last().value as RegistrationCommand
             assertThat(registrationCommand.command).isInstanceOf(VerifyMember::class.java)
 
-            val pendingMemberRecord = this.outputStates[1].value as? PersistentMemberInfo
+            val pendingMemberRecord = this.outputStates[0].value as? PersistentMemberInfo
             assertThat(pendingMemberRecord).isNotNull
             assertThat(pendingMemberRecord).isEqualTo(persistentMemberInfo)
         }
@@ -289,8 +325,11 @@ class StartRegistrationHandlerTest {
 
     @Test
     fun `declined if updating the status of the registration request fails`() {
+        val operation = mock<MembershipPersistenceOperation<Unit>> {
+            on { execute() } doReturn MembershipPersistenceResult.Failure("error")
+        }
         whenever(membershipPersistenceClient.setRegistrationRequestStatus(any(), any(), any(), anyOrNull()))
-            .doReturn(MembershipPersistenceResult.Failure("error"))
+            .doReturn(operation)
 
         with(handler.invoke(registrationState, Record(testTopic, testTopicKey, startRegistrationCommand))) {
             assertThat(updatedState).isNotNull
@@ -394,7 +433,7 @@ class StartRegistrationHandlerTest {
             assertThat(updatedState).isNotNull
             assertThat(updatedState!!.registrationId).isEqualTo(registrationId)
             assertThat(updatedState!!.registeringMember).isEqualTo(badHoldingIdentity)
-            assertThat(outputStates).isNotEmpty.hasSize(1)
+            assertThat(outputStates).isNotEmpty.hasSize(2)
 
             assertDeclinedRegistration()
         }
@@ -416,7 +455,7 @@ class StartRegistrationHandlerTest {
             assertThat(updatedState).isNotNull
             assertThat(updatedState!!.registrationId).isEqualTo(registrationId)
             assertThat(updatedState!!.registeringMember).isEqualTo(aliceHoldingIdentity)
-            assertThat(outputStates).isNotEmpty.hasSize(1)
+            assertThat(outputStates).isNotEmpty.hasSize(2)
 
             assertDeclinedRegistration()
         }
@@ -447,7 +486,7 @@ class StartRegistrationHandlerTest {
             assertThat(updatedState).isNotNull
             assertThat(updatedState!!.registrationId).isEqualTo(registrationId)
             assertThat(updatedState!!.registeringMember).isEqualTo(aliceHoldingIdentity)
-            assertThat(outputStates).isNotEmpty.hasSize(1)
+            assertThat(outputStates).isNotEmpty.hasSize(2)
 
             assertDeclinedRegistration()
         }
@@ -460,7 +499,7 @@ class StartRegistrationHandlerTest {
             assertThat(updatedState).isNotNull
             assertThat(updatedState!!.registrationId).isEqualTo(registrationId)
             assertThat(updatedState!!.registeringMember).isEqualTo(aliceHoldingIdentity)
-            assertThat(outputStates).isNotEmpty.hasSize(1)
+            assertThat(outputStates).isNotEmpty.hasSize(2)
 
             assertDeclinedRegistration()
         }
@@ -475,14 +514,15 @@ class StartRegistrationHandlerTest {
 
     @Test
     fun `declined if member info fails to persist`() {
-        whenever(membershipPersistenceClient.persistMemberInfo(any(), any())).thenReturn(
-            MembershipPersistenceResult.Failure("error")
-        )
+        val operation = mock<MembershipPersistenceOperation<Unit>> {
+            on { execute() } doReturn MembershipPersistenceResult.Failure("error")
+        }
+        whenever(membershipPersistenceClient.persistMemberInfo(any(), any())).thenReturn(operation)
         with(handler.invoke(registrationState, Record(testTopic, testTopicKey, startRegistrationCommand))) {
             assertThat(updatedState).isNotNull
             assertThat(updatedState!!.registrationId).isEqualTo(registrationId)
             assertThat(updatedState!!.registeringMember).isEqualTo(aliceHoldingIdentity)
-            assertThat(outputStates).isNotEmpty.hasSize(1)
+            assertThat(outputStates).isNotEmpty.hasSize(2)
 
             assertDeclinedRegistration()
         }
@@ -668,7 +708,7 @@ class StartRegistrationHandlerTest {
             assertThat(updatedState).isNotNull
             assertThat(updatedState!!.registrationId).isEqualTo(registrationId)
             assertThat(updatedState!!.registeringMember).isEqualTo(aliceHoldingIdentity)
-            assertThat(outputStates).isNotEmpty.hasSize(1)
+            assertThat(outputStates).isNotEmpty.hasSize(2)
 
             assertDeclinedRegistration()
         }
@@ -805,13 +845,12 @@ class StartRegistrationHandlerTest {
     inner class PreAuthTokenTest {
         @Test
         fun `Invalid UUID for preauth token results in declined registration`() {
-            whenever(memberMemberContext.parseOrNull(PRE_AUTH_TOKEN, UUID::class.java)).doThrow(
-                IllegalArgumentException("bad-token")
+            whenever(registrationContext.items).doReturn(
+                listOf(KeyValuePair(PRE_AUTH_TOKEN, "bad-token"))
             )
 
             val result = handler.invoke(registrationState, Record(testTopic, testTopicKey, startRegistrationCommand))
 
-            verify(memberMemberContext).parseOrNull(PRE_AUTH_TOKEN, UUID::class.java)
             verify(membershipQueryClient, never()).queryPreAuthTokens(any(), any(), any(), any())
             result.assertDeclinedRegistration()
         }
@@ -819,7 +858,9 @@ class StartRegistrationHandlerTest {
         @Test
         fun `Exception while querying for pre-auth tokens causes a declined registration`() {
             val token = UUID(0, 1)
-            whenever(memberMemberContext.parseOrNull(PRE_AUTH_TOKEN, UUID::class.java)).doReturn(token)
+            whenever(registrationContext.items).doReturn(
+                listOf(KeyValuePair(PRE_AUTH_TOKEN, token.toString()))
+            )
             whenever(membershipQueryClient.queryPreAuthTokens(any(), any(), eq(token), any())).doReturn(
                 MembershipQueryResult.Failure("failed-query")
             )
@@ -833,7 +874,10 @@ class StartRegistrationHandlerTest {
         @Test
         fun `No matching pre-auth token results in declined registration`() {
             val token = UUID(0, 1)
-            whenever(memberMemberContext.parseOrNull(PRE_AUTH_TOKEN, UUID::class.java)).doReturn(token)
+
+            whenever(registrationContext.items).doReturn(
+                listOf(KeyValuePair(PRE_AUTH_TOKEN, token.toString()))
+            )
             whenever(membershipQueryClient.queryPreAuthTokens(any(), any(), eq(token), any())).doReturn(
                 MembershipQueryResult.Success(emptyList())
             )
@@ -848,7 +892,9 @@ class StartRegistrationHandlerTest {
         fun `Matching pre-auth token found results in started registration`() {
             val token = UUID(0, 1)
             val persistedToken: PreAuthToken = mock()
-            whenever(memberMemberContext.parseOrNull(PRE_AUTH_TOKEN, UUID::class.java)).doReturn(token)
+            whenever(registrationContext.items).doReturn(
+                listOf(KeyValuePair(PRE_AUTH_TOKEN, token.toString()))
+            )
             whenever(membershipQueryClient.queryPreAuthTokens(any(), any(), eq(token), any())).doReturn(
                 MembershipQueryResult.Success(listOf(persistedToken))
             )
@@ -864,7 +910,9 @@ class StartRegistrationHandlerTest {
             val persistedToken: PreAuthToken = mock {
                 on { ttl } doReturn null
             }
-            whenever(memberMemberContext.parseOrNull(PRE_AUTH_TOKEN, UUID::class.java)).doReturn(token)
+            whenever(registrationContext.items).doReturn(
+                listOf(KeyValuePair(PRE_AUTH_TOKEN, token.toString()))
+            )
             whenever(membershipQueryClient.queryPreAuthTokens(any(), any(), eq(token), any())).doReturn(
                 MembershipQueryResult.Success(listOf(persistedToken))
             )
@@ -880,7 +928,9 @@ class StartRegistrationHandlerTest {
             val persistedToken: PreAuthToken = mock {
                 on { ttl } doReturn clock.instant().plusSeconds(600)
             }
-            whenever(memberMemberContext.parseOrNull(PRE_AUTH_TOKEN, UUID::class.java)).doReturn(token)
+            whenever(registrationContext.items).doReturn(
+                listOf(KeyValuePair(PRE_AUTH_TOKEN, token.toString()))
+            )
             whenever(membershipQueryClient.queryPreAuthTokens(any(), any(), eq(token), any())).doReturn(
                 MembershipQueryResult.Success(listOf(persistedToken))
             )
@@ -896,7 +946,9 @@ class StartRegistrationHandlerTest {
             val persistedToken: PreAuthToken = mock {
                 on { ttl } doReturn clock.instant().minusSeconds(600)
             }
-            whenever(memberMemberContext.parseOrNull(PRE_AUTH_TOKEN, UUID::class.java)).doReturn(token)
+            whenever(registrationContext.items).doReturn(
+                listOf(KeyValuePair(PRE_AUTH_TOKEN, token.toString()))
+            )
             whenever(membershipQueryClient.queryPreAuthTokens(any(), any(), eq(token), any())).doReturn(
                 MembershipQueryResult.Success(listOf(persistedToken))
             )
@@ -914,7 +966,7 @@ class StartRegistrationHandlerTest {
         assertExpectedOutputStates(DeclineRegistration::class.java)
 
     private fun RegistrationHandlerResult.assertExpectedOutputStates(expectedResultClass: Class<*>) {
-        with(outputStates.first()) {
+        with(outputStates.last()) {
             assertThat(topic).isEqualTo(Schemas.Membership.REGISTRATION_COMMAND_TOPIC)
             assertThat(key).isEqualTo(testTopicKey)
             assertThat(value).isInstanceOf(RegistrationCommand::class.java)

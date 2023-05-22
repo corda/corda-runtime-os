@@ -12,20 +12,14 @@ import net.corda.schema.Schemas.Membership.MEMBER_LIST_TOPIC
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.toAvro
-import java.util.concurrent.TimeUnit
 
 internal class MGMRegistrationOutputPublisher(
     private val memberInfoFactory: MemberInfoFactory,
-    private val publisherFactory: () -> Publisher,
 ) {
 
-    private companion object {
-        const val PUBLICATION_TIMEOUT_SECONDS = 30L
-    }
-
-    fun publish(
+    fun createRecords(
         mgmInfo: MemberInfo
-    ) {
+    ): Collection<Record<*, *>> {
         val holdingIdentity = mgmInfo.holdingIdentity
         val holdingIdentityShortHash = holdingIdentity.shortHash.value
         val avroHoldingIdentity = holdingIdentity.toAvro()
@@ -46,16 +40,7 @@ internal class MGMRegistrationOutputPublisher(
             )
         )
 
-        try {
-            publisherFactory
-                .invoke()
-                .publish(listOf(mgmRecord, eventRecord))
-                .forEach {
-                    it.get(PUBLICATION_TIMEOUT_SECONDS, TimeUnit.SECONDS)
-                }
-        } catch (ex: CordaMessageAPIFatalException) {
-            throw MGMRegistrationOutputPublisherException(ex.message ?: "Unknown failure.", ex)
-        }
+        return listOf(mgmRecord, eventRecord)
     }
 }
 

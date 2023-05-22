@@ -33,6 +33,8 @@ class JPABackingStoreEntitiesIntegrationTest {
     private val testClock =
         AutoTickTestClock(Instant.now().truncatedTo(ChronoUnit.MILLIS), Duration.ofMillis(1))
 
+    private val originatorX500Name = "C=GB, L=London, O=Alice"
+
     private companion object {
         private const val MIGRATION_FILE_LOCATION =
             "net/corda/db/schema/vnode-uniqueness/migration/vnode-uniqueness-creation-v1.0.xml"
@@ -122,6 +124,7 @@ class JPABackingStoreEntitiesIntegrationTest {
         val txDetails = UniquenessTransactionDetailEntity(
             txId.algorithm,
             txId.bytes,
+            originatorX500Name,
             testClock.instant(),
             testClock.instant(),
             RESULT_ACCEPTED_REPRESENTATION
@@ -187,6 +190,7 @@ class JPABackingStoreEntitiesIntegrationTest {
             UniquenessTransactionDetailEntity(
                 txId.algorithm,
                 txId.bytes,
+                originatorX500Name,
                 testClock.instant(),
                 testClock.instant(),
                 RESULT_ACCEPTED_REPRESENTATION),

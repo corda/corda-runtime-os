@@ -5,13 +5,11 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_CPI_NAME
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_CPI_SIGNER_HASH
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_CPI_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_ROLE
-import net.corda.membership.lib.MemberInfoExtension.Companion.PRE_AUTH_TOKEN
 import net.corda.membership.lib.MemberInfoExtension.Companion.ROLES_PREFIX
 import net.corda.membership.lib.MemberInfoExtension.Companion.SOFTWARE_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.cpiInfo
 import net.corda.membership.lib.MemberInfoExtension.Companion.isNotary
 import net.corda.membership.lib.MemberInfoExtension.Companion.isStaticMgm
-import net.corda.membership.lib.MemberInfoExtension.Companion.preAuthToken
 import net.corda.membership.lib.MemberInfoExtension.Companion.softwareVersion
 import net.corda.utilities.parse
 import net.corda.utilities.parseOrNull
@@ -25,7 +23,6 @@ import org.junit.jupiter.api.assertDoesNotThrow
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
-import java.util.UUID
 
 class MemberInfoExtensionTest {
     private val memberContext: MemberContext = mock()
@@ -73,33 +70,6 @@ class MemberInfoExtensionTest {
         }
 
         assertThat(result).isEqualTo(softwareVersion)
-    }
-
-    @Test
-    fun `Pre-auth token can be parsed from member context is present`() {
-        val preAuthToken = UUID(0, 1)
-        whenever(
-            memberContext.parseOrNull<UUID>(PRE_AUTH_TOKEN)
-        ) doReturn preAuthToken
-
-        val result = assertDoesNotThrow {
-            memberInfo.preAuthToken
-        }
-
-        assertThat(result).isEqualTo(preAuthToken)
-    }
-
-    @Test
-    fun `Pre-auth token from member context is null if not set`() {
-        whenever(
-            memberContext.parseOrNull<UUID>(PRE_AUTH_TOKEN)
-        ) doReturn null
-
-        val result = assertDoesNotThrow {
-            memberInfo.preAuthToken
-        }
-
-        assertThat(result).isNull()
     }
 
     @Nested
@@ -169,7 +139,8 @@ class MemberInfoExtensionTest {
                 mapOf(
                     "$ROLES_PREFIX.0" to "fake role",
                     "$ROLES_PREFIX.1" to NOTARY_ROLE,
-                ).entries)
+                ).entries
+            )
 
             val result = assertDoesNotThrow { memberInfo.isNotary() }
 

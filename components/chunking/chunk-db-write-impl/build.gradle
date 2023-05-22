@@ -46,6 +46,7 @@ dependencies {
     implementation project(':libs:membership:network-info')
     implementation project(':components:chunking:chunk-db-write')
     implementation project(':components:membership:certificates-service')
+    integrationTestImplementation project(":libs:serialization:serialization-avro")
 
     implementation "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
     implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
@@ -66,6 +67,7 @@ dependencies {
     integrationTestImplementation project(':libs:platform-info')
 
     testImplementation "com.google.jimfs:jimfs:$jimfsVersion"
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 
     testRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"

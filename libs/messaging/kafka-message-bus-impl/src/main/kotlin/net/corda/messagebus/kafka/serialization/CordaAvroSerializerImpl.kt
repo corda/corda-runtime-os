@@ -1,13 +1,23 @@
 package net.corda.messagebus.kafka.serialization
 
-import net.corda.data.CordaAvroSerializer
+import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.schema.registry.AvroSchemaRegistry
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.apache.kafka.common.serialization.Serializer
 import org.apache.kafka.common.serialization.StringSerializer
 import org.slf4j.LoggerFactory
 
+/**
+ * Corda avro serializer impl
+ *
+ * @param T Type to serialize
+ * @property schemaRegistry the Avro-based Schemas
+ * @property throwOnSerializationError throw exception or return null on failure to serialize (defaults to throw)
+ * @property onError lambda to be run on serialization error
+ */
 class CordaAvroSerializerImpl<T : Any>(
-    private val schemaRegistry: AvroSchemaRegistry
+    private val schemaRegistry: AvroSchemaRegistry,
+    private val onError: ((ByteArray) -> Unit)?
 ) : CordaAvroSerializer<T>, Serializer<T> {
 
     companion object {
@@ -15,21 +25,32 @@ class CordaAvroSerializerImpl<T : Any>(
         private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
+    /**
+     * Serialize data T.
+     * On serialization failure if throwOnSerializationError is true, throw and exception. If false, return null
+     * if onError is not null, run the lambda
+     *
+     * @param data
+     * @return Serialized data or null
+     */
     override fun serialize(data: T): ByteArray? {
-        return when (data) {
-            is String -> stringSerializer.serialize(null, data)
-            is ByteArray -> data
-            else -> {
-                try {
+        try {
+            return when (data) {
+                is String -> stringSerializer.serialize(null, data)
+                is ByteArray -> data
+                else -> {
                     schemaRegistry.serialize(data).array()
-                } catch (ex: Throwable) {
-                    log.error("Failed to serialize instance of class type ${data::class.java.name} containing " +
-                            "$data", ex)
-                    throw ex
                 }
             }
+        } catch (ex: Throwable) {
+            val message = "Failed to serialize instance of class type ${data::class.java.name} containing $data"
+
+            onError?.invoke(message.toByteArray())
+            log.error(message, ex)
+            throw CordaRuntimeException(message, ex)
         }
     }
+
 
     override fun serialize(topic: String?, data: T?): ByteArray? {
         return when (data) {

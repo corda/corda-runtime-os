@@ -18,6 +18,7 @@ dependencies {
     implementation "com.networknt:json-schema-validator:$networkntJsonSchemaVersion"
     implementation project(':libs:membership:membership-common')
 
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
 }

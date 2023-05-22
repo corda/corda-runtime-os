@@ -1,6 +1,6 @@
 package net.corda.membership.impl.registration.dynamic
 
-import net.corda.data.CordaAvroSerializationFactory
+import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.data.membership.command.registration.RegistrationCommand
 import net.corda.data.membership.command.registration.member.PersistMemberRegistrationState
 import net.corda.data.membership.command.registration.member.ProcessMemberVerificationRequest
@@ -72,6 +72,7 @@ class RegistrationProcessor(
             membershipPersistenceClient,
             membershipQueryClient,
             membershipGroupReaderProvider,
+            cordaAvroSerializationFactory,
         ),
         ApproveRegistration::class.java to ApproveRegistrationHandler(
             membershipPersistenceClient,
@@ -122,7 +123,7 @@ class RegistrationProcessor(
         state: RegistrationState?,
         event: Record<String, RegistrationCommand>
     ): StateAndEventProcessor.Response<RegistrationState> {
-        logger.info("Processing registration command.")
+        logger.info("Processing registration command for registration ID ${event.key}.")
         val result = try {
             when (val command = event.value?.command) {
                 is QueueRegistration -> {

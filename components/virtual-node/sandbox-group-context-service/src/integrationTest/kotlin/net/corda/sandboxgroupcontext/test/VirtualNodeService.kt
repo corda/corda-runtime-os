@@ -12,6 +12,7 @@ import net.corda.testing.sandboxes.CpiLoader
 import net.corda.testing.sandboxes.VirtualNodeLoader
 import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.flows.SubFlow
+import net.corda.v5.ledger.utxo.ContractState
 import net.corda.virtualnode.VirtualNodeInfo
 import org.junit.jupiter.api.fail
 import org.osgi.framework.BundleContext
@@ -44,7 +45,7 @@ class VirtualNodeService @Activate constructor(
     }
     init {
         // setting cache size to 2 as some tests require 2 concurrent sandboxes for validating they don't overlap
-        sandboxGroupContextComponent.initCaches(2)
+        sandboxGroupContextComponent.resizeCaches(2)
     }
 
     private val vnodes = mutableMapOf<SandboxGroupContext, VirtualNodeInfo>()
@@ -119,6 +120,10 @@ class VirtualNodeService @Activate constructor(
 
     fun getFlowClass(className: String, groupContext: SandboxGroupContext): Class<out Flow> {
         return groupContext.sandboxGroup.loadClassFromMainBundles(className, Flow::class.java)
+    }
+
+    fun getContractStateClass(groupContext: SandboxGroupContext, className: String): Class<out ContractState> {
+        return groupContext.sandboxGroup.loadClassFromMainBundles(className, ContractState::class.java)
     }
 
     fun getBundleContext(clazz: Class<*>): BundleContext {

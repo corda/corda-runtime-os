@@ -18,19 +18,10 @@ import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertDoesNotThrow
-import org.junit.jupiter.api.assertThrows
-import org.mockito.kotlin.any
-import org.mockito.kotlin.argumentCaptor
-import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
-import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
-import org.mockito.kotlin.verify
-import org.mockito.kotlin.whenever
 import java.util.UUID
-import java.util.concurrent.CompletableFuture
 
 class MGMRegistrationOutputPublisherTest {
 
@@ -51,33 +42,11 @@ class MGMRegistrationOutputPublisherTest {
     private val memberInfoFactory = mock<MemberInfoFactory> {
         on { createPersistentMemberInfo(holdingIdentity.toAvro(), memberInfo) } doReturn persistentInfo
     }
-
-    private val recordPublishFuture: CompletableFuture<Unit> = mock {
-        on { get(any(), any()) } doAnswer {}
-    }
-    private val publishedRecordsCaptor = argumentCaptor<List<Record<*, *>>>()
-    private val publishedRecords
-        get() = assertDoesNotThrow { publishedRecordsCaptor.firstValue }
-
-    private val publisher: Publisher = mock {
-        on { publish(publishedRecordsCaptor.capture()) } doReturn listOf(recordPublishFuture)
-    }
-
-    private val publisherFactory = { publisher }
-
-    private val mgmRegistrationOutputPublisher = MGMRegistrationOutputPublisher(
-        memberInfoFactory,
-        publisherFactory
-    )
+    private val mgmRegistrationOutputPublisher = MGMRegistrationOutputPublisher(memberInfoFactory)
 
     @Test
     fun `Publish runs successfully`() {
-        assertDoesNotThrow {
-            mgmRegistrationOutputPublisher.publish(memberInfo)
-        }
-
-        verify(publisher).publish(any())
-        verify(recordPublishFuture).get(any(), any())
+        val publishedRecords = mgmRegistrationOutputPublisher.createRecords(memberInfo)
 
         assertThat(publishedRecords.map { it.topic }).containsExactlyInAnyOrder(
             MEMBER_LIST_TOPIC,
@@ -113,15 +82,6 @@ class MGMRegistrationOutputPublisherTest {
             assertThat(it.value).isInstanceOf(PersistentMemberInfo::class.java)
             val memberInfo = it.value as PersistentMemberInfo
             assertThat(memberInfo).isEqualTo(persistentInfo)
-        }
-    }
-
-    @Test
-    fun `Expected exception thrown is exception thrown from record publishing`() {
-        whenever(publisher.publish(any())).doThrow(CordaMessageAPIFatalException::class)
-
-        assertThrows<MGMRegistrationOutputPublisherException> {
-            mgmRegistrationOutputPublisher.publish(memberInfo)
         }
     }
 }

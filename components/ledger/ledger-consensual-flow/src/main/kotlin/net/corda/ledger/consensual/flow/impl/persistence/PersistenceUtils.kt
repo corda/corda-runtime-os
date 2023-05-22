@@ -18,6 +18,6 @@ inline fun <T> wrapWithPersistenceException(function: () -> T): T {
     return try {
         function()
     } catch (e: CordaRuntimeException) {
-        throw CordaPersistenceException(e.message ?: "Exception occurred when executing persistence operation")
+        throw CordaPersistenceException(e.message ?: "Exception occurred when executing persistence operation", e)
     }
 }

@@ -1,5 +1,6 @@
 package net.corda.messagebus.kafka.producer
 
+import io.micrometer.core.instrument.binder.MeterBinder
 import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messagebus.api.producer.CordaProducer
@@ -12,6 +13,8 @@ import net.corda.messaging.api.chunking.ChunkSerializerService
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.exception.CordaMessageAPIProducerRequiresReset
+import net.corda.metrics.CordaMetrics
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.clients.consumer.OffsetAndMetadata
 import org.apache.kafka.clients.producer.Callback
@@ -38,12 +41,15 @@ import org.slf4j.LoggerFactory
 class CordaKafkaProducerImpl(
     private val config: ResolvedProducerConfig,
     private val producer: Producer<Any, Any>,
-    private val chunkSerializerService: ChunkSerializerService
+    private val chunkSerializerService: ChunkSerializerService,
+    private val producerMetricsBinder : MeterBinder,
 ) : CordaProducer {
     private val topicPrefix = config.topicPrefix
     private val transactional = config.transactional
 
     init {
+        producerMetricsBinder.bindTo(CordaMetrics.registry)
+
         if (transactional) {
             initTransactionForProducer()
         }
@@ -98,7 +104,17 @@ class CordaKafkaProducerImpl(
         if (chunkedRecords.isNotEmpty()) {
             sendChunks(chunkedRecords, callback, partition)
         } else {
-            producer.send(record.toKafkaRecord(topicPrefix , partition), callback?.toKafkaCallback())
+            try {
+                producer.send(record.toKafkaRecord(topicPrefix , partition), callback?.toKafkaCallback())
+            } catch (ex: CordaRuntimeException) {
+                val msg = "Failed to send record to topic ${record.topic} with key ${record.key}"
+                if (config.throwOnSerializationError) {
+                    log.error(msg, ex)
+                    throw ex
+                } else {
+                    log.warn(msg, ex)
+                }
+            }
         }
     }
 
@@ -217,6 +233,8 @@ class CordaKafkaProducerImpl(
                 "CordaKafkaProducer failed to close producer safely. This can be observed when there are " +
                         "no reachable brokers. ClientId: ${config.clientId}", ex
             )
+        } finally {
+            (producerMetricsBinder as? AutoCloseable)?.close()
         }
     }
 

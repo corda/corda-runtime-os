@@ -1,10 +1,11 @@
 plugins {
+    id 'org.jetbrains.kotlin.jvm'
     id 'net.corda.plugins.cordapp-cpk2'
 }
 
 cordapp {
-    targetPlatformVersion platformVersion as Integer
-    minimumPlatformVersion platformVersion as Integer
+    targetPlatformVersion platformVersion.toInteger()
+    minimumPlatformVersion platformVersion.toInteger()
     contract {
         name "Utxo Ledger demo contract"
         versionId 1
@@ -14,10 +15,11 @@ cordapp {
 
 dependencies {
     cordaProvided platform("net.corda:corda-api:$cordaApiVersion")
+    cordaProvided 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     cordaProvided 'net.corda:corda-ledger-utxo'
 
     testImplementation project(":libs:application:application-impl")
     testImplementation project(":libs:sandbox-types")
-    testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 }

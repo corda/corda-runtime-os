@@ -2,12 +2,9 @@ plugins {
     id 'corda.common-publishing'
     id 'corda.quasar-app'
     id 'corda.docker-app'
-    id 'corda.javadoc-generation'
 }
 
 ext {
-    releasable = true
-
     // Use db message bus emulation by default, but allow switching to kafka without manually updating the build file
     if (!project.hasProperty('busImpl')) {
         busImplementation = 'db-message-bus-impl'
@@ -118,25 +115,10 @@ tasks.named('jar', Jar) {
 }
 
 publishing {
-    // Allow us to publish to S3 bucket for DP2 - to be extracted to plugin
-    if (project.hasProperty('maven.repo.s3') && project.hasProperty('releasable')) {
-        repositories {
-            maven {
-                url = project.findProperty('maven.repo.s3')
-                credentials(AwsCredentials) {
-                    accessKey "${System.getenv('AWS_ACCESS_KEY_ID')}"
-                    secretKey "${System.getenv('AWS_SECRET_ACCESS_KEY')}"
-                    sessionToken "${System.getenv('AWS_SESSION_TOKEN')}"
-                }
-            }
-        }
-    }
-
     publications {
         maven(MavenPublication) {
             artifactId 'corda-combined-worker'
             groupId project.group
-            artifact javadocJar
             pom {
                 name = 'corda-combined-worker'
                 description = 'corda-combined-worker'

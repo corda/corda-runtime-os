@@ -1,7 +1,6 @@
 package net.corda.session.mapper.service.executor
 
 import com.typesafe.config.ConfigValueFactory
-import java.time.Instant
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.mapper.ExecuteCleanup
@@ -24,6 +23,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.time.Instant
 
 class FlowMapperMessageProcessorTest {
 
@@ -56,12 +56,6 @@ class FlowMapperMessageProcessorTest {
     }
 
     @Test
-    fun `when state is closing new session events are not processed`() {
-        flowMapperMessageProcessor.onNext(buildMapperState(FlowMapperStateType.CLOSING), buildMapperEvent(buildSessionEvent()))
-        verify(flowMapperEventExecutorFactory, times(0)).create(any(), any(), anyOrNull(), any(), any())
-    }
-
-    @Test
     fun `when state is null new session events are processed`() {
         flowMapperMessageProcessor.onNext(null, buildMapperEvent(buildSessionEvent()))
         verify(flowMapperEventExecutorFactory, times(1)).create(any(), any(), anyOrNull(), any(), any())
@@ -80,21 +74,41 @@ class FlowMapperMessageProcessorTest {
     }
 
     @Test
-    fun `when state is OPEN expired session events are processed`() {
+    fun `when state is OPEN expired session events are not processed`() {
         flowMapperMessageProcessor.onNext(buildMapperState(FlowMapperStateType.OPEN), buildMapperEvent(buildSessionEvent(Instant.now()
             .minusSeconds(100000))))
         verify(flowMapperEventExecutorFactory, times(0)).create(any(), any(), anyOrNull(), any(), any())
     }
 
     @Test
-    fun `when state is CLOSING new session events are not processed`() {
-        flowMapperMessageProcessor.onNext(buildMapperState(FlowMapperStateType.CLOSING), buildMapperEvent(buildSessionEvent()))
+    fun `when state is CLOSING expired session events are not processed`() {
+        flowMapperMessageProcessor.onNext(buildMapperState(FlowMapperStateType.CLOSING), buildMapperEvent(buildSessionEvent(Instant.now()
+            .minusSeconds(100000))))
+        verify(flowMapperEventExecutorFactory, times(0)).create(any(), any(), anyOrNull(), any(), any())
+    }
+
+    @Test
+    fun `when state is ERROR expired session events are not processed`() {
+        flowMapperMessageProcessor.onNext(buildMapperState(FlowMapperStateType.ERROR), buildMapperEvent(buildSessionEvent(Instant.now()
+            .minusSeconds(100000))))
         verify(flowMapperEventExecutorFactory, times(0)).create(any(), any(), anyOrNull(), any(), any())
     }
 
     @Test
     fun `when state is CLOSING cleanup events are processed`() {
         flowMapperMessageProcessor.onNext(buildMapperState(FlowMapperStateType.CLOSING), buildMapperEvent(ExecuteCleanup()))
+        verify(flowMapperEventExecutorFactory, times(1)).create(any(), any(), anyOrNull(), any(), any())
+    }
+
+    @Test
+    fun `when state is CLOSING new session events are processed`() {
+        flowMapperMessageProcessor.onNext(buildMapperState(FlowMapperStateType.CLOSING), buildMapperEvent(buildSessionEvent(Instant.now())))
+        verify(flowMapperEventExecutorFactory, times(1)).create(any(), any(), anyOrNull(), any(), any())
+    }
+
+    @Test
+    fun `when state is ERROR new session events are processed`() {
+        flowMapperMessageProcessor.onNext(buildMapperState(FlowMapperStateType.ERROR), buildMapperEvent(buildSessionEvent(Instant.now())))
         verify(flowMapperEventExecutorFactory, times(1)).create(any(), any(), anyOrNull(), any(), any())
     }
 }

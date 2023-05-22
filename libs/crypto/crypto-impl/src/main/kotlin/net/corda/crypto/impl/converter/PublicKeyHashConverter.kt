@@ -1,21 +1,22 @@
 package net.corda.crypto.impl.converter
 
-import net.corda.crypto.cipher.suite.PublicKeyHash
+import net.corda.crypto.core.parseSecureHash
 import net.corda.layeredpropertymap.ConversionContext
 import net.corda.layeredpropertymap.CustomPropertyConverter
+import net.corda.v5.crypto.SecureHash
 import org.osgi.service.component.annotations.Component
 
 /**
- * Converter class, converting from String to [PublicKeyHash] object.
+ * Converter class, converting from String to [SecureHash].
  */
 @Component(service = [CustomPropertyConverter::class])
-class PublicKeyHashConverter : CustomPropertyConverter<PublicKeyHash> {
-    override val type: Class<PublicKeyHash>
-        get() = PublicKeyHash::class.java
+class PublicKeyHashConverter : CustomPropertyConverter<SecureHash> {
+    override val type: Class<SecureHash>
+        get() = SecureHash::class.java
 
-    override fun convert(context: ConversionContext): PublicKeyHash? = if (context.value("hash") != null) {
-        context.value("hash")?.let { PublicKeyHash.parse(it) }
+    override fun convert(context: ConversionContext): SecureHash? = if (context.value("hash") != null) {
+        context.value("hash")?.let { parseSecureHash(it) }
     } else {
-        context.value()?.let { PublicKeyHash.parse(it) }
+        context.value()?.let { parseSecureHash(it) }
     }
 }

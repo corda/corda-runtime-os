@@ -117,7 +117,8 @@ internal class DeliveryTracker(
 
         override val dominoTile = publisher.dominoTile
 
-        fun replayMessage(message: AuthenticatedMessageAndKey) {
+        @Suppress("unused_parameter")
+        fun replayMessage(message: AuthenticatedMessageAndKey, messageId: MessageId) {
             publisher.withLifecycleLock {
                 if (!isRunning) {
                     throw IllegalStateException("A message was added for replay before the DeliveryTracker was started.")

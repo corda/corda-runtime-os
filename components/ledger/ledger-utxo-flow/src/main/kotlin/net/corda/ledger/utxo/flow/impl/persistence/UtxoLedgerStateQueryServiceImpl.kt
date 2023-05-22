@@ -1,17 +1,11 @@
 package net.corda.ledger.utxo.flow.impl.persistence
 
-import net.corda.crypto.core.parseSecureHash
 import net.corda.flow.external.events.executor.ExternalEventExecutor
-import net.corda.ledger.utxo.data.state.StateAndRefImpl
-import net.corda.ledger.utxo.data.state.TransactionStateImpl
-import net.corda.ledger.utxo.data.state.getEncumbranceGroup
-import net.corda.ledger.utxo.data.transaction.UtxoOutputInfoComponent
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindUnconsumedStatesByTypeExternalEventFactory
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindUnconsumedStatesByTypeParameters
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.ResolveStateRefsExternalEventFactory
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.ResolveStateRefsParameters
 import net.corda.sandbox.type.UsedByFlow
-import net.corda.utilities.serialization.deserialize
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.ledger.utxo.ContractState
@@ -35,21 +29,13 @@ class UtxoLedgerStateQueryServiceImpl @Activate constructor(
 ) : UtxoLedgerStateQueryService, UsedByFlow, SingletonSerializeAsToken {
 
     @Suspendable
-    @Suppress("UNCHECKED_CAST")
     override fun <T: ContractState> findUnconsumedStatesByType(stateClass: Class<out T>): List<StateAndRef<T>> {
         return wrapWithPersistenceException {
             externalEventExecutor.execute(
                 FindUnconsumedStatesByTypeExternalEventFactory::class.java,
                 FindUnconsumedStatesByTypeParameters(stateClass)
             )
-        }.map {
-            val info = serializationService.deserialize<UtxoOutputInfoComponent>(it.info)
-            val contractState = serializationService.deserialize<ContractState>(it.data)
-            StateAndRefImpl(
-                state = TransactionStateImpl(contractState as T, info.notaryName, info.notaryKey, info.getEncumbranceGroup()),
-                ref = StateRef(parseSecureHash(it.transactionId), it.leafIndex)
-            )
-        }
+        }.map { it.toStateAndRef(serializationService)}
     }
 
     @Suspendable
@@ -59,13 +45,6 @@ class UtxoLedgerStateQueryServiceImpl @Activate constructor(
                 ResolveStateRefsExternalEventFactory::class.java,
                 ResolveStateRefsParameters(stateRefs)
             )
-        }.map {
-            val info = serializationService.deserialize<UtxoOutputInfoComponent>(it.info)
-            val contractState = serializationService.deserialize<ContractState>(it.data)
-            StateAndRefImpl(
-                state = TransactionStateImpl(contractState, info.notaryName, info.notaryKey, info.getEncumbranceGroup()),
-                ref = StateRef(parseSecureHash(it.transactionId), it.leafIndex)
-            )
-        }
+        }.map { it.toStateAndRef<ContractState>(serializationService) }
     }
 }

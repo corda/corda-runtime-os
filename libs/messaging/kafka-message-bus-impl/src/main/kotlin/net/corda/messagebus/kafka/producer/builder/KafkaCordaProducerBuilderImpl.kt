@@ -1,5 +1,6 @@
 package net.corda.messagebus.kafka.producer.builder
 
+import io.micrometer.core.instrument.binder.kafka.KafkaClientMetrics
 import java.util.Properties
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messagebus.api.configuration.ProducerConfig
@@ -13,9 +14,9 @@ import net.corda.messaging.api.chunking.MessagingChunkFactory
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.schema.configuration.MessagingConfig
 import net.corda.schema.registry.AvroSchemaRegistry
-import net.corda.utilities.classload.OsgiDelegatedClassLoader
 import org.apache.kafka.clients.producer.KafkaProducer
 import org.osgi.framework.FrameworkUtil
+import org.osgi.framework.wiring.BundleWiring
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -43,35 +44,49 @@ class KafkaCordaProducerBuilderImpl @Activate constructor(
         private val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
-    override fun createProducer(producerConfig: ProducerConfig, messageBusConfig: SmartConfig): CordaProducer {
+    override fun createProducer(
+        producerConfig: ProducerConfig,
+        messageBusConfig: SmartConfig,
+        onSerializationError: ((ByteArray) -> Unit)?
+    ): CordaProducer {
         val configResolver = MessageBusConfigResolver(messageBusConfig.factory)
         val (resolvedConfig, kafkaProperties) = configResolver.resolve(messageBusConfig, producerConfig)
 
         return executeKafkaActionWithRetry(
             action = {
-                val producer = createKafkaProducer(kafkaProperties)
+                val producer = createKafkaProducer(kafkaProperties, onSerializationError)
                 val maxAllowedMessageSize = messageBusConfig.getLong(MessagingConfig.MAX_ALLOWED_MSG_SIZE)
                 val producerChunkService = messagingChunkFactory.createChunkSerializerService(maxAllowedMessageSize)
-                CordaKafkaProducerImpl(resolvedConfig, producer, producerChunkService)
+                CordaKafkaProducerImpl(
+                    resolvedConfig,
+                    producer,
+                    producerChunkService,
+                    KafkaClientMetrics(producer)
+                )
             },
-            errorMessage = { "SubscriptionProducerBuilderImpl failed to producer with clientId ${producerConfig.clientId}, " +
-                    "with configuration: $messageBusConfig" },
+            errorMessage = {
+                "SubscriptionProducerBuilderImpl failed to producer with clientId ${producerConfig.clientId}, " +
+                        "with configuration: $messageBusConfig"
+            },
             log = log
         )
     }
 
-    private fun createKafkaProducer(kafkaProperties: Properties): KafkaProducer<Any, Any> {
+    private fun createKafkaProducer(
+        kafkaProperties: Properties,
+        onSerializationError: ((ByteArray) -> Unit)?
+    ): KafkaProducer<Any, Any> {
         val contextClassLoader = Thread.currentThread().contextClassLoader
         val currentBundle = FrameworkUtil.getBundle(KafkaProducer::class.java)
 
         return try {
             if (currentBundle != null) {
-                Thread.currentThread().contextClassLoader = OsgiDelegatedClassLoader(currentBundle)
+                Thread.currentThread().contextClassLoader = currentBundle.adapt(BundleWiring::class.java).classLoader
             }
             KafkaProducer(
                 kafkaProperties,
-                CordaAvroSerializerImpl(avroSchemaRegistry),
-                CordaAvroSerializerImpl(avroSchemaRegistry)
+                CordaAvroSerializerImpl(avroSchemaRegistry, onSerializationError),
+                CordaAvroSerializerImpl(avroSchemaRegistry, onSerializationError)
             )
         } finally {
             Thread.currentThread().contextClassLoader = contextClassLoader

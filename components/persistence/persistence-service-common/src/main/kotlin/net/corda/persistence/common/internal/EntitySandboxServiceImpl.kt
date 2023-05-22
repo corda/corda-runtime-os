@@ -1,6 +1,6 @@
 package net.corda.persistence.common.internal
 
-import net.corda.cpiinfo.read.CpiInfoReadService
+import net.corda.cpk.read.CpkReadService
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.flow.external.events.responses.exceptions.CpkNotAvailableException
 import net.corda.flow.external.events.responses.exceptions.VirtualNodeException
@@ -24,9 +24,11 @@ import net.corda.sandboxgroupcontext.service.registerCustomCryptography
 import net.corda.sandboxgroupcontext.service.registerCustomJsonDeserializers
 import net.corda.sandboxgroupcontext.service.registerCustomJsonSerializers
 import net.corda.utilities.debug
+import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.observer.UtxoLedgerTokenStateObserver
 import net.corda.v5.ledger.utxo.query.VaultNamedQueryFactory
+import net.corda.v5.ledger.utxo.query.json.ContractStateVaultJsonFactory
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
@@ -51,8 +53,8 @@ import org.slf4j.LoggerFactory
 class EntitySandboxServiceImpl @Activate constructor(
     @Reference
     private val sandboxService: SandboxGroupContextComponent,
-    @Reference
-    private val cpiInfoService: CpiInfoReadService,
+    @Reference(service = CpkReadService::class)
+    private val cpkReadService: CpkReadService,
     @Reference
     private val virtualNodeInfoService: VirtualNodeInfoReadService,
     @Reference
@@ -62,18 +64,16 @@ class EntitySandboxServiceImpl @Activate constructor(
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
-    override fun get(holdingIdentity: HoldingIdentity): SandboxGroupContext {
+    override fun get(holdingIdentity: HoldingIdentity, cpkFileHashes: Set<SecureHash>): SandboxGroupContext {
         // We're throwing internal exceptions so that we can relay some information back to the flow worker
         // on how to proceed with any request to us that fails.
         val virtualNode = virtualNodeInfoService.get(holdingIdentity)
             ?: throw VirtualNodeException("Could not get virtual node for $holdingIdentity")
 
-        val cpks = cpiInfoService.get(virtualNode.cpiIdentifier)?.cpksMetadata
-            ?: throw VirtualNodeException("Could not get list of CPKs for ${virtualNode.cpiIdentifier}")
+        if (!sandboxService.hasCpks(cpkFileHashes))
+            throw CpkNotAvailableException("CPKs not available (yet): $cpkFileHashes")
 
-        val cpkIds = cpks.mapTo(mutableSetOf(), CpkMetadata::fileChecksum)
-        if (!sandboxService.hasCpks(cpkIds))
-            throw CpkNotAvailableException("CPKs not available (yet): $cpkIds")
+        val cpks = cpkFileHashes.mapNotNull { cpkReadService.get(it)?.metadata }
 
         return sandboxService.getOrCreate(getVirtualNodeContext(virtualNode, cpks)) { _, ctx ->
             initializeSandbox(cpks, virtualNode, ctx)
@@ -88,6 +88,7 @@ class EntitySandboxServiceImpl @Activate constructor(
         val customCrypto = sandboxService.registerCustomCryptography(ctx)
         val customSerializers = sandboxService.registerCordappCustomSerializers(ctx)
         val namedQueryFactories = sandboxService.registerLedgerNamedQueryFactories(ctx)
+        val contractStateJsonFactories = sandboxService.registerLedgerContractStateJsonFactories(ctx)
         val emfCloseable = putEntityManager(ctx, cpks, virtualNode)
         putTokenStateObservers(ctx, cpks)
 
@@ -115,6 +116,7 @@ class EntitySandboxServiceImpl @Activate constructor(
             customSerializers.close()
             customCrypto.close()
             namedQueryFactories.close()
+            contractStateJsonFactories.close()
         }
     }
 
@@ -222,6 +224,16 @@ class EntitySandboxServiceImpl @Activate constructor(
             sandboxGroupContext,
             serviceNames = { metadata -> metadata.cordappManifest.ledgerNamedQueryClasses },
             serviceMarkerType = VaultNamedQueryFactory::class.java
+        )
+    }
+
+    private fun SandboxGroupContextComponent.registerLedgerContractStateJsonFactories(
+        sandboxGroupContext: SandboxGroupContext
+    ): AutoCloseable {
+        return registerMetadataServices(
+            sandboxGroupContext,
+            serviceNames = { metadata -> metadata.cordappManifest.ledgerStateJsonFactories },
+            serviceMarkerType = ContractStateVaultJsonFactory::class.java
         )
     }
 }

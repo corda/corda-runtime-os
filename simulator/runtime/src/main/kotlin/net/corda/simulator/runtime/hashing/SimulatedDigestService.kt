@@ -26,4 +26,12 @@ class SimulatedDigestService : DigestService {
     override fun digestLength(digestName: DigestAlgorithmName): Int {
         TODO("Not yet implemented")
     }
+
+    override fun defaultDigestAlgorithm(): DigestAlgorithmName {
+        TODO("Not yet implemented")
+    }
+
+    override fun supportedDigestAlgorithms(): MutableSet<DigestAlgorithmName> {
+        TODO("Not yet implemented")
+    }
 }

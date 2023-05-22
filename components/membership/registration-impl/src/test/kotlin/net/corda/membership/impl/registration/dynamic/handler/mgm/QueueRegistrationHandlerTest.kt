@@ -1,8 +1,7 @@
 package net.corda.membership.impl.registration.dynamic.handler.mgm
 
-import net.corda.data.crypto.wire.CryptoSignatureSpec
-import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.identity.HoldingIdentity
+import net.corda.data.membership.SignedData
 import net.corda.data.membership.command.registration.RegistrationCommand
 import net.corda.data.membership.command.registration.mgm.CheckForPendingRegistration
 import net.corda.data.membership.command.registration.mgm.QueueRegistration
@@ -10,6 +9,7 @@ import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.p2p.MembershipRegistrationRequest
 import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.persistence.client.MembershipPersistenceClient
+import net.corda.membership.persistence.client.MembershipPersistenceOperation
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.messaging.api.records.Record
 import net.corda.v5.base.types.MemberX500Name
@@ -21,7 +21,6 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
-import java.nio.ByteBuffer
 import java.util.UUID
 
 class QueueRegistrationHandlerTest {
@@ -37,12 +36,13 @@ class QueueRegistrationHandlerTest {
     private val member = HoldingIdentity(aliceName.toString(), groupId.toString())
     private val mgm = HoldingIdentity(mgmName.toString(), groupId.toString())
 
-    private val memberContext = mock<ByteBuffer>()
-    private val memberSignature = mock<CryptoSignatureWithKey>()
-    private val memberSignatureSpec = mock<CryptoSignatureSpec>()
+    private val memberContext = mock<SignedData>()
+    private val registrationContext = mock<SignedData>()
 
     private val registrationRequest =
-        MembershipRegistrationRequest(registrationId, memberContext, memberSignature, memberSignatureSpec, SERIAL)
+        MembershipRegistrationRequest(registrationId, memberContext, registrationContext, SERIAL)
+
+    private val mockPersistenceOperation = mock<MembershipPersistenceOperation<Unit>>()
     private val membershipPersistenceClient = mock<MembershipPersistenceClient> {
         on {
             persistRegistrationRequest(
@@ -52,12 +52,11 @@ class QueueRegistrationHandlerTest {
                     registrationRequest.registrationId,
                     member.toCorda(),
                     registrationRequest.memberContext,
-                    registrationRequest.memberSignature,
-                    registrationRequest.memberSignatureSpec,
+                    registrationRequest.registrationContext,
                     registrationRequest.serial,
                 ))
             )
-        } doReturn MembershipPersistenceResult.success()
+        } doReturn mockPersistenceOperation
     }
     private val inputCommand = RegistrationCommand(QueueRegistration(mgm, member, registrationRequest, 0))
 
@@ -65,6 +64,7 @@ class QueueRegistrationHandlerTest {
 
     @Test
     fun `invoke returns check pending registration command as next step`() {
+        whenever(mockPersistenceOperation.execute()).thenReturn(MembershipPersistenceResult.success())
         with(handler.invoke(null, Record(TOPIC, KEY, inputCommand))) {
             assertThat(updatedState).isNull()
             assertThat(outputStates.size).isEqualTo(1)
@@ -80,8 +80,10 @@ class QueueRegistrationHandlerTest {
 
     @Test
     fun `retry if queueing the request failed`() {
-        whenever(membershipPersistenceClient.persistRegistrationRequest(any(), any()))
-            .thenReturn(MembershipPersistenceResult.Failure("error happened"))
+        whenever(mockPersistenceOperation.getOrThrow()).thenThrow(
+            MembershipPersistenceResult.PersistenceRequestException(MembershipPersistenceResult.Failure<Unit>("error"))
+        )
+        whenever(membershipPersistenceClient.persistRegistrationRequest(any(), any())).thenReturn(mockPersistenceOperation)
         with(handler.invoke(null, Record(TOPIC, KEY, inputCommand))) {
             assertThat(updatedState).isNull()
             assertThat(outputStates.size).isEqualTo(1)

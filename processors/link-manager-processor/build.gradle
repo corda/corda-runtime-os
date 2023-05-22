@@ -3,17 +3,16 @@ plugins {
     id 'corda.common-library'
 }
 
+description 'Link Manager Processor'
+
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
-    compileOnly 'org.osgi:osgi.core'
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
-    compileOnly "org.osgi:org.osgi.service.cm:$osgiCmVersion"
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
 
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation "com.typesafe:config:$typeSafeConfigVersion"
-    implementation "info.picocli:picocli:$picocliVersion"
     implementation 'org.slf4j:slf4j-api'
     implementation 'net.corda:corda-base'
     implementation 'net.corda:corda-config-schema'
@@ -25,13 +24,13 @@ dependencies {
     implementation project(':libs:lifecycle:lifecycle')
     implementation project(':libs:messaging:messaging')
     implementation project(':libs:utilities')
-    implementation project(':osgi-framework-api')
     implementation project(":components:membership:group-policy")
     implementation project(":components:crypto:crypto-client")
     implementation project(":components:membership:membership-group-read")
     implementation project(":components:membership:membership-persistence-client")
+    implementation project(':components:virtual-node:virtual-node-info-read-service')
+    implementation project(":components:virtual-node:cpi-info-read-service")
 
-    runtimeOnly 'net.corda:corda-avro-schema'
     runtimeOnly project(":components:crypto:crypto-client-impl")
     runtimeOnly project(':components:configuration:configuration-read-service-impl')
     runtimeOnly project(':libs:messaging:messaging-impl')
@@ -44,8 +43,4 @@ dependencies {
     runtimeOnly project(":libs:layered-property-map")
     runtimeOnly project(":libs:crypto:crypto-impl")
     runtimeOnly project(":components:membership:membership-group-read-impl")
-    implementation project(':components:virtual-node:virtual-node-info-read-service')
-    implementation project(":components:virtual-node:cpi-info-read-service")
 }
-
-description 'Link Manager Processor'

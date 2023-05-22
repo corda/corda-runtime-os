@@ -27,6 +27,7 @@ import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.records.Record
+import net.corda.membership.persistence.client.MembershipPersistenceOperation
 import net.corda.schema.Schemas.Membership.MEMBERSHIP_ACTIONS_TOPIC
 import net.corda.schema.Schemas.Membership.MEMBER_LIST_TOPIC
 import net.corda.schema.Schemas.Membership.REGISTRATION_COMMAND_TOPIC
@@ -66,6 +67,13 @@ class ApproveRegistrationHandlerTest {
         createHoldingIdentity("mgm"),
         isMgm = true,
     )
+    private class SuccessOperation<T>(
+        private val result: T,
+    ) : MembershipPersistenceOperation<T> {
+        override fun execute() = MembershipPersistenceResult.Success(result)
+
+        override fun createAsyncCommands() = emptyList<Record<*, *>>()
+    }
     private val membershipPersistenceClient = mock<MembershipPersistenceClient> {
         on {
             setMemberAndRegistrationRequestAsApproved(
@@ -73,20 +81,20 @@ class ApproveRegistrationHandlerTest {
                 member,
                 registrationId
             )
-        } doReturn MembershipPersistenceResult.Success(memberInfo)
+        } doReturn SuccessOperation(memberInfo)
         on {
             setMemberAndRegistrationRequestAsApproved(
                 owner,
                 notary,
                 registrationId
             )
-        } doReturn MembershipPersistenceResult.Success(notaryInfo)
+        } doReturn SuccessOperation(notaryInfo)
         on {
             addNotaryToGroupParameters(
                 mgm.holdingIdentity,
                 notaryInfo
             )
-        } doReturn MembershipPersistenceResult.Success(mockSignedGroupParameters)
+        } doReturn SuccessOperation(mockSignedGroupParameters)
     }
     private val clock = TestClock(Instant.ofEpochMilli(0))
     private val cordaAvroSerializationFactory = mock<CordaAvroSerializationFactory>()
@@ -99,7 +107,7 @@ class ApproveRegistrationHandlerTest {
                 any(),
                 anyOrNull(),
                 any(),
-                eq(MembershipStatusFilter.ACTIVE),
+                eq(MembershipStatusFilter.ACTIVE_OR_SUSPENDED),
             )
         } doReturn record
     }
@@ -165,7 +173,7 @@ class ApproveRegistrationHandlerTest {
                 ),
                 anyOrNull(),
                 any(),
-                eq(MembershipStatusFilter.ACTIVE),
+                eq(MembershipStatusFilter.ACTIVE_OR_SUSPENDED),
             )
         ).doReturn(record)
 

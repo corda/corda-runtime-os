@@ -1,7 +1,7 @@
 package net.corda.messaging.publisher
 
-import net.corda.data.CordaAvroDeserializer
-import net.corda.data.CordaAvroSerializer
+import net.corda.avro.serialization.CordaAvroDeserializer
+import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.messaging.RPCRequest
 import net.corda.data.messaging.RPCResponse
 import net.corda.data.messaging.ResponseStatus
@@ -90,7 +90,7 @@ class CordaRPCSenderImplTest {
 
     @Test
     fun `test producer is closed properly`() {
-        doAnswer { cordaProducer }.whenever(cordaProducerBuilder).createProducer(any(), any())
+        doAnswer { cordaProducer }.whenever(cordaProducerBuilder).createProducer(any(), any(), anyOrNull())
         doThrow(CordaMessageAPIFatalException("Bail out here")).whenever(cordaConsumerBuilder)
             .createConsumer<Any, Any>(any(), any(), any(), any(), any(), any())
 
@@ -105,7 +105,7 @@ class CordaRPCSenderImplTest {
         cordaSenderImpl.start()
         waitWhile(Duration.ofSeconds(TEST_TIMEOUT_SECONDS)) { cordaSenderImpl.isRunning }
 
-        verify(cordaProducerBuilder).createProducer(any(), eq(config.messageBusConfig))
+        verify(cordaProducerBuilder).createProducer(any(), eq(config.messageBusConfig), anyOrNull())
 
         cordaSenderImpl.close()
         verify(cordaProducer, times(1)).close()
@@ -115,7 +115,7 @@ class CordaRPCSenderImplTest {
 
     @Test
     fun `send returns the correct reply`() {
-        doAnswer { cordaProducer }.whenever(cordaProducerBuilder).createProducer(any(), any())
+        doAnswer { cordaProducer }.whenever(cordaProducerBuilder).createProducer(any(), any(), anyOrNull())
         val partitionListener = argumentCaptor<CordaConsumerRebalanceListener>()
 
         doNothing().whenever(cordaConsumer).subscribe(any<Collection<String>>(), partitionListener.capture())
@@ -229,7 +229,7 @@ class CordaRPCSenderImplTest {
                 throw CordaMessageAPIIntermittentException("")
             }
             cordaProducer
-        }.whenever(cordaProducerBuilder).createProducer(any(), any())
+        }.whenever(cordaProducerBuilder).createProducer(any(), any(), anyOrNull())
 
         doThrow(CordaMessageAPIFatalException("bail out here")).whenever(cordaConsumerBuilder)
             .createConsumer<Any, Any>(any(), any(), any(), any(), any(), any())
@@ -246,7 +246,7 @@ class CordaRPCSenderImplTest {
         waitWhile(Duration.ofSeconds(TEST_TIMEOUT_SECONDS)) { cordaSenderImpl.isRunning }
 
         assertFalse(firstCall)
-        verify(cordaProducerBuilder, times(2)).createProducer(any(), any())
+        verify(cordaProducerBuilder, times(2)).createProducer(any(), any(), anyOrNull())
         verify(cordaConsumerBuilder, times(1)).createConsumer<Any, Any>(any(), any(), any(), any(), any(), anyOrNull())
 
         assertFalse(lifeCycleCoordinatorMockHelper.lifecycleCoordinatorThrows)
@@ -268,7 +268,7 @@ class CordaRPCSenderImplTest {
                 }
             }
             cordaProducer
-        }.whenever(cordaProducerBuilder).createProducer(any(), any())
+        }.whenever(cordaProducerBuilder).createProducer(any(), any(), anyOrNull())
 
         doAnswer {
             @Suppress("TooGenericExceptionThrown")

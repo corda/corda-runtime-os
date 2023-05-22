@@ -33,4 +33,8 @@ class TestEntityRestResourceImpl : TestEntityRestResource, PluggableRestResource
     override fun deleteUsingQuery(query: String): String {
         return "Deleted using query: $query"
     }
+
+    override fun putInputEcho(echoParams: TestEntityRestResource.EchoParams): TestEntityRestResource.EchoResponse {
+        return TestEntityRestResource.EchoResponse(echoParams.content)
+    }
 }

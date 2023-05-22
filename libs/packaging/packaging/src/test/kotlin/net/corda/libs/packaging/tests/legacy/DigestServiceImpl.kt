@@ -29,8 +29,20 @@ class DigestServiceImpl : PlatformDigestService {
         return SecureHashImpl(platformDigestName.name, messageDigest.digest())
     }
 
+    override fun parseSecureHash(algoNameAndHexString: String): SecureHash {
+        TODO("Not yet implemented")
+    }
+
     override fun digestLength(platformDigestName: DigestAlgorithmName): Int {
         return digestFor(platformDigestName).digestLength
+    }
+
+    override fun defaultDigestAlgorithm(): DigestAlgorithmName {
+        TODO("Not yet implemented")
+    }
+
+    override fun supportedDigestAlgorithms(): Set<DigestAlgorithmName> {
+        TODO("Not yet implemented")
     }
 
     private fun digestAs(bytes: ByteArray, digestAlgorithmName: DigestAlgorithmName): ByteArray {

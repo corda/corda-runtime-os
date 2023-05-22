@@ -1,6 +1,8 @@
 package net.corda.messaging.subscription.consumer
 
+import net.corda.messagebus.api.CordaTopicPartition
 import net.corda.messagebus.api.consumer.CordaConsumer
+import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import java.time.Clock
@@ -19,6 +21,34 @@ interface StateAndEventConsumer<K : Any, S : Any, E : Any> : AutoCloseable {
         message: String,
         exception: Exception? = null
     ) : CordaRuntimeException(message, exception)
+
+    /**
+     * Perform any management of the state and event consumers when new partitions are assigned to the event consumer.
+     *
+     * @param partitions The set of partitions that has been assigned to this event consumer.
+     */
+    fun onPartitionsAssigned(partitions: Set<CordaTopicPartition>)
+
+    /**
+     * Perform any management of the state and event consumers when partitions are revoked from the event consumer.
+     *
+     * @param partitions The set of partitions that have been revoked from this event consumer.
+     */
+    fun onPartitionsRevoked(partitions: Set<CordaTopicPartition>)
+
+    /**
+     * Poll for any events.
+     *
+     * @return The list of consumer records returned from the poll
+     */
+    fun pollEvents(): List<CordaConsumerRecord<K, E>>
+
+    /**
+     * Reset the event consumer to its last committed position.
+     *
+     * Should be invoked if processing of a batch of events fails to ensure that they are polled again.
+     */
+    fun resetEventOffsetPosition()
 
     /**
      * Get the in memory state value for a given [key]

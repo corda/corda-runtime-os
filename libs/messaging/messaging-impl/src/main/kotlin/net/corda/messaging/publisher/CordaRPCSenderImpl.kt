@@ -1,7 +1,7 @@
 package net.corda.messaging.publisher
 
-import net.corda.data.CordaAvroDeserializer
-import net.corda.data.CordaAvroSerializer
+import net.corda.avro.serialization.CordaAvroDeserializer
+import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.messaging.RPCRequest
 import net.corda.data.messaging.RPCResponse
@@ -26,6 +26,7 @@ import net.corda.messaging.api.exception.CordaRPCAPISenderException
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.subscription.RPCSubscription
 import net.corda.messaging.config.ResolvedSubscriptionConfig
+import net.corda.messaging.constants.MetricsConstants
 import net.corda.messaging.subscription.ThreadLooper
 import net.corda.messaging.subscription.consumer.listener.RPCConsumerRebalanceListener
 import net.corda.messaging.utils.FutureTracker
@@ -70,9 +71,9 @@ internal class CordaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
     )
 
     private val processorMeter = CordaMetrics.Metric.MessageProcessorTime.builder()
-        .withTag(CordaMetrics.Tag.MessagePatternType, "RPC")
+        .withTag(CordaMetrics.Tag.MessagePatternType, MetricsConstants.RPC_PATTERN_TYPE)
         .withTag(CordaMetrics.Tag.MessagePatternClientId, config.clientId)
-        .withTag(CordaMetrics.Tag.OperationName, "rpcSender")
+        .withTag(CordaMetrics.Tag.OperationName, MetricsConstants.RPC_SENDER_OPERATION)
         .build()
 
     private val errorMsg = "Failed to read records from group ${config.group}, topic ${config.topic}"

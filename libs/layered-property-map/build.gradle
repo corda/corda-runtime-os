@@ -2,11 +2,6 @@ plugins {
     id 'corda.common-publishing'
     id 'corda.common-library'
     id 'corda.osgi-test-conventions'
-    id 'corda.javadoc-generation'
-}
-
-ext {
-    releasable = true
 }
 
 description 'Layered property map internal API and implementation'
@@ -25,6 +20,7 @@ dependencies {
 
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
     testImplementation "net.corda:corda-crypto"
+    testImplementation project(':libs:crypto:crypto-core')
     testImplementation project(":testing:test-utilities")
 
     integrationTestImplementation project(":libs:layered-property-map:layered-property-map-test-converter")

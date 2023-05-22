@@ -625,6 +625,7 @@ class MGMRestResourceImpl internal constructor(
             net.corda.data.membership.common.RegistrationStatus.PENDING_AUTO_APPROVAL -> RegistrationStatus.PENDING_AUTO_APPROVAL
             net.corda.data.membership.common.RegistrationStatus.DECLINED -> RegistrationStatus.DECLINED
             net.corda.data.membership.common.RegistrationStatus.INVALID -> RegistrationStatus.INVALID
+            net.corda.data.membership.common.RegistrationStatus.FAILED -> RegistrationStatus.FAILED
             net.corda.data.membership.common.RegistrationStatus.APPROVED -> RegistrationStatus.APPROVED
         }
 
