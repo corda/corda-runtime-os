@@ -53,7 +53,6 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
                 getExternalEvent(context, now) +
                 postProcessRetries(context)
 
-        context.flowMetrics.flowSessionMessageSent(context.inputEvent.payload::class.java.name)
         context.flowMetrics.flowEventCompleted(context.inputEvent.payload::class.java.name)
 
         return context.copy(outputRecords = context.outputRecords + outputRecords)
@@ -81,7 +80,10 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
                 }
             }
             .flatMap { (_, events) -> events }
-            .map { event -> flowRecordFactory.createFlowMapperEventRecord(event.sessionId, event) }
+            .map { event ->
+                context.flowMetrics.flowSessionMessageSent(event.payload::class.java.name)
+                flowRecordFactory.createFlowMapperEventRecord(event.sessionId, event)
+            }
     }
 
     private fun verifyCounterparty(
