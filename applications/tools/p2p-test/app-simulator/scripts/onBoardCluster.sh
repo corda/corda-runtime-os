@@ -45,7 +45,7 @@ build_cpi() {
 
    cd $WORKING_DIR
 
-   cp $REPO_TOP_LEVEL_DIR/testing/cpbs/test-cordapp/build/libs/test-cordapp-5.0.0.0-SNAPSHOT-package.cpb ./
+   cp $REPO_TOP_LEVEL_DIR/testing/cpbs/test-cordapp/build/libs/test-cordapp-$CORDA_VERSION-SNAPSHOT-package.cpb ./
 
    rm -f test-cordapp-5.0.0.0-SNAPSHOT-package.cpi
 
@@ -53,7 +53,7 @@ build_cpi() {
    keytool -genkeypair -alias "signing key 1" -keystore signingkeys.pfx -storepass "keystore password" -dname "cn=CPI Plugin Example - Signing Key 1, o=R3, L=London, c=GB" -keyalg RSA -storetype pkcs12 -validity 4000
    keytool -importcert -keystore signingkeys.pfx -storepass "keystore password" -noprompt -alias gradle-plugin-default-key -file "$SCRIPT_DIR/gradle-plugin-default-key.pem"
 
-   $CORDA_CLI_DIR/build/generatedScripts/corda-cli.sh package create-cpi --cpb test-cordapp-5.0.0.0-SNAPSHOT-package.cpb --group-policy $1 --cpi-name "test cordapp" --cpi-version "1.0.0.0-SNAPSHOT" --file test-cordapp-5.0.0.0-SNAPSHOT-package.cpi --keystore signingkeys.pfx --storepass "keystore password" --key "signing key 1" 
+   $CORDA_CLI_DIR/build/generatedScripts/corda-cli.sh package create-cpi --cpb test-cordapp-$CORDA_VERSION-SNAPSHOT-package.cpb --group-policy $1 --cpi-name "test cordapp" --cpi-version "1.0.0.0-SNAPSHOT" --file test-cordapp-5.0.0.0-SNAPSHOT-package.cpi --keystore signingkeys.pfx --storepass "keystore password" --key "signing key 1" 
 }
 
 trust_cpi_keys() {
@@ -217,12 +217,14 @@ register() {
     # Register
     registrationId=$(curl --fail-with-body -s -S --insecure -u admin:admin -d " $COMMAND " https://$1/api/v1/membership/$2 | jq -r .registrationId)
 
+    echo "Registration Id $registrationId for $2"
+
     # Wait for registration to be approve
     wait_for_approve $1 $2 $registrationId
 }
 
 complete_network_setup() {
-    curl --fail-with-body -s -S -k -u admin:admin -X PUT -d '{"p2pTlsCertificateChainAlias": "cluster-tls", "sessionKeyId": "'$3'"}' "https://$1/api/v1/network/setup/$2"
+    curl --fail-with-body -s -S -k -u admin:admin -X PUT -d '{"p2pTlsCertificateChainAlias": "cluster-tls", "sessionKeysAndCertificates": [{"sessionKeyId": "'$3'", "preferred": true}]}' "https://$1/api/v1/network/setup/$2"
 }
 
 extract_group_policy() {
@@ -310,6 +312,7 @@ on_board_node() {
    CPI_CHECKSUM=$(cpi_checksum $1 $CPI_ID)
 
    NODE_HOLDING_ID_SHORT_HASH=$(create_vnode $1 $CPI_CHECKSUM $2)
+   echo "$2 Holding Id Short Hash $NODE_HOLDING_ID_SHORT_HASH"
 
    NODE_SESSION_KEY_ID=$(assign_hsm_and_generate_session_key_pair $1 $NODE_HOLDING_ID_SHORT_HASH)
    echo Node $2 Session Key Id: $NODE_SESSION_KEY_ID
