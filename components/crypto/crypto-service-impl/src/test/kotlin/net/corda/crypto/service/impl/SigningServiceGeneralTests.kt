@@ -76,13 +76,7 @@ class SigningServiceGeneralTests {
         val repo = mock<SigningRepository> {
             on { findKey(any<PublicKey>()) } doThrow exception
         }
-        val signingService = SigningServiceImpl(
-            cryptoServiceFactory = mock(),
-            signingRepositoryFactory = { repo },
-            schemeMetadata = schemeMetadata,
-            digestService = mockDigestService(),
-            cache = makeCache(),
-        )
+        val signingService = makeSigningServiceImpl(repo, makeCache())
         val thrown = assertThrows(exception::class.java) {
             signingService.sign(
                 tenantId = tenantId,
@@ -103,13 +97,8 @@ class SigningServiceGeneralTests {
         val repo = mock<SigningRepository> {
             on { findKey(any<PublicKey>()) } doReturn null
         }
-        val signingService = SigningServiceImpl(
-            cryptoServiceFactory = mock(),
-            signingRepositoryFactory = { repo },
-            schemeMetadata = schemeMetadata,
-            digestService = mockDigestService(),
-            cache = makeCache()
-        )
+        val cache = makeCache()
+        val signingService = makeSigningServiceImpl(repo, cache)
         val publicKey = mock<PublicKey> {
             on { encoded } doReturn UUID.randomUUID().toString().toByteArray()
         }
@@ -139,13 +128,7 @@ class SigningServiceGeneralTests {
         val repo = mock<SigningRepository> {
             on { findKey(any<PublicKey>()) } doThrow exception
         }
-        val signingService = SigningServiceImpl(
-            signingRepositoryFactory = { repo },
-            cryptoServiceFactory = mock(),
-            schemeMetadata = schemeMetadata,
-            digestService = mockDigestService(),
-            cache = makeCache(),
-        )
+        val signingService = makeSigningServiceImpl(repo, makeCache())
         val thrown = assertThrows(exception::class.java) {
             signingService.deriveSharedSecret(
                 tenantId = UUID.randomUUID().toString(),
@@ -167,13 +150,7 @@ class SigningServiceGeneralTests {
         val repo = mock<SigningRepository> {
             on { findKey(any<PublicKey>()) } doReturn null
         }
-        val signingService = SigningServiceImpl(
-            signingRepositoryFactory = { repo },
-            cryptoServiceFactory = mock(),
-            schemeMetadata = schemeMetadata,
-            digestService = mockDigestService(),
-            cache = makeCache(),
-        )
+        val signingService = makeSigningServiceImpl(repo, makeCache())
         assertThrows(IllegalArgumentException::class.java) {
             signingService.deriveSharedSecret(
                 tenantId = UUID.randomUUID().toString(),
@@ -210,13 +187,7 @@ class SigningServiceGeneralTests {
         val repo = mock<SigningRepository> {
             on { findKey(anyString()) } doReturn existingKey
         }
-        val signingService = SigningServiceImpl(
-            signingRepositoryFactory = { repo },
-            cryptoServiceFactory = mock(),
-            schemeMetadata = schemeMetadata,
-            digestService = mockDigestService(),
-            cache = makeCache(),
-        )
+        val signingService = makeSigningServiceImpl(repo, makeCache())
         assertThrows(KeyAlreadyExistsException::class.java) {
             signingService.generateKeyPair(
                 tenantId = UUID.randomUUID().toString(),
@@ -244,13 +215,7 @@ class SigningServiceGeneralTests {
         val repo = mock<SigningRepository> {
             on { findKey(anyString()) } doThrow exception
         }
-        val signingService = SigningServiceImpl(
-            signingRepositoryFactory = { repo },
-            cryptoServiceFactory = mock(),
-            schemeMetadata = schemeMetadata,
-            digestService = mockDigestService(),
-            cache = mock(),
-        )
+        val signingService = makeSigningServiceImpl(repo, mock())
         var thrown = assertThrows(exception::class.java) {
             signingService.generateKeyPair(
                 tenantId = UUID.randomUUID().toString(),
@@ -290,13 +255,7 @@ class SigningServiceGeneralTests {
         val store = mock<SigningRepository> {
             on { query(any(), any(), any(), any()) } doReturn emptyList()
         }
-        val signingService = SigningServiceImpl(
-            signingRepositoryFactory = { store },
-            cryptoServiceFactory = mock(),
-            schemeMetadata = schemeMetadata,
-            digestService = mockDigestService(),
-            cache = mock(),
-        )
+        val signingService = makeSigningServiceImpl(store, mock())
         val filter = mapOf(
             CATEGORY_FILTER to category,
             SCHEME_CODE_NAME_FILTER to schemeCodeName,
@@ -332,13 +291,7 @@ class SigningServiceGeneralTests {
         val repo = mock<SigningRepository> {
             on { query(any(), any(), any(), any()) } doReturn emptyList()
         }
-        val signingService = SigningServiceImpl(
-            signingRepositoryFactory = { repo },
-            cryptoServiceFactory = mock(),
-            schemeMetadata = schemeMetadata,
-            digestService = mockDigestService(),
-            cache = mock(),
-        )
+        val signingService = makeSigningServiceImpl(repo, mock())
         val filter = emptyMap<String, String>()
         val result = signingService.querySigningKeys(
             tenantId,
@@ -355,6 +308,20 @@ class SigningServiceGeneralTests {
             SigningKeyOrderBy.valueOf(orderBy.toString()),
             filter
         )
+    }
+
+    private fun makeSigningServiceImpl(
+        repo: SigningRepository,
+        cache: Cache<CacheKey, SigningKeyInfo>,
+    ): SigningServiceImpl {
+        val signingService = SigningServiceImpl(
+            cryptoServiceFactory = mock(),
+            signingRepositoryFactory = { repo },
+            schemeMetadata = schemeMetadata,
+            digestService = mockDigestService(),
+            cache = cache
+        )
+        return signingService
     }
 
     @Test
