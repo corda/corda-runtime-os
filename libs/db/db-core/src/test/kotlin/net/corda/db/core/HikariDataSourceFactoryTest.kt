@@ -21,9 +21,10 @@ class HikariDataSourceFactoryTest {
             jdbcUrl = "url",
             username = "user",
             password = "password",
+            maximumPoolSize = 44,
         )
 
-        assertThat(hikariConfig?.minimumIdle).isEqualTo(-1)
+        assertThat(hikariConfig?.minimumIdle).isEqualTo(44)
     }
 
     @Test
