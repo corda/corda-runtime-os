@@ -34,6 +34,11 @@ fun DataSourceFactory.createFromConfig(config: SmartConfig): CloseableDataSource
     val driver = configWithFallback.getString(DatabaseConfig.JDBC_DRIVER)
     val jdbcUrl = configWithFallback.getString(DatabaseConfig.JDBC_URL)
     val maxPoolSize = configWithFallback.getInt(DatabaseConfig.DB_POOL_MAX_SIZE)
+    val minPoolSize = if(configWithFallback.hasPath(DatabaseConfig.DB_POOL_MIN_SIZE)) {
+        configWithFallback.getInt(DatabaseConfig.DB_POOL_MIN_SIZE)
+    } else {
+        null
+    }
 
     val username = if (configWithFallback.hasPath(DatabaseConfig.DB_USER)) configWithFallback.getString(DatabaseConfig.DB_USER) else
         throw DBConfigurationException(
@@ -52,7 +57,9 @@ fun DataSourceFactory.createFromConfig(config: SmartConfig): CloseableDataSource
         jdbcUrl = jdbcUrl,
         username = username,
         password = password,
-        maximumPoolSize = maxPoolSize)
+        maximumPoolSize = maxPoolSize,
+        minimumPoolSize = minPoolSize,
+    )
 }
 
 @Suppress("LongParameterList")
@@ -63,6 +70,7 @@ fun createDbConfig(
     jdbcDriver: String? = null,
     jdbcUrl: String? = null,
     maxPoolSize: Int? = null,
+    minPoolSize: Int? = null,
     key: String = "database-password"
 ): SmartConfig {
     var config =
@@ -74,6 +82,8 @@ fun createDbConfig(
         config = config.withValue(DatabaseConfig.JDBC_URL, ConfigValueFactory.fromAnyRef(jdbcUrl))
     if(null != maxPoolSize)
         config = config.withValue(DatabaseConfig.DB_POOL_MAX_SIZE, ConfigValueFactory.fromAnyRef(maxPoolSize))
+    if(null != minPoolSize)
+        config = config.withValue(DatabaseConfig.DB_POOL_MIN_SIZE, ConfigValueFactory.fromAnyRef(minPoolSize))
     return config
 
 }

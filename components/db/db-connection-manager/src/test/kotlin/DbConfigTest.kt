@@ -1,4 +1,5 @@
 import com.typesafe.config.ConfigFactory
+import com.typesafe.config.ConfigValueFactory
 import net.corda.db.connection.manager.DBConfigurationException
 import net.corda.db.connection.manager.createDbConfig
 import net.corda.db.connection.manager.createFromConfig
@@ -7,6 +8,7 @@ import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.libs.configuration.secret.SecretsLookupService
 import net.corda.schema.configuration.DatabaseConfig
+import net.corda.schema.configuration.DatabaseConfig.DB_POOL_MIN_SIZE
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -35,12 +37,14 @@ class DbConfigTest {
     private val driver = "driver"
     private val url = "url"
     private val poolsize = 987
+    private val minPoolSize = 5
     private val fullConfig = """
         ${DatabaseConfig.JDBC_DRIVER}=$driver
         ${DatabaseConfig.JDBC_URL}=$url
         ${DatabaseConfig.DB_POOL_MAX_SIZE}=$poolsize
         ${DatabaseConfig.DB_USER}=$user
         ${DatabaseConfig.DB_PASS}=$pass
+        ${DatabaseConfig.DB_POOL_MIN_SIZE}=null
     """.trimIndent()
     private val fullSmartConfig = SmartConfigImpl(
         ConfigFactory.parseString(fullConfig),
@@ -67,7 +71,9 @@ class DbConfigTest {
             jdbcUrl = url,
             username = user,
             password = pass,
-            maximumPoolSize = poolsize)
+            maximumPoolSize = poolsize,
+            minimumPoolSize = null,
+        )
     }
 
     @Test
@@ -79,7 +85,28 @@ class DbConfigTest {
             DEFAULT_JDBC_URL,
             user,
             pass,
-            maximumPoolSize = DB_POOL_MAX_SIZE)
+            maximumPoolSize = DB_POOL_MAX_SIZE,
+            minimumPoolSize = null,
+        )
+    }
+
+    @Test
+    fun `when minimum pull size exsits, the createFromConfig will read it`() {
+        val configWithMin = minimalSmartConfig.withValue(
+            DB_POOL_MIN_SIZE,
+            ConfigValueFactory.fromAnyRef(minPoolSize),
+        )
+
+        dataSourceFactory.createFromConfig(configWithMin)
+
+        verify(dataSourceFactory).create(
+            JDBC_DRIVER,
+            DEFAULT_JDBC_URL,
+            user,
+            pass,
+            maximumPoolSize = DB_POOL_MAX_SIZE,
+            minimumPoolSize = minPoolSize,
+        )
     }
 
     @Test
@@ -104,7 +131,7 @@ class DbConfigTest {
 
     @Test
     fun `when createDbConfig can be read`() {
-        val createdConfig = createDbConfig(smartConfigFactory, user, pass, driver, url, poolsize)
+        val createdConfig = createDbConfig(smartConfigFactory, user, pass, driver, url, poolsize, minPoolSize)
 
         assertThat(createdConfig.getString(DatabaseConfig.DB_USER)).isEqualTo(user)
         assertThat(createdConfig.getConfig(DatabaseConfig.DB_PASS)).isEqualTo(secretConfig)
@@ -112,6 +139,7 @@ class DbConfigTest {
         assertThat(createdConfig.getString(DatabaseConfig.JDBC_DRIVER)).isEqualTo(driver)
         assertThat(createdConfig.getString(DatabaseConfig.JDBC_URL)).isEqualTo(url)
         assertThat(createdConfig.getInt(DatabaseConfig.DB_POOL_MAX_SIZE)).isEqualTo(poolsize)
+        assertThat(createdConfig.getInt(DatabaseConfig.DB_POOL_MIN_SIZE)).isEqualTo(minPoolSize)
     }
 
     @Test
@@ -133,5 +161,12 @@ class DbConfigTest {
         val createdConfig = createDbConfig(smartConfigFactory, user, pass, jdbcUrl = url, jdbcDriver = driver, )
 
         assertThat(createdConfig.hasPath(DatabaseConfig.DB_POOL_MAX_SIZE)).isFalse
+    }
+
+    @Test
+    fun `when createDbConfig leave default min pool size empty`() {
+        val createdConfig = createDbConfig(smartConfigFactory, user, pass, jdbcUrl = url, jdbcDriver = driver, )
+
+        assertThat(createdConfig.hasPath(DatabaseConfig.DB_POOL_MIN_SIZE)).isFalse
     }
 }

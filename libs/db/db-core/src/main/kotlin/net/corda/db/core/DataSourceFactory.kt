@@ -38,7 +38,7 @@ interface DataSourceFactory {
         isAutoCommit: Boolean = false,
         isReadOnly: Boolean = false,
         maximumPoolSize: Int = 10,
-        minimumPoolSize: Int = maximumPoolSize,
+        minimumPoolSize: Int? = null,
         idleTimeout: Duration = Duration.ofMinutes(2),
         maxLifetime: Duration = Duration.ofMinutes(30),
         keepaliveTime: Duration = Duration.ZERO,
