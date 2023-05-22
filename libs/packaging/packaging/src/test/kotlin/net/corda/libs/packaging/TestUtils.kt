@@ -5,6 +5,7 @@ import net.corda.libs.packaging.core.CordappType
 import org.osgi.framework.Constants.BUNDLE_SYMBOLICNAME
 import org.osgi.framework.Constants.BUNDLE_VERSION
 import java.util.jar.Manifest
+import javax.naming.ldap.LdapName
 
 /**
  * Test utilities shared across multiple `install` tests.
@@ -98,4 +99,17 @@ internal object TestUtils {
 
         return Manifest(manifestString.byteInputStream())
     }
+
+    internal fun filterAndSortX500Attributes(x500Attributes: String) =
+        LdapName(x500Attributes).let {
+            val includedAttributes = it.rdns.filter { rdn ->
+                rdn.type in X500_NAME_SUPPORTED_ATTRIBUTES
+            }
+
+            val sorted = includedAttributes.sortedWith { rdn1, rdn2 ->
+                X500_NAME_SUPPORTED_ATTRIBUTES.indexOf(rdn1.type) -
+                        X500_NAME_SUPPORTED_ATTRIBUTES.indexOf(rdn2.type)
+            }
+            LdapName(sorted)
+        }.toString()
 }

@@ -156,6 +156,20 @@ class RestServerOpenApiTest : RestServerTestBase() {
             val deleteParams = delete.parameters
             assertEquals("query", deleteParams[0].name)
         }
+        with(openAPI.paths["/testentity/inputecho"]) {
+            assertNotNull(this)
+            val putParams = put.parameters
+            assertTrue(putParams.isEmpty())
+            assertEquals(
+                "#/components/schemas/EchoParams",
+                put.requestBody.content["application/json"]?.schema?.`$ref`
+            )
+
+            assertEquals(
+                "#/components/schemas/EchoResponse",
+                put.responses["200"]?.content?.get("application/json")?.schema?.`$ref`
+            )
+        }
 
         with(openAPI.paths["/health/stringmethodwithnameinannotation"]) {
             assertNotNull(this)
@@ -224,6 +238,22 @@ class RestServerOpenApiTest : RestServerTestBase() {
             val numberProperty = this.properties["number"]
             assertNotNull(numberProperty)
             assertThat(numberProperty.nullable).isFalse
+        }
+
+        with(openAPI.components.schemas["EchoParams"]) {
+            assertNotNull(this)
+            assertNull(this.nullable)
+
+            val contentProperty = this.properties["content"]
+            assertThat(contentProperty?.description).isEqualTo("Can be any value - string, number, boolean, array or object.")
+        }
+
+        with(openAPI.components.schemas["EchoResponse"]) {
+            assertNotNull(this)
+            assertNull(this.nullable)
+
+            val contentProperty = this.properties["content"]
+            assertThat(contentProperty?.description).isEqualTo("Can be any value - string, number, boolean, array or object.")
         }
     }
 

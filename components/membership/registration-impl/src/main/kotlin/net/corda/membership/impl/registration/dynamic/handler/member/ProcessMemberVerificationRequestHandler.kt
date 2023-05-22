@@ -1,6 +1,6 @@
 package net.corda.membership.impl.registration.dynamic.handler.member
 
-import net.corda.data.CordaAvroSerializationFactory
+import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.membership.command.registration.member.ProcessMemberVerificationRequest
@@ -50,11 +50,11 @@ internal class ProcessMemberVerificationRequestHandler(
 
         val registrationId = command.verificationRequest.registrationId
 
-        membershipPersistenceClient.setRegistrationRequestStatus(
+        val commands = membershipPersistenceClient.setRegistrationRequestStatus(
             member.toCorda(),
             registrationId,
             RegistrationStatus.PENDING_MEMBER_VERIFICATION,
-        )
+        ).createAsyncCommands()
 
         return RegistrationHandlerResult(
             null,
@@ -67,7 +67,7 @@ internal class ProcessMemberVerificationRequestHandler(
                         KeyValuePairList(payload)
                     )
                 )
-            )
+            ) + commands
         )
     }
 }

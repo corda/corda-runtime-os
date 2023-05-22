@@ -18,6 +18,7 @@ import net.corda.common.json.serializers.SerializationCustomizer
 import net.corda.crypto.core.parseSecureHash
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.sandbox.type.UsedByPersistence
+import net.corda.sandbox.type.UsedByVerification
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.marshalling.json.JsonDeserializer
 import net.corda.v5.application.marshalling.json.JsonSerializer
@@ -35,9 +36,12 @@ import java.util.Collections.unmodifiableMap
  * Simple implementation, requires alignment with other serialization such as that used
  * in the HTTP library
  */
-@Component(service = [ JsonMarshallingService::class, UsedByFlow::class, UsedByPersistence::class ], scope = PROTOTYPE)
+@Component(
+    service = [ JsonMarshallingService::class, UsedByFlow::class, UsedByPersistence::class, UsedByVerification::class ],
+    scope = PROTOTYPE
+)
 class JsonMarshallingServiceImpl : JsonMarshallingService,
-    UsedByFlow, UsedByPersistence, SingletonSerializeAsToken, SerializationCustomizer {
+    UsedByFlow, UsedByPersistence, UsedByVerification, SingletonSerializeAsToken, SerializationCustomizer {
     private companion object {
         private const val INITIAL_SIZE = 16
         private const val MAX_SIZE = 200

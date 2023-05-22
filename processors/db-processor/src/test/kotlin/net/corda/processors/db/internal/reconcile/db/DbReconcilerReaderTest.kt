@@ -1,5 +1,9 @@
 package net.corda.processors.db.internal.reconcile.db
 
+import java.util.stream.Collectors
+import java.util.stream.Stream
+import javax.persistence.EntityManager
+import javax.persistence.EntityTransaction
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -10,9 +14,7 @@ import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
-import net.corda.processors.db.internal.reconcile.db.DbReconcilerReader.GetRecordsErrorEvent
 import net.corda.reconciliation.VersionedRecord
-import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -29,10 +31,6 @@ import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-import java.util.stream.Collectors
-import java.util.stream.Stream
-import javax.persistence.EntityManager
-import javax.persistence.EntityTransaction
 
 class DbReconcilerReaderTest {
 
@@ -155,19 +153,6 @@ class DbReconcilerReaderTest {
             lifecycleEventHandler.processEvent(StopEvent(), coordinator)
 
             verify(dependencyRegistrationHandle, never()).close()
-        }
-    }
-
-    @Nested
-    inner class GetRecordsErrorEventTest {
-        @Test
-        fun `Error retrieving records stops the component`() {
-            lifecycleEventHandler.processEvent(
-                GetRecordsErrorEvent(CordaRuntimeException("")),
-                coordinator
-            )
-
-            verify(coordinator).postEvent(eq(StopEvent()))
         }
     }
 
@@ -307,51 +292,42 @@ class DbReconcilerReaderTest {
         }
 
         @Test
-        fun `Failure to get entity transaction posts error event and rethrows exception`() {
+        fun `Failure to get entity transaction rethrows exception`() {
             whenever(em1.transaction) doThrow RuntimeException(errorMsg)
 
             val ex = assertThrows<RuntimeException> {
                 // call terminal operation to process stream
                 dbReconcilerReader.getAllVersionedRecords()?.count()
             }
-            val postedEvent = postEventCaptor.firstValue
 
             verify(em1).transaction
             assertThat(ex.message).isEqualTo(errorMsg)
-            assertThat(postedEvent).isInstanceOf(GetRecordsErrorEvent::class.java)
-            assertThat((postedEvent as GetRecordsErrorEvent).exception.message).isEqualTo(errorMsg)
         }
 
         @Test
-        fun `Failure to start transaction posts error event and rethrows exception`() {
+        fun `Failure to start transaction rethrows exception`() {
             whenever(transaction1.begin()) doThrow RuntimeException(errorMsg)
 
             val ex = assertThrows<RuntimeException> {
                 // call terminal operation to process stream
                 dbReconcilerReader.getAllVersionedRecords()?.count()
             }
-            val postedEvent = postEventCaptor.firstValue
 
             verify(transaction1).begin()
             assertThat(ex.message).isEqualTo(errorMsg)
-            assertThat(postedEvent).isInstanceOf(GetRecordsErrorEvent::class.java)
-            assertThat((postedEvent as GetRecordsErrorEvent).exception.message).isEqualTo(errorMsg)
         }
 
         @Test
-        fun `Failure to get all versioned records posts error event and rethrows exception`() {
+        fun `Failure to get all versioned records rethrows exception`() {
             whenever(getAllVersionRecordsMock.invoke(eq(reconciliationContext2))) doThrow RuntimeException(errorMsg)
 
             val ex = assertThrows<RuntimeException> {
                 // call terminal operation to process stream
                 dbReconcilerReader.getAllVersionedRecords()?.count()
             }
-            val postedEvent = postEventCaptor.firstValue
 
             verify(getAllVersionRecordsMock, times(2)).invoke(any())
             assertThat(ex.message).isEqualTo(errorMsg)
-            assertThat(postedEvent).isInstanceOf(GetRecordsErrorEvent::class.java)
-            assertThat((postedEvent as GetRecordsErrorEvent).exception.message).isEqualTo(errorMsg)
         }
     }
 }

@@ -52,7 +52,7 @@ class DbConfigSubcommand : Runnable {
 
     @Option(
         names = ["-p", "--password"],
-        description = ["Password name for the database connection. Used only by CORDA type secrets service."]
+        description = ["Password name for the database connection."]
     )
     var password: String? = null
 
@@ -94,9 +94,10 @@ class DbConfigSubcommand : Runnable {
 
     @Option(
         names = ["-k", "--key"],
-        description = ["Vault key for the secrets service. Used only by VAULT type secrets service."]
+        description = ["Vault key for the secrets service. Used only by VAULT type secrets service."],
+        defaultValue = "corda-config-database-password"
     )
-    var vaultKey: String? = null
+    var vaultKey: String = "corda-config-database-password"
 
     @Option(
         names = ["-t", "--type"],
@@ -135,7 +136,7 @@ class DbConfigSubcommand : Runnable {
             updateTimestamp = Instant.now(),
             updateActor = "Setup Script",
             description = description,
-            config = createConfigDbConfig(jdbcUrl!!, username!!, value, jdbcPoolMaxSize, secretsService)
+            config = createConfigDbConfig(jdbcUrl!!, username!!, value, vaultKey, jdbcPoolMaxSize, secretsService)
         ).also { it.version = 0 }
 
 
@@ -171,17 +172,18 @@ class DbConfigSubcommand : Runnable {
  *
  */
 @Suppress("LongParameterList")
-fun createConfigDbConfig(
+private fun createConfigDbConfig(
     jdbcUrl: String,
     username: String,
     value: String,
+    key: String,
     jdbcPoolMaxSize: Int,
-    secretsService: SecretsCreateService
+    secretsService: SecretsCreateService,
 ): String {
     return "{\"database\":{" +
             "\"jdbc\":" +
             "{\"url\":\"$jdbcUrl\"}," +
-            "\"pass\":${createSecureConfig(secretsService, value, "corda-config-database-password")}," +
+            "\"pass\":${createSecureConfig(secretsService, value, key)}," +
             "\"user\":\"$username\"," +
             "\"pool\":" +
             "{\"max_size\":$jdbcPoolMaxSize}}}"

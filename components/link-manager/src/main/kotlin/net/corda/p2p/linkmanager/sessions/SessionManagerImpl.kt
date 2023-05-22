@@ -93,6 +93,8 @@ import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.locks.ReentrantReadWriteLock
+import net.corda.p2p.crypto.protocol.api.InvalidSelectedModeError
+import net.corda.p2p.crypto.protocol.api.NoCommonModeError
 import kotlin.concurrent.read
 import kotlin.concurrent.write
 
@@ -475,6 +477,20 @@ internal class SessionManagerImpl(
                 "${sessionCounterparties.counterpartyId}"
         )
 
+        val responderMemberInfo = membershipGroupReaderProvider.lookup(
+            sessionCounterparties.ourId,
+            sessionCounterparties.counterpartyId,
+            filter
+        )
+        if (responderMemberInfo != null && responderMemberInfo.serial > sessionCounterparties.serial) {
+            logger.warn(
+                "Attempted to start session negotiation with peer ${sessionCounterparties.counterpartyId} which is " +
+                        "in ${sessionCounterparties.ourId}'s members map but the serial number has progressed beyond " +
+                        "the requested serial number. The sessionInit message was not sent and will not be retried."
+            )
+            return null
+        }
+
         for (message in messages) {
             sessionReplayer.addMessageForReplay(
                 initiatorHelloUniqueId(message.first.sessionId),
@@ -488,14 +504,20 @@ internal class SessionManagerImpl(
             )
         }
 
-        val responderMemberInfo = membershipGroupReaderProvider.lookup(
-            sessionCounterparties.ourId,
-            sessionCounterparties.counterpartyId,
-            filter
-        )
         if (responderMemberInfo == null) {
-            logger.warn("Attempted to start session negotiation with peer ${sessionCounterparties.counterpartyId} which is not in " +
-                "${sessionCounterparties.ourId}'s members map. Filter was $filter. The sessionInit message was not sent.")
+            logger.warn(
+                "Attempted to start session negotiation with peer ${sessionCounterparties.counterpartyId} which is " +
+                        "not in ${sessionCounterparties.ourId}'s members map. Filter was $filter. The sessionInit " +
+                        "message was not sent. Message will be retried."
+            )
+            return null
+        } else if (responderMemberInfo.serial < sessionCounterparties.serial) {
+            logger.warn(
+                "Attempted to start session negotiation with peer ${sessionCounterparties.counterpartyId} which is " +
+                        "not in ${sessionCounterparties.ourId}'s members map with serial " +
+                        "${sessionCounterparties.serial}. Filter was $filter and serial found was " +
+                        "${responderMemberInfo.serial}. The sessionInit message was not sent. Message will be retried."
+            )
             return null
         }
 
@@ -693,7 +715,7 @@ internal class SessionManagerImpl(
             val peerMemberInfo = membershipGroupReaderProvider.lookupByKey(
                 localIdentity,
                 message.source.initiatorPublicKeyHash.array(),
-                MembershipStatusFilter.ACTIVE_IF_PRESENT_OR_PENDING
+                MembershipStatusFilter.ACTIVE_OR_SUSPENDED_IF_PRESENT_OR_PENDING
             )
             if (peerMemberInfo == null) {
                 null
@@ -717,15 +739,9 @@ internal class SessionManagerImpl(
             logger.couldNotFindGroupInfo(message::class.java.simpleName, message.header.sessionId, hostedIdentityInSameGroup)
             return null
         }
-        val pkiMode = pkiMode(groupPolicy, sessionManagerConfig) ?: return null
 
         val session = pendingInboundSessions.computeIfAbsent(message.header.sessionId) { sessionId ->
-            val session = protocolFactory.createResponder(
-                sessionId,
-                groupPolicy.protocolModes,
-                sessionManagerConfig.maxMessageSize,
-                pkiMode
-            )
+            val session = protocolFactory.createResponder(sessionId, sessionManagerConfig.maxMessageSize)
             session.receiveInitiatorHello(message)
             session
         }
@@ -758,7 +774,7 @@ internal class SessionManagerImpl(
                     .lookupByKey(
                         hostedIdentityInSameGroup,
                         initiatorIdentityData.initiatorPublicKeyHash.array(),
-                        MembershipStatusFilter.ACTIVE_IF_PRESENT_OR_PENDING,
+                        MembershipStatusFilter.ACTIVE_OR_SUSPENDED_IF_PRESENT_OR_PENDING,
                     )
             }
         if (peer == null) {
@@ -786,6 +802,18 @@ internal class SessionManagerImpl(
         val groupPolicy = groupPolicyProvider.getGroupPolicy(ourIdentityInfo.holdingIdentity)
         if (groupPolicy == null) {
             logger.couldNotFindGroupInfo(message::class.java.simpleName, message.header.sessionId, ourIdentityInfo.holdingIdentity)
+            return null
+        }
+
+        val sessionManagerConfig = config.get()
+        val pkiMode = pkiMode(groupPolicy, sessionManagerConfig) ?: return null
+        try {
+            session.validateEncryptedExtensions(pkiMode, groupPolicy.protocolModes, peer.holdingIdentity.x500Name)
+        } catch (exception: InvalidPeerCertificate) {
+            logger.validationFailedWarning(message::class.java.simpleName, message.header.sessionId, exception.message)
+            return null
+        } catch (exception: NoCommonModeError) {
+            logger.validationFailedWarning(message::class.java.simpleName, message.header.sessionId, exception.message)
             return null
         }
 
@@ -835,16 +863,12 @@ internal class SessionManagerImpl(
         return try {
             validatePeerHandshakeMessage(
                 message,
-                peer.holdingIdentity.x500Name,
                 peer.sessionInitiationKeys.map { it to it.toKeyAlgorithm().getSignatureSpec() }
             )
         } catch (exception: WrongPublicKeyHashException) {
             logger.error("The message was discarded. ${exception.message}")
             null
         } catch (exception: InvalidHandshakeMessageException) {
-            logger.validationFailedWarning(message::class.java.simpleName, message.header.sessionId, exception.message)
-            null
-        } catch (exception: InvalidPeerCertificate) {
             logger.validationFailedWarning(message::class.java.simpleName, message.header.sessionId, exception.message)
             null
         }
@@ -869,6 +893,8 @@ internal class SessionManagerImpl(
         } catch (exception: InvalidHandshakeMessageException) {
             logger.validationFailedWarning(message::class.java.simpleName, message.header.sessionId, exception.message)
         } catch (exception: InvalidPeerCertificate) {
+            logger.validationFailedWarning(message::class.java.simpleName, message.header.sessionId, exception.message)
+        } catch (exception: InvalidSelectedModeError) {
             logger.validationFailedWarning(message::class.java.simpleName, message.header.sessionId, exception.message)
         }
         return false

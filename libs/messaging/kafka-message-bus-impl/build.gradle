@@ -14,7 +14,9 @@ dependencies {
     implementation project(":libs:schema-registry:schema-registry")
     implementation project(":libs:configuration:configuration-core")
     implementation project(":libs:configuration:configuration-merger")
+    implementation project(":libs:metrics")
     implementation project(":libs:utilities")
+    api project(":libs:serialization:serialization-avro")
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation "net.corda:corda-avro-schema"
@@ -26,6 +28,7 @@ dependencies {
     implementation "com.typesafe:config:$typeSafeConfigVersion"
 
     testImplementation "org.assertj:assertj-core:$assertjVersion"
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation project(":testing:test-utilities")
 

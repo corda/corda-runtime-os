@@ -2,9 +2,9 @@ package net.corda.membership.impl.persistence.service.handler
 
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.cipher.suite.SignatureSpecs
-import net.corda.data.CordaAvroDeserializer
-import net.corda.data.CordaAvroSerializationFactory
-import net.corda.data.CordaAvroSerializer
+import net.corda.avro.serialization.CordaAvroDeserializer
+import net.corda.avro.serialization.CordaAvroSerializationFactory
+import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.identity.HoldingIdentity
@@ -15,18 +15,18 @@ import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.schema.CordaDb
 import net.corda.membership.datamodel.GroupParametersEntity
 import net.corda.membership.datamodel.MemberInfoEntity
-import net.corda.membership.lib.EPOCH_KEY
-import net.corda.membership.lib.MODIFIED_TIME_KEY
+import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.EPOCH_KEY
+import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.MODIFIED_TIME_KEY
+import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.NOTARY_SERVICE_KEYS_KEY
+import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.NOTARY_SERVICE_NAME_KEY
+import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.NOTARY_SERVICE_PROTOCOL_KEY
+import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.NOTARY_SERVICE_PROTOCOL_VERSIONS_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_ROLE
 import net.corda.membership.lib.MemberInfoExtension.Companion.ROLES_PREFIX
 import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.lib.MemberInfoExtension.Companion.notaryDetails
 import net.corda.membership.lib.MemberInfoFactory
-import net.corda.membership.lib.NOTARY_SERVICE_KEYS_KEY
-import net.corda.membership.lib.NOTARY_SERVICE_NAME_KEY
-import net.corda.membership.lib.NOTARY_SERVICE_PROTOCOL_KEY
-import net.corda.membership.lib.NOTARY_SERVICE_PROTOCOL_VERSIONS_KEY
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.membership.lib.notary.MemberNotaryDetails
 import net.corda.membership.lib.notary.MemberNotaryKey
@@ -65,6 +65,7 @@ import javax.persistence.criteria.CriteriaBuilder
 import javax.persistence.criteria.CriteriaQuery
 import javax.persistence.criteria.Order
 import javax.persistence.criteria.Path
+import javax.persistence.criteria.Predicate
 import javax.persistence.criteria.Root
 import kotlin.test.assertFailsWith
 
@@ -129,8 +130,10 @@ class AddNotaryToGroupParametersHandlerTest {
         on { get<String>("epoch") } doReturn mock<Path<String>>()
     }
     private val statusPath = mock<Path<String>>()
+    private val memberX500NamePath = mock<Path<String>>()
     private val memberRoot = mock<Root<MemberInfoEntity>> {
         on { get<String>("status") } doReturn statusPath
+        on { get<String>("memberX500Name") } doReturn memberX500NamePath
     }
     private val order = mock<Order>()
     private val query = mock<CriteriaQuery<GroupParametersEntity>> {
@@ -138,16 +141,20 @@ class AddNotaryToGroupParametersHandlerTest {
         on { select(root) } doReturn mock
         on { orderBy(order) } doReturn mock
     }
+    private val notEqualPredicate = mock<Predicate>()
+    private val equalPredicate = mock<Predicate>()
     private val memberCriteriaQuery = mock<CriteriaQuery<MemberInfoEntity>> {
         on { from(MemberInfoEntity::class.java) } doReturn memberRoot
         on { select(memberRoot) } doReturn mock
-        on { where(any()) } doReturn mock
+        on { where(equalPredicate, notEqualPredicate) } doReturn mock
+        on { where(any(), any()) } doReturn mock
     }
     private val criteriaBuilder = mock<CriteriaBuilder> {
         on { createQuery(GroupParametersEntity::class.java) } doReturn query
         on { createQuery(MemberInfoEntity::class.java) } doReturn memberCriteriaQuery
         on { desc(any()) } doReturn order
-        on { equal(statusPath, MEMBER_STATUS_ACTIVE) } doReturn mock()
+        on { equal(statusPath, MEMBER_STATUS_ACTIVE) } doReturn equalPredicate
+        on { notEqual(eq(memberX500NamePath), any<String>()) } doReturn notEqualPredicate
     }
     private val entityManager = mock<EntityManager> {
         on { persist(any<GroupParametersEntity>()) } doAnswer {}
@@ -190,6 +197,7 @@ class AddNotaryToGroupParametersHandlerTest {
         on { parse(eq(STATUS), eq(String::class.java)) } doReturn MEMBER_STATUS_ACTIVE
     }
     private val notaryInRequest: MemberInfo = mock {
+        on { name } doReturn MemberX500Name.parse(knownIdentity.x500Name)
         on { memberProvidedContext } doReturn notaryMemberContext
         on { mgmProvidedContext } doReturn notaryMgmContext
         on { name } doReturn MemberX500Name.parse(knownIdentity.x500Name)
@@ -378,32 +386,6 @@ class AddNotaryToGroupParametersHandlerTest {
         verify(entityManager).transaction
         verify(registry).get(eq(CordaDb.Vault.persistenceUnitName))
         verify(entityManager, times(0)).persist(any())
-    }
-
-    @Test
-    fun `notary protocol must be specified to add new notary service`() {
-        whenever(notaryDetails.serviceProtocol).doReturn(null)
-
-        val ex = assertFailsWith<MembershipPersistenceException> { handler.invoke(requestContext, request) }
-        assertThat(ex.message).contains("protocol must be specified")
-    }
-
-    @Test
-    fun `notary protocol must match that of existing notary service`() {
-        mockExistingNotary()
-        whenever(notaryDetails.serviceProtocol).doReturn("incorrect.plugin.type")
-
-        val ex = assertFailsWith<MembershipPersistenceException> { handler.invoke(requestContext, request) }
-        assertThat(ex.message).contains("protocols do not match")
-    }
-
-    @Test
-    fun `exception is thrown if notary protocol is specified but versions are missing`() {
-        whenever(notaryDetails.serviceProtocol).doReturn(KNOWN_NOTARY_PROTOCOL)
-        whenever(notaryDetails.serviceProtocolVersions).doReturn(emptySet())
-
-        val ex = assertFailsWith<MembershipPersistenceException> { handler.invoke(requestContext, request) }
-        assertThat(ex.message).contains("protocol versions are missing")
     }
 
     @Test

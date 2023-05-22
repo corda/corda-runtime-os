@@ -1,4 +1,4 @@
-package net.corda.processors.rpc
+package net.corda.processors.rest
 
 import java.nio.file.Path
 

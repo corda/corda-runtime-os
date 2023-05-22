@@ -15,8 +15,7 @@ class ChunkBuilderServiceImpl : ChunkBuilderService {
         chunkNumber: Int,
         checksum: SecureHash,
         offset: Long,
-        properties: KeyValuePairList?,
-        fileName: String?,
+        properties: KeyValuePairList?
     ): Chunk = Chunk.newBuilder()
         .setRequestId(identifier)
         .setPartNumber(chunkNumber)
@@ -24,8 +23,6 @@ class ChunkBuilderServiceImpl : ChunkBuilderService {
         .setChecksum(checksum.toAvro())
         .setProperties(properties)
         .setOffset(offset)
-        //TODO - remove these CORE-9481
-        .setFileName(fileName)
         .build()
 
     override fun buildChunk(
@@ -33,8 +30,7 @@ class ChunkBuilderServiceImpl : ChunkBuilderService {
         chunkNumber: Int,
         byteBuffer: ByteBuffer,
         offset: Long,
-        properties: KeyValuePairList?,
-        fileName: String?,
+        properties: KeyValuePairList?
     ): Chunk = Chunk.newBuilder()
         .setRequestId(identifier)
         .setPartNumber(chunkNumber)
@@ -42,7 +38,6 @@ class ChunkBuilderServiceImpl : ChunkBuilderService {
         .setProperties(properties)
         .setChecksum(null)
         .setOffset(offset)
-        //TODO - remove these CORE-9481
-        .setFileName(fileName)
         .build()
+
 }

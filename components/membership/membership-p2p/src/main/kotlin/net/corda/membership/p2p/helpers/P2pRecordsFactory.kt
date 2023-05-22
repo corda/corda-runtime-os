@@ -1,21 +1,22 @@
 package net.corda.membership.p2p.helpers
 
-import net.corda.data.CordaAvroSerializationFactory
+import java.nio.ByteBuffer
+import java.time.temporal.ChronoUnit
+import java.util.UUID
+import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.data.identity.HoldingIdentity
 import net.corda.data.p2p.app.AppMessage
 import net.corda.data.p2p.app.AuthenticatedMessage
 import net.corda.data.p2p.app.AuthenticatedMessageHeader
+import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.records.Record
-import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.schema.Schemas.P2P.P2P_OUT_TOPIC
 import net.corda.schema.configuration.MembershipConfig.TtlsConfig.TTLS
+import net.corda.utilities.serialization.wrapWithNullErrorHandling
 import net.corda.utilities.time.Clock
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.slf4j.LoggerFactory
-import java.nio.ByteBuffer
-import java.time.temporal.ChronoUnit
-import java.util.UUID
 
 class P2pRecordsFactory(
     private val cordaAvroSerializationFactory: CordaAvroSerializationFactory,
@@ -59,10 +60,13 @@ class P2pRecordsFactory(
         id: String = UUID.randomUUID().toString(),
         filter: MembershipStatusFilter = MembershipStatusFilter.ACTIVE,
     ): Record<String, AppMessage> {
-        val data = cordaAvroSerializationFactory.createAvroSerializer<T> {
-            logger.warn("Serialization failed")
-        }.serialize(content)
-            ?: throw CordaRuntimeException("Could not serialize $content")
+        val data = wrapWithNullErrorHandling({
+            CordaRuntimeException("Could not serialize $content", it)
+        }) {
+            cordaAvroSerializationFactory.createAvroSerializer<T> {
+                logger.warn("Serialization failed")
+            }.serialize(content)
+        }
         val header = AuthenticatedMessageHeader.newBuilder()
             .setDestination(destination)
             .setSource(source)

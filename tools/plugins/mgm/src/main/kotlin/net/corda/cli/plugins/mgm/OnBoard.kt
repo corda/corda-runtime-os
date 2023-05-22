@@ -9,6 +9,7 @@ import picocli.CommandLine.Command
         OnBoardMember::class,
         AllowClientCertificate::class,
     ],
-    description = ["On board a member."]
+    description = ["On board a member."],
+    hidden = true
 )
 class OnBoard

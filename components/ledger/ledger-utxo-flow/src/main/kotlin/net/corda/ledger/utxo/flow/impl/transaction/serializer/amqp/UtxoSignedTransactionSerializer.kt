@@ -11,7 +11,6 @@ import net.corda.serialization.BaseProxySerializer
 import net.corda.serialization.InternalCustomSerializer
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.serialization.SerializationService
-import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -30,34 +29,42 @@ class UtxoSignedTransactionSerializer @Activate constructor(
     private val transactionSignatureService: TransactionSignatureServiceInternal,
     @Reference(service = UtxoLedgerTransactionFactory::class)
     private val utxoLedgerTransactionFactory: UtxoLedgerTransactionFactory
-) : BaseProxySerializer<UtxoSignedTransactionInternal, UtxoSignedTransactionProxy>(),
-    UsedByFlow {
+) : BaseProxySerializer<UtxoSignedTransactionInternal, UtxoSignedTransactionProxy>(), UsedByFlow {
+    private companion object {
+        private const val VERSION_1 = 1
+    }
 
-    override val type = UtxoSignedTransactionInternal::class.java
+    override val type
+        get() = UtxoSignedTransactionInternal::class.java
 
-    override val proxyType = UtxoSignedTransactionProxy::class.java
+    override val proxyType
+        get() = UtxoSignedTransactionProxy::class.java
 
-    override val withInheritance = true
+    override val withInheritance
+        // UtxoSignedTransactionInternal is an interface.
+        get() = true
 
     override fun toProxy(obj: UtxoSignedTransactionInternal): UtxoSignedTransactionProxy {
         return UtxoSignedTransactionProxy(
-            UtxoSignedTransactionVersion.VERSION_1,
+            VERSION_1,
             obj.wireTransaction,
             obj.signatures
         )
     }
 
     override fun fromProxy(proxy: UtxoSignedTransactionProxy): UtxoSignedTransactionInternal {
-        if (proxy.version == UtxoSignedTransactionVersion.VERSION_1) {
-            return UtxoSignedTransactionImpl(
-                serializationService,
-                transactionSignatureService,
-                utxoLedgerTransactionFactory,
-                proxy.wireTransaction,
-                proxy.signatures
-            )
+        return when(proxy.version) {
+            VERSION_1 ->
+                UtxoSignedTransactionImpl(
+                    serializationService,
+                    transactionSignatureService,
+                    utxoLedgerTransactionFactory,
+                    proxy.wireTransaction,
+                    proxy.signatures
+                )
+            else ->
+                throw CordaRuntimeException("Unable to create UtxoSignedTransaction with Version='${proxy.version}'")
         }
-        throw CordaRuntimeException("Unable to create UtxoSignedTransaction with Version='${proxy.version}'")
     }
 }
 
@@ -68,7 +75,7 @@ data class UtxoSignedTransactionProxy(
     /**
      * Version of container.
      */
-    val version: UtxoSignedTransactionVersion,
+    val version: Int,
 
     /**
      * Properties for Utxo Signed transactions' serialisation.
@@ -76,11 +83,3 @@ data class UtxoSignedTransactionProxy(
     val wireTransaction: WireTransaction,
     val signatures: List<DigitalSignatureAndMetadata>
 )
-
-/**
- * Enumeration for UtxoSignedTransaction version.
- */
-@CordaSerializable
-enum class UtxoSignedTransactionVersion {
-    VERSION_1
-}

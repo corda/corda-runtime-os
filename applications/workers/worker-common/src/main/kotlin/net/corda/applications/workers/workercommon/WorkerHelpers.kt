@@ -34,6 +34,7 @@ class WorkerHelpers {
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         private const val BOOT_CONFIG_PATH = "net/corda/applications/workers/workercommon/boot/corda.boot.json"
+        private val SENSITIVE_ARGS = setOf("-ddatabase.pass", "-spassphrase", "-msasl.jaas.config")
 
         /**
          * Parses the [args] into the [params].
@@ -201,11 +202,9 @@ class WorkerHelpers {
 
             val arguments = processInfo.arguments()
             if (arguments.isPresent) {
-                arguments.get().forEachIndexed { i, arg ->
-                    if ("-ddatabase.pass" !in arg && "-spassphrase" !in arg) {
-                        info("argument $i, $arg")
-                    }
-                }
+                arguments.get().map { arg -> SENSITIVE_ARGS.firstOrNull { arg.trim().startsWith(it) }
+                    .let { prefix -> if (prefix == null) arg else "$prefix=[REDACTED]" }
+                }.forEachIndexed { i, redactedArg -> info("argument $i, $redactedArg") }
             } else {
                 info("arguments: Null")
             }

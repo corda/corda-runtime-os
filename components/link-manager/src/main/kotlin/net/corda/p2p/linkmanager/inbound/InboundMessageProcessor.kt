@@ -16,7 +16,7 @@ import net.corda.data.p2p.MessageAck
 import net.corda.data.p2p.SessionPartitions
 import net.corda.data.p2p.app.AppMessage
 import net.corda.data.p2p.app.AuthenticatedMessage
-import net.corda.data.p2p.app.UnauthenticatedMessage
+import net.corda.data.p2p.app.InboundUnauthenticatedMessage
 import net.corda.data.p2p.crypto.AuthenticatedDataMessage
 import net.corda.data.p2p.crypto.AuthenticatedEncryptedDataMessage
 import net.corda.data.p2p.crypto.InitiatorHandshakeMessage
@@ -27,6 +27,7 @@ import net.corda.p2p.crypto.protocol.api.Session
 import net.corda.p2p.linkmanager.LinkManager
 import net.corda.p2p.linkmanager.common.AvroSealedClasses
 import net.corda.p2p.linkmanager.common.MessageConverter
+import net.corda.p2p.linkmanager.membership.NetworkMessagingValidator
 import net.corda.p2p.linkmanager.sessions.SessionManager
 import net.corda.data.p2p.markers.AppMessageMarker
 import net.corda.data.p2p.markers.LinkManagerReceivedMarker
@@ -37,12 +38,15 @@ import net.corda.utilities.time.Clock
 import net.corda.virtualnode.toCorda
 import org.slf4j.LoggerFactory
 
+@Suppress("LongParameterList")
 internal class InboundMessageProcessor(
     private val sessionManager: SessionManager,
     private val groupPolicyProvider: GroupPolicyProvider,
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
     private val inboundAssignmentListener: InboundAssignmentListener,
-    private val clock: Clock
+    private val clock: Clock,
+    private val networkMessagingValidator: NetworkMessagingValidator =
+        NetworkMessagingValidator(membershipGroupReaderProvider),
 ) :
     EventLogProcessor<String, LinkInMessage> {
 
@@ -68,12 +72,18 @@ internal class InboundMessageProcessor(
                 is ResponderHelloMessage, is ResponderHandshakeMessage, is InitiatorHandshakeMessage, is InitiatorHelloMessage -> {
                     processSessionMessage(message)
                 }
-                is UnauthenticatedMessage -> {
+                is InboundUnauthenticatedMessage -> {
                     logger.debug {
                         "Processing unauthenticated message ${payload.header.messageId}"
                     }
                     recordInboundMessagesMetric(payload)
-                    listOf(Record(Schemas.P2P.P2P_IN_TOPIC, LinkManager.generateKey(), AppMessage(payload)))
+                    listOf(
+                        Record(
+                            Schemas.P2P.P2P_IN_TOPIC,
+                            LinkManager.generateKey(),
+                            AppMessage(payload)
+                        )
+                    )
                 }
                 else -> {
                     logger.error("Received unknown payload type ${message.payload::class.java.simpleName}. The message was discarded.")
@@ -122,33 +132,37 @@ internal class InboundMessageProcessor(
         val messages = mutableListOf<Record<*, *>>()
         when (val sessionDirection = sessionManager.getSessionById(sessionId)) {
             is SessionManager.SessionDirection.Inbound -> {
-                messages.addAll(
-                    processLinkManagerPayload(
-                        sessionDirection.counterparties,
-                        sessionDirection.session,
-                        sessionId,
-                        message
+                checkAllowedCommunication(sessionDirection.counterparties) {
+                    messages.addAll(
+                        processLinkManagerPayload(
+                            sessionDirection.counterparties,
+                            sessionDirection.session,
+                            sessionId,
+                            message
+                        )
                     )
-                )
+                }
             }
             is SessionManager.SessionDirection.Outbound -> {
-                MessageConverter.extractPayload(
-                    sessionDirection.session,
-                    sessionId,
-                    message,
-                    MessageAck::fromByteBuffer
-                )?.let {
-                    when (val ack = it.ack) {
-                        is AuthenticatedMessageAck -> {
-                            logger.debug { "Processing ack for message ${ack.messageId} from session $sessionId." }
-                            sessionManager.messageAcknowledged(sessionId)
-                            messages.add(makeMarkerForAckMessage(ack))
+                checkAllowedCommunication(sessionDirection.counterparties) {
+                    MessageConverter.extractPayload(
+                        sessionDirection.session,
+                        sessionId,
+                        message,
+                        MessageAck::fromByteBuffer
+                    )?.let {
+                        when (val ack = it.ack) {
+                            is AuthenticatedMessageAck -> {
+                                logger.debug { "Processing ack for message ${ack.messageId} from session $sessionId." }
+                                sessionManager.messageAcknowledged(sessionId)
+                                messages.add(makeMarkerForAckMessage(ack))
+                            }
+                            is HeartbeatMessageAck -> {
+                                logger.debug { "Processing heartbeat ack from session $sessionId." }
+                                sessionManager.messageAcknowledged(sessionId)
+                            }
+                            else -> logger.warn("Received an inbound message with unexpected type for SessionId = $sessionId.")
                         }
-                        is HeartbeatMessageAck -> {
-                            logger.debug { "Processing heartbeat ack from session $sessionId." }
-                            sessionManager.messageAcknowledged(sessionId)
-                        }
-                        else -> logger.warn("Received an inbound message with unexpected type for SessionId = $sessionId.")
                     }
                 }
             }
@@ -281,22 +295,37 @@ internal class InboundMessageProcessor(
         }
     }
 
-    private fun recordInboundMessagesMetric(message: UnauthenticatedMessage) {
-        message.header.let {
-            recordInboundMessagesMetric(it.source.x500Name, it.destination.x500Name, it.source.groupId,
-                it.subsystem, message::class.java.simpleName)
-        }
+    private fun recordInboundMessagesMetric(message: InboundUnauthenticatedMessage) {
+        recordInboundMessagesMetric(null, null, null,
+            message.header.subsystem, message::class.java.simpleName)
     }
 
-    private fun recordInboundMessagesMetric(source: String, dest: String, group: String, subsystem: String, messageType: String) {
-        CordaMetrics.Metric.InboundMessageCount.builder()
-            .withTag(CordaMetrics.Tag.SourceVirtualNode, source)
-            .withTag(CordaMetrics.Tag.DestinationVirtualNode, dest)
-            .withTag(CordaMetrics.Tag.MembershipGroup, group)
-            .withTag(CordaMetrics.Tag.MessagingSubsystem, subsystem)
-            .withTag(CordaMetrics.Tag.MessageType, messageType)
-            .build().increment()
+    private fun recordInboundMessagesMetric(source: String?, dest: String?, group: String?, subsystem: String, messageType: String) {
+        val builder = CordaMetrics.Metric.InboundMessageCount.builder()
+        listOf(
+            CordaMetrics.Tag.SourceVirtualNode to source,
+            CordaMetrics.Tag.DestinationVirtualNode to dest,
+            CordaMetrics.Tag.MembershipGroup to group,
+            CordaMetrics.Tag.MessagingSubsystem to subsystem,
+            CordaMetrics.Tag.MessageType to messageType,
+        ).forEach {
+            val value = it.second
+            if (value != null) {
+                builder.withTag(it.first, value)
+            }
+        }
+        builder.build().increment()
     }
+
+    private fun <T> checkAllowedCommunication(
+        counterparties: SessionManager.Counterparties,
+        func: () -> T
+    ) = networkMessagingValidator.invokeIfValidInbound(
+        counterparties.counterpartyId,
+        counterparties.ourId,
+        func
+    )
+
 
     override val keyClass = String::class.java
     override val valueClass = LinkInMessage::class.java

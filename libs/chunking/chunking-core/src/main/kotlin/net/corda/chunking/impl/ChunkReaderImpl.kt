@@ -76,8 +76,10 @@ internal class ChunkReaderImpl(private val destDir: Path) : ChunkReader {
             if (actualChecksum != chunksReceived.expectedChecksum) {
                 throw IllegalArgumentException(SECURE_HASH_VALIDATION_ERROR)
             }
-
-            chunksCombinedCallback!!.onChunksCombined(chunk.fileName, path, actualChecksum, chunk.properties?.fromAvro())
+            chunksCombinedCallback!!.onChunksCombined(
+                path,
+                actualChecksum,
+                chunk.properties?.fromAvro())
 
             // Since all the chunks been received and consumer notified, it is safe to get rid of entry in a map.
             chunksSoFar.remove(chunk.requestId)

@@ -1,6 +1,6 @@
 package net.corda.membership.impl.registration.dynamic.handler.mgm
 
-import net.corda.data.CordaAvroSerializationFactory
+import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.data.membership.command.registration.RegistrationCommand
 import net.corda.data.membership.command.registration.mgm.CheckForPendingRegistration
 import net.corda.data.membership.command.registration.mgm.DeclineRegistration
@@ -55,12 +55,13 @@ internal class DeclineRegistrationHandler(
             logger.warn("Trying to decline registration request: '$registrationId' by ${declinedBy.x500Name} which is not an MGM")
         }
         logger.info("Declining registration request: '$registrationId' for ${declinedMember.x500Name} - ${command.reason}")
-        membershipPersistenceClient.setRegistrationRequestStatus(
+        val registrationRequestDeclinedCommand = membershipPersistenceClient.setRegistrationRequestStatus(
             viewOwningIdentity = declinedBy.toCorda(),
             registrationId = registrationId,
-            registrationRequestStatus = RegistrationStatus.DECLINED
-        )
-        val persistDeclineMessage = p2pRecordsFactory.createAuthenticatedMessageRecord(
+            registrationRequestStatus = RegistrationStatus.DECLINED,
+            reason = command.reason
+        ).createAsyncCommands()
+        val memberDeclinedMessage = p2pRecordsFactory.createAuthenticatedMessageRecord(
             source = declinedBy,
             destination = declinedMember,
             // Setting TTL to avoid resending the message in case the decline reason is that the
@@ -79,7 +80,7 @@ internal class DeclineRegistrationHandler(
         )
         return RegistrationHandlerResult(
             null,
-            listOf(persistDeclineMessage, commandToStartProcessingTheNextRequest)
+            listOf(memberDeclinedMessage, commandToStartProcessingTheNextRequest) + registrationRequestDeclinedCommand
         )
     }
 

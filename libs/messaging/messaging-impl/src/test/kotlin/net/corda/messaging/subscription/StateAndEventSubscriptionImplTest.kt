@@ -5,7 +5,7 @@ import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
-import net.corda.data.CordaAvroSerializer
+import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.messagebus.api.CordaTopicPartition
 import net.corda.messagebus.api.consumer.CordaConsumer
@@ -85,7 +85,7 @@ class StateAndEventSubscriptionImplTest {
         doAnswer { eventConsumer }.whenever(stateAndEventConsumer).eventConsumer
         doAnswer { stateConsumer }.whenever(stateAndEventConsumer).stateConsumer
         doAnswer { false }.whenever(stateAndEventConsumer).resetPollInterval()
-        doAnswer { producer }.whenever(builder).createProducer(any())
+        doAnswer { producer }.whenever(builder).createProducer(any(), anyOrNull())
         doAnswer { setOf(topicPartition) }.whenever(stateConsumer).assignment()
         doAnswer { listOf(state) }.whenever(stateConsumer).poll(any())
         doAnswer { Pair(stateAndEventConsumer, rebalanceListener) }.whenever(builder)
@@ -112,7 +112,7 @@ class StateAndEventSubscriptionImplTest {
                 latch.countDown()
                 listOf(mockConsumerRecords[latch.count.toInt() - 1])
             }
-        }.whenever(eventConsumer).poll(any())
+        }.whenever(stateAndEventConsumer).pollEvents()
 
         doReturn(lifeCycleCoordinatorMockHelper.lifecycleCoordinator).`when`(lifecycleCoordinatorFactory)
             .createCoordinator(any(), any())
@@ -135,7 +135,7 @@ class StateAndEventSubscriptionImplTest {
             } else {
                 producer
             }
-        }.whenever(builder).createProducer(any())
+        }.whenever(builder).createProducer(any(), anyOrNull())
 
         val subscription = StateAndEventSubscriptionImpl<String, String, String>(
             config,
@@ -149,7 +149,6 @@ class StateAndEventSubscriptionImplTest {
         subscription.start()
         waitWhile(Duration.ofSeconds(TEST_TIMEOUT_SECONDS)) { subscription.isRunning }
 
-        val eventConsumer = stateAndEventConsumer.eventConsumer
         verify(builder, times(1)).createStateEventConsumerAndRebalanceListener<Any, Any, Any>(
             any(),
             anyOrNull(),
@@ -159,8 +158,8 @@ class StateAndEventSubscriptionImplTest {
             anyOrNull(),
             anyOrNull()
         )
-        verify(builder, times(2)).createProducer(any())
-        verify(eventConsumer, times(6)).poll(any())
+        verify(builder, times(2)).createProducer(any(), anyOrNull())
+        verify(stateAndEventConsumer, times(6)).pollEvents()
         verify(producer, times(5)).beginTransaction()
         verify(producer, times(5)).sendRecords(any())
         verify(producer, times(5)).sendRecordOffsetsToTransaction(any(), any())
@@ -198,7 +197,6 @@ class StateAndEventSubscriptionImplTest {
         subscription.start()
         waitWhile(Duration.ofSeconds(TEST_TIMEOUT_SECONDS)) { subscription.isRunning }
 
-        val eventConsumer = stateAndEventConsumer.eventConsumer
         verify(builder, times(1)).createStateEventConsumerAndRebalanceListener<Any, Any, Any>(
             any(),
             anyOrNull(),
@@ -208,8 +206,8 @@ class StateAndEventSubscriptionImplTest {
             any(),
             any()
         )
-        verify(builder, times(1)).createProducer(any())
-        verify(eventConsumer, times(1)).poll(any())
+        verify(builder, times(1)).createProducer(any(), anyOrNull())
+        verify(stateAndEventConsumer, times(1)).pollEvents()
         verify(producer, times(0)).beginTransaction()
         verify(rebalanceListener).close()
 
@@ -270,8 +268,6 @@ class StateAndEventSubscriptionImplTest {
         subscription.start()
         waitWhile(Duration.ofSeconds(TEST_TIMEOUT_SECONDS)) { subscription.isRunning }
 
-        val eventConsumer = stateAndEventConsumer.eventConsumer
-
         verify(builder, times(1)).createStateEventConsumerAndRebalanceListener<Any, Any, Any>(
             any(),
             anyOrNull(),
@@ -281,8 +277,8 @@ class StateAndEventSubscriptionImplTest {
             anyOrNull(),
             anyOrNull()
         )
-        verify(builder, times(1)).createProducer(any())
-        verify(eventConsumer, times(6)).poll(any())
+        verify(builder, times(1)).createProducer(any(), anyOrNull())
+        verify(stateAndEventConsumer, times(6)).pollEvents()
         verify(producer, times(5)).beginTransaction()
         verify(producer, times(5)).sendRecords(any())
         verify(producer, times(5)).sendRecordOffsetsToTransaction(any(), any())
@@ -304,7 +300,6 @@ class StateAndEventSubscriptionImplTest {
         }
 
         var eventsPaused = false
-        val eventConsumer = stateAndEventConsumer.eventConsumer
         doAnswer {
             if (eventsPaused) {
                 emptyList()
@@ -312,7 +307,7 @@ class StateAndEventSubscriptionImplTest {
                 eventsPaused = true
                 records
             }
-        }.whenever(eventConsumer).poll(any())
+        }.whenever(stateAndEventConsumer).pollEvents()
         val subscription = StateAndEventSubscriptionImpl<Any, Any, Any>(
             config,
             builder,
@@ -335,7 +330,7 @@ class StateAndEventSubscriptionImplTest {
             anyOrNull(),
             anyOrNull()
         )
-        verify(builder, times(1)).createProducer(any())
+        verify(builder, times(1)).createProducer(any(), anyOrNull())
         verify(producer, times(28)).beginTransaction()
         verify(producer, times(28)).sendRecords(any())
         verify(producer, times(28)).sendRecordOffsetsToTransaction(any(), any())
@@ -356,7 +351,6 @@ class StateAndEventSubscriptionImplTest {
         }
 
         var eventsPaused = false
-        val eventConsumer = stateAndEventConsumer.eventConsumer
         doAnswer {
             if (eventsPaused) {
                 emptyList()
@@ -364,7 +358,7 @@ class StateAndEventSubscriptionImplTest {
                 eventsPaused = true
                 records
             }
-        }.whenever(eventConsumer).poll(any())
+        }.whenever(stateAndEventConsumer).pollEvents()
 
         val subscription = StateAndEventSubscriptionImpl<Any, Any, Any>(
             config,
@@ -388,7 +382,7 @@ class StateAndEventSubscriptionImplTest {
             anyOrNull(),
             anyOrNull()
         )
-        verify(builder, times(1)).createProducer(any())
+        verify(builder, times(1)).createProducer(any(), anyOrNull())
         verify(producer, times(3)).beginTransaction()
         verify(producer, times(3)).sendRecords(any())
         verify(producer, times(3)).sendRecordOffsetsToTransaction(any(), any())
@@ -403,14 +397,13 @@ class StateAndEventSubscriptionImplTest {
         records.add(CordaConsumerRecord(TOPIC, 1, 1, "key1", "value1", 1))
 
         var callCount = 0
-        val eventConsumer = stateAndEventConsumer.eventConsumer
         doAnswer {
             if (callCount++ == 0) {
                 records
             } else {
                 mutableListOf()
             }
-        }.whenever(eventConsumer).poll(any())
+        }.whenever(stateAndEventConsumer).pollEvents()
 
         //null response from waitForFunctionToFinish indicates slow function exceeded timeout
         doAnswer {
@@ -447,7 +440,7 @@ class StateAndEventSubscriptionImplTest {
             anyOrNull(),
             anyOrNull()
         )
-        verify(builder, times(1)).createProducer(any())
+        verify(builder, times(1)).createProducer(any(), anyOrNull())
         verify(producer, times(1)).beginTransaction()
         verify(producer, times(1)).sendRecords(any())
         verify(producer, times(1)).sendRecordOffsetsToTransaction(any(), any())
@@ -463,14 +456,13 @@ class StateAndEventSubscriptionImplTest {
         val outputRecord = Record("Topic", "Key", "Value")
 
         var callCount = 0
-        val eventConsumer = stateAndEventConsumer.eventConsumer
         doAnswer {
             if (callCount++ == 0) {
                 records
             } else {
                 mutableListOf()
             }
-        }.whenever(eventConsumer).poll(any())
+        }.whenever(stateAndEventConsumer).pollEvents()
 
         doAnswer {
             CompletableFuture.completedFuture(
@@ -510,7 +502,7 @@ class StateAndEventSubscriptionImplTest {
             anyOrNull(),
             anyOrNull()
         )
-        verify(builder, times(1)).createProducer(any())
+        verify(builder, times(1)).createProducer(any(), anyOrNull())
         verify(producer, times(1)).beginTransaction()
         verify(producer, times(1)).sendRecords(argThat { list: List<CordaProducerRecord<*, *>> ->
             list.contains(CordaProducerRecord("Topic", "Key", "Value"))

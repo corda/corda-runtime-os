@@ -10,11 +10,12 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.membership.impl.registration.dynamic.handler.MissingRegistrationStateException
 import net.corda.membership.p2p.helpers.P2pRecordsFactory
 import net.corda.membership.persistence.client.MembershipPersistenceClient
-import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.messaging.api.records.Record
 import net.corda.data.p2p.app.AppMessage
+import net.corda.membership.persistence.client.MembershipPersistenceOperation
 import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.schema.Schemas
+import net.corda.schema.Schemas.Membership.REGISTRATION_COMMAND_TOPIC
 import net.corda.schema.configuration.MembershipConfig.TtlsConfig.DECLINE_REGISTRATION
 import net.corda.schema.configuration.MembershipConfig.TtlsConfig.TTLS
 import net.corda.test.util.identity.createTestHoldingIdentity
@@ -45,6 +46,16 @@ class DeclineRegistrationHandlerTest {
         member,
         mgm
     )
+    private val commands = listOf(
+        Record(
+            "topic",
+            "key",
+            false,
+        )
+    )
+    private val operation = mock<MembershipPersistenceOperation<Unit>> {
+        on { createAsyncCommands() } doReturn commands
+    }
 
     private val membershipPersistenceClient = mock<MembershipPersistenceClient> {
         on {
@@ -53,7 +64,7 @@ class DeclineRegistrationHandlerTest {
                 REGISTRATION_ID,
                 RegistrationStatus.DECLINED
             )
-        } doReturn MembershipPersistenceResult.success()
+        } doReturn operation
     }
 
     private val record = mock<Record<String, AppMessage>>()
@@ -80,6 +91,15 @@ class DeclineRegistrationHandlerTest {
 
     @Test
     fun `handler calls persistence client and returns output states`() {
+        val expectedOutputStates = listOf(
+            record,
+            Record(
+                topic = REGISTRATION_COMMAND_TOPIC,
+                key = member.toString(),
+                value = RegistrationCommand(CheckForPendingRegistration(mgm, member, 0))
+            )
+        ) + commands
+
         val result = handler.invoke(state, Record(TOPIC, member.toString(), RegistrationCommand(command)))
 
         verify(membershipPersistenceClient, times(1)).setRegistrationRequestStatus(
@@ -89,9 +109,7 @@ class DeclineRegistrationHandlerTest {
         )
 
         assertThat(result.updatedState).isNull()
-        assertThat(result.outputStates)
-            .hasSize(2)
-            .contains(record)
+        assertThat(result.outputStates).containsExactlyInAnyOrderElementsOf(expectedOutputStates)
 
         val registrationCommand = result.outputStates.single { it.topic == Schemas.Membership.REGISTRATION_COMMAND_TOPIC }
         val checkForPendingRegistration = (registrationCommand.value as? RegistrationCommand)?.command as? CheckForPendingRegistration

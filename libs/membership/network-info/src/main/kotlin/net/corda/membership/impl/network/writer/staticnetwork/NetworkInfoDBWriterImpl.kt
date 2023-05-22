@@ -2,16 +2,18 @@ package net.corda.membership.impl.network.writer.staticnetwork
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.node.ObjectNode
+import java.security.KeyPairGenerator
+import javax.persistence.EntityManager
+import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.crypto.cipher.suite.KeyEncodingService
-import net.corda.crypto.cipher.suite.calculateHash
-import net.corda.data.CordaAvroSerializationFactory
+import net.corda.crypto.core.fullId
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.libs.packaging.Cpi
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.membership.datamodel.StaticNetworkInfoEntity
-import net.corda.membership.lib.EPOCH_KEY
-import net.corda.membership.lib.MODIFIED_TIME_KEY
+import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.EPOCH_KEY
+import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.MODIFIED_TIME_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.IS_STATIC_MGM
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
@@ -29,6 +31,7 @@ import net.corda.membership.network.writer.NetworkInfoWriter
 import net.corda.membership.network.writer.staticnetwork.StaticNetworkUtils.mgmSignatureSpec
 import net.corda.membership.network.writer.staticnetwork.StaticNetworkUtils.mgmSigningKeyAlgorithm
 import net.corda.membership.network.writer.staticnetwork.StaticNetworkUtils.mgmSigningKeyProvider
+import net.corda.utilities.serialization.wrapWithNullErrorHandling
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -36,8 +39,6 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
-import java.security.KeyPairGenerator
-import javax.persistence.EntityManager
 
 @Component(service = [NetworkInfoWriter::class])
 class NetworkInfoDBWriterImpl(
@@ -100,16 +101,18 @@ class NetworkInfoDBWriterImpl(
                 .genKeyPair()
                 .let { it.public.encoded to it.private.encoded }
 
-            val serializedParams = serializer.serialize(
-                KeyValuePairList(
-                    listOf(
-                        KeyValuePair(EPOCH_KEY, "1"),
-                        KeyValuePair(MODIFIED_TIME_KEY, clock.instant().toString())
+            val serializedParams = wrapWithNullErrorHandling({
+                CordaRuntimeException("Failed to serialize KeyValuePairList for static network group parameters.", it)
+            }) {
+                serializer.serialize(
+                    KeyValuePairList(
+                        listOf(
+                            KeyValuePair(EPOCH_KEY, "1"),
+                            KeyValuePair(MODIFIED_TIME_KEY, clock.instant().toString())
+                        )
                     )
                 )
-            ) ?: throw CordaRuntimeException(
-                "Failed to serialize KeyValuePairList for static network group parameters."
-            )
+            }
 
             StaticNetworkInfoEntity(
                 groupId,
@@ -149,7 +152,7 @@ class NetworkInfoDBWriterImpl(
             val staticMgmInfo = mapOf(
                 PARTY_NAME to "O=Corda-Static-Network-MGM, L=London, C=GB",
                 PARTY_SESSION_KEYS.format(0) to keyEncodingService.encodeAsString(mgmSessionKey),
-                SESSION_KEYS_HASH.format(0) to mgmSessionKey.calculateHash().value,
+                SESSION_KEYS_HASH.format(0) to mgmSessionKey.fullId(),
                 SESSION_KEYS_SIGNATURE_SPEC.format(0) to mgmSignatureSpec.signatureName,
                 URL_KEY.format(0) to "https://localhost:8080",
                 PROTOCOL_VERSION.format(0) to "1",

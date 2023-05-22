@@ -1,5 +1,9 @@
 package net.corda.membership.impl.registration.staticnetwork
 
+import java.nio.ByteBuffer
+import java.util.UUID
+import net.corda.avro.serialization.CordaAvroSerializationFactory
+import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.client.CryptoOpsClient
@@ -7,12 +11,11 @@ import net.corda.crypto.client.hsm.HSMRegistrationClient
 import net.corda.crypto.core.CryptoConsts.Categories.LEDGER
 import net.corda.crypto.core.CryptoConsts.Categories.NOTARY
 import net.corda.crypto.core.CryptoConsts.Categories.SESSION_INIT
-import net.corda.data.CordaAvroSerializationFactory
-import net.corda.data.CordaAvroSerializer
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.PersistentMemberInfo
+import net.corda.data.membership.SignedData
 import net.corda.data.membership.StaticNetworkInfo
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.p2p.HostedIdentityEntry
@@ -75,6 +78,7 @@ import net.corda.schema.Schemas.Membership.MEMBER_LIST_TOPIC
 import net.corda.schema.Schemas.P2P.P2P_HOSTED_IDENTITIES_TOPIC
 import net.corda.schema.membership.MembershipSchema.RegistrationContextSchema
 import net.corda.utilities.concurrent.SecManagerForkJoinPool
+import net.corda.utilities.serialization.wrapWithNullErrorHandling
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -90,8 +94,6 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.nio.ByteBuffer
-import java.util.UUID
 
 @Suppress("LongParameterList")
 @Component(service = [MemberRegistrationService::class])
@@ -215,7 +217,7 @@ class StaticMemberRegistrationService(
         registrationId: UUID,
         member: HoldingIdentity,
         context: Map<String, String>
-    ) {
+    ): Collection<Record<*, *>> {
         if (!isRunning || coordinator.status == LifecycleStatus.DOWN) {
             throw MembershipRegistrationException(
                 "Registration failed. Reason: StaticMemberRegistrationService is not running/down."
@@ -271,6 +273,8 @@ class StaticMemberRegistrationService(
             persistGroupParameters(memberInfo, staticMemberList)
 
             persistRegistrationRequest(registrationId, memberInfo)
+
+            return emptyList()
         } catch (e: InvalidMembershipRegistrationException) {
             logger.warn("Registration failed. Reason:", e)
             throw e
@@ -329,20 +333,38 @@ class StaticMemberRegistrationService(
     }
 
     private fun persistRegistrationRequest(registrationId: UUID, memberInfo: MemberInfo) {
-        val memberContext = keyValuePairListSerializer.serialize(memberInfo.memberProvidedContext.toAvro())
-            ?: throw IllegalArgumentException("Failed to serialize the member context for this request.")
+        val memberContext = wrapWithNullErrorHandling({
+            IllegalArgumentException("Failed to serialize the member context for this request.", it)
+        }) {
+            keyValuePairListSerializer.serialize(memberInfo.memberProvidedContext.toAvro())
+        }
+        val registrationContext = wrapWithNullErrorHandling({
+            IllegalArgumentException("Failed to serialize the registration context for this request.", it)
+        }) {
+            keyValuePairListSerializer.serialize(KeyValuePairList(emptyList()))
+        }
         persistenceClient.persistRegistrationRequest(
             viewOwningIdentity = memberInfo.holdingIdentity,
             registrationRequest = RegistrationRequest(
                 status = RegistrationStatus.APPROVED,
                 registrationId = registrationId.toString(),
                 requester = memberInfo.holdingIdentity,
-                memberContext = ByteBuffer.wrap(memberContext),
-                signature = CryptoSignatureWithKey(
-                    ByteBuffer.wrap(byteArrayOf()),
-                    ByteBuffer.wrap(byteArrayOf())
+                memberContext = SignedData(
+                    ByteBuffer.wrap(memberContext),
+                    CryptoSignatureWithKey(
+                        ByteBuffer.wrap(byteArrayOf()),
+                        ByteBuffer.wrap(byteArrayOf())
+                    ),
+                    CryptoSignatureSpec("", null, null)
                 ),
-                signatureSpec = CryptoSignatureSpec("", null, null),
+                registrationContext = SignedData(
+                    ByteBuffer.wrap(registrationContext),
+                    CryptoSignatureWithKey(
+                        ByteBuffer.wrap(byteArrayOf()),
+                        ByteBuffer.wrap(byteArrayOf())
+                    ),
+                    CryptoSignatureSpec("", null, null)
+                ),
                 serial = 0L,
             )
         ).getOrThrow()
@@ -431,6 +453,7 @@ class StaticMemberRegistrationService(
                 hsmRegistrationClient.assignSoftHSM(memberId, SESSION_INIT)
                 keysFactory.getOrGenerateKeyPair(SESSION_INIT)
             }
+
             SessionKeyPolicy.COMBINED -> {
                 ledgerKey
             }

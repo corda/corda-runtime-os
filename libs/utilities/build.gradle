@@ -1,13 +1,9 @@
 plugins {
     id 'corda.common-publishing'
     id 'corda.common-library'
-    id 'corda.javadoc-generation'
 }
 description 'Utilities'
 
-ext {
-    releasable = true
-}
 
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
@@ -28,6 +24,7 @@ dependencies {
 
     testImplementation "org.assertj:assertj-core:$assertjVersion"
     testImplementation "com.google.jimfs:jimfs:$jimfsVersion"
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 
     testRuntimeOnly 'org.osgi:osgi.core'

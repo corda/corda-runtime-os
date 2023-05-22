@@ -2,11 +2,6 @@ plugins {
     id 'org.jetbrains.kotlin.jvm'
     id 'corda.common-publishing'
     id 'net.corda.plugins.cordapp-cpb2'
-    id 'corda.javadoc-generation'
-}
-
-ext {
-    releasable = true
 }
 
 description 'Corda Non-Validating Notary Plugin Server'
@@ -28,15 +23,13 @@ dependencies {
     cordaProvided 'net.corda:corda-application'
     cordaProvided 'net.corda:corda-notary-plugin'
     cordaProvided 'org.jetbrains.kotlin:kotlin-osgi-bundle'
-
-    cordaProvided "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
-    cordaProvided "org.osgi:osgi.core"
     cordaProvided 'org.slf4j:slf4j-api'
 
     // Common package pulled in as transitive dependency through API
     cordapp project(":notary-plugins:notary-plugin-non-validating:notary-plugin-non-validating-api")
 
     testImplementation "org.assertj:assertj-core:$assertjVersion"
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 
     testImplementation project(":libs:crypto:crypto-core")

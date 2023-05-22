@@ -5,6 +5,7 @@ import net.corda.crypto.impl.converter.PublicKeyConverter
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
+import net.corda.data.membership.SignedData
 import net.corda.data.membership.SignedMemberInfo
 import net.corda.layeredpropertymap.testkit.LayeredPropertyMapMocks
 import net.corda.layeredpropertymap.toAvro
@@ -200,12 +201,16 @@ class MemberInfoTest {
         )
         val dataFileWriter: DataFileWriter<SignedMemberInfo> = DataFileWriter(userDatumWriter)
         val signedMemberInfo = SignedMemberInfo(
-            memberInfo?.memberProvidedContext?.toAvro()?.toByteBuffer(),
-            memberInfo?.mgmProvidedContext?.toAvro()?.toByteBuffer(),
-            signature,
-            signatureSpec,
-            signature,
-            signatureSpec
+            SignedData(
+                memberInfo?.memberProvidedContext?.toAvro()?.toByteBuffer(),
+                signature,
+                signatureSpec,
+            ),
+            SignedData(
+                memberInfo?.mgmProvidedContext?.toAvro()?.toByteBuffer(),
+                signature,
+                signatureSpec,
+            )
         )
 
         dataFileWriter.create(signedMemberInfo.schema, avroMemberInfo)
@@ -223,10 +228,10 @@ class MemberInfoTest {
             user = dataFileReader.next(user)
             recreatedMemberInfo = MemberInfoImpl(
                 LayeredPropertyMapMocks.create<MemberContextImpl>(
-                    KeyValuePairList.fromByteBuffer(user.memberContext).toSortedMap(), converters
+                    KeyValuePairList.fromByteBuffer(user.memberContext.data).toSortedMap(), converters
                 ),
                 LayeredPropertyMapMocks.create<MGMContextImpl>(
-                    KeyValuePairList.fromByteBuffer(user.mgmContext).toSortedMap(), converters
+                    KeyValuePairList.fromByteBuffer(user.mgmContext.data).toSortedMap(), converters
                 )
             )
         }

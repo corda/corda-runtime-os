@@ -25,6 +25,7 @@ dependencies {
     implementation "org.slf4j:slf4j-api:$slf4jVersion"
 
     testImplementation "org.assertj:assertj-core:$assertjVersion"
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 
     testImplementation project(":libs:lifecycle:lifecycle-test-impl")
@@ -32,7 +33,7 @@ dependencies {
     testImplementation project(":testing:flow:flow-utilities")
 
     integrationTestImplementation project(":testing:db-message-bus-testkit")
-    integrationTestImplementation project(":libs:flows:utils")
+    integrationTestImplementation project(":libs:flows:flow-utils")
 
     integrationTestRuntimeOnly project(":libs:crypto:cipher-suite-impl")
     integrationTestRuntimeOnly project(":libs:lifecycle:lifecycle-impl")

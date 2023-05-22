@@ -22,6 +22,7 @@ dependencies {
     implementation "org.slf4j:jul-to-slf4j:$slf4jVersion"
     runtimeOnly "org.apache.felix:org.apache.felix.framework:$felixVersion"
     runtimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
+    runtimeOnly "org.apache.logging.log4j:log4j-layout-template-json:$log4jVersion"
 
     // Jackson dependencies for JSON formatted logs
     runtimeOnly "com.fasterxml.jackson.core:jackson-core:$jacksonVersion"

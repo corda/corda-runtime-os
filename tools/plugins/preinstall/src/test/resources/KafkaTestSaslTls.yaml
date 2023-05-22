@@ -1,0 +1,26 @@
+kafka:
+  bootstrapServers: "localhost:9093"
+  topicPrefix: ""
+  tls:
+    enabled: true
+    truststore:
+      valueFrom:
+        secretKeyRef:
+          name: "kafka-truststore-file"
+          key: "kafka-truststore-file"
+      password:
+        valueFrom:
+          secretKeyRef:
+            name: "kafka-truststore-password"
+            key: "kafka-truststore-password"
+      type: "JKS"
+  sasl:
+    mechanism: "PLAIN"
+    enabled: true
+    username:
+      value: "alice"
+    password:
+      valueFrom:
+        secretKeyRef:
+          name: "kafka-sasl"
+          key: "kafka-sasl-password"

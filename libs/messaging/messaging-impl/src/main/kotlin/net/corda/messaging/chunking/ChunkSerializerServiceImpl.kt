@@ -8,7 +8,7 @@ import net.corda.chunking.ChunkBuilderService
 import net.corda.chunking.Constants.Companion.APP_LEVEL_CHUNK_MESSAGE_OVERHEAD
 import net.corda.chunking.Constants.Companion.CORDA_RECORD_OVERHEAD
 import net.corda.crypto.cipher.suite.PlatformDigestService
-import net.corda.data.CordaAvroSerializer
+import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.chunking.Chunk
 import net.corda.data.chunking.ChunkKey
 import net.corda.messagebus.api.producer.CordaProducerRecord
@@ -136,7 +136,7 @@ class ChunkSerializerServiceImpl(
         if (obj == null) return null
         return try {
             cordaAvroSerializer.serialize(obj)
-        } catch (ex: Throwable) {
+        } catch (ex: CordaRuntimeException) {
             // if serialization is going to fail, let it be handled within the kafka client logic
             return null
         }

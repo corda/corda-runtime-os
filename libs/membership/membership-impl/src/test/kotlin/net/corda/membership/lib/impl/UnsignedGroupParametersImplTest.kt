@@ -4,12 +4,12 @@ import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.core.CompositeKeyProvider
 import net.corda.crypto.impl.converter.PublicKeyConverter
 import net.corda.layeredpropertymap.testkit.LayeredPropertyMapMocks
-import net.corda.membership.lib.EPOCH_KEY
-import net.corda.membership.lib.MODIFIED_TIME_KEY
-import net.corda.membership.lib.NOTARY_SERVICE_KEYS_KEY
-import net.corda.membership.lib.NOTARY_SERVICE_NAME_KEY
-import net.corda.membership.lib.NOTARY_SERVICE_PROTOCOL_KEY
-import net.corda.membership.lib.NOTARY_SERVICE_PROTOCOL_VERSIONS_KEY
+import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.EPOCH_KEY
+import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.MODIFIED_TIME_KEY
+import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.NOTARY_SERVICE_KEYS_KEY
+import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.NOTARY_SERVICE_NAME_KEY
+import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.NOTARY_SERVICE_PROTOCOL_KEY
+import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.NOTARY_SERVICE_PROTOCOL_VERSIONS_KEY
 import net.corda.membership.lib.impl.converter.NotaryInfoConverter
 import net.corda.test.util.time.TestClock
 import net.corda.v5.base.types.LayeredPropertyMap
@@ -18,6 +18,7 @@ import net.corda.v5.crypto.CompositeKeyNodeAndWeight
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.SoftAssertions.assertSoftly
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
@@ -42,7 +43,7 @@ class UnsignedGroupParametersImplTest {
         on { decodePublicKey(KEY) } doReturn key
     }
     private val compositeKeyProvider: CompositeKeyProvider = mock {
-        on { create(eq(listOf(compositeKeyNodeAndWeight)), eq(null)) } doReturn compositeKey
+        on { create(eq(listOf(compositeKeyNodeAndWeight)), any()) } doReturn compositeKey
     }
     private val serializedParameters = "group-params".toByteArray()
 

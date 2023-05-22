@@ -34,11 +34,13 @@ dependencies {
 
     implementation project(':libs:crypto:cipher-suite')
     implementation project(':libs:flows:external-event-responses')
+    implementation project(':libs:flows:flow-utils')
     implementation project(':libs:ledger:ledger-common-data')
     implementation project(':libs:ledger:ledger-utxo-data')
     implementation project(':libs:ledger:ledger-utxo-transaction-verifier')
     implementation project(':libs:messaging:messaging')
     implementation project(":libs:serialization:json-validator")
+    implementation project(":libs:serialization:serialization-avro")
     implementation project(':libs:utilities')
     implementation project(':libs:virtual-node:sandbox-group-context')
 

@@ -13,6 +13,7 @@ dependencies {
     implementation project(":libs:messaging:messaging")
     implementation project(":libs:flows:session-manager")
     implementation project(':libs:utilities')
+    implementation project(":libs:serialization:serialization-avro")
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation "net.corda:corda-base"
@@ -25,8 +26,9 @@ dependencies {
     implementation "org.slf4j:slf4j-api:$slf4jVersion"
 
     testImplementation "org.assertj:assertj-core:$assertjVersion"
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
-    testImplementation project(":libs:flows:utils")
+    testImplementation project(":libs:flows:flow-utils")
 
     integrationTestImplementation project(":testing:db-message-bus-testkit")
 

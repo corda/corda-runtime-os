@@ -10,21 +10,30 @@ object UniquenessConstants {
     /**
      * Specifies the maximum supported transaction algorithm length.
      *
-     * CHANGING THIS VALUE WILL CHANGE THE SIZE OF DATABASE FIELDS STORING TRANSACTION ALGORITHM IDS
+     * THIS VALUE MUST MATCH THE SIZE SPECIFIED IN THE CORDA-API LIQUIBASE SCHEMA DEFINITION
      */
     const val TRANSACTION_ID_ALGO_LENGTH = 8
 
     /**
      * Specifies the maximum supported transaction hash length.
      *
-     * CHANGING THIS VALUE WILL CHANGE THE SIZE OF DATABASE FIELDS STORING TRANSACTION IDS
+     * THIS VALUE MUST MATCH THE SIZE SPECIFIED IN THE CORDA-API LIQUIBASE SCHEMA DEFINITION
      */
     const val TRANSACTION_ID_LENGTH = 64
 
     /**
+     * Specifies the maximum supported length of the x500 name of a party requesting notarization.
+     * This is deliberately large, relying on application logic to enforce an assumed shorter
+     * maximum length.
+     *
+     * THIS VALUE MUST MATCH THE SIZE SPECIFIED IN THE CORDA-API LIQUIBASE SCHEMA DEFINITION
+     */
+    const val ORIGINATOR_X500_NAME_LENGTH = 1024
+
+    /**
      * Specifies the maximum supported rejected transaction error details length.
      *
-     * CHANGING THIS VALUE WILL CHANGE THE SIZE LIMIT OF REJECTED TRANSACTION ERROR DETAILS
+     * THIS VALUE MUST MATCH THE SIZE SPECIFIED IN THE CORDA-API LIQUIBASE SCHEMA DEFINITION
      */
     const val REJECTED_TRANSACTION_ERROR_DETAILS_LENGTH = 1024
 

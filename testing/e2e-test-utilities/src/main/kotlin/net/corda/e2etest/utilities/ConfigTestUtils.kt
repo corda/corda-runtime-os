@@ -19,13 +19,7 @@ fun JsonNode.configWithDefaultsNode(): JsonNode =
  * Get the current configuration (as a [JsonNode]) for the specified [section].
  */
 fun getConfig(section: String): JsonNode {
-    return cluster {
-        endpoint(
-            CLUSTER_URI,
-            USERNAME,
-            PASSWORD
-        )
-
+    return DEFAULT_CLUSTER.cluster {
         assertWithRetryIgnoringExceptions {
             command { getConfig(section) }
             condition { it.code == OK.statusCode }
@@ -38,14 +32,10 @@ fun getConfig(section: String): JsonNode {
  * The currently installed schema and configuration versions are automatically obtained from the running system
  * before updating.
  */
-fun updateConfig(config: String, section: String) {
-    return cluster {
-        endpoint(
-            CLUSTER_URI,
-            USERNAME,
-            PASSWORD
-        )
+fun updateConfig(config: String, section: String) = DEFAULT_CLUSTER.updateConfig(config, section)
 
+fun ClusterInfo.updateConfig(config: String, section: String) {
+    return cluster {
         val currentConfig = getConfig(section).body.toJson()
         val currentSchemaVersion = currentConfig["schemaVersion"]
 
@@ -83,14 +73,16 @@ fun waitForConfigurationChange(
     value: String,
     expectServiceToBeDown: Boolean = true,
     timeout: Duration = Duration.ofMinutes(1)
+) = DEFAULT_CLUSTER.waitForConfigurationChange(section, key, value, expectServiceToBeDown, timeout)
+
+fun ClusterInfo.waitForConfigurationChange(
+    section: String,
+    key: String,
+    value: String,
+    expectServiceToBeDown: Boolean = true,
+    timeout: Duration = Duration.ofMinutes(1)
 ) {
     cluster {
-        endpoint(
-            CLUSTER_URI,
-            USERNAME,
-            PASSWORD
-        )
-
         if (expectServiceToBeDown) {
             // Wait for the service to become unavailable
             eventually(timeout) {
@@ -112,4 +104,21 @@ fun waitForConfigurationChange(
             }
         }
     }
+}
+
+fun ClusterInfo.updateConfigAndWaitForChange(
+    section: String,
+    key: String,
+    value: Any
+) {
+    updateConfig(
+        mapOf(key to value).toJsonString(),
+        section
+    )
+    waitForConfigurationChange(
+        section,
+        key,
+        value.toString(),
+        expectServiceToBeDown = false
+    )
 }

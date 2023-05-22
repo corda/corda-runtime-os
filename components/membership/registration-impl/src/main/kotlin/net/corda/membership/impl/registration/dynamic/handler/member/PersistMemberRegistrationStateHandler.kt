@@ -16,14 +16,14 @@ internal class PersistMemberRegistrationStateHandler(
         command: PersistMemberRegistrationState,
     ): RegistrationHandlerResult {
         val member = command.member.toCorda()
-        membershipPersistenceClient.setRegistrationRequestStatus(
+        val commands = membershipPersistenceClient.setRegistrationRequestStatus(
             member,
             command.setStatusRequest.registrationId,
             command.setStatusRequest.newStatus,
-        )
+        ).createAsyncCommands()
         return RegistrationHandlerResult(
             null,
-            emptyList()
+            commands.toList(),
         )
     }
 

@@ -1,6 +1,6 @@
 package net.corda.membership.impl.registration.dynamic.handler.mgm
 
-import net.corda.data.CordaAvroSerializationFactory
+import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.data.membership.command.registration.RegistrationCommand
 import net.corda.data.membership.command.registration.mgm.ApproveRegistration
 import net.corda.data.membership.command.registration.mgm.DeclineRegistration
@@ -18,10 +18,10 @@ import net.corda.membership.impl.registration.dynamic.handler.MissingRegistratio
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandler
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandlerResult
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_PENDING
-import net.corda.membership.lib.MemberInfoExtension.Companion.PRE_AUTH_TOKEN
 import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.lib.approval.RegistrationRule
 import net.corda.membership.lib.approval.RegistrationRulesEngine
+import net.corda.membership.lib.registration.PRE_AUTH_TOKEN
 import net.corda.membership.lib.toMap
 import net.corda.membership.p2p.helpers.P2pRecordsFactory
 import net.corda.membership.p2p.helpers.P2pRecordsFactory.Companion.getTtlMinutes
@@ -90,11 +90,11 @@ internal class ProcessMemberVerificationResponseHandler(
             }
 
             val status = getNextRegistrationStatus(mgm.toCorda(), member.toCorda(), registrationId)
-            membershipPersistenceClient.setRegistrationRequestStatus(
+            val setRegistrationRequestStatusCommands = membershipPersistenceClient.setRegistrationRequestStatus(
                 mgm.toCorda(),
                 registrationId,
                 status
-            )
+            ).createAsyncCommands()
             val persistStatusMessage = p2pRecordsFactory.createAuthenticatedMessageRecord(
                 source = mgm,
                 destination = member,
@@ -116,7 +116,7 @@ internal class ProcessMemberVerificationResponseHandler(
             listOfNotNull(
                 persistStatusMessage,
                 approveRecord,
-            )
+            ) + setRegistrationRequestStatusCommands
         } catch (e: Exception) {
             logger.warn("Could not process member verification response for registration request: '$registrationId'", e)
             listOf(
@@ -140,15 +140,17 @@ internal class ProcessMemberVerificationResponseHandler(
         member: HoldingIdentity,
         registrationId: String
     ): RegistrationStatus {
-        val proposedMemberInfo = membershipQueryClient
+        val registrationRequest = membershipQueryClient
             .queryRegistrationRequest(mgm, registrationId)
             .getOrThrow()
+        val proposedMemberInfo = registrationRequest
             ?.memberProvidedContext
             ?.toMap()
             ?: throw CordaRuntimeException(
                 "Could not read the proposed MemberInfo for registration request " +
                         "(ID=$registrationId) submitted by ${member.x500Name}."
             )
+        val registrationContext = registrationRequest.registrationContext.toMap()
 
         val activeMemberInfo = membershipGroupReaderProvider
             .getGroupReader(mgm)
@@ -157,7 +159,7 @@ internal class ProcessMemberVerificationResponseHandler(
             ?.memberProvidedContext
             ?.toMap()
 
-        val preAuthToken = proposedMemberInfo[PRE_AUTH_TOKEN]
+        val preAuthToken = registrationContext[PRE_AUTH_TOKEN]
 
         val approvalRuleType = preAuthToken?.let {
             val tokenExists = membershipQueryClient.queryPreAuthTokens(

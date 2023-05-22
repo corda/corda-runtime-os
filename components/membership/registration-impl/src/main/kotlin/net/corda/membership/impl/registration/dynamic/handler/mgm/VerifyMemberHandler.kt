@@ -1,6 +1,6 @@
 package net.corda.membership.impl.registration.dynamic.handler.mgm
 
-import net.corda.data.CordaAvroSerializationFactory
+import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.membership.command.registration.RegistrationCommand
@@ -60,24 +60,23 @@ internal class VerifyMemberHandler(
                     "Could not verify registration request: '$registrationId' member ${member.x500Name} - Can not be an MGM."
                 )
             }
-            membershipPersistenceClient.setRegistrationRequestStatus(
+            val setRegistrationRequestStatusCommand = membershipPersistenceClient.setRegistrationRequestStatus(
                 mgm.toCorda(),
                 registrationId,
                 RegistrationStatus.PENDING_MEMBER_VERIFICATION
-            )
-            listOf(
-                p2pRecordsFactory.createAuthenticatedMessageRecord(
-                    mgm,
-                    member,
-                    VerificationRequest(
-                        registrationId,
-                        KeyValuePairList(emptyList<KeyValuePair>())
-                    ),
-                    membershipConfig.getTtlMinutes(VERIFY_MEMBER_REQUEST),
-                    id = ttlIdsFactory.createId(key),
-                    MembershipStatusFilter.PENDING,
-                )
-            )
+            ).createAsyncCommands()
+            setRegistrationRequestStatusCommand +
+                    p2pRecordsFactory.createAuthenticatedMessageRecord(
+                        mgm,
+                        member,
+                        VerificationRequest(
+                            registrationId,
+                            KeyValuePairList(emptyList<KeyValuePair>())
+                        ),
+                        membershipConfig.getTtlMinutes(VERIFY_MEMBER_REQUEST),
+                        id = ttlIdsFactory.createId(key),
+                        MembershipStatusFilter.PENDING,
+                    )
         } catch (e: Exception) {
             logger.warn("Member verification failed for registration request: '$registrationId'.", e)
             listOf(

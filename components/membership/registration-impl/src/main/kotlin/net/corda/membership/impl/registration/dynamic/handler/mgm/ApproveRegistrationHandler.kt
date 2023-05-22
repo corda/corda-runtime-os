@@ -1,6 +1,6 @@
 package net.corda.membership.impl.registration.dynamic.handler.mgm
 
-import net.corda.data.CordaAvroSerializationFactory
+import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.actions.request.DistributeMemberInfo
 import net.corda.data.membership.actions.request.MembershipActionsRequest
@@ -11,6 +11,7 @@ import net.corda.data.membership.command.registration.mgm.DeclineRegistration
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.p2p.SetOwnRegistrationStatus
 import net.corda.data.membership.state.RegistrationState
+import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.layeredpropertymap.toAvro
 import net.corda.membership.groupparams.writer.service.GroupParametersWriterService
 import net.corda.membership.impl.registration.dynamic.handler.MemberTypeChecker
@@ -81,18 +82,18 @@ internal class ApproveRegistrationHandler(
                     "Registering member's name '${approvedMember.x500Name}' is already in use as a notary service name."
                 )
             }
-            val persistState = membershipPersistenceClient.setMemberAndRegistrationRequestAsApproved(
+            val memberInfo = membershipPersistenceClient.setMemberAndRegistrationRequestAsApproved(
                 viewOwningIdentity = approvedBy.toCorda(),
                 approvedMember = approvedMember.toCorda(),
                 registrationRequestId = registrationId,
-            )
-            val memberInfo = persistState.getOrThrow()
+            ).getOrThrow()
 
             // If approved member has notary role set, add notary to MGM's view of the group parameters.
             // Otherwise, retrieve epoch of current group parameters from the group reader.
             val epoch = if (memberInfo.notaryDetails != null) {
                 val mgmHoldingIdentity = mgm.holdingIdentity
                 val result = membershipPersistenceClient.addNotaryToGroupParameters(mgmHoldingIdentity, memberInfo)
+                    .execute()
                 if (result is MembershipPersistenceResult.Failure) {
                     throw MembershipPersistenceException(
                         "Failed to update group parameters with notary information of" +
@@ -130,7 +131,8 @@ internal class ApproveRegistrationHandler(
                 content = SetOwnRegistrationStatus(
                     registrationId,
                     RegistrationStatus.APPROVED
-                )
+                ),
+                filter = MembershipStatusFilter.ACTIVE_OR_SUSPENDED
             )
 
             val commandToStartProcessingTheNextRequest = Record(

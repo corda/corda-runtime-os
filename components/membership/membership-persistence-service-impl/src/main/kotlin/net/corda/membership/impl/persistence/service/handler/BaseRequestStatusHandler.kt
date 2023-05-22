@@ -1,6 +1,6 @@
 package net.corda.membership.impl.persistence.service.handler
 
-import net.corda.data.CordaAvroDeserializer
+import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.common.RegistrationRequestDetails
@@ -23,8 +23,8 @@ internal abstract class BaseRequestStatusHandler<REQUEST, RESPONSE>(persistenceH
     }
 
     fun RegistrationRequestEntity.toDetails(): RegistrationRequestDetails {
-        val context = keyValuePairListDeserializer.deserialize(this.context)
-        val registrationProtocolVersion = context?.items?.firstOrNull {
+        val memberContext = keyValuePairListDeserializer.deserialize(this.memberContext)
+        val registrationProtocolVersion = memberContext?.items?.firstOrNull {
             it.key == "registrationProtocolVersion"
         }?.value?.toIntOrNull() ?: DEFAULT_REGISTRATION_PROTOCOL_VERSION
         return RegistrationRequestDetails.newBuilder()
@@ -34,14 +34,22 @@ internal abstract class BaseRequestStatusHandler<REQUEST, RESPONSE>(persistenceH
             .setRegistrationId(this.registrationId)
             .setHoldingIdentityId(this.holdingIdentityShortHash)
             .setRegistrationProtocolVersion(registrationProtocolVersion)
-            .setMemberProvidedContext(context)
+            .setMemberProvidedContext(memberContext)
             .setMemberSignature(
                 CryptoSignatureWithKey(
-                    ByteBuffer.wrap(this.signatureKey),
-                    ByteBuffer.wrap(this.signatureContent)
+                    ByteBuffer.wrap(this.memberContextSignatureKey),
+                    ByteBuffer.wrap(this.memberContextSignatureContent)
                 )
             )
-            .setMemberSignatureSpec(retrieveSignatureSpec(this.signatureSpec))
+            .setMemberSignatureSpec(retrieveSignatureSpec(this.memberContextSignatureSpec))
+            .setRegistrationContext(keyValuePairListDeserializer.deserialize(registrationContext))
+            .setRegistrationContextSignature(
+                CryptoSignatureWithKey(
+                    ByteBuffer.wrap(registrationContextSignatureKey),
+                    ByteBuffer.wrap(registrationContextSignatureContent)
+                )
+            )
+            .setRegistrationContextSignatureSpec(retrieveSignatureSpec(registrationContextSignatureSpec))
             .setReason(this.reason)
             .setSerial(this.serial)
             .build()

@@ -11,7 +11,7 @@ description 'Fish test bundle'
 group 'com.r3.testing'
 
 cordapp {
-    targetPlatformVersion platformVersion as Integer
+    targetPlatformVersion platformVersion.toInteger()
     contract {
         name 'Testing Fish CPK'
         versionId 1
@@ -20,18 +20,9 @@ cordapp {
 }
 
 dependencies {
-    compileOnly "org.osgi:org.osgi.service.component.annotations"
-    cordaProvided "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
     cordaProvided platform("net.corda:corda-api:$cordaApiVersion")
     cordaProvided 'net.corda:corda-application'
-    cordaProvided "org.osgi:osgi.core"
 
     cordaProvided 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     cordaProvided 'javax.persistence:javax.persistence-api'
-}
-
-tasks.named('jar', Jar) {
-    bnd '''\
-DynamicImport-Package: org.hibernate.proxy
-'''
 }

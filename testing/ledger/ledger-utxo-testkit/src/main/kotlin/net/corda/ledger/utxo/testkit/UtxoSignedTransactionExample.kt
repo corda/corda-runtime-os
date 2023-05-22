@@ -23,14 +23,15 @@ fun UtxoSignedTransactionFactory.createExample(
     jsonValidator: JsonValidator,
     wireTransactionFactory: WireTransactionFactory,
     componentGroups: List<List<ByteArray>> = defaultComponentGroups +
-            List(UtxoComponentGroup.values().size - defaultComponentGroups.size) { emptyList() }
+            List(UtxoComponentGroup.values().size - defaultComponentGroups.size - 1) { emptyList() }
 ):UtxoSignedTransaction {
     val wireTransaction = wireTransactionFactory.createExample(
         jsonMarshallingService,
         jsonValidator,
         componentGroups,
         ledgerModel = UtxoLedgerTransactionImpl::class.java.name,
-        transactionSubType = "GENERAL"
+        transactionSubType = "GENERAL",
+        memberShipGroupParametersHash = "MEMBERSHIP_GROUP_PARAMETERS_HASH"
     )
     return create(wireTransaction, listOf(getSignatureWithMetadataExample()))
 }

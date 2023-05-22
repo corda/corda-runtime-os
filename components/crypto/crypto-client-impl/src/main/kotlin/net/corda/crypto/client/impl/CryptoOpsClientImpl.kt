@@ -4,8 +4,6 @@ import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.cipher.suite.PlatformDigestService
 import net.corda.crypto.cipher.suite.publicKeyId
-import net.corda.crypto.cipher.suite.sha256Bytes
-import net.corda.crypto.cipher.suite.toStringShort
 import net.corda.crypto.component.impl.retry
 import net.corda.crypto.component.impl.toClientException
 import net.corda.crypto.core.CryptoTenants
@@ -43,7 +41,6 @@ import net.corda.messaging.api.exception.CordaRPCAPIResponderException
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.utilities.concurrent.getOrThrow
 import net.corda.utilities.debug
-import net.corda.v5.base.util.EncodingUtils.toBase58
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
@@ -259,7 +256,7 @@ class CryptoOpsClientImpl(
             "Sending '{}'(tenant={}, publicKey={}, signatureSpec={})",
             SignRpcCommand::class.java.simpleName,
             tenantId,
-            publicKey.toStringShort().take(12),
+            publicKey.publicKeyId(),
             signatureSpec
         )
         val request = createRequest(
@@ -287,7 +284,7 @@ class CryptoOpsClientImpl(
     ): CryptoSignatureWithKey {
         logger.debug {
             "Sending '${SignRpcCommand::class.java.simpleName}'(tenant=${tenantId}," +
-                    "publicKey=${toBase58(publicKey.array().sha256Bytes()).take(12)}..)"
+                    "publicKey=${publicKeyIdFromBytes(publicKey.array())}..)"
         }
         val request = createRequest(
             tenantId,

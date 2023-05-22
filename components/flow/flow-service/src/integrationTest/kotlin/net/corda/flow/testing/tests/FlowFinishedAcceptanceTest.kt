@@ -41,7 +41,7 @@ class FlowFinishedAcceptanceTest : FlowServiceTestBase() {
     fun `A flow finishing removes the flow's checkpoint publishes a completed flow status and schedules flow cleanup`() {
         `when` {
             startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
-                .suspendsWith(FlowIORequest.FlowFinished(DONE))
+                .completedSuccessfullyWith(DONE)
         }
 
         then {
@@ -75,7 +75,7 @@ class FlowFinishedAcceptanceTest : FlowServiceTestBase() {
 
         `when` {
             startFlowEventReceived(FLOW_ID1, REQUEST_ID1, CHARLIE_HOLDING_IDENTITY, CPI1, "flow start data")
-                .suspendsWith(FlowIORequest.FlowFinished(DONE))
+                .completedSuccessfullyWith(DONE)
         }
 
         then {
@@ -88,17 +88,47 @@ class FlowFinishedAcceptanceTest : FlowServiceTestBase() {
     }
 
     @Test
-    fun `An initiated flow finishing removes the flow's checkpoint publishes a completed flow status and schedules flow cleanup`() {
+    fun `A flow finishing with FlowFinished removes fiber from fiber cache`() {
         `when` {
-            sessionInitEventReceived(FLOW_ID1, INITIATED_SESSION_ID_1, CPI1, PROTOCOL)
-                .suspendsWith(FlowIORequest.FlowFinished(DONE))
+            startFlowEventReceived(FLOW_ID1, REQUEST_ID1, BOB_HOLDING_IDENTITY, CPI1, "flow start data")
+                .suspendsWith(FlowIORequest.InitialCheckpoint)
+        }
+
+        then {
+            expectOutputForFlow(FLOW_ID1) {
+                wakeUpEvent()
+                flowStatus(FlowStates.RUNNING)
+                flowFiberCacheContainsKey(BOB_HOLDING_IDENTITY, REQUEST_ID1)
+            }
+        }
+
+        `when` {
+            wakeupEventReceived(FLOW_ID1)
+                .completedSuccessfullyWith(DONE)
         }
 
         then {
             expectOutputForFlow(FLOW_ID1) {
                 nullStateRecord()
                 flowStatus(FlowStates.COMPLETED, result = DONE)
-                scheduleFlowMapperCleanupEvents(FlowKey(INITIATED_SESSION_ID_1, BOB_HOLDING_IDENTITY).toString())
+                scheduleFlowMapperCleanupEvents(FlowKey(REQUEST_ID1, BOB_HOLDING_IDENTITY).toString())
+                flowFiberCacheDoesNotContainKey(BOB_HOLDING_IDENTITY, REQUEST_ID1)
+            }
+        }
+    }
+
+    @Test
+    fun `An initiated flow finishing removes the flow's checkpoint publishes a completed flow status`() {
+        `when` {
+            sessionInitEventReceived(FLOW_ID1, INITIATED_SESSION_ID_1, CPI1, PROTOCOL)
+                .completedSuccessfullyWith(DONE)
+        }
+
+        then {
+            expectOutputForFlow(FLOW_ID1) {
+                nullStateRecord()
+                flowStatus(FlowStates.COMPLETED, result = DONE)
+                flowFiberCacheDoesNotContainKey(BOB_HOLDING_IDENTITY, INITIATED_SESSION_ID_1)
             }
         }
     }
@@ -115,16 +145,15 @@ class FlowFinishedAcceptanceTest : FlowServiceTestBase() {
 
         `when` {
             sessionAckEventReceived(FLOW_ID1, SESSION_ID_1, receivedSequenceNum = 3)
-                .suspendsWith(FlowIORequest.FlowFinished(DONE))
+                .completedSuccessfullyWith(DONE)
         }
-
-
 
         then {
             expectOutputForFlow(FLOW_ID1) {
                 nullStateRecord()
                 flowStatus(FlowStates.COMPLETED, result = DONE)
                 scheduleFlowMapperCleanupEvents(FlowKey(REQUEST_ID1, ALICE_HOLDING_IDENTITY).toString(), SESSION_ID_1)
+                flowFiberCacheDoesNotContainKey(ALICE_HOLDING_IDENTITY, REQUEST_ID1)
             }
         }
     }

@@ -3,11 +3,12 @@ package net.corda.membership.impl.client
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.core.ShortHash
-import net.corda.data.CordaAvroSerializationFactory
-import net.corda.data.CordaAvroSerializer
+import net.corda.avro.serialization.CordaAvroSerializationFactory
+import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
+import net.corda.data.membership.SignedData
 import net.corda.data.membership.async.request.MembershipAsyncRequest
 import net.corda.data.membership.async.request.RegistrationAsyncRequest
 import net.corda.data.membership.common.RegistrationRequestDetails
@@ -32,9 +33,11 @@ import net.corda.membership.client.dto.RegistrationRequestStatusDto
 import net.corda.membership.client.dto.RegistrationStatusDto
 import net.corda.membership.client.dto.SubmittedRegistrationStatus
 import net.corda.membership.lib.MemberInfoExtension.Companion.SERIAL
+import net.corda.membership.lib.registration.PRE_AUTH_TOKEN
 import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.lib.toWire
 import net.corda.membership.persistence.client.MembershipPersistenceClient
+import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.persistence.client.MembershipQueryResult
 import net.corda.messaging.api.publisher.Publisher
@@ -85,6 +88,8 @@ class MemberResourceClientImpl @Activate constructor(
         const val COMPONENT_HANDLE_NAME = "MemberOpsClient.componentHandle"
 
         private val clock = UTCClock()
+
+        private val REGISTRATION_CONTEXT_KEYS = setOf(PRE_AUTH_TOKEN)
     }
 
     private val keyValuePairListSerializer: CordaAvroSerializer<KeyValuePairList> =
@@ -244,7 +249,8 @@ class MemberResourceClientImpl @Activate constructor(
                                     holdingIdentityShortHash.toString(),
                                     requestId,
                                     registrationContext.toWire(),
-                                )
+                                ),
+                                null,
                             )
                         )
                     )
@@ -268,49 +274,75 @@ class MemberResourceClientImpl @Activate constructor(
                 )
             }
             val sent = clock.instant()
-            try {
+            val persistenceSuccess = try {
                 val context = keyValuePairListSerializer.serialize(
-                    registrationContext.filterNot { it.key == SERIAL }.toWire()
+                    registrationContext.filterNot {
+                        it.key == SERIAL || REGISTRATION_CONTEXT_KEYS.contains(it.key)
+                    }.toWire()
                 )
-                membershipPersistenceClient.persistRegistrationRequest(
+                val additionalContext = keyValuePairListSerializer.serialize(
+                    registrationContext.filter {
+                        REGISTRATION_CONTEXT_KEYS.contains(it.key)
+                    }.toWire()
+                )
+                val persistentOperation = membershipPersistenceClient.persistRegistrationRequest(
                     holdingIdentity,
                     RegistrationRequest(
                         RegistrationStatus.NEW,
                         requestId,
                         holdingIdentity,
-                        ByteBuffer.wrap(context),
-                        CryptoSignatureWithKey(
-                            ByteBuffer.wrap(byteArrayOf()),
-                            ByteBuffer.wrap(byteArrayOf())
+                        SignedData(
+                            ByteBuffer.wrap(context),
+                            CryptoSignatureWithKey(
+                                ByteBuffer.wrap(byteArrayOf()),
+                                ByteBuffer.wrap(byteArrayOf())
+                            ),
+                            CryptoSignatureSpec("", null, null),
                         ),
-                        CryptoSignatureSpec("", null, null),
+                        SignedData(
+                            ByteBuffer.wrap(additionalContext),
+                            CryptoSignatureWithKey(
+                                ByteBuffer.wrap(byteArrayOf()),
+                                ByteBuffer.wrap(byteArrayOf())
+                            ),
+                            CryptoSignatureSpec("", null, null),
+                        ),
                         registrationContext[SERIAL]?.toLong(),
                     )
-                ).getOrThrow()
-                return RegistrationRequestProgressDto(
-                    requestId,
-                    sent,
-                    SubmittedRegistrationStatus.SUBMITTED,
-                    true,
-                    "Submitting registration request was successful.",
-                    MemberInfoSubmittedDto(registrationContext)
                 )
+                when (val result = persistentOperation.execute()) {
+                    is MembershipPersistenceResult.Failure -> {
+                        logger.warn(
+                            "Could not persist registration request for holding identity ID" +
+                                " [$holdingIdentityShortHash]. ${result.errorMsg}",
+                        )
+                        asyncPublisher.publish(persistentOperation.createAsyncCommands().toList())
+                        false
+                    }
+                    is MembershipPersistenceResult.Success -> true
+                }
             } catch (e: Exception) {
                 logger.warn(
                     "Could not persist registration request for holding identity ID" +
                         " [$holdingIdentityShortHash].",
-                    e
+                    e,
                 )
-                return RegistrationRequestProgressDto(
-                    requestId,
-                    sent,
-                    SubmittedRegistrationStatus.SUBMITTED,
-                    false,
-                    "Submitting registration request was successful. " +
-                        "The request will be available in the API eventually.",
-                    MemberInfoSubmittedDto(emptyMap())
-                )
+                false
             }
+            val reason = if (persistenceSuccess) {
+                "Submitting registration request was successful."
+            } else {
+                "Submitting registration request was successful. " +
+                    "The request will be available in the API eventually."
+            }
+            return RegistrationRequestProgressDto(
+                requestId,
+                sent,
+                SubmittedRegistrationStatus.SUBMITTED,
+                persistenceSuccess,
+                reason,
+                MemberInfoSubmittedDto(registrationContext),
+            )
         }
 
         override fun checkRegistrationProgress(holdingIdentityShortHash: ShortHash): List<RegistrationRequestStatusDto> {
@@ -376,6 +408,7 @@ class MemberResourceClientImpl @Activate constructor(
             RegistrationStatus.PENDING_AUTO_APPROVAL -> RegistrationStatusDto.PENDING_AUTO_APPROVAL
             RegistrationStatus.DECLINED -> RegistrationStatusDto.DECLINED
             RegistrationStatus.INVALID -> RegistrationStatusDto.INVALID
+            RegistrationStatus.FAILED -> RegistrationStatusDto.FAILED
             RegistrationStatus.APPROVED -> RegistrationStatusDto.APPROVED
         }
     }
