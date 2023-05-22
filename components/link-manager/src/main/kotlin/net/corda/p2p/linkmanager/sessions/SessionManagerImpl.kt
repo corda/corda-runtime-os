@@ -739,15 +739,9 @@ internal class SessionManagerImpl(
             logger.couldNotFindGroupInfo(message::class.java.simpleName, message.header.sessionId, hostedIdentityInSameGroup)
             return null
         }
-        val pkiMode = pkiMode(groupPolicy, sessionManagerConfig) ?: return null
 
         val session = pendingInboundSessions.computeIfAbsent(message.header.sessionId) { sessionId ->
-            val session = protocolFactory.createResponder(
-                sessionId,
-                groupPolicy.protocolModes,
-                sessionManagerConfig.maxMessageSize,
-                pkiMode
-            )
+            val session = protocolFactory.createResponder(sessionId, sessionManagerConfig.maxMessageSize)
             session.receiveInitiatorHello(message)
             session
         }
@@ -811,6 +805,18 @@ internal class SessionManagerImpl(
             return null
         }
 
+        val sessionManagerConfig = config.get()
+        val pkiMode = pkiMode(groupPolicy, sessionManagerConfig) ?: return null
+        try {
+            session.validateEncryptedExtensions(pkiMode, groupPolicy.protocolModes, peer.holdingIdentity.x500Name)
+        } catch (exception: InvalidPeerCertificate) {
+            logger.validationFailedWarning(message::class.java.simpleName, message.header.sessionId, exception.message)
+            return null
+        } catch (exception: NoCommonModeError) {
+            logger.validationFailedWarning(message::class.java.simpleName, message.header.sessionId, exception.message)
+            return null
+        }
+
         val tenantId = ourIdentityInfo.holdingIdentity.shortHash.value
         val ourIdentitySessionKey = ourIdentityInfo.allSessionKeysAndCertificates.first {
             session.hash(it.sessionPublicKey).contentEquals(ourIdentityData.responderPublicKeyHash)
@@ -857,19 +863,12 @@ internal class SessionManagerImpl(
         return try {
             validatePeerHandshakeMessage(
                 message,
-                peer.holdingIdentity.x500Name,
                 peer.sessionInitiationKeys.map { it to it.toKeyAlgorithm().getSignatureSpec() }
             )
         } catch (exception: WrongPublicKeyHashException) {
             logger.error("The message was discarded. ${exception.message}")
             null
         } catch (exception: InvalidHandshakeMessageException) {
-            logger.validationFailedWarning(message::class.java.simpleName, message.header.sessionId, exception.message)
-            null
-        } catch (exception: InvalidPeerCertificate) {
-            logger.validationFailedWarning(message::class.java.simpleName, message.header.sessionId, exception.message)
-            null
-        } catch (exception: NoCommonModeError) {
             logger.validationFailedWarning(message::class.java.simpleName, message.header.sessionId, exception.message)
             null
         }
