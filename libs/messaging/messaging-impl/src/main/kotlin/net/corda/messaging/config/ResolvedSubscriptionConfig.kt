@@ -65,5 +65,5 @@ data class ResolvedSubscriptionConfig(
     }
 
     val clientId = "$subscriptionType-$group-$topic-$uniqueId"
-    val lifecycleCoordinatorName = LifecycleCoordinatorName("$topic-$subscriptionType-$group", clientId)
+    val lifecycleCoordinatorName = LifecycleCoordinatorName("$subscriptionType-$group-$topic", uniqueId)
 }
