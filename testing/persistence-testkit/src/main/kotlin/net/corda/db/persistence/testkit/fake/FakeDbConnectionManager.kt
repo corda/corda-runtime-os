@@ -53,14 +53,6 @@ class FakeDbConnectionManager(
         )
     }
 
-    override fun getOrCreateEntityManagerFactory(
-        connectionId: UUID,
-        entitiesSet: JpaEntitiesSet
-    ) = createEntityManagerFactory(
-        connectionId,
-        entitiesSet,
-    )
-
     fun getDataSource(id: UUID): CloseableDataSource {
         return dbSources.single { it.id ==  id}.dataSource
     }
