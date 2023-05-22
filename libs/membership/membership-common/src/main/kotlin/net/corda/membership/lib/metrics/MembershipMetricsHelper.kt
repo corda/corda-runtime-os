@@ -11,9 +11,9 @@ fun getTimerMetric(
     operation: String
 ): Timer {
     return when (type) {
-        REGISTRATION -> CordaMetrics.Metric.MembershipRegistrationHandlerExecutionTime
-        SYNC -> CordaMetrics.Metric.MembershipSynchronisationHandlerExecutionTime
-        ACTIONS -> CordaMetrics.Metric.MembershipActionsHandlerExecutionTime
+        REGISTRATION -> CordaMetrics.Metric.Membership.RegistrationHandlerExecutionTime
+        SYNC -> CordaMetrics.Metric.Membership.SyncHandlerExecutionTime
+        ACTIONS -> CordaMetrics.Metric.Membership.ActionsHandlerExecutionTime
     }.builder()
         .withTag(CordaMetrics.Tag.OperationName, operation)
         .build()

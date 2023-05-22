@@ -337,45 +337,49 @@ object CordaMetrics {
          */
         object CryptoSigningKeyLookupTimer: Metric<Timer>("crypto.signing.key.lookup.time", CordaMetrics::timer)
 
-        /**
-         * Time taken for a membership persistence transaction to complete.
-         */
-        object MembershipPersistenceTransaction: Metric<Timer>(
-            "membership.persistence.transaction.time",
-            CordaMetrics::timer
-        )
+        object Membership {
+            private const val PREFIX = "membership"
 
-        /**
-         * Total time taken for a membership persistence handler to execute.
-         */
-        object MembershipPersistenceHandler: Metric<Timer>(
-            "membership.persistence.handler.time",
-            CordaMetrics::timer
-        )
+            /**
+             * Time taken for a membership persistence transaction to complete.
+             */
+            object PersistenceTransactionExecutionTime: Metric<Timer>(
+                "$PREFIX.persistence.transaction.time",
+                CordaMetrics::timer
+            )
 
-        /**
-         * Time taken by each stage of network registration.
-         */
-        object MembershipRegistrationHandlerExecutionTime: Metric<Timer>(
-            "membership.registration.handler.time",
-            CordaMetrics::timer
-        )
+            /**
+             * Total time taken for a membership persistence handler to execute.
+             */
+            object PersistenceHandlerExecutionTime: Metric<Timer>(
+                "$PREFIX.persistence.handler.time",
+                CordaMetrics::timer
+            )
 
-        /**
-         * Time taken by each membership actions handler (e.g. distribute network data).
-         */
-        object MembershipActionsHandlerExecutionTime: Metric<Timer>(
-            "membership.actions.handler.time",
-            CordaMetrics::timer
-        )
+            /**
+             * Time taken by each stage of network registration.
+             */
+            object RegistrationHandlerExecutionTime: Metric<Timer>(
+                "$PREFIX.registration.handler.time",
+                CordaMetrics::timer
+            )
 
-        /**
-         * Time taken to execute each stage of network synchronisation between members and the MGM.
-         */
-        object MembershipSynchronisationHandlerExecutionTime: Metric<Timer>(
-            "membership.sync.handler.time",
-            CordaMetrics::timer
-        )
+            /**
+             * Time taken by each membership actions handler (e.g. distribute network data).
+             */
+            object ActionsHandlerExecutionTime: Metric<Timer>(
+                "$PREFIX.actions.handler.time",
+                CordaMetrics::timer
+            )
+
+            /**
+             * Time taken to execute each stage of network synchronisation between members and the MGM.
+             */
+            object SyncHandlerExecutionTime: Metric<Timer>(
+                "$PREFIX.sync.handler.time",
+                CordaMetrics::timer
+            )
+        }
     }
 
     /**

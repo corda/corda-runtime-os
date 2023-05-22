@@ -96,12 +96,12 @@ internal class HandlerFactories(
         UpdateStaticNetworkInfo::class.java to { UpdateStaticNetworkInfoHandler(persistenceHandlerServices) },
     )
 
-    private fun getHandlerTimer(operation: String) = Metric.MembershipPersistenceHandler
+    private fun getHandlerTimer(operation: String) = Metric.Membership.PersistenceHandlerExecutionTime
         .builder()
         .withTag(CordaMetrics.Tag.OperationName, operation)
         .build()
 
-    private fun getTransactionTimer(operation: String) = Metric.MembershipPersistenceTransaction
+    private fun getTransactionTimer(operation: String) = Metric.Membership.PersistenceTransactionExecutionTime
         .builder()
         .withTag(CordaMetrics.Tag.OperationName, operation)
         .build()
