@@ -76,4 +76,23 @@ class FlowMetricsRecorderImpl(
             .withTag(CordaMetrics.Tag.OperationStatus, completionStatus)
             .build().record(Duration.ofMillis(executionTimeMillis))
     }
+
+    override fun recordFlowSessionMessagesIncoming(flowEventType: String) {
+        CordaMetrics.Metric.FlowSessionMessagesIncomingCount.builder()
+            .forVirtualNode(flowCheckpoint.holdingIdentity.shortHash.toString())
+            .withTag(CordaMetrics.Tag.FlowClass, flowCheckpoint.flowStartContext.flowClassName)
+            .withTag(CordaMetrics.Tag.FlowEvent, flowEventType)
+            .build().increment()
+
+    }
+
+    override fun recordFlowSessionMessagesOutgoing(flowEventType: String) {
+        CordaMetrics.Metric.FlowSessionMessagesOutgoingCount.builder()
+            .forVirtualNode(flowCheckpoint.holdingIdentity.shortHash.toString())
+            .withTag(CordaMetrics.Tag.FlowClass, flowCheckpoint.flowStartContext.flowClassName)
+            .withTag(CordaMetrics.Tag.FlowEvent, flowEventType)
+            .build().increment()
+    }
+
+
 }

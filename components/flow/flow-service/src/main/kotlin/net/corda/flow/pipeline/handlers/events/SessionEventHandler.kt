@@ -1,6 +1,5 @@
 package net.corda.flow.pipeline.handlers.events
 
-import java.time.Instant
 import net.corda.data.KeyValuePairList
 import net.corda.data.flow.FlowInitiatorType
 import net.corda.data.flow.FlowKey
@@ -32,6 +31,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
+import java.time.Instant
 
 @Component(service = [FlowEventHandler::class])
 class SessionEventHandler @Activate constructor(
@@ -65,6 +65,7 @@ class SessionEventHandler @Activate constructor(
             sessionEvent,
             now
         )
+            .also { recordOutboundMessagesMetric(message) }
 
         // Null is returned if duplicate [SessionInit]s are received
         val nextSessionEvent = sessionManager.getNextReceivedEvent(updatedSessionState)

@@ -170,6 +170,17 @@ object CordaMetrics {
          */
         object FlowMapperExpiredSessionEventCount : Metric<Counter>("flow.mapper.expired.session.event.count", Metrics::counter)
 
+        /**
+         * FLOW SESSION METRICS
+         *
+         * The number of messages received by sessions.
+         */
+        object FlowSessionMessagesIncomingCount: Metric<Counter>("flow.session.messages.incoming.count", Metrics::counter)
+
+        /**
+         * Number of outbound peer-to-peer data messages replayed.
+         */
+        object FlowSessionMessagesOutgoingCount: Metric<Counter>("flow.session.messages.outgoing.count", Metrics::counter)
 
         /**
          * P2P Metrics
