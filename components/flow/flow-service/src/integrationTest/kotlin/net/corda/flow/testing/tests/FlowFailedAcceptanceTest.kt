@@ -42,7 +42,18 @@ class FlowFailedAcceptanceTest : FlowServiceTestBase() {
     fun `A flow failing removes the flow's checkpoint publishes a failed flow status and schedules flow cleanup`() {
         `when` {
             startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
-                .suspendsWith(FlowIORequest.FlowFailed(EXCEPTION))
+                .suspendsWith(FlowIORequest.InitialCheckpoint)
+        }
+
+        then {
+            expectOutputForFlow(FLOW_ID1) {
+                flowFiberCacheContainsKey(ALICE_HOLDING_IDENTITY, REQUEST_ID1)
+            }
+        }
+
+        `when` {
+            wakeupEventReceived(FLOW_ID1)
+                .completedWithError(EXCEPTION)
         }
 
         then {
@@ -50,6 +61,7 @@ class FlowFailedAcceptanceTest : FlowServiceTestBase() {
                 nullStateRecord()
                 flowStatus(FlowStates.FAILED, errorType = FLOW_FAILED, errorMessage = EXCEPTION.message)
                 scheduleFlowMapperCleanupEvents(FlowKey(REQUEST_ID1, ALICE_HOLDING_IDENTITY).toString())
+                flowFiberCacheDoesNotContainKey(ALICE_HOLDING_IDENTITY, REQUEST_ID1)
             }
         }
     }
@@ -58,14 +70,15 @@ class FlowFailedAcceptanceTest : FlowServiceTestBase() {
     fun `An initiated flow failing removes the flow's checkpoint publishes a failed flow status and schedules flow cleanup`() {
         `when` {
             sessionInitEventReceived(FLOW_ID1, INITIATED_SESSION_ID_1, CPI1, PROTOCOL)
-                .suspendsWith(FlowIORequest.FlowFailed(EXCEPTION))
+                .completedWithError(EXCEPTION)
         }
 
         then {
             expectOutputForFlow(FLOW_ID1) {
                 nullStateRecord()
                 flowStatus(FlowStates.FAILED, errorType = FLOW_FAILED, errorMessage = EXCEPTION.message)
-                scheduleFlowMapperCleanupEvents(FlowKey(INITIATED_SESSION_ID_1, BOB_HOLDING_IDENTITY).toString())
+                scheduleFlowMapperCleanupEvents(INITIATED_SESSION_ID_1)
+                flowFiberCacheDoesNotContainKey(ALICE_HOLDING_IDENTITY, REQUEST_ID1)
             }
         }
     }
@@ -82,16 +95,15 @@ class FlowFailedAcceptanceTest : FlowServiceTestBase() {
 
         `when` {
             sessionAckEventReceived(FLOW_ID1, SESSION_ID_1, receivedSequenceNum = 3)
-                .suspendsWith(FlowIORequest.FlowFailed(EXCEPTION))
+                .completedWithError(EXCEPTION)
         }
-
-
 
         then {
             expectOutputForFlow(FLOW_ID1) {
                 nullStateRecord()
                 flowStatus(FlowStates.FAILED, errorType = FLOW_FAILED, errorMessage = EXCEPTION.message)
                 scheduleFlowMapperCleanupEvents(FlowKey(REQUEST_ID1, ALICE_HOLDING_IDENTITY).toString(), SESSION_ID_1)
+                flowFiberCacheDoesNotContainKey(ALICE_HOLDING_IDENTITY, REQUEST_ID1)
             }
         }
     }

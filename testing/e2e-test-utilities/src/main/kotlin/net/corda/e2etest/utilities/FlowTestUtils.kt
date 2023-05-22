@@ -1,17 +1,16 @@
 package net.corda.e2etest.utilities
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
+import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.databind.node.NullNode
 import org.apache.commons.text.StringEscapeUtils.escapeJson
 import java.time.Duration
 import java.util.UUID
 
-const val SMOKE_TEST_CLASS_NAME = "net.cordapp.testing.smoketests.flow.RpcSmokeTestFlow"
+const val SMOKE_TEST_CLASS_NAME = "com.r3.corda.testing.smoketests.flow.RpcSmokeTestFlow"
 const val RPC_FLOW_STATUS_SUCCESS = "COMPLETED"
 const val RPC_FLOW_STATUS_FAILED = "FAILED"
-
-fun FlowStatus.getRpcFlowResult(): RpcSmokeTestOutput =
-    ObjectMapper().readValue(this.flowResult!!, RpcSmokeTestOutput::class.java)
 
 fun startRpcFlow(
     holdingId: String,
@@ -20,13 +19,7 @@ fun startRpcFlow(
     requestId: String = UUID.randomUUID().toString()
 ): String {
 
-    return cluster {
-        endpoint(
-            CLUSTER_URI,
-            USERNAME,
-            PASSWORD
-        )
-
+    return DEFAULT_CLUSTER.cluster {
         assertWithRetry {
             command {
                 flowStart(
@@ -43,14 +36,15 @@ fun startRpcFlow(
     }
 }
 
-fun startRpcFlow(holdingId: String, args: Map<String, Any>, flowName: String, expectedCode: Int = 202): String {
-    return cluster {
-        endpoint(
-            CLUSTER_URI,
-            USERNAME,
-            PASSWORD
-        )
+fun startRpcFlow(
+    holdingId: String,
+    args: Map<String, Any>,
+    flowName: String,
+    expectedCode: Int = 202
+) = DEFAULT_CLUSTER.startRpcFlow(holdingId, args, flowName, expectedCode)
 
+fun ClusterInfo.startRpcFlow(holdingId: String, args: Map<String, Any>, flowName: String, expectedCode: Int = 202): String {
+    return cluster {
         val requestId = UUID.randomUUID().toString()
 
         assertWithRetry {
@@ -69,14 +63,13 @@ fun startRpcFlow(holdingId: String, args: Map<String, Any>, flowName: String, ex
     }
 }
 
-fun awaitRpcFlowFinished(holdingId: String, requestId: String): FlowStatus {
-    return cluster {
-        endpoint(
-            CLUSTER_URI,
-            USERNAME,
-            PASSWORD
-        )
+fun awaitRpcFlowFinished(
+    holdingId: String,
+    requestId: String
+) = DEFAULT_CLUSTER.awaitRpcFlowFinished(holdingId, requestId)
 
+fun ClusterInfo.awaitRpcFlowFinished(holdingId: String, requestId: String): FlowStatus {
+    return cluster {
         ObjectMapper().readValue(
             assertWithRetry {
                 command { flowStatus(holdingId, requestId) }
@@ -92,14 +85,46 @@ fun awaitRpcFlowFinished(holdingId: String, requestId: String): FlowStatus {
     }
 }
 
-fun getFlowStatus(holdingId: String, requestId: String, expectedCode: Int): FlowStatus {
-    return  cluster {
-        endpoint(
-            CLUSTER_URI,
-            USERNAME,
-            PASSWORD
-        )
+fun awaitRestFlowResult(
+    holdingId: String,
+    requestId: String
+) = DEFAULT_CLUSTER.awaitRestFlowResult(holdingId, requestId)
+fun ClusterInfo.awaitRestFlowResult(holdingId: String, requestId: String): FlowResult {
+    return cluster {
+        val jsonNode = ObjectMapper().readTree(
+            assertWithRetry {
+                command { flowResult(holdingId, requestId) }
+                timeout(Duration.ofMinutes(6))
+                condition {
+                    it.code == 200 &&
+                            (it.toJson()["flowStatus"].textValue() == RPC_FLOW_STATUS_SUCCESS ||
+                                    it.toJson()["flowStatus"].textValue() == RPC_FLOW_STATUS_FAILED)
+                }
+            }.body)
 
+        FlowResult(
+            jsonNode[FlowResult::flowStatus.name]?.textValue(),
+            jsonNode[FlowResult::json.name]?.handlingNulls(),
+            jsonNode[FlowResult::flowError.name]?.handlingNulls()?.asFlowError()
+        )
+    }
+}
+
+private fun JsonNode.handlingNulls(): JsonNode? {
+    return when(this) {
+        is NullNode -> null
+        else -> this
+    }
+}
+
+fun getFlowStatus(
+    holdingId: String,
+    requestId: String,
+    expectedCode: Int
+) = DEFAULT_CLUSTER.getFlowStatus(holdingId, requestId, expectedCode)
+
+fun ClusterInfo.getFlowStatus(holdingId: String, requestId: String, expectedCode: Int): FlowStatus {
+    return cluster {
         ObjectMapper().readValue(
             assertWithRetry {
                 command { flowStatus(holdingId, requestId) }
@@ -112,14 +137,15 @@ fun getFlowStatus(holdingId: String, requestId: String, expectedCode: Int): Flow
     }
 }
 
-fun awaitMultipleRpcFlowFinished(holdingId: String, expectedFlowCount: Int) {
-    return cluster {
-        endpoint(
-            CLUSTER_URI,
-            USERNAME,
-            PASSWORD
-        )
+private fun JsonNode.asFlowError(): FlowError {
+    val flowError = FlowError()
+    flowError.type = this["type"]?.textValue()
+    flowError.message = this["message"]?.textValue()
+    return flowError
+}
 
+fun awaitMultipleRpcFlowFinished(holdingId: String, expectedFlowCount: Int) {
+    return DEFAULT_CLUSTER.cluster {
         assertWithRetry {
             command { multipleFlowStatus(holdingId) }
             timeout(Duration.ofSeconds(20))
@@ -137,13 +163,7 @@ fun awaitMultipleRpcFlowFinished(holdingId: String, expectedFlowCount: Int) {
 }
 
 fun getFlowClasses(holdingId: String): List<String> {
-    return cluster {
-        endpoint(
-            CLUSTER_URI,
-            USERNAME,
-            PASSWORD
-        )
-
+    return DEFAULT_CLUSTER.cluster {
         val vNodeJson = assertWithRetry {
             command { runnableFlowClasses(holdingId) }
             condition { it.code == 200 }
@@ -159,11 +179,6 @@ class RpcSmokeTestInput {
     var data: Map<String, String>? = null
 }
 
-@JsonIgnoreProperties(ignoreUnknown = true)
-class RpcSmokeTestOutput {
-    var command: String? = null
-    var result: String? = null
-}
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 class FlowStatus {
@@ -177,3 +192,9 @@ class FlowError {
     var type: String? = null
     var message: String? = null
 }
+
+data class FlowResult (
+    val flowStatus: String?,
+    val json: JsonNode?,
+    val flowError: FlowError?
+)

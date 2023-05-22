@@ -8,7 +8,18 @@ import net.corda.messaging.subscription.consumer.listener.StateAndEventConsumerR
 
 @Suppress("LongParameterList")
 interface StateAndEventBuilder {
-    fun createProducer(config: ResolvedSubscriptionConfig): CordaProducer
+    /**
+     * Create producer
+     *
+     * @param config subscription configuration for the messaging layer.
+     * @param onSerializationError a lambda to run on serialization error, will run regardless of throwOnSerializationError
+     * @return
+     */
+    fun createProducer(
+        config: ResolvedSubscriptionConfig,
+        onSerializationError: ((ByteArray) -> Unit)? = null
+    ): CordaProducer
+
     fun <K : Any, S : Any, E : Any> createStateEventConsumerAndRebalanceListener(
         config: ResolvedSubscriptionConfig,
         kClazz: Class<K>,

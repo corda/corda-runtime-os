@@ -1,7 +1,9 @@
 @file:JvmName("SerializationUtils")
+
 package net.corda.utilities.serialization
 
 import net.corda.v5.application.serialization.SerializationService
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.serialization.SerializedBytes
 
 /**
@@ -27,3 +29,23 @@ inline fun <reified T : Any> SerializationService.deserialize(serializedBytes: S
 inline fun <reified T : Any> SerializationService.deserialize(bytes: ByteArray): T {
     return this.deserialize(bytes, T::class.java)
 }
+
+
+/**
+ * Wrap with null error handling
+ *
+ * @param T The return type expected
+ * @param onErrorOrNull what to throw on error or null
+ * @param f the block to wrap
+ * @return type T
+ */
+inline fun <reified T : Any> wrapWithNullErrorHandling(
+    onErrorOrNull: (cause: Exception) -> Exception,
+    f: () -> T?
+): T = try {
+    f() ?: throw onErrorOrNull(SerializationException())
+} catch (ex: Exception) {
+    throw onErrorOrNull(ex)
+}
+
+class SerializationException : CordaRuntimeException("Failed to serialize null value")

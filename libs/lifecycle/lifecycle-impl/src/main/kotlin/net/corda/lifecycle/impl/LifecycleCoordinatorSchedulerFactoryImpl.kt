@@ -7,9 +7,16 @@ import net.corda.lifecycle.LifecycleCoordinatorSchedulerFactory
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Deactivate
+import org.slf4j.LoggerFactory
 
 @Component(service = [ LifecycleCoordinatorSchedulerFactory::class ])
 class LifecycleCoordinatorSchedulerFactoryImpl @Activate constructor(): LifecycleCoordinatorSchedulerFactory {
+    private val logger = LoggerFactory.getLogger(this::class.java)
+
+    private fun handleUncaughtException(thread: Thread, exception: Throwable) {
+        logger.error("Uncaught exception from ${thread.name}", exception)
+    }
+
     /**
      * The executor on which events are processed. Note that all events should be processed on an executor thread,
      * but they may be posted from any thread. Different events may be processed on different executor threads.
@@ -22,6 +29,7 @@ class LifecycleCoordinatorSchedulerFactoryImpl @Activate constructor(): Lifecycl
      */
     private val executor = Executors.newCachedThreadPool(
         ThreadFactoryBuilder()
+            .setUncaughtExceptionHandler(::handleUncaughtException)
             .setNameFormat("lifecycle-coordinator-%d")
             .setDaemon(true)
             .build()
@@ -29,6 +37,7 @@ class LifecycleCoordinatorSchedulerFactoryImpl @Activate constructor(): Lifecycl
 
     private val timerExecutor = Executors.newSingleThreadScheduledExecutor(
         ThreadFactoryBuilder()
+            .setUncaughtExceptionHandler(::handleUncaughtException)
             .setNameFormat("lifecycle-coordinator-timer-%d")
             .setDaemon(true)
             .build()

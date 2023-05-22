@@ -7,13 +7,12 @@ import net.corda.membership.rest.v1.MemberLookupRestResource
 import net.corda.membership.rest.v1.types.response.RestMemberInfo
 import org.pf4j.Extension
 import org.pf4j.Plugin
-import org.pf4j.PluginWrapper
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import picocli.CommandLine
 
 @Suppress("unused")
-class NetworkPluginWrapper(wrapper: PluginWrapper) : Plugin(wrapper) {
+class NetworkPluginWrapper : Plugin() {
     companion object {
         private val logger: Logger = LoggerFactory.getLogger(NetworkPlugin::class.java)
     }

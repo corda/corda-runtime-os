@@ -3,6 +3,7 @@ package net.corda.e2etest.utilities
 import com.fasterxml.jackson.databind.ObjectMapper
 import net.corda.e2etest.utilities.types.NetworkOnboardingMetadata
 import net.corda.rest.ResponseCode
+import net.corda.utilities.minutes
 import net.corda.utilities.seconds
 import net.corda.v5.base.types.MemberX500Name
 import java.io.File
@@ -33,7 +34,6 @@ const val DEFAULT_SIGNATURE_SPEC = "SHA256withECDSA"
  * By default, this function will wait until the registration is approved, but this can be disabled so that after
  * registration is submitted, the status is not verified.
  *
- * @param clusterInfo Information about the target cluster including API endpoint and P2P host.
  * @param cpb The path to the CPB to use when creating the CPI.
  * @param cpiName The name to be used for the CPI.
  * @param groupPolicy The group policy file to be bundled with the CPB in the CPI.
@@ -53,6 +53,7 @@ fun ClusterInfo.onboardMember(
     waitForApproval: Boolean = true,
     getAdditionalContext: ((holdingId: String) -> Map<String, String>)? = null
 ): NetworkOnboardingMetadata {
+    conditionallyUploadCpiSigningCertificate()
     conditionallyUploadCordaPackage(cpiName, cpb, groupPolicy)
     val holdingId = getOrCreateVirtualNodeFor(x500Name, cpiName)
 
@@ -63,6 +64,7 @@ fun ClusterInfo.onboardMember(
     val ledgerKeyId = createKeyFor(holdingId, "$holdingId$CAT_LEDGER", CAT_LEDGER, DEFAULT_KEY_SCHEME)
 
     if (!keyExists(TENANT_P2P, "$TENANT_P2P$CAT_TLS", CAT_TLS)) {
+        disableCertificateRevocationChecks()
         val tlsKeyId = createKeyFor(TENANT_P2P, "$TENANT_P2P$CAT_TLS", CAT_TLS, DEFAULT_KEY_SCHEME)
         val tlsCsr = generateCsr(x500Name, tlsKeyId)
         val tlsCert = File.createTempFile("${this.hashCode()}$CAT_TLS", ".pem").also {
@@ -125,6 +127,7 @@ fun ClusterInfo.configureNetworkParticipant(
 ) {
     return cluster {
         assertWithRetry {
+            interval(1.seconds)
             command { configureNetworkParticipant(holdingId, sessionKeyId) }
             condition { it.code == ResponseCode.NO_CONTENT.statusCode }
             failMessage("Failed to configure member '$holdingId' as a network participant")
@@ -148,6 +151,7 @@ fun ClusterInfo.register(
     )
 
     assertWithRetry {
+        interval(3.seconds)
         command { register(holdingIdentityShortHash, mapper.writeValueAsString(payload)) }
         condition {
             it.code == ResponseCode.OK.statusCode
@@ -180,8 +184,8 @@ fun ClusterInfo.waitForRegistrationStatus(
             // Use a fairly long timeout here to give plenty of time for the other side to respond. Longer
             // term this should be changed to not use the RPC message pattern and have the information available in a
             // cache on the REST worker, but for now this will have to suffice.
-            timeout(60.seconds)
-            interval(3.seconds)
+            timeout(3.minutes)
+            interval(5.seconds)
             command {
                 if (registrationId != null) {
                     getRegistrationStatus(holdingIdentityShortHash, registrationId)
@@ -207,11 +211,15 @@ fun ClusterInfo.waitForRegistrationStatus(
 fun registerStaticMember(
     holdingIdentityShortHash: String,
     isNotary: Boolean = false
+) = DEFAULT_CLUSTER.registerStaticMember(holdingIdentityShortHash, isNotary)
+
+fun ClusterInfo.registerStaticMember(
+    holdingIdentityShortHash: String,
+    isNotary: Boolean = false
 ) {
     cluster {
-        endpoint(CLUSTER_URI, USERNAME, PASSWORD)
-
         assertWithRetry {
+            interval(1.seconds)
             command { registerStaticMember(holdingIdentityShortHash, isNotary) }
             condition {
                 it.code == ResponseCode.OK.statusCode
@@ -224,7 +232,7 @@ fun registerStaticMember(
             // Use a fairly long timeout here to give plenty of time for the other side to respond. Longer
             // term this should be changed to not use the RPC message pattern and have the information available in a
             // cache on the REST worker, but for now this will have to suffice.
-            timeout(60.seconds)
+            timeout(1.minutes)
             interval(1.seconds)
             command { getRegistrationStatus(holdingIdentityShortHash) }
             condition {

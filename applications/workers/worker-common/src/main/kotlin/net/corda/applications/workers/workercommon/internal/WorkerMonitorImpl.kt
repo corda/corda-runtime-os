@@ -15,11 +15,11 @@ import net.corda.applications.workers.workercommon.WorkerMonitor
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.registry.LifecycleRegistry
 import net.corda.metrics.CordaMetrics
-import net.corda.utilities.classload.OsgiClassLoader
 import net.corda.utilities.classload.executeWithThreadContextClassLoader
 import net.corda.utilities.executeWithStdErrSuppressed
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory
 import org.osgi.framework.FrameworkUtil
+import org.osgi.framework.wiring.BundleWiring
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -37,9 +37,7 @@ internal class WorkerMonitorImpl @Activate constructor(
     @Reference(service = LifecycleRegistry::class)
     private val lifecycleRegistry: LifecycleRegistry
 ) : WorkerMonitor {
-    private companion object {
-        val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
-    }
+    private val logger = LoggerFactory.getLogger(this::class.java)
 
     // The use of Javalin is temporary, and will be replaced in the future.
     private var server: Javalin? = null
@@ -127,7 +125,7 @@ internal class WorkerMonitorImpl @Activate constructor(
             server.start(port)
         } else {
             // We temporarily switch the context class loader to allow Javalin to find `WebSocketServletFactory`.
-            executeWithThreadContextClassLoader(OsgiClassLoader(listOf(bundle))) {
+            executeWithThreadContextClassLoader(bundle.adapt(BundleWiring::class.java).classLoader) {
                 // Required because Javalin prints an error directly to stderr if it cannot find a logging
                 // implementation via standard class loading mechanism. This mechanism is not appropriate for OSGi.
                 // The logging implementation is found correctly in practice.

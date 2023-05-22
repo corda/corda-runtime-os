@@ -92,6 +92,8 @@ class UniquenessCheckerImplDBIntegrationTests {
     private val noDbHoldingIdentityDbName =
         VirtualNodeDbType.UNIQUENESS.getSchemaName(noDbHoldingIdentity.shortHash)
 
+    private val originatorX500Name = "C=GB, L=London, O=David"
+
     // We don't use Instant.MAX because this appears to cause a long overflow in Avro
     private val defaultTimeWindowUpperBound: Instant =
         LocalDate.of(2200, 1, 1).atStartOfDay().toInstant(ZoneOffset.UTC)
@@ -109,6 +111,7 @@ class UniquenessCheckerImplDBIntegrationTests {
                 defaultHoldingIdentity.toAvro(),
                 ExternalEventContext(),
                 txId.toString(),
+                originatorX500Name,
                 emptyList(),
                 emptyList(),
                 0,

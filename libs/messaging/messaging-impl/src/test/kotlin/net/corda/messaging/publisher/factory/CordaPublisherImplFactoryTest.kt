@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 
@@ -23,7 +24,7 @@ class CordaPublisherImplFactoryTest {
 
     @BeforeEach
     fun beforeEach() {
-        doReturn(cordaProducer).`when`(cordaProducerBuilder).createProducer(any(), any())
+        doReturn(cordaProducer).`when`(cordaProducerBuilder).createProducer(any(), any(), anyOrNull())
         cordaPublisherFactory = CordaPublisherFactory(mock(), cordaProducerBuilder, mock(), mock())
     }
 

@@ -2,7 +2,7 @@ package net.corda.messagebus.kafka.serialization
 
 import java.nio.ByteBuffer
 import java.util.function.Consumer
-import net.corda.data.CordaAvroDeserializer
+import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.data.chunking.Chunk
 import net.corda.data.chunking.ChunkKey
 import net.corda.schema.registry.AvroSchemaRegistry
@@ -11,7 +11,15 @@ import org.apache.kafka.common.serialization.Deserializer
 import org.apache.kafka.common.serialization.StringDeserializer
 import org.slf4j.LoggerFactory
 
-class CordaAvroDeserializerImpl<T : Any>(
+/**
+ * Corda avro serializer impl
+ *
+ * @param T Type to deserialize
+ * @property schemaRegistry the Avro-based Schemas
+ * @property onError lambda to be run on deserialization error
+ * @property expectedClass
+ */
+class CordaAvroDeserializerImpl<T: Any>(
     private val schemaRegistry: AvroSchemaRegistry,
     private val onError: Consumer<ByteArray>,
     private val expectedClass: Class<T>

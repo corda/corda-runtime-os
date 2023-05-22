@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import net.corda.crypto.test.certificates.generation.toPem
 import net.corda.e2etest.utilities.types.NetworkOnboardingMetadata
 import net.corda.rest.ResponseCode
+import net.corda.utilities.minutes
 import net.corda.utilities.seconds
 import java.io.File
 import java.net.URLEncoder.encode
@@ -16,12 +17,12 @@ import java.time.Duration
  * Calls the necessary endpoints to create a vnode, and onboard the MGM to that vnode.
  */
 fun ClusterInfo.onboardMgm(
-    resourceName: String,
     mgmName: String = "O=Mgm, L=London, C=GB, OU=$testRunUniqueId",
     groupPolicyConfig: GroupPolicyConfig = GroupPolicyConfig()
 ): NetworkOnboardingMetadata {
-    val mgmCpiName = "mgm_$testRunUniqueId.cpi"
-    conditionallyUploadCordaPackage(mgmCpiName, resourceName, getMgmGroupPolicy())
+    val mgmCpiName = "mgm.cpi"
+    conditionallyUploadCpiSigningCertificate()
+    conditionallyUploadCordaPackage(mgmCpiName, null, getMgmGroupPolicy())
     val mgmHoldingId = getOrCreateVirtualNodeFor(mgmName, mgmCpiName)
 
     addSoftHsmFor(mgmHoldingId, CAT_SESSION_INIT)
@@ -42,6 +43,7 @@ fun ClusterInfo.onboardMgm(
     )
 
     if (!keyExists(TENANT_P2P, "$TENANT_P2P$CAT_TLS", CAT_TLS)) {
+        disableCertificateRevocationChecks()
         val tlsKeyId = createKeyFor(TENANT_P2P, "$TENANT_P2P$CAT_TLS", CAT_TLS, DEFAULT_KEY_SCHEME)
         val mgmTlsCsr = generateCsr(mgmName, tlsKeyId)
         val mgmTlsCert = File.createTempFile("${this.hashCode()}$CAT_TLS", ".pem").also {
@@ -63,6 +65,8 @@ fun ClusterInfo.exportGroupPolicy(
     mgmHoldingId: String
 ) = cluster {
     assertWithRetry {
+        interval(2.seconds)
+        timeout(30.seconds)
         command { get("/api/v1/mgm/$mgmHoldingId/info") }
         condition { it.code == ResponseCode.OK.statusCode }
     }.body
@@ -100,6 +104,7 @@ private fun ClusterInfo.createApprovalRuleCommon(
     )
 
     assertWithRetry {
+        interval(1.seconds)
         command { post(url, ObjectMapper().writeValueAsString(payload)) }
         condition { it.code == ResponseCode.OK.statusCode }
     }.toJson()["ruleId"].textValue()
@@ -128,6 +133,7 @@ private fun ClusterInfo.delete(
     url: String
 ) = cluster {
     assertWithRetry {
+        interval(1.seconds)
         command { delete(url) }
         condition { it.code == ResponseCode.NO_CONTENT.statusCode }
     }
@@ -150,6 +156,7 @@ fun ClusterInfo.createPreAuthToken(
     }
 
     assertWithRetry {
+        interval(1.seconds)
         command { post("/api/v1/mgm/$mgmHoldingId/preauthtoken", ObjectMapper().writeValueAsString(payload)) }
         condition { it.code == ResponseCode.OK.statusCode }
     }.toJson()["id"].textValue()
@@ -165,6 +172,7 @@ fun ClusterInfo.revokePreAuthToken(
 ) {
     cluster {
         assertWithRetry {
+            interval(1.seconds)
             command { put("/api/v1/mgm/$mgmHoldingId/preauthtoken/revoke/$tokenId", "{\"remarks\": \"$remark\"}") }
             condition { it.code == ResponseCode.OK.statusCode }
         }
@@ -188,6 +196,7 @@ fun ClusterInfo.getPreAuthTokens(
     }
     val query = queries.joinToString(prefix = "?", separator = "&")
     assertWithRetry {
+        interval(1.seconds)
         command { get("/api/v1/mgm/$mgmHoldingId/preauthtoken$query") }
         condition { it.code == ResponseCode.OK.statusCode }
     }.toJson()
@@ -207,7 +216,8 @@ fun ClusterInfo.waitForPendingRegistrationReviews(
             "?requestsubjectx500name=${encode(memberX500Name.toString(), defaultCharset())}"
         } ?: ""
         assertWithRetry {
-            timeout(60.seconds)
+            timeout(2.minutes)
+            interval(3.seconds)
             command { get("/api/v1/mgm/$mgmHoldingId/registrations$query") }
             condition {
                 val json = it.toJson().firstOrNull()
@@ -228,6 +238,7 @@ fun ClusterInfo.approveRegistration(
 ) {
     cluster {
         assertWithRetry {
+            interval(1.seconds)
             command { post("/api/v1/mgm/$mgmHoldingId/approve/$registrationId", "") }
             condition { it.code == ResponseCode.NO_CONTENT.statusCode }
         }
@@ -243,6 +254,7 @@ fun ClusterInfo.declineRegistration(
 ) {
     cluster {
         assertWithRetry {
+            interval(1.seconds)
             command { post(
                 "/api/v1/mgm/$mgmHoldingId/decline/$registrationId",
                 "{\"reason\": \"Declined by automated test with runId $testRunUniqueId.\"}")

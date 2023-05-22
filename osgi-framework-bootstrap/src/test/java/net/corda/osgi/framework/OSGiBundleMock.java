@@ -4,6 +4,7 @@ import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceReference;
 import org.osgi.framework.Version;
+import org.osgi.framework.wiring.BundleRevision;
 
 import java.io.File;
 import java.io.InputStream;
@@ -177,9 +178,14 @@ final class OSGiBundleMock implements Bundle {
         return new Version(0, 0, 0, "mock");
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public <A> A adapt(Class<A> type) {
-        throw new UnsupportedOperationException("Not yet implemented");
+        if (type == BundleRevision.class) {
+            return (A) new OSGiBundleRevisionMock(this);
+        } else {
+            throw new UnsupportedOperationException("Not yet implemented");
+        }
     }
 
     @Override

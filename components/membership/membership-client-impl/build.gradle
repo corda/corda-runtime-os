@@ -19,6 +19,7 @@ dependencies {
     implementation project(":libs:utilities")
     implementation project(":libs:virtual-node:virtual-node-info")
     implementation project(':components:membership:membership-persistence-client')
+    implementation project(":libs:serialization:serialization-avro")
 
     implementation "net.corda:corda-avro-schema"
     implementation "net.corda:corda-base"
@@ -33,6 +34,6 @@ dependencies {
 
     testImplementation "net.corda:corda-serialization"
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
-    testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"
 }

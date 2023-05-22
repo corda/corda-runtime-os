@@ -21,6 +21,7 @@ import net.corda.messaging.api.processor.EventLogProcessor
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.listener.PartitionAssignmentListener
 import net.corda.messaging.config.ResolvedSubscriptionConfig
+import net.corda.messaging.constants.MetricsConstants
 import net.corda.messaging.subscription.consumer.listener.ForwardingRebalanceListener
 import net.corda.messaging.subscription.consumer.listener.LoggingConsumerRebalanceListener
 import net.corda.messaging.utils.toCordaProducerRecords
@@ -67,9 +68,9 @@ internal class EventLogSubscriptionImpl<K : Any, V : Any>(
             "${config.clientId}."
 
     private val processorMeter = CordaMetrics.Metric.MessageProcessorTime.builder()
-        .withTag(CordaMetrics.Tag.MessagePatternType, "Durable")
+        .withTag(CordaMetrics.Tag.MessagePatternType, MetricsConstants.DURABLE_PATTERN_TYPE)
         .withTag(CordaMetrics.Tag.MessagePatternClientId, config.clientId)
-        .withTag(CordaMetrics.Tag.OperationName, "onNext")
+        .withTag(CordaMetrics.Tag.OperationName, MetricsConstants.ON_NEXT_OPERATION)
         .build()
 
     override val isRunning: Boolean
@@ -117,8 +118,11 @@ internal class EventLogSubscriptionImpl<K : Any, V : Any>(
                     },
                     rebalanceListener
                 )
-                val producerConfig = ProducerConfig(config.clientId, config.instanceId, true, ProducerRoles.EVENT_LOG)
-                producer = cordaProducerBuilder.createProducer(producerConfig, config.messageBusConfig)
+                val producerConfig = ProducerConfig(config.clientId, config.instanceId, true, ProducerRoles.EVENT_LOG, false)
+                producer = cordaProducerBuilder.createProducer(producerConfig, config.messageBusConfig) { data ->
+                    log.warn("Failed to serialize record from ${config.topic}")
+                    deadLetterRecords.add(data)
+                }
                 consumer.use { cordaConsumer ->
                     cordaConsumer.subscribe(config.topic)
                     producer.use { cordaProducer ->

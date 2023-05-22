@@ -1,6 +1,6 @@
-@file:JvmName("FlowSandboxServiceUtils")
 package net.corda.flow.pipeline.sandbox.impl
 
+import net.corda.flow.fiber.cache.FlowFiberCache
 import net.corda.flow.pipeline.sandbox.FlowSandboxGroupContext
 import net.corda.flow.pipeline.sandbox.FlowSandboxService
 import net.corda.flow.pipeline.sandbox.factory.SandboxDependencyInjectorFactory
@@ -22,12 +22,15 @@ import net.corda.sandboxgroupcontext.service.registerCustomJsonSerializers
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import net.corda.virtualnode.HoldingIdentity
+import net.corda.virtualnode.toAvro
 import org.osgi.framework.BundleContext
 import org.osgi.framework.Constants.SCOPE_PROTOTYPE
 import org.osgi.framework.Constants.SERVICE_SCOPE
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
+import org.osgi.service.component.annotations.Deactivate
 import org.osgi.service.component.annotations.Reference
+import org.slf4j.LoggerFactory
 
 @Suppress("LongParameterList")
 @RequireSandboxAMQP
@@ -40,11 +43,33 @@ class FlowSandboxServiceImpl @Activate constructor(
     private val dependencyInjectionFactory: SandboxDependencyInjectorFactory,
     @Reference(service = FlowProtocolStoreFactory::class)
     private val flowProtocolStoreFactory: FlowProtocolStoreFactory,
+    @Reference(service = FlowFiberCache::class)
+    private val flowFiberCache: FlowFiberCache,
     private val bundleContext: BundleContext
 ) : FlowSandboxService {
 
-    companion object {
-        const val NON_PROTOTYPE_SERVICES = "(!($SERVICE_SCOPE=$SCOPE_PROTOTYPE))"
+    private companion object {
+        private const val NON_PROTOTYPE_SERVICES = "(!($SERVICE_SCOPE=$SCOPE_PROTOTYPE))"
+        private val logger = LoggerFactory.getLogger(FlowSandboxServiceImpl::class.java)
+    }
+
+    init {
+        if (!sandboxGroupContextComponent.addEvictionListener(SandboxGroupType.FLOW, ::onEviction)) {
+            logger.warn("FAILED TO ADD EVICTION LISTENER")
+        }
+    }
+
+    @Suppress("unused")
+    @Deactivate
+    fun shutdown() {
+        if (!sandboxGroupContextComponent.removeEvictionListener(SandboxGroupType.FLOW, ::onEviction)) {
+            logger.warn("FAILED TO REMOVE EVICTION LISTENER")
+        }
+    }
+
+    private fun onEviction(vnc: VirtualNodeContext) {
+        logger.debug("Sandbox {} has been evicted", vnc)
+        flowFiberCache.remove(vnc.holdingIdentity.toAvro())
     }
 
     override fun get(holdingIdentity: HoldingIdentity, cpkFileHashes: Set<SecureHash>): FlowSandboxGroupContext {

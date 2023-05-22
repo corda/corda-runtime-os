@@ -1,22 +1,19 @@
 package net.corda.sandboxgroupcontext.service.impl
 
-import java.time.Duration
 import java.util.concurrent.CompletableFuture
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.sandboxgroupcontext.SandboxGroupType
 import net.corda.sandboxgroupcontext.VirtualNodeContext
+import net.corda.sandboxgroupcontext.service.CacheEviction
 
-interface SandboxGroupContextCache : AutoCloseable {
+interface SandboxGroupContextCache : CacheEviction, AutoCloseable {
     val capacities: Map<SandboxGroupType, Long>
-    fun remove(virtualNodeContext: VirtualNodeContext): CompletableFuture<*>?
+
     fun get(
         virtualNodeContext: VirtualNodeContext,
         createFunction: (VirtualNodeContext) -> CloseableSandboxGroupContext
     ): SandboxGroupContext
 
-    fun resize(sandboxGroupType: SandboxGroupType, newCapacity: Long): SandboxGroupContextCache
+    fun resize(sandboxGroupType: SandboxGroupType, newCapacity: Long)
     fun flush(): CompletableFuture<*>
-
-    @Throws(InterruptedException::class)
-    fun waitFor(completion: CompletableFuture<*>, duration: Duration): Boolean
 }

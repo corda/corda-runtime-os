@@ -17,6 +17,7 @@ dependencies {
     implementation project(':libs:crypto:crypto-core')
     implementation project(":libs:membership:membership-common")
     implementation project(":libs:utilities")
+    implementation project(":libs:serialization:serialization-avro")
 
     implementation "net.corda:corda-avro-schema"
     implementation "net.corda:corda-base"
@@ -29,6 +30,6 @@ dependencies {
     testImplementation project(":testing:test-utilities")
 
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
-    testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"
 }

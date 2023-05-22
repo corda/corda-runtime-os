@@ -56,6 +56,7 @@ data class CordappManifest(
         const val CORDAPP_ENTITIES = "Corda-Entity-Classes"
         const val CORDAPP_TOKEN_STATE_OBSERVERS = "Corda-Token-Observer-Classes"
         const val CORDAPP_LEDGER_NAMED_QUERY_CLASSES = "Corda-Ledger-Named-Query-Classes"
+        const val CORDAPP_LEDGER_STATE_JSON_FACTORIES = "Corda-Ledger-Vault-Json-Factory-Classes"
 
         private operator fun Manifest.get(key: String): String? = mainAttributes.getValue(key)
 
@@ -186,6 +187,7 @@ data class CordappManifest(
     val entities: Set<String> get() = parseSet(CORDAPP_ENTITIES)
     val tokenStateObservers: Set<String> get() = parseSet(CORDAPP_TOKEN_STATE_OBSERVERS)
     val ledgerNamedQueryClasses: Set<String> get() = parseSet(CORDAPP_LEDGER_NAMED_QUERY_CLASSES)
+    val ledgerStateJsonFactories: Set<String> get() = parseSet(CORDAPP_LEDGER_STATE_JSON_FACTORIES)
 
     fun toAvro(): CorDappManifestAvro =
         CorDappManifestAvro(

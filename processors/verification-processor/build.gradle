@@ -3,29 +3,25 @@ plugins {
     id 'corda.common-library'
 }
 
+description 'Verification Processor'
+
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
-    compileOnly 'org.osgi:osgi.core'
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
-    compileOnly "org.osgi:org.osgi.service.cm:$osgiCmVersion"
+    compileOnly "co.paralleluniverse:quasar-osgi-annotations:$quasarVersion"
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
+    api project(':libs:configuration:configuration-core')
 
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
-    implementation "com.typesafe:config:$typeSafeConfigVersion"
-    implementation "info.picocli:picocli:$picocliVersion"
     implementation 'org.slf4j:slf4j-api'
-    implementation 'net.corda:corda-base'
 
-    implementation project(":components:configuration:configuration-read-service")
-    implementation project(":components:ledger:ledger-verification")
+    implementation project(':components:configuration:configuration-read-service')
+    implementation project(':components:ledger:ledger-verification')
+    implementation project(':libs:lifecycle:lifecycle')
     implementation project(':libs:utilities')
 
-    runtimeOnly "net.corda:corda-avro-schema"
-
-    runtimeOnly project(":components:configuration:configuration-read-service-impl")
-    runtimeOnly project(":libs:lifecycle:lifecycle-impl")
-    runtimeOnly project(":libs:sandbox-internal")
+    runtimeOnly project(':components:configuration:configuration-read-service-impl')
+    runtimeOnly project(':libs:lifecycle:lifecycle-impl')
 }
 
-description 'Verification Processor'

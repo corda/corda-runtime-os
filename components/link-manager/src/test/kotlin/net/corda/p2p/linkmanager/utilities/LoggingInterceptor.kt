@@ -49,6 +49,12 @@ class LoggingInterceptor private constructor(private val testAppender: TestAppen
         assertEquals(expectedMessage, warnings.single().message)
     }
 
+    fun assertWarnings(expectedMessages: List<String>) {
+        val warnings = testAppender.messages.filter { it.level == Level.WARN }
+        assertEquals(expectedMessages.size, warnings.size)
+        assertThat(warnings.map { it.message }).containsExactlyInAnyOrderElementsOf(expectedMessages)
+    }
+
     fun assertSingleWarningContains(expectedMessagePart: String) {
         val warnings = testAppender.messages.filter { it.level == Level.WARN }
         assertEquals(1, warnings.size)

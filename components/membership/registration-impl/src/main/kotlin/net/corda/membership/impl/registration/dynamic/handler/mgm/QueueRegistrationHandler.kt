@@ -51,8 +51,7 @@ internal class QueueRegistrationHandler(
             memberRegistrationRequest.registrationId,
             member.toCorda(),
             memberRegistrationRequest.memberContext,
-            memberRegistrationRequest.memberSignature,
-            memberRegistrationRequest.memberSignatureSpec,
+            memberRegistrationRequest.registrationContext,
             memberRegistrationRequest.serial,
         )
     }

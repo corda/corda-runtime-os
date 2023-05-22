@@ -3,6 +3,7 @@ package net.corda.osgi.framework;
 import net.corda.osgi.api.Application;
 import net.corda.osgi.api.Shutdown;
 import org.osgi.framework.Bundle;
+import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.Constants;
@@ -10,6 +11,7 @@ import org.osgi.framework.FrameworkEvent;
 import org.osgi.framework.ServiceReference;
 import org.osgi.framework.launch.Framework;
 import org.osgi.framework.launch.FrameworkFactory;
+import org.osgi.framework.wiring.BundleRevision;
 import org.osgi.framework.wiring.FrameworkWiring;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,6 +41,7 @@ import static java.util.Comparator.comparing;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toUnmodifiableList;
+import static org.osgi.framework.wiring.BundleRevision.TYPE_FRAGMENT;
 
 /**
  * {@link OSGiFrameworkWrap} provides an API to bootstrap an OSGI framework and OSGi bundles in the classpath.
@@ -109,7 +112,7 @@ class OSGiFrameworkWrap implements AutoCloseable {
      * Return a new configured {@link Framework} loaded from the classpath and having {@code frameworkFactoryFQN} as
      * Full Qualified Name of the {@link FrameworkFactory}.
      * Configure the {@link Framework} to set the bundles' cache to {@code frameworkStorageDir} path.
-     *
+     * <p>
      * The {@link FrameworkFactory} must be in the classpath.
      *
      * @param frameworkStorageDir Path to the directory the {@link Framework} uses as bundles' cache.
@@ -218,13 +221,13 @@ class OSGiFrameworkWrap implements AutoCloseable {
      * @return Return {@code true} if the {@code bundle} is an OSGi fragment.
      */
     static boolean isFragment(Bundle bundle) {
-        return bundle.getHeaders().get(Constants.FRAGMENT_HOST) != null;
+        return (bundle.adapt(BundleRevision.class).getTypes() & TYPE_FRAGMENT) != 0;
     }
 
     /**
      * Return {@code true} if the {@code state} LSB is between {@link Bundle#UNINSTALLED} and {@link Bundle#STOPPING} excluded
-     * because the bundle is startable if {link Bundle#getState} is inside this range.
-     *
+     * because the bundle is startable if {@link Bundle#getState} is inside this range.
+     * <p>
      * Bundle states are expressed as a bit-mask though a bundle can only be in one state at any time,
      * the state in the lifecycle is represented in the LSB of the value returned by {@link Bundle#getState}.
      * See OSGi Core Release 7 <a href="https://docs.osgi.org/specification/osgi.core/7.0.0/framework.lifecycle.html">4.4.2 Bundle State</a>
@@ -242,9 +245,9 @@ class OSGiFrameworkWrap implements AutoCloseable {
     /**
      * Return `true` if the {@code state} LSB is between {@link Bundle#STARTING} and {@link Bundle#ACTIVE} excluded
      * because the bundle is stoppable if {@link Bundle#getState} is in this range.
-     *
+     * <p>
      * Bundle states are expressed as a bit-mask though a bundle can only be in one state at any time,
-     * the state in the lifecycle is represented in the LSB of the value returned by [Bundle.getState].
+     * the state in the lifecycle is represented in the LSB of the value returned by {@link Bundle#getState}.
      * See OSGi Core Release 7 <a href="https://docs.osgi.org/specification/osgi.core/7.0.0/framework.lifecycle.html">4.4.2 Bundle State</a>
      *
      * @param state of the bundle.
@@ -275,10 +278,10 @@ class OSGiFrameworkWrap implements AutoCloseable {
 
     /**
      * Activate (start) the bundles installed with {@link #install}.
-     * Call the {@code start} methods of the classes implementing `BundleActivator` in the activated bundle.
-     *
+     * Call the {@code start} methods of the classes implementing {@link BundleActivator} in the activated bundle.
+     * <p>
      * Bundle activation is idempotent.
-     *
+     * <p>
      * Thread safe.
      *
      * @return this.
@@ -319,14 +322,14 @@ class OSGiFrameworkWrap implements AutoCloseable {
     /**
      * Install the bundles represented by the {@code resource} in this classpath in the {@link Framework} wrapped by this object.
      * All installed bundles starts with the method {@link #activate}.
-     *
+     * <p>
      * Thread safe.
      *
      * @param resource represents the path in the classpath where bundles are described.
      * The resource can be:
      * * the bundle {@code .jar} file;
      * * the file describing where bundles are, for example the file {@code system_bundles} at the root of the classpath.
-     *
+     * <p>
      * Any {@code resource} not terminating with the {@code .jar} extension is considered a list of bundles.
      *
      * @return this.
@@ -485,13 +488,13 @@ class OSGiFrameworkWrap implements AutoCloseable {
      * Start the {@link Framework} wrapped by this {@link OSGiFrameworkWrap}.
      * If the {@link Framework} can't start, the method logs a warning describing the actual state of the framework.
      * Start the framework multiple times is harmless, it just logs the warning.
-     *
+     * <p>
      * This method registers the {@link Shutdown} used by applications to ask to quit.
      * The {@link Shutdown#shutdown} implementation calls {@link #stop}: both this method and {@link #stop} are synchronized,
      * but there is no risk of deadlock because applications start-up from synchronized {@link #startApplication},
      * it runs only after this method returned and the service is registered.
      * The {@link Shutdown#shutdown} runs {@link #stop} in a separate thread.
-     *
+     * <p>
      * Thread safe.
      *
      * @return this.
@@ -506,7 +509,7 @@ class OSGiFrameworkWrap implements AutoCloseable {
      */
     synchronized OSGiFrameworkWrap start() throws BundleException {
         if (isStartable(framework.getState())) {
-            framework.start();
+            framework.init();
             framework.getBundleContext().addBundleListener(bundleEvent -> {
                 final Bundle bundle = bundleEvent.getBundle();
                 if (isActive(bundle.getState())) {
@@ -523,6 +526,7 @@ class OSGiFrameworkWrap implements AutoCloseable {
                     bundleStateMap.get(bundle.getState())
                 );
             });
+            framework.start();
             framework.getBundleContext().registerService(
                 Shutdown.class,
                 // Called by applications using the 'ShutdownBootstrapper'.
@@ -544,13 +548,13 @@ class OSGiFrameworkWrap implements AutoCloseable {
     /**
      * Call the {@link Application#startup} method of the class implementing the {@link Application} interface:
      * this is the entry-point of the application distributed in the bootable JAR.
-     *
+     * <p>
      * If no class implements the {@link Application} interface in any bundle zipped in the bootable JAR,
      * it throws {@link ClassNotFoundException} exception.
-     *
+     * <p>
      * This method waits {@code timeout} ms for all bundles to be active,
      * if any bundle is not active yet, it logs a warning and try to startup the application.
-     *
+     * <p>
      * Thread safe.
      *
      * @param timeout in milliseconds to wait application bundles to be active before to call
@@ -617,16 +621,16 @@ class OSGiFrameworkWrap implements AutoCloseable {
 
     /**
      * This method performs the following actions to stop the application running in the OSGi framework.
-     *
-     *  1. Calls the {@link Application#shutdown} method of the class implementing the {@link Application} interface.
-     *      If no class implements the {@link Application} interface in any bundle zipped in the bootable JAR,
-     *      it logs a warning message and continues to shutdowns the OSGi framework.
-     *  2. Deactivate installed bundles.
-     *  3. Stop the {@link Framework} wrapped by this {@link OSGiFrameworkWrap}.
-     *      If the {@link Framework} can't stop, the method logs a warning describing the actual state of the framework.
-     *
+     * <ol>
+     * <li>Calls the {@link Application#shutdown} method of the class implementing the {@link Application} interface.
+     *     If no class implements the {@link Application} interface in any bundle zipped in the bootable JAR,
+     *     it logs a warning message and continues to shutdowns the OSGi framework.
+     *  <li>Deactivate installed bundles.</li>
+     *  <li>Stop the {@link Framework} wrapped by this {@link OSGiFrameworkWrap}.
+     *      If the {@link Framework} can't stop, the method logs a warning describing the actual state of the framework.</li>
+     * </ol>
      * To stop the framework multiple times is harmless, it just logs the warning.
-     *
+     * <p>
      * Thread safe.
      *
      * @return true if the framework stopped successfully, and false otherwise.
@@ -679,7 +683,7 @@ class OSGiFrameworkWrap implements AutoCloseable {
 
     /**
      * Wait until this Framework has completely stopped.
-     *
+     * <p>
      * This method will only wait if called when the wrapped {@link Framework} is in the {@link Bundle#STARTING},
      * {@link Bundle#ACTIVE} or {@link Bundle#STOPPING} states, otherwise it will return immediately.
      *

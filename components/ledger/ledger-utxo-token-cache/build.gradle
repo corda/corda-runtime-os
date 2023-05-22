@@ -11,6 +11,7 @@ dependencies {
     compileOnly 'org.osgi:osgi.annotation'
 
     implementation project(":components:configuration:configuration-read-service")
+    implementation project(":components:ledger:ledger-utxo-flow")
     implementation project(":libs:configuration:configuration-core")
     implementation project(':libs:flows:external-event-responses')
     implementation project(":libs:lifecycle:lifecycle")

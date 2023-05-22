@@ -8,13 +8,15 @@ import net.corda.messagebus.db.datamodel.TopicRecordEntry
 import net.corda.messagebus.db.datamodel.TransactionRecordEntry
 import net.corda.messagebus.db.datamodel.TransactionState
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
+import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.orm.utils.transaction
 import net.corda.utilities.debug
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.sql.SQLException
 import java.sql.SQLIntegrityConstraintViolationException
+import java.sql.SQLTransientConnectionException
 import java.sql.SQLTransientException
-import java.time.Instant
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.persistence.PersistenceException
@@ -156,48 +158,6 @@ class DBAccess(
         return partitionsPerTopic
     }
 
-    fun deleteRecordsOlderThan(topic: String, timestamp: Instant) {
-        executeWithErrorHandling("clean up records older than $timestamp") { entityManager ->
-            val builder = entityManager.criteriaBuilder
-            val delete = builder.createCriteriaDelete(TopicRecordEntry::class.java)
-            val root = delete.from(TopicRecordEntry::class.java)
-            delete.where(
-                builder.and(
-                    builder.equal(
-                        root.get<String>(TopicRecordEntry::topic.name),
-                        topic
-                    ),
-                    builder.lessThan(
-                        root.get(TopicRecordEntry::timestamp.name),
-                        timestamp
-                    )
-                )
-            )
-            entityManager.createQuery(delete).executeUpdate()
-        }
-    }
-
-    fun deleteOffsetsOlderThan(topic: String, timestamp: Instant) {
-        executeWithErrorHandling("clean up offsets older than $timestamp") { entityManager ->
-            val builder = entityManager.criteriaBuilder
-            val delete = builder.createCriteriaDelete(CommittedPositionEntry::class.java)
-            val root = delete.from(CommittedPositionEntry::class.java)
-            delete.where(
-                builder.and(
-                    builder.equal(
-                        root.get<String>(CommittedPositionEntry::topic.name),
-                        topic
-                    ),
-                    builder.lessThan(
-                        root.get(CommittedPositionEntry::timestamp.name),
-                        timestamp
-                    )
-                )
-            )
-            entityManager.createQuery(delete).executeUpdate()
-        }
-    }
-
     fun writeOffsets(offsets: List<CommittedPositionEntry>) {
         executeWithErrorHandling("write offsets") { entityManager ->
             offsets.forEach {
@@ -205,21 +165,6 @@ class DBAccess(
                 if (entityManager.find(CommittedPositionEntry::class.java, key) == null) {
                     entityManager.persist(it)
                 }
-            }
-        }
-    }
-
-    /**
-     * Special case for writing Atomic Txn Record. We check first if it's in the database as this isn't
-     * an error for this one txn record
-     */
-    fun writeAtomicTransactionRecord() {
-        executeWithErrorHandling(
-            "write atomic transaction record",
-            allowDuplicate = true
-        ) { entityManager ->
-            if (entityManager.find(TransactionRecordEntry::class.java, ATOMIC_TRANSACTION.transactionId) == null) {
-                entityManager.persist(ATOMIC_TRANSACTION)
             }
         }
     }
@@ -354,6 +299,7 @@ class DBAccess(
      * Executes the specified operation with the necessary error handling.
      * If an error arises during execution, the transaction is rolled back and the exception is re-thrown.
      */
+    @Suppress("ThrowsCount")
     private fun <T> executeWithErrorHandling(
         operationName: String,
         allowDuplicate: Boolean = false,
@@ -380,6 +326,8 @@ class DBAccess(
                 // where connection is not available.
                 log.debug { "Transient DB error, let's try one more time: ${e.message}" }
                 executeWithErrorHandling(operationName, allowDuplicate, true, operation)
+            } else if ((e.isAcquireConnectionException()) || (e.isConnectionClosedException())) {
+                throw CordaMessageAPIIntermittentException("Can not acquire connection", e)
             } else {
                 log.error("Error while trying to $operationName. Transaction has been rolled back.", e)
                 throw e
@@ -387,11 +335,11 @@ class DBAccess(
         } ?: throw CordaMessageAPIFatalException("Internal error.  DB result should not be null.")
     }
 
-    private fun <T : Exception> Exception.isCausedBy(exceptionType: Class<T>): Boolean {
+    private inline fun <reified T : Exception> Exception.isCausedBy(message: String? = null): Boolean {
         var currentCause = this.cause
         while (currentCause != null) {
-            if (exceptionType.isAssignableFrom(currentCause::class.java)) {
-                return true
+            if (currentCause is T) {
+                return message == null || currentCause.message?.contains(message) ?: false
             }
             currentCause = currentCause.cause
         }
@@ -399,8 +347,14 @@ class DBAccess(
     }
 
     private fun Exception.isDuplicate() =
-        isCausedBy(SQLIntegrityConstraintViolationException::class.java) || isCausedBy(PersistenceException::class.java)
+        isCausedBy<SQLIntegrityConstraintViolationException>() || isCausedBy<PersistenceException>()
 
     private fun Exception.isTransientDbException() =
-        this is SQLTransientException || isCausedBy(SQLTransientException::class.java)
+        this is SQLTransientException || isCausedBy<SQLTransientException>()
+
+    private fun Exception.isAcquireConnectionException() =
+        this.isCausedBy<SQLTransientConnectionException>("Connection is not available")
+
+    private fun Exception.isConnectionClosedException() =
+        this.isCausedBy<SQLException>("Connection is closed")
 }
