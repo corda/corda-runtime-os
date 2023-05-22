@@ -11,6 +11,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.metrics.CordaMetrics
 import net.corda.persistence.common.EntitySandboxService
 import net.corda.persistence.common.ResponseFactory
+import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.utilities.MDC_CLIENT_ID
 import net.corda.utilities.MDC_EXTERNAL_EVENT_ID
 import net.corda.utilities.trace
@@ -26,6 +27,7 @@ import java.time.Instant
  */
 @Suppress("LongParameterList")
 class PersistenceRequestProcessor(
+    private val currentSandboxGroupContext: CurrentSandboxGroupContext,
     private val entitySandboxService: EntitySandboxService,
     private val delegatedRequestHandlerSelector: DelegatedRequestHandlerSelector,
     private val responseFactory: ResponseFactory
@@ -62,6 +64,9 @@ class PersistenceRequestProcessor(
                             .toSet()
 
                         val sandbox = entitySandboxService.get(holdingIdentity, cpkFileHashes)
+
+                        currentSandboxGroupContext.set(sandbox)
+
                         delegatedRequestHandlerSelector.selectHandler(sandbox, request).execute()
                     } catch (e: Exception) {
                         listOf(
@@ -76,6 +81,8 @@ class PersistenceRequestProcessor(
                                 }
                             }
                         )
+                    } finally {
+                        currentSandboxGroupContext.remove()
                     }.also {
                         CordaMetrics.Metric.LedgerPersistenceExecutionTime
                             .builder()

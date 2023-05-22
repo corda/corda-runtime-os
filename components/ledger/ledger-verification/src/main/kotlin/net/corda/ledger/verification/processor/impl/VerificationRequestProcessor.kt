@@ -12,6 +12,7 @@ import net.corda.ledger.verification.sandbox.VerificationSandboxService
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.metrics.CordaMetrics
+import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.utilities.MDC_CLIENT_ID
 import net.corda.utilities.MDC_EXTERNAL_EVENT_ID
 import net.corda.utilities.trace
@@ -27,6 +28,7 @@ import java.time.Instant
  */
 @Suppress("LongParameterList")
 class VerificationRequestProcessor(
+    private val currentSandboxGroupContext: CurrentSandboxGroupContext,
     private val verificationSandboxService: VerificationSandboxService,
     private val requestHandler: VerificationRequestHandler,
     private val responseFactory: ExternalEventResponseFactory
@@ -58,9 +60,14 @@ class VerificationRequestProcessor(
                 ) {
                     try {
                         val sandbox = verificationSandboxService.get(holdingIdentity, request.cpkMetadata)
+
+                        currentSandboxGroupContext.set(sandbox)
+
                         requestHandler.handleRequest(sandbox, request)
                     } catch (e: Exception) {
                         errorResponse(request.flowExternalEventContext, e)
+                    } finally {
+                        currentSandboxGroupContext.remove()
                     }.also {
                         CordaMetrics.Metric.LedgerTransactionVerificationTime
                             .builder()

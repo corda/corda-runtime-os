@@ -46,7 +46,7 @@ class SerializationServiceImpl @Activate constructor(
         }
 
     override fun <T : Any> serialize(obj: T): SerializedBytes<T> {
-        return CordaMetrics.Metric.Serialization.DeserializationTime
+        return CordaMetrics.Metric.Serialization.SerializationTime
             .builder()
             .forVirtualNode(currentSandboxGroupContext.get().virtualNodeContext.holdingIdentity.shortHash.toString())
             .withTag(CordaMetrics.Tag.FlowId, flowEngine.flowId.toString())

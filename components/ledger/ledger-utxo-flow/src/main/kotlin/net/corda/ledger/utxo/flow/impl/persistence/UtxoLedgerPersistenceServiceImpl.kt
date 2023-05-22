@@ -16,7 +16,7 @@ import net.corda.ledger.utxo.flow.impl.persistence.external.events.UpdateTransac
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoSignedTransactionFactory
 import net.corda.metrics.CordaMetrics
-import net.corda.metrics.recordInline
+import net.corda.flow.fiber.metrics.recordSuspendable
 import net.corda.sandbox.type.SandboxConstants.CORDA_SYSTEM_SERVICE
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
@@ -62,17 +62,17 @@ class UtxoLedgerPersistenceServiceImpl @Activate constructor(
         id: SecureHash,
         transactionStatus: TransactionStatus
     ): Pair<UtxoSignedTransaction?, TransactionStatus>? {
-        return ledgerPersistenceFlowTimer("findTransactionWithStatus").recordInline {
+        return recordSuspendable({ ledgerPersistenceFlowTimer("findTransactionWithStatus") }) @Suspendable {
             wrapWithPersistenceException {
                 externalEventExecutor.execute(
                     FindTransactionExternalEventFactory::class.java,
                     FindTransactionParameters(id.toString(), transactionStatus)
                 )
             }.firstOrNull().let {
-                if (it == null) return null
+                if (it == null) return@let null
                 val (transaction, status) = serializationService.deserialize<Pair<SignedTransactionContainer?, String?>>(it.array())
                 if (status == null)
-                    return null
+                    return@let null
                 transaction?.toSignedTransaction() to status.toTransactionStatus()
             }
         }
@@ -84,7 +84,7 @@ class UtxoLedgerPersistenceServiceImpl @Activate constructor(
         transactionStatus: TransactionStatus,
         visibleStatesIndexes: List<Int>
     ): List<CordaPackageSummary> {
-        return ledgerPersistenceFlowTimer("persist").recordInline {
+        return recordSuspendable({ ledgerPersistenceFlowTimer("persist")}) @Suspendable {
             wrapWithPersistenceException {
                 externalEventExecutor.execute(
                     PersistTransactionExternalEventFactory::class.java,
@@ -96,7 +96,7 @@ class UtxoLedgerPersistenceServiceImpl @Activate constructor(
 
     @Suspendable
     override fun updateStatus(id: SecureHash, transactionStatus: TransactionStatus) {
-        ledgerPersistenceFlowTimer("updateStatus").recordInline {
+        recordSuspendable({ ledgerPersistenceFlowTimer("updateStatus")}) @Suspendable {
             wrapWithPersistenceException {
                 externalEventExecutor.execute(
                     UpdateTransactionStatusExternalEventFactory::class.java,
@@ -111,7 +111,7 @@ class UtxoLedgerPersistenceServiceImpl @Activate constructor(
         transaction: UtxoSignedTransaction,
         transactionStatus: TransactionStatus
     ): Pair<TransactionExistenceStatus, List<CordaPackageSummary>> {
-        return ledgerPersistenceFlowTimer("persistIfDoesNotExist").recordInline {
+        return recordSuspendable({ ledgerPersistenceFlowTimer("persistIfDoesNotExist")}) @Suspendable {
             wrapWithPersistenceException {
                 externalEventExecutor.execute(
                     PersistTransactionIfDoesNotExistExternalEventFactory::class.java,
@@ -130,7 +130,7 @@ class UtxoLedgerPersistenceServiceImpl @Activate constructor(
     }
 
     private fun SignedTransactionContainer.toSignedTransaction()
-            : UtxoSignedTransaction {
+            : UtxoSignedTransaction { 
         return utxoSignedTransactionFactory.create(wireTransaction, signatures)
     }
 
