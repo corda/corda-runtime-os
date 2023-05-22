@@ -46,7 +46,7 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
     private val clock: Clock = Clock.systemUTC(),
 ) : StateAndEventSubscription<K, S, E> {
 
-    private val log = LoggerFactory.getLogger(config.loggerName)
+    private val log = LoggerFactory.getLogger("${this.javaClass.name}-${config.clientId}")
 
     private var nullableProducer: CordaProducer? = null
     private var nullableStateAndEventConsumer: StateAndEventConsumer<K, S, E>? = null
