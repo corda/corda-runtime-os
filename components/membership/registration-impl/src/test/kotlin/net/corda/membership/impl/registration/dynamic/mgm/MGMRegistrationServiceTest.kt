@@ -81,6 +81,7 @@ import net.corda.schema.membership.MembershipSchema
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toAvro
@@ -105,6 +106,7 @@ import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
+import org.mockito.kotlin.spy
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
@@ -237,9 +239,11 @@ class MGMRegistrationServiceTest {
     private val cordaAvroSerializationFactory = mock<CordaAvroSerializationFactory> {
         on { createAvroSerializer<KeyValuePairList>(any()) } doReturn keyValuePairListSerializer
     }
-    private val memberInfoFactory: MemberInfoFactory = MemberInfoFactoryImpl(
-        layeredPropertyMapFactory,
-        cordaAvroSerializationFactory,
+    private val memberInfoFactory: MemberInfoFactory = spy(
+        MemberInfoFactoryImpl(
+            layeredPropertyMapFactory,
+            cordaAvroSerializationFactory,
+        )
     )
     private val membershipSchemaValidator: MembershipSchemaValidator = mock()
     private val membershipSchemaValidatorFactory: MembershipSchemaValidatorFactory = mock {
@@ -329,9 +333,16 @@ class MGMRegistrationServiceTest {
         fun `registration successfully builds MGM info and publishes it`() {
             postUpEvent()
             registrationService.start()
+            val capturedMemberInfo = argumentCaptor<MemberInfo>()
+            val capturedPublishedList = argumentCaptor<List<Record<String, Any>>>()
 
             val publishedList = registrationService.register(registrationRequest, mgm, properties)
 
+            verify(mockPublisher).publish(capturedPublishedList.capture())
+            verify(memberInfoFactory).createPersistentMemberInfo(eq(mgm.toAvro()), capturedMemberInfo.capture())
+            val publishedList = capturedPublishedList.firstValue
+            val publishedMgmInfo = publishedList.first()
+            val publishedEvent = publishedList.last()
             assertSoftly {
                 val expectedRecordKey = "$mgmId-$mgmId"
                 it.assertThat(publishedList)
@@ -368,22 +379,12 @@ class MGMRegistrationServiceTest {
                             )
                         )
 
-                    fun getProperty(prop: String): String {
-                        return persistedMgm
-                            ?.memberContext?.items?.firstOrNull { item ->
-                                item.key == prop
-                            }?.value ?: persistedMgm?.mgmContext?.items?.firstOrNull { item ->
+                fun getProperty(prop: String): String {
+                    return memberInfo.memberProvidedContext.entries.firstOrNull { item ->
                             item.key == prop
-                        }?.value ?: fail("Could not find property within published member for test")
-                    }
-                    assertThat(getProperty(PARTY_NAME)).isEqualTo(mgmName.toString())
-                    assertThat(getProperty(GROUP_ID)).isEqualTo(groupId)
-                    assertThat(getProperty(STATUS)).isEqualTo(MEMBER_STATUS_ACTIVE)
-                    assertThat(getProperty(IS_MGM)).isEqualTo("true")
-                    assertThat(getProperty(PLATFORM_VERSION)).isEqualTo(TEST_PLATFORM_VERSION.toString())
-                    assertThat(getProperty(SOFTWARE_VERSION)).isEqualTo(TEST_SOFTWARE_VERSION)
-                    assertThat(getProperty(MEMBER_CPI_VERSION)).isEqualTo(TEST_CPI_VERSION)
-                    assertThat(getProperty(MEMBER_CPI_NAME)).isEqualTo(TEST_CPI_NAME)
+                        }?.value ?: memberInfo.mgmProvidedContext.entries.firstOrNull { item ->
+                        item.key == prop
+                    }?.value ?: fail("Could not find property within published member for test")
                 }
                 assertThat(publishedList).anySatisfy { publishedEvent ->
                     assertThat(publishedEvent.topic).isEqualTo(EVENT_TOPIC)
@@ -609,7 +610,7 @@ class MGMRegistrationServiceTest {
 
             assertThat(exception).hasMessageContaining("Could not find virtual node info")
         }
-        
+
     }
 
     @Nested

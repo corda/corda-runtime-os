@@ -178,6 +178,7 @@ class StartRegistrationHandlerTest {
     private val persistRegistrationRequestOperation = mock<MembershipPersistenceOperation<Unit>> {
         on { execute() } doReturn MembershipPersistenceResult.success()
     }
+    private val persistentMemberInfo: PersistentMemberInfo = mock()
 
     private val memberTypeChecker = mock<MemberTypeChecker> {
         on { getMgmMemberInfo(mgmHoldingIdentity.toCorda()) } doReturn mgmMemberInfo
@@ -228,6 +229,7 @@ class StartRegistrationHandlerTest {
     fun setUp() {
         memberInfoFactory = mock {
             on { createMemberInfo(any<SortedMap<String, String?>>(), any()) } doReturn pendingMemberInfo
+            on { createPersistentMemberInfo(eq(mgmHoldingIdentity), eq(pendingMemberInfo)) } doReturn persistentMemberInfo
         }
         membershipPersistenceClient = mock {
             on {
@@ -274,7 +276,7 @@ class StartRegistrationHandlerTest {
 
             val pendingMemberRecord = outputStates.firstNotNullOf { it.value as? PersistentMemberInfo }
             assertThat(pendingMemberRecord).isNotNull
-            assertThat(pendingMemberRecord.viewOwningMember).isEqualTo(mgmHoldingIdentity)
+            assertThat(pendingMemberRecord).isEqualTo(persistentMemberInfo)
         }
         verifyServices(
             updateRegistrationRequest = true,

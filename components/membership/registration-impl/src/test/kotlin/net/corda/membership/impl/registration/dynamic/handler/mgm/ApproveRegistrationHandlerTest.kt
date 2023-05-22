@@ -1,7 +1,6 @@
 package net.corda.membership.impl.registration.dynamic.handler.mgm
 
-import net.corda.avro.serialization.CordaAvroSerializationFactory
-import net.corda.data.KeyValuePair
+import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.actions.request.DistributeMemberInfo
 import net.corda.data.membership.actions.request.MembershipActionsRequest
@@ -20,6 +19,7 @@ import net.corda.membership.impl.registration.dynamic.handler.MissingRegistratio
 import net.corda.membership.impl.registration.dynamic.handler.TestUtils.createHoldingIdentity
 import net.corda.membership.impl.registration.dynamic.handler.TestUtils.mockMemberInfo
 import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
+import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.SignedGroupParameters
 import net.corda.membership.lib.VersionedMessageBuilder
 import net.corda.membership.p2p.helpers.P2pRecordsFactory
@@ -128,6 +128,11 @@ class ApproveRegistrationHandlerTest {
     }
     private val writerService: GroupParametersWriterService = mock()
 
+    private val persistentMemberInfo: PersistentMemberInfo = mock()
+    private val memberInfoFactory: MemberInfoFactory = mock {
+        on { createPersistentMemberInfo(eq(owner.toAvro()), eq(memberInfo)) } doReturn persistentMemberInfo
+    }
+
     private val handler = ApproveRegistrationHandler(
         membershipPersistenceClient,
         clock,
@@ -135,6 +140,7 @@ class ApproveRegistrationHandlerTest {
         memberTypeChecker,
         groupReaderProvider,
         writerService,
+        memberInfoFactory,
         p2pRecordsFactory,
     )
 
@@ -150,19 +156,7 @@ class ApproveRegistrationHandlerTest {
             .allSatisfy {
                 assertThat(it.key).isEqualTo("${owner.shortHash}-${member.shortHash}")
                 val value = it.value as? PersistentMemberInfo
-                assertThat(value?.viewOwningMember).isEqualTo(owner.toAvro())
-                assertThat(value?.memberContext?.items).contains(
-                    KeyValuePair(
-                        "member",
-                        member.x500Name.toString(),
-                    )
-                )
-                assertThat(value?.mgmContext?.items).contains(
-                    KeyValuePair(
-                        "mgm",
-                        member.x500Name.toString(),
-                    )
-                )
+                assertThat(value).isEqualTo(persistentMemberInfo)
             }
     }
 

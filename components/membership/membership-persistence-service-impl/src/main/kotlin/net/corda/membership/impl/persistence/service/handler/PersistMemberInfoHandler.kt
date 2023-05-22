@@ -1,8 +1,7 @@
 package net.corda.membership.impl.persistence.service.handler
 
 import javax.persistence.LockModeType
-import net.corda.avro.serialization.CordaAvroDeserializer
-import net.corda.avro.serialization.CordaAvroSerializer
+import net.corda.data.CordaAvroDeserializer
 import net.corda.data.KeyValuePairList
 import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.data.membership.db.request.command.PersistMemberInfo
@@ -21,23 +20,12 @@ internal class PersistMemberInfoHandler(
     persistenceHandlerServices: PersistenceHandlerServices
 ) : BasePersistenceHandler<PersistMemberInfo, Unit>(persistenceHandlerServices) {
     override val operation = PersistMemberInfo::class.java
-    private val keyValuePairListSerializer: CordaAvroSerializer<KeyValuePairList> =
-        cordaAvroSerializationFactory.createAvroSerializer {
-            logger.error("Failed to serialize key value pair list.")
-        }
+
     private val keyValuePairListDeserializer: CordaAvroDeserializer<KeyValuePairList> =
         cordaAvroSerializationFactory.createAvroDeserializer(
             { logger.error("Failed to deserialize key value pair list.") },
             KeyValuePairList::class.java
         )
-
-    private fun serializeContext(context: KeyValuePairList): ByteArray {
-        return wrapWithNullErrorHandling({
-            MembershipPersistenceException("Failed to serialize key value pair list.", it)
-        }) {
-            keyValuePairListSerializer.serialize(context)
-        }
-    }
 
     private fun deserialize(data: ByteArray): KeyValuePairList {
         return keyValuePairListDeserializer.deserialize(data) ?: throw MembershipPersistenceException(
@@ -92,12 +80,12 @@ internal class PersistMemberInfoHandler(
                         newMemberInfo.status == MEMBER_STATUS_PENDING,
                         newMemberInfo.status,
                         clock.instant(),
-                        serializeContext(it.persistentMemberInfo.memberContext),
+                        it.persistentMemberInfo.signedData.memberContext.array(),
                         it.memberSignature.publicKey.array(),
                         it.memberSignature.bytes.array(),
                         it.memberSignatureSpec.signatureName,
-                        serializeContext(it.persistentMemberInfo.mgmContext),
-                        newMemberInfo.serial,
+                        it.persistentMemberInfo.signedData.mgmContext.array(),
+                        memberInfo.serial,
                     )
                     em.merge(entity)
                 }
