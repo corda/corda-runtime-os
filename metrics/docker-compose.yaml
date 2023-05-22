@@ -15,7 +15,7 @@ services:
   grafana:
     image: grafana/grafana
     volumes:
-      - ./grafana/db:/var/lib/grafana
+      - ./data/grafana:/var/lib/grafana
       - ./grafana/provisioning:/etc/grafana/provisioning/
     ports:
       - "3000:3000"
@@ -30,7 +30,7 @@ services:
     command: [ "-config.file=/etc/tempo.yaml" ]
     volumes:
       - ./tempo.yaml:/etc/tempo.yaml
-      - ./tempo-data:/tmp/tempo
+      - ./data/tempo-data:/tmp/tempo
     ports:
       - "14268:14268"  # jaeger ingest
       - "3200:3200"   # tempo
