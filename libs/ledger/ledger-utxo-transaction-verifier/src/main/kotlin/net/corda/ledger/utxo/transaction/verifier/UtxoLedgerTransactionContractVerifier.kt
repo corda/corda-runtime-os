@@ -1,10 +1,10 @@
 package net.corda.ledger.utxo.transaction.verifier
 
-import net.corda.data.ledger.persistence.LedgerTypes
 import net.corda.ledger.utxo.data.transaction.ContractVerificationFailureImpl
 import net.corda.metrics.CordaMetrics
 import net.corda.v5.ledger.utxo.ContractVerificationException
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
+import net.corda.virtualnode.HoldingIdentity
 
 /**
  * Verifies contracts of ledger transaction. For security reasons, some verifications need to be run with a new instance
@@ -16,13 +16,12 @@ import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 fun verifyContracts(
     transactionFactory: () -> UtxoLedgerTransaction,
     transaction: UtxoLedgerTransaction = transactionFactory.invoke(),
-    metricParameters: UtxoLedgerTransactionVerifierMetricParameters
+    holdingIdentity: HoldingIdentity
 ) {
 
     CordaMetrics.Metric.Ledger.ContractionVerificationTime
         .builder()
-        .forVirtualNode(metricParameters.holdingIdentity.shortHash.toString())
-        .withTag(CordaMetrics.Tag.FlowId, metricParameters.flowId)
+        .forVirtualNode(holdingIdentity.shortHash.toString())
         .build()
         .recordCallable {
 
@@ -33,8 +32,7 @@ fun verifyContracts(
 
             CordaMetrics.Metric.Ledger.ContractVerificationContractCount
                 .builder()
-                .forVirtualNode(metricParameters.holdingIdentity.shortHash.toString())
-                .withTag(CordaMetrics.Tag.FlowId, metricParameters.flowId)
+                .forVirtualNode(holdingIdentity.shortHash.toString())
                 .build()
                 .record(contractClassMap.size.toDouble())
 
@@ -42,8 +40,7 @@ fun verifyContracts(
 
                 CordaMetrics.Metric.Ledger.ContractionVerificationContractTime
                     .builder()
-                    .forVirtualNode(metricParameters.holdingIdentity.shortHash.toString())
-                    .withTag(CordaMetrics.Tag.FlowId, metricParameters.flowId)
+                    .forVirtualNode(holdingIdentity.shortHash.toString())
                     .withTag(CordaMetrics.Tag.LedgerContractName, contractClass.name)
                     .build()
                     .recordCallable {

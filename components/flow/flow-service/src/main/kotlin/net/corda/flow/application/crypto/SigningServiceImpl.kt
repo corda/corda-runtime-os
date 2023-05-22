@@ -13,7 +13,6 @@ import net.corda.metrics.CordaMetrics
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.v5.application.crypto.SigningService
-import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.crypto.DigitalSignature
@@ -35,8 +34,6 @@ class SigningServiceImpl @Activate constructor(
     private val currentSandboxGroupContext: CurrentSandboxGroupContext,
     @Reference(service = ExternalEventExecutor::class)
     private val externalEventExecutor: ExternalEventExecutor,
-    @Reference(service = FlowEngine::class)
-    private val flowEngine: FlowEngine,
     @Reference(service = KeyEncodingService::class)
     private val keyEncodingService: KeyEncodingService
 ) : SigningService, UsedByFlow, SingletonSerializeAsToken {
@@ -113,7 +110,6 @@ class SigningServiceImpl @Activate constructor(
         return CordaMetrics.Metric.CryptoOperationsFlowTime
             .builder()
             .forVirtualNode(currentSandboxGroupContext.get().virtualNodeContext.holdingIdentity.shortHash.toString())
-            .withTag(CordaMetrics.Tag.FlowId, flowEngine.flowId.toString())
             .withTag(CordaMetrics.Tag.OperationName, operationName)
             .build()
     }

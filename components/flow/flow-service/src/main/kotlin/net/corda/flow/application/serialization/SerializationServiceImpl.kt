@@ -1,6 +1,5 @@
 package net.corda.flow.application.serialization
 
-import io.micrometer.core.instrument.Timer
 import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.metrics.CordaMetrics
 import net.corda.sandbox.type.SandboxConstants.CORDA_SYSTEM_SERVICE
@@ -9,7 +8,6 @@ import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.sandboxgroupcontext.RequireSandboxAMQP.AMQP_SERIALIZATION_SERVICE
 import net.corda.sandboxgroupcontext.getObjectByKey
 import net.corda.utilities.reflection.castIfPossible
-import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.serialization.SerializedBytes
 import net.corda.v5.serialization.SingletonSerializeAsToken
@@ -27,9 +25,7 @@ import java.io.NotSerializableException
 )
 class SerializationServiceImpl @Activate constructor(
     @Reference(service = CurrentSandboxGroupContext::class)
-    private val currentSandboxGroupContext: CurrentSandboxGroupContext,
-    @Reference(service = FlowEngine::class)
-    private val flowEngine: FlowEngine
+    private val currentSandboxGroupContext: CurrentSandboxGroupContext
 ) : SerializationServiceInternal, UsedByFlow, SingletonSerializeAsToken {
 
     private companion object {
@@ -49,7 +45,6 @@ class SerializationServiceImpl @Activate constructor(
         return CordaMetrics.Metric.Serialization.SerializationTime
             .builder()
             .forVirtualNode(currentSandboxGroupContext.get().virtualNodeContext.holdingIdentity.shortHash.toString())
-            .withTag(CordaMetrics.Tag.FlowId, flowEngine.flowId.toString())
             .withTag(CordaMetrics.Tag.SerializedClass, obj::class.java.name)
             .build()
             .recordCallable { serializationService.serialize(obj) } as SerializedBytes<T>
@@ -60,7 +55,6 @@ class SerializationServiceImpl @Activate constructor(
             CordaMetrics.Metric.Serialization.DeserializationTime
                 .builder()
                 .forVirtualNode(currentSandboxGroupContext.get().virtualNodeContext.holdingIdentity.shortHash.toString())
-                .withTag(CordaMetrics.Tag.FlowId, flowEngine.flowId.toString())
                 .withTag(CordaMetrics.Tag.SerializedClass, clazz.name)
                 .build()
                 .recordCallable { serializationService.deserialize(bytes, clazz) } as T

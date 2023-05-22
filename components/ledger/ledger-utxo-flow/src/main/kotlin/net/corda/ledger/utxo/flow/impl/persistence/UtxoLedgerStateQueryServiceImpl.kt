@@ -10,7 +10,6 @@ import net.corda.ledger.utxo.flow.impl.persistence.external.events.ResolveStateR
 import net.corda.metrics.CordaMetrics
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
-import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.ledger.utxo.ContractState
@@ -31,8 +30,6 @@ class UtxoLedgerStateQueryServiceImpl @Activate constructor(
     private val currentSandboxGroupContext: CurrentSandboxGroupContext,
     @Reference(service = ExternalEventExecutor::class)
     private val externalEventExecutor: ExternalEventExecutor,
-    @Reference(service = FlowEngine::class)
-    private val flowEngine: FlowEngine,
     @Reference(service = SerializationService::class)
     private val serializationService: SerializationService
 ) : UtxoLedgerStateQueryService, UsedByFlow, SingletonSerializeAsToken {
@@ -65,7 +62,6 @@ class UtxoLedgerStateQueryServiceImpl @Activate constructor(
         return CordaMetrics.Metric.Ledger.PersistenceFlowTime
             .builder()
             .forVirtualNode(currentSandboxGroupContext.get().virtualNodeContext.holdingIdentity.shortHash.toString())
-            .withTag(CordaMetrics.Tag.FlowId, flowEngine.flowId.toString())
             .withTag(CordaMetrics.Tag.OperationName, operationName)
             .build()
     }

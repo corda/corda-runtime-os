@@ -87,7 +87,6 @@ class PersistenceRequestProcessor(
                         CordaMetrics.Metric.LedgerPersistenceExecutionTime
                             .builder()
                             .forVirtualNode(holdingIdentity.shortHash.toString())
-                            .withTag(CordaMetrics.Tag.FlowId, request.flowExternalEventContext.flowId)
                             .withTag(CordaMetrics.Tag.LedgerType, request.ledgerType.toString())
                             .withTag(CordaMetrics.Tag.OperationName, request.request.javaClass.simpleName)
                             .build()

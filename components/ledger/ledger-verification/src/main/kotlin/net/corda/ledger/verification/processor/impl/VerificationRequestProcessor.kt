@@ -72,7 +72,6 @@ class VerificationRequestProcessor(
                         CordaMetrics.Metric.LedgerTransactionVerificationTime
                             .builder()
                             .forVirtualNode(holdingIdentity.shortHash.toString())
-                            .withTag(CordaMetrics.Tag.FlowId, request.flowExternalEventContext.flowId)
                             .withTag(CordaMetrics.Tag.LedgerType, LedgerTypes.UTXO.toString())
                             .build()
                             .record(Duration.between(startTime, Instant.now()))
