@@ -41,7 +41,7 @@ internal class PubSubSubscriptionImpl<K : Any, V : Any>(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
 ) : Subscription<K, V> {
 
-    private val log = LoggerFactory.getLogger(config.loggerName)
+    private val log = LoggerFactory.getLogger("${this.javaClass.name}-${config.clientId}")
 
     private var threadLooper =
         ThreadLooper(log, config, lifecycleCoordinatorFactory, "pubsub processing thread", ::runConsumeLoop)
@@ -90,9 +90,7 @@ internal class PubSubSubscriptionImpl<K : Any, V : Any>(
                     processor.valueClass,
                     ::logFailedDeserialize
                 ).use {
-                    val listener = PubSubConsumerRebalanceListener(
-                        config.topic, config.group, it
-                    )
+                    val listener = PubSubConsumerRebalanceListener(config.clientId, it)
                     it.setDefaultRebalanceListener(listener)
                     it.subscribe(config.topic)
                     threadLooper.updateLifecycleStatus(LifecycleStatus.UP)

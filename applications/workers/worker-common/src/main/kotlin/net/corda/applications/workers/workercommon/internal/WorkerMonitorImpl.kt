@@ -5,8 +5,10 @@ import io.javalin.Javalin
 import io.javalin.core.util.Header
 import io.micrometer.core.instrument.binder.jvm.ClassLoaderMetrics
 import io.micrometer.core.instrument.binder.jvm.JvmGcMetrics
+import io.micrometer.core.instrument.binder.jvm.JvmHeapPressureMetrics
 import io.micrometer.core.instrument.binder.jvm.JvmMemoryMetrics
 import io.micrometer.core.instrument.binder.jvm.JvmThreadMetrics
+import io.micrometer.core.instrument.binder.system.FileDescriptorMetrics
 import io.micrometer.core.instrument.binder.system.ProcessorMetrics
 import io.micrometer.core.instrument.binder.system.UptimeMetrics
 import io.micrometer.prometheus.PrometheusConfig
@@ -52,9 +54,11 @@ internal class WorkerMonitorImpl @Activate constructor(
         ClassLoaderMetrics().bindTo(CordaMetrics.registry)
         JvmMemoryMetrics().bindTo(CordaMetrics.registry)
         JvmGcMetrics().bindTo(CordaMetrics.registry)
+        JvmHeapPressureMetrics().bindTo(CordaMetrics.registry)
         ProcessorMetrics().bindTo(CordaMetrics.registry)
         JvmThreadMetrics().bindTo(CordaMetrics.registry)
         UptimeMetrics().bindTo(CordaMetrics.registry)
+        FileDescriptorMetrics().bindTo(CordaMetrics.registry)
     }
 
 

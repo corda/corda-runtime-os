@@ -32,18 +32,18 @@ internal class MessagingConfigResolver(private val smartConfigFactory: SmartConf
      * @param subscriptionType Type of subscription.
      * @param subscriptionConfig User configurable values for a subscription.
      * @param messagingConfig Messaging smart config.
-     * @param counter Client counter.
+     * @param uniqueId Unique id, used to uniquely identify the subscription.
      * @return concrete class containing all config values used by a subscription.
      */
     fun buildSubscriptionConfig(
         subscriptionType: SubscriptionType,
         subscriptionConfig: SubscriptionConfig,
         messagingConfig: SmartConfig,
-        counter: Long
+        uniqueId: String
     ): ResolvedSubscriptionConfig {
         val config = messagingConfig.withFallback(defaults)
         return try {
-            ResolvedSubscriptionConfig.merge(subscriptionType, subscriptionConfig, config, counter)
+            ResolvedSubscriptionConfig.merge(subscriptionType, subscriptionConfig, config, uniqueId)
         } catch (e: ConfigException) {
             logger.error("Failed to resolve subscription config $subscriptionConfig: ${e.message}")
             throw CordaMessageAPIConfigException(
