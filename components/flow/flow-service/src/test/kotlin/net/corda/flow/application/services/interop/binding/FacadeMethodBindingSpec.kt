@@ -21,39 +21,39 @@ import kotlin.reflect.KClass
 import kotlin.reflect.jvm.javaMethod
 
 // Binding will fail because there is no method with this name
-@BindsFacade("org.corda.interop/platform/tokens")
-interface MethodHasIncorrectName {
-    @BindsFacadeMethod
-    fun getBananas(): InteropAction<Long>
-}
-
-// Binding will fail because there is no method with the name given in the annotation
-@BindsFacade("org.corda.interop/platform/tokens")
-interface MethodIsAnnotatedWithIncorrectName {
-    @BindsFacadeMethod("get-bananas")
-    fun getBalance(): InteropAction<Long>
-}
-
-// Binding will fail because the method has too few parameters
-@BindsFacade("org.corda.interop/platform/tokens")
-interface MethodSignatureHasTooFewParameters {
-    @BindsFacadeMethod
-    fun getBalance(): InteropAction<Long>
-}
-
-// Binding will fail because the method has too many parameters
-@BindsFacade("org.corda.interop/platform/tokens")
-interface MethodSignatureHasTooManyParameters {
-    @BindsFacadeMethod
-    fun getBalance(denomination: String, superogatoryParameter: UUID): InteropAction<Long>
-}
-
-// Binding will fail because the return type must be wrapped with InteropAction
-@BindsFacade("org.corda.interop/platform/tokens")
-interface MethodSignatureHasNonInteropActionReturnType {
-    @BindsFacadeMethod
-    fun getBalance(denomination: String): UUID
-}
+//@BindsFacade("org.corda.interop/platform/tokens")
+//interface MethodHasIncorrectName {
+//    @BindsFacadeMethod
+//    fun getBananas(): InteropAction<Long>
+//}
+//
+//// Binding will fail because there is no method with the name given in the annotation
+//@BindsFacade("org.corda.interop/platform/tokens")
+//interface MethodIsAnnotatedWithIncorrectName {
+//    @BindsFacadeMethod("get-bananas")
+//    fun getBalance(): InteropAction<Long>
+//}
+//
+//// Binding will fail because the method has too few parameters
+//@BindsFacade("org.corda.interop/platform/tokens")
+//interface MethodSignatureHasTooFewParameters {
+//    @BindsFacadeMethod
+//    fun getBalance(): InteropAction<Long>
+//}
+//
+//// Binding will fail because the method has too many parameters
+//@BindsFacade("org.corda.interop/platform/tokens")
+//interface MethodSignatureHasTooManyParameters {
+//    @BindsFacadeMethod
+//    fun getBalance(denomination: String, superogatoryParameter: UUID): InteropAction<Long>
+//}
+//
+//// Binding will fail because the return type must be wrapped with InteropAction
+//@BindsFacade("org.corda.interop/platform/tokens")
+//interface MethodSignatureHasNonInteropActionReturnType {
+//    @BindsFacadeMethod
+//    fun getBalance(denomination: String): UUID
+//}
 
 class FacadeMethodBindingSpec : DescribeSpec({
 
