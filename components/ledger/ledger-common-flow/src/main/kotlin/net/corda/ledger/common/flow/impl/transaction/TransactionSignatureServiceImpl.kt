@@ -2,7 +2,6 @@ package net.corda.ledger.common.flow.impl.transaction
 
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.cipher.suite.merkle.MerkleTreeProvider
-import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.core.bytes
 import net.corda.ledger.common.data.transaction.BATCH_MERKLE_TREE_DIGEST_OPTIONS_LEAF_PREFIX_B64_KEY
 import net.corda.ledger.common.data.transaction.BATCH_MERKLE_TREE_DIGEST_OPTIONS_NODE_PREFIX_B64_KEY
@@ -31,8 +30,11 @@ import net.corda.v5.application.crypto.DigitalSignatureMetadata
 import net.corda.v5.application.crypto.DigitalSignatureVerificationService
 import net.corda.v5.application.crypto.SignatureSpecService
 import net.corda.v5.application.crypto.SigningService
+import net.corda.v5.application.flows.FlowContextPropertyKeys
+import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
@@ -75,7 +77,9 @@ class TransactionSignatureServiceImpl @Activate constructor(
     @Reference(service = PlatformInfoProvider::class)
     private val platformInfoProvider: PlatformInfoProvider,
     @Reference(service = KeyEncodingService::class)
-    private val keyEncodingService: KeyEncodingService
+    private val keyEncodingService: KeyEncodingService,
+    @Reference(service = FlowEngine::class)
+    private val flowEngine: FlowEngine
 ) : TransactionSignatureService, TransactionSignatureServiceInternal, SingletonSerializeAsToken, UsedByFlow {
 
     @Suspendable
@@ -311,16 +315,18 @@ class TransactionSignatureServiceImpl @Activate constructor(
         SIGNATURE_BATCH_MERKLE_TREE_DIGEST_OPTIONS_LEAF_PREFIX_B64_KEY to transaction.batchMerkleTreeDigestOptionsLeafPrefixB64,
         SIGNATURE_BATCH_MERKLE_TREE_DIGEST_OPTIONS_NODE_PREFIX_B64_KEY to transaction.batchMerkleTreeDigestOptionsNodePrefixB64
     )
+
+    private fun getCpiSummary(): CordaPackageSummary =
+        with(flowEngine) {
+            CordaPackageSummaryImpl(
+                name = flowContextProperties[FlowContextPropertyKeys.CPI_NAME]
+                    ?: throw CordaRuntimeException("CPI name is not accessible"),
+                version = flowContextProperties[FlowContextPropertyKeys.CPI_VERSION]
+                    ?: throw CordaRuntimeException("CPI version is not accessible"),
+                signerSummaryHash = flowContextProperties[FlowContextPropertyKeys.CPI_SIGNER_SUMMARY_HASH]
+                    ?: throw CordaRuntimeException("CPI signer summary hash is not accessible"),
+                fileChecksum = flowContextProperties[FlowContextPropertyKeys.CPI_FILE_CHECKSUM]
+                    ?: throw CordaRuntimeException("CPI file checksum is not accessible"),
+            )
+        }
 }
-
-/**
- * TODO [CORE-7126] Fake values until we can get CPI information properly
- */
-private fun getCpiSummary(): CordaPackageSummary =
-    CordaPackageSummaryImpl(
-        name = "CPI name",
-        version = "CPI version",
-        signerSummaryHash = SecureHashImpl("SHA-256", "Fake-value".toByteArray()).toHexString(),
-        fileChecksum = SecureHashImpl("SHA-256", "Another-Fake-value".toByteArray()).toHexString()
-    )
-
