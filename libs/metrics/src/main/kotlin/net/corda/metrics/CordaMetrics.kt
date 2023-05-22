@@ -353,7 +353,7 @@ object CordaMetrics {
         /**
          * Method name for which the metric is applicable.
          */
-        Method("method"),
+        Http_Method("http.method"),
 
         /**
          * Type of the SandboxGroup to which the metric applies.

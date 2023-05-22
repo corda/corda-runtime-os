@@ -141,13 +141,13 @@ internal object ContextUtils {
 
                     CordaMetrics.Metric.HttpRequestCount.builder()
                         .withTag(CordaMetrics.Tag.Uri, "${ctx.matchedPath()}")
-                        .withTag(CordaMetrics.Tag.Method, "$ctxMethod")
+                        .withTag(CordaMetrics.Tag.Http_Method, "$ctxMethod")
                         .withTag(CordaMetrics.Tag.OperationStatus, "${ctx.status()}")
                         .build().increment()
 
                     CordaMetrics.Metric.HttpRequestTime.builder()
                         .withTag(CordaMetrics.Tag.Uri, "${ctx.matchedPath()}")
-                        .withTag(CordaMetrics.Tag.Method, "$ctxMethod")
+                        .withTag(CordaMetrics.Tag.Http_Method, "$ctxMethod")
                         .withTag(CordaMetrics.Tag.OperationStatus, "${ctx.status()}")
                         .build().record(Duration.between(startTime, endTime))
                 }
