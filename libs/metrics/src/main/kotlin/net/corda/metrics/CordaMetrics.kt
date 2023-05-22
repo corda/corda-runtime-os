@@ -348,7 +348,7 @@ object CordaMetrics {
         /**
          * Uri for which the metric is applicable.
          */
-        Uri("uri"),
+        Uri_path("uri.path"),
 
         /**
          * Method name for which the metric is applicable.

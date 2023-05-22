@@ -140,13 +140,13 @@ internal object ContextUtils {
                     val endTime = Instant.now()
 
                     CordaMetrics.Metric.HttpRequestCount.builder()
-                        .withTag(CordaMetrics.Tag.Uri, "${ctx.matchedPath()}")
+                        .withTag(CordaMetrics.Tag.Uri_path, "${ctx.matchedPath()}")
                         .withTag(CordaMetrics.Tag.Http_Method, "$ctxMethod")
                         .withTag(CordaMetrics.Tag.OperationStatus, "${ctx.status()}")
                         .build().increment()
 
                     CordaMetrics.Metric.HttpRequestTime.builder()
-                        .withTag(CordaMetrics.Tag.Uri, "${ctx.matchedPath()}")
+                        .withTag(CordaMetrics.Tag.Uri_path, "${ctx.matchedPath()}")
                         .withTag(CordaMetrics.Tag.Http_Method, "$ctxMethod")
                         .withTag(CordaMetrics.Tag.OperationStatus, "${ctx.status()}")
                         .build().record(Duration.between(startTime, endTime))
