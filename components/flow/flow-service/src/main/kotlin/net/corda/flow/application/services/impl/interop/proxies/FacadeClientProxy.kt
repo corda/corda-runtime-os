@@ -160,7 +160,7 @@ private class FacadeClientProxy(
                 binding.constructorParameter.type)
         }
 
-        return bindings.constructor.constructors.single().newInstance(*constructorArgs)
+        return bindings.constructor.newInstance(*constructorArgs)
     }
 }
 

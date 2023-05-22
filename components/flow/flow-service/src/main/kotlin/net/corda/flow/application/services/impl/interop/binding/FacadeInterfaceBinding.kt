@@ -108,8 +108,16 @@ sealed class FacadeOutParameterBindings {
     data class SingletonOutParameterBinding(val outParameter: TypedParameter<*>, val returnType: Class<*>)
         : FacadeOutParameterBindings()
 
-    data class DataClassOutParameterBindings(val constructor: Class<*>, val bindings: List<DataClassPropertyBinding>)
+    data class DataClassOutParameterBindings(private val clazz: Class<*>, val bindings: List<DataClassPropertyBinding>)
         : FacadeOutParameterBindings() {
+        init {
+            require(clazz.constructors.size == 1) {
+                "Facade ParameterBinding supports classes with a single constructor only."
+            }
+        }
+
+        val constructor: Constructor<*>
+            get() = clazz.constructors.single()
 
         private val bindingsByParameterName = bindings.associateBy { it.facadeOutParameter.name }
 
