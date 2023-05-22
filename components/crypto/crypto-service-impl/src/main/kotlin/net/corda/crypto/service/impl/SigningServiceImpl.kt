@@ -46,6 +46,9 @@ data class CacheKey(val tenantId: String, val publicKeyId: ShortHash)
  *
  * 2. Provide wrapping key operations, routing to the appropriate crypto service implementation. The crypto
  *    service wrapping key operations are cached. TODO - remove these and have callers use CryptoServiceFactory?
+ *
+ *    TODO - rename to SigningHandlerImpl? it's not really a service any more now that crypto processor creates this,
+ *    since the crypto processor is a service.
  */
 @Suppress("TooManyFunctions", "LongParameterList")
 class SigningServiceImpl(

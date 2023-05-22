@@ -70,6 +70,9 @@ class FlowFailedRequestHandler @Activate constructor(
 
         log.info("Flow [${checkpoint.flowId}] failed")
         checkpoint.markDeleted()
+
+        context.flowMetrics.flowFailed()
+
         return context.copy(outputRecords = context.outputRecords + records)
     }
 }
