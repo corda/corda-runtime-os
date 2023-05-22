@@ -228,6 +228,14 @@ object CordaMetrics {
                 "$PREFIX.sync.handler.time",
                 CordaMetrics::timer
             )
+
+            /**
+             * Metric to capture the changes in group size.
+             */
+            object MemberListCacheSize: Metric<SettableGauge>(
+                "$PREFIX.memberlist.cache.size",
+                CordaMetrics::settableGauge
+            )
         }
     }
 
