@@ -127,8 +127,8 @@ class InteropServiceIntegrationTest {
         )
 
         val contextUserProperties = KeyValuePairList(listOf(
-            KeyValuePair("INTEROP_FACADE_ID", "/com/r3/tokens/sample/v1.0"),
-            KeyValuePair("INTEROP_FACADE_METHOD", "say-hello"),
+            KeyValuePair("INTEROP_FACADE_ID", "org.corda.interop/platform/tokens/v1.0"),
+            KeyValuePair("INTEROP_FACADE_METHOD", "hello"),
             KeyValuePair("INTEROP_GROUP_ID", "fake_group_id")
         ))
 
