@@ -65,7 +65,7 @@ class SessionEventHandler @Activate constructor(
             sessionEvent,
             now
         )
-            .also { recordOutboundMessagesMetric(message) }
+        context.flowMetrics.flowSessionMessageReceived(sessionEvent.payload::class.java.name)
 
         // Null is returned if duplicate [SessionInit]s are received
         val nextSessionEvent = sessionManager.getNextReceivedEvent(updatedSessionState)

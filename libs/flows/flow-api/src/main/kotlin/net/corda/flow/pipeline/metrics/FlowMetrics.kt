@@ -17,7 +17,7 @@ interface FlowMetrics {
 
     fun flowFailed()
 
-    fun flowSessionMessageOutgoing(flowEventType: String)
+    fun flowSessionMessageSent(flowEventType: String)
 
-    fun flowSessionMessageIncoming(flowEventType: String)
+    fun flowSessionMessageReceived(flowEventType: String)
 }

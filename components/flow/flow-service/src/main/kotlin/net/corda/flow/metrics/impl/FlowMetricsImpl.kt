@@ -88,12 +88,12 @@ class FlowMetricsImpl(
         recordFlowCompleted(FlowStates.FAILED.toString())
     }
 
-    override fun flowSessionMessageOutgoing(flowEventType: String) {
-        flowMetricsRecorder.recordFlowSessionMessagesOutgoing(flowEventType)
+    override fun flowSessionMessageSent(flowEventType: String) {
+        flowMetricsRecorder.recordFlowSessionMessagesSent(flowEventType)
     }
 
-    override fun flowSessionMessageIncoming(flowEventType: String) {
-        flowMetricsRecorder.recordFlowSessionMessagesIncoming(flowEventType)
+    override fun flowSessionMessageReceived(flowEventType: String) {
+        flowMetricsRecorder.recordFlowSessionMessagesReceived(flowEventType)
     }
 
     private fun recordFlowCompleted(completionStatus: String) {

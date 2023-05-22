@@ -77,8 +77,8 @@ class FlowMetricsRecorderImpl(
             .build().record(Duration.ofMillis(executionTimeMillis))
     }
 
-    override fun recordFlowSessionMessagesIncoming(flowEventType: String) {
-        CordaMetrics.Metric.FlowSessionMessagesIncomingCount.builder()
+    override fun recordFlowSessionMessagesReceived(flowEventType: String) {
+        CordaMetrics.Metric.FlowSessionMessagesReceivedCount.builder()
             .forVirtualNode(flowCheckpoint.holdingIdentity.shortHash.toString())
             .withTag(CordaMetrics.Tag.FlowClass, flowCheckpoint.flowStartContext.flowClassName)
             .withTag(CordaMetrics.Tag.FlowEvent, flowEventType)
@@ -86,8 +86,8 @@ class FlowMetricsRecorderImpl(
 
     }
 
-    override fun recordFlowSessionMessagesOutgoing(flowEventType: String) {
-        CordaMetrics.Metric.FlowSessionMessagesOutgoingCount.builder()
+    override fun recordFlowSessionMessagesSent(flowEventType: String) {
+        CordaMetrics.Metric.FlowSessionMessagesSentCount.builder()
             .forVirtualNode(flowCheckpoint.holdingIdentity.shortHash.toString())
             .withTag(CordaMetrics.Tag.FlowClass, flowCheckpoint.flowStartContext.flowClassName)
             .withTag(CordaMetrics.Tag.FlowEvent, flowEventType)
