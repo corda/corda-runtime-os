@@ -2,6 +2,7 @@ package net.corda.ledger.utxo.token.cache.services
 
 import net.corda.ledger.utxo.token.cache.entities.CachedToken
 import net.corda.ledger.utxo.token.cache.entities.ClaimQuery
+import net.corda.ledger.utxo.token.cache.entities.TokenFilter
 
 /**
  * The [TokenFilterStrategy] implements the filtering strategy used to select tokens for a given [ClaimQuery]
@@ -16,6 +17,5 @@ interface TokenFilterStrategy {
      *
      * @return An iterable list of filtered tokens
      */
-    fun filterTokens(cachedTokenSource: Iterable<CachedToken>, claimQuery: ClaimQuery): Iterable<CachedToken>
+    fun filterTokens(cachedTokenSource: Iterable<CachedToken>, tokenFilter: TokenFilter): Iterable<CachedToken>
 }
-

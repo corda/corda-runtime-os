@@ -1,5 +1,7 @@
 package net.corda.membership.impl.registration.dynamic.mgm
 
+import java.nio.ByteBuffer
+import java.util.UUID
 import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureSpec
@@ -13,12 +15,11 @@ import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.registration.InvalidMembershipRegistrationException
+import net.corda.utilities.serialization.wrapWithNullErrorHandling
 import net.corda.virtualnode.HoldingIdentity
 import org.slf4j.LoggerFactory
-import java.nio.ByteBuffer
-import java.util.UUID
 
-internal class MGMRegistrationRequestHandler (
+internal class MGMRegistrationRequestHandler(
     cordaAvroSerializationFactory: CordaAvroSerializationFactory,
     private val membershipPersistenceClient: MembershipPersistenceClient,
     private val membershipQueryClient: MembershipQueryClient,
@@ -73,13 +74,17 @@ internal class MGMRegistrationRequestHandler (
     fun throwIfRegistrationAlreadyApproved(holdingIdentity: HoldingIdentity) {
         val result = membershipQueryClient.queryRegistrationRequests(holdingIdentity).getOrThrow()
         result.find { it.registrationStatus == RegistrationStatus.APPROVED }?.let { approvedRegistration ->
-            throw InvalidMembershipRegistrationException("Registration failed, there is already an approved registration for" +
-                " ${holdingIdentity.shortHash} with id ${approvedRegistration.registrationId}.")
+            throw InvalidMembershipRegistrationException(
+                "Registration failed, there is already an approved registration for" +
+                        " ${holdingIdentity.shortHash} with id ${approvedRegistration.registrationId}."
+            )
         }
     }
 
-    private fun serialize(data: KeyValuePairList) = keyValuePairListSerializer.serialize(data)
-        ?: throw InvalidMembershipRegistrationException(
-            "Failed to serialize the member context for this request."
-        )
+    private fun serialize(data: KeyValuePairList) = wrapWithNullErrorHandling({
+        InvalidMembershipRegistrationException("Failed to serialize the member context for this request.", it)
+    }) {
+        keyValuePairListSerializer.serialize(data)
+    }
+
 }

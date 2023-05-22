@@ -13,6 +13,7 @@ import net.corda.applications.workers.rest.utils.getMemberName
 import net.corda.applications.workers.rest.utils.onboardStaticMembers
 import net.corda.data.identity.HoldingIdentity
 import org.junit.jupiter.api.Disabled
+import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.io.TempDir
@@ -20,7 +21,6 @@ import java.nio.file.Path
 import java.util.*
 import java.util.concurrent.TimeUnit
 
-@Disabled("CORE-13288: Tests are disabled until there is a solution in place")
 class StaticNetworkTest {
     @TempDir
     lateinit var tempDir: Path
@@ -31,6 +31,7 @@ class StaticNetworkTest {
         addMembers((3..4).map { createTestMember("Member$it") })
     }
 
+    @Tag("Unstable")
     @Test
     fun `register members`() {
         onboardStaticGroup(tempDir)

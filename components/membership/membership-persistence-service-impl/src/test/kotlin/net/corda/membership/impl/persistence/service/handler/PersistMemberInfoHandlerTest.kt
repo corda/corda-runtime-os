@@ -127,7 +127,7 @@ class PersistMemberInfoHandlerTest {
     }
     private val keyEncodingService: KeyEncodingService = mock()
     private val platformInfoProvider: PlatformInfoProvider = mock()
-
+    private val transactionTimerFactory = { _: String -> transactionTimer }
     private val services = PersistenceHandlerServices(
         clock,
         dbConnectionManager,
@@ -138,6 +138,7 @@ class PersistMemberInfoHandlerTest {
         keyEncodingService,
         platformInfoProvider,
         mock(),
+        transactionTimerFactory
     )
     private lateinit var persistMemberInfoHandler: PersistMemberInfoHandler
 
