@@ -1,0 +1,27 @@
+resources:
+  requests:
+    memory: "50GB"
+    cpu: "500M"
+  limits:
+    memory: "1250E"
+    cpu: "1000M"
+
+bootstrap:
+  resources:
+    requests:
+      memory: "62050MiB"
+
+workers:
+  crypto:
+    resources:
+      limits:
+        cpu: "900M"
+
+  p2pGateway:
+    resources:
+      requests:
+        memory: "62050MiB"
+        cpu: "550M"
+      limits:
+        memory: "100Gb"
+        cpu: "1000M"

@@ -33,6 +33,7 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
 import java.time.Instant
+import net.corda.flow.fiber.cache.FlowFiberCache
 
 @Suppress("Unused")
 @Component(service = [FlowEventExceptionProcessor::class])
@@ -45,6 +46,8 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
     private val flowEventContextConverter: FlowEventContextConverter,
     @Reference(service = FlowSessionManager::class)
     private val flowSessionManager: FlowSessionManager,
+    @Reference(service = FlowFiberCache::class)
+    private val flowFiberCache: FlowFiberCache,
 ) : FlowEventExceptionProcessor {
 
     private companion object {
@@ -98,6 +101,8 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
             flowCheckpoint.rollback()
             flowCheckpoint.markForRetry(context.inputEvent, exception)
 
+            removeCachedFlowFiber(flowCheckpoint)
+
             flowEventContextConverter.convert(context.copy(outputRecords = context.outputRecords + records))
         }
     }
@@ -106,15 +111,16 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
         exception: FlowFatalException,
         context: FlowEventContext<*>
     ): StateAndEventProcessor.Response<Checkpoint> = withEscalation {
-        val msg = if(!context.checkpoint.doesExist) {
-                "Flow processing for flow ID ${context.checkpoint.flowId} has failed due to a fatal exception. " +
-                        "doesExist was false"
-
+        val msg = if (!context.checkpoint.doesExist) {
+            "Flow processing for flow ID ${context.checkpoint.flowId} has failed due to a fatal exception. " +
+                    "doesExist was false"
         } else {
-                "Flow processing for flow ID ${context.checkpoint.flowId} has failed due to a fatal exception. " +
-                        "Flow start context: ${context.checkpoint.flowStartContext}"
+            "Flow processing for flow ID ${context.checkpoint.flowId} has failed due to a fatal exception. " +
+                    "Flow start context: ${context.checkpoint.flowStartContext}"
         }
         log.warn(msg, exception)
+
+        removeCachedFlowFiber(context.checkpoint)
 
         val records = createStatusRecord(context.checkpoint.flowId) {
             flowMessageFactory.createFlowFailedStatusMessage(
@@ -154,6 +160,9 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
         context: FlowEventContext<*>
     ): StateAndEventProcessor.Response<Checkpoint> = withEscalation {
         log.warn("A non critical error was reported while processing the event: ${exception.message}")
+
+        removeCachedFlowFiber(context.checkpoint)
+
         flowEventContextConverter.convert(context)
     }
 
@@ -163,8 +172,11 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
     ): StateAndEventProcessor.Response<Checkpoint> {
         return withEscalation {
             val checkpoint = context.checkpoint
+
             checkpoint.setPendingPlatformError(PLATFORM_ERROR, exception.message)
             checkpoint.waitingFor = WaitingFor(net.corda.data.flow.state.waiting.Wakeup())
+
+            removeCachedFlowFiber(checkpoint)
 
             val record = flowRecordFactory.createFlowEventRecord(checkpoint.flowId, Wakeup())
             flowEventContextConverter.convert(context.copy(outputRecords = context.outputRecords + record))
@@ -204,6 +216,8 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
                 checkpoint.sessions.filterNot { it.hasScheduledCleanup }
             )
             val statusRecord = createFlowKilledStatusRecord(checkpoint, exception.message ?: "No exception message provided.")
+
+            removeCachedFlowFiber(checkpoint)
 
             checkpoint.markDeleted()
 
@@ -248,5 +262,12 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
     private fun getScheduledCleanupExpiryTime(context: FlowEventContext<*>, now: Instant): Long {
         val flowCleanupTime = context.config.getLong(FlowConfig.SESSION_FLOW_CLEANUP_TIME)
         return now.plusMillis(flowCleanupTime).toEpochMilli()
+    }
+
+    /**
+     * Remove cached flow fiber for this checkpoint, if it exists.
+     */
+    private fun removeCachedFlowFiber(checkpoint: FlowCheckpoint) {
+        if (checkpoint.doesExist) flowFiberCache.remove(checkpoint.flowKey)
     }
 }

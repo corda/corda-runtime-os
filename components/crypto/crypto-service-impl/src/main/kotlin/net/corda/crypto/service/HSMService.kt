@@ -8,11 +8,6 @@ import net.corda.lifecycle.Lifecycle
  */
 interface HSMService : Lifecycle {
     /**
-     * Assigns an HSM out of existing pull of configured HSMs (except Soft HSM)
-     */
-    fun assignHSM(tenantId: String, category: String, context: Map<String, String>): HSMAssociationInfo
-
-    /**
      * Assigns a Soft HSM, note that a new HSMConfig record will be created for each tenant.
      */
     fun assignSoftHSM(tenantId: String, category: String): HSMAssociationInfo

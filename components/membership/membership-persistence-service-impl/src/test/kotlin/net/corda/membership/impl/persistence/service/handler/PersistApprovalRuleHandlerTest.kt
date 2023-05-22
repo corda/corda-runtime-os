@@ -100,6 +100,7 @@ class PersistApprovalRuleHandlerTest {
         on { virtualNodeInfoReadService } doReturn nodeInfoReadService
         on { jpaEntitiesRegistry } doReturn registry
         on { dbConnectionManager } doReturn connectionManager
+        on { transactionTimerFactory } doReturn { transactionTimer }
     }
     private lateinit var handler: PersistApprovalRuleHandler
 

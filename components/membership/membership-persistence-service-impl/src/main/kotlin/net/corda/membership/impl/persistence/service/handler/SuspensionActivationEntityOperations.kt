@@ -1,5 +1,8 @@
 package net.corda.membership.impl.persistence.service.handler
 
+import javax.persistence.EntityManager
+import javax.persistence.LockModeType
+import javax.persistence.PessimisticLockException
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.KeyValuePair
@@ -13,10 +16,8 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.SERIAL
 import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.lib.exceptions.InvalidEntityUpdateException
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
+import net.corda.utilities.serialization.wrapWithNullErrorHandling
 import net.corda.utilities.time.Clock
-import javax.persistence.EntityManager
-import javax.persistence.LockModeType
-import javax.persistence.PessimisticLockException
 
 internal class SuspensionActivationEntityOperations(
     private val clock: Clock,
@@ -46,7 +47,8 @@ internal class SuspensionActivationEntityOperations(
             require(member.serialNumber == it) {
                 throw InvalidEntityUpdateException(
                     "The provided serial number '$expectedSerial' does not match the current version '${member.serialNumber}' of " +
-                        "MemberInfo for member '$memberName'.")
+                            "MemberInfo for member '$memberName'."
+                )
             }
         }
         require(member.status == expectedStatus) {
@@ -74,8 +76,11 @@ internal class SuspensionActivationEntityOperations(
                 else -> it
             }
         })
-        val serializedMgmContext = keyValuePairListSerializer.serialize(mgmContext)
-            ?: throw MembershipPersistenceException("Failed to serialize the MGM-provided context.")
+        val serializedMgmContext = wrapWithNullErrorHandling({
+            MembershipPersistenceException("Failed to serialize the MGM-provided context.", it)
+        }) {
+            keyValuePairListSerializer.serialize(mgmContext)
+        }
 
         em.merge(
             MemberInfoEntity(
