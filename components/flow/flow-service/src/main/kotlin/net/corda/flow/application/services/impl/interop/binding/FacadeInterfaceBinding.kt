@@ -108,7 +108,7 @@ sealed class FacadeOutParameterBindings {
     data class SingletonOutParameterBinding(val outParameter: TypedParameter<*>, val returnType: Class<*>)
         : FacadeOutParameterBindings()
 
-    data class DataClassOutParameterBindings(val constructor: Constructor<*>, val bindings: List<DataClassPropertyBinding>)
+    data class DataClassOutParameterBindings(val constructor: Class<*>, val bindings: List<DataClassPropertyBinding>)
         : FacadeOutParameterBindings() {
 
         private val bindingsByParameterName = bindings.associateBy { it.facadeOutParameter.name }

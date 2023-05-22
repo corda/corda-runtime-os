@@ -406,7 +406,7 @@ private class DataClassOutParametersBindingContext(
             "Cannot find properties with both a constructor parameter and a getter method for out parameters $missingProperties"
         }
 
-        return FacadeOutParameterBindings.DataClassOutParameterBindings(constructor, properties)
+        return FacadeOutParameterBindings.DataClassOutParameterBindings(wrappedReturnType, properties)
     }
 
     private fun bindDataClassProperty(
