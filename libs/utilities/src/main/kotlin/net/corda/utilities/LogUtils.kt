@@ -21,6 +21,9 @@ const val MDC_VNODE_ID = "vnode.id"
 const val MDC_SESSION_EVENT_ID = "session.event.id"
 const val MDC_EXTERNAL_EVENT_ID = "corda.external.event.id"
 
+const val MDC_LOGGED_PREFIX = "corda.logged"
+const val MDC_CORDA_PREFIX = "corda"
+
 inline fun <T> logElapsedTime(label: String, logger: Logger, body: () -> T): T {
     // Use nanoTime as it's monotonic.
     val now = System.nanoTime()
@@ -76,6 +79,12 @@ fun <R> withMDC(mdcProperties: Map<String, String>, block: () -> R) : R {
     } finally {
         clearMDC(mdcProperties)
     }
+}
+
+fun Map<String, String>.selectLoggedProperties() = filter {
+    it.key.startsWith(MDC_LOGGED_PREFIX)
+}.mapKeys {
+    it.key.replace(MDC_LOGGED_PREFIX, MDC_CORDA_PREFIX)
 }
 
 /**

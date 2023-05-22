@@ -23,6 +23,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.utilities.MDC_CLIENT_ID
 import net.corda.utilities.MDC_EXTERNAL_EVENT_ID
 import net.corda.utilities.MDC_FLOW_ID
+import net.corda.utilities.selectLoggedProperties
 import net.corda.utilities.trace
 import net.corda.utilities.withMDC
 import org.slf4j.LoggerFactory
@@ -65,7 +66,7 @@ class CryptoFlowOpsBusProcessor(
             MDC_FLOW_ID to request.flowExternalEventContext.flowId,
             MDC_CLIENT_ID to clientRequestId,
             MDC_EXTERNAL_EVENT_ID to request.flowExternalEventContext.requestId
-        )
+        ) + request.flowExternalEventContext.contextProperties.toMap().selectLoggedProperties()
 
         return withMDC(mdc) {
             logger.info("Handling ${request.request::class.java.name} for tenant ${request.context.tenantId}")

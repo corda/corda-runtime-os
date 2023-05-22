@@ -11,12 +11,14 @@ import net.corda.flow.pipeline.exceptions.FlowMarkedForKillException
 import net.corda.flow.pipeline.exceptions.FlowPlatformException
 import net.corda.flow.pipeline.exceptions.FlowTransientException
 import net.corda.flow.pipeline.factory.FlowEventPipelineFactory
+import net.corda.flow.state.impl.FlowStateManager
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.schema.configuration.MessagingConfig.Subscription.PROCESSOR_TIMEOUT
 import net.corda.utilities.withMDC
 import net.corda.utilities.debug
+import net.corda.utilities.selectLoggedProperties
 import net.corda.utilities.trace
 import org.slf4j.LoggerFactory
 
@@ -48,7 +50,16 @@ class FlowEventProcessorImpl(
     ): StateAndEventProcessor.Response<Checkpoint> {
         val flowEvent = event.value
         val mdcProperties = flowMDCService.getMDCLogging(state, flowEvent, event.key)
-        return withMDC(mdcProperties) {
+
+        val loggedContextProperties = state?.flowState
+            ?.let(::FlowStateManager)
+            ?.flowContext
+            ?.flattenPlatformProperties()
+            ?.selectLoggedProperties()
+            ?: emptyMap()
+
+
+        return withMDC(mdcProperties + loggedContextProperties) {
             getFlowPipelineResponse(flowEvent, event, state, mdcProperties)
         }
     }

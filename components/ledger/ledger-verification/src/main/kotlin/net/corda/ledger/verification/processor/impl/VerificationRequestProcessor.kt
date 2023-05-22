@@ -12,6 +12,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.flow.utils.toMap
 import net.corda.utilities.MDC_CLIENT_ID
 import net.corda.utilities.MDC_EXTERNAL_EVENT_ID
+import net.corda.utilities.selectLoggedProperties
 import net.corda.utilities.trace
 import net.corda.utilities.withMDC
 import net.corda.virtualnode.toCorda
@@ -48,7 +49,7 @@ class VerificationRequestProcessor(
                     mapOf(
                         MDC_CLIENT_ID to clientRequestId,
                         MDC_EXTERNAL_EVENT_ID to request.flowExternalEventContext.requestId
-                    )
+                    ) + request.flowExternalEventContext.contextProperties.toMap().selectLoggedProperties()
                 ) {
                     try {
                         val holdingIdentity = request.holdingIdentity.toCorda()
