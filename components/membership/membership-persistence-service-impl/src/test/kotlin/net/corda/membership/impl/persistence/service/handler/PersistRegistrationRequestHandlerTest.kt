@@ -88,7 +88,7 @@ class PersistRegistrationRequestHandlerTest {
     }
     private val keyEncodingService: KeyEncodingService = mock()
     private val platformInfoProvider: PlatformInfoProvider = mock()
-
+    private val transactionTimerFactory = { _: String -> transactionTimer }
     private val services = PersistenceHandlerServices(
         clock,
         dbConnectionManager,
@@ -98,6 +98,7 @@ class PersistRegistrationRequestHandlerTest {
         keyEncodingService,
         platformInfoProvider,
         mock(),
+        transactionTimerFactory
     )
     private lateinit var persistRegistrationRequestHandler: PersistRegistrationRequestHandler
 

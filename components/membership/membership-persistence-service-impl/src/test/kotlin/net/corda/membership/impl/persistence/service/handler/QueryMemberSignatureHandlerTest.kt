@@ -68,6 +68,7 @@ class QueryMemberSignatureHandlerTest {
     }
     private val keyEncodingService: KeyEncodingService = mock()
     private val platformInfoProvider: PlatformInfoProvider = mock()
+    private val transactionTimerFactory = { _: String -> transactionTimer }
     private val service = PersistenceHandlerServices(
         clock,
         dbConnectionManager,
@@ -77,6 +78,7 @@ class QueryMemberSignatureHandlerTest {
         keyEncodingService,
         platformInfoProvider,
         mock(),
+        transactionTimerFactory
     )
     private val handler = QueryMemberSignatureHandler(service)
 

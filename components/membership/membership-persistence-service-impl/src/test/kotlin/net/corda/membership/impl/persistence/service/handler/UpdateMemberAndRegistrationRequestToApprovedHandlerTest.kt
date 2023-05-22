@@ -83,6 +83,7 @@ class UpdateMemberAndRegistrationRequestToApprovedHandlerTest {
     }
     private val keyEncodingService: KeyEncodingService = mock()
     private val platformInfoProvider: PlatformInfoProvider = mock()
+    private val transactionTimeFactory = { _: String -> transactionTimer }
     private val service = PersistenceHandlerServices(
         clock,
         dbConnectionManager,
@@ -92,6 +93,7 @@ class UpdateMemberAndRegistrationRequestToApprovedHandlerTest {
         keyEncodingService,
         platformInfoProvider,
         mock(),
+        transactionTimeFactory
     )
     private val handler = UpdateMemberAndRegistrationRequestToApprovedHandler(service)
 

@@ -87,6 +87,7 @@ class PersistApprovalRuleHandlerTest {
     private val persistenceHandlerServices = mock<PersistenceHandlerServices> {
         on { jpaEntitiesRegistry } doReturn registry
         on { dbConnectionManager } doReturn connectionManager
+        on { transactionTimerFactory } doReturn { transactionTimer }
     }
     private lateinit var handler: PersistApprovalRuleHandler
 

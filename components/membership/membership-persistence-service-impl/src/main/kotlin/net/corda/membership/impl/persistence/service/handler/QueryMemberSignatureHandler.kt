@@ -14,7 +14,7 @@ import java.nio.ByteBuffer
 internal class QueryMemberSignatureHandler(
     persistenceHandlerServices: PersistenceHandlerServices
 ) : BasePersistenceHandler<QueryMemberSignature, MemberSignatureQueryResponse>(persistenceHandlerServices) {
-
+    override val operation = QueryMemberSignature::class.java
     override fun invoke(
         context: MembershipRequestContext,
         request: QueryMemberSignature,

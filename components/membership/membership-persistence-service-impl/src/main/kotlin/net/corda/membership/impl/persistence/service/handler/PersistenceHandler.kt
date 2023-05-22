@@ -1,5 +1,6 @@
 package net.corda.membership.impl.persistence.service.handler
 
+import io.micrometer.core.instrument.Timer
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.core.ShortHash
 import net.corda.avro.serialization.CordaAvroSerializationFactory
@@ -20,6 +21,11 @@ import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 
 internal interface PersistenceHandler<REQUEST, RESPONSE> {
+    /**
+     * Persistence operation identifier for logging and metrics purposes.
+     */
+    val operation: Class<REQUEST>
+
     fun invoke(context: MembershipRequestContext, request: REQUEST): RESPONSE?
 }
 
@@ -33,6 +39,8 @@ internal abstract class BasePersistenceHandler<REQUEST, RESPONSE>(
 
     private val dbConnectionManager get() = persistenceHandlerServices.dbConnectionManager
     private val jpaEntitiesRegistry get() = persistenceHandlerServices.jpaEntitiesRegistry
+    private val transactionTimer get() = persistenceHandlerServices.transactionTimerFactory(operation.simpleName)
+
     val clock get() = persistenceHandlerServices.clock
     val cordaAvroSerializationFactory get() = persistenceHandlerServices.cordaAvroSerializationFactory
     val memberInfoFactory get() = persistenceHandlerServices.memberInfoFactory
@@ -42,11 +50,15 @@ internal abstract class BasePersistenceHandler<REQUEST, RESPONSE>(
 
     fun <R> transaction(holdingIdentityShortHash: ShortHash, block: (EntityManager) -> R): R {
         val factory = getEntityManagerFactory(holdingIdentityShortHash)
-        return factory.transaction(block)
+        return transactionTimer.recordCallable {
+            factory.transaction(block)
+        }!!
     }
 
     fun <R> transaction(block: (EntityManager) -> R): R {
-        return dbConnectionManager.getClusterEntityManagerFactory().transaction(block)
+        return dbConnectionManager.getClusterEntityManagerFactory().let {
+            transactionTimer.recordCallable { it.transaction(block) }!!
+        }
     }
 
     fun retrieveSignatureSpec(signatureSpec: String) = if (signatureSpec.isEmpty()) {
@@ -76,4 +88,5 @@ internal data class PersistenceHandlerServices(
     val keyEncodingService: KeyEncodingService,
     val platformInfoProvider: PlatformInfoProvider,
     val allowedCertificatesReaderWriterService: AllowedCertificatesReaderWriterService,
+    val transactionTimerFactory: (String) -> Timer
 )

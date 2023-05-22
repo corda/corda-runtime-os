@@ -77,6 +77,7 @@ import org.assertj.core.api.SoftAssertions.assertSoftly
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
+import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
@@ -242,6 +243,7 @@ class MembershipPersistenceRPCProcessorTest {
         on { merge(preAuthTokenEntity) } doReturn preAuthTokenEntity
         on { createQuery(registrationRequestsQuery) } doReturn registrationRequestQuery
         on { find(eq(MemberInfoEntity::class.java), any(), eq(LockModeType.PESSIMISTIC_WRITE)) } doReturn memberEntity
+        on { merge(any<Any>()) } doAnswer { it.arguments[0] }
     }
     private val entityManagerFactory: EntityManagerFactory = mock {
         on { createEntityManager() } doReturn entityManager

@@ -203,6 +203,7 @@ class SuspendMemberHandlerTest {
         on { cordaAvroSerializationFactory } doReturn cordaAvroSerializationFactory
         on { memberInfoFactory } doReturn memberInfoFactory
         on { keyEncodingService } doReturn mock()
+        on { transactionTimerFactory } doReturn { transactionTimer }
     }
     private val notaryUpdater = mock<GroupParametersNotaryUpdater>()
     private val handler: SuspendMemberHandler = SuspendMemberHandler(persistenceHandlerServices, notaryUpdater) { _, _, _, ->

@@ -76,6 +76,7 @@ class QueryGroupPolicyHandlerTest {
     private val keyEncodingService: KeyEncodingService = mock()
     private val platformInfoProvider: PlatformInfoProvider = mock()
 
+    private val transactionTimerFactory = { _: String -> transactionTimer }
     private val services = PersistenceHandlerServices(
         clock,
         dbConnectionManager,
@@ -85,6 +86,7 @@ class QueryGroupPolicyHandlerTest {
         keyEncodingService,
         platformInfoProvider,
         mock(),
+        transactionTimerFactory
     )
 
     private lateinit var queryGroupPolicyHandler: QueryGroupPolicyHandler

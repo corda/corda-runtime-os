@@ -65,6 +65,7 @@ class ConsumePreAuthTokenHandlerTest {
         on { clock } doReturn clock
         on { dbConnectionManager } doReturn dbConnectionManager
         on { jpaEntitiesRegistry } doReturn jpaEntitiesRegistry
+        on { transactionTimerFactory } doReturn { transactionTimer }
     }
 
     private val handler: ConsumePreAuthTokenHandler = ConsumePreAuthTokenHandler(persistenceHandlerServices)

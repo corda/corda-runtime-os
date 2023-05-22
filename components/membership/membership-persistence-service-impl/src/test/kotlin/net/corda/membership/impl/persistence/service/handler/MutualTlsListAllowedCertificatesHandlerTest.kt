@@ -47,6 +47,7 @@ class MutualTlsListAllowedCertificatesHandlerTest {
     private val persistenceHandlerServices = mock<PersistenceHandlerServices> {
         on { dbConnectionManager } doReturn dbConnectionManager
         on { jpaEntitiesRegistry } doReturn jpaEntitiesRegistry
+        on { transactionTimerFactory } doReturn { transactionTimer }
     }
     private val handler = MutualTlsListAllowedCertificatesHandler(persistenceHandlerServices)
     private val context = mock<MembershipRequestContext> {

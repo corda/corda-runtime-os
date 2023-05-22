@@ -56,6 +56,7 @@ class RevokePreAuthTokenHandlerTest  {
         on { dbConnectionManager } doReturn dbConnectionManager
         on { jpaEntitiesRegistry } doReturn jpaEntitiesRegistry
         on { allowedCertificatesReaderWriterService } doReturn writerToKafka
+        on { transactionTimerFactory } doReturn { transactionTimer }
     }
     private val handler = RevokePreAuthTokenHandler(persistenceHandlerServices)
     private val context = mock<MembershipRequestContext> {
