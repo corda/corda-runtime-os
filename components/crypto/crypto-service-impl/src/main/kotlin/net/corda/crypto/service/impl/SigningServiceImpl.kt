@@ -336,9 +336,10 @@ class SigningServiceImpl(
         }
     }
 
-    @Suppress("NestedBlockDepth")
+    @Suppress("ThrowsCount", "NestedBlockDepth")
     private fun getOwnedKeyRecord(tenantId: String, publicKey: PublicKey): OwnedKeyRecord {
         if (publicKey is CompositeKey) {
+            // TODO - cache lookups here?
             val leafKeysIdsChunks = publicKey.leafKeys.map {
                 it.fullIdHash(schemeMetadata, digestService) to it
             }.chunked(KEY_LOOKUP_INPUT_ITEMS_LIMIT)
@@ -359,22 +360,19 @@ class SigningServiceImpl(
                 "The tenant $tenantId doesn't own any public key in '${publicKey.publicKeyId()}' composite key."
             )
         } else {
-            // TODO - use cache?
-            return signingRepositoryFactory.getInstance(tenantId).use { repo->
-                repo.findKey(publicKey)?.let {
-                    // This is to make sure cached key by short id (db one looks with full id so should be OK) is the actual
-                    // requested key Sand not a different one that clashed on key id (short key id).
-                    if (it.fullId == publicKey.fullIdHash(schemeMetadata, digestService)) {
-                        it
-                    } else {
-                        null
-                    }
-                }?.let {
-                    OwnedKeyRecord(publicKey, it)
-                } ?: throw IllegalArgumentException(
-                    "The tenant $tenantId doesn't own public key '${publicKey.publicKeyId()}'."
-                )
+            val requestedFullKeyId = publicKey.fullIdHash(schemeMetadata, digestService)
+            val keyId = ShortHash.of(requestedFullKeyId)
+            val cacheKey = CacheKey(tenantId, keyId)
+            val signingKeyInfo =  cache.get(cacheKey) {
+                val repo = signingRepositoryFactory.getInstance(tenantId)
+                val result = repo.findKey(publicKey)
+                if (result == null) throw IllegalArgumentException("The public key '${publicKey.publicKeyId()}' was not found")
+                if (result.fullId != requestedFullKeyId) throw IllegalArgumentException(
+                        "The tenant $tenantId doesn't own public key '${publicKey.publicKeyId()}'.")
+                cache.put(cacheKey, result)
+                result
             }
+            return OwnedKeyRecord(publicKey, signingKeyInfo)
         }
     }
 
