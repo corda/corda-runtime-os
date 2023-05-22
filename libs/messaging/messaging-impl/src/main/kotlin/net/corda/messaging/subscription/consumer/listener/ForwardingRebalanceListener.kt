@@ -9,14 +9,13 @@ import org.slf4j.LoggerFactory
 /**
  * A [CordaConsumerRebalanceListener] that logs any assignment events and forwards them to the underlying [partitionAssignmentListener].
  */
-class ForwardingRebalanceListener(private val topic: String,
-                                  groupName: String,
-                                  clientId: String,
-                                  private val partitionAssignmentListener: PartitionAssignmentListener
-):
-    LoggingConsumerRebalanceListener(topic, groupName, clientId) {
+class ForwardingRebalanceListener(
+    private val topic: String,
+    clientId: String,
+    private val partitionAssignmentListener: PartitionAssignmentListener
+) : LoggingConsumerRebalanceListener(clientId) {
 
-    override val log: Logger = LoggerFactory.getLogger("${this.javaClass.name}-$topic-$groupName")
+    override val log: Logger = LoggerFactory.getLogger("${this.javaClass.name}-${clientId}")
 
     override fun onPartitionsRevoked(partitions: Collection<CordaTopicPartition>) {
         super.onPartitionsRevoked(partitions)
@@ -27,5 +26,4 @@ class ForwardingRebalanceListener(private val topic: String,
         super.onPartitionsAssigned(partitions)
         partitionAssignmentListener.onPartitionsAssigned(partitions.map { topic to it.partition })
     }
-
 }

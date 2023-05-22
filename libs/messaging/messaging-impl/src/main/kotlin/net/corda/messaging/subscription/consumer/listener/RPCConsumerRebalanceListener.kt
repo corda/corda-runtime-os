@@ -6,16 +6,15 @@ import net.corda.messaging.subscription.LifecycleStatusUpdater
 import net.corda.messaging.utils.FutureTracker
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.util.*
+import java.util.Collections
 
 class RPCConsumerRebalanceListener<RESPONSE>(
-    topic: String,
-    groupName: String,
+    clientId: String,
     private var tracker: FutureTracker<RESPONSE>,
     private val lifecycleStatusUpdater: LifecycleStatusUpdater
-) : LoggingConsumerRebalanceListener(topic, groupName) {
+) : LoggingConsumerRebalanceListener(clientId) {
 
-    override val log: Logger = LoggerFactory.getLogger("${this.javaClass.name}-$topic-$groupName")
+    override val log: Logger = LoggerFactory.getLogger("${this.javaClass.name}-${clientId}")
 
     private val partitions = mutableListOf<CordaTopicPartition>()
 
