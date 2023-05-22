@@ -22,7 +22,7 @@ dependencies {
 
     implementation project(":libs:configuration:configuration-core")
 
-    implementation("io.zipkin.reporter2:zipkin-sender-urlconnection:2.16.3")
+    implementation("io.zipkin.reporter2:zipkin-sender-urlconnection:$zipkinVersion")
     implementation("io.zipkin.brave:brave-context-slf4j:$braveVersion")
     implementation("io.zipkin.brave:brave-instrumentation-kafka-clients:$braveVersion")
     implementation("io.zipkin.brave:brave-instrumentation-servlet:$braveVersion")
