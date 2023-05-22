@@ -1,9 +1,11 @@
 package net.corda.crypto.service.impl
 
 import com.github.benmanes.caffeine.cache.Cache
+import com.github.benmanes.caffeine.cache.Caffeine
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.cipher.suite.GeneratedPublicKey
+import net.corda.crypto.cipher.suite.PlatformDigestService
 import net.corda.crypto.cipher.suite.SignatureSpecImpl
 import net.corda.crypto.cipher.suite.schemes.ECDSA_SECP256R1_TEMPLATE
 import net.corda.crypto.component.test.utils.generateKeyPair
@@ -15,8 +17,8 @@ import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.CREATED_BEFORE_FILTE
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.MASTER_KEY_ALIAS_FILTER
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.SCHEME_CODE_NAME_FILTER
 import net.corda.crypto.core.KeyAlreadyExistsException
-import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.core.ShortHash
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.core.parseSecureHash
 import net.corda.crypto.persistence.SigningKeyInfo
 import net.corda.crypto.persistence.SigningKeyOrderBy
@@ -25,6 +27,7 @@ import net.corda.crypto.service.CryptoServiceFactory
 import net.corda.crypto.service.CryptoServiceRef
 import net.corda.crypto.service.KeyOrderBy
 import net.corda.crypto.softhsm.SigningRepository
+import net.corda.crypto.testkit.SecureHashUtils
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.crypto.SecureHash
@@ -48,6 +51,7 @@ import org.mockito.kotlin.verify
 import java.security.PublicKey
 import java.time.Instant
 import java.util.UUID
+import java.util.concurrent.TimeUnit
 
 class SigningServiceGeneralTests {
     companion object {
@@ -73,8 +77,8 @@ class SigningServiceGeneralTests {
             cryptoServiceFactory = mock(),
             signingRepositoryFactory = { repo },
             schemeMetadata = schemeMetadata,
-            digestService = mock(),
-            cache = mock()
+            digestService = mockDigestService(),
+            cache = makeCache(),
         )
         val thrown = assertThrows(exception::class.java) {
             signingService.sign(
@@ -100,21 +104,31 @@ class SigningServiceGeneralTests {
             cryptoServiceFactory = mock(),
             signingRepositoryFactory = { repo },
             schemeMetadata = schemeMetadata,
-            digestService = mock(),
-            cache = mock()
+            digestService = mockDigestService(),
+            cache = makeCache()
         )
+        val publicKey = mock<PublicKey> {
+            on { encoded } doReturn UUID.randomUUID().toString().toByteArray()
+        }
         assertThrows(IllegalArgumentException::class.java) {
             signingService.sign(
                 tenantId = UUID.randomUUID().toString(),
-                publicKey = mock {
-                    on { encoded } doReturn UUID.randomUUID().toString().toByteArray()
-                },
+                publicKey = publicKey,
                 signatureSpec = SignatureSpecImpl("NONE"),
                 data = ByteArray(2),
                 context = emptyMap()
             )
         }
     }
+
+    private fun mockDigestService() = mock<PlatformDigestService> {
+        on { hash(any<ByteArray>(), any()) } doReturn SecureHashUtils.randomSecureHash()
+    }
+
+    private fun makeCache(): Cache<CacheKey, SigningKeyInfo> =
+        Caffeine.newBuilder()
+            .expireAfterAccess(3600, TimeUnit.MINUTES)
+            .maximumSize(3).build()
 
     @Test
     fun `Should throw original exception failing derivation`() {
@@ -126,8 +140,8 @@ class SigningServiceGeneralTests {
             signingRepositoryFactory = { repo },
             cryptoServiceFactory = mock(),
             schemeMetadata = schemeMetadata,
-            digestService = mock(),
-            cache = mock(),
+            digestService = mockDigestService(),
+            cache = makeCache(),
         )
         val thrown = assertThrows(exception::class.java) {
             signingService.deriveSharedSecret(
@@ -154,8 +168,8 @@ class SigningServiceGeneralTests {
             signingRepositoryFactory = { repo },
             cryptoServiceFactory = mock(),
             schemeMetadata = schemeMetadata,
-            digestService = mock(),
-            cache = mock()
+            digestService = mockDigestService(),
+            cache = makeCache(),
         )
         assertThrows(IllegalArgumentException::class.java) {
             signingService.deriveSharedSecret(
@@ -197,8 +211,8 @@ class SigningServiceGeneralTests {
             signingRepositoryFactory = { repo },
             cryptoServiceFactory = mock(),
             schemeMetadata = schemeMetadata,
-            digestService = mock(),
-            cache = mock(),
+            digestService = mockDigestService(),
+            cache = makeCache(),
         )
         assertThrows(KeyAlreadyExistsException::class.java) {
             signingService.generateKeyPair(
@@ -231,7 +245,7 @@ class SigningServiceGeneralTests {
             signingRepositoryFactory = { repo },
             cryptoServiceFactory = mock(),
             schemeMetadata = schemeMetadata,
-            digestService = mock(),
+            digestService = mockDigestService(),
             cache = mock(),
         )
         var thrown = assertThrows(exception::class.java) {
@@ -277,7 +291,7 @@ class SigningServiceGeneralTests {
             signingRepositoryFactory = { store },
             cryptoServiceFactory = mock(),
             schemeMetadata = schemeMetadata,
-            digestService = mock(),
+            digestService = mockDigestService(),
             cache = mock(),
         )
         val filter = mapOf(
@@ -319,7 +333,7 @@ class SigningServiceGeneralTests {
             signingRepositoryFactory = { repo },
             cryptoServiceFactory = mock(),
             schemeMetadata = schemeMetadata,
-            digestService = mock(),
+            digestService = mockDigestService(),
             cache = mock(),
         )
         val filter = emptyMap<String, String>()
@@ -369,7 +383,7 @@ class SigningServiceGeneralTests {
                 on { findInstance(tenantId, CryptoConsts.Categories.LEDGER) } doReturn ref
             },
             schemeMetadata = schemeMetadata,
-            digestService = mock(),
+            digestService = mockDigestService(),
             cache = mock(),
         )
         var result = signingService.generateKeyPair(
@@ -433,7 +447,7 @@ class SigningServiceGeneralTests {
             signingRepositoryFactory = { repo },
             cryptoServiceFactory = cryptoServiceFactory,
             schemeMetadata = schemeMetadata,
-            digestService = mock(),
+            digestService = mockDigestService(),
             cache = cache,
         )
 
@@ -471,7 +485,7 @@ class SigningServiceGeneralTests {
             signingRepositoryFactory = { repo },
             cryptoServiceFactory = cryptoServiceFactory,
             schemeMetadata = schemeMetadata,
-            digestService = mock(),
+            digestService = mockDigestService(),
             cache = cache,
         )
 
