@@ -130,6 +130,7 @@ class UtxoLedgerTransactionVerificationServiceImpl @Activate constructor(
             "Membership group parameters hash cannot be found in the transaction metadata."
         }
     }
+
     private fun transactionVerificationFlowTimer(): Timer {
         return CordaMetrics.Metric.Ledger.TransactionVerificationFlowTime
             .builder()
