@@ -49,6 +49,7 @@ import net.corda.persistence.common.EntitySandboxServiceFactory
 import net.corda.persistence.common.ResponseFactory
 import net.corda.persistence.common.exceptions.KafkaMessageSizeException
 import net.corda.persistence.common.getSerializationService
+import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.test.util.dsl.entities.cpx.getCpkFileHashes
 import net.corda.testing.sandboxes.SandboxSetup
@@ -124,6 +125,7 @@ class PersistenceServiceInternalTests {
     private lateinit var catClass: Class<*>
     private lateinit var schemaName: String
     private lateinit var dbConnectionManager: FakeDbConnectionManager
+    private lateinit var currentSandboxGroupContext: CurrentSandboxGroupContext
 
     @BeforeAll
     fun setup(
@@ -144,6 +146,7 @@ class PersistenceServiceInternalTests {
             responseFactory = setup.fetchService(timeout = 10000)
             deserializer = setup.fetchService<CordaAvroSerializationFactory>(timeout = 10000)
                 .createAvroDeserializer({}, EntityResponse::class.java)
+            currentSandboxGroupContext = setup.fetchService(timeout = 5000)
         }
     }
 
@@ -262,6 +265,7 @@ class PersistenceServiceInternalTests {
             }
         )
         val processor = EntityMessageProcessor(
+            currentSandboxGroupContext,
             myEntitySandboxService,
             responseFactory,
             this::noOpPayloadCheck
@@ -992,6 +996,7 @@ class PersistenceServiceInternalTests {
 
     private fun getMessageProcessor(payloadCheck: (bytes: ByteBuffer) -> ByteBuffer): EntityMessageProcessor {
         return EntityMessageProcessor(
+            currentSandboxGroupContext,
             entitySandboxService,
             responseFactory,
             payloadCheck

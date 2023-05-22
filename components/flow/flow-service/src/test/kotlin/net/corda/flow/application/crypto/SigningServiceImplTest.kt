@@ -4,12 +4,18 @@ import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.core.DigitalSignatureWithKey
 import net.corda.crypto.core.DigitalSignatureWithKeyId
 import net.corda.crypto.core.fullIdHash
+import net.corda.flow.ALICE_X500_HOLDING_IDENTITY
 import net.corda.flow.application.crypto.external.events.CreateSignatureExternalEventFactory
 import net.corda.flow.application.crypto.external.events.FilterMyKeysExternalEventFactory
 import net.corda.flow.application.crypto.external.events.SignParameters
 import net.corda.flow.external.events.executor.ExternalEventExecutor
+import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
+import net.corda.sandboxgroupcontext.SandboxGroupContext
+import net.corda.sandboxgroupcontext.VirtualNodeContext
 import net.corda.v5.crypto.CompositeKey
+import net.corda.virtualnode.toCorda
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.eq
@@ -21,8 +27,18 @@ class SigningServiceImplTest {
 
     private val keyEncodingService = mock<KeyEncodingService>()
     private val externalEventExecutor = mock<ExternalEventExecutor>()
+    private val sandbox = mock<SandboxGroupContext>()
+    private val virtualNodeContext = mock<VirtualNodeContext>()
+    private val currentSandboxGroupContext = mock<CurrentSandboxGroupContext>()
     private val captor = argumentCaptor<SignParameters>()
-    private val signingService = SigningServiceImpl(externalEventExecutor, keyEncodingService)
+    private val signingService = SigningServiceImpl(currentSandboxGroupContext, externalEventExecutor, keyEncodingService)
+
+    @BeforeEach
+    fun beforeEach() {
+        whenever(sandbox.virtualNodeContext).thenReturn(virtualNodeContext)
+        whenever(virtualNodeContext.holdingIdentity).thenReturn(ALICE_X500_HOLDING_IDENTITY.toCorda())
+        whenever(currentSandboxGroupContext.get()).thenReturn(sandbox)
+    }
 
     @Test
     fun `sign returns the signature returned from the flow resuming`() {
