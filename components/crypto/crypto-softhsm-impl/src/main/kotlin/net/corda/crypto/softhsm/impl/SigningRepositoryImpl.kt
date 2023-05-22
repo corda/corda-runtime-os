@@ -29,6 +29,7 @@ import net.corda.crypto.persistence.schemeCodeName
 import net.corda.crypto.softhsm.SigningRepository
 import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.layeredpropertymap.create
+import net.corda.metrics.CordaMetrics
 import net.corda.orm.utils.transaction
 import net.corda.orm.utils.use
 import net.corda.v5.crypto.SecureHash
@@ -222,17 +223,22 @@ class SigningRepositoryImpl(
         require(keyIds.size <= KEY_LOOKUP_INPUT_ITEMS_LIMIT) {
             "The number of ids exceeds $KEY_LOOKUP_INPUT_ITEMS_LIMIT"
         }
-        return entityManagerFactory.createEntityManager().use { em ->
-            em.transaction {
-                val keyIdsStrings = keyIds.map<ShortHash, String> { it.value }
-                em.createQuery<SigningKeyEntity?>(
-                    "FROM SigningKeyEntity WHERE tenantId=:tenantId AND keyId IN(:keyIds)",
-                    SigningKeyEntity::class.java
-                ).setParameter("tenantId", tenantId)
-                    .setParameter("keyIds", keyIdsStrings)
-                    .resultList.map { it.joinSigningKeyInfo(em) }
-            }
-        }
+        return CordaMetrics.Metric.CryptoSigningKeyLookupTimer.builder()
+            .withTag(CordaMetrics.Tag.SigningKeyLookupMethod, "PublicKeyShortHashes")
+            .build()
+            .recordCallable {
+                entityManagerFactory.createEntityManager().use { em ->
+                    em.transaction {
+                        val keyIdsStrings = keyIds.map<ShortHash, String> { it.value }
+                        em.createQuery<SigningKeyEntity?>(
+                            "FROM SigningKeyEntity WHERE tenantId=:tenantId AND keyId IN(:keyIds)",
+                            SigningKeyEntity::class.java
+                        ).setParameter("tenantId", tenantId)
+                            .setParameter("keyIds", keyIdsStrings)
+                            .resultList.map { it.joinSigningKeyInfo(em) }
+                    }
+                }
+            }!!
     }
 
     override fun lookupByPublicKeyHashes(fullKeyIds: Set<SecureHash>): Collection<SigningKeyInfo> {
@@ -240,22 +246,27 @@ class SigningRepositoryImpl(
             "The number of ids exceeds $KEY_LOOKUP_INPUT_ITEMS_LIMIT"
         }
 
-        return entityManagerFactory.createEntityManager().use { em ->
-            em.transaction {
-                val fullKeyIdsStrings = fullKeyIds.map { it.toString() }
+        return CordaMetrics.Metric.CryptoSigningKeyLookupTimer.builder()
+            .withTag(CordaMetrics.Tag.SigningKeyLookupMethod, "PublicKeyHashes")
+            .build()
+            .recordCallable {
+                entityManagerFactory.createEntityManager().use { em ->
+                    em.transaction {
+                        val fullKeyIdsStrings = fullKeyIds.map { it.toString() }
 
-                em.createQuery<SigningKeyEntity?>(
-                    "FROM ${SigningKeyEntity::class.java.simpleName} " +
-                            "WHERE tenantId=:tenantId " +
-                            "AND fullKeyId IN(:fullKeyIds) " +
-                            "ORDER BY created",
-                    SigningKeyEntity::class.java
-                )
-                    .setParameter("tenantId", tenantId)
-                    .setParameter("fullKeyIds", fullKeyIdsStrings)
-                    .resultList.map { it.joinSigningKeyInfo(em) }
-            }
-        }
+                        em.createQuery<SigningKeyEntity?>(
+                            "FROM ${SigningKeyEntity::class.java.simpleName} " +
+                                    "WHERE tenantId=:tenantId " +
+                                    "AND fullKeyId IN(:fullKeyIds) " +
+                                    "ORDER BY created",
+                            SigningKeyEntity::class.java
+                        )
+                            .setParameter("tenantId", tenantId)
+                            .setParameter("fullKeyIds", fullKeyIdsStrings)
+                            .resultList.map { it.joinSigningKeyInfo(em) }
+                    }
+                }
+            }!!
     }
 }
 

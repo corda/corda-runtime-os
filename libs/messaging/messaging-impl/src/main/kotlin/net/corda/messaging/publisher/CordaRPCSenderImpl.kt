@@ -231,7 +231,8 @@ internal class CordaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
             future.completeExceptionally(CordaRPCAPISenderException(error))
             log.warn(error)
         } else {
-            val partition = partitions[0].partition
+            // Pick partition at random to distribute the load evenly
+            val partition = partitions.random().partition
             val request = RPCRequest(
                 config.clientId,
                 correlationId,
