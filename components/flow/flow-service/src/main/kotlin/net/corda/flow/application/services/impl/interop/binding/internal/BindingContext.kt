@@ -79,6 +79,7 @@ internal abstract class BindingContext<T> {
  */
 internal class InterfaceBindingContext(val facade: Facade, private val boundInterface: Class<*>) :
     BindingContext<FacadeInterfaceBinding>() {
+
     @Suspendable
     override fun createBinding(): FacadeInterfaceBinding {
         // The interface must be annotated with @BindsFacade
@@ -114,6 +115,7 @@ internal class InterfaceBindingContext(val facade: Facade, private val boundInte
             boundMethods
         )
     }
+
     @Suspendable
     private fun getMethodBinding(method: Method, defaultBoundVersions: Set<String>):
             FacadeMethodBinding? {
@@ -445,6 +447,7 @@ private class DataClassOutParametersBindingContext(
         "$parent"
 
 }
+
 @Suspendable
 private inline fun <reified T : Annotation> AnnotatedElement.readAnnotation(): T? =
     if (isAnnotationPresent(T::class.java)) getAnnotation(T::class.java) else null
