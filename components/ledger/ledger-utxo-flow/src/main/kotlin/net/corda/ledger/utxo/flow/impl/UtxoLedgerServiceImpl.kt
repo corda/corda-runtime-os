@@ -18,7 +18,6 @@ import net.corda.ledger.utxo.flow.impl.transaction.UtxoTransactionBuilderInterna
 import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoSignedTransactionFactory
 import net.corda.ledger.utxo.flow.impl.transaction.filtered.UtxoFilteredTransactionBuilderImpl
 import net.corda.ledger.utxo.flow.impl.transaction.filtered.factory.UtxoFilteredTransactionFactory
-import net.corda.metrics.CordaMetrics
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.sandboxgroupcontext.getObjectByKey
@@ -51,7 +50,6 @@ import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 import java.security.AccessController
 import java.security.PrivilegedActionException
 import java.security.PrivilegedExceptionAction
-import java.time.Duration
 
 @Suppress("LongParameterList", "TooManyFunctions")
 @Component(service = [UtxoLedgerService::class, UsedByFlow::class], scope = PROTOTYPE)
@@ -166,8 +164,6 @@ class UtxoLedgerServiceImpl @Activate constructor(
     @Suppress("ThrowsCount")
     internal fun getPluggableNotaryClientFlow(notary: MemberX500Name): Class<PluggableNotaryClientFlow> {
 
-        val startTime = clock.instant()
-
         val notaryInfo = notaryLookup.notaryServices.firstOrNull { it.name == notary }
             ?: throw CordaRuntimeException(
                 "Notary service $notary has not been registered on the network."
@@ -190,16 +186,6 @@ class UtxoLedgerServiceImpl @Activate constructor(
                         "it does not inherit from ${PluggableNotaryClientFlow::class.simpleName}."
             )
         }
-
-        CordaMetrics.Metric.Ledger.NotaryPluginSelectionTime
-            .builder()
-            .forVirtualNode(currentSandboxGroupContext.get().virtualNodeContext.holdingIdentity.shortHash.toString())
-            .withTag(CordaMetrics.Tag.FlowId, flowEngine.flowId.toString())
-            .withTag(CordaMetrics.Tag.LedgerNotaryPluginProtocol, notaryInfo.protocol)
-            .withTag(CordaMetrics.Tag.LedgerNotaryPluginFlow, flowName)
-            .build()
-            .record(Duration.between(startTime, clock.instant()))
-
 
         @Suppress("UNCHECKED_CAST") return flowClass as Class<PluggableNotaryClientFlow>
     }

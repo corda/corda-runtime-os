@@ -393,8 +393,6 @@ object CordaMetrics {
             object PersistenceFlowTime : Metric<Timer>("ledger.persistence.flow.time", CordaMetrics::timer)
 
             object BackchainResolutionChainLength : Metric<DistributionSummary>("ledger.backchain.resolution.chain.length", Metrics::summary)
-
-            object NotaryPluginSelectionTime : Metric<Timer>("ledger.notary.plugin.selection.time", CordaMetrics::timer)
         }
 
         object Serialization {
@@ -452,6 +450,7 @@ object CordaMetrics {
          */
         FlowClass("flow.class"),
 
+        // REMOVE THIS TAG
         /**
          * Flow Id for which the metric is applicable.
          */

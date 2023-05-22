@@ -5,7 +5,9 @@ import net.corda.ledger.utxo.flow.impl.flows.backchain.TopologicalSort
 import net.corda.ledger.utxo.flow.impl.flows.backchain.dependencies
 import net.corda.ledger.utxo.flow.impl.persistence.TransactionExistenceStatus
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
+import net.corda.metrics.CordaMetrics
 import net.corda.sandbox.CordaSystemFlow
+import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.utilities.trace
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.SubFlow
@@ -28,6 +30,9 @@ class TransactionBackchainReceiverFlowV1(
 
     @CordaInject
     lateinit var utxoLedgerPersistenceService: UtxoLedgerPersistenceService
+
+    @CordaInject
+    lateinit var currentSandboxGroupContext: CurrentSandboxGroupContext
 
     @Suspendable
     override fun call(): TopologicalSort {
@@ -92,6 +97,8 @@ class TransactionBackchainReceiverFlowV1(
             session.send(TransactionBackchainRequestV1.Stop)
         }
 
+        recordBackchainResolutionChainLengthMetric(sortedTransactionIds)
+
         return sortedTransactionIds
     }
 
@@ -113,6 +120,14 @@ class TransactionBackchainReceiverFlowV1(
                 transactionsToRetrieve.addAll(unseenDependencies)
             }
         }
+    }
+
+    private fun recordBackchainResolutionChainLengthMetric(sortedTransactionIds: TopologicalSort) {
+        CordaMetrics.Metric.Ledger.BackchainResolutionChainLength
+            .builder()
+            .forVirtualNode(currentSandboxGroupContext.get().virtualNodeContext.holdingIdentity.shortHash.toString())
+            .build()
+            .record(sortedTransactionIds.size.toDouble())
     }
 
     override fun equals(other: Any?): Boolean {
