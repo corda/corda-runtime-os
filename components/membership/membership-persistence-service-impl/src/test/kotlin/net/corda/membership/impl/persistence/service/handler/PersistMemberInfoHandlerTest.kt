@@ -4,7 +4,6 @@ import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.core.ShortHash
 import net.corda.data.CordaAvroDeserializer
 import net.corda.data.CordaAvroSerializationFactory
-import net.corda.data.CordaAvroSerializer
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureSpec
@@ -115,12 +114,8 @@ class PersistMemberInfoHandlerTest {
     private val memberInfoFactory: MemberInfoFactory = mock {
         on { createMemberInfo(any()) } doReturn ourMemberInfo
     }
-    private val keyValueSerializer: CordaAvroSerializer<KeyValuePairList> = mock {
-        on { serialize(any()) } doReturn "123".toByteArray()
-    }
     private val keyValuePairListDeserializer = mock<CordaAvroDeserializer<KeyValuePairList>>()
     private val cordaAvroSerializationFactory: CordaAvroSerializationFactory = mock {
-        on { createAvroSerializer<KeyValuePairList>(any()) } doReturn keyValueSerializer
         on { createAvroDeserializer<KeyValuePairList>(any(), any())} doReturn keyValuePairListDeserializer
     }
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService = mock {

@@ -1,7 +1,6 @@
 package net.corda.membership.impl.registration.dynamic.handler.mgm
 
 import net.corda.data.CordaAvroSerializationFactory
-import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.actions.request.DistributeMemberInfo
 import net.corda.data.membership.actions.request.MembershipActionsRequest
 import net.corda.data.membership.command.registration.RegistrationCommand
@@ -11,7 +10,6 @@ import net.corda.data.membership.command.registration.mgm.DeclineRegistration
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.p2p.SetOwnRegistrationStatus
 import net.corda.data.membership.state.RegistrationState
-import net.corda.layeredpropertymap.toAvro
 import net.corda.membership.groupparams.writer.service.GroupParametersWriterService
 import net.corda.membership.impl.registration.dynamic.handler.MemberTypeChecker
 import net.corda.membership.impl.registration.dynamic.handler.MissingRegistrationStateException
@@ -19,6 +17,7 @@ import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandle
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandlerResult
 import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
 import net.corda.membership.lib.MemberInfoExtension.Companion.notaryDetails
+import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.membership.p2p.helpers.P2pRecordsFactory
 import net.corda.membership.persistence.client.MembershipPersistenceClient
@@ -43,6 +42,7 @@ internal class ApproveRegistrationHandler(
     private val memberTypeChecker: MemberTypeChecker,
     private val groupReaderProvider: MembershipGroupReaderProvider,
     private val groupParametersWriterService: GroupParametersWriterService,
+    private val memberInfoFactory: MemberInfoFactory,
     private val p2pRecordsFactory: P2pRecordsFactory = P2pRecordsFactory(
         cordaAvroSerializationFactory,
         clock,
@@ -113,11 +113,7 @@ internal class ApproveRegistrationHandler(
             )
 
             // Push member to member list kafka topic
-            val persistentMemberInfo = PersistentMemberInfo.newBuilder()
-                .setMemberContext(memberInfo.memberProvidedContext.toAvro())
-                .setViewOwningMember(approvedBy)
-                .setMgmContext(memberInfo.mgmProvidedContext.toAvro())
-                .build()
+            val persistentMemberInfo = memberInfoFactory.createPersistentMemberInfo(approvedBy, memberInfo)
             val memberRecord = Record(
                 topic = MEMBER_LIST_TOPIC,
                 key = "${approvedBy.toCorda().shortHash}-${approvedMember.toCorda().shortHash}",

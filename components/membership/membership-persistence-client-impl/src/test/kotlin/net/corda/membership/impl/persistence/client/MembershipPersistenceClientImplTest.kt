@@ -712,12 +712,8 @@ class MembershipPersistenceClientImplTest {
 
         @Test
         fun `addNotaryToGroupParameters sends the correct data`() {
-            val memberContext: MemberContext = mock {
-                on { entries } doReturn mapOf("a" to "b").entries
-            }
-            val mgmContext: MGMContext = mock {
-                on { entries } doReturn mapOf("c" to "d").entries
-            }
+            val memberContext: MemberContext = mock()
+            val mgmContext: MGMContext = mock()
             val notaryInRequest: MemberInfo = mock {
                 on { memberProvidedContext } doReturn memberContext
                 on { mgmProvidedContext } doReturn mgmContext
@@ -747,8 +743,6 @@ class MembershipPersistenceClientImplTest {
 
             val notary = (argument.firstValue.request as? AddNotaryToGroupParameters)?.notary
             assertThat(notary?.viewOwningMember).isEqualTo(ourHoldingIdentity.toAvro())
-            assertThat(notary?.memberContext?.items).containsExactly(KeyValuePair("a", "b"))
-            assertThat(notary?.mgmContext?.items).containsExactly(KeyValuePair("c", "d"))
             assertThat(notary?.signedData).isEqualTo(signedContexts)
         }
     }

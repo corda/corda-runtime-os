@@ -79,7 +79,6 @@ import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidationException
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidator
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidatorFactory
-import net.corda.membership.lib.toSortedMap
 import net.corda.membership.network.writer.staticnetwork.StaticNetworkUtils
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
@@ -121,6 +120,7 @@ import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
+import org.mockito.kotlin.spy
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
@@ -273,9 +273,11 @@ class StaticMemberRegistrationServiceTest {
         on { createAvroSerializer<KeyValuePairList>(any()) } doReturn keyValuePairListSerializer
         on { createAvroDeserializer(any(), eq(KeyValuePairList::class.java)) } doReturn keyValuePairListDeserializer
     }
-    private val memberInfoFactory: MemberInfoFactory = MemberInfoFactoryImpl(
-        layeredPropertyMapFactory,
-        cordaAvroSerializationFactory,
+    private val memberInfoFactory: MemberInfoFactory = spy(
+        MemberInfoFactoryImpl(
+            layeredPropertyMapFactory,
+            cordaAvroSerializationFactory,
+        )
     )
 
     private val membershipSchemaValidator: MembershipSchemaValidator = mock()
@@ -376,11 +378,14 @@ class StaticMemberRegistrationServiceTest {
         fun `during registration, the registering static member inside the GroupPolicy file gets parsed and published`() {
             setUpPublisher()
             registrationService.start()
+            val capturedMemberInfos = argumentCaptor<MemberInfo>()
             val capturedPublishedList = argumentCaptor<List<Record<String, Any>>>()
             registrationService.register(registrationId, alice, mockContext)
             verify(mockPublisher).publish(capturedPublishedList.capture())
             verify(hsmRegistrationClient).assignSoftHSM(aliceId.value, LEDGER)
             verify(cryptoOpsClient).generateKeyPair(any(), eq(LEDGER), any(), any(), any<Map<String, String>>())
+            verify(memberInfoFactory, times(3))
+                .createPersistentMemberInfo(any(), capturedMemberInfos.capture())
 
             (CryptoConsts.Categories.all.minus(listOf(LEDGER))).forEach {
                 verify(hsmRegistrationClient, never()).assignSoftHSM(aliceId.value, it)
@@ -408,26 +413,27 @@ class StaticMemberRegistrationServiceTest {
             val publishedInfo = publishedList.first()
 
             assertEquals(Schemas.Membership.MEMBER_LIST_TOPIC, publishedInfo.topic)
-            val persistentMemberPublished = publishedInfo.value as PersistentMemberInfo
-            val memberPublished = memberInfoFactory.createMemberInfo(
-                persistentMemberPublished.memberContext.toSortedMap(),
-                persistentMemberPublished.mgmContext.toSortedMap()
-            )
-            assertEquals(DUMMY_GROUP_ID, memberPublished.groupId)
-            assertEquals(TEST_SOFTWARE_VERSION, memberPublished.softwareVersion)
-            assertEquals(TEST_PLATFORM_VERSION, memberPublished.platformVersion)
-            assertEquals(TEST_CPI_NAME, memberPublished.cpiInfo.name)
-            assertEquals(TEST_CPI_VERSION, memberPublished.cpiInfo.version)
-            assertEquals(testCpiSignerSummaryHash, memberPublished.cpiInfo.signerSummaryHash)
-            assertNotNull(memberPublished.serial)
-            assertNotNull(memberPublished.modifiedTime)
+            assertThat(publishedInfo.value).isInstanceOf(PersistentMemberInfo::class.java)
+            val aliceInfo = capturedMemberInfos.allValues.first {
+                it.name == aliceName
+            }
+            with(aliceInfo) {
+                assertEquals(DUMMY_GROUP_ID, groupId)
+                assertEquals(TEST_SOFTWARE_VERSION, softwareVersion)
+                assertEquals(TEST_PLATFORM_VERSION, platformVersion)
+                assertEquals(TEST_CPI_NAME, cpiInfo.name)
+                assertEquals(TEST_CPI_VERSION, cpiInfo.version)
+                assertEquals(testCpiSignerSummaryHash, cpiInfo.signerSummaryHash)
+                assertNotNull(serial)
+                assertNotNull(modifiedTime)
 
-            assertEquals(aliceKey, memberPublished.sessionInitiationKeys.first())
-            assertEquals(1, memberPublished.ledgerKeys.size)
-            assertEquals(1, memberPublished.ledgerKeyHashes.size)
-            assertEquals(aliceKey.calculateHash(), memberPublished.ledgerKeyHashes.first())
-            assertEquals(MEMBER_STATUS_ACTIVE, memberPublished.status)
-            assertEquals(1, memberPublished.endpoints.size)
+                assertEquals(aliceKey, sessionInitiationKeys.first())
+                assertEquals(1, ledgerKeys.size)
+                assertEquals(1, ledgerKeyHashes.size)
+                assertEquals(aliceKey.calculateHash(), ledgerKeyHashes.first())
+                assertEquals(MEMBER_STATUS_ACTIVE, status)
+                assertEquals(1, endpoints.size)
+            }
 
             // we publish the hosted identity as the last item
             val publishedHostedIdentity = publishedList.last()
@@ -773,6 +779,7 @@ class StaticMemberRegistrationServiceTest {
 
         @Test
         fun `registration adds notary info to member info`() {
+            val capturedMemberInfos = argumentCaptor<MemberInfo>()
             val capturedPublishedList = argumentCaptor<List<Record<String, Any>>>()
             whenever(mockPublisher.publish(capturedPublishedList.capture())).doReturn(emptyList())
             setUpPublisher()
@@ -787,15 +794,14 @@ class StaticMemberRegistrationServiceTest {
 
             registrationService.register(registrationId, alice, context)
 
-            val persistentMemberPublished =
-                capturedPublishedList.firstValue.firstOrNull()?.value as PersistentMemberInfo
-            val memberInfo = memberInfoFactory.createMemberInfo(
-                persistentMemberPublished.memberContext.toSortedMap(),
-                persistentMemberPublished.mgmContext.toSortedMap()
-            )
-            val notaryDetails = memberInfo.notaryDetails
+            verify(memberInfoFactory, times(3))
+                .createPersistentMemberInfo(any(), capturedMemberInfos.capture())
+            val notaryDetails = capturedMemberInfos.allValues.firstOrNull {
+                it.notaryDetails != null
+            }?.notaryDetails
             assertSoftly {
-                assertThat(notaryDetails).isNotNull
+                assertThat(capturedPublishedList.firstValue.firstOrNull()?.value)
+                    .isInstanceOf(PersistentMemberInfo::class.java)
                 assertThat(notaryDetails?.serviceName)
                     .isEqualTo(MemberX500Name.parse(notary.toString()))
                 assertThat(notaryDetails?.serviceProtocol).isEqualTo("net.corda.notary.MyNotaryService")
@@ -817,6 +823,7 @@ class StaticMemberRegistrationServiceTest {
 
         @Test
         fun `registration without notary will not add notary to member info`() {
+            val capturedMemberInfos = argumentCaptor<MemberInfo>()
             val capturedPublishedList = argumentCaptor<List<Record<String, Any>>>()
             whenever(mockPublisher.publish(capturedPublishedList.capture())).doReturn(emptyList())
             setUpPublisher()
@@ -827,15 +834,15 @@ class StaticMemberRegistrationServiceTest {
 
             registrationService.register(registrationId, alice, context)
 
-            val persistentMemberPublished =
-                capturedPublishedList.firstValue.firstOrNull()?.value as PersistentMemberInfo
-            val memberInfo = memberInfoFactory.createMemberInfo(
-                persistentMemberPublished.memberContext.toSortedMap(),
-                persistentMemberPublished.mgmContext.toSortedMap()
-            )
-            val notaryDetails = memberInfo.notaryDetails
-            assertThat(notaryDetails)
-                .isNull()
+            verify(memberInfoFactory, times(3))
+                .createPersistentMemberInfo(any(), capturedMemberInfos.capture())
+
+            assertThat(capturedPublishedList.firstValue.firstOrNull()?.value)
+                .isInstanceOf(PersistentMemberInfo::class.java)
+            val notary = capturedMemberInfos.allValues.firstOrNull {
+                it.notaryDetails != null
+            }
+            assertThat(notary).isNull()
         }
 
         @Test

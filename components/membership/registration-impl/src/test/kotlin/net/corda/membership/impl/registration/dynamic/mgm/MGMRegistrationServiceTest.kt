@@ -89,6 +89,7 @@ import net.corda.schema.membership.MembershipSchema
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toAvro
@@ -113,6 +114,7 @@ import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
+import org.mockito.kotlin.spy
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
@@ -248,9 +250,11 @@ class MGMRegistrationServiceTest {
     private val cordaAvroSerializationFactory = mock<CordaAvroSerializationFactory> {
         on { createAvroSerializer<KeyValuePairList>(any()) } doReturn keyValuePairListSerializer
     }
-    private val memberInfoFactory: MemberInfoFactory = MemberInfoFactoryImpl(
-        layeredPropertyMapFactory,
-        cordaAvroSerializationFactory,
+    private val memberInfoFactory: MemberInfoFactory = spy(
+        MemberInfoFactoryImpl(
+            layeredPropertyMapFactory,
+            cordaAvroSerializationFactory,
+        )
     )
     private val membershipSchemaValidator: MembershipSchemaValidator = mock()
     private val membershipSchemaValidatorFactory: MembershipSchemaValidatorFactory = mock {
@@ -351,11 +355,13 @@ class MGMRegistrationServiceTest {
         fun `registration successfully builds MGM info and publishes it`() {
             postConfigChangedEvent()
             registrationService.start()
+            val capturedMemberInfo = argumentCaptor<MemberInfo>()
             val capturedPublishedList = argumentCaptor<List<Record<String, Any>>>()
 
             registrationService.register(registrationRequest, mgm, properties)
 
-            verify(mockPublisher, times(1)).publish(capturedPublishedList.capture())
+            verify(mockPublisher).publish(capturedPublishedList.capture())
+            verify(memberInfoFactory).createPersistentMemberInfo(eq(mgm.toAvro()), capturedMemberInfo.capture())
             val publishedList = capturedPublishedList.firstValue
             val publishedMgmInfo = publishedList.first()
             val publishedEvent = publishedList.last()
@@ -368,10 +374,9 @@ class MGMRegistrationServiceTest {
                 val expectedRecordKey = "$mgmId-$mgmId"
                 it.assertThat(publishedMgmInfo.key).isEqualTo(expectedRecordKey)
                 it.assertThat(publishedEvent.key).isEqualTo(mgmId.value)
-
-                val persistedMgm = publishedMgmInfo.value as PersistentMemberInfo
-
-                it.assertThat(persistedMgm.memberContext.items.map { item -> item.key })
+                it.assertThat(publishedMgmInfo.value).isInstanceOf(PersistentMemberInfo::class.java)
+                val memberInfo = capturedMemberInfo.firstValue
+                it.assertThat(memberInfo.memberProvidedContext.entries.map { item -> item.key })
                     .containsExactlyInAnyOrderElementsOf(
                         listOf(
                             GROUP_ID,
@@ -388,7 +393,7 @@ class MGMRegistrationServiceTest {
                             PROTOCOL_VERSION.format(0),
                         )
                     )
-                it.assertThat(persistedMgm.mgmContext.items.map { item -> item.key })
+                it.assertThat(memberInfo.mgmProvidedContext.entries.map { item -> item.key })
                     .containsExactlyInAnyOrderElementsOf(
                         listOf(
                             CREATION_TIME,
@@ -400,10 +405,9 @@ class MGMRegistrationServiceTest {
                     )
 
                 fun getProperty(prop: String): String {
-                    return persistedMgm
-                        .memberContext.items.firstOrNull { item ->
+                    return memberInfo.memberProvidedContext.entries.firstOrNull { item ->
                             item.key == prop
-                        }?.value ?: persistedMgm.mgmContext.items.firstOrNull { item ->
+                        }?.value ?: memberInfo.mgmProvidedContext.entries.firstOrNull { item ->
                         item.key == prop
                     }?.value ?: fail("Could not find property within published member for test")
                 }

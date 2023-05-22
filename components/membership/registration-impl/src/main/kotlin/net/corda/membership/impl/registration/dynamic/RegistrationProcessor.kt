@@ -80,6 +80,7 @@ class RegistrationProcessor(
             memberTypeChecker,
             membershipGroupReaderProvider,
             groupParametersWriterService,
+            memberInfoFactory,
         ),
         DeclineRegistration::class.java to DeclineRegistrationHandler(
             membershipPersistenceClient,

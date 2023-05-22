@@ -1398,7 +1398,8 @@ class MembershipPersistenceTest {
         assertThat(persistedEntity1).isNotNull
         assertThat(persistedEntity1.status).isEqualTo(MEMBER_STATUS_SUSPENDED)
         assertThat(persistedEntity1.serialNumber).isEqualTo(2L)
-        with(suspended1.mgmContext.toMap()) {
+        val suspended1MemberInfo = memberInfoFactory.createMemberInfo(suspended1)
+        with(suspended1MemberInfo.mgmProvidedContext) {
             assertThat(this[STATUS]).isEqualTo(MEMBER_STATUS_SUSPENDED)
             assertThat(this[SERIAL]).isEqualTo("2")
         }
@@ -1421,7 +1422,8 @@ class MembershipPersistenceTest {
         assertThat(persistedEntity2).isNotNull
         assertThat(persistedEntity2.status).isEqualTo(MEMBER_STATUS_SUSPENDED)
         assertThat(persistedEntity2.serialNumber).isEqualTo(2L)
-        with(suspended2.mgmContext.toMap()) {
+        val suspended2MemberInfo = memberInfoFactory.createMemberInfo(suspended2)
+        with(suspended2MemberInfo.mgmProvidedContext) {
             assertThat(this[STATUS]).isEqualTo(MEMBER_STATUS_SUSPENDED)
             assertThat(this[SERIAL]).isEqualTo("2")
         }
@@ -1446,7 +1448,8 @@ class MembershipPersistenceTest {
         assertThat(persistedEntity1).isNotNull
         assertThat(persistedEntity1.status).isEqualTo(MEMBER_STATUS_ACTIVE)
         assertThat(persistedEntity1.serialNumber).isEqualTo(2L)
-        with(suspended1.mgmContext.toMap()) {
+        val suspended1MemberInfo = memberInfoFactory.createMemberInfo(suspended1)
+        with(suspended1MemberInfo.mgmProvidedContext) {
             assertThat(this[STATUS]).isEqualTo(MEMBER_STATUS_ACTIVE)
             assertThat(this[SERIAL]).isEqualTo("2")
         }
@@ -1469,7 +1472,8 @@ class MembershipPersistenceTest {
         assertThat(persistedEntity2).isNotNull
         assertThat(persistedEntity2.status).isEqualTo(MEMBER_STATUS_ACTIVE)
         assertThat(persistedEntity2.serialNumber).isEqualTo(2L)
-        with(suspended2.mgmContext.toMap()) {
+        val suspended2MemberInfo = memberInfoFactory.createMemberInfo(suspended2)
+        with(suspended2MemberInfo.mgmProvidedContext) {
             assertThat(this[STATUS]).isEqualTo(MEMBER_STATUS_ACTIVE)
             assertThat(this[SERIAL]).isEqualTo("2")
         }

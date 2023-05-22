@@ -153,6 +153,7 @@ class StartRegistrationHandlerTest {
         on { memberProvidedContext } doReturn mgmMemberContext
         on { mgmProvidedContext } doReturn mgmContext
     }
+    private val persistentMemberInfo: PersistentMemberInfo = mock()
 
     private val memberTypeChecker = mock<MemberTypeChecker> {
         on { getMgmMemberInfo(mgmHoldingIdentity.toCorda()) } doReturn mgmMemberInfo
@@ -197,6 +198,7 @@ class StartRegistrationHandlerTest {
     fun setUp() {
         memberInfoFactory = mock {
             on { createMemberInfo(any<SortedMap<String, String?>>(), any()) } doReturn pendingMemberInfo
+            on { createPersistentMemberInfo(eq(mgmHoldingIdentity), eq(pendingMemberInfo)) } doReturn persistentMemberInfo
         }
         membershipPersistenceClient = mock {
             on {
@@ -242,7 +244,7 @@ class StartRegistrationHandlerTest {
 
             val pendingMemberRecord = this.outputStates[1].value as? PersistentMemberInfo
             assertThat(pendingMemberRecord).isNotNull
-            assertThat(pendingMemberRecord!!.viewOwningMember).isEqualTo(mgmHoldingIdentity)
+            assertThat(pendingMemberRecord).isEqualTo(persistentMemberInfo)
         }
         verifyServices(
             updateRegistrationRequest = true,

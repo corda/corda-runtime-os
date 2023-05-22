@@ -650,10 +650,7 @@ class SynchronisationIntegrationTest {
                 .isInstanceOf(PersistentMemberInfo::class.java)
             with(result) {
                 it.assertThat(viewOwningMember).isEqualTo(requester)
-                val memberPublished = memberInfoFactory.createMemberInfo(
-                    memberContext.toSortedMap(),
-                    mgmContext.toSortedMap()
-                )
+                val memberPublished = memberInfoFactory.createMemberInfo(this)
                 it.assertThat(memberPublished.groupId).isEqualTo(groupId)
                 it.assertThat(memberPublished.name.toString()).isEqualTo(participant.x500Name)
                 it.assertThat(memberPublished.ledgerKeys.size).isEqualTo(0)
