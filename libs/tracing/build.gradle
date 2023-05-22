@@ -26,7 +26,7 @@ dependencies {
     implementation("io.zipkin.brave:brave-context-slf4j:5.15.0")
     implementation("io.zipkin.brave:brave-instrumentation-kafka-clients:5.15.0")
     implementation("io.zipkin.brave:brave-instrumentation-servlet:5.15.0")
-    implementation("com.konghq:unirest-java:3.14.2")
+    implementation("com.konghq:unirest-java:$unirestVersion")
     implementation "org.apache.servicemix.bundles:org.apache.servicemix.bundles.kafka-clients:$kafkaClientVersion"
 
 
