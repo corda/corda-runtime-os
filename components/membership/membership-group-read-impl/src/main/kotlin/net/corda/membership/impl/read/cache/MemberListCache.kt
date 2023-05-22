@@ -2,6 +2,8 @@ package net.corda.membership.impl.read.cache
 
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_PENDING
 import net.corda.membership.lib.MemberInfoExtension.Companion.status
+import net.corda.membership.lib.metrics.SettableGaugeMetricTypes
+import net.corda.membership.lib.metrics.getSettableGaugeMetric
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import org.slf4j.LoggerFactory
@@ -43,13 +45,28 @@ interface MemberListCache : MemberDataListCache<MemberInfo> {
                         } else {
                             old.status != MEMBER_STATUS_PENDING && old.name == new.name
                         }
+                    }.also {
+                        recordMemberListCacheSize(holdingIdentity, it)
                     }
             }
         }
 
         override fun clear() {
             logger.info("Clearing member list cache.")
+            for (key in cache.keys()) {
+                recordMemberListCacheSize(key, emptyList())
+            }
             cache.clear()
+        }
+
+        private fun recordMemberListCacheSize(
+            holdingIdentity: HoldingIdentity,
+            memberList: List<MemberInfo>
+        ) {
+            getSettableGaugeMetric(
+                SettableGaugeMetricTypes.MEMBER_LIST,
+                holdingIdentity
+            ).set(memberList.size)
         }
 
         /**
