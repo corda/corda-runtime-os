@@ -68,6 +68,12 @@ class SigningServiceGeneralTests {
         fun keyOrders() = KeyOrderBy.values()
 
         val tenantId = UUID.randomUUID().toString()
+
+        // Remember key ids cannot clash for same tenant so short keys of testing keys need to be different
+        val fullKeyId0 = parseSecureHash("SHA-256:ABC12345678911111111111111")
+        val shortKeyId0 = ShortHash.of(fullKeyId0)
+        val fullKeyId1 = parseSecureHash("SHA-256:BBC12345678911111111111111")
+        val shortKeyId1 = ShortHash.of(fullKeyId1)
     }
 
     @Test
@@ -327,7 +333,6 @@ class SigningServiceGeneralTests {
             publicKey = generateKeyPair(schemeMetadata, ECDSA_SECP256R1_CODE_NAME).public,
             hsmAlias = UUID.randomUUID().toString()
         )
-        val tenantId = UUID.randomUUID().toString()
         val expectedAlias = UUID.randomUUID().toString()
         val signingKeyInfo = mock<SigningKeyInfo> { on { id } doReturn ShortHash.of("1234567890AB") }
         val repo = mock<SigningRepository> {
@@ -335,7 +340,7 @@ class SigningServiceGeneralTests {
         }
         val scheme = ECDSA_SECP256R1_TEMPLATE.makeScheme("BC")
         val ref = CryptoServiceRef(
-            tenantId = UUID.randomUUID().toString(),
+            tenantId = tenantId,
             category = CryptoConsts.Categories.LEDGER,
             masterKeyAlias = UUID.randomUUID().toString(),
             hsmId = UUID.randomUUID().toString(),
@@ -472,15 +477,8 @@ class SigningServiceGeneralTests {
             digestService = mockDigestService(),
             cache = cache,
         )
-        listOf(Pair(shortKeyId0, fullKeyId0), Pair(shortKeyId1, fullKeyId1)).forEach { key ->
-            cache.put(
-                CacheKey(tenantId, key.first),
-                mock<SigningKeyInfo> {
-                    on { fullId }.thenReturn(key.second)
-                }
-            )
-        }
-
+        populateCache(cache, shortKeyId0, fullKeyId0)
+        populateCache(cache, shortKeyId1, fullKeyId1)
         val r = signingService.lookupSigningKeysByPublicKeyShortHash(tenantId, listOf(shortKeyId0, shortKeyId1))
         assertEquals(
             setOf(fullKeyId0, fullKeyId1).map { it.toString() }.toSet(),
@@ -488,6 +486,58 @@ class SigningServiceGeneralTests {
         )
         // verify it didn't go to the database
         assertThat(repoCount).isEqualTo(0)
+    }
+
+    @Test
+    fun `lookupSigningKeysByPublicKeyShortHash requested keys from cache and from database if they are not cached`() {
+        var repoCount = 0
+        val keysCaptor = argumentCaptor<Set<ShortHash>>()
+        val mockDbResults = setOf(mock<SigningKeyInfo> {
+            on { fullId }.thenReturn(fullKeyId1)
+            on { id }.thenReturn(shortKeyId1)
+        })
+        val repo = mock<SigningRepository> {
+            on { lookupByPublicKeyShortHashes(keysCaptor.capture()) }.thenReturn(mockDbResults)
+        }
+        val cache = makeCache()
+        populateCache(cache, shortKeyId0, fullKeyId0)
+        val signingService = SigningServiceImpl(
+            signingRepositoryFactory = {
+                repoCount++
+                repo
+            },
+            cryptoServiceFactory = mock(),
+            schemeMetadata = schemeMetadata,
+            digestService = mockDigestService(),
+            cache = cache,
+        )
+        val r = signingService.lookupSigningKeysByPublicKeyShortHash(tenantId, listOf(shortKeyId0, shortKeyId1))
+        assertEquals(
+            setOf(fullKeyId0, fullKeyId1).map { it.toString() }.toSet(),
+            r.map { it.fullId.toString() }.toSet()
+        )
+        assertEquals(setOf(shortKeyId1), keysCaptor.firstValue)
+        assertThat(repoCount).isEqualTo(1) // we should have opened the repository layer once
+        assertEquals(
+            setOf(shortKeyId0.value, shortKeyId1.value).map { it.toString() }.toSet(),
+            r.map { it.id.toString() }.toSet()
+        )
+    }
+
+    private fun populateCache(
+        cache: Cache<CacheKey, SigningKeyInfo>,
+        shortKeyId: ShortHash,
+        fullKeyId: SecureHash,
+    ) {
+        cache.put(
+            CacheKey(tenantId, shortKeyId),
+            mock<SigningKeyInfo> {
+                on { fullId }.thenReturn(fullKeyId)
+                on { id }.thenReturn(shortKeyId)
+            }
+        )
+
+
     }
 
 }
