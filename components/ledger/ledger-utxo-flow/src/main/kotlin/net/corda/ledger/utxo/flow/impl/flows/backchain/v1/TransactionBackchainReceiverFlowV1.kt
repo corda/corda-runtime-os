@@ -6,9 +6,7 @@ import net.corda.ledger.utxo.flow.impl.flows.backchain.TopologicalSort
 import net.corda.ledger.utxo.flow.impl.flows.backchain.dependencies
 import net.corda.ledger.utxo.flow.impl.persistence.TransactionExistenceStatus
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
-import net.corda.metrics.CordaMetrics
 import net.corda.sandbox.CordaSystemFlow
-import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.utilities.trace
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.SubFlow
