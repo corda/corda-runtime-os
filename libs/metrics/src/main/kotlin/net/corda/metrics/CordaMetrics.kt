@@ -26,11 +26,6 @@ object CordaMetrics {
         // NOTE: please ensure the metric names adhere to the conventions described on https://micrometer.io/docs/concepts#_naming_meters
 
         /**
-         * Number of HTTP Requests.
-         */
-        object HttpRequestCount : Metric<Counter>("http.server.request", Metrics::counter)
-
-        /**
          * HTTP Requests time.
          */
         object HttpRequestTime : Metric<Timer>("http.server.request.time", CordaMetrics::timer)
@@ -387,9 +382,14 @@ object CordaMetrics {
      */
     enum class Tag(val value: String) {
         /**
-         * Address for which the metric is applicable.
+         * URI's path for which the metric is applicable.
          */
-        Address("address"),
+        UriPath("uri.path"),
+
+        /**
+         * Http method for which the metric is applicable.
+         */
+        HttpMethod("http.method"),
 
         /**
          * Type of the SandboxGroup to which the metric applies.
