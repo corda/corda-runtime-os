@@ -474,6 +474,7 @@ class SigningServiceGeneralTests {
         val shortHashCaptor = argumentCaptor<Set<ShortHash>>()
         val hashCaptor = argumentCaptor<Set<SecureHash>>()
         val mockDbResults = if (keysInCache == 0) setOf(signingKeyInfo0, signingKeyInfo1) else setOf(signingKeyInfo1)
+
         val repo = if (longHashes) (mock<SigningRepository> {
             on { lookupByPublicKeyHashes(hashCaptor.capture()) }.thenReturn(mockDbResults)
         }) else (mock<SigningRepository> {
@@ -510,6 +511,30 @@ class SigningServiceGeneralTests {
             if (keysInCache == 0) assertEquals(setOf(shortKeyId0, shortKeyId1), shortHashCaptor.firstValue)
             if (keysInCache == 1) assertEquals(setOf(shortKeyId1), shortHashCaptor.firstValue)
         }
+    }
+
+    @Test
+    fun `lookupSigningKeysByPublicKeyHashes will not return clashed keys on short key id`() {
+        val mockDbResults = setOf(signingKeyInfo0)
+        val requestedFullKeyId = parseSecureHash("SHA-256:ABC12345678911111111111112")
+        val hashCaptor = argumentCaptor<Set<SecureHash>>()
+        val cache = makeCache()
+        var repoCount = 0
+        val repo = mock<SigningRepository> {
+            on { lookupByPublicKeyHashes(hashCaptor.capture()) }.thenReturn(mockDbResults)
+        }
+        populateCache(cache, shortKeyId0, fullKeyId0)
+        val signingService = SigningServiceImpl(
+            signingRepositoryFactory = {
+                repoCount++
+                repo
+            },
+            cryptoServiceFactory = mock(),
+            schemeMetadata = schemeMetadata,
+            digestService = mockDigestService(),
+            cache = cache
+        )
+        signingService.lookupSigningKeysByPublicKeyHashes(tenantId, listOf(requestedFullKeyId))
     }
 
 
