@@ -38,6 +38,7 @@ import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.CsvSource
 import org.junit.jupiter.params.provider.MethodSource
 import org.mockito.ArgumentMatchers.anyString
 import org.mockito.Mockito
@@ -82,9 +83,6 @@ class SigningServiceGeneralTests {
             on { fullId }.thenReturn(fullKeyId1)
             on { id }.thenReturn(shortKeyId1)
         }
-
-        @JvmStatic
-        fun numCached(): Collection<Int> = setOf(0, 1, 2)
     }
 
 
@@ -468,7 +466,7 @@ class SigningServiceGeneralTests {
     }
 
     @ParameterizedTest
-    @MethodSource("numCached")
+    @CsvSource("0", "1", "2")
     fun `lookupSigningKeysByPublicKeyShortHash returns requested keys from cache and db`(
         keysInCache: Int,
     ) {
