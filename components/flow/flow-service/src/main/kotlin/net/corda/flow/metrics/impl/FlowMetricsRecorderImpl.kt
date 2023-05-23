@@ -76,4 +76,18 @@ class FlowMetricsRecorderImpl(
             .withTag(CordaMetrics.Tag.OperationStatus, completionStatus)
             .build().record(Duration.ofMillis(executionTimeMillis))
     }
+
+    override fun recordTotalEventsProcessed(eventsProcessed: Long) {
+        CordaMetrics.Metric.FlowEventProcessedCount.builder()
+            .forVirtualNode(flowCheckpoint.holdingIdentity.shortHash.toString())
+            .withTag(CordaMetrics.Tag.FlowClass, flowCheckpoint.flowStartContext.flowClassName)
+            .build().record(eventsProcessed.toDouble())
+    }
+
+    override fun recordTotalFiberResumes(fiberResumes: Long) {
+        CordaMetrics.Metric.FlowEventResumeCount.builder()
+            .forVirtualNode(flowCheckpoint.holdingIdentity.shortHash.toString())
+            .withTag(CordaMetrics.Tag.FlowClass, flowCheckpoint.flowStartContext.flowClassName)
+            .build().record(fiberResumes.toDouble())
+    }
 }

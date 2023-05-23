@@ -10,4 +10,6 @@ interface FlowMetricsRecorder {
     fun recordTotalFiberExecutionTime(executionTimeMillis: Long)
     fun recordTotalSuspensionTime(executionTimeMillis: Long)
     fun recordFlowCompletion(executionTimeMillis: Long, completionStatus:String)
+    fun recordTotalEventsProcessed(eventsProcessed: Long)
+    fun recordTotalFiberResumes(fiberResumes: Long)
 }
