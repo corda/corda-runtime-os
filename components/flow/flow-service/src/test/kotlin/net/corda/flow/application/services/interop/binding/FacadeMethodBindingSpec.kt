@@ -19,6 +19,7 @@ import java.util.*
 import kotlin.reflect.KClass
 import kotlin.reflect.jvm.javaMethod
 
+// Binding will fail because there is no method with this name
 @BindsFacade("org.corda.interop/platform/tokens")
 interface MethodHasIncorrectName {
     @BindsFacadeMethod
@@ -125,62 +126,63 @@ class FacadeMethodBindingSpec {
         val refParameter = reserveTokens.outParameter("reservation-ref", UUID::class.java)
         val expiryParameter = reserveTokens.outParameter("expiration-timestamp", ZonedDateTime::class.java)
 
-        assertNotNull(bindingV2.bindingFor(TokensFacade::reserveTokensV2))
+        val binding = bindingV2.bindingFor(TokensFacade::reserveTokensV2)
+        assertNotNull(binding)
         assertNotNull(
-            bindingV2.bindingFor(TokensFacade::reserveTokensV2)!!.outParameterBindings
+            binding!!.outParameterBindings
                     as? FacadeOutParameterBindings.DataClassOutParameterBindings
         )
         assertNotNull(
-            (bindingV2.bindingFor(TokensFacade::reserveTokensV2)!!.outParameterBindings
+            (binding.outParameterBindings
                     as? FacadeOutParameterBindings.DataClassOutParameterBindings)!!.bindingFor(
                 refParameter
             )
         )
         assertEquals(
             refParameter,
-            (bindingV2.bindingFor(TokensFacade::reserveTokensV2)!!.outParameterBindings
+            (binding.outParameterBindings
                     as? FacadeOutParameterBindings.DataClassOutParameterBindings)!!.bindingFor(
                 refParameter
             )!!.facadeOutParameter
         )
         assertEquals(
             BoundParameter(0, UUID::class.java),
-            (bindingV2.bindingFor(TokensFacade::reserveTokensV2)!!.outParameterBindings
+            (binding.outParameterBindings
                     as? FacadeOutParameterBindings.DataClassOutParameterBindings)!!.bindingFor(
                 refParameter
             )!!.constructorParameter
         )
         assertEquals(
             TokenReservation::reservationRef.getter.javaMethod,
-            (bindingV2.bindingFor(TokensFacade::reserveTokensV2)!!.outParameterBindings
+            (binding.outParameterBindings
                     as? FacadeOutParameterBindings.DataClassOutParameterBindings)!!.bindingFor(
                 refParameter
             )!!.readMethod
         )
 
         assertNotNull(
-            (bindingV2.bindingFor(TokensFacade::reserveTokensV2)!!.outParameterBindings
+            (binding.outParameterBindings
                     as? FacadeOutParameterBindings.DataClassOutParameterBindings)!!.bindingFor(
                 expiryParameter
             )
         )
         assertEquals(
             expiryParameter,
-            (bindingV2.bindingFor(TokensFacade::reserveTokensV2)!!.outParameterBindings
+            (binding.outParameterBindings
                     as? FacadeOutParameterBindings.DataClassOutParameterBindings)!!.bindingFor(
                 expiryParameter
             )!!.facadeOutParameter
         )
         assertEquals(
             BoundParameter(1, ZonedDateTime::class.java),
-            (bindingV2.bindingFor(TokensFacade::reserveTokensV2)!!.outParameterBindings
+            (binding.outParameterBindings
                     as? FacadeOutParameterBindings.DataClassOutParameterBindings)!!.bindingFor(
                 expiryParameter
             )!!.constructorParameter
         )
         assertEquals(
             TokenReservation::expires.getter.javaMethod,
-            (bindingV2.bindingFor(TokensFacade::reserveTokensV2)!!.outParameterBindings
+            (binding.outParameterBindings
                     as? FacadeOutParameterBindings.DataClassOutParameterBindings)!!.bindingFor(
                 expiryParameter
             )!!.readMethod
