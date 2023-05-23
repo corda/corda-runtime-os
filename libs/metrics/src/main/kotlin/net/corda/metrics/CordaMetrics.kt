@@ -341,12 +341,12 @@ object CordaMetrics {
      */
     enum class Tag(val value: String) {
         /**
-         * Uri for which the metric is applicable.
+         * URI's path for which the metric is applicable.
          */
         UriPath("uri.path"),
 
         /**
-         * Method name for which the metric is applicable.
+         * Http method for which the metric is applicable.
          */
         HttpMethod("http.method"),
 
