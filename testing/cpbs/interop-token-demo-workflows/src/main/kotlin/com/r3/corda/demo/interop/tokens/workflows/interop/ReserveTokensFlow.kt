@@ -35,7 +35,7 @@ class ReserveTokensFlow : ClientStartableFlow {
 
     @Suspendable
     override fun call(requestBody: ClientRequestBody): String {
-        log.info("ReserveTokensFlow.call() starting ...")
+        log.info("${this::class.java.simpleName}.call() starting ...")
 
         val unconsumedStates = ledgerService.findUnconsumedStatesByType(TokenState::class.java)
 
@@ -66,7 +66,7 @@ class ReserveTokensFlow : ClientStartableFlow {
         val response = responseObject.result.toString()
 
         log.info("Facade responded with '$response'")
-        log.info("ReserveTokensFlow.call() ending")
+        log.info("${this::class.java.simpleName}.call() ending")
 
         return response
     }

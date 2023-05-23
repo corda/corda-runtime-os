@@ -9,9 +9,10 @@ import net.corda.v5.base.types.MemberX500Name
 import org.slf4j.LoggerFactory
 import java.math.BigDecimal
 
+@Suppress("LongParameterList")
 class ReserveTokensSubFlowV2(private val alias: MemberX500Name, private val interopGroupId: String,
                              private val facadeId: String, private val denomination: String,
-                             private val amount: BigDecimal, private val timeToLiveMs : Long):
+                             private val amount: BigDecimal, private val timeToLiveMs: Long):
     SubFlow<TokenReservation> {
 
     @CordaInject
@@ -19,8 +20,7 @@ class ReserveTokensSubFlowV2(private val alias: MemberX500Name, private val inte
 
     @Suspendable
     override fun call(): TokenReservation {
-        log.info("ReserveTokensSubFlow.call() starting")
-
+        log.info("${this::class.java.simpleName}.call() starting")
         log.info("Calling facade method '$facadeId' to $alias")
 
         val client: TokensFacade =
@@ -30,7 +30,7 @@ class ReserveTokensSubFlowV2(private val alias: MemberX500Name, private val inte
         val response = responseObject.result
 
         log.info("Facade responded with '$response'")
-        log.info("ReserveTokensSubFlow.call() ending")
+        log.info("${this::class.java.simpleName}.call() ending")
 
         return response
     }

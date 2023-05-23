@@ -30,7 +30,7 @@ class SimpleReserveTokensViaSubFlowFlowV2 : ClientStartableFlow {
 
     @Suspendable
     override fun call(requestBody: ClientRequestBody): String {
-        log.info("SimpleReserveTokensViaSubFlow.call() starting")
+        log.info("${this::class.java.simpleName}.call() starting")
 
         val args = requestBody.getRequestBodyAsMap(jsonMarshallingService, String::class.java, String::class.java)
 
@@ -46,7 +46,7 @@ class SimpleReserveTokensViaSubFlowFlowV2 : ClientStartableFlow {
 
         val text = response.toString()
         log.info("Facade responded with '$text'")
-        log.info("SimpleReserveTokensViaSubFlow.call() ending")
+        log.info("${this::class.java.simpleName}.call() ending")
 
         return text
     }

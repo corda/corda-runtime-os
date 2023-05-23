@@ -17,12 +17,12 @@ open class FacadeDispatcherFlow : ResponderFlow {
     }
     @Suspendable
     override fun call(session: FlowSession) {
-        log.info("Starting")
+        log.info("${this::class.java.simpleName}.call() starting")
         val request = session.receive(String::class.java)
         log.info("Processing $request")
         val facadeResponse = facadeService.dispatchFacadeRequest(this, request)
         log.info("Responding $facadeResponse")
         session.send(facadeResponse)
-        log.info("End")
+        log.info("${this::class.java.simpleName}.call() end")
     }
 }
