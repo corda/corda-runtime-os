@@ -336,6 +336,22 @@ object CordaMetrics {
          * The time taken to create entity manager factories.
          */
         object CryptoSigningKeyLookupTimer: Metric<Timer>("crypto.signing.key.lookup.time", CordaMetrics::timer)
+
+        /**
+         * Time taken for a membership persistence transaction to complete.
+         */
+        object MembershipPersistenceTransaction: Metric<Timer>(
+            "membership.persistence.transaction.time",
+            CordaMetrics::timer
+        )
+
+        /**
+         * Total time taken for a membership persistence handler to execute.
+         */
+        object MembershipPersistenceHandler: Metric<Timer>(
+            "membership.persistence.handler.time",
+            CordaMetrics::timer
+        )
     }
 
     /**
