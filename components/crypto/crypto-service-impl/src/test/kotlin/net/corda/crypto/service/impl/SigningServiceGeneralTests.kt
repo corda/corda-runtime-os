@@ -104,7 +104,7 @@ class SigningServiceGeneralTests {
         }
         assertThrows(IllegalArgumentException::class.java) {
             signingService.sign(
-                tenantId = UUID.randomUUID().toString(),
+                tenantId = tenantId,
                 publicKey = publicKey,
                 signatureSpec = SignatureSpecImpl("NONE"),
                 data = ByteArray(2),
@@ -245,7 +245,6 @@ class SigningServiceGeneralTests {
         val skip = 17
         val take = 21
         val orderBy: KeyOrderBy = KeyOrderBy.ALIAS
-        val tenantId: String = UUID.randomUUID().toString()
         val category: String = CryptoConsts.Categories.TLS
         val schemeCodeName: String = UUID.randomUUID().toString()
         val alias: String = UUID.randomUUID().toString()
@@ -313,8 +312,9 @@ class SigningServiceGeneralTests {
     private fun makeSigningServiceImpl(
         repo: SigningRepository,
         cache: Cache<CacheKey, SigningKeyInfo>,
+        cryptoServiceFactory: CryptoServiceFactory = mock()
     ): SigningServiceImpl = SigningServiceImpl(
-        cryptoServiceFactory = mock(),
+        cryptoServiceFactory = cryptoServiceFactory,
         signingRepositoryFactory = { repo },
         schemeMetadata = schemeMetadata,
         digestService = mockDigestService(),
@@ -410,14 +410,7 @@ class SigningServiceGeneralTests {
             on { lookupByPublicKeyShortHashes(keyIdsCap.capture()) } doReturn setOf(signingKeyInfo)
         }
 
-        val signingService = SigningServiceImpl(
-            signingRepositoryFactory = { repo },
-            cryptoServiceFactory = cryptoServiceFactory,
-            schemeMetadata = schemeMetadata,
-            digestService = mockDigestService(),
-            cache = cache,
-        )
-
+        val signingService = makeSigningServiceImpl(repo, cache, cryptoServiceFactory)
         signingService.lookupSigningKeysByPublicKeyShortHash("tenant", keys)
 
         val cacheKeys = setOf(CacheKey("tenant", hashA), CacheKey("tenant", hashB))
@@ -448,14 +441,7 @@ class SigningServiceGeneralTests {
             on { lookupByPublicKeyHashes(fullIdsCap.capture()) } doReturn setOf(signingKeyInfo)
         }
 
-        val signingService = SigningServiceImpl(
-            signingRepositoryFactory = { repo },
-            cryptoServiceFactory = cryptoServiceFactory,
-            schemeMetadata = schemeMetadata,
-            digestService = mockDigestService(),
-            cache = cache,
-        )
-
+        val signingService = makeSigningServiceImpl(repo, cache, cryptoServiceFactory)
         signingService.lookupSigningKeysByPublicKeyHashes("tenant", keys)
 
         val cacheKeys = setOf(CacheKey("tenant", shortA), CacheKey("tenant", shortB))
