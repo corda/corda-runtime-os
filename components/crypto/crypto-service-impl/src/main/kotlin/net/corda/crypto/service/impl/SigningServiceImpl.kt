@@ -126,6 +126,7 @@ class SigningServiceImpl(
             cache.getAllPresent(keyIds.mapTo(mutableSetOf()) {
                 CacheKey(tenantId, it)
             }).mapTo(mutableSetOf()) { it.value }
+        // TODO handle short ID clashes
         if (cachedKeys.size == keyIds.size) return cachedKeys
         val notFound: List<ShortHash> = keyIds - cachedKeys.map { it.id }.toSet()
 
@@ -143,6 +144,7 @@ class SigningServiceImpl(
         fullKeyIds: List<SecureHash>,
     ): Collection<SigningKeyInfo> {
         val keyIds = fullKeyIds.map { ShortHash.of(it) }
+        // TODO handle short ID clashes
         val cachedMap = cache.getAllPresent(keyIds.mapTo(mutableSetOf()) { CacheKey(tenantId, it) })
         val cachedList = cachedMap.map { it.value }
         if (cachedMap.size == fullKeyIds.size) return cachedList
