@@ -25,10 +25,14 @@ class CordaMetricsTest {
     fun `create meter supports tags name`() {
         val meter = CordaMetrics.Metric.HttpRequestCount
             .builder()
-            .withTag(CordaMetrics.Tag.Address, "blah")
+            .withTag(CordaMetrics.Tag.Uri_path, "/hello")
+            .withTag(CordaMetrics.Tag.Http_Method, "GET")
+            .withTag(CordaMetrics.Tag.OperationStatus, "200")
             .build()
         assertThat(meter.id.tags.map { Pair(it.key, it.value) })
-            .contains(Pair(CordaMetrics.Tag.Address.value, "blah"))
+            .contains(Pair(CordaMetrics.Tag.Uri_path.value, "/hello"))
+            .contains(Pair(CordaMetrics.Tag.Http_Method.value, "GET"))
+            .contains(Pair(CordaMetrics.Tag.OperationStatus.value, "200"))
     }
 
     @Test
