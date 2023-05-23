@@ -2,7 +2,6 @@ package net.corda.ledger.utxo.flow.impl.transaction.verifier
 
 import io.micrometer.core.instrument.Timer
 import net.corda.crypto.core.parseSecureHash
-import net.corda.data.ledger.persistence.LedgerTypes
 import net.corda.flow.external.events.executor.ExternalEventExecutor
 import net.corda.flow.fiber.metrics.recordSuspendable
 import net.corda.ledger.common.data.transaction.TransactionMetadataInternal
