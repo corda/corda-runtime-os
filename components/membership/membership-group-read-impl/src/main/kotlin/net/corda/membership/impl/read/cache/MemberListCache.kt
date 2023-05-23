@@ -45,28 +45,30 @@ interface MemberListCache : MemberDataListCache<MemberInfo> {
                         } else {
                             old.status != MEMBER_STATUS_PENDING && old.name == new.name
                         }
-                    }.also {
-                        recordMemberListCacheSize(holdingIdentity, it.size)
                     }
             }
+            recordMemberListCacheSize()
         }
 
         override fun clear() {
             logger.info("Clearing member list cache.")
-            for (key in cache.keys()) {
-                recordMemberListCacheSize(key, 0)
-            }
+            recordMemberListCacheSize(0)
             cache.clear()
         }
 
+        /**
+         * Record metrics for the currently stored member list sizes.
+         * Allows for an override in case the cache is cleared so we can record a 0 metric before removing the keys.
+         */
         private fun recordMemberListCacheSize(
-            holdingIdentity: HoldingIdentity,
-            memberListSize: Int
+            sizeOverride: Int? = null
         ) {
-            getSettableGaugeMetric(
-                SettableGaugeMetricTypes.MEMBER_LIST,
-                holdingIdentity
-            ).set(memberListSize)
+            for (entry in cache) {
+                getSettableGaugeMetric(
+                    SettableGaugeMetricTypes.MEMBER_LIST,
+                    entry.key
+                ).set(sizeOverride ?: entry.value.size)
+            }
         }
 
         /**
