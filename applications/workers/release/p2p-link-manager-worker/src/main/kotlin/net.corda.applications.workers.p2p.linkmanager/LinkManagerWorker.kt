@@ -12,6 +12,7 @@ import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.processors.p2p.linkmanager.LinkManagerProcessor
 import net.corda.tracing.setTracingServiceName
+import net.corda.tracing.setZipkinHost
 import net.corda.tracing.shutdownTracing
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -52,6 +53,7 @@ class LinkManagerWorker @Activate constructor(
         val params = WorkerHelpers.getParams(args, LinkManagerWorkerParams())
         if (WorkerHelpers.printHelpOrVersion(params.defaultParams, this::class.java, shutDownService)) return
         WorkerHelpers.setupMonitor(workerMonitor, params.defaultParams, this.javaClass.simpleName)
+        params.defaultParams.zipkinTraceUrl?.let(::setZipkinHost)
 
         val config = WorkerHelpers.getBootstrapConfig(
             secretsServiceFactoryResolver,

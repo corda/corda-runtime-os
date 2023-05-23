@@ -30,6 +30,7 @@ import net.corda.processors.verification.VerificationProcessor
 import net.corda.schema.configuration.BootConfig
 import net.corda.schema.configuration.DatabaseConfig
 import net.corda.tracing.setTracingServiceName
+import net.corda.tracing.setZipkinHost
 import net.corda.tracing.shutdownTracing
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -149,6 +150,7 @@ class CombinedWorker @Activate constructor(
         ).run()
 
         setupMonitor(workerMonitor, params.defaultParams, this.javaClass.simpleName)
+        params.defaultParams.zipkinTraceUrl?.let(::setZipkinHost)
 
         JavaSerialisationFilter.install()
 

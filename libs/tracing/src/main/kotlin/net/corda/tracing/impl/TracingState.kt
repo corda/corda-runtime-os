@@ -19,6 +19,7 @@ object TracingState: AutoCloseable {
     private val resourcesToClose = Stack<AutoCloseable>()
 
     var serviceName = "unknown"
+    var zipkinHost = ""
 
     val tracing: Tracing by lazy {
 
@@ -33,8 +34,7 @@ object TracingState: AutoCloseable {
             .traceId128Bit(true)
             .sampler(Sampler.ALWAYS_SAMPLE)
 
-        val zipkinHost = System.getenv("CORDA_TRACING_SERVER_ZIPKIN_PROTOCOL")
-        if (zipkinHost != null) {
+        if (zipkinHost.isNotEmpty()) {
             val zipkinUrl = "$zipkinHost/api/v2/spans"
             val spanAsyncReporter =
                 AsyncReporter.create(URLConnectionSender.create(zipkinUrl))
