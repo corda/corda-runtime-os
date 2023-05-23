@@ -43,6 +43,7 @@ import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.messaging.api.subscription.RPCSubscription
 import net.corda.messaging.api.subscription.Subscription
+import net.corda.messaging.api.subscription.SubscriptionBase
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
@@ -101,6 +102,9 @@ class CryptoProcessorImpl @Activate constructor(
             MESSAGING_CONFIG,
             CRYPTO_CONFIG
         )
+        const val FLOW_OPS_SUBSCRIPTION = "FLOW_OPS_SUBSCRIPTION"
+        const val RPC_OPS_SUBSCRIPTION = "RPC_OPS_SUBSCRIPTION"
+        const val HSM_REG_SUBSCRIPTION = "HSM_REG_SUBSCRIPTION"
     }
 
     init {
@@ -131,10 +135,6 @@ class CryptoProcessorImpl @Activate constructor(
     private var dependenciesUp: Boolean = false
 
     private val tmpAssignmentFailureCounter = AtomicInteger(0)
-
-    private var flowOpsSubscription: Subscription<String, FlowOpsRequest>? = null
-    private var rpcOpsSubscription: RPCSubscription<RpcOpsRequest, RpcOpsResponse>? = null
-    private var hsmRegSubscription: RPCSubscription<HSMRegistrationRequest, HSMRegistrationResponse>? = null
 
     override val isRunning: Boolean
         get() = lifecycleCoordinator.isRunning
@@ -218,12 +218,12 @@ class CryptoProcessorImpl @Activate constructor(
             }
 
             is ConfigChangedEvent -> {
-                startBusProcessors(event)
+                startBusProcessors(event, coordinator)
             }
         }
     }
 
-    private fun startBusProcessors(event: ConfigChangedEvent) {
+    private fun startBusProcessors(event: ConfigChangedEvent, coordinator: LifecycleCoordinator) {
         val cryptoConfig = event.config.getConfig(CRYPTO_CONFIG)
 
         // first make the signing service object, which both processors will consume
@@ -247,56 +247,52 @@ class CryptoProcessorImpl @Activate constructor(
         val rpcOpsProcessor = CryptoOpsBusProcessor(signingService, retryingConfig)
         val hsmRegistrationProcessor = HSMRegistrationBusProcessor(hsmService, retryingConfig)
 
-        // now make the subscriptions
+        // now make and start the subscriptions
         val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
         val flowGroupName = "crypto.ops.flow"
-        flowOpsSubscription?.close()
-        flowOpsSubscription = subscriptionFactory.createDurableSubscription(
-            subscriptionConfig = SubscriptionConfig(flowGroupName, Schemas.Crypto.FLOW_OPS_MESSAGE_TOPIC),
-            processor = flowOpsProcessor,
-            messagingConfig = messagingConfig,
-            partitionAssignmentListener = null
-        )
+        coordinator.createManagedResource(FLOW_OPS_SUBSCRIPTION) {
+            subscriptionFactory.createDurableSubscription(
+                subscriptionConfig = SubscriptionConfig(flowGroupName, Schemas.Crypto.FLOW_OPS_MESSAGE_TOPIC),
+                processor = flowOpsProcessor,
+                messagingConfig = messagingConfig,
+                partitionAssignmentListener = null
+            )
+        }
+        coordinator.getManagedResource<SubscriptionBase>(FLOW_OPS_SUBSCRIPTION)!!.start()
+
         val rpcGroupName = "crypto.ops.rpc"
         val rpcClientName = "crypto.ops.rpc"
-        rpcOpsSubscription?.close()
-        rpcOpsSubscription = subscriptionFactory.createRPCSubscription(
-            rpcConfig = RPCConfig(
-                groupName = rpcGroupName,
-                clientName = rpcClientName,
-                requestTopic = Schemas.Crypto.RPC_OPS_MESSAGE_TOPIC,
-                requestType = RpcOpsRequest::class.java,
-                responseType = RpcOpsResponse::class.java
-            ),
-            responderProcessor = rpcOpsProcessor,
-            messagingConfig = messagingConfig
-        )
+        coordinator.createManagedResource(RPC_OPS_SUBSCRIPTION) {
+            subscriptionFactory.createRPCSubscription(
+                rpcConfig = RPCConfig(
+                    groupName = rpcGroupName,
+                    clientName = rpcClientName,
+                    requestTopic = Schemas.Crypto.RPC_OPS_MESSAGE_TOPIC,
+                    requestType = RpcOpsRequest::class.java,
+                    responseType = RpcOpsResponse::class.java
+                ),
+                responderProcessor = rpcOpsProcessor,
+                messagingConfig = messagingConfig
+            )
+        }
+        coordinator.getManagedResource<SubscriptionBase>(RPC_OPS_SUBSCRIPTION)!!.start()
 
         val hsmRegGroupName = "crypto.hsm.rpc.registration"
         val hsmRegClientName = "crypto.hsm.rpc.registration"
-        hsmRegSubscription?.close()
-        hsmRegSubscription = subscriptionFactory.createRPCSubscription(
-            rpcConfig = RPCConfig(
-                groupName = hsmRegGroupName,
-                clientName = hsmRegClientName,
-                requestTopic = Schemas.Crypto.RPC_HSM_REGISTRATION_MESSAGE_TOPIC,
-                requestType = HSMRegistrationRequest::class.java,
-                responseType = HSMRegistrationResponse::class.java
-            ),
-            responderProcessor = hsmRegistrationProcessor,
-            messagingConfig = messagingConfig
-        )
-
-        // and start the subscriptions
-        logger.trace("Starting processing on $flowGroupName ${Schemas.Crypto.FLOW_OPS_MESSAGE_TOPIC}")
-        flowOpsSubscription?.start()
-            ?: logger.error("Flow requests Kafka processor not set")
-        logger.trace("Starting processing on $rpcGroupName ${Schemas.Crypto.RPC_OPS_MESSAGE_TOPIC}")
-        rpcOpsSubscription?.start()
-            ?: logger.error("Rpc requests Kafka processor not set")
-        logger.trace("Starting processing on $hsmRegGroupName ${Schemas.Crypto.RPC_HSM_REGISTRATION_MESSAGE_TOPIC}")
-        hsmRegSubscription?.start()
-            ?: logger.error("Hsm registration requests Kafka processor not set")
+        coordinator.createManagedResource(HSM_REG_SUBSCRIPTION) {
+            subscriptionFactory.createRPCSubscription(
+                rpcConfig = RPCConfig(
+                    groupName = hsmRegGroupName,
+                    clientName = hsmRegClientName,
+                    requestTopic = Schemas.Crypto.RPC_HSM_REGISTRATION_MESSAGE_TOPIC,
+                    requestType = HSMRegistrationRequest::class.java,
+                    responseType = HSMRegistrationResponse::class.java
+                ),
+                responderProcessor = hsmRegistrationProcessor,
+                messagingConfig = messagingConfig
+            )
+        }
+        coordinator.getManagedResource<SubscriptionBase>(HSM_REG_SUBSCRIPTION)!!.start()
     }
 
     private fun setStatus(status: LifecycleStatus, coordinator: LifecycleCoordinator) {
