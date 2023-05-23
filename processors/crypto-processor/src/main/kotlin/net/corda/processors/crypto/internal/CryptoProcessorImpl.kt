@@ -77,7 +77,7 @@ class CryptoProcessorImpl @Activate constructor(
     @Reference(service = HSMService::class)
     private val hsmService: HSMService,
     @Reference(service = JpaEntitiesRegistry::class)
-    private val entitiesRegistry: JpaEntitiesRegistry,
+    private val jpaEntitiesRegistry: JpaEntitiesRegistry,
     @Reference(service = DbConnectionManager::class)
     private val dbConnectionManager: DbConnectionManager,
     @Reference(service = VirtualNodeInfoReadService::class)
@@ -104,8 +104,8 @@ class CryptoProcessorImpl @Activate constructor(
     }
 
     init {
-        entitiesRegistry.register(CordaDb.Crypto.persistenceUnitName, CryptoEntities.classes)
-        entitiesRegistry.register(CordaDb.CordaCluster.persistenceUnitName, ConfigurationEntities.classes)
+        jpaEntitiesRegistry.register(CordaDb.Crypto.persistenceUnitName, CryptoEntities.classes)
+        jpaEntitiesRegistry.register(CordaDb.CordaCluster.persistenceUnitName, ConfigurationEntities.classes)
     }
 
     private val dependentComponents = DependentComponents.of(
@@ -231,7 +231,7 @@ class CryptoProcessorImpl @Activate constructor(
             cryptoServiceFactory, SigningRepositoryFactoryImpl(
                 dbConnectionManager,
                 virtualNodeInfoReadService,
-                entitiesRegistry,
+                jpaEntitiesRegistry,
                 keyEncodingService,
                 digestService,
                 layeredPropertyMapFactory
@@ -289,11 +289,14 @@ class CryptoProcessorImpl @Activate constructor(
 
         // and start the subscriptions
         logger.trace("Starting processing on $flowGroupName ${Schemas.Crypto.FLOW_OPS_MESSAGE_TOPIC}")
-        flowOpsSubscription!!.start()
+        flowOpsSubscription?.start()
+            ?: logger.info("Flow requests Kafka processor not set")
         logger.trace("Starting processing on $rpcGroupName ${Schemas.Crypto.RPC_OPS_MESSAGE_TOPIC}")
-        rpcOpsSubscription!!.start()
+        rpcOpsSubscription?.start()
+            ?: logger.info("Rpc requests Kafka processor not set")
         logger.trace("Starting processing on $hsmRegGroupName ${Schemas.Crypto.RPC_HSM_REGISTRATION_MESSAGE_TOPIC}")
-        hsmRegSubscription!!.start()
+        hsmRegSubscription?.start()
+            ?: logger.info("Hsm registration requests Kafka processor not set")
     }
 
     private fun setStatus(status: LifecycleStatus, coordinator: LifecycleCoordinator) {
