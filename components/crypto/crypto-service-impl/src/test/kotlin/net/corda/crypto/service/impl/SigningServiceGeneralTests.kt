@@ -72,9 +72,21 @@ class SigningServiceGeneralTests {
         // Remember key ids cannot clash for same tenant so short keys of testing keys need to be different
         val fullKeyId0 = parseSecureHash("SHA-256:ABC12345678911111111111111")
         val shortKeyId0 = ShortHash.of(fullKeyId0)
+        val signingKeyInfo0 = mock<SigningKeyInfo> {
+            on { fullId }.thenReturn(fullKeyId0)
+            on { id }.thenReturn(shortKeyId0)
+        }
         val fullKeyId1 = parseSecureHash("SHA-256:BBC12345678911111111111111")
         val shortKeyId1 = ShortHash.of(fullKeyId1)
+        val signingKeyInfo1 = mock<SigningKeyInfo> {
+            on { fullId }.thenReturn(fullKeyId1)
+            on { id }.thenReturn(shortKeyId1)
+        }
+
+        @JvmStatic
+        fun numCached(): Collection<Int> = setOf(0, 1, 2)
     }
+
 
     @Test
     fun `Should throw original exception failing signing`() {
@@ -455,52 +467,18 @@ class SigningServiceGeneralTests {
         assertThat(fullIdsCap.allValues.single()).isEqualTo(setOf(hashB))
     }
 
-    @Test
-    fun `lookupSigningKeysByPublicKeyShortHash returns requested keys from cache if all requested keys are in cache`() {
-        // Remember key ids cannot clash for same tenant so short keys of testing keys need to be different
-        val fullKeyId0 = parseSecureHash("SHA-256:ABC12345678911111111111111")
-        val shortKeyId0 = ShortHash.of(fullKeyId0)
-        val fullKeyId1 = parseSecureHash("SHA-256:BBC12345678911111111111111")
-        val shortKeyId1 = ShortHash.of(fullKeyId1)
-        val repo = mock<SigningRepository> {
-            on { findKey(any<PublicKey>()) } doReturn null
-        }
-        val cache = makeCache()
-        var repoCount = 0
-        val signingService = SigningServiceImpl(
-            signingRepositoryFactory = {
-                repoCount++
-                repo
-            },
-            cryptoServiceFactory = mock(),
-            schemeMetadata = schemeMetadata,
-            digestService = mockDigestService(),
-            cache = cache,
-        )
-        populateCache(cache, shortKeyId0, fullKeyId0)
-        populateCache(cache, shortKeyId1, fullKeyId1)
-        val r = signingService.lookupSigningKeysByPublicKeyShortHash(tenantId, listOf(shortKeyId0, shortKeyId1))
-        assertEquals(
-            setOf(fullKeyId0, fullKeyId1).map { it.toString() }.toSet(),
-            r.map { it.fullId.toString() }.toSet()
-        )
-        // verify it didn't go to the database
-        assertThat(repoCount).isEqualTo(0)
-    }
-
-    @Test
-    fun `lookupSigningKeysByPublicKeyShortHash requested keys from cache and from database if they are not cached`() {
-        var repoCount = 0
+    @ParameterizedTest
+    @MethodSource("numCached")
+    fun `lookupSigningKeysByPublicKeyShortHash returns requested keys from cache and db`(
+        keysInCache: Int,
+    ) {
         val keysCaptor = argumentCaptor<Set<ShortHash>>()
-        val mockDbResults = setOf(mock<SigningKeyInfo> {
-            on { fullId }.thenReturn(fullKeyId1)
-            on { id }.thenReturn(shortKeyId1)
-        })
+        val mockDbResults = if (keysInCache == 0) setOf(signingKeyInfo0, signingKeyInfo1) else setOf(signingKeyInfo1)
         val repo = mock<SigningRepository> {
             on { lookupByPublicKeyShortHashes(keysCaptor.capture()) }.thenReturn(mockDbResults)
         }
         val cache = makeCache()
-        populateCache(cache, shortKeyId0, fullKeyId0)
+        var repoCount = 0
         val signingService = SigningServiceImpl(
             signingRepositoryFactory = {
                 repoCount++
@@ -511,18 +489,18 @@ class SigningServiceGeneralTests {
             digestService = mockDigestService(),
             cache = cache,
         )
+        if (keysInCache >= 1) populateCache(cache, shortKeyId0, fullKeyId0)
+        if (keysInCache >= 2) populateCache(cache, shortKeyId1, fullKeyId1)
         val r = signingService.lookupSigningKeysByPublicKeyShortHash(tenantId, listOf(shortKeyId0, shortKeyId1))
         assertEquals(
             setOf(fullKeyId0, fullKeyId1).map { it.toString() }.toSet(),
             r.map { it.fullId.toString() }.toSet()
         )
-        assertEquals(setOf(shortKeyId1), keysCaptor.firstValue)
-        assertThat(repoCount).isEqualTo(1) // we should have opened the repository layer once
-        assertEquals(
-            setOf(shortKeyId0.value, shortKeyId1.value).map { it.toString() }.toSet(),
-            r.map { it.id.toString() }.toSet()
-        )
+        assertThat(repoCount).isEqualTo(if (keysInCache == 2) 0 else 1)
+        if (keysInCache == 0) assertEquals(setOf(shortKeyId0, shortKeyId1), keysCaptor.firstValue)
+        if (keysInCache == 1) assertEquals(setOf(shortKeyId1), keysCaptor.firstValue)
     }
+
 
     private fun populateCache(
         cache: Cache<CacheKey, SigningKeyInfo>,
