@@ -95,7 +95,7 @@ object CordaMetrics {
         object FlowEventLagTime : Metric<Timer>("flow.event.lag", CordaMetrics::timer)
 
         /**
-         * Metric for the time taken to execute the pipeline (excluding any start lag)
+         * Metric for the time taken to process a single event in the flow pipeline.
          *
          * Number of pipeline events processed can be inferred from the count of events recorded for this metric.
          */
@@ -103,7 +103,7 @@ object CordaMetrics {
 
 
         /**
-         * Metric for the time taken to execute the fiber (excluding any start lag)
+         * Metric for the time the fiber is running between two suspension points.
          *
          * Number of fiber execution events processed can be inferred from the count of events recorded for this metric.
          */
@@ -111,12 +111,12 @@ object CordaMetrics {
 
 
         /**
-         * Metric for the time taken to execute the flow (excluding any start lag)
+         * Metric for the total time spent in the pipeline code across the execution time of a flow.
          */
         object FlowPipelineExecutionTime : Metric<Timer>("flow.pipeline.execution.time", CordaMetrics::timer)
 
         /**
-         * Metric for the time taken to execute the fiber (excluding any start lag)
+         * Metric for the total time spent executing user code across the execution time of a flow.
          */
         object FlowFiberExecutionTime : Metric<Timer>("flow.fiber.execution.time", CordaMetrics::timer)
 
@@ -178,7 +178,7 @@ object CordaMetrics {
         object FlowSessionMessagesReceivedCount: Metric<Counter>("flow.session.messages.received.count", Metrics::counter)
 
         /**
-         * Number of outbound peer-to-peer data messages replayed.
+         * The number of messages sent by sessions.
          */
         object FlowSessionMessagesSentCount: Metric<Counter>("flow.session.messages.sent.count", Metrics::counter)
 
