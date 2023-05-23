@@ -1,0 +1,47 @@
+{
+  "id": "org.corda.interop/platform/tokens/v1.0",
+  "aliases": {
+    "denomination": "string (org.corda.interop/platform/tokens/types/denomination/1.0)"
+  },
+  "queries": {
+    "get-balance": {
+      "in": {
+        "denomination": "denomination"
+      },
+      "out": {
+        "balance": "decimal"
+      }
+    }
+  },
+  "commands": {
+    "hello": {
+      "in": {
+        "greeting": "string"
+      },
+      "out": {
+        "greeting": "string"
+      }
+    },
+    "reserve-tokens": {
+      "in": {
+        "denomination": "denomination",
+        "amount": "decimal"
+      },
+      "out": {
+        "reservation-ref": "uuid"
+      }
+    },
+    "release-reserved-tokens": {
+      "in": {
+        "reservation-ref": "uuid"
+      }
+    },
+    "spend-reserved-tokens": {
+      "in": {
+        "reservation-ref": "uuid",
+        "transaction-ref": "uuid",
+        "recipient": "string"
+      }
+    }
+  }
+}
