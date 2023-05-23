@@ -92,7 +92,7 @@ class HSMRegistrationBusProcessorTests {
         val hsmService = mock<HSMService> {
             on { assignHSM(any(), any(), any()) } doReturn info
         }
-        val processor = HSMRegistrationBusProcessor(hsmService, configEvent)
+        val processor = HSMRegistrationBusProcessor(hsmService, configEvent.config.toCryptoConfig().retrying())
         val context = createRequestContext()
         val future = CompletableFuture<HSMRegistrationResponse>()
         processor.onNext(
