@@ -47,7 +47,7 @@ class FlowMetricsImpl(
 
     override fun flowFiberEntered() {
         fiberStartTime = clock.nowInMillis()
-        currentState.totalEventResumptionCount++
+        currentState.totalFiberSuspensionCount++
 
         // If we were waiting on a suspension then record the wait time.
         if (currentState.suspensionAction != null && currentState.suspensionTimestampMillis != null) {
@@ -97,7 +97,7 @@ class FlowMetricsImpl(
         flowMetricsRecorder.recordTotalFiberExecutionTime(currentState.totalFiberExecutionTime)
         flowMetricsRecorder.recordTotalPipelineExecutionTime(currentState.totalPipelineExecutionTime)
         flowMetricsRecorder.recordTotalEventsProcessed(currentState.totalEventProcessedCount)
-        flowMetricsRecorder.recordTotalFiberResumes(currentState.totalEventResumptionCount)
+        flowMetricsRecorder.recordTotalFiberSuspensions(currentState.totalFiberSuspensionCount)
     }
 
     private fun Clock.nowInMillis(): Long {
@@ -113,6 +113,6 @@ class FlowMetricsImpl(
         var totalFiberExecutionTime: Long = 0
         var totalPipelineExecutionTime: Long = 0
         var totalEventProcessedCount: Long = 0
-        var totalEventResumptionCount: Long = 0
+        var totalFiberSuspensionCount: Long = 0
     }
 }

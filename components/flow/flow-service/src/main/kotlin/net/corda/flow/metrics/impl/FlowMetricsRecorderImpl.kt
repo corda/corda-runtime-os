@@ -84,10 +84,10 @@ class FlowMetricsRecorderImpl(
             .build().record(eventsProcessed.toDouble())
     }
 
-    override fun recordTotalFiberResumes(fiberResumes: Long) {
-        CordaMetrics.Metric.FlowEventResumeCount.builder()
+    override fun recordTotalFiberSuspensions(fiberSuspensions: Long) {
+        CordaMetrics.Metric.FlowFiberSuspensionCount.builder()
             .forVirtualNode(flowCheckpoint.holdingIdentity.shortHash.toString())
             .withTag(CordaMetrics.Tag.FlowClass, flowCheckpoint.flowStartContext.flowClassName)
-            .build().record(fiberResumes.toDouble())
+            .build().record(fiberSuspensions.toDouble())
     }
 }

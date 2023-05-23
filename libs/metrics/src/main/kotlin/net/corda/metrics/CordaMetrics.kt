@@ -146,7 +146,7 @@ object CordaMetrics {
         /**
          * Number of flow events that lead to a fiber resume for a single flow.
          */
-        object FlowEventResumeCount : Metric<DistributionSummary>("flow.event.resume.count", Metrics::summary)
+        object FlowFiberSuspensionCount : Metric<DistributionSummary>("flow.fiber.suspension.total.count", Metrics::summary)
 
         /**
          * FLOW MAPPER METRICS
