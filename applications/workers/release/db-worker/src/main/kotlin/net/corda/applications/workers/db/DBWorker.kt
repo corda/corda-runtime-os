@@ -19,6 +19,7 @@ import net.corda.processors.db.DBProcessor
 import net.corda.processors.uniqueness.UniquenessProcessor
 import net.corda.schema.configuration.BootConfig.BOOT_DB
 import net.corda.tracing.setTracingServiceName
+import net.corda.tracing.setZipkinHost
 import net.corda.tracing.shutdownTracing
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -66,6 +67,7 @@ class DBWorker @Activate constructor(
         val params = getParams(args, DBWorkerParams())
         if (printHelpOrVersion(params.defaultParams, DBWorker::class.java, shutDownService)) return
         setupMonitor(workerMonitor, params.defaultParams, this.javaClass.simpleName)
+        params.defaultParams.zipkinTraceUrl?.let(::setZipkinHost)
 
         val databaseConfig = PathAndConfig(BOOT_DB, params.databaseParams)
         val config = getBootstrapConfig(

@@ -18,7 +18,7 @@ CORDA_TRACING_SERVER_ZIPKIN_PROTOCOL=http://localhost:9411
 ```
 
 ## Providing IDs on REST requests
- 
+
 _This is optional, if you don't provide an ID, one will be generated for you._
 
 The trace ID can be provided to the REST endpoint in HTTP headers.
@@ -49,7 +49,7 @@ Here we describe how to run the combined worker with a Kafka message bus and a t
         environment:
           ZOOKEEPER_CLIENT_PORT: 2181
           ZOOKEEPER_TICK_TIME: 2000
-    
+
       kafka:
         image: confluentinc/cp-kafka:latest
         container_name: kafka
@@ -87,14 +87,19 @@ Here we describe how to run the combined worker with a Kafka message bus and a t
     ```shell
     ./gradlew :applications:workers:release:combined-worker:clean :applications:workers:release:combined-worker:appJar -PbusImpl=kafka
     ```
-7. Set `CORDA_TRACING_SERVER_ZIPKIN_PROTOCOL` environment variable to http://localhost:9411 and start the combined worker 
+7. Start the combined worker with the `--send-trace-to` command line parameter
     ```bash
-    CORDA_TRACING_SERVER_ZIPKIN_PROTOCOL=http://localhost:9411 java -jar -Dco.paralleluniverse.fibers.verifyInstrumentation=true \
+    java -jar -Dco.paralleluniverse.fibers.verifyInstrumentation=true                      \
       ./applications/workers/release/combined-worker/build/bin/corda-combined-worker-*.jar \
-      --instance-id=0 -mbus.busType=KAFKA -mbootstrap.servers=localhost:9092 \
-      -spassphrase=password -ssalt=salt \
-      -ddatabase.user=user -ddatabase.pass=password \
-      -ddatabase.jdbc.directory=applications/workers/release/combined-worker/drivers \
-      -ddatabase.jdbc.url=jdbc:postgresql://localhost:5432/cordacluster
+      --instance-id=0                                                                      \
+      -mbus.busType=KAFKA                                                                  \
+      -mbootstrap.servers=localhost:9092                                                   \
+      -spassphrase=password                                                                \
+      -ssalt=salt                                                                          \
+      -ddatabase.user=user                                                                 \
+      -ddatabase.pass=password                                                             \
+      -ddatabase.jdbc.directory=applications/workers/release/combined-worker/drivers       \
+      -ddatabase.jdbc.url=jdbc:postgresql://localhost:5432/cordacluster                    \
+      --send-trace-to=http://localhost:9411
     ```
 8. Visit http://localhost:3000/ to view the dashboard
