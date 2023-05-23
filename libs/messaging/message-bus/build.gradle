@@ -12,6 +12,7 @@ dependencies {
     implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation "net.corda:corda-base"
     implementation project(":libs:configuration:configuration-core")
+    implementation project(":libs:tracing")
 }
 
 description 'Message Bus API'
