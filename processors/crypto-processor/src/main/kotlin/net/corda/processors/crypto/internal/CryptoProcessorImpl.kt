@@ -290,13 +290,13 @@ class CryptoProcessorImpl @Activate constructor(
         // and start the subscriptions
         logger.trace("Starting processing on $flowGroupName ${Schemas.Crypto.FLOW_OPS_MESSAGE_TOPIC}")
         flowOpsSubscription?.start()
-            ?: logger.info("Flow requests Kafka processor not set")
+            ?: logger.error("Flow requests Kafka processor not set")
         logger.trace("Starting processing on $rpcGroupName ${Schemas.Crypto.RPC_OPS_MESSAGE_TOPIC}")
         rpcOpsSubscription?.start()
-            ?: logger.info("Rpc requests Kafka processor not set")
+            ?: logger.error("Rpc requests Kafka processor not set")
         logger.trace("Starting processing on $hsmRegGroupName ${Schemas.Crypto.RPC_HSM_REGISTRATION_MESSAGE_TOPIC}")
         hsmRegSubscription?.start()
-            ?: logger.info("Hsm registration requests Kafka processor not set")
+            ?: logger.error("Hsm registration requests Kafka processor not set")
     }
 
     private fun setStatus(status: LifecycleStatus, coordinator: LifecycleCoordinator) {
