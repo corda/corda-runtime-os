@@ -343,12 +343,12 @@ object CordaMetrics {
         /**
          * Uri for which the metric is applicable.
          */
-        Uri_path("uri.path"),
+        UriPath("uri.path"),
 
         /**
          * Method name for which the metric is applicable.
          */
-        Http_Method("http.method"),
+        HttpMethod("http.method"),
 
         /**
          * Type of the SandboxGroup to which the metric applies.
