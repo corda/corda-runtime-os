@@ -30,6 +30,7 @@ import net.corda.ledger.utxo.data.transaction.UtxoOutputInfoComponent
 import net.corda.orm.utils.transaction
 import net.corda.persistence.common.getEntityManagerFactory
 import net.corda.persistence.common.getSerializationService
+import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.sandboxgroupcontext.getSandboxSingletonService
 import net.corda.test.util.dsl.entities.cpx.getCpkFileHashes
 import net.corda.test.util.time.AutoTickTestClock
@@ -95,6 +96,7 @@ class UtxoPersistenceServiceImplTest {
     private lateinit var repository: UtxoRepository
     private lateinit var cpiInfoReadService: CpiInfoReadService
     private lateinit var factoryRegistry: ContractStateVaultJsonFactoryRegistry
+    private lateinit var currentSandboxGroupContext: CurrentSandboxGroupContext
     private val emConfig = DbUtils.getEntityManagerConfiguration("ledger_db_for_test")
 
     companion object {
@@ -132,6 +134,10 @@ class UtxoPersistenceServiceImplTest {
             cpiInfoReadService = setup.fetchService(timeout = TIMEOUT_MILLIS)
             val cpkFileHashes = cpiInfoReadService.getCpkFileHashes(virtualNodeInfo)
             val ctx = virtualNode.entitySandboxService.get(virtualNodeInfo.holdingIdentity, cpkFileHashes)
+
+            currentSandboxGroupContext = setup.fetchService(timeout = TIMEOUT_MILLIS)
+            currentSandboxGroupContext.set(ctx)
+
             wireTransactionFactory = ctx.getSandboxSingletonService()
             jsonMarshallingService = ctx.getSandboxSingletonService()
             jsonValidator = ctx.getSandboxSingletonService()
@@ -158,6 +164,9 @@ class UtxoPersistenceServiceImplTest {
     @AfterAll
     fun cleanup() {
         emConfig.close()
+        if (this::currentSandboxGroupContext.isInitialized) {
+            currentSandboxGroupContext.remove()
+        }
     }
 
     @Test
