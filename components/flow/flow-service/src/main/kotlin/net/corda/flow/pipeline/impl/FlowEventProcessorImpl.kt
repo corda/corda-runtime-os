@@ -49,7 +49,9 @@ class FlowEventProcessorImpl(
         val flowEvent = event.value
         val mdcProperties = flowMDCService.getMDCLogging(state, flowEvent, event.key)
         return withMDC(mdcProperties) {
-            getFlowPipelineResponse(flowEvent, event, state, mdcProperties)
+            event.tracing.recordNextSpan("Flow Event") {
+                getFlowPipelineResponse(flowEvent, event, state, mdcProperties)
+            }
         }
     }
 
