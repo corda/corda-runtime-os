@@ -26,11 +26,6 @@ object CordaMetrics {
         // NOTE: please ensure the metric names adhere to the conventions described on https://micrometer.io/docs/concepts#_naming_meters
 
         /**
-         * Number of HTTP Requests.
-         */
-        object HttpRequestCount : Metric<Counter>("http.server.request", Metrics::counter)
-
-        /**
          * HTTP Requests time.
          */
         object HttpRequestTime : Metric<Timer>("http.server.request.time", CordaMetrics::timer)
