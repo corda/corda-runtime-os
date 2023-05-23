@@ -32,7 +32,7 @@ interface MemberDataCache<T> {
     /**
      * Clears all cached data.
      */
-    fun clear()
+    fun close()
 
     /**
      * Basic member data in-memory cache implementation.
@@ -54,7 +54,7 @@ interface MemberDataCache<T> {
 
         override fun getAll(): Map<HoldingIdentity, T> = cache
 
-        override fun clear() {
+        override fun close() {
             logger.info("Clearing member data cache.")
             cache.clear()
         }

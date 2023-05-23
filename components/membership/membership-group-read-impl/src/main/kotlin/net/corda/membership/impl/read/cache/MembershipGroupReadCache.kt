@@ -22,7 +22,7 @@ interface MembershipGroupReadCache {
     /**
      * Clears all cached data.
      */
-    fun clear()
+    fun close()
 
     /**
      * Default implementation of [MembershipGroupReadCache].
@@ -40,9 +40,9 @@ interface MembershipGroupReadCache {
             groupReaderCache
         )
 
-        override fun clear() {
+        override fun close() {
             logger.info("Clearing membership group read cache.")
-            caches.forEach { it.clear() }
+            caches.forEach { it.close() }
         }
     }
 }

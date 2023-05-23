@@ -147,7 +147,7 @@ class GroupParametersReaderServiceImplTest {
             verify(configHandle, never()).close()
             verify(subscriptionHandle, never()).close()
             verify(groupParamsSubscription, never()).close()
-            verify(groupParametersCache, never()).clear()
+            verify(groupParametersCache, never()).close()
         }
 
         @Test
@@ -224,7 +224,7 @@ class GroupParametersReaderServiceImplTest {
 
             postStopEvent()
             verify(coordinator).updateStatus(eq(LifecycleStatus.DOWN), any())
-            verify(groupParametersCache).clear()
+            verify(groupParametersCache).close()
         }
     }
 

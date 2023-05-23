@@ -138,7 +138,7 @@ class MembershipGroupReaderProviderImpl @Activate constructor(
 
         override fun close() {
             membershipGroupReadSubscriptions.stop()
-            membershipGroupReadCache.clear()
+            membershipGroupReadCache.close()
         }
     }
 

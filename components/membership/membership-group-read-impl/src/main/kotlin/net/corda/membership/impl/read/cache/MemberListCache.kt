@@ -8,6 +8,9 @@ import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import org.slf4j.LoggerFactory
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.Executors
+import java.util.concurrent.ScheduledExecutorService
+import java.util.concurrent.TimeUnit
 
 /**
  * Interface for storing the member lists in-memory including implementation class.
@@ -25,13 +28,24 @@ interface MemberListCache : MemberDataListCache<MemberInfo> {
     /**
      * In-memory member list cache implementation.
      */
-    class Impl : MemberListCache {
+    class Impl(
+        executorFactory: () -> ScheduledExecutorService = { Executors.newSingleThreadScheduledExecutor() }
+    ) : MemberListCache {
 
         companion object {
+            private const val METRIC_RATE_SECONDS = 30L
             val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         }
 
         private val cache = ConcurrentHashMap<HoldingIdentity, ReplaceableList<MemberInfo>>()
+        private val executor = executorFactory().also {
+            it.scheduleAtFixedRate(
+                ::recordMemberListCacheSize,
+                METRIC_RATE_SECONDS,
+                METRIC_RATE_SECONDS,
+                TimeUnit.SECONDS
+            )
+        }
 
         override fun get(holdingIdentity: HoldingIdentity): List<MemberInfo> = cache[holdingIdentity] ?: emptyList()
         override fun getAll(): Map<HoldingIdentity, List<MemberInfo>> = cache
@@ -47,11 +61,11 @@ interface MemberListCache : MemberDataListCache<MemberInfo> {
                         }
                     }
             }
-            recordMemberListCacheSize()
         }
 
-        override fun clear() {
+        override fun close() {
             logger.info("Clearing member list cache.")
+            executor.shutdownNow()
             recordMemberListCacheSize(0)
             cache.clear()
         }
