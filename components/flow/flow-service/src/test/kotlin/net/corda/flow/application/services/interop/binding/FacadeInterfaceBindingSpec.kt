@@ -23,7 +23,7 @@ class FacadeInterfaceBindingSpec {
         FacadeReaders.JSON.read(this::class.java.getResourceAsStream("/sampleFacades/tokens-facade_v2.json")!!)
 
     infix fun <T : Any> KClass<T>.shouldFailToBindWith(expectedMessage: String) =
-        facadeV1.assertBindingFails2(java, expectedMessage)
+        facadeV1.assertBindingFails(java, expectedMessage)
 
     @Test
     fun `should fail if the interface does not bind any facade`() {

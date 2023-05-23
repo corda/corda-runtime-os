@@ -1,10 +1,10 @@
 package net.corda.flow.application.services.interop.binding
 
-import io.kotest.core.spec.style.DescribeSpec
 import net.corda.flow.application.services.impl.interop.facade.FacadeReaders
 import net.corda.v5.application.interop.binding.BindsFacade
 import net.corda.v5.application.interop.binding.BindsFacadeMethod
 import net.corda.v5.application.interop.binding.InteropAction
+import org.junit.jupiter.api.Test
 import java.math.BigDecimal
 import java.time.ZonedDateTime
 import java.util.*
@@ -59,7 +59,11 @@ data class DataClassWithMultipleConstructors(val reservationRef: UUID, val expir
 @BindsFacade("org.corda.interop/platform/tokens")
 interface MethodReturnTypeDoesNotHaveUniquePrimaryConstructor {
     @BindsFacadeMethod
-    fun reserveTokens(denomination: String, amount: BigDecimal, ttlMs: Long): InteropAction<DataClassWithMultipleConstructors>
+    fun reserveTokens(
+        denomination: String,
+        amount: BigDecimal,
+        ttlMs: Long
+    ): InteropAction<DataClassWithMultipleConstructors>
 }
 
 data class IncompleteTokenReference(val reservationRef: UUID)
@@ -84,58 +88,63 @@ interface MethodReturnTypeIsDataClassWithIncorrectTypes {
     ): InteropAction<IncorrectlyTypedTokenReference>
 }
 
-class FacadeOutParameterBindingSpec : DescribeSpec({
-
-    val facadeV2 = FacadeReaders.JSON.read(this::class.java.getResourceAsStream("/sampleFacades/tokens-facade_v2.json")!!)
+class FacadeOutParameterBindingSpec {
+    val facadeV2 =
+        FacadeReaders.JSON.read(this::class.java.getResourceAsStream("/sampleFacades/tokens-facade_v2.json")!!)
 
     infix fun <T : Any> KClass<T>.shouldFailToBindWith(expectedMessage: String) =
         facadeV2.assertBindingFails(java, expectedMessage)
 
-    describe("Facade out parameter binding") {
-
-        it("should fail if there are no out-parameters but the return type is non-void") {
-            MethodReturnTypeIsIncorrectlyNonVoid::class shouldFailToBindWith
-                    "Return type class java.lang.Long is not Void/Unit"
-        }
-
-        it("should fail if there are out-parameters but the return type is void") {
-            MethodReturnTypeIsIncorrectlyVoid::class shouldFailToBindWith
-                    "Return type is not compatible with facade out-parameter type"
-        }
-
-        it("should fail if an interface method has an incompatible scalar return type") {
-            MethodSignatureHasIncompatibleReturnType::class shouldFailToBindWith
-                    "Return type is not compatible with facade out-parameter type"
-        }
-
-        it("should fail if an interface method has a scalar return type but there are multiple out parameters") {
-            MethodReturnTypeIsIncorrectlyScalar::class shouldFailToBindWith
-                    "Out parameters are [reservation-ref, expiration-timestamp], " +
-                    "but constructor parameters are []"
-        }
-
-        it("should fail if the return type is not a well-formed data class") {
-            MethodReturnTypeIsNotDataClass::class shouldFailToBindWith
-                    "Cannot find properties with both a constructor parameter and a getter method " +
-                    "for out parameters [reservation-ref, expiration-timestamp]"
-        }
-
-        it("should fail if the return type does not have a unique primary constructor") {
-            MethodReturnTypeDoesNotHaveUniquePrimaryConstructor::class shouldFailToBindWith
-                    "Return type does not have a unique constructor"
-        }
-
-        it("should fail if the data class return type does not have all expected properties") {
-            MethodReturnTypeIsDataClassWithTooFewProperties::class shouldFailToBindWith
-                    "Out parameters are [reservation-ref, expiration-timestamp], " +
-                    "but constructor parameters are [reservation-ref]"
-        }
-
-        //TODO Investigate changing toString method to get TypedParameter(... instead of TypedParameterImpl
-        it("should fail if a data class property has the wrong type") {
-            MethodReturnTypeIsDataClassWithIncorrectTypes::class shouldFailToBindWith
-                    "Constructor parameter reservationRef(#0) of type long does not match type of " +
-                    "facade out parameter TypedParameterImpl(name=reservation-ref, type=uuid)"
-        }
+    @Test
+    fun `should fail if there are no out-parameters but the return type is non-void`() {
+        MethodReturnTypeIsIncorrectlyNonVoid::class shouldFailToBindWith
+                "Return type class java.lang.Long is not Void/Unit"
     }
-})
+
+    @Test
+    fun `should fail if there are out-parameters but the return type is void`() {
+        MethodReturnTypeIsIncorrectlyVoid::class shouldFailToBindWith
+                "Return type is not compatible with facade out-parameter type"
+    }
+
+    @Test
+    fun `should fail if an interface method has an incompatible scalar return type`() {
+        MethodSignatureHasIncompatibleReturnType::class shouldFailToBindWith
+                "Return type is not compatible with facade out-parameter type"
+    }
+
+    @Test
+    fun `should fail if an interface method has a scalar return type but there are multiple out parameters`() {
+        MethodReturnTypeIsIncorrectlyScalar::class shouldFailToBindWith
+                "Out parameters are [reservation-ref, expiration-timestamp], " +
+                "but constructor parameters are []"
+    }
+
+    @Test
+    fun `should fail if the return type is not a well-formed data class`() {
+        MethodReturnTypeIsNotDataClass::class shouldFailToBindWith
+                "Cannot find properties with both a constructor parameter and a getter method " +
+                "for out parameters [reservation-ref, expiration-timestamp]"
+    }
+
+    @Test
+    fun `should fail if the return type does not have a unique primary constructor`() {
+        MethodReturnTypeDoesNotHaveUniquePrimaryConstructor::class shouldFailToBindWith
+                "Return type does not have a unique constructor"
+    }
+
+    @Test
+    fun `should fail if the data class return type does not have all expected properties`() {
+        MethodReturnTypeIsDataClassWithTooFewProperties::class shouldFailToBindWith
+                "Out parameters are [reservation-ref, expiration-timestamp], " +
+                "but constructor parameters are [reservation-ref]"
+    }
+
+    @Test
+    //TODO Investigate changing toString method to get TypedParameter(... instead of TypedParameterImpl
+    fun `should fail if a data class property has the wrong type`() {
+        MethodReturnTypeIsDataClassWithIncorrectTypes::class shouldFailToBindWith
+                "Constructor parameter reservationRef(#0) of type long does not match type of " +
+                "facade out parameter TypedParameterImpl(name=reservation-ref, type=uuid)"
+    }
+}
