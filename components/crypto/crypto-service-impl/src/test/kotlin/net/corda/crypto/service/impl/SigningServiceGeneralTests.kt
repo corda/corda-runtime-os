@@ -313,16 +313,13 @@ class SigningServiceGeneralTests {
     private fun makeSigningServiceImpl(
         repo: SigningRepository,
         cache: Cache<CacheKey, SigningKeyInfo>,
-    ): SigningServiceImpl {
-        val signingService = SigningServiceImpl(
-            cryptoServiceFactory = mock(),
-            signingRepositoryFactory = { repo },
-            schemeMetadata = schemeMetadata,
-            digestService = mockDigestService(),
-            cache = cache
-        )
-        return signingService
-    }
+    ): SigningServiceImpl = SigningServiceImpl(
+        cryptoServiceFactory = mock(),
+        signingRepositoryFactory = { repo },
+        schemeMetadata = schemeMetadata,
+        digestService = mockDigestService(),
+        cache = cache
+    )
 
     @Test
     @Suppress("ComplexMethod")
