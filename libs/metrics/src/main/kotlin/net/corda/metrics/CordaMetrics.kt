@@ -214,16 +214,6 @@ object CordaMetrics {
         object InboundSessionCount : Metric<SettableGauge>("p2p.session.inbound", CordaMetrics::settableGauge)
 
         /**
-         * The time taken by verification processor to verify a ledger transaction.
-         */
-        object LedgerTransactionVerificationTime: Metric<Timer>("ledger.transaction.verification.time", CordaMetrics::timer)
-
-        /**
-         * The time taken by ledger persistence processor to perform persistence operation.
-         */
-        object LedgerPersistenceExecutionTime: Metric<Timer>("ledger.persistence.execution.time", CordaMetrics::timer)
-
-        /**
          * Time it took for an inbound request to the p2p gateway to be processed.
          */
         object InboundGatewayRequestLatency: Metric<Timer>("p2p.gateway.inbound.request.time", CordaMetrics::timer)
@@ -378,27 +368,76 @@ object CordaMetrics {
             CordaMetrics::timer
         )
 
+        /**
+         * The time taken by crypto operations from the flow side.
+         */
         object CryptoOperationsFlowTime: Metric<Timer>("crypto.operations.flow.time", CordaMetrics::timer)
 
         object Ledger {
 
+            /**
+             * The time taken by transaction verification from the flow side.
+             */
             object TransactionVerificationFlowTime : Metric<Timer>("ledger.transaction.verification.flow.time", CordaMetrics::timer)
 
-            object ContractionVerificationTime : Metric<Timer>("ledger.contract.verification.time", CordaMetrics::timer)
+            /**
+             * The time taken by verification processor to verify a ledger transaction.
+             */
+            object TransactionVerificationTime: Metric<Timer>("ledger.transaction.verification.time", CordaMetrics::timer)
 
-            object ContractionVerificationContractTime : Metric<Timer>("ledger.contract.verification.contract.time", CordaMetrics::timer)
+            /**
+             * The time taken by contract verification when verifying a transaction.
+             */
+            object ContractVerificationTime : Metric<Timer>("ledger.contract.verification.time", CordaMetrics::timer)
 
-            object ContractVerificationContractCount : Metric<DistributionSummary>("ledger.contract.verification.contract.count", Metrics::summary)
+            /**
+             * The time taken per contract by contract verification when verifying a transaction.
+             */
+            object ContractVerificationContractTime : Metric<Timer>("ledger.contract.verification.contract.time", CordaMetrics::timer)
 
+            /**
+             * The number of executed contracts during contract verification when verifying a transaction.
+             */
+            object ContractVerificationContractCount : Metric<DistributionSummary>(
+                "ledger.contract.verification.contract.count",
+                Metrics::summary
+            )
+
+            /**
+             * The time taken by ledger persistence operations from the flow side.
+             */
             object PersistenceFlowTime : Metric<Timer>("ledger.persistence.flow.time", CordaMetrics::timer)
 
-            object BackchainResolutionChainLength : Metric<DistributionSummary>("ledger.backchain.resolution.chain.length", Metrics::summary)
+            /**
+             * The time taken by ledger persistence processor to perform persistence operation.
+             */
+            object PersistenceExecutionTime: Metric<Timer>("ledger.persistence.execution.time", CordaMetrics::timer)
+
+            /**
+             * The length of resolved backchains when performing backchain resolution.
+             */
+            object BackchainResolutionChainLength : Metric<DistributionSummary>(
+                "ledger.backchain.resolution.chain.length",
+                Metrics::summary
+            )
+
+            /**
+             * The time taken from requesting a uniqueness check to a response being received from the perspective of
+             * a client (requesting) node.
+             */
+            object UniquenessClientRunTime : Metric<Timer>("ledger.uniqueness.client.run.time", CordaMetrics::timer)
         }
 
         object Serialization {
 
+            /**
+             * The time taken serializing an object.
+             */
             object SerializationTime : Metric<Timer>("serialization.amqp.serialization.time", CordaMetrics::timer)
 
+            /**
+             * The time taken deserializing an object.
+             */
             object DeserializationTime : Metric<Timer>("serialization.amqp.deserialization.time", CordaMetrics::timer)
         }
     }
@@ -480,10 +519,11 @@ object CordaMetrics {
          */
         LedgerType("ledger.type"),
 
+        /**
+         * The contract class name of a contract being executed.
+         */
         LedgerContractName("ledger.contract.name"),
 
-        LedgerNotaryPluginProtocol("ledger.notary.plugin.protocol"),
-        LedgerNotaryPluginFlow("ledger.notary.plugin.flow"),
         SerializedClass("serialized.class"),
 
         /**

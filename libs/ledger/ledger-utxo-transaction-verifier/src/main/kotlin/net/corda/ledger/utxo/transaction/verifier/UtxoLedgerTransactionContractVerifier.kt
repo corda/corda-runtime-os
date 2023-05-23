@@ -19,7 +19,7 @@ fun verifyContracts(
     holdingIdentity: HoldingIdentity
 ) {
 
-    CordaMetrics.Metric.Ledger.ContractionVerificationTime
+    CordaMetrics.Metric.Ledger.ContractVerificationTime
         .builder()
         .forVirtualNode(holdingIdentity.shortHash.toString())
         .build()
@@ -38,7 +38,7 @@ fun verifyContracts(
 
             contractClassMap.forEach { (contractClass, contractStates) ->
 
-                CordaMetrics.Metric.Ledger.ContractionVerificationContractTime
+                CordaMetrics.Metric.Ledger.ContractVerificationContractTime
                     .builder()
                     .forVirtualNode(holdingIdentity.shortHash.toString())
                     .withTag(CordaMetrics.Tag.LedgerContractName, contractClass.name)

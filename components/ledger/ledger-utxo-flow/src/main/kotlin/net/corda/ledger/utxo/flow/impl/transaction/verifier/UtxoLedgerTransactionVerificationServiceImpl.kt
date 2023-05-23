@@ -119,7 +119,6 @@ class UtxoLedgerTransactionVerificationServiceImpl @Activate constructor(
         return CordaMetrics.Metric.Ledger.TransactionVerificationFlowTime
             .builder()
             .forVirtualNode(currentSandboxGroupContext.get().virtualNodeContext.holdingIdentity.shortHash.toString())
-            .withTag(CordaMetrics.Tag.LedgerType, LedgerTypes.UTXO.toString())
             .build()
     }
 }

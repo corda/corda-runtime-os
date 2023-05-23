@@ -84,7 +84,7 @@ class PersistenceRequestProcessor(
                     } finally {
                         currentSandboxGroupContext.remove()
                     }.also {
-                        CordaMetrics.Metric.LedgerPersistenceExecutionTime
+                        CordaMetrics.Metric.Ledger.PersistenceExecutionTime
                             .builder()
                             .forVirtualNode(holdingIdentity.shortHash.toString())
                             .withTag(CordaMetrics.Tag.LedgerType, request.ledgerType.toString())
