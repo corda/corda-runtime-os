@@ -12,6 +12,8 @@ import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.processors.p2p.gateway.GatewayProcessor
 import net.corda.tracing.setTracingServiceName
+import net.corda.tracing.setZipkinHost
+import net.corda.tracing.shutdownTracing
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -51,6 +53,7 @@ class GatewayWorker @Activate constructor(
         val params = WorkerHelpers.getParams(args, GatewayWorkerParams())
         if (WorkerHelpers.printHelpOrVersion(params.defaultParams, this::class.java, shutDownService)) return
         WorkerHelpers.setupMonitor(workerMonitor, params.defaultParams, this.javaClass.simpleName)
+        params.defaultParams.zipkinTraceUrl?.let(::setZipkinHost)
 
         val config = WorkerHelpers.getBootstrapConfig(
             secretsServiceFactoryResolver,
@@ -65,6 +68,7 @@ class GatewayWorker @Activate constructor(
         logger.info("P2P Gateway worker stopping.")
         gatewayProcessor.stop()
         workerMonitor.stop()
+        shutdownTracing()
     }
 }
 /** Additional parameters for the member worker are added here. */

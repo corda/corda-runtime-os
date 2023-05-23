@@ -31,6 +31,27 @@ fun <K, V> wrapWithTracingProducer(kafkaProducer: Producer<K, V>): Producer<K, V
 }
 
 /**
+ * Configure Zipkin host that will receive trace data in zipkin format. The value should include a port number if the
+ * server is listening on the default 9411 port.
+ *
+ * Example value: http://localhost:9411
+ *
+ * Defaults to "" which will turn off sending data to a Zipkin host.
+ */
+fun setZipkinHost(zipkinHost: String) {
+    TracingState.zipkinHost = zipkinHost
+}
+
+/**
+ * Close tracing system, flushing buffers before shutdown.
+ *
+ * Call this method to avoid losing events at shutdown.
+ */
+fun shutdownTracing() {
+    TracingState.close()
+}
+
+/**
  * Configure Javalin to read trace IDs from requests or generate new ones if missing.
  */
 fun configureJavalinForTracing(config: JavalinConfig) {

@@ -5,6 +5,9 @@
     <option name="PROGRAM_PARAMETERS" value="--instance-id=0 -mbus.busType=DATABASE -spassphrase=password -ssalt=salt -spassphrase=password -ssalt=salt -ddatabase.user=user -ddatabase.pass=password -ddatabase.jdbc.url=jdbc:postgresql://localhost:5432/cordacluster -ddatabase.jdbc.directory=$ProjectFileDir$/applications/workers/release/combined-worker/drivers -rtls.crt.path=$ProjectFileDir$/applications/workers/release/combined-worker/tls/rest/server.crt -rtls.key.path=$ProjectFileDir$/applications/workers/release/combined-worker/tls/rest/server.key -rtls.ca.crt.path=$ProjectFileDir$/applications/workers/release/combined-worker/tls/rest/ca-chain-bundle.crt" />
     <option name="WORKING_DIRECTORY" value="$ProjectFileDir$" />
     <option name="ALTERNATIVE_JRE_PATH" />
+    <envs>
+      <env name="CORDA_TRACING_SERVER_ZIPKIN_PROTOCOL" value="http://localhost:9411" />
+    </envs>
     <method v="2">
       <option name="Gradle.BeforeRunTask" enabled="false" tasks="appJar" externalProjectPath="$PROJECT_DIR$/applications/workers/release/combined-worker" vmOptions="" scriptParameters="" />
     </method>

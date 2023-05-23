@@ -8,33 +8,44 @@ import brave.sampler.Sampler
 import zipkin2.reporter.AsyncReporter
 import zipkin2.reporter.brave.ZipkinSpanHandler
 import zipkin2.reporter.urlconnection.URLConnectionSender
+import java.util.Stack
 
 /**
  * Tracing objects that will exist for the lifetime of the application.
  *
  * Close before shutdown to wait for trace spans to be sent to external systems.
  */
-object TracingState : AutoCloseable {
-    private val spanAsyncReporter =
-        AsyncReporter.create(URLConnectionSender.create("http://localhost:9411/api/v2/spans"))
-    private val spanHandler = ZipkinSpanHandler
-        .create(spanAsyncReporter)
+object TracingState: AutoCloseable {
 
-    private val braveCurrentTraceContext = ThreadLocalCurrentTraceContext.newBuilder()
-        .addScopeDecorator(MDCScopeDecorator.get())
-        .build()
+    private val resourcesToClose = Stack<AutoCloseable>()
 
     var serviceName = "unknown"
+    var zipkinHost = ""
 
     val tracing: Tracing by lazy {
-        Tracing.newBuilder()
+
+        val braveCurrentTraceContext = ThreadLocalCurrentTraceContext.newBuilder()
+            .addScopeDecorator(MDCScopeDecorator.get())
+            .build()
+
+        val tracingBuilder = Tracing.newBuilder()
             .currentTraceContext(braveCurrentTraceContext)
             .supportsJoin(false)
             .localServiceName(serviceName)
             .traceId128Bit(true)
             .sampler(Sampler.ALWAYS_SAMPLE)
-            .addSpanHandler(spanHandler)
-            .build()
+
+        if (zipkinHost.isNotEmpty()) {
+            val zipkinUrl = "$zipkinHost/api/v2/spans"
+            val spanAsyncReporter =
+                AsyncReporter.create(URLConnectionSender.create(zipkinUrl))
+                    .also(resourcesToClose::push)
+            val spanHandler = ZipkinSpanHandler.create(spanAsyncReporter)
+
+            tracingBuilder.addSpanHandler(spanHandler)
+        }
+
+        tracingBuilder.build().also(resourcesToClose::push)
     }
 
     val kafkaTracing: KafkaTracing by lazy {
@@ -44,7 +55,8 @@ object TracingState : AutoCloseable {
     }
 
     override fun close() {
-        tracing.close()
-        spanAsyncReporter.close()
+        while (resourcesToClose.any()) {
+            resourcesToClose.pop().close()
+        }
     }
 }

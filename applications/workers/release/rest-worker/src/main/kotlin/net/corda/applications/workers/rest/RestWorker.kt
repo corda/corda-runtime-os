@@ -20,6 +20,8 @@ import net.corda.schema.configuration.BootConfig
 import net.corda.schema.configuration.BootConfig.BOOT_REST_TLS_CRT_PATH
 import net.corda.schema.configuration.BootConfig.BOOT_REST_TLS_KEYSTORE_FILE_PATH
 import net.corda.tracing.setTracingServiceName
+import net.corda.tracing.setZipkinHost
+import net.corda.tracing.shutdownTracing
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -65,6 +67,7 @@ class RestWorker @Activate constructor(
         params.validate()
         if (printHelpOrVersion(params.defaultParams, RestWorker::class.java, shutDownService)) return
         setupMonitor(workerMonitor, params.defaultParams, this.javaClass.simpleName)
+        params.defaultParams.zipkinTraceUrl?.let(::setZipkinHost)
 
         val restConfig = PathAndConfig(BootConfig.BOOT_REST, params.restParams)
         val config = getBootstrapConfig(
@@ -80,6 +83,7 @@ class RestWorker @Activate constructor(
         logger.info("REST worker stopping.")
         processor.stop()
         workerMonitor.stop()
+        shutdownTracing()
     }
 }
 

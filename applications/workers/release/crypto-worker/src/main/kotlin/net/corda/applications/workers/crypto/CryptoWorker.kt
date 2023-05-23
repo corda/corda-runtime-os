@@ -22,6 +22,8 @@ import net.corda.schema.configuration.BootConfig
 import net.corda.schema.configuration.BootConfig.BOOT_CRYPTO
 import net.corda.schema.configuration.BootConfig.BOOT_DB
 import net.corda.tracing.setTracingServiceName
+import net.corda.tracing.setZipkinHost
+import net.corda.tracing.shutdownTracing
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -69,6 +71,7 @@ class CryptoWorker @Activate constructor(
             throw IllegalStateException("Please specify which HSM the worker must handle, like --hsm-id SOFT")
         }
         setupMonitor(workerMonitor, params.defaultParams, this.javaClass.simpleName)
+        params.defaultParams.zipkinTraceUrl?.let(::setZipkinHost)
         processor.start(
             buildBoostrapConfig(params, configurationValidatorFactory)
         )
@@ -78,6 +81,7 @@ class CryptoWorker @Activate constructor(
         logger.info("Crypto worker stopping.")
         processor.stop()
         workerMonitor.stop()
+        shutdownTracing()
     }
 
     private fun buildBoostrapConfig(
