@@ -49,35 +49,36 @@ class FacadeInParameterBindingSpec {
     fun `should bind all in-parameters in the example Tokens facade`() {
         val reserveTokensV2 = facadeV2.method("reserve-tokens")
 
-        assertNotNull(bindingV2.bindingFor(TokensFacade::reserveTokensV2))
-        assertNotNull(bindingV2.bindingFor(TokensFacade::reserveTokensV2)!!.bindingForMethodParameter(0))
+        val binding = bindingV2.bindingFor(TokensFacade::reserveTokensV2)
+        assertNotNull(binding)
+        assertNotNull(binding!!.bindingForMethodParameter(0))
         assertEquals(
             BoundParameter(0, String::class.java),
-            bindingV2.bindingFor(TokensFacade::reserveTokensV2)!!.bindingForMethodParameter(0)!!.boundParameter
+            binding.bindingForMethodParameter(0)!!.boundParameter
         )
         assertEquals(
             reserveTokensV2.inParameter("denomination", String::class.java),
-            bindingV2.bindingFor(TokensFacade::reserveTokensV2)!!.bindingForMethodParameter(0)!!.facadeParameter
+            binding.bindingForMethodParameter(0)!!.facadeParameter
         )
 
-        assertNotNull(bindingV2.bindingFor(TokensFacade::reserveTokensV2)!!.bindingForMethodParameter(1))
+        assertNotNull(binding.bindingForMethodParameter(1))
         assertEquals(
             BoundParameter(1, BigDecimal::class.java),
-            bindingV2.bindingFor(TokensFacade::reserveTokensV2)!!.bindingForMethodParameter(1)!!.boundParameter
+            binding.bindingForMethodParameter(1)!!.boundParameter
         )
         assertEquals(
             reserveTokensV2.inParameter("amount", BigDecimal::class.java),
-            bindingV2.bindingFor(TokensFacade::reserveTokensV2)!!.bindingForMethodParameter(1)!!.facadeParameter
+            binding.bindingForMethodParameter(1)!!.facadeParameter
         )
 
-        assertNotNull(bindingV2.bindingFor(TokensFacade::reserveTokensV2)!!.bindingForMethodParameter(2))
+        assertNotNull(binding.bindingForMethodParameter(2))
         assertEquals(
             BoundParameter(2, Long::class.java),
-            bindingV2.bindingFor(TokensFacade::reserveTokensV2)!!.bindingForMethodParameter(2)!!.boundParameter
+            binding.bindingForMethodParameter(2)!!.boundParameter
         )
         assertEquals(
             reserveTokensV2.inParameter("ttl-ms", BigDecimal::class.java),
-            bindingV2.bindingFor(TokensFacade::reserveTokensV2)!!.bindingForMethodParameter(2)!!.facadeParameter
+            binding.bindingForMethodParameter(2)!!.facadeParameter
         )
     }
 
