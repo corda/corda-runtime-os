@@ -143,11 +143,20 @@ class SigningServiceImpl(
         tenantId: String,
         fullKeyIds: List<SecureHash>,
     ): Collection<SigningKeyInfo> {
+        val filterOutMismatches = { found: Collection<SigningKeyInfo> ->
+            found.map { foundSigningKeyInfo ->
+                if (fullKeyIds.contains(foundSigningKeyInfo.fullId)) {
+                    foundSigningKeyInfo
+                } else {
+                    null
+                }
+            }.filterNotNull()
+        }
         val keyIds = fullKeyIds.map { ShortHash.of(it) }
-        // TODO handle short ID clashes
         val cachedMap = cache.getAllPresent(keyIds.mapTo(mutableSetOf()) { CacheKey(tenantId, it) })
-        val cachedList = cachedMap.map { it.value }
-        if (cachedMap.size == fullKeyIds.size) return cachedList
+        val cachedKeys = cachedMap.map { it.value }
+        val cachedMatchingKeys = filterOutMismatches(cachedKeys)
+        if (cachedMatchingKeys.size == fullKeyIds.size) return cachedMatchingKeys
 
         val notFound = fullKeyIds.filter {
             !cachedMap.containsKey(CacheKey(tenantId, ShortHash.of(it)))
@@ -155,14 +164,12 @@ class SigningServiceImpl(
 
         val fetchedKeys = signingRepositoryFactory.getInstance(tenantId).use {
             it.lookupByPublicKeyHashes(notFound.toMutableSet())
-                .map { foundKey ->
-                    foundKey.also {
-                        cache.put(CacheKey(tenantId, it.id), it)
-                    }
-                }
         }
-
-        return cachedList + fetchedKeys
+        val fetchedMatchingKeys = filterOutMismatches(fetchedKeys)
+        fetchedMatchingKeys.forEach {
+            cache.put(CacheKey(tenantId, it.id), it)
+        }
+        return cachedMatchingKeys + fetchedMatchingKeys
     }
 
     // TODO- ditch this method and have callers use crytpoServiceFactory directly?

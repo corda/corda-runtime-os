@@ -534,7 +534,13 @@ class SigningServiceGeneralTests {
             digestService = mockDigestService(),
             cache = cache
         )
-        signingService.lookupSigningKeysByPublicKeyHashes(tenantId, listOf(requestedFullKeyId))
+        val lookedUpByFullKeyIdsKeys =
+            signingService.lookupSigningKeysByPublicKeyHashes(tenantId, listOf(requestedFullKeyId))
+        assertEquals(0, lookedUpByFullKeyIdsKeys.size)
+
+        // since we could not find anything in the cache which is 
+        // suitable we should have gone to the repository
+        assertEquals(1, repoCount)
     }
 
 
