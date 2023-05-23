@@ -104,19 +104,17 @@ class FacadeMethodBindingSpec {
     fun `should bind methods with a single out parameter`() {
         val getBalance = facadeV2.method("get-balance")
         assertNotNull(bindingV2.bindingFor(TokensFacade::getBalance))
+        val outParameterBindings = bindingV2.bindingFor(TokensFacade::getBalance)!!.outParameterBindings
         assertNotNull(
-            bindingV2.bindingFor(TokensFacade::getBalance)!!.outParameterBindings
-                    as? FacadeOutParameterBindings.SingletonOutParameterBinding
+            outParameterBindings as? FacadeOutParameterBindings.SingletonOutParameterBinding
         )
         assertEquals(
             getBalance.outParameter("balance", BigDecimal::class.java),
-            (bindingV2.bindingFor(TokensFacade::getBalance)!!.outParameterBindings
-                    as? FacadeOutParameterBindings.SingletonOutParameterBinding)!!.outParameter
+            (outParameterBindings as? FacadeOutParameterBindings.SingletonOutParameterBinding)!!.outParameter
         )
         assertEquals(
             Double::class.javaObjectType,
-            (bindingV2.bindingFor(TokensFacade::getBalance)!!.outParameterBindings
-                    as? FacadeOutParameterBindings.SingletonOutParameterBinding)!!.returnType
+            (outParameterBindings as? FacadeOutParameterBindings.SingletonOutParameterBinding)!!.returnType
         )
     }
 
@@ -126,64 +124,56 @@ class FacadeMethodBindingSpec {
         val refParameter = reserveTokens.outParameter("reservation-ref", UUID::class.java)
         val expiryParameter = reserveTokens.outParameter("expiration-timestamp", ZonedDateTime::class.java)
 
-        val binding = bindingV2.bindingFor(TokensFacade::reserveTokensV2)
+        val binding = bindingV2.bindingFor(TokensFacade::reserveTokensV2)!!
+        val outParameterBindings = binding.outParameterBindings
         assertNotNull(binding)
         assertNotNull(
-            binding!!.outParameterBindings
-                    as? FacadeOutParameterBindings.DataClassOutParameterBindings
+            outParameterBindings as? FacadeOutParameterBindings.DataClassOutParameterBindings
         )
         assertNotNull(
-            (binding.outParameterBindings
-                    as? FacadeOutParameterBindings.DataClassOutParameterBindings)!!.bindingFor(
+            (outParameterBindings as? FacadeOutParameterBindings.DataClassOutParameterBindings)!!.bindingFor(
                 refParameter
             )
         )
         assertEquals(
             refParameter,
-            (binding.outParameterBindings
-                    as? FacadeOutParameterBindings.DataClassOutParameterBindings)!!.bindingFor(
+            (outParameterBindings as? FacadeOutParameterBindings.DataClassOutParameterBindings)!!.bindingFor(
                 refParameter
             )!!.facadeOutParameter
         )
         assertEquals(
             BoundParameter(0, UUID::class.java),
-            (binding.outParameterBindings
-                    as? FacadeOutParameterBindings.DataClassOutParameterBindings)!!.bindingFor(
+            (outParameterBindings as? FacadeOutParameterBindings.DataClassOutParameterBindings)!!.bindingFor(
                 refParameter
             )!!.constructorParameter
         )
         assertEquals(
             TokenReservation::reservationRef.getter.javaMethod,
-            (binding.outParameterBindings
-                    as? FacadeOutParameterBindings.DataClassOutParameterBindings)!!.bindingFor(
+            (outParameterBindings as? FacadeOutParameterBindings.DataClassOutParameterBindings)!!.bindingFor(
                 refParameter
             )!!.readMethod
         )
 
         assertNotNull(
-            (binding.outParameterBindings
-                    as? FacadeOutParameterBindings.DataClassOutParameterBindings)!!.bindingFor(
+            (outParameterBindings as? FacadeOutParameterBindings.DataClassOutParameterBindings)!!.bindingFor(
                 expiryParameter
             )
         )
         assertEquals(
             expiryParameter,
-            (binding.outParameterBindings
-                    as? FacadeOutParameterBindings.DataClassOutParameterBindings)!!.bindingFor(
+            (outParameterBindings as? FacadeOutParameterBindings.DataClassOutParameterBindings)!!.bindingFor(
                 expiryParameter
             )!!.facadeOutParameter
         )
         assertEquals(
             BoundParameter(1, ZonedDateTime::class.java),
-            (binding.outParameterBindings
-                    as? FacadeOutParameterBindings.DataClassOutParameterBindings)!!.bindingFor(
+            (outParameterBindings as? FacadeOutParameterBindings.DataClassOutParameterBindings)!!.bindingFor(
                 expiryParameter
             )!!.constructorParameter
         )
         assertEquals(
             TokenReservation::expires.getter.javaMethod,
-            (binding.outParameterBindings
-                    as? FacadeOutParameterBindings.DataClassOutParameterBindings)!!.bindingFor(
+            (outParameterBindings as? FacadeOutParameterBindings.DataClassOutParameterBindings)!!.bindingFor(
                 expiryParameter
             )!!.readMethod
         )
