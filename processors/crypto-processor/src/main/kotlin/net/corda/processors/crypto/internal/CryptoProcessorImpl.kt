@@ -258,6 +258,7 @@ class CryptoProcessorImpl @Activate constructor(
                 partitionAssignmentListener = null
             )
         }
+        logger.trace("Starting processing on $flowGroupName ${Schemas.Crypto.FLOW_OPS_MESSAGE_TOPIC}")
         coordinator.getManagedResource<SubscriptionBase>(FLOW_OPS_SUBSCRIPTION)!!.start()
 
         val rpcGroupName = "crypto.ops.rpc"
@@ -275,6 +276,7 @@ class CryptoProcessorImpl @Activate constructor(
                 messagingConfig = messagingConfig
             )
         }
+        logger.trace("Starting processing on $rpcGroupName ${Schemas.Crypto.RPC_OPS_MESSAGE_TOPIC}")
         coordinator.getManagedResource<SubscriptionBase>(RPC_OPS_SUBSCRIPTION)!!.start()
 
         val hsmRegGroupName = "crypto.hsm.rpc.registration"
@@ -292,6 +294,7 @@ class CryptoProcessorImpl @Activate constructor(
                 messagingConfig = messagingConfig
             )
         }
+        logger.trace("Starting processing on $hsmRegGroupName ${Schemas.Crypto.RPC_HSM_REGISTRATION_MESSAGE_TOPIC}")
         coordinator.getManagedResource<SubscriptionBase>(HSM_REG_SUBSCRIPTION)!!.start()
     }
 
