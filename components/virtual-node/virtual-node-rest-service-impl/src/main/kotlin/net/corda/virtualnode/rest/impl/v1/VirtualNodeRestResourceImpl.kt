@@ -48,6 +48,7 @@ import net.corda.rest.exception.BadRequestException
 import net.corda.rest.exception.InternalServerException
 import net.corda.rest.exception.InvalidInputDataException
 import net.corda.rest.exception.InvalidStateChangeException
+import net.corda.rest.exception.OperationNotAllowedException
 import net.corda.rest.exception.ResourceNotFoundException
 import net.corda.rest.exception.ServiceUnavailableException
 import net.corda.rest.messagebus.MessageBusUtils.tryWithExceptionHandling
@@ -420,7 +421,7 @@ internal class VirtualNodeRestResourceImpl(
         val resp = tryWithExceptionHandling(logger, "Update vNode state") {
             sendAndReceive(rpcRequest)
         }
-        logger.debug { "Received response to update for $virtualNodeShortId to $newState by $actor" }
+        logger.info("Received response to update for $virtualNodeShortId to $newState by $actor")
 
         return when (val resolvedResponse = resp.responseType) {
             is VirtualNodeStateChangeResponse -> {
@@ -441,7 +442,13 @@ internal class VirtualNodeRestResourceImpl(
         } catch (e: IllegalArgumentException) {
             throw InvalidInputDataException(details = mapOf("newState" to "must be one of ACTIVE, MAINTENANCE"))
         }
-        getVirtualNode(virtualNodeShortId)
+        val virtualNode = getVirtualNode(virtualNodeShortId)
+
+        if (state == VirtualNodeStateTransitions.ACTIVE && virtualNode.operationInProgress != null) {
+            throw OperationNotAllowedException("The Virtual Node with shortHash ${virtualNode.holdingIdentity.shortHash} " +
+                    "has an operation in progress and cannot be set to Active")
+        }
+
         return state
     }
 
