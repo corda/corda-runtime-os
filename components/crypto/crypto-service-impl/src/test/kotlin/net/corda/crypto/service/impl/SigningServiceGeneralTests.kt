@@ -466,15 +466,19 @@ class SigningServiceGeneralTests {
     }
 
     @ParameterizedTest
-    @CsvSource("0", "1", "2")
-    fun `lookupSigningKeysByPublicKeyShortHash returns requested keys from cache and db`(
+    @CsvSource("0,false", "1,false", "2,false", "0,true", "1,true", "2,true")
+    fun `lookup returns requested keys from cache and db`(
         keysInCache: Int,
+        longHashes: Boolean,
     ) {
-        val keysCaptor = argumentCaptor<Set<ShortHash>>()
+        val shortHashCaptor = argumentCaptor<Set<ShortHash>>()
+        val hashCaptor = argumentCaptor<Set<SecureHash>>()
         val mockDbResults = if (keysInCache == 0) setOf(signingKeyInfo0, signingKeyInfo1) else setOf(signingKeyInfo1)
-        val repo = mock<SigningRepository> {
-            on { lookupByPublicKeyShortHashes(keysCaptor.capture()) }.thenReturn(mockDbResults)
-        }
+        val repo = if (longHashes) (mock<SigningRepository> {
+            on { lookupByPublicKeyHashes(hashCaptor.capture()) }.thenReturn(mockDbResults)
+        }) else (mock<SigningRepository> {
+            on { lookupByPublicKeyShortHashes(shortHashCaptor.capture()) }.thenReturn(mockDbResults)
+        })
         val cache = makeCache()
         var repoCount = 0
         val signingService = SigningServiceImpl(
@@ -489,14 +493,23 @@ class SigningServiceGeneralTests {
         )
         if (keysInCache >= 1) populateCache(cache, shortKeyId0, fullKeyId0)
         if (keysInCache >= 2) populateCache(cache, shortKeyId1, fullKeyId1)
-        val r = signingService.lookupSigningKeysByPublicKeyShortHash(tenantId, listOf(shortKeyId0, shortKeyId1))
+        val r = if (longHashes)
+            signingService.lookupSigningKeysByPublicKeyHashes(tenantId, listOf(fullKeyId0, fullKeyId1))
+        else
+            signingService.lookupSigningKeysByPublicKeyShortHash(tenantId, listOf(shortKeyId0, shortKeyId1))
+
         assertEquals(
             setOf(fullKeyId0, fullKeyId1).map { it.toString() }.toSet(),
             r.map { it.fullId.toString() }.toSet()
         )
         assertThat(repoCount).isEqualTo(if (keysInCache == 2) 0 else 1)
-        if (keysInCache == 0) assertEquals(setOf(shortKeyId0, shortKeyId1), keysCaptor.firstValue)
-        if (keysInCache == 1) assertEquals(setOf(shortKeyId1), keysCaptor.firstValue)
+        if (longHashes) {
+            if (keysInCache == 0) assertEquals(setOf(fullKeyId0, fullKeyId1), hashCaptor.firstValue)
+            if (keysInCache == 1) assertEquals(setOf(fullKeyId1), hashCaptor.firstValue)
+        } else {
+            if (keysInCache == 0) assertEquals(setOf(shortKeyId0, shortKeyId1), shortHashCaptor.firstValue)
+            if (keysInCache == 1) assertEquals(setOf(shortKeyId1), shortHashCaptor.firstValue)
+        }
     }
 
 
