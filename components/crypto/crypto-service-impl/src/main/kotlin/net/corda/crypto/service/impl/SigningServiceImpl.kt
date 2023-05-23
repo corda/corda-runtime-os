@@ -363,15 +363,17 @@ class SigningServiceImpl(
             val requestedFullKeyId = publicKey.fullIdHash(schemeMetadata, digestService)
             val keyId = ShortHash.of(requestedFullKeyId)
             val cacheKey = CacheKey(tenantId, keyId)
-            val signingKeyInfo =  cache.get(cacheKey) {
+            val signingKeyInfo = cache.get(cacheKey) {
                 val repo = signingRepositoryFactory.getInstance(tenantId)
                 val result = repo.findKey(publicKey)
                 if (result == null) throw IllegalArgumentException("The public key '${publicKey.publicKeyId()}' was not found")
-                if (result.fullId != requestedFullKeyId) throw IllegalArgumentException(
-                        "The tenant $tenantId doesn't own public key '${publicKey.publicKeyId()}'.")
                 cache.put(cacheKey, result)
                 result
             }
+            if (signingKeyInfo.fullId != requestedFullKeyId) throw IllegalArgumentException(
+                "The tenant $tenantId doesn't own public key '${publicKey.publicKeyId()}'."
+            )
+
             return OwnedKeyRecord(publicKey, signingKeyInfo)
         }
     }
