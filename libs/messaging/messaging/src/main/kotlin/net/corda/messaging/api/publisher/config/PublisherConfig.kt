@@ -8,4 +8,5 @@ package net.corda.messaging.api.publisher.config
 data class PublisherConfig (
     val clientId: String,
     val transactional: Boolean = true,
+    val withTracing: Boolean = false
 )

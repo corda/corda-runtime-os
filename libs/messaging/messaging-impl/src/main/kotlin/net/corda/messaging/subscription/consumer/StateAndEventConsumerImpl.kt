@@ -12,6 +12,7 @@ import net.corda.messaging.constants.MetricsConstants
 import net.corda.messaging.utils.tryGetResult
 import net.corda.metrics.CordaMetrics
 import net.corda.schema.Schemas.getStateAndEventStateTopic
+import net.corda.tracing.wrapWithTracingExecutor
 import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
 import java.time.Clock
@@ -261,7 +262,9 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
     }
 
     override fun waitForFunctionToFinish(function: () -> Any, maxTimeout: Long, timeoutErrorMessage: String): CompletableFuture<Any> {
-        val future: CompletableFuture<Any> = CompletableFuture.supplyAsync({ function() }, executor)
+        val future: CompletableFuture<Any> = CompletableFuture.supplyAsync(
+            { function() },
+            wrapWithTracingExecutor(executor))
         future.tryGetResult(getInitialConsumerTimeout())
 
         if (!future.isDone) {
