@@ -22,8 +22,8 @@ class CpkChunksKafkaReader(
     private val cpkChunksFileManager: CpkChunksFileManager,
     private val onCpkAssembled: (SecureHash, Cpk) -> Unit
 ) : CompactedProcessor<CpkChunkId, Chunk> {
-    companion object {
-        val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+    private companion object {
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     // Assuming [CompactedProcessor.onSnapshot] and [CompactedProcessor.onNext] are not called concurrently.
