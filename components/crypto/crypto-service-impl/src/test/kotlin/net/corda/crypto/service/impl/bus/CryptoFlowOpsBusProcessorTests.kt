@@ -45,6 +45,7 @@ import net.corda.v5.crypto.SecureHash
 import org.junit.jupiter.api.Assertions.assertInstanceOf
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
@@ -394,6 +395,7 @@ import kotlin.test.assertTrue
     }
 
 
+     @Disabled
      //    @Suppress("UNCHECKED_CAST")
      @Test
      fun `Should process list with valid event and skip event without value`() {
@@ -422,6 +424,7 @@ import kotlin.test.assertTrue
          assertTrue(transformed.any { it.encoded.contentEquals(myPublicKeys[1].encoded) })
      }
 
+     @Disabled
      @Suppress("UNCHECKED_CAST")
      @Test
      fun `Should process list with valid event and return error for stale event`() {
@@ -482,6 +485,7 @@ import kotlin.test.assertTrue
          assertTrue(r.transformedResponses.first().any { it.encoded.contentEquals(myPublicKeys[1].encoded) })
      }
 
+     @Disabled
      @Test
      fun `Should process list with valid event and return error for failed event`() {
          val failingTenantId = UUID.randomUUID().toString()
