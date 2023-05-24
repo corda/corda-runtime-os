@@ -11,6 +11,6 @@ interface FlowMetricsRecorder {
     fun recordTotalSuspensionTime(executionTimeMillis: Long)
     fun recordFlowCompletion(executionTimeMillis: Long, completionStatus:String)
     fun recordFlowSessionMessagesReceived(flowEventType: String)
-    fun recordFlowSessionMessagesSent(flowEventType: String)
+    fun recordFlowSessionMessagesSent(flowEventType: String, highestSequenceNumberSent:Long)
 
 }

@@ -86,12 +86,12 @@ class FlowMetricsRecorderImpl(
 
     }
 
-    override fun recordFlowSessionMessagesSent(flowEventType: String) {
+    override fun recordFlowSessionMessagesSent(flowEventType: String, highestSequenceNumberSent: Long) {
         CordaMetrics.Metric.FlowSessionMessagesSentCount.builder()
             .forVirtualNode(flowCheckpoint.holdingIdentity.shortHash.toString())
             .withTag(CordaMetrics.Tag.FlowClass, flowCheckpoint.flowStartContext.flowClassName)
             .withTag(CordaMetrics.Tag.FlowEvent, flowEventType)
-            .build().increment()
+            .build().increment(highestSequenceNumberSent.toDouble())
     }
 
 

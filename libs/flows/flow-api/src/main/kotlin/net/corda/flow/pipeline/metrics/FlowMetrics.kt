@@ -17,7 +17,9 @@ interface FlowMetrics {
 
     fun flowFailed()
 
-    fun flowSessionMessageSent(flowEventType: String)
+    fun flowSessionMessageSent(flowEventType: String, sessionId: String)
 
     fun flowSessionMessageReceived(flowEventType: String)
+
+    fun flowSessionMessageReplayed(flowEventType: String, sessionId: String)
 }

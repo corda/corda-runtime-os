@@ -88,8 +88,18 @@ class FlowMetricsImpl(
         recordFlowCompleted(FlowStates.FAILED.toString())
     }
 
-    override fun flowSessionMessageSent(flowEventType: String) {
-        flowMetricsRecorder.recordFlowSessionMessagesSent(flowEventType)
+    override fun flowSessionMessageSent(flowEventType: String, sessionId: String) {
+        val sessionMetricState = currentState.sessionMetricStateBySessionId[sessionId]
+        if (sessionMetricState != null) {
+            sessionMetricState.highestSequenceNumberSent++
+        } else {
+            currentState.sessionMetricStateBySessionId[sessionId] = SessionMetricState()
+        }
+        flowMetricsRecorder.recordFlowSessionMessagesSent(flowEventType, sessionMetricState!!.highestSequenceNumberSent)
+    }
+
+    override fun flowSessionMessageReplayed(flowEventType: String, sessionId: String) {
+
     }
 
     override fun flowSessionMessageReceived(flowEventType: String) {
@@ -116,5 +126,10 @@ class FlowMetricsImpl(
         var totalSuspensionTime: Long = 0
         var totalFiberExecutionTime: Long = 0
         var totalPipelineExecutionTime: Long = 0
+        var sessionMetricStateBySessionId: MutableMap<String, SessionMetricState> = mutableMapOf()
+    }
+
+    private class SessionMetricState {
+        var highestSequenceNumberSent: Long = 0
     }
 }
