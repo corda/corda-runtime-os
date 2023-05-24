@@ -448,7 +448,6 @@ private class DataClassOutParametersBindingContext(
 
 }
 
-@Suspendable
 private inline fun <reified T : Annotation> AnnotatedElement.readAnnotation(): T? =
     if (isAnnotationPresent(T::class.java)) getAnnotation(T::class.java) else null
 

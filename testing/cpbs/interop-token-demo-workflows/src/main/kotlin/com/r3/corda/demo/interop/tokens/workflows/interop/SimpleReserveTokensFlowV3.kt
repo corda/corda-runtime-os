@@ -42,11 +42,10 @@ class SimpleReserveTokensFlowV3 : ClientStartableFlow {
 
         log.info("Calling facade method '$facadeId' with payload '$uuid' to $alias")
 
-        val client: TokensFacade =
+        val tokens: TokensFacade =
             facadeService.getFacade(facadeId, TokensFacade::class.java, alias, interopGroupId)
 
-        val responseObject: InteropAction<SimpleTokenReservation> = client.reserveTokensV3(
-            "USD", BigDecimal(100), 100)
+        val responseObject: InteropAction<SimpleTokenReservation> = tokens.reserveTokensV3("USD", BigDecimal(100), 100)
         val response = responseObject.result.toString()
 
         log.info("Facade responded with '$response'")
