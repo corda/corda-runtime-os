@@ -2,6 +2,7 @@ package net.corda.flow.application.serialization
 
 import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.metrics.CordaMetrics
+import net.corda.metrics.recordOptionally
 import net.corda.sandbox.type.SandboxConstants.CORDA_SYSTEM_SERVICE
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
@@ -47,7 +48,7 @@ class SerializationServiceImpl @Activate constructor(
             .forVirtualNode(currentSandboxGroupContext.get().virtualNodeContext.holdingIdentity.shortHash.toString())
             .withTag(CordaMetrics.Tag.SerializedClass, obj::class.java.name)
             .build()
-            .recordCallable { serializationService.serialize(obj) } as SerializedBytes<T>
+            .recordOptionally(greaterThanMillis = 1) { serializationService.serialize(obj) }
     }
 
     override fun <T : Any> deserialize(bytes: ByteArray, clazz: Class<T>): T {
@@ -57,7 +58,7 @@ class SerializationServiceImpl @Activate constructor(
                 .forVirtualNode(currentSandboxGroupContext.get().virtualNodeContext.holdingIdentity.shortHash.toString())
                 .withTag(CordaMetrics.Tag.SerializedClass, clazz.name)
                 .build()
-                .recordCallable { serializationService.deserialize(bytes, clazz) } as T
+                .recordOptionally(greaterThanMillis = 1) { serializationService.deserialize(bytes, clazz) }
         } catch (e: NotSerializableException) {
             log.error("Failed to deserialize it into a ${clazz.name}", e)
             throw e

@@ -2,6 +2,7 @@ package net.corda.sandbox.serialization.amqp
 
 import io.micrometer.core.instrument.Timer
 import net.corda.metrics.CordaMetrics
+import net.corda.metrics.recordOptionally
 import net.corda.sandbox.type.UsedByPersistence
 import net.corda.sandbox.type.UsedByVerification
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
@@ -11,6 +12,8 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
+import java.time.Duration
+import java.time.Instant
 
 /**
  * A [SerializationService] component for persistence and verification sandboxes.
@@ -38,7 +41,7 @@ class SerializationServiceProxy @Activate constructor(
     override fun <T : Any> deserialize(bytes: ByteArray, clazz: Class<T>): T {
         return checkNotNull(serializationService) { "deserialize(byte[], Class): Not initialised" }
             .run {
-                deserializationTime(clazz).recordCallable {
+                deserializationTime(clazz).recordOptionally(greaterThanMillis = 1) {
                     deserialize(bytes, clazz)
                 }
             }
@@ -47,7 +50,7 @@ class SerializationServiceProxy @Activate constructor(
     override fun <T : Any> deserialize(serializedBytes: SerializedBytes<T>, clazz: Class<T>): T {
         return checkNotNull(serializationService) { "deserialize(SerializedBytes, Class): Not initialized" }
             .run {
-                deserializationTime(clazz).recordCallable {
+                deserializationTime(clazz).recordOptionally(greaterThanMillis = 1) {
                     deserialize(serializedBytes, clazz)
                 }
             }
@@ -61,7 +64,7 @@ class SerializationServiceProxy @Activate constructor(
                     .forVirtualNode(currentSandboxGroupContext.get().virtualNodeContext.holdingIdentity.shortHash.toString())
                     .withTag(CordaMetrics.Tag.SerializedClass, obj::class.java.name)
                     .build()
-                    .recordCallable { serialize(obj) }
+                    .recordOptionally(greaterThanMillis = 1) { serialize(obj) }
             }
     }
 
