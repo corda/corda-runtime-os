@@ -28,6 +28,7 @@ internal class ActivateMemberHandler(
         = {clock: Clock, serializer: CordaAvroDeserializer<KeyValuePairList>, deserializer: CordaAvroSerializer<KeyValuePairList>
         -> SuspensionActivationEntityOperations(clock, serializer, deserializer)}
 ) : BasePersistenceHandler<ActivateMember, ActivateMemberResponse>(persistenceHandlerServices) {
+    override val operation = ActivateMember::class.java
     private val keyValuePairListDeserializer: CordaAvroDeserializer<KeyValuePairList> by lazy {
         cordaAvroSerializationFactory.createAvroDeserializer(
             {

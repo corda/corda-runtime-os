@@ -2,8 +2,8 @@ package net.corda.flow.metrics.impl
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import net.corda.data.flow.output.FlowStates
-import net.corda.flow.pipeline.metrics.FlowMetrics
 import net.corda.flow.metrics.FlowMetricsRecorder
+import net.corda.flow.pipeline.metrics.FlowMetrics
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.utilities.time.Clock
 
@@ -88,6 +88,14 @@ class FlowMetricsImpl(
 
     override fun flowFailed() {
         recordFlowCompleted(FlowStates.FAILED.toString())
+    }
+
+    override fun flowSessionMessageSent(flowEventType: String) {
+        flowMetricsRecorder.recordFlowSessionMessagesSent(flowEventType)
+    }
+
+    override fun flowSessionMessageReceived(flowEventType: String) {
+        flowMetricsRecorder.recordFlowSessionMessagesReceived(flowEventType)
     }
 
     private fun recordFlowCompleted(completionStatus: String) {
