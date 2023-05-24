@@ -33,7 +33,16 @@ fun <K, V> wrapWithTracingProducer(kafkaProducer: Producer<K, V>): Producer<K, V
 }
 
 fun addTraceContextToRecords(records: List<Record<*, *>>): List<Record<*, *>> {
-    return records
+    val injector = TracingState.tracing.propagation().injector { param: MutableList<Pair<String, String>>, key: String, value: String ->
+        param.removeAll { it.first == key }
+        param.add(key to value)
+    }
+
+    return records.map {
+        val headersWithTracing = it.headers.toMutableList()
+        injector.inject(TracingState.tracing.currentTraceContext().get(), headersWithTracing)
+        it.copy(headers = headersWithTracing)
+    }
 }
 
 fun traceEventProcessing(
