@@ -94,5 +94,12 @@ class FlowMetricsRecorderImpl(
             .build().increment(highestSequenceNumberSent.toDouble())
     }
 
+    override fun recordFlowSessionMessagesReplayed(flowEventType: String, highestSequenceNumberSent: Long) {
+        CordaMetrics.Metric.FlowSessionMessagesReplayedCount.builder()
+            .forVirtualNode(flowCheckpoint.holdingIdentity.shortHash.toString())
+            .withTag(CordaMetrics.Tag.FlowClass, flowCheckpoint.flowStartContext.flowClassName)
+            .withTag(CordaMetrics.Tag.FlowEvent, flowEventType)
+            .build().increment(highestSequenceNumberSent.toDouble())
+    }
 
 }

@@ -12,5 +12,6 @@ interface FlowMetricsRecorder {
     fun recordFlowCompletion(executionTimeMillis: Long, completionStatus:String)
     fun recordFlowSessionMessagesReceived(flowEventType: String)
     fun recordFlowSessionMessagesSent(flowEventType: String, highestSequenceNumberSent:Long)
+    fun recordFlowSessionMessagesReplayed(flowEventType: String, highestSequenceNumberSent:Long)
 
 }

@@ -89,13 +89,10 @@ class FlowMetricsImpl(
     }
 
     override fun flowSessionMessageSent(flowEventType: String, sessionId: String) {
-        val sessionMetricState = currentState.sessionMetricStateBySessionId[sessionId]
-        if (sessionMetricState != null) {
-            sessionMetricState.highestSequenceNumberSent++
-        } else {
-            currentState.sessionMetricStateBySessionId[sessionId] = SessionMetricState()
+        val sessionMetricState = currentState.sessionMetricStateBySessionId.computeIfAbsent(sessionId) {
+            SessionMetricState()
         }
-        flowMetricsRecorder.recordFlowSessionMessagesSent(flowEventType, sessionMetricState!!.highestSequenceNumberSent)
+        flowMetricsRecorder.recordFlowSessionMessagesSent(flowEventType, sessionMetricState.highestSequenceNumberSent)
     }
 
     override fun flowSessionMessageReplayed(flowEventType: String, sessionId: String) {

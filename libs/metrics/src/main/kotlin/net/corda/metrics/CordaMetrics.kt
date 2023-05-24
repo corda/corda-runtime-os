@@ -178,6 +178,11 @@ object CordaMetrics {
         object FlowSessionMessagesSentCount: Metric<Counter>("flow.session.messages.sent.count", Metrics::counter)
 
         /**
+         * The number of messages replayed by sessions.
+         */
+        object FlowSessionMessagesReplayedCount: Metric<Counter>("flow.session.messages.replayed.count", Metrics::counter)
+
+        /**
          * P2P Metrics
          *
          * Number of outbound peer-to-peer data messages sent.
