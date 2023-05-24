@@ -2,7 +2,7 @@ package net.corda.crypto.config.impl
 
 import net.corda.libs.configuration.SmartConfig
 
-class CryptoBusProcessorConfig(internal val config: SmartConfig) : SmartConfig by config {
+class RetryingConfig(internal val config: SmartConfig) : SmartConfig by config {
     val maxAttempts: Int
         get() = try {
             config.getConfig(this::maxAttempts.name).getInt(DEFAULT)
