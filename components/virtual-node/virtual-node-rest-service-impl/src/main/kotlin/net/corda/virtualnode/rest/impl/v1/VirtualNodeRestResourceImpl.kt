@@ -445,7 +445,7 @@ internal class VirtualNodeRestResourceImpl(
         val virtualNode = getVirtualNode(virtualNodeShortId)
 
         if (state == VirtualNodeStateTransitions.ACTIVE && virtualNode.operationInProgress != null) {
-            throw OperationNotAllowedException("The Virtual Node with shortHash ${virtualNode.holdingIdentity.shortHash} " +
+            throw BadRequestException("The Virtual Node with shortHash ${virtualNode.holdingIdentity.shortHash} " +
                     "has an operation in progress and cannot be set to Active")
         }
 
