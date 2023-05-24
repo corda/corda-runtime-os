@@ -51,12 +51,18 @@ class FlowEventProcessorImpl(
         val flowEvent = event.value
         val mdcProperties = flowMDCService.getMDCLogging(state, flowEvent, event.key)
 
-        val loggedContextProperties = state?.flowState
-            ?.let(::FlowStateManager)
-            ?.flowContext
-            ?.flattenPlatformProperties()
-            ?.selectLoggedProperties()
-            ?: emptyMap()
+        val loggedContextProperties = try {
+            state?.flowState
+                ?.let(::FlowStateManager)
+                ?.flowContext
+                ?.flattenPlatformProperties()
+                ?.selectLoggedProperties()
+                ?: emptyMap()
+        } catch (e: Exception) {
+            // FlowStateManager construction might fail if the given flow state is not valid and cannot be built
+            // into an avro object (happens in unit tests), in that case we will default to an empty map
+            emptyMap()
+        }
 
 
         return withMDC(mdcProperties + loggedContextProperties) {
