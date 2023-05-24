@@ -421,7 +421,7 @@ internal class VirtualNodeRestResourceImpl(
         val resp = tryWithExceptionHandling(logger, "Update vNode state") {
             sendAndReceive(rpcRequest)
         }
-        logger.info("Received response to update for $virtualNodeShortId to $newState by $actor")
+        logger.debug("Received response to update for $virtualNodeShortId to $newState by $actor")
 
         return when (val resolvedResponse = resp.responseType) {
             is VirtualNodeStateChangeResponse -> {
