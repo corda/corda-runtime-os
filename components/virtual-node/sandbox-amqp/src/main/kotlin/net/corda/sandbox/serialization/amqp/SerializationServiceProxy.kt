@@ -12,8 +12,6 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
-import java.time.Duration
-import java.time.Instant
 
 /**
  * A [SerializationService] component for persistence and verification sandboxes.
