@@ -8,11 +8,13 @@ import net.corda.data.flow.state.checkpoint.Checkpoint
 import net.corda.data.flow.state.checkpoint.FlowState
 import net.corda.data.flow.state.external.ExternalEventStateType
 import net.corda.flow.pipeline.FlowMDCService
+import net.corda.flow.state.impl.FlowStateManager
 import net.corda.utilities.MDC_CLIENT_ID
 import net.corda.utilities.MDC_EXTERNAL_EVENT_ID
 import net.corda.utilities.MDC_FLOW_ID
 import net.corda.utilities.MDC_SESSION_EVENT_ID
 import net.corda.utilities.MDC_VNODE_ID
+import net.corda.utilities.selectLoggedProperties
 import net.corda.virtualnode.toCorda
 import org.osgi.service.component.annotations.Component
 import org.slf4j.LoggerFactory
@@ -78,9 +80,23 @@ class FlowMDCServiceImpl : FlowMDCService {
             MDC_CLIENT_ID to startContext.requestId,
             MDC_FLOW_ID to flowId
         )
+
+        // Extract properties starting with `corda.logged`
+        val loggedContextProperties = try {
+            state.flowState
+                .let(::FlowStateManager)
+                .flowContext
+                .flattenPlatformProperties()
+                .selectLoggedProperties()
+        } catch (e: Exception) {
+            // FlowStateManager construction might fail if the given flow state is not valid and cannot be built
+            // into an avro object (happens in unit tests), in that case we will default to an empty map
+            emptyMap()
+        }
+
         setExternalEventIdIfNotComplete(flowState, mdcLogging)
         setSessionMDCFromEvent(event, mdcLogging)
-        return mdcLogging
+        return mdcLogging + loggedContextProperties
     }
 
     private fun setSessionMDCFromEvent(event: FlowEvent?, mdcLogging: MutableMap<String, String>) {

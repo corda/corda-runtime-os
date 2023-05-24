@@ -11,14 +11,12 @@ import net.corda.flow.pipeline.exceptions.FlowMarkedForKillException
 import net.corda.flow.pipeline.exceptions.FlowPlatformException
 import net.corda.flow.pipeline.exceptions.FlowTransientException
 import net.corda.flow.pipeline.factory.FlowEventPipelineFactory
-import net.corda.flow.state.impl.FlowStateManager
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.schema.configuration.MessagingConfig.Subscription.PROCESSOR_TIMEOUT
 import net.corda.utilities.withMDC
 import net.corda.utilities.debug
-import net.corda.utilities.selectLoggedProperties
 import net.corda.utilities.trace
 import org.slf4j.LoggerFactory
 
@@ -51,21 +49,7 @@ class FlowEventProcessorImpl(
         val flowEvent = event.value
         val mdcProperties = flowMDCService.getMDCLogging(state, flowEvent, event.key)
 
-        val loggedContextProperties = try {
-            state?.flowState
-                ?.let(::FlowStateManager)
-                ?.flowContext
-                ?.flattenPlatformProperties()
-                ?.selectLoggedProperties()
-                ?: emptyMap()
-        } catch (e: Exception) {
-            // FlowStateManager construction might fail if the given flow state is not valid and cannot be built
-            // into an avro object (happens in unit tests), in that case we will default to an empty map
-            emptyMap()
-        }
-
-
-        return withMDC(mdcProperties + loggedContextProperties) {
+        return withMDC(mdcProperties) {
             getFlowPipelineResponse(flowEvent, event, state, mdcProperties)
         }
     }
