@@ -524,6 +524,9 @@ object CordaMetrics {
          */
         LedgerContractName("ledger.contract.name"),
 
+        /**
+         * The class being serialized to or deserialized from.
+         */
         SerializedClass("serialized.class"),
 
         /**

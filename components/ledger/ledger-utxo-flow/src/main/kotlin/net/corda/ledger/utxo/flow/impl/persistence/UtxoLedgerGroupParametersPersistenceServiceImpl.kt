@@ -3,6 +3,8 @@ package net.corda.ledger.utxo.flow.impl.persistence
 import io.micrometer.core.instrument.Timer
 import net.corda.flow.external.events.executor.ExternalEventExecutor
 import net.corda.flow.fiber.metrics.recordSuspendable
+import net.corda.ledger.utxo.flow.impl.persistence.LedgerPersistenceMetricOperationName.FindGroupParameters
+import net.corda.ledger.utxo.flow.impl.persistence.LedgerPersistenceMetricOperationName.PersistSignedGroupParametersIfDoNotExist
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindSignedGroupParametersExternalEventFactory
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindSignedGroupParametersParameters
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.PersistSignedGroupParametersIfDoNotExistExternalEventFactory
@@ -38,7 +40,7 @@ class UtxoLedgerGroupParametersPersistenceServiceImpl @Activate constructor(
 
     @Suspendable
     override fun find(hash: SecureHash): SignedGroupParameters? {
-        return recordSuspendable({ ledgerPersistenceFlowTimer("findUnconsumedStatesByType") }) @Suspendable {
+        return recordSuspendable({ ledgerPersistenceFlowTimer(FindGroupParameters) }) @Suspendable {
             wrapWithPersistenceException {
                 externalEventExecutor.execute(
                     FindSignedGroupParametersExternalEventFactory::class.java,
@@ -50,7 +52,7 @@ class UtxoLedgerGroupParametersPersistenceServiceImpl @Activate constructor(
 
     @Suspendable
     override fun persistIfDoesNotExist(signedGroupParameters: SignedGroupParameters) {
-        recordSuspendable({ ledgerPersistenceFlowTimer("findUnconsumedStatesByType") }) @Suspendable {
+        recordSuspendable({ ledgerPersistenceFlowTimer(PersistSignedGroupParametersIfDoNotExist) }) @Suspendable {
             wrapWithPersistenceException {
                 externalEventExecutor.execute(
                     PersistSignedGroupParametersIfDoNotExistExternalEventFactory::class.java,
@@ -66,11 +68,11 @@ class UtxoLedgerGroupParametersPersistenceServiceImpl @Activate constructor(
         }
     }
 
-    private fun ledgerPersistenceFlowTimer(operationName: String): Timer {
+    private fun ledgerPersistenceFlowTimer(operationName: LedgerPersistenceMetricOperationName): Timer {
         return CordaMetrics.Metric.Ledger.PersistenceFlowTime
             .builder()
             .forVirtualNode(currentSandboxGroupContext.get().virtualNodeContext.holdingIdentity.shortHash.toString())
-            .withTag(CordaMetrics.Tag.OperationName, operationName)
+            .withTag(CordaMetrics.Tag.OperationName, operationName.name)
             .build()
     }
 }

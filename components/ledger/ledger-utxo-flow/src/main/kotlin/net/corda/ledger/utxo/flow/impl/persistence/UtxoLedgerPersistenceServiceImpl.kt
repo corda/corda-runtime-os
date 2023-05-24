@@ -6,6 +6,10 @@ import net.corda.flow.fiber.metrics.recordSuspendable
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.data.transaction.TransactionStatus.Companion.toTransactionStatus
+import net.corda.ledger.utxo.flow.impl.persistence.LedgerPersistenceMetricOperationName.FindTransactionWithStatus
+import net.corda.ledger.utxo.flow.impl.persistence.LedgerPersistenceMetricOperationName.PersistTransaction
+import net.corda.ledger.utxo.flow.impl.persistence.LedgerPersistenceMetricOperationName.PersistTransactionIfDoesNotExist
+import net.corda.ledger.utxo.flow.impl.persistence.LedgerPersistenceMetricOperationName.UpdateTransactionStatus
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindTransactionExternalEventFactory
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindTransactionParameters
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.PersistTransactionExternalEventFactory
@@ -59,7 +63,7 @@ class UtxoLedgerPersistenceServiceImpl @Activate constructor(
         id: SecureHash,
         transactionStatus: TransactionStatus
     ): Pair<UtxoSignedTransaction?, TransactionStatus>? {
-        return recordSuspendable({ ledgerPersistenceFlowTimer("findTransactionWithStatus") }) @Suspendable {
+        return recordSuspendable({ ledgerPersistenceFlowTimer(FindTransactionWithStatus) }) @Suspendable {
             wrapWithPersistenceException {
                 externalEventExecutor.execute(
                     FindTransactionExternalEventFactory::class.java,
@@ -81,7 +85,7 @@ class UtxoLedgerPersistenceServiceImpl @Activate constructor(
         transactionStatus: TransactionStatus,
         visibleStatesIndexes: List<Int>
     ): List<CordaPackageSummary> {
-        return recordSuspendable({ ledgerPersistenceFlowTimer("persist")}) @Suspendable {
+        return recordSuspendable({ ledgerPersistenceFlowTimer(PersistTransaction)}) @Suspendable {
             wrapWithPersistenceException {
                 externalEventExecutor.execute(
                     PersistTransactionExternalEventFactory::class.java,
@@ -93,7 +97,7 @@ class UtxoLedgerPersistenceServiceImpl @Activate constructor(
 
     @Suspendable
     override fun updateStatus(id: SecureHash, transactionStatus: TransactionStatus) {
-        recordSuspendable({ ledgerPersistenceFlowTimer("updateStatus")}) @Suspendable {
+        recordSuspendable({ ledgerPersistenceFlowTimer(UpdateTransactionStatus)}) @Suspendable {
             wrapWithPersistenceException {
                 externalEventExecutor.execute(
                     UpdateTransactionStatusExternalEventFactory::class.java,
@@ -108,7 +112,7 @@ class UtxoLedgerPersistenceServiceImpl @Activate constructor(
         transaction: UtxoSignedTransaction,
         transactionStatus: TransactionStatus
     ): Pair<TransactionExistenceStatus, List<CordaPackageSummary>> {
-        return recordSuspendable({ ledgerPersistenceFlowTimer("persistIfDoesNotExist")}) @Suspendable {
+        return recordSuspendable({ ledgerPersistenceFlowTimer(PersistTransactionIfDoesNotExist)}) @Suspendable {
             wrapWithPersistenceException {
                 externalEventExecutor.execute(
                     PersistTransactionIfDoesNotExistExternalEventFactory::class.java,
@@ -138,12 +142,11 @@ class UtxoLedgerPersistenceServiceImpl @Activate constructor(
 
     private fun serialize(payload: Any) = ByteBuffer.wrap(serializationService.serialize(payload).bytes)
 
-    // TODO align with ledger persistence operation names
-    private fun ledgerPersistenceFlowTimer(operationName: String): Timer {
+    private fun ledgerPersistenceFlowTimer(operationName: LedgerPersistenceMetricOperationName): Timer {
         return CordaMetrics.Metric.Ledger.PersistenceFlowTime
             .builder()
             .forVirtualNode(currentSandboxGroupContext.get().virtualNodeContext.holdingIdentity.shortHash.toString())
-            .withTag(CordaMetrics.Tag.OperationName, operationName)
+            .withTag(CordaMetrics.Tag.OperationName, operationName.name)
             .build()
     }
 }

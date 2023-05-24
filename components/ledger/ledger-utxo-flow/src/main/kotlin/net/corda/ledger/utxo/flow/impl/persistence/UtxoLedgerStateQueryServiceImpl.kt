@@ -3,6 +3,8 @@ package net.corda.ledger.utxo.flow.impl.persistence
 import io.micrometer.core.instrument.Timer
 import net.corda.flow.external.events.executor.ExternalEventExecutor
 import net.corda.flow.fiber.metrics.recordSuspendable
+import net.corda.ledger.utxo.flow.impl.persistence.LedgerPersistenceMetricOperationName.FindUnconsumedStatesByType
+import net.corda.ledger.utxo.flow.impl.persistence.LedgerPersistenceMetricOperationName.ResolveStateRefs
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindUnconsumedStatesByTypeExternalEventFactory
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindUnconsumedStatesByTypeParameters
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.ResolveStateRefsExternalEventFactory
@@ -36,7 +38,7 @@ class UtxoLedgerStateQueryServiceImpl @Activate constructor(
 
     @Suspendable
     override fun <T: ContractState> findUnconsumedStatesByType(stateClass: Class<out T>): List<StateAndRef<T>> {
-        return recordSuspendable({ ledgerPersistenceFlowTimer("findUnconsumedStatesByType") }) @Suspendable {
+        return recordSuspendable({ ledgerPersistenceFlowTimer(FindUnconsumedStatesByType) }) @Suspendable {
             wrapWithPersistenceException {
                 externalEventExecutor.execute(
                     FindUnconsumedStatesByTypeExternalEventFactory::class.java,
@@ -48,7 +50,7 @@ class UtxoLedgerStateQueryServiceImpl @Activate constructor(
 
     @Suspendable
     override fun resolveStateRefs(stateRefs: Iterable<StateRef>): List<StateAndRef<*>> {
-        return recordSuspendable({ ledgerPersistenceFlowTimer("resolveStateRefs") }) @Suspendable {
+        return recordSuspendable({ ledgerPersistenceFlowTimer(ResolveStateRefs) }) @Suspendable {
             wrapWithPersistenceException {
                 externalEventExecutor.execute(
                     ResolveStateRefsExternalEventFactory::class.java,
@@ -58,11 +60,11 @@ class UtxoLedgerStateQueryServiceImpl @Activate constructor(
         }
     }
 
-    private fun ledgerPersistenceFlowTimer(operationName: String): Timer {
+    private fun ledgerPersistenceFlowTimer(operationName: LedgerPersistenceMetricOperationName): Timer {
         return CordaMetrics.Metric.Ledger.PersistenceFlowTime
             .builder()
             .forVirtualNode(currentSandboxGroupContext.get().virtualNodeContext.holdingIdentity.shortHash.toString())
-            .withTag(CordaMetrics.Tag.OperationName, operationName)
+            .withTag(CordaMetrics.Tag.OperationName, operationName.name)
             .build()
     }
 }
