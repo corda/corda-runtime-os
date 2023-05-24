@@ -134,6 +134,16 @@ object CordaMetrics {
         object FlowScheduledWakeupCount : Metric<Counter>("flow.scheduled.wakeup.count", Metrics::counter)
 
         /**
+         * Number of events a flow received in order for it to complete.
+         */
+        object FlowEventProcessedCount : Metric<DistributionSummary>("flow.event.processed.count", Metrics::summary)
+
+        /**
+         * Number of flow events that lead to a fiber resume for a single flow.
+         */
+        object FlowFiberSuspensionCount : Metric<DistributionSummary>("flow.fiber.suspension.total.count", Metrics::summary)
+
+        /**
          * FLOW MAPPER METRICS
          *
          * Time to process a single message in the flow mapper
