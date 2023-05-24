@@ -56,7 +56,7 @@ kubectl port-forward --namespace "$namespace" deployment/corda-rest-worker 8888 
 rm -r register-member
 mkdir -p register-member
 cd corda-runtime-os
-./gradlew tools:plugins package:assemble tools:plugins:mgm:assemble
+./gradlew tools:plugins:package:assemble tools:plugins:mgm:assemble
 cd ../corda-cli-plugin-host
 echo "Step Group Policy for $cpi and Identity ${identity1[@]}"
 ./build/generatedScripts/corda-cli.sh mgm groupPolicy "--name=${identity1[@]:0:1}" "--name=${identity1[@]:1:1}" "--name=${identity1[@]:2:1}" --endpoint-protocol=1 --endpoint="http://localhost:1080" > "../register-member/$groupPolicyFile.json"
