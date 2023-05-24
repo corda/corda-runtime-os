@@ -355,6 +355,7 @@ private class DataClassOutParametersBindingContext(
 ) : BindingContext<FacadeOutParameterBindings>() {
 
     override fun createBinding(): FacadeOutParameterBindings {
+        //TODO test the code against Java - verify and document possible constraints for a request returned types, see CORE-14104
         val constructor = wrappedReturnType.constructors.singleOrNull().orFail {
             "Return type does not have a unique constructor"
         }

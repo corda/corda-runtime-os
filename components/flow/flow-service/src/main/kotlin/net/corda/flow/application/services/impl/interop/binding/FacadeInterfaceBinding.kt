@@ -116,6 +116,7 @@ sealed class FacadeOutParameterBindings {
             }
         }
 
+        //TODO test the code against Java - verify and document possible constraints for a request returned types, see CORE-14104
         val constructor: Constructor<*>
             get() = clazz.constructors.single()
 
