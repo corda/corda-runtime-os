@@ -1,8 +1,5 @@
 package net.corda.messaging.api.records
 
-import net.corda.messaging.api.tracing.NoopRecordTraceContext
-import net.corda.messaging.api.tracing.RecordTracingContext
-
 /**
  * Object to encapsulate the events stored on topics
  * @property topic Defines the id of the topic the record is stored on.
@@ -15,6 +12,5 @@ data class Record<K : Any, V : Any>(
     val topic: String,
     val key: K,
     val value: V?,
-    val headers: List<Pair<String, String>> = listOf(),
-    val tracing: RecordTracingContext = NoopRecordTraceContext()
+    val headers: List<Pair<String, String>> = listOf()
 )

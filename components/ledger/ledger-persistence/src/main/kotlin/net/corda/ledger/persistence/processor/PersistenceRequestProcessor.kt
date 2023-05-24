@@ -10,6 +10,7 @@ import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.persistence.common.EntitySandboxService
 import net.corda.persistence.common.ResponseFactory
+import net.corda.tracing.traceEventProcessing
 import net.corda.utilities.MDC_CLIENT_ID
 import net.corda.utilities.MDC_EXTERNAL_EVENT_ID
 import net.corda.utilities.trace
@@ -40,38 +41,44 @@ class PersistenceRequestProcessor(
         log.trace { "onNext processing messages ${events.joinToString(",") { it.key }}" }
 
         return events
-            .mapNotNull { it.value }
-            .flatMap { request ->
-                val clientRequestId = request.flowExternalEventContext.contextProperties.toMap()[MDC_CLIENT_ID] ?: ""
+            .filterNot { it.value == null }
+            .flatMap { event ->
+                val request = event.value!!
+                val requestType = request.request?.let { it.javaClass.simpleName } ?: "Unknown"
+                traceEventProcessing(event, "Ledger Persistence - $requestType") {
+                    val clientRequestId =
+                        request.flowExternalEventContext.contextProperties.toMap()[MDC_CLIENT_ID] ?: ""
 
-                withMDC(
-                    mapOf(
-                        MDC_CLIENT_ID to clientRequestId,
-                        MDC_EXTERNAL_EVENT_ID to request.flowExternalEventContext.requestId
-                    )
-                ) {
-                    try {
-                        val holdingIdentity = request.holdingIdentity.toCorda()
-                        val cpkFileHashes = request.flowExternalEventContext.contextProperties.items
-                            .filter { it.key.startsWith(CPK_FILE_CHECKSUM) }
-                            .map { it.value.toSecureHash() }
-                            .toSet()
-
-                        val sandbox = entitySandboxService.get(holdingIdentity, cpkFileHashes)
-                        delegatedRequestHandlerSelector.selectHandler(sandbox, request).execute()
-                    } catch (e: Exception) {
-                        listOf(
-                            when (e) {
-                                is UnsupportedLedgerTypeException,
-                                is UnsupportedRequestTypeException,
-                                is InconsistentLedgerStateException -> {
-                                    responseFactory.fatalErrorResponse(request.flowExternalEventContext, e)
-                                }
-                                else -> {
-                                    responseFactory.errorResponse(request.flowExternalEventContext, e)
-                                }
-                            }
+                    withMDC(
+                        mapOf(
+                            MDC_CLIENT_ID to clientRequestId,
+                            MDC_EXTERNAL_EVENT_ID to request.flowExternalEventContext.requestId
                         )
+                    ) {
+                        try {
+                            val holdingIdentity = request.holdingIdentity.toCorda()
+                            val cpkFileHashes = request.flowExternalEventContext.contextProperties.items
+                                .filter { it.key.startsWith(CPK_FILE_CHECKSUM) }
+                                .map { it.value.toSecureHash() }
+                                .toSet()
+
+                            val sandbox = entitySandboxService.get(holdingIdentity, cpkFileHashes)
+                            delegatedRequestHandlerSelector.selectHandler(sandbox, request).execute()
+                        } catch (e: Exception) {
+                            listOf(
+                                when (e) {
+                                    is UnsupportedLedgerTypeException,
+                                    is UnsupportedRequestTypeException,
+                                    is InconsistentLedgerStateException -> {
+                                        responseFactory.fatalErrorResponse(request.flowExternalEventContext, e)
+                                    }
+
+                                    else -> {
+                                        responseFactory.errorResponse(request.flowExternalEventContext, e)
+                                    }
+                                }
+                            )
+                        }
                     }
                 }
             }

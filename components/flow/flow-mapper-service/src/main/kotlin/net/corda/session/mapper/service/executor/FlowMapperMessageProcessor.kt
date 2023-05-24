@@ -9,6 +9,7 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.schema.configuration.FlowConfig
+import net.corda.tracing.traceStateAndEventExecution
 import net.corda.utilities.debug
 import net.corda.utilities.trace
 import org.slf4j.LoggerFactory
@@ -40,16 +41,19 @@ class FlowMapperMessageProcessor(
         val key = event.key
         logger.trace { "Received event. Key: $key Event: ${event.value}" }
         val value = event.value ?: return StateAndEventProcessor.Response(state, emptyList())
+        val eventType = value.javaClass.simpleName
 
-        return if (!isExpiredSessionEvent(value)) {
-            val executor = flowMapperEventExecutorFactory.create(key, value, state, flowConfig)
-            val result = executor.execute()
-            StateAndEventProcessor.Response(result.flowMapperState, result.outputEvents)
-        } else {
-            logger.debug {
-                errorMsg.format("ignored", event, state)
+        return traceStateAndEventExecution(event, "Flow Mapper Event - $eventType") {
+            if (!isExpiredSessionEvent(value)) {
+                val executor = flowMapperEventExecutorFactory.create(key, value, state, flowConfig)
+                val result = executor.execute()
+                StateAndEventProcessor.Response(result.flowMapperState, result.outputEvents)
+            } else {
+                logger.debug {
+                    errorMsg.format("ignored", event, state)
+                }
+                StateAndEventProcessor.Response(state, emptyList())
             }
-            StateAndEventProcessor.Response(state, emptyList())
         }
     }
 

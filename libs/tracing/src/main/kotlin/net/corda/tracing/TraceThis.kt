@@ -2,6 +2,8 @@ package net.corda.tracing
 
 import brave.servlet.TracingFilter
 import io.javalin.core.JavalinConfig
+import net.corda.messaging.api.processor.StateAndEventProcessor
+import net.corda.messaging.api.records.Record
 import net.corda.tracing.impl.TracingState
 import org.apache.kafka.clients.consumer.Consumer
 import org.apache.kafka.clients.producer.Producer
@@ -28,6 +30,47 @@ fun <K, V> wrapWithTracingConsumer(kafkaConsumer: Consumer<K, V>): Consumer<K, V
 
 fun <K, V> wrapWithTracingProducer(kafkaProducer: Producer<K, V>): Producer<K, V> {
     return TracingState.kafkaTracing.producer(kafkaProducer)
+}
+
+fun addTraceContextToRecords(records: List<Record<*, *>>): List<Record<*, *>> {
+    return records
+}
+
+fun traceEventProcessing(
+    event:Record<*,*>,
+    operationName:String,
+    processingBlock:()-> List<Record<*,*>>
+):List<Record<*,*>>{
+    val span = TracingState.recordTracing.nextSpan(event).name(operationName)
+    return TracingState.tracing.currentTraceContext().newScope(span.context()).use {
+        try {
+            addTraceContextToRecords(processingBlock())
+        } catch (ex: Exception) {
+            span.error(ex)
+            throw ex
+        } finally {
+            span.finish()
+        }
+    }
+}
+
+fun <K : Any, S : Any, V : Any> traceStateAndEventExecution(
+    event: Record<K, V>,
+    operationName: String,
+    processingBlock: () -> StateAndEventProcessor.Response<S>
+): StateAndEventProcessor.Response<S> {
+    val span = TracingState.recordTracing.nextSpan(event).name(operationName)
+    return TracingState.tracing.currentTraceContext().newScope(span.context()).use {
+        try {
+            val result = processingBlock()
+            result.copy(responseEvents = addTraceContextToRecords(result.responseEvents))
+        } catch (ex: Exception) {
+            span.error(ex)
+            throw ex
+        } finally {
+            span.finish()
+        }
+    }
 }
 
 /**

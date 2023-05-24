@@ -21,6 +21,7 @@ dependencies {
     implementation "org.slf4j:slf4j-api:$slf4jVersion"
 
     implementation project(":libs:configuration:configuration-core")
+    implementation project(":libs:messaging:messaging")
 
     implementation("io.zipkin.reporter2:zipkin-sender-urlconnection:$zipkinVersion")
     implementation("io.zipkin.brave:brave-context-slf4j:$braveVersion")

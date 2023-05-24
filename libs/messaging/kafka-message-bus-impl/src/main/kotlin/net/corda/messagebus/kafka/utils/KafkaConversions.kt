@@ -4,7 +4,6 @@ import net.corda.messagebus.api.CordaTopicPartition
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messagebus.api.consumer.CordaOffsetResetStrategy
 import net.corda.messagebus.api.producer.CordaProducerRecord
-import net.corda.messagebus.kafka.tracing.KafkaRecordTracingContext
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.clients.consumer.OffsetResetStrategy
 import org.apache.kafka.clients.producer.ProducerRecord
@@ -51,8 +50,7 @@ fun <K : Any, V : Any> ConsumerRecord<Any, Any>.toCordaConsumerRecord(
         key,
         value,
         this.timestamp(),
-        this.headers().map { it.key() to stringDeserializer.deserialize(null, it.value()) },
-        KafkaRecordTracingContext(this)
+        this.headers().map { it.key() to stringDeserializer.deserialize(null, it.value()) }
     )
 }
 

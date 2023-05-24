@@ -1,4 +1,4 @@
 @Export
-package net.corda.messaging.api.tracing;
+package net.corda.tracing.messaging;
 
 import org.osgi.annotation.bundle.Export;
