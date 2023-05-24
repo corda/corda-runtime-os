@@ -4,10 +4,10 @@ import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.cipher.suite.schemes.KeyScheme
 import net.corda.crypto.core.DigitalSignatureWithKey
 import net.corda.crypto.core.ShortHash
+import net.corda.crypto.persistence.SigningKeyInfo
 import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
-import net.corda.crypto.persistence.SigningKeyInfo
 import java.security.KeyPair
 import java.security.PublicKey
 
@@ -65,18 +65,18 @@ interface SigningService {
      */
     fun lookupSigningKeysByPublicKeyShortHash(
         tenantId: String,
-        keyIds: List<ShortHash>,
+        keyIds: Set<ShortHash>,
     ): Collection<SigningKeyInfo>
 
     /**
      * Looks for keys by full key ids.
      *
      * @param tenantId The tenant's id which the keys belong to.
-     * @param fullKeyIds Key ids to look keys for.
+     * @param requestedFullKeyIds Key ids to look keys for.
      */
     fun lookupSigningKeysByPublicKeyHashes(
         tenantId: String,
-        fullKeyIds: List<SecureHash>,
+        requestedFullKeyIds: Set<SecureHash>,
     ): Collection<SigningKeyInfo>
 
     /**

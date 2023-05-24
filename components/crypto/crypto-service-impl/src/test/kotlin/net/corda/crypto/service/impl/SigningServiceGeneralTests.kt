@@ -67,7 +67,7 @@ class SigningServiceGeneralTests {
     fun `Should throw original exception failing signing`() {
         val exception = RuntimeException("")
         val repo = mock<SigningRepository> {
-            on { findKey(any<PublicKey>()) } doThrow exception
+            on { findKeyByFullId(any()) } doThrow exception
         }
         val signingService = SigningServiceImpl(
             cryptoServiceFactory = mock(),
@@ -88,7 +88,7 @@ class SigningServiceGeneralTests {
             )
         }
         assertSame(exception, thrown)
-        Mockito.verify(repo, times(1)).findKey(any<PublicKey>())
+        Mockito.verify(repo, times(1)).findKeyByFullId(any())
     }
 
     @Test
@@ -120,7 +120,7 @@ class SigningServiceGeneralTests {
     fun `Should throw original exception failing derivation`() {
         val exception = RuntimeException("")
         val repo = mock<SigningRepository> {
-            on { findKey(any<PublicKey>()) } doThrow exception
+            on { findKeyByFullId(any()) } doThrow exception
         }
         val signingService = SigningServiceImpl(
             signingRepositoryFactory = { repo },
@@ -142,7 +142,7 @@ class SigningServiceGeneralTests {
             )
         }
         assertSame(exception, thrown)
-        verify(repo, times(1)).findKey(any<PublicKey>())
+        verify(repo, times(1)).findKeyByFullId(any())
     }
 
     @Test
@@ -414,7 +414,7 @@ class SigningServiceGeneralTests {
     fun `repository can correctly looks up a signing key by short ids`() {
         val hashA = ShortHash.of("0123456789AB")
         val hashB = ShortHash.of("123456789ABC")
-        val keys = listOf(hashA, hashB)
+        val keys = setOf(hashA, hashB)
         val mockCachedKey = mock<SigningKeyInfo> { on { id } doReturn hashA }
         val queryCap = argumentCaptor<Iterable<CacheKey>>()
         val cache = mock<Cache<CacheKey, SigningKeyInfo>> {
@@ -475,7 +475,7 @@ class SigningServiceGeneralTests {
             cache = cache,
         )
 
-        signingService.lookupSigningKeysByPublicKeyHashes("tenant", keys)
+        signingService.lookupSigningKeysByPublicKeyHashes("tenant", keys.toSet())
 
         val cacheKeys = setOf(CacheKey("tenant", shortA), CacheKey("tenant", shortB))
         queryCap.allValues.single().forEach {
@@ -483,4 +483,5 @@ class SigningServiceGeneralTests {
         }
         assertThat(fullIdsCap.allValues.single()).isEqualTo(setOf(hashB))
     }
+
 }

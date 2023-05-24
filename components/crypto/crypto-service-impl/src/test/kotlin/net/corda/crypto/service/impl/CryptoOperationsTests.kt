@@ -355,7 +355,7 @@ class CryptoOperationsTests {
         val key2 = signingFreshKeys.values.first().publicKey
         val ourKeys = signingFreshKeys.values.first().signingService.lookupSigningKeysByPublicKeyShortHash(
             tenantId,
-            listOf(ShortHash.of(key1.publicKeyId()), ShortHash.of(key2.publicKeyId()))
+            setOf(ShortHash.of(key1.publicKeyId()), ShortHash.of(key2.publicKeyId()))
         ).toList()
         assertThat(ourKeys).hasSize(1)
         assertTrue(ourKeys.any { it.publicKey.contentEquals(key2.encoded) })
@@ -371,7 +371,7 @@ class CryptoOperationsTests {
         }
         val ourKeys = signingFreshKeys.values.first().signingService.lookupSigningKeysByPublicKeyShortHash(
             tenantId,
-            listOf(ShortHash.of(key1.publicKeyId()), ShortHash.of(key2.publicKeyId()))
+            setOf(ShortHash.of(key1.publicKeyId()), ShortHash.of(key2.publicKeyId()))
         ).toList()
         assertThat(ourKeys).isEmpty()
     }
@@ -385,7 +385,7 @@ class CryptoOperationsTests {
         val returned =
             info.signingService.lookupSigningKeysByPublicKeyShortHash(
                 tenantId,
-                listOf(ShortHash.of(info.publicKey.publicKeyId()))
+                setOf(ShortHash.of(info.publicKey.publicKeyId()))
             )
         assertEquals(1, returned.size)
         verifySigningKeyInfo(info.publicKey, info.alias, scheme, returned.first())
@@ -401,7 +401,7 @@ class CryptoOperationsTests {
         val returned =
             info.signingService.lookupSigningKeysByPublicKeyShortHash(
                 tenantId,
-                listOf(ShortHash.of(info.publicKey.publicKeyId()))
+                setOf(ShortHash.of(info.publicKey.publicKeyId()))
             )
         assertEquals(1, returned.size)
         verifySigningKeyInfo(info.publicKey, null, scheme, returned.first())
@@ -416,7 +416,7 @@ class CryptoOperationsTests {
         val info = signingAliasedKeys.getValue(scheme)
         val returned = info.signingService.lookupSigningKeysByPublicKeyShortHash(
             tenantId,
-            listOf(ShortHash.of(publicKeyIdFromBytes(UUID.randomUUID().toString().toByteArray())))
+            setOf(ShortHash.of(publicKeyIdFromBytes(UUID.randomUUID().toString().toByteArray())))
         )
         assertEquals(0, returned.size)
     }
@@ -470,7 +470,7 @@ class CryptoOperationsTests {
         val returned =
             info.signingService.lookupSigningKeysByPublicKeyShortHash(
                 tenantId,
-                listOf(ShortHash.of(unknownPublicKey.publicKeyId()))
+                setOf(ShortHash.of(unknownPublicKey.publicKeyId()))
             )
         assertEquals(0, returned.size)
     }

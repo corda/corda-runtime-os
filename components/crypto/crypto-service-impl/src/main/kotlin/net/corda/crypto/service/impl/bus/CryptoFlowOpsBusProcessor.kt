@@ -126,7 +126,8 @@ class CryptoFlowOpsBusProcessor(
     private fun handleRequest(request: Any, context: CryptoRequestContext): Any {
         return when (request) {
             is FilterMyKeysFlowQuery -> {
-                val keys = request.keys.map { ShortHash.of(publicKeyIdFromBytes(it.array())) }
+                val keys =
+                    request.keys.mapTo(mutableSetOf()) { ShortHash.of(publicKeyIdFromBytes(it.array())) }
                 signingService.lookupSigningKeysByPublicKeyShortHash(context.tenantId, keys)
             }
 
@@ -146,9 +147,10 @@ class CryptoFlowOpsBusProcessor(
             }
 
             is ByIdsFlowQuery ->
-                CryptoSigningKeys(signingService.lookupSigningKeysByPublicKeyHashes(
-                    context.tenantId,
-                    request.fullKeyIds.hashes.map { SecureHashImpl(it.algorithm, it.bytes.array()) }
+                CryptoSigningKeys(
+                    signingService.lookupSigningKeysByPublicKeyHashes(
+                        context.tenantId,
+                        request.fullKeyIds.hashes.mapTo(mutableSetOf()) { SecureHashImpl(it.algorithm, it.bytes.array()) }
                 ).map { it.toAvro() })
 
             else -> throw IllegalArgumentException("Unknown request type ${request::class.java.name}")

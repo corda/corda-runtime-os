@@ -1,6 +1,5 @@
 package net.corda.crypto.softhsm.impl
 
-import java.security.PublicKey
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.cipher.suite.PlatformDigestService
 import net.corda.crypto.core.InvalidParamsException
@@ -34,6 +33,7 @@ import net.corda.orm.utils.transaction
 import net.corda.orm.utils.use
 import net.corda.v5.crypto.SecureHash
 import java.io.InvalidObjectException
+import java.security.PublicKey
 import java.time.Instant
 import java.util.*
 import javax.persistence.EntityManager
@@ -188,6 +188,18 @@ class SigningRepositoryImpl(
             }
         }
     }
+
+    override fun findKeyByFullId(fullKeyId: SecureHash): SigningKeyInfo? =
+        entityManagerFactory.createEntityManager().use { em ->
+            em.createQuery(
+                "FROM ${SigningKeyEntity::class.java.simpleName} " +
+                        "WHERE tenantId=:tenantId " +
+                        "AND fullKeyId=:fullKeyId",
+                SigningKeyEntity::class.java
+            ).setParameter("tenantId", tenantId)
+                .setParameter("fullKeyId", fullKeyId.toString())
+                .resultList.singleOrNull()?.joinSigningKeyInfo(em)
+        }
 
     override fun query(
         skip: Int,

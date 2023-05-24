@@ -2,8 +2,6 @@ package net.corda.crypto.service.impl
 
 import com.github.benmanes.caffeine.cache.Cache
 import com.github.benmanes.caffeine.cache.Caffeine
-import java.security.InvalidParameterException
-import java.util.concurrent.TimeUnit
 import net.corda.cache.caffeine.CacheFactoryImpl
 import net.corda.crypto.cipher.suite.CRYPTO_CATEGORY
 import net.corda.crypto.cipher.suite.CRYPTO_TENANT_ID
@@ -31,12 +29,15 @@ import net.corda.crypto.service.CryptoServiceFactory
 import net.corda.crypto.service.KeyOrderBy
 import net.corda.crypto.service.SigningService
 import net.corda.crypto.softhsm.SigningRepositoryFactory
+import net.corda.utilities.VisibleForTesting
 import net.corda.utilities.debug
 import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
 import org.slf4j.LoggerFactory
+import java.security.InvalidParameterException
 import java.security.PublicKey
+import java.util.concurrent.TimeUnit
 
 data class CacheKey(val tenantId: String, val publicKeyId: ShortHash)
 
@@ -87,7 +88,7 @@ class SigningServiceImpl(
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
-    data class OwnedKeyRecord(val publicKey: PublicKey, val data: net.corda.crypto.persistence.SigningKeyInfo)
+    data class OwnedKeyRecord(val publicKey: PublicKey, val data: SigningKeyInfo)
 
     override fun getSupportedSchemes(tenantId: String, category: String): List<String> {
         logger.debug { "getSupportedSchemes(tenant=$tenantId, category=$category)" }
@@ -95,7 +96,7 @@ class SigningServiceImpl(
         return ref.instance.supportedSchemes.map { it.key.codeName }
     }
 
-
+    // This is admin operation - not to worry about performance for now
     override fun querySigningKeys(
         tenantId: String,
         skip: Int,
@@ -118,49 +119,68 @@ class SigningServiceImpl(
         }
     }
 
+    // Most likely admin operation
     override fun lookupSigningKeysByPublicKeyShortHash(
         tenantId: String,
-        keyIds: List<ShortHash>,
+        keyIds: Set<ShortHash>,
     ): Collection<SigningKeyInfo> {
         val cachedKeys =
-            cache.getAllPresent(keyIds.mapTo(mutableSetOf()) {
-                CacheKey(tenantId, it)
-            }).mapTo(mutableSetOf()) { it.value }
-        if (cachedKeys.size == keyIds.size) return cachedKeys
-        val notFound: List<ShortHash> = keyIds - cachedKeys.map { it.id }.toSet()
+            cache.getAllPresent(keyIds.mapTo(mutableSetOf()) { CacheKey(tenantId, it) })
+                .mapTo(mutableSetOf()) { it.value }
 
-        val fetchedKeys = signingRepositoryFactory.getInstance(tenantId).use {
-            it.lookupByPublicKeyShortHashes(notFound.toMutableSet())
+        return if (cachedKeys.size == keyIds.size) {
+            cachedKeys
+        } else {
+            val notFound = keyIds - cachedKeys.mapTo(mutableSetOf()) { it.id }
+            val fetchedKeys =
+                signingRepositoryFactory.getInstance(tenantId).use {
+                    it.lookupByPublicKeyShortHashes(notFound)
+                }
+
+            fetchedKeys.forEach {
+                cache.put(CacheKey(tenantId, it.id), it)
+            }
+
+            cachedKeys + fetchedKeys
         }
-        fetchedKeys.forEach { cache.put(CacheKey(tenantId, it.id), it) }
-
-        return cachedKeys + fetchedKeys
     }
 
-
+    // Flow `filterMyKeys` operation - needs cache in place
     override fun lookupSigningKeysByPublicKeyHashes(
         tenantId: String,
-        fullKeyIds: List<SecureHash>,
+        requestedFullKeyIds: Set<SecureHash>,
     ): Collection<SigningKeyInfo> {
-        val keyIds = fullKeyIds.map { ShortHash.of(it) }
-        val cachedMap = cache.getAllPresent(keyIds.mapTo(mutableSetOf()) { CacheKey(tenantId, it) })
-        val cachedList = cachedMap.map { it.value }
-        if (cachedMap.size == fullKeyIds.size) return cachedList
-
-        val notFound = fullKeyIds.filter {
-            !cachedMap.containsKey(CacheKey(tenantId, ShortHash.of(it)))
-        }
-
-        val fetchedKeys = signingRepositoryFactory.getInstance(tenantId).use {
-            it.lookupByPublicKeyHashes(notFound.toMutableSet())
-                .map { foundKey ->
-                    foundKey.also {
-                        cache.put(CacheKey(tenantId, it.id), it)
-                    }
+        // cache is using short key ids so convert to find cached keys
+        val keyIds = requestedFullKeyIds.map { ShortHash.of(it) }
+        val cached =
+            cache.getAllPresent(keyIds.mapTo(mutableSetOf()) { CacheKey(tenantId, it) })
+        val cachedKeysByFullId =
+            cached
+                .map {
+                    it.value
                 }
-        }
+                .filterTo(mutableSetOf()) {
+                    // TODO Clashed keys on short ids should be identified and removed from `requestedFullKeyIds` so we
+                    //  don't look them up in DB since short key ids can't clash per tenant,
+                    //  i.e. there can't be a different key with same short key id
+                    it.fullId in requestedFullKeyIds
+                }
 
-        return cachedList + fetchedKeys
+        return if (cachedKeysByFullId.size == requestedFullKeyIds.size) {
+            cachedKeysByFullId
+        } else {
+            val notFound =
+                requestedFullKeyIds - cachedKeysByFullId.mapTo(mutableSetOf()) { it.fullId }
+            // We look for keys in DB by their full key ids so not risking a clash here
+            val fetchedKeys =
+                signingRepositoryFactory.getInstance(tenantId).use {
+                    it.lookupByPublicKeyHashes(notFound)
+                }
+            fetchedKeys.forEach {
+                cache.put(CacheKey(tenantId, it.id), it)
+            }
+            cachedKeysByFullId + fetchedKeys
+        }
     }
 
     // TODO- ditch this method and have callers use crytpoServiceFactory directly?
@@ -242,6 +262,7 @@ class SigningServiceImpl(
             context = context
         )
 
+    // Flow sign operation - needs cache in place
     override fun sign(
         tenantId: String,
         publicKey: PublicKey,
@@ -336,16 +357,18 @@ class SigningServiceImpl(
         }
     }
 
-    @Suppress("NestedBlockDepth")
+    // Flow sign operation - needs cache in place
+    @Suppress("ThrowsCount", "NestedBlockDepth")
     private fun getOwnedKeyRecord(tenantId: String, publicKey: PublicKey): OwnedKeyRecord {
         if (publicKey is CompositeKey) {
             val leafKeysIdsChunks = publicKey.leafKeys.map {
                 it.fullIdHash(schemeMetadata, digestService) to it
             }.chunked(KEY_LOOKUP_INPUT_ITEMS_LIMIT)
             for (chunk in leafKeysIdsChunks) {
-                val found = signingRepositoryFactory.getInstance(tenantId).lookupByPublicKeyHashes(
-                    chunk.map { it.first }.toMutableSet()
-                )
+                val found = signingRepositoryFactory.getInstance(tenantId)
+                        .lookupByPublicKeyHashes(
+                            chunk.mapTo(mutableSetOf()) { it.first }
+                        )
                 if (found.isNotEmpty()) {
                     for (key in chunk) {
                         val first = found.firstOrNull { it.fullId == key.first }
@@ -359,21 +382,28 @@ class SigningServiceImpl(
                 "The tenant $tenantId doesn't own any public key in '${publicKey.publicKeyId()}' composite key."
             )
         } else {
-            // TODO - use cache?
-            return signingRepositoryFactory.getInstance(tenantId).use { repo->
-                repo.findKey(publicKey)?.let {
-                    // This is to make sure cached key by short id (db one looks with full id so should be OK) is the actual
-                    // requested key Sand not a different one that clashed on key id (short key id).
-                    if (it.fullId == publicKey.fullIdHash(schemeMetadata, digestService)) {
-                        it
-                    } else {
-                        null
-                    }
-                }?.let {
-                    OwnedKeyRecord(publicKey, it)
-                } ?: throw IllegalArgumentException(
-                    "The tenant $tenantId doesn't own public key '${publicKey.publicKeyId()}'."
-                )
+            val requestedFullKeyId = publicKey.fullIdHash(schemeMetadata, digestService)
+            return lookupByFullKeyId(tenantId, requestedFullKeyId)?.let {
+                OwnedKeyRecord(publicKey, it)
+            } ?: throw IllegalArgumentException(
+                "The tenant $tenantId doesn't own public key '${publicKey.publicKeyId()}'."
+            )
+        }
+    }
+
+    @VisibleForTesting
+    internal fun lookupByFullKeyId(tenantId: String, requestedFullKeyId: SecureHash): SigningKeyInfo? {
+        val keyId = ShortHash.of(requestedFullKeyId)
+        return cache.get(CacheKey(tenantId, keyId)) {
+            val repository = signingRepositoryFactory.getInstance(tenantId)
+            repository.findKeyByFullId(requestedFullKeyId)
+        }?.let {
+            // This is to make sure cached key by short id (db one looks with full id so should be OK) is the actual
+            // requested key and not a different one that clashed on key id (short key id).
+            if (it.fullId == requestedFullKeyId) {
+                it
+            } else {
+                null
             }
         }
     }

@@ -1,6 +1,5 @@
 package net.corda.crypto.softhsm
 
-import java.security.PublicKey
 import net.corda.crypto.core.ShortHash
 import net.corda.crypto.persistence.SigningKeyInfo
 import net.corda.crypto.persistence.SigningKeyOrderBy
@@ -8,6 +7,7 @@ import net.corda.crypto.persistence.SigningPublicKeySaveContext
 import net.corda.crypto.persistence.SigningWrappedKeySaveContext
 import net.corda.v5.crypto.SecureHash
 import java.io.Closeable
+import java.security.PublicKey
 
 /**
  * Crypto JPA repository
@@ -38,6 +38,8 @@ interface SigningRepository : Closeable {
      * Find a key record by the public key.
      */
     fun findKey(publicKey: PublicKey): SigningKeyInfo?
+
+    fun findKeyByFullId(fullKeyId: SecureHash): SigningKeyInfo?
 
     /**
      * Returns list of keys satisfying the filter condition. All filter values are combined as AND.

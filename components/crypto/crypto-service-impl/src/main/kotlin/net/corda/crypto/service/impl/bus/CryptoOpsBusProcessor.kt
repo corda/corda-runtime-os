@@ -1,8 +1,5 @@
 package net.corda.crypto.service.impl.bus
 
-import java.nio.ByteBuffer
-import java.time.Instant
-import java.util.concurrent.CompletableFuture
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.cipher.suite.schemes.KeyScheme
 import net.corda.crypto.config.impl.RetryingConfig
@@ -44,6 +41,9 @@ import net.corda.utilities.debug
 import net.corda.v5.crypto.SecureHash
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.nio.ByteBuffer
+import java.time.Instant
+import java.util.concurrent.CompletableFuture
 
 @Suppress("LongParameterList")
 class CryptoOpsBusProcessor(
@@ -55,13 +55,13 @@ class CryptoOpsBusProcessor(
         private val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
 
-        private fun avroShortHashesToDto(shortHashes: ShortHashes): List<ShortHash> =
-            shortHashes.hashes.map {
+        private fun avroShortHashesToDto(shortHashes: ShortHashes): Set<ShortHash> =
+            shortHashes.hashes.mapTo(mutableSetOf()) {
                 ShortHash.of(it)
             }
 
-        private fun avroSecureHashesToDto(secureHashes: SecureHashes): List<SecureHash> =
-            secureHashes.hashes.map {
+        private fun avroSecureHashesToDto(secureHashes: SecureHashes): Set<SecureHash> =
+            secureHashes.hashes.mapTo(mutableSetOf()) {
                 SecureHashImpl(it.algorithm, it.bytes.array())
             }
     }
