@@ -48,7 +48,6 @@ import net.corda.rest.exception.BadRequestException
 import net.corda.rest.exception.InternalServerException
 import net.corda.rest.exception.InvalidInputDataException
 import net.corda.rest.exception.InvalidStateChangeException
-import net.corda.rest.exception.OperationNotAllowedException
 import net.corda.rest.exception.ResourceNotFoundException
 import net.corda.rest.exception.ServiceUnavailableException
 import net.corda.rest.messagebus.MessageBusUtils.tryWithExceptionHandling
