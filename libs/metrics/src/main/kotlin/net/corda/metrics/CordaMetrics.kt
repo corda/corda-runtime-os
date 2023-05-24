@@ -371,47 +371,47 @@ object CordaMetrics {
         /**
          * The time taken by crypto operations from the flow side.
          */
-        object CryptoOperationsFlowTime: Metric<Timer>("crypto.operations.flow.time", CordaMetrics::timer)
+        object CryptoOperationsFlowTime: Metric<Timer>("flow.crypto.time", CordaMetrics::timer)
 
         object Ledger {
 
             /**
              * The time taken by transaction verification from the flow side.
              */
-            object TransactionVerificationFlowTime : Metric<Timer>("ledger.transaction.verification.flow.time", CordaMetrics::timer)
+            object TransactionVerificationFlowTime : Metric<Timer>("ledger.flow.verification.time", CordaMetrics::timer)
 
             /**
              * The time taken by verification processor to verify a ledger transaction.
              */
-            object TransactionVerificationTime: Metric<Timer>("ledger.transaction.verification.time", CordaMetrics::timer)
+            object TransactionVerificationTime: Metric<Timer>("ledger.verification.time", CordaMetrics::timer)
 
             /**
              * The time taken by contract verification when verifying a transaction.
              */
-            object ContractVerificationTime : Metric<Timer>("ledger.contract.verification.time", CordaMetrics::timer)
+            object ContractVerificationTime : Metric<Timer>("ledger.verification.contract.total.time", CordaMetrics::timer)
 
             /**
              * The time taken per contract by contract verification when verifying a transaction.
              */
-            object ContractVerificationContractTime : Metric<Timer>("ledger.contract.verification.contract.time", CordaMetrics::timer)
+            object ContractVerificationContractTime : Metric<Timer>("ledger.verification.contract.time", CordaMetrics::timer)
 
             /**
              * The number of executed contracts during contract verification when verifying a transaction.
              */
             object ContractVerificationContractCount : Metric<DistributionSummary>(
-                "ledger.contract.verification.contract.count",
+                "ledger.verification.contract.count",
                 Metrics::summary
             )
 
             /**
              * The time taken by ledger persistence operations from the flow side.
              */
-            object PersistenceFlowTime : Metric<Timer>("ledger.persistence.flow.time", CordaMetrics::timer)
+            object PersistenceFlowTime : Metric<Timer>("ledger.flow.persistence.time", CordaMetrics::timer)
 
             /**
              * The time taken by ledger persistence processor to perform persistence operation.
              */
-            object PersistenceExecutionTime: Metric<Timer>("ledger.persistence.execution.time", CordaMetrics::timer)
+            object PersistenceExecutionTime: Metric<Timer>("ledger.persistence.time", CordaMetrics::timer)
 
             /**
              * The length of resolved backchains when performing backchain resolution.
