@@ -41,7 +41,7 @@ import java.security.PublicKey
 data class CacheKey(val tenantId: String, val publicKeyId: ShortHash)
 
 /**
- * 1. Provide a (mostly) cached versions of the signing key operations, unlike the signing key operations
+ * 1. Provide (mostly) cached versions of the signing key operations, unlike the signing key operations
  * in [SigningRepositoryImpl] which are uncached.
  *
  * 2. Provide wrapping key operations, routing to the appropriate crypto service implementation. The crypto
