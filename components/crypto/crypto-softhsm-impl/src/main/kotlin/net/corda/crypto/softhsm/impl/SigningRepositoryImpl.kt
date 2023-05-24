@@ -185,14 +185,6 @@ class SigningRepositoryImpl(
                 ).setParameter("tenantId", tenantId)
                     .setParameter("fullKeyId", requestedFullKeyId.toString())
                     .resultList.singleOrNull()?.joinSigningKeyInfo(em)
-                em.createQuery<SigningKeyEntity?>(
-                    "FROM ${SigningKeyEntity::class.java.simpleName} " +
-                            "WHERE tenantId=:tenantId " +
-                            "AND fullKeyId=:fullKeyId",
-                    SigningKeyEntity::class.java
-                ).setParameter("tenantId", tenantId)
-                    .setParameter("fullKeyId", requestedFullKeyId.toString())
-                    .resultList.singleOrNull<SigningKeyEntity?>()?.joinSigningKeyInfo(em)
             }
         }
     }
