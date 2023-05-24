@@ -441,7 +441,13 @@ internal class VirtualNodeRestResourceImpl(
         } catch (e: IllegalArgumentException) {
             throw InvalidInputDataException(details = mapOf("newState" to "must be one of ACTIVE, MAINTENANCE"))
         }
-        getVirtualNode(virtualNodeShortId)
+        val virtualNode = getVirtualNode(virtualNodeShortId)
+
+        if (state == VirtualNodeStateTransitions.ACTIVE && virtualNode.operationInProgress != null) {
+            throw BadRequestException("The Virtual Node with shortHash ${virtualNode.holdingIdentity.shortHash} " +
+                    "has an operation in progress and cannot be set to Active")
+        }
+
         return state
     }
 
