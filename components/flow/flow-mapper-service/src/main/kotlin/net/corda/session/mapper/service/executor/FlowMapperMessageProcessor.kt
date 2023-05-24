@@ -8,13 +8,11 @@ import net.corda.flow.mapper.factory.FlowMapperEventExecutorFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
-import net.corda.metrics.CordaMetrics
 import net.corda.schema.configuration.FlowConfig
+import net.corda.tracing.traceStateAndEventExecution
 import net.corda.utilities.debug
-import net.corda.utilities.time.UTCClock
 import net.corda.utilities.trace
 import org.slf4j.LoggerFactory
-import java.time.Duration
 import java.time.Instant
 
 /**
@@ -35,24 +33,17 @@ class FlowMapperMessageProcessor(
     private val sessionP2PTtl = flowConfig.getLong(FlowConfig.SESSION_P2P_TTL)
 
     private val errorMsg = "This event is expired and will be %. Event: % State: %"
-    private val clock = UTCClock()
 
     override fun onNext(
         state: FlowMapperState?,
         event: Record<String, FlowMapperEvent>
     ): StateAndEventProcessor.Response<FlowMapperState> {
-
         val key = event.key
         logger.trace { "Received event. Key: $key Event: ${event.value}" }
         val value = event.value ?: return StateAndEventProcessor.Response(state, emptyList())
+        val eventType = value.javaClass.simpleName
 
-        CordaMetrics.Metric.FlowMapperEventLag.builder()
-            .withTag(CordaMetrics.Tag.FlowEvent, value.payload::class.java.name)
-            .build().record(Duration.ofMillis(clock.instant().toEpochMilli() - event.timestamp))
-        val eventProcessingTimer = CordaMetrics.Metric.FlowMapperEventProcessingTime.builder()
-            .withTag(CordaMetrics.Tag.FlowEvent, value.payload::class.java.name)
-            .build()
-        return eventProcessingTimer.recordCallable {
+        return traceStateAndEventExecution(event, "Flow Mapper Event - $eventType") {
             if (!isExpiredSessionEvent(value)) {
                 val executor = flowMapperEventExecutorFactory.create(key, value, state, flowConfig)
                 val result = executor.execute()
@@ -61,11 +52,9 @@ class FlowMapperMessageProcessor(
                 logger.debug {
                     errorMsg.format("ignored", event, state)
                 }
-                CordaMetrics.Metric.FlowMapperExpiredSessionEventCount.builder()
-                    .build().increment()
                 StateAndEventProcessor.Response(state, emptyList())
             }
-        }!!
+        }
     }
 
     /**

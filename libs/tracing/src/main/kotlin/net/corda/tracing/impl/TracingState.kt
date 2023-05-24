@@ -2,8 +2,10 @@ package net.corda.tracing.impl
 
 import brave.Tracing
 import brave.context.slf4j.MDCScopeDecorator
+import brave.kafka.clients.KafkaTracing
 import brave.propagation.ThreadLocalCurrentTraceContext
 import brave.sampler.Sampler
+import net.corda.tracing.messaging.RecordTracing
 import zipkin2.reporter.AsyncReporter
 import zipkin2.reporter.brave.ZipkinSpanHandler
 import zipkin2.reporter.urlconnection.URLConnectionSender
@@ -14,7 +16,7 @@ import java.util.Stack
  *
  * Close before shutdown to wait for trace spans to be sent to external systems.
  */
-object TracingState: AutoCloseable {
+object TracingState : AutoCloseable {
 
     private val resourcesToClose = Stack<AutoCloseable>()
 
@@ -46,6 +48,14 @@ object TracingState: AutoCloseable {
 
         tracingBuilder.build().also(resourcesToClose::push)
     }
+
+    val kafkaTracing: KafkaTracing by lazy {
+        KafkaTracing.newBuilder(tracing)
+            .singleRootSpanOnReceiveBatch(false)
+            .build()
+    }
+
+    val recordTracing: RecordTracing by lazy { RecordTracing(tracing) }
 
     override fun close() {
         while (resourcesToClose.any()) {

@@ -1,7 +1,5 @@
 package net.corda.messagebus.api.consumer
 
-import net.corda.messagebus.api.tracing.CordaRecordTracingContext
-
 /**
  * A key/value pair to be received from the message bus. This also consists of a topic name and
  * a partition number from which the record is being received, an offset that points 
@@ -42,10 +40,5 @@ data class CordaConsumerRecord<K, V>(
     /**
      * The optional headers carried on the message.
      */
-    val headers: List<Pair<String, String>> = listOf(),
-
-    /**
-     * Optional reference to the tracing API for this record.
-     */
-    val tracing: CordaRecordTracingContext? = null
+    val headers: List<Pair<String, String>> = listOf()
 )

@@ -8,10 +8,9 @@ import net.corda.ledger.persistence.common.UnsupportedLedgerTypeException
 import net.corda.ledger.persistence.common.UnsupportedRequestTypeException
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
-import net.corda.metrics.CordaMetrics
 import net.corda.persistence.common.EntitySandboxService
 import net.corda.persistence.common.ResponseFactory
-import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
+import net.corda.tracing.traceEventProcessing
 import net.corda.utilities.MDC_CLIENT_ID
 import net.corda.utilities.MDC_EXTERNAL_EVENT_ID
 import net.corda.utilities.trace
@@ -19,15 +18,12 @@ import net.corda.utilities.withMDC
 import net.corda.v5.application.flows.FlowContextPropertyKeys.CPK_FILE_CHECKSUM
 import net.corda.virtualnode.toCorda
 import org.slf4j.LoggerFactory
-import java.time.Duration
-import java.time.Instant
 
 /**
  * Handles incoming requests, typically from the flow worker, and sends responses.
  */
 @Suppress("LongParameterList")
 class PersistenceRequestProcessor(
-    private val currentSandboxGroupContext: CurrentSandboxGroupContext,
     private val entitySandboxService: EntitySandboxService,
     private val delegatedRequestHandlerSelector: DelegatedRequestHandlerSelector,
     private val responseFactory: ResponseFactory
@@ -45,52 +41,44 @@ class PersistenceRequestProcessor(
         log.trace { "onNext processing messages ${events.joinToString(",") { it.key }}" }
 
         return events
-            .mapNotNull { it.value }
-            .flatMap { request ->
-                val startTime = Instant.now()
-                val clientRequestId = request.flowExternalEventContext.contextProperties.toMap()[MDC_CLIENT_ID] ?: ""
-                val holdingIdentity = request.holdingIdentity.toCorda()
+            .filterNot { it.value == null }
+            .flatMap { event ->
+                val request = event.value!!
+                val requestType = request.request?.let { it.javaClass.simpleName } ?: "Unknown"
+                traceEventProcessing(event, "Ledger Persistence - $requestType") {
+                    val clientRequestId =
+                        request.flowExternalEventContext.contextProperties.toMap()[MDC_CLIENT_ID] ?: ""
 
-                withMDC(
-                    mapOf(
-                        MDC_CLIENT_ID to clientRequestId,
-                        MDC_EXTERNAL_EVENT_ID to request.flowExternalEventContext.requestId
-                    )
-                ) {
-                    try {
-                        val cpkFileHashes = request.flowExternalEventContext.contextProperties.items
-                            .filter { it.key.startsWith(CPK_FILE_CHECKSUM) }
-                            .map { it.value.toSecureHash() }
-                            .toSet()
-
-                        val sandbox = entitySandboxService.get(holdingIdentity, cpkFileHashes)
-
-                        currentSandboxGroupContext.set(sandbox)
-
-                        delegatedRequestHandlerSelector.selectHandler(sandbox, request).execute()
-                    } catch (e: Exception) {
-                        listOf(
-                            when (e) {
-                                is UnsupportedLedgerTypeException,
-                                is UnsupportedRequestTypeException,
-                                is InconsistentLedgerStateException -> {
-                                    responseFactory.fatalErrorResponse(request.flowExternalEventContext, e)
-                                }
-                                else -> {
-                                    responseFactory.errorResponse(request.flowExternalEventContext, e)
-                                }
-                            }
+                    withMDC(
+                        mapOf(
+                            MDC_CLIENT_ID to clientRequestId,
+                            MDC_EXTERNAL_EVENT_ID to request.flowExternalEventContext.requestId
                         )
-                    } finally {
-                        currentSandboxGroupContext.remove()
-                    }.also {
-                        CordaMetrics.Metric.Ledger.PersistenceExecutionTime
-                            .builder()
-                            .forVirtualNode(holdingIdentity.shortHash.toString())
-                            .withTag(CordaMetrics.Tag.LedgerType, request.ledgerType.toString())
-                            .withTag(CordaMetrics.Tag.OperationName, request.request.javaClass.simpleName)
-                            .build()
-                            .record(Duration.between(startTime, Instant.now()))
+                    ) {
+                        try {
+                            val holdingIdentity = request.holdingIdentity.toCorda()
+                            val cpkFileHashes = request.flowExternalEventContext.contextProperties.items
+                                .filter { it.key.startsWith(CPK_FILE_CHECKSUM) }
+                                .map { it.value.toSecureHash() }
+                                .toSet()
+
+                            val sandbox = entitySandboxService.get(holdingIdentity, cpkFileHashes)
+                            delegatedRequestHandlerSelector.selectHandler(sandbox, request).execute()
+                        } catch (e: Exception) {
+                            listOf(
+                                when (e) {
+                                    is UnsupportedLedgerTypeException,
+                                    is UnsupportedRequestTypeException,
+                                    is InconsistentLedgerStateException -> {
+                                        responseFactory.fatalErrorResponse(request.flowExternalEventContext, e)
+                                    }
+
+                                    else -> {
+                                        responseFactory.errorResponse(request.flowExternalEventContext, e)
+                                    }
+                                }
+                            )
+                        }
                     }
                 }
             }

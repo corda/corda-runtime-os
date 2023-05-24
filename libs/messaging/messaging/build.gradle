@@ -4,7 +4,6 @@ plugins {
 }
 
 dependencies {
-    implementation project(path: ':libs:tracing')
     compileOnly 'org.osgi:osgi.annotation'
     compileOnly "co.paralleluniverse:quasar-osgi-annotations:$quasarVersion"
 
