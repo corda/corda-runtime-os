@@ -86,8 +86,8 @@ class TestSigningRepository: SigningRepository {
         keys[ShortHash.of(publicKeyHashFromBytes(publicKey.encoded))]
     }
 
-    override fun findKeyByFullId(fullKeyId: SecureHash): SigningKeyInfo? {
-        TODO("Not yet implemented")
+    override fun findKeyByFullId(fullKeyId: SecureHash): SigningKeyInfo? = lock.withLock {
+        keys[ShortHash.of(fullKeyId)]
     }
 
     @Suppress("ComplexMethod")
