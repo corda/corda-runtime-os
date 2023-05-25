@@ -19,7 +19,6 @@ import net.corda.crypto.cipher.suite.publicKeyId
 import net.corda.crypto.cipher.suite.schemes.KeyScheme
 import net.corda.crypto.config.impl.CryptoSigningServiceConfig
 import net.corda.crypto.core.DigitalSignatureWithKey
-import net.corda.crypto.core.KEY_LOOKUP_INPUT_ITEMS_LIMIT
 import net.corda.crypto.core.KeyAlreadyExistsException
 import net.corda.crypto.core.ShortHash
 import net.corda.crypto.core.fullIdHash
@@ -345,46 +344,33 @@ class SigningServiceImpl(
         }
     }
 
-    @Suppress("ThrowsCount", "NestedBlockDepth")
+    @Suppress("ThrowsCount")
     private fun getOwnedKeyRecord(tenantId: String, publicKey: PublicKey): OwnedKeyRecord {
         if (publicKey is CompositeKey) {
-            // TODO - cache lookups here?
-            val leafKeysIdsChunks = publicKey.leafKeys.map {
-                it.fullIdHash(schemeMetadata, digestService) to it
-            }.chunked(KEY_LOOKUP_INPUT_ITEMS_LIMIT)
-            for (chunk in leafKeysIdsChunks) {
-                val found = signingRepositoryFactory.getInstance(tenantId).lookupByPublicKeyHashes(
-                    chunk.map { it.first }.toMutableSet()
-                )
-                if (found.isNotEmpty()) {
-                    for (key in chunk) {
-                        val first = found.firstOrNull { it.fullId == key.first }
-                        if (first != null) {
-                            return OwnedKeyRecord(key.second, first)
-                        }
-                    }
-                }
-            }
+            val found = lookupSigningKeysByPublicKeyHashes(tenantId, publicKey.leafKeys.map { it.fullIdHash() })
+            val hit = found.firstOrNull()
+            if (hit != null) return OwnedKeyRecord(publicKey.leafKeys.filter { it.fullIdHash() == hit.fullId }
+                .first(), hit)
             throw IllegalArgumentException(
                 "The tenant $tenantId doesn't own any public key in '${publicKey.publicKeyId()}' composite key."
             )
-        } else {
-            val requestedFullKeyId = publicKey.fullIdHash(schemeMetadata, digestService)
-            val keyId = ShortHash.of(requestedFullKeyId)
-            val cacheKey = CacheKey(tenantId, keyId)
-            val signingKeyInfo = cache.get(cacheKey) {
-                val repo = signingRepositoryFactory.getInstance(tenantId)
-                val result = repo.findKey(publicKey)
-                if (result == null) throw IllegalArgumentException("The public key '${publicKey.publicKeyId()}' was not found")
-                cache.put(cacheKey, result)
-                result
-            }
-            if (signingKeyInfo.fullId != requestedFullKeyId) throw IllegalArgumentException(
-                "The tenant $tenantId doesn't own public key '${publicKey.publicKeyId()}'."
-            )
-
-            return OwnedKeyRecord(publicKey, signingKeyInfo)
         }
+        // now we are not dealing with composite keys
+        val requestedFullKeyId = publicKey.fullIdHash(schemeMetadata, digestService)
+        val keyId = ShortHash.of(requestedFullKeyId)
+        val cacheKey = CacheKey(tenantId, keyId)
+        val signingKeyInfo = cache.get(cacheKey) {
+            val repo = signingRepositoryFactory.getInstance(tenantId)
+            val result = repo.findKey(publicKey)
+            if (result == null) throw IllegalArgumentException("The public key '${publicKey.publicKeyId()}' was not found")
+            cache.put(cacheKey, result)
+            result
+        }
+        if (signingKeyInfo.fullId != requestedFullKeyId) throw IllegalArgumentException(
+            "The tenant $tenantId doesn't own public key '${publicKey.publicKeyId()}'."
+        )
+
+        return OwnedKeyRecord(publicKey, signingKeyInfo)
     }
 
     @Suppress("ThrowsCount")
