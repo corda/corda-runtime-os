@@ -1,6 +1,5 @@
 package net.corda.flow.pipeline.sandbox.impl
 
-import net.corda.flow.fiber.cache.FlowFiberCache
 import net.corda.flow.pipeline.sandbox.FlowSandboxGroupContext
 import net.corda.flow.pipeline.sandbox.FlowSandboxService
 import net.corda.flow.pipeline.sandbox.factory.SandboxDependencyInjectorFactory
@@ -12,6 +11,7 @@ import net.corda.sandboxgroupcontext.MutableSandboxGroupContext
 import net.corda.sandboxgroupcontext.RequireSandboxAMQP
 import net.corda.sandboxgroupcontext.RequireSandboxJSON
 import net.corda.sandboxgroupcontext.SandboxGroupType
+import net.corda.sandboxgroupcontext.SandboxedCacheEvicter
 import net.corda.sandboxgroupcontext.VirtualNodeContext
 import net.corda.sandboxgroupcontext.putObjectByKey
 import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
@@ -22,13 +22,11 @@ import net.corda.sandboxgroupcontext.service.registerCustomJsonSerializers
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import net.corda.virtualnode.HoldingIdentity
-import net.corda.virtualnode.toAvro
 import org.osgi.framework.BundleContext
 import org.osgi.framework.Constants.SCOPE_PROTOTYPE
 import org.osgi.framework.Constants.SERVICE_SCOPE
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
-import org.osgi.service.component.annotations.Deactivate
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
 
@@ -39,12 +37,12 @@ import org.slf4j.LoggerFactory
 class FlowSandboxServiceImpl @Activate constructor(
     @Reference(service = SandboxGroupContextComponent::class)
     private val sandboxGroupContextComponent: SandboxGroupContextComponent,
+    @Reference(service = SandboxedCacheEvicter::class)
+    private val sandboxedCacheEvicter: SandboxedCacheEvicter,
     @Reference(service = SandboxDependencyInjectorFactory::class)
     private val dependencyInjectionFactory: SandboxDependencyInjectorFactory,
     @Reference(service = FlowProtocolStoreFactory::class)
     private val flowProtocolStoreFactory: FlowProtocolStoreFactory,
-    @Reference(service = FlowFiberCache::class)
-    private val flowFiberCache: FlowFiberCache,
     private val bundleContext: BundleContext
 ) : FlowSandboxService {
 
@@ -54,23 +52,33 @@ class FlowSandboxServiceImpl @Activate constructor(
     }
 
     init {
-        if (!sandboxGroupContextComponent.addEvictionListener(SandboxGroupType.FLOW, ::onEviction)) {
-            logger.warn("FAILED TO ADD EVICTION LISTENER")
-        }
+//        if (!sandboxGroupContextComponent.addEvictionListener(SandboxGroupType.FLOW, ::onEviction)) {
+//            logger.error("FAILED TO ADD EVICTION LISTENER")
+//        }
+        sandboxedCacheEvicter.setSandboxGroupType(SandboxGroupType.FLOW)
     }
 
-    @Suppress("unused")
-    @Deactivate
-    fun shutdown() {
-        if (!sandboxGroupContextComponent.removeEvictionListener(SandboxGroupType.FLOW, ::onEviction)) {
-            logger.warn("FAILED TO REMOVE EVICTION LISTENER")
-        }
-    }
+//    @Suppress("unused")
+//    @Deactivate
+//    fun shutdown() {
+//        logger.info("SHUTTING DOWN CACHE EVICTER")
+////        if (!sandboxGroupContextComponent.removeEvictionListener(SandboxGroupType.FLOW, ::onEviction)) {
+////            logger.error("FAILED TO REMOVE EVICTION LISTENER")
+////        }
+//    }
 
-    private fun onEviction(vnc: VirtualNodeContext) {
-        logger.debug("Sandbox {} has been evicted", vnc)
-        flowFiberCache.remove(vnc.holdingIdentity.toAvro())
-    }
+//    private fun onEviction(vnc: VirtualNodeContext) {
+//        logger.debug("Sandbox {} has been evicted", vnc)
+//        for (ref in bundleContext.getServiceReferences(SandboxedCache::class.java, NON_PROTOTYPE_SERVICES)) {
+//            bundleContext.getService(ref)?.also { cache ->
+//                logger.debug(
+//                    "Evicting cached items from ${cache::class.java} with holding identity: ${vnc.holdingIdentity} and sandbox type: " +
+//                            vnc.sandboxGroupType
+//                )
+//                cache.remove(vnc.holdingIdentity, vnc.sandboxGroupType)
+//            }
+//        }
+//    }
 
     override fun get(holdingIdentity: HoldingIdentity, cpkFileHashes: Set<SecureHash>): FlowSandboxGroupContext {
         val vNodeContext = VirtualNodeContext(

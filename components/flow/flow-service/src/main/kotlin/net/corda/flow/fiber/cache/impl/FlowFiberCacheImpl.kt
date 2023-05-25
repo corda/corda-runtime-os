@@ -7,15 +7,18 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import java.time.Duration
 import net.corda.data.flow.FlowKey
-import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.fiber.FlowFiberImpl
 import net.corda.flow.fiber.cache.FlowFiberCache
+import net.corda.sandboxgroupcontext.SandboxGroupType
+import net.corda.sandboxgroupcontext.SandboxedCache
 import net.corda.utilities.debug
+import net.corda.virtualnode.HoldingIdentity
+import net.corda.virtualnode.toAvro
 import org.slf4j.LoggerFactory
 
 @Suppress("unused")
-@Component(service = [FlowFiberCache::class])
-class FlowFiberCacheImpl @Activate constructor() : FlowFiberCache {
+@Component(service = [FlowFiberCache::class, SandboxedCache::class])
+class FlowFiberCacheImpl @Activate constructor() : FlowFiberCache, SandboxedCache {
 
     private companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -51,9 +54,10 @@ class FlowFiberCacheImpl @Activate constructor() : FlowFiberCache {
         cache.cleanUp()
     }
 
-    override fun remove(holdingIdentity: HoldingIdentity) {
+    override fun remove(holdingIdentity: HoldingIdentity, sandboxGroupType: SandboxGroupType) {
         logger.debug { "Flow fiber cache removing holdingIdentity $holdingIdentity" }
-        val keysToInvalidate = cache.asMap().keys.filter { holdingIdentity == it.identity }
+        val holdingIdentityToRemove = holdingIdentity.toAvro()
+        val keysToInvalidate = cache.asMap().keys.filter { holdingIdentityToRemove == it.identity }
         cache.invalidateAll(keysToInvalidate)
         cache.cleanUp()
     }
