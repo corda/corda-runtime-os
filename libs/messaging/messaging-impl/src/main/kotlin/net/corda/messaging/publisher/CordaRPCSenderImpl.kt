@@ -101,8 +101,6 @@ internal class CordaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
                     String::class.java,
                     RPCResponse::class.java
                 ).use {
-                    // TODO: we might want to reload the assignment based on a configurable interval to
-                    //  handle operators dynamically adding partitions.
                     val availablePartitions = it.getPartitions(responseTopic)
                     if (availablePartitions.isEmpty()) throw NoSuchElementException(noPartitionsErrorMsg)
 
