@@ -53,7 +53,7 @@ class UtxoTransactionBuilderImpl(
             this.signatories.intersect(signatories.toSet()).isEmpty()
                     && signatories.distinct().size == signatories.count()
         ) {
-            "Duplicating signatories is not allowed."
+            "Duplicating signatories are not allowed."
         }
         this.signatories += signatories
         return this

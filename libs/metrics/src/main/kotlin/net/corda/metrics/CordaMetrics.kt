@@ -26,11 +26,6 @@ object CordaMetrics {
         // NOTE: please ensure the metric names adhere to the conventions described on https://micrometer.io/docs/concepts#_naming_meters
 
         /**
-         * Number of HTTP Requests.
-         */
-        object HttpRequestCount : Metric<Counter>("http.server.request", Metrics::counter)
-
-        /**
          * HTTP Requests time.
          */
         object HttpRequestTime : Metric<Timer>("http.server.request.time", CordaMetrics::timer)
@@ -95,7 +90,7 @@ object CordaMetrics {
         object FlowEventLagTime : Metric<Timer>("flow.event.lag", CordaMetrics::timer)
 
         /**
-         * Metric for the time taken to execute the flow (excluding any start lag)
+         * Metric for the time taken to process a single event in the flow pipeline.
          *
          * Number of pipeline events processed can be inferred from the count of events recorded for this metric.
          */
@@ -103,7 +98,7 @@ object CordaMetrics {
 
 
         /**
-         * Metric for the time taken to execute the flow (excluding any start lag)
+         * Metric for the time the fiber is running between two suspension points.
          *
          * Number of fiber execution events processed can be inferred from the count of events recorded for this metric.
          */
@@ -111,12 +106,12 @@ object CordaMetrics {
 
 
         /**
-         * Metric for the time taken to execute the flow (excluding any start lag)
+         * Metric for the total time spent in the pipeline code across the execution time of a flow.
          */
         object FlowPipelineExecutionTime : Metric<Timer>("flow.pipeline.execution.time", CordaMetrics::timer)
 
         /**
-         * Metric for the time taken to execute the flow (excluding any start lag)
+         * Metric for the total time spent executing user code across the execution time of a flow.
          */
         object FlowFiberExecutionTime : Metric<Timer>("flow.fiber.execution.time", CordaMetrics::timer)
 
@@ -137,6 +132,16 @@ object CordaMetrics {
          * Number of times a scheduled wakeup is published for flows.
          */
         object FlowScheduledWakeupCount : Metric<Counter>("flow.scheduled.wakeup.count", Metrics::counter)
+
+        /**
+         * Number of events a flow received in order for it to complete.
+         */
+        object FlowEventProcessedCount : Metric<DistributionSummary>("flow.event.processed.count", Metrics::summary)
+
+        /**
+         * Number of flow events that lead to a fiber resume for a single flow.
+         */
+        object FlowFiberSuspensionCount : Metric<DistributionSummary>("flow.fiber.suspension.total.count", Metrics::summary)
 
         /**
          * FLOW MAPPER METRICS
@@ -170,6 +175,17 @@ object CordaMetrics {
          */
         object FlowMapperExpiredSessionEventCount : Metric<Counter>("flow.mapper.expired.session.event.count", Metrics::counter)
 
+        /**
+         * FLOW SESSION METRICS
+         *
+         * The number of messages received by sessions.
+         */
+        object FlowSessionMessagesReceivedCount: Metric<Counter>("flow.session.messages.received.count", Metrics::counter)
+
+        /**
+         * The number of messages sent by sessions.
+         */
+        object FlowSessionMessagesSentCount: Metric<Counter>("flow.session.messages.sent.count", Metrics::counter)
 
         /**
          * P2P Metrics
@@ -222,6 +238,31 @@ object CordaMetrics {
          * The time taken by ledger persistence processor to perform persistence operation.
          */
         object LedgerPersistenceExecutionTime: Metric<Timer>("ledger.persistence.execution.time", CordaMetrics::timer)
+
+        /**
+         * Time it took for an inbound request to the p2p gateway to be processed.
+         */
+        object InboundGatewayRequestLatency: Metric<Timer>("p2p.gateway.inbound.request.time", CordaMetrics::timer)
+
+        /**
+         * Time it took for an outbound request from the p2p gateway to be processed.
+         */
+        object OutboundGatewayRequestLatency: Metric<Timer>("p2p.gateway.outbound.request.time", CordaMetrics::timer)
+
+        /**
+         * Number of inbound connections established.
+         */
+        object InboundGatewayConnections: Metric<Counter>("p2p.gateway.inbound.tls.connections", Metrics::counter)
+
+        /**
+         * Number of outbound connections established.
+         */
+        object OutboundGatewayConnections: Metric<Counter>("p2p.gateway.outbound.tls.connections", Metrics::counter)
+
+        /**
+         * Time it took for gateway to process certificate revocation checks.
+         */
+        object GatewayRevocationChecksLatency: Metric<Timer>("p2p.gateway.cert.revocation.check.time", CordaMetrics::timer)
 
         /**
          * The time taken from requesting a uniqueness check to a response being received from the perspective of
@@ -398,9 +439,14 @@ object CordaMetrics {
      */
     enum class Tag(val value: String) {
         /**
-         * Address for which the metric is applicable.
+         * URI's path for which the metric is applicable.
          */
-        Address("address"),
+        UriPath("uri.path"),
+
+        /**
+         * Http method for which the metric is applicable.
+         */
+        HttpMethod("http.method"),
 
         /**
          * Type of the SandboxGroup to which the metric applies.
@@ -505,7 +551,27 @@ object CordaMetrics {
         /**
          * Type of error raised in failure cases
          */
-        ErrorType("error.type")
+        ErrorType("error.type"),
+
+        /**
+         * Source endpoint of a peer-to-peer message or connection.
+         */
+        SourceEndpoint("endpoint.source"),
+
+        /**
+         * Destination endpoint of a peer-to-peer message or connection.
+         */
+        DestinationEndpoint("endpoint.destination"),
+
+        /**
+         * Response type (e.g. status code) of an HTTP request.
+         */
+        HttpResponseType("response.type"),
+
+        /**
+         * Result of a TLS connection (i.e. success or failure).
+         */
+        ConnectionResult("connection.result")
     }
 
     val registry: CompositeMeterRegistry = Metrics.globalRegistry

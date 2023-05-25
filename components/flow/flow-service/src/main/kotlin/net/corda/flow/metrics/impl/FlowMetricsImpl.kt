@@ -2,8 +2,8 @@ package net.corda.flow.metrics.impl
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import net.corda.data.flow.output.FlowStates
-import net.corda.flow.pipeline.metrics.FlowMetrics
 import net.corda.flow.metrics.FlowMetricsRecorder
+import net.corda.flow.pipeline.metrics.FlowMetrics
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.utilities.time.Clock
 
@@ -47,6 +47,7 @@ class FlowMetricsImpl(
 
     override fun flowFiberEntered() {
         fiberStartTime = clock.nowInMillis()
+        currentState.totalFiberSuspensionCount++
 
         // If we were waiting on a suspension then record the wait time.
         if (currentState.suspensionAction != null && currentState.suspensionTimestampMillis != null) {
@@ -77,6 +78,7 @@ class FlowMetricsImpl(
         val pipelineExecutionTime = clock.instant().toEpochMilli() - eventReceivedTimestampMillis
         flowMetricsRecorder.recordPipelineExecution(pipelineExecutionTime, flowEventType)
         currentState.totalPipelineExecutionTime += pipelineExecutionTime
+        currentState.totalEventProcessedCount++
         flowCheckpoint.setMetricsState(objectMapper.writeValueAsString(currentState))
     }
 
@@ -88,12 +90,22 @@ class FlowMetricsImpl(
         recordFlowCompleted(FlowStates.FAILED.toString())
     }
 
+    override fun flowSessionMessageSent(flowEventType: String) {
+        flowMetricsRecorder.recordFlowSessionMessagesSent(flowEventType)
+    }
+
+    override fun flowSessionMessageReceived(flowEventType: String) {
+        flowMetricsRecorder.recordFlowSessionMessagesReceived(flowEventType)
+    }
+
     private fun recordFlowCompleted(completionStatus: String) {
         val flowCompletionTime = clock.instant().toEpochMilli() - currentState.flowProcessingStartTime
         flowMetricsRecorder.recordFlowCompletion(flowCompletionTime, completionStatus)
         flowMetricsRecorder.recordTotalSuspensionTime(currentState.totalSuspensionTime)
         flowMetricsRecorder.recordTotalFiberExecutionTime(currentState.totalFiberExecutionTime)
         flowMetricsRecorder.recordTotalPipelineExecutionTime(currentState.totalPipelineExecutionTime)
+        flowMetricsRecorder.recordTotalEventsProcessed(currentState.totalEventProcessedCount)
+        flowMetricsRecorder.recordTotalFiberSuspensions(currentState.totalFiberSuspensionCount)
     }
 
     private fun Clock.nowInMillis(): Long {
@@ -108,5 +120,7 @@ class FlowMetricsImpl(
         var totalSuspensionTime: Long = 0
         var totalFiberExecutionTime: Long = 0
         var totalPipelineExecutionTime: Long = 0
+        var totalEventProcessedCount: Long = 0
+        var totalFiberSuspensionCount: Long = 0
     }
 }

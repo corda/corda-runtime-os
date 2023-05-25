@@ -3,6 +3,8 @@ package net.corda.crypto.service.impl.bus
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.crypto.cipher.suite.sha256Bytes
 import net.corda.crypto.config.impl.createDefaultCryptoConfig
+import net.corda.crypto.config.impl.retrying
+import net.corda.crypto.config.impl.toCryptoConfig
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoConsts.HSMContext.PREFERRED_PRIVATE_KEY_POLICY_KEY
 import net.corda.crypto.core.CryptoConsts.HSMContext.PREFERRED_PRIVATE_KEY_POLICY_NONE
@@ -90,7 +92,7 @@ class HSMRegistrationBusProcessorTests {
         val hsmService = mock<HSMService> {
             on { assignHSM(any(), any(), any()) } doReturn info
         }
-        val processor = HSMRegistrationBusProcessor(hsmService, configEvent)
+        val processor = HSMRegistrationBusProcessor(hsmService, configEvent.config.toCryptoConfig().retrying())
         val context = createRequestContext()
         val future = CompletableFuture<HSMRegistrationResponse>()
         processor.onNext(
@@ -126,7 +128,7 @@ class HSMRegistrationBusProcessorTests {
         val hsmService = mock<HSMService> {
             on { assignSoftHSM(any(), any()) } doReturn info
         }
-        val processor = HSMRegistrationBusProcessor(hsmService, configEvent)
+        val processor = HSMRegistrationBusProcessor(hsmService, configEvent.config.toCryptoConfig().retrying())
         val context = createRequestContext()
         val future = CompletableFuture<HSMRegistrationResponse>()
         processor.onNext(
@@ -161,7 +163,7 @@ class HSMRegistrationBusProcessorTests {
         val hsmService = mock<HSMService> {
             on { findAssignedHSM(any(), any()) } doReturn association
         }
-        val processor = HSMRegistrationBusProcessor(hsmService, configEvent)
+        val processor = HSMRegistrationBusProcessor(hsmService, configEvent.config.toCryptoConfig().retrying())
         val context = createRequestContext()
         val future = CompletableFuture<HSMRegistrationResponse>()
         processor.onNext(
@@ -181,7 +183,7 @@ class HSMRegistrationBusProcessorTests {
     @Test
     fun `Should return no content response when handling AssignedMSMQQuery for unassigned category`() {
         val hsmService = mock<HSMService>()
-        val processor = HSMRegistrationBusProcessor(hsmService, configEvent)
+        val processor = HSMRegistrationBusProcessor(hsmService, configEvent.config.toCryptoConfig().retrying())
         val context = createRequestContext()
         val future = CompletableFuture<HSMRegistrationResponse>()
         processor.onNext(
@@ -200,7 +202,7 @@ class HSMRegistrationBusProcessorTests {
     @Test
     fun `Should complete future exceptionally with IllegalArgumentException in case of unknown request`() {
         val hsmService = mock<HSMService>()
-        val processor = HSMRegistrationBusProcessor(hsmService, configEvent)
+        val processor = HSMRegistrationBusProcessor(hsmService, configEvent.config.toCryptoConfig().retrying())
         val context = createRequestContext()
         val future = CompletableFuture<HSMRegistrationResponse>()
         processor.onNext(
@@ -223,7 +225,7 @@ class HSMRegistrationBusProcessorTests {
         val hsmService = mock<HSMService> {
             on { assignHSM(any(), any(), any()) } doThrow originalException
         }
-        val processor = HSMRegistrationBusProcessor(hsmService, configEvent)
+        val processor = HSMRegistrationBusProcessor(hsmService, configEvent.config.toCryptoConfig().retrying())
         val context = createRequestContext()
         val future = CompletableFuture<HSMRegistrationResponse>()
         processor.onNext(
