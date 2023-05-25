@@ -54,6 +54,8 @@ class PersistenceRequestProcessorTest {
         assertThat(target.valueClass).isEqualTo(LedgerPersistenceRequest::class.java)
     }
 
+    private fun List<Record<*, *>>.excludeHeaders() = this.map { it.copy(headers = emptyList()) }
+
     @Test
     fun `requests routed to handlers to generate response messages`() {
         val request1 = createRequest("r1")
@@ -73,7 +75,7 @@ class PersistenceRequestProcessorTest {
 
         val results = target.onNext(listOf(requestRecord1, requestRecord2))
 
-        assertThat(results).containsOnly(responseRecord11, responseRecord12, responseRecord21)
+        assertThat(results.excludeHeaders()).containsOnly(responseRecord11, responseRecord12, responseRecord21)
     }
 
     @Test
@@ -98,7 +100,7 @@ class PersistenceRequestProcessorTest {
 
         val results = target.onNext(listOf(requestRecord1, requestRecord2))
 
-        assertThat(results).containsOnly(responseRecord1, failureResponseRecord)
+        assertThat(results.excludeHeaders()).containsOnly(responseRecord1, failureResponseRecord)
     }
 
     private fun createRequest(requestId: String): LedgerPersistenceRequest {
@@ -113,3 +115,4 @@ class PersistenceRequestProcessorTest {
         }
     }
 }
+

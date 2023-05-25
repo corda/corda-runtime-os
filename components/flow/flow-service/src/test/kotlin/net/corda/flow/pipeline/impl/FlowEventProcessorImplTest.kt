@@ -165,7 +165,7 @@ class FlowEventProcessorImplTest {
         val response = processor.onNext(checkpoint, inputEvent)
 
         assertEquals(checkpoint, response.updatedState)
-        assertEquals(outputRecords, response.responseEvents)
+        assertEquals(outputRecords, response.responseEvents.excludeHeaders())
         verify(flowMDCService, times(1)).getMDCLogging(anyOrNull(), any(), any())
     }
 
@@ -242,6 +242,10 @@ class FlowEventProcessorImplTest {
         assertThat(response).isEqualTo(outputResponse)
     }
 
+    private fun List<Record<*, *>>.excludeHeaders() = this.map { it.copy(headers = emptyList()) }
+    private fun <S : Any> StateAndEventProcessor.Response<S>.excludeHeaders() =
+        copy(responseEvents = responseEvents.excludeHeaders())
+
     @Test
     fun `FlowMarkedForKillException produces flow kill context`() {
         val error = FlowMarkedForKillException("reason")
@@ -252,7 +256,7 @@ class FlowEventProcessorImplTest {
 
         val response = processor.onNext(checkpoint, getFlowEventRecord(FlowEvent(flowKey, wakeupPayload)))
 
-        assertThat(response).isEqualTo(killedFlowResponse)
+        assertThat(response.excludeHeaders()).isEqualTo(killedFlowResponse)
     }
 
     @Test
@@ -262,7 +266,7 @@ class FlowEventProcessorImplTest {
         val response = processor.onNext(null, inputEvent)
 
         assertEquals(checkpoint, response.updatedState)
-        assertEquals(outputRecords, response.responseEvents)
+        assertEquals(outputRecords, response.responseEvents.excludeHeaders())
         verify(flowMDCService, times(1)).getMDCLogging(anyOrNull(), any(), any())
     }
 
@@ -273,7 +277,7 @@ class FlowEventProcessorImplTest {
         val response = processor.onNext(null, inputEvent)
 
         assertEquals(checkpoint, response.updatedState)
-        assertEquals(outputRecords, response.responseEvents)
+        assertEquals(outputRecords, response.responseEvents.excludeHeaders())
         verify(flowMDCService, times(1)).getMDCLogging(anyOrNull(), any(), any())
     }
 
