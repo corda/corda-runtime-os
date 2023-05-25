@@ -48,18 +48,20 @@ fun <R> trace(operationName: String, processingBlock: TraceContext.() -> R): R {
     }
 }
 
-fun addTraceContextToRecords(records: List<Record<*, *>>): List<Record<*, *>> {
-    val injector = TracingState.tracing.propagation()
+private val recordInjector by lazy {
+    TracingState.tracing.propagation()
         .injector { param: MutableList<Pair<String, String>>, key: String, value: String ->
             param.removeAll { it.first == key }
             param.add(key to value)
         }
+}
 
-    return records.map {
-        val headersWithTracing = it.headers.toMutableList()
-        injector.inject(TracingState.tracing.currentTraceContext().get(), headersWithTracing)
-        it.copy(headers = headersWithTracing)
-    }
+fun addTraceContextToRecords(records: List<Record<*, *>>): List<Record<*, *>> = records.map(::addTraceContextToRecord)
+
+fun addTraceContextToRecord(it: Record<*, *>): Record<out Any, out Any> {
+    val headersWithTracing = it.headers.toMutableList()
+    recordInjector.inject(TracingState.tracing.currentTraceContext().get(), headersWithTracing)
+    return it.copy(headers = headersWithTracing)
 }
 
 fun traceEventProcessing(
