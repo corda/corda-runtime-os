@@ -13,7 +13,6 @@ import net.corda.messagebus.kafka.serialization.CordaAvroDeserializerImpl
 import net.corda.messagebus.kafka.utils.KafkaRetryUtils.executeKafkaActionWithRetry
 import net.corda.messaging.api.chunking.MessagingChunkFactory
 import net.corda.schema.registry.AvroSchemaRegistry
-import net.corda.tracing.wrapWithTracingConsumer
 import org.apache.kafka.clients.consumer.KafkaConsumer
 import org.osgi.framework.FrameworkUtil
 import org.osgi.framework.wiring.BundleWiring
@@ -61,7 +60,7 @@ class CordaKafkaConsumerBuilderImpl @Activate constructor(
                 val consumer = createKafkaConsumer(kafkaProperties, keyDeserializer, valueDeserializer)
                 CordaKafkaConsumerImpl(
                     resolvedConfig,
-                    wrapWithTracingConsumer(consumer),
+                    consumer,
                     listener,
                     consumerChunkDeserializerService,
                     KafkaClientMetrics(consumer)
