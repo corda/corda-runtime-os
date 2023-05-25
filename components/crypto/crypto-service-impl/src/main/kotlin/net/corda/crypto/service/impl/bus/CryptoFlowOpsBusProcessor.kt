@@ -1,21 +1,17 @@
 package net.corda.crypto.service.impl.bus
 
-import net.corda.crypto.config.impl.RetryingConfig
-import net.corda.crypto.core.SecureHashImpl
-import net.corda.crypto.core.ShortHash
-import net.corda.crypto.core.publicKeyIdFromBytes
+import net.corda.configuration.read.ConfigChangedEvent
+import net.corda.crypto.client.CryptoOpsProxyClient
+import net.corda.crypto.config.impl.flowBusProcessor
+import net.corda.crypto.config.impl.toCryptoConfig
 import net.corda.crypto.flow.CryptoFlowOpsTransformer
 import net.corda.crypto.impl.retrying.BackoffStrategy
 import net.corda.crypto.impl.retrying.CryptoRetryingExecutor
 import net.corda.crypto.impl.toMap
-import net.corda.crypto.impl.toSignatureSpec
-import net.corda.crypto.service.SigningService
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoRequestContext
 import net.corda.data.crypto.wire.CryptoResponseContext
-import net.corda.data.crypto.wire.CryptoSignatureWithKey
-import net.corda.data.crypto.wire.CryptoSigningKeys
 import net.corda.data.crypto.wire.ops.flow.FlowOpsRequest
 import net.corda.data.crypto.wire.ops.flow.FlowOpsResponse
 import net.corda.data.crypto.wire.ops.flow.commands.SignFlowCommand
@@ -24,21 +20,19 @@ import net.corda.data.crypto.wire.ops.flow.queries.FilterMyKeysFlowQuery
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
-import net.corda.metrics.CordaMetrics
+import net.corda.tracing.traceEventProcessingSingle
 import net.corda.utilities.MDC_CLIENT_ID
 import net.corda.utilities.MDC_EXTERNAL_EVENT_ID
 import net.corda.utilities.MDC_FLOW_ID
 import net.corda.utilities.trace
 import net.corda.utilities.withMDC
 import org.slf4j.LoggerFactory
-import java.nio.ByteBuffer
-import java.time.Duration
 import java.time.Instant
 
 class CryptoFlowOpsBusProcessor(
-    private val signingService: SigningService,
+    private val cryptoOpsClient: CryptoOpsProxyClient,
     private val externalEventResponseFactory: ExternalEventResponseFactory,
-    config: RetryingConfig,
+    event: ConfigChangedEvent
 ) : DurableProcessor<String, FlowOpsRequest> {
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -46,6 +40,8 @@ class CryptoFlowOpsBusProcessor(
 
     override val keyClass: Class<String> = String::class.java
     override val valueClass = FlowOpsRequest::class.java
+
+    private val config = event.config.toCryptoConfig().flowBusProcessor()
 
     private val executor = CryptoRetryingExecutor(
         logger,
@@ -63,38 +59,23 @@ class CryptoFlowOpsBusProcessor(
             logger.error("Unexpected null payload for event with the key={} in topic={}", event.key, event.topic)
             return null // cannot send any error back as have no idea where to send to
         }
+        val eventType = request.request?.let { it.javaClass.simpleName } ?: "Unknown"
+        return traceEventProcessingSingle(event, "Crypto Event - $eventType") {
+            val expireAt = getRequestExpireAt(request)
+            val clientRequestId = request.flowExternalEventContext.contextProperties.toMap()[MDC_CLIENT_ID] ?: ""
+            val mdc = mapOf(
+                MDC_FLOW_ID to request.flowExternalEventContext.flowId,
+                MDC_CLIENT_ID to clientRequestId,
+                MDC_EXTERNAL_EVENT_ID to request.flowExternalEventContext.requestId
+            )
 
-        val expireAt = getRequestExpireAt(request)
-        val clientRequestId = request.flowExternalEventContext.contextProperties.toMap()[MDC_CLIENT_ID] ?: ""
-        val mdc = mapOf(
-            MDC_FLOW_ID to request.flowExternalEventContext.flowId,
-            MDC_CLIENT_ID to clientRequestId,
-            MDC_EXTERNAL_EVENT_ID to request.flowExternalEventContext.requestId
-        )
+            withMDC(mdc) {
+                logger.info("Handling ${request.request::class.java.name} for tenant ${request.context.tenantId}")
 
-        return withMDC(mdc) {
-            val requestPayload = request.request
-            val startTime = Instant.now()
-            logger.info("Handling ${requestPayload::class.java.name} for tenant ${request.context.tenantId}")
-
-            try {
-                if (Instant.now() >= expireAt) {
-                    logger.warn(
-                        "Event ${requestPayload::class.java.name} for tenant ${request.context.tenantId} " +
-                                "is no longer valid, expired at $expireAt"
-                    )
-                    externalEventResponseFactory.transientError(
-                        request.flowExternalEventContext,
-                        ExceptionEnvelope("Expired", "Expired at $expireAt")
-                    )
-                } else {
-                    val response = executor.executeWithRetry {
-                        handleRequest(requestPayload, request.context)
-                    }
-
+                try {
                     if (Instant.now() >= expireAt) {
                         logger.warn(
-                            "Event ${requestPayload::class.java.name} for tenant ${request.context.tenantId} " +
+                            "Event ${request.request::class.java.name} for tenant ${request.context.tenantId} " +
                                     "is no longer valid, expired at $expireAt"
                         )
                         externalEventResponseFactory.transientError(
@@ -102,56 +83,67 @@ class CryptoFlowOpsBusProcessor(
                             ExceptionEnvelope("Expired", "Expired at $expireAt")
                         )
                     } else {
-                        externalEventResponseFactory.success(
-                            request.flowExternalEventContext,
-                            FlowOpsResponse(createResponseContext(request), response, null)
-                        )
+                        val response = executor.executeWithRetry {
+                            handleRequest(request.request, request.context)
+                        }
+
+                        if (Instant.now() >= expireAt) {
+                            logger.warn(
+                                "Event ${request.request::class.java.name} for tenant ${request.context.tenantId} " +
+                                        "is no longer valid, expired at $expireAt"
+                            )
+                            externalEventResponseFactory.transientError(
+                                request.flowExternalEventContext,
+                                ExceptionEnvelope("Expired", "Expired at $expireAt")
+                            )
+                        } else {
+                            externalEventResponseFactory.success(
+                                request.flowExternalEventContext,
+                                FlowOpsResponse(createResponseContext(request), response, null)
+                            )
+                        }
                     }
+                } catch (throwable: Throwable) {
+                    logger.error(
+                        "Failed to handle ${request.request::class.java.name} for tenant ${request.context.tenantId}",
+                        throwable
+                    )
+                    externalEventResponseFactory.platformError(request.flowExternalEventContext, throwable)
                 }
-            } catch (throwable: Throwable) {
-                logger.error(
-                    "Failed to handle ${requestPayload::class.java.name} for tenant ${request.context.tenantId}",
-                    throwable
-                )
-                externalEventResponseFactory.platformError(request.flowExternalEventContext, throwable)
-            }.also {
-                CordaMetrics.Metric.CryptoFlowOpsProcessorExecutionTime.builder()
-                    .withTag(CordaMetrics.Tag.OperationName, requestPayload::class.java.simpleName)
-                    .build()
-                    .record(Duration.between(startTime, Instant.now()))
             }
         }
     }
 
     private fun handleRequest(request: Any, context: CryptoRequestContext): Any {
-        return when (request) {
-            is FilterMyKeysFlowQuery -> {
-                val keys = request.keys.map { ShortHash.of(publicKeyIdFromBytes(it.array())) }
-                signingService.lookupSigningKeysByPublicKeyShortHash(context.tenantId, keys)
-            }
+        // What about if cryptoOpsClient has gone to DOWN or ERROR out at this point? 
+        // Then CryptoOpsClientComponent will throw AbstractComponentNotReadyFunction, and the retry logic
+        // will keep repeating it until timeout or the cryptoOpsClient potentially comes back. 
 
-            is SignFlowCommand -> {
-                val publicKey = signingService.schemeMetadata.decodePublicKey(request.publicKey.array())
-                val signature = signingService.sign(
-                    context.tenantId,
-                    publicKey,
-                    request.signatureSpec.toSignatureSpec(signingService.schemeMetadata),
-                    request.bytes.array(),
-                    request.context.toMap()
+        // For example, if we get an UnknownHostException from Kafka client code then the crypto ops client
+        // will be marked as DOWN or ERROR (depending on what catches it; certainly if it made it to the top of the
+        // TreadLooper it will cause the status to go to ERROR)
+
+        return when (request) {
+            is FilterMyKeysFlowQuery ->
+                cryptoOpsClient.filterMyKeysProxy(
+                    tenantId = context.tenantId,
+                    candidateKeys = request.keys
                 )
-                CryptoSignatureWithKey(
-                    ByteBuffer.wrap(signingService.schemeMetadata.encodeAsByteArray(signature.by)),
-                    ByteBuffer.wrap(signature.bytes)
+
+            is SignFlowCommand ->
+                cryptoOpsClient.signProxy(
+                    tenantId = context.tenantId,
+                    publicKey = request.publicKey,
+                    signatureSpec = request.signatureSpec,
+                    data = request.bytes,
+                    context = request.context
                 )
-            }
 
             is ByIdsFlowQuery ->
-                CryptoSigningKeys(signingService.lookupSigningKeysByPublicKeyHashes(
-                    context.tenantId,
-                    request.fullKeyIds.hashes.map { SecureHashImpl(it.algorithm, it.bytes.array()) }
-                ).map { it.toAvro() })
+                cryptoOpsClient.lookupKeysByFullIdsProxy(context.tenantId, request.fullKeyIds)
 
-            else -> throw IllegalArgumentException("Unknown request type ${request::class.java.name}")
+            else ->
+                throw IllegalArgumentException("Unknown request type ${request::class.java.name}")
         }
     }
 

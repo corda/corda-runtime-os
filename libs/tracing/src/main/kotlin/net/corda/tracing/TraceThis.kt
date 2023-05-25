@@ -1,9 +1,12 @@
 package net.corda.tracing
 
+import brave.Span
 import brave.servlet.TracingFilter
 import io.javalin.core.JavalinConfig
 import net.corda.messaging.api.processor.StateAndEventProcessor
+import net.corda.messaging.api.records.EventLogRecord
 import net.corda.messaging.api.records.Record
+import net.corda.tracing.impl.BatchRecordTracerImpl
 import net.corda.tracing.impl.TraceContextImpl
 import net.corda.tracing.impl.TracingState
 import org.apache.kafka.clients.consumer.Consumer
@@ -31,6 +34,10 @@ fun <K, V> wrapWithTracingConsumer(kafkaConsumer: Consumer<K, V>): Consumer<K, V
 
 fun <K, V> wrapWithTracingProducer(kafkaProducer: Producer<K, V>): Producer<K, V> {
     return TracingState.kafkaTracing.producer(kafkaProducer)
+}
+
+fun traceBatch(operationName: String): BatchRecordTracer {
+    return BatchRecordTracerImpl(operationName)
 }
 
 fun <R> trace(operationName: String, processingBlock: TraceContext.() -> R): R {
@@ -64,6 +71,15 @@ fun addTraceContextToRecord(it: Record<*, *>): Record<out Any, out Any> {
     return it.copy(headers = headersWithTracing)
 }
 
+fun addTraceContextToRecords(records: List<Record<*, *>>, span: Span): List<Record<*, *>> =
+    records.map { addTraceContextToRecord(it, span) }
+
+fun addTraceContextToRecord(it: Record<*, *>, span: Span): Record<out Any, out Any> {
+    val headersWithTracing = it.headers.toMutableList()
+    recordInjector.inject(span.context(), headersWithTracing)
+    return it.copy(headers = headersWithTracing)
+}
+
 fun traceEventProcessing(
     event: Record<*, *>,
     operationName: String,
@@ -73,6 +89,41 @@ fun traceEventProcessing(
     return TracingState.tracing.currentTraceContext().newScope(span.context()).use {
         try {
             addTraceContextToRecords(processingBlock())
+        } catch (ex: Exception) {
+            span.error(ex)
+            throw ex
+        } finally {
+            span.finish()
+        }
+    }
+}
+fun traceEventProcessing(
+    event: EventLogRecord<*, *>,
+    operationName: String,
+    processingBlock: () -> List<Record<*, *>>
+): List<Record<*, *>> {
+    val span = TracingState.recordTracing.nextSpan(event).name(operationName).start()
+    return TracingState.tracing.currentTraceContext().newScope(span.context()).use {
+        try {
+            addTraceContextToRecords(processingBlock())
+        } catch (ex: Exception) {
+            span.error(ex)
+            throw ex
+        } finally {
+            span.finish()
+        }
+    }
+}
+
+fun traceEventProcessingSingle(
+    event: Record<*, *>,
+    operationName: String,
+    processingBlock: () -> Record<*, *>?
+): Record<*, *>? {
+    val span = TracingState.recordTracing.nextSpan(event).name(operationName).start()
+    return TracingState.tracing.currentTraceContext().newScope(span.context()).use {
+        try {
+            processingBlock()?.let { addTraceContextToRecord(it) }
         } catch (ex: Exception) {
             span.error(ex)
             throw ex

@@ -9,7 +9,9 @@ import brave.kafka.clients.KafkaTracing
 import brave.propagation.B3Propagation
 import brave.propagation.ThreadLocalCurrentTraceContext
 import brave.sampler.Sampler
+import zipkin2.Span
 import zipkin2.reporter.AsyncReporter
+import zipkin2.reporter.Reporter
 import zipkin2.reporter.brave.ZipkinSpanHandler
 import zipkin2.reporter.urlconnection.URLConnectionSender
 import java.util.Stack
@@ -44,13 +46,17 @@ object TracingState : AutoCloseable {
                     .build()
             )
 
+        val reporters = mutableListOf<Reporter<Span>>(Reporter.CONSOLE)
+        val reporter = CombinedSpanReporter(reporters)
+
         if (zipkinHost.isNotEmpty()) {
             val zipkinUrl = "$zipkinHost/api/v2/spans"
             val spanAsyncReporter =
                 AsyncReporter.create(URLConnectionSender.create(zipkinUrl))
                     .also(resourcesToClose::push)
+            reporters.add(spanAsyncReporter)
 
-            val spanHandler = ZipkinSpanHandler.create(spanAsyncReporter)
+            val spanHandler = ZipkinSpanHandler.create(reporter)
 
             tracingBuilder.addSpanHandler(spanHandler)
         }
