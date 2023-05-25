@@ -2,7 +2,6 @@ package net.corda.ledger.verification.processor.impl
 
 import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.flow.event.external.ExternalEventResponseErrorType
-import net.corda.data.ledger.persistence.LedgerTypes
 import net.corda.flow.external.events.responses.exceptions.NotAllowedCpkException
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
 import net.corda.flow.utils.toMap
@@ -12,6 +11,7 @@ import net.corda.ledger.verification.sandbox.VerificationSandboxService
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.metrics.CordaMetrics
+import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.utilities.MDC_CLIENT_ID
 import net.corda.utilities.MDC_EXTERNAL_EVENT_ID
 import net.corda.utilities.trace
@@ -27,6 +27,7 @@ import java.time.Instant
  */
 @Suppress("LongParameterList")
 class VerificationRequestProcessor(
+    private val currentSandboxGroupContext: CurrentSandboxGroupContext,
     private val verificationSandboxService: VerificationSandboxService,
     private val requestHandler: VerificationRequestHandler,
     private val responseFactory: ExternalEventResponseFactory
@@ -58,15 +59,18 @@ class VerificationRequestProcessor(
                 ) {
                     try {
                         val sandbox = verificationSandboxService.get(holdingIdentity, request.cpkMetadata)
+
+                        currentSandboxGroupContext.set(sandbox)
+
                         requestHandler.handleRequest(sandbox, request)
                     } catch (e: Exception) {
                         errorResponse(request.flowExternalEventContext, e)
+                    } finally {
+                        currentSandboxGroupContext.remove()
                     }.also {
-                        CordaMetrics.Metric.LedgerTransactionVerificationTime
+                        CordaMetrics.Metric.Ledger.TransactionVerificationTime
                             .builder()
                             .forVirtualNode(holdingIdentity.shortHash.toString())
-                            .withTag(CordaMetrics.Tag.FlowId, request.flowExternalEventContext.flowId)
-                            .withTag(CordaMetrics.Tag.LedgerType, LedgerTypes.UTXO.toString())
                             .build()
                             .record(Duration.between(startTime, Instant.now()))
                     }

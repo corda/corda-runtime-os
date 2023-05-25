@@ -1,5 +1,6 @@
 package net.corda.chunking
 
+import com.google.common.jimfs.Configuration
 import com.google.common.jimfs.Jimfs
 import java.nio.ByteBuffer
 import java.nio.file.FileSystem
@@ -27,7 +28,10 @@ class ChunkReadingTest {
 
     @BeforeEach
     fun beforeEach() {
-        fs = Jimfs.newFileSystem()
+        val posix = Configuration.unix().toBuilder()
+            .setAttributeViews("basic", "posix")
+            .build()
+        fs = Jimfs.newFileSystem(posix)
     }
 
     @AfterEach
@@ -37,9 +41,9 @@ class ChunkReadingTest {
 
     private fun createEmptyFile(fileSize: Long): Path {
         val path = fs.getPath(randomFileName())
-        Files.newByteChannel(path, StandardOpenOption.WRITE, StandardOpenOption.CREATE_NEW).apply {
-            position(fileSize)
-            write(ByteBuffer.wrap(ByteArray(0)))
+        Files.newByteChannel(path, StandardOpenOption.WRITE, StandardOpenOption.CREATE_NEW).use { channel ->
+            channel.position(fileSize)
+            channel.write(ByteBuffer.wrap(ByteArray(0)))
         }
 
         assertThat(fileSize).isEqualTo(Files.size(path))

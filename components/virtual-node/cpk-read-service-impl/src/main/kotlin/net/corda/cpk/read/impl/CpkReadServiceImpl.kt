@@ -22,7 +22,6 @@ import net.corda.lifecycle.createCoordinator
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas
-import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.utilities.PathProvider
@@ -65,7 +64,7 @@ class CpkReadServiceImpl (
     )
 
     companion object {
-        val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        private val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
         const val CPK_CACHE_DIR = "cpk-cache"
         const val CPK_PARTS_DIR = "cpk-parts"
@@ -106,10 +105,7 @@ class CpkReadServiceImpl (
             configSubscription?.close()
             configSubscription = configReadService.registerComponentForUpdates(
                 coordinator,
-                setOf(
-                    ConfigKeys.BOOT_CONFIG,
-                    ConfigKeys.MESSAGING_CONFIG
-                )
+                setOf(BOOT_CONFIG, MESSAGING_CONFIG)
             )
         } else {
             logger.warn(

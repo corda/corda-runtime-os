@@ -6,7 +6,10 @@ import net.corda.libs.packaging.core.CpkFormatVersion
 import net.corda.libs.packaging.internal.FormatVersionReader
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
+import java.io.IOException
 import java.io.InputStream
+import java.nio.channels.FileChannel
+import java.nio.channels.WritableByteChannel
 import java.security.DigestInputStream
 import java.security.MessageDigest
 import java.security.cert.Certificate
@@ -39,6 +42,20 @@ fun InputStream.hash(algo : DigestAlgorithmName = DigestAlgorithmName.SHA2_256,
         }
     }
     return SecureHashImpl(algo.name, md.digest())
+}
+
+/**
+ * Transfer the entire contents of [input] to this [WritableByteChannel].
+ */
+@Throws(IOException::class)
+fun WritableByteChannel.writeFile(input: FileChannel) {
+    var pos = 0L
+    var bytesToWrite = input.size()
+    while (bytesToWrite > 0) {
+        val bytesWritten = input.transferTo(pos, bytesToWrite, this)
+        pos += bytesWritten
+        bytesToWrite -= bytesWritten
+    }
 }
 
 /**
@@ -93,7 +110,7 @@ private fun LdapName.filterSupportedAttributes(): String {
 }
 
 fun Collection<Certificate>.signerSummaryHashForRequiredSigners(): SecureHash {
-    require(size > 0) {
+    require(isNotEmpty()) {
         "Can't create signer summary hash on an empty signers set"
     }
     return asSequence().signerSummaryHash()

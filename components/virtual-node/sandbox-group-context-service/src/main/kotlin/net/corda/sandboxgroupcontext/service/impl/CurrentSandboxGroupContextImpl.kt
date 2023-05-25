@@ -1,19 +1,32 @@
 package net.corda.sandboxgroupcontext.service.impl
 
 import net.corda.sandbox.type.UsedByFlow
+import net.corda.sandbox.type.UsedByPersistence
+import net.corda.sandbox.type.UsedByVerification
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.utilities.trace
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Component
+import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
-@Component(service = [CurrentSandboxGroupContext::class, UsedByFlow::class])
-class CurrentSandboxGroupContextImpl : CurrentSandboxGroupContext, SingletonSerializeAsToken, UsedByFlow {
+@Component(
+    service = [
+        CurrentSandboxGroupContext::class,
+        SingletonSerializeAsToken::class,
+        UsedByFlow::class,
+        UsedByPersistence::class,
+        UsedByVerification::class
+    ]
+)
+class CurrentSandboxGroupContextImpl
+    : CurrentSandboxGroupContext, SingletonSerializeAsToken, UsedByFlow, UsedByPersistence, UsedByVerification {
 
     private companion object {
         @JvmField
-        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        val log: Logger = LoggerFactory.getLogger(CurrentSandboxGroupContextImpl::class.java)
+
         @JvmField
         val currentSandboxGroupContext = ThreadLocal<SandboxGroupContext?>()
     }
