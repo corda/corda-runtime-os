@@ -1,24 +1,25 @@
 package net.corda.tracing.impl
 
 import brave.Tracing
+import brave.baggage.BaggageField
+import brave.baggage.BaggagePropagation
+import brave.baggage.BaggagePropagationConfig
 import brave.context.slf4j.MDCScopeDecorator
 import brave.kafka.clients.KafkaTracing
+import brave.propagation.B3Propagation
 import brave.propagation.ThreadLocalCurrentTraceContext
 import brave.sampler.Sampler
-import net.corda.tracing.messaging.RecordTracing
 import zipkin2.reporter.AsyncReporter
 import zipkin2.reporter.brave.ZipkinSpanHandler
 import zipkin2.reporter.urlconnection.URLConnectionSender
 import java.util.Stack
 
-/**
- * Tracing objects that will exist for the lifetime of the application.
- *
- * Close before shutdown to wait for trace spans to be sent to external systems.
- */
 object TracingState : AutoCloseable {
 
     private val resourcesToClose = Stack<AutoCloseable>()
+    val requestId: BaggageField = BaggageField.create("request_id")
+    val virtualNodeId: BaggageField = BaggageField.create("vnode_id")
+    val transactionId: BaggageField = BaggageField.create("tx_id")
 
     var serviceName = "unknown"
     var zipkinHost = ""
@@ -35,12 +36,20 @@ object TracingState : AutoCloseable {
             .localServiceName(serviceName)
             .traceId128Bit(true)
             .sampler(Sampler.ALWAYS_SAMPLE)
+            .propagationFactory(
+                BaggagePropagation.newFactoryBuilder(B3Propagation.FACTORY)
+                    .add(BaggagePropagationConfig.SingleBaggageField.remote(requestId))
+                    .add(BaggagePropagationConfig.SingleBaggageField.remote(virtualNodeId))
+                    .add(BaggagePropagationConfig.SingleBaggageField.remote(transactionId))
+                    .build()
+            )
 
         if (zipkinHost.isNotEmpty()) {
             val zipkinUrl = "$zipkinHost/api/v2/spans"
             val spanAsyncReporter =
                 AsyncReporter.create(URLConnectionSender.create(zipkinUrl))
                     .also(resourcesToClose::push)
+
             val spanHandler = ZipkinSpanHandler.create(spanAsyncReporter)
 
             tracingBuilder.addSpanHandler(spanHandler)

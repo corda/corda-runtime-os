@@ -1,4 +1,4 @@
-package net.corda.tracing.messaging
+package net.corda.tracing.impl
 
 import brave.Span
 import brave.Tracing
@@ -11,16 +11,7 @@ class RecordTracing(tracing: Tracing) {
     private val messagingTracing = MessagingTracing.create(tracing)
     private val recordHeaderGetter: Propagation.Getter<List<Pair<String, String>>, String> =
         Propagation.Getter<List<Pair<String, String>>, String> { request, key ->
-            val iter = request.listIterator()
-            // to guard against multiple (more recent) values for the same key we search
-            // in reverse order
-            while (iter.hasPrevious()){
-                val item = iter.previous()
-                if(item.first==key){
-                     return@Getter item.second
-                }
-            }
-            null
+            request.reversed().firstOrNull { it.first==key }?.second
         }
     private val tracingContextExtractor = messagingTracing.propagation().extractor(recordHeaderGetter)
 

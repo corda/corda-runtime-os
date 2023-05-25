@@ -4,6 +4,7 @@ import brave.servlet.TracingFilter
 import io.javalin.core.JavalinConfig
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
+import net.corda.tracing.impl.TraceContextImpl
 import net.corda.tracing.impl.TracingState
 import org.apache.kafka.clients.consumer.Consumer
 import org.apache.kafka.clients.producer.Producer
@@ -32,11 +33,27 @@ fun <K, V> wrapWithTracingProducer(kafkaProducer: Producer<K, V>): Producer<K, V
     return TracingState.kafkaTracing.producer(kafkaProducer)
 }
 
-fun addTraceContextToRecords(records: List<Record<*, *>>): List<Record<*, *>> {
-    val injector = TracingState.tracing.propagation().injector { param: MutableList<Pair<String, String>>, key: String, value: String ->
-        param.removeAll { it.first == key }
-        param.add(key to value)
+fun <R> trace(operationName: String, processingBlock: TraceContext.() -> R): R {
+    val span = TracingState.tracing.tracer().nextSpan().name(operationName)
+    val ctx = TraceContextImpl(span)
+    return TracingState.tracing.currentTraceContext().newScope(span.context()).use {
+        try {
+            processingBlock(ctx)
+        } catch (ex: Exception) {
+            span.error(ex)
+            throw ex
+        } finally {
+            span.finish()
+        }
     }
+}
+
+fun addTraceContextToRecords(records: List<Record<*, *>>): List<Record<*, *>> {
+    val injector = TracingState.tracing.propagation()
+        .injector { param: MutableList<Pair<String, String>>, key: String, value: String ->
+            param.removeAll { it.first == key }
+            param.add(key to value)
+        }
 
     return records.map {
         val headersWithTracing = it.headers.toMutableList()
@@ -46,10 +63,10 @@ fun addTraceContextToRecords(records: List<Record<*, *>>): List<Record<*, *>> {
 }
 
 fun traceEventProcessing(
-    event:Record<*,*>,
-    operationName:String,
-    processingBlock:()-> List<Record<*,*>>
-):List<Record<*,*>>{
+    event: Record<*, *>,
+    operationName: String,
+    processingBlock: () -> List<Record<*, *>>
+): List<Record<*, *>> {
     val span = TracingState.recordTracing.nextSpan(event).name(operationName)
     return TracingState.tracing.currentTraceContext().newScope(span.context()).use {
         try {
@@ -115,5 +132,3 @@ fun configureJavalinForTracing(config: JavalinConfig) {
         )
     }
 }
-
-

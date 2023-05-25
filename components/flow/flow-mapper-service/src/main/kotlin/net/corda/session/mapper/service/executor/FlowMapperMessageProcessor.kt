@@ -41,7 +41,7 @@ class FlowMapperMessageProcessor(
         val key = event.key
         logger.trace { "Received event. Key: $key Event: ${event.value}" }
         val value = event.value ?: return StateAndEventProcessor.Response(state, emptyList())
-        val eventType = value.javaClass.simpleName
+        val eventType = value.payload?.let { it.javaClass.simpleName } ?: "Unknown"
 
         return traceStateAndEventExecution(event, "Flow Mapper Event - $eventType") {
             if (!isExpiredSessionEvent(value)) {
