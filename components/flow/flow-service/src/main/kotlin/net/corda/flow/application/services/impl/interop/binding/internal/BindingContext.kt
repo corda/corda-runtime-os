@@ -80,7 +80,6 @@ internal abstract class BindingContext<T> {
 internal class InterfaceBindingContext(val facade: Facade, private val boundInterface: Class<*>) :
     BindingContext<FacadeInterfaceBinding>() {
 
-    @Suspendable
     override fun createBinding(): FacadeInterfaceBinding {
         // The interface must be annotated with @BindsFacade
         val boundFacadeName = boundInterface.readAnnotation<BindsFacade>().orFail {
@@ -115,8 +114,7 @@ internal class InterfaceBindingContext(val facade: Facade, private val boundInte
             boundMethods
         )
     }
-
-    @Suspendable
+    
     private fun getMethodBinding(method: Method, defaultBoundVersions: Set<String>):
             FacadeMethodBinding? {
         // Ignore methods that are not annotated with @BindsFacadeMethod.
