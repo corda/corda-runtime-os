@@ -39,8 +39,8 @@ spec:
           securityContext:
             allowPrivilegeEscalation: false
           args:
-            - "--mode DB_SINK"
-            - "--clients {{ .Values.appSimulators.dbSink.parallelClientsPerReplica }}"
+            - "--mode=DB_SINK"
+            - "--clients={{ .Values.appSimulators.dbSink.parallelClientsPerReplica }}"
             {{- include "appSimulator.kafkaArgs" . | nindent 12 }}
             {{- include "appSimulator.databaseArgs" . | nindent 12 }}
 
