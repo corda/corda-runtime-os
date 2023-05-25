@@ -3,6 +3,7 @@ package net.corda.virtualnode.write.db.impl.writer.asyncoperation
 import net.corda.data.virtualnode.VirtualNodeAsynchronousRequest
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
+import net.corda.tracing.traceEventProcessing
 import org.slf4j.Logger
 
 internal class VirtualNodeAsyncOperationProcessor(
@@ -12,7 +13,13 @@ internal class VirtualNodeAsyncOperationProcessor(
 
     override fun onNext(events: List<Record<String, VirtualNodeAsynchronousRequest>>): List<Record<*, *>> {
         logger.debug("Received ${events.size} asynchronous virtual node operation requests.")
-        events.forEach { handleEvent(it) }
+        events.forEach { record ->
+            val requestType = record.value?.request?.javaClass?.simpleName ?: "Unknown"
+            traceEventProcessing(record, "Virtual Node - $requestType") {
+                handleEvent(record)
+                emptyList()
+            }
+        }
         return emptyList()
     }
 
