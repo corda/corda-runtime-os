@@ -5,6 +5,7 @@ import brave.baggage.BaggageField
 import brave.baggage.BaggagePropagation
 import brave.baggage.BaggagePropagationConfig
 import brave.context.slf4j.MDCScopeDecorator
+import brave.kafka.clients.KafkaTracing
 import brave.propagation.B3Propagation
 import brave.propagation.ThreadLocalCurrentTraceContext
 import brave.sampler.Sampler
@@ -55,6 +56,12 @@ object TracingState : AutoCloseable {
         }
 
         tracingBuilder.build().also(resourcesToClose::push)
+    }
+
+    val kafkaTracing: KafkaTracing by lazy {
+        KafkaTracing.newBuilder(tracing)
+            .singleRootSpanOnReceiveBatch(false)
+            .build()
     }
 
     val recordTracing: RecordTracing by lazy { RecordTracing(tracing) }
