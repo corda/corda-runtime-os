@@ -3,6 +3,7 @@ package net.corda.ledger.utxo.flow.impl.flows.backchain.v1
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.ledger.common.data.transaction.CordaPackageSummaryImpl
 import net.corda.ledger.common.data.transaction.TransactionStatus.UNVERIFIED
+import net.corda.ledger.utxo.flow.impl.UtxoLedgerMetricRecorder
 import net.corda.ledger.utxo.flow.impl.flows.backchain.TopologicalSort
 import net.corda.ledger.utxo.flow.impl.persistence.TransactionExistenceStatus
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
@@ -41,6 +42,7 @@ class TransactionBackchainReceiverFlowV1Test {
     }
 
     private val utxoLedgerPersistenceService = mock<UtxoLedgerPersistenceService>()
+    private val utxoLedgerMetricRecorder = mock<UtxoLedgerMetricRecorder>()
     private val session = mock<FlowSession>()
 
     private val retrievedTransaction1 = mock<UtxoSignedTransaction>()
@@ -277,7 +279,9 @@ class TransactionBackchainReceiverFlowV1Test {
         return TransactionBackchainReceiverFlowV1(
             setOf(SecureHashImpl("SHA", byteArrayOf(1, 1, 1, 1))),
             originalTransactionsToRetrieve, session
-        ).apply { utxoLedgerPersistenceService = this@TransactionBackchainReceiverFlowV1Test.utxoLedgerPersistenceService }
-            .call()
+        ).apply {
+            utxoLedgerPersistenceService = this@TransactionBackchainReceiverFlowV1Test.utxoLedgerPersistenceService
+            utxoLedgerMetricRecorder = this@TransactionBackchainReceiverFlowV1Test.utxoLedgerMetricRecorder
+        }.call()
     }
 }

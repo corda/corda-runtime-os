@@ -1,6 +1,8 @@
 package net.corda.flow.application.serialization
 
 import net.corda.flow.pipeline.exceptions.FlowFatalException
+import net.corda.metrics.CordaMetrics
+import net.corda.metrics.recordOptionally
 import net.corda.sandbox.type.SandboxConstants.CORDA_SYSTEM_SERVICE
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
@@ -18,8 +20,8 @@ import org.slf4j.LoggerFactory
 import java.io.NotSerializableException
 
 @Component(
-    service = [ SerializationService::class, SerializationServiceInternal::class, UsedByFlow::class ],
-    property = [ CORDA_SYSTEM_SERVICE ],
+    service = [SerializationService::class, SerializationServiceInternal::class, UsedByFlow::class],
+    property = [CORDA_SYSTEM_SERVICE],
     scope = PROTOTYPE
 )
 class SerializationServiceImpl @Activate constructor(
@@ -41,12 +43,22 @@ class SerializationServiceImpl @Activate constructor(
         }
 
     override fun <T : Any> serialize(obj: T): SerializedBytes<T> {
-        return serializationService.serialize(obj)
+        return CordaMetrics.Metric.Serialization.SerializationTime
+            .builder()
+            .forVirtualNode(currentSandboxGroupContext.get().virtualNodeContext.holdingIdentity.shortHash.toString())
+            .withTag(CordaMetrics.Tag.SerializedClass, obj::class.java.name)
+            .build()
+            .recordOptionally(greaterThanMillis = 1) { serializationService.serialize(obj) }
     }
 
     override fun <T : Any> deserialize(bytes: ByteArray, clazz: Class<T>): T {
         return try {
-            serializationService.deserialize(bytes, clazz)
+            CordaMetrics.Metric.Serialization.DeserializationTime
+                .builder()
+                .forVirtualNode(currentSandboxGroupContext.get().virtualNodeContext.holdingIdentity.shortHash.toString())
+                .withTag(CordaMetrics.Tag.SerializedClass, clazz.name)
+                .build()
+                .recordOptionally(greaterThanMillis = 1) { serializationService.deserialize(bytes, clazz) }
         } catch (e: NotSerializableException) {
             log.error("Failed to deserialize it into a ${clazz.name}", e)
             throw e
