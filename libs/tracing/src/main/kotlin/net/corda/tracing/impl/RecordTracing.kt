@@ -3,6 +3,7 @@ package net.corda.tracing.impl
 import brave.Span
 import brave.Tracing
 import brave.propagation.Propagation
+import net.corda.messaging.api.records.EventLogRecord
 import net.corda.messaging.api.records.Record
 
 class RecordTracing(tracing: Tracing) {
@@ -14,10 +15,18 @@ class RecordTracing(tracing: Tracing) {
     private val tracingContextExtractor = tracing.propagation().extractor(recordHeaderGetter)
 
     fun nextSpan(record: Record<*, *>): Span {
-        val extracted = tracingContextExtractor.extract(record.headers)
+        return nextSpan(record.topic, record.headers)
+    }
+
+    fun nextSpan(record: EventLogRecord<*, *>): Span {
+        return nextSpan(record.topic, record.headers)
+    }
+
+    private fun nextSpan(topic:String, headers: List<Pair<String, String>>): Span{
+        val extracted = tracingContextExtractor.extract(headers)
         val span = tracer.nextSpan(extracted)
         if (extracted.context() == null && !span.isNoop) {
-           span.tag("kafka.topic", record.topic)
+            span.tag("kafka.topic", topic)
         }
 
         return span

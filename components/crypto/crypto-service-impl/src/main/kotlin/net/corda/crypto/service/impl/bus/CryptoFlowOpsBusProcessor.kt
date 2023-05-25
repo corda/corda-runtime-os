@@ -20,6 +20,7 @@ import net.corda.data.crypto.wire.ops.flow.queries.FilterMyKeysFlowQuery
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
+import net.corda.tracing.traceEventProcessingSingle
 import net.corda.utilities.MDC_CLIENT_ID
 import net.corda.utilities.MDC_EXTERNAL_EVENT_ID
 import net.corda.utilities.MDC_FLOW_ID
@@ -58,51 +59,57 @@ class CryptoFlowOpsBusProcessor(
             logger.error("Unexpected null payload for event with the key={} in topic={}", event.key, event.topic)
             return null // cannot send any error back as have no idea where to send to
         }
+        val eventType = request.request?.let { it.javaClass.simpleName } ?: "Unknown"
+        return traceEventProcessingSingle(event, "Crypto Event - $eventType") {
+            val expireAt = getRequestExpireAt(request)
+            val clientRequestId = request.flowExternalEventContext.contextProperties.toMap()[MDC_CLIENT_ID] ?: ""
+            val mdc = mapOf(
+                MDC_FLOW_ID to request.flowExternalEventContext.flowId,
+                MDC_CLIENT_ID to clientRequestId,
+                MDC_EXTERNAL_EVENT_ID to request.flowExternalEventContext.requestId
+            )
 
-        val expireAt = getRequestExpireAt(request)
-        val clientRequestId = request.flowExternalEventContext.contextProperties.toMap()[MDC_CLIENT_ID] ?: ""
-        val mdc = mapOf(
-            MDC_FLOW_ID to request.flowExternalEventContext.flowId,
-            MDC_CLIENT_ID to clientRequestId,
-            MDC_EXTERNAL_EVENT_ID to request.flowExternalEventContext.requestId
-        )
+            withMDC(mdc) {
+                logger.info("Handling ${request.request::class.java.name} for tenant ${request.context.tenantId}")
 
-        return withMDC(mdc) {
-            logger.info("Handling ${request.request::class.java.name} for tenant ${request.context.tenantId}")
-
-            try {
-                if (Instant.now() >= expireAt) {
-                    logger.warn("Event ${request.request::class.java.name} for tenant ${request.context.tenantId} " +
-                            "is no longer valid, expired at $expireAt")
-                    externalEventResponseFactory.transientError(
-                        request.flowExternalEventContext,
-                        ExceptionEnvelope("Expired", "Expired at $expireAt")
-                    )
-                } else {
-                    val response = executor.executeWithRetry {
-                        handleRequest(request.request, request.context)
-                    }
-
+                try {
                     if (Instant.now() >= expireAt) {
-                        logger.warn("Event ${request.request::class.java.name} for tenant ${request.context.tenantId} " +
-                                "is no longer valid, expired at $expireAt")
+                        logger.warn(
+                            "Event ${request.request::class.java.name} for tenant ${request.context.tenantId} " +
+                                    "is no longer valid, expired at $expireAt"
+                        )
                         externalEventResponseFactory.transientError(
                             request.flowExternalEventContext,
                             ExceptionEnvelope("Expired", "Expired at $expireAt")
                         )
                     } else {
-                        externalEventResponseFactory.success(
-                            request.flowExternalEventContext,
-                            FlowOpsResponse(createResponseContext(request), response, null)
-                        )
+                        val response = executor.executeWithRetry {
+                            handleRequest(request.request, request.context)
+                        }
+
+                        if (Instant.now() >= expireAt) {
+                            logger.warn(
+                                "Event ${request.request::class.java.name} for tenant ${request.context.tenantId} " +
+                                        "is no longer valid, expired at $expireAt"
+                            )
+                            externalEventResponseFactory.transientError(
+                                request.flowExternalEventContext,
+                                ExceptionEnvelope("Expired", "Expired at $expireAt")
+                            )
+                        } else {
+                            externalEventResponseFactory.success(
+                                request.flowExternalEventContext,
+                                FlowOpsResponse(createResponseContext(request), response, null)
+                            )
+                        }
                     }
+                } catch (throwable: Throwable) {
+                    logger.error(
+                        "Failed to handle ${request.request::class.java.name} for tenant ${request.context.tenantId}",
+                        throwable
+                    )
+                    externalEventResponseFactory.platformError(request.flowExternalEventContext, throwable)
                 }
-            } catch (throwable: Throwable) {
-                logger.error(
-                    "Failed to handle ${request.request::class.java.name} for tenant ${request.context.tenantId}",
-                    throwable
-                )
-                externalEventResponseFactory.platformError(request.flowExternalEventContext, throwable)
             }
         }
     }
@@ -122,6 +129,7 @@ class CryptoFlowOpsBusProcessor(
                     tenantId = context.tenantId,
                     candidateKeys = request.keys
                 )
+
             is SignFlowCommand ->
                 cryptoOpsClient.signProxy(
                     tenantId = context.tenantId,
@@ -130,8 +138,10 @@ class CryptoFlowOpsBusProcessor(
                     data = request.bytes,
                     context = request.context
                 )
+
             is ByIdsFlowQuery ->
                 cryptoOpsClient.lookupKeysByFullIdsProxy(context.tenantId, request.fullKeyIds)
+
             else ->
                 throw IllegalArgumentException("Unknown request type ${request::class.java.name}")
         }

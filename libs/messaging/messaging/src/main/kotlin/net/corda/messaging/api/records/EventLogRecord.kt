@@ -9,4 +9,5 @@ data class EventLogRecord<K : Any, V : Any>(
     val key: K, val value: V?,
     val partition: Int,
     val offset: Long,
+    val headers: List<Pair<String, String>> = listOf()
 )
