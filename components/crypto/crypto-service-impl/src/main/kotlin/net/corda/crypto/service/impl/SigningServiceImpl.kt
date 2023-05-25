@@ -365,10 +365,11 @@ class SigningServiceImpl(
                 it.fullIdHash(schemeMetadata, digestService) to it
             }.chunked(KEY_LOOKUP_INPUT_ITEMS_LIMIT)
             for (chunk in leafKeysIdsChunks) {
-                val found = signingRepositoryFactory.getInstance(tenantId)
-                        .lookupByPublicKeyHashes(
-                            chunk.mapTo(mutableSetOf()) { it.first }
-                        )
+                val found =
+                    lookupSigningKeysByPublicKeyHashes(
+                        tenantId,
+                        chunk.mapTo(mutableSetOf()) { it.first }
+                    )
                 if (found.isNotEmpty()) {
                     for (key in chunk) {
                         val first = found.firstOrNull { it.fullId == key.first }
