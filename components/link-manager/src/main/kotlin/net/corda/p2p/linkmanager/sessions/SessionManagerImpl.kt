@@ -901,11 +901,12 @@ internal class SessionManagerImpl(
         return false
     }
 
+    private val outboundSessionCountMetric = CordaMetrics.Metric.OutboundSessionCount.builder().build()
+    private val inboundSessionContMetric = CordaMetrics.Metric.InboundSessionCount.builder().build()
+
     private fun recordTotalSessionMetrics() {
-        CordaMetrics.Metric.OutboundSessionCount.builder()
-            .build().set(outboundSessionPool.getAllSessionIds().size)
-        CordaMetrics.Metric.InboundSessionCount.builder()
-            .build().set(activeInboundSessions.size + pendingInboundSessions.size)
+        outboundSessionCountMetric.set(outboundSessionPool.getAllSessionIds().size)
+        inboundSessionContMetric.set(activeInboundSessions.size + pendingInboundSessions.size)
     }
 
     class HeartbeatManager(
