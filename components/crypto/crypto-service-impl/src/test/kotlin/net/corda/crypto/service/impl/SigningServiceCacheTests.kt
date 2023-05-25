@@ -6,11 +6,13 @@ import net.corda.cache.caffeine.CacheFactoryImpl
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.cipher.suite.impl.PlatformDigestServiceImpl
 import net.corda.crypto.core.ShortHash
+import net.corda.crypto.core.fullIdHash
 import net.corda.crypto.core.parseSecureHash
 import net.corda.crypto.persistence.SigningKeyInfo
 import net.corda.crypto.service.SigningService
 import net.corda.crypto.softhsm.SigningRepository
 import net.corda.crypto.softhsm.SigningRepositoryFactory
+import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.crypto.SecureHash
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -22,8 +24,10 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.security.PublicKey
 import java.util.concurrent.TimeUnit
 import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -258,6 +262,66 @@ class SigningServiceCacheTests {
 
         assertNull(lookedUpByFullKeyIdKey)
         verify(signingRepositoryFactory, times(0)).getInstance(any())
+    }
+
+    @Test
+    fun `composite key look up hits the cache for key leaves first then the database`() {
+        val keyEncoded1 = byteArrayOf(1, 2, 3)
+        val keyEncoded2 = byteArrayOf(4, 5, 6)
+        val leafKey1 = mock<PublicKey>().also {
+            whenever(it.encoded).thenReturn(keyEncoded1)
+        }
+        val leafKey2 = mock<PublicKey>().also {
+            whenever(it.encoded).thenReturn(keyEncoded2)
+        }
+
+        val compositeSigningKey =
+            mock<CompositeKey>()
+                .also {
+                    whenever(it.leafKeys).thenReturn(setOf(leafKey1, leafKey2))
+                }
+
+        val fullKeyId1 = leafKey1.fullIdHash()
+        val shortKeyId1 = ShortHash.of(fullKeyId1)
+        val fullKeyId2 = leafKey2.fullIdHash()
+        val shortKeyId2 = ShortHash.of(fullKeyId2)
+
+        val cacheLookupCaptor = argumentCaptor<Set<CacheKey>>()
+        val cache =
+            mock<Cache<CacheKey, SigningKeyInfo>>()
+                .also { cache ->
+                    whenever(cache.getAllPresent(cacheLookupCaptor.capture()))
+                        .thenReturn(
+                            mapOf()
+                        )
+                }
+
+        val databaseLookUpCaptor = argumentCaptor<Set<SecureHash>>()
+        signingRepositoryFactory.run {
+            val signingRepository = mock<SigningRepository>().also {
+                val cachedKey1 = mock<SigningKeyInfo>().also {
+                    whenever(it.id).thenReturn(shortKeyId1)
+                    whenever(it.fullId).thenReturn(fullKeyId1)
+                }
+                val cachedKey2 = mock<SigningKeyInfo>().also {
+                    whenever(it.id).thenReturn(shortKeyId2)
+                    whenever(it.fullId).thenReturn(fullKeyId2)
+                }
+                whenever(it.lookupByPublicKeyHashes(databaseLookUpCaptor.capture())).thenReturn(listOf(cachedKey1, cachedKey2))
+            }
+            whenever(this.getInstance(eq(tenantId))).thenReturn(signingRepository)
+        }
+
+        setUpSigningService(cache)
+        val ownedKeyRecord = (signingService as SigningServiceImpl).getOwnedKeyRecord(tenantId, compositeSigningKey)
+        assertNotNull(ownedKeyRecord)
+        // should be returning the first key leaf only
+        assertEquals(leafKey1, ownedKeyRecord.publicKey)
+        // assert we hit the cache for both the leaves
+        assertEquals(setOf(CacheKey(tenantId, shortKeyId1), CacheKey(tenantId, shortKeyId2)), cacheLookupCaptor.firstValue)
+        // assert we also hit the database because leaves were missing on cache
+        assertEquals(setOf(fullKeyId1, fullKeyId2), databaseLookUpCaptor.firstValue)
+        verify(signingRepositoryFactory, times(1)).getInstance(any())
     }
 
     private fun createCache(): Cache<CacheKey, SigningKeyInfo> =

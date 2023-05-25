@@ -359,7 +359,8 @@ class SigningServiceImpl(
 
     // Flow sign operation - needs cache in place
     @Suppress("ThrowsCount", "NestedBlockDepth")
-    private fun getOwnedKeyRecord(tenantId: String, publicKey: PublicKey): OwnedKeyRecord {
+    @VisibleForTesting
+    internal fun getOwnedKeyRecord(tenantId: String, publicKey: PublicKey): OwnedKeyRecord {
         if (publicKey is CompositeKey) {
             val leafKeysIdsChunks = publicKey.leafKeys.map {
                 it.fullIdHash(schemeMetadata, digestService) to it
