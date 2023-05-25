@@ -11,7 +11,15 @@ import org.osgi.service.component.annotations.Component
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
-@Component(service = [CurrentSandboxGroupContext::class, UsedByFlow::class, UsedByPersistence::class, UsedByVerification::class])
+@Component(
+    service = [
+        CurrentSandboxGroupContext::class,
+        SingletonSerializeAsToken::class,
+        UsedByFlow::class,
+        UsedByPersistence::class,
+        UsedByVerification::class
+    ]
+)
 class CurrentSandboxGroupContextImpl
     : CurrentSandboxGroupContext, SingletonSerializeAsToken, UsedByFlow, UsedByPersistence, UsedByVerification {
 
