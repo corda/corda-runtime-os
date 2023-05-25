@@ -15,6 +15,7 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.p2p.app.simulator.AppSimulator.Companion.APP_SIMULATOR_SUBSYSTEM
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
+import net.corda.schema.configuration.MessagingConfig
 import net.corda.schema.configuration.MessagingConfig.Bus.KAFKA_PRODUCER_CLIENT_ID
 import net.corda.utilities.time.Clock
 import org.slf4j.LoggerFactory
@@ -69,6 +70,7 @@ class Sender(private val publisherFactory: PublisherFactory,
                 val configWithInstanceId = commonConfig.bootConfig
                     .withValue(KAFKA_PRODUCER_CLIENT_ID, ConfigValueFactory.fromAnyRef("app-simulator-sender-$instanceId-$client"))
                     .withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef("$instanceId-$client".hashCode()))
+                    .withValue(MessagingConfig.MAX_ALLOWED_MSG_SIZE, ConfigValueFactory.fromAnyRef(10000000))
                 val messagingConfig = configMerger.getMessagingConfig(configWithInstanceId)
                 val publisher = publisherFactory.createPublisher(PublisherConfig("app-simulator", false), messagingConfig)
                 publisher.use {
