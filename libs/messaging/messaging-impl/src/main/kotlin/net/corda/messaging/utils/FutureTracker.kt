@@ -2,7 +2,6 @@ package net.corda.messaging.utils
 
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
-import net.corda.messagebus.api.CordaTopicPartition
 import net.corda.messaging.api.exception.CordaRPCAPIPartitionException
 import net.corda.messaging.api.exception.CordaRPCAPISenderException
 
@@ -12,16 +11,13 @@ import net.corda.messaging.api.exception.CordaRPCAPISenderException
  * [futuresInPartitionMap] is a map where the key is the partition number we listen for responses on for the futures we
  * hold in the value part of this map
  */
-class FutureTracker<RESPONSE> {
-
+class FutureTracker<RESPONSE> : AutoCloseable {
     private val futuresInPartitionMap = ConcurrentHashMap<Int, WeakValueHashMap<String, CompletableFuture<RESPONSE>>>()
 
     fun addFuture(correlationId: String, future: CompletableFuture<RESPONSE>, partition: Int) {
         if (futuresInPartitionMap[partition] == null) {
             future.completeExceptionally(
-                CordaRPCAPISenderException(
-                    "Repartition event!! Partition was removed before we could send the request. Please retry"
-                )
+                CordaRPCAPISenderException("Partition was removed before we could send the request. Please retry.")
             )
         } else {
             futuresInPartitionMap[partition]?.put(correlationId, future)
@@ -36,23 +32,37 @@ class FutureTracker<RESPONSE> {
         futuresInPartitionMap[partition]?.remove(correlationId)
     }
 
-    fun addPartitions(partitions: List<CordaTopicPartition>) {
+    fun addPartition(partition: Int) {
+        futuresInPartitionMap[partition] = WeakValueHashMap()
+    }
+
+    fun addPartitions(partitions: List<Int>) {
         for (partition in partitions) {
-            futuresInPartitionMap[partition.partition] = WeakValueHashMap()
+            addPartition(partition)
         }
     }
 
-    fun removePartitions(partitions: List<CordaTopicPartition>) {
+    private fun removePartition(partition: Int) {
+        val futures = futuresInPartitionMap[partition]
+
+        for (key in futures!!.keys) {
+            futures[key]?.completeExceptionally(
+                CordaRPCAPIPartitionException("Partition was removed, results for this future can no longer be returned.")
+            )
+        }
+
+        futuresInPartitionMap.remove(partition)
+    }
+
+    fun removePartitions(partitions: List<Int>) {
         for (partition in partitions) {
-            val futures = futuresInPartitionMap[partition.partition]
-            for (key in futures!!.keys) {
-                futures[key]?.completeExceptionally(
-                    CordaRPCAPIPartitionException(
-                        "Repartition event!! Results for this future can no longer be returned"
-                    )
-                )
-            }
-            futuresInPartitionMap.remove(partition.partition)
+            removePartition(partition)
+        }
+    }
+
+    override fun close() {
+        for (partition in futuresInPartitionMap.keys()) {
+            removePartition(partition)
         }
     }
 }
