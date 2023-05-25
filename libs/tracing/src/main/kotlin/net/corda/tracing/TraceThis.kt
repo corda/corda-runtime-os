@@ -59,7 +59,7 @@ fun traceEventProcessing(
     operationName: String,
     processingBlock: () -> List<Record<*, *>>
 ): List<Record<*, *>> {
-    val span = TracingState.recordTracing.nextSpan(event).name(operationName)
+    val span = TracingState.recordTracing.nextSpan(event).name(operationName).start()
     return TracingState.tracing.currentTraceContext().newScope(span.context()).use {
         try {
             addTraceContextToRecords(processingBlock())
@@ -77,7 +77,7 @@ fun <K : Any, S : Any, V : Any> traceStateAndEventExecution(
     operationName: String,
     processingBlock: () -> StateAndEventProcessor.Response<S>
 ): StateAndEventProcessor.Response<S> {
-    val span = TracingState.recordTracing.nextSpan(event).name(operationName)
+    val span = TracingState.recordTracing.nextSpan(event).name(operationName).start()
     return TracingState.tracing.currentTraceContext().newScope(span.context()).use {
         try {
             val result = processingBlock()
