@@ -1,9 +1,16 @@
 package net.corda.crypto.impl
 
+import java.io.StringReader
+import java.io.StringWriter
+import java.security.Provider
+import java.security.PublicKey
+import java.security.SecureRandom
+import java.security.spec.X509EncodedKeySpec
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.cipher.suite.schemes.KeyScheme
 import net.corda.crypto.cipher.suite.schemes.KeySchemeCapability
 import net.corda.crypto.cipher.suite.schemes.KeySchemeTemplate
+import net.corda.metrics.CordaMetrics
 import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.crypto.CordaOID.OID_COMPOSITE_KEY
 import net.corda.v5.crypto.KeySchemeCodes.COMPOSITE_KEY_CODE_NAME
@@ -17,12 +24,6 @@ import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter
 import org.bouncycastle.openssl.jcajce.JcaPEMWriter
 import org.bouncycastle.pqc.jcajce.provider.BouncyCastlePQCProvider
 import org.bouncycastle.util.io.pem.PemReader
-import java.io.StringReader
-import java.io.StringWriter
-import java.security.Provider
-import java.security.PublicKey
-import java.security.SecureRandom
-import java.security.spec.X509EncodedKeySpec
 
 class CipherSchemeMetadataProvider : KeyEncodingService {
 
@@ -140,15 +141,22 @@ class CipherSchemeMetadataProvider : KeyEncodingService {
         algorithmMap[normaliseAlgorithmIdentifier(algorithm)]
             ?: throw IllegalArgumentException("Unrecognised algorithm: ${algorithm.algorithm.id}, with parameters=${algorithm.parameters}")
 
-    override fun decodePublicKey(encodedKey: ByteArray): PublicKey = try {
-        val subjectPublicKeyInfo = SubjectPublicKeyInfo.getInstance(encodedKey)
-        val scheme = findKeyScheme(subjectPublicKeyInfo.algorithm)
-        val keyFactory = keyFactories[scheme]
-        keyFactory.generatePublic(X509EncodedKeySpec(encodedKey))
-    } catch (e: RuntimeException) {
-        throw e
-    } catch (e: Throwable) {
-        throw CryptoException("Failed to decode public key", e)
+    override fun decodePublicKey(encodedKey: ByteArray): PublicKey {
+        return try {
+            CordaMetrics.Metric.CryptoMethodTimer.builder()
+                .withTag(CordaMetrics.Tag.Method, "CipherSchemeMetadataProvider.decodePublicKey")
+                .build()
+                .recordCallable {
+                    val subjectPublicKeyInfo = SubjectPublicKeyInfo.getInstance(encodedKey)
+                    val scheme = findKeyScheme(subjectPublicKeyInfo.algorithm)
+                    val keyFactory = keyFactories[scheme]
+                    keyFactory.generatePublic(X509EncodedKeySpec(encodedKey))
+                }!!
+        } catch (e: RuntimeException) {
+            throw e
+        } catch (e: Throwable) {
+            throw CryptoException("Failed to decode public key", e)
+        }
     }
 
     override fun decodePublicKey(encodedKey: String): PublicKey = try {

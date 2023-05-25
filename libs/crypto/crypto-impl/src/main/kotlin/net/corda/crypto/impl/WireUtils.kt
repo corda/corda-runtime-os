@@ -16,7 +16,9 @@ import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SignatureSpec
 import java.nio.ByteBuffer
 import java.security.spec.AlgorithmParameterSpec
+import java.time.Duration
 import java.time.Instant
+import net.corda.metrics.CordaMetrics
 
 val emptyKeyValuePairList = KeyValuePairList(emptyList())
 
@@ -60,7 +62,10 @@ fun List<KeyValuePair>.toMap(): Map<String, String> {
     return map
 }
 
+private const val CRYPTO_SIGNATURE_SPEC_TO_SIGNATURE_SPEC_METHOD_NAME = "CryptoSignatureSpec.toSignatureSpec"
+
 fun CryptoSignatureSpec.toSignatureSpec(serializer: AlgorithmParameterSpecEncodingService): SignatureSpec {
+    val startTime = Instant.now()
     val algorithmParams = if (params != null) {
         serializer.deserialize(
             SerializedAlgorithmParameterSpec(
@@ -77,6 +82,11 @@ fun CryptoSignatureSpec.toSignatureSpec(serializer: AlgorithmParameterSpecEncodi
         }
         algorithmParams != null -> ParameterizedSignatureSpec(signatureName, algorithmParams)
         else -> SignatureSpecImpl(signatureName)
+    }.also {
+        CordaMetrics.Metric.CryptoMethodTimer.builder()
+            .withTag(CordaMetrics.Tag.Method, CRYPTO_SIGNATURE_SPEC_TO_SIGNATURE_SPEC_METHOD_NAME)
+            .build()
+            .record(Duration.between(startTime, Instant.now()))
     }
 }
 

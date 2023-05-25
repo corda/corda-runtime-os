@@ -18,16 +18,18 @@ class SigningRepositoryFactoryImpl(
     private val digestService: PlatformDigestService,
     private val layeredPropertyMapFactory: LayeredPropertyMapFactory,
 ) : SigningRepositoryFactory {
-    override fun getInstance(tenantId: String) = SigningRepositoryImpl(
-        entityManagerFactory = getEntityManagerFactory(
-            tenantId,
-            dbConnectionManager,
-            virtualNodeInfoReadService,
-            jpaEntitiesRegistry
-        ),
-        tenantId = tenantId,
-        keyEncodingService = keyEncodingService,
-        digestService = digestService,
-        layeredPropertyMapFactory = layeredPropertyMapFactory
-    )
+    override fun getInstance(tenantId: String) = recordGetInstance(this::class.java.simpleName) {
+        SigningRepositoryImpl(
+            entityManagerFactory = getEntityManagerFactory(
+                tenantId,
+                dbConnectionManager,
+                virtualNodeInfoReadService,
+                jpaEntitiesRegistry
+            ),
+            tenantId = tenantId,
+            keyEncodingService = keyEncodingService,
+            digestService = digestService,
+            layeredPropertyMapFactory = layeredPropertyMapFactory
+        )
+    }
 }

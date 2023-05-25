@@ -368,6 +368,24 @@ object CordaMetrics {
          */
         object CryptoSigningKeyLookupTimer: Metric<Timer>("crypto.signing.key.lookup.time", CordaMetrics::timer)
 
+        /**
+         * The time taken to create entity manager factories.
+         */
+        object CryptoServiceInstanceCreationTimer: Metric<Timer>("crypto.service.instance.creation.time", CordaMetrics::timer)
+
+        /**
+         * The time taken to create entity manager factories.
+         */
+        object CryptoMethodTimer: Metric<Timer>("crypto.method.time", CordaMetrics::timer)
+
+        /**
+         * Time taken for a membership persistence transaction to complete.
+         */
+        object MembershipPersistenceTransaction: Metric<Timer>(
+            "membership.persistence.transaction.time",
+            CordaMetrics::timer
+        )
+
         object Membership {
             private const val PREFIX = "membership"
 
@@ -607,7 +625,31 @@ object CordaMetrics {
          */
         ResultType("result.type"),
 
+        /**
+         * Method to lookup signing keys. Currently used by SingingRepositoryImpl to indicate whether the lookup is via public key hashes or
+         * public key short hashes.
+         */
         SigningKeyLookupMethod("lookup.method"),
+
+        /**
+         * Label to identify the instance of class / implementation retrieved via `getInstance` calls.
+         */
+        GetInstanceType("instance.type"),
+
+        /**
+         * Label to identify the method inside a class / implementation.
+         */
+        Method("method"),
+
+        /**
+         * Label to identify the method inside a class / implementation.
+         */
+        PublicKeyType("publickey.type"),
+
+        /**
+         * Label to identify the method inside a class / implementation.
+         */
+        Tenant("tenant"),
 
         /**
          * Boolean value indicating whether the metric relates to a duplicate request. Used by the

@@ -17,7 +17,7 @@ fun getEntityManagerFactory(
     jpaEntitiesRegistry: JpaEntitiesRegistry,
 ): EntityManagerFactory {
     return CordaMetrics.Metric.EntityManagerFactoryCreationTimer.builder()
-        .withTag(CordaMetrics.Tag.VirtualNode, tenantId)
+        .withTag(CordaMetrics.Tag.Tenant, tenantId)
         .build()
         .recordCallable {
             val onCluster = CryptoTenants.isClusterTenant(tenantId)

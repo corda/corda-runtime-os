@@ -100,7 +100,11 @@ open class SoftCryptoServiceProviderImpl @Activate constructor(
         jpaEntitiesRegistry
     )
 
-    override fun getInstance(config: SmartConfig): CryptoService = impl.getInstance(config)
+    override fun getInstance(config: SmartConfig): CryptoService {
+        return recordGetInstance(this::class.java.simpleName) {
+            impl.getInstance(config)
+        }
+    }
 
     override val lifecycleName: LifecycleCoordinatorName get() = lifecycleCoordinatorName
 

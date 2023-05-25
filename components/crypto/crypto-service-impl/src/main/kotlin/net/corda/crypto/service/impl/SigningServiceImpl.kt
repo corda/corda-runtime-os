@@ -36,6 +36,9 @@ import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
 import org.slf4j.LoggerFactory
 import java.security.PublicKey
+import java.time.Duration
+import java.time.Instant
+import net.corda.metrics.CordaMetrics
 
 data class CacheKey(val tenantId: String, val publicKeyId: ShortHash)
 
@@ -84,6 +87,7 @@ class SigningServiceImpl(
 
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        private const val SIGNING_SERVICE_GET_OWNED_KEY_RECORD_METHOD_NAME = "getOwnedKeyRecord"
     }
 
     data class OwnedKeyRecord(val publicKey: PublicKey, val data: net.corda.crypto.persistence.SigningKeyInfo)
@@ -93,7 +97,6 @@ class SigningServiceImpl(
         val ref = cryptoServiceFactory.findInstance(tenantId = tenantId, category = category)
         return ref.instance.supportedSchemes.map { it.key.codeName }
     }
-
 
     override fun querySigningKeys(
         tenantId: String,
@@ -138,7 +141,6 @@ class SigningServiceImpl(
 
         return cachedKeys + fetchedKeys
     }
-
 
     override fun lookupSigningKeysByPublicKeyHashes(
         tenantId: String,
@@ -348,6 +350,7 @@ class SigningServiceImpl(
 
     @Suppress("ThrowsCount")
     private fun getOwnedKeyRecord(tenantId: String, publicKey: PublicKey): OwnedKeyRecord {
+        val startTime = Instant.now()
         if (publicKey is CompositeKey) {
             val found = lookupSigningKeysByPublicKeyHashes(tenantId, publicKey.leafKeys.map { it.fullIdHash() })
             val hit = found.firstOrNull()
@@ -374,6 +377,11 @@ class SigningServiceImpl(
         if (signingKeyInfo.fullId != requestedFullKeyId) throw IllegalArgumentException(
             "The tenant $tenantId doesn't own public key '${publicKey.publicKeyId()}'."
         )
+        CordaMetrics.Metric.CryptoMethodTimer.builder()
+            .withTag(CordaMetrics.Tag.Method, SIGNING_SERVICE_GET_OWNED_KEY_RECORD_METHOD_NAME)
+            .withTag(CordaMetrics.Tag.PublicKeyType, publicKey::class.java.simpleName)
+            .build()
+            .record(Duration.between(startTime, Instant.now()))
         return OwnedKeyRecord(publicKey, signingKeyInfo)
     }
 

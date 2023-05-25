@@ -27,6 +27,7 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
 import java.time.Duration
+import net.corda.crypto.softhsm.impl.recordGetInstance
 
 /**
  * A high level factory which worker instance which supports only the Soft HSM implementation.
@@ -71,8 +72,9 @@ class CryptoServiceFactoryImpl @Activate constructor(
     override fun findInstance(tenantId: String, category: String): CryptoServiceRef =
         impl.findInstance(tenantId, category)
 
-    override fun getInstance(hsmId: String): CryptoService =
+    override fun getInstance(hsmId: String): CryptoService = recordGetInstance(this::class.java.simpleName) {
         impl.getInstance(hsmId)
+    }
 
     override fun bootstrapConfig(config: SmartConfig) {
         lifecycleCoordinator.postEvent(BootstrapConfigProvided(config))
