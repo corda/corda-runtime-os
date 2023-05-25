@@ -39,8 +39,8 @@ spec:
           securityContext:
             allowPrivilegeEscalation: false
           args:
-            - "--mode SENDER"
-            - "--clients {{ .Values.appSimulators.sender.parallelClientsPerReplica }}"
+            - "--mode=SENDER"
+            - "--clients={{ .Values.appSimulators.sender.parallelClientsPerReplica }}"
             - "-lloadGenerationType=CONTINUOUS"
             - "-lpeerX500Name={{ .Values.appSimulators.sender.peerX500Name }}"
             - "-lpeerGroupId={{ .Values.appSimulators.sender.peerGroupId }}"
