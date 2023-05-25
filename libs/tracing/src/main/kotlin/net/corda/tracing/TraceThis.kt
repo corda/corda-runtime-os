@@ -34,7 +34,7 @@ fun <K, V> wrapWithTracingProducer(kafkaProducer: Producer<K, V>): Producer<K, V
 }
 
 fun <R> trace(operationName: String, processingBlock: TraceContext.() -> R): R {
-    val span = TracingState.tracing.tracer().nextSpan().name(operationName)
+    val span = TracingState.tracing.tracer().nextSpan().name(operationName).start()
     val ctx = TraceContextImpl(span)
     return TracingState.tracing.currentTraceContext().newScope(span.context()).use {
         try {
