@@ -2,7 +2,7 @@
 set -e
 
 SCRIPT_DIR=$(dirname ${BASH_SOURCE[0]})
-source "$SCRIPT_DIR"/settings.sh
+source "$SCRIPT_DIR"/settings.sh $1
 
 deploy() {
    local namespace=$1
@@ -29,12 +29,7 @@ deploy() {
      --values $REPO_TOP_LEVEL_DIR/debug.yaml --wait --version $CORDA_CHART_VERSION
 }
 
-if [ $# -eq 0 ]
-then
-  declare -a namespaces=($A_CLUSTER_NAMESPACE $B_CLUSTER_NAMESPACE $MGM_CLUSTER_NAMESPACE)
-else
-  namespaces=$@
-fi
+declare -a namespaces=($A_CLUSTER_NAMESPACE $B_CLUSTER_NAMESPACE $MGM_CLUSTER_NAMESPACE)
 
 helm registry login corda-os-docker.software.r3.com -u $CORDA_ARTIFACTORY_USERNAME -p $CORDA_ARTIFACTORY_PASSWORD
 helm registry login corda-os-docker-unstable.software.r3.com -u $CORDA_ARTIFACTORY_USERNAME -p $CORDA_ARTIFACTORY_PASSWORD

@@ -1,6 +1,16 @@
 #!/bin/bash
 # Settings for the P2P Deployment as Enviroment Varaibles
 
+# Set cluster mode (single or multiple)
+if [ "$1" == "single-cluster" ]
+then
+  echo "Mode=SINGLE_CLUSTER"
+  CLUSTER_MODE="SINGLE_CLUSTER"
+else
+  echo "Mode=MULTI_CLUSTER"
+  CLUSTER_MODE="MULTI_CLUSTER"
+fi
+
 # Prefix the K8s namespace of each corda cluster
 NAMESPACE_PREFIX="${USER//./}"
 
@@ -10,15 +20,22 @@ CORDA_VERSION=5.1.0.0
 if [ -z $DOCKER_IMAGE_VERSION ]; then
   DOCKER_IMAGE_VERSION=$(curl -u $CORDA_ARTIFACTORY_USERNAME:$CORDA_ARTIFACTORY_PASSWORD  https://corda-os-docker-unstable.software.r3.com:/v2/corda-os-p2p-link-manager-worker/tags/list | jq -r -M '.["tags"] | map(select(contains("'$CORDA_VERSION'-beta"))) | sort | reverse | .[0]')
 fi
-#DOCKER_IMAGE_VERSION=5.0.0.0-beta-167361472154
+DOCKER_IMAGE_VERSION=5.1.0.0-alpha-1685010443775 #TODO - revert
 
 # Uncomment to enable mutual TLS
 # MTLS="Y"
 
 # K8s namespaces
-A_CLUSTER_NAMESPACE=$NAMESPACE_PREFIX-cluster-a
-B_CLUSTER_NAMESPACE=$NAMESPACE_PREFIX-cluster-b
-MGM_CLUSTER_NAMESPACE=$NAMESPACE_PREFIX-mgm
+if [ $CLUSTER_MODE == "SINGLE_CLUSTER" ]
+then
+  A_CLUSTER_NAMESPACE=$NAMESPACE_PREFIX-cluster-a
+  B_CLUSTER_NAMESPACE=$NAMESPACE_PREFIX-cluster-a
+  MGM_CLUSTER_NAMESPACE=$NAMESPACE_PREFIX-cluster-a
+else
+  A_CLUSTER_NAMESPACE=$NAMESPACE_PREFIX-cluster-a
+  B_CLUSTER_NAMESPACE=$NAMESPACE_PREFIX-cluster-b
+  MGM_CLUSTER_NAMESPACE=$NAMESPACE_PREFIX-mgm
+fi
 APP_SIMULATOR_DB_NAMESPACE=$NAMESPACE_PREFIX-db
 
 #KAFKA Settings
@@ -27,8 +44,14 @@ KAFKA_ZOOKEEPER_REPLICAS=1
 
 # RPC PORTS
 A_RPC_PORT=8888
-B_RPC_PORT=8889
-MGM_RPC_PORT=8890
+if [ $CLUSTER_MODE == "SINGLE_CLUSTER" ]
+then
+  B_RPC_PORT=8888
+  MGM_RPC_PORT=8888
+else
+  B_RPC_PORT=8889
+  MGM_RPC_PORT=8890
+fi
 
 A_RPC=localhost:$A_RPC_PORT
 B_RPC=localhost:$B_RPC_PORT

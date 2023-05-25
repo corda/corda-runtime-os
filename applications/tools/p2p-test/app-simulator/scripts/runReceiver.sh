@@ -1,6 +1,6 @@
 #!/bin/bash
 
-source settings.sh
+source settings.sh $1
 set -e
 
 MGM_HOLDING_ID_SHORT_HASH=$(cat $MGM_HOLDING_ID_FILE)
