@@ -2,15 +2,13 @@ package net.corda.membership.impl.read.cache
 
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_PENDING
 import net.corda.membership.lib.MemberInfoExtension.Companion.status
-import net.corda.membership.lib.metrics.SettableGaugeMetricTypes
+import net.corda.membership.lib.metrics.SettableGaugeMetricTypes.MEMBER_LIST
 import net.corda.membership.lib.metrics.getSettableGaugeMetric
+import net.corda.metrics.SettableGauge
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import org.slf4j.LoggerFactory
 import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.Executors
-import java.util.concurrent.ScheduledExecutorService
-import java.util.concurrent.TimeUnit
 
 /**
  * Interface for storing the member lists in-memory including implementation class.
@@ -28,30 +26,20 @@ interface MemberListCache : MemberDataListCache<MemberInfo> {
     /**
      * In-memory member list cache implementation.
      */
-    class Impl(
-        executorFactory: () -> ScheduledExecutorService = { Executors.newSingleThreadScheduledExecutor() }
-    ) : MemberListCache {
+    class Impl : MemberListCache {
 
         companion object {
-            private const val METRIC_RATE_SECONDS = 30L
             val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         }
 
         private val cache = ConcurrentHashMap<HoldingIdentity, ReplaceableList<MemberInfo>>()
-        private val executor = executorFactory().also {
-            it.scheduleAtFixedRate(
-                ::recordMemberListCacheSize,
-                METRIC_RATE_SECONDS,
-                METRIC_RATE_SECONDS,
-                TimeUnit.SECONDS
-            )
-        }
+        private val cacheSizeMetrics = ConcurrentHashMap<HoldingIdentity, SettableGauge>()
 
         override fun get(holdingIdentity: HoldingIdentity): List<MemberInfo> = cache[holdingIdentity] ?: emptyList()
         override fun getAll(): Map<HoldingIdentity, List<MemberInfo>> = cache
 
         override fun put(holdingIdentity: HoldingIdentity, data: List<MemberInfo>) {
-            cache.compute(holdingIdentity) { _, value ->
+            cache.compute(holdingIdentity) { holdingId, value ->
                 (value ?: ReplaceableList())
                     .addOrReplace(data) { old, new ->
                         if (new.status == MEMBER_STATUS_PENDING) {
@@ -59,31 +47,28 @@ interface MemberListCache : MemberDataListCache<MemberInfo> {
                         } else {
                             old.status != MEMBER_STATUS_PENDING && old.name == new.name
                         }
+                    }.also {
+                        getCacheSizeMetric(holdingId).set(it.size)
                     }
             }
         }
 
         override fun close() {
             logger.info("Clearing member list cache.")
-            executor.shutdownNow()
-            recordMemberListCacheSize(0)
+            cache.forEach { getCacheSizeMetric(it.key).set(0) }
             cache.clear()
         }
 
         /**
-         * Record metrics for the currently stored member list sizes.
-         * Allows for an override in case the cache is cleared so we can record a 0 metric before removing the keys.
+         * Returns the metric for setting the current member list cache size. We need to hold a reference to the
+         * [SettableGauge] so that the cached gauge metric in the micrometer library is referencing the expected value.
+         * If we recreated the settable gauge, the value referenced by the cached gauge will be cleared by the garbage
+         * collector and NaN will be reported in the metric for cache size.
          */
-        private fun recordMemberListCacheSize(
-            sizeOverride: Int? = null
-        ) {
-            for (entry in cache) {
-                getSettableGaugeMetric(
-                    SettableGaugeMetricTypes.MEMBER_LIST,
-                    entry.key
-                ).set(sizeOverride ?: entry.value.size)
+        private fun getCacheSizeMetric(holdingId: HoldingIdentity) = cacheSizeMetrics
+            .computeIfAbsent(holdingId) {
+                getSettableGaugeMetric(MEMBER_LIST, it)
             }
-        }
 
         /**
          * An implementation of [List] which has additional method [addOrReplace]. Calling [addOrReplace] will result in the
@@ -102,7 +87,10 @@ interface MemberListCache : MemberDataListCache<MemberInfo> {
              * @param predicate the function used to detect when to replace instead of add. When an existing entry paired with
              * any of the candidates is true for the given predicate, then that entry is replaced.
              */
-            fun addOrReplace(candidates: List<T>, predicate: (oldEntry: T, newEntry: T) -> Boolean): ReplaceableList<T> {
+            fun addOrReplace(
+                candidates: List<T>,
+                predicate: (oldEntry: T, newEntry: T) -> Boolean
+            ): ReplaceableList<T> {
                 // Add all items which do not match one of the new candidates from the old list to the new list
                 ArrayList(
                     data.filter { o ->
