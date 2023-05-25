@@ -265,7 +265,7 @@ class SigningServiceCacheTests {
     }
 
     @Test
-    fun `composite key look up hits the cache for key leaves first then the database`() {
+    fun `composite key look up hits the cache for key leaves first then the database if not found in cache`() {
         val keyEncoded1 = byteArrayOf(1, 2, 3)
         val keyEncoded2 = byteArrayOf(4, 5, 6)
         val leafKey1 = mock<PublicKey>().also {
