@@ -20,7 +20,7 @@ import net.corda.messaging.publisher.CordaRPCSenderImpl
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import java.util.concurrent.atomic.AtomicLong
+import java.util.UUID
 
 /**
  * Patterns implementation for Publisher Factory.
@@ -36,9 +36,6 @@ class CordaPublisherFactory @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
 ) : PublisherFactory {
-
-    // Used to ensure that each subscription has a unique client.id
-    private val clientIdCounter = AtomicLong()
 
     override fun createPublisher(
         publisherConfig: PublisherConfig,
@@ -62,7 +59,7 @@ class CordaPublisherFactory @Activate constructor(
             SubscriptionType.RPC_SENDER,
             subscriptionConfig,
             messagingConfig,
-            clientIdCounter.getAndIncrement()
+            UUID.randomUUID().toString()
         )
         val serializer = avroSerializationFactory.createAvroSerializer<REQUEST> { }
         val deserializer = avroSerializationFactory.createAvroDeserializer({}, rpcConfig.responseType)

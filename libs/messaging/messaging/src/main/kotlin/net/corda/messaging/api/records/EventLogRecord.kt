@@ -6,7 +6,9 @@ package net.corda.messaging.api.records
  */
 data class EventLogRecord<K : Any, V : Any>(
     val topic: String,
-    val key: K, val value: V?,
+    val key: K,
+    val value: V?,
     val partition: Int,
     val offset: Long,
+    val timestamp: Long = 0
 )

@@ -26,7 +26,7 @@ class FlowEventProcessorImpl(
     private val flowEventExceptionProcessor: FlowEventExceptionProcessor,
     private val flowEventContextConverter: FlowEventContextConverter,
     private val config: SmartConfig,
-    private val flowMDCService: FlowMDCService,
+    private val flowMDCService: FlowMDCService
 ) : StateAndEventProcessor<String, Checkpoint, FlowEvent> {
 
     private companion object {
@@ -70,7 +70,7 @@ class FlowEventProcessorImpl(
 
         val pipeline = try {
             log.trace { "Flow [${event.key}] Received event: ${flowEvent.payload::class.java} / ${flowEvent.payload}" }
-            flowEventPipelineFactory.create(state, flowEvent, config, mdcProperties)
+            flowEventPipelineFactory.create(state, flowEvent, config, mdcProperties, event.timestamp)
         } catch (t: Throwable) {
             // Without a pipeline there's a limit to what can be processed.
             return flowEventExceptionProcessor.process(t)

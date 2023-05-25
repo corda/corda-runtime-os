@@ -20,13 +20,13 @@ class RPCConsumerRebalanceListenerTest {
     @BeforeEach
     fun setup() {
         lifecycleStatusUpdater = mock()
-        listener = RPCConsumerRebalanceListener<String>("", "", FutureTracker(), lifecycleStatusUpdater)
+        listener = RPCConsumerRebalanceListener("", FutureTracker(), lifecycleStatusUpdater)
     }
 
     @Test
     fun `Test up and down status changes are triggered correctly`() {
         val lifecycleStatusUpdater: LifecycleStatusUpdater = mock()
-        val listener = RPCConsumerRebalanceListener<String>("test", "test", FutureTracker(), lifecycleStatusUpdater)
+        val listener = RPCConsumerRebalanceListener<String>("test", FutureTracker(), lifecycleStatusUpdater)
 
         listener.onPartitionsAssigned(mutableListOf(CordaTopicPartition("test", 0)))
         verify(lifecycleStatusUpdater, times(1)).updateLifecycleStatus(LifecycleStatus.UP)

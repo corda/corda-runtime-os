@@ -12,5 +12,6 @@ data class Record<K : Any, V : Any>(
     val topic: String,
     val key: K,
     val value: V?,
-    val headers: List<Pair<String, String>> = listOf()
+    val headers: List<Pair<String, String>> = listOf(),
+    val timestamp: Long = 0
 )

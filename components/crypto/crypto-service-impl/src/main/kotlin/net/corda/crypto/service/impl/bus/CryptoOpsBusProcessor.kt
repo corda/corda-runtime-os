@@ -5,7 +5,7 @@ import java.time.Instant
 import java.util.concurrent.CompletableFuture
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.cipher.suite.schemes.KeyScheme
-import net.corda.crypto.config.impl.opsBusProcessor
+import net.corda.crypto.config.impl.RetryingConfig
 import net.corda.crypto.core.InvalidParamsException
 import net.corda.crypto.core.KeyAlreadyExistsException
 import net.corda.crypto.core.SecureHashImpl
@@ -38,8 +38,8 @@ import net.corda.data.crypto.wire.ops.rpc.commands.SignRpcCommand
 import net.corda.data.crypto.wire.ops.rpc.queries.ByIdsRpcQuery
 import net.corda.data.crypto.wire.ops.rpc.queries.KeysRpcQuery
 import net.corda.data.crypto.wire.ops.rpc.queries.SupportedSchemesRpcQuery
-import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.processor.RPCResponderProcessor
+import net.corda.metrics.CordaMetrics
 import net.corda.utilities.debug
 import net.corda.v5.crypto.SecureHash
 import org.slf4j.Logger
@@ -48,7 +48,7 @@ import org.slf4j.LoggerFactory
 @Suppress("LongParameterList")
 class CryptoOpsBusProcessor(
     private val signingService: SigningService,
-    cryptoConfig: SmartConfig,
+    config: RetryingConfig,
 ) :
     RPCResponderProcessor<RpcOpsRequest, RpcOpsResponse> {
     companion object {
@@ -65,8 +65,6 @@ class CryptoOpsBusProcessor(
                 SecureHashImpl(it.algorithm, it.bytes.array())
             }
     }
-
-    private val config = cryptoConfig.opsBusProcessor()
 
     private val executor = CryptoRetryingExecutor(
         logger,
@@ -215,17 +213,22 @@ class CryptoOpsBusProcessor(
             )
         }
 
-        return when (request) {
-            is SupportedSchemesRpcQuery -> handleSupportedSchemesRpcQuery(request)
-            is ByIdsRpcQuery -> handleByIdsRpcQuery(request)
-            is KeysRpcQuery -> handleKeysRpcQuery(request)
-            is DeriveSharedSecretCommand -> handleDeriveSharedSecretCommand(request)
-            is GenerateKeyPairCommand -> handleGenerateKeyPairCommand(request)
-            is GenerateFreshKeyRpcCommand -> handleGenerateFreshKeyRpcCommand(request)
-            is GenerateWrappingKeyRpcCommand -> handleGenerateWrappingKeyRpcCommand(request)
-            is SignRpcCommand -> handleSignRpcCommand(request)
-            else -> throw IllegalArgumentException("Unknown request type ${request::class.java.name}")
-        }
+        return CordaMetrics.Metric.CryptoOpsProcessorExecutionTime.builder()
+            .withTag(CordaMetrics.Tag.OperationName, request::class.java.simpleName)
+            .build()
+            .recordCallable<Any> {
+                when (request) {
+                    is SupportedSchemesRpcQuery -> handleSupportedSchemesRpcQuery(request)
+                    is ByIdsRpcQuery -> handleByIdsRpcQuery(request)
+                    is KeysRpcQuery -> handleKeysRpcQuery(request)
+                    is DeriveSharedSecretCommand -> handleDeriveSharedSecretCommand(request)
+                    is GenerateKeyPairCommand -> handleGenerateKeyPairCommand(request)
+                    is GenerateFreshKeyRpcCommand -> handleGenerateFreshKeyRpcCommand(request)
+                    is GenerateWrappingKeyRpcCommand -> handleGenerateWrappingKeyRpcCommand(request)
+                    is SignRpcCommand -> handleSignRpcCommand(request)
+                    else -> throw IllegalArgumentException("Unknown request type ${request::class.java.name}")
+                }
+            }!!
     }
 
     private fun createResponseContext(request: RpcOpsRequest) = CryptoResponseContext(

@@ -14,6 +14,7 @@ import net.corda.lifecycle.domino.logic.util.RPCSubscriptionDominoTile
 import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
+import net.corda.metrics.CordaMetrics
 import net.corda.p2p.gateway.messaging.RevocationConfig
 import net.corda.p2p.gateway.messaging.RevocationConfigMode
 import net.corda.schema.Schemas.P2P.GATEWAY_REVOCATION_CHECK_REQUEST_TOPIC
@@ -41,6 +42,7 @@ class RevocationChecker(
         private const val groupAndClientName = "GatewayRevocationChecker"
         private const val certificateAlgorithm = "PKIX"
         private const val certificateFactoryType = "X.509"
+        private val revocationTimer = CordaMetrics.Metric.GatewayRevocationChecksLatency.builder().build()
 
         fun getCertCheckingParameters(trustStore: KeyStore, revocationConfig: RevocationConfig): PKIXBuilderParameters {
             val pkixParams = PKIXBuilderParameters(trustStore, X509CertSelector())
@@ -77,6 +79,13 @@ class RevocationChecker(
         private val certPathValidator: CertPathValidator
     ): RPCResponderProcessor<RevocationCheckRequest, RevocationCheckResponse> {
         override fun onNext(request: RevocationCheckRequest, respFuture: CompletableFuture<RevocationCheckResponse>) {
+            revocationTimer.recordCallable { checkRevocation(request, respFuture) }
+        }
+
+        private fun checkRevocation(
+            request: RevocationCheckRequest,
+            respFuture: CompletableFuture<RevocationCheckResponse>
+        ) {
             val revocationMode = request.mode
             if (revocationMode == null) {
                 respFuture.completeExceptionally(
@@ -98,10 +107,12 @@ class RevocationChecker(
                     }
                 })
             } catch (exception: CertificateException) {
-                respFuture.completeExceptionally(IllegalStateException(
-                    "Revocation check request cannot be made, certificate chain could not be parsed from pem format. Cause by:\n"
-                        + exception.message
-                ))
+                respFuture.completeExceptionally(
+                    IllegalStateException(
+                        "Revocation check request cannot be made, certificate chain could not be parsed from pem format. Cause by:\n"
+                                + exception.message
+                    )
+                )
                 return
             }
             if (certificateChain == null) {
