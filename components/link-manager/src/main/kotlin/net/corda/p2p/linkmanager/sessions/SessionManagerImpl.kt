@@ -167,6 +167,9 @@ internal class SessionManagerImpl(
         it.scheduleAtFixedRate({ recordTotalSessionMetrics() }, 5, 5, TimeUnit.SECONDS)
     }
 
+    private val outboundSessionCountMetric = CordaMetrics.Metric.OutboundSessionCount.builder().build()
+    private val inboundSessionCountMetric = CordaMetrics.Metric.InboundSessionCount.builder().build()
+
     override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,
         coordinatorFactory,
@@ -901,12 +904,9 @@ internal class SessionManagerImpl(
         return false
     }
 
-    private val outboundSessionCountMetric = CordaMetrics.Metric.OutboundSessionCount.builder().build()
-    private val inboundSessionContMetric = CordaMetrics.Metric.InboundSessionCount.builder().build()
-
     private fun recordTotalSessionMetrics() {
         outboundSessionCountMetric.set(outboundSessionPool.getAllSessionIds().size)
-        inboundSessionContMetric.set(activeInboundSessions.size + pendingInboundSessions.size)
+        inboundSessionCountMetric.set(activeInboundSessions.size + pendingInboundSessions.size)
     }
 
     class HeartbeatManager(
