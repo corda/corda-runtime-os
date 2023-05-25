@@ -113,7 +113,7 @@ internal class InterfaceBindingContext(val facade: Facade, private val boundInte
             boundMethods
         )
     }
-    
+
     private fun getMethodBinding(method: Method, defaultBoundVersions: Set<String>):
             FacadeMethodBinding? {
         // Ignore methods that are not annotated with @BindsFacadeMethod.
