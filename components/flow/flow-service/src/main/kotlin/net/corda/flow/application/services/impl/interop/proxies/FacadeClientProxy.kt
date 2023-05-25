@@ -14,7 +14,6 @@ import net.corda.v5.application.interop.facade.FacadeRequest
 import net.corda.v5.application.interop.facade.FacadeResponse
 import net.corda.v5.application.interop.parameters.TypedParameter
 import net.corda.v5.application.interop.parameters.TypedParameterValue
-import net.corda.v5.base.annotations.Suspendable
 import java.lang.reflect.InvocationHandler
 import java.lang.reflect.Method
 import java.lang.reflect.Proxy
@@ -70,7 +69,6 @@ inline fun <reified T : Any> Facade.getClientProxy(
  * Kotlin convenience method for creating a client proxy with the provided [JsonMarshaller]
  * and the provided request processor.
  */
-@Suspendable
 fun <T> Facade.getClientProxy(
     jsonMarshaller: JsonMarshaller,
     expectedClass: Class<T>,
