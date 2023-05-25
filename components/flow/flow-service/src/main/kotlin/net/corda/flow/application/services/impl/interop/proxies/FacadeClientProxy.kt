@@ -31,10 +31,6 @@ object FacadeProxies {
      * @param jsonMarshaller A [JsonMarshaller] to use when reading/writing JSON blobs
      */
     @Suppress("UNCHECKED_CAST")
-    // TODO originally the method was envisioned as public API and could be used in Java code (hence @JvmStatic annotation),
-    //  however effectively it's not Corda APi (it's hidden from a Cordapp code),
-    //  decide if it should be exposed as a lower level Facade API, otherwise @JvmStatic should be removed
-    @JvmStatic
     fun <T> getClientProxy(facade: Facade, interfaceType: Class<T>,
                            jsonMarshaller: JsonMarshaller,
                            requestProcessor: (FacadeRequest) -> FacadeResponse): T {

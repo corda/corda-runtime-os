@@ -18,7 +18,6 @@ import net.corda.v5.application.interop.parameters.ParameterType
 import net.corda.v5.application.interop.parameters.ParameterTypeLabel
 import net.corda.v5.application.interop.parameters.TypeQualifier
 import net.corda.v5.application.interop.parameters.TypedParameter
-import net.corda.v5.base.annotations.Suspendable
 import java.beans.Introspector
 import java.beans.PropertyDescriptor
 import java.lang.reflect.AnnotatedElement
@@ -80,7 +79,6 @@ internal abstract class BindingContext<T> {
 internal class InterfaceBindingContext(val facade: Facade, private val boundInterface: Class<*>) :
     BindingContext<FacadeInterfaceBinding>() {
 
-    @Suspendable
     override fun createBinding(): FacadeInterfaceBinding {
         // The interface must be annotated with @BindsFacade
         val boundFacadeName = boundInterface.readAnnotation<BindsFacade>().orFail {
@@ -116,7 +114,6 @@ internal class InterfaceBindingContext(val facade: Facade, private val boundInte
         )
     }
 
-    @Suspendable
     private fun getMethodBinding(method: Method, defaultBoundVersions: Set<String>):
             FacadeMethodBinding? {
         // Ignore methods that are not annotated with @BindsFacadeMethod.
@@ -355,6 +352,7 @@ private class DataClassOutParametersBindingContext(
 ) : BindingContext<FacadeOutParameterBindings>() {
 
     override fun createBinding(): FacadeOutParameterBindings {
+        //TODO test the code against Java - verify and document possible constraints for a request returned types, see CORE-14104
         val constructor = wrappedReturnType.constructors.singleOrNull().orFail {
             "Return type does not have a unique constructor"
         }
