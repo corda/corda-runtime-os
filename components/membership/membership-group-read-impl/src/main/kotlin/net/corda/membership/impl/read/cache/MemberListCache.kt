@@ -53,7 +53,7 @@ interface MemberListCache : MemberDataListCache<MemberInfo> {
             }
         }
 
-        override fun close() {
+        override fun clear() {
             logger.info("Clearing member list cache.")
             cache.forEach { getCacheSizeMetric(it.key).set(0) }
             cache.clear()
@@ -87,10 +87,7 @@ interface MemberListCache : MemberDataListCache<MemberInfo> {
              * @param predicate the function used to detect when to replace instead of add. When an existing entry paired with
              * any of the candidates is true for the given predicate, then that entry is replaced.
              */
-            fun addOrReplace(
-                candidates: List<T>,
-                predicate: (oldEntry: T, newEntry: T) -> Boolean
-            ): ReplaceableList<T> {
+            fun addOrReplace(candidates: List<T>, predicate: (oldEntry: T, newEntry: T) -> Boolean): ReplaceableList<T> {
                 // Add all items which do not match one of the new candidates from the old list to the new list
                 ArrayList(
                     data.filter { o ->

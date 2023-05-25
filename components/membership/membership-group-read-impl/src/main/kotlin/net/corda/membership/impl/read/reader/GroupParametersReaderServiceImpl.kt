@@ -136,7 +136,7 @@ class GroupParametersReaderServiceImpl internal constructor(
         override fun get(identity: HoldingIdentity): InternalGroupParameters? = groupParametersCache.get(identity)
 
         override fun close() {
-            groupParametersCache.close()
+            groupParametersCache.clear()
         }
     }
 

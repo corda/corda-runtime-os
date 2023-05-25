@@ -172,7 +172,7 @@ class MemberListProcessorTest {
 
     @AfterEach
     fun tearDown() {
-        membershipGroupReadCache.close()
+        membershipGroupReadCache.clear()
     }
 
     @Test

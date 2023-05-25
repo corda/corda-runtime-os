@@ -51,14 +51,14 @@ class MembershipGroupReadCacheTest {
     @Test
     fun `Member list cache is cleared after clearing group cache`() {
         memberListCache.put(aliceIdGroup1, bob)
-        membershipGroupReadCache.close()
+        membershipGroupReadCache.clear()
         assertNull(groupReaderCache.get(aliceIdGroup1))
     }
 
     @Test
     fun `Group reader cache is cleared after starting clearing group cache`() {
         groupReaderCache.put(aliceIdGroup1, membershipGroupReader)
-        membershipGroupReadCache.close()
+        membershipGroupReadCache.clear()
         assertNull(groupReaderCache.get(aliceIdGroup1))
     }
 }

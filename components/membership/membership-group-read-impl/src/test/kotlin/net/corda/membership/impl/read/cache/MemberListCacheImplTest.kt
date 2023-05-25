@@ -18,11 +18,8 @@ import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
-import org.mockito.kotlin.verify
-import java.util.concurrent.ScheduledExecutorService
 
 class MemberListCacheImplTest {
     private lateinit var memberListCache: MemberListCache
@@ -54,12 +51,9 @@ class MemberListCacheImplTest {
         on { name } doReturn alice
     }
 
-    private val executor: ScheduledExecutorService = mock()
-
     @BeforeEach
     fun setUp() {
-        memberListCache = MemberListCache.Impl { executor }
-        verify(executor).scheduleAtFixedRate(any(), any(), any(), any())
+        memberListCache = MemberListCache.Impl()
     }
 
     @Test
@@ -218,16 +212,10 @@ class MemberListCacheImplTest {
     }
 
     @Test
-    fun `close shuts down the executor`() {
-        memberListCache.close()
-        verify(executor).shutdownNow()
-    }
-
-    @Test
-    fun `close empties the cache`() {
+    fun `clear empties the cache`() {
         memberListCache.put(aliceIdGroup1, listOf(bobInfo))
         assertMemberList(lookupWithDefaults(), bobInfo)
-        memberListCache.close()
+        memberListCache.clear()
         assertMemberList(lookupWithDefaults())
     }
 
