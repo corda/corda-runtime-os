@@ -18,7 +18,6 @@ import net.corda.v5.application.interop.parameters.ParameterType
 import net.corda.v5.application.interop.parameters.ParameterTypeLabel
 import net.corda.v5.application.interop.parameters.TypeQualifier
 import net.corda.v5.application.interop.parameters.TypedParameter
-import net.corda.v5.base.annotations.Suspendable
 import java.beans.Introspector
 import java.beans.PropertyDescriptor
 import java.lang.reflect.AnnotatedElement
