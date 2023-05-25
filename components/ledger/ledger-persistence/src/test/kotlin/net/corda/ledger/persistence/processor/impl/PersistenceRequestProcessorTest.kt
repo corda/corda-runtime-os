@@ -39,6 +39,12 @@ class PersistenceRequestProcessorTest {
         responseFactory
     )
 
+    private fun List<Record<*, *>>.excludeHeaders() = this.map { record ->
+        record.copy(headers = record.headers.filterNot { (key, _) ->
+            key.startsWith("X-B3-")
+        })
+    }
+
     @BeforeEach
     fun setup() {
         whenever(entitySandboxService.get(cordaHoldingIdentity, cpkHashes)).thenReturn(sandbox)
@@ -53,8 +59,6 @@ class PersistenceRequestProcessorTest {
     fun `value should be of type LedgerPersistenceRequest`() {
         assertThat(target.valueClass).isEqualTo(LedgerPersistenceRequest::class.java)
     }
-
-    private fun List<Record<*, *>>.excludeHeaders() = this.map { it.copy(headers = emptyList()) }
 
     @Test
     fun `requests routed to handlers to generate response messages`() {

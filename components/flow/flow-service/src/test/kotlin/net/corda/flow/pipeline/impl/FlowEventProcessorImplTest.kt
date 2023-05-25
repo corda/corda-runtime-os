@@ -136,6 +136,14 @@ class FlowEventProcessorImplTest {
         flowMDCService
     )
 
+    private fun List<Record<*, *>>.excludeHeaders() = this.map { record ->
+        record.copy(headers = record.headers.filterNot { (key, _) ->
+            key.startsWith("X-B3-")
+        })
+    }
+    private fun <S : Any> StateAndEventProcessor.Response<S>.excludeHeaders() =
+        copy(responseEvents = responseEvents.excludeHeaders())
+
     @BeforeEach
     fun setup() {
         whenever(checkpoint.flowState).thenReturn(flowState)
@@ -241,10 +249,6 @@ class FlowEventProcessorImplTest {
 
         assertThat(response).isEqualTo(outputResponse)
     }
-
-    private fun List<Record<*, *>>.excludeHeaders() = this.map { it.copy(headers = emptyList()) }
-    private fun <S : Any> StateAndEventProcessor.Response<S>.excludeHeaders() =
-        copy(responseEvents = responseEvents.excludeHeaders())
 
     @Test
     fun `FlowMarkedForKillException produces flow kill context`() {
