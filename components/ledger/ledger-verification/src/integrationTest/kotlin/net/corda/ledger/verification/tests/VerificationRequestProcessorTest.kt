@@ -28,6 +28,7 @@ import net.corda.ledger.verification.processor.impl.VerificationRequestProcessor
 import net.corda.ledger.verification.tests.helpers.VirtualNodeService
 import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.messaging.api.records.Record
+import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.sandboxgroupcontext.RequireSandboxAMQP
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.sandboxgroupcontext.getObjectByKey
@@ -102,6 +103,7 @@ class VerificationRequestProcessorTest {
     private lateinit var wireTransactionFactory: WireTransactionFactory
     private lateinit var jsonMarshallingService: JsonMarshallingService
     private lateinit var jsonValidator: JsonValidator
+    private lateinit var currentSandboxGroupContext: CurrentSandboxGroupContext
 
     @BeforeAll
     fun setup(
@@ -122,6 +124,7 @@ class VerificationRequestProcessorTest {
             wireTransactionFactory = setup.fetchService(TIMEOUT_MILLIS)
             jsonMarshallingService = setup.fetchService(TIMEOUT_MILLIS)
             jsonValidator = setup.fetchService(TIMEOUT_MILLIS)
+            currentSandboxGroupContext = setup.fetchService(TIMEOUT_MILLIS)
         }
     }
 
@@ -139,6 +142,7 @@ class VerificationRequestProcessorTest {
 
         // Create request processor
         val processor = VerificationRequestProcessor(
+            currentSandboxGroupContext,
             verificationSandboxService,
             VerificationRequestHandlerImpl(externalEventResponseFactory),
             externalEventResponseFactory
@@ -174,6 +178,7 @@ class VerificationRequestProcessorTest {
 
         // Create request processor
         val processor = VerificationRequestProcessor(
+            currentSandboxGroupContext,
             verificationSandboxService,
             VerificationRequestHandlerImpl(externalEventResponseFactory),
             externalEventResponseFactory
@@ -213,6 +218,7 @@ class VerificationRequestProcessorTest {
 
         // Create request processor
         val processor = VerificationRequestProcessor(
+            currentSandboxGroupContext,
             verificationSandboxService,
             VerificationRequestHandlerImpl(externalEventResponseFactory),
             externalEventResponseFactory

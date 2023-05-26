@@ -1,6 +1,5 @@
 package net.corda.flow.pipeline.impl
 
-import java.time.Instant
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.event.mapper.ScheduleCleanup
@@ -24,6 +23,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
+import java.time.Instant
 
 @Component(service = [FlowGlobalPostProcessor::class])
 class FlowGlobalPostProcessorImpl @Activate constructor(
@@ -53,6 +53,8 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
                 getExternalEvent(context, now) +
                 postProcessRetries(context)
 
+        context.flowMetrics.flowEventCompleted(context.inputEvent.payload::class.java.name)
+
         return context.copy(outputRecords = context.outputRecords + outputRecords)
     }
 
@@ -78,7 +80,10 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
                 }
             }
             .flatMap { (_, events) -> events }
-            .map { event -> flowRecordFactory.createFlowMapperEventRecord(event.sessionId, event) }
+            .map { event ->
+                context.flowMetrics.flowSessionMessageSent(event.payload::class.java.name)
+                flowRecordFactory.createFlowMapperEventRecord(event.sessionId, event)
+            }
     }
 
     private fun verifyCounterparty(
@@ -108,8 +113,9 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
             ).plusMillis(timeoutWindow)
 
             if (expiryTime < now) {
-                val msg = "[${context.checkpoint.holdingIdentity.x500Name}] has failed to create a flow with counterparty: " +
-                        "[${counterparty}] as the recipient doesn't exist in the network."
+                val msg =
+                    "[${context.checkpoint.holdingIdentity.x500Name}] has failed to create a flow with counterparty: " +
+                            "[${counterparty}] as the recipient doesn't exist in the network."
                 sessionManager.errorSession(sessionState)
                 if (doesCheckpointExist) {
                     log.debug { "$msg. Throwing FlowPlatformException" }

@@ -1,8 +1,6 @@
 package net.corda.crypto.service.impl.bus
 
-import net.corda.configuration.read.ConfigChangedEvent
-import net.corda.crypto.config.impl.flowBusProcessor
-import net.corda.crypto.config.impl.toCryptoConfig
+import net.corda.crypto.config.impl.RetryingConfig
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.core.ShortHash
 import net.corda.crypto.core.publicKeyIdFromBytes
@@ -26,6 +24,7 @@ import net.corda.data.crypto.wire.ops.flow.queries.FilterMyKeysFlowQuery
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
+import net.corda.metrics.CordaMetrics
 import net.corda.utilities.MDC_CLIENT_ID
 import net.corda.utilities.MDC_EXTERNAL_EVENT_ID
 import net.corda.utilities.MDC_FLOW_ID
@@ -33,13 +32,13 @@ import net.corda.utilities.trace
 import net.corda.utilities.withMDC
 import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
+import java.time.Duration
 import java.time.Instant
-import kotlin.math.sign
 
 class CryptoFlowOpsBusProcessor(
     private val signingService: SigningService,
     private val externalEventResponseFactory: ExternalEventResponseFactory,
-    event: ConfigChangedEvent,
+    config: RetryingConfig,
 ) : DurableProcessor<String, FlowOpsRequest> {
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -47,8 +46,6 @@ class CryptoFlowOpsBusProcessor(
 
     override val keyClass: Class<String> = String::class.java
     override val valueClass = FlowOpsRequest::class.java
-
-    private val config = event.config.toCryptoConfig().flowBusProcessor()
 
     private val executor = CryptoRetryingExecutor(
         logger,
@@ -76,24 +73,30 @@ class CryptoFlowOpsBusProcessor(
         )
 
         return withMDC(mdc) {
-            logger.info("Handling ${request.request::class.java.name} for tenant ${request.context.tenantId}")
+            val requestPayload = request.request
+            val startTime = Instant.now()
+            logger.info("Handling ${requestPayload::class.java.name} for tenant ${request.context.tenantId}")
 
             try {
                 if (Instant.now() >= expireAt) {
-                    logger.warn("Event ${request.request::class.java.name} for tenant ${request.context.tenantId} " +
-                            "is no longer valid, expired at $expireAt")
+                    logger.warn(
+                        "Event ${requestPayload::class.java.name} for tenant ${request.context.tenantId} " +
+                                "is no longer valid, expired at $expireAt"
+                    )
                     externalEventResponseFactory.transientError(
                         request.flowExternalEventContext,
                         ExceptionEnvelope("Expired", "Expired at $expireAt")
                     )
                 } else {
                     val response = executor.executeWithRetry {
-                        handleRequest(request.request, request.context)
+                        handleRequest(requestPayload, request.context)
                     }
 
                     if (Instant.now() >= expireAt) {
-                        logger.warn("Event ${request.request::class.java.name} for tenant ${request.context.tenantId} " +
-                                "is no longer valid, expired at $expireAt")
+                        logger.warn(
+                            "Event ${requestPayload::class.java.name} for tenant ${request.context.tenantId} " +
+                                    "is no longer valid, expired at $expireAt"
+                        )
                         externalEventResponseFactory.transientError(
                             request.flowExternalEventContext,
                             ExceptionEnvelope("Expired", "Expired at $expireAt")
@@ -107,10 +110,15 @@ class CryptoFlowOpsBusProcessor(
                 }
             } catch (throwable: Throwable) {
                 logger.error(
-                    "Failed to handle ${request.request::class.java.name} for tenant ${request.context.tenantId}",
+                    "Failed to handle ${requestPayload::class.java.name} for tenant ${request.context.tenantId}",
                     throwable
                 )
                 externalEventResponseFactory.platformError(request.flowExternalEventContext, throwable)
+            }.also {
+                CordaMetrics.Metric.CryptoFlowOpsProcessorExecutionTime.builder()
+                    .withTag(CordaMetrics.Tag.OperationName, requestPayload::class.java.simpleName)
+                    .build()
+                    .record(Duration.between(startTime, Instant.now()))
             }
         }
     }
@@ -131,7 +139,7 @@ class CryptoFlowOpsBusProcessor(
                     request.bytes.array(),
                     request.context.toMap()
                 )
-                return CryptoSignatureWithKey(
+                CryptoSignatureWithKey(
                     ByteBuffer.wrap(signingService.schemeMetadata.encodeAsByteArray(signature.by)),
                     ByteBuffer.wrap(signature.bytes)
                 )
@@ -143,8 +151,7 @@ class CryptoFlowOpsBusProcessor(
                     request.fullKeyIds.hashes.map { SecureHashImpl(it.algorithm, it.bytes.array()) }
                 ).map { it.toAvro() })
 
-            else ->
-                throw IllegalArgumentException("Unknown request type ${request::class.java.name}")
+            else -> throw IllegalArgumentException("Unknown request type ${request::class.java.name}")
         }
     }
 

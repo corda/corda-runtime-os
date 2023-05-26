@@ -58,7 +58,7 @@ class LedgerUniquenessCheckerClientServiceImpl @Activate constructor(
                 timeWindowUpperBound
             )
         ).also {
-            CordaMetrics.Metric.LedgerUniquenessClientRunTime
+            CordaMetrics.Metric.Ledger.UniquenessClientRunTime
                 .builder()
                 .withTag(
                     CordaMetrics.Tag.ResultType,
