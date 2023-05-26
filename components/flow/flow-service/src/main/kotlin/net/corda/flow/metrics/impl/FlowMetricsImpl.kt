@@ -18,7 +18,7 @@ class FlowMetricsImpl(
     private val eventReceivedTimestampMillis: Long
     private var fiberStartTime = clock.nowInMillis()
     private var fiberExecutionTime: Long = 0
-    private var sequenceNumberCache = mutableMapOf<String, MutableSet<Long>>()
+    private var sequenceNumberCache = mutableMapOf<String, MutableSet<Long?>>()
 
     private companion object {
         val objectMapper = ObjectMapper()
@@ -89,29 +89,45 @@ class FlowMetricsImpl(
         recordFlowCompleted(FlowStates.FAILED.toString())
     }
 
-    override fun flowSessionMessageSent(flowEventType: String, sessionId: String, sequenceNumber: Long) {
+    override fun flowSessionMessageSent(flowEventType: String, sessionId: String, sequenceNumber: Long?) {
         val sessionMetricState = currentState.sessionMetricStateBySessionId.computeIfAbsent(sessionId) {
             SessionMetricState()
         }
         flowMetricsRecorder.recordFlowSessionMessagesSent(flowEventType)
-        sequenceNumberCache.computeIfAbsent(sessionId) {
-            mutableSetOf()
+
+        if (isReplay(sequenceNumber, sessionMetricState)) {
+            flowMetricsRecorder.recordFlowSessionMessagesReplayed(flowEventType)
+        } else if (isAckOrError(sequenceNumber)) {
+            //ignore
+        } else {
+            val cache = sequenceNumberCache.computeIfAbsent(sessionId) {
+                mutableSetOf()
+            }
+            cache.add(sequenceNumber)
+            val incrementedHighestContiguousSequenceNumber = sessionMetricState.highestContiguousSequenceNumber + 1
+
+            for(seqNum in cache) {
+                when {
+                    cache.contains(incrementedHighestContiguousSequenceNumber) -> {
+                        cache.remove(incrementedHighestContiguousSequenceNumber)
+                        sessionMetricState.highestContiguousSequenceNumber++
+                    }
+                }
+            }
+
         }
     }
 
-    override fun flowSessionMessageReplayed(flowEventType: String, sessionId: String, sequenceNumber: Long) {
-        when(sequenceNumber) {
-            null, 0L -> {
-                //ignore
-            }
-            currentState.sessionMetricStateBySessionId[sessionId]!!.highestSequenceNumberSent -> {
+    private fun isAckOrError(sequenceNumber: Long?) : Boolean {
+        return (sequenceNumber == null || sequenceNumber == 0L)
+    }
 
-            }
+    private fun isReplay (sequenceNumber: Long?, sessionMetricState: SessionMetricState) : Boolean{
+        return when {
+            isAckOrError(sequenceNumber) -> false
+            sequenceNumber!! <= sessionMetricState.highestContiguousSequenceNumber -> false
+            else -> false
         }
-        if (sequenceNumber <= currentState.sessionMetricStateBySessionId[sessionId].highestSequenceNumberSent) {
-            flowMetricsRecorder.recordFlowSessionMessagesReplayed(flowEventType)
-        }
-
     }
 
     override fun flowSessionMessageReceived(flowEventType: String) {
@@ -142,6 +158,6 @@ class FlowMetricsImpl(
     }
 
     private class SessionMetricState {
-        var highestSequenceNumberSent: Long = 0
+        var highestContiguousSequenceNumber: Long = 0
     }
 }
