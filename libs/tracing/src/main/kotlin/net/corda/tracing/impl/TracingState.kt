@@ -46,7 +46,9 @@ object TracingState : AutoCloseable {
                     .build()
             )
 
-        val reporters = mutableListOf<Reporter<Span>>(Reporter.CONSOLE)
+        // The console reporter is useful when debugging test runs on the combined worker.
+        // uncomment it to enable it.
+        val reporters = mutableListOf<Reporter<Span>>(/*Reporter.CONSOLE*/)
         val reporter = CombinedSpanReporter(reporters)
 
         if (zipkinHost.isNotEmpty()) {
@@ -59,9 +61,10 @@ object TracingState : AutoCloseable {
             val spanHandler = ZipkinSpanHandler.create(reporter)
 
             tracingBuilder.addSpanHandler(spanHandler)
+            tracingBuilder.build().also(resourcesToClose::push)
+        } else {
+            tracingBuilder.build().also(resourcesToClose::push).apply { isNoop = true }
         }
-
-        tracingBuilder.build().also(resourcesToClose::push)
     }
 
     val kafkaTracing: KafkaTracing by lazy {
