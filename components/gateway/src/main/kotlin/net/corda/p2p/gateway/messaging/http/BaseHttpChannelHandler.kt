@@ -9,6 +9,7 @@ import io.netty.handler.ssl.SslHandshakeCompletionEvent
 import io.netty.handler.ssl.SslHandshakeTimeoutException
 import io.netty.handler.timeout.IdleStateEvent
 import net.corda.metrics.CordaMetrics
+import net.corda.metrics.CordaMetrics.NOT_APPLICABLE_TAG_VALUE
 import org.slf4j.Logger
 import java.net.InetSocketAddress
 import java.net.SocketAddress
@@ -125,18 +126,32 @@ abstract class BaseHttpChannelHandler(private val eventListener: HttpConnectionL
     }
 
     private fun getConnectionMetric(remoteAddress: SocketAddress, connectionResult: String): Counter {
-        val metricsBuilder = when(handlerType) {
-            HandlerType.SERVER -> CordaMetrics.Metric.InboundGatewayConnections.builder()
-            HandlerType.CLIENT -> CordaMetrics.Metric.OutboundGatewayConnections.builder()
+        // The address is always expected to be an InetSocketAddress, but populating the tag in any other case because prometheus
+        // requires the same set of tags to be populated for a specific metric name.
+        val remoteAddressValue = if (remoteAddress is InetSocketAddress) {
+            remoteAddress.hostString
+        } else {
+            NOT_APPLICABLE_TAG_VALUE
         }
-        metricsBuilder.withTag(CordaMetrics.Tag.ConnectionResult, connectionResult)
-        if (remoteAddress is InetSocketAddress) {
-            when(handlerType) {
-                HandlerType.SERVER -> metricsBuilder.withTag(CordaMetrics.Tag.SourceEndpoint, remoteAddress.hostString)
-                HandlerType.CLIENT -> metricsBuilder.withTag(CordaMetrics.Tag.DestinationEndpoint, remoteAddress.hostString)
-            }
+
+        return when(handlerType) {
+            HandlerType.SERVER -> getServerCounter(remoteAddressValue, connectionResult)
+            HandlerType.CLIENT -> getClientCounter(remoteAddressValue, connectionResult)
         }
-        return metricsBuilder.build()
+    }
+
+    private fun getServerCounter(remoteAddress: String, connectionResult: String): Counter {
+        return CordaMetrics.Metric.InboundGatewayConnections.builder()
+            .withTag(CordaMetrics.Tag.ConnectionResult, connectionResult)
+            .withTag(CordaMetrics.Tag.SourceEndpoint, remoteAddress)
+            .build()
+    }
+
+    private fun getClientCounter(remoteAddress: String, connectionResult: String): Counter {
+        return CordaMetrics.Metric.OutboundGatewayConnections.builder()
+            .withTag(CordaMetrics.Tag.ConnectionResult, connectionResult)
+            .withTag(CordaMetrics.Tag.DestinationEndpoint, remoteAddress)
+            .build()
     }
 
 }

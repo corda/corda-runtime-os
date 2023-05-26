@@ -23,6 +23,7 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.metrics.CordaMetrics
+import net.corda.metrics.CordaMetrics.NOT_APPLICABLE_TAG_VALUE
 import net.corda.p2p.gateway.messaging.http.HttpRequest
 import net.corda.p2p.gateway.messaging.http.HttpWriter
 import net.corda.p2p.gateway.messaging.http.ReconfigurableHttpServer
@@ -196,9 +197,14 @@ internal class InboundMessageHandler(
     private fun getRequestTimer(sourceAddress: SocketAddress, statusCode: HttpResponseStatus): Timer {
         val metricsBuilder = CordaMetrics.Metric.InboundGatewayRequestLatency.builder()
         metricsBuilder.withTag(CordaMetrics.Tag.HttpResponseType, statusCode.code().toString())
-        if (sourceAddress is InetSocketAddress) {
-            metricsBuilder.withTag(CordaMetrics.Tag.SourceEndpoint, sourceAddress.hostString)
+        // The address is always expected to be an InetSocketAddress, but populating the tag in any other case because prometheus
+        // requires the same set of tags to be populated for a specific metric name.
+        val sourceEndpoint = if (sourceAddress is InetSocketAddress) {
+            sourceAddress.hostString
+        } else {
+            NOT_APPLICABLE_TAG_VALUE
         }
+        metricsBuilder.withTag(CordaMetrics.Tag.SourceEndpoint, sourceEndpoint)
         return metricsBuilder.build()
     }
 }
