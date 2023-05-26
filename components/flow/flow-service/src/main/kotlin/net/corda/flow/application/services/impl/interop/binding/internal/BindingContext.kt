@@ -352,6 +352,7 @@ private class DataClassOutParametersBindingContext(
 ) : BindingContext<FacadeOutParameterBindings>() {
 
     override fun createBinding(): FacadeOutParameterBindings {
+        //TODO test the code against Java - verify and document possible constraints for a request returned types, see CORE-14104
         val constructor = wrappedReturnType.constructors.singleOrNull().orFail {
             "Return type does not have a unique constructor"
         }
@@ -405,7 +406,7 @@ private class DataClassOutParametersBindingContext(
             "Cannot find properties with both a constructor parameter and a getter method for out parameters $missingProperties"
         }
 
-        return FacadeOutParameterBindings.DataClassOutParameterBindings(constructor, properties)
+        return FacadeOutParameterBindings.DataClassOutParameterBindings(wrappedReturnType, properties)
     }
 
     private fun bindDataClassProperty(

@@ -30,7 +30,6 @@ object FacadeProxies {
      * @param jsonMarshaller A [JsonMarshaller] to use when reading/writing JSON blobs
      */
     @Suppress("UNCHECKED_CAST")
-    @JvmStatic
     fun <T> getClientProxy(facade: Facade, interfaceType: Class<T>,
                            jsonMarshaller: JsonMarshaller,
                            requestProcessor: (FacadeRequest) -> FacadeResponse): T {

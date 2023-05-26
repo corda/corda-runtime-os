@@ -5,7 +5,7 @@ import net.corda.flow.application.services.impl.interop.binding.internal.Interfa
 import net.corda.v5.application.interop.facade.Facade
 
 /**
- * Public entry-point for binding JVM interfaces to [Facade]s. A Java developer wishing to bind a facade to a JVM
+ * Entry-point for binding JVM interfaces to [Facade]s. A Java developer wishing to bind a facade to a JVM
  * interface will write:
  *
  * ```java
@@ -20,7 +20,6 @@ object FacadeInterfaceBindings {
      * @param boundInterface The [Class] to bind the facade to.
      * @return A [FacadeInterfaceBinding] which maps methods in the bound interface to methods in the facade.
      */
-    @JvmStatic
     fun bind(facade: Facade, boundInterface: Class<*>): FacadeInterfaceBinding {
         val context = InterfaceBindingContext(facade, boundInterface)
 
