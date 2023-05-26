@@ -52,33 +52,8 @@ class FlowSandboxServiceImpl @Activate constructor(
     }
 
     init {
-//        if (!sandboxGroupContextComponent.addEvictionListener(SandboxGroupType.FLOW, ::onEviction)) {
-//            logger.error("FAILED TO ADD EVICTION LISTENER")
-//        }
         sandboxedCacheEvicter.setSandboxGroupType(SandboxGroupType.FLOW)
     }
-
-//    @Suppress("unused")
-//    @Deactivate
-//    fun shutdown() {
-//        logger.info("SHUTTING DOWN CACHE EVICTER")
-////        if (!sandboxGroupContextComponent.removeEvictionListener(SandboxGroupType.FLOW, ::onEviction)) {
-////            logger.error("FAILED TO REMOVE EVICTION LISTENER")
-////        }
-//    }
-
-//    private fun onEviction(vnc: VirtualNodeContext) {
-//        logger.debug("Sandbox {} has been evicted", vnc)
-//        for (ref in bundleContext.getServiceReferences(SandboxedCache::class.java, NON_PROTOTYPE_SERVICES)) {
-//            bundleContext.getService(ref)?.also { cache ->
-//                logger.debug(
-//                    "Evicting cached items from ${cache::class.java} with holding identity: ${vnc.holdingIdentity} and sandbox type: " +
-//                            vnc.sandboxGroupType
-//                )
-//                cache.remove(vnc.holdingIdentity, vnc.sandboxGroupType)
-//            }
-//        }
-//    }
 
     override fun get(holdingIdentity: HoldingIdentity, cpkFileHashes: Set<SecureHash>): FlowSandboxGroupContext {
         val vNodeContext = VirtualNodeContext(
