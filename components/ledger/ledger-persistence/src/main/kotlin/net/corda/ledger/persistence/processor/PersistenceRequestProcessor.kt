@@ -44,7 +44,7 @@ class PersistenceRequestProcessor(
             .filterNot { it.value == null }
             .flatMap { event ->
                 val request = event.value!!
-                val requestType = request.request?.let { it.javaClass.simpleName } ?: "Unknown"
+                val requestType = request.javaClass.simpleName
                 traceEventProcessing(event, "Ledger Persistence - $requestType") {
                     val clientRequestId =
                         request.flowExternalEventContext.contextProperties.toMap()[MDC_CLIENT_ID] ?: ""

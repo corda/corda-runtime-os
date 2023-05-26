@@ -1,10 +1,13 @@
+@file:Suppress("TooManyFunctions")
 package net.corda.tracing
 
 import brave.Span
 import brave.servlet.TracingFilter
 import io.javalin.core.JavalinConfig
 import net.corda.messaging.api.processor.StateAndEventProcessor
+import net.corda.messaging.api.records.EventLogRecord
 import net.corda.messaging.api.records.Record
+import net.corda.tracing.impl.BatchRecordTracerImpl
 import net.corda.tracing.impl.TraceContextImpl
 import net.corda.tracing.impl.TracingState
 import org.apache.kafka.clients.consumer.Consumer
@@ -34,7 +37,11 @@ fun <K, V> wrapWithTracingProducer(kafkaProducer: Producer<K, V>): Producer<K, V
     return TracingState.kafkaTracing.producer(kafkaProducer)
 }
 
-private fun <T> Span.doTrace(operationName: String, blockOnSpan: Span.() -> T) : T {
+fun traceBatch(operationName: String): BatchRecordTracer {
+    return BatchRecordTracerImpl(operationName)
+}
+
+private fun <T> Span.doTrace(operationName: String, blockOnSpan: Span.() -> T): T {
     name(operationName).start()
     return TracingState.tracing.currentTraceContext().newScope(context()).use {
         try {
@@ -71,6 +78,15 @@ fun addTraceContextToRecord(it: Record<*, *>): Record<out Any, out Any> {
     return it.copy(headers = headersWithTracing)
 }
 
+fun addTraceContextToRecords(records: List<Record<*, *>>, span: Span): List<Record<*, *>> =
+    records.map { addTraceContextToRecord(it, span) }
+
+fun addTraceContextToRecord(it: Record<*, *>, span: Span): Record<out Any, out Any> {
+    val headersWithTracing = it.headers.toMutableList()
+    recordInjector.inject(span.context(), headersWithTracing)
+    return it.copy(headers = headersWithTracing)
+}
+
 fun traceEventProcessing(
     event: Record<*, *>,
     operationName: String,
@@ -78,6 +94,36 @@ fun traceEventProcessing(
 ): List<Record<*, *>> {
     return TracingState.recordTracing.nextSpan(event).doTrace(operationName) {
         addTraceContextToRecords(processingBlock())
+    }
+}
+
+fun traceEventProcessing(
+    event: EventLogRecord<*, *>,
+    operationName: String,
+    processingBlock: () -> List<Record<*, *>>
+): List<Record<*, *>> {
+    return TracingState.recordTracing.nextSpan(event).doTrace(operationName) {
+        addTraceContextToRecords(processingBlock())
+    }
+}
+
+fun traceEventProcessingNullableSingle(
+    event: Record<*, *>,
+    operationName: String,
+    processingBlock: () -> Record<*, *>?
+): Record<*, *>? {
+    return TracingState.recordTracing.nextSpan(event).doTrace(operationName) {
+        processingBlock()?.let { addTraceContextToRecord(it) }
+    }
+}
+
+fun traceEventProcessingSingle(
+    event: Record<*, *>,
+    operationName: String,
+    processingBlock: () -> Record<*, *>
+): Record<*, *> {
+    return TracingState.recordTracing.nextSpan(event).doTrace(operationName) {
+        addTraceContextToRecord(processingBlock())
     }
 }
 

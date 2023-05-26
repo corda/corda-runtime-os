@@ -20,9 +20,9 @@ import net.corda.persistence.common.EntitySandboxService
 import net.corda.persistence.common.ResponseFactory
 import net.corda.persistence.common.getEntityManagerFactory
 import net.corda.persistence.common.getSerializationService
+import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.sandboxgroupcontext.SandboxGroupContext
-import net.corda.tracing.traceEventProcessing
-import net.corda.tracing.traceEventProcessingSingle
+import net.corda.tracing.traceEventProcessingNullableSingle
 import net.corda.utilities.MDC_CLIENT_ID
 import net.corda.utilities.MDC_EXTERNAL_EVENT_ID
 import net.corda.utilities.debug
@@ -46,6 +46,7 @@ fun SandboxGroupContext.getClass(fullyQualifiedClassName: String) =
  * [payloadCheck] is called against each AMQP payload in the result (not the entire Avro array of results)
  */
 class EntityMessageProcessor(
+    private val currentSandboxGroupContext: CurrentSandboxGroupContext,
     private val entitySandboxService: EntitySandboxService,
     private val responseFactory: ResponseFactory,
     private val payloadCheck: (bytes: ByteBuffer) -> ByteBuffer,
@@ -68,7 +69,7 @@ class EntityMessageProcessor(
                 null
             } else {
                 val eventType = request.request?.let { it.javaClass.simpleName } ?: "Unknown"
-                traceEventProcessingSingle(event, "Crypto Event - $eventType") {
+                traceEventProcessingNullableSingle(event, "Crypto Event - $eventType") {
                     processEvent(request)
                 }
             }
@@ -95,12 +96,17 @@ class EntityMessageProcessor(
 
                 val sandbox = entitySandboxService.get(holdingIdentity, cpkFileHashes)
 
+                currentSandboxGroupContext.set(sandbox)
+
                 processRequestWithSandbox(sandbox, request)
             } catch (e: Exception) {
                 responseFactory.errorResponse(request.flowExternalEventContext, e)
+            } finally {
+                currentSandboxGroupContext.remove()
             }
         }
     }
+
 
     @Suppress("ComplexMethod")
     private fun processRequestWithSandbox(
