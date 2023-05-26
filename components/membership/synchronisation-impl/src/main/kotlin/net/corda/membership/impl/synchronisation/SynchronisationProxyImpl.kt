@@ -340,7 +340,7 @@ class SynchronisationProxyImpl @Activate constructor(
         ) {
             return getTimerMetric(
                 TimerMetricTypes.SYNC,
-                getOwnerHoldingId(command)?.toCorda()?.shortHash?.value,
+                getOwnerHoldingId(command),
                 commandType.simpleName
             ).recordCallable {
                 func(command)

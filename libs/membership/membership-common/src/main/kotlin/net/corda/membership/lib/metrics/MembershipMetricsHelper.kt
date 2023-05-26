@@ -9,6 +9,7 @@ import net.corda.metrics.CordaMetrics
 import net.corda.metrics.CordaMetrics.Metric.Membership
 import net.corda.metrics.SettableGauge
 import net.corda.virtualnode.HoldingIdentity
+import net.corda.virtualnode.toCorda
 
 enum class TimerMetricTypes {
     REGISTRATION, SYNC, ACTIONS;
@@ -16,7 +17,7 @@ enum class TimerMetricTypes {
 
 fun getTimerMetric(
     type: TimerMetricTypes,
-    holdingId: String?,
+    holdingId: net.corda.data.identity.HoldingIdentity?,
     operation: String
 ): Timer {
     val builder = when (type) {
@@ -24,7 +25,10 @@ fun getTimerMetric(
         SYNC -> Membership.SyncHandlerExecutionTime
         ACTIONS -> Membership.ActionsHandlerExecutionTime
     }.builder().withTag(CordaMetrics.Tag.OperationName, operation)
-    holdingId?.let { builder.forVirtualNode(it) }
+    holdingId?.let {
+        builder.forVirtualNode(it.toCorda().shortHash.value)
+            .withTag(CordaMetrics.Tag.MembershipGroup, it.groupId)
+    }
     return builder.build()
 }
 
@@ -40,5 +44,6 @@ fun getSettableGaugeMetric(
         MEMBER_LIST -> Membership.MemberListCacheSize
     }.builder()
         .forVirtualNode(holdingId.shortHash.value)
+        .withTag(CordaMetrics.Tag.MembershipGroup, holdingId.groupId)
         .build()
 }

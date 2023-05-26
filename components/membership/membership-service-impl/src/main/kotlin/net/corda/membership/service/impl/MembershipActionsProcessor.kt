@@ -84,7 +84,7 @@ class MembershipActionsProcessor(
     ): List<Record<String, *>> {
         return getTimerMetric(
             TimerMetricTypes.ACTIONS,
-            getOwnerHoldingId(request)?.toCorda()?.shortHash?.value,
+            getOwnerHoldingId(request),
             request::class.java.simpleName
         ).recordCallable { func(request) }!!
     }

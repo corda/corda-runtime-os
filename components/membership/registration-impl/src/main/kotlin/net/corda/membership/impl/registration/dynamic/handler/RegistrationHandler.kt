@@ -31,7 +31,7 @@ interface RegistrationHandler<T> {
     ): RegistrationHandlerResult {
         return getTimerMetric(
             TimerMetricTypes.REGISTRATION,
-            getOwnerHoldingId(state, command)?.toCorda()?.shortHash?.value,
+            getOwnerHoldingId(state, command),
             commandType.simpleName
         ).recordCallable {
             func(state, key, command)
