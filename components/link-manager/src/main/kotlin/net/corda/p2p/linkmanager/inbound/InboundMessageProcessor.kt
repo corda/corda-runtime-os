@@ -31,7 +31,6 @@ import net.corda.p2p.linkmanager.membership.NetworkMessagingValidator
 import net.corda.p2p.linkmanager.sessions.SessionManager
 import net.corda.data.p2p.markers.AppMessageMarker
 import net.corda.data.p2p.markers.LinkManagerReceivedMarker
-import net.corda.metrics.CordaMetrics
 import net.corda.p2p.linkmanager.metrics.recordInboundMessagesMetric
 import net.corda.schema.Schemas
 import net.corda.utilities.debug
