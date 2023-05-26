@@ -47,7 +47,6 @@ class FlowMetricsImpl(
 
     override fun flowFiberEntered() {
         fiberStartTime = clock.nowInMillis()
-        currentState.totalFiberSuspensionCount++
 
         // If we were waiting on a suspension then record the wait time.
         if (currentState.suspensionAction != null && currentState.suspensionTimestampMillis != null) {
@@ -72,6 +71,7 @@ class FlowMetricsImpl(
         flowFiberExited()
         currentState.suspensionAction = suspensionOperationName
         currentState.suspensionTimestampMillis = clock.nowInMillis()
+        currentState.totalFiberSuspensionCount++
     }
 
     override fun flowEventCompleted(flowEventType: String) {
@@ -99,8 +99,10 @@ class FlowMetricsImpl(
     }
 
     private fun recordFlowCompleted(completionStatus: String) {
-        val flowCompletionTime = clock.instant().toEpochMilli() - currentState.flowProcessingStartTime
-        flowMetricsRecorder.recordFlowCompletion(flowCompletionTime, completionStatus)
+        val currentTime = clock.instant().toEpochMilli()
+        val flowCompletionTime = currentTime - currentState.flowProcessingStartTime
+        val flowRunTime = currentTime - flowCheckpoint.flowStartContext.createdTimestamp.toEpochMilli()
+        flowMetricsRecorder.recordFlowCompletion(flowCompletionTime, flowRunTime, completionStatus)
         flowMetricsRecorder.recordTotalSuspensionTime(currentState.totalSuspensionTime)
         flowMetricsRecorder.recordTotalFiberExecutionTime(currentState.totalFiberExecutionTime)
         flowMetricsRecorder.recordTotalPipelineExecutionTime(currentState.totalPipelineExecutionTime)
