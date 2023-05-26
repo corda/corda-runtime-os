@@ -16,7 +16,6 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
-import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
@@ -52,8 +51,8 @@ class SerializationServiceImplTest {
         val deserialized = flowFiberSerializationService.deserialize(byteArray, TestObject::class.java)
 
         assertThat(deserialized).isEqualTo(tesObj)
-        verify(serializationService, times(1)).deserialize(byteArray,  TestObject::class.java)
-        verify(currentSandboxGroupContext, times(2)).get()
+        verify(serializationService).deserialize(byteArray,  TestObject::class.java)
+        verify(currentSandboxGroupContext).get()
     }
 
     @Test
@@ -64,8 +63,8 @@ class SerializationServiceImplTest {
         val deserialized = flowFiberSerializationService.deserializeAndCheckType(byteArray, TestObject::class.java)
 
         assertThat(deserialized).isEqualTo(tesObj)
-        verify(serializationService, times(1)).deserialize(byteArray,  TestObject::class.java)
-        verify(currentSandboxGroupContext, times(2)).get()
+        verify(serializationService).deserialize(byteArray,  TestObject::class.java)
+        verify(currentSandboxGroupContext).get()
     }
 
     @Test
@@ -74,8 +73,8 @@ class SerializationServiceImplTest {
 
         assertThrows<CordaRuntimeException> { flowFiberSerializationService.deserializeAndCheckType(byteArray, TestObject::class.java) }
 
-        verify(serializationService, times(1)).deserialize(byteArray,  TestObject::class.java)
-        verify(currentSandboxGroupContext, times(2)).get()
+        verify(serializationService).deserialize(byteArray,  TestObject::class.java)
+        verify(currentSandboxGroupContext).get()
     }
 
     @Test
@@ -84,7 +83,7 @@ class SerializationServiceImplTest {
         val deserialized = flowFiberSerializationService.serialize(testObj)
 
         assertThat(deserialized).isEqualTo(serializedBytes)
-        verify(serializationService, times(1)).serialize(testObj)
-        verify(currentSandboxGroupContext, times(2)).get()
+        verify(serializationService).serialize(testObj)
+        verify(currentSandboxGroupContext).get()
     }
 }
