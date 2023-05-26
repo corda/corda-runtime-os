@@ -1,8 +1,5 @@
 package net.corda.flow.application.services.interop.binding
 
-import io.kotest.assertions.throwables.shouldThrow
-import io.kotest.core.spec.style.DescribeSpec
-import io.kotest.matchers.string.shouldContain
 import net.corda.flow.application.services.impl.interop.binding.creation.bindTo
 import net.corda.flow.application.services.impl.interop.binding.internal.FacadeInterfaceBindingException
 import net.corda.flow.application.services.impl.interop.facade.FacadeReaders
@@ -10,6 +7,8 @@ import net.corda.v5.application.interop.binding.BindsFacade
 import net.corda.v5.application.interop.binding.BindsFacadeMethod
 import net.corda.v5.application.interop.binding.InteropAction
 import net.corda.v5.application.interop.binding.QualifiedWith
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import java.util.*
 import kotlin.reflect.KClass
 
@@ -18,7 +17,8 @@ import kotlin.reflect.KClass
 interface MethodSignatureHasWronglyQualifiedParameter {
     @BindsFacadeMethod
     fun getBalance(
-        @QualifiedWith("org.corda.interop/platform/tokens/denomination/v2.0") denomination: String): InteropAction<Long>
+        @QualifiedWith("org.corda.interop/platform/tokens/denomination/v2.0") denomination: String
+    ): InteropAction<Long>
 }
 
 class UnqualifiedFruit
@@ -102,44 +102,51 @@ interface IllFormedDataClassOutput {
     fun makePie(fruit: UnqualifiedFruit, pastry: UnqualifiedPastry): InteropAction<MismatchedConstructorAndGetterTypes>
 }
 
-class TypeQualificationSpec : DescribeSpec({
-
-    val facade = FacadeReaders.JSON.read(this::class.java.getResourceAsStream("/sampleFacades/qualification-test-facade.json")!!)
+class TypeQualificationSpec {
+    val facade =
+        FacadeReaders.JSON.read(this::class.java.getResourceAsStream("/sampleFacades/qualification-test-facade.json")!!)
 
     infix fun <T : Any> KClass<T>.shouldFailToBindWith(expectedMessage: String) =
         facade.assertBindingFails(java, expectedMessage)
 
-    describe("In-parameter binding") {
-        val tokensFacadeV2 = FacadeReaders.JSON.read(this::class.java.getResourceAsStream("/sampleFacades/tokens-facade_v2.json")!!)
+    val tokensFacadeV2 =
+        FacadeReaders.JSON.read(this::class.java.getResourceAsStream("/sampleFacades/tokens-facade_v2.json")!!)
 
-        it("should fail if a primitive parameter type with a qualifier does not match the facade qualifier") {
-            shouldThrow<FacadeInterfaceBindingException> {
-                tokensFacadeV2.bindTo<MethodSignatureHasWronglyQualifiedParameter>()
-            }.message shouldContain "Type of parameter is not compatible with facade in-parameter type"
-        }
-
-        it("should fail if a parameter with a qualified JSON type is incorrectly qualified") {
-            MismatchedParameterQualifier::class shouldFailToBindWith
-                    "has a type with qualifiers [org.corda.test/test/fruit/v1.0], " +
-                    "but is annotated with qualifiers [org.corda.test/test/fruit/v2.0]"
-        }
-
-        it("should fail if a parameter's type is qualified with a qualifier that doesn't match the facade type") {
-            MismatchedTypeQualifier::class shouldFailToBindWith
-                    "Type of parameter is not compatible with facade in-parameter type"
-        }
-
-        it("should fall if a property of a data class mapped to an out parameter has a mismatched qualifier") {
-            MismatchedTypeQualifierInOutput::class shouldFailToBindWith
-                    "does not match type of facade out parameter"
-        }
-
-        it("should fail if an out parameter is inconsistently qualified") {
-            InconsistentlyQualifiedOutParameter::class shouldFailToBindWith "Parameter qualification mismatch"
-        }
-
-        it("should fail if a data class output type has mismatched constructor and getter types") {
-            IllFormedDataClassOutput::class shouldFailToBindWith "Type mismatch"
-        }
+    @Test
+    fun `should fail if a primitive parameter type with a qualifier does not match the facade qualifier`() {
+        assertThrows<FacadeInterfaceBindingException> {
+            tokensFacadeV2.bindTo<MethodSignatureHasWronglyQualifiedParameter>()
+        }.message.equals("Type of parameter is not compatible with facade in-parameter type")
     }
-})
+
+    @Test
+    fun `should fail if a parameter with a qualified JSON type is incorrectly qualified`() {
+        MismatchedParameterQualifier::class shouldFailToBindWith
+                "has a type with qualifiers [org.corda.test/test/fruit/v1.0], " +
+                "but is annotated with qualifiers [org.corda.test/test/fruit/v2.0]"
+    }
+
+    @Test
+    fun `should fail if a parameter's type is qualified with a qualifier that doesn't match the facade type`() {
+        MismatchedTypeQualifier::class shouldFailToBindWith
+                "Type of parameter is not compatible with facade in-parameter type"
+    }
+
+    @Test
+    fun `should fall if a property of a data class mapped to an out parameter has a mismatched qualifier`() {
+        MismatchedTypeQualifierInOutput::class shouldFailToBindWith
+                "does not match type of facade out parameter"
+    }
+
+    @Test
+    fun `should fail if an out parameter is inconsistently qualified`() {
+        InconsistentlyQualifiedOutParameter::class shouldFailToBindWith "Parameter qualification mismatch"
+    }
+
+    @Test
+    fun `should fail if a data class output type has mismatched constructor and getter types`() {
+        IllFormedDataClassOutput::class shouldFailToBindWith "Type mismatch"
+    }
+
+
+}
