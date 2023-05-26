@@ -129,8 +129,8 @@ class SigningServiceImpl(
             cache.getAllPresent(keyIds.mapTo(mutableSetOf()) {
                 CacheKey(tenantId, it)
             }).mapTo(mutableSetOf()) { it.value }
-        if (cachedKeys.size == keyIds.size) return cachedKeys
         val notFound: List<ShortHash> = keyIds - cachedKeys.map { it.id }.toSet()
+        if (notFound.isEmpty()) return cachedKeys
         val fetchedKeys = signingRepositoryFactory.getInstance(tenantId).use {
             it.lookupByPublicKeyShortHashes(notFound.toMutableSet())
         }
