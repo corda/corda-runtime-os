@@ -13,6 +13,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.sandboxgroupcontext.VirtualNodeContext
+import net.corda.tracing.excludeTracingHeaders
 import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -79,7 +80,7 @@ class VerificationRequestProcessorTest {
 
         val results = verificationRequestProcessor.onNext(listOf(requestRecord1, requestRecord2))
 
-        assertThat(results).containsOnly(responseRecord1, responseRecord2)
+        assertThat(results.excludeTracingHeaders()).containsOnly(responseRecord1, responseRecord2)
     }
 
     @Test
@@ -101,7 +102,7 @@ class VerificationRequestProcessorTest {
 
         val results = verificationRequestProcessor.onNext(listOf(requestRecord1, requestRecord2))
 
-        assertThat(results).containsOnly(responseRecord1, failureResponseRecord)
+        assertThat(results.excludeTracingHeaders()).containsOnly(responseRecord1, failureResponseRecord)
     }
 
     private fun createRequest(requestId: String) =
