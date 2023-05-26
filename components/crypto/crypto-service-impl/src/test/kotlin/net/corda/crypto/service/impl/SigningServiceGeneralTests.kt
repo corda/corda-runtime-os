@@ -466,6 +466,7 @@ class SigningServiceGeneralTests {
         assertThat(fullIdsCap.allValues.single()).isEqualTo(setOf(hashB))
     }
 
+
     @ParameterizedTest
     @CsvSource("0,false", "1,false", "2,false", "0,true", "1,true", "2,true")
     fun `lookup returns requested keys from cache and db`(
@@ -495,11 +496,12 @@ class SigningServiceGeneralTests {
         )
         if (keysInCache >= 1) populateCache(cache, shortKeyId0, fullKeyId0)
         if (keysInCache >= 2) populateCache(cache, shortKeyId1, fullKeyId1)
-        val r = if (longHashes)
+        fun doLookup() = if (longHashes)
             signingService.lookupSigningKeysByPublicKeyHashes(tenantId, listOf(fullKeyId0, fullKeyId1))
         else
             signingService.lookupSigningKeysByPublicKeyShortHash(tenantId, listOf(shortKeyId0, shortKeyId1))
 
+        val r = doLookup()
         assertEquals(
             setOf(fullKeyId0, fullKeyId1).map { it.toString() }.toSet(),
             r.map { it.fullId.toString() }.toSet()
@@ -512,6 +514,11 @@ class SigningServiceGeneralTests {
             if (keysInCache == 0) assertEquals(setOf(shortKeyId0, shortKeyId1), shortHashCaptor.firstValue)
             if (keysInCache == 1) assertEquals(setOf(shortKeyId1), shortHashCaptor.firstValue)
         }
+        // looking again should result in no more database access 
+        val r2 = doLookup()
+        assertThat(r).isEqualTo(r2)
+        assertThat(repoCount).isEqualTo(if (keysInCache == 2) 0 else 1)
+
     }
 
     @Test
