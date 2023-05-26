@@ -5,6 +5,7 @@ import net.corda.data.chunking.Chunk
 import net.corda.data.chunking.CpkChunkId
 import net.corda.libs.packaging.writeFile
 import net.corda.utilities.debug
+import net.corda.utilities.posixOptional
 import net.corda.v5.crypto.SecureHash
 import org.slf4j.LoggerFactory
 import java.nio.channels.FileChannel
@@ -57,10 +58,12 @@ class CpkChunksFileManagerImpl(private val cpkCacheDir: Path) : CpkChunksFileMan
             // Try to create the directory. Will fail if this path
             // already exists as something other than a directory.
             logger.debug { "Creating CPK directory: $cpkXDir" }
-            Files.createDirectory(cpkXDir, CPK_DIRECTORY_PERMISSIONS)
+            @Suppress("SpreadOperator")
+            Files.createDirectory(cpkXDir, *cpkXDir.posixOptional(CPK_DIRECTORY_PERMISSIONS))
         }
         val filePath = cpkXDir.resolve(chunkId.toFileName())
-        Files.newByteChannel(filePath, CREATE_OR_REPLACE, CPK_FILE_PERMISSIONS).use { channel ->
+        @Suppress("SpreadOperator")
+        Files.newByteChannel(filePath, CREATE_OR_REPLACE, *filePath.posixOptional(CPK_FILE_PERMISSIONS)).use { channel ->
             channel.write(chunk.data)
         }
     }
@@ -75,7 +78,8 @@ class CpkChunksFileManagerImpl(private val cpkCacheDir: Path) : CpkChunksFileMan
         }
 
         return cpkXDir.resolve(cpkChecksum.toCpkFileName()).also { cpkFilePath ->
-            Files.newByteChannel(cpkFilePath, CREATE_OR_REPLACE, CPK_FILE_PERMISSIONS).use { output ->
+            @Suppress("SpreadOperator")
+            Files.newByteChannel(cpkFilePath, CREATE_OR_REPLACE, *cpkFilePath.posixOptional(CPK_FILE_PERMISSIONS)).use { output ->
                 chunkParts.forEach { chunkId ->
                     val cpkChunkPath = cpkXDir.resolve(chunkId.toFileName())
                     FileChannel.open(cpkChunkPath, READ).use(output::writeFile)

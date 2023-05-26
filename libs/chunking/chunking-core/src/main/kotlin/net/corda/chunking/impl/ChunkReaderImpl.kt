@@ -9,6 +9,7 @@ import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.core.toCorda
 import net.corda.data.KeyValuePairList
 import net.corda.data.chunking.Chunk
+import net.corda.utilities.posixOptional
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.crypto.SecureHash
 import java.nio.file.Files
@@ -64,9 +65,10 @@ internal class ChunkReaderImpl(private val destDir: Path) : ChunkReader {
             chunksReceived.expectedChecksum = chunk.checksum.toCorda()
         } else {
             // We have a chunk, move to the correct offset, and write the data.
-            // We expect the data to be correct sized.  There is a unit test to
+            // We expect the data to be correctly sized. There is a unit test to
             // ensure the writer does this.
-            Files.newByteChannel(path, CREATE_OR_UPDATE, CHUNK_FILE_PERMISSIONS).use { channel ->
+            @Suppress("SpreadOperator")
+            Files.newByteChannel(path, CREATE_OR_UPDATE, *path.posixOptional(CHUNK_FILE_PERMISSIONS)).use { channel ->
                 channel.position(chunk.offset)
                 channel.write(chunk.data)
             }

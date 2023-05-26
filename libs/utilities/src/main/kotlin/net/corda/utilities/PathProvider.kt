@@ -38,8 +38,8 @@ class WorkspacePathProvider(
             "Configuration should not be null for ${ConfigKeys.WORKSPACE_DIR}"
         }
 
-        return dirResolver(config.getString(ConfigKeys.WORKSPACE_DIR)!!, dirPath).also {
-            Files.createDirectories(it, WORKSPACE_DIR_PERMISSIONS)
+        return dirResolver(config.getString(ConfigKeys.WORKSPACE_DIR)!!, dirPath).also { dir ->
+            Files.createDirectories(dir, *dir.posixOptional(WORKSPACE_DIR_PERMISSIONS))
         }
     }
 }
@@ -57,8 +57,8 @@ class TempPathProvider(
             "Configuration should not be null for ${ConfigKeys.TEMP_DIR}"
         }
 
-        return dirResolver(config.getString(ConfigKeys.TEMP_DIR)!!, dirPath).also {
-            Files.createDirectories(it, TEMP_DIR_PERMISSIONS)
+        return dirResolver(config.getString(ConfigKeys.TEMP_DIR)!!, dirPath).also { dir ->
+            Files.createDirectories(dir, *dir.posixOptional(TEMP_DIR_PERMISSIONS))
         }
     }
 }
