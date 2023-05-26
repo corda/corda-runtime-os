@@ -1,15 +1,21 @@
 {{- include "corda.worker" ( list $ .Values.workers.crypto "crypto"
-  ( dict "clusterDbAccess" true "additionalWorkerArgs" ( list "--hsm-id=SOFT" ) )
+  ( dict "clusterDbAccess" true "additionalWorkerArgs" ( list "--hsm-id=SOFT" "--send-trace-to=http://observability-tempo.observability:9411" ) )
 ) }}
 {{- include "corda.worker" ( list $ .Values.workers.db "db"
-  ( dict "clusterDbAccess" true )
+  ( dict "clusterDbAccess" true "additionalWorkerArgs" ( list "--send-trace-to=http://observability-tempo.observability:9411" ) )
 ) }}
-{{- include "corda.worker" ( list $ .Values.workers.flow "flow" ) }}
-{{- include "corda.worker" ( list $ .Values.workers.membership "membership" ) }}
+{{- include "corda.worker" ( list $ .Values.workers.flow "flow"
+    ( dict "additionalWorkerArgs" ( list "--send-trace-to=http://observability-tempo.observability:9411" ) )
+)}}
+{{- include "corda.worker" ( list $ .Values.workers.membership "membership"
+    ( dict "additionalWorkerArgs" ( list "--send-trace-to=http://observability-tempo.observability:9411" ) )
+) }}
 {{- include "corda.worker" ( list $ .Values.workers.p2pGateway "p2pGateway"
-  ( dict "httpPort" 8080 )
+  ( dict "httpPort" 8080 "additionalWorkerArgs" ( list "--send-trace-to=http://observability-tempo.observability:9411" ) )
 ) }}
-{{- include "corda.worker" ( list $ .Values.workers.p2pLinkManager "p2pLinkManager" ) }}
+{{- include "corda.worker" ( list $ .Values.workers.p2pLinkManager "p2pLinkManager"
+    ( dict "additionalWorkerArgs" ( list "--send-trace-to=http://observability-tempo.observability:9411" ) )
+) }}
 {{- include "corda.worker" ( list $ .Values.workers.rest "rest"
-  ( dict "httpPort" 8888 "tlsSecretName" ( include "corda.restTlsSecretName" $ ) "additionalWorkerArgs" ( list "-rtls.crt.path=/tls/tls.crt" "-rtls.key.path=/tls/tls.key" "-rtls.ca.crt.path=/tls/ca.crt"  ) )
+  ( dict "httpPort" 8888 "tlsSecretName" ( include "corda.restTlsSecretName" $ ) "additionalWorkerArgs" ( list "-rtls.crt.path=/tls/tls.crt" "-rtls.key.path=/tls/tls.key" "-rtls.ca.crt.path=/tls/ca.crt" "--send-trace-to=http://observability-tempo.observability:9411" ) )
 ) }}
