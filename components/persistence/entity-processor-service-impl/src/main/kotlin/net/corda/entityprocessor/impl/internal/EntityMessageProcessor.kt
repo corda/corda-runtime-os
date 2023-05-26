@@ -22,7 +22,7 @@ import net.corda.persistence.common.getEntityManagerFactory
 import net.corda.persistence.common.getSerializationService
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.sandboxgroupcontext.SandboxGroupContext
-import net.corda.tracing.traceEventProcessingSingle
+import net.corda.tracing.traceEventProcessingNullableSingle
 import net.corda.utilities.MDC_CLIENT_ID
 import net.corda.utilities.MDC_EXTERNAL_EVENT_ID
 import net.corda.utilities.debug
@@ -69,7 +69,7 @@ class EntityMessageProcessor(
                 null
             } else {
                 val eventType = request.request?.let { it.javaClass.simpleName } ?: "Unknown"
-                traceEventProcessingSingle(event, "Crypto Event - $eventType") {
+                traceEventProcessingNullableSingle(event, "Crypto Event - $eventType") {
                     processEvent(request)
                 }
             }

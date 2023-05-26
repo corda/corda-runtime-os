@@ -107,13 +107,23 @@ fun traceEventProcessing(
     }
 }
 
-fun traceEventProcessingSingle(
+fun traceEventProcessingNullableSingle(
     event: Record<*, *>,
     operationName: String,
     processingBlock: () -> Record<*, *>?
 ): Record<*, *>? {
     return TracingState.recordTracing.nextSpan(event).doTrace(operationName) {
         processingBlock()?.let { addTraceContextToRecord(it) }
+    }
+}
+
+fun traceEventProcessingSingle(
+    event: Record<*, *>,
+    operationName: String,
+    processingBlock: () -> Record<*, *>
+): Record<*, *> {
+    return TracingState.recordTracing.nextSpan(event).doTrace(operationName) {
+        addTraceContextToRecord(processingBlock())
     }
 }
 

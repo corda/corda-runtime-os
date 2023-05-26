@@ -25,7 +25,7 @@ import net.corda.flow.external.events.responses.factory.ExternalEventResponseFac
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.metrics.CordaMetrics
-import net.corda.tracing.traceEventProcessingSingle
+import net.corda.tracing.traceEventProcessingNullableSingle
 import net.corda.utilities.MDC_CLIENT_ID
 import net.corda.utilities.MDC_EXTERNAL_EVENT_ID
 import net.corda.utilities.MDC_FLOW_ID
@@ -65,7 +65,7 @@ class CryptoFlowOpsBusProcessor(
             return null // cannot send any error back as have no idea where to send to
         }
         val eventType = request.request?.let { it.javaClass.simpleName } ?: "Unknown"
-        return traceEventProcessingSingle(event, "Crypto Event - $eventType") {
+        return traceEventProcessingNullableSingle(event, "Crypto Event - $eventType") {
             val expireAt = getRequestExpireAt(request)
             val clientRequestId = request.flowExternalEventContext.contextProperties.toMap()[MDC_CLIENT_ID] ?: ""
             val mdc = mapOf(
