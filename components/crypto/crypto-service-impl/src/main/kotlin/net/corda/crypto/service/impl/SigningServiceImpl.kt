@@ -121,14 +121,16 @@ class SigningServiceImpl(
         tenantId: String,
         keyIds: List<ShortHash>,
     ): Collection<SigningKeyInfo> {
+        // Since we are looking up by short IDs there's nothing we can do to handle clashes
+        // on short IDs in this case, at this layer. We must therefore rely on the database
+        // uniqueness constraints to stop clashes from being created.
+
         val cachedKeys =
             cache.getAllPresent(keyIds.mapTo(mutableSetOf()) {
                 CacheKey(tenantId, it)
             }).mapTo(mutableSetOf()) { it.value }
-        // TODO handle short ID clashes
         if (cachedKeys.size == keyIds.size) return cachedKeys
         val notFound: List<ShortHash> = keyIds - cachedKeys.map { it.id }.toSet()
-
         val fetchedKeys = signingRepositoryFactory.getInstance(tenantId).use {
             it.lookupByPublicKeyShortHashes(notFound.toMutableSet())
         }
@@ -356,10 +358,13 @@ class SigningServiceImpl(
             )
         }
         // now we are not dealing with composite keys
+
+        // Unfortunately this fullIdHash call is an extension function, which is hard to mock, so testing
+        // the happy path on this function is hard.
         val requestedFullKeyId = publicKey.fullIdHash(schemeMetadata, digestService)
         val keyId = ShortHash.of(requestedFullKeyId)
         val cacheKey = CacheKey(tenantId, keyId)
-        val signingKeyInfo = cache.get(cacheKey) {
+        val signingKeyInfo = cache.getIfPresent(cacheKey) ?: run {
             val repo = signingRepositoryFactory.getInstance(tenantId)
             val result = repo.findKey(publicKey)
             if (result == null) throw IllegalArgumentException("The public key '${publicKey.publicKeyId()}' was not found")
@@ -369,7 +374,6 @@ class SigningServiceImpl(
         if (signingKeyInfo.fullId != requestedFullKeyId) throw IllegalArgumentException(
             "The tenant $tenantId doesn't own public key '${publicKey.publicKeyId()}'."
         )
-
         return OwnedKeyRecord(publicKey, signingKeyInfo)
     }
 
