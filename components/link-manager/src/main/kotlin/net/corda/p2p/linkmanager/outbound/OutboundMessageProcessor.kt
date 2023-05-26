@@ -425,7 +425,10 @@ internal class OutboundMessageProcessor(
                 builder.withTag(it.first, value)
             }
         }
-        builder.build().increment()
+        val counter = builder.build()
+        logger.info("Counter before: ${counter.count()}")
+        counter.increment()
+        logger.info("Counter after: ${counter.count()}")
         logger.info("Emitted metric for $messageType")
     }
 
