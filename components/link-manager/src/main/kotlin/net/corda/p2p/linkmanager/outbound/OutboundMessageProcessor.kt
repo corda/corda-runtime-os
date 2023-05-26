@@ -266,6 +266,7 @@ internal class OutboundMessageProcessor(
         val source = messageAndKey.message.header.source.toCorda()
         val destination = messageAndKey.message.header.destination.toCorda()
         if (linkManagerHostingMap.isHostedLocally(destination)) {
+            logger.info("Looping back message ${messageAndKey.message.header.messageId}")
             recordInboundMessagesMetric(messageAndKey.message)
             return if (isReplay) {
                 listOf(Record(Schemas.P2P.P2P_IN_TOPIC, messageAndKey.key, AppMessage(messageAndKey.message)),
