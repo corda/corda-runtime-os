@@ -27,7 +27,6 @@ import net.corda.p2p.linkmanager.hosting.LinkManagerHostingMap
 import net.corda.p2p.linkmanager.inbound.InboundAssignmentListener
 import net.corda.p2p.linkmanager.membership.NetworkMessagingValidator
 import net.corda.p2p.linkmanager.membership.lookup
-import net.corda.p2p.linkmanager.metrics.recordInboundMessagesMetric
 import net.corda.p2p.linkmanager.sessions.PendingSessionMessageQueues
 import net.corda.p2p.linkmanager.sessions.SessionManager
 import net.corda.schema.Schemas
@@ -398,6 +397,36 @@ internal class OutboundMessageProcessor(
             .withTag(CordaMetrics.Tag.MessagingSubsystem, subsystem)
             .withTag(CordaMetrics.Tag.MessageType, messageType)
             .build().increment()
+    }
+
+    private fun recordInboundMessagesMetric(message: AuthenticatedMessage) {
+        message.header.let {
+            recordInboundMessagesMetric(it.source.x500Name, it.destination.x500Name, it.source.groupId,
+                it.subsystem, message::class.java.simpleName)
+        }
+    }
+
+    private fun recordInboundMessagesMetric(message: InboundUnauthenticatedMessage) {
+        recordInboundMessagesMetric(null, null, null,
+            message.header.subsystem, message::class.java.simpleName)
+    }
+
+    private fun recordInboundMessagesMetric(source: String?, dest: String?, group: String?, subsystem: String, messageType: String) {
+        val builder = CordaMetrics.Metric.InboundMessageCount.builder()
+        listOf(
+            CordaMetrics.Tag.SourceVirtualNode to source,
+            CordaMetrics.Tag.DestinationVirtualNode to dest,
+            CordaMetrics.Tag.MembershipGroup to group,
+            CordaMetrics.Tag.MessagingSubsystem to subsystem,
+            CordaMetrics.Tag.MessageType to messageType,
+        ).forEach {
+            val value = it.second
+            if (value != null) {
+                builder.withTag(it.first, value)
+            }
+        }
+        builder.build().increment()
+        logger.info("Emitted metric for $messageType")
     }
 
 }
