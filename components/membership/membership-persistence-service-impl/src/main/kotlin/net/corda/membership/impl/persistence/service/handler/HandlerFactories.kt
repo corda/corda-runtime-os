@@ -37,7 +37,6 @@ import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.membership.lib.metrics.TimerMetricTypes
 import net.corda.membership.lib.metrics.getTimerMetric
 import net.corda.membership.mtls.allowed.list.service.AllowedCertificatesReaderWriterService
-import net.corda.metrics.CordaMetrics
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.utilities.time.Clock
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
