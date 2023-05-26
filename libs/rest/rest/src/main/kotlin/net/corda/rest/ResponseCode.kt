@@ -160,6 +160,11 @@ enum class ResponseCode constructor(val statusCode: Int) {
     UNPROCESSABLE_CONTENT(422),
 
     /**
+     * See `https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/429`.
+     */
+    TOO_MANY_REQUESTS(429),
+
+    /**
      * SERVER ERRORS 5xx
      */
 

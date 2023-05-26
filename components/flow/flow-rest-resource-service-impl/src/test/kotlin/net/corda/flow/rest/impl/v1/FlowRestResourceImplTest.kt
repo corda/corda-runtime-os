@@ -3,6 +3,7 @@ package net.corda.flow.rest.impl.v1
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.data.flow.FlowKey
+import net.corda.data.flow.output.FlowStates
 import net.corda.data.flow.output.FlowStatus
 import net.corda.flow.rest.FlowStatusCacheService
 import net.corda.flow.rest.factory.MessageFactory
@@ -30,6 +31,7 @@ import net.corda.rest.exception.OperationNotAllowedException
 import net.corda.rest.exception.ResourceAlreadyExistsException
 import net.corda.rest.exception.ResourceNotFoundException
 import net.corda.rest.exception.ServiceUnavailableException
+import net.corda.rest.exception.TooManyRequestsException
 import net.corda.rest.security.CURRENT_REST_CONTEXT
 import net.corda.rest.security.RestAuthContext
 import net.corda.rest.ws.DuplexChannel
@@ -38,6 +40,8 @@ import net.corda.utilities.MDC_CLIENT_ID
 import net.corda.virtualnode.OperationalStatus
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
+import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertInstanceOf
 import org.junit.jupiter.api.BeforeEach
@@ -560,5 +564,26 @@ class FlowRestResourceImplTest {
         assertThrows<BadRequestException> {
             flowRestResource.startFlow(VALID_SHORT_HASH, StartFlowParameters("", FLOW1, TestJsonObject()))
         }
+    }
+
+    @Test
+    fun `start from throws when rate is exceeded`() {
+
+        val runningStatus = FlowStatus().apply {
+            flowStatus = FlowStates.RUNNING
+        }
+
+        val excessiveCount = 1001
+        whenever(flowStatusCacheService.getStatusesPerIdentity(any())).thenReturn((1..excessiveCount).map { runningStatus })
+        val flowRestResource = createFlowRestResource()
+        assertThat(flowRestResource.getMultipleFlowStatus(VALID_SHORT_HASH).flowStatusResponses).hasSize(excessiveCount)
+
+        assertThatThrownBy {
+            flowRestResource.startFlow(
+                VALID_SHORT_HASH,
+                StartFlowParameters(clientRequestId, FLOW1, TestJsonObject())
+            )
+        }.isInstanceOf(TooManyRequestsException::class.java).hasMessageContaining(
+            "Unable to start flow at this time as $excessiveCount flows are currently running")
     }
 }

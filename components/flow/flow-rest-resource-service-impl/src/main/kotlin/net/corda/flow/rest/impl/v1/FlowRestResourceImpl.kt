@@ -1,6 +1,7 @@
 package net.corda.flow.rest.impl.v1
 
 import net.corda.cpiinfo.read.CpiInfoReadService
+import net.corda.data.flow.output.FlowStates
 import net.corda.data.virtualnode.VirtualNodeInfo
 import net.corda.data.virtualnode.VirtualNodeOperationalState
 import net.corda.flow.rest.FlowStatusCacheService
@@ -33,6 +34,7 @@ import net.corda.rest.exception.OperationNotAllowedException
 import net.corda.rest.exception.ResourceAlreadyExistsException
 import net.corda.rest.exception.ResourceNotFoundException
 import net.corda.rest.exception.ServiceUnavailableException
+import net.corda.rest.exception.TooManyRequestsException
 import net.corda.rest.messagebus.MessageBusUtils.tryWithExceptionHandling
 import net.corda.rest.response.ResponseEntity
 import net.corda.rest.security.CURRENT_REST_CONTEXT
@@ -71,6 +73,11 @@ class FlowRestResourceImpl @Activate constructor(
     private companion object {
         val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         const val PUBLICATION_TIMEOUT_SECONDS = 30L
+        val runningFlowStates: Set<FlowStates> =
+            setOf(FlowStates.START_REQUESTED, FlowStates.RUNNING, FlowStates.RETRYING)
+
+        // Should really be read from configuration service
+        val runningFlowsThresholdPerVNode = (System.getenv("RUNNING_FLOWS_LIMIT_PER_VNODE") ?: "1000").toInt()
     }
 
     override val isRunning: Boolean get() = publisher != null
@@ -165,6 +172,14 @@ class FlowRestResourceImpl @Activate constructor(
             throw ForbiddenException(FlowRestExceptionConstants.FORBIDDEN.format(principal, startFlow.flowClassName))
         }
 
+        // Check whether too many flows already in flight for a given vNode
+        vNode.runningFlowsCount.let {
+            if (it >= runningFlowsThresholdPerVNode) {
+                throw TooManyRequestsException("Unable to start flow at this time as $it flows are currently running " +
+                        "for a vNode: '${vNode.holdingIdentity}'.")
+            }
+        }
+
         // TODO Platform properties to be populated correctly.
         // This is a placeholder which indicates access to everything, see CORE-6076
         val flowContextPlatformProperties = mapOf(
@@ -210,6 +225,12 @@ class FlowRestResourceImpl @Activate constructor(
         }
         return ResponseEntity.accepted(messageFactory.createFlowStatusResponse(status))
     }
+
+    private val VirtualNodeInfo.runningFlowsCount: Int
+        get() {
+            val flowStatuses = flowStatusCacheService.getStatusesPerIdentity(holdingIdentity)
+            return flowStatuses.count { it.flowStatus in runningFlowStates }
+        }
 
     private fun markFatalAndReturnFailureException(exception: Exception): Exception {
         fatalErrorOccurred = true
