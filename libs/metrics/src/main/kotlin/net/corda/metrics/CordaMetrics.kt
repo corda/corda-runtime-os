@@ -73,6 +73,11 @@ object CordaMetrics {
         /**
          * Metric for flow or subFlow fiber serialization.
          */
+        object ProducerCommitTime : Metric<Timer>("producer.commit.time", CordaMetrics::timer)
+
+        /**
+         * Metric for flow fiber serialization.
+         */
         object FlowFiberSerializationTime : Metric<Timer>("flow.fiber.serialization.time", CordaMetrics::timer)
 
         /**
@@ -644,6 +649,11 @@ object CordaMetrics {
          * Type of the SandboxGroup to which the metric applies.
          */
         SandboxGroupType("sandbox.type"),
+
+        /**
+         * The step of some processing being measured by a metric.
+         */
+        Step("step"),
 
         /**
          * Source of metric.

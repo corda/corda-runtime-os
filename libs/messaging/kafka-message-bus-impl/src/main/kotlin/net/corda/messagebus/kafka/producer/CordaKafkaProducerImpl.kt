@@ -45,7 +45,7 @@ class CordaKafkaProducerImpl(
     private val config: ResolvedProducerConfig,
     private val producer: Producer<Any, Any>,
     private val chunkSerializerService: ChunkSerializerService,
-    private val producerMetricsBinder : MeterBinder,
+    private val producerMetricsBinder: MeterBinder,
 ) : CordaProducer {
     private val topicPrefix = config.topicPrefix
     private val transactional = config.transactional
@@ -113,6 +113,15 @@ class CordaKafkaProducerImpl(
         }
     }
 
+    private fun <T : Any> recordCommitMetricStep(step: String, op: () -> T): T? {
+        return CordaMetrics.Metric.ProducerCommitTime.builder()
+            .withTag(CordaMetrics.Tag.Step, step)
+            .build()
+            .recordCallable {
+                op.invoke()
+            }
+    }
+
     /**
      * Check to see if the [record] needs chunking. If it does then check producer type and send chunks,
      * otherwise send the records normally
@@ -121,9 +130,13 @@ class CordaKafkaProducerImpl(
      * @param partition partition to send to. defaults to null.
      */
     private fun sendRecord(record: CordaProducerRecord<*, *>, callback: CordaProducer.Callback? = null, partition: Int? = null) {
-        val chunkedRecords = chunkSerializerService.generateChunkedRecords(record)
-        if (chunkedRecords.isNotEmpty()) {
-            sendChunks(chunkedRecords, callback, partition)
+        val chunkedRecords = recordCommitMetricStep("generateChunkedRecords") {
+            chunkSerializerService.generateChunkedRecords(record)
+        }
+        if (!chunkedRecords.isNullOrEmpty()) {
+            recordCommitMetricStep("sendChunks") {
+                sendChunks(chunkedRecords, callback, partition)
+            }
         } else {
             sendWholeRecord(record, partition, callback)
         }
@@ -137,10 +150,12 @@ class CordaKafkaProducerImpl(
         val traceContext = traceSend(record.headers, "send $clientId")
         traceContext.markInScope().use {
             try {
-                producer.send(
-                    record.toKafkaRecord(topicPrefix, partition),
-                    toTraceKafkaCallback({ exception -> callback?.onCompletion(exception) }, traceContext)
-                )
+                recordCommitMetricStep("sendWithoutChunks") {
+                    producer.send(
+                        record.toKafkaRecord(topicPrefix, partition),
+                        toTraceKafkaCallback({ exception -> callback?.onCompletion(exception) }, traceContext)
+                    )
+                }
             } catch (ex: CordaRuntimeException) {
                 traceContext.errorAndFinish(ex)
                 val msg = "Failed to send record to topic ${record.topic} with key ${record.key}"
@@ -181,7 +196,7 @@ class CordaKafkaProducerImpl(
         }
         cordaProducerRecords.forEach {
             //note callback is only applicable to async calls which are not allowed
-            producer.send(it.toKafkaRecord(topicPrefix,partition))
+            producer.send(it.toKafkaRecord(topicPrefix, partition))
         }
     }
 
@@ -369,8 +384,11 @@ class CordaKafkaProducerImpl(
                 }
                 throw CordaMessageAPIIntermittentException("Error occurred $errorString", ex)
             }
+
             is CordaMessageAPIFatalException,
-            is CordaMessageAPIIntermittentException -> { throw ex }
+            is CordaMessageAPIIntermittentException -> {
+                throw ex
+            }
 
             else -> {
                 // Here we do not know what the exact cause of the exception is, but we do know Kafka has not told us we
