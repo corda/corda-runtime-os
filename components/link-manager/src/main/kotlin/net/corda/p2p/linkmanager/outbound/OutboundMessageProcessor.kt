@@ -420,10 +420,8 @@ internal class OutboundMessageProcessor(
             CordaMetrics.Tag.MessagingSubsystem to subsystem,
             CordaMetrics.Tag.MessageType to messageType,
         ).forEach {
-            val value = it.second
-            if (value != null) {
-                builder.withTag(it.first, value)
-            }
+            val value = it.second ?: "none"
+            builder.withTag(it.first, value)
         }
         val counter = builder.build()
         logger.info("Counter before: ${counter.count()}")
