@@ -27,6 +27,7 @@ import net.corda.p2p.linkmanager.hosting.LinkManagerHostingMap
 import net.corda.p2p.linkmanager.inbound.InboundAssignmentListener
 import net.corda.p2p.linkmanager.membership.NetworkMessagingValidator
 import net.corda.p2p.linkmanager.membership.lookup
+import net.corda.p2p.linkmanager.metrics.recordInboundMessagesMetric
 import net.corda.p2p.linkmanager.sessions.PendingSessionMessageQueues
 import net.corda.p2p.linkmanager.sessions.SessionManager
 import net.corda.schema.Schemas
@@ -199,6 +200,7 @@ internal class OutboundMessageProcessor(
             message.payload,
         )
         if (linkManagerHostingMap.isHostedLocally(message.header.destination.toCorda())) {
+            recordInboundMessagesMetric(inboundMessage)
             return listOf(Record(Schemas.P2P.P2P_IN_TOPIC, LinkManager.generateKey(), AppMessage(inboundMessage)))
         } else if (destMemberInfo != null) {
             val source = message.header.source.toCorda()
@@ -264,6 +266,7 @@ internal class OutboundMessageProcessor(
         val source = messageAndKey.message.header.source.toCorda()
         val destination = messageAndKey.message.header.destination.toCorda()
         if (linkManagerHostingMap.isHostedLocally(destination)) {
+            recordInboundMessagesMetric(messageAndKey.message)
             return if (isReplay) {
                 listOf(Record(Schemas.P2P.P2P_IN_TOPIC, messageAndKey.key, AppMessage(messageAndKey.message)),
                     recordForLMReceivedMarker(messageAndKey.message.header.messageId)
