@@ -101,10 +101,7 @@ class FlowMetricsImpl(
 
     override fun flowSessionMessageReplayed(flowEventType: String, sessionId: String, sequenceNumber: Long) {
         when(sequenceNumber) {
-            null -> {
-                //ignore
-            }
-            0L -> {
+            null, 0L -> {
                 //ignore
             }
             currentState.sessionMetricStateBySessionId[sessionId]!!.highestSequenceNumberSent -> {
