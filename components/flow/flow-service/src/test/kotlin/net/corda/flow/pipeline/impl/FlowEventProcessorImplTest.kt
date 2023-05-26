@@ -125,7 +125,7 @@ class FlowEventProcessorImplTest {
     }
 
     private val flowEventPipelineFactory = mock<FlowEventPipelineFactory>().apply {
-        whenever(create(anyOrNull(), any(), any(), any())).thenReturn(flowEventPipeline)
+        whenever(create(anyOrNull(), any(), any(), any(), any())).thenReturn(flowEventPipeline)
     }
 
     private val processor = FlowEventProcessorImpl(
@@ -135,6 +135,14 @@ class FlowEventProcessorImplTest {
         MINIMUM_SMART_CONFIG,
         flowMDCService
     )
+
+    private fun List<Record<*, *>>.excludeHeaders() = this.map { record ->
+        record.copy(headers = record.headers.filterNot { (key, _) ->
+            key.startsWith("X-B3-")
+        })
+    }
+    private fun <S : Any> StateAndEventProcessor.Response<S>.excludeHeaders() =
+        copy(responseEvents = responseEvents.excludeHeaders())
 
     @BeforeEach
     fun setup() {
@@ -165,7 +173,7 @@ class FlowEventProcessorImplTest {
         val response = processor.onNext(checkpoint, inputEvent)
 
         assertEquals(checkpoint, response.updatedState)
-        assertEquals(outputRecords, response.responseEvents)
+        assertEquals(outputRecords, response.responseEvents.excludeHeaders())
         verify(flowMDCService, times(1)).getMDCLogging(anyOrNull(), any(), any())
     }
 
@@ -252,7 +260,7 @@ class FlowEventProcessorImplTest {
 
         val response = processor.onNext(checkpoint, getFlowEventRecord(FlowEvent(flowKey, wakeupPayload)))
 
-        assertThat(response).isEqualTo(killedFlowResponse)
+        assertThat(response.excludeHeaders()).isEqualTo(killedFlowResponse)
     }
 
     @Test
@@ -262,7 +270,7 @@ class FlowEventProcessorImplTest {
         val response = processor.onNext(null, inputEvent)
 
         assertEquals(checkpoint, response.updatedState)
-        assertEquals(outputRecords, response.responseEvents)
+        assertEquals(outputRecords, response.responseEvents.excludeHeaders())
         verify(flowMDCService, times(1)).getMDCLogging(anyOrNull(), any(), any())
     }
 
@@ -273,7 +281,7 @@ class FlowEventProcessorImplTest {
         val response = processor.onNext(null, inputEvent)
 
         assertEquals(checkpoint, response.updatedState)
-        assertEquals(outputRecords, response.responseEvents)
+        assertEquals(outputRecords, response.responseEvents.excludeHeaders())
         verify(flowMDCService, times(1)).getMDCLogging(anyOrNull(), any(), any())
     }
 

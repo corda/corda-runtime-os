@@ -10,7 +10,8 @@ fun <K : Any, V : Any> CordaConsumerRecord<K, V>.toRecord(): Record<K, V> {
         this.topic,
         this.key,
         this.value,
-        this.headers
+        this.headers,
+        this.timestamp
     )
 }
 
@@ -21,7 +22,8 @@ fun <K : Any, V : Any> CordaConsumerRecord<K, V>.toEventLogRecord(): EventLogRec
         this.value,
         this.partition,
         this.offset,
-        this.headers
+        this.headers,
+        this.timestamp
     )
 }
 
@@ -30,6 +32,7 @@ fun <K: Any, V: Any> EventLogRecord<K,V>.toRecord():Record<K,V>{
         topic = this.topic,
         key = this.key,
         value = this.value,
+        timestamp = this.timestamp,
         headers = this.headers
     )
 }

@@ -9,6 +9,7 @@ import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.persistence.common.EntitySandboxService
 import net.corda.persistence.common.PayloadChecker
 import net.corda.persistence.common.ResponseFactory
+import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.schema.Schemas
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -17,6 +18,8 @@ import org.osgi.service.component.annotations.Reference
 @Suppress("UNUSED")
 @Component(service = [EntityProcessorFactory::class])
 class EntityProcessorFactoryImpl @Activate constructor(
+    @Reference(service = CurrentSandboxGroupContext::class)
+    private val currentSandboxGroupContext: CurrentSandboxGroupContext,
     @Reference(service = SubscriptionFactory::class)
     private val subscriptionFactory: SubscriptionFactory,
     @Reference(service = EntitySandboxService::class)
@@ -32,6 +35,7 @@ class EntityProcessorFactoryImpl @Activate constructor(
         val subscriptionConfig = SubscriptionConfig(GROUP_NAME, Schemas.Persistence.PERSISTENCE_ENTITY_PROCESSOR_TOPIC)
 
         val processor = EntityMessageProcessor(
+            currentSandboxGroupContext,
             entitySandboxService,
             responseFactory,
             PayloadChecker(config)::checkSize

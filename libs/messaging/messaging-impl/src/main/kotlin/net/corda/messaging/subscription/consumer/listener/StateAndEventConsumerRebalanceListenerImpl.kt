@@ -19,8 +19,7 @@ internal class StateAndEventConsumerRebalanceListenerImpl<K : Any, S : Any, E : 
     private val stateAndEventListener: StateAndEventListener<K, S>? = null
 ) : StateAndEventConsumerRebalanceListener {
 
-    private val log = LoggerFactory.getLogger(config.loggerName)
-
+    private val log = LoggerFactory.getLogger("${this.javaClass.name}-${config.clientId}")
     private val currentStates = partitionState.currentStates
     private val stateConsumer = stateAndEventConsumer.stateConsumer
 
@@ -30,7 +29,7 @@ internal class StateAndEventConsumerRebalanceListenerImpl<K : Any, S : Any, E : 
      */
     override fun onPartitionsAssigned(partitions: Collection<CordaTopicPartition>) {
         val partitionIds = partitions.map{ it.partition }.joinToString(",")
-        log.info("Consumer (${config.clientId}) group name ${config.group} for topic ${config.topic} partition assigned: $partitionIds.")
+        log.info("Partitions assigned: $partitionIds.")
         stateAndEventConsumer.onPartitionsAssigned(partitions.toSet())
 
         val newStatePartitions = partitions.toStateTopics()
@@ -55,8 +54,8 @@ internal class StateAndEventConsumerRebalanceListenerImpl<K : Any, S : Any, E : 
      *  keeps up
      */
     override fun onPartitionsRevoked(partitions: Collection<CordaTopicPartition>) {
-        val partitionIds = partitions.map{ it.partition }.joinToString(",")
-        log.info("Consumer (${config.clientId}) group name ${config.group} for topic ${config.topic} partition revoked: $partitionIds.")
+        val partitionIds = partitions.map { it.partition }.joinToString(",")
+        log.info("Partition revoked: $partitionIds.")
         stateAndEventConsumer.onPartitionsRevoked(partitions.toSet())
         val removedPartitionIds = partitions.map { it.partition }
         for (partitionId in removedPartitionIds) {

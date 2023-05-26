@@ -96,6 +96,7 @@ class PersistGroupParametersInitialSnapshotHandlerTest {
         on { dbConnectionManager } doReturn connectionManager
         on { clock } doReturn clock
         on { keyEncodingService } doReturn keyEncodingService
+        on { transactionTimerFactory } doReturn { transactionTimer }
     }
     private val handler = PersistGroupParametersInitialSnapshotHandler(persistenceHandlerServices)
 

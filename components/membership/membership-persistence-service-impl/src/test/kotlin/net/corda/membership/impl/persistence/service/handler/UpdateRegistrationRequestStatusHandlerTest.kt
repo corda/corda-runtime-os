@@ -26,6 +26,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
+import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
@@ -66,6 +67,7 @@ class UpdateRegistrationRequestStatusHandlerTest {
     private val entityTransaction: EntityTransaction = mock()
     private val entityManager: EntityManager = mock {
         on { transaction } doReturn entityTransaction
+        on { merge(any<Any>()) } doAnswer { it.arguments[0] }
     }
     private val entityManagerFactory: EntityManagerFactory = mock {
         on { createEntityManager() } doReturn entityManager
@@ -94,7 +96,7 @@ class UpdateRegistrationRequestStatusHandlerTest {
     }
     private val keyEncodingService: KeyEncodingService = mock()
     private val platformInfoProvider: PlatformInfoProvider = mock()
-
+    private val transactionTimerFactory = { _: String -> transactionTimer }
     private val services = PersistenceHandlerServices(
         clock,
         dbConnectionManager,
@@ -105,6 +107,7 @@ class UpdateRegistrationRequestStatusHandlerTest {
         keyEncodingService,
         platformInfoProvider,
         mock(),
+        transactionTimerFactory
     )
     private lateinit var updateRegistrationRequestStatusHandler: UpdateRegistrationRequestStatusHandler
 

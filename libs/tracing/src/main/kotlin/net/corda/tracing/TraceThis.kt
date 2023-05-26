@@ -1,3 +1,4 @@
+@file:Suppress("TooManyFunctions")
 package net.corda.tracing
 
 import brave.Span
@@ -40,18 +41,24 @@ fun traceBatch(operationName: String): BatchRecordTracer {
     return BatchRecordTracerImpl(operationName)
 }
 
-fun <R> trace(operationName: String, processingBlock: TraceContext.() -> R): R {
-    val span = TracingState.tracing.tracer().nextSpan().name(operationName).start()
-    val ctx = TraceContextImpl(span)
-    return TracingState.tracing.currentTraceContext().newScope(span.context()).use {
+private fun <T> Span.doTrace(operationName: String, blockOnSpan: Span.() -> T): T {
+    name(operationName).start()
+    return TracingState.tracing.currentTraceContext().newScope(context()).use {
         try {
-            processingBlock(ctx)
+            blockOnSpan()
         } catch (ex: Exception) {
-            span.error(ex)
+            error(ex)
             throw ex
         } finally {
-            span.finish()
+            finish()
         }
+    }
+}
+
+fun <R> trace(operationName: String, processingBlock: TraceContext.() -> R): R {
+    return TracingState.tracing.tracer().nextSpan().doTrace(operationName) {
+        val ctx = TraceContextImpl(this)
+        processingBlock(ctx)
     }
 }
 
@@ -85,33 +92,18 @@ fun traceEventProcessing(
     operationName: String,
     processingBlock: () -> List<Record<*, *>>
 ): List<Record<*, *>> {
-    val span = TracingState.recordTracing.nextSpan(event).name(operationName).start()
-    return TracingState.tracing.currentTraceContext().newScope(span.context()).use {
-        try {
-            addTraceContextToRecords(processingBlock())
-        } catch (ex: Exception) {
-            span.error(ex)
-            throw ex
-        } finally {
-            span.finish()
-        }
+    return TracingState.recordTracing.nextSpan(event).doTrace(operationName) {
+        addTraceContextToRecords(processingBlock())
     }
 }
+
 fun traceEventProcessing(
     event: EventLogRecord<*, *>,
     operationName: String,
     processingBlock: () -> List<Record<*, *>>
 ): List<Record<*, *>> {
-    val span = TracingState.recordTracing.nextSpan(event).name(operationName).start()
-    return TracingState.tracing.currentTraceContext().newScope(span.context()).use {
-        try {
-            addTraceContextToRecords(processingBlock())
-        } catch (ex: Exception) {
-            span.error(ex)
-            throw ex
-        } finally {
-            span.finish()
-        }
+    return TracingState.recordTracing.nextSpan(event).doTrace(operationName) {
+        addTraceContextToRecords(processingBlock())
     }
 }
 
@@ -120,16 +112,8 @@ fun traceEventProcessingSingle(
     operationName: String,
     processingBlock: () -> Record<*, *>?
 ): Record<*, *>? {
-    val span = TracingState.recordTracing.nextSpan(event).name(operationName).start()
-    return TracingState.tracing.currentTraceContext().newScope(span.context()).use {
-        try {
-            processingBlock()?.let { addTraceContextToRecord(it) }
-        } catch (ex: Exception) {
-            span.error(ex)
-            throw ex
-        } finally {
-            span.finish()
-        }
+    return TracingState.recordTracing.nextSpan(event).doTrace(operationName) {
+        processingBlock()?.let { addTraceContextToRecord(it) }
     }
 }
 
@@ -138,17 +122,9 @@ fun <K : Any, S : Any, V : Any> traceStateAndEventExecution(
     operationName: String,
     processingBlock: () -> StateAndEventProcessor.Response<S>
 ): StateAndEventProcessor.Response<S> {
-    val span = TracingState.recordTracing.nextSpan(event).name(operationName).start()
-    return TracingState.tracing.currentTraceContext().newScope(span.context()).use {
-        try {
-            val result = processingBlock()
-            result.copy(responseEvents = addTraceContextToRecords(result.responseEvents))
-        } catch (ex: Exception) {
-            span.error(ex)
-            throw ex
-        } finally {
-            span.finish()
-        }
+    return TracingState.recordTracing.nextSpan(event).doTrace(operationName) {
+        val result = processingBlock()
+        result.copy(responseEvents = addTraceContextToRecords(result.responseEvents))
     }
 }
 

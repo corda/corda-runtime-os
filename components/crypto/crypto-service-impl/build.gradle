@@ -35,6 +35,7 @@ dependencies {
     implementation project(':libs:crypto:crypto-flow')
     implementation project(':libs:flows:external-event-responses')
     implementation project(":libs:messaging:messaging")
+    implementation project(":libs:metrics")
     implementation project(":libs:layered-property-map")
     implementation project(":libs:lifecycle:lifecycle")
     implementation project(":libs:tracing")
