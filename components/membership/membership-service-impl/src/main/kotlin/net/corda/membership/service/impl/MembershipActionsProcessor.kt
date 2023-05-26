@@ -17,7 +17,6 @@ import net.corda.membership.service.impl.actions.DistributeMemberInfoActionHandl
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.utilities.time.Clock
-import net.corda.virtualnode.toCorda
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
