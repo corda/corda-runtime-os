@@ -81,7 +81,7 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
             }
             .flatMap { (_, events) -> events }
             .map { event ->
-                context.flowMetrics.flowSessionMessageSent(event.payload::class.java.name, event.sessionId)
+                context.flowMetrics.flowSessionMessageSent(event.payload::class.java.name, event.sessionId, event.sequenceNum.toLong())
                 context.flowMetrics.flowSessionMessageReplayed(event.payload::class.java.name, event.sessionId)
                 flowRecordFactory.createFlowMapperEventRecord(event.sessionId, event)
             }

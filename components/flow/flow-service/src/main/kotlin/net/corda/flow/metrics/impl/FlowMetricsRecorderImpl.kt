@@ -86,20 +86,20 @@ class FlowMetricsRecorderImpl(
 
     }
 
-    override fun recordFlowSessionMessagesSent(flowEventType: String, highestSequenceNumberSent: Long) {
+    override fun recordFlowSessionMessagesSent(flowEventType: String) {
         CordaMetrics.Metric.FlowSessionMessagesSentCount.builder()
             .forVirtualNode(flowCheckpoint.holdingIdentity.shortHash.toString())
             .withTag(CordaMetrics.Tag.FlowClass, flowCheckpoint.flowStartContext.flowClassName)
             .withTag(CordaMetrics.Tag.FlowEvent, flowEventType)
-            .build().increment(highestSequenceNumberSent.toDouble())
+            .build().increment()
     }
 
-    override fun recordFlowSessionMessagesReplayed(flowEventType: String, highestSequenceNumberSent: Long) {
+    override fun recordFlowSessionMessagesReplayed(flowEventType: String) {
         CordaMetrics.Metric.FlowSessionMessagesReplayedCount.builder()
             .forVirtualNode(flowCheckpoint.holdingIdentity.shortHash.toString())
             .withTag(CordaMetrics.Tag.FlowClass, flowCheckpoint.flowStartContext.flowClassName)
             .withTag(CordaMetrics.Tag.FlowEvent, flowEventType)
-            .build().increment(highestSequenceNumberSent.toDouble())
+            .build().increment()
     }
 
 }

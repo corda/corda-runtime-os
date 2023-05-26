@@ -18,6 +18,7 @@ class FlowMetricsImpl(
     private val eventReceivedTimestampMillis: Long
     private var fiberStartTime = clock.nowInMillis()
     private var fiberExecutionTime: Long = 0
+    private var sequenceNumberCache = mutableMapOf<String, MutableSet<Long>>()
 
     private companion object {
         val objectMapper = ObjectMapper()
@@ -88,14 +89,31 @@ class FlowMetricsImpl(
         recordFlowCompleted(FlowStates.FAILED.toString())
     }
 
-    override fun flowSessionMessageSent(flowEventType: String, sessionId: String) {
+    override fun flowSessionMessageSent(flowEventType: String, sessionId: String, sequenceNumber: Long) {
         val sessionMetricState = currentState.sessionMetricStateBySessionId.computeIfAbsent(sessionId) {
             SessionMetricState()
         }
-        flowMetricsRecorder.recordFlowSessionMessagesSent(flowEventType, sessionMetricState.highestSequenceNumberSent)
+        flowMetricsRecorder.recordFlowSessionMessagesSent(flowEventType)
+        sequenceNumberCache.computeIfAbsent(sessionId) {
+            mutableSetOf()
+        }
     }
 
-    override fun flowSessionMessageReplayed(flowEventType: String, sessionId: String) {
+    override fun flowSessionMessageReplayed(flowEventType: String, sessionId: String, sequenceNumber: Long) {
+        when(sequenceNumber) {
+            null -> {
+                //ignore
+            }
+            0L -> {
+                //ignore
+            }
+            currentState.sessionMetricStateBySessionId[sessionId]!!.highestSequenceNumberSent -> {
+
+            }
+        }
+        if (sequenceNumber <= currentState.sessionMetricStateBySessionId[sessionId].highestSequenceNumberSent) {
+            flowMetricsRecorder.recordFlowSessionMessagesReplayed(flowEventType)
+        }
 
     }
 
