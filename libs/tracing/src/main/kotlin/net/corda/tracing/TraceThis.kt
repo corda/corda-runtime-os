@@ -78,6 +78,14 @@ fun addTraceContextToRecord(it: Record<*, *>): Record<out Any, out Any> {
     return it.copy(headers = headersWithTracing)
 }
 
+fun List<Record<*, *>>.excludeTracingHeaders() = this.map { record ->
+    record.copy(headers = record.headers.filterNot { (key, _) ->
+        key.startsWith("X-B3-")
+    })
+}
+fun <S : Any> StateAndEventProcessor.Response<S>.excludeTracingHeaders() =
+    copy(responseEvents = responseEvents.excludeTracingHeaders())
+
 fun addTraceContextToRecords(records: List<Record<*, *>>, span: Span): List<Record<*, *>> =
     records.map { addTraceContextToRecord(it, span) }
 

@@ -17,6 +17,7 @@ import net.corda.persistence.common.ResponseFactory
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.sandboxgroupcontext.VirtualNodeContext
+import net.corda.tracing.excludeTracingHeaders
 import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
@@ -43,12 +44,6 @@ class PersistenceRequestProcessorTest {
         delegatedRequestHandlerSelector,
         responseFactory
     )
-
-    private fun List<Record<*, *>>.excludeHeaders() = this.map { record ->
-        record.copy(headers = record.headers.filterNot { (key, _) ->
-            key.startsWith("X-B3-")
-        })
-    }
 
     @BeforeEach
     fun setup() {
@@ -87,7 +82,7 @@ class PersistenceRequestProcessorTest {
 
         val results = target.onNext(listOf(requestRecord1, requestRecord2))
 
-        assertThat(results.excludeHeaders()).containsOnly(responseRecord11, responseRecord12, responseRecord21)
+        assertThat(results.excludeTracingHeaders()).containsOnly(responseRecord11, responseRecord12, responseRecord21)
     }
 
     @Test
@@ -112,7 +107,7 @@ class PersistenceRequestProcessorTest {
 
         val results = target.onNext(listOf(requestRecord1, requestRecord2))
 
-        assertThat(results.excludeHeaders()).containsOnly(responseRecord1, failureResponseRecord)
+        assertThat(results.excludeTracingHeaders()).containsOnly(responseRecord1, failureResponseRecord)
     }
 
     private fun createRequest(requestId: String): LedgerPersistenceRequest {
