@@ -5,6 +5,7 @@ import net.corda.sandboxgroupcontext.SandboxedCache
 import net.corda.sandboxgroupcontext.SandboxedCacheEvicter
 import net.corda.sandboxgroupcontext.VirtualNodeContext
 import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
+import net.corda.utilities.debug
 import org.osgi.framework.BundleContext
 import org.osgi.framework.Constants
 import org.osgi.service.component.annotations.Activate
@@ -49,10 +50,10 @@ class SandboxedCacheEvicterImpl @Activate constructor(
         log.debug("Sandbox {} has been evicted", vnc)
         for (ref in bundleContext.getServiceReferences(SandboxedCache::class.java, NON_PROTOTYPE_SERVICES)) {
             bundleContext.getService(ref)?.also { cache ->
-                log.error(
+                log.debug {
                     "Evicting cached items from ${cache::class.java} with holding identity: ${vnc.holdingIdentity} and sandbox type: " +
                             vnc.sandboxGroupType
-                )
+                }
                 cache.remove(vnc.holdingIdentity, vnc.sandboxGroupType)
             }
         }

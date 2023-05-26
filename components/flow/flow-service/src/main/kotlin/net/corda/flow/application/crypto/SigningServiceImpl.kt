@@ -12,7 +12,6 @@ import net.corda.flow.fiber.metrics.recordSuspendable
 import net.corda.metrics.CordaMetrics
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
-import net.corda.sandboxgroupcontext.SandboxedCache
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.crypto.CompositeKey
