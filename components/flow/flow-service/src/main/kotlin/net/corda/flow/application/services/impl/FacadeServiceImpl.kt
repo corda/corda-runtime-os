@@ -38,12 +38,7 @@ class FacadeServiceImpl @Activate constructor(
     }
 
     @Suspendable
-    override fun <T : Any?> getFacade(
-        facadeId: String?,
-        expectedType: Class<T>?,
-        alias: MemberX500Name?,
-        interopGroup: String?
-    ): T {
+    override fun <T : Any?> getFacade(facadeId: String?, expectedType: Class<T>?, alias: MemberX500Name?, interopGroup: String?): T {
         logger.info("Creating Proxy for: $facadeId, $expectedType, $alias, $interopGroup")
         require(facadeId != null)
         val facade = facadeLookup(facadeId)
@@ -85,14 +80,11 @@ class FacadeServiceImpl @Activate constructor(
     }
 }
 
-class MessagingDispatcher(
-    private var flowMessaging: FlowMessaging, private val jsonMarshallingService: JsonMarshallingService,
-    private val alias: MemberX500Name, private val aliasGroupId: String
-) : (FacadeRequest) -> FacadeResponse {
+class MessagingDispatcher(private var flowMessaging: FlowMessaging, private val jsonMarshallingService: JsonMarshallingService,
+    private val alias: MemberX500Name, private val aliasGroupId: String) : (FacadeRequest) -> FacadeResponse {
     override fun invoke(request: FacadeRequest): FacadeResponse {
         val payload = jsonMarshallingService.format(request)
-        val response =
-            flowMessaging.callFacade(alias, aliasGroupId, request.facadeId.toString(), request.methodName, payload)
+        val response = flowMessaging.callFacade(alias, aliasGroupId, request.facadeId.toString(), request.methodName, payload)
         return jsonMarshallingService.parse(response, FacadeResponseImpl::class.java)
     }
 }

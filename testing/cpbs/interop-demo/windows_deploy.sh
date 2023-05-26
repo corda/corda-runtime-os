@@ -223,14 +223,6 @@ curl --insecure -u admin:admin -X GET "https://localhost:8888/api/v1/members/$SH
 
 
 
-
-
-
-
-
-
-
-
 groupPolicyFile2=GroupPolicy2
 cpi=demo2
 identity3="C=GB, L=London, O=Bob"
