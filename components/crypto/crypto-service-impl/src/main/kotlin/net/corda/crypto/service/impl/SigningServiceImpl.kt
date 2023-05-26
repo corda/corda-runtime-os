@@ -144,7 +144,7 @@ class SigningServiceImpl(
         tenantId: String,
         fullKeyIds: List<SecureHash>,
     ): Collection<SigningKeyInfo> {
-        val filterOutMismatches = { found: Collection<SigningKeyInfo> ->
+        fun filterOutMismatches(found: Collection<SigningKeyInfo>) =
             found.map { foundSigningKeyInfo ->
                 if (fullKeyIds.contains(foundSigningKeyInfo.fullId)) {
                     foundSigningKeyInfo
@@ -152,16 +152,16 @@ class SigningServiceImpl(
                     null
                 }
             }.filterNotNull()
-        }
+
         val keyIds = fullKeyIds.map { ShortHash.of(it) }
         val cachedMap = cache.getAllPresent(keyIds.mapTo(mutableSetOf()) { CacheKey(tenantId, it) })
         val cachedKeys = cachedMap.map { it.value }
         val cachedMatchingKeys = filterOutMismatches(cachedKeys)
         if (cachedMatchingKeys.size == fullKeyIds.size) return cachedMatchingKeys
-
-        val notFound = fullKeyIds.filter {
-            !cachedMap.containsKey(CacheKey(tenantId, ShortHash.of(it)))
-        }
+        val notFound = fullKeyIds.filter { hash -> cachedMatchingKeys.count { it.fullId == hash } == 0 }
+        // if fullKeyIds has duplicates it's possible that notFound is empty here, even though
+        // we didn't get as many records from the cache as the number of keys we expected
+        if (notFound.isEmpty()) return cachedMatchingKeys
 
         val fetchedKeys = signingRepositoryFactory.getInstance(tenantId).use {
             it.lookupByPublicKeyHashes(notFound.toMutableSet())
