@@ -8,6 +8,8 @@ import net.corda.flow.external.events.executor.ExternalEventExecutor
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.sandboxgroupcontext.SandboxGroupType
 import net.corda.sandboxgroupcontext.SandboxedCache
+import net.corda.sandboxgroupcontext.SandboxedCache.CacheKey
+import net.corda.sandboxgroupcontext.VirtualNodeContext
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.crypto.CompositeKey
 import net.corda.virtualnode.HoldingIdentity
@@ -27,7 +29,6 @@ class MySigningKeysCacheImpl @Activate constructor(
     private val externalEventExecutor: ExternalEventExecutor,
 ) : MySigningKeysCache, SandboxedCache {
 
-    private data class CacheKey(val holdingIdentity: HoldingIdentity, val publicKey: PublicKey)
     private data class CacheValue(val publicKey: PublicKey?)
 
     // TODO Access configuration to setup the cache
@@ -41,7 +42,7 @@ class MySigningKeysCacheImpl @Activate constructor(
     private val maximumSize = java.lang.Long.getLong(MY_SIGNING_KEYS_CACHE_MAX_SIZE_PROPERTY_NAME, 10000)
     private val expireAfterWriteSeconds = java.lang.Long.getLong(MY_SIGNING_KEYS_EXPIRE_AFTER_WRITE_SECONDS_PROPERTY_NAME, 600)
 
-    private val cache: Cache<CacheKey, CacheValue> = CacheFactoryImpl().build(
+    private val cache: Cache<CacheKey<PublicKey>, CacheValue> = CacheFactoryImpl().build(
         "Signing-Key-Cache",
         Caffeine.newBuilder()
             .expireAfterAccess(Duration.ofSeconds(expireAfterWriteSeconds))
@@ -50,9 +51,9 @@ class MySigningKeysCacheImpl @Activate constructor(
 
     @Suspendable
     override fun get(keys: Set<PublicKey>): Map<PublicKey, PublicKey?> {
-        val holdingIdentity = currentSandboxGroupContext.get().virtualNodeContext.holdingIdentity
-        val cachedKeys = cache.getAllPresent(keys.map { CacheKey(holdingIdentity, it) })
-            .map { (key, value) -> key.publicKey to value.publicKey }
+        val virtualNodeContext = currentSandboxGroupContext.get().virtualNodeContext
+        val cachedKeys = cache.getAllPresent(keys.map { CacheKey(virtualNodeContext, it) })
+            .map { (key, value) -> key.key to value.publicKey }
             .toMap()
 
         if (cachedKeys.size == keys.size) {
@@ -100,17 +101,18 @@ class MySigningKeysCacheImpl @Activate constructor(
             foundLeaf
         }
 
-        putAll(plainKeysReqResp, holdingIdentity)
-        putAll(compositeKeysReqResp, holdingIdentity)
+        putAll(virtualNodeContext, plainKeysReqResp)
+        putAll(virtualNodeContext, compositeKeysReqResp)
 
         return cachedKeys + plainKeysReqResp + compositeKeysReqResp
     }
 
     override fun remove(holdingIdentity: HoldingIdentity, sandboxGroupType: SandboxGroupType) {
-        TODO("Not yet implemented")
+        cache.invalidateAll(cache.asMap().keys.filter { it.holdingIdentity == holdingIdentity })
+        cache.cleanUp()
     }
 
-    private fun putAll(keys: Map<out PublicKey, PublicKey?>, holdingIdentity: HoldingIdentity) {
-       cache.putAll(keys.map { (key, value) -> CacheKey(holdingIdentity, key) to CacheValue(value) }.toMap())
+    private fun putAll(virtualNodeContext: VirtualNodeContext, keys: Map<out PublicKey, PublicKey?>) {
+        cache.putAll(keys.map { (key, value) -> CacheKey(virtualNodeContext, key) to CacheValue(value) }.toMap())
     }
 }
