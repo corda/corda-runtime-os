@@ -22,7 +22,7 @@ class MySigningKeysCacheImplTest {
     private val sandbox = mock<SandboxGroupContext>()
     private val virtualNodeContext = mock<VirtualNodeContext>()
     private val currentSandboxGroupContext = mock<CurrentSandboxGroupContext>()
-    private val mySigningKeysCache = MySigningKeysCacheImpl(currentSandboxGroupContext, externalEventExecutor)
+    private val mySigningKeysCache = MySigningKeysCacheImpl(currentSandboxGroupContext)
 
     @BeforeEach
     fun beforeEach() {

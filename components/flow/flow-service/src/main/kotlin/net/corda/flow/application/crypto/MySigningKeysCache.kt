@@ -7,4 +7,5 @@ interface MySigningKeysCache {
 
     @Suspendable
     fun get(keys: Set<PublicKey>): Map<PublicKey, PublicKey?>
+    fun putAll(keys: Map<out PublicKey, PublicKey?>)
 }
