@@ -10,7 +10,6 @@ import net.corda.sandboxgroupcontext.SandboxedCache.CacheKey
 import net.corda.sandboxgroupcontext.VirtualNodeContext
 import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
 import net.corda.utilities.debug
-import net.corda.v5.base.annotations.Suspendable
 import net.corda.virtualnode.HoldingIdentity
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
