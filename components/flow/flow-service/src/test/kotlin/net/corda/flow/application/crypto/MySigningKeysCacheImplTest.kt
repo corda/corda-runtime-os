@@ -2,17 +2,13 @@ package net.corda.flow.application.crypto
 
 import net.corda.flow.ALICE_X500_HOLDING_IDENTITY
 import net.corda.flow.BOB_X500_HOLDING_IDENTITY
-import net.corda.flow.application.crypto.external.events.FilterMyKeysExternalEventFactory
-import net.corda.flow.external.events.executor.ExternalEventExecutor
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.sandboxgroupcontext.SandboxGroupType
 import net.corda.sandboxgroupcontext.VirtualNodeContext
 import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
-import net.corda.v5.crypto.CompositeKey
 import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
