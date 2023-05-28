@@ -7,7 +7,7 @@ import net.corda.db.schema.CordaDb
 import net.corda.libs.configuration.SmartConfig
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.JpaEntitiesSet
-import java.util.*
+import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
@@ -55,6 +55,15 @@ class DbConnectionOpsCachedImpl(
     ): EntityManagerFactory {
         return cache.computeIfAbsent(Pair(name,privilege)) {
             delegate.getOrCreateEntityManagerFactory(name, privilege, entitiesSet)
+        }
+    }
+
+    override fun getOrCreateEntityManagerFactory(
+        connectionId: UUID,
+        entitiesSet: JpaEntitiesSet
+    ): EntityManagerFactory {
+        return cache.computeIfAbsent(Pair(connectionId.toString(), DbPrivilege.DML)) {
+            delegate.getOrCreateEntityManagerFactory(connectionId, entitiesSet)
         }
     }
 }
