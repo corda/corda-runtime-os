@@ -13,7 +13,6 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import java.security.PublicKey
-import java.time.Duration
 
 @Component(service = [MySigningKeysCache::class, SandboxedCache::class])
 class MySigningKeysCacheImpl @Activate constructor(
@@ -26,26 +25,28 @@ class MySigningKeysCacheImpl @Activate constructor(
     // TODO Access configuration to setup the cache
     private companion object {
         private const val MY_SIGNING_KEYS_CACHE_MAX_SIZE_PROPERTY_NAME = "net.corda.flow.application.crypto.cache.maximumSize"
-        private const val MY_SIGNING_KEYS_EXPIRE_AFTER_WRITE_SECONDS_PROPERTY_NAME =
-            "net.corda.flow.application.crypto.cache.expireAfterWriteSeconds"
     }
 
     private val maximumSize = java.lang.Long.getLong(MY_SIGNING_KEYS_CACHE_MAX_SIZE_PROPERTY_NAME, 10000)
-    private val expireAfterWriteSeconds = java.lang.Long.getLong(MY_SIGNING_KEYS_EXPIRE_AFTER_WRITE_SECONDS_PROPERTY_NAME, 600)
 
     private val cache: Cache<CacheKey<PublicKey>, CacheValue> = CacheFactoryImpl().build(
         "My-Signing-Key-Cache",
-        Caffeine.newBuilder()
-            .expireAfterAccess(Duration.ofSeconds(expireAfterWriteSeconds))
-            .maximumSize(maximumSize)
+        Caffeine.newBuilder().maximumSize(maximumSize)
     )
+
+    override val sandboxGroupType: SandboxGroupType
+        get() = SandboxGroupType.FLOW
 
     @Suspendable
     override fun get(keys: Set<PublicKey>): Map<PublicKey, PublicKey?> {
-        val virtualNodeContext = currentSandboxGroupContext.get().virtualNodeContext
-        return cache.getAllPresent(keys.map { CacheKey(virtualNodeContext, it) })
-            .map { (key, value) -> key.key to value.publicKey }
-            .toMap()
+        return if (keys.isNotEmpty()) {
+            val virtualNodeContext = currentSandboxGroupContext.get().virtualNodeContext
+            cache.getAllPresent(keys.map { CacheKey(virtualNodeContext, it) })
+                .map { (key, value) -> key.key to value.publicKey }
+                .toMap()
+        } else {
+            emptyMap()
+        }
     }
 
     override fun putAll(keys: Map<out PublicKey, PublicKey?>) {
