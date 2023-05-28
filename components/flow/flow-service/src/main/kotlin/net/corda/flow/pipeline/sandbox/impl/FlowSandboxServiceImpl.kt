@@ -11,7 +11,6 @@ import net.corda.sandboxgroupcontext.MutableSandboxGroupContext
 import net.corda.sandboxgroupcontext.RequireSandboxAMQP
 import net.corda.sandboxgroupcontext.RequireSandboxJSON
 import net.corda.sandboxgroupcontext.SandboxGroupType
-import net.corda.sandboxgroupcontext.SandboxedCacheEvicter
 import net.corda.sandboxgroupcontext.VirtualNodeContext
 import net.corda.sandboxgroupcontext.putObjectByKey
 import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
@@ -36,8 +35,6 @@ import org.osgi.service.component.annotations.Reference
 class FlowSandboxServiceImpl @Activate constructor(
     @Reference(service = SandboxGroupContextComponent::class)
     private val sandboxGroupContextComponent: SandboxGroupContextComponent,
-    @Reference(service = SandboxedCacheEvicter::class)
-    private val sandboxedCacheEvicter: SandboxedCacheEvicter,
     @Reference(service = SandboxDependencyInjectorFactory::class)
     private val dependencyInjectionFactory: SandboxDependencyInjectorFactory,
     @Reference(service = FlowProtocolStoreFactory::class)
@@ -47,10 +44,6 @@ class FlowSandboxServiceImpl @Activate constructor(
 
     private companion object {
         private const val NON_PROTOTYPE_SERVICES = "(!($SERVICE_SCOPE=$SCOPE_PROTOTYPE))"
-    }
-
-    init {
-        sandboxedCacheEvicter.setSandboxGroupType(SandboxGroupType.FLOW)
     }
 
     override fun get(holdingIdentity: HoldingIdentity, cpkFileHashes: Set<SecureHash>): FlowSandboxGroupContext {

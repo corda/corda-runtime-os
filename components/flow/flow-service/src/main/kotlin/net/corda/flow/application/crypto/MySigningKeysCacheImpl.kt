@@ -7,23 +7,32 @@ import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.sandboxgroupcontext.SandboxGroupType
 import net.corda.sandboxgroupcontext.SandboxedCache
 import net.corda.sandboxgroupcontext.SandboxedCache.CacheKey
+import net.corda.sandboxgroupcontext.VirtualNodeContext
+import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
+import net.corda.utilities.debug
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.virtualnode.HoldingIdentity
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
+import org.osgi.service.component.annotations.Deactivate
 import org.osgi.service.component.annotations.Reference
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import java.security.PublicKey
 
 @Component(service = [MySigningKeysCache::class, SandboxedCache::class])
 class MySigningKeysCacheImpl @Activate constructor(
     @Reference(service = CurrentSandboxGroupContext::class)
-    private val currentSandboxGroupContext: CurrentSandboxGroupContext
+    private val currentSandboxGroupContext: CurrentSandboxGroupContext,
+    @Reference(service = SandboxGroupContextComponent::class)
+    private val sandboxGroupContextComponent: SandboxGroupContextComponent
 ) : MySigningKeysCache, SandboxedCache {
 
     private data class CacheValue(val publicKey: PublicKey?)
 
     // TODO Access configuration to setup the cache
     private companion object {
+        private val log: Logger = LoggerFactory.getLogger(MySigningKeysCacheImpl::class.java)
         private const val MY_SIGNING_KEYS_CACHE_MAX_SIZE_PROPERTY_NAME = "net.corda.flow.application.crypto.cache.maximumSize"
     }
 
@@ -34,8 +43,27 @@ class MySigningKeysCacheImpl @Activate constructor(
         Caffeine.newBuilder().maximumSize(maximumSize)
     )
 
-    override val sandboxGroupType: SandboxGroupType
-        get() = SandboxGroupType.FLOW
+    init {
+        if (!sandboxGroupContextComponent.addEvictionListener(SandboxGroupType.FLOW, ::onEviction)) {
+            log.error("FAILED TO ADD EVICTION LISTENER")
+        }
+    }
+
+    @Suppress("unused")
+    @Deactivate
+    fun shutdown() {
+        if (!sandboxGroupContextComponent.removeEvictionListener(SandboxGroupType.FLOW, ::onEviction)) {
+            log.error("FAILED TO REMOVE EVICTION LISTENER")
+        }
+    }
+
+    private fun onEviction(vnc: VirtualNodeContext) {
+        log.debug {
+            "Evicting cached items from ${cache::class.java} with holding identity: ${vnc.holdingIdentity} and sandbox type: " +
+                    SandboxGroupType.FLOW
+        }
+        remove(vnc.holdingIdentity, SandboxGroupType.FLOW)
+    }
 
     @Suspendable
     override fun get(keys: Set<PublicKey>): Map<PublicKey, PublicKey?> {

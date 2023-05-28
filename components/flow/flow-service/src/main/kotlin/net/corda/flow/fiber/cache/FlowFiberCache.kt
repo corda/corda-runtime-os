@@ -2,11 +2,12 @@ package net.corda.flow.fiber.cache
 
 import net.corda.data.flow.FlowKey
 import net.corda.flow.fiber.FlowFiberImpl
+import net.corda.sandboxgroupcontext.SandboxedCache
 
 /**
  * Cache for flow fibers.
  */
-interface FlowFiberCache {
+interface FlowFiberCache: SandboxedCache {
     /**
      * Put a flow fiber into the cache keyed by the given [FlowKey].
      */
