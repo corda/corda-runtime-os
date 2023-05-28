@@ -20,7 +20,7 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.security.PublicKey
 
-@Component(service = [MySigningKeysCache::class, SandboxedCache::class])
+@Component(service = [MySigningKeysCache::class])
 class MySigningKeysCacheImpl @Activate constructor(
     @Reference(service = CurrentSandboxGroupContext::class)
     private val currentSandboxGroupContext: CurrentSandboxGroupContext,
