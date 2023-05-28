@@ -65,7 +65,6 @@ class MySigningKeysCacheImpl @Activate constructor(
         remove(vnc.holdingIdentity, SandboxGroupType.FLOW)
     }
 
-    @Suspendable
     override fun get(keys: Set<PublicKey>): Map<PublicKey, PublicKey?> {
         return if (keys.isNotEmpty()) {
             val virtualNodeContext = currentSandboxGroupContext.get().virtualNodeContext
