@@ -8,6 +8,7 @@ import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.sandboxgroupcontext.SandboxGroupType
 import net.corda.sandboxgroupcontext.VirtualNodeContext
+import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
 import net.corda.v5.crypto.CompositeKey
 import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
@@ -30,7 +31,8 @@ class MySigningKeysCacheImplTest {
     private val sandbox = mock<SandboxGroupContext>()
     private val virtualNodeContext = mock<VirtualNodeContext>()
     private val currentSandboxGroupContext = mock<CurrentSandboxGroupContext>()
-    private val mySigningKeysCache = MySigningKeysCacheImpl(currentSandboxGroupContext)
+    private val sandboxGroupContextComponent = mock<SandboxGroupContextComponent>()
+    private val mySigningKeysCache = MySigningKeysCacheImpl(currentSandboxGroupContext, sandboxGroupContextComponent)
 
     @BeforeEach
     fun beforeEach() {
@@ -84,8 +86,8 @@ class MySigningKeysCacheImplTest {
 
         assertThat(mySigningKeysCache.get(setOf(KEY_A, KEY_B, KEY_C, KEY_D))).containsExactlyInAnyOrderEntriesOf(
             mapOf(
-                KEY_A to KEY_A,
-                KEY_B to null
+                KEY_C to KEY_C,
+                KEY_D to null
             )
         )
     }
