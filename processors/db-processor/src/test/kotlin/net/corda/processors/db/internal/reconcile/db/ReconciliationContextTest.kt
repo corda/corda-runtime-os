@@ -46,7 +46,7 @@ class ReconciliationContextTest {
     private val dbConnectionManager: DbConnectionManager = mock {
         on { getClusterEntityManagerFactory() } doReturn clusterEmf
         on {
-            createEntityManagerFactory(eq(virtualNodeInfo.vaultDmlConnectionId), eq(jpaEntitiesSet))
+            getOrCreateEntityManagerFactory(eq(virtualNodeInfo.vaultDmlConnectionId), eq(jpaEntitiesSet))
         } doReturn vnodeEmf
     }
 
@@ -115,7 +115,7 @@ class ReconciliationContextTest {
 
         @Test
         fun `Context initialisation does not create the entity manager factory and the entity manager`() {
-            verify(dbConnectionManager, never()).createEntityManagerFactory(
+            verify(dbConnectionManager, never()).getOrCreateEntityManagerFactory(
                 eq(virtualNodeInfo.vaultDmlConnectionId),
                 eq(jpaEntitiesSet)
             )
@@ -125,7 +125,7 @@ class ReconciliationContextTest {
         @Test
         fun `Context entity manager factory and entity manager are created when called`() {
             context.getOrCreateEntityManager()
-            verify(dbConnectionManager).createEntityManagerFactory(
+            verify(dbConnectionManager).getOrCreateEntityManagerFactory(
                 eq(virtualNodeInfo.vaultDmlConnectionId),
                 eq(jpaEntitiesSet)
             )
@@ -136,7 +136,7 @@ class ReconciliationContextTest {
         fun `Context entity manager factory and entity manager are not recreated if they haven't been closed`() {
             context.getOrCreateEntityManager()
             context.getOrCreateEntityManager()
-            verify(dbConnectionManager).createEntityManagerFactory(
+            verify(dbConnectionManager).getOrCreateEntityManagerFactory(
                 eq(virtualNodeInfo.vaultDmlConnectionId),
                 eq(jpaEntitiesSet)
             )
@@ -148,7 +148,7 @@ class ReconciliationContextTest {
             context.getOrCreateEntityManager()
             context.close()
             context.getOrCreateEntityManager()
-            verify(dbConnectionManager, times(2)).createEntityManagerFactory(
+            verify(dbConnectionManager, times(2)).getOrCreateEntityManagerFactory(
                 eq(virtualNodeInfo.vaultDmlConnectionId),
                 eq(jpaEntitiesSet)
             )
