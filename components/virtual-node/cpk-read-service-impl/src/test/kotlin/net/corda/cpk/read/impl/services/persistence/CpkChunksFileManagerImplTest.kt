@@ -11,6 +11,7 @@ import net.corda.crypto.core.toCorda
 import net.corda.data.chunking.CpkChunkId
 import net.corda.utilities.inputStream
 import net.corda.v5.crypto.SecureHash
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -20,7 +21,8 @@ import java.nio.ByteBuffer
 import java.nio.file.FileSystem
 import java.nio.file.Files
 import java.nio.file.Path
-import java.nio.file.StandardOpenOption
+import java.nio.file.StandardOpenOption.CREATE_NEW
+import java.nio.file.StandardOpenOption.WRITE
 
 class CpkChunksFileManagerImplTest {
     private lateinit var commonCpkCacheDir: Path
@@ -34,7 +36,10 @@ class CpkChunksFileManagerImplTest {
 
     @BeforeEach
     fun setUp() {
-        fs = Jimfs.newFileSystem(Configuration.unix())
+        val posix = Configuration.unix().toBuilder()
+            .setAttributeViews("basic", "posix")
+            .build()
+        fs = Jimfs.newFileSystem(posix)
         commonCpkCacheDir = fs.getPath("/cpks").apply { Files.createDirectories(this) }
         cpkChunksFileManagerImpl = CpkChunksFileManagerImpl(commonCpkCacheDir)
     }
@@ -46,7 +51,7 @@ class CpkChunksFileManagerImplTest {
 
     private fun CpkChunkId.toPath(): Path {
         val cpkXDir = commonCpkCacheDir.resolve(fs.getPath(this.cpkChecksum.toCorda().toCpkDirName()))
-        if (!Files.exists(cpkXDir)) {
+        if (!Files.isDirectory(cpkXDir)) {
             Files.createDirectory(cpkXDir)
         }
         val fileName = this.toFileName()
@@ -55,15 +60,11 @@ class CpkChunksFileManagerImplTest {
 
     private fun CpkChunkId.toDummyFile(): Path {
         val filePath = toPath()
-        Files.newByteChannel(filePath, StandardOpenOption.WRITE, StandardOpenOption.CREATE_NEW).use {
-            it.position(0)
-            it.write(ByteBuffer.wrap(ByteArray(0)))
+        Files.newByteChannel(filePath, WRITE, CREATE_NEW).use { channel ->
+            channel.write(ByteBuffer.wrap(ByteArray(0)))
         }
         return filePath
     }
-
-    private fun cpkChunkFileExists(chunkId: CpkChunkId) =
-        Files.exists(chunkId.toPath())
 
     private fun getCpkChunkContent(chunkId: CpkChunkId): ByteArray {
         val filePath = chunkId.toPath()
@@ -103,7 +104,7 @@ class CpkChunksFileManagerImplTest {
         val (cpkChunkId, chunk) =
             Helpers.dummyCpkChunkIdToChunk(parseSecureHash(DUMMY_HASH), 0, parseSecureHash(DUMMY_HASH), bytes)
         cpkChunksFileManagerImpl.writeChunkFile(cpkChunkId, chunk)
-        assertTrue(cpkChunkFileExists(cpkChunkId))
+        assertThat(cpkChunkId.toPath()).isRegularFile
 
         val bytesRead = getCpkChunkContent(cpkChunkId)
         assertTrue(bytes.contentEquals(bytesRead))

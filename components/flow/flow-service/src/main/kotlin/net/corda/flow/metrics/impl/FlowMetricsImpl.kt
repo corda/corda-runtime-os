@@ -48,6 +48,7 @@ class FlowMetricsImpl(
 
     override fun flowFiberEntered() {
         fiberStartTime = clock.nowInMillis()
+        currentState.totalFiberSuspensionCount++
 
         // If we were waiting on a suspension then record the wait time.
         if (currentState.suspensionAction != null && currentState.suspensionTimestampMillis != null) {
@@ -78,6 +79,7 @@ class FlowMetricsImpl(
         val pipelineExecutionTime = clock.instant().toEpochMilli() - eventReceivedTimestampMillis
         flowMetricsRecorder.recordPipelineExecution(pipelineExecutionTime, flowEventType)
         currentState.totalPipelineExecutionTime += pipelineExecutionTime
+        currentState.totalEventProcessedCount++
         flowCheckpoint.setMetricsState(objectMapper.writeValueAsString(currentState))
     }
 
@@ -140,6 +142,8 @@ class FlowMetricsImpl(
         flowMetricsRecorder.recordTotalSuspensionTime(currentState.totalSuspensionTime)
         flowMetricsRecorder.recordTotalFiberExecutionTime(currentState.totalFiberExecutionTime)
         flowMetricsRecorder.recordTotalPipelineExecutionTime(currentState.totalPipelineExecutionTime)
+        flowMetricsRecorder.recordTotalEventsProcessed(currentState.totalEventProcessedCount)
+        flowMetricsRecorder.recordTotalFiberSuspensions(currentState.totalFiberSuspensionCount)
     }
 
     private fun Clock.nowInMillis(): Long {
@@ -154,6 +158,8 @@ class FlowMetricsImpl(
         var totalSuspensionTime: Long = 0
         var totalFiberExecutionTime: Long = 0
         var totalPipelineExecutionTime: Long = 0
+        var totalEventProcessedCount: Long = 0
+        var totalFiberSuspensionCount: Long = 0
         var sessionMetricStateBySessionId: MutableMap<String, SessionMetricState> = mutableMapOf()
     }
 

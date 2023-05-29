@@ -32,7 +32,7 @@ internal class ChunkWriterImpl(
         }
     }
 
-    var chunkWriteCallback: ChunkWriteCallback? = null
+    private var chunkWriteCallback: ChunkWriteCallback? = null
 
     // chunk size must be smaller than the max allowed message size to allow a buffer for the rest of the message.
     //add extra overhead to avoid message bus level chunking
