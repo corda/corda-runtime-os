@@ -5,7 +5,7 @@ import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.InitiatingFlow
 import net.corda.v5.application.flows.ClientRequestBody
 import net.corda.v5.application.interop.FacadeService
-import net.corda.v5.application.interop.RemoteAliasLookUp
+import net.corda.v5.application.interop.InteropIdentityLookUp
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.types.MemberX500Name
@@ -23,7 +23,7 @@ class FacadeInvocationFlow : ClientStartableFlow {
     }
 
     @CordaInject
-    lateinit var remoteAliasLookUp: RemoteAliasLookUp
+    lateinit var interopIdentityLookUp: InteropIdentityLookUp
 
     @CordaInject
     lateinit var jsonMarshallingService: JsonMarshallingService
@@ -43,7 +43,7 @@ class FacadeInvocationFlow : ClientStartableFlow {
         val payload = getArgument(args, "payload")
         val hostNetwork = getArgument(args, "hostNetwork")
 
-        val aliasMember = remoteAliasLookUp.lookup(alias.toString(), hostNetwork)
+        val aliasMember = interopIdentityLookUp.lookup(hostNetwork)
         log.info("AliasMemberInfo for $alias  : $aliasMember")
 
         if(!aliasMember.facadeIds.contains(facadeId)) {
