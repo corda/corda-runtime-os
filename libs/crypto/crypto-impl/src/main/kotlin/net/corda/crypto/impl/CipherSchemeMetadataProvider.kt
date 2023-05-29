@@ -25,6 +25,8 @@ import org.bouncycastle.openssl.jcajce.JcaPEMWriter
 import org.bouncycastle.pqc.jcajce.provider.BouncyCastlePQCProvider
 import org.bouncycastle.util.io.pem.PemReader
 
+private const val DECODE_PUBLIC_KEY_METHOD_NAME = "CipherSchemeMetadataProvider.decodePublicKey"
+
 class CipherSchemeMetadataProvider : KeyEncodingService {
 
     private val cordaSecurityProvider = CordaSecurityProvider(this)
@@ -144,7 +146,7 @@ class CipherSchemeMetadataProvider : KeyEncodingService {
     override fun decodePublicKey(encodedKey: ByteArray): PublicKey {
         return try {
             CordaMetrics.Metric.CryptoMethodTimer.builder()
-                .withTag(CordaMetrics.Tag.Method, "CipherSchemeMetadataProvider.decodePublicKey")
+                .withTag(CordaMetrics.Tag.Method, DECODE_PUBLIC_KEY_METHOD_NAME)
                 .build()
                 .recordCallable {
                     val subjectPublicKeyInfo = SubjectPublicKeyInfo.getInstance(encodedKey)

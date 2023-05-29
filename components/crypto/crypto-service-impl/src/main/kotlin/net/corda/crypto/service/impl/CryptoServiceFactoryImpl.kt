@@ -1,5 +1,6 @@
 package net.corda.crypto.service.impl
 
+import java.time.Duration
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.cipher.suite.CryptoService
@@ -17,6 +18,7 @@ import net.corda.crypto.persistence.HSMStore
 import net.corda.crypto.service.CryptoServiceFactory
 import net.corda.crypto.service.CryptoServiceRef
 import net.corda.crypto.softhsm.CryptoServiceProvider
+import net.corda.crypto.softhsm.impl.recordGetInstance
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -26,8 +28,6 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
-import java.time.Duration
-import net.corda.crypto.softhsm.impl.recordGetInstance
 
 /**
  * A high level factory which worker instance which supports only the Soft HSM implementation.

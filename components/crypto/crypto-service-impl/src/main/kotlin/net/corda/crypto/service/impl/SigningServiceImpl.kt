@@ -3,6 +3,9 @@ package net.corda.crypto.service.impl
 import com.github.benmanes.caffeine.cache.Cache
 import com.github.benmanes.caffeine.cache.Caffeine
 import java.security.InvalidParameterException
+import java.security.PublicKey
+import java.time.Duration
+import java.time.Instant
 import java.util.concurrent.TimeUnit
 import net.corda.cache.caffeine.CacheFactoryImpl
 import net.corda.crypto.cipher.suite.CRYPTO_CATEGORY
@@ -30,15 +33,12 @@ import net.corda.crypto.service.CryptoServiceFactory
 import net.corda.crypto.service.KeyOrderBy
 import net.corda.crypto.service.SigningService
 import net.corda.crypto.softhsm.SigningRepositoryFactory
+import net.corda.metrics.CordaMetrics
 import net.corda.utilities.debug
 import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
 import org.slf4j.LoggerFactory
-import java.security.PublicKey
-import java.time.Duration
-import java.time.Instant
-import net.corda.metrics.CordaMetrics
 
 data class CacheKey(val tenantId: String, val publicKeyId: ShortHash)
 
@@ -90,7 +90,7 @@ class SigningServiceImpl(
         private const val SIGNING_SERVICE_GET_OWNED_KEY_RECORD_METHOD_NAME = "getOwnedKeyRecord"
     }
 
-    data class OwnedKeyRecord(val publicKey: PublicKey, val data: net.corda.crypto.persistence.SigningKeyInfo)
+    data class OwnedKeyRecord(val publicKey: PublicKey, val data: SigningKeyInfo)
 
     override fun getSupportedSchemes(tenantId: String, category: String): List<String> {
         logger.debug { "getSupportedSchemes(tenant=$tenantId, category=$category)" }
