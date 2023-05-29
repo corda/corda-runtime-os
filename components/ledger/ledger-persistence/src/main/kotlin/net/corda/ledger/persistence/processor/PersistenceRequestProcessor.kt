@@ -13,8 +13,8 @@ import net.corda.persistence.common.EntitySandboxService
 import net.corda.persistence.common.ResponseFactory
 import net.corda.utilities.MDC_CLIENT_ID
 import net.corda.utilities.MDC_EXTERNAL_EVENT_ID
-import net.corda.utilities.selectLoggedProperties
 import net.corda.utilities.trace
+import net.corda.utilities.translateFlowContextToMDC
 import net.corda.utilities.withMDC
 import net.corda.v5.application.flows.FlowContextPropertyKeys.CPK_FILE_CHECKSUM
 import net.corda.virtualnode.toCorda
@@ -54,7 +54,7 @@ class PersistenceRequestProcessor(
                     mapOf(
                         MDC_CLIENT_ID to clientRequestId,
                         MDC_EXTERNAL_EVENT_ID to request.flowExternalEventContext.requestId
-                    ) + request.flowExternalEventContext.contextProperties.toMap().selectLoggedProperties()
+                    ) + translateFlowContextToMDC(request.flowExternalEventContext.contextProperties.toMap())
                 ) {
                     try {
                         val cpkFileHashes = request.flowExternalEventContext.contextProperties.items

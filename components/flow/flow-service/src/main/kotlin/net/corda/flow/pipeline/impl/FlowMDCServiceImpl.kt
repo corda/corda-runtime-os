@@ -14,7 +14,7 @@ import net.corda.utilities.MDC_EXTERNAL_EVENT_ID
 import net.corda.utilities.MDC_FLOW_ID
 import net.corda.utilities.MDC_SESSION_EVENT_ID
 import net.corda.utilities.MDC_VNODE_ID
-import net.corda.utilities.selectLoggedProperties
+import net.corda.utilities.translateFlowContextToMDC
 import net.corda.virtualnode.toCorda
 import org.osgi.service.component.annotations.Component
 import org.slf4j.LoggerFactory
@@ -83,11 +83,12 @@ class FlowMDCServiceImpl : FlowMDCService {
 
         // Extract properties starting with `corda.logged`
         val loggedContextProperties = try {
-            state.flowState
+            translateFlowContextToMDC(
+                state.flowState
                 .let(::FlowStateManager)
                 .flowContext
                 .flattenPlatformProperties()
-                .selectLoggedProperties()
+            )
         } catch (e: Exception) {
             // FlowStateManager construction might fail if the given flow state is not valid and cannot be built
             // into an avro object (happens in unit tests), in that case we will default to an empty map

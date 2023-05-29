@@ -1,5 +1,6 @@
 package net.corda.utilities
 
+import net.corda.v5.application.flows.FlowContextProperties.CORDA_RESERVED_PREFIX
 import java.io.OutputStream
 import java.io.PrintStream
 import java.time.Duration
@@ -22,7 +23,6 @@ const val MDC_SESSION_EVENT_ID = "session.event.id"
 const val MDC_EXTERNAL_EVENT_ID = "corda.external.event.id"
 
 const val MDC_LOGGED_PREFIX = "corda.logged"
-const val MDC_CORDA_PREFIX = "corda"
 
 inline fun <T> logElapsedTime(label: String, logger: Logger, body: () -> T): T {
     // Use nanoTime as it's monotonic.
@@ -81,10 +81,12 @@ fun <R> withMDC(mdcProperties: Map<String, String>, block: () -> R) : R {
     }
 }
 
-fun Map<String, String>.selectLoggedProperties() = filter {
+fun translateFlowContextToMDC(
+    flowContextProperties: Map<String, String>
+): Map<String, String> = flowContextProperties.filter {
     it.key.startsWith(MDC_LOGGED_PREFIX)
 }.mapKeys {
-    it.key.replace(MDC_LOGGED_PREFIX, MDC_CORDA_PREFIX)
+    it.key.replace("$MDC_LOGGED_PREFIX.", CORDA_RESERVED_PREFIX)
 }
 
 /**

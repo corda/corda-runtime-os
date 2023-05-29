@@ -30,8 +30,8 @@ import net.corda.metrics.CordaMetrics
 import net.corda.utilities.MDC_CLIENT_ID
 import net.corda.utilities.MDC_EXTERNAL_EVENT_ID
 import net.corda.utilities.MDC_FLOW_ID
-import net.corda.utilities.selectLoggedProperties
 import net.corda.utilities.trace
+import net.corda.utilities.translateFlowContextToMDC
 import net.corda.utilities.withMDC
 import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
@@ -75,7 +75,7 @@ class CryptoFlowOpsBusProcessor(
             MDC_FLOW_ID to request.flowExternalEventContext.flowId,
             MDC_CLIENT_ID to clientRequestId,
             MDC_EXTERNAL_EVENT_ID to request.flowExternalEventContext.requestId
-        ) + request.flowExternalEventContext.contextProperties.toMap().selectLoggedProperties()
+        ) + translateFlowContextToMDC(request.flowExternalEventContext.contextProperties.toMap())
 
         return withMDC(mdc) {
             val requestPayload = request.request
