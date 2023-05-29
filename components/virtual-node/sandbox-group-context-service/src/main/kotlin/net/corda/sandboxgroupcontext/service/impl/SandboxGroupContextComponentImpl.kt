@@ -123,7 +123,7 @@ class SandboxGroupContextComponentImpl @Activate constructor(
 
         SandboxGroupType.values().forEach {
             val cacheSize = try {
-                config.getConfig(it.name.lowercase()).getLong(ConfigKeys.SANDBOX_CACHE_SIZE) + 50
+                config.getConfig(it.name.lowercase()).getLong(ConfigKeys.SANDBOX_CACHE_SIZE)
             } catch (e: ConfigException.Missing) {
                 SANDBOX_CACHE_SIZE_DEFAULT
             }
