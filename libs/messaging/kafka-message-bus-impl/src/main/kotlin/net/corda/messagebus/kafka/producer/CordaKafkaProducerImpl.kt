@@ -202,14 +202,18 @@ class CordaKafkaProducerImpl(
 
     override fun beginTransaction() {
         tryWithCleanupOnFailure("beginning transaction", abortTransactionOnFailure = false) {
-            producer.beginTransaction()
+            recordCommitMetricStep("beginTransaction") {
+                producer.beginTransaction()
+            }
         }
     }
 
     override fun abortTransaction() {
         getOrCreateBatchPublishTracing(config.clientId).abort()
         tryWithCleanupOnFailure("aborting transaction", abortTransactionOnFailure = false) {
-            producer.abortTransaction()
+            recordCommitMetricStep("abortTransaction") {
+                producer.abortTransaction()
+            }
         }
     }
 
@@ -248,7 +252,9 @@ class CordaKafkaProducerImpl(
      * @return null if successful, exception instance transaction can be retried, otherwise throws whatever thrown by the producer.
      */
     private fun commitTransactionAndCatchRetryable() = try {
-        producer.commitTransaction()
+        recordCommitMetricStep("commitTransaction") {
+            producer.commitTransaction()
+        }
         null
     } catch (ex: TimeoutException) {
         ex
@@ -272,10 +278,12 @@ class CordaKafkaProducerImpl(
         records: List<ConsumerRecord<*, *>>? = null
     ) {
         tryWithCleanupOnFailure("sending offset for transaction") {
-            producer.sendOffsetsToTransaction(
-                consumerOffsets(consumer, records),
-                (consumer as CordaKafkaConsumerImpl).groupMetadata()
-            )
+            recordCommitMetricStep("sendOffsetsToTransaction") {
+                producer.sendOffsetsToTransaction(
+                    consumerOffsets(consumer, records),
+                    (consumer as CordaKafkaConsumerImpl).groupMetadata()
+                )
+            }
         }
     }
 
@@ -331,7 +339,9 @@ class CordaKafkaProducerImpl(
     @Suppress("ThrowsCount")
     private fun initTransactionForProducer() {
         tryWithCleanupOnFailure("initializing producer for transactions", abortTransactionOnFailure = false) {
-            producer.initTransactions()
+            recordCommitMetricStep("initTransactions") {
+                producer.initTransactions()
+            }
         }
     }
 
