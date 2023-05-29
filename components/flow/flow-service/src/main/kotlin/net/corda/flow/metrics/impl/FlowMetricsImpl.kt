@@ -104,13 +104,13 @@ class FlowMetricsImpl(
                 mutableSetOf()
             }
             cache.add(sequenceNumber)
-            val incrementedHighestContiguousSequenceNumber = sessionMetricState.highestContiguousSequenceNumber + 1
+            val incrementedHighestSeenSequenceNumber = sessionMetricState.highestSeenSequenceNumber + 1
 
             for(seqNum in cache) {
                 when {
-                    cache.contains(incrementedHighestContiguousSequenceNumber) -> {
-                        cache.remove(incrementedHighestContiguousSequenceNumber)
-                        sessionMetricState.highestContiguousSequenceNumber++
+                    cache.contains(incrementedHighestSeenSequenceNumber) -> {
+                        cache.remove(incrementedHighestSeenSequenceNumber)
+                        sessionMetricState.highestSeenSequenceNumber++
                     }
                 }
             }
@@ -125,7 +125,7 @@ class FlowMetricsImpl(
     private fun isReplay (sequenceNumber: Long?, sessionMetricState: SessionMetricState) : Boolean{
         return when {
             isAckOrError(sequenceNumber) -> false
-            sequenceNumber!! <= sessionMetricState.highestContiguousSequenceNumber -> false
+            sequenceNumber!! <= sessionMetricState.highestSeenSequenceNumber -> false
             else -> false
         }
     }
@@ -158,6 +158,6 @@ class FlowMetricsImpl(
     }
 
     private class SessionMetricState {
-        var highestContiguousSequenceNumber: Long = 0
+        var highestSeenSequenceNumber: Long = 0
     }
 }
