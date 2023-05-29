@@ -18,10 +18,10 @@ import net.corda.crypto.persistence.HSMStore
 import net.corda.crypto.service.CryptoServiceFactory
 import net.corda.crypto.service.CryptoServiceRef
 import net.corda.crypto.softhsm.CryptoServiceProvider
-import net.corda.crypto.softhsm.impl.recordGetInstance
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
+import net.corda.metrics.CordaMetrics
 import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
 import net.corda.utilities.debug
 import org.osgi.service.component.annotations.Activate
@@ -70,11 +70,22 @@ class CryptoServiceFactoryImpl @Activate constructor(
     )
 
     override fun findInstance(tenantId: String, category: String): CryptoServiceRef =
-        impl.findInstance(tenantId, category)
+        CordaMetrics.Metric.CryptoServiceInstanceCreationTimer.builder()
+            .withTag(CordaMetrics.Tag.Method, "FindInstance")
+            .withTag(CordaMetrics.Tag.InstanceType, this::class.java.simpleName)
+            .build()
+            .recordCallable {
+                impl.findInstance(tenantId, category)
+            }!!
 
-    override fun getInstance(hsmId: String): CryptoService = recordGetInstance(this::class.java.simpleName) {
-        impl.getInstance(hsmId)
-    }
+    override fun getInstance(hsmId: String): CryptoService =
+        CordaMetrics.Metric.CryptoServiceInstanceCreationTimer.builder()
+            .withTag(CordaMetrics.Tag.Method, "GetInstance")
+            .withTag(CordaMetrics.Tag.InstanceType, this::class.java.simpleName)
+            .build()
+            .recordCallable {
+                impl.getInstance(hsmId)
+            }!!
 
     override fun bootstrapConfig(config: SmartConfig) {
         lifecycleCoordinator.postEvent(BootstrapConfigProvided(config))

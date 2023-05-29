@@ -87,7 +87,7 @@ class SigningServiceImpl(
 
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
-        private const val SIGNING_SERVICE_GET_OWNED_KEY_RECORD_METHOD_NAME = "getOwnedKeyRecord"
+        private const val SIGNING_SERVICE_GET_OWNED_KEY_RECORD_METHOD_NAME = "SigningServiceImpl.getOwnedKeyRecord"
     }
 
     data class OwnedKeyRecord(val publicKey: PublicKey, val data: SigningKeyInfo)

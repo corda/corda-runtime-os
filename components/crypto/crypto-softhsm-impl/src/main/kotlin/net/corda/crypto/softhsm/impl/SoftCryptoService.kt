@@ -225,7 +225,7 @@ class SoftCryptoService(
 
     private fun obtainAndStoreWrappingKey(alias: String, tenantId: String): WrappingKey =
         CordaMetrics.Metric.WrappingKeyCreationTimer.builder()
-            .withTag(CordaMetrics.Tag.VirtualNode, tenantId)
+            .withTag(CordaMetrics.Tag.Tenant, tenantId)
             .build()
             .recordCallable {
                 wrappingKeyCache?.getIfPresent(alias) ?: run {

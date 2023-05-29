@@ -634,7 +634,7 @@ object CordaMetrics {
         /**
          * Label to identify the instance of class / implementation retrieved via `getInstance` calls.
          */
-        GetInstanceType("instance.type"),
+        InstanceType("instance.type"),
 
         /**
          * Label to identify the method inside a class / implementation.
