@@ -85,6 +85,7 @@ class FlowMDCServiceImpl : FlowMDCService {
         val loggedContextProperties = try {
             translateFlowContextToMDC(
                 state.flowState
+                // TODO CORE-14185 Instantiating the FlowStateManager is heavyweight, find a better way to do this
                 .let(::FlowStateManager)
                 .flowContext
                 .flattenPlatformProperties()
