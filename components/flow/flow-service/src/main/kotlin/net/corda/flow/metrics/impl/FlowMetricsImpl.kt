@@ -97,26 +97,23 @@ class FlowMetricsImpl(
         }
         flowMetricsRecorder.recordFlowSessionMessagesSent(flowEventType)
 
-        if (isReplay(sequenceNumber, sessionMetricState)) {
-            flowMetricsRecorder.recordFlowSessionMessagesReplayed(flowEventType)
-        } else if (isAckOrError(sequenceNumber)) {
-            //ignore
-        } else {
-            val cache = sequenceNumberCache.computeIfAbsent(sessionId) {
-                mutableSetOf()
+        when {
+            isReplay(sequenceNumber, sessionMetricState) -> {
+                flowMetricsRecorder.recordFlowSessionMessagesReplayed(flowEventType)
             }
-            cache.add(sequenceNumber)
-            val incrementedHighestSeenSequenceNumber = sessionMetricState.highestSeenSequenceNumber + 1
-
-            for(seqNum in cache) {
-                when {
-                    cache.contains(incrementedHighestSeenSequenceNumber) -> {
-                        cache.remove(incrementedHighestSeenSequenceNumber)
-                        sessionMetricState.highestSeenSequenceNumber++
-                    }
+            isAckOrError(sequenceNumber) -> {
+                //ignore
+            }
+            else -> {
+                val cache = sequenceNumberCache.computeIfAbsent(sessionId) {
+                    mutableSetOf()
+                }
+                cache.add(sequenceNumber)
+                while(cache.contains(sessionMetricState.highestSeenSequenceNumber + 1)) {
+                    sessionMetricState.highestSeenSequenceNumber++
+                    cache.remove(sessionMetricState.highestSeenSequenceNumber)
                 }
             }
-
         }
     }
 
@@ -127,7 +124,7 @@ class FlowMetricsImpl(
     private fun isReplay (sequenceNumber: Long?, sessionMetricState: SessionMetricState) : Boolean{
         return when {
             isAckOrError(sequenceNumber) -> false
-            sequenceNumber!! <= sessionMetricState.highestSeenSequenceNumber -> false
+            sequenceNumber!! <= sessionMetricState.highestSeenSequenceNumber -> true
             else -> false
         }
     }
