@@ -232,9 +232,8 @@ internal class OutboundMessageHandler(
     ): Timer {
         val builder = CordaMetrics.Metric.OutboundGatewayRequestLatency.builder()
         builder.withTag(CordaMetrics.Tag.DestinationEndpoint, peerMessage.header.address)
-        if (response != null) {
-            builder.withTag(CordaMetrics.Tag.HttpResponseType, response.statusCode.code().toString())
-        }
+        val responseType = response?.statusCode?.code()?.toString() ?: "none"
+        builder.withTag(CordaMetrics.Tag.HttpResponseType, responseType)
         return builder.build()
     }
 
