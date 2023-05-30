@@ -9,6 +9,7 @@ import net.corda.membership.lib.metrics.TimerMetricTypes.REGISTRATION
 import net.corda.membership.lib.metrics.TimerMetricTypes.SYNC
 import net.corda.metrics.CordaMetrics
 import net.corda.metrics.CordaMetrics.Metric.Membership
+import net.corda.metrics.CordaMetrics.NOT_APPLICABLE_TAG_VALUE
 import net.corda.metrics.SettableGauge
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toCorda
@@ -30,8 +31,8 @@ fun getTimerMetric(
         PERSISTENCE_TRANSACTION -> Membership.PersistenceTransactionExecutionTime
     }.builder()
         .withTag(CordaMetrics.Tag.OperationName, operation)
-        .withTag(CordaMetrics.Tag.MembershipGroup, holdingId?.groupId ?: "unspecified")
-        .forVirtualNode(holdingId?.toCorda()?.shortHash?.value ?: "unspecified")
+        .withTag(CordaMetrics.Tag.MembershipGroup, holdingId?.groupId ?: NOT_APPLICABLE_TAG_VALUE)
+        .forVirtualNode(holdingId?.toCorda()?.shortHash?.value ?: NOT_APPLICABLE_TAG_VALUE)
         .build()
 }
 
