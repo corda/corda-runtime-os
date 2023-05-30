@@ -10,13 +10,18 @@ import net.corda.ledger.utxo.data.transaction.TransactionVerificationResult
 import net.corda.ledger.utxo.data.transaction.TransactionVerificationStatus
 import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionInternal
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerGroupParametersPersistenceService
+import net.corda.ledger.utxo.flow.impl.persistence.external.events.ALICE_X500_HOLDING_IDENTITY
 import net.corda.ledger.utxo.flow.impl.transaction.verifier.external.events.TransactionVerificationExternalEventFactory
 import net.corda.ledger.utxo.test.mockCurrentGroupParametersService
 import net.corda.ledger.utxo.testkit.notaryX500Name
 import net.corda.membership.lib.SignedGroupParameters
+import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
+import net.corda.sandboxgroupcontext.SandboxGroupContext
+import net.corda.sandboxgroupcontext.VirtualNodeContext
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.membership.NotaryInfo
+import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -43,6 +48,9 @@ class UtxoLedgerTransactionVerificationServiceImplTest {
     private val mockUtxoLedgerGroupParametersPersistenceService = mock<UtxoLedgerGroupParametersPersistenceService>()
     private val mockSignedGroupParameters = mock<SignedGroupParameters>()
     private val notaryInfo = mock<NotaryInfo>()
+    private val sandbox = mock<SandboxGroupContext>()
+    private val virtualNodeContext = mock<VirtualNodeContext>()
+    private val currentSandboxGroupContext = mock<CurrentSandboxGroupContext>()
     private val groupParametersHash = parseSecureHash("algo:1234")
 
     @BeforeEach
@@ -52,6 +60,7 @@ class UtxoLedgerTransactionVerificationServiceImplTest {
             serializationService,
             mockUtxoLedgerGroupParametersPersistenceService,
             mockCurrentGroupParametersService(),
+            currentSandboxGroupContext,
             mock()
         )
 
@@ -61,6 +70,9 @@ class UtxoLedgerTransactionVerificationServiceImplTest {
         whenever(notaryInfo.publicKey).thenReturn(publicKeyExample)
         whenever(mockSignedGroupParameters.notaries).thenReturn(listOf(notaryInfo))
         whenever(mockSignedGroupParameters.hash).thenReturn(groupParametersHash)
+        whenever(sandbox.virtualNodeContext).thenReturn(virtualNodeContext)
+        whenever(virtualNodeContext.holdingIdentity).thenReturn(ALICE_X500_HOLDING_IDENTITY.toCorda())
+        whenever(currentSandboxGroupContext.get()).thenReturn(sandbox)
     }
 
     @Test

@@ -1,6 +1,5 @@
 package net.corda.messaging.utils
 
-import net.corda.messagebus.api.CordaTopicPartition
 import net.corda.messaging.api.exception.CordaRPCAPISenderException
 import net.corda.test.util.eventually
 import net.corda.utilities.concurrent.getOrThrow
@@ -27,7 +26,7 @@ class FutureTrackerTest {
 
     @Test
     fun `test FutureTracker partition creation, future insertion, retrieval and removal`() {
-        tracker.addPartitions(listOf(CordaTopicPartition("", 0)))
+        tracker.addPartitions(listOf(0))
         tracker.addFuture("test", future, 0)
         Assertions.assertEquals(future, tracker.getFuture("test", 0))
 
@@ -37,15 +36,15 @@ class FutureTrackerTest {
 
     @Test
     fun `test FutureTracker partition removal `() {
-        tracker.addPartitions(listOf(CordaTopicPartition("", 0)))
-        tracker.addPartitions(listOf(CordaTopicPartition("", 1)))
+        tracker.addPartitions(listOf(0))
+        tracker.addPartitions(listOf(1))
         tracker.addFuture("test", future, 0)
         tracker.addFuture("test", future, 1)
 
         Assertions.assertEquals(future, tracker.getFuture("test", 0))
         Assertions.assertEquals(future, tracker.getFuture("test", 1))
 
-        tracker.removePartitions(listOf(CordaTopicPartition("", 1)))
+        tracker.removePartitions(listOf(1))
 
         Assertions.assertEquals(future, tracker.getFuture("test", 0))
         Assertions.assertNull(tracker.getFuture("test", 1))
@@ -74,7 +73,7 @@ class FutureTrackerTest {
 
     @Test
     fun `test retrieval with the wrong correlation ID and partition`() {
-        tracker.addPartitions(listOf(CordaTopicPartition("", 0)))
+        tracker.addPartitions(listOf(0))
         tracker.addFuture("test", future, 0)
 
         Assertions.assertEquals(future, tracker.getFuture("test", 0))
@@ -84,7 +83,7 @@ class FutureTrackerTest {
 
     @Test
     fun `test retrieval of a completed future and a discarded one`() {
-        tracker.addPartitions(listOf(CordaTopicPartition("", 0)))
+        tracker.addPartitions(listOf(0))
         tracker.addFuture("test", future, 0)
 
         future.complete("It's done")
