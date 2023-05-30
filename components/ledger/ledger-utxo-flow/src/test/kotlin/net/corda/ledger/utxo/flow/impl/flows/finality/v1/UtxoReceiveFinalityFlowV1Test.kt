@@ -402,6 +402,8 @@ class UtxoReceiveFinalityFlowV1Test {
     @Test
     fun `receiving a transaction resolves the transaction's backchain`() {
         whenever(signedTransaction.addMissingSignatures()).thenReturn(signedTransactionWithOwnKeys to listOf(signature1, signature2))
+        whenever(signedTransaction.inputStateRefs).thenReturn(listOf(mock()))
+        whenever(signedTransaction.referenceStateRefs).thenReturn(listOf(mock()))
         whenever(session.receive(List::class.java)).thenReturn(listOf(signature3))
         whenever(session.receive(Payload::class.java)).thenReturn(Payload.Success(listOf(signatureNotary)))
 
@@ -413,6 +415,8 @@ class UtxoReceiveFinalityFlowV1Test {
     @Test
     fun `receiving a transaction resolves the transaction's backchain even when it fails verification`() {
         whenever(ledgerTransaction.outputStateAndRefs).thenReturn(listOf(getExampleInvalidStateAndRefImpl()))
+        whenever(signedTransaction.inputStateRefs).thenReturn(listOf(mock()))
+        whenever(signedTransaction.referenceStateRefs).thenReturn(listOf(mock()))
         whenever(transactionVerificationService.verify(any())).thenThrow(
             TransactionVerificationException(
                 ID,
