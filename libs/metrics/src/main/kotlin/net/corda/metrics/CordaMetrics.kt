@@ -642,6 +642,15 @@ object CordaMetrics {
         ConnectionResult("connection.result")
     }
 
+    /**
+     * Prometheus requires the same set of tags to be populated for a specific metric name.
+     * Otherwise, metrics will be (silently) not exported.
+     *
+     * This value can be used to comply with this rule in scenarios where a tag is not relevant in some conditions,
+     * but it still needs to be populated in order to avoid lost data points.
+     */
+    const val NOT_APPLICABLE_TAG_VALUE = "not_applicable"
+
     val registry: CompositeMeterRegistry = Metrics.globalRegistry
 
     /**
