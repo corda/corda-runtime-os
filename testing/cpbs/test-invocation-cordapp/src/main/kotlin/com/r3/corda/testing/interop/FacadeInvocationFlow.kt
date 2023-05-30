@@ -43,7 +43,7 @@ class FacadeInvocationFlow : ClientStartableFlow {
         val payload = getArgument(args, "payload")
         val hostNetwork = getArgument(args, "hostNetwork")
 
-        val aliasMember = interopIdentityLookUp.lookup(hostNetwork)
+        val aliasMember = interopIdentityLookUp.lookup(hostNetwork) ?: throw NullPointerException("$hostNetwork no in LookUp")
         log.info("AliasMemberInfo for $alias  : $aliasMember")
 
         if(!aliasMember.facadeIds.contains(facadeId)) {

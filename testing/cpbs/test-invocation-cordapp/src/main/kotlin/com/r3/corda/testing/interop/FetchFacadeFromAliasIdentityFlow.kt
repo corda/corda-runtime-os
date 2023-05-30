@@ -33,7 +33,7 @@ class FetchFacadeFromAliasIdentityFlow : ClientStartableFlow {
 
         val hostNetwork = getArgument(args, "hostNetwork")
 
-        val aliasMember = interopIdentityLookUp.lookup(hostNetwork)
+        val aliasMember = interopIdentityLookUp.lookup(hostNetwork)?: throw NullPointerException("$hostNetwork not in Lookup")
         log.info("Alias member info for $hostNetwork :  '$aliasMember'")
         log.info("FetchHoldingIdentityAliasFlow.call() ending")
 
