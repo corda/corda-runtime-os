@@ -3,6 +3,7 @@ package net.corda.p2p.linkmanager.metrics
 import net.corda.data.p2p.app.AuthenticatedMessage
 import net.corda.data.p2p.app.InboundUnauthenticatedMessage
 import net.corda.metrics.CordaMetrics
+import net.corda.metrics.CordaMetrics.NOT_APPLICABLE_TAG_VALUE
 
 fun recordInboundMessagesMetric(message: AuthenticatedMessage) {
     message.header.let {
@@ -25,7 +26,7 @@ private fun recordInboundMessagesMetric(source: String?, dest: String?, group: S
         CordaMetrics.Tag.MessagingSubsystem to subsystem,
         CordaMetrics.Tag.MessageType to messageType,
     ).forEach {
-        val value = it.second ?: "not_applicable"
+        val value = it.second ?: NOT_APPLICABLE_TAG_VALUE
         builder.withTag(it.first, value)
     }
     builder.build().increment()
