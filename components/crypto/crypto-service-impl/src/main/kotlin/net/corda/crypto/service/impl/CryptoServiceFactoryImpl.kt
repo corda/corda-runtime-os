@@ -1,6 +1,7 @@
 package net.corda.crypto.service.impl
 
 import java.time.Duration
+import java.time.Instant
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.cipher.suite.CryptoService
@@ -69,23 +70,25 @@ class CryptoServiceFactoryImpl @Activate constructor(
         cryptoServiceProvider = cryptoServiceProvider
     )
 
-    override fun findInstance(tenantId: String, category: String): CryptoServiceRef =
-        CordaMetrics.Metric.CryptoServiceInstanceCreationTimer.builder()
-            .withTag(CordaMetrics.Tag.Method, "FindInstance")
-            .withTag(CordaMetrics.Tag.InstanceType, this::class.java.simpleName)
-            .build()
-            .recordCallable {
-                impl.findInstance(tenantId, category)
-            }!!
+    override fun findInstance(tenantId: String, category: String): CryptoServiceRef {
+        val startTime = Instant.now()
+        return impl.findInstance(tenantId, category).also {
+            CordaMetrics.Metric.CryptoServiceFindInstanceTimer.builder()
+                .withTag(CordaMetrics.Tag.InstanceType, it::class.java.simpleName)
+                .build()
+                .record(Duration.between(startTime, Instant.now()))
+        }
+    }
 
-    override fun getInstance(hsmId: String): CryptoService =
-        CordaMetrics.Metric.CryptoServiceInstanceCreationTimer.builder()
-            .withTag(CordaMetrics.Tag.Method, "GetInstance")
-            .withTag(CordaMetrics.Tag.InstanceType, this::class.java.simpleName)
-            .build()
-            .recordCallable {
-                impl.getInstance(hsmId)
-            }!!
+    override fun getInstance(hsmId: String): CryptoService {
+        val startTime = Instant.now()
+        return impl.getInstance(hsmId).also {
+            CordaMetrics.Metric.CryptoServiceGetInstanceTimer.builder()
+                .withTag(CordaMetrics.Tag.InstanceType, it::class.java.simpleName)
+                .build()
+                .record(Duration.between(startTime, Instant.now()))
+        }
+    }
 
     override fun bootstrapConfig(config: SmartConfig) {
         lifecycleCoordinator.postEvent(BootstrapConfigProvided(config))
@@ -149,7 +152,7 @@ class CryptoServiceFactoryImpl @Activate constructor(
 
         fun getInstance(hsmId: String): CryptoService {
             logger.debug { "Getting the crypto service for hsmId=$hsmId)" }
-            if(hsmId != this.hsmId) {
+            if (hsmId != this.hsmId) {
                 throw IllegalArgumentException(
                     "The worker is not configured to handle $hsmId, it handles ${this.hsmId}."
                 )

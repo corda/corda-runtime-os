@@ -4,8 +4,6 @@ import com.github.benmanes.caffeine.cache.Cache
 import com.github.benmanes.caffeine.cache.Caffeine
 import java.security.InvalidParameterException
 import java.security.PublicKey
-import java.time.Duration
-import java.time.Instant
 import java.util.concurrent.TimeUnit
 import net.corda.cache.caffeine.CacheFactoryImpl
 import net.corda.crypto.cipher.suite.CRYPTO_CATEGORY
@@ -87,7 +85,8 @@ class SigningServiceImpl(
 
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
-        private const val SIGNING_SERVICE_GET_OWNED_KEY_RECORD_METHOD_NAME = "SigningServiceImpl.getOwnedKeyRecord"
+        private const val SIGN_OPERATION_NAME = "sign"
+        private const val DERIVE_SHARED_SECRET_OPERATION_NAME = "deriveSharedSecret"
     }
 
     data class OwnedKeyRecord(val publicKey: PublicKey, val data: SigningKeyInfo)
@@ -261,7 +260,15 @@ class SigningServiceImpl(
         data: ByteArray,
         context: Map<String, String>
     ): DigitalSignatureWithKey {
-        val record = getOwnedKeyRecord(tenantId, publicKey)
+        val record =
+            CordaMetrics.Metric.GetOwnedKeyRecordTimer.builder()
+                .withTag(CordaMetrics.Tag.OperationName, SIGN_OPERATION_NAME)
+                .withTag(CordaMetrics.Tag.PublicKeyType, publicKey::class.java.simpleName)
+                .build()
+                .recordCallable {
+                    getOwnedKeyRecord(tenantId, publicKey)
+                }!!
+
         logger.debug { "sign(tenant=$tenantId, publicKey=${record.data.id})" }
         val scheme = schemeMetadata.findKeyScheme(record.data.schemeCodeName)
         val cryptoService = cryptoServiceFactory.getInstance(record.data.hsmId)
@@ -279,7 +286,15 @@ class SigningServiceImpl(
         otherPublicKey: PublicKey,
         context: Map<String, String>,
     ): ByteArray {
-        val record = getOwnedKeyRecord(tenantId, publicKey)
+        val record =
+            CordaMetrics.Metric.GetOwnedKeyRecordTimer.builder()
+                .withTag(CordaMetrics.Tag.OperationName, DERIVE_SHARED_SECRET_OPERATION_NAME)
+                .withTag(CordaMetrics.Tag.PublicKeyType, publicKey::class.java.simpleName)
+                .build()
+                .recordCallable {
+                    getOwnedKeyRecord(tenantId, publicKey)
+                }!!
+
         logger.info(
             "deriveSharedSecret(tenant={}, publicKey={}, otherPublicKey={})",
             tenantId,
@@ -350,7 +365,6 @@ class SigningServiceImpl(
 
     @Suppress("ThrowsCount")
     private fun getOwnedKeyRecord(tenantId: String, publicKey: PublicKey): OwnedKeyRecord {
-        val startTime = Instant.now()
         if (publicKey is CompositeKey) {
             val found = lookupSigningKeysByPublicKeyHashes(tenantId, publicKey.leafKeys.map { it.fullIdHash() })
             val hit = found.firstOrNull()
@@ -377,11 +391,6 @@ class SigningServiceImpl(
         if (signingKeyInfo.fullId != requestedFullKeyId) throw IllegalArgumentException(
             "The tenant $tenantId doesn't own public key '${publicKey.publicKeyId()}'."
         )
-        CordaMetrics.Metric.CryptoMethodTimer.builder()
-            .withTag(CordaMetrics.Tag.Method, SIGNING_SERVICE_GET_OWNED_KEY_RECORD_METHOD_NAME)
-            .withTag(CordaMetrics.Tag.PublicKeyType, publicKey::class.java.simpleName)
-            .build()
-            .record(Duration.between(startTime, Instant.now()))
         return OwnedKeyRecord(publicKey, signingKeyInfo)
     }
 

@@ -62,7 +62,8 @@ fun List<KeyValuePair>.toMap(): Map<String, String> {
     return map
 }
 
-private const val CRYPTO_SIGNATURE_SPEC_TO_SIGNATURE_SPEC_METHOD_NAME = "CryptoSignatureSpec.toSignatureSpec"
+private const val TO_SIGNATURE_SPEC_OPERATION_NAME = "toSignatureSpec"
+private const val TO_WIRE_OPERATION_NAME = "toWire"
 
 fun CryptoSignatureSpec.toSignatureSpec(serializer: AlgorithmParameterSpecEncodingService): SignatureSpec {
     val startTime = Instant.now()
@@ -83,27 +84,37 @@ fun CryptoSignatureSpec.toSignatureSpec(serializer: AlgorithmParameterSpecEncodi
         algorithmParams != null -> ParameterizedSignatureSpec(signatureName, algorithmParams)
         else -> SignatureSpecImpl(signatureName)
     }.also {
-        CordaMetrics.Metric.CryptoMethodTimer.builder()
-            .withTag(CordaMetrics.Tag.Method, CRYPTO_SIGNATURE_SPEC_TO_SIGNATURE_SPEC_METHOD_NAME)
+        CordaMetrics.Metric.CryptoSignatureSpecTimer.builder()
+            .withTag(CordaMetrics.Tag.OperationName, TO_SIGNATURE_SPEC_OPERATION_NAME)
             .build()
             .record(Duration.between(startTime, Instant.now()))
     }
 }
 
-fun SignatureSpec.toWire(serializer: AlgorithmParameterSpecEncodingService): CryptoSignatureSpec =
-    when(this) {
+
+fun SignatureSpec.toWire(serializer: AlgorithmParameterSpecEncodingService): CryptoSignatureSpec {
+    val startTime = Instant.now()
+    return when (this) {
         is CustomSignatureSpec -> CryptoSignatureSpec(
             signatureName,
             customDigestName.name,
             params?.serialize(serializer)
         )
+
         is ParameterizedSignatureSpec -> CryptoSignatureSpec(
             signatureName,
             null,
             params.serialize(serializer)
         )
+
         else -> CryptoSignatureSpec(signatureName, null, null)
+    }.also {
+        CordaMetrics.Metric.CryptoSignatureSpecTimer.builder()
+            .withTag(CordaMetrics.Tag.OperationName, TO_WIRE_OPERATION_NAME)
+            .build()
+            .record(Duration.between(startTime, Instant.now()))
     }
+}
 
 private fun AlgorithmParameterSpec.serialize(
     serializer: AlgorithmParameterSpecEncodingService

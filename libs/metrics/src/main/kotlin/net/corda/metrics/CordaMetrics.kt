@@ -344,12 +344,12 @@ object CordaMetrics {
         object CryptoFlowOpsProcessorExecutionTime: Metric<Timer>("crypto.flow.processor.execution.time", CordaMetrics::timer)
 
         /**
-         * The time taken by crypto operations.
+         * The time taken by crypto operations invoked by RPC message pattern requests.
          */
         object CryptoOpsProcessorExecutionTime: Metric<Timer>("crypto.processor.execution.time", CordaMetrics::timer)
 
         /**
-         * The time taken by crypto operations.
+         * The time taken for wrapping key creation in crypto operations.
          */
         object WrappingKeyCreationTimer: Metric<Timer>("crypto.wrapping.key.creation.time", CordaMetrics::timer)
 
@@ -359,24 +359,44 @@ object CordaMetrics {
         object EntityManagerFactoryCreationTimer: Metric<Timer>("entity.manager.factory.creation.time", CordaMetrics::timer)
 
         /**
-         * The time taken to create entity manager factories.
+         * The time taken for soft crypto service signing.
          */
         object SoftCryptoSignTimer: Metric<Timer>("soft.crypto.sign.time", CordaMetrics::timer)
 
         /**
-         * The time taken to create entity manager factories.
+         * The time taken for crypto signing key lookup.
          */
         object CryptoSigningKeyLookupTimer: Metric<Timer>("crypto.signing.key.lookup.time", CordaMetrics::timer)
 
         /**
-         * The time taken to create entity manager factories.
+         * The time taken to find crypto service instances.
          */
-        object CryptoServiceInstanceCreationTimer: Metric<Timer>("crypto.service.instance.creation.time", CordaMetrics::timer)
+        object CryptoServiceFindInstanceTimer: Metric<Timer>("crypto.service.find.instance.time", CordaMetrics::timer)
 
         /**
-         * The time taken to create entity manager factories.
+         * The time taken to get crypto service instances.
          */
-        object CryptoMethodTimer: Metric<Timer>("crypto.method.time", CordaMetrics::timer)
+        object CryptoServiceGetInstanceTimer: Metric<Timer>("crypto.service.get.instance.time", CordaMetrics::timer)
+
+        /**
+         * The time taken to get crypto signing repository instances.
+         */
+        object CryptoSigningRepositoryGetInstanceTimer: Metric<Timer>("crypto.signing.repository.get.instance.time", CordaMetrics::timer)
+
+        /**
+         * The time taken for crypto service sign operation.
+         */
+        object GetOwnedKeyRecordTimer: Metric<Timer>("crypto.get.owned.key.record.time", CordaMetrics::timer)
+
+        /**
+         * The time taken for crypto cipher scheme operations.
+         */
+        object CryptoCipherSchemeTimer: Metric<Timer>("crypto.cipher.scheme.time", CordaMetrics::timer)
+
+        /**
+         * The time taken for crypto signature spec operations.
+         */
+        object CryptoSignatureSpecTimer: Metric<Timer>("crypto.signature.spec.time", CordaMetrics::timer)
 
         /**
          * Time taken for a membership persistence transaction to complete.
@@ -632,14 +652,9 @@ object CordaMetrics {
         SigningKeyLookupMethod("lookup.method"),
 
         /**
-         * Label to identify the instance of class / implementation retrieved via `getInstance` calls.
+         * Label to identify the type of instance obtained during late-init getInstance or findInstance operations.
          */
         InstanceType("instance.type"),
-
-        /**
-         * Label to identify the method inside a class / implementation.
-         */
-        Method("method"),
 
         /**
          * Label to identify the method inside a class / implementation.
@@ -647,7 +662,12 @@ object CordaMetrics {
         PublicKeyType("publickey.type"),
 
         /**
-         * Label to identify the method inside a class / implementation.
+         * Identifies the name of key-based encryption algorithms used in crypto operations.
+         */
+        AlgorithmName("algorithm.name"),
+
+        /**
+         * Identifier of a tenant either a virtual node identifier or cluster level tenant id.
          */
         Tenant("tenant"),
 

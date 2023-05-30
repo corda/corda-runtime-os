@@ -5,6 +5,13 @@ import com.github.benmanes.caffeine.cache.Caffeine
 import com.typesafe.config.ConfigList
 import com.typesafe.config.ConfigObject
 import com.typesafe.config.ConfigValue
+import java.security.InvalidParameterException
+import java.security.KeyPairGenerator
+import java.security.PrivateKey
+import java.security.Provider
+import java.security.PublicKey
+import java.util.InvalidPropertiesFormatException
+import java.util.concurrent.TimeUnit
 import net.corda.cache.caffeine.CacheFactoryImpl
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
@@ -32,17 +39,6 @@ import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.propertytypes.ServiceRanking
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.security.InvalidParameterException
-import java.security.KeyPairGenerator
-import java.security.PrivateKey
-import java.security.Provider
-import java.security.PublicKey
-import java.util.InvalidPropertiesFormatException
-import java.util.concurrent.TimeUnit
-
-const val KEY_MAP_TRANSIENT_NAME = "TRANSIENT"
-const val KEY_MAP_CACHING_NAME = "CACHING"
-const val WRAPPING_DEFAULT_NAME = "DEFAULT"
 
 /**
  * A factory that creates [SoftCryptoService] instances given configuration.
@@ -100,11 +96,7 @@ open class SoftCryptoServiceProviderImpl @Activate constructor(
         jpaEntitiesRegistry
     )
 
-    override fun getInstance(config: SmartConfig): CryptoService {
-        return recordGetInstance(this::class.java.simpleName) {
-            impl.getInstance(config)
-        }
-    }
+    override fun getInstance(config: SmartConfig): CryptoService = impl.getInstance(config)
 
     override val lifecycleName: LifecycleCoordinatorName get() = lifecycleCoordinatorName
 
@@ -116,7 +108,7 @@ open class SoftCryptoServiceProviderImpl @Activate constructor(
         private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
         private val jpaEntitiesRegistry: JpaEntitiesRegistry,
     ) : AbstractImpl {
-        private fun openRepository(tenantId: String) =  WrappingRepositoryImpl(
+        private fun openRepository(tenantId: String) = WrappingRepositoryImpl(
             getEntityManagerFactory(
                 tenantId,
                 dbConnectionManager,
@@ -186,6 +178,5 @@ open class SoftCryptoServiceProviderImpl @Activate constructor(
 
         override val downstream: DependenciesTracker
             get() = DependenciesTracker.AlwaysUp()
-
     }
 }
