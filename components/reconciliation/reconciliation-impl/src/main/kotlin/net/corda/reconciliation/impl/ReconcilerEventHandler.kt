@@ -1,6 +1,5 @@
 package net.corda.reconciliation.impl
 
-import kotlin.streams.asSequence
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleEventHandler
@@ -15,6 +14,7 @@ import net.corda.reconciliation.ReconcilerWriter
 import net.corda.utilities.debug
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.slf4j.LoggerFactory
+import kotlin.streams.asSequence
 
 @Suppress("LongParameterList")
 internal class ReconcilerEventHandler<K : Any, V : Any>(
@@ -40,7 +40,7 @@ internal class ReconcilerEventHandler<K : Any, V : Any>(
         when (event) {
             is StartEvent -> onStartEvent(coordinator)
             is RegistrationStatusChangeEvent -> onRegistrationStatusChangeEvent(event, coordinator)
-            is ReconcileEvent -> reconcileAndScheduleNext(coordinator)
+//            is ReconcileEvent -> reconcileAndScheduleNext(coordinator)
             is UpdateIntervalEvent -> onUpdateIntervalEvent(event, coordinator)
             is StopEvent -> onStopEvent(coordinator)
         }
@@ -61,27 +61,11 @@ internal class ReconcilerEventHandler<K : Any, V : Any>(
         if (event.status == LifecycleStatus.UP) {
             logger.info("Starting reconciliations")
             coordinator.updateStatus(LifecycleStatus.UP)
-            reconcileAndScheduleNext(coordinator)
+            // reconcileAndScheduleNext(coordinator)
         } else {
             // TODO Revise below actions in case of an error from sub services (DOWN vs ERROR)
             coordinator.updateStatus(event.status)
             coordinator.cancelTimer(timerKey)
-        }
-    }
-
-    private fun reconcileAndScheduleNext(coordinator: LifecycleCoordinator) {
-        logger.info("Initiating reconciliation")
-        try {
-            val startTime = System.currentTimeMillis()
-            reconcile()
-            val endTime = System.currentTimeMillis()
-            logger.info("Reconciliation completed in ${endTime - startTime} ms")
-            scheduleNextReconciliation(coordinator)
-        } catch (e: Exception) {
-            // An error here could be a transient or not exception. We should transition to `DOWN` and wait
-            // on subsequent `RegistrationStatusChangeEvent` to see if it is going to be a `DOWN` or an `ERROR`.
-            logger.warn("Reconciliation failed. Terminating reconciliations", e)
-            coordinator.updateStatus(LifecycleStatus.DOWN)
         }
     }
 
