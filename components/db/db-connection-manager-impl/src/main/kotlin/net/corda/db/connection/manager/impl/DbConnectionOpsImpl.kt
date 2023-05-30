@@ -80,6 +80,13 @@ class DbConnectionOpsImpl(
         )
     }
 
+    override fun getOrCreateEntityManagerFactory(
+        connectionId: UUID,
+        entitiesSet: JpaEntitiesSet
+    ): EntityManagerFactory {
+        return createEntityManagerFactory(connectionId, entitiesSet)
+    }
+
     override fun createEntityManagerFactory(connectionId: UUID, entitiesSet: JpaEntitiesSet):
             EntityManagerFactory {
         logger.info("Loading DB connection details for $connectionId")

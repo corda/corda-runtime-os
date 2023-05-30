@@ -6,7 +6,7 @@ import net.corda.db.core.DbPrivilege
 import net.corda.db.schema.CordaDb
 import net.corda.libs.configuration.SmartConfig
 import net.corda.orm.JpaEntitiesSet
-import java.util.*
+import java.util.UUID
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.sql.DataSource
@@ -61,6 +61,12 @@ class LateInitDbConnectionOps: DbConnectionOps {
         entitiesSet: JpaEntitiesSet
     ): EntityManagerFactory =
         delegate.getOrCreateEntityManagerFactory(name, privilege, entitiesSet)
+
+    override fun getOrCreateEntityManagerFactory(
+        connectionId: UUID,
+        entitiesSet: JpaEntitiesSet
+    ): EntityManagerFactory =
+        delegate.getOrCreateEntityManagerFactory(connectionId, entitiesSet)
 
     override fun createEntityManagerFactory(connectionId: UUID, entitiesSet: JpaEntitiesSet):
             EntityManagerFactory = delegate.createEntityManagerFactory(connectionId, entitiesSet)

@@ -141,6 +141,13 @@ class FakeDbConnectionManager(
         TODO("Not yet implemented")
     }
 
+    override fun getOrCreateEntityManagerFactory(
+        connectionId: UUID,
+        entitiesSet: JpaEntitiesSet
+    ): EntityManagerFactory {
+        TODO("Not yet implemented")
+    }
+
     override fun create(
         driverClass: String,
         jdbcUrl: String,

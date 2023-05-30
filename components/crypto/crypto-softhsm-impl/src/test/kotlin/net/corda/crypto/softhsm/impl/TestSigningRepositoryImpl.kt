@@ -1,6 +1,5 @@
 package net.corda.crypto.softhsm.impl
 
-import javax.persistence.EntityManagerFactory
 import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.persistence.getEntityManagerFactory
 import net.corda.db.connection.manager.DbConnectionManager
@@ -17,6 +16,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoMoreInteractions
+import javax.persistence.EntityManagerFactory
 
 class TestSigningRepositoryImpl {
 
@@ -26,7 +26,7 @@ class TestSigningRepositoryImpl {
         // Arguably this is really tessting getEntityManagerFactory so should be moved to a new test class
         val entityManagerFactory = mock<EntityManagerFactory>()
         val dbConnectionManager = mock<DbConnectionManager> {
-            on { getOrCreateEntityManagerFactory(any(), any()) } doReturn entityManagerFactory
+            on { getOrCreateEntityManagerFactory(any<CordaDb>(), any()) } doReturn entityManagerFactory
         }
         val tenant = CryptoTenants.CRYPTO
         makeMockSigningRepository(tenant, dbConnectionManager).use { repo ->
@@ -62,7 +62,7 @@ class TestSigningRepositoryImpl {
             on { cryptoDmlConnectionId } doReturn mock()
         }
         val dbConnectionManager = mock<DbConnectionManager> {
-            on { getOrCreateEntityManagerFactory(any(), any()) } doReturn mock()
+            on { getOrCreateEntityManagerFactory(any<CordaDb>(), any()) } doReturn mock()
             on { createEntityManagerFactory(any(), any()) } doReturn ownedEntityManagerFactory
         }
         val virtualNodeInfoReadService = mock<VirtualNodeInfoReadService> {

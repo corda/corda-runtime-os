@@ -5,7 +5,7 @@ import net.corda.db.core.DbPrivilege
 import net.corda.db.schema.CordaDb
 import net.corda.libs.configuration.SmartConfig
 import net.corda.orm.JpaEntitiesSet
-import java.util.*
+import java.util.UUID
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.sql.DataSource
@@ -130,14 +130,24 @@ interface DbConnectionOps {
             EntityManagerFactory
 
     /**
+     * Get an instance of [EntityManagerFactory] for the for a given connection ID. Use cache or create one if necessary.
+     *
+     * @param connectionId Connection UUID
+     * @param entitiesSet Set of all entities managed by [javax.persistence.EntityManager]s created by the
+     *                  [EntityManagerFactory] returned
+     * @return [EntityManagerFactory] from cache, or created on demand.
+     */
+    fun getOrCreateEntityManagerFactory(connectionId: UUID, entitiesSet: JpaEntitiesSet): EntityManagerFactory
+
+    /**
      * Create an [EntityManagerFactory] for a given connection ID.
      *
      * A new EMF should be created and implementations of this class should not cache it.
      *
-     * @param connectionId
+     * @param connectionId Connection UUID
      * @param entitiesSet Set of all entities managed by [javax.persistence.EntityManager]s created by the
      *                  [EntityManagerFactory] returned
-     * @return
+     * @return Created [EntityManagerFactory].
      */
     fun createEntityManagerFactory(connectionId: UUID, entitiesSet: JpaEntitiesSet): EntityManagerFactory
 }
