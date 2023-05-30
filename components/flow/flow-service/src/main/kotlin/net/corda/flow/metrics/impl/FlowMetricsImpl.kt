@@ -147,7 +147,7 @@ class FlowMetricsImpl(
         return this.instant().toEpochMilli()
     }
 
-    private class FlowMetricState {
+    internal class FlowMetricState {
         var flowProcessingStartTime: Long = 0
         var suspensionTimestampMillis: Long? = null
         var suspensionAction: String? = null
@@ -160,7 +160,7 @@ class FlowMetricsImpl(
         var sessionMetricStateBySessionId: MutableMap<String, SessionMetricState> = mutableMapOf()
     }
 
-    private class SessionMetricState {
+    internal class SessionMetricState {
         var highestSeenSequenceNumber: Long = 0
     }
 }
