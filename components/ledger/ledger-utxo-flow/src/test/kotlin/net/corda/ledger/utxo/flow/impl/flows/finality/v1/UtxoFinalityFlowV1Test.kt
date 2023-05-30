@@ -910,6 +910,7 @@ class UtxoFinalityFlowV1Test {
     @Test
     fun `each passed in session is sent the transaction backchain`() {
         whenever(initialTx.getMissingSignatories()).thenReturn(setOf(publicKeyAlice1, publicKeyAlice2, publicKeyBob))
+        whenever(initialTx.inputStateRefs).thenReturn(listOf(mock()))
         whenever(flowEngine.subFlow(pluggableNotaryClientFlow)).thenReturn(listOf(signatureNotary))
 
         whenever(sessionAlice.receive(Payload::class.java)).thenReturn(
