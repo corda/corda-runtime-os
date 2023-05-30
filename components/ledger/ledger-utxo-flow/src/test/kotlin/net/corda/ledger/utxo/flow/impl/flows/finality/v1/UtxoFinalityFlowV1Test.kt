@@ -928,6 +928,30 @@ class UtxoFinalityFlowV1Test {
         verify(flowEngine).subFlow(TransactionBackchainSenderFlow(TX_ID, sessionBob))
     }
 
+    @Test
+    fun `called with a transaction that has no dependencies should not invoke backchain resolution`() {
+        whenever(initialTx.getMissingSignatories()).thenReturn(setOf(publicKeyAlice1, publicKeyAlice2, publicKeyBob))
+        whenever(initialTx.inputStateRefs).thenReturn(emptyList())
+        whenever(initialTx.referenceStateRefs).thenReturn(emptyList())
+
+        whenever(flowEngine.subFlow(pluggableNotaryClientFlow)).thenReturn(listOf(signatureNotary))
+
+        whenever(sessionAlice.receive(Payload::class.java)).thenReturn(
+            Payload.Success(
+                listOf(
+                    signatureAlice1,
+                    signatureAlice2
+                )
+            )
+        )
+        whenever(sessionBob.receive(Payload::class.java)).thenReturn(Payload.Success(listOf(signatureBob)))
+
+        callFinalityFlow(initialTx, listOf(sessionAlice, sessionBob))
+
+        verify(flowEngine, never()).subFlow(TransactionBackchainSenderFlow(TX_ID, sessionAlice))
+        verify(flowEngine, never()).subFlow(TransactionBackchainSenderFlow(TX_ID, sessionBob))
+    }
+
     private fun callFinalityFlow(signedTransaction: UtxoSignedTransactionInternal, sessions: List<FlowSession>) {
         val flow = spy(UtxoFinalityFlowV1(
             signedTransaction,

@@ -428,6 +428,19 @@ class UtxoReceiveFinalityFlowV1Test {
         verify(flowEngine).subFlow(TransactionBackchainResolutionFlow(signedTransaction.dependencies, session))
     }
 
+    @Test
+    fun `if receiving a transaction with no dependencies then the backchain resolution flow will not be called`() {
+        whenever(signedTransaction.addMissingSignatures()).thenReturn(signedTransactionWithOwnKeys to listOf(signature1, signature2))
+        whenever(signedTransaction.inputStateRefs).thenReturn(emptyList())
+        whenever(signedTransaction.referenceStateRefs).thenReturn(emptyList())
+        whenever(session.receive(List::class.java)).thenReturn(listOf(signature3))
+        whenever(session.receive(Payload::class.java)).thenReturn(Payload.Success(listOf(signatureNotary)))
+
+        callReceiveFinalityFlow()
+
+        verify(flowEngine, never()).subFlow(TransactionBackchainResolutionFlow(signedTransaction.dependencies, session))
+    }
+
     private fun callReceiveFinalityFlow(validator: UtxoTransactionValidator = UtxoTransactionValidator { }) {
         val flow = UtxoReceiveFinalityFlowV1(session, validator)
         flow.memberLookup = memberLookup
