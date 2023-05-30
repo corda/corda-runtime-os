@@ -145,7 +145,7 @@ class CipherSchemeMetadataProvider : KeyEncodingService {
         algorithmMap[normaliseAlgorithmIdentifier(algorithm)]
             ?: throw IllegalArgumentException("Unrecognised algorithm: ${algorithm.algorithm.id}, with parameters=${algorithm.parameters}")
 
-    private fun <T : Any> recordCipherOperation(operationName: String, op: () -> T): T {
+    private fun <T : Any> recordPublicKeyOperation(operationName: String, op: () -> T): T {
         return CordaMetrics.Metric.CryptoCipherSchemeTimer.builder()
             .withTag(CordaMetrics.Tag.OperationName, operationName)
             .build()
@@ -156,7 +156,7 @@ class CipherSchemeMetadataProvider : KeyEncodingService {
 
     override fun decodePublicKey(encodedKey: ByteArray): PublicKey {
         return try {
-            recordCipherOperation(DECODE_PUBLIC_KEY_FROM_BYTE_ARRAY_OPERATION_NAME) {
+            recordPublicKeyOperation(DECODE_PUBLIC_KEY_FROM_BYTE_ARRAY_OPERATION_NAME) {
                 val subjectPublicKeyInfo = SubjectPublicKeyInfo.getInstance(encodedKey)
                 val scheme = findKeyScheme(subjectPublicKeyInfo.algorithm)
                 val keyFactory = keyFactories[scheme]
@@ -170,7 +170,7 @@ class CipherSchemeMetadataProvider : KeyEncodingService {
     }
 
     override fun decodePublicKey(encodedKey: String): PublicKey = try {
-        recordCipherOperation(DECODE_PUBLIC_KEY_FROM_STRING_OPERATION_NAME) {
+        recordPublicKeyOperation(DECODE_PUBLIC_KEY_FROM_STRING_OPERATION_NAME) {
             val pemContent = parsePemContent(encodedKey)
             val publicKeyInfo = SubjectPublicKeyInfo.getInstance(pemContent)
             val converter = getJcaPEMKeyConverter(publicKeyInfo)
@@ -184,7 +184,7 @@ class CipherSchemeMetadataProvider : KeyEncodingService {
     }
 
     override fun encodeAsString(publicKey: PublicKey): String = try {
-        recordCipherOperation(ENCODE_PUBLIC_KEY_TO_STRING_OPERATION_NAME) {
+        recordPublicKeyOperation(ENCODE_PUBLIC_KEY_TO_STRING_OPERATION_NAME) {
             objectToPem(publicKey)
         }
     } catch (e: RuntimeException) {

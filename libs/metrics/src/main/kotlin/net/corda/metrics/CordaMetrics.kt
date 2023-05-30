@@ -652,11 +652,6 @@ object CordaMetrics {
         SigningKeyLookupMethod("lookup.method"),
 
         /**
-         * Label to identify the type of instance obtained during late-init getInstance or findInstance operations.
-         */
-        InstanceType("instance.type"),
-
-        /**
          * Label to identify the method inside a class / implementation.
          */
         PublicKeyType("publickey.type"),

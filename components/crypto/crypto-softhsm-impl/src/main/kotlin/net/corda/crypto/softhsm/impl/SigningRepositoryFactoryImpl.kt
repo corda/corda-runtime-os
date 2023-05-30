@@ -21,7 +21,6 @@ class SigningRepositoryFactoryImpl(
 ) : SigningRepositoryFactory {
     override fun getInstance(tenantId: String) =
         CordaMetrics.Metric.CryptoSigningRepositoryGetInstanceTimer.builder()
-            .withTag(CordaMetrics.Tag.InstanceType, SigningRepositoryImpl::class.java.simpleName)
             .withTag(CordaMetrics.Tag.Tenant, tenantId)
             .build()
             .recordCallable {

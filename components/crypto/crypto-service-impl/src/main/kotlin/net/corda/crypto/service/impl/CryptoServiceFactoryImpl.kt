@@ -74,7 +74,6 @@ class CryptoServiceFactoryImpl @Activate constructor(
         val startTime = Instant.now()
         return impl.findInstance(tenantId, category).also {
             CordaMetrics.Metric.CryptoServiceFindInstanceTimer.builder()
-                .withTag(CordaMetrics.Tag.InstanceType, it::class.java.simpleName)
                 .build()
                 .record(Duration.between(startTime, Instant.now()))
         }
@@ -84,7 +83,6 @@ class CryptoServiceFactoryImpl @Activate constructor(
         val startTime = Instant.now()
         return impl.getInstance(hsmId).also {
             CordaMetrics.Metric.CryptoServiceGetInstanceTimer.builder()
-                .withTag(CordaMetrics.Tag.InstanceType, it::class.java.simpleName)
                 .build()
                 .record(Duration.between(startTime, Instant.now()))
         }
