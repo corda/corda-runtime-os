@@ -75,7 +75,7 @@ class UtxoReceiveFinalityFlowV1(
             flowEngine.subFlow(TransactionBackchainResolutionFlow(transactionDependencies, session))
         } else {
             log.trace {
-                "Transaction with id ${initialTransaction.id} has no dependencies so no backchain resolution will be performed."
+                "Transaction with id ${initialTransaction.id} has no dependencies so backchain resolution will not be performed."
             }
         }
         return initialTransaction
