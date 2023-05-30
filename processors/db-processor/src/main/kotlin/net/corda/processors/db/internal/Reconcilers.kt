@@ -1,6 +1,5 @@
 package net.corda.processors.db.internal
 
-import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.reconcile.ConfigReconcilerReader
 import net.corda.configuration.write.publish.ConfigPublishService
 import net.corda.cpiinfo.read.CpiInfoReadService
@@ -97,7 +96,7 @@ class Reconcilers(
      */
     fun updateConfigReconciler(intervalMs: Long) = configReconciler.updateInterval(intervalMs)
 
-    fun onConfigChanged(event: ConfigChangedEvent) {
+    fun onConfigChanged() {
 //        val smartConfig = event.config[ConfigKeys.RECONCILIATION_CONFIG] ?: return
 //
 //        smartConfig.updateIntervalWhenKeyIs(RECONCILIATION_CPI_INFO_INTERVAL_MS, cpiReconciler::updateInterval)

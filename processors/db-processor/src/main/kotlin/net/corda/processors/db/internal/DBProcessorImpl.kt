@@ -202,7 +202,7 @@ class DBProcessorImpl @Activate constructor(
         when (event) {
             is StartEvent -> onStartEvent()
             is RegistrationStatusChangeEvent -> onRegistrationStatusChangeEvent(event, coordinator)
-            is ConfigChangedEvent -> onConfigChangedEvent(event)
+            is ConfigChangedEvent -> onConfigChangedEvent()
             is BootConfigEvent -> onBootConfigEvent(event)
             is StopEvent -> onStopEvent()
             else -> log.error("Unexpected event $event!")
@@ -243,11 +243,9 @@ class DBProcessorImpl @Activate constructor(
         coordinator.updateStatus(event.status)
     }
 
-    private fun onConfigChangedEvent(
-        event: ConfigChangedEvent,
-    ) {
+    private fun onConfigChangedEvent() {
         // Creates and starts the rest of the reconcilers
-        reconcilers.onConfigChanged(event)
+        reconcilers.onConfigChanged()
     }
 
     private fun onStartEvent() {
