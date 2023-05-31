@@ -103,12 +103,12 @@ class SessionInitExecutorTest {
 
     @Test
     fun `Subsequent OUTBOUND SessionInit messages get passed through if no ACK received from first message`(){
+        whenever(sessionEventSerializer.serialize(any())).thenReturn("bytes".toByteArray())
         val retrySessionInit = SessionInit("info", "1", emptyKeyValuePairList(), emptyKeyValuePairList(), emptyKeyValuePairList(), null)
-
         val payload = buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", 1, retrySessionInit)
 
         val flowMapperState = FlowMapperState()
-        flowMapperState.setStatus(FlowMapperStateType.OPEN)
+        flowMapperState.status = FlowMapperStateType.OPEN
 
         val resultOutbound = SessionInitExecutor(
             "sessionId",
@@ -129,7 +129,7 @@ class SessionInitExecutorTest {
         val payload = buildSessionEvent(MessageDirection. INBOUND, "sessionId", 1, retrySessionInit)
 
         val flowMapperState = FlowMapperState()
-        flowMapperState.setStatus(FlowMapperStateType.OPEN)
+        flowMapperState.status = FlowMapperStateType.OPEN
 
         val resultOutbound = SessionInitExecutor(
             "sessionId",
