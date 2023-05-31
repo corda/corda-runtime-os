@@ -37,6 +37,11 @@ internal class CompactedSubscriptionImpl<K : Any, V : Any>(
 
     private var latestValues: MutableMap<K, V>? = null
 
+    private val inMemoryValuesCount = CordaMetrics.Metric.Messaging.ConsumerInMemoryStoreCount.builder()
+        .withTag(CordaMetrics.Tag.MessagePatternType, MetricsConstants.COMPACTED_PATTERN_TYPE)
+        .withTag(CordaMetrics.Tag.MessagePatternClientId, config.clientId)
+        .build()
+
     private val processorMeter = CordaMetrics.Metric.Messaging.MessageProcessorTime.builder()
         .withTag(CordaMetrics.Tag.MessagePatternType, MetricsConstants.COMPACTED_PATTERN_TYPE)
         .withTag(CordaMetrics.Tag.MessagePatternClientId, config.clientId)
@@ -155,6 +160,7 @@ internal class CompactedSubscriptionImpl<K : Any, V : Any>(
             val consumerRecords = consumer.poll(config.pollTimeout)
             try {
                 processCompactedRecords(consumerRecords)
+                recordInMemoryValuesCount()
             } catch (ex: Exception) {
                 when (ex) {
                     is CordaMessageAPIFatalException,
@@ -170,6 +176,10 @@ internal class CompactedSubscriptionImpl<K : Any, V : Any>(
                 }
             }
         }
+    }
+
+    private fun recordInMemoryValuesCount() {
+        inMemoryValuesCount.record(getLatestValues().size.toDouble())
     }
 
     private fun processCompactedRecords(
