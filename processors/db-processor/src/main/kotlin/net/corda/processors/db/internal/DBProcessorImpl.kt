@@ -170,7 +170,6 @@ class DBProcessorImpl @Activate constructor(
     private val reconcilers = Reconcilers(
         coordinatorFactory,
         dbConnectionManager,
-        virtualNodeInfoWriteService,
         virtualNodeInfoReadService,
         cpiInfoReadService,
         cpiInfoWriteService,
@@ -202,7 +201,7 @@ class DBProcessorImpl @Activate constructor(
         when (event) {
             is StartEvent -> onStartEvent()
             is RegistrationStatusChangeEvent -> onRegistrationStatusChangeEvent(event, coordinator)
-            is ConfigChangedEvent -> onConfigChangedEvent()
+            is ConfigChangedEvent -> onConfigChangedEvent(event)
             is BootConfigEvent -> onBootConfigEvent(event)
             is StopEvent -> onStopEvent()
             else -> log.error("Unexpected event $event!")
@@ -243,9 +242,11 @@ class DBProcessorImpl @Activate constructor(
         coordinator.updateStatus(event.status)
     }
 
-    private fun onConfigChangedEvent() {
+    private fun onConfigChangedEvent(
+        event: ConfigChangedEvent,
+    ) {
         // Creates and starts the rest of the reconcilers
-        reconcilers.onConfigChanged()
+        reconcilers.onConfigChanged(event)
     }
 
     private fun onStartEvent() {
