@@ -503,6 +503,14 @@ object CordaMetrics {
             }
             VoidMeter
         })
+
+        object Db {
+            /**
+             * The time taken to process a flow persistence request, from the moment the request is received from Kafka.
+             */
+            object EntityPersistenceRequestTime : Metric<Timer>("db.flow.persistence.request.time", CordaMetrics::timer)
+
+        }
     }
 
     /**
