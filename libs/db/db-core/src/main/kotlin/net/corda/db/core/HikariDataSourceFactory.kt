@@ -17,7 +17,7 @@ import javax.sql.DataSource
  */
 class HikariDataSourceFactory(
     private val hikariDataSourceFactory: (c: HikariConfig) -> CloseableDataSource = { c ->
-        val ds = LoggedDataSource(HikariDataSource(c))
+        val ds = HikariDataSource(c)
         // TODO - this can be enabled when https://github.com/brettwooldridge/HikariCP/pull/1989 is released
         //   https://r3-cev.atlassian.net/browse/CORE-7113
         // ds.metricsTrackerFactory = MicrometerMetricsTrackerFactory(MeterFactory.registry)
@@ -27,7 +27,7 @@ class HikariDataSourceFactory(
     /**
      * [HikariDataSource] wrapper that makes it [CloseableDataSource]
      */
-    private class DataSourceWrapper(private val delegate: CloseableDataSource)
+    private class DataSourceWrapper(private val delegate: HikariDataSource)
         : CloseableDataSource, Closeable by delegate, DataSource by delegate
 
     override fun create(
@@ -45,8 +45,14 @@ class HikariDataSourceFactory(
         validationTimeout: Duration
     ): CloseableDataSource {
         val conf = HikariConfig()
+        conf.dataSource = LoggedDataSource(
+            driverClass,
+            jdbcUrl,
+            username,
+            password,
+        )
 
-        try {
+        /*try {
             // Create and *wrap* an existing data source.
             conf.dataSource = OSGiDataSourceFactory.create(
                 driverClass,
@@ -61,7 +67,7 @@ class HikariDataSourceFactory(
             conf.jdbcUrl = jdbcUrl
             conf.username = username
             conf.password = password
-        }
+        }*/
 
         conf.isAutoCommit = isAutoCommit
         conf.isReadOnly = isReadOnly

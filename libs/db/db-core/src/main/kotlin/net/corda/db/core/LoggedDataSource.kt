@@ -1,12 +1,13 @@
 package net.corda.db.core
 
-import com.zaxxer.hikari.HikariDataSource
 import org.slf4j.LoggerFactory
-import java.io.Closeable
+import java.io.PrintWriter
 import java.sql.Connection
+import java.sql.DriverManager
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
+import java.util.logging.Logger
 import javax.sql.DataSource
 
 internal class LoggedConnection(
@@ -39,13 +40,51 @@ internal class LoggedConnection(
     }
 }
 internal class LoggedDataSource(
-    private val origin: HikariDataSource
-): CloseableDataSource, DataSource by origin, Closeable by origin {
+    driverClass: String,
+    private val jdbcUrl: String,
+    private val username: String,
+    private val password: String,
+): DataSource {
+    private var logWriter: PrintWriter? = null
+    private var timeout: Int = 25
+    init {
+        Class.forName(driverClass)
+    }
+    override fun getLogWriter(): PrintWriter? {
+        return logWriter
+    }
+
+    override fun setLogWriter(out: PrintWriter?) {
+        logWriter = out
+    }
+
+    override fun setLoginTimeout(seconds: Int) {
+        timeout = seconds
+    }
+
+    override fun getLoginTimeout(): Int {
+        return timeout
+    }
+
+    override fun getParentLogger(): Logger? {
+        return null
+    }
+
+    override fun <T : Any?> unwrap(iface: Class<T>?): T? {
+        return null
+    }
+
+    override fun isWrapperFor(iface: Class<*>?): Boolean {
+        return false
+    }
+
     override fun getConnection(): Connection {
-        return LoggedConnection(origin.connection)
+        val connection = DriverManager.getConnection(jdbcUrl, username, password)
+        return LoggedConnection(connection)
     }
 
     override fun getConnection(username: String?, password: String?): Connection {
-        return LoggedConnection(origin.getConnection(username, password))
+        val connection = DriverManager.getConnection(jdbcUrl, username?: this.username, password?: this.password)
+        return LoggedConnection(connection)
     }
 }
