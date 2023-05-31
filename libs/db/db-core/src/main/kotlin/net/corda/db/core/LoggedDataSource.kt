@@ -33,6 +33,7 @@ internal class LoggedConnection(
 
 
     override fun close() {
+        connection.close()
         activeConnection.remove(this)
         logger.info("Closing connection $created", Exception("Closed", created))
     }
