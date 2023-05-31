@@ -9,7 +9,7 @@ import net.corda.flow.fiber.cache.FlowFiberCache
 import net.corda.sandboxgroupcontext.SandboxGroupType
 import net.corda.sandboxgroupcontext.SandboxedCache
 import net.corda.sandboxgroupcontext.VirtualNodeContext
-import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
+import net.corda.sandboxgroupcontext.service.CacheEviction
 import net.corda.utilities.debug
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro
@@ -23,8 +23,8 @@ import java.time.Duration
 @Suppress("unused")
 @Component(service = [FlowFiberCache::class])
 class FlowFiberCacheImpl @Activate constructor(
-    @Reference(service = SandboxGroupContextComponent::class)
-    private val sandboxGroupContextComponent: SandboxGroupContextComponent
+    @Reference(service = CacheEviction::class)
+    private val cacheEviction: CacheEviction
 ) : FlowFiberCache, SandboxedCache {
 
     private companion object {
@@ -44,7 +44,7 @@ class FlowFiberCacheImpl @Activate constructor(
     )
 
     init {
-        if (!sandboxGroupContextComponent.addEvictionListener(SandboxGroupType.FLOW, ::onEviction)) {
+        if (!cacheEviction.addEvictionListener(SandboxGroupType.FLOW, ::onEviction)) {
             logger.error("FAILED TO ADD EVICTION LISTENER")
         }
     }
@@ -52,7 +52,7 @@ class FlowFiberCacheImpl @Activate constructor(
     @Suppress("unused")
     @Deactivate
     fun shutdown() {
-        if (!sandboxGroupContextComponent.removeEvictionListener(SandboxGroupType.FLOW, ::onEviction)) {
+        if (!cacheEviction.removeEvictionListener(SandboxGroupType.FLOW, ::onEviction)) {
             logger.error("FAILED TO REMOVE EVICTION LISTENER")
         }
     }
@@ -62,7 +62,7 @@ class FlowFiberCacheImpl @Activate constructor(
             "Evicting cached items from ${cache::class.java} with holding identity: ${vnc.holdingIdentity} and sandbox type: " +
                     SandboxGroupType.FLOW
         }
-        remove(vnc.holdingIdentity, SandboxGroupType.FLOW)
+        remove(vnc.holdingIdentity)
     }
 
     override fun put(key: FlowKey, fiber: FlowFiberImpl) {
@@ -83,7 +83,7 @@ class FlowFiberCacheImpl @Activate constructor(
         cache.cleanUp()
     }
 
-    override fun remove(holdingIdentity: HoldingIdentity, sandboxGroupType: SandboxGroupType) {
+    override fun remove(holdingIdentity: HoldingIdentity) {
         logger.debug { "Flow fiber cache removing holdingIdentity $holdingIdentity" }
         val holdingIdentityToRemove = holdingIdentity.toAvro()
         val keysToInvalidate = cache.asMap().keys.filter { holdingIdentityToRemove == it.identity }

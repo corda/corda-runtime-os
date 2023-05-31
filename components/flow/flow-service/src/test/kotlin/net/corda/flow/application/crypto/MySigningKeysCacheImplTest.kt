@@ -78,7 +78,7 @@ class MySigningKeysCacheImplTest {
             BOB_X500_HOLDING_IDENTITY.toCorda()
         )
         mySigningKeysCache.putAll(mapOf(KEY_A to KEY_A, KEY_B to null, KEY_C to KEY_C, KEY_D to null))
-        mySigningKeysCache.remove(ALICE_X500_HOLDING_IDENTITY.toCorda(), SandboxGroupType.FLOW)
+        mySigningKeysCache.remove(ALICE_X500_HOLDING_IDENTITY.toCorda())
 
         assertThat(mySigningKeysCache.get(setOf(KEY_A, KEY_B, KEY_C, KEY_D))).containsExactlyInAnyOrderEntriesOf(
             mapOf(

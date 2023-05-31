@@ -8,7 +8,7 @@ import net.corda.sandboxgroupcontext.SandboxGroupType
 import net.corda.sandboxgroupcontext.SandboxedCache
 import net.corda.sandboxgroupcontext.SandboxedCache.CacheKey
 import net.corda.sandboxgroupcontext.VirtualNodeContext
-import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
+import net.corda.sandboxgroupcontext.service.CacheEviction
 import net.corda.utilities.debug
 import net.corda.virtualnode.HoldingIdentity
 import org.osgi.service.component.annotations.Activate
@@ -23,8 +23,8 @@ import java.security.PublicKey
 class MySigningKeysCacheImpl @Activate constructor(
     @Reference(service = CurrentSandboxGroupContext::class)
     private val currentSandboxGroupContext: CurrentSandboxGroupContext,
-    @Reference(service = SandboxGroupContextComponent::class)
-    private val sandboxGroupContextComponent: SandboxGroupContextComponent
+    @Reference(service = CacheEviction::class)
+    private val cacheEviction: CacheEviction
 ) : MySigningKeysCache, SandboxedCache {
 
     private data class CacheValue(val publicKey: PublicKey?)
@@ -43,7 +43,7 @@ class MySigningKeysCacheImpl @Activate constructor(
     )
 
     init {
-        if (!sandboxGroupContextComponent.addEvictionListener(SandboxGroupType.FLOW, ::onEviction)) {
+        if (!cacheEviction.addEvictionListener(SandboxGroupType.FLOW, ::onEviction)) {
             log.error("FAILED TO ADD EVICTION LISTENER")
         }
     }
@@ -51,7 +51,7 @@ class MySigningKeysCacheImpl @Activate constructor(
     @Suppress("unused")
     @Deactivate
     fun shutdown() {
-        if (!sandboxGroupContextComponent.removeEvictionListener(SandboxGroupType.FLOW, ::onEviction)) {
+        if (!cacheEviction.removeEvictionListener(SandboxGroupType.FLOW, ::onEviction)) {
             log.error("FAILED TO REMOVE EVICTION LISTENER")
         }
     }
@@ -61,7 +61,7 @@ class MySigningKeysCacheImpl @Activate constructor(
             "Evicting cached items from ${cache::class.java} with holding identity: ${vnc.holdingIdentity} and sandbox type: " +
                     SandboxGroupType.FLOW
         }
-        remove(vnc.holdingIdentity, SandboxGroupType.FLOW)
+        remove(vnc.holdingIdentity)
     }
 
     override fun get(keys: Set<PublicKey>): Map<PublicKey, PublicKey?> {
@@ -82,7 +82,7 @@ class MySigningKeysCacheImpl @Activate constructor(
         }
     }
 
-    override fun remove(holdingIdentity: HoldingIdentity, sandboxGroupType: SandboxGroupType) {
+    override fun remove(holdingIdentity: HoldingIdentity) {
         cache.invalidateAll(cache.asMap().keys.filter { it.holdingIdentity == holdingIdentity })
         cache.cleanUp()
     }

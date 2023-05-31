@@ -24,6 +24,7 @@ import net.corda.sandboxgroupcontext.VirtualNodeContext
 import net.corda.sandboxgroupcontext.getObjectByKey
 import net.corda.sandboxgroupcontext.putObjectByKey
 import net.corda.sandboxgroupcontext.service.CacheControl
+import net.corda.sandboxgroupcontext.service.CacheEviction
 import net.corda.sandboxgroupcontext.service.EvictionListener
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.crypto.SecureHash
@@ -72,7 +73,7 @@ typealias SatisfiedServiceReferences = Map<String, SortedMap<ServiceReference<*>
  * in EVERY process.
  */
 @Suppress("TooManyFunctions")
-@Component(service = [ SandboxGroupContextService::class ])
+@Component(service = [ SandboxGroupContextService::class, CacheEviction::class ])
 @RequireSandboxCrypto
 @RequireSandboxHooks
 @RequireCordaSystem

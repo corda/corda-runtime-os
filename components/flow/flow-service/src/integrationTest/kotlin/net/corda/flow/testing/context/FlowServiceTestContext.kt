@@ -416,7 +416,7 @@ class FlowServiceTestContext @Activate constructor(
     }
 
     override fun resetFlowFiberCache() {
-        ALL_TEST_VIRTUAL_NODES.forEach { flowFiberCache.remove(it.toCorda(), SandboxGroupType.FLOW) }
+        ALL_TEST_VIRTUAL_NODES.forEach { flowFiberCache.remove(it.toCorda()) }
     }
 
     fun clearTestRuns() {
