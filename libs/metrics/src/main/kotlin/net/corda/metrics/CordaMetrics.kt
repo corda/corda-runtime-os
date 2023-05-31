@@ -626,6 +626,15 @@ object CordaMetrics {
              */
             object ReconciliationRecordsCount : Metric<DistributionSummary>("db.reconciliation.records.count", Metrics::summary)
         }
+
+        object Messaging {
+
+            /**
+             * Counter for the number of chunks generated when writing records.
+             */
+            object ProducerChunksGenerated : Metric<DistributionSummary>("producer.chunks.generated", Metrics::summary)
+
+        }
     }
 
     /**
@@ -802,7 +811,9 @@ object CordaMetrics {
         /**
          * Result of a TLS connection (i.e. success or failure).
          */
-        ConnectionResult("connection.result")
+        ConnectionResult("connection.result"),
+
+        Topic("topic")
     }
 
     /**

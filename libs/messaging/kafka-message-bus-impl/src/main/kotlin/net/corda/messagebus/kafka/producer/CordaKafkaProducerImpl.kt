@@ -194,10 +194,25 @@ class CordaKafkaProducerImpl(
             callback?.onCompletion(exceptionThrown)
             throw exceptionThrown
         }
+
+        recordChunksPerTopic(cordaProducerRecords)
+
         cordaProducerRecords.forEach {
             //note callback is only applicable to async calls which are not allowed
             producer.send(it.toKafkaRecord(topicPrefix, partition))
         }
+    }
+
+    private fun recordChunksPerTopic(cordaProducerRecords: List<CordaProducerRecord<*, *>>) {
+        cordaProducerRecords.groupBy { it.topic }
+            .mapValues { (_, records) -> records.size }
+            .forEach { (topic, count) ->
+                CordaMetrics.Metric.Messaging.ProducerChunksGenerated.builder()
+                    .withTag(CordaMetrics.Tag.Topic, topic)
+                    .build()
+                    .record(count.toDouble())
+            }
+
     }
 
     override fun beginTransaction() {
