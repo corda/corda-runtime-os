@@ -86,7 +86,6 @@ class SigningServiceImpl(
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         private const val SIGN_OPERATION_NAME = "sign"
-        private const val DERIVE_SHARED_SECRET_OPERATION_NAME = "deriveSharedSecret"
     }
 
     data class OwnedKeyRecord(val publicKey: PublicKey, val data: SigningKeyInfo)
@@ -286,14 +285,7 @@ class SigningServiceImpl(
         otherPublicKey: PublicKey,
         context: Map<String, String>,
     ): ByteArray {
-        val record =
-            CordaMetrics.Metric.Crypto.GetOwnedKeyRecordTimer.builder()
-                .withTag(CordaMetrics.Tag.OperationName, DERIVE_SHARED_SECRET_OPERATION_NAME)
-                .withTag(CordaMetrics.Tag.PublicKeyType, publicKey::class.java.simpleName)
-                .build()
-                .recordCallable {
-                    getOwnedKeyRecord(tenantId, publicKey)
-                }!!
+        val record = getOwnedKeyRecord(tenantId, publicKey)
 
         logger.info(
             "deriveSharedSecret(tenant={}, publicKey={}, otherPublicKey={})",

@@ -1,7 +1,6 @@
 package net.corda.crypto.service.impl
 
 import java.time.Duration
-import java.time.Instant
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.cipher.suite.CryptoService
@@ -22,7 +21,6 @@ import net.corda.crypto.softhsm.CryptoServiceProvider
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
-import net.corda.metrics.CordaMetrics
 import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
 import net.corda.utilities.debug
 import org.osgi.service.component.annotations.Activate
@@ -70,22 +68,11 @@ class CryptoServiceFactoryImpl @Activate constructor(
         cryptoServiceProvider = cryptoServiceProvider
     )
 
-    override fun findInstance(tenantId: String, category: String): CryptoServiceRef {
-        val startTime = Instant.now()
-        return impl.findInstance(tenantId, category).also {
-            CordaMetrics.Metric.Crypto.CryptoServiceFindInstanceTimer.builder()
-                .build()
-                .record(Duration.between(startTime, Instant.now()))
-        }
-    }
+    override fun findInstance(tenantId: String, category: String): CryptoServiceRef =
+        impl.findInstance(tenantId, category)
 
     override fun getInstance(hsmId: String): CryptoService {
-        val startTime = Instant.now()
-        return impl.getInstance(hsmId).also {
-            CordaMetrics.Metric.Crypto.CryptoServiceGetInstanceTimer.builder()
-                .build()
-                .record(Duration.between(startTime, Instant.now()))
-        }
+        return impl.getInstance(hsmId)
     }
 
     override fun bootstrapConfig(config: SmartConfig) {

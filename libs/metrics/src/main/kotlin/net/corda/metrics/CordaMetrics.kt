@@ -372,16 +372,6 @@ object CordaMetrics {
             object SigningKeyLookupTimer: Metric<Timer>("$PREFIX.signing.key.lookup.time", CordaMetrics::timer)
 
             /**
-             * The time taken to find crypto service instances.
-             */
-            object CryptoServiceFindInstanceTimer: Metric<Timer>("$PREFIX.service.find.instance.time", CordaMetrics::timer)
-
-            /**
-             * The time taken to get crypto service instances.
-             */
-            object CryptoServiceGetInstanceTimer: Metric<Timer>("$PREFIX.service.get.instance.time", CordaMetrics::timer)
-
-            /**
              * The time taken to get crypto signing repository instances.
              */
             object SigningRepositoryGetInstanceTimer: Metric<Timer>("$PREFIX.signing.repository.get.instance.time", CordaMetrics::timer)
