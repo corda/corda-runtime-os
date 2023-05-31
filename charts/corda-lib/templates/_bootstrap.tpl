@@ -9,7 +9,7 @@ metadata:
   annotations:
     "helm.sh/hook": pre-install
     "helm.sh/hook-weight": "-3"
-  name: preinstall-role
+  name: {{ include "corda.fullname" . }}-preinstall-role
 rules:
 - apiGroups: [""]
   resources: ["secrets"]
@@ -21,13 +21,13 @@ metadata:
   annotations:
     "helm.sh/hook": pre-install
     "helm.sh/hook-weight": "-2"
-  name: preinstall-role-binding
+  name: {{ include "corda.fullname" . }}-preinstall-role-binding
 subjects:
 - kind: ServiceAccount
-  name: preinstall-service-account
+  name: {{ include "corda.fullname" . }}-preinstall-service-account
 roleRef:
   kind: Role
-  name: preinstall-role
+  name: {{ include "corda.fullname" . }}-preinstall-role
   apiGroup: rbac.authorization.k8s.io
 ---
 apiVersion: v1
@@ -36,7 +36,7 @@ metadata:
   annotations:
     "helm.sh/hook": pre-install
     "helm.sh/hook-weight": "-4"
-  name: preinstall-service-account
+  name: {{ include "corda.fullname" . }}-preinstall-service-account
 ---
 apiVersion: batch/v1
 kind: Job
@@ -55,7 +55,7 @@ spec:
     spec:
       {{- include "corda.imagePullSecrets" . | nindent 6 }}
       {{- include "corda.tolerations" . | nindent 6 }}
-      serviceAccountName: preinstall-service-account
+      serviceAccountName: {{ include "corda.fullname" . }}-preinstall-service-account
       securityContext:
         runAsUser: 10001
         runAsGroup: 10002
