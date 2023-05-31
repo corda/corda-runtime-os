@@ -1,6 +1,13 @@
 package com.r3.corda.demo.interop.tokens.workflows.interop
 
+import com.r3.corda.demo.interop.tokens.workflows.IssueFlowArgs
+import com.r3.corda.demo.interop.tokens.workflows.IssueFlowResult
+import com.r3.corda.demo.interop.tokens.workflows.IssueSubFlow
+import com.r3.corda.demo.interop.tokens.workflows.TransferFlowArgs
+import com.r3.corda.demo.interop.tokens.workflows.TransferFlowResult
+import com.r3.corda.demo.interop.tokens.workflows.TransferSubFlow
 import net.corda.v5.application.flows.CordaInject
+import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.interop.binding.InteropAction
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.base.annotations.Suspendable
@@ -23,6 +30,10 @@ class TokensFlow: FacadeDispatcherFlow(), TokensFacade {
 
     @CordaInject
     lateinit var memberLookup: MemberLookup
+
+    @CordaInject
+    lateinit var flowEngine: FlowEngine
+
     private val timeserver : () -> ZonedDateTime = { ZonedDateTime.now() }
     private var balances = mutableMapOf("USD" to BigDecimal(100), "EUR" to BigDecimal(100))
     private val reservations = mutableMapOf<UUID, Reservation>()
@@ -42,7 +53,7 @@ class TokensFlow: FacadeDispatcherFlow(), TokensFacade {
 
     @Suspendable
     override fun reserveTokensV1(denomination: String, amount: BigDecimal): InteropAction<UUID> {
-        log.info("reserveTokensV1 $denomination $amount")
+        log.info("reserveTokensV1 $denomination $amount invokes on ${memberLookup.myInfo().name}")
         return InteropAction.ServerResponse(reserveTokensV2(denomination, amount, 24 * 60 * 1000)
             .result.reservationRef)
     }
@@ -62,6 +73,7 @@ class TokensFlow: FacadeDispatcherFlow(), TokensFacade {
         return InteropAction.ServerResponse(TokenReservation(ref, expirationTimestamp))
     }
 
+    @Suspendable
     override fun reserveTokensV3(
         denomination: String,
         amount: BigDecimal,
@@ -73,7 +85,9 @@ class TokensFlow: FacadeDispatcherFlow(), TokensFacade {
 
         reservations[ref] = Reservation(ref, denomination, amount.toDouble(), expirationTimestamp)
 
-        return InteropAction.ServerResponse(SimpleTokenReservation(ref, "$denomination $amount"))
+        val result : IssueFlowResult = flowEngine.subFlow(IssueSubFlow(IssueFlowArgs(amount.toString())))
+
+        return InteropAction.ServerResponse(SimpleTokenReservation(ref, result.stateId))
     }
 
     @Suspendable
@@ -102,6 +116,9 @@ class TokensFlow: FacadeDispatcherFlow(), TokensFacade {
 
         memberLookup.lookup(MemberX500Name.parse(recipient))
         spendHistory.add(Spend(reservation, transactionRef, recipient))
+
+
+         flowEngine.subFlow(TransferSubFlow(TransferFlowArgs(recipient, reservationRef)))
 
         return InteropAction.ServerResponse(Unit)
     }
