@@ -215,9 +215,9 @@ class SoftCryptoService(
                 signature.sign()
             }
         }
-        CordaMetrics.Metric.Crypto.SoftSignTimer
+        CordaMetrics.Metric.Crypto.SignTimer
             .builder()
-            .withTag(CordaMetrics.Tag.AlgorithmName, spec.keyScheme.algorithmName)
+            .withTag(CordaMetrics.Tag.SignatureSpec, spec.signatureSpec.signatureName)
             .build()
             .record(Duration.between(startTime, Instant.now()))
         return signatureBytes

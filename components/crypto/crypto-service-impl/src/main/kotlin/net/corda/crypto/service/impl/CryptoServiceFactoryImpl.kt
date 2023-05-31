@@ -1,6 +1,5 @@
 package net.corda.crypto.service.impl
 
-import java.time.Duration
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.cipher.suite.CryptoService
@@ -27,6 +26,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
+import java.time.Duration
 
 /**
  * A high level factory which worker instance which supports only the Soft HSM implementation.
@@ -71,9 +71,8 @@ class CryptoServiceFactoryImpl @Activate constructor(
     override fun findInstance(tenantId: String, category: String): CryptoServiceRef =
         impl.findInstance(tenantId, category)
 
-    override fun getInstance(hsmId: String): CryptoService {
-        return impl.getInstance(hsmId)
-    }
+    override fun getInstance(hsmId: String): CryptoService =
+        impl.getInstance(hsmId)
 
     override fun bootstrapConfig(config: SmartConfig) {
         lifecycleCoordinator.postEvent(BootstrapConfigProvided(config))
@@ -137,7 +136,7 @@ class CryptoServiceFactoryImpl @Activate constructor(
 
         fun getInstance(hsmId: String): CryptoService {
             logger.debug { "Getting the crypto service for hsmId=$hsmId)" }
-            if (hsmId != this.hsmId) {
+            if(hsmId != this.hsmId) {
                 throw IllegalArgumentException(
                     "The worker is not configured to handle $hsmId, it handles ${this.hsmId}."
                 )

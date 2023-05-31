@@ -362,9 +362,9 @@ object CordaMetrics {
             object EntityManagerFactoryCreationTimer: Metric<Timer>("entity.manager.factory.creation.time", CordaMetrics::timer)
 
             /**
-             * The time taken for soft crypto service signing.
+             * The time taken for crypto signing.
              */
-            object SoftSignTimer: Metric<Timer>("$PREFIX.soft.sign.time", CordaMetrics::timer)
+            object SignTimer: Metric<Timer>("$PREFIX.sign.time", CordaMetrics::timer)
 
             /**
              * The time taken for crypto signing key lookup.
@@ -644,9 +644,9 @@ object CordaMetrics {
         PublicKeyType("publickey.type"),
 
         /**
-         * Identifies the name of key-based encryption algorithms used in crypto operations.
+         * Identifies the signature signing scheme name to create signatures during crypto signing operations.
          */
-        AlgorithmName("algorithm.name"),
+        SignatureSpec("signature.spec"),
 
         /**
          * Identifier of a tenant either a virtual node identifier or cluster level tenant id.
