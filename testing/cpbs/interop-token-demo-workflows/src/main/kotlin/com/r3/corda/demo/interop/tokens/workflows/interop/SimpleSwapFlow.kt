@@ -97,7 +97,6 @@ class SimpleSwapFlow : ClientStartableFlow {
             val session1 = flowMessaging.initiateFlow(newOwnerInfo.name)
            // val reservation : UUID = session1.sendAndReceive(UUID::class.java, Payment(toReserve = BigDecimal(100)))
 
-          //  log.info("Tesla Reserved $reservation")
 
             val finalizationResult = ledgerService.finalize(
                 signedTransaction,
