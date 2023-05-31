@@ -2,7 +2,7 @@ package net.corda.messaging.integration
 
 import java.util.UUID
 import net.corda.messaging.integration.IntegrationTestProperties.Companion.getBundleContext
-import net.corda.schema.Schemas.getStateAndEventDLQTopic
+import net.corda.schema.Schemas.getDLQTopic
 import net.corda.schema.Schemas.getStateAndEventStateTopic
 
 class TopicTemplates {
@@ -50,7 +50,7 @@ class TopicTemplates {
                     } 
                 ]"""
         private const val DURABLE_TOPIC3 = "DurableTopic3"
-        val DURABLE_TOPIC3_DLQ = getStateAndEventDLQTopic(DURABLE_TOPIC3)
+        val DURABLE_TOPIC3_DLQ = getDLQTopic(DURABLE_TOPIC3)
         val DURABLE_TOPIC3_TEMPLATE = """topics = [ 
                     { 
                         topicName = "$TEST_TOPIC_PREFIX$DURABLE_TOPIC3" 
@@ -127,7 +127,7 @@ class TopicTemplates {
         ]"""
 
         const val EVENT_TOPIC1 = "EventTopic1"
-        private val EVENT_TOPIC1_DLQ = getStateAndEventDLQTopic(EVENT_TOPIC1)
+        private val EVENT_TOPIC1_DLQ = getDLQTopic(EVENT_TOPIC1)
         private val EVENT_TOPIC1_STATE = getStateAndEventStateTopic(EVENT_TOPIC1)
         val EVENT_TOPIC1_TEMPLATE = """topics = [ 
                     { 
@@ -151,7 +151,7 @@ class TopicTemplates {
                 ]"""
 
         const val EVENT_TOPIC2 = "EventTopic2"
-        private val EVENT_TOPIC2_DLQ = getStateAndEventDLQTopic(EVENT_TOPIC2)
+        private val EVENT_TOPIC2_DLQ = getDLQTopic(EVENT_TOPIC2)
         private val EVENT_TOPIC2_STATE = getStateAndEventStateTopic(EVENT_TOPIC2)
         val EVENT_TOPIC2_TEMPLATE = """topics = [ 
                     { 
@@ -175,7 +175,7 @@ class TopicTemplates {
                 ]"""
 
         const val EVENT_TOPIC3 = "EventTopic3"
-        private val EVENT_TOPIC3_DLQ = getStateAndEventDLQTopic(EVENT_TOPIC3)
+        private val EVENT_TOPIC3_DLQ = getDLQTopic(EVENT_TOPIC3)
         private val EVENT_TOPIC3_STATE = getStateAndEventStateTopic(EVENT_TOPIC3)
         val EVENT_TOPIC3_TEMPLATE = """topics = [ 
                     { 
@@ -199,7 +199,7 @@ class TopicTemplates {
                 ]"""
 
         const val EVENT_TOPIC4 = "EventTopic4"
-        private val EVENT_TOPIC4_DLQ = getStateAndEventDLQTopic(EVENT_TOPIC4)
+        private val EVENT_TOPIC4_DLQ = getDLQTopic(EVENT_TOPIC4)
         private val EVENT_TOPIC4_STATE = getStateAndEventStateTopic(EVENT_TOPIC4)
         val EVENT_TOPIC4_TEMPLATE = """topics = [ 
                     { 
@@ -223,7 +223,7 @@ class TopicTemplates {
                 ]"""
 
         const val EVENT_TOPIC5 = "EventTopic5"
-        val EVENT_TOPIC5_DLQ = getStateAndEventDLQTopic(EVENT_TOPIC5)
+        val EVENT_TOPIC5_DLQ = getDLQTopic(EVENT_TOPIC5)
         private val EVENT_TOPIC5_STATE = getStateAndEventStateTopic(EVENT_TOPIC5)
         val EVENT_TOPIC5_TEMPLATE = """topics = [ 
                     { 
@@ -247,7 +247,7 @@ class TopicTemplates {
                 ]"""
 
         const val EVENT_TOPIC6 = "EventTopic6"
-        private val EVENT_TOPIC6_DLQ = getStateAndEventDLQTopic(EVENT_TOPIC6)
+        private val EVENT_TOPIC6_DLQ = getDLQTopic(EVENT_TOPIC6)
         private val EVENT_TOPIC6_STATE = getStateAndEventStateTopic(EVENT_TOPIC6)
         val EVENT_TOPIC6_TEMPLATE = """topics = [ 
                     { 
@@ -271,7 +271,7 @@ class TopicTemplates {
                 ]"""
 
         const val EVENT_TOPIC7 = "EventTopic7"
-        val EVENT_TOPIC7_DLQ = getStateAndEventDLQTopic(EVENT_TOPIC7)
+        val EVENT_TOPIC7_DLQ = getDLQTopic(EVENT_TOPIC7)
         private val EVENT_TOPIC7_STATE = getStateAndEventStateTopic(EVENT_TOPIC7)
         val EVENT_TOPIC7_TEMPLATE = """topics = [ 
                     { 
