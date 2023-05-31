@@ -76,3 +76,15 @@ CODEOWNERS         @ronanbrowne @mnesbit @driessamyn @rick-r3 @fenryka
 /processors/db/                                                 @simon-johnson-r3 @mnesbit @driessamyn @ronanbrowne @rick-r3 @fenryka
 /testing/persistence-testkit/                                   @simon-johnson-r3 @mnesbit @driessamyn @ronanbrowne @rick-r3 @fenryka
 /tools/plugins/db-config
+
+# Modules to be audited by Ledger SMEs
+/components/ledger/                                             @blsemo @relyafi @mnesbit @driessamyn @ronanbrowne @rick-r3 @fenryka
+/libs/ledger/                                                   @blsemo @relyafi @mnesbit @driessamyn @ronanbrowne @rick-r3 @fenryka
+/testing/ledger-*                                               @blsemo @relyafi @mnesbit @driessamyn @ronanbrowne @rick-r3 @fenryka
+
+# Modules to be audited by Notary SMEs
+/components/uniqueness/                                         @blsemo @relyafi @mnesbit @driessamyn @ronanbrowne @rick-r3 @fenryka
+/libs/uniqueness/                                               @blsemo @relyafi @mnesbit @driessamyn @ronanbrowne @rick-r3 @fenryka
+/notary-plugins/                                                @blsemo @relyafi @mnesbit @driessamyn @ronanbrowne @rick-r3 @fenryka
+/processors/uniqueness-processor/                               @blsemo @relyafi @mnesbit @driessamyn @ronanbrowne @rick-r3 @fenryka
+/testing/uniqueness/                                            @blsemo @relyafi @mnesbit @driessamyn @ronanbrowne @rick-r3 @fenryka
