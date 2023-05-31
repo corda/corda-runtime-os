@@ -39,7 +39,7 @@ internal class LoggedConnection(
         logger.info("Closing connection $created", Exception("Closed", created))
     }
 }
-internal class LoggedDataSource(
+internal class SimpleDataSource(
     driverClass: String,
     private val jdbcUrl: String,
     private val username: String,
@@ -79,12 +79,23 @@ internal class LoggedDataSource(
     }
 
     override fun getConnection(): Connection {
-        val connection = DriverManager.getConnection(jdbcUrl, username, password)
-        return LoggedConnection(connection)
+        return DriverManager.getConnection(jdbcUrl, username, password)
     }
 
     override fun getConnection(username: String?, password: String?): Connection {
-        val connection = DriverManager.getConnection(jdbcUrl, username?: this.username, password?: this.password)
-        return LoggedConnection(connection)
+        return DriverManager.getConnection(jdbcUrl, username?: this.username, password?: this.password)
+    }
+
+}
+internal class LoggedDataSource(
+    private val datasource: DataSource,
+):DataSource by datasource {
+
+    override fun getConnection(): Connection {
+        return LoggedConnection(datasource.connection)
+    }
+
+    override fun getConnection(username: String?, password: String?): Connection {
+        return LoggedConnection(datasource.getConnection(username, password))
     }
 }

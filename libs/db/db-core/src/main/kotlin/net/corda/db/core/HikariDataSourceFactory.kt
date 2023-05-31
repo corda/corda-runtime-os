@@ -45,29 +45,23 @@ class HikariDataSourceFactory(
         validationTimeout: Duration
     ): CloseableDataSource {
         val conf = HikariConfig()
-        conf.dataSource = LoggedDataSource(
-            driverClass,
-            jdbcUrl,
-            username,
-            password,
-        )
 
-        /*try {
-            // Create and *wrap* an existing data source.
-            conf.dataSource = OSGiDataSourceFactory.create(
+        val ds = try {
+            OSGiDataSourceFactory.create(
                 driverClass,
                 jdbcUrl,
                 username,
                 password
             )
         } catch (_: UnsupportedOperationException) {
-            // Defer to Hikari, and hence java.sql.DriverManager, which we don't want in production
-            // code. This part should only be hit in unit tests that don't use an OSGi framework.
-            conf.driverClassName = driverClass
-            conf.jdbcUrl = jdbcUrl
-            conf.username = username
-            conf.password = password
-        }*/
+            SimpleDataSource(
+                driverClass,
+                jdbcUrl,
+                username,
+                password
+            )
+        }
+        conf.dataSource = LoggedDataSource(ds)
 
         conf.isAutoCommit = isAutoCommit
         conf.isReadOnly = isReadOnly
