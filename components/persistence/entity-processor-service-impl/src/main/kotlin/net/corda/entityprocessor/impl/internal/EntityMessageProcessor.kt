@@ -70,6 +70,13 @@ class EntityMessageProcessor(
                 // We received a [null] external event therefore we do not know the flow id to respond to.
                 return@mapNotNull null
             } else {
+                CordaMetrics.Metric.Db.EntityPersistenceRequestLag.builder()
+                    .withTag(CordaMetrics.Tag.OperationName, request.request::class.java.name)
+                    .build()
+                    .record(
+                        Duration.ofMillis(Instant.now().toEpochMilli() - event.timestamp)
+                    )
+
                 val clientRequestId =
                     request.flowExternalEventContext.contextProperties.toMap()[MDC_CLIENT_ID] ?: ""
 
@@ -103,7 +110,7 @@ class EntityMessageProcessor(
                             .withTag(CordaMetrics.Tag.OperationStatus, requestOutcome)
                             .build()
                             .record(Duration.between(startTime, Instant.now()))
-                        
+
                         currentSandboxGroupContext.remove()
                     }
                 }
