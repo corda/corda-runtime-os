@@ -34,7 +34,7 @@ class WorkerHelpers {
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         private const val BOOT_CONFIG_PATH = "net/corda/applications/workers/workercommon/boot/corda.boot.json"
-        private val SENSITIVE_ARGS = setOf("-ddatabase.pass", "-spassphrase", "-msasl.jaas.config")
+        private val SENSITIVE_ARGS = setOf("-ddatabase.pass", "-spassphrase", "-msasl.jaas.config", "-ssalt")
 
         /**
          * Parses the [args] into the [params].
