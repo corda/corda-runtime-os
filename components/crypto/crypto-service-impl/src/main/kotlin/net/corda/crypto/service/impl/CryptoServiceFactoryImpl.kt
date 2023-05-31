@@ -73,7 +73,7 @@ class CryptoServiceFactoryImpl @Activate constructor(
     override fun findInstance(tenantId: String, category: String): CryptoServiceRef {
         val startTime = Instant.now()
         return impl.findInstance(tenantId, category).also {
-            CordaMetrics.Metric.CryptoServiceFindInstanceTimer.builder()
+            CordaMetrics.Metric.Crypto.CryptoServiceFindInstanceTimer.builder()
                 .build()
                 .record(Duration.between(startTime, Instant.now()))
         }
@@ -82,7 +82,7 @@ class CryptoServiceFactoryImpl @Activate constructor(
     override fun getInstance(hsmId: String): CryptoService {
         val startTime = Instant.now()
         return impl.getInstance(hsmId).also {
-            CordaMetrics.Metric.CryptoServiceGetInstanceTimer.builder()
+            CordaMetrics.Metric.Crypto.CryptoServiceGetInstanceTimer.builder()
                 .build()
                 .record(Duration.between(startTime, Instant.now()))
         }

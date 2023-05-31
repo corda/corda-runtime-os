@@ -146,7 +146,7 @@ class CipherSchemeMetadataProvider : KeyEncodingService {
             ?: throw IllegalArgumentException("Unrecognised algorithm: ${algorithm.algorithm.id}, with parameters=${algorithm.parameters}")
 
     private fun <T : Any> recordPublicKeyOperation(operationName: String, op: () -> T): T {
-        return CordaMetrics.Metric.CryptoCipherSchemeTimer.builder()
+        return CordaMetrics.Metric.Crypto.CipherSchemeTimer.builder()
             .withTag(CordaMetrics.Tag.OperationName, operationName)
             .build()
             .recordCallable {

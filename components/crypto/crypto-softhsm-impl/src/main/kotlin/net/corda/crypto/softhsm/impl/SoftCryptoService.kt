@@ -215,7 +215,7 @@ class SoftCryptoService(
                 signature.sign()
             }
         }
-        CordaMetrics.Metric.SoftCryptoSignTimer
+        CordaMetrics.Metric.Crypto.SoftSignTimer
             .builder()
             .withTag(CordaMetrics.Tag.AlgorithmName, spec.keyScheme.algorithmName)
             .build()
@@ -226,7 +226,7 @@ class SoftCryptoService(
     private fun providerFor(scheme: KeyScheme): Provider = schemeMetadata.providers.getValue(scheme.providerName)
 
     private fun obtainAndStoreWrappingKey(alias: String, tenantId: String): WrappingKey =
-        CordaMetrics.Metric.WrappingKeyCreationTimer.builder()
+        CordaMetrics.Metric.Crypto.WrappingKeyCreationTimer.builder()
             .withTag(CordaMetrics.Tag.Tenant, tenantId)
             .build()
             .recordCallable {

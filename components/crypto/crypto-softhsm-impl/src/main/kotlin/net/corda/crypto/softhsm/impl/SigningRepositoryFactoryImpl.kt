@@ -20,7 +20,7 @@ class SigningRepositoryFactoryImpl(
     private val layeredPropertyMapFactory: LayeredPropertyMapFactory,
 ) : SigningRepositoryFactory {
     override fun getInstance(tenantId: String) =
-        CordaMetrics.Metric.CryptoSigningRepositoryGetInstanceTimer.builder()
+        CordaMetrics.Metric.Crypto.SigningRepositoryGetInstanceTimer.builder()
             .withTag(CordaMetrics.Tag.Tenant, tenantId)
             .build()
             .recordCallable {

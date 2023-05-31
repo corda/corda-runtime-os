@@ -261,7 +261,7 @@ class SigningServiceImpl(
         context: Map<String, String>
     ): DigitalSignatureWithKey {
         val record =
-            CordaMetrics.Metric.GetOwnedKeyRecordTimer.builder()
+            CordaMetrics.Metric.Crypto.GetOwnedKeyRecordTimer.builder()
                 .withTag(CordaMetrics.Tag.OperationName, SIGN_OPERATION_NAME)
                 .withTag(CordaMetrics.Tag.PublicKeyType, publicKey::class.java.simpleName)
                 .build()
@@ -287,7 +287,7 @@ class SigningServiceImpl(
         context: Map<String, String>,
     ): ByteArray {
         val record =
-            CordaMetrics.Metric.GetOwnedKeyRecordTimer.builder()
+            CordaMetrics.Metric.Crypto.GetOwnedKeyRecordTimer.builder()
                 .withTag(CordaMetrics.Tag.OperationName, DERIVE_SHARED_SECRET_OPERATION_NAME)
                 .withTag(CordaMetrics.Tag.PublicKeyType, publicKey::class.java.simpleName)
                 .build()

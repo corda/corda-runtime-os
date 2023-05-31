@@ -84,7 +84,7 @@ fun CryptoSignatureSpec.toSignatureSpec(serializer: AlgorithmParameterSpecEncodi
         algorithmParams != null -> ParameterizedSignatureSpec(signatureName, algorithmParams)
         else -> SignatureSpecImpl(signatureName)
     }.also {
-        CordaMetrics.Metric.CryptoSignatureSpecTimer.builder()
+        CordaMetrics.Metric.Crypto.SignatureSpecTimer.builder()
             .withTag(CordaMetrics.Tag.OperationName, TO_SIGNATURE_SPEC_OPERATION_NAME)
             .build()
             .record(Duration.between(startTime, Instant.now()))
@@ -109,7 +109,7 @@ fun SignatureSpec.toWire(serializer: AlgorithmParameterSpecEncodingService): Cry
 
         else -> CryptoSignatureSpec(signatureName, null, null)
     }.also {
-        CordaMetrics.Metric.CryptoSignatureSpecTimer.builder()
+        CordaMetrics.Metric.Crypto.SignatureSpecTimer.builder()
             .withTag(CordaMetrics.Tag.OperationName, TO_WIRE_OPERATION_NAME)
             .build()
             .record(Duration.between(startTime, Instant.now()))

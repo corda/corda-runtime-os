@@ -16,7 +16,7 @@ fun getEntityManagerFactory(
     virtualNodeInfoReadService: VirtualNodeInfoReadService,
     jpaEntitiesRegistry: JpaEntitiesRegistry,
 ): EntityManagerFactory {
-    return CordaMetrics.Metric.EntityManagerFactoryCreationTimer.builder()
+    return CordaMetrics.Metric.Crypto.EntityManagerFactoryCreationTimer.builder()
         .withTag(CordaMetrics.Tag.Tenant, tenantId)
         .build()
         .recordCallable {

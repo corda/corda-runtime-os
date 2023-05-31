@@ -338,73 +338,70 @@ object CordaMetrics {
          */
         object UniquenessBackingStoreDbReadTime: Metric<Timer>("uniqueness.backingstore.db.read.time", CordaMetrics::timer)
 
-        /**
-         * The time taken by crypto flow operations.
-         */
-        object CryptoFlowOpsProcessorExecutionTime: Metric<Timer>("crypto.flow.processor.execution.time", CordaMetrics::timer)
+        object Crypto {
+            private const val PREFIX = "crypto"
 
-        /**
-         * The time taken by crypto operations invoked by RPC message pattern requests.
-         */
-        object CryptoOpsProcessorExecutionTime: Metric<Timer>("crypto.processor.execution.time", CordaMetrics::timer)
+            /**
+             * The time taken by crypto flow operations.
+             */
+            object FlowOpsProcessorExecutionTime: Metric<Timer>("$PREFIX.flow.processor.execution.time", CordaMetrics::timer)
 
-        /**
-         * The time taken for wrapping key creation in crypto operations.
-         */
-        object WrappingKeyCreationTimer: Metric<Timer>("crypto.wrapping.key.creation.time", CordaMetrics::timer)
+            /**
+             * The time taken by crypto operations invoked by RPC message pattern requests.
+             */
+            object OpsProcessorExecutionTime: Metric<Timer>("$PREFIX.processor.execution.time", CordaMetrics::timer)
 
-        /**
-         * The time taken to create entity manager factories.
-         */
-        object EntityManagerFactoryCreationTimer: Metric<Timer>("entity.manager.factory.creation.time", CordaMetrics::timer)
+            /**
+             * The time taken for wrapping key creation in crypto operations.
+             */
+            object WrappingKeyCreationTimer: Metric<Timer>("$PREFIX.wrapping.key.creation.time", CordaMetrics::timer)
 
-        /**
-         * The time taken for soft crypto service signing.
-         */
-        object SoftCryptoSignTimer: Metric<Timer>("soft.crypto.sign.time", CordaMetrics::timer)
+            /**
+             * The time taken to create entity manager factories.
+             */
+            object EntityManagerFactoryCreationTimer: Metric<Timer>("entity.manager.factory.creation.time", CordaMetrics::timer)
 
-        /**
-         * The time taken for crypto signing key lookup.
-         */
-        object CryptoSigningKeyLookupTimer: Metric<Timer>("crypto.signing.key.lookup.time", CordaMetrics::timer)
+            /**
+             * The time taken for soft crypto service signing.
+             */
+            object SoftSignTimer: Metric<Timer>("$PREFIX.soft.sign.time", CordaMetrics::timer)
 
-        /**
-         * The time taken to find crypto service instances.
-         */
-        object CryptoServiceFindInstanceTimer: Metric<Timer>("crypto.service.find.instance.time", CordaMetrics::timer)
+            /**
+             * The time taken for crypto signing key lookup.
+             */
+            object SigningKeyLookupTimer: Metric<Timer>("$PREFIX.signing.key.lookup.time", CordaMetrics::timer)
 
-        /**
-         * The time taken to get crypto service instances.
-         */
-        object CryptoServiceGetInstanceTimer: Metric<Timer>("crypto.service.get.instance.time", CordaMetrics::timer)
+            /**
+             * The time taken to find crypto service instances.
+             */
+            object CryptoServiceFindInstanceTimer: Metric<Timer>("$PREFIX.service.find.instance.time", CordaMetrics::timer)
 
-        /**
-         * The time taken to get crypto signing repository instances.
-         */
-        object CryptoSigningRepositoryGetInstanceTimer: Metric<Timer>("crypto.signing.repository.get.instance.time", CordaMetrics::timer)
+            /**
+             * The time taken to get crypto service instances.
+             */
+            object CryptoServiceGetInstanceTimer: Metric<Timer>("$PREFIX.service.get.instance.time", CordaMetrics::timer)
 
-        /**
-         * The time taken for crypto service sign operation.
-         */
-        object GetOwnedKeyRecordTimer: Metric<Timer>("crypto.get.owned.key.record.time", CordaMetrics::timer)
+            /**
+             * The time taken to get crypto signing repository instances.
+             */
+            object SigningRepositoryGetInstanceTimer: Metric<Timer>("$PREFIX.signing.repository.get.instance.time", CordaMetrics::timer)
 
-        /**
-         * The time taken for crypto cipher scheme operations.
-         */
-        object CryptoCipherSchemeTimer: Metric<Timer>("crypto.cipher.scheme.time", CordaMetrics::timer)
+            /**
+             * The time taken for crypto service sign operation.
+             */
+            object GetOwnedKeyRecordTimer: Metric<Timer>("$PREFIX.get.owned.key.record.time", CordaMetrics::timer)
 
-        /**
-         * The time taken for crypto signature spec operations.
-         */
-        object CryptoSignatureSpecTimer: Metric<Timer>("crypto.signature.spec.time", CordaMetrics::timer)
+            /**
+             * The time taken for crypto cipher scheme operations.
+             */
+            object CipherSchemeTimer: Metric<Timer>("$PREFIX.cipher.scheme.time", CordaMetrics::timer)
 
-        /**
-         * Time taken for a membership persistence transaction to complete.
-         */
-        object MembershipPersistenceTransaction: Metric<Timer>(
-            "membership.persistence.transaction.time",
-            CordaMetrics::timer
-        )
+            /**
+             * The time taken for crypto signature spec operations.
+             */
+            object SignatureSpecTimer: Metric<Timer>("$PREFIX.signature.spec.time", CordaMetrics::timer)
+
+        }
 
         object Membership {
             private const val PREFIX = "membership"
