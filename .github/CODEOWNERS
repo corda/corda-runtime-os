@@ -73,7 +73,7 @@ CODEOWNERS         @ronanbrowne @mnesbit @driessamyn @rick-r3 @fenryka
 /components/persistence/                                        @simon-johnson-r3 @mnesbit @driessamyn @ronanbrowne @rick-r3 @fenryka
 /components/reconciliation/                                     @simon-johnson-r3 @mnesbit @driessamyn @ronanbrowne @rick-r3 @fenryka
 /libs/db/                                                       @simon-johnson-r3 @mnesbit @driessamyn @ronanbrowne @rick-r3 @fenryka
-/processors/db/                                                 @simon-johnson-r3 @mnesbit @driessamyn @ronanbrowne @rick-r3 @fenryka
+/processors/db-processor/                                       @simon-johnson-r3 @mnesbit @driessamyn @ronanbrowne @rick-r3 @fenryka
 /testing/persistence-testkit/                                   @simon-johnson-r3 @mnesbit @driessamyn @ronanbrowne @rick-r3 @fenryka
 /tools/plugins/db-config                                        @simon-johnson-r3 @mnesbit @driessamyn @ronanbrowne @rick-r3 @fenryka
 
