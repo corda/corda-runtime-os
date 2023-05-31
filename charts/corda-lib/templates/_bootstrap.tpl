@@ -24,7 +24,7 @@ metadata:
   name: {{ include "corda.fullname" . }}-preinstall-role-binding
 subjects:
 - kind: ServiceAccount
-  name: preinstall-service-account
+  name: {{ include "corda.fullname" . }}-preinstall-service-account
 roleRef:
   kind: Role
   name: {{ include "corda.fullname" . }}-preinstall-role
