@@ -10,11 +10,13 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.TimerEvent
+import net.corda.metrics.CordaMetrics
 import net.corda.reconciliation.ReconcilerReader
 import net.corda.reconciliation.ReconcilerWriter
 import net.corda.utilities.debug
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.slf4j.LoggerFactory
+import java.time.Duration
 
 @Suppress("LongParameterList")
 internal class ReconcilerEventHandler<K : Any, V : Any>(
@@ -71,18 +73,30 @@ internal class ReconcilerEventHandler<K : Any, V : Any>(
 
     private fun reconcileAndScheduleNext(coordinator: LifecycleCoordinator) {
         logger.info("Initiating reconciliation")
+        var reconciliationOutcome = "FAILED"
+        val startTime = System.currentTimeMillis()
+        var reconciliationRunTime = startTime
         try {
-            val startTime = System.currentTimeMillis()
             reconcile()
-            val endTime = System.currentTimeMillis()
-            logger.info("Reconciliation completed in ${endTime - startTime} ms")
-            scheduleNextReconciliation(coordinator)
-        } catch (e: Exception) {
+            reconciliationOutcome = "SUCCEEDED"
+            reconciliationRunTime = System.currentTimeMillis() - startTime
+            logger.info("Reconciliation completed in $reconciliationRunTime ms")
+        } catch (e: Throwable) {
             // An error here could be a transient or not exception. We should transition to `DOWN` and wait
             // on subsequent `RegistrationStatusChangeEvent` to see if it is going to be a `DOWN` or an `ERROR`.
+            reconciliationRunTime = System.currentTimeMillis() - startTime
             logger.warn("Reconciliation failed. Terminating reconciliations", e)
             coordinator.updateStatus(LifecycleStatus.DOWN)
+            return
+        } finally {
+            CordaMetrics.Metric.Db.ReconciliationRunTime.builder()
+                .withTag(CordaMetrics.Tag.OperationName, name)
+                .withTag(CordaMetrics.Tag.OperationStatus, reconciliationOutcome)
+                .build()
+                .record(Duration.ofMillis(reconciliationRunTime))
         }
+
+        scheduleNextReconciliation(coordinator)
     }
 
     // TODO following method should be extracted to dedicated file, to be tested separately
