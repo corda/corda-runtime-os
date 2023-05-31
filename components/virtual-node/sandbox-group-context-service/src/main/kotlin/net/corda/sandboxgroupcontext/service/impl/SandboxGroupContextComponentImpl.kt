@@ -1,10 +1,8 @@
 package net.corda.sandboxgroupcontext.service.impl
 
-import com.typesafe.config.ConfigException
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpk.read.CpkReadService
-import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -114,19 +112,20 @@ class SandboxGroupContextComponentImpl @Activate constructor(
             is StartEvent -> onStart(coordinator)
             is StopEvent -> onStop()
             is RegistrationStatusChangeEvent -> onRegistrationChangeEvent(event, coordinator)
-            is ConfigChangedEvent -> onConfigChangeEvent(event, coordinator)
+            is ConfigChangedEvent -> onConfigChangeEvent(coordinator)
         }
     }
 
-    private fun onConfigChangeEvent(event: ConfigChangedEvent, coordinator: LifecycleCoordinator) {
-        val config = event.config.getConfig(ConfigKeys.SANDBOX_CONFIG)
+    private fun onConfigChangeEvent(coordinator: LifecycleCoordinator) {
+//        val config = event.config.getConfig(ConfigKeys.SANDBOX_CONFIG)
 
         SandboxGroupType.values().forEach {
-            val cacheSize = try {
-                config.getConfig(it.name.lowercase()).getLong(ConfigKeys.SANDBOX_CACHE_SIZE)
-            } catch (e: ConfigException.Missing) {
-                SANDBOX_CACHE_SIZE_DEFAULT
-            }
+            val cacheSize = 100L
+//            val cacheSize = try {
+//                config.getConfig(it.name.lowercase()).getLong(ConfigKeys.SANDBOX_CACHE_SIZE)
+//            } catch (e: ConfigException.Missing) {
+//                SANDBOX_CACHE_SIZE_DEFAULT
+//            }
 
             logger.info("Re-creating Sandbox ${it.name} cache with size: {}", cacheSize)
             resizeCache(it, cacheSize)

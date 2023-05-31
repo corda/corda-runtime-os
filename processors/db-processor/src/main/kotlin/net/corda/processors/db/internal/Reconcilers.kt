@@ -17,13 +17,16 @@ import net.corda.processors.db.internal.reconcile.db.ConfigReconciler
 import net.corda.processors.db.internal.reconcile.db.CpiReconciler
 import net.corda.processors.db.internal.reconcile.db.GroupParametersReconciler
 import net.corda.processors.db.internal.reconcile.db.MgmAllowedCertificateSubjectsReconciler
+import net.corda.processors.db.internal.reconcile.db.VirtualNodeReconciler
 import net.corda.reconciliation.ReconcilerFactory
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.ReconciliationConfig.RECONCILIATION_CONFIG_INTERVAL_MS
 import net.corda.schema.configuration.ReconciliationConfig.RECONCILIATION_CPI_INFO_INTERVAL_MS
 import net.corda.schema.configuration.ReconciliationConfig.RECONCILIATION_GROUP_PARAMS_INTERVAL_MS
 import net.corda.schema.configuration.ReconciliationConfig.RECONCILIATION_MTLS_MGM_ALLOWED_LIST_INTERVAL_MS
+import net.corda.schema.configuration.ReconciliationConfig.RECONCILIATION_VNODE_INFO_INTERVAL_MS
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
+import net.corda.virtualnode.write.db.VirtualNodeInfoWriteService
 
 /**
  * Container component that holds the reconilcation objects.
@@ -32,6 +35,7 @@ import net.corda.virtualnode.read.VirtualNodeInfoReadService
 class Reconcilers(
     coordinatorFactory: LifecycleCoordinatorFactory,
     dbConnectionManager: DbConnectionManager,
+    virtualNodeInfoWriteService: VirtualNodeInfoWriteService,
     virtualNodeInfoReadService: VirtualNodeInfoReadService,
     cpiInfoReadService: CpiInfoReadService,
     cpiInfoWriteService: CpiInfoWriteService,
@@ -50,6 +54,14 @@ class Reconcilers(
         reconcilerFactory,
         cpiInfoReadService,
         cpiInfoWriteService
+    )
+
+    private val vnodeReconciler = VirtualNodeReconciler(
+        coordinatorFactory,
+        dbConnectionManager,
+        reconcilerFactory,
+        virtualNodeInfoReadService,
+        virtualNodeInfoWriteService
     )
     private val configReconciler = ConfigReconciler(
         coordinatorFactory,
@@ -80,6 +92,7 @@ class Reconcilers(
 
     fun stop() {
         cpiReconciler.stop()
+        vnodeReconciler.stop()
         configReconciler.stop()
         groupParametersReconciler.stop()
         mgmAllowedCertificateSubjectsReconciler.stop()
@@ -95,6 +108,7 @@ class Reconcilers(
         val smartConfig = event.config[ConfigKeys.RECONCILIATION_CONFIG] ?: return
 
         smartConfig.updateIntervalWhenKeyIs(RECONCILIATION_CPI_INFO_INTERVAL_MS, cpiReconciler::updateInterval)
+        smartConfig.updateIntervalWhenKeyIs(RECONCILIATION_VNODE_INFO_INTERVAL_MS, vnodeReconciler::updateInterval)
         smartConfig.updateIntervalWhenKeyIs(RECONCILIATION_CONFIG_INTERVAL_MS, configReconciler::updateInterval)
         smartConfig.updateIntervalWhenKeyIs(
             RECONCILIATION_GROUP_PARAMS_INTERVAL_MS,

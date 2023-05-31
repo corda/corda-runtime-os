@@ -170,6 +170,7 @@ class DBProcessorImpl @Activate constructor(
     private val reconcilers = Reconcilers(
         coordinatorFactory,
         dbConnectionManager,
+        virtualNodeInfoWriteService,
         virtualNodeInfoReadService,
         cpiInfoReadService,
         cpiInfoWriteService,
