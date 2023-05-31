@@ -1,5 +1,8 @@
 package net.corda.db.connection.manager.impl
 
+import com.github.benmanes.caffeine.cache.Cache
+import com.github.benmanes.caffeine.cache.Caffeine
+import net.corda.cache.caffeine.CacheFactoryImpl
 import net.corda.db.connection.manager.DBConfigurationException
 import net.corda.db.connection.manager.DbConnectionOps
 import net.corda.db.core.DbPrivilege
@@ -7,8 +10,7 @@ import net.corda.db.schema.CordaDb
 import net.corda.libs.configuration.SmartConfig
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.JpaEntitiesSet
-import java.util.*
-import java.util.concurrent.ConcurrentHashMap
+import java.util.UUID
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 
@@ -17,12 +19,18 @@ class DbConnectionOpsCachedImpl(
     private val entitiesRegistry: JpaEntitiesRegistry
     ): DbConnectionOps by delegate {
 
-    // TODO - replace with caffeine cache
-    private val cache = ConcurrentHashMap<Pair<String,DbPrivilege>, EntityManagerFactory>()
+    private val cache: Cache<Pair<String,DbPrivilege>, EntityManagerFactory> =
+        CacheFactoryImpl().build(
+            "",
+            Caffeine.newBuilder()
+                .maximumSize(30)
+                .removalListener { _ , value, _ ->
+                    value?.close()
+                }
+        )
 
     private fun removeFromCache(name: String, privilege: DbPrivilege) {
-        val entityManagerFactory = cache.remove(Pair(name,privilege))
-        entityManagerFactory?.close()
+        cache.invalidate(Pair(name,privilege))
     }
 
     override fun putConnection(name: String, privilege: DbPrivilege, config: SmartConfig,
@@ -53,7 +61,7 @@ class DbConnectionOpsCachedImpl(
         privilege: DbPrivilege,
         entitiesSet: JpaEntitiesSet
     ): EntityManagerFactory {
-        return cache.computeIfAbsent(Pair(name,privilege)) {
+        return cache.get(Pair(name,privilege)) {
             delegate.getOrCreateEntityManagerFactory(name, privilege, entitiesSet)
         }
     }

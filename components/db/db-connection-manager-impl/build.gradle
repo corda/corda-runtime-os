@@ -15,6 +15,7 @@ dependencies {
     implementation project(':libs:virtual-node:virtual-node-datamodel')
     implementation project(":libs:lifecycle:lifecycle")
     implementation project(':libs:utilities')
+    implementation project(':libs:cache:cache-caffeine')
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation 'net.corda:corda-base'
@@ -24,6 +25,7 @@ dependencies {
 
     implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation "org.slf4j:slf4j-api:$slf4jVersion"
+    implementation "com.github.ben-manes.caffeine:caffeine:$caffeineVersion"
 
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
