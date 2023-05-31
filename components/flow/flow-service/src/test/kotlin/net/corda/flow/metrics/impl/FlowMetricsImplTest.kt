@@ -1,10 +1,12 @@
 package net.corda.flow.metrics.impl
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import net.corda.data.flow.event.SessionEvent
+import net.corda.flow.metrics.FlowMetricsRecorder
 import net.corda.flow.state.FlowCheckpoint
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito.mock
+import org.mockito.kotlin.times
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
 internal class FlowMetricsImplTest {
@@ -13,32 +15,30 @@ internal class FlowMetricsImplTest {
         val objectMapper = ObjectMapper()
     }
 
-    private val flowMetricsState: String
-    val checkpoint = mock<FlowCheckpoint>()
-    val flowMetricsImpl = FlowMetricsImpl(mock(), mock(), checkpoint, mock())
-
-
-    init {
-        flowMetricsState = objectMapper.writeValueAsString(flowMetricsImpl.)
-    }
-
-
     @Test
     fun flowSessionMessageSent() {
-        val sessionEvent = mock<SessionEvent>()
+        val sessionId = "sessionId"
+        val flowEventType = "SessionData"
+        val sequenceNumber = 1L
+        val HSSN = 3L
 
-        whenever(sessionEvent.sessionId).thenReturn()
-        whenever(sessionEvent.payload).thenReturn()
-        whenever(sessionEvent.sequenceNum).thenReturn()
+        val flowMetricsStateString: String
+        val checkpoint = mock<FlowCheckpoint>()
+        val flowMetricStateObject = FlowMetricsImpl.FlowMetricState()
+        val sessionMetricStateObject = FlowMetricsImpl.SessionMetricState()
 
-        val sessionId = sessionEvent.sessionId
-        val flowEventType = sessionEvent.payload::class.java.simpleName
-        val sequenceNumber = sessionEvent.sequenceNum.toLong()
+        sessionMetricStateObject.highestSeenSequenceNumber = HSSN
+        flowMetricStateObject.sessionMetricStateBySessionId[sessionId] = sessionMetricStateObject
 
-        whenever(checkpoint.flowMetricsState).thenReturn(flowMetricsState)
+        val flowMetricsRecorder = mock<FlowMetricsRecorder>()
+        flowMetricsStateString = objectMapper.writeValueAsString(flowMetricStateObject)
 
+        whenever(checkpoint.flowMetricsState).thenReturn(flowMetricsStateString)
 
+        val flowMetricsImpl = FlowMetricsImpl(mock(), flowMetricsRecorder, checkpoint, mock())
         flowMetricsImpl.flowSessionMessageSent(flowEventType, sessionId, sequenceNumber)
 
+        verify(flowMetricsRecorder, times(1)).recordFlowSessionMessagesReplayed(flowEventType)
+        verify(flowMetricsRecorder, times(1)).recordFlowSessionMessagesSent(flowEventType)
     }
 }
