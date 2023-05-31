@@ -114,7 +114,7 @@ class CordaKafkaProducerImpl(
     }
 
     private fun <T : Any> recordCommitMetricStep(step: String, op: () -> T): T? {
-        return CordaMetrics.Metric.ProducerCommitTime.builder()
+        return CordaMetrics.Metric.Messaging.ProducerCommitTime.builder()
             .withTag(CordaMetrics.Tag.Step, step)
             .build()
             .recordCallable {

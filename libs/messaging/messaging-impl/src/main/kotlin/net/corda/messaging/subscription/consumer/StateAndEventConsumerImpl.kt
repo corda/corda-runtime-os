@@ -60,13 +60,23 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
     private val partitionsToSync = ConcurrentHashMap.newKeySet<CordaTopicPartition>()
     private val inSyncPartitions = ConcurrentHashMap.newKeySet<CordaTopicPartition>()
 
-    private val statePollTimer = CordaMetrics.Metric.MessagePollTime.builder()
+    private val currentInMemoryStatesCount = CordaMetrics.Metric.Messaging.ConsumerInMemoryStoreCount.builder()
+        .withTag(CordaMetrics.Tag.MessagePatternType, MetricsConstants.STATE_AND_EVENT_PATTERN_TYPE)
+        .withTag(CordaMetrics.Tag.MessagePatternClientId, config.clientId)
+        .build()
+
+    private val currentPartitionCount = CordaMetrics.Metric.Messaging.ConsumerPartitionCount.builder()
+        .withTag(CordaMetrics.Tag.MessagePatternType, MetricsConstants.STATE_AND_EVENT_PATTERN_TYPE)
+        .withTag(CordaMetrics.Tag.MessagePatternClientId, config.clientId)
+        .build()
+
+    private val statePollTimer = CordaMetrics.Metric.Messaging.MessagePollTime.builder()
         .withTag(CordaMetrics.Tag.MessagePatternType, MetricsConstants.STATE_AND_EVENT_PATTERN_TYPE)
         .withTag(CordaMetrics.Tag.MessagePatternClientId, config.clientId)
         .withTag(CordaMetrics.Tag.OperationName, MetricsConstants.STATE_POLL_OPERATION)
         .build()
 
-    private val eventPollTimer = CordaMetrics.Metric.MessagePollTime.builder()
+    private val eventPollTimer = CordaMetrics.Metric.Messaging.MessagePollTime.builder()
         .withTag(CordaMetrics.Tag.MessagePatternType, MetricsConstants.STATE_AND_EVENT_PATTERN_TYPE)
         .withTag(CordaMetrics.Tag.MessagePatternClientId, config.clientId)
         .withTag(CordaMetrics.Tag.OperationName, MetricsConstants.EVENT_POLL_OPERATION)
@@ -195,6 +205,9 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
                 onPartitionsSynchronized(syncedPartitions)
             }
         }
+
+        recordInMemoryStatesCount()
+        recordPartitionCount()
     }
 
     override fun close() {
@@ -361,6 +374,14 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
                 currentState
             }
         }
+    }
+
+    private fun recordInMemoryStatesCount() {
+        currentInMemoryStatesCount.record(currentStates.size.toDouble())
+    }
+
+    private fun recordPartitionCount() {
+        currentPartitionCount.record(eventConsumer.assignment().size.toDouble())
     }
 
     override fun updateInMemoryStatePostCommit(updatedStates: MutableMap<Int, MutableMap<K, S?>>, clock: Clock) {

@@ -44,26 +44,6 @@ object CordaMetrics {
         object SandboxCreateTime : Metric<Timer>("sandbox.create.time", CordaMetrics::timer)
 
         /**
-         * Time it took to execute a message pattern processor
-         */
-        object MessageProcessorTime : Metric<Timer>("messaging.processor.time", CordaMetrics::timer)
-
-        /**
-         * The size of batches of messages received in a poll from the message bus.
-         */
-        object MessageBatchSize : Metric<DistributionSummary>("messaging.batch.size", Metrics::summary)
-
-        /**
-         * The time taken to commit a processed batch of messages back to the bus.
-         */
-        object MessageCommitTime : Metric<Timer>("messaging.commit.time", CordaMetrics::timer)
-
-        /**
-         * The time blocking inside a poll call waiting for messages from the bus.
-         */
-        object MessagePollTime : Metric<Timer>("messaging.poll.time", CordaMetrics::timer)
-
-        /**
          * FLOW METRICS
          *
          * Time it took for a flow or subFlow to complete successfully or to error.
@@ -72,11 +52,6 @@ object CordaMetrics {
 
         /**
          * Metric for flow or subFlow fiber serialization.
-         */
-        object ProducerCommitTime : Metric<Timer>("producer.commit.time", CordaMetrics::timer)
-
-        /**
-         * Metric for flow fiber serialization.
          */
         object FlowFiberSerializationTime : Metric<Timer>("flow.fiber.serialization.time", CordaMetrics::timer)
 
@@ -630,9 +605,44 @@ object CordaMetrics {
         object Messaging {
 
             /**
-             * Counter for the number of chunks generated when writing records.
+             * Time it took to execute a message pattern processor
              */
-            object ProducerChunksGenerated : Metric<DistributionSummary>("producer.chunks.generated", Metrics::summary)
+            object MessageProcessorTime : Metric<Timer>("messaging.processor.time", CordaMetrics::timer)
+
+            /**
+             * The size of batches of messages received in a poll from the message bus.
+             */
+            object MessageBatchSize : Metric<DistributionSummary>("messaging.batch.size", Metrics::summary)
+
+            /**
+             * The time taken to commit a processed batch of messages back to the bus.
+             */
+            object MessageCommitTime : Metric<Timer>("messaging.commit.time", CordaMetrics::timer)
+
+            /**
+             * The time blocking inside a poll call waiting for messages from the bus.
+             */
+            object MessagePollTime : Metric<Timer>("messaging.poll.time", CordaMetrics::timer)
+
+            /**
+             * Metric for flow fiber serialization.
+             */
+            object ProducerCommitTime : Metric<Timer>("producer.commit.time", CordaMetrics::timer)
+
+            /**
+             * Measure for the number of chunks generated when writing records.
+             */
+            object ProducerChunksGenerated : Metric<DistributionSummary>("producer.chunks.generated.count", Metrics::summary)
+
+            /**
+             * Measure for the number of in-memory states held in StateAndEvent patterns.
+             */
+            object ConsumerInMemoryStoreCount : Metric<DistributionSummary>("consumer.inmemory.store.count", Metrics::summary)
+
+            /**
+             * Measure for the number of in-memory states held in StateAndEvent patterns.
+             */
+            object ConsumerPartitionCount : Metric<DistributionSummary>("consumer.partition.count", Metrics::summary)
 
         }
     }

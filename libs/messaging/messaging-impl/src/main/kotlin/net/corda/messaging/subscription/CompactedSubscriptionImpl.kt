@@ -37,13 +37,13 @@ internal class CompactedSubscriptionImpl<K : Any, V : Any>(
 
     private var latestValues: MutableMap<K, V>? = null
 
-    private val processorMeter = CordaMetrics.Metric.MessageProcessorTime.builder()
+    private val processorMeter = CordaMetrics.Metric.Messaging.MessageProcessorTime.builder()
         .withTag(CordaMetrics.Tag.MessagePatternType, MetricsConstants.COMPACTED_PATTERN_TYPE)
         .withTag(CordaMetrics.Tag.MessagePatternClientId, config.clientId)
         .withTag(CordaMetrics.Tag.OperationName, MetricsConstants.ON_NEXT_OPERATION)
         .build()
 
-    private val snapshotMeter = CordaMetrics.Metric.MessageProcessorTime.builder()
+    private val snapshotMeter = CordaMetrics.Metric.Messaging.MessageProcessorTime.builder()
         .withTag(CordaMetrics.Tag.MessagePatternType, MetricsConstants.COMPACTED_PATTERN_TYPE)
         .withTag(CordaMetrics.Tag.MessagePatternClientId, config.clientId)
         .withTag(CordaMetrics.Tag.OperationName, MetricsConstants.ON_SNAPSHOT_OPERATION)
