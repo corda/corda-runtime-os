@@ -1,3 +1,78 @@
 # Reduced list for the duration of 5.0 code freeze 
-* @mnesbit @driessamyn @ronanbrowne @rick-r3 @fenryka @yarivus
+# * @mnesbit @driessamyn @ronanbrowne @rick-r3 @fenryka + team leads for area
 
+# Build scripts should be audited by BLT
+
+Jenkinsfile        @ronanbrowne @mnesbit @driessamyn @rick-r3 @fenryka
+.ci/**             @ronanbrowne @mnesbit @driessamyn @rick-r3 @fenryka
+
+*.gradle           @ronanbrowne @mnesbit @driessamyn @rick-r3 @fenryka
+gradle.properties  @ronanbrowne @mnesbit @driessamyn @rick-r3 @fenryka
+gradle/*           @ronanbrowne @mnesbit @driessamyn @rick-r3 @fenryka
+
+.github/**         @ronanbrowne @mnesbit @driessamyn @rick-r3 @fenryka
+CODEOWNERS         @ronanbrowne @mnesbit @driessamyn @rick-r3 @fenryka
+
+# Modules to be audited by REST team
+/applications/workers/release/rest-worker/      @vkolomeyko @mnesbit @driessamyn @ronanbrowne @rick-r3 @fenryka
+/components/rest-gateway-comp/                  @vkolomeyko @mnesbit @driessamyn @ronanbrowne @rick-r3 @fenryka
+/components/permissions/                        @vkolomeyko @mnesbit @driessamyn @ronanbrowne @rick-r3 @fenryka
+/components/rbac-security-manager-service/      @vkolomeyko @mnesbit @driessamyn @ronanbrowne @rick-r3 @fenryka
+/libs/rest/                                     @vkolomeyko @mnesbit @driessamyn @ronanbrowne @rick-r3 @fenryka
+/libs/permissions/                              @vkolomeyko @mnesbit @driessamyn @ronanbrowne @rick-r3 @fenryka
+/processors/rest-processor/                     @vkolomeyko @mnesbit @driessamyn @ronanbrowne @rick-r3 @fenryka
+
+# Corda Helm chart for cluster management team
+/charts/corda/                                  @davidcurrie @mnesbit @driessamyn @ronanbrowne @rick-r3 @fenryka
+
+# Modules to be audited by the Network team
+/applications/workers/release/p2p-gateway-worker/               @dimosr @mnesbit @driessamyn @ronanbrowne @rick-r3 @fenryka
+/applications/workers/release/p2p-link-manager-worker/          @dimosr @mnesbit @driessamyn @ronanbrowne @rick-r3 @fenryka
+/applications/workers/release/member-worker/                    @dimosr @mnesbit @driessamyn @ronanbrowne @rick-r3 @fenryka
+/processors/link-manager-processor/                             @dimosr @mnesbit @driessamyn @ronanbrowne @rick-r3 @fenryka
+/processors/gateway-processor/                                  @dimosr @mnesbit @driessamyn @ronanbrowne @rick-r3 @fenryka
+/processors/member-processor/                                   @dimosr @mnesbit @driessamyn @ronanbrowne @rick-r3 @fenryka
+/components/gateway/                                            @dimosr @mnesbit @driessamyn @ronanbrowne @rick-r3 @fenryka
+/components/link-manager/                                       @dimosr @mnesbit @driessamyn @ronanbrowne @rick-r3 @fenryka
+/components/membership/                                         @dimosr @mnesbit @driessamyn @ronanbrowne @rick-r3 @fenryka
+/libs/membership/                                               @dimosr @mnesbit @driessamyn @ronanbrowne @rick-r3 @fenryka
+/libs/p2p-crypto/                                               @dimosr @mnesbit @driessamyn @ronanbrowne @rick-r3 @fenryka
+/libs/layered-property-map/                                     @dimosr @mnesbit @driessamyn @ronanbrowne @rick-r3 @fenryka
+/tools/plugins/mgm/                                             @dimosr @mnesbit @driessamyn @ronanbrowne @rick-r3 @fenryka
+/tools/plugins/network/                                         @dimosr @mnesbit @driessamyn @ronanbrowne @rick-r3 @fenryka
+/applications/tools/p2p-test/                                   @dimosr @mnesbit @driessamyn @ronanbrowne @rick-r3 @fenryka
+
+# Modules to be audited by Sandboxing SMEs
+/components/security-manager/                                   @simon-johnson-r3 @mnesbit @driessamyn @ronanbrowne @rick-r3 @fenryka
+/components/virtual-node/sandbox-*                              @simon-johnson-r3 @mnesbit @driessamyn @ronanbrowne @rick-r3 @fenryka
+/components/sandbox*                                            @simon-johnson-r3 @mnesbit @driessamyn @ronanbrowne @rick-r3 @fenryka
+/libs/virtual-node/sandbox-*                                    @simon-johnson-r3 @mnesbit @driessamyn @ronanbrowne @rick-r3 @fenryka
+/osgi-*                                                         @simon-johnson-r3 @mnesbit @driessamyn @ronanbrowne @rick-r3 @fenryka
+/testing/sandboxes/                                             @simon-johnson-r3 @mnesbit @driessamyn @ronanbrowne @rick-r3 @fenryka
+/testing/sandboxes-testkit/                                     @simon-johnson-r3 @mnesbit @driessamyn @ronanbrowne @rick-r3 @fenryka
+/testing/security-manager-utilities/                            @simon-johnson-r3 @mnesbit @driessamyn @ronanbrowne @rick-r3 @fenryka
+
+# Modules to be audited by Crypto SMEs
+/components/crypto/                                             @dickon @mnesbit @driessamyn @ronanbrowne @rick-r3 @fenryka
+/libs/crypto/                                                   @dickon @mnesbit @driessamyn @ronanbrowne @rick-r3 @fenryka
+/processors/crypto/                                             @dickon @mnesbit @driessamyn @ronanbrowne @rick-r3 @fenryka
+
+# Modules to be audited by Packaging SMEs
+/components/chunking/                                           @simon-johnson-r3 @mnesbit @driessamyn @ronanbrowne @rick-r3 @fenryka
+/components/virtual-node/cpi-*                                  @simon-johnson-r3 @mnesbit @driessamyn @ronanbrowne @rick-r3 @fenryka
+/components/virtual-node/cpk-*                                  @simon-johnson-r3 @mnesbit @driessamyn @ronanbrowne @rick-r3 @fenryka
+/libs/chunking/                                                 @simon-johnson-r3 @mnesbit @driessamyn @ronanbrowne @rick-r3 @fenryka
+/libs/packaging/                                                @simon-johnson-r3 @mnesbit @driessamyn @ronanbrowne @rick-r3 @fenryka
+/libs/serialization/                                            @simon-johnson-r3 @mnesbit @driessamyn @ronanbrowne @rick-r3 @fenryka
+/libs/virtual-node/cpi-*                                        @simon-johnson-r3 @mnesbit @driessamyn @ronanbrowne @rick-r3 @fenryka
+/testing/packaging-test-utilities/                              @simon-johnson-r3 @mnesbit @driessamyn @ronanbrowne @rick-r3 @fenryka
+/tools/plugins/package                                          @simon-johnson-r3 @mnesbit @driessamyn @ronanbrowne @rick-r3 @fenryka
+
+# Modules to be audited by DB SMEs
+/components/db/                                                 @simon-johnson-r3 @mnesbit @driessamyn @ronanbrowne @rick-r3 @fenryka
+/components/persistence/                                        @simon-johnson-r3 @mnesbit @driessamyn @ronanbrowne @rick-r3 @fenryka
+/components/reconciliation/                                     @simon-johnson-r3 @mnesbit @driessamyn @ronanbrowne @rick-r3 @fenryka
+/libs/db/                                                       @simon-johnson-r3 @mnesbit @driessamyn @ronanbrowne @rick-r3 @fenryka
+/processors/db/                                                 @simon-johnson-r3 @mnesbit @driessamyn @ronanbrowne @rick-r3 @fenryka
+/testing/persistence-testkit/                                   @simon-johnson-r3 @mnesbit @driessamyn @ronanbrowne @rick-r3 @fenryka
+/tools/plugins/db-config
