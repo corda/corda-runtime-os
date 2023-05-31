@@ -6,7 +6,7 @@ import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.sandboxgroupcontext.SandboxGroupType
 import net.corda.sandboxgroupcontext.VirtualNodeContext
-import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
+import net.corda.sandboxgroupcontext.service.CacheEviction
 import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -27,8 +27,8 @@ class MySigningKeysCacheImplTest {
     private val sandbox = mock<SandboxGroupContext>()
     private val virtualNodeContext = mock<VirtualNodeContext>()
     private val currentSandboxGroupContext = mock<CurrentSandboxGroupContext>()
-    private val sandboxGroupContextComponent = mock<SandboxGroupContextComponent>()
-    private val mySigningKeysCache = MySigningKeysCacheImpl(currentSandboxGroupContext, sandboxGroupContextComponent)
+    private val cacheEviction = mock<CacheEviction>()
+    private val mySigningKeysCache = MySigningKeysCacheImpl(currentSandboxGroupContext, cacheEviction)
 
     @BeforeEach
     fun beforeEach() {
