@@ -82,13 +82,13 @@ internal class ReconcilerEventHandler<K : Any, V : Any>(
             reconciliationOutcome = "SUCCEEDED"
             reconciliationRunTime = System.currentTimeMillis() - startTime
             logger.info("Reconciliation completed in $reconciliationRunTime ms")
+            scheduleNextReconciliation(coordinator)
         } catch (e: Throwable) {
             // An error here could be a transient or not exception. We should transition to `DOWN` and wait
             // on subsequent `RegistrationStatusChangeEvent` to see if it is going to be a `DOWN` or an `ERROR`.
             reconciliationRunTime = System.currentTimeMillis() - startTime
             logger.warn("Reconciliation failed. Terminating reconciliations", e)
             coordinator.updateStatus(LifecycleStatus.DOWN)
-            return
         } finally {
             CordaMetrics.Metric.Db.ReconciliationRunTime.builder()
                 .withTag(CordaMetrics.Tag.OperationName, name)
@@ -102,8 +102,6 @@ internal class ReconcilerEventHandler<K : Any, V : Any>(
                 .build()
                 .record(reconciledCount.toDouble())
         }
-
-        scheduleNextReconciliation(coordinator)
     }
 
     // TODO following method should be extracted to dedicated file, to be tested separately
