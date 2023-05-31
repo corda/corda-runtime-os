@@ -520,6 +520,11 @@ object CordaMetrics {
              * Metric for the time taken for a full reconciliation run.
              */
             object ReconciliationRunTime : Metric<Timer>("db.reconciliation.run.time", CordaMetrics::timer)
+
+            /**
+             * Metric for the number of reconciled records for a reconciliation run.
+             */
+            object ReconciliationRecordsCount : Metric<DistributionSummary>("db.reconciliation.records.count", Metrics::summary)
         }
     }
 

@@ -76,8 +76,9 @@ internal class ReconcilerEventHandler<K : Any, V : Any>(
         var reconciliationOutcome = "FAILED"
         val startTime = System.currentTimeMillis()
         var reconciliationRunTime = startTime
+        var reconciledCount = 0
         try {
-            reconcile()
+            reconciledCount = reconcile()
             reconciliationOutcome = "SUCCEEDED"
             reconciliationRunTime = System.currentTimeMillis() - startTime
             logger.info("Reconciliation completed in $reconciliationRunTime ms")
@@ -94,6 +95,12 @@ internal class ReconcilerEventHandler<K : Any, V : Any>(
                 .withTag(CordaMetrics.Tag.OperationStatus, reconciliationOutcome)
                 .build()
                 .record(Duration.ofMillis(reconciliationRunTime))
+
+            CordaMetrics.Metric.Db.ReconciliationRecordsCount.builder()
+                .withTag(CordaMetrics.Tag.OperationName, name)
+                .withTag(CordaMetrics.Tag.OperationStatus, reconciliationOutcome)
+                .build()
+                .record(reconciledCount.toDouble())
         }
 
         scheduleNextReconciliation(coordinator)
@@ -105,7 +112,7 @@ internal class ReconcilerEventHandler<K : Any, V : Any>(
      * @throws [ReconciliationException] to notify an error occurred at kafka or db [ReconcilerReader.getAllVersionedRecords].
      */
     @Suppress("ComplexMethod")
-    fun reconcile() {
+    fun reconcile(): Int {
         val kafkaRecords =
             kafkaReader.getAllVersionedRecords()?.asSequence()?.associateBy { it.key }
                 ?: throw ReconciliationException("Error occurred while retrieving kafka records")
@@ -128,6 +135,7 @@ internal class ReconcilerEventHandler<K : Any, V : Any>(
             }
                 ?: throw ReconciliationException("Error occurred while retrieving db records")
 
+        var reconciledCount = 0
         toBeReconciledDbRecords.use {
             it.forEach { dbRecord ->
                 if (dbRecord.isDeleted) {
@@ -135,8 +143,11 @@ internal class ReconcilerEventHandler<K : Any, V : Any>(
                 } else {
                     writer.put(dbRecord.key, dbRecord.value)
                 }
+                reconciledCount++
             }
         }
+
+        return reconciledCount
     }
 
     private fun scheduleNextReconciliation(coordinator: LifecycleCoordinator) {
