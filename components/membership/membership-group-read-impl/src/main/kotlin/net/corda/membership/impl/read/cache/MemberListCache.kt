@@ -2,6 +2,9 @@ package net.corda.membership.impl.read.cache
 
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_PENDING
 import net.corda.membership.lib.MemberInfoExtension.Companion.status
+import net.corda.membership.lib.metrics.SettableGaugeMetricTypes.MEMBER_LIST
+import net.corda.membership.lib.metrics.getSettableGaugeMetric
+import net.corda.metrics.SettableGauge
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import org.slf4j.LoggerFactory
@@ -30,12 +33,13 @@ interface MemberListCache : MemberDataListCache<MemberInfo> {
         }
 
         private val cache = ConcurrentHashMap<HoldingIdentity, ReplaceableList<MemberInfo>>()
+        private val cacheSizeMetrics = ConcurrentHashMap<HoldingIdentity, SettableGauge>()
 
         override fun get(holdingIdentity: HoldingIdentity): List<MemberInfo> = cache[holdingIdentity] ?: emptyList()
         override fun getAll(): Map<HoldingIdentity, List<MemberInfo>> = cache
 
         override fun put(holdingIdentity: HoldingIdentity, data: List<MemberInfo>) {
-            cache.compute(holdingIdentity) { _, value ->
+            cache.compute(holdingIdentity) { holdingId, value ->
                 (value ?: ReplaceableList())
                     .addOrReplace(data) { old, new ->
                         if (new.status == MEMBER_STATUS_PENDING) {
@@ -43,14 +47,28 @@ interface MemberListCache : MemberDataListCache<MemberInfo> {
                         } else {
                             old.status != MEMBER_STATUS_PENDING && old.name == new.name
                         }
+                    }.also {
+                        getCacheSizeMetric(holdingId).set(it.size)
                     }
             }
         }
 
         override fun clear() {
             logger.info("Clearing member list cache.")
+            cache.forEach { getCacheSizeMetric(it.key).set(0) }
             cache.clear()
         }
+
+        /**
+         * Returns the metric for setting the current member list cache size. We need to hold a reference to the
+         * [SettableGauge] so that the cached gauge metric in the micrometer library is referencing the expected value.
+         * If we recreated the settable gauge, the value referenced by the cached gauge will be cleared by the garbage
+         * collector and NaN will be reported in the metric for cache size.
+         */
+        private fun getCacheSizeMetric(holdingId: HoldingIdentity) = cacheSizeMetrics
+            .computeIfAbsent(holdingId) {
+                getSettableGaugeMetric(MEMBER_LIST, it)
+            }
 
         /**
          * An implementation of [List] which has additional method [addOrReplace]. Calling [addOrReplace] will result in the

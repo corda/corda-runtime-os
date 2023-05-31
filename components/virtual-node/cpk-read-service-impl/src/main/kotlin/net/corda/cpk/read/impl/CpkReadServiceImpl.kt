@@ -21,6 +21,8 @@ import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
+import net.corda.metrics.CordaMetrics
+import net.corda.metrics.CordaMetrics.Tag.ContentsType
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
@@ -147,12 +149,20 @@ class CpkReadServiceImpl (
             return
         }
 
+        // Monitor the amount of available disk space in these two directories.
+        CordaMetrics.Metric.DiskSpace(cpkCacheDir).builder()
+            .withTag(ContentsType, "CPKs")
+            .build()
+        CordaMetrics.Metric.DiskSpace(cpkPartsDir).builder()
+            .withTag(ContentsType, "CPK chunks")
+            .build()
+
         val cpkChunksFileManager = CpkChunksFileManagerImpl(cpkCacheDir)
         cpkChunksKafkaReaderSubscription?.close()
         cpkChunksKafkaReaderSubscription =
             subscriptionFactory.createCompactedSubscription(
                 SubscriptionConfig(CPK_READ_GROUP, Schemas.VirtualNode.CPK_FILE_TOPIC),
-                CpkChunksKafkaReader(cpkPartsDir, cpkChunksFileManager, this::onCpkAssembled),
+                CpkChunksKafkaReader(cpkPartsDir, cpkChunksFileManager, ::onCpkAssembled),
                 messagingConfig
             ).also { it.start() }
     }
