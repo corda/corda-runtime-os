@@ -128,6 +128,9 @@ class FlowCheckpointImpl(
     override val initialPlatformVersion: Int
         get() = checkpoint.initialPlatformVersion
 
+    override val flowMetricsState: String
+        get() = checkpoint.flowMetricsState ?: "{}"
+
     override fun initFlowState(flowStartContext: FlowStartContext, cpkFileHashes: Set<SecureHash>) {
         if (flowStateManager != null) {
             val key = flowStartContext.statusKey
@@ -208,6 +211,10 @@ class FlowCheckpointImpl(
 
     override fun setPendingPlatformError(type: String, message: String) {
         pipelineStateManager.setPendingPlatformError(type, message)
+    }
+
+    override fun setMetricsState(stateJson: String) {
+        checkpoint.flowMetricsState = stateJson
     }
 
     override fun toAvro(): Checkpoint? {

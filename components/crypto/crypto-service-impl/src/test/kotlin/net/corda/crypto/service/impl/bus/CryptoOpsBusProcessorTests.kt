@@ -2,6 +2,7 @@ package net.corda.crypto.service.impl.bus
 
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.crypto.config.impl.createDefaultCryptoConfig
+import net.corda.crypto.config.impl.retrying
 import net.corda.crypto.config.impl.toCryptoConfig
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.publicKeyIdFromBytes
@@ -133,7 +134,7 @@ class CryptoOpsBusProcessorTests {
         // if this is @BeforeEach.
         tenantId = UUID.randomUUID().toString()
         factory = TestServicesFactory()
-        processor = CryptoOpsBusProcessor(factory.signingService, configEvent.config.toCryptoConfig())
+        processor = CryptoOpsBusProcessor(factory.signingService, configEvent.config.toCryptoConfig().retrying())
         CryptoConsts.Categories.all.forEach {
             factory.hsmService.assignSoftHSM(tenantId, it)
         }

@@ -40,7 +40,6 @@ internal abstract class BasePersistenceHandler<REQUEST, RESPONSE>(
     private val dbConnectionManager get() = persistenceHandlerServices.dbConnectionManager
     private val jpaEntitiesRegistry get() = persistenceHandlerServices.jpaEntitiesRegistry
     private val transactionTimer get() = persistenceHandlerServices.transactionTimerFactory(operation.simpleName)
-
     val clock get() = persistenceHandlerServices.clock
     val cordaAvroSerializationFactory get() = persistenceHandlerServices.cordaAvroSerializationFactory
     val memberInfoFactory get() = persistenceHandlerServices.memberInfoFactory
@@ -54,7 +53,6 @@ internal abstract class BasePersistenceHandler<REQUEST, RESPONSE>(
             factory.transaction(block)
         }!!
     }
-
     fun <R> transaction(block: (EntityManager) -> R): R {
         return dbConnectionManager.getClusterEntityManagerFactory().let {
             transactionTimer.recordCallable { it.transaction(block) }!!

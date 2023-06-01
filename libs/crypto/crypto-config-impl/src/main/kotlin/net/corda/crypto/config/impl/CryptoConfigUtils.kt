@@ -148,7 +148,7 @@ const val MAXIMUM_SIZE = "maximumSize"
 private const val HSM_MAP = "hsmMap"
 const val DEFAULT = "default"
 const val CACHING = "caching"
-private const val RETRYING = "retrying"
+const val RETRYING = "retrying"
 private const val HSM = "hsm"
 
 fun Map<String, SmartConfig>.toCryptoConfig(): SmartConfig =
@@ -175,6 +175,15 @@ fun SmartConfig.opsBusProcessor(): CryptoBusProcessorConfig =
     } catch (e: Throwable) {
         throw IllegalStateException("Failed to get BusProcessorConfig for ops operations.", e)
     }
+
+fun SmartConfig.retrying(): RetryingConfig =
+    try {
+        RetryingConfig(getConfig(RETRYING))
+    } catch (e: Throwable) {
+        throw IllegalStateException("Failed to get $RETRYING.", e)
+    }
+
+
 
 fun SmartConfig.flowBusProcessor(): CryptoBusProcessorConfig =
     try {
@@ -241,10 +250,10 @@ fun createDefaultCryptoConfig(wrappingKeyPassphrase: Any, wrappingKeySalt: Any):
             RETRYING,
             ConfigValueFactory.fromMap(
                 mapOf(
-                    CryptoBusProcessorConfig::maxAttempts.name to mapOf(
+                    RetryingConfig::maxAttempts.name to mapOf(
                         DEFAULT to 3
                     ),
-                    CryptoBusProcessorConfig::waitBetweenMills.name to mapOf(
+                    RetryingConfig::waitBetweenMills.name to mapOf(
                         DEFAULT to ConfigValueFactory.fromIterable(listOf(200))
                     )
                 ),

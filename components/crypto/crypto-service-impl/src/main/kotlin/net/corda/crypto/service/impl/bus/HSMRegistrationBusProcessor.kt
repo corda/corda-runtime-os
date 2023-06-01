@@ -1,8 +1,6 @@
 package net.corda.crypto.service.impl.bus
 
-import net.corda.configuration.read.ConfigChangedEvent
-import net.corda.crypto.config.impl.hsmRegistrationBusProcessor
-import net.corda.crypto.config.impl.toCryptoConfig
+import net.corda.crypto.config.impl.RetryingConfig
 import net.corda.crypto.impl.retrying.BackoffStrategy
 import net.corda.crypto.impl.retrying.CryptoRetryingExecutor
 import net.corda.crypto.service.HSMService
@@ -22,13 +20,11 @@ import java.util.concurrent.CompletableFuture
 
 class HSMRegistrationBusProcessor(
     private val hsmService: HSMService,
-    event: ConfigChangedEvent
+    config: RetryingConfig
 ) : RPCResponderProcessor<HSMRegistrationRequest, HSMRegistrationResponse> {
     companion object {
         private val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
-
-    private val config = event.config.toCryptoConfig().hsmRegistrationBusProcessor()
 
     private val executor = CryptoRetryingExecutor(
         logger,

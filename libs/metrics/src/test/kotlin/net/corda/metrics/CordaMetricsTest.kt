@@ -23,17 +23,21 @@ class CordaMetricsTest {
 
     @Test
     fun `create meter supports tags name`() {
-        val meter = CordaMetrics.Metric.HttpRequestCount
+        val meter = CordaMetrics.Metric.HttpRequestTime
             .builder()
-            .withTag(CordaMetrics.Tag.Address, "blah")
+            .withTag(CordaMetrics.Tag.UriPath, "/hello")
+            .withTag(CordaMetrics.Tag.HttpMethod, "GET")
+            .withTag(CordaMetrics.Tag.OperationStatus, "200")
             .build()
         assertThat(meter.id.tags.map { Pair(it.key, it.value) })
-            .contains(Pair(CordaMetrics.Tag.Address.value, "blah"))
+            .contains(Pair(CordaMetrics.Tag.UriPath.value, "/hello"))
+            .contains(Pair(CordaMetrics.Tag.HttpMethod.value, "GET"))
+            .contains(Pair(CordaMetrics.Tag.OperationStatus.value, "200"))
     }
 
     @Test
     fun `create meter supports vnode tag`() {
-        val meter = CordaMetrics.Metric.HttpRequestCount
+        val meter = CordaMetrics.Metric.HttpRequestTime
             .builder()
             .forVirtualNode("ABC")
             .build()
@@ -43,8 +47,8 @@ class CordaMetricsTest {
 
     @Test
     fun `create http counter sets name`() {
-        val meter = CordaMetrics.Metric.HttpRequestCount.builder().build()
-        assertThat(meter.id.name).isEqualTo("corda.${CordaMetrics.Metric.HttpRequestCount.metricsName}")
+        val meter = CordaMetrics.Metric.HttpRequestTime.builder().build()
+        assertThat(meter.id.name).isEqualTo("corda.${CordaMetrics.Metric.HttpRequestTime.metricsName}")
         assertThat(meter.id.tags.map { Pair(it.key, it.value) })
             .contains(Pair(CordaMetrics.Tag.WorkerType.value, meterSourceName))
     }

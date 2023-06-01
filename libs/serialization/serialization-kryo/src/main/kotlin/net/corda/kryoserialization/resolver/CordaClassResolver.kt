@@ -55,7 +55,11 @@ class CordaClassResolver(
         nameId = nextNameId++
         classToNameId.put(type, nameId)
         output.writeVarInt(nameId, true)
-        output.writeString(type.name)
+        if (registration.isTypeNameAscii) {
+            output.writeAscii(type.name)
+        } else {
+            output.writeString(type.name)
+        }
         output.writeString(sandboxGroup.getStaticTag(type))
     }
 
