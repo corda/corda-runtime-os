@@ -1,4 +1,4 @@
-@Library('corda-shared-build-pipeline-steps@5.0.1') _
+@Library('corda-shared-build-pipeline-steps@seanb/ES-463/aborted-build-slack-notification') _
 
 cordaPipeline(
     dailyBuildCron: 'H H/6 * * *',
