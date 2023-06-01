@@ -68,7 +68,7 @@ spec:
           {{- include "corda.bootstrapResources" . | nindent 10 }}
           args: ['preinstall', 'run-all', '/tmp/values.yaml']
           volumeMounts:
-            - mountPath: /tmp
+            - mountPath: /{{ include "corda.fullname" . }}-tmp
               name: temp
             {{ include "corda.log4jVolumeMount" . | nindent 12 }}
           env:
@@ -85,11 +85,11 @@ spec:
             - -c
           args:
             - |
-                mkdir /tmp
-                touch /tmp/values.yaml
-                echo -e {{ toYaml .Values | quote }} >> /tmp/values.yaml
+                mkdir /{{ include "corda.fullname" . }}-tmp
+                touch /{{ include "corda.fullname" . }}-tmp/values.yaml
+                echo -e {{ toYaml .Values | quote }} >> /{{ include "corda.fullname" . }}-tmp/values.yaml
           volumeMounts:
-            - mountPath: /tmp
+            - mountPath: /{{ include "corda.fullname" . }}-tmp
               name: temp
       volumes:
         - name: temp
