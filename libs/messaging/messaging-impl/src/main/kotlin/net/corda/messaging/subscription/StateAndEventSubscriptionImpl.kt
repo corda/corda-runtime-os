@@ -368,7 +368,7 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
             log.warn(
                 "Failed to process record from topic $eventTopic, group ${config.group}, " +
                         "producerClientId ${config.clientId}. " +
-                        "Retrying poll and process. Attempts: $attempts."
+                        "Retrying poll and process. Attempts: $attempts.", ex
             )
             stateAndEventConsumer.resetEventOffsetPosition()
         } else {
