@@ -7,7 +7,6 @@ import com.r3.corda.demo.interop.tokens.workflows.TransferFlowArgs
 import net.corda.v5.application.flows.ClientRequestBody
 import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.CordaInject
-import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.flows.InitiatedBy
 import net.corda.v5.application.flows.InitiatingFlow
 import net.corda.v5.application.flows.ResponderFlow
@@ -24,7 +23,6 @@ import org.slf4j.LoggerFactory
 import java.math.BigDecimal
 import java.time.Duration
 import java.time.Instant
-import java.util.*
 
 
 @InitiatingFlow(protocol = "interop-sample-simple-swap-protocol")
@@ -42,9 +40,6 @@ class SimpleSwapFlow : ClientStartableFlow {
 
     @CordaInject
     lateinit var ledgerService: UtxoLedgerService
-
-    @CordaInject
-    lateinit var flowEngine: FlowEngine
 
     @CordaInject
     lateinit var flowMessaging: FlowMessaging
@@ -95,8 +90,6 @@ class SimpleSwapFlow : ClientStartableFlow {
             val signedTransaction = txBuilder.toSignedTransaction()
 
             val session1 = flowMessaging.initiateFlow(newOwnerInfo.name)
-           // val reservation : UUID = session1.sendAndReceive(UUID::class.java, Payment(toReserve = BigDecimal(100)))
-
 
             val finalizationResult = ledgerService.finalize(
                 signedTransaction,
@@ -108,24 +101,16 @@ class SimpleSwapFlow : ClientStartableFlow {
 
 
             val payment = Payment(toReserve = BigDecimal(100))
-            val myAlias = MemberX500Name.parse("C=US, L=Chicago, O=Bob Alias")
+            val myAlias = MemberX500Name.parse("C=GB, L=London, O=Bob2 Alias")
             val facadeId = "org.corda.interop/platform/tokens/v3.0"
             log.info("Interop call: $facadeId, $myAlias")
             val tokens: TokensFacade =
                 facadeService.getFacade(facadeId, TokensFacade::class.java, myAlias, payment.interopGroupId)
 
-//        val response = flowMessaging.callFacade(MemberX500Name.parse("C=GB, L=London, O=Bob Alias"), "3dfc0aae-be7c-44c2-aa4f-4d0d7145cf08",
-//            facadeId,  "reserve-tokens", "100")
             val responseObject = tokens.reserveTokensV3("USD", payment.toReserve, 1000L)
-            log.info("Interop remedy call finished}")
+            log.info("Interop remedy call finished")
             val response : SimpleTokenReservation = responseObject.result
-            log.info("Interop call get $response}")
-
-            log.info("Tesla calling responder finality")
-
-            val responseObject2 = tokens.spendReservedTokens(UUID.fromString(response.message),
-                UUID.randomUUID(), "C=US, L=Chicago, O=Alice")
-            log.info("Tesla 123 calling responder finality ${responseObject2.result}")
+            log.info("Interop call get $response")
 
             return jsonMarshallingService.format(IssueFlowResult(userResult, outputState.linearId.toString()))
         } catch (e: Exception) {
@@ -138,9 +123,6 @@ class SimpleSwapFlow : ClientStartableFlow {
 @InitiatedBy(protocol = "interop-sample-simple-swap-protocol")
 class SimpleSwapResponderFlow : ResponderFlow {
 
-    @CordaInject
-    lateinit var flowMessaging: FlowMessaging
-
     private companion object {
         private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
@@ -148,32 +130,8 @@ class SimpleSwapResponderFlow : ResponderFlow {
     @CordaInject
     lateinit var utxoLedgerService: UtxoLedgerService
 
-    @CordaInject
-    lateinit var facadeService: FacadeService
-
-    @CordaInject
-    lateinit var memberLookup: MemberLookup
-
     @Suspendable
     override fun call(session: FlowSession) {
-
-//
-//        val msg = session.receive(Payment::class.java)
-//        log.info("Received message: $msg")
-//        val myAlias = memberLookup.myInfo().name
-//        val facadeId = "org.corda.interop/platform/tokens/v1.0"
-//        log.info("Interop call: $facadeId, $myAlias, ${msg.interopGroupId}")
-//        val tokens: TokensFacade =
-//            facadeService.getFacade(facadeId, TokensFacade::class.java, myAlias, msg.interopGroupId)
-//
-////        val response = flowMessaging.callFacade(MemberX500Name.parse("C=GB, L=London, O=Bob Alias"), "3dfc0aae-be7c-44c2-aa4f-4d0d7145cf08",
-////            facadeId,  "reserve-tokens", "100")
-//        val responseObject = tokens.reserveTokensV1("USD", msg.toReserve)
-//        log.info("Interop remedy call finished}")
-//        val response = responseObject.result
-//        log.info("Interop call get $response}")
-//        session.send(response)
-//        log.info("Tesla calling responder finality")
 
         try {
             val finalizationResult = utxoLedgerService.receiveFinality(session) { ledgerTransaction ->

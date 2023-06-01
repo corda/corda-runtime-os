@@ -4,7 +4,6 @@ import com.r3.corda.demo.interop.tokens.workflows.IssueFlowArgs
 import com.r3.corda.demo.interop.tokens.workflows.IssueFlowResult
 import com.r3.corda.demo.interop.tokens.workflows.IssueSubFlow
 import com.r3.corda.demo.interop.tokens.workflows.TransferFlowArgs
-import com.r3.corda.demo.interop.tokens.workflows.TransferFlowResult
 import com.r3.corda.demo.interop.tokens.workflows.TransferSubFlow
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.FlowEngine

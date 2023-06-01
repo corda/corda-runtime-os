@@ -77,9 +77,7 @@ class TransferSubFlow(private val params: TransferFlowArgs): SubFlow<TransferFlo
 
             val transactionId = flowEngine.subFlow(FinalizeFlow(signedTransaction, listOf(ownerInfo.name, newOwnerInfo.name)))
 
-            val result = TransferFlowResult(transactionId, outputState.linearId.toString())
-            log.info("TeslaTesla ${result}")
-            return result
+            return TransferFlowResult(transactionId, outputState.linearId.toString())
 
         } catch (e: Exception) {
             log.warn("Failed to process utxo flow because: '${e.message}'")
