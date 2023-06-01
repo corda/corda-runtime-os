@@ -635,11 +635,6 @@ object CordaMetrics {
             object ConsumerInMemoryStoreCount : Metric<DistributionSummary>("consumer.inmemory.store.count", Metrics::summary)
 
             /**
-             * Measure for the number of in-memory states held in StateAndEvent patterns.
-             */
-            object ConsumerPartitionCount : Metric<DistributionSummary>("consumer.partition.count", Metrics::summary)
-
-            /**
              * Counter for the number of records a consumer has consumed.
              */
             object ConsumerRecordsConsumedCount : Metric<DistributionSummary>("consumer.records.consumed.count", Metrics::summary)
