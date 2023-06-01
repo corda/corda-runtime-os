@@ -37,7 +37,7 @@ internal class CompactedSubscriptionImpl<K : Any, V : Any>(
 
     private var latestValues: MutableMap<K, V>? = null
 
-    private val inMemoryValuesCount = CordaMetrics.Metric.Messaging.ConsumerInMemoryStoreCount.builder()
+    private val inMemoryValuesCount = CordaMetrics.Metric.Messaging.CompactedConsumerInMemoryStoreCount.builder()
         .withTag(CordaMetrics.Tag.MessagePatternType, MetricsConstants.COMPACTED_PATTERN_TYPE)
         .withTag(CordaMetrics.Tag.MessagePatternClientId, config.clientId)
         .build()
