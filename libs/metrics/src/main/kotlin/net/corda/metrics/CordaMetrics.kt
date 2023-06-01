@@ -625,11 +625,6 @@ object CordaMetrics {
             object MessagePollTime : Metric<Timer>("messaging.poll.time", CordaMetrics::timer)
 
             /**
-             * Metric for flow fiber serialization.
-             */
-            object ProducerCommitTime : Metric<Timer>("producer.commit.time", CordaMetrics::timer)
-
-            /**
              * Measure for the number of chunks generated when writing records.
              */
             object ProducerChunksGenerated : Metric<DistributionSummary>("producer.chunks.generated.count", Metrics::summary)
@@ -643,6 +638,16 @@ object CordaMetrics {
              * Measure for the number of in-memory states held in StateAndEvent patterns.
              */
             object ConsumerPartitionCount : Metric<DistributionSummary>("consumer.partition.count", Metrics::summary)
+
+            /**
+             * Counter for the number of records a consumer has consumed.
+             */
+            object ConsumerRecordsConsumedCount : Metric<DistributionSummary>("consumer.records.consumed.count", Metrics::summary)
+
+            /**
+             * Size of consumer's record buffer.
+             */
+            object ConsumerRecordBufferSize : Metric<DistributionSummary>("consumer.record.buffer.size", Metrics::summary)
 
         }
     }
@@ -668,11 +673,6 @@ object CordaMetrics {
          * Type of the SandboxGroup to which the metric applies.
          */
         SandboxGroupType("sandbox.type"),
-
-        /**
-         * The step of some processing being measured by a metric.
-         */
-        Step("step"),
 
         /**
          * Source of metric.
@@ -823,7 +823,15 @@ object CordaMetrics {
          */
         ConnectionResult("connection.result"),
 
-        Topic("topic")
+        /**
+         * Name of a message bus topic published to or consumed from.
+         */
+        Topic("topic"),
+
+        /**
+         * Partition of a message bus topic published to or consumed from.
+         */
+        Partition("partition")
     }
 
     /**
