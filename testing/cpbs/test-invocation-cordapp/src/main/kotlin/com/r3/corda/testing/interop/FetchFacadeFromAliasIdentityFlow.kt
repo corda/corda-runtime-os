@@ -4,7 +4,7 @@ import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.InitiatingFlow
 import net.corda.v5.application.flows.ClientRequestBody
-import net.corda.v5.application.interop.RemoteAliasLookUp
+import net.corda.v5.application.interop.InteropIdentityLookUp
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.base.annotations.Suspendable
 import org.slf4j.LoggerFactory
@@ -23,7 +23,7 @@ class FetchFacadeFromAliasIdentityFlow : ClientStartableFlow {
     lateinit var jsonMarshallingService: JsonMarshallingService
 
     @CordaInject
-    lateinit var remoteAliasLookUp: RemoteAliasLookUp
+    lateinit var interopIdentityLookUp: InteropIdentityLookUp
 
     @Suspendable
     override fun call(requestBody: ClientRequestBody): String {
@@ -31,11 +31,10 @@ class FetchFacadeFromAliasIdentityFlow : ClientStartableFlow {
 
         val args = requestBody.getRequestBodyAsMap(jsonMarshallingService, String::class.java, String::class.java)
 
-        val alias = getArgument(args, "alias")
         val hostNetwork = getArgument(args, "hostNetwork")
 
-        val aliasMember = remoteAliasLookUp.lookup(alias, hostNetwork)
-        log.info("Alias member info for $alias :  '$aliasMember'")
+        val aliasMember = interopIdentityLookUp.lookup(hostNetwork)?: throw NullPointerException("$hostNetwork not in Lookup")
+        log.info("Alias member info for $hostNetwork :  '$aliasMember'")
         log.info("FetchHoldingIdentityAliasFlow.call() ending")
 
         return aliasMember.facadeIds.toString()
