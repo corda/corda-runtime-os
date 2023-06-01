@@ -622,34 +622,28 @@ object CordaMetrics {
             /**
              * Measure for the number of chunks generated when writing records.
              */
-            object ProducerChunksGenerated : Metric<DistributionSummary>("producer.chunks.generated.count", Metrics::summary)
+            object ProducerChunksGenerated : Metric<DistributionSummary>("producer.chunks.generated", Metrics::summary)
 
             /**
              * Measure for the number of in-memory states held in StateAndEvent patterns.
              */
-            object ConsumerInMemoryStoreCount : Metric<DistributionSummary>("consumer.inmemory.store.count", Metrics::summary)
+            object ConsumerInMemoryStoreCount : Metric<DistributionSummary>("consumer.inmemory.store", Metrics::summary)
 
             /**
              * Counter for the number of records a consumer has consumed.
              */
-            object ConsumerRecordsConsumedCount : Metric<DistributionSummary>("consumer.records.consumed.count", Metrics::summary)
+            object ConsumerRecordsConsumedCount : Metric<DistributionSummary>("consumer.records.consumed", Metrics::summary)
 
             /**
              * Size of consumer's record buffer.
              */
-            object ConsumerRecordBufferSize : Metric<DistributionSummary>("consumer.record.buffer.size", Metrics::summary)
+            object ConsumerRecordBufferSize : Metric<DistributionSummary>("consumer.record.buffer", Metrics::summary)
 
             /**
              * The time inside poll call to CordaKafkaConsumer. Includes waiting for messages from the bus and some other post-processing
              * around partition assignment and record buffering.
              */
             object CordaConsumerPollTime : Metric<Timer>("messaging.poll.time", CordaMetrics::timer)
-
-            /**
-             * The time blocking inside a poll call waiting for messages from the bus.
-             */
-            object KafkaConsumerPollTime : Metric<Timer>("consumer.poll.time", CordaMetrics::timer)
-
         }
     }
 

@@ -80,12 +80,7 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
     @Suppress("TooGenericExceptionCaught")
     override fun poll(timeout: Duration): List<CordaConsumerRecord<K, V>> {
         val polledRecords = try {
-            CordaMetrics.Metric.Messaging.KafkaConsumerPollTime.builder()
-                .withTag(CordaMetrics.Tag.MessagePatternClientId, config.clientId)
-                .build()
-                .recordCallable {
-                    consumer.poll(timeout)
-                }
+            consumer.poll(timeout)
         } catch (ex: Exception) {
             when (ex) {
                 is AuthorizationException,
