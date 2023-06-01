@@ -133,7 +133,7 @@ class SwapResponderFlow : ResponderFlow {
 
         val msg = session.receive(Payment::class.java)
         log.info("Received message: $msg")
-        val myAlias = memberLookup.myInfo().name
+        val myAlias = MemberX500Name.parse("C=GB, L=London, O=Bob2 Alias")//TODO replace with alias lookup
         val facadeId = "org.corda.interop/platform/tokens/v1.0"
         log.info("Interop call: $facadeId, $myAlias, ${msg.interopGroupId}")
         val tokens: TokensFacade =
