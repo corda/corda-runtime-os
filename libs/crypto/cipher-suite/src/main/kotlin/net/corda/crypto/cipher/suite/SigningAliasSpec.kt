@@ -4,6 +4,8 @@ import net.corda.crypto.cipher.suite.schemes.KeyScheme
 import net.corda.v5.crypto.SignatureSpec
 import java.security.PublicKey
 
+// TODO remove
+
 /**
  * Parameters for signing operation when using the key stored in the HSM.
  *
@@ -19,7 +21,7 @@ class SigningAliasSpec(
     val hsmAlias: String,
     override val publicKey: PublicKey,
     override val keyScheme: KeyScheme,
-    override val signatureSpec: SignatureSpec
+    override val signatureSpec: SignatureSpec,
 ) : SigningSpec {
 
     /**
