@@ -115,7 +115,7 @@ class CryptoFlowOpsBusProcessor(
                 )
                 externalEventResponseFactory.platformError(request.flowExternalEventContext, throwable)
             }.also {
-                CordaMetrics.Metric.CryptoFlowOpsProcessorExecutionTime.builder()
+                CordaMetrics.Metric.Crypto.FlowOpsProcessorExecutionTime.builder()
                     .withTag(CordaMetrics.Tag.OperationName, requestPayload::class.java.simpleName)
                     .build()
                     .record(Duration.between(startTime, Instant.now()))

@@ -34,6 +34,8 @@ import java.security.KeyPairGenerator
 import java.security.PrivateKey
 import java.security.Provider
 import java.security.PublicKey
+import java.time.Duration
+import java.time.Instant
 import javax.crypto.Cipher
 
 const val WRAPPING_KEY_ENCODING_VERSION: Int = 1
@@ -55,7 +57,6 @@ const val PRIVATE_KEY_ENCODING_VERSION: Int = 1
  * @param wrappingKeyFactory creates a wrapping key given scheme metadata. For instance:
  *        `{ WrappingKeyImpl.generateWrappingKey(it) }`
  */
-
 
 @Suppress("LongParameterList")
 class SoftCryptoService(
@@ -199,33 +200,34 @@ class SoftCryptoService(
     }
 
     private fun sign(spec: SigningSpec, privateKey: PrivateKey, data: ByteArray): ByteArray {
-        return CordaMetrics.Metric.SoftCryptoSignTimer
+        val startTime = Instant.now()
+        val signingData = spec.signatureSpec.getSigningData(digestService, data)
+        val signatureBytes = if (spec.signatureSpec is CustomSignatureSpec && spec.keyScheme.algorithmName == "RSA") {
+            // when the hash is precalculated and the key is RSA the actual sign operation is encryption
+            val cipher = Cipher.getInstance(spec.signatureSpec.signatureName, providerFor(spec.keyScheme))
+            cipher.init(Cipher.ENCRYPT_MODE, privateKey)
+            cipher.doFinal(signingData)
+        } else {
+            signatureInstances.withSignature(spec.keyScheme, spec.signatureSpec) { signature ->
+                spec.signatureSpec.getParamsSafely()?.let { params -> signature.setParameter(params) }
+                signature.initSign(privateKey, schemeMetadata.secureRandom)
+                signature.update(signingData)
+                signature.sign()
+            }
+        }
+        CordaMetrics.Metric.Crypto.SignTimer
             .builder()
+            .withTag(CordaMetrics.Tag.SignatureSpec, spec.signatureSpec.signatureName)
             .build()
-            .recordCallable {
-                val signingData = spec.signatureSpec.getSigningData(digestService, data)
-                val signatureBytes = if (spec.signatureSpec is CustomSignatureSpec && spec.keyScheme.algorithmName == "RSA") {
-                    // when the hash is precalculated and the key is RSA the actual sign operation is encryption
-                    val cipher = Cipher.getInstance(spec.signatureSpec.signatureName, providerFor(spec.keyScheme))
-                    cipher.init(Cipher.ENCRYPT_MODE, privateKey)
-                    cipher.doFinal(signingData)
-                } else {
-                    signatureInstances.withSignature(spec.keyScheme, spec.signatureSpec) { signature ->
-                        spec.signatureSpec.getParamsSafely()?.let { params -> signature.setParameter(params) }
-                        signature.initSign(privateKey, schemeMetadata.secureRandom)
-                        signature.update(signingData)
-                        signature.sign()
-                    }
-                }
-                signatureBytes
-            }!!
+            .record(Duration.between(startTime, Instant.now()))
+        return signatureBytes
     }
 
     private fun providerFor(scheme: KeyScheme): Provider = schemeMetadata.providers.getValue(scheme.providerName)
 
     private fun obtainAndStoreWrappingKey(alias: String, tenantId: String): WrappingKey =
-        CordaMetrics.Metric.WrappingKeyCreationTimer.builder()
-            .withTag(CordaMetrics.Tag.VirtualNode, tenantId)
+        CordaMetrics.Metric.Crypto.WrappingKeyCreationTimer.builder()
+            .withTag(CordaMetrics.Tag.Tenant, tenantId)
             .build()
             .recordCallable {
                 wrappingKeyCache?.getIfPresent(alias) ?: run {
@@ -256,7 +258,6 @@ class SoftCryptoService(
         ).also {
             privateKeyCache?.put(publicKey, it)
         }
-    
 
     override fun close() {
     }

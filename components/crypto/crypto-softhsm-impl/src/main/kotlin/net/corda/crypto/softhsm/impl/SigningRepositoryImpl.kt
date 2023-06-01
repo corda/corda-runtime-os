@@ -215,7 +215,7 @@ class SigningRepositoryImpl(
         require(keyIds.size <= KEY_LOOKUP_INPUT_ITEMS_LIMIT) {
             "The number of ids exceeds $KEY_LOOKUP_INPUT_ITEMS_LIMIT"
         }
-        return CordaMetrics.Metric.CryptoSigningKeyLookupTimer.builder()
+        return CordaMetrics.Metric.Crypto.SigningKeyLookupTimer.builder()
             .withTag(CordaMetrics.Tag.SigningKeyLookupMethod, "PublicKeyShortHashes")
             .build()
             .recordCallable {
@@ -238,7 +238,7 @@ class SigningRepositoryImpl(
             "The number of ids exceeds $KEY_LOOKUP_INPUT_ITEMS_LIMIT"
         }
 
-        return CordaMetrics.Metric.CryptoSigningKeyLookupTimer.builder()
+        return CordaMetrics.Metric.Crypto.SigningKeyLookupTimer.builder()
             .withTag(CordaMetrics.Tag.SigningKeyLookupMethod, "PublicKeyHashes")
             .build()
             .recordCallable {
