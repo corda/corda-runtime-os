@@ -63,13 +63,13 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
 
     private val currentStatesMetricCache = ConcurrentHashMap<Int, DistributionSummary>()
 
-    private val statePollTimer = CordaMetrics.Metric.Messaging.MessagePollTime.builder()
+    private val statePollTimer = CordaMetrics.Metric.Messaging.CordaConsumerPollTime.builder()
         .withTag(CordaMetrics.Tag.MessagePatternType, MetricsConstants.STATE_AND_EVENT_PATTERN_TYPE)
         .withTag(CordaMetrics.Tag.MessagePatternClientId, config.clientId)
         .withTag(CordaMetrics.Tag.OperationName, MetricsConstants.STATE_POLL_OPERATION)
         .build()
 
-    private val eventPollTimer = CordaMetrics.Metric.Messaging.MessagePollTime.builder()
+    private val eventPollTimer = CordaMetrics.Metric.Messaging.CordaConsumerPollTime.builder()
         .withTag(CordaMetrics.Tag.MessagePatternType, MetricsConstants.STATE_AND_EVENT_PATTERN_TYPE)
         .withTag(CordaMetrics.Tag.MessagePatternClientId, config.clientId)
         .withTag(CordaMetrics.Tag.OperationName, MetricsConstants.EVENT_POLL_OPERATION)

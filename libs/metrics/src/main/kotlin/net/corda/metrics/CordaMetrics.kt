@@ -620,11 +620,6 @@ object CordaMetrics {
             object MessageCommitTime : Metric<Timer>("messaging.commit.time", CordaMetrics::timer)
 
             /**
-             * The time blocking inside a poll call waiting for messages from the bus.
-             */
-            object MessagePollTime : Metric<Timer>("messaging.poll.time", CordaMetrics::timer)
-
-            /**
              * Measure for the number of chunks generated when writing records.
              */
             object ProducerChunksGenerated : Metric<DistributionSummary>("producer.chunks.generated.count", Metrics::summary)
@@ -643,6 +638,17 @@ object CordaMetrics {
              * Size of consumer's record buffer.
              */
             object ConsumerRecordBufferSize : Metric<DistributionSummary>("consumer.record.buffer.size", Metrics::summary)
+
+            /**
+             * The time inside poll call to CordaKafkaConsumer. Includes waiting for messages from the bus and some other post-processing
+             * around partition assignment and record buffering.
+             */
+            object CordaConsumerPollTime : Metric<Timer>("messaging.poll.time", CordaMetrics::timer)
+
+            /**
+             * The time blocking inside a poll call waiting for messages from the bus.
+             */
+            object KafkaConsumerPollTime : Metric<Timer>("consumer.poll.time", CordaMetrics::timer)
 
         }
     }
