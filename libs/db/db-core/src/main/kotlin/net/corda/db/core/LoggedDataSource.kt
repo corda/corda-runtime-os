@@ -104,7 +104,11 @@ internal class SimpleDataSource(
 internal class LoggedDataSource(
     private val datasource: DataSource,
 ):DataSource by datasource {
-    private val created = Exception("TTT - created datasource")
+    companion object {
+        private val indexFactory = AtomicLong()
+    }
+    private val index = indexFactory.incrementAndGet()
+    private val created = Exception("TTT - created datasource $this")
 
     override fun getConnection(): Connection {
         return LoggedConnection(datasource.connection, created)
@@ -113,4 +117,6 @@ internal class LoggedDataSource(
     override fun getConnection(username: String?, password: String?): Connection {
         return LoggedConnection(datasource.getConnection(username, password), created)
     }
+
+    override fun toString() = "LoggedDataSource$index"
 }

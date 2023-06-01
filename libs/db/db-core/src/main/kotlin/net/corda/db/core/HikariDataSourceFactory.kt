@@ -2,8 +2,11 @@ package net.corda.db.core
 
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
+import org.slf4j.LoggerFactory
 import java.io.Closeable
 import java.time.Duration
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 import javax.sql.DataSource
 
 /**
@@ -24,11 +27,35 @@ class HikariDataSourceFactory(
         DataSourceWrapper(ds)
     }
 ) : DataSourceFactory {
+    companion object {
+        private val logger = LoggerFactory.getLogger("TTT")
+        private val repoter = Executors.newScheduledThreadPool(1)
+    }
     /**
      * [HikariDataSource] wrapper that makes it [CloseableDataSource]
      */
-    private class DataSourceWrapper(private val delegate: HikariDataSource)
-        : CloseableDataSource, Closeable by delegate, DataSource by delegate
+    private class DataSourceWrapper(val delegate: HikariDataSource)
+        : CloseableDataSource, Closeable by delegate, DataSource by delegate {
+            val myReport = repoter.scheduleAtFixedRate(
+                {
+                    val bean = delegate.hikariConfigMXBean
+                    val info = delegate.hikariPoolMXBean
+                    logger.info("Reporting on ${delegate.poolName}")
+                    logger.info("\t minimumIdle = ${bean.minimumIdle}")
+                    logger.info("\t idleTimeout = ${bean.idleTimeout}")
+                    logger.info("\t active = ${info.activeConnections}")
+                    logger.info("\t total = ${info.totalConnections}")
+                },
+                3,
+                1,
+                TimeUnit.MINUTES,
+                )
+
+        override fun close() {
+            myReport.cancel(false)
+            delegate.close()
+        }
+        }
 
     override fun create(
         driverClass: String,
@@ -61,7 +88,9 @@ class HikariDataSourceFactory(
                 password
             )
         }
-        conf.dataSource = LoggedDataSource(ds)
+        val lds = LoggedDataSource(ds)
+        conf.dataSource = lds
+        conf.poolName = lds.toString()
 
         conf.isAutoCommit = isAutoCommit
         conf.isReadOnly = isReadOnly
@@ -80,6 +109,10 @@ class HikariDataSourceFactory(
         if(Duration.ZERO != keepaliveTime)
             conf.keepaliveTime = keepaliveTime.toMillis()
         conf.validationTimeout = validationTimeout.toMillis()
+        logger.info("Creating ds ${conf.dataSource} " +
+                "idleTimeout = ${conf.idleTimeout}, " +
+                "minimumIdle = ${conf.minimumIdle} " +
+                "keepaliveTime = ${conf.keepaliveTime}")
 
         return hikariDataSourceFactory(conf)
     }
