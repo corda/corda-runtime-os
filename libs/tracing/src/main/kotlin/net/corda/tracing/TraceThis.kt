@@ -1,14 +1,12 @@
 @file:Suppress("TooManyFunctions")
+
 package net.corda.tracing
 
-import brave.Span
-import brave.servlet.TracingFilter
 import io.javalin.core.JavalinConfig
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.EventLogRecord
 import net.corda.messaging.api.records.Record
-import net.corda.tracing.impl.BatchRecordTracerImpl
-import net.corda.tracing.impl.TraceContextImpl
+import net.corda.tracing.impl.BraveTracingService
 import net.corda.tracing.impl.TracingState
 import org.apache.kafka.clients.consumer.Consumer
 import org.apache.kafka.clients.producer.Producer
@@ -18,81 +16,46 @@ import java.util.concurrent.ExecutorService
 import javax.servlet.DispatcherType
 
 /**
- * Configure service name that will be displayed in dashboards.
- * Defaults to "unknown".
+ * Configures the tracing for a given Corda worker.
+ * If the zipkin host parameter is not set then tracing will be disabled
+ *
+ * @param serviceName The service name that will be displayed in dashboards.
+ * @param zipkinHost The url of the zipkin host the trace data will be sent to. The value should include a port number
+ * if the server is listening on the default 9411 port. Example value: http://localhost:9411
+ *
  */
-fun setTracingServiceName(serviceName: String) {
-    TracingState.serviceName = serviceName
+fun configureTracing(serviceName: String, zipkinHost: String?) {
+    if (zipkinHost.isNullOrEmpty()) {
+        return
+    }
+
+    TracingState.currentTraceService = BraveTracingService(serviceName, zipkinHost)
 }
 
 fun wrapWithTracingExecutor(executor: ExecutorService): ExecutorService {
-    return TracingState.tracing.currentTraceContext().executorService(executor)
+    return TracingState.currentTraceService.wrapWithTracingExecutor(executor)
 }
 
 fun <K, V> wrapWithTracingConsumer(kafkaConsumer: Consumer<K, V>): Consumer<K, V> {
-    return TracingState.kafkaTracing.consumer(kafkaConsumer)
+    return TracingState.currentTraceService.wrapWithTracingConsumer(kafkaConsumer)
 }
 
 fun <K, V> wrapWithTracingProducer(kafkaProducer: Producer<K, V>): Producer<K, V> {
-    return TracingState.kafkaTracing.producer(kafkaProducer)
+    return TracingState.currentTraceService.wrapWithTracingProducer(kafkaProducer)
 }
 
 fun traceBatch(operationName: String): BatchRecordTracer {
-    return BatchRecordTracerImpl(operationName)
-}
-
-private fun <T> Span.doTrace(operationName: String, blockOnSpan: Span.() -> T): T {
-    name(operationName).start()
-    return TracingState.tracing.currentTraceContext().newScope(context()).use {
-        try {
-            blockOnSpan()
-        } catch (ex: Exception) {
-            error(ex)
-            throw ex
-        } finally {
-            finish()
-        }
-    }
+    return TracingState.currentTraceService.traceBatch(operationName)
 }
 
 fun <R> trace(operationName: String, processingBlock: TraceContext.() -> R): R {
-    return TracingState.tracing.tracer().nextSpan().doTrace(operationName) {
-        val ctx = TraceContextImpl(this)
-        processingBlock(ctx)
-    }
-}
-
-private val recordInjector by lazy {
-    TracingState.tracing.propagation()
-        .injector { param: MutableList<Pair<String, String>>, key: String, value: String ->
-            param.removeAll { it.first == key }
-            param.add(key to value)
-        }
+    return TracingState.currentTraceService.nextSpan(operationName, processingBlock)
 }
 
 fun addTraceContextToRecords(records: List<Record<*, *>>): List<Record<*, *>> = records.map(::addTraceContextToRecord)
 
 fun addTraceContextToRecord(it: Record<*, *>): Record<out Any, out Any> {
-    val headersWithTracing = it.headers.toMutableList()
-    recordInjector.inject(TracingState.tracing.currentTraceContext().get(), headersWithTracing)
-    return it.copy(headers = headersWithTracing)
-}
-
-fun List<Record<*, *>>.excludeTracingHeaders() = this.map { record ->
-    record.copy(headers = record.headers.filterNot { (key, _) ->
-        key.startsWith("X-B3-")
-    })
-}
-fun <S : Any> StateAndEventProcessor.Response<S>.excludeTracingHeaders() =
-    copy(responseEvents = responseEvents.excludeTracingHeaders())
-
-fun addTraceContextToRecords(records: List<Record<*, *>>, span: Span): List<Record<*, *>> =
-    records.map { addTraceContextToRecord(it, span) }
-
-fun addTraceContextToRecord(it: Record<*, *>, span: Span): Record<out Any, out Any> {
-    val headersWithTracing = it.headers.toMutableList()
-    recordInjector.inject(span.context(), headersWithTracing)
-    return it.copy(headers = headersWithTracing)
+    return it.copy(headers = TracingState.currentTraceService.addTraceHeaders(it.headers))
 }
 
 fun traceEventProcessing(
@@ -100,7 +63,7 @@ fun traceEventProcessing(
     operationName: String,
     processingBlock: () -> List<Record<*, *>>
 ): List<Record<*, *>> {
-    return TracingState.recordTracing.nextSpan(event).doTrace(operationName) {
+    return TracingState.currentTraceService.nextSpan(operationName, event) {
         addTraceContextToRecords(processingBlock())
     }
 }
@@ -110,7 +73,7 @@ fun traceEventProcessing(
     operationName: String,
     processingBlock: () -> List<Record<*, *>>
 ): List<Record<*, *>> {
-    return TracingState.recordTracing.nextSpan(event).doTrace(operationName) {
+    return TracingState.currentTraceService.nextSpan(operationName, event) {
         addTraceContextToRecords(processingBlock())
     }
 }
@@ -120,7 +83,7 @@ fun traceEventProcessingNullableSingle(
     operationName: String,
     processingBlock: () -> Record<*, *>?
 ): Record<*, *>? {
-    return TracingState.recordTracing.nextSpan(event).doTrace(operationName) {
+    return TracingState.currentTraceService.nextSpan(operationName, event) {
         processingBlock()?.let { addTraceContextToRecord(it) }
     }
 }
@@ -130,7 +93,7 @@ fun traceEventProcessingSingle(
     operationName: String,
     processingBlock: () -> Record<*, *>
 ): Record<*, *> {
-    return TracingState.recordTracing.nextSpan(event).doTrace(operationName) {
+    return TracingState.currentTraceService.nextSpan(operationName, event) {
         addTraceContextToRecord(processingBlock())
     }
 }
@@ -140,22 +103,10 @@ fun <K : Any, S : Any, V : Any> traceStateAndEventExecution(
     operationName: String,
     processingBlock: () -> StateAndEventProcessor.Response<S>
 ): StateAndEventProcessor.Response<S> {
-    return TracingState.recordTracing.nextSpan(event).doTrace(operationName) {
+    return TracingState.currentTraceService.nextSpan(operationName, event) {
         val result = processingBlock()
         result.copy(responseEvents = addTraceContextToRecords(result.responseEvents))
     }
-}
-
-/**
- * Configure Zipkin host that will receive trace data in zipkin format. The value should include a port number if the
- * server is listening on the default 9411 port.
- *
- * Example value: http://localhost:9411
- *
- * Defaults to "" which will turn off sending data to a Zipkin host.
- */
-fun setZipkinHost(zipkinHost: String) {
-    TracingState.zipkinHost = zipkinHost
 }
 
 /**
@@ -164,7 +115,7 @@ fun setZipkinHost(zipkinHost: String) {
  * Call this method to avoid losing events at shutdown.
  */
 fun shutdownTracing() {
-    TracingState.close()
+    TracingState.currentTraceService.close()
 }
 
 /**
@@ -173,7 +124,7 @@ fun shutdownTracing() {
 fun configureJavalinForTracing(config: JavalinConfig) {
     config.configureServletContextHandler { sch ->
         sch.addFilter(
-            FilterHolder(TracingFilter.create(TracingState.tracing)),
+            FilterHolder(TracingState.currentTraceService.getTracedServletFilter()),
             "/*",
             EnumSet.of(DispatcherType.INCLUDE, DispatcherType.REQUEST)
         )

@@ -6,7 +6,7 @@ import brave.propagation.Propagation
 import net.corda.messaging.api.records.EventLogRecord
 import net.corda.messaging.api.records.Record
 
-class RecordTracing(tracing: Tracing) {
+class BraveRecordTracing(tracing: Tracing) {
     private val tracer = tracing.tracer()
     private val recordHeaderGetter: Propagation.Getter<List<Pair<String, String>>, String> =
         Propagation.Getter<List<Pair<String, String>>, String> { request, key ->

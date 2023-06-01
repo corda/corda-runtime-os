@@ -47,13 +47,11 @@ class UniquenessCheckMessageProcessor(
 }
 
 private fun BatchRecordTracer.error(request: UniquenessCheckRequestAvro, record: Record<*, *>): Record<*, *> {
-    request.flowExternalEventContext?.requestId?.let { id -> this.completeSpanFor(id, record) }
-    return record
+    return request.flowExternalEventContext?.requestId?.let { id -> this.completeSpanFor(id, record) } ?: record
 }
 
-private fun BatchRecordTracer.complete(request: UniquenessCheckRequestAvro, record: Record<*, *>): Record<*, *>  {
-    request.flowExternalEventContext?.requestId?.let { id -> this.completeSpanFor(id, record) }
-    return record
+private fun BatchRecordTracer.complete(request: UniquenessCheckRequestAvro, record: Record<*, *>): Record<*, *> {
+    return request.flowExternalEventContext?.requestId?.let { id -> this.completeSpanFor(id, record) } ?: record
 }
 
 private fun createBatchTracer(events: List<Record<String, UniquenessCheckRequestAvro>>): BatchRecordTracer {

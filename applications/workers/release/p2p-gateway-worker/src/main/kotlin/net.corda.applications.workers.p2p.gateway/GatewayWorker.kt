@@ -11,8 +11,7 @@ import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.processors.p2p.gateway.GatewayProcessor
-import net.corda.tracing.setTracingServiceName
-import net.corda.tracing.setZipkinHost
+import net.corda.tracing.configureTracing
 import net.corda.tracing.shutdownTracing
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -46,14 +45,14 @@ class GatewayWorker @Activate constructor(
     override fun startup(args: Array<String>) {
         logger.info("P2P Gateway worker starting.")
         logger.loggerStartupInfo(platformInfoProvider)
-        setTracingServiceName("P2P Gateway Worker")
 
         applicationBanner.show("P2P Gateway Worker", platformInfoProvider)
 
         val params = WorkerHelpers.getParams(args, GatewayWorkerParams())
         if (WorkerHelpers.printHelpOrVersion(params.defaultParams, this::class.java, shutDownService)) return
         WorkerHelpers.setupMonitor(workerMonitor, params.defaultParams, this.javaClass.simpleName)
-        params.defaultParams.zipkinTraceUrl?.let(::setZipkinHost)
+
+        configureTracing("P2P Gateway Worker", params.defaultParams.zipkinTraceUrl)
 
         val config = WorkerHelpers.getBootstrapConfig(
             secretsServiceFactoryResolver,

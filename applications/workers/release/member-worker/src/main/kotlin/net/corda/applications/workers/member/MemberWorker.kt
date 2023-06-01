@@ -14,8 +14,7 @@ import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.processors.member.MemberProcessor
-import net.corda.tracing.setTracingServiceName
-import net.corda.tracing.setZipkinHost
+import net.corda.tracing.configureTracing
 import net.corda.tracing.shutdownTracing
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -51,14 +50,14 @@ class MemberWorker @Activate constructor(
     override fun startup(args: Array<String>) {
         logger.info("Member worker starting.")
         logger.loggerStartupInfo(platformInfoProvider)
-        setTracingServiceName("Member Worker")
 
         applicationBanner.show("Member Worker", platformInfoProvider)
 
         val params = getParams(args, MemberWorkerParams())
         if (printHelpOrVersion(params.defaultParams, MemberWorker::class.java, shutDownService)) return
         setupMonitor(workerMonitor, params.defaultParams, this.javaClass.simpleName)
-        params.defaultParams.zipkinTraceUrl?.let(::setZipkinHost)
+
+        configureTracing("Member Worker", params.defaultParams.zipkinTraceUrl)
 
         val config = getBootstrapConfig(
             secretsServiceFactoryResolver,

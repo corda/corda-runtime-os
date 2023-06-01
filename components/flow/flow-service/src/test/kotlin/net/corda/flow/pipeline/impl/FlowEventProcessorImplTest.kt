@@ -1,6 +1,5 @@
 package net.corda.flow.pipeline.impl
 
-import java.time.Instant
 import net.corda.data.KeyValuePairList
 import net.corda.data.flow.FlowInitiatorType
 import net.corda.data.flow.FlowKey
@@ -34,7 +33,6 @@ import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.Flow.FLOW_EVENT_TOPIC
 import net.corda.schema.Schemas.Flow.FLOW_STATUS_TOPIC
-import net.corda.tracing.excludeTracingHeaders
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
@@ -46,6 +44,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.time.Instant
 
 class FlowEventProcessorImplTest {
 
@@ -166,7 +165,7 @@ class FlowEventProcessorImplTest {
         val response = processor.onNext(checkpoint, inputEvent)
 
         assertEquals(checkpoint, response.updatedState)
-        assertEquals(outputRecords, response.responseEvents.excludeTracingHeaders())
+        assertEquals(outputRecords, response.responseEvents)
         verify(flowMDCService, times(1)).getMDCLogging(anyOrNull(), any(), any())
     }
 
@@ -253,7 +252,7 @@ class FlowEventProcessorImplTest {
 
         val response = processor.onNext(checkpoint, getFlowEventRecord(FlowEvent(flowKey, wakeupPayload)))
 
-        assertThat(response.excludeTracingHeaders()).isEqualTo(killedFlowResponse)
+        assertThat(response).isEqualTo(killedFlowResponse)
     }
 
     @Test
@@ -263,7 +262,7 @@ class FlowEventProcessorImplTest {
         val response = processor.onNext(null, inputEvent)
 
         assertEquals(checkpoint, response.updatedState)
-        assertEquals(outputRecords, response.responseEvents.excludeTracingHeaders())
+        assertEquals(outputRecords, response.responseEvents)
         verify(flowMDCService, times(1)).getMDCLogging(anyOrNull(), any(), any())
     }
 
@@ -274,7 +273,7 @@ class FlowEventProcessorImplTest {
         val response = processor.onNext(null, inputEvent)
 
         assertEquals(checkpoint, response.updatedState)
-        assertEquals(outputRecords, response.responseEvents.excludeTracingHeaders())
+        assertEquals(outputRecords, response.responseEvents)
         verify(flowMDCService, times(1)).getMDCLogging(anyOrNull(), any(), any())
     }
 
