@@ -65,12 +65,12 @@ class CordaPublisherFactory @Activate constructor(
         val deserializer = avroSerializationFactory.createAvroDeserializer({}, rpcConfig.responseType)
 
         return CordaRPCSenderImpl(
-            config,
-            cordaConsumerBuilder,
-            cordaProducerBuilder,
-            serializer,
-            deserializer,
-            lifecycleCoordinatorFactory
+            config = config,
+            cordaConsumerBuilder = cordaConsumerBuilder,
+            cordaProducerBuilder = cordaProducerBuilder,
+            serializer = serializer,
+            deserializer = deserializer,
+            lifecycleCoordinatorFactory = lifecycleCoordinatorFactory
         )
     }
 }

@@ -3,12 +3,17 @@ package net.corda.ledger.utxo.flow.impl.persistence
 import net.corda.flow.external.events.executor.ExternalEventExecutor
 import net.corda.flow.persistence.query.ResultSetExecutor
 import net.corda.flow.persistence.query.ResultSetFactory
+import net.corda.ledger.utxo.flow.impl.persistence.external.events.ALICE_X500_HOLDING_IDENTITY
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.VaultNamedQueryExternalEventFactory
+import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
+import net.corda.sandboxgroupcontext.SandboxGroupContext
+import net.corda.sandboxgroupcontext.VirtualNodeContext
 import net.corda.utilities.days
 import net.corda.utilities.time.Clock
 import net.corda.v5.application.persistence.CordaPersistenceException
 import net.corda.v5.application.persistence.PagedQuery.ResultSet
 import net.corda.v5.base.exceptions.CordaRuntimeException
+import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
@@ -31,6 +36,9 @@ class VaultNamedParameterizedQueryImplTest {
     }
 
     private val externalEventExecutor = mock<ExternalEventExecutor>()
+    private val sandbox = mock<SandboxGroupContext>()
+    private val virtualNodeContext = mock<VirtualNodeContext>()
+    private val currentSandboxGroupContext = mock<CurrentSandboxGroupContext>()
     private val resultSetFactory = mock<ResultSetFactory>()
     private val resultSet = mock<ResultSet<Any>>()
     private val clock = mock<Clock>()
@@ -39,6 +47,7 @@ class VaultNamedParameterizedQueryImplTest {
 
     private val query = VaultNamedParameterizedQueryImpl(
         externalEventExecutor = externalEventExecutor,
+        currentSandboxGroupContext = currentSandboxGroupContext,
         resultSetFactory = resultSetFactory,
         parameters = mutableMapOf(),
         queryName = "",
@@ -53,6 +62,9 @@ class VaultNamedParameterizedQueryImplTest {
         whenever(resultSetFactory.create(mapCaptor.capture(), any(), any(), any(), resultSetExecutorCaptor.capture())).thenReturn(resultSet)
         whenever(resultSet.next()).thenReturn(results)
         whenever(clock.instant()).thenReturn(later)
+        whenever(sandbox.virtualNodeContext).thenReturn(virtualNodeContext)
+        whenever(virtualNodeContext.holdingIdentity).thenReturn(ALICE_X500_HOLDING_IDENTITY.toCorda())
+        whenever(currentSandboxGroupContext.get()).thenReturn(sandbox)
     }
 
     @Test

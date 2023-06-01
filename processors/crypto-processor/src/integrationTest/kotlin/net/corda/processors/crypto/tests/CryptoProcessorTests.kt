@@ -355,6 +355,7 @@ class CryptoProcessorTests {
 
         private fun startDependencies() {
             cryptoProcessor.start(boostrapConfig)
+            opsClient.start()
             hsmRegistrationClient.start()
             stableDecryptor.start()
             tracker = TestDependenciesTracker(

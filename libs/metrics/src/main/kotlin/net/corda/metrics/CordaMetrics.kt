@@ -7,8 +7,12 @@ import io.micrometer.core.instrument.Meter
 import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.core.instrument.Metrics
 import io.micrometer.core.instrument.Timer
+import io.micrometer.core.instrument.binder.system.DiskSpaceMetrics
 import io.micrometer.core.instrument.composite.CompositeMeterRegistry
 import io.micrometer.core.instrument.config.MeterFilter
+import io.micrometer.core.instrument.noop.NoopMeter
+import java.nio.file.FileSystems
+import java.nio.file.Path
 import java.util.concurrent.atomic.AtomicInteger
 import io.micrometer.core.instrument.Tag as micrometerTag
 
@@ -90,7 +94,7 @@ object CordaMetrics {
         object FlowEventLagTime : Metric<Timer>("flow.event.lag", CordaMetrics::timer)
 
         /**
-         * Metric for the time taken to execute the flow (excluding any start lag)
+         * Metric for the time taken to process a single event in the flow pipeline.
          *
          * Number of pipeline events processed can be inferred from the count of events recorded for this metric.
          */
@@ -98,7 +102,7 @@ object CordaMetrics {
 
 
         /**
-         * Metric for the time taken to execute the flow (excluding any start lag)
+         * Metric for the time the fiber is running between two suspension points.
          *
          * Number of fiber execution events processed can be inferred from the count of events recorded for this metric.
          */
@@ -106,12 +110,12 @@ object CordaMetrics {
 
 
         /**
-         * Metric for the time taken to execute the flow (excluding any start lag)
+         * Metric for the total time spent in the pipeline code across the execution time of a flow.
          */
         object FlowPipelineExecutionTime : Metric<Timer>("flow.pipeline.execution.time", CordaMetrics::timer)
 
         /**
-         * Metric for the time taken to execute the flow (excluding any start lag)
+         * Metric for the total time spent executing user code across the execution time of a flow.
          */
         object FlowFiberExecutionTime : Metric<Timer>("flow.fiber.execution.time", CordaMetrics::timer)
 
@@ -132,6 +136,16 @@ object CordaMetrics {
          * Number of times a scheduled wakeup is published for flows.
          */
         object FlowScheduledWakeupCount : Metric<Counter>("flow.scheduled.wakeup.count", Metrics::counter)
+
+        /**
+         * Number of events a flow received in order for it to complete.
+         */
+        object FlowEventProcessedCount : Metric<DistributionSummary>("flow.event.processed.count", Metrics::summary)
+
+        /**
+         * Number of flow events that lead to a fiber resume for a single flow.
+         */
+        object FlowFiberSuspensionCount : Metric<DistributionSummary>("flow.fiber.suspension.total.count", Metrics::summary)
 
         /**
          * FLOW MAPPER METRICS
@@ -165,6 +179,17 @@ object CordaMetrics {
          */
         object FlowMapperExpiredSessionEventCount : Metric<Counter>("flow.mapper.expired.session.event.count", Metrics::counter)
 
+        /**
+         * FLOW SESSION METRICS
+         *
+         * The number of messages received by sessions.
+         */
+        object FlowSessionMessagesReceivedCount: Metric<Counter>("flow.session.messages.received.count", Metrics::counter)
+
+        /**
+         * The number of messages sent by sessions.
+         */
+        object FlowSessionMessagesSentCount: Metric<Counter>("flow.session.messages.sent.count", Metrics::counter)
 
         /**
          * P2P Metrics
@@ -207,16 +232,6 @@ object CordaMetrics {
          * Number of inbound peer-to-peer sessions.
          */
         object InboundSessionCount : Metric<SettableGauge>("p2p.session.inbound", CordaMetrics::settableGauge)
-
-        /**
-         * The time taken by verification processor to verify a ledger transaction.
-         */
-        object LedgerTransactionVerificationTime: Metric<Timer>("ledger.transaction.verification.time", CordaMetrics::timer)
-
-        /**
-         * The time taken by ledger persistence processor to perform persistence operation.
-         */
-        object LedgerPersistenceExecutionTime: Metric<Timer>("ledger.persistence.execution.time", CordaMetrics::timer)
 
         /**
          * Time it took for an inbound request to the p2p gateway to be processed.
@@ -357,21 +372,137 @@ object CordaMetrics {
          */
         object CryptoSigningKeyLookupTimer: Metric<Timer>("crypto.signing.key.lookup.time", CordaMetrics::timer)
 
-        /**
-         * Time taken for a membership persistence transaction to complete.
-         */
-        object MembershipPersistenceTransaction: Metric<Timer>(
-            "membership.persistence.transaction.time",
-            CordaMetrics::timer
-        )
+        object Membership {
+            private const val PREFIX = "membership"
+
+            /**
+             * Time taken for a membership persistence transaction to complete.
+             */
+            object PersistenceTransactionExecutionTime: Metric<Timer>(
+                "$PREFIX.persistence.transaction.time",
+                CordaMetrics::timer
+            )
+
+            /**
+             * Total time taken for a membership persistence handler to execute.
+             */
+            object PersistenceHandlerExecutionTime: Metric<Timer>(
+                "$PREFIX.persistence.handler.time",
+                CordaMetrics::timer
+            )
+
+            /**
+             * Time taken by each stage of network registration.
+             */
+            object RegistrationHandlerExecutionTime: Metric<Timer>(
+                "$PREFIX.registration.handler.time",
+                CordaMetrics::timer
+            )
+
+            /**
+             * Time taken by each membership actions handler (e.g. distribute network data).
+             */
+            object ActionsHandlerExecutionTime: Metric<Timer>(
+                "$PREFIX.actions.handler.time",
+                CordaMetrics::timer
+            )
+
+            /**
+             * Time taken to execute each stage of network synchronisation between members and the MGM.
+             */
+            object SyncHandlerExecutionTime: Metric<Timer>(
+                "$PREFIX.sync.handler.time",
+                CordaMetrics::timer
+            )
+
+            /**
+             * Metric to capture the changes in group size.
+             */
+            object MemberListCacheSize: Metric<SettableGauge>(
+                "$PREFIX.memberlist.cache.size",
+                CordaMetrics::settableGauge
+            )
+        }
 
         /**
-         * Total time taken for a membership persistence handler to execute.
+         * The time taken by crypto operations from the flow side.
          */
-        object MembershipPersistenceHandler: Metric<Timer>(
-            "membership.persistence.handler.time",
-            CordaMetrics::timer
-        )
+        object CryptoOperationsFlowTime: Metric<Timer>("flow.crypto.time", CordaMetrics::timer)
+
+        object Ledger {
+
+            /**
+             * The time taken by transaction verification from the flow side.
+             */
+            object TransactionVerificationFlowTime : Metric<Timer>("ledger.flow.verification.time", CordaMetrics::timer)
+
+            /**
+             * The time taken by verification processor to verify a ledger transaction.
+             */
+            object TransactionVerificationTime: Metric<Timer>("ledger.verification.time", CordaMetrics::timer)
+
+            /**
+             * The time taken by contract verification when verifying a transaction.
+             */
+            object ContractVerificationTime : Metric<Timer>("ledger.verification.contract.total.time", CordaMetrics::timer)
+
+            /**
+             * The time taken per contract by contract verification when verifying a transaction.
+             */
+            object ContractVerificationContractTime : Metric<Timer>("ledger.verification.contract.time", CordaMetrics::timer)
+
+            /**
+             * The number of executed contracts during contract verification when verifying a transaction.
+             */
+            object ContractVerificationContractCount : Metric<DistributionSummary>(
+                "ledger.verification.contract.count",
+                Metrics::summary
+            )
+
+            /**
+             * The time taken by ledger persistence operations from the flow side.
+             */
+            object PersistenceFlowTime : Metric<Timer>("ledger.flow.persistence.time", CordaMetrics::timer)
+
+            /**
+             * The time taken by ledger persistence processor to perform persistence operation.
+             */
+            object PersistenceExecutionTime: Metric<Timer>("ledger.persistence.time", CordaMetrics::timer)
+
+            /**
+             * The length of resolved backchains when performing backchain resolution.
+             */
+            object BackchainResolutionChainLength : Metric<DistributionSummary>(
+                "ledger.backchain.resolution.chain.length",
+                Metrics::summary
+            )
+
+            /**
+             * The time taken from requesting a uniqueness check to a response being received from the perspective of
+             * a client (requesting) node.
+             */
+            object UniquenessClientRunTime : Metric<Timer>("ledger.uniqueness.client.run.time", CordaMetrics::timer)
+        }
+
+        object Serialization {
+
+            /**
+             * The time taken serializing an object.
+             */
+            object SerializationTime : Metric<Timer>("serialization.amqp.serialization.time", CordaMetrics::timer)
+
+            /**
+             * The time taken deserializing an object.
+             */
+            object DeserializationTime : Metric<Timer>("serialization.amqp.deserialization.time", CordaMetrics::timer)
+        }
+
+        class DiskSpace(path: Path) : Metric<NoopMeter>("", meter = { _, tags ->
+            if (path.fileSystem == FileSystems.getDefault()) {
+                DiskSpaceMetrics(path.toFile(), tags).bindTo(registry)
+            }
+            VoidMeter
+        })
     }
 
     /**
@@ -427,11 +558,6 @@ object CordaMetrics {
         FlowClass("flow.class"),
 
         /**
-         * Flow Id for which the metric is applicable.
-         */
-        FlowId("flow.id"),
-
-        /**
          * The flow suspension action this metric was recorded for.
          */
         FlowSuspensionAction("flow.suspension.action"),
@@ -440,6 +566,11 @@ object CordaMetrics {
          * The flow event type this metric was recorded for.
          */
         FlowEvent("flow.event"),
+
+        /**
+         * Label for a type of content.
+         */
+        ContentsType("contents.type"),
 
         /**
          * The status of the operation. Can be used to indicate whether an operation was successful or failed.
@@ -460,6 +591,16 @@ object CordaMetrics {
          * The ledger type.
          */
         LedgerType("ledger.type"),
+
+        /**
+         * The contract class name of a contract being executed.
+         */
+        LedgerContractName("ledger.contract.name"),
+
+        /**
+         * The class being serialized to or deserialized from.
+         */
+        SerializedClass("serialized.class"),
 
         /**
          * The membership group within which peer-to-peer communication happens.
@@ -517,6 +658,15 @@ object CordaMetrics {
         ConnectionResult("connection.result")
     }
 
+    /**
+     * Prometheus requires the same set of tags to be populated for a specific metric name.
+     * Otherwise, metrics will be (silently) not exported.
+     *
+     * This value can be used to comply with this rule in scenarios where a tag is not relevant in some conditions,
+     * but it still needs to be populated in order to avoid lost data points.
+     */
+    const val NOT_APPLICABLE_TAG_VALUE = "not_applicable"
+
     val registry: CompositeMeterRegistry = Metrics.globalRegistry
 
     /**
@@ -526,24 +676,24 @@ object CordaMetrics {
      * @param registry Registry instance
      */
     fun configure(workerType: String, registry: MeterRegistry) {
-        this.registry.add(registry)
-        this.registry.config()
+        this.registry.add(registry).config()
+            .commonTags(Tag.WorkerType.value, workerType)
             .meterFilter(object : MeterFilter {
                 override fun map(id: Meter.Id): Meter.Id {
                     // prefix all metrics with `corda`, except standard JVM and Process metrics
                     @Suppress("ComplexCondition")
-                    if (
+                    return if (
                         id.name.startsWith("corda") ||
                         id.name.startsWith("jvm") ||
                         id.name.startsWith("system") ||
                         id.name.startsWith("process")
                     ) {
-                        return id
+                        id
+                    } else {
+                        id.withName("corda." + id.name)
                     }
-                    return id.withName("corda." + id.name)
                 }
             })
-            .commonTags(Tag.WorkerType.value, workerType)
     }
 
     fun settableGauge(name: String, tags: Iterable<micrometerTag>): SettableGauge {
@@ -584,3 +734,9 @@ object CordaMetrics {
         }
     }
 }
+
+/**
+ * This is a dummy "placeholder" meter.
+ */
+@Suppress("NULLABILITY_MISMATCH_BASED_ON_JAVA_ANNOTATIONS")
+private object VoidMeter : NoopMeter(null)

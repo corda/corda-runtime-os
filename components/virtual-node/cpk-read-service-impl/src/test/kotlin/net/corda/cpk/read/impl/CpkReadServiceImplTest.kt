@@ -27,12 +27,12 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
 class CpkReadServiceImplTest {
-    lateinit var cpkReadService: CpkReadServiceImpl
-    lateinit var coordinatorFactory: LifecycleCoordinatorFactory
-    lateinit var configReadService: ConfigurationReadService
-    lateinit var subscriptionFactory: SubscriptionFactory
+    private lateinit var cpkReadService: CpkReadServiceImpl
+    private lateinit var coordinatorFactory: LifecycleCoordinatorFactory
+    private lateinit var configReadService: ConfigurationReadService
+    private lateinit var subscriptionFactory: SubscriptionFactory
 
-    lateinit var coordinator: LifecycleCoordinator
+    private lateinit var coordinator: LifecycleCoordinator
 
     @BeforeEach
     fun setUp() {
@@ -64,7 +64,10 @@ class CpkReadServiceImplTest {
 
     @Test
     fun `on onConfigChangedEvent fully sets the component`() {
-        val fs = Jimfs.newFileSystem(Configuration.unix())
+        val posix = Configuration.unix().toBuilder()
+            .setAttributeViews("basic", "posix")
+            .build()
+        val fs = Jimfs.newFileSystem(posix)
         val workspacePathProvider = mock<PathProvider>()
         whenever(workspacePathProvider.getOrCreate(any(), anyVararg())).thenReturn(fs.getPath("/workspace/$CPK_CACHE_DIR"))
         val tempPathProvider = mock<PathProvider>()
