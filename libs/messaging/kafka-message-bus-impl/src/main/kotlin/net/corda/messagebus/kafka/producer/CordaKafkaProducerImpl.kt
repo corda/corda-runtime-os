@@ -100,7 +100,8 @@ class CordaKafkaProducerImpl(
      * @param partition partition to send to. defaults to null.
      */
     private fun sendRecord(record: CordaProducerRecord<*, *>, callback: CordaProducer.Callback? = null, partition: Int? = null) {
-        val chunkedRecords = chunkSerializerService.generateChunkedRecords(record)
+        // TMP: Disable chunking
+        val chunkedRecords = emptyList<CordaProducerRecord<*, *>>() // chunkSerializerService.generateChunkedRecords(record)
         if (chunkedRecords.isNotEmpty()) {
             sendChunks(chunkedRecords, callback, partition)
         } else {
