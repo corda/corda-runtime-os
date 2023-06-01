@@ -120,6 +120,10 @@ class SessionInitExecutorTest {
         ).execute()
 
         assertThat(resultOutbound.outputEvents).isNotEmpty
+        resultOutbound.outputEvents.forEach {
+            assertThat(it.topic).isEqualTo(P2P_OUT_TOPIC)
+            assertThat(it.value!!::class).isEqualTo(AppMessage::class)
+        }
     }
 
     @Test
