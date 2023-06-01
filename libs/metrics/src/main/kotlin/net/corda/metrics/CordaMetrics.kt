@@ -707,6 +707,7 @@ object CordaMetrics {
     fun timer(name: String, tags: Iterable<micrometerTag>): Timer {
         return Timer.builder(name)
             .publishPercentiles(0.50, 0.95, 0.99)
+            .publishPercentileHistogram()
             .tags(tags)
             .register(registry)
     }
