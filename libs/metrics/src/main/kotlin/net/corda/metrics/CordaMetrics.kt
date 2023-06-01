@@ -610,6 +610,12 @@ object CordaMetrics {
             object MessageProcessorTime : Metric<Timer>("messaging.processor.time", CordaMetrics::timer)
 
             /**
+             * The time inside poll call to CordaKafkaConsumer. Includes waiting for messages from the bus and some other post-processing
+             * around partition assignment and record buffering.
+             */
+            object MessagePollTime : Metric<Timer>("messaging.poll.time", CordaMetrics::timer)
+
+            /**
              * The size of batches of messages received in a poll from the message bus.
              */
             object MessageBatchSize : Metric<DistributionSummary>("messaging.batch.size", Metrics::summary)
@@ -628,7 +634,7 @@ object CordaMetrics {
              * Measure for the number of in-memory states held in StateAndEvent patterns.
              */
             object CompactedConsumerInMemoryStoreCount : Metric<DistributionSummary>(
-                "consumer.compacted.value.store",
+                "consumer.compacted.inmemory.store",
                 Metrics::summary
             )
 
@@ -636,7 +642,7 @@ object CordaMetrics {
              * Measure for the number of in-memory states held in StateAndEvent patterns.
              */
             object StateAndEventConsumerInMemoryStoreCount : Metric<DistributionSummary>(
-                "consumer.stateandevent.currentstate.store",
+                "consumer.stateandevent.inmemory.store",
                 Metrics::summary
             )
 
@@ -651,10 +657,10 @@ object CordaMetrics {
             object ConsumerRecordBufferSize : Metric<DistributionSummary>("consumer.record.buffer", Metrics::summary)
 
             /**
-             * The time inside poll call to CordaKafkaConsumer. Includes waiting for messages from the bus and some other post-processing
-             * around partition assignment and record buffering.
+             * Generic consumer poll time, time taken by kafka to respond to consumer polls for each client ID.
              */
-            object MessagePollTime : Metric<Timer>("messaging.poll.time", CordaMetrics::timer)
+            object ConsumerPollTime : Metric<Timer>("consumer.poll.time", CordaMetrics::timer)
+
         }
     }
 

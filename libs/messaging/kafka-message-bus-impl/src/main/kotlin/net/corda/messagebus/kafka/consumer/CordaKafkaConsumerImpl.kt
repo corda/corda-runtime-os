@@ -39,6 +39,7 @@ import org.apache.kafka.common.errors.TimeoutException
 import org.apache.kafka.common.errors.WakeupException
 import org.slf4j.LoggerFactory
 import java.time.Duration
+import java.time.Instant
 import java.util.concurrent.ConcurrentHashMap
 
 
@@ -79,6 +80,7 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
 
     @Suppress("TooGenericExceptionCaught")
     override fun poll(timeout: Duration): List<CordaConsumerRecord<K, V>> {
+        val startTime = Instant.now()
         val polledRecords = try {
             consumer.poll(timeout)
         } catch (ex: Exception) {
@@ -123,7 +125,12 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
 
         recordBufferSize()
 
-        return recordsToReturn.sortedBy { it.timestamp }
+        return recordsToReturn.sortedBy { it.timestamp }.also {
+            CordaMetrics.Metric.Messaging.ConsumerPollTime.builder()
+                .withTag(CordaMetrics.Tag.MessagePatternClientId, config.clientId)
+                .build()
+                .record(Duration.between(startTime, Instant.now()))
+        }
     }
 
     private fun recordPolledRecordsPerPartition(partition: Int, records: List<ConsumerRecord<*, *>>) {
