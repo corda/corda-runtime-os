@@ -12,7 +12,6 @@
     javax.annotation.meta;version=3.0.0
 
 -runrequires: \
-    bnd.identity;id='net.corda.metrics',\
     bnd.identity;id='net.corda.merkle-impl',\
     bnd.identity;id='${project.archivesBaseName}-tests',\
     bnd.identity;id='junit-jupiter-engine',\
