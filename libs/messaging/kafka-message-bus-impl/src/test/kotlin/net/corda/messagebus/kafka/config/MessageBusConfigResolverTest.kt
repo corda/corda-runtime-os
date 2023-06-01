@@ -152,7 +152,7 @@ class MessageBusConfigResolverTest {
                 CLIENT_ID_PROP to "consumer-$CLIENT_ID",
                 ISOLATION_LEVEL_PROP to "read_committed",
                 BOOTSTRAP_SERVERS_PROP to "localhost:9092",
-                SESSION_TIMEOUT_PROP to "6000",
+                SESSION_TIMEOUT_PROP to "12000",
                 AUTO_OFFSET_RESET_PROP to "earliest"
             )
             val properties = Properties()
