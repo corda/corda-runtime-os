@@ -11,9 +11,7 @@ import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.cipher.suite.KeyGenerationSpec
 import net.corda.crypto.cipher.suite.KeyMaterialSpec
 import net.corda.crypto.cipher.suite.PlatformDigestService
-import net.corda.crypto.cipher.suite.SharedSecretAliasSpec
 import net.corda.crypto.cipher.suite.SharedSecretWrappedSpec
-import net.corda.crypto.cipher.suite.SigningAliasSpec
 import net.corda.crypto.cipher.suite.SigningWrappedSpec
 import net.corda.crypto.cipher.suite.publicKeyId
 import net.corda.crypto.cipher.suite.schemes.KeyScheme
@@ -263,10 +261,7 @@ class SigningServiceImpl(
         logger.debug { "sign(tenant=$tenantId, publicKey=${record.data.id})" }
         val scheme = schemeMetadata.findKeyScheme(record.data.schemeCodeName)
         val cryptoService = cryptoServiceFactory.getInstance(record.data.hsmId)
-        val spec = if (record.data.keyMaterial != null)
-            SigningWrappedSpec(getKeySpec(record, publicKey, tenantId), record.publicKey, scheme, signatureSpec)
-        else
-            SigningAliasSpec(getHsmAlias(record, publicKey, tenantId), publicKey, scheme, signatureSpec)
+        val spec = SigningWrappedSpec(getKeySpec(record, publicKey, tenantId), record.publicKey, scheme, signatureSpec)
         val signedBytes = cryptoService.sign(spec, data, context + mapOf(CRYPTO_TENANT_ID to tenantId))
         return DigitalSignatureWithKey(record.publicKey, signedBytes)
     }
@@ -286,10 +281,8 @@ class SigningServiceImpl(
         )
         val scheme = schemeMetadata.findKeyScheme(record.data.schemeCodeName)
         val cryptoService = cryptoServiceFactory.getInstance(record.data.hsmId)
-        val spec = if (record.data.keyMaterial != null)
+        val spec =
             SharedSecretWrappedSpec(getKeySpec(record, publicKey, tenantId), record.publicKey, scheme, otherPublicKey)
-        else
-            SharedSecretAliasSpec(getHsmAlias(record, publicKey, tenantId), record.publicKey, scheme, otherPublicKey)
         return cryptoService.deriveSharedSecret(spec, context + mapOf(CRYPTO_TENANT_ID to tenantId))
     }
 
@@ -383,9 +376,7 @@ class SigningServiceImpl(
         publicKey: PublicKey,
         tenantId: String,
     ): KeyMaterialSpec {
-        val keyMaterial: ByteArray = record.data.keyMaterial ?: throw IllegalStateException(
-            "The key material is null for public key ${publicKey.publicKeyId()} of tenant $tenantId  "
-        )
+        val keyMaterial: ByteArray = record.data.keyMaterial
         val masterKeyAlias = record.data.masterKeyAlias ?: throw IllegalStateException(
             "The master key alias for public key ${publicKey.publicKeyId()} of tenant $tenantId must be specified, but is null"
         )
