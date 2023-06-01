@@ -90,7 +90,7 @@ class Receiver(private val subscriptionFactory: SubscriptionFactory,
                     } else {
                         null
                     }
-                } catch (e: Exception) {
+                } catch (e: ClassCastException) {
                     null
                 }
             }

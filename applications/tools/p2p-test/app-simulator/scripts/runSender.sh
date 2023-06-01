@@ -1,6 +1,6 @@
 #!/bin/bash
 
-source settings.sh $1
+source settings.sh
 set -e
 
 echo "Starting Sender"

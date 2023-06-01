@@ -2,7 +2,7 @@
 
 set -e
 SCRIPT_DIR=$(dirname ${BASH_SOURCE[0]})
-source "$SCRIPT_DIR"/settings.sh $1
+source "$SCRIPT_DIR/settings.sh"
 
 create_mgm_group_policy() {
 echo '{
