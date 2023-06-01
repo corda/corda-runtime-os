@@ -66,7 +66,7 @@ spec:
           imagePullPolicy: {{ .Values.imagePullPolicy }}
           {{- include "corda.containerSecurityContext" . | nindent 10 }}
           {{- include "corda.bootstrapResources" . | nindent 10 }}
-          args: ['preinstall', 'run-all', '/tmp/values.yaml']
+          args: ['preinstall', 'run-all', '/{{ include "corda.fullname" . }}-tmp/values.yaml']
           volumeMounts:
             - mountPath: /{{ include "corda.fullname" . }}-tmp
               name: temp
