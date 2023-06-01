@@ -11,7 +11,6 @@ import net.corda.crypto.cipher.suite.KeyMaterialSpec
 import net.corda.crypto.cipher.suite.PlatformDigestService
 import net.corda.crypto.cipher.suite.SharedSecretSpec
 import net.corda.crypto.cipher.suite.SharedSecretWrappedSpec
-import net.corda.crypto.cipher.suite.SigningSpec
 import net.corda.crypto.cipher.suite.SigningWrappedSpec
 import net.corda.crypto.cipher.suite.getParamsSafely
 import net.corda.crypto.cipher.suite.schemes.KeyScheme
@@ -177,10 +176,7 @@ class SoftCryptoService(
     private fun computeTenantId(context: Map<String, String>) =
         context.get("tenantId") ?: CryptoTenants.CRYPTO
 
-    override fun sign(spec: SigningSpec, data: ByteArray, context: Map<String, String>): ByteArray {
-        require(spec is SigningWrappedSpec) {
-            "The service supports only ${SigningWrappedSpec::class.java}"
-        }
+    override fun sign(spec: SigningWrappedSpec, data: ByteArray, context: Map<String, String>): ByteArray {
         require(data.isNotEmpty()) {
             "Signing of an empty array is not permitted."
         }
@@ -198,7 +194,7 @@ class SoftCryptoService(
         )
     }
 
-    private fun sign(spec: SigningSpec, privateKey: PrivateKey, data: ByteArray): ByteArray {
+    private fun sign(spec: SigningWrappedSpec, privateKey: PrivateKey, data: ByteArray): ByteArray {
         val startTime = System.nanoTime()
         val signingData = spec.signatureSpec.getSigningData(digestService, data)
         val signatureBytes = if (spec.signatureSpec is CustomSignatureSpec && spec.keyScheme.algorithmName == "RSA") {

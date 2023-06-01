@@ -5,7 +5,7 @@ import net.corda.crypto.cipher.suite.CryptoServiceExtensions
 import net.corda.crypto.cipher.suite.GeneratedKey
 import net.corda.crypto.cipher.suite.KeyGenerationSpec
 import net.corda.crypto.cipher.suite.SharedSecretSpec
-import net.corda.crypto.cipher.suite.SigningSpec
+import net.corda.crypto.cipher.suite.SigningWrappedSpec
 import net.corda.crypto.cipher.suite.schemes.KeyScheme
 import net.corda.crypto.core.isRecoverable
 import net.corda.crypto.impl.retrying.BackoffStrategy
@@ -109,9 +109,9 @@ class CryptoServiceDecorator(
     }
 
     override fun sign(
-        spec: SigningSpec,
+        spec: SigningWrappedSpec,
         data: ByteArray,
-        context: Map<String, String>
+        context: Map<String, String>,
     ): ByteArray = try {
         withTimeout.executeWithRetry {
             cryptoService.sign(spec, data, context)
