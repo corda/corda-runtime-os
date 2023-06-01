@@ -627,12 +627,18 @@ object CordaMetrics {
             /**
              * Measure for the number of in-memory states held in StateAndEvent patterns.
              */
-            object CompactedConsumerInMemoryStoreCount : Metric<DistributionSummary>("consumer.compacted.value.store", Metrics::summary)
+            object CompactedConsumerInMemoryStoreCount : Metric<DistributionSummary>(
+                "consumer.compacted.value.store",
+                Metrics::summary
+            )
 
             /**
              * Measure for the number of in-memory states held in StateAndEvent patterns.
              */
-            object StateAndEventConsumerInMemoryStoreCount : Metric<DistributionSummary>("consumer.stateandevent.currentstate.store", Metrics::summary)
+            object StateAndEventConsumerInMemoryStoreCount : Metric<DistributionSummary>(
+                "consumer.stateandevent.currentstate.store",
+                Metrics::summary
+            )
 
             /**
              * Counter for the number of records a consumer has consumed.
@@ -648,7 +654,7 @@ object CordaMetrics {
              * The time inside poll call to CordaKafkaConsumer. Includes waiting for messages from the bus and some other post-processing
              * around partition assignment and record buffering.
              */
-            object CordaConsumerPollTime : Metric<Timer>("messaging.poll.time", CordaMetrics::timer)
+            object MessagePollTime : Metric<Timer>("messaging.poll.time", CordaMetrics::timer)
         }
     }
 
