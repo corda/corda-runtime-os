@@ -7,8 +7,12 @@ import io.micrometer.core.instrument.Meter
 import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.core.instrument.Metrics
 import io.micrometer.core.instrument.Timer
+import io.micrometer.core.instrument.binder.system.DiskSpaceMetrics
 import io.micrometer.core.instrument.composite.CompositeMeterRegistry
 import io.micrometer.core.instrument.config.MeterFilter
+import io.micrometer.core.instrument.noop.NoopMeter
+import java.nio.file.FileSystems
+import java.nio.file.Path
 import java.util.concurrent.atomic.AtomicInteger
 import io.micrometer.core.instrument.Tag as micrometerTag
 
@@ -368,21 +372,57 @@ object CordaMetrics {
          */
         object CryptoSigningKeyLookupTimer: Metric<Timer>("crypto.signing.key.lookup.time", CordaMetrics::timer)
 
-        /**
-         * Time taken for a membership persistence transaction to complete.
-         */
-        object MembershipPersistenceTransaction: Metric<Timer>(
-            "membership.persistence.transaction.time",
-            CordaMetrics::timer
-        )
+        object Membership {
+            private const val PREFIX = "membership"
 
-        /**
-         * Total time taken for a membership persistence handler to execute.
-         */
-        object MembershipPersistenceHandler: Metric<Timer>(
-            "membership.persistence.handler.time",
-            CordaMetrics::timer
-        )
+            /**
+             * Time taken for a membership persistence transaction to complete.
+             */
+            object PersistenceTransactionExecutionTime: Metric<Timer>(
+                "$PREFIX.persistence.transaction.time",
+                CordaMetrics::timer
+            )
+
+            /**
+             * Total time taken for a membership persistence handler to execute.
+             */
+            object PersistenceHandlerExecutionTime: Metric<Timer>(
+                "$PREFIX.persistence.handler.time",
+                CordaMetrics::timer
+            )
+
+            /**
+             * Time taken by each stage of network registration.
+             */
+            object RegistrationHandlerExecutionTime: Metric<Timer>(
+                "$PREFIX.registration.handler.time",
+                CordaMetrics::timer
+            )
+
+            /**
+             * Time taken by each membership actions handler (e.g. distribute network data).
+             */
+            object ActionsHandlerExecutionTime: Metric<Timer>(
+                "$PREFIX.actions.handler.time",
+                CordaMetrics::timer
+            )
+
+            /**
+             * Time taken to execute each stage of network synchronisation between members and the MGM.
+             */
+            object SyncHandlerExecutionTime: Metric<Timer>(
+                "$PREFIX.sync.handler.time",
+                CordaMetrics::timer
+            )
+
+            /**
+             * Metric to capture the changes in group size.
+             */
+            object MemberListCacheSize: Metric<SettableGauge>(
+                "$PREFIX.memberlist.cache.size",
+                CordaMetrics::settableGauge
+            )
+        }
 
         /**
          * The time taken by crypto operations from the flow side.
@@ -456,6 +496,13 @@ object CordaMetrics {
              */
             object DeserializationTime : Metric<Timer>("serialization.amqp.deserialization.time", CordaMetrics::timer)
         }
+
+        class DiskSpace(path: Path) : Metric<NoopMeter>("", meter = { _, tags ->
+            if (path.fileSystem == FileSystems.getDefault()) {
+                DiskSpaceMetrics(path.toFile(), tags).bindTo(registry)
+            }
+            VoidMeter
+        })
     }
 
     /**
@@ -519,6 +566,11 @@ object CordaMetrics {
          * The flow event type this metric was recorded for.
          */
         FlowEvent("flow.event"),
+
+        /**
+         * Label for a type of content.
+         */
+        ContentsType("contents.type"),
 
         /**
          * The status of the operation. Can be used to indicate whether an operation was successful or failed.
@@ -606,6 +658,15 @@ object CordaMetrics {
         ConnectionResult("connection.result")
     }
 
+    /**
+     * Prometheus requires the same set of tags to be populated for a specific metric name.
+     * Otherwise, metrics will be (silently) not exported.
+     *
+     * This value can be used to comply with this rule in scenarios where a tag is not relevant in some conditions,
+     * but it still needs to be populated in order to avoid lost data points.
+     */
+    const val NOT_APPLICABLE_TAG_VALUE = "not_applicable"
+
     val registry: CompositeMeterRegistry = Metrics.globalRegistry
 
     /**
@@ -615,24 +676,24 @@ object CordaMetrics {
      * @param registry Registry instance
      */
     fun configure(workerType: String, registry: MeterRegistry) {
-        this.registry.add(registry)
-        this.registry.config()
+        this.registry.add(registry).config()
+            .commonTags(Tag.WorkerType.value, workerType)
             .meterFilter(object : MeterFilter {
                 override fun map(id: Meter.Id): Meter.Id {
                     // prefix all metrics with `corda`, except standard JVM and Process metrics
                     @Suppress("ComplexCondition")
-                    if (
+                    return if (
                         id.name.startsWith("corda") ||
                         id.name.startsWith("jvm") ||
                         id.name.startsWith("system") ||
                         id.name.startsWith("process")
                     ) {
-                        return id
+                        id
+                    } else {
+                        id.withName("corda." + id.name)
                     }
-                    return id.withName("corda." + id.name)
                 }
             })
-            .commonTags(Tag.WorkerType.value, workerType)
     }
 
     fun settableGauge(name: String, tags: Iterable<micrometerTag>): SettableGauge {
@@ -673,3 +734,9 @@ object CordaMetrics {
         }
     }
 }
+
+/**
+ * This is a dummy "placeholder" meter.
+ */
+@Suppress("NULLABILITY_MISMATCH_BASED_ON_JAVA_ANNOTATIONS")
+private object VoidMeter : NoopMeter(null)

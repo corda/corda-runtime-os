@@ -141,6 +141,7 @@ class SessionEventHandler @Activate constructor(
 
         //set initial session state, so it can be found when trying to send the confirmation message
         context.checkpoint.putSessionState(initialSessionState)
+        context.flowMetrics.flowStarted()
 
         sendConfirmMessage(initiatedFlowNameAndProtocol, requestedProtocolName, initiatorVersionsSupported, context, sessionId)
     }
