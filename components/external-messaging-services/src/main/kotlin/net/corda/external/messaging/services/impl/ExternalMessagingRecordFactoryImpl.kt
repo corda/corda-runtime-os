@@ -30,10 +30,10 @@ class ExternalMessagingRecordFactoryImpl(
         message: String
     ): Record<String, String> {
         return Record(
-            route.externalReceiveTopicName,
-            messageId,
-            message,
-            listOf(
+            topic = route.externalReceiveTopicName,
+            key = messageId,
+            value = message,
+            headers = listOf(
                 MessageHeaders.HOLDING_ID to holdingId,
                 MessageHeaders.CHANNEL_NAME to route.channelName,
                 MessageHeaders.CORRELATION_ID to createRandomIdFn(),
