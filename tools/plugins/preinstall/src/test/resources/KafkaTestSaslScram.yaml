@@ -7,9 +7,86 @@ kafka:
     mechanism: "SCRAM"
     enabled: true
     username:
-      value: "alice"
+      value: ""
     password:
       valueFrom:
         secretKeyRef:
-          name: "kafka-sasl"
-          key: "kafka-sasl-password"
+          name: ""
+          key: ""
+
+workers:
+  crypto:
+    kafka:
+      sasl:
+        username:
+          value: "alice"
+        password:
+          valueFrom:
+            secretKeyRef:
+              name: "kafka-sasl"
+              key: "kafka-sasl-password"
+
+  db:
+    kafka:
+      sasl:
+        username:
+          value: "alice"
+        password:
+          valueFrom:
+            secretKeyRef:
+              name: "kafka-sasl"
+              key: "kafka-sasl-password"
+
+  flow:
+    kafka:
+      sasl:
+        username:
+          value: "alice"
+        password:
+          valueFrom:
+            secretKeyRef:
+              name: "kafka-sasl"
+              key: "kafka-sasl-password"
+
+  membership:
+    kafka:
+      sasl:
+        username:
+          value: "alice"
+        password:
+          valueFrom:
+            secretKeyRef:
+              name: "kafka-sasl"
+              key: "kafka-sasl-password"
+  rest:
+    kafka:
+      sasl:
+        username:
+          value: "alice"
+        password:
+          valueFrom:
+            secretKeyRef:
+              name: "kafka-sasl"
+              key: "kafka-sasl-password"
+
+  p2pGateway:
+    kafka:
+      sasl:
+        username:
+          value: "alice"
+        password:
+          valueFrom:
+            secretKeyRef:
+              name: "kafka-sasl"
+              key: "kafka-sasl-password"
+
+  p2pLinkManager:
+    kafka:
+      sasl:
+        username:
+          value: "alice"
+        password:
+          valueFrom:
+            secretKeyRef:
+              name: "kafka-sasl"
+              key: "kafka-sasl-password"
