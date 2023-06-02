@@ -35,7 +35,6 @@ import java.security.PrivateKey
 import java.security.Provider
 import java.security.PublicKey
 import java.time.Duration
-import java.time.Instant
 import javax.crypto.Cipher
 
 const val WRAPPING_KEY_ENCODING_VERSION: Int = 1
@@ -200,7 +199,7 @@ class SoftCryptoService(
     }
 
     private fun sign(spec: SigningSpec, privateKey: PrivateKey, data: ByteArray): ByteArray {
-        val startTime = Instant.now()
+        val startTime = System.nanoTime()
         val signingData = spec.signatureSpec.getSigningData(digestService, data)
         val signatureBytes = if (spec.signatureSpec is CustomSignatureSpec && spec.keyScheme.algorithmName == "RSA") {
             // when the hash is precalculated and the key is RSA the actual sign operation is encryption
@@ -219,7 +218,7 @@ class SoftCryptoService(
             .builder()
             .withTag(CordaMetrics.Tag.SignatureSpec, spec.signatureSpec.signatureName)
             .build()
-            .record(Duration.between(startTime, Instant.now()))
+            .record(Duration.ofNanos(System.nanoTime() - startTime))
         return signatureBytes
     }
 
