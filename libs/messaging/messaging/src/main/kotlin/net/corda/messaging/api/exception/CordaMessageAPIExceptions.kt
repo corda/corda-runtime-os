@@ -25,3 +25,9 @@ open class CordaMessageAPIIntermittentException(message: String?, exception: Exc
  */
 class CordaMessageAPIProducerRequiresReset(message: String?, exception: Exception? = null) :
     CordaMessageAPIIntermittentException(message, exception)
+
+/**
+ * Thrown by a producer when published message exceeds the limit supported by Kafka
+ */
+class CordaMessageTooLargeException(message: String?, exception: Exception? = null) :
+    CordaMessageAPIIntermittentException(message, exception)

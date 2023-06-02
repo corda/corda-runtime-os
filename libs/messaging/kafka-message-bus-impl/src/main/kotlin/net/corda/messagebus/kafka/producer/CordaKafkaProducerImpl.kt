@@ -13,6 +13,7 @@ import net.corda.messaging.api.chunking.ChunkSerializerService
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.exception.CordaMessageAPIProducerRequiresReset
+import net.corda.messaging.api.exception.CordaMessageTooLargeException
 import net.corda.metrics.CordaMetrics
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.apache.kafka.clients.consumer.ConsumerRecord
@@ -26,6 +27,7 @@ import org.apache.kafka.common.errors.FencedInstanceIdException
 import org.apache.kafka.common.errors.InterruptException
 import org.apache.kafka.common.errors.InvalidProducerEpochException
 import org.apache.kafka.common.errors.ProducerFencedException
+import org.apache.kafka.common.errors.RecordTooLargeException
 import org.apache.kafka.common.errors.TimeoutException
 import org.apache.kafka.common.errors.UnsupportedForMessageFormatException
 import org.apache.kafka.common.errors.UnsupportedVersionException
@@ -77,7 +79,7 @@ class CordaKafkaProducerImpl(
     }
 
     override fun sendRecords(records: List<CordaProducerRecord<*, *>>) {
-        tryWithCleanupOnFailure("send multiple records, no partition") {
+        tryWithCleanupOnFailure("send multiple records, without partitions specified") {
             for (record in records) {
                 sendRecord(record)
             }
@@ -85,7 +87,7 @@ class CordaKafkaProducerImpl(
     }
 
     override fun sendRecordsToPartitions(recordsWithPartitions: List<Pair<Int, CordaProducerRecord<*, *>>>) {
-        tryWithCleanupOnFailure("send multiple records, with partitions") {
+        tryWithCleanupOnFailure("send multiple records, with partitions specified") {
             for ((partition, record) in recordsWithPartitions) {
                 sendRecord(record, null, partition)
             }
@@ -100,21 +102,27 @@ class CordaKafkaProducerImpl(
      * @param partition partition to send to. defaults to null.
      */
     private fun sendRecord(record: CordaProducerRecord<*, *>, callback: CordaProducer.Callback? = null, partition: Int? = null) {
-        // TMP: Disable chunking
-        val chunkedRecords = emptyList<CordaProducerRecord<*, *>>() // chunkSerializerService.generateChunkedRecords(record)
-        if (chunkedRecords.isNotEmpty()) {
-            sendChunks(chunkedRecords, callback, partition)
-        } else {
+        try {
+            // Assuming the record is short, try sending as one plain Kafka message
             try {
-                producer.send(record.toKafkaRecord(topicPrefix , partition), callback?.toKafkaCallback())
-            } catch (ex: CordaRuntimeException) {
-                val msg = "Failed to send record to topic ${record.topic} with key ${record.key}"
-                if (config.throwOnSerializationError) {
-                    log.error(msg, ex)
+                producer.send(record.toKafkaRecord(topicPrefix, partition), callback?.toKafkaCallback())
+            } catch (ex: CordaMessageTooLargeException) {
+                // This did not work - try sending by breaking into chunks
+                val chunkedRecords = chunkSerializerService.generateChunkedRecords(record)
+                if (chunkedRecords.isEmpty()) {
+                    // Cannot be broken into chunks - re-throw the original exception
                     throw ex
-                } else {
-                    log.warn(msg, ex)
                 }
+                sendChunks(chunkedRecords, callback, partition)
+            }
+        }
+        catch (ex: CordaRuntimeException) {
+            val msg = "Failed to send record to topic ${record.topic} with key ${record.key}"
+            if (config.throwOnSerializationError) {
+                log.error(msg, ex)
+                throw ex
+            } else {
+                log.warn(msg, ex)
             }
         }
     }
@@ -318,10 +326,14 @@ class CordaKafkaProducerImpl(
                 // This exception means the coordinator has bumped the producer epoch because of a timeout of this producer.
                 // There is no other producer, we are not a zombie, and so don't need to be fenced, we can simply abort and retry.
             is KafkaException -> {
-                if (abortTransaction) {
-                    abortTransaction()
+                if (ex.cause is RecordTooLargeException) {
+                    throw CordaMessageTooLargeException("Unable to publish due to too large record", ex)
+                } else {
+                    if (abortTransaction) {
+                        abortTransaction()
+                    }
+                    throw CordaMessageAPIIntermittentException("Error occurred $errorString", ex)
                 }
-                throw CordaMessageAPIIntermittentException("Error occurred $errorString", ex)
             }
             is CordaMessageAPIFatalException,
             is CordaMessageAPIIntermittentException -> { throw ex }
