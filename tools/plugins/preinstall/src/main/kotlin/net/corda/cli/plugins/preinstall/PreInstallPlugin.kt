@@ -287,6 +287,8 @@ class PreInstallPlugin : Plugin() {
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     data class Workers(
+        @JsonProperty("crypto")
+        val crypto: Resources?,
         @JsonProperty("db")
         val db: Resources?,
         @JsonProperty("flow")
