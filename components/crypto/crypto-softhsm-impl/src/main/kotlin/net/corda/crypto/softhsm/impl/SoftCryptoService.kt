@@ -22,6 +22,7 @@ import net.corda.crypto.hes.core.impl.deriveDHSharedSecret
 import net.corda.crypto.impl.SignatureInstances
 import net.corda.crypto.impl.getSigningData
 import net.corda.crypto.persistence.WrappingKeyInfo
+import net.corda.crypto.softhsm.SigningRepositoryFactory
 import net.corda.crypto.softhsm.WrappingRepositoryFactory
 import net.corda.crypto.softhsm.deriveSupportedSchemes
 import net.corda.metrics.CordaMetrics
@@ -45,6 +46,8 @@ const val PRIVATE_KEY_ENCODING_VERSION: Int = 1
  *
  * @param wrappingRepositoryFactory which provides a factory for [WrappingRepository], which provides save and
  *        find operations for wrapping keys on a specific tenant.
+ * @param signingRepositoryFactory which provides a factory for [SigningRepository], which provides save and
+ *        find operations for signing keys fon a specific tenant.
  * @param schemeMetadata which specifies encryption schemes, digests schemes and a source of randomness
  * @param defaultUnmanagedWrappingKeyName The unmanaged wrapping key that will be used by default for new wrapping keys
  * @param digestService supply a platform digest service instance; if not one will be constructed
@@ -59,6 +62,7 @@ const val PRIVATE_KEY_ENCODING_VERSION: Int = 1
 @Suppress("LongParameterList")
 class SoftCryptoService(
     private val wrappingRepositoryFactory: WrappingRepositoryFactory,
+    private val signingRepositoryFactory: SigningRepositoryFactory,
     private val schemeMetadata: CipherSchemeMetadata,
     private val defaultUnmanagedWrappingKeyName: String,
     private val unmanagedWrappingKeys: Map<String, WrappingKey>,

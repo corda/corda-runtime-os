@@ -201,6 +201,9 @@ class TestServicesFactory {
                 wrappingKeyFactory = {
                     WrappingKeyImpl.generateWrappingKey(it)
                 },
+                signingRepositoryFactory =  {
+                    signingRepository
+                }
             ),
             recordedCryptoContexts
         )
