@@ -20,7 +20,6 @@ import net.corda.virtualnode.toCorda
 import org.slf4j.LoggerFactory
 import java.io.NotSerializableException
 import java.time.Duration
-import java.time.Instant
 
 /**
  * Handles incoming requests, typically from the flow worker, and sends responses.
@@ -47,7 +46,7 @@ class VerificationRequestProcessor(
         return events
             .mapNotNull { it.value }
             .map { request ->
-                val startTime = Instant.now()
+                val startTime = System.nanoTime()
                 val clientRequestId = request.flowExternalEventContext.contextProperties.toMap()[MDC_CLIENT_ID] ?: ""
                 val holdingIdentity = request.holdingIdentity.toCorda()
 
@@ -72,7 +71,7 @@ class VerificationRequestProcessor(
                             .builder()
                             .forVirtualNode(holdingIdentity.shortHash.toString())
                             .build()
-                            .record(Duration.between(startTime, Instant.now()))
+                            .record(Duration.ofNanos(System.nanoTime() - startTime))
                     }
                 }
             }

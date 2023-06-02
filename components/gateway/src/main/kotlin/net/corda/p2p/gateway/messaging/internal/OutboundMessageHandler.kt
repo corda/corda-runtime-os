@@ -28,6 +28,7 @@ import net.corda.v5.base.types.MemberX500Name
 import org.bouncycastle.asn1.x500.X500Name
 import org.slf4j.LoggerFactory
 import java.net.URI
+import java.time.Duration
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.Executors
@@ -172,12 +173,12 @@ internal class OutboundMessageHandler(
             trustStore,
             clientCertificateKeyStore,
         )
-        val startTime = System.currentTimeMillis()
+        val startTime = System.nanoTime()
         val responseFuture = sendMessage(destinationInfo, gatewayMessage)
             .orTimeout(connectionConfig().responseTimeout.toMillis(), TimeUnit.MILLISECONDS)
         return responseFuture.whenCompleteAsync({ response, error ->
-            val requestLatency = System.currentTimeMillis() - startTime
-            getRequestTimer(peerMessage, response).record(requestLatency, TimeUnit.MILLISECONDS)
+            val requestLatency = Duration.ofNanos(System.nanoTime() - startTime)
+            getRequestTimer(peerMessage, response).record(requestLatency)
             handleResponse(PendingRequest(gatewayMessage, destinationInfo, responseFuture), response, error, MAX_RETRIES)
         }, retryThreadPool).thenApply {  }
 

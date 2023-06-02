@@ -211,6 +211,14 @@ class MemberListCacheImplTest {
         assertThat(lookupWithDefaults()).containsExactlyInAnyOrder(bobInfo, originalInfo, updatedInfo)
     }
 
+    @Test
+    fun `clear empties the cache`() {
+        memberListCache.put(aliceIdGroup1, listOf(bobInfo))
+        assertMemberList(lookupWithDefaults(), bobInfo)
+        memberListCache.clear()
+        assertMemberList(lookupWithDefaults())
+    }
+
     private fun lookupWithDefaults(
         holdingIdentity: HoldingIdentity = aliceIdGroup1
     ): List<MemberInfo>? {
