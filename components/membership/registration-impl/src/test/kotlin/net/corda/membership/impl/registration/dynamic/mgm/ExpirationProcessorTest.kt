@@ -28,7 +28,10 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.Membership.REGISTRATION_COMMAND_TOPIC
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
+import net.corda.schema.configuration.ConfigKeys.MEMBERSHIP_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
+import net.corda.schema.configuration.MembershipConfig.EXPIRATION_DATE_FOR_REGISTRATION_REQUESTS
+import net.corda.schema.configuration.MembershipConfig.MAX_DURATION_BETWEEN_EXPIRED_REGISTRATION_REQUESTS_POLLS
 import net.corda.test.util.time.TestClock
 import net.corda.utilities.hours
 import net.corda.v5.base.types.MemberX500Name
@@ -82,8 +85,12 @@ class ExpirationProcessorTest {
     private val clock = TestClock(Instant.ofEpochMilli(100))
 
     private val messagingConfig = mock<SmartConfig>()
+    private val membershipConfig = mock<SmartConfig> {
+        on { getLong(MAX_DURATION_BETWEEN_EXPIRED_REGISTRATION_REQUESTS_POLLS) } doReturn 300
+        on { getLong(EXPIRATION_DATE_FOR_REGISTRATION_REQUESTS) } doReturn 180
+    }
     private val configChangedEvent = mock<ConfigChangedEvent> {
-        on { config } doReturn mapOf(MESSAGING_CONFIG to messagingConfig)
+        on { config } doReturn mapOf(MESSAGING_CONFIG to messagingConfig, MEMBERSHIP_CONFIG to membershipConfig)
     }
     private val publisher = mock<Publisher>()
     private val publisherFactory = mock<PublisherFactory> {
@@ -211,7 +218,7 @@ class ExpirationProcessorTest {
 
             verify(configurationReadService).registerComponentForUpdates(
                 coordinator,
-                setOf(BOOT_CONFIG, MESSAGING_CONFIG,)
+                setOf(BOOT_CONFIG, MESSAGING_CONFIG, MEMBERSHIP_CONFIG,)
             )
         }
 

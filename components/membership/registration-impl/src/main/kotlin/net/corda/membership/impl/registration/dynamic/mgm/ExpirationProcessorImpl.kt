@@ -6,6 +6,7 @@ import net.corda.crypto.core.ShortHash
 import net.corda.data.membership.command.registration.RegistrationCommand
 import net.corda.data.membership.command.registration.mgm.DeclineRegistration
 import net.corda.data.membership.common.RegistrationStatus.PENDING_MEMBER_VERIFICATION
+import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -26,8 +27,10 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.Membership.REGISTRATION_COMMAND_TOPIC
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
+import net.corda.schema.configuration.ConfigKeys.MEMBERSHIP_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
-import net.corda.utilities.minutes
+import net.corda.schema.configuration.MembershipConfig.EXPIRATION_DATE_FOR_REGISTRATION_REQUESTS
+import net.corda.schema.configuration.MembershipConfig.MAX_DURATION_BETWEEN_EXPIRED_REGISTRATION_REQUESTS_POLLS
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
 import net.corda.virtualnode.HoldingIdentity
@@ -39,6 +42,7 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.time.Instant
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.TimeUnit
 import kotlin.random.Random
 
 @Component(service = [ExpirationProcessor::class])
@@ -83,10 +87,6 @@ internal class ExpirationProcessorImpl internal constructor(
         const val WAIT_FOR_CONFIG_RESOURCE_NAME = "ExpirationProcessor.registerComponentForUpdates"
         const val PUBLISHER_RESOURCE_NAME = "ExpirationProcessor.publisher"
         const val PUBLISHER_CLIENT_ID = "expiration-processor"
-
-        val expirationDate = 300.minutes.toMillis()
-        val timeframe = 180.minutes.toMillis()
-        val maxNoise = (0.1 * timeframe).toInt()
     }
 
     private val coordinatorName = LifecycleCoordinatorName.forComponent<ExpirationProcessor>()
@@ -135,9 +135,20 @@ internal class ExpirationProcessorImpl internal constructor(
     private data class DeclineExpiredRegistrationRequests(
         val mgm: HoldingIdentity,
         override val key: String,
+        val expirationDate: Long,
     ) : TimerEvent
 
-    private inner class ActiveImpl : InnerExpirationProcessor {
+    private inner class ActiveImpl(membershipConfiguration: SmartConfig) : InnerExpirationProcessor {
+        private val expirationDate = membershipConfiguration
+            .getLong(MAX_DURATION_BETWEEN_EXPIRED_REGISTRATION_REQUESTS_POLLS).let {
+                TimeUnit.MINUTES.toMillis(it)
+            }
+        private val timeframe = membershipConfiguration
+            .getLong(EXPIRATION_DATE_FOR_REGISTRATION_REQUESTS).let {
+                TimeUnit.MINUTES.toMillis(it)
+            }
+        private val maxNoise = (0.1 * timeframe).toInt()
+
         override fun cancelOrScheduleProcessingOfExpiredRequests(mgm: HoldingIdentity): Boolean {
             mgms.add(mgm)
             coordinator.setTimer(
@@ -145,7 +156,7 @@ internal class ExpirationProcessorImpl internal constructor(
                 // Add noise to prevent all the MGMs to ask for clean-up at the same time (in case of service re-start)
                 delay = timeframe - Random.nextInt(maxNoise)
             ) {
-                DeclineExpiredRegistrationRequests(mgm, it)
+                DeclineExpiredRegistrationRequests(mgm, it, expirationDate)
             }
             return true
         }
@@ -158,8 +169,8 @@ internal class ExpirationProcessorImpl internal constructor(
         }
     }
 
-    private fun activate() {
-        impl = ActiveImpl()
+    private fun activate(membershipConfiguration: SmartConfig) {
+        impl = ActiveImpl(membershipConfiguration)
         loadMgms()
         mgms.forEach {
             impl.cancelOrScheduleProcessingOfExpiredRequests(it)
@@ -179,7 +190,7 @@ internal class ExpirationProcessorImpl internal constructor(
             is StopEvent -> handleStopEvent(coordinator)
             is RegistrationStatusChangeEvent -> handleRegistrationChangeEvent(event, coordinator)
             is ConfigChangedEvent -> handleConfigChangeEvent(event)
-            is DeclineExpiredRegistrationRequests -> handleDeclineExpiredRequestsEvent(event.mgm)
+            is DeclineExpiredRegistrationRequests -> handleDeclineExpiredRequestsEvent(event.mgm, event.expirationDate)
         }
     }
 
@@ -216,7 +227,7 @@ internal class ExpirationProcessorImpl internal constructor(
             coordinator.createManagedResource(WAIT_FOR_CONFIG_RESOURCE_NAME) {
                 configurationReadService.registerComponentForUpdates(
                     coordinator,
-                    setOf(BOOT_CONFIG, MESSAGING_CONFIG)
+                    setOf(BOOT_CONFIG, MESSAGING_CONFIG, MEMBERSHIP_CONFIG)
                 )
             }
         } else {
@@ -239,11 +250,11 @@ internal class ExpirationProcessorImpl internal constructor(
                 it.start()
             }
         }
-        activate()
+        activate(event.config.getConfig(MEMBERSHIP_CONFIG))
         coordinator.updateStatus(LifecycleStatus.UP)
     }
 
-    private fun handleDeclineExpiredRequestsEvent(mgm: HoldingIdentity) {
+    private fun handleDeclineExpiredRequestsEvent(mgm: HoldingIdentity, expirationDate: Long) {
         try {
             if(!impl.cancelOrScheduleProcessingOfExpiredRequests(mgm)) return
             logger.info("Process expired registration requests submitted for membership group '${mgm.groupId}' " +
