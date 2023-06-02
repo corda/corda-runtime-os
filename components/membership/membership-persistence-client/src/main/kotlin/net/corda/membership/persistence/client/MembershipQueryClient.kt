@@ -16,7 +16,7 @@ import java.util.UUID
 
 interface MembershipQueryClient : Lifecycle {
     /**
-     * Query for all members visible by a specific holding identity.
+     * Query for all members visible by a specific holding identity and status.
      *
      * @param viewOwningIdentity The holding identity whose view is being requested.
      * @param statusFilter A collection of statuses to query for.
@@ -29,7 +29,7 @@ interface MembershipQueryClient : Lifecycle {
     ): MembershipQueryResult<Collection<SignedMemberInfo>>
 
     /**
-     * Query for all members matching the given holding identities as visible by a specific holding identity.
+     * Query for all members matching the given holding identities and statuses as visible by a specific holding identity.
      *
      * @param viewOwningIdentity The holding identity whose view is being requested.
      * @param holdingIdentityFilter A collection of holding identities to query for.
