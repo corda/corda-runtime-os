@@ -235,7 +235,7 @@ class CheckKafka : Callable<Int>, PluginContext() {
             return
         }
 
-        logger.info(props.entries.toString())
+        logger.info(props.entries.joinToString(separator = ",\n"))
 
         try {
             checkConnectionAndBrokers(KafkaAdmin(props, report), bootstrap?.kafka?.replicas)
