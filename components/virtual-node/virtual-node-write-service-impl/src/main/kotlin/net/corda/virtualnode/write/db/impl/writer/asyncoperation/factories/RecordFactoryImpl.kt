@@ -46,7 +46,6 @@ internal class RecordFactoryImpl(
         return Record(
             MEMBER_LIST_TOPIC,
             "${holdingIdentity.shortHash}-${mgmHoldingIdentity.shortHash}",
-
             memberInfoFactory.createPersistentMemberInfo(
                 holdingIdentity.toAvro(),
                 mgmInfo,

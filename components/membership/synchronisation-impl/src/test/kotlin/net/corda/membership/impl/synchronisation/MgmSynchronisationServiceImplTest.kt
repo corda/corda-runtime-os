@@ -1,12 +1,12 @@
 package net.corda.membership.impl.synchronisation
 
 import com.typesafe.config.ConfigFactory
+import net.corda.avro.serialization.CordaAvroSerializationFactory
+import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.core.toCorda
-import net.corda.data.CordaAvroSerializationFactory
-import net.corda.data.CordaAvroSerializer
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.SecureHash
 import net.corda.data.crypto.wire.CryptoSignatureSpec
@@ -43,7 +43,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.PROTOCOL_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.SOFTWARE_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.lib.MemberInfoExtension.Companion.URL_KEY
-import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
+import net.corda.membership.lib.SignedMemberInfo
 import net.corda.membership.lib.impl.MemberInfoFactoryImpl
 import net.corda.membership.lib.impl.converter.EndpointInfoConverter
 import net.corda.membership.p2p.helpers.MembershipPackageFactory
@@ -162,16 +162,10 @@ class MgmSynchronisationServiceImplTest {
     private val daisyInfo = createMemberInfo(daisyName)
     private val simonInfo = createMemberInfo(simonName, status = MEMBER_STATUS_SUSPENDED)
 
-    private val memberInfos = listOf(mgmInfo, aliceInfo, bobInfo, daisyInfo)
     private val memberInfosWithoutMgm = listOf(aliceInfo, bobInfo, daisyInfo)
     private val groupParameters: InternalGroupParameters = mock()
     private val groupReader: MembershipGroupReader = mock {
-        on { lookup(MembershipStatusFilter.ACTIVE_OR_SUSPENDED) } doReturn memberInfos
         on { lookup(eq(MemberX500Name.parse(mgmName)), any()) } doReturn mgmInfo
-        on { lookup(eq(MemberX500Name.parse(aliceName)), any()) } doReturn aliceInfo
-        on { lookup(eq(MemberX500Name.parse(bobName)), any()) } doReturn bobInfo
-        on { lookup(eq(MemberX500Name.parse(daisyName)), any()) } doReturn daisyInfo
-        on { lookup(MemberX500Name.parse(simonName), MembershipStatusFilter.ACTIVE_OR_SUSPENDED) } doReturn simonInfo
         on { groupParameters } doReturn groupParameters
     }
     private val groupReaderProvider: MembershipGroupReaderProvider = mock {
@@ -198,26 +192,38 @@ class MgmSynchronisationServiceImplTest {
             )
         } doReturn matchingMerkleTree
     }
-    private val signatures = createSignatures(memberInfosWithoutMgm)
-    private val signature = createSignatures(listOf(bobInfo))
+    private val signatures = createSignedInfos(memberInfosWithoutMgm)
+    private val aliceSignature = createSignedInfos(listOf(aliceInfo))
+    private val bobSignature = createSignedInfos(listOf(bobInfo))
+    private val simonSignature = createSignedInfos(listOf(simonInfo))
     private val membershipQueryClient: MembershipQueryClient = mock {
         on {
-            queryMembersSignatures(eq(mgm.toCorda()), eq(listOf(bob.toCorda())))
+            queryMemberInfo(eq(mgm.toCorda()), eq(listOf(alice.toCorda())), eq(listOf(MEMBER_STATUS_ACTIVE, MEMBER_STATUS_SUSPENDED)))
         } doReturn MembershipQueryResult.Success(
-            signature
+            aliceSignature
         )
         on {
-            queryMembersSignatures(eq(mgm.toCorda()), eq(listOf(simon.toCorda())))
+            queryMemberInfo(eq(mgm.toCorda()), eq(listOf(bob.toCorda())), eq(listOf(MEMBER_STATUS_ACTIVE, MEMBER_STATUS_SUSPENDED)))
         } doReturn MembershipQueryResult.Success(
-            signature
+            bobSignature
         )
         on {
-            queryMembersSignatures(eq(mgm.toCorda()), eq(listOf(daisy.toCorda())))
+            queryMemberInfo(eq(mgm.toCorda()), eq(listOf(simon.toCorda())), eq(listOf(MEMBER_STATUS_ACTIVE, MEMBER_STATUS_SUSPENDED)))
+        } doReturn MembershipQueryResult.Success(
+            simonSignature
+        )
+        on {
+            queryMemberInfo(eq(mgm.toCorda()), eq(listOf(daisy.toCorda())), eq(listOf(MEMBER_STATUS_ACTIVE, MEMBER_STATUS_SUSPENDED)))
         } doReturn MembershipQueryResult.Failure(
             PERSISTENCE_EXCEPTION
         )
         on {
-            queryMembersSignatures(eq(mgm.toCorda()), eq(memberInfosWithoutMgm.map { it.holdingIdentity }))
+            queryMemberInfo(eq(mgm.toCorda()), eq(listOf(charlie.toCorda())), eq(listOf(MEMBER_STATUS_ACTIVE, MEMBER_STATUS_SUSPENDED)))
+        } doReturn MembershipQueryResult.Success(
+            emptyList()
+        )
+        on {
+            queryMemberInfo(eq(mgm.toCorda()), eq(listOf(MEMBER_STATUS_ACTIVE, MEMBER_STATUS_SUSPENDED)))
         } doReturn MembershipQueryResult.Success(
             signatures
         )
@@ -236,7 +242,6 @@ class MgmSynchronisationServiceImplTest {
             createMembershipPackage(
                 eq(signer),
                 eq(signatures),
-                eq(memberInfosWithoutMgm),
                 any(),
                 any(),
             )
@@ -244,8 +249,7 @@ class MgmSynchronisationServiceImplTest {
         on {
             createMembershipPackage(
                 eq(signer),
-                eq(signature),
-                eq(listOf(bobInfo)),
+                eq(bobSignature),
                 any(),
                 any(),
             )
@@ -253,8 +257,7 @@ class MgmSynchronisationServiceImplTest {
         on {
             createMembershipPackage(
                 eq(signer),
-                eq(signature),
-                eq(listOf(simonInfo)),
+                eq(simonSignature),
                 any(),
                 any(),
             )
@@ -343,12 +346,16 @@ class MgmSynchronisationServiceImplTest {
         )
     )
 
-    private fun createSignatures(members: List<MemberInfo>) = members.associate {
+    private fun createSignedInfos(members: List<MemberInfo>) = members.map {
         val name = it.name.toString()
-        it.holdingIdentity to (CryptoSignatureWithKey(
-            ByteBuffer.wrap("pk-$name".toByteArray()),
-            ByteBuffer.wrap("sig-$name".toByteArray())
-        ) to CryptoSignatureSpec("dummy", null, null))
+        SignedMemberInfo(
+            it,
+            CryptoSignatureWithKey(
+                ByteBuffer.wrap("pk-$name".toByteArray()),
+                ByteBuffer.wrap("sig-$name".toByteArray()),
+            ),
+            CryptoSignatureSpec("dummy", null, null),
+        )
     }
 
     private fun postStartEvent() {
@@ -469,11 +476,10 @@ class MgmSynchronisationServiceImplTest {
     fun `all members are sent when member hash is matching`() {
         postConfigChangedEvent()
         synchronisationService.start()
-        val capturedList = argumentCaptor<List<MemberInfo>>()
+        val capturedList = argumentCaptor<List<SignedMemberInfo>>()
         val request = createRequest(alice)
         val records = synchronisationService.processSyncRequest(request)
         verify(membershipPackageFactory, times(1)).createMembershipPackage(
-            any(),
             any(),
             capturedList.capture(),
             any(),
@@ -482,7 +488,7 @@ class MgmSynchronisationServiceImplTest {
         assertThat(records).containsExactly(allMembershipPackageRecord)
         val membersPublished = capturedList.firstValue
         assertThat(membersPublished.size).isEqualTo(3)
-        assertThat(membersPublished).isEqualTo(listOf(aliceInfo, bobInfo, daisyInfo))
+        assertThat(membersPublished).isEqualTo(signatures)
         synchronisationService.stop()
     }
 
@@ -490,11 +496,10 @@ class MgmSynchronisationServiceImplTest {
     fun `only the requesting member's info is sent when member hash is not matching`() {
         postConfigChangedEvent()
         synchronisationService.start()
-        val capturedList = argumentCaptor<List<MemberInfo>>()
+        val capturedList = argumentCaptor<List<SignedMemberInfo>>()
         val request = createRequest(bob)
         val records = synchronisationService.processSyncRequest(request)
         verify(membershipPackageFactory, times(1)).createMembershipPackage(
-            any(),
             any(),
             capturedList.capture(),
             any(),
@@ -503,7 +508,7 @@ class MgmSynchronisationServiceImplTest {
         assertThat(records).containsExactly(bobMembershipPackageRecord)
         val membersPublished = capturedList.firstValue
         assertThat(membersPublished.size).isEqualTo(1)
-        assertThat(membersPublished).isEqualTo(listOf(bobInfo))
+        assertThat(membersPublished).isEqualTo(bobSignature)
         synchronisationService.stop()
     }
 
@@ -511,11 +516,10 @@ class MgmSynchronisationServiceImplTest {
     fun `only the requesting member's info is sent when member is suspended`() {
         postConfigChangedEvent()
         synchronisationService.start()
-        val capturedList = argumentCaptor<List<MemberInfo>>()
+        val capturedList = argumentCaptor<List<SignedMemberInfo>>()
         val request = createRequest(simon)
         val records = synchronisationService.processSyncRequest(request)
         verify(membershipPackageFactory, times(1)).createMembershipPackage(
-            any(),
             any(),
             capturedList.capture(),
             any(),
@@ -524,7 +528,7 @@ class MgmSynchronisationServiceImplTest {
         assertThat(records).containsExactly(simonMembershipPackageRecord)
         val membersPublished = capturedList.firstValue
         assertThat(membersPublished.size).isEqualTo(1)
-        assertThat(membersPublished).isEqualTo(listOf(simonInfo))
+        assertThat(membersPublished).isEqualTo(simonSignature)
         synchronisationService.stop()
     }
 
@@ -535,7 +539,7 @@ class MgmSynchronisationServiceImplTest {
         val ex = assertFailsWith<CordaRuntimeException> {
             synchronisationService.processSyncRequest(createRequest(charlie))
         }
-        assertThat(ex.message).isEqualTo("Requester ${MemberX500Name.parse(charlieName)} is not part of the membership group!")
+        assertThat(ex.message).isEqualTo("Requester $charlieName is not part of the membership group!")
         synchronisationService.stop()
     }
 

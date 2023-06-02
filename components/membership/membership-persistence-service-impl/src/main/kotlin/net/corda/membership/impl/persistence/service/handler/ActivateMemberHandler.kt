@@ -23,10 +23,10 @@ internal class ActivateMemberHandler(
     private val addNotaryToGroupParametersHandler: AddNotaryToGroupParametersHandler
         = AddNotaryToGroupParametersHandler(persistenceHandlerServices),
     suspensionActivationEntityOperationsFactory:
-        (clock: Clock, serializer: CordaAvroDeserializer<KeyValuePairList>, deserializer: CordaAvroSerializer<KeyValuePairList>)
+        (clock: Clock, serializer: CordaAvroSerializer<KeyValuePairList>)
         -> SuspensionActivationEntityOperations
-        = {clock: Clock, serializer: CordaAvroDeserializer<KeyValuePairList>, deserializer: CordaAvroSerializer<KeyValuePairList>
-        -> SuspensionActivationEntityOperations(clock, serializer, deserializer)}
+        = {clock: Clock, serializer: CordaAvroSerializer<KeyValuePairList>
+        -> SuspensionActivationEntityOperations(clock, serializer, persistenceHandlerServices.memberInfoFactory)}
 ) : BasePersistenceHandler<ActivateMember, ActivateMemberResponse>(persistenceHandlerServices) {
     override val operation = ActivateMember::class.java
     private val keyValuePairListDeserializer: CordaAvroDeserializer<KeyValuePairList> by lazy {
@@ -43,7 +43,7 @@ internal class ActivateMemberHandler(
         }
     }
     private val suspensionActivationEntityOperations =
-        suspensionActivationEntityOperationsFactory(clock, keyValuePairListDeserializer, keyValuePairListSerializer)
+        suspensionActivationEntityOperationsFactory(clock, keyValuePairListSerializer)
 
     override fun invoke(context: MembershipRequestContext, request: ActivateMember): ActivateMemberResponse {
         val (updatedMemberInfo, updatedGroupParameters) = transaction(context.holdingIdentity.toCorda().shortHash) { em ->
@@ -65,7 +65,7 @@ internal class ActivateMemberHandler(
                 currentMgmContext,
                 MEMBER_STATUS_ACTIVE
             )
-            val updatedGroupParameters = if (memberInfoFactory.create(updatedMemberInfo).isNotary()) {
+            val updatedGroupParameters = if (memberInfoFactory.createMemberInfo(updatedMemberInfo).isNotary()) {
                 logger.info("Activating notary member ${context.holdingIdentity}.")
                 updateGroupParameters(em, updatedMemberInfo)
             } else {

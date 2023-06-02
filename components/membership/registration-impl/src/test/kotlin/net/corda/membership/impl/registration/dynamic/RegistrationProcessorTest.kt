@@ -227,7 +227,8 @@ class  RegistrationProcessorTest {
             on {
                 queryMemberInfo(
                     eq(mgmHoldingIdentity.toCorda()),
-                    any()
+                    any(),
+                    any(),
                 )
             } doReturn MembershipQueryResult.Success(emptyList())
             on {
