@@ -85,7 +85,6 @@ spec:
             - -c
           args:
             - |
-                mkdir /tmp
                 touch /tmp/values.yaml
                 echo -e {{ toYaml .Values | quote }} >> /tmp/values.yaml
           volumeMounts:
@@ -285,7 +284,6 @@ spec:
             - -c
           args:
             - |
-                mkdir /tmp
                 touch /tmp/config.properties
                 {{- if .Values.kafka.tls.enabled }}
                 {{- if .Values.kafka.sasl.enabled }}
