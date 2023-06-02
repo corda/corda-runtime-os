@@ -27,6 +27,7 @@ import net.corda.crypto.persistence.getEntityManagerFactory
 import net.corda.crypto.softhsm.CryptoServiceProvider
 import net.corda.crypto.softhsm.SoftCryptoServiceProvider
 import net.corda.db.connection.manager.DbConnectionManager
+import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -69,6 +70,8 @@ open class SoftCryptoServiceProviderImpl @Activate constructor(
     private val jpaEntitiesRegistry: JpaEntitiesRegistry,
     @Reference(service = VirtualNodeInfoReadService::class)
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
+    @Reference(service = LayeredPropertyMapFactory::class)
+    private val layeredPropertyMapFactory: LayeredPropertyMapFactory,
 ) : AbstractConfigurableComponent<SoftCryptoServiceProviderImpl.Impl>(
     coordinatorFactory = coordinatorFactory,
     myName = lifecycleCoordinatorName,
@@ -93,7 +96,8 @@ open class SoftCryptoServiceProviderImpl @Activate constructor(
         CacheFactoryImpl(),
         dbConnectionManager,
         virtualNodeInfoReadService,
-        jpaEntitiesRegistry
+        jpaEntitiesRegistry,
+        layeredPropertyMapFactory,
     )
 
     override fun getInstance(config: SmartConfig): CryptoService = impl.getInstance(config)
@@ -107,8 +111,9 @@ open class SoftCryptoServiceProviderImpl @Activate constructor(
         private val dbConnectionManager: DbConnectionManager,
         private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
         private val jpaEntitiesRegistry: JpaEntitiesRegistry,
+        private val layeredPropertyMapFactory: LayeredPropertyMapFactory
     ) : AbstractImpl {
-        private fun openRepository(tenantId: String) = WrappingRepositoryImpl(
+        private fun openWrappingRepository(tenantId: String) = WrappingRepositoryImpl(
             getEntityManagerFactory(
                 tenantId,
                 dbConnectionManager,
@@ -117,6 +122,19 @@ open class SoftCryptoServiceProviderImpl @Activate constructor(
             ),
             tenantId
         )
+        private fun openSigningRepository(tenantId: String) = SigningRepositoryImpl(
+            getEntityManagerFactory(
+                tenantId,
+                dbConnectionManager,
+                virtualNodeInfoReadService,
+                jpaEntitiesRegistry
+            ),
+            tenantId = tenantId,
+            keyEncodingService = schemeMetadata,
+            digestService = digestService,
+            layeredPropertyMapFactory = layeredPropertyMapFactory
+        )
+
 
         @Suppress("ThrowsCount")
         fun getInstance(config: SmartConfig): CryptoService {
@@ -160,7 +178,8 @@ open class SoftCryptoServiceProviderImpl @Activate constructor(
                     .maximumSize(maximumSize)
             )
             return SoftCryptoService(
-                wrappingRepositoryFactory = ::openRepository,
+                wrappingRepositoryFactory = ::openWrappingRepository,
+                signingRepositoryFactory = ::openSigningRepository ,
                 schemeMetadata = schemeMetadata,
                 digestService = digestService,
                 defaultUnmanagedWrappingKeyName = defaultUnmanagedWrappingKeyName,
