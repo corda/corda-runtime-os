@@ -13,7 +13,6 @@ import net.corda.messaging.api.chunking.ChunkSerializerService
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.exception.CordaMessageAPIProducerRequiresReset
-import net.corda.messaging.api.exception.CordaMessageTooLargeException
 import net.corda.metrics.CordaMetrics
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.apache.kafka.clients.consumer.ConsumerRecord
@@ -102,11 +101,11 @@ class CordaKafkaProducerImpl(
      * @param partition partition to send to. defaults to null.
      */
     private fun sendRecord(record: CordaProducerRecord<*, *>, callback: CordaProducer.Callback? = null, partition: Int? = null) {
+        // Assuming the record is short, try sending as one plain Kafka message
         try {
-            // Assuming the record is short, try sending as one plain Kafka message
-            try {
-                producer.send(record.toKafkaRecord(topicPrefix, partition), callback?.toKafkaCallback())
-            } catch (ex: CordaMessageTooLargeException) {
+            producer.send(record.toKafkaRecord(topicPrefix, partition), callback?.toKafkaCallback())
+        } catch (ex: KafkaException) {
+            if (ex.cause is RecordTooLargeException) {
                 // This did not work - try sending by breaking into chunks
                 val chunkedRecords = chunkSerializerService.generateChunkedRecords(record)
                 if (chunkedRecords.isEmpty()) {
@@ -114,6 +113,8 @@ class CordaKafkaProducerImpl(
                     throw ex
                 }
                 sendChunks(chunkedRecords, callback, partition)
+            } else {
+                throw ex
             }
         }
         catch (ex: CordaRuntimeException) {
@@ -131,7 +132,7 @@ class CordaKafkaProducerImpl(
      * Send chunked records via the kafka producer.
      * If the producer is configured to be asynchronous, throw a fatal exception as this is not allowed.
      * Async producers may fail to send some chunks which could block the consumer from returning records
-     * due it waiting for more chunks to arrive.
+     * due to waiting for more chunks to arrive.
      * Executes the callback if there is an error to mimic kafka producers error handling where it also sets the callback when there are
      * errors always.
      * @param cordaProducerRecords chunked records to send
@@ -326,14 +327,10 @@ class CordaKafkaProducerImpl(
                 // This exception means the coordinator has bumped the producer epoch because of a timeout of this producer.
                 // There is no other producer, we are not a zombie, and so don't need to be fenced, we can simply abort and retry.
             is KafkaException -> {
-                if (ex.cause is RecordTooLargeException) {
-                    throw CordaMessageTooLargeException("Unable to publish due to too large record", ex)
-                } else {
-                    if (abortTransaction) {
-                        abortTransaction()
-                    }
-                    throw CordaMessageAPIIntermittentException("Error occurred $errorString", ex)
+                if (abortTransaction) {
+                    abortTransaction()
                 }
+                throw CordaMessageAPIIntermittentException("Error occurred $errorString", ex)
             }
             is CordaMessageAPIFatalException,
             is CordaMessageAPIIntermittentException -> { throw ex }
