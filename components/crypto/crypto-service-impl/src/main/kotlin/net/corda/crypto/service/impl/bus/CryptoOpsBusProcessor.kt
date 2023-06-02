@@ -213,7 +213,7 @@ class CryptoOpsBusProcessor(
             )
         }
 
-        return CordaMetrics.Metric.CryptoOpsProcessorExecutionTime.builder()
+        return CordaMetrics.Metric.Crypto.OpsProcessorExecutionTime.builder()
             .withTag(CordaMetrics.Tag.OperationName, request::class.java.simpleName)
             .build()
             .recordCallable<Any> {
