@@ -225,16 +225,6 @@ class CheckKafka : Callable<Int>, PluginContext() {
         creds.truststoreType = truststoreType
         creds.timeout = timeout
 
-        logger.info("PROPERTIES: ")
-        logger.info("${kafka.sasl.enabled}")
-        logger.info("$saslUsername")
-        logger.info("$saslPassword")
-        logger.info("$saslMechanism")
-        logger.info("${rootKafka.tls.enabled}")
-        logger.info("$truststorePassword")
-        logger.info("$truststoreFile")
-        logger.info("$truststoreType")
-
         val props: Properties
         try {
             props = creds.getKafkaProperties()
