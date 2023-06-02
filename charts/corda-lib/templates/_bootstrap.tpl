@@ -66,10 +66,10 @@ spec:
           imagePullPolicy: {{ .Values.imagePullPolicy }}
           {{- include "corda.containerSecurityContext" . | nindent 10 }}
           {{- include "corda.bootstrapResources" . | nindent 10 }}
-          args: ['preinstall', 'run-all', '/{{ include "corda.fullname" . }}-preinstall-tmp/values.yaml']
+          args: ['preinstall', 'run-all', '/tmp/values.yaml']
           volumeMounts:
-            - mountPath: /{{ include "corda.fullname" . }}-preinstall-tmp
-              name: {{ include "corda.fullname" . }}-temp
+            - mountPath: /tmp
+              name: temp
             {{ include "corda.log4jVolumeMount" . | nindent 12 }}
           env:
             {{ include "corda.bootstrapCliEnv" . | nindent 12 }}
@@ -85,14 +85,14 @@ spec:
             - -c
           args:
             - |
-                mkdir /{{ include "corda.fullname" . }}-preinstall-tmp
-                touch /{{ include "corda.fullname" . }}-preinstall-tmp/values.yaml
-                echo -e {{ toYaml .Values | quote }} >> /{{ include "corda.fullname" . }}-preinstall-tmp/values.yaml
+                mkdir /tmp
+                touch /tmp/values.yaml
+                echo -e {{ toYaml .Values | quote }} >> /tmp/values.yaml
           volumeMounts:
-            - mountPath: /{{ include "corda.fullname" . }}-preinstall-tmp
-              name: {{ include "corda.fullname" . }}-temp
+            - mountPath: /tmp
+              name: temp
       volumes:
-        - name: {{ include "corda.fullname" . }}-temp
+        - name: temp
           emptyDir: {}
         {{ include "corda.log4jVolume" . | nindent 8 }}
       restartPolicy: Never
