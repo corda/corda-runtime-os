@@ -157,15 +157,17 @@ class PreInstallPlugin : Plugin() {
         @JsonProperty("kafka")
         val kafka: KafkaConfiguration,
         @JsonProperty("bootstrap")
-        val bootstrap: KafkaBootstrap?
+        val bootstrap: KafkaBootstrap?,
+        @JsonProperty("workers")
+        val workers: KafkaWorkers?
     )
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     data class KafkaConfiguration(
         @JsonProperty("bootstrapServers")
-        val bootstrapServers: String,
+        val bootstrapServers: String?,
         @JsonProperty("tls")
-        val tls: TLS,
+        val tls: TLS?,
         @JsonProperty("sasl")
         val sasl: SASL
     )
@@ -198,6 +200,24 @@ class PreInstallPlugin : Plugin() {
         val username: SecretValues?,
         @JsonProperty("password")
         val password: SecretValues?
+    )
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    data class KafkaWorkers(
+        @JsonProperty("crypto")
+        val crypto: Kafka?,
+        @JsonProperty("db")
+        val db: Kafka?,
+        @JsonProperty("flow")
+        val flow: Kafka?,
+        @JsonProperty("membership")
+        val membership: Kafka?,
+        @JsonProperty("rest")
+        val rest: Kafka?,
+        @JsonProperty("p2pLinkManager")
+        val p2pLinkManager: Kafka?,
+        @JsonProperty("p2pGateway")
+        val p2pGateway: Kafka?
     )
 
     @JsonIgnoreProperties(ignoreUnknown = true)
