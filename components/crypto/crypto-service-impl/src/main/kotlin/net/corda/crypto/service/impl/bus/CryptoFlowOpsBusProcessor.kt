@@ -76,7 +76,7 @@ class CryptoFlowOpsBusProcessor(
 
             withMDC(mdc) {
                 val requestPayload = request.request
-                val startTime = Instant.now()
+                val startTime = System.nanoTime()
                 logger.info("Handling ${requestPayload::class.java.name} for tenant ${request.context.tenantId}")
 
                 try {
@@ -117,10 +117,10 @@ class CryptoFlowOpsBusProcessor(
                     )
                     externalEventResponseFactory.platformError(request.flowExternalEventContext, throwable)
                 }.also {
-                    CordaMetrics.Metric.CryptoFlowOpsProcessorExecutionTime.builder()
+                    CordaMetrics.Metric.Crypto.FlowOpsProcessorExecutionTime.builder()
                         .withTag(CordaMetrics.Tag.OperationName, requestPayload::class.java.simpleName)
                         .build()
-                        .record(Duration.between(startTime, Instant.now()))
+                        .record(Duration.ofNanos(System.nanoTime() - startTime))
                 }
             }
         }

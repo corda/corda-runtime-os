@@ -21,7 +21,6 @@ import net.corda.v5.application.flows.FlowContextPropertyKeys.CPK_FILE_CHECKSUM
 import net.corda.virtualnode.toCorda
 import org.slf4j.LoggerFactory
 import java.time.Duration
-import java.time.Instant
 
 /**
  * Handles incoming requests, typically from the flow worker, and sends responses.
@@ -48,7 +47,7 @@ class PersistenceRequestProcessor(
         return events
             .filterNot { it.value == null }
             .flatMap { event ->
-                val startTime = Instant.now()
+                val startTime = System.nanoTime()
                 val request = event.value!!
                 val requestType = request.javaClass.simpleName
                 traceEventProcessing(event, "Ledger Persistence - $requestType") {
@@ -97,7 +96,7 @@ class PersistenceRequestProcessor(
                                 .withTag(CordaMetrics.Tag.LedgerType, request.ledgerType.toString())
                                 .withTag(CordaMetrics.Tag.OperationName, request.request.javaClass.simpleName)
                                 .build()
-                                .record(Duration.between(startTime, Instant.now()))
+                                .record(Duration.ofNanos(System.nanoTime() - startTime))
                         }
                     }
                 }
