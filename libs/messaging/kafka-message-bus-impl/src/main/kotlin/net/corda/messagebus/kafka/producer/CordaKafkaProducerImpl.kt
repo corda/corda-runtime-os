@@ -100,6 +100,7 @@ class CordaKafkaProducerImpl(
      * @param callback for error handling in async producers
      * @param partition partition to send to. defaults to null.
      */
+    @Suppress("ThrowsCount")
     private fun sendRecord(record: CordaProducerRecord<*, *>, callback: CordaProducer.Callback? = null, partition: Int? = null) {
         // Assuming the record is short, try sending as one plain Kafka message
         try {
