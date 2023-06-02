@@ -1063,7 +1063,7 @@ class MembershipPersistenceTest {
             listOf(bobId),
             listOf(MEMBER_STATUS_ACTIVE)
         ).getOrThrow()
-        assertThat(result).hasSize(2)
+        assertThat(result).hasSize(1)
         with(result.first().memberInfo) {
             assertThat(name).isEqualTo(bobId.x500Name)
             assertTrue(isActive)
