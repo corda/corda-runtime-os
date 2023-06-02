@@ -235,7 +235,7 @@ class CheckKafka : Callable<Int>, PluginContext() {
             return
         }
 
-        report.addEntry(ReportEntry(props.entries.toString(), true))
+        logger.info(props.entries.toString())
 
         try {
             checkConnectionAndBrokers(KafkaAdmin(props, report), bootstrap?.kafka?.replicas)
@@ -269,7 +269,7 @@ class CheckKafka : Callable<Int>, PluginContext() {
             logger.info(report.toString())
             0
         } else {
-            logger.error(report.failingTests())
+            logger.error(report.toString())
             1
         }
     }
