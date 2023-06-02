@@ -1,5 +1,6 @@
 package net.corda.membership.impl.registration.dynamic.handler.mgm
 
+import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.data.membership.command.registration.RegistrationCommand
 import net.corda.data.membership.command.registration.mgm.DeclineRegistration
 import net.corda.data.membership.command.registration.mgm.StartRegistration
@@ -9,7 +10,6 @@ import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.p2p.SetOwnRegistrationStatus
 import net.corda.data.membership.state.RegistrationState
 import net.corda.data.p2p.app.MembershipStatusFilter.PENDING
-import net.corda.layeredpropertymap.toAvro
 import net.corda.membership.impl.registration.dynamic.handler.MemberTypeChecker
 import net.corda.membership.impl.registration.dynamic.handler.MissingRegistrationStateException
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandler
@@ -133,7 +133,7 @@ internal class StartRegistrationHandler(
             val existingMemberInfos = membershipQueryClient.queryMemberInfo(
                 mgmHoldingId,
                 listOf(pendingMemberHoldingId)
-            ).getOrThrow()
+            ).getOrThrow().map { it.memberInfo }
             // The MemberX500Name is not a duplicate
             validateRegistrationRequest(
                 existingMemberInfos.isEmpty() || registrationRequest.serial != 0L

@@ -18,13 +18,9 @@ import net.corda.data.membership.p2p.MembershipPackage
 import net.corda.data.membership.p2p.SignedMemberships
 import net.corda.layeredpropertymap.toAvro
 import net.corda.membership.lib.InternalGroupParameters
-import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
 import net.corda.utilities.time.Clock
-import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
-import net.corda.v5.membership.MemberInfo
-import net.corda.virtualnode.HoldingIdentity
 import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
 
@@ -58,31 +54,25 @@ class MembershipPackageFactory(
 
     fun createMembershipPackage(
         mgmSigner: Signer,
-        membersSignatures: Map<HoldingIdentity, Pair<CryptoSignatureWithKey, CryptoSignatureSpec>>,
-        membersToSend: Collection<MemberInfo>,
+        membersToSend: Collection<net.corda.membership.lib.SignedMemberInfo>,
         hashCheck: SecureHash,
         groupParameters: InternalGroupParameters,
     ): MembershipPackage {
         val mgmSignatureSpec = mgmSigner.signatureSpec.toAvro()
         val signedMembers = membersToSend.map {
-            val memberTree = merkleTreeGenerator.generateTree(listOf(it))
+            val memberTree = merkleTreeGenerator.generateTree(listOf(it.memberInfo))
             val mgmSignature = mgmSigner.sign(memberTree.root.bytes).toAvro()
-            val (memberSignature, memberSignatureSpec) =
-                membersSignatures[it.holdingIdentity]?.let { signatureAndSpec ->
-                    signatureAndSpec.first to signatureAndSpec.second
-                } ?: throw CordaRuntimeException("Could not find member signature and signature spec for ${it.name}")
-
             SignedMemberInfo.newBuilder()
                 .setMemberContext(
                     SignedData(
-                        ByteBuffer.wrap(serializer.serialize(it.memberProvidedContext.toAvro())),
-                        memberSignature,
-                        memberSignatureSpec
+                        ByteBuffer.wrap(serializer.serialize(it.memberInfo.memberProvidedContext.toAvro())),
+                        it.memberSignature,
+                        it.memberSignatureSpec
                     )
                 )
                 .setMgmContext(
                     SignedData(
-                        ByteBuffer.wrap(serializer.serialize(it.mgmProvidedContext.toAvro())),
+                        ByteBuffer.wrap(serializer.serialize(it.memberInfo.mgmProvidedContext.toAvro())),
                         mgmSignature,
                         mgmSignatureSpec
                     )

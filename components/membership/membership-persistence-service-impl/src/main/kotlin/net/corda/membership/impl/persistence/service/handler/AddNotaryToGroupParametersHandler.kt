@@ -114,7 +114,7 @@ internal class AddNotaryToGroupParametersHandler(
         }
 
             val parametersMap = deserializer.deserializeKeyValuePairList(previous.singleResult.parameters).toMap()
-            val notaryInfo = memberInfoFactory.createMemberInfo(request.notary)
+            val notaryInfo = memberInfoFactory.createMemberInfo(notaryMemberInfo)
             val notary = notaryInfo.notaryDetails
                 ?: throw MembershipPersistenceException(
                     "Cannot add notary to group parameters - notary details not found."

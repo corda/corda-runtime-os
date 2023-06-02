@@ -1,14 +1,14 @@
 package net.corda.membership.impl.client
 
+import net.corda.avro.serialization.CordaAvroDeserializer
+import net.corda.avro.serialization.CordaAvroSerializationFactory
+import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.core.ShortHash
 import net.corda.crypto.impl.converter.PublicKeyConverter
-import net.corda.data.CordaAvroDeserializer
-import net.corda.data.CordaAvroSerializer
-import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.membership.PersistentGroupParameters
@@ -175,7 +175,6 @@ class MGMResourceClientTest {
         on { execute() } doReturn MembershipPersistenceResult.success()
     }
 
-    private val memberInfoFactory = MemberInfoFactoryImpl(LayeredPropertyMapMocks.createFactory(converters))
     private class Operation<T>(
         private val result: MembershipPersistenceResult<T>,
     ) : MembershipPersistenceOperation<T> {
@@ -230,7 +229,7 @@ class MGMResourceClientTest {
         on { serial } doReturn 0
     }
     private val mockMemberInfoFactory = mock<MemberInfoFactory> {
-        on {create(any())} doReturn memberInfo
+        on { createMemberInfo(any()) } doReturn memberInfo
     }
 
     private fun convertPublicKeys(): List<Pair<String, String>> =

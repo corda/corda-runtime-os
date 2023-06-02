@@ -17,9 +17,7 @@ import net.corda.data.membership.p2p.DistributionType
 import net.corda.layeredpropertymap.toAvro
 import net.corda.membership.lib.InternalGroupParameters
 import net.corda.membership.lib.MemberInfoExtension
-import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
 import net.corda.test.util.time.TestClock
-import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.merkle.MerkleTree
 import net.corda.v5.membership.MGMContext
@@ -28,7 +26,6 @@ import net.corda.v5.membership.MemberInfo
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.SoftAssertions.assertSoftly
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
@@ -96,14 +93,15 @@ class MembershipPackageFactoryTest {
             whenever(mgmSigner.sign(hash)).thenReturn(signature)
         }
     }
-    private val signature = members.associate {
-        it.holdingIdentity to (
-                CryptoSignatureWithKey(
-                    ByteBuffer.wrap("pk-${it.name}".toByteArray()),
-                    ByteBuffer.wrap("sig-${it.name}".toByteArray())
-                ) to
-                        CryptoSignatureSpec("dummy", null, null)
-                )
+    private val signedMembers = members.map {
+        net.corda.membership.lib.SignedMemberInfo(
+            it,
+            CryptoSignatureWithKey(
+                ByteBuffer.wrap("pk-${it.name}".toByteArray()),
+                ByteBuffer.wrap("sig-${it.name}".toByteArray())
+            ),
+            CryptoSignatureSpec("dummy", null, null),
+        )
     }
     private val allAlg = "all-alg"
     private val checkHash = SecureHashImpl(allAlg, "all".toByteArray())
@@ -120,8 +118,7 @@ class MembershipPackageFactoryTest {
     fun `createMembershipPackage create the correct membership package meta data`() {
         val membershipPackage = factory.createMembershipPackage(
             mgmSigner,
-            signature,
-            members,
+            signedMembers,
             checkHash,
             groupParameters,
         )
@@ -152,8 +149,7 @@ class MembershipPackageFactoryTest {
     fun `createMembershipPackage create the correct membership hash check`() {
         val hashCheck = factory.createMembershipPackage(
             mgmSigner,
-            signature,
-            members,
+            signedMembers,
             checkHash,
             groupParameters,
         ).memberships.hashCheck
@@ -168,8 +164,7 @@ class MembershipPackageFactoryTest {
     fun `createMembershipPackage create the correct memberships`() {
         val memberships = factory.createMembershipPackage(
             mgmSigner,
-            signature,
-            members,
+            signedMembers,
             checkHash,
             groupParameters,
         ).memberships.memberships
@@ -203,19 +198,6 @@ class MembershipPackageFactoryTest {
             .containsExactlyInAnyOrderElementsOf(
                 expectedMembers
             )
-    }
-
-    @Test
-    fun `createMembershipPackage throws exception for missing signature`() {
-        assertThrows<CordaRuntimeException> {
-            factory.createMembershipPackage(
-                mgmSigner,
-                signature.minus(members.last().holdingIdentity),
-                members,
-                checkHash,
-                groupParameters,
-            )
-        }
     }
 
     private fun mockMemberInfo(

@@ -1,5 +1,8 @@
 package net.corda.membership.impl.read.subscription
 
+import net.corda.avro.serialization.CordaAvroDeserializer
+import net.corda.avro.serialization.CordaAvroSerializationFactory
+import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.crypto.impl.converter.PublicKeyConverter
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.layeredpropertymap.testkit.LayeredPropertyMapMocks
@@ -27,9 +30,6 @@ import net.corda.membership.lib.impl.converter.MemberNotaryDetailsConverter
 import net.corda.messaging.api.records.Record
 import net.corda.test.util.time.TestClock
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
-import net.corda.data.CordaAvroDeserializer
-import net.corda.data.CordaAvroSerializationFactory
-import net.corda.data.CordaAvroSerializer
 import net.corda.data.KeyValuePairList
 import net.corda.data.membership.SignedContexts
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEYS

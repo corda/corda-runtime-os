@@ -78,13 +78,13 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.SOFTWARE_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.lib.MemberInfoExtension.Companion.URL_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
+import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
 import net.corda.membership.lib.MemberInfoExtension.Companion.modifiedTime
 import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.SignedGroupParameters
 import net.corda.membership.lib.SignedMemberInfo
 import net.corda.membership.lib.approval.ApprovalRuleParams
-import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.lib.toMap
 import net.corda.membership.lib.toSortedMap
@@ -128,7 +128,6 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
-import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
@@ -1058,7 +1057,35 @@ class MembershipPersistenceTest {
     }
 
     @Test
-    fun `queryMembersSignatures returns the member signatures`() {
+    fun `queryMemberInfo returns the member based on status and name`() {
+        membershipQueryClient.start()
+        eventually {
+            assertThat(membershipPersistenceClient.isRunning).isTrue
+        }
+
+        val bobId = createTestHoldingIdentity("O=Bob, C=GB, L=London", groupId)
+        val charlieId = createTestHoldingIdentity("O=Charlie, C=GB, L=London", groupId)
+        val publicKey = "pk".toByteArray()
+        val signature = "signature".toByteArray()
+        val signatureSpec = CryptoSignatureSpec("spec", null, null)
+        persistMember(bobId.x500Name, MEMBER_STATUS_PENDING, publicKey, signature, signatureSpec)
+        persistMember(bobId.x500Name, MEMBER_STATUS_ACTIVE, publicKey, signature, signatureSpec)
+        persistMember(charlieId.x500Name, MEMBER_STATUS_ACTIVE, publicKey, signature, signatureSpec)
+
+        val result = membershipQueryClient.queryMemberInfo(
+            viewOwningHoldingIdentity,
+            listOf(bobId),
+            listOf(MEMBER_STATUS_ACTIVE)
+        ).getOrThrow()
+        assertThat(result).hasSize(2)
+        with(result.first().memberInfo) {
+            assertThat(name).isEqualTo(bobId.x500Name)
+            assertTrue(isActive)
+        }
+    }
+
+    @Test
+    fun `queryMemberInfo returns the member signatures`() {
         membershipQueryClient.start()
         eventually {
             assertThat(membershipPersistenceClient.isRunning).isTrue
@@ -1072,7 +1099,6 @@ class MembershipPersistenceTest {
             memberAndRegistrationId[holdingId] = registrationId
             val publicKey = "pk-$index".toByteArray()
             val signature = "signature-$index".toByteArray()
-            val regContextSig = "reg-context-signature-$index".toByteArray()
             val signatureSpec = CryptoSignatureSpec("spec-$index", null, null)
             persistMember(holdingId.x500Name, MEMBER_STATUS_PENDING, publicKey, signature, signatureSpec)
 
@@ -1080,68 +1106,19 @@ class MembershipPersistenceTest {
                 ByteBuffer.wrap(publicKey),
                 ByteBuffer.wrap(signature)
             )
-            val cryptoSignatureWithKeyForRegistrationContext = CryptoSignatureWithKey(
-                ByteBuffer.wrap(publicKey),
-                ByteBuffer.wrap(regContextSig)
-            )
-            val context = KeyValuePairList(
-                listOf(
-                    KeyValuePair(MEMBER_CONTEXT_KEY, MEMBER_CONTEXT_VALUE)
-                )
-            )
-            val registrationContext = KeyValuePairList(
-                listOf(
-                    KeyValuePair(REGISTRATION_CONTEXT_KEY, REGISTRATION_CONTEXT_VALUE)
-                )
-            )
-            membershipPersistenceClientWrapper.persistRegistrationRequest(
-                viewOwningHoldingIdentity,
-                RegistrationRequest(
-                    RegistrationStatus.SENT_TO_MGM,
-                    registrationId,
-                    holdingId,
-                    SignedData(
-                        ByteBuffer.wrap(
-                            cordaAvroSerializer.serialize(context)
-                        ),
-                        cryptoSignatureWithKey,
-                        signatureSpec,
-                    ),
-                    SignedData(
-                        ByteBuffer.wrap(
-                            cordaAvroSerializer.serialize(registrationContext)
-                        ),
-                        cryptoSignatureWithKeyForRegistrationContext,
-                        signatureSpec,
-                    ),
-                    REGISTRATION_SERIAL,
-                )
-            ).getOrThrow()
 
             holdingId to (
                     cryptoSignatureWithKey to signatureSpec
             )
         }
 
-        // before approval only non-pending information is available
-        assertThrows<MembershipPersistenceException> {
-            membershipQueryClient.queryMembersSignatures(
-                viewOwningHoldingIdentity,
-                signatures.keys
-            ).getOrThrow()
-        }
-
-        memberAndRegistrationId.forEach {
-            membershipPersistenceClientWrapper.setMemberAndRegistrationRequestAsApproved(
-                viewOwningHoldingIdentity, it.key, it.value
-            ).getOrThrow()
-        }
-
-        val resultsAfterApproval = membershipQueryClient.queryMembersSignatures(
+        val results = membershipQueryClient.queryMemberInfo(
             viewOwningHoldingIdentity,
             signatures.keys
-        ).getOrThrow()
-        assertThat(resultsAfterApproval).containsAllEntriesOf(signatures)
+        ).getOrThrow().associate {
+            it.memberInfo.holdingIdentity to Pair(it.memberSignature, it.memberSignatureSpec)
+        }
+        assertThat(results).containsAllEntriesOf(signatures)
     }
 
     @Test
@@ -1486,7 +1463,7 @@ class MembershipPersistenceTest {
                 KeyValuePair(SERIAL, "1"),
             ).sorted()
         )
-        val notary = memberInfoFactory.create(memberContext.toSortedMap(), mgmContext.toSortedMap())
+        val notary = memberInfoFactory.createMemberInfo(memberContext.toSortedMap(), mgmContext.toSortedMap())
         val persisted = membershipPersistenceClientWrapper.addNotaryToGroupParameters(viewOwningHoldingIdentity, notary)
             .execute()
         assertThat(persisted).isInstanceOf(MembershipPersistenceResult.Success::class.java)
@@ -1495,7 +1472,7 @@ class MembershipPersistenceTest {
             viewOwningHoldingIdentity,
             listOf(
                 SignedMemberInfo(
-                    memberInfoFactory.create(
+                    memberInfoFactory.createMemberInfo(
                         memberContext.toSortedMap(),
                         mgmContext.toSortedMap()
                     ),
@@ -1509,7 +1486,7 @@ class MembershipPersistenceTest {
         ).execute()
         assertThat(memberPersistenceResult1).isInstanceOf(MembershipPersistenceResult.Success::class.java)
 
-        val (updatedMemberInfo, groupParameters) = membershipPersistenceClientWrapper.suspendMember(
+        val (updatedPersistentMemberInfo, groupParameters) = membershipPersistenceClientWrapper.suspendMember(
             viewOwningHoldingIdentity, memberX500Name, 1, "test-reason"
         ).getOrThrow()
 
@@ -1528,10 +1505,9 @@ class MembershipPersistenceTest {
         assertThat(persistedMemberInfoEntity).isNotNull
         assertThat(persistedMemberInfoEntity.status).isEqualTo(MEMBER_STATUS_SUSPENDED)
         assertThat(persistedMemberInfoEntity.serialNumber).isEqualTo(2L)
-        with(updatedMemberInfo.mgmContext.toMap()) {
-            assertThat(this[STATUS]).isEqualTo(MEMBER_STATUS_SUSPENDED)
-            assertThat(this[SERIAL]).isEqualTo("2")
-        }
+        val updatedMemberInfo = memberInfoFactory.createMemberInfo(updatedPersistentMemberInfo)
+        assertThat(updatedMemberInfo.mgmProvidedContext.entries.associate { it.key to it.value })
+            .containsAllEntriesOf(mapOf(STATUS to MEMBER_STATUS_SUSPENDED, SERIAL to "2"))
 
         val persistedGroupParametersEntity = vnodeEmf.createEntityManager().use {
             it.find(
@@ -1647,7 +1623,7 @@ class MembershipPersistenceTest {
             viewOwningHoldingIdentity,
             listOf(
                 SignedMemberInfo(
-                    memberInfoFactory.create(
+                    memberInfoFactory.createMemberInfo(
                         memberContext.toSortedMap(),
                         mgmContext.toSortedMap()
                     ),
@@ -1661,7 +1637,7 @@ class MembershipPersistenceTest {
         ).execute()
         memberPersistenceResult1.getOrThrow()
 
-        val (updatedMemberInfo, groupParameters) = membershipPersistenceClientWrapper.activateMember(
+        val (updatedPersistentMemberInfo, groupParameters) = membershipPersistenceClientWrapper.activateMember(
             viewOwningHoldingIdentity, memberX500Name, 1, "test-reason"
         ).getOrThrow()
 
@@ -1682,7 +1658,9 @@ class MembershipPersistenceTest {
         }
         assertThat(persistedMemberInfoEntity.status).isEqualTo(MEMBER_STATUS_ACTIVE)
         assertThat(persistedMemberInfoEntity.serialNumber).isEqualTo(2L)
-        assertThat(updatedMemberInfo.mgmContext.toMap()).containsEntry(STATUS, MEMBER_STATUS_ACTIVE).containsEntry(SERIAL, "2")
+        val updatedMemberInfo = memberInfoFactory.createMemberInfo(updatedPersistentMemberInfo)
+        assertThat(updatedMemberInfo.mgmProvidedContext.entries.associate { it.key to it.value })
+            .containsAllEntriesOf(mapOf(STATUS to MEMBER_STATUS_ACTIVE, SERIAL to "2"))
 
         val persistedGroupParametersEntity = vnodeEmf.createEntityManager().use {
             it.find(

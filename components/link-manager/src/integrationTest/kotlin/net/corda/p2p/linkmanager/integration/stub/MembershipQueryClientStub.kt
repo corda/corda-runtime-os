@@ -8,11 +8,15 @@ import net.corda.virtualnode.HoldingIdentity
 import java.util.UUID
 
 class MembershipQueryClientStub : MembershipQueryClient {
-    override fun queryMemberInfo(viewOwningIdentity: HoldingIdentity) = throw UnsupportedOperationException()
+    override fun queryMemberInfo(
+        viewOwningIdentity: HoldingIdentity,
+        statusFilter: List<String>,
+    ) = throw UnsupportedOperationException()
 
     override fun queryMemberInfo(
         viewOwningIdentity: HoldingIdentity,
-        queryFilter: Collection<HoldingIdentity>,
+        holdingIdentityFilter: Collection<HoldingIdentity>,
+        statusFilter: List<String>,
     ) = throw UnsupportedOperationException()
 
     override fun queryRegistrationRequest(
@@ -25,11 +29,6 @@ class MembershipQueryClientStub : MembershipQueryClient {
         requestSubjectX500Name: MemberX500Name?,
         statuses: List<RegistrationStatus>,
         limit: Int?,
-    ) = throw UnsupportedOperationException()
-
-    override fun queryMembersSignatures(
-        viewOwningIdentity: HoldingIdentity,
-        holdingsIdentities: Collection<HoldingIdentity>,
     ) = throw UnsupportedOperationException()
 
     override fun queryGroupPolicy(viewOwningIdentity: HoldingIdentity) = throw UnsupportedOperationException()

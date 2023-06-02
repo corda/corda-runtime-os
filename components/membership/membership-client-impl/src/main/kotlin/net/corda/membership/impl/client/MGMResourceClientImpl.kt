@@ -635,7 +635,7 @@ class MGMResourceClientImpl @Activate constructor(
             mgmHoldingIdentity: HoldingIdentity,
             mgmShortHash: String,
         ) {
-            val serialNumber = memberInfoFactory.create(memberInfo).serial
+            val serialNumber = memberInfoFactory.createMemberInfo(memberInfo).serial
             val publisher = coordinator.getManagedResource<Publisher>(PUBLISHER_RESOURCE_NAME)
             val recordForGroupParameters = groupParameters?.let {
                 listOf(Record(

@@ -443,7 +443,7 @@ class StaticMemberRegistrationServiceTest {
                 assertEquals(aliceKey, sessionInitiationKeys.first())
                 assertEquals(1, ledgerKeys.size)
                 assertEquals(1, ledgerKeyHashes.size)
-                assertEquals(aliceKey.calculateHash(), ledgerKeyHashes.first())
+                assertEquals(aliceKey.fullIdHash(), ledgerKeyHashes.first())
                 assertEquals(MEMBER_STATUS_ACTIVE, status)
                 assertEquals(1, endpoints.size)
             }

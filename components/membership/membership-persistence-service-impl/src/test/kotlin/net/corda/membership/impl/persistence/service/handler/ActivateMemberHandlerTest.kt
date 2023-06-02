@@ -6,7 +6,6 @@ import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.membership.PersistentMemberInfo
-import net.corda.data.membership.SignedContexts
 import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.data.membership.db.request.command.ActivateMember
 import net.corda.data.membership.db.response.command.ActivateMemberResponse
@@ -38,14 +37,12 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-import java.nio.ByteBuffer
 import java.time.Instant
 import java.util.UUID
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.persistence.EntityTransaction
 import net.corda.data.membership.SignedGroupParameters
-import net.corda.membership.lib.MemberInfoExtension
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import javax.persistence.PessimisticLockException
@@ -112,7 +109,7 @@ class ActivateMemberHandlerTest {
     private val keyValuePairListSerializer = mock<CordaAvroSerializer<KeyValuePairList>> {
         on { serialize(any()) } doReturn byteArrayOf(0)
     }
-    private val keyValuePairListDeserializer = mock<CordaAvroDeserializer<KeyValuePairList>>() {
+    private val keyValuePairListDeserializer = mock<CordaAvroDeserializer<KeyValuePairList>> {
         on { deserialize(serializedMgmContext) } doReturn mgmContext
     }
     private val cordaAvroSerializationFactory = mock<CordaAvroSerializationFactory> {
@@ -130,7 +127,7 @@ class ActivateMemberHandlerTest {
         on { memberProvidedContext } doReturn mock()
     }
     private val memberInfoFactory = mock<MemberInfoFactory> {
-        on { create(persistentMemberInfo) } doReturn memberInfo
+        on { createMemberInfo(persistentMemberInfo) } doReturn memberInfo
     }
     private val persistenceHandlerServices: PersistenceHandlerServices = mock {
         on { clock } doReturn clock
@@ -145,7 +142,7 @@ class ActivateMemberHandlerTest {
     private val handler: ActivateMemberHandler = ActivateMemberHandler(
         persistenceHandlerServices,
         addNotaryToGroupParametersHandler
-    ) { _, _, _ -> suspensionActivationEntityOperations }
+    ) { _, _ -> suspensionActivationEntityOperations }
     private val context = MembershipRequestContext(
         clock.instant(),
         UUID(0, 1).toString(),
@@ -170,13 +167,13 @@ class ActivateMemberHandlerTest {
     fun `invoke returns the correct data when member is a notary`() {
         val mockMemberContext = mock<MemberContext> {
             on { entries } doReturn mapOf(
-                "${MemberInfoExtension.ROLES_PREFIX}.0" to MemberInfoExtension.NOTARY_ROLE
+                "${ROLES_PREFIX}.0" to NOTARY_ROLE
             ).entries
         }
         val mockMemberInfo = mock<MemberInfo> {
             on { memberProvidedContext } doReturn mockMemberContext
         }
-        whenever(memberInfoFactory.create(persistentMemberInfo)).thenReturn(mockMemberInfo)
+        whenever(memberInfoFactory.createMemberInfo(persistentMemberInfo)).thenReturn(mockMemberInfo)
         val groupParameters = mock<SignedGroupParameters>()
         whenever(addNotaryToGroupParametersHandler.addNotaryToGroupParameters(em, persistentMemberInfo)).doReturn(groupParameters)
 

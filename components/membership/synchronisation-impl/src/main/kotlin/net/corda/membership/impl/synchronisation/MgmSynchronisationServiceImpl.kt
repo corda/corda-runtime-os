@@ -23,9 +23,11 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.membership.lib.InternalGroupParameters
+import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_SUSPENDED
-import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
+import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
 import net.corda.membership.lib.MemberInfoExtension.Companion.status
+import net.corda.membership.lib.SignedMemberInfo
 import net.corda.membership.locally.hosted.identities.LocallyHostedIdentitiesService
 import net.corda.membership.p2p.helpers.MembershipPackageFactory
 import net.corda.membership.p2p.helpers.MerkleTreeGenerator
@@ -215,25 +217,38 @@ class MgmSynchronisationServiceImpl internal constructor(
             val mgmName = MemberX500Name.parse(mgm.x500Name)
             val mgmInfo = groupReader.lookup(mgmName)
                 ?: throw CordaRuntimeException("MGM $mgmName $IDENTITY_EX_MESSAGE")
-            val requesterName = MemberX500Name.parse(requester.x500Name)
-            val requesterInfo = groupReader.lookup(requesterName, filter = ACTIVE_OR_SUSPENDED)
-                ?: throw CordaRuntimeException("Requester $requesterName $IDENTITY_EX_MESSAGE")
+            val requesterInfo = services.membershipQueryClient.queryMemberInfo(
+                mgm.toCorda(),
+                listOf(requester.toCorda()),
+                listOf(MEMBER_STATUS_ACTIVE, MEMBER_STATUS_SUSPENDED)
+            ).getOrThrow().firstOrNull() ?: throw CordaRuntimeException("Requester ${requester.x500Name} $IDENTITY_EX_MESSAGE")
             // we don't want to include the MGM in the data package since MGM information comes from the group policy
-            val allNonPendingMembersExcludingMgm = groupReader.lookup(ACTIVE_OR_SUSPENDED).filterNot { it.holdingIdentity == mgm.toCorda() }
+            val allNonPendingMembersExcludingMgm = services.membershipQueryClient.queryMemberInfo(
+                mgm.toCorda(),
+                listOf(MEMBER_STATUS_ACTIVE, MEMBER_STATUS_SUSPENDED),
+            ).getOrThrow().filterNot { it.memberInfo.isMgm }
             val groupParameters = groupReader.groupParameters
                 ?: throw CordaRuntimeException("Failed to retrieve group parameters for building membership packages.")
-            if (compareHashes(memberHashFromTheReq.toCorda(), requesterInfo)) {
+            if (compareHashes(memberHashFromTheReq.toCorda(), requesterInfo.memberInfo)) {
                 // member has the latest updates regarding its own membership
                 // will send all membership data from MGM
-                if (requesterInfo.status == MEMBER_STATUS_SUSPENDED) {
-                    sendPackage(mgm, requester, createMembershipPackage(mgmInfo, listOf(requesterInfo), groupParameters))
+                if (requesterInfo.memberInfo.status == MEMBER_STATUS_SUSPENDED) {
+                    sendPackage(
+                        mgm,
+                        requester,
+                        createMembershipPackage(mgmInfo, listOf(requesterInfo), groupParameters),
+                    )
                 } else {
                     sendPackage(mgm, requester, createMembershipPackage(mgmInfo, allNonPendingMembersExcludingMgm, groupParameters))
                 }
             } else {
                 // member has not received the latest updates regarding its own membership
                 // will send its missing updates about themselves only
-                sendPackage(mgm, requester, createMembershipPackage(mgmInfo, listOf(requesterInfo), groupParameters))
+                sendPackage(
+                    mgm,
+                    requester,
+                    createMembershipPackage(mgmInfo, listOf(requesterInfo), groupParameters),
+                )
             }
             logger.info("Sync package is sent to ${requester.x500Name}.")
         }
@@ -275,23 +290,16 @@ class MgmSynchronisationServiceImpl internal constructor(
 
         private fun createMembershipPackage(
             mgm: MemberInfo,
-            members: Collection<MemberInfo>,
+            signedMembers: Collection<SignedMemberInfo>,
             groupParameters: InternalGroupParameters,
         ): MembershipPackage {
             val mgmSigner = services.signerFactory.createSigner(mgm)
-            val signatures = services.membershipQueryClient
-                .queryMembersSignatures(
-                    mgm.holdingIdentity,
-                    members.map {
-                        it.holdingIdentity
-                    }
-                ).getOrThrow()
+            val members = signedMembers.map { it.memberInfo }
             val membersTree = services.merkleTreeGenerator.generateTree(members)
 
             return services.membershipPackageFactory.createMembershipPackage(
                 mgmSigner,
-                signatures,
-                members,
+                signedMembers,
                 membersTree.root,
                 groupParameters,
             )

@@ -416,6 +416,8 @@ class SynchronisationIntegrationTest {
     fun `sync requests are processed by mgm`() {
         groupPolicyProvider.putGroupPolicy(mgm.toCorda(), MgmTestGroupPolicy())
 
+        membershipQueryClient.loadMembers(listOf(requesterInfo, participantInfo))
+
         // Create sync request to be published
         membershipGroupReaderProvider.loadMembers(
             mgm.toCorda(),
@@ -486,8 +488,8 @@ class SynchronisationIntegrationTest {
             it.assertThat(membershipPackage.memberships.memberships).hasSize(2)
                 .allSatisfy {
                     val member = memberInfoFactory.createMemberInfo(
-                        keyValueDeserializer.deserialize(it.memberContext.array())!!.toSortedMap(),
-                        keyValueDeserializer.deserialize(it.mgmContext.array())!!.toSortedMap()
+                        keyValueDeserializer.deserialize(it.memberContext.data.array())!!.toSortedMap(),
+                        keyValueDeserializer.deserialize(it.mgmContext.data.array())!!.toSortedMap()
                     )
                     assertThat(member.name.toString()).isIn(members)
                     assertThat(member.groupId).isEqualTo(groupId)

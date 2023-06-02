@@ -11,6 +11,8 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.StartEvent
+import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
+import net.corda.membership.lib.SignedMemberInfo
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.persistence.client.MembershipQueryResult
 import net.corda.v5.base.types.LayeredPropertyMap
@@ -29,7 +31,9 @@ import java.util.UUID
 /**
  * Created for mocking and simplifying membership query client functionalities used by the membership services.
  */
-interface TestMembershipQueryClient : MembershipQueryClient
+interface TestMembershipQueryClient : MembershipQueryClient {
+    fun loadMembers(memberList: List<MemberInfo>)
+}
 
 @ServiceRanking(Int.MAX_VALUE)
 @Component(service = [MembershipQueryClient::class, TestMembershipQueryClient::class])
@@ -40,6 +44,7 @@ class TestMembershipQueryClientImpl @Activate constructor(
     companion object {
         val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         private const val UNIMPLEMENTED_FUNCTION = "Called unimplemented function for test service"
+        private lateinit var members: List<SignedMemberInfo>
     }
 
     private val coordinator =
@@ -49,21 +54,34 @@ class TestMembershipQueryClientImpl @Activate constructor(
             }
         }
 
-    override fun queryMemberInfo(viewOwningIdentity: HoldingIdentity): MembershipQueryResult<Collection<MemberInfo>> {
-        with(UNIMPLEMENTED_FUNCTION) {
-            logger.warn(this)
-            throw UnsupportedOperationException(this)
+    override fun loadMembers(memberList: List<MemberInfo>) {
+        members = memberList.map {
+            SignedMemberInfo(
+                it,
+                CryptoSignatureWithKey(
+                    ByteBuffer.wrap(it.holdingIdentity.x500Name.toString().toByteArray()),
+                    ByteBuffer.wrap(it.holdingIdentity.x500Name.toString().toByteArray()),
+                ),
+                CryptoSignatureSpec("", null, null)
+            )
         }
     }
 
     override fun queryMemberInfo(
         viewOwningIdentity: HoldingIdentity,
-        queryFilter: Collection<HoldingIdentity>
-    ): MembershipQueryResult<Collection<MemberInfo>> {
-        with(UNIMPLEMENTED_FUNCTION) {
-            logger.warn(this)
-            throw UnsupportedOperationException(this)
+        statusFilter: List<String>,
+    ): MembershipQueryResult<Collection<SignedMemberInfo>> = MembershipQueryResult.Success(members)
+
+    override fun queryMemberInfo(
+        viewOwningIdentity: HoldingIdentity,
+        holdingIdentityFilter: Collection<HoldingIdentity>,
+        statusFilter: List<String>,
+    ): MembershipQueryResult<Collection<SignedMemberInfo>> {
+        val result = mutableListOf<SignedMemberInfo>()
+        holdingIdentityFilter.forEach { id ->
+            result.addAll(members.filter { it.memberInfo.holdingIdentity == id })
         }
+        return MembershipQueryResult.Success(result)
     }
 
     override fun queryRegistrationRequest(
@@ -86,21 +104,6 @@ class TestMembershipQueryClientImpl @Activate constructor(
             logger.warn(this)
             throw UnsupportedOperationException(this)
         }
-    }
-
-    override fun queryMembersSignatures(
-        viewOwningIdentity: HoldingIdentity,
-        holdingsIdentities: Collection<HoldingIdentity>
-    ): MembershipQueryResult<Map<HoldingIdentity, Pair<CryptoSignatureWithKey, CryptoSignatureSpec>>> {
-        return MembershipQueryResult.Success(
-            holdingsIdentities.associateWith {
-                CryptoSignatureWithKey(
-                    ByteBuffer.wrap(viewOwningIdentity.toAvro().x500Name.toByteArray()),
-                    ByteBuffer.wrap(viewOwningIdentity.toAvro().x500Name.toByteArray())
-                ) to
-                        CryptoSignatureSpec("", null, null)
-            }
-        )
     }
 
     override fun queryGroupPolicy(viewOwningIdentity: HoldingIdentity): MembershipQueryResult<Pair<LayeredPropertyMap, Long>> {

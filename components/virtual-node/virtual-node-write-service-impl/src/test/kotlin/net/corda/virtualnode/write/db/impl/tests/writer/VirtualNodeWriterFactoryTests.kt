@@ -82,7 +82,7 @@ class VirtualNodeWriterFactoryTests {
 
         val publisherFactory = getPublisherFactory()
         val virtualNodeWriterFactory = VirtualNodeWriterFactory(
-            getSubscriptionFactory(), publisherFactory, getDbConnectionManager(), mock(), mock(), mock()
+            getSubscriptionFactory(), publisherFactory, getDbConnectionManager(), mock(), mock(), mock(), mock()
         )
         virtualNodeWriterFactory.create(expectedConfig, externalMsgConfig)
 

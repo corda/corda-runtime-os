@@ -257,7 +257,7 @@ class MembershipPersistenceClientImpl(
 
         return request.operation { payload ->
             dataToResultConvertor<UpdateMemberAndRegistrationRequestResponse, MemberInfo>(payload) {
-                memberInfoFactory.create(it.memberInfo)
+                memberInfoFactory.createMemberInfo(it.memberInfo)
             }
         }
     }

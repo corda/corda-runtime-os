@@ -2,8 +2,6 @@ package net.corda.processor.member
 
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
-import net.corda.data.crypto.wire.CryptoSignatureSpec
-import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.StaticNetworkInfo
 import net.corda.data.membership.common.ApprovalRuleDetails
@@ -172,13 +170,16 @@ internal class TestMembershipPersistenceClientImpl @Activate constructor(
             }
         }
 
-    override fun queryMemberInfo(viewOwningIdentity: HoldingIdentity): MembershipQueryResult<Collection<MemberInfo>> =
-        MembershipQueryResult.Success(emptyList())
+    override fun queryMemberInfo(
+        viewOwningIdentity: HoldingIdentity,
+        statusFilter: List<String>,
+    ): MembershipQueryResult<Collection<SignedMemberInfo>> = MembershipQueryResult.Success(emptyList())
 
     override fun queryMemberInfo(
         viewOwningIdentity: HoldingIdentity,
-        queryFilter: Collection<HoldingIdentity>,
-    ): MembershipQueryResult<Collection<MemberInfo>> = MembershipQueryResult.Success(emptyList())
+        holdingIdentityFilter: Collection<HoldingIdentity>,
+        statusFilter: List<String>,
+    ): MembershipQueryResult<Collection<SignedMemberInfo>> = MembershipQueryResult.Success(emptyList())
 
     override fun queryRegistrationRequest(
         viewOwningIdentity: HoldingIdentity,
@@ -191,12 +192,6 @@ internal class TestMembershipPersistenceClientImpl @Activate constructor(
         statuses: List<RegistrationStatus>,
         limit: Int?,
     ): MembershipQueryResult<List<RegistrationRequestDetails>> = MembershipQueryResult.Success(emptyList())
-
-    override fun queryMembersSignatures(
-        viewOwningIdentity: HoldingIdentity,
-        holdingsIdentities: Collection<HoldingIdentity>,
-    ): MembershipQueryResult<Map<HoldingIdentity, Pair<CryptoSignatureWithKey, CryptoSignatureSpec>>> =
-        MembershipQueryResult.Success(emptyMap())
 
     override fun queryGroupPolicy(viewOwningIdentity: HoldingIdentity): MembershipQueryResult<Pair<LayeredPropertyMap, Long>> =
         MembershipQueryResult.Failure("Unsupported")

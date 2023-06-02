@@ -293,7 +293,7 @@ class MGMRegistrationServiceTest {
     )
 
     private val validCertificateDate = GregorianCalendar(2022, Calendar.JULY, 22)
-    val mockClock = Mockito.mockConstruction(UTCClock::class.java) {
+    private val mockClock = Mockito.mockConstruction(UTCClock::class.java) {
         mock, _ -> whenever(mock.instant()).thenReturn(validCertificateDate.toInstant())
     }
 
@@ -338,8 +338,18 @@ class MGMRegistrationServiceTest {
             val publishedList = registrationService.register(registrationRequest, mgm, properties)
 
             verify(memberInfoFactory).createPersistentMemberInfo(eq(mgm.toAvro()), capturedMemberInfo.capture())
+            val publishedMgmInfo = publishedList.first()
+            val publishedEvent = publishedList.last()
             assertSoftly {
-                /*
+                it.assertThat(publishedList).hasSize(2)
+
+                it.assertThat(publishedMgmInfo.topic).isEqualTo(MEMBER_LIST_TOPIC)
+                it.assertThat(publishedEvent.topic).isEqualTo(EVENT_TOPIC)
+
+                val expectedRecordKey = "$mgmId-$mgmId"
+                it.assertThat(publishedMgmInfo.key).isEqualTo(expectedRecordKey)
+                it.assertThat(publishedEvent.key).isEqualTo(mgmId.value)
+                it.assertThat(publishedMgmInfo.value).isInstanceOf(PersistentMemberInfo::class.java)
                 val memberInfo = capturedMemberInfo.firstValue
                 it.assertThat(memberInfo.memberProvidedContext.entries.map { item -> item.key })
                     .containsExactlyInAnyOrderElementsOf(
@@ -376,80 +386,24 @@ class MGMRegistrationServiceTest {
                         item.key == prop
                     }?.value ?: fail("Could not find property within published member for test")
                 }
-                 */
 
-                val expectedRecordKey = "$mgmId-$mgmId"
-                it.assertThat(publishedList)
-                    .hasSize(2)
-                assertThat(publishedList).anySatisfy { publishedMgmInfo ->
-                    assertThat(publishedMgmInfo.topic).isEqualTo(MEMBER_LIST_TOPIC)
-                    assertThat(publishedMgmInfo.key).isEqualTo(expectedRecordKey)
-                    val persistedMgm = publishedMgmInfo.value as? PersistentMemberInfo
-                    assertThat(persistedMgm?.memberContext?.items?.map { item -> item.key })
-                        .containsExactlyInAnyOrderElementsOf(
-                            listOf(
-                                GROUP_ID,
-                                PARTY_NAME,
-                                PARTY_SESSION_KEYS_PEM.format(0),
-                                SESSION_KEYS_HASH.format(0),
-                                ECDH_KEY,
-                                PLATFORM_VERSION,
-                                SOFTWARE_VERSION,
-                                MEMBER_CPI_NAME,
-                                MEMBER_CPI_VERSION,
-                                MEMBER_CPI_SIGNER_HASH,
-                                URL_KEY.format(0),
-                                PROTOCOL_VERSION.format(0),
-                            )
-                        )
-                    assertThat(persistedMgm?.mgmContext?.items?.map { item -> item.key })
-                        .containsExactlyInAnyOrderElementsOf(
-                            listOf(
-                                CREATION_TIME,
-                                MODIFIED_TIME,
-                                STATUS,
-                                IS_MGM,
-                                SERIAL,
-                            )
-                        )
-                    /*
-                    fun getProperty(prop: String): String {
-                    return memberInfo.memberProvidedContext.entries.firstOrNull { item ->
-                            item.key == prop
-                        }?.value ?: memberInfo.mgmProvidedContext.entries.firstOrNull { item ->
-                        item.key == prop
-                    }?.value ?: fail("Could not find property within published member for test")
-                }
-                     */
+                it.assertThat(getProperty(PARTY_NAME)).isEqualTo(mgmName.toString())
+                it.assertThat(getProperty(GROUP_ID)).isEqualTo(groupId)
+                it.assertThat(getProperty(STATUS)).isEqualTo(MEMBER_STATUS_ACTIVE)
+                it.assertThat(getProperty(IS_MGM)).isEqualTo("true")
+                it.assertThat(getProperty(PLATFORM_VERSION)).isEqualTo(TEST_PLATFORM_VERSION.toString())
+                it.assertThat(getProperty(SOFTWARE_VERSION)).isEqualTo(TEST_SOFTWARE_VERSION)
+                it.assertThat(getProperty(MEMBER_CPI_VERSION)).isEqualTo(TEST_CPI_VERSION)
+                it.assertThat(getProperty(MEMBER_CPI_NAME)).isEqualTo(TEST_CPI_NAME)
+                it.assertThat(statusUpdate.firstValue.status).isEqualTo(RegistrationStatus.APPROVED)
+                it.assertThat(statusUpdate.firstValue.registrationId).isEqualTo(registrationRequest.toString())
+                it.assertThat(statusUpdate.firstValue.serial).isEqualTo(0L)
 
-                    fun getProperty(prop: String): String {
-                        return persistedMgm
-                            ?.memberContext?.items?.firstOrNull { item ->
-                                item.key == prop
-                            }?.value ?: persistedMgm?.mgmContext?.items?.firstOrNull { item ->
-                            item.key == prop
-                        }?.value ?: fail("Could not find property within published member for test")
-                    }
-                    assertThat(getProperty(PARTY_NAME)).isEqualTo(mgmName.toString())
-                    assertThat(getProperty(GROUP_ID)).isEqualTo(groupId)
-                    assertThat(getProperty(STATUS)).isEqualTo(MEMBER_STATUS_ACTIVE)
-                    assertThat(getProperty(IS_MGM)).isEqualTo("true")
-                    assertThat(getProperty(PLATFORM_VERSION)).isEqualTo(TEST_PLATFORM_VERSION.toString())
-                    assertThat(getProperty(SOFTWARE_VERSION)).isEqualTo(TEST_SOFTWARE_VERSION)
-                    assertThat(getProperty(MEMBER_CPI_VERSION)).isEqualTo(TEST_CPI_VERSION)
-                    assertThat(getProperty(MEMBER_CPI_NAME)).isEqualTo(TEST_CPI_NAME)
-                }
-                assertThat(publishedList).anySatisfy { publishedEvent ->
-                    assertThat(publishedEvent.topic).isEqualTo(EVENT_TOPIC)
 
-                    assertThat(publishedEvent.key).isEqualTo(mgmId.value)
-                    val membershipEvent = publishedEvent.value as? MembershipEvent
-                    assertThat(membershipEvent?.event).isInstanceOf(MgmOnboarded::class.java)
-                    val mgmOnboardedEvent = membershipEvent?.event as? MgmOnboarded
-                    assertThat(mgmOnboardedEvent?.onboardedMgm).isEqualTo(mgm.toAvro())
-                }
-                assertThat(statusUpdate.firstValue.status).isEqualTo(RegistrationStatus.APPROVED)
-                assertThat(statusUpdate.firstValue.registrationId).isEqualTo(registrationRequest.toString())
+                val membershipEvent = publishedEvent.value as MembershipEvent
+                it.assertThat(membershipEvent.event).isInstanceOf(MgmOnboarded::class.java)
+                val mgmOnboardedEvent = membershipEvent.event as MgmOnboarded
+                it.assertThat(mgmOnboardedEvent.onboardedMgm).isEqualTo(mgm.toAvro())
             }
             verify(expirationProcessor).scheduleProcessingOfExpiredRequests(mgm)
             registrationService.stop()
