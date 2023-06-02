@@ -157,6 +157,7 @@ class CheckLimits : Callable<Int>, PluginContext() {
         }
 
         checkResources(yaml.bootstrap?.resources, "bootstrap")
+        checkResources(yaml.workers?.crypto?.resources, "crypto")
         checkResources(yaml.workers?.db?.resources, "DB")
         checkResources(yaml.workers?.flow?.resources, "flow")
         checkResources(yaml.workers?.membership?.resources, "membership")
