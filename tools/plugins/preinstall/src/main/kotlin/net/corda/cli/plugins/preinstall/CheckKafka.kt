@@ -39,11 +39,12 @@ class CheckKafka : Callable<Int>, PluginContext() {
     class SASLCredentialException(message: String) : Exception(message)
     private val logger = getLogger()
 
-    open class KafkaAdmin(props: Properties) {
+    open class KafkaAdmin(props: Properties, report: PreInstallPlugin.Report) {
         private val admin: AdminClient?
 
         init {
             admin = AdminClient.create(props)
+            report.addEntry(ReportEntry("Created admin client successfully", true))
         }
 
         open fun getNodes(): Collection<Node> {
@@ -234,8 +235,10 @@ class CheckKafka : Callable<Int>, PluginContext() {
             return
         }
 
+        report.addEntry(ReportEntry(props.entries.toString(), true))
+
         try {
-            checkConnectionAndBrokers(KafkaAdmin(props), bootstrap?.kafka?.replicas)
+            checkConnectionAndBrokers(KafkaAdmin(props, report), bootstrap?.kafka?.replicas)
         } catch (e: KafkaException) {
             report.addEntry(ReportEntry("Connect to Kafka cluster using client", false, e))
         } catch (e: ExecutionException) {
