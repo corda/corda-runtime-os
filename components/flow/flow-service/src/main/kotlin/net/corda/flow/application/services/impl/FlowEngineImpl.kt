@@ -54,8 +54,6 @@ class FlowEngineImpl @Activate constructor(
 
         resetFlowVersioningInformationIfSubFlowIsInitiatingFlow()
 
-//        getFiberExecutionContext().flowMetrics.subFlowStarted()
-
         try {
             val result = subFlow.call()
             /*
