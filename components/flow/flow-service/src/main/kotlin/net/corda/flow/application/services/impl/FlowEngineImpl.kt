@@ -50,9 +50,11 @@ class FlowEngineImpl @Activate constructor(
         } catch (e: PrivilegedActionException) {
             throw e.exception
         }
-        getFiberExecutionContext().flowStackService.push(subFlow)
+        getFiberExecutionContext().flowStackService.push(subFlow, getFiberExecutionContext().flowMetrics)
 
         resetFlowVersioningInformationIfSubFlowIsInitiatingFlow()
+
+//        getFiberExecutionContext().flowMetrics.subFlowStarted()
 
         try {
             val result = subFlow.call()
@@ -63,6 +65,8 @@ class FlowEngineImpl @Activate constructor(
              */
 
             finishSubFlow()
+//            getFiberExecutionContext().flowMetrics.subFlowFinished(subFlow::class.java.name, currentSubFlowStartTime, "COMPLETED")
+            getFiberExecutionContext().flowMetrics.subFlowFinished("COMPLETED")
 
             return result
         } catch (t: Throwable) {
@@ -73,6 +77,8 @@ class FlowEngineImpl @Activate constructor(
             // as long as it catches it in the flow which initiated it. The only thing Corda needs to do here is mark
             // the sub-flow as failed and rethrow.
             failSubFlow(t)
+//            getFiberExecutionContext().flowMetrics.subFlowFinished(subFlow::class.java.name, currentSubFlowStartTime, "FLOW_FAILED")
+            getFiberExecutionContext().flowMetrics.subFlowFinished("FAILED")
             throw t
         } finally {
             popCurrentFlowStackItem()
@@ -92,6 +98,9 @@ class FlowEngineImpl @Activate constructor(
         get() = peekCurrentFlowStackItem().sessions
             .filter(FlowStackItemSession::getInitiated)
             .map(FlowStackItemSession::getSessionId)
+
+    private val currentSubFlowStartTime: Long
+        get() = peekCurrentFlowStackItem().startTime
 
     @Suspendable
     private fun finishSubFlow() {
