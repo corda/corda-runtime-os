@@ -24,10 +24,8 @@ import net.corda.crypto.config.impl.signingService
 import net.corda.crypto.core.CryptoConsts.SOFT_HSM_ID
 import net.corda.crypto.core.aes.WrappingKeyImpl
 import net.corda.crypto.service.SigningService
-import net.corda.crypto.service.impl.CryptoServiceFactoryImpl
 import net.corda.crypto.service.impl.HSMServiceImpl
 import net.corda.crypto.service.impl.SigningServiceImpl
-import net.corda.crypto.softhsm.CryptoServiceProvider
 import net.corda.crypto.softhsm.impl.SoftCryptoService
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
@@ -159,29 +157,7 @@ class TestServicesFactory {
     }
 
     val cryptoWrappingRepository = TestWrappingRepository()
-    val signingService: SigningService by lazy {
-        SigningServiceImpl(
-            cryptoServiceFactory = cryptoServiceFactory,
-            signingRepositoryFactory = { signingRepository },
-            digestService = PlatformDigestServiceImpl(schemeMetadata),
-            schemeMetadata = schemeMetadata,
-            config = cryptoConfig.signingService(),
-        )
-    }
 
-    val hsmService: HSMServiceImpl by lazy {
-        HSMServiceImpl(
-            coordinatorFactory,
-            configurationReadService,
-            hsmStore,
-            cryptoServiceFactory = cryptoServiceFactory
-        ).also {
-            it.start()
-            eventually {
-                assertEquals(LifecycleStatus.UP, it.lifecycleCoordinator.status)
-            }
-        }
-    }
 
     val rootWrappingKey = WrappingKeyImpl.generateWrappingKey(schemeMetadata)
 
@@ -209,21 +185,19 @@ class TestServicesFactory {
         )
     }
 
-    // this MUST return cryptoService at the end of the day, rather than make its own,
-    // or else we'll end up multiple instances of the crypto service with different second level wrapping keys
-    val cryptoServiceFactory: CryptoServiceFactoryImpl = CryptoServiceFactoryImpl(
-        coordinatorFactory,
-        configurationReadService,
-        hsmStore,
-        object : CryptoServiceProvider {
-            override fun getInstance(config: SmartConfig): CryptoService = cryptoService
-        }
-    ).also {
-        it.start()
-        it.bootstrapConfig(bootstrapConfig)
-        eventually {
-            assertEquals(LifecycleStatus.UP, it.lifecycleCoordinator.status)
-        }
+    val signingService: SigningService by lazy {
+        SigningServiceImpl(
+            cryptoService = cryptoService,
+            signingRepositoryFactory = { signingRepository },
+            digestService = PlatformDigestServiceImpl(schemeMetadata),
+            schemeMetadata = schemeMetadata,
+            config = cryptoConfig.signingService(),
+            hsmStore = hsmStore
+        )
+    }
+
+    val hsmService: HSMServiceImpl by lazy {
+        HSMServiceImpl(hsmStore, cryptoService)
     }
 
     private class CryptoServiceWrapper(
