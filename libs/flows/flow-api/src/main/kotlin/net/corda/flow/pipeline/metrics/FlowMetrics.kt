@@ -1,5 +1,7 @@
 package net.corda.flow.pipeline.metrics
 
+import java.time.Instant
+
 interface FlowMetrics {
     fun flowEventReceived(flowEventType: String)
 
@@ -20,4 +22,8 @@ interface FlowMetrics {
     fun flowSessionMessageSent(flowEventType: String)
 
     fun flowSessionMessageReceived(flowEventType: String)
+
+    fun subFlowFinished(subFlowName: String, subFlowStartTime: Long, completionStatus: String)
+    fun subFlowStarted()
+    fun subFlowFinished(completionStatus: String)
 }

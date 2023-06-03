@@ -71,6 +71,11 @@ object CordaMetrics {
         object FlowRunTime : Metric<Timer>("flow.run.time", CordaMetrics::timer)
 
         /**
+         * Time it took for a subFlow to complete successfully or to error.
+         */
+        object FlowSubFlowRunTime : Metric<Timer>("flow.subflow.run.time", CordaMetrics::timer)
+
+        /**
          * Metric for flow fiber serialization.
          */
         object FlowFiberSerializationTime : Metric<Timer>("flow.fiber.serialization.time", CordaMetrics::timer)
