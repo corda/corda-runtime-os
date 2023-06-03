@@ -11,8 +11,6 @@ class FlowMetricsRecorderImpl(
     private val flowCheckpoint: FlowCheckpoint
 ) : FlowMetricsRecorder {
 
-    private val log: Logger = LoggerFactory.getLogger(FlowMetricsFactoryImpl::class.java)
-
     override fun recordFlowEventLag(lagMilli: Long, flowEventType: String) {
         CordaMetrics.Metric.FlowEventLagTime.builder()
             .forVirtualNode(flowCheckpoint.holdingIdentity.shortHash.toString())
@@ -29,7 +27,6 @@ class FlowMetricsRecorderImpl(
     }
 
     override fun recordFlowSuspensionCompletion(flowName: String, operationName: String, executionTimeMilli: Long) {
-        log.info("recordFlowSuspensionCompletion ($flowName)")
         CordaMetrics.Metric.FlowEventSuspensionWaitTime.builder()
             .forVirtualNode(flowCheckpoint.holdingIdentity.shortHash.toString())
             .withTag(CordaMetrics.Tag.FlowClass, flowName)
@@ -38,7 +35,6 @@ class FlowMetricsRecorderImpl(
     }
 
     override fun recordFiberExecution(flowName: String, executionTimeMillis: Long) {
-        log.info("recordFiberExecution ($flowName)")
         CordaMetrics.Metric.FlowEventFiberExecutionTime.builder()
             .forVirtualNode(flowCheckpoint.holdingIdentity.shortHash.toString())
             .withTag(CordaMetrics.Tag.FlowClass, flowName)
@@ -46,7 +42,6 @@ class FlowMetricsRecorderImpl(
     }
 
     override fun recordPipelineExecution(flowName: String, executionTimeMillis: Long, flowEventType: String) {
-        log.info("recordPipelineExecution ($flowName)")
         CordaMetrics.Metric.FlowEventPipelineExecutionTime.builder()
             .forVirtualNode(flowCheckpoint.holdingIdentity.shortHash.toString())
             .withTag(CordaMetrics.Tag.FlowClass, flowName)
@@ -55,7 +50,6 @@ class FlowMetricsRecorderImpl(
     }
 
     override fun recordTotalPipelineExecutionTime(flowName: String, executionTimeMillis: Long) {
-        log.info("recordTotalPipelineExecutionTime ($flowName)")
         CordaMetrics.Metric.FlowPipelineExecutionTime.builder()
             .forVirtualNode(flowCheckpoint.holdingIdentity.shortHash.toString())
             .withTag(CordaMetrics.Tag.FlowClass, flowName)
@@ -63,7 +57,6 @@ class FlowMetricsRecorderImpl(
     }
 
     override fun recordTotalFiberExecutionTime(flowName: String, executionTimeMillis: Long) {
-        log.info("recordTotalFiberExecutionTime ($flowName)")
         CordaMetrics.Metric.FlowFiberExecutionTime.builder()
             .forVirtualNode(flowCheckpoint.holdingIdentity.shortHash.toString())
             .withTag(CordaMetrics.Tag.FlowClass, flowName)
@@ -71,7 +64,6 @@ class FlowMetricsRecorderImpl(
     }
 
     override fun recordTotalSuspensionTime(flowName: String, executionTimeMillis: Long) {
-        log.info("recordTotalSuspensionTime ($flowName)")
         val flowStartContext = flowCheckpoint.flowStartContext
         CordaMetrics.Metric.FlowSuspensionWaitTime.builder()
             .forVirtualNode(flowCheckpoint.holdingIdentity.shortHash.toString())
@@ -80,7 +72,6 @@ class FlowMetricsRecorderImpl(
     }
 
     override fun recordFlowCompletion(flowName: String, executionTimeMillis: Long, runTimeMillis: Long, completionStatus: String) {
-        log.info("recordFlowCompletion ($flowName)")
         CordaMetrics.Metric.FlowExecutionTime.builder()
             .forVirtualNode(flowCheckpoint.holdingIdentity.shortHash.toString())
             .withTag(CordaMetrics.Tag.FlowClass, flowName)
@@ -94,7 +85,6 @@ class FlowMetricsRecorderImpl(
     }
 
     override fun recordFlowSessionMessagesReceived(flowName: String, flowEventType: String) {
-        log.info("recordFlowSessionMessagesReceived ($flowName)")
         CordaMetrics.Metric.FlowSessionMessagesReceivedCount.builder()
             .forVirtualNode(flowCheckpoint.holdingIdentity.shortHash.toString())
             .withTag(CordaMetrics.Tag.FlowClass, flowName)
@@ -104,7 +94,6 @@ class FlowMetricsRecorderImpl(
     }
 
     override fun recordFlowSessionMessagesSent(flowName: String, flowEventType: String) {
-        log.info("recordFlowSessionMessagesSent ($flowName)")
         CordaMetrics.Metric.FlowSessionMessagesSentCount.builder()
             .forVirtualNode(flowCheckpoint.holdingIdentity.shortHash.toString())
             .withTag(CordaMetrics.Tag.FlowClass, flowName)
@@ -113,7 +102,6 @@ class FlowMetricsRecorderImpl(
     }
 
     override fun recordTotalEventsProcessed(flowName: String, eventsProcessed: Long) {
-        log.info("recordTotalEventsProcessed ($flowName)")
         CordaMetrics.Metric.FlowEventProcessedCount.builder()
             .forVirtualNode(flowCheckpoint.holdingIdentity.shortHash.toString())
             .withTag(CordaMetrics.Tag.FlowClass, flowName)
@@ -121,23 +109,13 @@ class FlowMetricsRecorderImpl(
     }
 
     override fun recordTotalFiberSuspensions(flowName: String, fiberSuspensions: Long) {
-        log.info("recordTotalFiberSuspensions ($flowName)")
         CordaMetrics.Metric.FlowFiberSuspensionCount.builder()
             .forVirtualNode(flowCheckpoint.holdingIdentity.shortHash.toString())
             .withTag(CordaMetrics.Tag.FlowClass, flowName)
             .build().record(fiberSuspensions.toDouble())
     }
 
-//    override fun recordSubFlowCompletion(subFlowName: String, runtimeNano: Long, completionStatus: String) {
-//        CordaMetrics.Metric.FlowSubFlowRunTime.builder()
-//            .forVirtualNode(flowCheckpoint.holdingIdentity.shortHash.toString())
-//            .withTag(CordaMetrics.Tag.FlowClass, subFlowName)
-//            .withTag(CordaMetrics.Tag.OperationStatus, completionStatus)
-//            .build().record(Duration.ofNanos(runtimeNano))
-//    }
-
     override fun recordSubFlowCompletion(subFlowName: String, runTimeMillis: Long, completionStatus: String) {
-        log.info("recordSubFlowCompletion ($subFlowName)")
         CordaMetrics.Metric.FlowRunTime.builder()
             .forVirtualNode(flowCheckpoint.holdingIdentity.shortHash.toString())
             .withTag(CordaMetrics.Tag.FlowClass, subFlowName)

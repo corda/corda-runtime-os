@@ -9,7 +9,6 @@ import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.serialization.checkpoint.NonSerializable
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.HoldingIdentity
-import java.time.Clock
 
 @Suppress("LongParameterList")
 class FlowFiberExecutionContext(

@@ -54,8 +54,6 @@ class FlowEngineImpl @Activate constructor(
 
         resetFlowVersioningInformationIfSubFlowIsInitiatingFlow()
 
-//        getFiberExecutionContext().flowMetrics.subFlowStarted()
-
         try {
             val result = subFlow.call()
             /*
@@ -65,7 +63,6 @@ class FlowEngineImpl @Activate constructor(
              */
 
             finishSubFlow()
-//            getFiberExecutionContext().flowMetrics.subFlowFinished(subFlow::class.java.name, currentSubFlowStartTime, "COMPLETED")
             getFiberExecutionContext().flowMetrics.subFlowFinished("COMPLETED")
 
             return result
@@ -77,7 +74,6 @@ class FlowEngineImpl @Activate constructor(
             // as long as it catches it in the flow which initiated it. The only thing Corda needs to do here is mark
             // the sub-flow as failed and rethrow.
             failSubFlow(t)
-//            getFiberExecutionContext().flowMetrics.subFlowFinished(subFlow::class.java.name, currentSubFlowStartTime, "FLOW_FAILED")
             getFiberExecutionContext().flowMetrics.subFlowFinished("FAILED")
             throw t
         } finally {

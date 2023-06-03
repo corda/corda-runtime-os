@@ -23,7 +23,7 @@ interface FlowMetrics {
 
     fun flowSessionMessageReceived(flowEventType: String)
 
-    fun subFlowFinished(subFlowName: String, subFlowStartTime: Long, completionStatus: String)
     fun subFlowStarted()
+
     fun subFlowFinished(completionStatus: String)
 }

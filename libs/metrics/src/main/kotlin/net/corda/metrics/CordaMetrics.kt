@@ -63,22 +63,17 @@ object CordaMetrics {
         /**
          * FLOW METRICS
          *
-         * Time it took for a flow to complete successfully or to error.
+         * Time it took for a flow or subFlow to complete successfully or to error.
          */
         object FlowRunTime : Metric<Timer>("flow.run.time", CordaMetrics::timer)
 
         /**
-         * Time it took for a subFlow to complete successfully or to error.
-         */
-        object FlowSubFlowRunTime : Metric<Timer>("flow.subflow.run.time", CordaMetrics::timer)
-
-        /**
-         * Metric for flow fiber serialization.
+         * Metric for flow or subFlow fiber serialization.
          */
         object FlowFiberSerializationTime : Metric<Timer>("flow.fiber.serialization.time", CordaMetrics::timer)
 
         /**
-         * Metric for flow fiber deserialization.
+         * Metric for flow or subFlow fiber deserialization.
          */
         object FlowFiberDeserializationTime : Metric<Timer>("flow.fiber.deserialization.time", CordaMetrics::timer)
 
@@ -116,12 +111,12 @@ object CordaMetrics {
 
 
         /**
-         * Metric for the total time spent in the pipeline code across the execution time of a flow.
+         * Metric for the total time spent in the pipeline code across the execution time of a flow or subFlow.
          */
         object FlowPipelineExecutionTime : Metric<Timer>("flow.pipeline.execution.time", CordaMetrics::timer)
 
         /**
-         * Metric for the total time spent executing user code across the execution time of a flow.
+         * Metric for the total time spent executing user code across the execution time of a flow or subFlow.
          */
         object FlowFiberExecutionTime : Metric<Timer>("flow.fiber.execution.time", CordaMetrics::timer)
 
@@ -139,7 +134,7 @@ object CordaMetrics {
         object FlowEventSuspensionWaitTime : Metric<Timer>("flow.event.suspension.wait.time", CordaMetrics::timer)
 
         /**
-         * Number of times a scheduled wakeup is published for flows.
+         * Number of times a scheduled wakeup is published for flows and subFlows.
          */
         object FlowScheduledWakeupCount : Metric<Counter>("flow.scheduled.wakeup.count", Metrics::counter)
 
@@ -149,7 +144,7 @@ object CordaMetrics {
         object FlowEventProcessedCount : Metric<DistributionSummary>("flow.event.processed.count", Metrics::summary)
 
         /**
-         * Number of flow events that lead to a fiber resume for a single flow.
+         * Number of flow events that lead to a fiber resume for a single flow or subFlow.
          */
         object FlowFiberSuspensionCount : Metric<DistributionSummary>("flow.fiber.suspension.total.count", Metrics::summary)
 
