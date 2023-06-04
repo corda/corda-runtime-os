@@ -95,9 +95,6 @@ class FlowEngineImpl @Activate constructor(
             .filter(FlowStackItemSession::getInitiated)
             .map(FlowStackItemSession::getSessionId)
 
-    private val currentSubFlowStartTime: Long
-        get() = peekCurrentFlowStackItem().startTime
-
     @Suspendable
     private fun closeSessionsOnSubFlowFinish() {
         val currentSessionIds = this.currentSessionIds
