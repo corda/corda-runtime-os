@@ -125,7 +125,7 @@ class DistributeMemberInfoActionHandlerTest {
         mockMemberInfo(createHoldingIdentity("member-$it"))
     } + memberInfo + mgm
     private val activeMembersWithoutMgm = allActiveMembers - mgm
-    private val nonPendingMembersWithoutMgm = allActiveMembers + suspendedMemberInfo -mgm
+    private val nonPendingMembersWithoutMgm = allActiveMembers + suspendedMemberInfo - mgm
     private val signatures = activeMembersWithoutMgm.associate {
         val name = it.name.toString()
         it.holdingIdentity to (CryptoSignatureWithKey(
@@ -207,7 +207,6 @@ class DistributeMemberInfoActionHandlerTest {
     }
     private val groupReader: MembershipGroupReader = mock {
         on { groupParameters } doReturn groupParameters
-        //on { lookup() } doReturn allActiveMembers
         on { lookup(MembershipStatusFilter.ACTIVE_OR_SUSPENDED)} doReturn allActiveMembers + suspendedMemberInfo
     }
     private val groupReaderProvider: MembershipGroupReaderProvider = mock {
