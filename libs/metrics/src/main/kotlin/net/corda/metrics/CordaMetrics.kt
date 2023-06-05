@@ -540,6 +540,29 @@ object CordaMetrics {
             }
             VoidMeter
         })
+
+        object Db {
+
+            /**
+             * Metric for the time taken to process an entity persistence request, from the moment the request is received from Kafka.
+             */
+            object EntityPersistenceRequestTime : Metric<Timer>("db.entity.persistence.request.time", CordaMetrics::timer)
+
+            /**
+             * Metric for the lag between the flow putting the entity persistence request to Kafka and the EntityMessageProcessor.
+             */
+            object EntityPersistenceRequestLag : Metric<Timer>("db.entity.persistence.request.lag", CordaMetrics::timer)
+
+            /**
+             * Metric for the time taken for a full reconciliation run.
+             */
+            object ReconciliationRunTime : Metric<Timer>("db.reconciliation.run.time", CordaMetrics::timer)
+
+            /**
+             * Metric for the number of reconciled records for a reconciliation run.
+             */
+            object ReconciliationRecordsCount : Metric<DistributionSummary>("db.reconciliation.records.count", Metrics::summary)
+        }
     }
 
     /**
