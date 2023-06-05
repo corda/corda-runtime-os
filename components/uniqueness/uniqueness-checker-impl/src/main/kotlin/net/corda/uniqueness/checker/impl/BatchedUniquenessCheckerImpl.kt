@@ -228,7 +228,7 @@ class BatchedUniquenessCheckerImpl(
                     }
                 } catch (e: Exception) {
                     // In practice, if we've received an unhandled exception then this will be before we
-                    // managed to commit to the DB, so raise an exception against all requests in the
+                    // managed to complete to the DB, so raise an exception against all requests in the
                     // batch
                     log.warn("Unhandled exception was thrown for transaction(s) " +
                             "${partitionedRequests.map { it.second.txId }}: $e")
@@ -318,7 +318,7 @@ class BatchedUniquenessCheckerImpl(
 
             batch.forEach { request ->
                 // Already processed -> Return same result as in DB (idempotency) but no need to
-                // commit to backing store so is not added to resultsToCommit
+                // complete to backing store so is not added to resultsToCommit
                 if (transactionDetailsCache[request.txId] != null) {
                     resultsToRespondWith.add(
                         Pair(
@@ -399,7 +399,7 @@ class BatchedUniquenessCheckerImpl(
                 }
             }
 
-            // Now that the processing has finished, we need to commit to the database.
+            // Now that the processing has finished, we need to complete to the database.
             commitResults(transactionOps, resultsToCommit)
         }
 
@@ -456,7 +456,7 @@ class BatchedUniquenessCheckerImpl(
     }
 
     /**
-     * A function to commit all the requests that were processed by the uniqueness service.
+     * A function to complete all the requests that were processed by the uniqueness service.
      *
      * If a request has failed it will be inserted to the TX and rejected TX tables.
      * If a request was successful it will be inserted to the TX table and its states

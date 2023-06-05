@@ -10,7 +10,7 @@ class BraveRecordTracing(tracing: Tracing) {
     private val tracer = tracing.tracer()
     private val recordHeaderGetter: Propagation.Getter<List<Pair<String, String>>, String> =
         Propagation.Getter<List<Pair<String, String>>, String> { request, key ->
-            request.reversed().firstOrNull { it.first==key }?.second
+            request.reversed().firstOrNull { it.first == key }?.second
         }
     private val tracingContextExtractor = tracing.propagation().extractor(recordHeaderGetter)
 
@@ -22,7 +22,11 @@ class BraveRecordTracing(tracing: Tracing) {
         return nextSpan(record.topic, record.headers)
     }
 
-    private fun nextSpan(topic:String, headers: List<Pair<String, String>>): Span{
+    fun createBatchPublishTracing(clientId: String): BraveBatchPublishTracing {
+        return BraveBatchPublishTracing(clientId, tracer, tracingContextExtractor)
+    }
+
+    private fun nextSpan(topic: String, headers: List<Pair<String, String>>): Span {
         val extracted = tracingContextExtractor.extract(headers)
         val span = tracer.nextSpan(extracted)
         if (extracted.context() == null && !span.isNoop) {

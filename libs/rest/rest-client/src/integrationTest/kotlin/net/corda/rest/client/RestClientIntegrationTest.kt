@@ -266,7 +266,7 @@ internal class RestClientIntegrationTest : RestIntegrationTestBase() {
                     assertEquals(CalendarRestResource.CalendarDay(DayOfWeek.WEDNESDAY, "2020-01-01"), values.first())
                     assertEquals(CalendarRestResource.CalendarDay(DayOfWeek.THURSDAY, "2020-04-09"), values.last())
                     assertFalse(this.isLastResult)
-                    // no commit
+                    // no complete
                 }
 
                 with(cursor.poll(300, 100.seconds)) {

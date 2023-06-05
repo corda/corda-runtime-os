@@ -8,9 +8,10 @@ import net.corda.data.flow.state.checkpoint.Checkpoint
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.data.flow.state.waiting.WaitingFor
-import net.corda.flow.pipeline.events.FlowEventContext
+import net.corda.flow.fiber.cache.FlowFiberCache
 import net.corda.flow.pipeline.FlowEventExceptionProcessor
 import net.corda.flow.pipeline.converters.FlowEventContextConverter
+import net.corda.flow.pipeline.events.FlowEventContext
 import net.corda.flow.pipeline.exceptions.FlowEventException
 import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.flow.pipeline.exceptions.FlowMarkedForKillException
@@ -33,7 +34,6 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
 import java.time.Instant
-import net.corda.flow.fiber.cache.FlowFiberCache
 
 @Suppress("Unused")
 @Component(service = [FlowEventExceptionProcessor::class])
@@ -96,7 +96,7 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
                 flowMessageFactory.createFlowRetryingStatusMessage(context.checkpoint)
             }
 
-            // Set up records before the rollback, just in case a transient exception happens after a flow is initialised
+            // Set up records before the abort, just in case a transient exception happens after a flow is initialised
             // but before the first checkpoint has been recorded.
             flowCheckpoint.rollback()
             flowCheckpoint.markForRetry(context.inputEvent, exception)

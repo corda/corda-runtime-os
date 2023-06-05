@@ -228,7 +228,7 @@ internal class CordaPublisherImpl(
                 "for topic $topic failed to send"
         when (exception) {
             null -> {
-                //transaction operation can still fail at commit stage  so do not set to true until it is committed
+                //transaction operation can still fail at complete stage  so do not set to true until it is committed
                 if (!config.transactional) {
                     future.complete(Unit)
                 } else {

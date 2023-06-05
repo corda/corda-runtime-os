@@ -71,7 +71,7 @@ internal class VirtualNodeWriterProcessor(
     }
 
     /**
-     * For each [request], the processor attempts to commit a new virtual node to the cluster database. If successful,
+     * For each [request], the processor attempts to complete a new virtual node to the cluster database. If successful,
      * the created virtual node is then published by the [vNodePublisher] to the `VIRTUAL_NODE_INFO_TOPIC` topic.
      *
      * If both steps succeed, [respFuture] is completed successfully. Otherwise, it is completed unsuccessfully.

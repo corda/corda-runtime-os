@@ -288,7 +288,7 @@ class UniquenessCheckerImplTests {
                     { assertStandardSuccessResponse(responses[requests[2]]!!, testClock) },
                     { assertStandardSuccessResponse(responses[requests[3]]!!, testClock) },
                     { assertStandardSuccessResponse(responses[requests[4]]!!, testClock) },
-                    // Check all tx ids match up to corresponding requests and commit timestamps
+                    // Check all tx ids match up to corresponding requests and complete timestamps
                     // are unique
                     { assertIterableEquals(
                         responses.keys.map { it.txId }, responses.values.map { it.txId }) },
@@ -342,7 +342,7 @@ class UniquenessCheckerImplTests {
                     { assertStandardSuccessResponse(responses[requests[0]]!!, testClock) },
                     { assertStandardSuccessResponse(responses[requests[1]]!!, testClock) },
                     { assertStandardSuccessResponse(responses[requests[2]]!!, testClock) },
-                    // Check all tx ids match up to corresponding requests and commit timestamps
+                    // Check all tx ids match up to corresponding requests and complete timestamps
                     // are unique
                     { assertIterableEquals(
                         responses.keys.map { it.txId }, responses.values.map { it.txId }) },

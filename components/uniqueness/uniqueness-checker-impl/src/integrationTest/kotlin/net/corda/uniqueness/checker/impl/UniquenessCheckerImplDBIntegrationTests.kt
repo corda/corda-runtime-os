@@ -369,7 +369,7 @@ class UniquenessCheckerImplDBIntegrationTests {
                     { assertStandardSuccessResponse(responses[requests[2]]!!, testClock) },
                     { assertStandardSuccessResponse(responses[requests[3]]!!, testClock) },
                     { assertStandardSuccessResponse(responses[requests[4]]!!, testClock) },
-                    // Check all tx ids match up to corresponding requests and commit timestamps
+                    // Check all tx ids match up to corresponding requests and complete timestamps
                     // are unique
                     {
                         assertIterableEquals(
@@ -436,7 +436,7 @@ class UniquenessCheckerImplDBIntegrationTests {
                     { assertStandardSuccessResponse(responses[requests[0]]!!, testClock) },
                     { assertStandardSuccessResponse(responses[requests[1]]!!, testClock) },
                     { assertStandardSuccessResponse(responses[requests[2]]!!, testClock) },
-                    // Check all tx ids match up to corresponding requests and commit timestamps
+                    // Check all tx ids match up to corresponding requests and complete timestamps
                     // are unique
                     {
                         assertIterableEquals(

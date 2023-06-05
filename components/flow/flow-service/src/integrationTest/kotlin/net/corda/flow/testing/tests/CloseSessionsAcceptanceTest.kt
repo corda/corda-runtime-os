@@ -286,7 +286,7 @@ class CloseSessionsAcceptanceTest : FlowServiceTestBase() {
         then {
             expectOutputForFlow(FLOW_ID1) {
                 flowDidNotResume()
-                // Need to rollback time to do the resends?
+                // Need to abort time to do the resends?
             }
         }
     }

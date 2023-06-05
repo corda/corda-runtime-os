@@ -14,6 +14,7 @@ import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.exception.CordaMessageAPIProducerRequiresReset
 import net.corda.metrics.CordaMetrics
+import net.corda.tracing.getOrCreateBatchPublishTracing
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.clients.consumer.OffsetAndMetadata
@@ -65,18 +66,21 @@ class CordaKafkaProducerImpl(
     }
 
     override fun send(record: CordaProducerRecord<*, *>, callback: CordaProducer.Callback?) {
+        getOrCreateBatchPublishTracing(config.clientId).begin(listOf( record.headers))
         tryWithCleanupOnFailure("send single record, no partition") {
             sendRecord(record, callback)
         }
     }
 
     override fun send(record: CordaProducerRecord<*, *>, partition: Int, callback: CordaProducer.Callback?) {
+        getOrCreateBatchPublishTracing(config.clientId).begin(listOf( record.headers))
         tryWithCleanupOnFailure("send single record, with partition") {
             sendRecord(record, callback, partition)
         }
     }
 
     override fun sendRecords(records: List<CordaProducerRecord<*, *>>) {
+        getOrCreateBatchPublishTracing(config.clientId).begin(records.map { it.headers })
         tryWithCleanupOnFailure("send multiple records, no partition") {
             for (record in records) {
                 sendRecord(record)
@@ -85,6 +89,8 @@ class CordaKafkaProducerImpl(
     }
 
     override fun sendRecordsToPartitions(recordsWithPartitions: List<Pair<Int, CordaProducerRecord<*, *>>>) {
+        val tracing = getOrCreateBatchPublishTracing(config.clientId)
+        tracing.begin(recordsWithPartitions.map { it.second.headers })
         tryWithCleanupOnFailure("send multiple records, with partitions") {
             for ((partition, record) in recordsWithPartitions) {
                 sendRecord(record, null, partition)
@@ -153,6 +159,7 @@ class CordaKafkaProducerImpl(
     }
 
     override fun abortTransaction() {
+        getOrCreateBatchPublishTracing(config.clientId).abort()
         tryWithCleanupOnFailure("aborting transaction", abortTransactionOnFailure = false) {
             producer.abortTransaction()
         }
@@ -172,7 +179,10 @@ class CordaKafkaProducerImpl(
             }
         }
 
+        getOrCreateBatchPublishTracing(config.clientId).complete()
+
         if (retryableException != null) {
+
             // We have retried once, we are not retrying again, so the only other option compatible with the producer
             // contract is to close the producer without aborting. That is the responsibility of the client, which we
             // notify by throwing the relevant exception.
@@ -185,7 +195,7 @@ class CordaKafkaProducerImpl(
 
     /**
      * The contract of the Kafka producer is that certain types of errors have their own process for handling.
-     * If a commit is interrupted or timed out, we cannot abort, but it is safe to retry the commit if we want.
+     * If a complete is interrupted or timed out, we cannot abort, but it is safe to retry the complete if we want.
      * This method catches those exceptions and returns them if they happened.
      *
      * @return null if successful, exception instance transaction can be retried, otherwise throws whatever thrown by the producer.
@@ -285,7 +295,12 @@ class CordaKafkaProducerImpl(
     ) {
         try {
             block()
+            // transactional publications will be completed in commitTransaction()
+            if(!transactional){
+                getOrCreateBatchPublishTracing(config.clientId).complete()
+            }
         } catch (ex: Exception) {
+            getOrCreateBatchPublishTracing(config.clientId).abort()
             handleException(ex, operation, abortTransactionOnFailure)
         }
     }
@@ -310,7 +325,7 @@ class CordaKafkaProducerImpl(
 
             is TimeoutException,
             is InterruptException,
-                // Failure to commit here might be due to consumer kicked from group.
+                // Failure to complete here might be due to consumer kicked from group.
                 // Return as intermittent to trigger retry
             is InvalidProducerEpochException,
                 // See https://cwiki.apache.org/confluence/display/KAFKA/KIP-588%3A+Allow+producers+to+recover+gracefully+from+transaction+timeouts

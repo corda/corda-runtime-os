@@ -17,6 +17,8 @@ interface TracingService : AutoCloseable {
 
     fun <R> nextSpan(operationName: String, record: EventLogRecord<*, *>, processingBlock: TraceContext.() -> R): R
 
+    fun getOrCreateBatchPublishTracing(clientId: String): BatchPublishTracing
+
     fun wrapWithTracingExecutor(executor: ExecutorService): ExecutorService
 
     fun <K, V> wrapWithTracingProducer(kafkaProducer: Producer<K, V>): Producer<K, V>

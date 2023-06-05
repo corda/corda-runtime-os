@@ -11,6 +11,7 @@ import brave.sampler.Sampler
 import brave.servlet.TracingFilter
 import net.corda.messaging.api.records.EventLogRecord
 import net.corda.messaging.api.records.Record
+import net.corda.tracing.BatchPublishTracing
 import net.corda.tracing.BatchRecordTracer
 import net.corda.tracing.TraceContext
 import net.corda.tracing.TracingService
@@ -24,8 +25,12 @@ import zipkin2.reporter.urlconnection.URLConnectionSender
 import java.util.Stack
 import java.util.concurrent.ExecutorService
 import javax.servlet.Filter
+
 @Suppress("TooManyFunctions")
 class BraveTracingService(serviceName: String, zipkinHost: String) : TracingService {
+
+    private val currentBatchPublishingTracers =
+        ThreadLocal.withInitial { mutableMapOf<String, BraveBatchPublishTracing>() }
 
     private val resourcesToClose = Stack<AutoCloseable>()
 
@@ -51,7 +56,7 @@ class BraveTracingService(serviceName: String, zipkinHost: String) : TracingServ
 
         // The console reporter is useful when debugging test runs on the combined worker.
         // uncomment it to enable it.
-        val reporters = mutableListOf<Reporter<Span>>(/*Reporter.CONSOLE*/)
+        val reporters = mutableListOf<Reporter<Span>>(Reporter.CONSOLE)
         val reporter = CombinedSpanReporter(reporters)
 
         val zipkinUrl = "$zipkinHost/api/v2/spans"
@@ -115,6 +120,11 @@ class BraveTracingService(serviceName: String, zipkinHost: String) : TracingServ
             val ctx = BraveTraceContext(this)
             processingBlock(ctx)
         }
+    }
+
+    override fun getOrCreateBatchPublishTracing(clientId: String): BatchPublishTracing {
+        return currentBatchPublishingTracers.get()
+            .getOrPut(clientId) { recordTracing.createBatchPublishTracing(clientId) }
     }
 
     override fun wrapWithTracingExecutor(executor: ExecutorService): ExecutorService {
