@@ -90,7 +90,7 @@ class TestSubCommands {
         fun testKafkaSaslSslNonPemTruststore() {
             // Test SASL_SSL with non-PEM format truststore
             val path = "./src/test/resources/KafkaTestSaslTls.yaml"
-            val yaml: PreInstallPlugin.Kafka = parseYaml<PreInstallPlugin.Kafka>(path)
+            val yaml: PreInstallPlugin.Kafka = parseYaml(path)
             val props = CheckKafka.KafkaProperties(yaml.kafka.bootstrapServers!!)
             props.saslEnabled = yaml.kafka.sasl?.enabled ?: false
             props.saslUsername = "sasl-user"
@@ -202,22 +202,9 @@ class TestSubCommands {
             whenever(mockAdmin.getNodes()).thenReturn(nodes)
 
             val ck = CheckKafka()
-            ck.checkConnectionAndBrokers(mockAdmin, 2)
+            ck.checkConnectionAndBrokers("foo", mockAdmin, 2)
 
-            assertTrue( ck.report.toString().contains("Connect to Kafka cluster using client: PASSED") )
-        }
-
-        @Test
-        fun testKafkaConnectNoBrokers() {
-            val mockAdmin = mock<CheckKafka.KafkaAdmin>()
-            val nodes: Collection<Node> = listOf()
-            whenever(mockAdmin.getDescriptionID()).thenReturn("ClusterID")
-            whenever(mockAdmin.getNodes()).thenReturn(nodes)
-
-            val ck = CheckKafka()
-            ck.checkConnectionAndBrokers(mockAdmin, 2)
-
-            assertTrue( ck.report.toString().contains("Kafka cluster has brokers: FAILED") )
+            assertTrue( ck.report.toString().contains("Connect to Kafka cluster using foo client: PASSED") )
         }
 
         @Test
@@ -228,9 +215,9 @@ class TestSubCommands {
             whenever(mockAdmin.getNodes()).thenReturn(nodes)
 
             val ck = CheckKafka()
-            ck.checkConnectionAndBrokers(mockAdmin, 2)
+            ck.checkConnectionAndBrokers("foo", mockAdmin, 2)
 
-            assertTrue( ck.report.toString().contains("Kafka replica count is less than the broker count: FAILED") )
+            assertTrue( ck.report.toString().contains("Kafka replica count is less than or equal to the broker count: FAILED") )
         }
 
         @Test

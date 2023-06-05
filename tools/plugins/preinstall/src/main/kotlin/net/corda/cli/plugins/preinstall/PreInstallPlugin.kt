@@ -64,20 +64,22 @@ class PreInstallPlugin : Plugin() {
         // object, and a namespace (if the credential is in a secret)
         @Suppress("ThrowsCount")
         fun getCredential(defaultValues: SecretValues?, values: SecretValues?, namespace: String?): String {
-            val secretName = values?.valueFrom?.secretKeyRef?.name ?: defaultValues?.valueFrom?.secretKeyRef?.name
+            val secretName = valueOrDefault(defaultValues?.valueFrom?.secretKeyRef?.name, values?.valueFrom?.secretKeyRef?.name)
             if (secretName.isNullOrEmpty())  {
-                val credential = values?.value ?: defaultValues?.value
+                val credential = valueOrDefault(defaultValues?.value, values?.value)
                 if (credential.isNullOrEmpty()) {
                     throw SecretException("No secretKeyRef name or value provided.")
                 }
                 return credential
             }
 
-            val secretKey = values?.valueFrom?.secretKeyRef?.key ?: defaultValues?.valueFrom?.secretKeyRef?.key
+            val secretKey = valueOrDefault(defaultValues?.valueFrom?.secretKeyRef?.key, values?.valueFrom?.secretKeyRef?.key)
             val encoded = getSecret(secretName, secretKey, namespace) ?:
             throw SecretException("Secret $secretName has no key $secretKey.")
             return String(Base64.getDecoder().decode(encoded))
         }
+
+        private fun valueOrDefault(default: String?, value: String?) = if (value.isNullOrEmpty()) default else value
 
         // get the credentials (.value) or credentials from a secret (.valueFrom.secretKeyRef...) from a SecretValues
         // object, and a namespace (if the credential is in a secret)

@@ -54,16 +54,11 @@ class CheckKafka : Callable<Int>, PluginContext() {
         }
     }
 
-    data class KafkaProperties(private val bootstrapServers: String) {
-        var saslUsername: String? = null
-        var saslPassword: String? = null
-        var saslMechanism: String? = null
-        var truststorePassword: String? = null
-        var truststoreFile: String? = null
-        var truststoreType: String? = null
-        var timeout: Int = 3000
-        var tlsEnabled = false
-        var saslEnabled = false
+    data class KafkaProperties(private val bootstrapServers: String, var saslUsername: String? = null,
+                               var saslPassword: String? = null, var saslMechanism: String? = null,
+                               var truststorePassword: String? = null, var truststoreFile: String? = null,
+                               var truststoreType: String? = null, var timeout: Int = 3000,
+                               var tlsEnabled: Boolean = false, var saslEnabled: Boolean = false) {
 
         class SaslPlainWithoutTlsException(message: String) : Exception(message)
 
@@ -116,30 +111,24 @@ class CheckKafka : Callable<Int>, PluginContext() {
     }
 
     // Connect to kafka using the properties assembled earlier
-    fun checkConnectionAndBrokers(client: KafkaAdmin, replicas: Int?) {
+    fun checkConnectionAndBrokers(component: String, client: KafkaAdmin, replicas: Int?) {
         val nodes: Collection<Node> = client.getNodes()
         val clusterID = client.getDescriptionID()
 
-        report.addEntry(ReportEntry("Connect to Kafka cluster using client", true))
+        report.addEntry(ReportEntry("Connect to Kafka cluster using $component client", true))
 
-        if (nodes.isEmpty()) {
-            report.addEntry(ReportEntry("Kafka cluster has brokers", false))
-            return
-        }
-        report.addEntry(ReportEntry("Kafka cluster has brokers", true))
-
-        logger.info("Kafka client connected to cluster with ID ${clusterID}.")
+        logger.info("Kafka $component client connected to cluster with ID ${clusterID}.")
         logger.info("Number of brokers: ${nodes.size}")
         replicas?.let {
             if (nodes.size < it) {
-                report.addEntry(ReportEntry("Kafka replica count is less than the broker count", false))
+                report.addEntry(ReportEntry("Kafka replica count is less than or equal to the broker count", false))
                 return
             }
-            report.addEntry(ReportEntry("Kafka replica count is less than the broker count", true))
+            report.addEntry(ReportEntry("Kafka replica count is less than or equal to the broker count", true))
         }
     }
 
-    private fun checkKafka(kafkaProperties : KafkaProperties, defaultSasl: PreInstallPlugin.SASL?,
+    private fun checkKafka(kafkaProperties : KafkaProperties, component: String, defaultSasl: PreInstallPlugin.SASL?,
                            clientSasl: PreInstallPlugin.ClientSASL?, replicas: Int) {
 
         val kafkaPropertiesWithCredentials = kafkaProperties.copy()
@@ -147,10 +136,9 @@ class CheckKafka : Callable<Int>, PluginContext() {
             try {
                 kafkaPropertiesWithCredentials.saslUsername = getCredential(defaultSasl?.username, clientSasl?.username, namespace)
                 kafkaPropertiesWithCredentials.saslPassword = getCredential(defaultSasl?.password, clientSasl?.password, namespace)
-                report.addEntry(ReportEntry("Get SASL credentials", true))
+                report.addEntry(ReportEntry("Get $component SASL credentials", true))
             } catch (e: Exception) {
-                report.addEntry(ReportEntry("Get SASL credentials", false, e))
-                logger.error(report.failingTests())
+                report.addEntry(ReportEntry("Get $component SASL credentials", false, e))
                 return
             }
         }
@@ -158,21 +146,20 @@ class CheckKafka : Callable<Int>, PluginContext() {
         val props: Properties
         try {
             props = kafkaPropertiesWithCredentials.getKafkaProperties()
-            report.addEntry(ReportEntry("Create Kafka client properties", true))
+            report.addEntry(ReportEntry("Create $component Kafka client properties", true))
         } catch (e: Exception) {
-            report.addEntry(ReportEntry("Create Kafka client properties", false, e))
-            logger.error(report.failingTests())
+            report.addEntry(ReportEntry("Create $component Kafka client properties", false, e))
             return
         }
 
         logger.info(props.entries.joinToString(separator = ",\n"))
 
         try {
-            checkConnectionAndBrokers(KafkaAdmin(props, report), replicas)
+            checkConnectionAndBrokers(component, KafkaAdmin(props, report), replicas)
         } catch (e: KafkaException) {
-            report.addEntry(ReportEntry("Connect to Kafka cluster using client", false, e))
+            report.addEntry(ReportEntry("Connect to Kafka cluster using $component client", false, e))
         } catch (e: ExecutionException) {
-            report.addEntry(ReportEntry("Connect to Kafka cluster using client", false, e))
+            report.addEntry(ReportEntry("Connect to Kafka cluster using $component client", false, e))
         }
     }
 
@@ -222,7 +209,7 @@ class CheckKafka : Callable<Int>, PluginContext() {
         }
 
         if (yaml.kafka.sasl?.enabled == true) {
-            if (yaml.kafka.sasl.mechanism == null) {
+            if (yaml.kafka.sasl.mechanism.isNullOrEmpty()) {
                 report.addEntry(ReportEntry("SASL mechanism provided", false))
             }
             kafkaProperties.saslEnabled = true
@@ -231,15 +218,15 @@ class CheckKafka : Callable<Int>, PluginContext() {
 
         val replicas = yaml.bootstrap?.kafka?.replicas ?: 3
         if (yaml.bootstrap?.kafka?.enabled == true) {
-            checkKafka(kafkaProperties, yaml.kafka.sasl, yaml.bootstrap.kafka.sasl, replicas)
+            checkKafka(kafkaProperties, "bootstrap", yaml.kafka.sasl, yaml.bootstrap.kafka.sasl, replicas)
         }
-        checkKafka(kafkaProperties, yaml.kafka.sasl, yaml.workers?.crypto?.kafka?.sasl, replicas)
-        checkKafka(kafkaProperties, yaml.kafka.sasl, yaml.workers?.db?.kafka?.sasl, replicas)
-        checkKafka(kafkaProperties, yaml.kafka.sasl, yaml.workers?.flow?.kafka?.sasl, replicas)
-        checkKafka(kafkaProperties, yaml.kafka.sasl, yaml.workers?.membership?.kafka?.sasl, replicas)
-        checkKafka(kafkaProperties, yaml.kafka.sasl, yaml.workers?.rest?.kafka?.sasl, replicas)
-        checkKafka(kafkaProperties, yaml.kafka.sasl, yaml.workers?.p2pGateway?.kafka?.sasl, replicas)
-        checkKafka(kafkaProperties, yaml.kafka.sasl, yaml.workers?.p2pLinkManager?.kafka?.sasl, replicas)
+        checkKafka(kafkaProperties, "crypto", yaml.kafka.sasl, yaml.workers?.crypto?.kafka?.sasl, replicas)
+        checkKafka(kafkaProperties, "db", yaml.kafka.sasl, yaml.workers?.db?.kafka?.sasl, replicas)
+        checkKafka(kafkaProperties, "flow", yaml.kafka.sasl, yaml.workers?.flow?.kafka?.sasl, replicas)
+        checkKafka(kafkaProperties, "membership", yaml.kafka.sasl, yaml.workers?.membership?.kafka?.sasl, replicas)
+        checkKafka(kafkaProperties, "rest", yaml.kafka.sasl, yaml.workers?.rest?.kafka?.sasl, replicas)
+        checkKafka(kafkaProperties, "p2pGateway", yaml.kafka.sasl, yaml.workers?.p2pGateway?.kafka?.sasl, replicas)
+        checkKafka(kafkaProperties, "p2pLinkManager", yaml.kafka.sasl, yaml.workers?.p2pLinkManager?.kafka?.sasl, replicas)
 
         return if (report.testsPassed()) {
             logger.info(report.toString())
