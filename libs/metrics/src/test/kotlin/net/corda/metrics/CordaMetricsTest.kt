@@ -1,24 +1,48 @@
 package net.corda.metrics
 
-import io.micrometer.core.instrument.MeterRegistry
+import io.micrometer.core.instrument.Meter
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Condition
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.mock
+import kotlin.math.roundToLong
 
 class CordaMetricsTest {
     private val meterSourceName = "Testing"
-    private val registry = mock<MeterRegistry>()
+    private val registry = SimpleMeterRegistry()
+
+    private fun singleValueOf(expected: Long): Condition<in Meter> {
+        return Condition<Meter>({ m ->
+            m.measure().single().value.roundToLong() == expected
+        }, "value of %d", expected)
+    }
 
     @BeforeEach
     @Test
     fun setup() {
+        CordaMetrics.registry.clear()
         CordaMetrics.configure(meterSourceName, registry)
     }
 
     @Test
     fun `configure factory sets registry`() {
         assertThat(CordaMetrics.registry.registries).contains(registry)
+    }
+
+    @Test
+    fun `gauge with computed values`() {
+        val items = mutableListOf<String>()
+        val gauge = CordaMetrics.Metric.OutboundSessionCount { items.size }.builder().build()
+        assertThat(CordaMetrics.registry.meters)
+            .hasSize(1)
+            .element(0).isEqualTo(gauge).has(singleValueOf(0))
+
+        items += "Hello Metrics!"
+        assertThat(gauge).has(singleValueOf(1))
+
+        items += "Goodbye, Cruel Metrics!"
+        assertThat(gauge).has(singleValueOf(2))
     }
 
     @Test

@@ -119,10 +119,10 @@ internal class SessionManagerImpl(
         messagingConfiguration,
         groupPolicyProvider,
         membershipGroupReaderProvider,
-        clock,
+        clock
     ),
 
-    executorServiceFactory: () -> ScheduledExecutorService = { Executors.newSingleThreadScheduledExecutor() },
+    executorServiceFactory: () -> ScheduledExecutorService = Executors::newSingleThreadScheduledExecutor
 ) : SessionManager {
 
     companion object {
@@ -132,9 +132,14 @@ internal class SessionManagerImpl(
     private val pendingInboundSessions = ConcurrentHashMap<String, AuthenticationProtocolResponder>()
     private val activeInboundSessions = ConcurrentHashMap<String, Pair<SessionManager.Counterparties, Session>>()
 
-    private val logger = LoggerFactory.getLogger(this::class.java.name)
+    private val logger = LoggerFactory.getLogger(this::class.java)
 
     private val sessionNegotiationLock = ReentrantReadWriteLock()
+
+    init {
+        CordaMetrics.Metric.OutboundSessionCount { outboundSessionPool.getAllSessionIds().size }.builder().build()
+        CordaMetrics.Metric.InboundSessionCount { activeInboundSessions.size + pendingInboundSessions.size }.builder().build()
+    }
 
     // This default needs to be removed and the lifecycle dependency graph adjusted to ensure the inbound subscription starts only after
     // the configuration has been received and the session manager has started (see CORE-6730).
@@ -163,18 +168,13 @@ internal class SessionManagerImpl(
     )
 
     private val revocationCheckerClient = RevocationCheckerClient(publisherFactory, coordinatorFactory, messagingConfiguration)
-    private val executorService = executorServiceFactory().also {
-        it.scheduleAtFixedRate({ recordTotalSessionMetrics() }, 5, 5, TimeUnit.SECONDS)
-    }
-
-    private val outboundSessionCountMetric = CordaMetrics.Metric.OutboundSessionCount.builder().build()
-    private val inboundSessionCountMetric = CordaMetrics.Metric.InboundSessionCount.builder().build()
+    private val executorService = executorServiceFactory()
 
     override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,
         coordinatorFactory,
         ::onTileStart,
-        onClose = { executorService.shutdownNow() },
+        onClose = executorService::shutdownNow,
         dependentChildren = setOf(
             heartbeatManager.dominoTile.coordinatorName, sessionReplayer.dominoTile.coordinatorName,
             LifecycleCoordinatorName.forComponent<GroupPolicyProvider>(),
@@ -790,7 +790,7 @@ internal class SessionManagerImpl(
         }
 
         session.generateHandshakeSecrets()
-        val ourIdentityData = session.validatePeerHandshakeMessageHandleError(message, peer,) ?: return null
+        val ourIdentityData = session.validatePeerHandshakeMessageHandleError(message, peer) ?: return null
         // Find the correct Holding Identity to use (using the public key hash).
         val ourIdentityInfo = linkManagerHostingMap.getInfo(ourIdentityData.responderPublicKeyHash, ourIdentityData.groupId)
         if (ourIdentityInfo == null) {
@@ -903,11 +903,6 @@ internal class SessionManagerImpl(
         return false
     }
 
-    private fun recordTotalSessionMetrics() {
-        outboundSessionCountMetric.set(outboundSessionPool.getAllSessionIds().size)
-        inboundSessionCountMetric.set(activeInboundSessions.size + pendingInboundSessions.size)
-    }
-
     class HeartbeatManager(
         publisherFactory: PublisherFactory,
         private val configurationReaderService: ConfigurationReadService,
@@ -972,7 +967,7 @@ internal class SessionManagerImpl(
         override val dominoTile = ComplexDominoTile(
             this::class.java.simpleName,
             coordinatorFactory,
-            onClose = { executorService.shutdownNow() },
+            onClose = executorService::shutdownNow,
             dependentChildren = setOf(
                 LifecycleCoordinatorName.forComponent<GroupPolicyProvider>(),
                 LifecycleCoordinatorName.forComponent<MembershipGroupReaderProvider>(),
