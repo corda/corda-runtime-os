@@ -26,7 +26,6 @@ class FlowStackImpl(val flowStackItems: MutableList<FlowStackItem>) : FlowStack 
                 mutableListOf(),
                 mutableKeyValuePairListOf(contextUserProperties),
                 mutableKeyValuePairListOf(contextPlatformProperties),
-                System.nanoTime()
             )
         flowStackItems.add(stackItem)
         flowMetrics.subFlowStarted()

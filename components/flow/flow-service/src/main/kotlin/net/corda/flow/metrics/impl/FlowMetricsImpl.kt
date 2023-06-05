@@ -117,13 +117,13 @@ class FlowMetricsImpl(
         subFlowMetricState.flowProcessingStartTime = clock.nowInMillis()
     }
 
-    override fun subFlowFinished(completionStatus: String) {
+    override fun subFlowFinished(completionStatus: FlowStates) {
         currentState.subFlowMetricStates.removeLast().let { finishedSubFlow ->
 
             val currentTime = clock.nowInMillis()
             val flowCompletionTime = currentTime - finishedSubFlow.flowProcessingStartTime
 
-            flowMetricsRecorder.recordSubFlowCompletion(finishedSubFlow.name, flowCompletionTime, completionStatus)
+            flowMetricsRecorder.recordSubFlowCompletion(finishedSubFlow.name, flowCompletionTime, completionStatus.toString())
             flowMetricsRecorder.recordTotalSuspensionTime(finishedSubFlow.name, finishedSubFlow.totalSuspensionTime)
             flowMetricsRecorder.recordTotalFiberExecutionTime(finishedSubFlow.name, finishedSubFlow.totalFiberExecutionTime)
             flowMetricsRecorder.recordTotalPipelineExecutionTime(finishedSubFlow.name, finishedSubFlow.totalPipelineExecutionTime)
