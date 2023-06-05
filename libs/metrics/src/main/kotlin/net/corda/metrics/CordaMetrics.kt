@@ -14,8 +14,8 @@ import io.micrometer.core.instrument.config.MeterFilter
 import io.micrometer.core.instrument.noop.NoopMeter
 import java.nio.file.FileSystems
 import java.nio.file.Path
-import java.util.concurrent.atomic.AtomicInteger
 import java.util.function.Supplier
+import java.util.function.ToDoubleFunction
 
 
 object CordaMetrics {
@@ -25,7 +25,7 @@ object CordaMetrics {
     ) {
 
         fun builder(): MeterBuilder<T> {
-            return MeterBuilder(this.metricsName, this.meter)
+            return MeterBuilder(metricsName, meter)
         }
 
         // NOTE: please ensure the metric names adhere to the conventions described on https://micrometer.io/docs/concepts#_naming_meters
@@ -227,12 +227,12 @@ object CordaMetrics {
         /**
          * Number of outbound peer-to-peer sessions.
          */
-        class OutboundSessionCount(computation: Supplier<Number>) : ComputedValue("p2p.session.outbound", computation)
+        class OutboundSessionCount(computation: Supplier<Number>) : ComputedValue<Any>("p2p.session.outbound", computation)
 
         /**
          * Number of inbound peer-to-peer sessions.
          */
-        class InboundSessionCount(computation: Supplier<Number>) : ComputedValue("p2p.session.inbound", computation)
+        class InboundSessionCount(computation: Supplier<Number>) : ComputedValue<Any>("p2p.session.inbound", computation)
 
         /**
          * Time it took for an inbound request to the p2p gateway to be processed.
@@ -444,9 +444,10 @@ object CordaMetrics {
             /**
              * Metric to capture the changes in group size.
              */
-            object MemberListCacheSize: Metric<SettableGauge>(
+            class MemberListCacheSize<T : List<*>>(list: T?): ComputedValue<T>(
                 "$PREFIX.memberlist.cache.size",
-                CordaMetrics::settableGauge
+                list,
+                Collection<*>::doubleSize
             )
         }
 
@@ -524,15 +525,33 @@ object CordaMetrics {
         }
 
         /**
-         * A [Gauge] metric that computes its value using a [Supplier] lambda.
-         * @param name A unique name for this [Gauge].
-         * @param computation A lambda to compute our current value.
+         * A [Gauge] metric that computes its value using a lambda.
          */
-        sealed class ComputedValue(name: String, computation: Supplier<Number>) : Metric<Gauge>(name, meter = { n, tags ->
-            Gauge.builder(n, computation)
-                .tags(tags)
-                .register(registry)
-        })
+        sealed class ComputedValue<T> private constructor(name: String, meter: (String, Iterable<micrometerTag>) -> Gauge)
+            : Metric<Gauge>(name, meter) {
+
+            /**
+             * @param name A unique name for this [Gauge].
+             * @param computation A lambda to compute our current value.
+             */
+            constructor(name: String, computation: Supplier<Number>) : this(name, meter = { n, tags ->
+                Gauge.builder(n, computation)
+                    .tags(tags)
+                    .register(registry)
+            })
+
+            /**
+             * @param name A unique name for this [Gauge].
+             * @param weakObj A weakly referenced object to apply [computation].
+             * @param computation A lambda to compute our current value from [weakObj].
+             */
+            constructor(name: String, weakObj: T?, computation: ToDoubleFunction<T>) : this(name, meter = { n, tags ->
+                SelfRemovingGauge(Gauge.builder(n, weakObj, computation)
+                    .tags(tags)
+                    .register(registry)
+                )
+            })
+        }
 
         class DiskSpace(path: Path) : Metric<NoopMeter>("", meter = { _, tags ->
             if (path.fileSystem == FileSystems.getDefault()) {
@@ -775,14 +794,6 @@ object CordaMetrics {
             })
     }
 
-    private fun settableGauge(name: String, tags: Iterable<micrometerTag>): SettableGauge {
-        val gaugeValue = AtomicInteger()
-        val gauge = Gauge.builder(name, gaugeValue, Number::toDouble)
-            .tags(tags)
-            .register(registry)
-        return SettableGauge(gauge, gaugeValue)
-    }
-
     private fun timer(name: String, tags: Iterable<micrometerTag>): Timer {
         return Timer.builder(name)
             .publishPercentiles(0.50, 0.95, 0.99)
@@ -811,6 +822,23 @@ object CordaMetrics {
 
         fun build(): T {
             return func(name, allTags)
+        }
+    }
+}
+
+private val Collection<*>.doubleSize: Double
+    get() = size.toDouble()
+
+/**
+ * A [Gauge] that removes itself from [CordaMetrics.registry]
+ * once it no longer computes a meaningful value.
+ */
+private class SelfRemovingGauge(private val gauge: Gauge) : Gauge by gauge {
+    override fun value(): Double {
+        return gauge.value().also { v ->
+            if (v.isNaN()) {
+                CordaMetrics.registry.remove(gauge)
+            }
         }
     }
 }
