@@ -4,6 +4,7 @@ import co.paralleluniverse.fibers.Fiber
 import co.paralleluniverse.fibers.FiberScheduler
 import net.corda.data.flow.state.checkpoint.FlowStackItem
 import net.corda.metrics.CordaMetrics
+import net.corda.utilities.clearMDC
 import net.corda.utilities.setMDC
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -240,6 +241,8 @@ class FlowFiberImpl(
     }
 
     private fun resetLoggingContext() {
+        //fully clear the fiber before setting the MDC
+        clearMDC()
         flowFiberExecutionContext?.mdcLoggingData?.let {
             setMDC(it)
         }
