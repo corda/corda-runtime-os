@@ -5,6 +5,8 @@ package net.corda.tracing
  *
  * Close before shutdown to wait for trace spans to be sent to external systems.
  */
-enum class TraceTag {
-    FLOW_CLASS,
+object TraceTag {
+    const val FLOW_CLASS:String = "flow.class"
+    const val FLOW_REQUEST_ID:String = "flow.request.id"
+    const val FLOW_REQUEST_VNODE_ID:String = "flow.request.vnode.id"
 }
