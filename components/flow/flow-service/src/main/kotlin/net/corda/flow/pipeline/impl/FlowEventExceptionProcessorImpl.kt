@@ -96,7 +96,7 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
                 flowMessageFactory.createFlowRetryingStatusMessage(context.checkpoint)
             }
 
-            // Set up records before the abort, just in case a transient exception happens after a flow is initialised
+            // Set up records before the rollback, just in case a transient exception happens after a flow is initialised
             // but before the first checkpoint has been recorded.
             flowCheckpoint.rollback()
             flowCheckpoint.markForRetry(context.inputEvent, exception)

@@ -1,6 +1,5 @@
 package net.corda.flow.testing.tests
 
-import java.util.stream.Stream
 import net.corda.data.flow.event.Wakeup
 import net.corda.data.flow.event.session.SessionAck
 import net.corda.data.flow.event.session.SessionClose
@@ -22,6 +21,7 @@ import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
 import org.osgi.test.junit5.service.ServiceExtension
+import java.util.stream.Stream
 
 @ExtendWith(ServiceExtension::class)
 @Execution(ExecutionMode.SAME_THREAD)
@@ -292,7 +292,7 @@ class SubFlowFinishedAcceptanceTest : FlowServiceTestBase() {
         then {
             expectOutputForFlow(FLOW_ID1) {
                 flowDidNotResume()
-                // Need to abort time to do the resends?
+                // Need to rollback time to do the resends?
             }
         }
     }
