@@ -21,8 +21,4 @@ internal class BraveTraceContext(
         BraveBaggageFields.VIRTUAL_NODE_ID.updateValue(vNodeId)
         span.tag(TraceTag.FLOW_REQUEST_VNODE_ID, vNodeId)
     }
-
-    override fun traceTxId(txId: String) {
-        BraveBaggageFields.TRANSACTION_ID.updateValue(txId)
-    }
 }

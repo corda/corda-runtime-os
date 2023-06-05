@@ -6,6 +6,4 @@ interface TraceContext {
     fun traceRequestId(requestId: String)
 
     fun traceVirtualNodeId(vNodeId: String)
-
-    fun traceTxId(txId: String)
 }

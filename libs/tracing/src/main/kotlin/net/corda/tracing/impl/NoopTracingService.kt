@@ -26,9 +26,6 @@ class NoopTracingService : TracingService {
 
         override fun traceVirtualNodeId(vNodeId: String) {
         }
-
-        override fun traceTxId(txId: String) {
-        }
     }
 
     class NoopBatchRecordTracer : BatchRecordTracer {

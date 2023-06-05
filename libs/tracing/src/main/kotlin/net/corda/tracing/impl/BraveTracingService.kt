@@ -45,7 +45,6 @@ class BraveTracingService(serviceName: String, zipkinHost: String) : TracingServ
                 BaggagePropagation.newFactoryBuilder(B3Propagation.FACTORY)
                     .add(BaggagePropagationConfig.SingleBaggageField.remote(BraveBaggageFields.REQUEST_ID))
                     .add(BaggagePropagationConfig.SingleBaggageField.remote(BraveBaggageFields.VIRTUAL_NODE_ID))
-                    .add(BaggagePropagationConfig.SingleBaggageField.remote(BraveBaggageFields.TRANSACTION_ID))
                     .build()
             )
 
@@ -151,14 +150,5 @@ class BraveTracingService(serviceName: String, zipkinHost: String) : TracingServ
                 finish()
             }
         }
-    }
-
-    private fun addTraceContextToRecords(records: List<Record<*, *>>): List<Record<*, *>> =
-        records.map(::addTraceContextToRecord)
-
-    private fun addTraceContextToRecord(it: Record<*, *>): Record<out Any, out Any> {
-        val headersWithTracing = it.headers.toMutableList()
-        recordInjector.inject(tracing.currentTraceContext().get(), headersWithTracing)
-        return it.copy(headers = headersWithTracing)
     }
 }
