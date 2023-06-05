@@ -27,7 +27,7 @@ fun <K : Any, V : Any> CordaConsumerRecord<K, V>.toEventLogRecord(): EventLogRec
     )
 }
 
-fun <K: Any, V: Any> EventLogRecord<K,V>.toRecord():Record<K,V>{
+fun <K: Any, V: Any> EventLogRecord<K, V>.toRecord(): Record<K, V> {
     return Record(
         topic = this.topic,
         key = this.key,
