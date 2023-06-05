@@ -64,7 +64,7 @@ class CryptoFlowOpsBusProcessor(
             logger.error("Unexpected null payload for event with the key={} in topic={}", event.key, event.topic)
             return null // cannot send any error back as have no idea where to send to
         }
-        val eventType = request.request?.let { it.javaClass.simpleName } ?: "Unknown"
+        val eventType = request.request?.javaClass?.simpleName ?: "Unknown"
         return traceEventProcessingNullableSingle(event, "Crypto Event - $eventType") {
             val expireAt = getRequestExpireAt(request)
             val clientRequestId = request.flowExternalEventContext.contextProperties.toMap()[MDC_CLIENT_ID] ?: ""
