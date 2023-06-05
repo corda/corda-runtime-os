@@ -139,7 +139,8 @@ class CheckKafka : Callable<Int>, PluginContext() {
         }
     }
 
-    private fun checkKafka(kafkaProperties : KafkaProperties, defaultSasl: PreInstallPlugin.SASL?, clientSasl: PreInstallPlugin.ClientSASL?, replicas: Int) {
+    private fun checkKafka(kafkaProperties : KafkaProperties, defaultSasl: PreInstallPlugin.SASL?,
+                           clientSasl: PreInstallPlugin.ClientSASL?, replicas: Int) {
 
         val kafkaPropertiesWithCredentials = kafkaProperties.copy()
         if (kafkaProperties.saslEnabled) {
