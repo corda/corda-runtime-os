@@ -171,6 +171,10 @@ kafka:
 
 # Configuration for cluster bootstrap
 bootstrap:
+  # Configuration for the preinstall check
+  preinstallCheck:
+    # -- indicates whether the preinstall check is enabled
+    enabled: true
   # Configuration for the REST API admin to be created during cluster bootstrap
   restApiAdmin:
     # the username configuration for the REST API admin to be created during cluster bootstrap

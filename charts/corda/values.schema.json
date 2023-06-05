@@ -583,6 +583,7 @@
             "default": {},
             "title": "configuration for cluster bootstrap",
             "required": [
+                "preinstallCheck",
                 "restApiAdmin",
                 "db",
                 "kafka",
@@ -592,6 +593,26 @@
             ],
             "additionalProperties": false,
             "properties": {
+                "preinstallCheck": {
+                    "type": "object",
+                    "default": {},
+                    "title": "configuration for the preinstall check",
+                    "required": [
+                        "enabled"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                        "enabled": {
+                            "type": "boolean",
+                            "default": true,
+                            "title": "indicates whether the preinstall check is enabled",
+                            "examples": [
+                                true,
+                                false
+                            ]
+                        }
+                    }
+                },
                 "restApiAdmin": {
                     "type": "object",
                     "default": {},

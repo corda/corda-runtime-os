@@ -2,6 +2,7 @@
 Preinstall Checks
 */}}
 {{- define "corda.bootstrapPreinstallJob" -}}
+{{- if .Values.bootstrap.preinstallCheck.enabled }}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
@@ -73,7 +74,6 @@ spec:
             {{ include "corda.log4jVolumeMount" . | nindent 12 }}
           env:
             {{ include "corda.bootstrapCliEnv" . | nindent 12 }}
-
       initContainers:
         - name: create-preinstall-values
           image: {{ include "corda.bootstrapCliImage" . }}
@@ -96,6 +96,7 @@ spec:
       restartPolicy: Never
       {{- include "corda.bootstrapNodeSelector" . | nindent 6 }}
   backoffLimit: 0
+{{- end }}
 {{- end }}
 
 {{/*
