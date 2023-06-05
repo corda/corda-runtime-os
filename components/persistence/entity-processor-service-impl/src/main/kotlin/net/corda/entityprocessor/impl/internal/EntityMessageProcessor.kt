@@ -71,7 +71,7 @@ class EntityMessageProcessor(
                 // We received a [null] external event therefore we do not know the flow id to respond to.
                 null
             } else {
-                val eventType = request.request?.let { it.javaClass.simpleName } ?: "Unknown"
+                val eventType = request.request?.javaClass?.simpleName ?: "Unknown"
                 traceEventProcessingNullableSingle(event, "Crypto Event - $eventType") {
                     CordaMetrics.Metric.Db.EntityPersistenceRequestLag.builder()
                         .withTag(CordaMetrics.Tag.OperationName, request.request::class.java.name)
