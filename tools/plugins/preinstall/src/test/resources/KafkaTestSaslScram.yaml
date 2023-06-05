@@ -7,12 +7,12 @@ kafka:
     mechanism: "SCRAM"
     enabled: true
     username:
-      value: ""
+      value: "bob"
     password:
       valueFrom:
         secretKeyRef:
-          name: ""
-          key: ""
+          name: "kafka-sasl"
+          key: "kafka-sasl-password"
 
 workers:
   crypto:
@@ -29,8 +29,6 @@ workers:
   db:
     kafka:
       sasl:
-        username:
-          value: "alice"
         password:
           valueFrom:
             secretKeyRef:
@@ -42,27 +40,19 @@ workers:
       sasl:
         username:
           value: "alice"
-        password:
-          valueFrom:
-            secretKeyRef:
-              name: "kafka-sasl"
-              key: "kafka-sasl-password"
 
   membership:
     kafka:
       sasl:
-        username:
-          value: "alice"
-        password:
-          valueFrom:
-            secretKeyRef:
-              name: "kafka-sasl"
-              key: "kafka-sasl-password"
+
   rest:
     kafka:
       sasl:
         username:
-          value: "alice"
+          valueFrom:
+            secretKeyRef:
+              name: "kafka-sasl"
+              key: "kafka-sasl-username"
         password:
           valueFrom:
             secretKeyRef:
@@ -75,10 +65,7 @@ workers:
         username:
           value: "alice"
         password:
-          valueFrom:
-            secretKeyRef:
-              name: "kafka-sasl"
-              key: "kafka-sasl-password"
+          value: "password"
 
   p2pLinkManager:
     kafka:
@@ -88,5 +75,4 @@ workers:
         password:
           valueFrom:
             secretKeyRef:
-              name: "kafka-sasl"
               key: "kafka-sasl-password"

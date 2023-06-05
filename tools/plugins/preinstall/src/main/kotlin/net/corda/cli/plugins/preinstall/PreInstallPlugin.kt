@@ -63,17 +63,36 @@ class PreInstallPlugin : Plugin() {
         // get the credentials (.value) or credentials from a secret (.valueFrom.secretKeyRef...) from a SecretValues
         // object, and a namespace (if the credential is in a secret)
         @Suppress("ThrowsCount")
-        fun getCredential(values: SecretValues, namespace: String?): String {
-            val secretKey: String? = values.valueFrom?.secretKeyRef?.key
-            val secretName: String? = values.valueFrom?.secretKeyRef?.name
-            val credential: String? = values.value
-
+        fun getCredential(defaultValues: SecretValues?, values: SecretValues?, namespace: String?): String {
+            val secretName = values?.valueFrom?.secretKeyRef?.name ?: defaultValues?.valueFrom?.secretKeyRef?.name
             if (secretName.isNullOrEmpty())  {
-                if (!credential.isNullOrEmpty()) {
-                    return credential
+                val credential = values?.value ?: defaultValues?.value
+                if (credential.isNullOrEmpty()) {
+                    throw SecretException("No secretKeyRef name or value provided.")
                 }
-                throw SecretException("No value $credential and no secret $secretName with key $secretKey could be parsed.")
+                return credential
             }
+
+            val secretKey = values?.valueFrom?.secretKeyRef?.key ?: defaultValues?.valueFrom?.secretKeyRef?.key
+            val encoded = getSecret(secretName, secretKey, namespace) ?:
+            throw SecretException("Secret $secretName has no key $secretKey.")
+            return String(Base64.getDecoder().decode(encoded))
+        }
+
+        // get the credentials (.value) or credentials from a secret (.valueFrom.secretKeyRef...) from a SecretValues
+        // object, and a namespace (if the credential is in a secret)
+        @Suppress("ThrowsCount")
+        fun getCredential(values: SecretValues, namespace: String?): String {
+            val secretName = values.valueFrom?.secretKeyRef?.name
+            if (secretName.isNullOrEmpty())  {
+                val credential = values.value
+                if (credential.isNullOrEmpty()) {
+                    throw SecretException("No secretKeyRef name or value provided.")
+                }
+                return credential
+            }
+
+            val secretKey = values.valueFrom.secretKeyRef.key
             val encoded = getSecret(secretName, secretKey, namespace) ?:
                 throw SecretException("Secret $secretName has no key $secretKey.")
             return String(Base64.getDecoder().decode(encoded))
@@ -81,7 +100,7 @@ class PreInstallPlugin : Plugin() {
 
         private fun getSecret(secretName: String, secretKey: String?, namespace: String?): String? {
             if (secretKey.isNullOrEmpty()) {
-                throw SecretException("No secret $secretName with key $secretKey could be parsed.")
+                throw SecretException("No secret key provided with secret name $secretName.")
             }
             return try {
                 val secret: Secret = if (namespace != null) {
@@ -160,13 +179,25 @@ class PreInstallPlugin : Plugin() {
     )
 
     @JsonIgnoreProperties(ignoreUnknown = true)
+    data class KafkaWorker(
+        @JsonProperty("kafka")
+        val kafka: KafkaWorkerKafka?
+    )
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    data class KafkaWorkerKafka(
+        @JsonProperty("sasl")
+        val sasl: ClientSASL?
+    )
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
     data class KafkaConfiguration(
         @JsonProperty("bootstrapServers")
         val bootstrapServers: String?,
         @JsonProperty("tls")
         val tls: TLS?,
         @JsonProperty("sasl")
-        val sasl: SASL
+        val sasl: SASL?
     )
 
     @JsonIgnoreProperties(ignoreUnknown = true)
@@ -180,7 +211,7 @@ class PreInstallPlugin : Plugin() {
     @JsonIgnoreProperties(ignoreUnknown = true)
     data class Truststore(
         @JsonProperty("valueFrom")
-        val valueFrom: SecretValues?,
+        val valueFrom: ValueFrom?,
         @JsonProperty("type")
         val type: String,
         @JsonProperty("password")
@@ -200,21 +231,29 @@ class PreInstallPlugin : Plugin() {
     )
 
     @JsonIgnoreProperties(ignoreUnknown = true)
+    data class ClientSASL(
+        @JsonProperty("username")
+        val username: SecretValues?,
+        @JsonProperty("password")
+        val password: SecretValues?
+    )
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
     data class KafkaWorkers(
         @JsonProperty("crypto")
-        val crypto: Kafka?,
+        val crypto: KafkaWorker?,
         @JsonProperty("db")
-        val db: Kafka?,
+        val db: KafkaWorker?,
         @JsonProperty("flow")
-        val flow: Kafka?,
+        val flow: KafkaWorker?,
         @JsonProperty("membership")
-        val membership: Kafka?,
+        val membership: KafkaWorker?,
         @JsonProperty("rest")
-        val rest: Kafka?,
+        val rest: KafkaWorker?,
         @JsonProperty("p2pLinkManager")
-        val p2pLinkManager: Kafka?,
+        val p2pLinkManager: KafkaWorker?,
         @JsonProperty("p2pGateway")
-        val p2pGateway: Kafka?
+        val p2pGateway: KafkaWorker?
     )
 
     @JsonIgnoreProperties(ignoreUnknown = true)
@@ -225,8 +264,12 @@ class PreInstallPlugin : Plugin() {
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     data class KafkaBootstrapConfiguration(
+        @JsonProperty("enabled")
+        val enabled: Boolean,
         @JsonProperty("replicas")
-        val replicas: Int?
+        val replicas: Int?,
+        @JsonProperty("sasl")
+        val sasl: ClientSASL
     )
 
     //DB
@@ -273,18 +316,24 @@ class PreInstallPlugin : Plugin() {
     @JsonIgnoreProperties(ignoreUnknown = true)
     data class BootstrapCredentials(
         @JsonProperty("username")
-        val username: SecretValues,
+        val username: SecretValues?,
         @JsonProperty("password")
-        val password: SecretValues
+        val password: SecretValues?
     )
 
     data class SecretValues(
         @JsonProperty("valueFrom")
-        val valueFrom: SecretValues?,
-        @JsonProperty("secretKeyRef")
-        val secretKeyRef: SecretValues?,
+        val valueFrom: ValueFrom?,
         @JsonProperty("value")
         val value: String?,
+    )
+
+    data class ValueFrom(
+        @JsonProperty("secretKeyRef")
+        val secretKeyRef: SecretKeyRef?
+    )
+
+    data class SecretKeyRef(
         @JsonProperty("key")
         val key: String?,
         @JsonProperty("name")

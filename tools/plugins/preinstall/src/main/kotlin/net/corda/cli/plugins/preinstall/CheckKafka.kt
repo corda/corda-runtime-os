@@ -3,8 +3,6 @@ package net.corda.cli.plugins.preinstall
 import net.corda.cli.plugins.preinstall.PreInstallPlugin.PluginContext
 import net.corda.cli.plugins.preinstall.PreInstallPlugin.Kafka
 import net.corda.cli.plugins.preinstall.PreInstallPlugin.ReportEntry
-import net.corda.cli.plugins.preinstall.PreInstallPlugin.KafkaConfiguration
-import net.corda.cli.plugins.preinstall.PreInstallPlugin.KafkaBootstrap
 import org.apache.kafka.clients.admin.AdminClient
 import org.apache.kafka.common.KafkaException
 import org.apache.kafka.common.Node
@@ -35,8 +33,6 @@ class CheckKafka : Callable<Int>, PluginContext() {
         description = ["The timeout in milliseconds for testing the Kafka connection - defaults to 3000"]
     )
     var timeout: Int = 3000
-
-    class SASLCredentialException(message: String) : Exception(message)
 
     open class KafkaAdmin(props: Properties, report: PreInstallPlugin.Report) {
         private val admin: AdminClient?
@@ -143,43 +139,13 @@ class CheckKafka : Callable<Int>, PluginContext() {
         }
     }
 
-    private fun checkCredential(value: Any?, e: Exception) {
-        if (value == null) {
-            report.addEntry(ReportEntry("Create Kafka client properties", false, e))
-        }
-    }
+    private fun checkKafka(kafkaProperties : KafkaProperties, defaultSasl: PreInstallPlugin.SASL?, clientSasl: PreInstallPlugin.ClientSASL?, replicas: Int) {
 
-    private fun checkKafka(workerKafka: KafkaConfiguration?, rootKafka: KafkaConfiguration, bootstrap: KafkaBootstrap?) {
-        val kafka = workerKafka ?: rootKafka
-
-        if (rootKafka.tls == null) {
-            report.addEntry(ReportEntry("TLS has not been defined under Kafka", false))
-            return
-        }
-
-        if (rootKafka.bootstrapServers == null) {
-            report.addEntry(ReportEntry("Bootstrap servers have not been defined under Kafka", false))
-            return
-        }
-
-        var saslUsername: String? = null
-        var saslPassword: String? = null
-        var saslMechanism: String? = null
-
-        var truststorePassword: String? = null
-        var truststoreFile: String? = null
-        var truststoreType: String? = null
-
-        if (rootKafka.sasl.enabled) {
-            checkCredential(kafka.sasl.username, SASLCredentialException("If SASL is enabled, you must provide a username."))
-            checkCredential(kafka.sasl.password, SASLCredentialException("If SASL is enabled, you must provide a password."))
-            checkCredential(rootKafka.sasl.mechanism, SASLCredentialException("If SASL is enabled, you must provide a mechanism."))
-
-            saslMechanism = rootKafka.sasl.mechanism
-
+        val kafkaPropertiesWithCredentials = kafkaProperties.copy()
+        if (kafkaProperties.saslEnabled) {
             try {
-                saslUsername = getCredential(kafka.sasl.username!!, namespace)
-                saslPassword = getCredential(kafka.sasl.password!!, namespace)
+                kafkaPropertiesWithCredentials.saslUsername = getCredential(defaultSasl?.username, clientSasl?.username, namespace)
+                kafkaPropertiesWithCredentials.saslPassword = getCredential(defaultSasl?.password, clientSasl?.password, namespace)
                 report.addEntry(ReportEntry("Get SASL credentials", true))
             } catch (e: Exception) {
                 report.addEntry(ReportEntry("Get SASL credentials", false, e))
@@ -188,45 +154,9 @@ class CheckKafka : Callable<Int>, PluginContext() {
             }
         }
 
-        if (rootKafka.tls.enabled) {
-            truststoreType = rootKafka.tls.truststore?.type
-
-            if (truststoreType != "PEM" && rootKafka.tls.truststore?.password != null) {
-                try {
-                    truststorePassword = getCredential(rootKafka.tls.truststore.password, namespace)
-                    report.addEntry(ReportEntry("Get TLS truststore password", true))
-                } catch (e: Exception) {
-                    report.addEntry(ReportEntry("Get TLS truststore password", false, e))
-                    logger.error(report.failingTests())
-                    return
-                }
-            } else if (rootKafka.tls.truststore?.valueFrom?.secretKeyRef?.name != null ) {
-                val secret = PreInstallPlugin.SecretValues(rootKafka.tls.truststore.valueFrom, null, null, null, null)
-                try {
-                    truststoreFile = getCredential(secret, namespace)
-                    report.addEntry(ReportEntry("Get TLS truststore certificate", true))
-                } catch (e: Exception) {
-                    report.addEntry(ReportEntry("Get TLS truststore certificate", false, e))
-                    logger.error(report.failingTests())
-                    return
-                }
-            }
-        }
-
-        val creds = KafkaProperties(rootKafka.bootstrapServers)
-        creds.saslEnabled = rootKafka.sasl.enabled
-        creds.saslUsername = saslUsername
-        creds.saslPassword = saslPassword
-        creds.saslMechanism = saslMechanism
-        creds.tlsEnabled = rootKafka.tls.enabled
-        creds.truststorePassword = truststorePassword
-        creds.truststoreFile = truststoreFile
-        creds.truststoreType = truststoreType
-        creds.timeout = timeout
-
         val props: Properties
         try {
-            props = creds.getKafkaProperties()
+            props = kafkaPropertiesWithCredentials.getKafkaProperties()
             report.addEntry(ReportEntry("Create Kafka client properties", true))
         } catch (e: Exception) {
             report.addEntry(ReportEntry("Create Kafka client properties", false, e))
@@ -237,7 +167,7 @@ class CheckKafka : Callable<Int>, PluginContext() {
         logger.info(props.entries.joinToString(separator = ",\n"))
 
         try {
-            checkConnectionAndBrokers(KafkaAdmin(props, report), bootstrap?.kafka?.replicas)
+            checkConnectionAndBrokers(KafkaAdmin(props, report), replicas)
         } catch (e: KafkaException) {
             report.addEntry(ReportEntry("Connect to Kafka cluster using client", false, e))
         } catch (e: ExecutionException) {
@@ -248,7 +178,7 @@ class CheckKafka : Callable<Int>, PluginContext() {
     override fun call(): Int {
         val yaml: Kafka
         try {
-            yaml = parseYaml<Kafka>(path)
+            yaml = parseYaml(path)
             report.addEntry(ReportEntry("Parse Kafka properties from YAML", true))
         } catch (e: Exception) {
             report.addEntry(ReportEntry("Parse Kafka properties from YAML", false, e))
@@ -256,13 +186,59 @@ class CheckKafka : Callable<Int>, PluginContext() {
             return 1
         }
 
-        checkKafka(yaml.workers?.crypto?.kafka, yaml.kafka, yaml.bootstrap)
-        checkKafka(yaml.workers?.db?.kafka, yaml.kafka, yaml.bootstrap)
-        checkKafka(yaml.workers?.flow?.kafka, yaml.kafka, yaml.bootstrap)
-        checkKafka(yaml.workers?.membership?.kafka, yaml.kafka, yaml.bootstrap)
-        checkKafka(yaml.workers?.rest?.kafka, yaml.kafka, yaml.bootstrap)
-        checkKafka(yaml.workers?.p2pGateway?.kafka, yaml.kafka, yaml.bootstrap)
-        checkKafka(yaml.workers?.p2pLinkManager?.kafka, yaml.kafka, yaml.bootstrap)
+        if (yaml.kafka.bootstrapServers == null) {
+            report.addEntry(ReportEntry("Bootstrap servers have not been defined under Kafka", false))
+            return 1
+        }
+        val kafkaProperties = KafkaProperties(yaml.kafka.bootstrapServers)
+        kafkaProperties.timeout = timeout
+
+        if (yaml.kafka.tls?.enabled == true) {
+            kafkaProperties.tlsEnabled = true
+            kafkaProperties.truststoreType = yaml.kafka.tls.truststore?.type
+
+            if (kafkaProperties.truststoreType == "JKS" && yaml.kafka.tls.truststore?.password != null) {
+                try {
+                    kafkaProperties.truststorePassword = getCredential(yaml.kafka.tls.truststore.password, namespace)
+                    report.addEntry(ReportEntry("Get TLS truststore password", true))
+                } catch (e: Exception) {
+                    report.addEntry(ReportEntry("Get TLS truststore password", false, e))
+                    logger.error(report.failingTests())
+                    return 1
+                }
+            }
+            if (yaml.kafka.tls.truststore?.valueFrom?.secretKeyRef?.name != null ) {
+                val secret = PreInstallPlugin.SecretValues(yaml.kafka.tls.truststore.valueFrom, null)
+                try {
+                    kafkaProperties.truststoreFile = getCredential(secret, namespace)
+                    report.addEntry(ReportEntry("Get TLS truststore certificate", true))
+                } catch (e: Exception) {
+                    report.addEntry(ReportEntry("Get TLS truststore certificate", false, e))
+                    logger.error(report.failingTests())
+                    return 1
+                }
+            }
+        }
+
+        if (yaml.kafka.sasl?.enabled == true) {
+            if (yaml.kafka.sasl.mechanism == null) {
+                report.addEntry(ReportEntry("SASL mechanism provided", false))
+            }
+            kafkaProperties.saslEnabled = true
+            kafkaProperties.saslMechanism = yaml.kafka.sasl.mechanism
+        }
+
+        val replicas = yaml.bootstrap?.kafka?.replicas ?: 3
+        if (yaml.bootstrap?.kafka?.enabled == true) {
+            checkKafka(kafkaProperties, yaml.kafka.sasl, yaml.bootstrap.kafka.sasl, replicas)
+        }
+        checkKafka(kafkaProperties, yaml.kafka.sasl, yaml.workers?.crypto?.kafka?.sasl, replicas)
+        checkKafka(kafkaProperties, yaml.kafka.sasl, yaml.workers?.db?.kafka?.sasl, replicas)
+        checkKafka(kafkaProperties, yaml.kafka.sasl, yaml.workers?.flow?.kafka?.sasl, replicas)
+        checkKafka(kafkaProperties, yaml.kafka.sasl, yaml.workers?.membership?.kafka?.sasl, replicas)
+        checkKafka(kafkaProperties, yaml.kafka.sasl, yaml.workers?.rest?.kafka?.sasl, replicas)
+        checkKafka(kafkaProperties, yaml.kafka.sasl, yaml.workers?.p2pGateway?.kafka?.sasl, replicas)
+        checkKafka(kafkaProperties, yaml.kafka.sasl, yaml.workers?.p2pLinkManager?.kafka?.sasl, replicas)
 
         return if (report.testsPassed()) {
             logger.info(report.toString())
