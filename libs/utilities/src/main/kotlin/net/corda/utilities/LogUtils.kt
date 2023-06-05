@@ -106,3 +106,10 @@ fun clearMDC(mdcDataKeys: Set<String>) {
 fun clearMDC(mdcData: Map<String, String>) {
     clearMDC(mdcData.keys)
 }
+
+/**
+ * Clear the Log4j logging MDC of all data stored there.
+ */
+fun clearMDC() {
+    MDC.clear()
+}

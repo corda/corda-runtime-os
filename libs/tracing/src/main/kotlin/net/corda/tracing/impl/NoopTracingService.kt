@@ -5,7 +5,6 @@ import net.corda.messaging.api.records.Record
 import net.corda.tracing.BatchPublishTracing
 import net.corda.tracing.BatchRecordTracer
 import net.corda.tracing.TraceContext
-import net.corda.tracing.TraceTag
 import net.corda.tracing.TracingService
 import org.apache.kafka.clients.consumer.Consumer
 import org.apache.kafka.clients.producer.Producer
@@ -21,9 +20,6 @@ class NoopTracingService : TracingService {
 
     class NoopTraceContext : TraceContext {
         override fun traceTag(key: String, value: String) {
-        }
-
-        override fun traceTag(key: TraceTag, value: String) {
         }
 
         override fun traceRequestId(requestId: String) {

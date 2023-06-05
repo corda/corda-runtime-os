@@ -15,6 +15,7 @@ import net.corda.data.persistence.PersistEntities
 import net.corda.flow.utils.toMap
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
+import net.corda.metrics.CordaMetrics
 import net.corda.orm.utils.transaction
 import net.corda.persistence.common.EntitySandboxService
 import net.corda.persistence.common.ResponseFactory
@@ -31,6 +32,8 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.virtualnode.toCorda
 import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
+import java.time.Duration
+import java.time.Instant
 
 fun SandboxGroupContext.getClass(fullyQualifiedClassName: String) =
     this.sandboxGroup.loadClassFromMainBundles(fullyQualifiedClassName)
@@ -68,8 +71,14 @@ class EntityMessageProcessor(
                 // We received a [null] external event therefore we do not know the flow id to respond to.
                 null
             } else {
-                val eventType = request.request?.let { it.javaClass.simpleName } ?: "Unknown"
+                val eventType = request.request?.javaClass?.simpleName ?: "Unknown"
                 traceEventProcessingNullableSingle(event, "Crypto Event - $eventType") {
+                    CordaMetrics.Metric.Db.EntityPersistenceRequestLag.builder()
+                        .withTag(CordaMetrics.Tag.OperationName, request.request::class.java.name)
+                        .build()
+                        .record(
+                            Duration.ofMillis(Instant.now().toEpochMilli() - event.timestamp)
+                        )
                     processEvent(request)
                 }
             }
@@ -79,12 +88,15 @@ class EntityMessageProcessor(
     private fun processEvent(request: EntityRequest): Record<*, *> {
         val clientRequestId =
             request.flowExternalEventContext.contextProperties.toMap()[MDC_CLIENT_ID] ?: ""
+
         return withMDC(
             mapOf(
                 MDC_CLIENT_ID to clientRequestId,
                 MDC_EXTERNAL_EVENT_ID to request.flowExternalEventContext.requestId
             )
         ) {
+            val startTime = Instant.now()
+            var requestOutcome = "FAILED"
             try {
                 val holdingIdentity = request.holdingIdentity.toCorda()
                 logger.info("Handling ${request.request::class.java.name} for holdingIdentity ${holdingIdentity.shortHash.value}")
@@ -98,10 +110,16 @@ class EntityMessageProcessor(
 
                 currentSandboxGroupContext.set(sandbox)
 
-                processRequestWithSandbox(sandbox, request)
+                processRequestWithSandbox(sandbox, request).also { requestOutcome = "SUCCEEDED" }
             } catch (e: Exception) {
                 responseFactory.errorResponse(request.flowExternalEventContext, e)
             } finally {
+                CordaMetrics.Metric.Db.EntityPersistenceRequestTime.builder()
+                    .withTag(CordaMetrics.Tag.OperationName, request.request::class.java.name)
+                    .withTag(CordaMetrics.Tag.OperationStatus, requestOutcome)
+                    .build()
+                    .record(Duration.between(startTime, Instant.now()))
+
                 currentSandboxGroupContext.remove()
             }
         }

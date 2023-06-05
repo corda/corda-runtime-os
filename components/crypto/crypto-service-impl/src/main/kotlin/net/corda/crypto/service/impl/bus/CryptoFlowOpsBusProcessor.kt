@@ -64,7 +64,7 @@ class CryptoFlowOpsBusProcessor(
             logger.error("Unexpected null payload for event with the key={} in topic={}", event.key, event.topic)
             return null // cannot send any error back as have no idea where to send to
         }
-        val eventType = request.request?.let { it.javaClass.simpleName } ?: "Unknown"
+        val eventType = request.request?.javaClass?.simpleName ?: "Unknown"
         return traceEventProcessingNullableSingle(event, "Crypto Event - $eventType") {
             val expireAt = getRequestExpireAt(request)
             val clientRequestId = request.flowExternalEventContext.contextProperties.toMap()[MDC_CLIENT_ID] ?: ""
@@ -76,7 +76,7 @@ class CryptoFlowOpsBusProcessor(
 
             withMDC(mdc) {
                 val requestPayload = request.request
-                val startTime = Instant.now()
+                val startTime = System.nanoTime()
                 logger.info("Handling ${requestPayload::class.java.name} for tenant ${request.context.tenantId}")
 
                 try {
@@ -117,10 +117,10 @@ class CryptoFlowOpsBusProcessor(
                     )
                     externalEventResponseFactory.platformError(request.flowExternalEventContext, throwable)
                 }.also {
-                    CordaMetrics.Metric.CryptoFlowOpsProcessorExecutionTime.builder()
+                    CordaMetrics.Metric.Crypto.FlowOpsProcessorExecutionTime.builder()
                         .withTag(CordaMetrics.Tag.OperationName, requestPayload::class.java.simpleName)
                         .build()
-                        .record(Duration.between(startTime, Instant.now()))
+                        .record(Duration.ofNanos(System.nanoTime() - startTime))
                 }
             }
         }

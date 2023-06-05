@@ -26,7 +26,6 @@
     org.slf4j.simpleLogger.dateTimeFormat='yyyy-MM-dd HH:mm:ss:SSS Z'
 
 -runrequires: \
-    bnd.identity;id='net.corda.metrics',\
     bnd.identity;id='net.corda.flow-mapper-impl',\
     bnd.identity;id='${project.archivesBaseName}-tests',\
     bnd.identity;id='net.corda.flow-utilities',\

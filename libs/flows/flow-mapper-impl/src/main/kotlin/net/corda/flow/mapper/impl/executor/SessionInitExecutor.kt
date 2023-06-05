@@ -41,9 +41,18 @@ class SessionInitExecutor(
         } else {
             //duplicate
             log.debug { "Duplicate SessionInit event received. Key: $eventKey, Event: $sessionEvent" }
-            if(messageDirection == MessageDirection.OUTBOUND){
+            if (messageDirection == MessageDirection.OUTBOUND) {
                 sessionInit.flowId = null
-                FlowMapperResult(flowMapperState, listOf(Record(outputTopic, eventKey, sessionEvent)))
+                FlowMapperResult(
+                    flowMapperState,
+                    listOf(
+                        Record(
+                            outputTopic,
+                            eventKey,
+                            generateAppMessage(sessionEvent, sessionEventSerializer, flowConfig)
+                        )
+                    )
+                )
             } else {
                 CordaMetrics.Metric.FlowMapperDeduplicationCount.builder()
                     .withTag(CordaMetrics.Tag.FlowEvent, sessionInit::class.java.name)

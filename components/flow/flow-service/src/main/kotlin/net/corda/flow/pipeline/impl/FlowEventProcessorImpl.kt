@@ -49,7 +49,7 @@ class FlowEventProcessorImpl(
     ): StateAndEventProcessor.Response<Checkpoint> {
         val flowEvent = event.value
         val mdcProperties = flowMDCService.getMDCLogging(state, flowEvent, event.key)
-        val eventType = event.value?.payload?.let { it.javaClass.simpleName } ?: "Unknown"
+        val eventType = event.value?.payload?.javaClass?.simpleName ?: "Unknown"
         return withMDC(mdcProperties) {
             traceStateAndEventExecution(event, "Flow Event - $eventType") {
                 getFlowPipelineResponse(flowEvent, event, state, mdcProperties)

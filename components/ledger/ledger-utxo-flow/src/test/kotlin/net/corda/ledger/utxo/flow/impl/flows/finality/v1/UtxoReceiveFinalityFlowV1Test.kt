@@ -402,6 +402,8 @@ class UtxoReceiveFinalityFlowV1Test {
     @Test
     fun `receiving a transaction resolves the transaction's backchain`() {
         whenever(signedTransaction.addMissingSignatures()).thenReturn(signedTransactionWithOwnKeys to listOf(signature1, signature2))
+        whenever(signedTransaction.inputStateRefs).thenReturn(listOf(mock()))
+        whenever(signedTransaction.referenceStateRefs).thenReturn(listOf(mock()))
         whenever(session.receive(List::class.java)).thenReturn(listOf(signature3))
         whenever(session.receive(Payload::class.java)).thenReturn(Payload.Success(listOf(signatureNotary)))
 
@@ -413,6 +415,8 @@ class UtxoReceiveFinalityFlowV1Test {
     @Test
     fun `receiving a transaction resolves the transaction's backchain even when it fails verification`() {
         whenever(ledgerTransaction.outputStateAndRefs).thenReturn(listOf(getExampleInvalidStateAndRefImpl()))
+        whenever(signedTransaction.inputStateRefs).thenReturn(listOf(mock()))
+        whenever(signedTransaction.referenceStateRefs).thenReturn(listOf(mock()))
         whenever(transactionVerificationService.verify(any())).thenThrow(
             TransactionVerificationException(
                 ID,
@@ -426,6 +430,19 @@ class UtxoReceiveFinalityFlowV1Test {
             .hasMessageContaining("Verification error")
 
         verify(flowEngine).subFlow(TransactionBackchainResolutionFlow(signedTransaction.dependencies, session))
+    }
+
+    @Test
+    fun `if receiving a transaction with no dependencies then the backchain resolution flow will not be called`() {
+        whenever(signedTransaction.addMissingSignatures()).thenReturn(signedTransactionWithOwnKeys to listOf(signature1, signature2))
+        whenever(signedTransaction.inputStateRefs).thenReturn(emptyList())
+        whenever(signedTransaction.referenceStateRefs).thenReturn(emptyList())
+        whenever(session.receive(List::class.java)).thenReturn(listOf(signature3))
+        whenever(session.receive(Payload::class.java)).thenReturn(Payload.Success(listOf(signatureNotary)))
+
+        callReceiveFinalityFlow()
+
+        verify(flowEngine, never()).subFlow(TransactionBackchainResolutionFlow(signedTransaction.dependencies, session))
     }
 
     private fun callReceiveFinalityFlow(validator: UtxoTransactionValidator = UtxoTransactionValidator { }) {
