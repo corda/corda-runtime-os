@@ -41,14 +41,11 @@ class PreInstallPlugin : Plugin() {
     open class PluginContext {
         var report = Report()
         private var client = KubernetesClientBuilder().build()
+        var logger = PreInstallPlugin.logger
 
         class SecretException: Exception {
             constructor (message: String?) : super(message)
             constructor (message: String?, cause: Throwable?) : super(message, cause)
-        }
-
-        fun getLogger(): Logger {
-            return logger
         }
 
         // parse a yaml file, and return an object of type T or null if there was an error

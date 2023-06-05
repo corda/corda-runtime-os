@@ -24,7 +24,6 @@ class CheckPostgres : Callable<Int>, PluginContext() {
         description = ["The namespace in which to look for the secrets if there are any"]
     )
     var namespace: String? = null
-    private val logger = getLogger()
 
     private fun connect(postgresUrl: String, username: String, password: String, credentialType: String) {
         try {

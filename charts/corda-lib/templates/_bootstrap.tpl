@@ -85,8 +85,7 @@ spec:
             - -c
           args:
             - |
-                touch /tmp/values.yaml
-                echo -e {{ toYaml .Values | quote }} >> /tmp/values.yaml
+                echo -e {{ toYaml .Values | quote }} > /tmp/values.yaml
           volumeMounts:
             - mountPath: /tmp
               name: temp

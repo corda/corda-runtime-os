@@ -37,7 +37,6 @@ class CheckKafka : Callable<Int>, PluginContext() {
     var timeout: Int = 3000
 
     class SASLCredentialException(message: String) : Exception(message)
-    private val logger = getLogger()
 
     open class KafkaAdmin(props: Properties, report: PreInstallPlugin.Report) {
         private val admin: AdminClient?
