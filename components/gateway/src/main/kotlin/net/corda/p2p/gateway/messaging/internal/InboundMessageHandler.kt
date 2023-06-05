@@ -23,6 +23,7 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.metrics.CordaMetrics
+import net.corda.metrics.CordaMetrics.NOT_APPLICABLE_TAG_VALUE
 import net.corda.p2p.gateway.messaging.http.HttpRequest
 import net.corda.p2p.gateway.messaging.http.HttpWriter
 import net.corda.p2p.gateway.messaging.http.ReconfigurableHttpServer
@@ -35,8 +36,8 @@ import org.slf4j.LoggerFactory
 import java.net.InetSocketAddress
 import java.net.SocketAddress
 import java.nio.ByteBuffer
+import java.time.Duration
 import java.util.UUID
-import java.util.concurrent.TimeUnit
 
 /**
  * This class implements a simple message processor for p2p messages received from other Gateways.
@@ -111,10 +112,10 @@ internal class InboundMessageHandler(
      */
     override fun onRequest(httpWriter: HttpWriter, request: HttpRequest) {
         dominoTile.withLifecycleLock {
-            val startTime = System.currentTimeMillis()
+            val startTime = System.nanoTime()
             val statusCode = handleRequest(httpWriter, request)
-            val duration = System.currentTimeMillis() - startTime
-            getRequestTimer(request.source, statusCode).record(duration, TimeUnit.MILLISECONDS)
+            val duration = Duration.ofNanos(System.nanoTime() - startTime)
+            getRequestTimer(request.source, statusCode).record(duration)
         }
     }
 
@@ -134,7 +135,8 @@ internal class InboundMessageHandler(
             return HttpResponseStatus.BAD_REQUEST
         }
 
-        logger.debug("Received and processing message ${gatewayMessage.id} of type ${p2pMessage.payload.javaClass} from ${request.source}")
+        logger.debug("Received and processing message {} of type {} from {}",
+            gatewayMessage.id, p2pMessage.payload::class.java, request.source)
         val response = GatewayResponse(gatewayMessage.id)
         return when (p2pMessage.payload) {
             is InboundUnauthenticatedMessage -> {
@@ -196,9 +198,14 @@ internal class InboundMessageHandler(
     private fun getRequestTimer(sourceAddress: SocketAddress, statusCode: HttpResponseStatus): Timer {
         val metricsBuilder = CordaMetrics.Metric.InboundGatewayRequestLatency.builder()
         metricsBuilder.withTag(CordaMetrics.Tag.HttpResponseType, statusCode.code().toString())
-        if (sourceAddress is InetSocketAddress) {
-            metricsBuilder.withTag(CordaMetrics.Tag.SourceEndpoint, sourceAddress.hostString)
+        // The address is always expected to be an InetSocketAddress, but populating the tag in any other case because prometheus
+        // requires the same set of tags to be populated for a specific metric name.
+        val sourceEndpoint = if (sourceAddress is InetSocketAddress) {
+            sourceAddress.hostString
+        } else {
+            NOT_APPLICABLE_TAG_VALUE
         }
+        metricsBuilder.withTag(CordaMetrics.Tag.SourceEndpoint, sourceEndpoint)
         return metricsBuilder.build()
     }
 }

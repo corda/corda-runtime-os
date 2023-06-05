@@ -16,8 +16,8 @@ interface DataSourceFactory {
      * @param minimumPoolSize the minimum number of connections in the pool.
      *      Defaults - the same as the maximum number of connections configured ([maximumPoolSize])
      * @param idleTimeout the maximum amount of time a connection is allowed to be idle before being removed from the pool.
-     *      If [minimumPoolSize] is equal to [maximumPoolSize], then connections will never be removed.
-     *      Default - 2 minutes.
+     *      If [minimumPoolSize] is equal to [maximumPoolSize], then connections will never be removed and this
+     *      parameter is ignored. Default - 2 minutes.
      * @param maxLifetime the maximum lifetime of a connection in the pool.
      *      An in-use connection will never be retired, only when it is closed will it then be removed.
      *      This should be set several seconds shorter than any database or infrastructure imposed connection time limit.

@@ -26,7 +26,7 @@ import java.nio.file.attribute.PosixFilePermissions.asFileAttribute
  */
 internal class ChunkReaderImpl(private val destDir: Path) : ChunkReader {
     companion object {
-        private val CHUNK_FILE_PERMISSIONS = asFileAttribute(setOf(OWNER_READ, OWNER_WRITE))
+        private val CPI_FILE_PERMISSIONS = asFileAttribute(setOf(OWNER_READ, OWNER_WRITE))
         private val CREATE_OR_UPDATE = setOf(CREATE, WRITE)
 
         private fun KeyValuePairList.fromAvro(): Map<String, String?> {
@@ -68,7 +68,7 @@ internal class ChunkReaderImpl(private val destDir: Path) : ChunkReader {
             // We expect the data to be correctly sized. There is a unit test to
             // ensure the writer does this.
             @Suppress("SpreadOperator")
-            Files.newByteChannel(path, CREATE_OR_UPDATE, *path.posixOptional(CHUNK_FILE_PERMISSIONS)).use { channel ->
+            Files.newByteChannel(path, CREATE_OR_UPDATE, *path.posixOptional(CPI_FILE_PERMISSIONS)).use { channel ->
                 channel.position(chunk.offset)
                 channel.write(chunk.data)
             }
