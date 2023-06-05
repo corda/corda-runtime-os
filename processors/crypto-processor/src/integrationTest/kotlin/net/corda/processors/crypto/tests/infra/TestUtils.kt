@@ -1,8 +1,6 @@
 package net.corda.processors.crypto.tests.infra
 
 import com.typesafe.config.ConfigFactory
-import java.time.Instant
-import kotlin.random.Random
 import net.corda.crypto.config.impl.createCryptoBootstrapParamsMap
 import net.corda.crypto.config.impl.createDefaultCryptoConfig
 import net.corda.crypto.core.CryptoConsts.SOFT_HSM_ID
@@ -16,6 +14,8 @@ import net.corda.schema.configuration.BootConfig.BOOT_CRYPTO
 import net.corda.schema.configuration.BootConfig.BOOT_DB
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.toAvro
+import java.time.Instant
+import kotlin.random.Random
 
 const val RESPONSE_TOPIC = "test.response"
 
@@ -29,7 +29,7 @@ private const val MESSAGING_CONFIGURATION_VALUE: String = """
                     thread.stop.timeout = 6000
                     processor.retries = 3
                     subscribe.retries = 3
-                    complete.retries = 3
+                    commit.retries = 3
                 }
                 producer {
                     close.timeout = 6000

@@ -68,7 +68,7 @@ class LinkManagerIntegrationTest {
                     thread.stop.timeout = 6000
                     processor.retries = 3
                     subscribe.retries = 3
-                    complete.retries = 3
+                    commit.retries = 3
                 }
                 producer {
                     close.timeout = 6000
