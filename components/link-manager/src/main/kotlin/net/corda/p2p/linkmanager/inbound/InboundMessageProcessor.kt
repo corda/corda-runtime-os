@@ -33,6 +33,7 @@ import net.corda.data.p2p.markers.AppMessageMarker
 import net.corda.data.p2p.markers.LinkManagerReceivedMarker
 import net.corda.p2p.linkmanager.metrics.recordInboundMessagesMetric
 import net.corda.schema.Schemas
+import net.corda.tracing.traceEventProcessing
 import net.corda.utilities.debug
 import net.corda.utilities.time.Clock
 import net.corda.virtualnode.toCorda
@@ -60,34 +61,40 @@ internal class InboundMessageProcessor(
                 logger.error("Received null message. The message was discarded.")
                 continue
             }
-            records += when (val payload = message.payload) {
-                is AuthenticatedDataMessage -> processDataMessage(
-                    payload.header.sessionId,
-                    AvroSealedClasses.DataMessage.Authenticated(payload)
-                )
-                is AuthenticatedEncryptedDataMessage -> processDataMessage(
-                    payload.header.sessionId,
-                    AvroSealedClasses.DataMessage.AuthenticatedAndEncrypted(payload)
-                )
-                is ResponderHelloMessage, is ResponderHandshakeMessage, is InitiatorHandshakeMessage, is InitiatorHelloMessage -> {
-                    processSessionMessage(message)
-                }
-                is InboundUnauthenticatedMessage -> {
-                    logger.debug {
-                        "Processing unauthenticated message ${payload.header.messageId}"
-                    }
-                    recordInboundMessagesMetric(payload)
-                    listOf(
-                        Record(
-                            Schemas.P2P.P2P_IN_TOPIC,
-                            LinkManager.generateKey(),
-                            AppMessage(payload)
-                        )
+            records += traceEventProcessing(event, "P2P Link Manager Inbound Event") {
+                when (val payload = message.payload) {
+                    is AuthenticatedDataMessage -> processDataMessage(
+                        payload.header.sessionId,
+                        AvroSealedClasses.DataMessage.Authenticated(payload)
                     )
-                }
-                else -> {
-                    logger.error("Received unknown payload type ${message.payload::class.java.simpleName}. The message was discarded.")
-                    emptyList()
+
+                    is AuthenticatedEncryptedDataMessage -> processDataMessage(
+                        payload.header.sessionId,
+                        AvroSealedClasses.DataMessage.AuthenticatedAndEncrypted(payload)
+                    )
+
+                    is ResponderHelloMessage, is ResponderHandshakeMessage, is InitiatorHandshakeMessage, is InitiatorHelloMessage -> {
+                        processSessionMessage(message)
+                    }
+
+                    is InboundUnauthenticatedMessage -> {
+                        logger.debug {
+                            "Processing unauthenticated message ${payload.header.messageId}"
+                        }
+                        recordInboundMessagesMetric(payload)
+                        listOf(
+                            Record(
+                                Schemas.P2P.P2P_IN_TOPIC,
+                                LinkManager.generateKey(),
+                                AppMessage(payload)
+                            )
+                        )
+                    }
+
+                    else -> {
+                        logger.error("Received unknown payload type ${message.payload::class.java.simpleName}. The message was discarded.")
+                        emptyList()
+                    }
                 }
             }
         }

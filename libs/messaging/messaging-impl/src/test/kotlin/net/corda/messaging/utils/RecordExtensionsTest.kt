@@ -8,7 +8,13 @@ class RecordExtensionsTest {
 
     @Test
     fun `toCordaProducerRecord maps all fields`(){
-        val record = Record("topic","key","value", listOf("a" to "b"))
+        val record = Record(
+            topic = "topic",
+            key = "key",
+            value = "value",
+            headers =  listOf("a" to "b")
+        )
+
         val result = record.toCordaProducerRecord()
 
         assertThat(result.topic).isEqualTo(record.topic)

@@ -12,6 +12,7 @@ import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.metrics.CordaMetrics
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
+import net.corda.tracing.traceEventProcessingSingle
 import net.corda.utilities.MDC_CLIENT_ID
 import net.corda.utilities.MDC_EXTERNAL_EVENT_ID
 import net.corda.utilities.trace
@@ -44,44 +45,49 @@ class VerificationRequestProcessor(
         log.trace { "onNext processing messages ${events.joinToString(",") { it.key }}" }
 
         return events
-            .mapNotNull { it.value }
-            .map { request ->
+            .filterNot { it.value == null }
+            .map { event ->
                 val startTime = System.nanoTime()
+                val request = event.value!!
                 val clientRequestId = request.flowExternalEventContext.contextProperties.toMap()[MDC_CLIENT_ID] ?: ""
                 val holdingIdentity = request.holdingIdentity.toCorda()
+                val requestType = request.javaClass.simpleName
+                traceEventProcessingSingle(event, "Ledger Persistence - $requestType") {
+                    withMDC(
+                        mapOf(
+                            MDC_CLIENT_ID to clientRequestId,
+                            MDC_EXTERNAL_EVENT_ID to request.flowExternalEventContext.requestId
+                        )
+                    ) {
+                        try {
+                            val sandbox = verificationSandboxService.get(holdingIdentity, request.cpkMetadata)
 
-                withMDC(
-                    mapOf(
-                        MDC_CLIENT_ID to clientRequestId,
-                        MDC_EXTERNAL_EVENT_ID to request.flowExternalEventContext.requestId
-                    )
-                ) {
-                    try {
-                        val sandbox = verificationSandboxService.get(holdingIdentity, request.cpkMetadata)
+                            currentSandboxGroupContext.set(sandbox)
 
-                        currentSandboxGroupContext.set(sandbox)
-
-                        requestHandler.handleRequest(sandbox, request)
-                    } catch (e: Exception) {
-                        errorResponse(request.flowExternalEventContext, e)
-                    } finally {
-                        currentSandboxGroupContext.remove()
-                    }.also {
-                        CordaMetrics.Metric.Ledger.TransactionVerificationTime
-                            .builder()
-                            .forVirtualNode(holdingIdentity.shortHash.toString())
-                            .build()
-                            .record(Duration.ofNanos(System.nanoTime() - startTime))
+                            requestHandler.handleRequest(sandbox, request)
+                        } catch (e: Exception) {
+                            errorResponse(request.flowExternalEventContext, e)
+                        } finally {
+                            currentSandboxGroupContext.remove()
+                        }.also {
+                            CordaMetrics.Metric.Ledger.TransactionVerificationTime
+                                .builder()
+                                .forVirtualNode(holdingIdentity.shortHash.toString())
+                                .build()
+                                .record(Duration.ofNanos(System.nanoTime() - startTime))
+                        }
                     }
                 }
             }
     }
 
-    private fun errorResponse(externalEventContext : ExternalEventContext, exception: Exception) = when (exception) {
+    private fun errorResponse(externalEventContext: ExternalEventContext, exception: Exception) = when (exception) {
         is NotAllowedCpkException, is NotSerializableException -> {
             log.error(errorMessage(externalEventContext, ExternalEventResponseErrorType.PLATFORM), exception)
             responseFactory.platformError(externalEventContext, exception)
-        } else -> {
+        }
+
+        else -> {
             log.warn(errorMessage(externalEventContext, ExternalEventResponseErrorType.TRANSIENT), exception)
             responseFactory.transientError(externalEventContext, exception)
         }

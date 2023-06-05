@@ -63,4 +63,7 @@ class DefaultWorkerParams(healthPortOverride: Int = WORKER_MONITOR_PORT) {
             "Command line flags win. " +
             "When multiple files are specified, values in the right-most file wins."])
     var configFiles = emptyList<Path>()
+
+    @Option(names = ["--send-trace-to"], description = ["URL of server that accepts Zipkin format traces."])
+    var zipkinTraceUrl: String? = null
 }
