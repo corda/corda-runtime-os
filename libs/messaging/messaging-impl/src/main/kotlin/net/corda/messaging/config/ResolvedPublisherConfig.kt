@@ -1,6 +1,7 @@
 package net.corda.messaging.config
 
 import java.time.Duration
+import java.util.UUID
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
@@ -25,14 +26,17 @@ internal data class ResolvedPublisherConfig(
          * @return Concrete class containing all config values used by a publisher.
          */
         fun merge(publisherConfig: PublisherConfig, messagingConfig: SmartConfig): ResolvedPublisherConfig {
+            val transactionalFlag = if (publisherConfig.transactional) "TRANSACTIONAL" else "ASYNCHRONOUS"
+            val clientId = "$transactionalFlag--${publisherConfig.clientId}--${publisherConfig.topic}--${UUID.randomUUID()}"
             return ResolvedPublisherConfig(
-                publisherConfig.clientId,
+                clientId,
                 messagingConfig.getInt(INSTANCE_ID),
                 publisherConfig.transactional,
                 Duration.ofMillis(messagingConfig.getLong(CLOSE_TIMEOUT)),
                 messagingConfig
             )
         }
+
     }
 
     val loggerName = "PUBLISHER-$clientId"
