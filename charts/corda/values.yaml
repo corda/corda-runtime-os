@@ -413,6 +413,8 @@ workers:
     annotations: {}
     # -- additional Java options for the crypto worker
     javaOptions: "-XX:MaxRAMPercentage=75"
+    # -- list of extra arguments for the crypto worker
+    extraArgs: []
     # crypto worker debug configuration
     debug:
       # -- run crypto worker with debug enabled
@@ -483,6 +485,8 @@ workers:
     annotations: {}
     # -- additional Java options for the DB worker
     javaOptions: "-XX:MaxRAMPercentage=75"
+    # -- list of extra arguments for the DB worker
+    extraArgs: []
     # DB worker debug configuration
     debug:
       # -- run DB worker with debug enabled
@@ -554,6 +558,8 @@ workers:
     annotations: {}
     # -- additional Java options for the flow worker
     javaOptions: "-XX:MaxRAMPercentage=75"
+    # -- list of extra arguments for the flow worker
+    extraArgs: []
     # flow worker debug configuration
     debug:
       # -- run flow worker with debug enabled
@@ -622,6 +628,8 @@ workers:
     annotations: {}
     # -- additional Java options for the membership worker
     javaOptions: "-XX:MaxRAMPercentage=75"
+    # -- list of extra arguments for the membership worker
+    extraArgs: []
     # membership worker debug configuration
     debug:
       # -- run membership worker with debug enabled
@@ -688,6 +696,8 @@ workers:
     annotations: {}
     # -- additional Java options for the rest worker
     javaOptions: "-XX:MaxRAMPercentage=75"
+    # -- list of extra arguments for the REST worker
+    extraArgs: []
     # REST worker debug configuration
     debug:
       # -- run REST worker with debug enabled
@@ -794,6 +804,8 @@ workers:
     annotations: {}
     # -- additional Java options for the P2P link manager worker
     javaOptions: "-XX:MaxRAMPercentage=75"
+    # -- list of extra arguments for the P2P link manager worker
+    extraArgs: []
     # p2p-link-manager worker debug configuration
     debug:
       # -- run P2P link manager worker with debug enabled
@@ -860,6 +872,8 @@ workers:
     annotations: {}
     # -- additional Java options for the P2P gateway worker
     javaOptions: "-XX:MaxRAMPercentage=75"
+    # -- list of extra arguments for the P2P gateway worker
+    extraArgs: []
     # p2p-gateway worker debug configuration
     debug:
       # -- run P2P gateway worker with debug enabled

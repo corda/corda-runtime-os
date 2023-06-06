@@ -134,7 +134,9 @@ spec:
             {{- end }}
             '-r', '{{ .Values.bootstrap.kafka.replicas }}',
             '-p', '{{ .Values.bootstrap.kafka.partitions }}',
-            'connect'{{- if .Values.bootstrap.kafka.cleanup }},
+            'connect',
+            '-w',
+            '300'{{- if .Values.bootstrap.kafka.cleanup }},
             '-d'
             {{- end }}
           ]
