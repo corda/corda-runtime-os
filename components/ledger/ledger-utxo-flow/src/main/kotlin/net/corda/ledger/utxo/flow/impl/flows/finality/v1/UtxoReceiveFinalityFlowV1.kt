@@ -10,6 +10,7 @@ import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.sandbox.CordaSystemFlow
 import net.corda.utilities.trace
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
+import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -21,7 +22,8 @@ import org.slf4j.LoggerFactory
 @CordaSystemFlow
 class UtxoReceiveFinalityFlowV1(
     private val session: FlowSession,
-    private val validator: UtxoTransactionValidator
+    private val validator: UtxoTransactionValidator,
+    private val flowMessaging: FlowMessaging
 ) : UtxoFinalityBaseV1() {
 
     private companion object {
@@ -119,8 +121,11 @@ class UtxoReceiveFinalityFlowV1(
         if (log.isDebugEnabled) {
             log.debug("Waiting for other parties' signatures for transaction: ${transaction.id}")
         }
-        @Suppress("unchecked_cast")
-        val otherPartiesSignatures = session.receive(List::class.java) as List<DigitalSignatureAndMetadata>
+        val otherPartiesSignatures = flowMessaging.receiveAll(
+            DigitalSignatureAndMetadata::class.java,
+            setOf(session)
+        )
+
         var signedTransaction = transaction
         otherPartiesSignatures
             .filter { it !in transaction.signatures }
