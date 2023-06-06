@@ -7,6 +7,7 @@ import brave.context.slf4j.MDCScopeDecorator
 import brave.kafka.clients.KafkaTracing
 import brave.propagation.B3Propagation
 import brave.propagation.ThreadLocalCurrentTraceContext
+import brave.sampler.RateLimitingSampler
 import brave.sampler.Sampler
 import brave.servlet.TracingFilter
 import net.corda.messaging.api.records.EventLogRecord
@@ -21,11 +22,13 @@ import zipkin2.reporter.AsyncReporter
 import zipkin2.reporter.Reporter
 import zipkin2.reporter.brave.ZipkinSpanHandler
 import zipkin2.reporter.urlconnection.URLConnectionSender
+import java.util.OptionalInt
 import java.util.Stack
 import java.util.concurrent.ExecutorService
 import javax.servlet.Filter
+
 @Suppress("TooManyFunctions")
-class BraveTracingService(serviceName: String, zipkinHost: String) : TracingService {
+class BraveTracingService(serviceName: String, zipkinHost: String, samplesPerSecond: OptionalInt) : TracingService {
 
     private val resourcesToClose = Stack<AutoCloseable>()
 
@@ -35,12 +38,17 @@ class BraveTracingService(serviceName: String, zipkinHost: String) : TracingServ
             .addScopeDecorator(MDCScopeDecorator.get())
             .build()
 
+        val sampler = if (samplesPerSecond.isPresent)
+            RateLimitingSampler.create(samplesPerSecond.asInt)
+        else
+            Sampler.ALWAYS_SAMPLE
+
         val tracingBuilder = Tracing.newBuilder()
             .currentTraceContext(braveCurrentTraceContext)
             .supportsJoin(false)
             .localServiceName(serviceName)
             .traceId128Bit(true)
-            .sampler(Sampler.ALWAYS_SAMPLE)
+            .sampler(sampler)
             .propagationFactory(
                 BaggagePropagation.newFactoryBuilder(B3Propagation.FACTORY)
                     .add(BaggagePropagationConfig.SingleBaggageField.remote(BraveBaggageFields.REQUEST_ID))

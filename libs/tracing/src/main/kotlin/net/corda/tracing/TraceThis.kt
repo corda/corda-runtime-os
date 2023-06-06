@@ -8,12 +8,28 @@ import net.corda.messaging.api.records.EventLogRecord
 import net.corda.messaging.api.records.Record
 import net.corda.tracing.impl.BraveTracingService
 import net.corda.tracing.impl.TracingState
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.apache.kafka.clients.consumer.Consumer
 import org.apache.kafka.clients.producer.Producer
 import org.eclipse.jetty.servlet.FilterHolder
 import java.util.EnumSet
+import java.util.OptionalInt
 import java.util.concurrent.ExecutorService
 import javax.servlet.DispatcherType
+
+private val alwaysSample = OptionalInt.empty()
+private val oneSamplePerSecond = OptionalInt.of(1)
+private fun samplesPerSecond(samplesPerSecond: Int) = OptionalInt.of(samplesPerSecond)
+private fun parseUnsignedIntWithErrorHandling(string: String) = try {
+    Integer.parseUnsignedInt(string)
+} catch (e: NumberFormatException) {
+    throw CordaRuntimeException("Invalid --trace-samples-per-second, failed to parse \"$string\" as unsigned int", e)
+}
+private fun readSampleRateString(samplesPerSecond: String?): OptionalInt = when {
+    samplesPerSecond.isNullOrEmpty() -> oneSamplePerSecond
+    samplesPerSecond.lowercase() == "unlimited" -> alwaysSample
+    else -> samplesPerSecond(parseUnsignedIntWithErrorHandling(samplesPerSecond))
+}
 
 /**
  * Configures the tracing for a given Corda worker.
@@ -24,12 +40,14 @@ import javax.servlet.DispatcherType
  * if the server is listening on the default 9411 port. Example value: http://localhost:9411
  *
  */
-fun configureTracing(serviceName: String, zipkinHost: String?) {
+fun configureTracing(serviceName: String, zipkinHost: String?, samplesPerSecond: String?) {
     if (zipkinHost.isNullOrEmpty()) {
         return
     }
 
-    TracingState.currentTraceService = BraveTracingService(serviceName, zipkinHost)
+    val sampleRate = readSampleRateString(samplesPerSecond)
+
+    TracingState.currentTraceService = BraveTracingService(serviceName, zipkinHost, sampleRate)
 }
 
 fun wrapWithTracingExecutor(executor: ExecutorService): ExecutorService {
