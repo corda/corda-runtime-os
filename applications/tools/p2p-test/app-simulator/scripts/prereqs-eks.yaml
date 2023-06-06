@@ -4,7 +4,7 @@ kafka:
       memory: 390Mi
       cpu: 1000m
     limits:
-      memory: 800Mi
+      memory: 1600Mi
       cpu: 1000m
 
 postgresql:
