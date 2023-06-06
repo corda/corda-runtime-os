@@ -6,7 +6,6 @@ import net.corda.ledger.utxo.flow.impl.flows.finality.v1.UtxoReceiveFinalityFlow
 import net.corda.sandbox.CordaSystemFlow
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.SubFlow
-import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
@@ -21,28 +20,24 @@ class UtxoReceiveFinalityFlow(
     @CordaInject
     lateinit var versioningService: VersioningService
 
-    @CordaInject
-    lateinit var flowMessaging: FlowMessaging
-
     @Suspendable
     override fun call(): UtxoSignedTransaction {
         return versioningService.versionedSubFlow(
-            UtxoReceiveFinalityFlowVersionedFlowFactory(validator, flowMessaging),
+            UtxoReceiveFinalityFlowVersionedFlowFactory(validator),
             session
         )
     }
 }
 
 class UtxoReceiveFinalityFlowVersionedFlowFactory(
-    private val validator: UtxoTransactionValidator,
-    private val flowMessaging: FlowMessaging
+    private val validator: UtxoTransactionValidator
 ) : VersionedReceiveFlowFactory<UtxoSignedTransaction> {
 
     override val versionedInstanceOf: Class<UtxoReceiveFinalityFlow> = UtxoReceiveFinalityFlow::class.java
 
     override fun create(version: Int, session: FlowSession): SubFlow<UtxoSignedTransaction> {
         return when {
-            version >= 1 -> UtxoReceiveFinalityFlowV1(session, validator, flowMessaging)
+            version >= 1 -> UtxoReceiveFinalityFlowV1(session, validator)
             else -> throw IllegalArgumentException()
         }
     }
