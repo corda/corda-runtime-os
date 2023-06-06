@@ -59,7 +59,7 @@ class FlowEngineImplTest {
 
         // verify unordered calls.
         verify(sandboxDependencyInjector).injectServices(subFlow)
-        verify(flowStack).push(subFlow)
+        verify(flowStack).push(subFlow, flowFiber.getExecutionContext().flowMetrics)
 
         // verify ordered calls
         inOrder(sandboxDependencyInjector, flowFiber, flowStack, subFlow) {
@@ -171,7 +171,7 @@ class FlowEngineImplTest {
 
         // verify unordered calls.
         verify(sandboxDependencyInjector).injectServices(subFlow)
-        verify(flowStack).push(subFlow)
+        verify(flowStack).push(subFlow, flowFiber.getExecutionContext().flowMetrics)
 
         // verify ordered calls
         inOrder(sandboxDependencyInjector, flowFiber, flowStack, subFlow) {
