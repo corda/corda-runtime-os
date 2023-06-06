@@ -17,6 +17,7 @@ import net.corda.tracing.TraceContext
 import net.corda.tracing.TracingService
 import org.apache.kafka.clients.consumer.Consumer
 import org.apache.kafka.clients.producer.Producer
+import org.slf4j.LoggerFactory
 import zipkin2.Span
 import zipkin2.reporter.AsyncReporter
 import zipkin2.reporter.Reporter
@@ -33,6 +34,8 @@ internal data class PerSecond(val samplesPerSecond: Int) : SampleRate
 @Suppress("TooManyFunctions")
 internal class BraveTracingService(serviceName: String, zipkinHost: String, samplesPerSecond: SampleRate) : TracingService {
 
+    private val logger = LoggerFactory.getLogger(this::class.java)
+
     private val resourcesToClose = Stack<AutoCloseable>()
 
     private val tracing: Tracing by lazy {
@@ -42,8 +45,14 @@ internal class BraveTracingService(serviceName: String, zipkinHost: String, samp
             .build()
 
         val sampler = when (samplesPerSecond) {
-            is PerSecond -> RateLimitingSampler.create(samplesPerSecond.samplesPerSecond)
-            is Unlimited -> Sampler.ALWAYS_SAMPLE
+            is PerSecond -> {
+                logger.info("Tracing will sample ${samplesPerSecond.samplesPerSecond} requests per second")
+                RateLimitingSampler.create(samplesPerSecond.samplesPerSecond)
+            }
+            is Unlimited -> {
+                logger.info("Tracing will sample unlimited requests per second")
+                Sampler.ALWAYS_SAMPLE
+            }
         }
 
         val tracingBuilder = Tracing.newBuilder()
