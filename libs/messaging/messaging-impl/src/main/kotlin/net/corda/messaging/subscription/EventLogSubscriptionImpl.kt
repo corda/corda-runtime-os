@@ -69,8 +69,24 @@ internal class EventLogSubscriptionImpl<K : Any, V : Any>(
 
     private val processorMeter = CordaMetrics.Metric.MessageProcessorTime.builder()
         .withTag(CordaMetrics.Tag.MessagePatternType, MetricsConstants.DURABLE_PATTERN_TYPE)
-        .withTag(CordaMetrics.Tag.MessagePatternClientId, config.clientId)
+        .withTag(CordaMetrics.Tag.MembershipGroup, config.group)
         .withTag(CordaMetrics.Tag.OperationName, MetricsConstants.ON_NEXT_OPERATION)
+        .build()
+
+    private val pollMeter = CordaMetrics.Metric.MessagePollTime.builder()
+        .withTag(CordaMetrics.Tag.MessagePatternType, MetricsConstants.DURABLE_PATTERN_TYPE)
+        .withTag(CordaMetrics.Tag.MembershipGroup, config.group)
+        .withTag(CordaMetrics.Tag.OperationName, MetricsConstants.EVENT_POLL_OPERATION)
+        .build()
+
+    private val commitTimer = CordaMetrics.Metric.MessageCommitTime.builder()
+        .withTag(CordaMetrics.Tag.MessagePatternType, MetricsConstants.DURABLE_PATTERN_TYPE)
+        .withTag(CordaMetrics.Tag.MembershipGroup, config.group)
+        .build()
+
+    private val recordCounter = CordaMetrics.Metric.MessageProcessedCounter.builder()
+        .withTag(CordaMetrics.Tag.MessagePatternType, MetricsConstants.DURABLE_PATTERN_TYPE)
+        .withTag(CordaMetrics.Tag.MembershipGroup, config.group)
         .build()
 
     override val isRunning: Boolean
@@ -164,9 +180,12 @@ internal class EventLogSubscriptionImpl<K : Any, V : Any>(
         var attempts = 0
         while (!threadLooper.loopStopped) {
             try {
-                processDurableRecords(consumer.poll(config.pollTimeout), producer, consumer)
+                processDurableRecords(pollMeter.recordCallable { consumer.poll(config.pollTimeout) }!!, producer, consumer)
+
                 attempts = 0
             } catch (ex: Exception) {
+                log.warn("pollAndProcessRecords: ", ex)
+
                 when (ex) {
                     is CordaMessageAPIFatalException -> {
                         throw ex
@@ -231,25 +250,33 @@ internal class EventLogSubscriptionImpl<K : Any, V : Any>(
         try {
             log.debug { "Processing records(keys: ${cordaConsumerRecords.joinToString { it.key.toString() }}, " +
                     "size: ${cordaConsumerRecords.size})" }
-            producer.beginTransaction()
-            val outputs = processorMeter.recordCallable { processor.onNext(cordaConsumerRecords.map { it.toEventLogRecord() })
-                .toCordaProducerRecords() }!!
-            producer.sendRecords(outputs)
-            if(deadLetterRecords.isNotEmpty()) {
-                producer.sendRecords(deadLetterRecords.map {
-                    CordaProducerRecord(
-                        getDLQTopic(config.topic),
-                        UUID.randomUUID().toString(),
-                        it
-                    )
-                })
-                deadLetterRecords.clear()
+            val outputs = processorMeter.recordCallable {
+                processor.onNext(cordaConsumerRecords.map { it.toEventLogRecord() })
+                    .toCordaProducerRecords()
+            }!!
+            commitTimer.recordCallable {
+                producer.beginTransaction()
+                producer.sendRecords(outputs)
+                if (deadLetterRecords.isNotEmpty()) {
+                    producer.sendRecords(deadLetterRecords.map {
+                        CordaProducerRecord(
+                            getDLQTopic(config.topic),
+                            UUID.randomUUID().toString(),
+                            it
+                        )
+                    })
+                    deadLetterRecords.clear()
+                }
+                producer.sendAllOffsetsToTransaction(consumer)
+                producer.commitTransaction()
+                log.debug {
+                    "Processing records(keys: ${cordaConsumerRecords.joinToString { it.key.toString() }}, " +
+                            "size: ${cordaConsumerRecords.size}) complete."
+                }
+                recordCounter.increment(cordaConsumerRecords.size.toDouble())
             }
-            producer.sendAllOffsetsToTransaction(consumer)
-            producer.commitTransaction()
-            log.debug { "Processing records(keys: ${cordaConsumerRecords.joinToString { it.key.toString() }}, " +
-                    "size: ${cordaConsumerRecords.size}) complete." }
         } catch (ex: Exception) {
+            log.warn("processDurableRecords: ", ex)
             when (ex) {
                 is CordaMessageAPIFatalException,
                 is CordaMessageAPIIntermittentException -> {

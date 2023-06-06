@@ -59,6 +59,12 @@ object CordaMetrics {
          */
         object MessagePollTime : Metric<Timer>("messaging.poll.time", CordaMetrics::timer)
 
+
+        /**
+         * The counter how many records processed by a pattern
+         */
+        object MessageProcessedCounter : Metric<Counter>("messaging.records.processed", Metrics::counter)
+
         /**
          * FLOW METRICS
          *

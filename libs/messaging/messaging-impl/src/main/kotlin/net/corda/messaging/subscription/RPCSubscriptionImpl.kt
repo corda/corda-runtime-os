@@ -52,8 +52,25 @@ internal class RPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
 
     private val processorMeter = CordaMetrics.Metric.MessageProcessorTime.builder()
         .withTag(CordaMetrics.Tag.MessagePatternType, MetricsConstants.RPC_PATTERN_TYPE)
-        .withTag(CordaMetrics.Tag.MessagePatternClientId, config.clientId)
+        .withTag(CordaMetrics.Tag.MembershipGroup, config.group)
         .withTag(CordaMetrics.Tag.OperationName, MetricsConstants.RPC_RESPONDER_OPERATION)
+        .build()
+
+
+    private val pollMeter = CordaMetrics.Metric.MessagePollTime.builder()
+        .withTag(CordaMetrics.Tag.MessagePatternType, MetricsConstants.RPC_PATTERN_TYPE)
+        .withTag(CordaMetrics.Tag.MembershipGroup, config.group)
+        .withTag(CordaMetrics.Tag.OperationName, MetricsConstants.EVENT_POLL_OPERATION)
+        .build()
+
+    private val recordCounter = CordaMetrics.Metric.MessageProcessedCounter.builder()
+        .withTag(CordaMetrics.Tag.MessagePatternType, MetricsConstants.RPC_PATTERN_TYPE)
+        .withTag(CordaMetrics.Tag.MembershipGroup, config.group)
+        .build()
+
+    private val commitTimer = CordaMetrics.Metric.MessageCommitTime.builder()
+        .withTag(CordaMetrics.Tag.MessagePatternType, MetricsConstants.RPC_PATTERN_TYPE)
+        .withTag(CordaMetrics.Tag.MembershipGroup, config.group)
         .build()
 
     val isRunning: Boolean
@@ -111,9 +128,9 @@ internal class RPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
 
     private fun pollAndProcessRecords(consumer: CordaConsumer<String, RPCRequest>, producer: CordaProducer) {
         while (!threadLooper.loopStopped) {
-            val consumerRecords = consumer.poll(config.pollTimeout)
+            val consumerRecords = pollMeter.recordCallable { consumer.poll(config.pollTimeout)  }
             try {
-                processRecords(consumerRecords, producer)
+                processRecords(consumerRecords!!, producer)
             } catch (ex: Exception) {
                 when (ex) {
                     is CordaMessageAPIFatalException,
@@ -188,11 +205,14 @@ internal class RPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
                             )
                         }
                     }
-                    producer.sendRecordsToPartitions(listOf(Pair(rpcRequest.replyPartition, record)))
+                    commitTimer.recordCallable {
+                        producer.sendRecordsToPartitions(listOf(Pair(rpcRequest.replyPartition, record)))
+                    }
                 } catch (ex: Exception) {
                     // intentionally swallowed
                     log.warn("Error publishing response", ex)
                 }
+                recordCounter.increment()
             }
             processorMeter.recordCallable { responderProcessor.onNext(request!!, future) }
         }

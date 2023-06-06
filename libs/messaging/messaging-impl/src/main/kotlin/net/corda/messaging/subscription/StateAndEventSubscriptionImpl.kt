@@ -93,6 +93,11 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         .withTag(CordaMetrics.Tag.MessagePatternClientId, config.clientId)
         .build()
 
+    private val recordCounter = CordaMetrics.Metric.MessageProcessedCounter.builder()
+        .withTag(CordaMetrics.Tag.MessagePatternType, MetricsConstants.STATE_AND_EVENT_PATTERN_TYPE)
+        .withTag(CordaMetrics.Tag.MembershipGroup, config.group)
+        .build()
+
     /**
      * Is the subscription running.
      */
@@ -268,6 +273,7 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         log.debug { "Processing events(keys: ${events.joinToString { it.key.toString() }}, size: ${events.size}) complete." }
 
         stateAndEventConsumer.updateInMemoryStatePostCommit(updatedStates, clock)
+        recordCounter.increment(events.size.toDouble())
         return false
     }
 
