@@ -22,13 +22,16 @@ import zipkin2.reporter.AsyncReporter
 import zipkin2.reporter.Reporter
 import zipkin2.reporter.brave.ZipkinSpanHandler
 import zipkin2.reporter.urlconnection.URLConnectionSender
-import java.util.OptionalInt
 import java.util.Stack
 import java.util.concurrent.ExecutorService
 import javax.servlet.Filter
 
+sealed interface SampleRate
+object Unlimited : SampleRate
+data class PerSecond(val samplesPerSecond: Int) : SampleRate
+
 @Suppress("TooManyFunctions")
-class BraveTracingService(serviceName: String, zipkinHost: String, samplesPerSecond: OptionalInt) : TracingService {
+class BraveTracingService(serviceName: String, zipkinHost: String, samplesPerSecond: SampleRate) : TracingService {
 
     private val resourcesToClose = Stack<AutoCloseable>()
 
@@ -38,10 +41,10 @@ class BraveTracingService(serviceName: String, zipkinHost: String, samplesPerSec
             .addScopeDecorator(MDCScopeDecorator.get())
             .build()
 
-        val sampler = if (samplesPerSecond.isPresent)
-            RateLimitingSampler.create(samplesPerSecond.asInt)
-        else
-            Sampler.ALWAYS_SAMPLE
+        val sampler = when (samplesPerSecond) {
+            is PerSecond -> RateLimitingSampler.create(samplesPerSecond.samplesPerSecond)
+            is Unlimited -> Sampler.ALWAYS_SAMPLE
+        }
 
         val tracingBuilder = Tracing.newBuilder()
             .currentTraceContext(braveCurrentTraceContext)
