@@ -1,6 +1,5 @@
 package net.corda.reconciliation.impl
 
-import kotlin.streams.asSequence
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleEventHandler
@@ -15,6 +14,7 @@ import net.corda.reconciliation.ReconcilerWriter
 import net.corda.utilities.debug
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.slf4j.LoggerFactory
+import kotlin.streams.asSequence
 
 @Suppress("LongParameterList")
 internal class ReconcilerEventHandler<K : Any, V : Any>(
