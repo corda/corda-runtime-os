@@ -15,5 +15,6 @@ interface FlowMetricsRecorder {
     fun recordTotalEventsProcessed(eventsProcessed: Long)
     fun recordTotalFiberSuspensions(fiberSuspensions: Long)
     fun recordFlowSessionMessagesReplayed(flowEventType: String)
+    fun recordFlowSessionMessagesReceivedDuplicates(flowEventType: String)
 
 }

@@ -133,6 +133,11 @@ class FlowMetricsImpl(
         flowMetricsRecorder.recordFlowSessionMessagesReceived(flowEventType)
     }
 
+    override fun flowSessionMessageReceivedDuplicates(flowEventType: String) {
+        sessionMetricState.highestSeenSequenceNumber
+        flowMetricsRecorder.recordFlowSessionMessagesReceivedDuplicates(flowEventType)
+    }
+
     private fun recordFlowCompleted(completionStatus: String) {
         val currentTime = clock.instant().toEpochMilli()
         val flowCompletionTime = currentTime - currentState.flowProcessingStartTime

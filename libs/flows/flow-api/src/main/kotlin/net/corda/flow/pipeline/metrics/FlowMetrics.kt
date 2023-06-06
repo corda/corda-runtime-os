@@ -20,4 +20,6 @@ interface FlowMetrics {
     fun flowSessionMessageSent(flowEventType: String, sessionId: String, sequenceNumber: Long?)
 
     fun flowSessionMessageReceived(flowEventType: String)
+
+    fun flowSessionMessageReceivedDuplicates(flowEventType: String)
 }
