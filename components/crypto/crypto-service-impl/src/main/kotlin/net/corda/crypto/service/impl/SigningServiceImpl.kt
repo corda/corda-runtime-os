@@ -3,6 +3,7 @@ package net.corda.crypto.service.impl
 import com.github.benmanes.caffeine.cache.Cache
 import com.github.benmanes.caffeine.cache.Caffeine
 import java.security.InvalidParameterException
+import java.security.PublicKey
 import java.util.concurrent.TimeUnit
 import net.corda.cache.caffeine.CacheFactoryImpl
 import net.corda.crypto.cipher.suite.CRYPTO_CATEGORY
@@ -30,12 +31,12 @@ import net.corda.crypto.service.CryptoServiceFactory
 import net.corda.crypto.service.KeyOrderBy
 import net.corda.crypto.service.SigningService
 import net.corda.crypto.softhsm.SigningRepositoryFactory
+import net.corda.metrics.CordaMetrics
 import net.corda.utilities.debug
 import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
 import org.slf4j.LoggerFactory
-import java.security.PublicKey
 
 data class CacheKey(val tenantId: String, val publicKeyId: ShortHash)
 
@@ -84,16 +85,16 @@ class SigningServiceImpl(
 
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        private const val SIGN_OPERATION_NAME = "sign"
     }
 
-    data class OwnedKeyRecord(val publicKey: PublicKey, val data: net.corda.crypto.persistence.SigningKeyInfo)
+    data class OwnedKeyRecord(val publicKey: PublicKey, val data: SigningKeyInfo)
 
     override fun getSupportedSchemes(tenantId: String, category: String): List<String> {
         logger.debug { "getSupportedSchemes(tenant=$tenantId, category=$category)" }
         val ref = cryptoServiceFactory.findInstance(tenantId = tenantId, category = category)
         return ref.instance.supportedSchemes.map { it.key.codeName }
     }
-
 
     override fun querySigningKeys(
         tenantId: String,
@@ -138,7 +139,6 @@ class SigningServiceImpl(
 
         return cachedKeys + fetchedKeys
     }
-
 
     override fun lookupSigningKeysByPublicKeyHashes(
         tenantId: String,
@@ -259,7 +259,15 @@ class SigningServiceImpl(
         data: ByteArray,
         context: Map<String, String>
     ): DigitalSignatureWithKey {
-        val record = getOwnedKeyRecord(tenantId, publicKey)
+        val record =
+            CordaMetrics.Metric.Crypto.GetOwnedKeyRecordTimer.builder()
+                .withTag(CordaMetrics.Tag.OperationName, SIGN_OPERATION_NAME)
+                .withTag(CordaMetrics.Tag.PublicKeyType, publicKey::class.java.simpleName)
+                .build()
+                .recordCallable {
+                    getOwnedKeyRecord(tenantId, publicKey)
+                }!!
+
         logger.debug { "sign(tenant=$tenantId, publicKey=${record.data.id})" }
         val scheme = schemeMetadata.findKeyScheme(record.data.schemeCodeName)
         val cryptoService = cryptoServiceFactory.getInstance(record.data.hsmId)
@@ -278,6 +286,7 @@ class SigningServiceImpl(
         context: Map<String, String>,
     ): ByteArray {
         val record = getOwnedKeyRecord(tenantId, publicKey)
+
         logger.info(
             "deriveSharedSecret(tenant={}, publicKey={}, otherPublicKey={})",
             tenantId,

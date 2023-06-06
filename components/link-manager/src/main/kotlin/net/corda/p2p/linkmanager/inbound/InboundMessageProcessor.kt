@@ -31,8 +31,9 @@ import net.corda.p2p.linkmanager.membership.NetworkMessagingValidator
 import net.corda.p2p.linkmanager.sessions.SessionManager
 import net.corda.data.p2p.markers.AppMessageMarker
 import net.corda.data.p2p.markers.LinkManagerReceivedMarker
-import net.corda.metrics.CordaMetrics
+import net.corda.p2p.linkmanager.metrics.recordInboundMessagesMetric
 import net.corda.schema.Schemas
+import net.corda.tracing.traceEventProcessing
 import net.corda.utilities.debug
 import net.corda.utilities.time.Clock
 import net.corda.virtualnode.toCorda
@@ -60,34 +61,40 @@ internal class InboundMessageProcessor(
                 logger.error("Received null message. The message was discarded.")
                 continue
             }
-            records += when (val payload = message.payload) {
-                is AuthenticatedDataMessage -> processDataMessage(
-                    payload.header.sessionId,
-                    AvroSealedClasses.DataMessage.Authenticated(payload)
-                )
-                is AuthenticatedEncryptedDataMessage -> processDataMessage(
-                    payload.header.sessionId,
-                    AvroSealedClasses.DataMessage.AuthenticatedAndEncrypted(payload)
-                )
-                is ResponderHelloMessage, is ResponderHandshakeMessage, is InitiatorHandshakeMessage, is InitiatorHelloMessage -> {
-                    processSessionMessage(message)
-                }
-                is InboundUnauthenticatedMessage -> {
-                    logger.debug {
-                        "Processing unauthenticated message ${payload.header.messageId}"
-                    }
-                    recordInboundMessagesMetric(payload)
-                    listOf(
-                        Record(
-                            Schemas.P2P.P2P_IN_TOPIC,
-                            LinkManager.generateKey(),
-                            AppMessage(payload)
-                        )
+            records += traceEventProcessing(event, "P2P Link Manager Inbound Event") {
+                when (val payload = message.payload) {
+                    is AuthenticatedDataMessage -> processDataMessage(
+                        payload.header.sessionId,
+                        AvroSealedClasses.DataMessage.Authenticated(payload)
                     )
-                }
-                else -> {
-                    logger.error("Received unknown payload type ${message.payload::class.java.simpleName}. The message was discarded.")
-                    emptyList()
+
+                    is AuthenticatedEncryptedDataMessage -> processDataMessage(
+                        payload.header.sessionId,
+                        AvroSealedClasses.DataMessage.AuthenticatedAndEncrypted(payload)
+                    )
+
+                    is ResponderHelloMessage, is ResponderHandshakeMessage, is InitiatorHandshakeMessage, is InitiatorHelloMessage -> {
+                        processSessionMessage(message)
+                    }
+
+                    is InboundUnauthenticatedMessage -> {
+                        logger.debug {
+                            "Processing unauthenticated message ${payload.header.messageId}"
+                        }
+                        recordInboundMessagesMetric(payload)
+                        listOf(
+                            Record(
+                                Schemas.P2P.P2P_IN_TOPIC,
+                                LinkManager.generateKey(),
+                                AppMessage(payload)
+                            )
+                        )
+                    }
+
+                    else -> {
+                        logger.error("Received unknown payload type ${message.payload::class.java.simpleName}. The message was discarded.")
+                        emptyList()
+                    }
                 }
             }
         }
@@ -286,35 +293,6 @@ internal class InboundMessageProcessor(
             message.messageId,
             AppMessageMarker(LinkManagerReceivedMarker(), clock.instant().toEpochMilli())
         )
-    }
-
-    private fun recordInboundMessagesMetric(message: AuthenticatedMessage) {
-        message.header.let {
-            recordInboundMessagesMetric(it.source.x500Name, it.destination.x500Name, it.source.groupId,
-                it.subsystem, message::class.java.simpleName)
-        }
-    }
-
-    private fun recordInboundMessagesMetric(message: InboundUnauthenticatedMessage) {
-        recordInboundMessagesMetric(null, null, null,
-            message.header.subsystem, message::class.java.simpleName)
-    }
-
-    private fun recordInboundMessagesMetric(source: String?, dest: String?, group: String?, subsystem: String, messageType: String) {
-        val builder = CordaMetrics.Metric.InboundMessageCount.builder()
-        listOf(
-            CordaMetrics.Tag.SourceVirtualNode to source,
-            CordaMetrics.Tag.DestinationVirtualNode to dest,
-            CordaMetrics.Tag.MembershipGroup to group,
-            CordaMetrics.Tag.MessagingSubsystem to subsystem,
-            CordaMetrics.Tag.MessageType to messageType,
-        ).forEach {
-            val value = it.second
-            if (value != null) {
-                builder.withTag(it.first, value)
-            }
-        }
-        builder.build().increment()
     }
 
     private fun <T> checkAllowedCommunication(
