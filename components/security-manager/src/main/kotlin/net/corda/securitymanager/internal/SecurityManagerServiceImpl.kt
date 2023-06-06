@@ -48,7 +48,7 @@ class SecurityManagerServiceImpl @Activate constructor(
     init {
         if (System.getProperty("securityMangerEnabled", "true").toBoolean()) {
             enablePackageAccessPermission("net.corda.")
-            startRestrictiveMode()
+            // startRestrictiveMode()
             applyDefaultSecurityPolicy(bundleContext)
         } else {
             log.warn("Security Manager disabled")
