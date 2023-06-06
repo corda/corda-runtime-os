@@ -26,9 +26,9 @@ import java.util.Stack
 import java.util.concurrent.ExecutorService
 import javax.servlet.Filter
 
-sealed interface SampleRate
-object Unlimited : SampleRate
-data class PerSecond(val samplesPerSecond: Int) : SampleRate
+internal sealed interface SampleRate
+internal object Unlimited : SampleRate
+internal data class PerSecond(val samplesPerSecond: Int) : SampleRate
 
 @Suppress("TooManyFunctions")
 internal class BraveTracingService(serviceName: String, zipkinHost: String, samplesPerSecond: SampleRate) : TracingService {
