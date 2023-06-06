@@ -66,7 +66,7 @@ class RestWorker @Activate constructor(
         if (printHelpOrVersion(params.defaultParams, RestWorker::class.java, shutDownService)) return
         setupMonitor(workerMonitor, params.defaultParams, this.javaClass.simpleName)
 
-        configureTracing("REST Worker", params.defaultParams.zipkinTraceUrl)
+        configureTracing("REST Worker", params.defaultParams.zipkinTraceUrl, params.defaultParams.traceSamplesPerSecond)
 
         val restConfig = PathAndConfig(BootConfig.BOOT_REST, params.restParams)
         val config = getBootstrapConfig(

@@ -57,7 +57,7 @@ class MemberWorker @Activate constructor(
         if (printHelpOrVersion(params.defaultParams, MemberWorker::class.java, shutDownService)) return
         setupMonitor(workerMonitor, params.defaultParams, this.javaClass.simpleName)
 
-        configureTracing("Member Worker", params.defaultParams.zipkinTraceUrl)
+        configureTracing("Member Worker", params.defaultParams.zipkinTraceUrl, params.defaultParams.traceSamplesPerSecond)
 
         val config = getBootstrapConfig(
             secretsServiceFactoryResolver,

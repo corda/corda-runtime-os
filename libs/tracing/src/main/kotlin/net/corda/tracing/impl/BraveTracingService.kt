@@ -7,6 +7,7 @@ import brave.context.slf4j.MDCScopeDecorator
 import brave.kafka.clients.KafkaTracing
 import brave.propagation.B3Propagation
 import brave.propagation.ThreadLocalCurrentTraceContext
+import brave.sampler.RateLimitingSampler
 import brave.sampler.Sampler
 import brave.servlet.TracingFilter
 import net.corda.messaging.api.records.EventLogRecord
@@ -16,6 +17,7 @@ import net.corda.tracing.TraceContext
 import net.corda.tracing.TracingService
 import org.apache.kafka.clients.consumer.Consumer
 import org.apache.kafka.clients.producer.Producer
+import org.slf4j.LoggerFactory
 import zipkin2.Span
 import zipkin2.reporter.AsyncReporter
 import zipkin2.reporter.Reporter
@@ -24,8 +26,15 @@ import zipkin2.reporter.urlconnection.URLConnectionSender
 import java.util.Stack
 import java.util.concurrent.ExecutorService
 import javax.servlet.Filter
+
+internal sealed interface SampleRate
+internal object Unlimited : SampleRate
+internal data class PerSecond(val samplesPerSecond: Int) : SampleRate
+
 @Suppress("TooManyFunctions")
-class BraveTracingService(serviceName: String, zipkinHost: String) : TracingService {
+internal class BraveTracingService(serviceName: String, zipkinHost: String, samplesPerSecond: SampleRate) : TracingService {
+
+    private val logger = LoggerFactory.getLogger(this::class.java)
 
     private val resourcesToClose = Stack<AutoCloseable>()
 
@@ -35,12 +44,23 @@ class BraveTracingService(serviceName: String, zipkinHost: String) : TracingServ
             .addScopeDecorator(MDCScopeDecorator.get())
             .build()
 
+        val sampler = when (samplesPerSecond) {
+            is PerSecond -> {
+                logger.info("Tracing will sample ${samplesPerSecond.samplesPerSecond} requests per second")
+                RateLimitingSampler.create(samplesPerSecond.samplesPerSecond)
+            }
+            is Unlimited -> {
+                logger.info("Tracing will sample unlimited requests per second")
+                Sampler.ALWAYS_SAMPLE
+            }
+        }
+
         val tracingBuilder = Tracing.newBuilder()
             .currentTraceContext(braveCurrentTraceContext)
             .supportsJoin(false)
             .localServiceName(serviceName)
             .traceId128Bit(true)
-            .sampler(Sampler.ALWAYS_SAMPLE)
+            .sampler(sampler)
             .propagationFactory(
                 BaggagePropagation.newFactoryBuilder(B3Propagation.FACTORY)
                     .add(BaggagePropagationConfig.SingleBaggageField.remote(BraveBaggageFields.REQUEST_ID))

@@ -70,7 +70,7 @@ class CryptoWorker @Activate constructor(
         }
         setupMonitor(workerMonitor, params.defaultParams, this.javaClass.simpleName)
 
-        configureTracing("Crypto Worker", params.defaultParams.zipkinTraceUrl)
+        configureTracing("Crypto Worker", params.defaultParams.zipkinTraceUrl, params.defaultParams.traceSamplesPerSecond)
 
         processor.start(
             buildBoostrapConfig(params, configurationValidatorFactory)

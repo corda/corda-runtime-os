@@ -52,7 +52,7 @@ class LinkManagerWorker @Activate constructor(
         if (WorkerHelpers.printHelpOrVersion(params.defaultParams, this::class.java, shutDownService)) return
         WorkerHelpers.setupMonitor(workerMonitor, params.defaultParams, this.javaClass.simpleName)
 
-        configureTracing("P2P Link Manager Worker", params.defaultParams.zipkinTraceUrl)
+        configureTracing("P2P Link Manager Worker", params.defaultParams.zipkinTraceUrl, params.defaultParams.traceSamplesPerSecond)
 
         val config = WorkerHelpers.getBootstrapConfig(
             secretsServiceFactoryResolver,
