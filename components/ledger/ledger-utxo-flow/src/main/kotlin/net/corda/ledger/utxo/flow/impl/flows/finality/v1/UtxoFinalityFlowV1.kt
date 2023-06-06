@@ -92,11 +92,17 @@ class UtxoFinalityFlowV1(
     @Suppress("MaxLineLength")
     @Suspendable
     private fun receiveSignaturesAndAddToTransaction(): Pair<UtxoSignedTransactionInternal, Map<FlowSession, List<DigitalSignatureAndMetadata>>> {
-        val signaturesPayloads = flowMessaging.receiveAllMap(
-            sessions.associateWith { Payload::class.java }
-        ).mapValues {
-            @Suppress("unchecked_cast")
-            it.value as Payload<List<DigitalSignatureAndMetadata>>
+        val signaturesPayloads = try {
+            flowMessaging.receiveAllMap(
+                sessions.associateWith { Payload::class.java }
+            ).mapValues {
+                @Suppress("unchecked_cast")
+                it.value as Payload<List<DigitalSignatureAndMetadata>>
+            }
+        } catch (e: CordaRuntimeException) {
+            log.warn("Failed to receive signatures from ${sessions.map { it.counterparty }} for transaction $transactionId")
+            persistInvalidTransaction(initialTransaction)
+            throw e
         }
 
         var transaction = initialTransaction
