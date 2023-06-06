@@ -14,6 +14,7 @@ import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.exception.CordaMessageAPIProducerRequiresReset
 import net.corda.metrics.CordaMetrics
+import net.corda.tracing.getOrCreateBatchPublishTracing
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.clients.consumer.OffsetAndMetadata
@@ -65,18 +66,21 @@ class CordaKafkaProducerImpl(
     }
 
     override fun send(record: CordaProducerRecord<*, *>, callback: CordaProducer.Callback?) {
+        getOrCreateBatchPublishTracing(config.clientId).begin(listOf( record.headers))
         tryWithCleanupOnFailure("send single record, no partition") {
             sendRecord(record, callback)
         }
     }
 
     override fun send(record: CordaProducerRecord<*, *>, partition: Int, callback: CordaProducer.Callback?) {
+        getOrCreateBatchPublishTracing(config.clientId).begin(listOf( record.headers))
         tryWithCleanupOnFailure("send single record, with partition") {
             sendRecord(record, callback, partition)
         }
     }
 
     override fun sendRecords(records: List<CordaProducerRecord<*, *>>) {
+        getOrCreateBatchPublishTracing(config.clientId).begin(records.map { it.headers })
         tryWithCleanupOnFailure("send multiple records, no partition") {
             for (record in records) {
                 sendRecord(record)
@@ -85,6 +89,8 @@ class CordaKafkaProducerImpl(
     }
 
     override fun sendRecordsToPartitions(recordsWithPartitions: List<Pair<Int, CordaProducerRecord<*, *>>>) {
+        val tracing = getOrCreateBatchPublishTracing(config.clientId)
+        tracing.begin(recordsWithPartitions.map { it.second.headers })
         tryWithCleanupOnFailure("send multiple records, with partitions") {
             for ((partition, record) in recordsWithPartitions) {
                 sendRecord(record, null, partition)
@@ -153,6 +159,7 @@ class CordaKafkaProducerImpl(
     }
 
     override fun abortTransaction() {
+        getOrCreateBatchPublishTracing(config.clientId).abort()
         tryWithCleanupOnFailure("aborting transaction", abortTransactionOnFailure = false) {
             producer.abortTransaction()
         }
@@ -171,6 +178,8 @@ class CordaKafkaProducerImpl(
                 retryableException = commitTransactionAndCatchRetryable()
             }
         }
+
+        getOrCreateBatchPublishTracing(config.clientId).complete()
 
         if (retryableException != null) {
             // We have retried once, we are not retrying again, so the only other option compatible with the producer
@@ -285,7 +294,12 @@ class CordaKafkaProducerImpl(
     ) {
         try {
             block()
+            // transactional publications will be completed in commitTransaction()
+            if(!transactional){
+                getOrCreateBatchPublishTracing(config.clientId).complete()
+            }
         } catch (ex: Exception) {
+            getOrCreateBatchPublishTracing(config.clientId).abort()
             handleException(ex, operation, abortTransactionOnFailure)
         }
     }

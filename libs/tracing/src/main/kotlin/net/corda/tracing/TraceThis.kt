@@ -52,6 +52,10 @@ fun <R> trace(operationName: String, processingBlock: TraceContext.() -> R): R {
     return TracingState.currentTraceService.nextSpan(operationName, processingBlock)
 }
 
+fun getOrCreateBatchPublishTracing(clientId:String):BatchPublishTracing{
+    return TracingState.currentTraceService.getOrCreateBatchPublishTracing(clientId)
+}
+
 fun addTraceContextToRecords(records: List<Record<*, *>>): List<Record<*, *>> = records.map(::addTraceContextToRecord)
 
 fun addTraceContextToRecord(it: Record<*, *>): Record<out Any, out Any> {

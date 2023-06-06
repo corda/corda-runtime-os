@@ -2,6 +2,7 @@ package net.corda.tracing.impl
 
 import net.corda.messaging.api.records.EventLogRecord
 import net.corda.messaging.api.records.Record
+import net.corda.tracing.BatchPublishTracing
 import net.corda.tracing.BatchRecordTracer
 import net.corda.tracing.TraceContext
 import net.corda.tracing.TracingService
@@ -53,6 +54,17 @@ class NoopTracingService : TracingService {
         }
     }
 
+    class NoopBatchPublishTracing:BatchPublishTracing{
+        override fun begin(recordHeaders: List<List<Pair<String,String>>>) {
+        }
+
+        override fun complete() {
+        }
+
+        override fun abort() {
+        }
+    }
+
     override fun addTraceHeaders(headers: List<Pair<String, String>>): List<Pair<String, String>> {
         return headers
     }
@@ -71,6 +83,10 @@ class NoopTracingService : TracingService {
         processingBlock: TraceContext.() -> R
     ): R {
         return processingBlock(NoopTraceContext())
+    }
+
+    override fun getOrCreateBatchPublishTracing(clientId: String): BatchPublishTracing {
+        return NoopBatchPublishTracing()
     }
 
     override fun wrapWithTracingExecutor(executor: ExecutorService): ExecutorService {
