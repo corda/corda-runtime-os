@@ -40,6 +40,9 @@ import net.corda.rest.ws.DuplexChannel
 import net.corda.rest.ws.WebSocketValidationException
 import net.corda.schema.Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC
 import net.corda.schema.Schemas.Flow.FLOW_STATUS_TOPIC
+import net.corda.tracing.TraceTag
+import net.corda.tracing.addTraceContextToRecord
+import net.corda.tracing.trace
 import net.corda.utilities.MDC_CLIENT_ID
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.read.rest.extensions.getByHoldingIdentityShortHashOrThrow
@@ -106,109 +109,123 @@ class FlowRestResourceImpl @Activate constructor(
         holdingIdentityShortHash: String,
         startFlow: StartFlowParameters
     ): ResponseEntity<FlowStatusResponse> {
-        if (publisher == null) {
-            throw ServiceUnavailableException(FlowRestExceptionConstants.UNINITIALIZED_ERROR)
-        }
-        if (fatalErrorOccurred) {
-            // If Kafka has told us this publisher should not attempt a retry, most likely we have already been
-            // replaced by another worker and have been "fenced". In that case it would be unsafe to create another
-            // producer, because we'd attempt to replace our replacement. Most likely service orchestration has already
-            // replaced us - nothing else should lead to us being fenced - and therefore should be responsible for
-            // closing us down soon. There are other fatal error types, but none are recoverable by definition.
-            throw ServiceUnavailableException(FlowRestExceptionConstants.TEMPORARY_INTERNAL_FAILURE)
-        }
+        return trace("API - Start Flow") {
+            traceVirtualNodeId(holdingIdentityShortHash)
 
-        val vNode = getVirtualNode(holdingIdentityShortHash)
-
-        if (vNode.flowStartOperationalStatus == VirtualNodeOperationalState.INACTIVE) {
-            throw OperationNotAllowedException(
-                FlowRestExceptionConstants.NOT_OPERATIONAL
-                    .format(holdingIdentityShortHash)
-            )
-        }
-
-        val clientRequestId = startFlow.clientRequestId
-        val flowStatus = flowStatusCacheService.getStatus(clientRequestId, vNode.holdingIdentity)
-
-        validateClientRequestId(clientRequestId)
-
-        if (flowStatus != null) {
-            throw ResourceAlreadyExistsException(FlowRestExceptionConstants.ALREADY_EXISTS_ERROR)
-        }
-
-        val flowClassName = startFlow.flowClassName
-        val startableFlows = getStartableFlows(holdingIdentityShortHash, vNode)
-        if (!startableFlows.contains(flowClassName)) {
-            val cpiMeta = cpiInfoReadService.get(CpiIdentifier.fromAvro(vNode.cpiIdentifier))
-            val msg =
-                "The flow that was requested ($flowClassName) is not in the list of startable flows for this holding identity."
-            val details = mapOf(
-                "CPI-name" to cpiMeta?.cpiId?.name.toString(),
-                "CPI-version" to cpiMeta?.cpiId?.version.toString(),
-                "CPI-signer-summary-hash" to cpiMeta?.cpiId?.signerSummaryHash.toString(),
-                "virtual-node" to vNode.holdingIdentity.x500Name,
-                "group-id" to vNode.holdingIdentity.groupId,
-                "startableFlows" to startableFlows.joinToString(",")
-            )
-            log.info("$msg $details")
-            throw InvalidInputDataException(msg, details)
-        }
-
-        val restContext = CURRENT_REST_CONTEXT.get()
-        val principal = restContext.principal
-
-        if (!permissionValidationService.permissionValidator.authorizeUser(
-                principal,
-                "$START_FLOW_PREFIX$PREFIX_SEPARATOR${startFlow.flowClassName}"
-            )
-        ) {
-            throw ForbiddenException(FlowRestExceptionConstants.FORBIDDEN.format(principal, startFlow.flowClassName))
-        }
-
-        // TODO Platform properties to be populated correctly.
-        // This is a placeholder which indicates access to everything, see CORE-6076
-        val flowContextPlatformProperties = mapOf(
-            "corda.account" to "account-zero",
-            MDC_CLIENT_ID to clientRequestId
-        )
-        val startEvent =
-            messageFactory.createStartFlowEvent(
-                clientRequestId,
-                vNode,
-                flowClassName,
-                startFlow.requestBody.escapedJson,
-                flowContextPlatformProperties
-            )
-        val status = messageFactory.createStartFlowStatus(clientRequestId, vNode, flowClassName)
-
-        val records = listOf(
-            Record(FLOW_MAPPER_EVENT_TOPIC, status.key.toString(), startEvent),
-            Record(FLOW_STATUS_TOPIC, status.key, status),
-        )
-
-        val recordFutures = try {
-            tryWithExceptionHandling(
-                log,
-                "Publishing start flow events",
-                untranslatedExceptions = setOf(CordaMessageAPIFatalException::class.java)
-            ) {
-                listOf(publisher!!.batchPublish(records))
+            if (publisher == null) {
+                throw ServiceUnavailableException(FlowRestExceptionConstants.UNINITIALIZED_ERROR)
             }
-        } catch (ex: CordaMessageAPIFatalException) {
-            throw markFatalAndReturnFailureException(ex)
-        }
-        waitOnPublisherFutures(recordFutures, PUBLICATION_TIMEOUT_SECONDS, TimeUnit.SECONDS) { ex, failureIsFatal ->
-            if (failureIsFatal) {
-                throw markFatalAndReturnFailureException(ex)
-            } else {
-                val msg = ex.message ?: ""
-                throw InternalServerException(
-                    FlowRestExceptionConstants.NON_FATAL_ERROR,
-                    mapOf("cause" to ex::class.java.simpleName, "reason" to msg)
+            if (fatalErrorOccurred) {
+                // If Kafka has told us this publisher should not attempt a retry, most likely we have already been
+                // replaced by another worker and have been "fenced". In that case it would be unsafe to create another
+                // producer, because we'd attempt to replace our replacement. Most likely service orchestration has already
+                // replaced us - nothing else should lead to us being fenced - and therefore should be responsible for
+                // closing us down soon. There are other fatal error types, but none are recoverable by definition.
+                throw ServiceUnavailableException(FlowRestExceptionConstants.TEMPORARY_INTERNAL_FAILURE)
+            }
+
+            val vNode = getVirtualNode(holdingIdentityShortHash)
+
+            if (vNode.flowStartOperationalStatus == VirtualNodeOperationalState.INACTIVE) {
+                throw OperationNotAllowedException(
+                    FlowRestExceptionConstants.NOT_OPERATIONAL
+                        .format(holdingIdentityShortHash)
                 )
             }
+
+            val clientRequestId = startFlow.clientRequestId
+
+            traceRequestId(clientRequestId)
+
+            val flowStatus = flowStatusCacheService.getStatus(clientRequestId, vNode.holdingIdentity)
+
+            validateClientRequestId(clientRequestId)
+
+            if (flowStatus != null) {
+                throw ResourceAlreadyExistsException(FlowRestExceptionConstants.ALREADY_EXISTS_ERROR)
+            }
+
+            val flowClassName = startFlow.flowClassName
+            val startableFlows = getStartableFlows(holdingIdentityShortHash, vNode)
+            if (!startableFlows.contains(flowClassName)) {
+                val cpiMeta = cpiInfoReadService.get(CpiIdentifier.fromAvro(vNode.cpiIdentifier))
+                val msg =
+                    "The flow that was requested ($flowClassName) is not in the list of startable flows for this holding identity."
+                val details = mapOf(
+                    "CPI-name" to cpiMeta?.cpiId?.name.toString(),
+                    "CPI-version" to cpiMeta?.cpiId?.version.toString(),
+                    "CPI-signer-summary-hash" to cpiMeta?.cpiId?.signerSummaryHash.toString(),
+                    "virtual-node" to vNode.holdingIdentity.x500Name,
+                    "group-id" to vNode.holdingIdentity.groupId,
+                    "startableFlows" to startableFlows.joinToString(",")
+                )
+                log.info("$msg $details")
+                throw InvalidInputDataException(msg, details)
+            }
+
+            traceTag(TraceTag.FLOW_CLASS, flowClassName)
+
+            val restContext = CURRENT_REST_CONTEXT.get()
+            val principal = restContext.principal
+
+            if (!permissionValidationService.permissionValidator.authorizeUser(
+                    principal,
+                    "$START_FLOW_PREFIX$PREFIX_SEPARATOR${startFlow.flowClassName}"
+                )
+            ) {
+                throw ForbiddenException(
+                    FlowRestExceptionConstants.FORBIDDEN.format(
+                        principal,
+                        startFlow.flowClassName
+                    )
+                )
+            }
+
+            // TODO Platform properties to be populated correctly.
+            // This is a placeholder which indicates access to everything, see CORE-6076
+            val flowContextPlatformProperties = mapOf(
+                "corda.account" to "account-zero",
+                MDC_CLIENT_ID to clientRequestId
+            )
+            val startEvent =
+                messageFactory.createStartFlowEvent(
+                    clientRequestId,
+                    vNode,
+                    flowClassName,
+                    startFlow.requestBody.escapedJson,
+                    flowContextPlatformProperties
+                )
+            val status = messageFactory.createStartFlowStatus(clientRequestId, vNode, flowClassName)
+
+            val records = listOf(
+                addTraceContextToRecord(Record(FLOW_MAPPER_EVENT_TOPIC, status.key.toString(), startEvent)),
+                Record(FLOW_STATUS_TOPIC, status.key, status),
+            )
+
+            val recordFutures = try {
+                tryWithExceptionHandling(
+                    log,
+                    "Publishing start flow events",
+                    untranslatedExceptions = setOf(CordaMessageAPIFatalException::class.java)
+                ) {
+                    listOf(publisher!!.batchPublish(records))
+                }
+            } catch (ex: CordaMessageAPIFatalException) {
+                throw markFatalAndReturnFailureException(ex)
+            }
+            waitOnPublisherFutures(recordFutures, PUBLICATION_TIMEOUT_SECONDS, TimeUnit.SECONDS) { ex, failureIsFatal ->
+                if (failureIsFatal) {
+                    throw markFatalAndReturnFailureException(ex)
+                } else {
+                    val msg = ex.message ?: ""
+                    throw InternalServerException(
+                        FlowRestExceptionConstants.NON_FATAL_ERROR,
+                        mapOf("cause" to ex::class.java.simpleName, "reason" to msg)
+                    )
+                }
+            }
+            ResponseEntity.accepted(messageFactory.createFlowStatusResponse(status))
         }
-        return ResponseEntity.accepted(messageFactory.createFlowStatusResponse(status))
     }
 
     private fun markFatalAndReturnFailureException(exception: Exception): Exception {

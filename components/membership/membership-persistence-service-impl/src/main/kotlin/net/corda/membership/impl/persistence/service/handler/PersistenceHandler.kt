@@ -35,7 +35,7 @@ internal abstract class BasePersistenceHandler<REQUEST, RESPONSE>(
 ) : PersistenceHandler<REQUEST, RESPONSE> {
 
     companion object {
-        val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        internal val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     private val dbConnectionManager get() = persistenceHandlerServices.dbConnectionManager

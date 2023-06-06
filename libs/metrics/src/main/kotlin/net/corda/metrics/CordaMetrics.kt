@@ -6,6 +6,7 @@ import io.micrometer.core.instrument.Gauge
 import io.micrometer.core.instrument.Meter
 import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.core.instrument.Metrics
+import io.micrometer.core.instrument.Tag as micrometerTag
 import io.micrometer.core.instrument.Timer
 import io.micrometer.core.instrument.binder.system.DiskSpaceMetrics
 import io.micrometer.core.instrument.composite.CompositeMeterRegistry
@@ -14,7 +15,7 @@ import io.micrometer.core.instrument.noop.NoopMeter
 import java.nio.file.FileSystems
 import java.nio.file.Path
 import java.util.concurrent.atomic.AtomicInteger
-import io.micrometer.core.instrument.Tag as micrometerTag
+import java.util.function.Supplier
 
 
 object CordaMetrics {
@@ -232,12 +233,12 @@ object CordaMetrics {
         /**
          * Number of outbound peer-to-peer sessions.
          */
-        object OutboundSessionCount : Metric<SettableGauge>("p2p.session.outbound", CordaMetrics::settableGauge)
+        class OutboundSessionCount(computation: Supplier<Number>) : ComputedValue("p2p.session.outbound", computation)
 
         /**
          * Number of inbound peer-to-peer sessions.
          */
-        object InboundSessionCount : Metric<SettableGauge>("p2p.session.inbound", CordaMetrics::settableGauge)
+        class InboundSessionCount(computation: Supplier<Number>) : ComputedValue("p2p.session.inbound", computation)
 
         /**
          * Time it took for an inbound request to the p2p gateway to be processed.
@@ -528,12 +529,46 @@ object CordaMetrics {
             object DeserializationTime : Metric<Timer>("serialization.amqp.deserialization.time", CordaMetrics::timer)
         }
 
+        /**
+         * A [Gauge] metric that computes its value using a [Supplier] lambda.
+         * @param name A unique name for this [Gauge].
+         * @param computation A lambda to compute our current value.
+         */
+        sealed class ComputedValue(name: String, computation: Supplier<Number>) : Metric<Gauge>(name, meter = { n, tags ->
+            Gauge.builder(n, computation)
+                .tags(tags)
+                .register(registry)
+        })
+
         class DiskSpace(path: Path) : Metric<NoopMeter>("", meter = { _, tags ->
             if (path.fileSystem == FileSystems.getDefault()) {
                 DiskSpaceMetrics(path.toFile(), tags).bindTo(registry)
             }
             VoidMeter
         })
+
+        object Db {
+
+            /**
+             * Metric for the time taken to process an entity persistence request, from the moment the request is received from Kafka.
+             */
+            object EntityPersistenceRequestTime : Metric<Timer>("db.entity.persistence.request.time", CordaMetrics::timer)
+
+            /**
+             * Metric for the lag between the flow putting the entity persistence request to Kafka and the EntityMessageProcessor.
+             */
+            object EntityPersistenceRequestLag : Metric<Timer>("db.entity.persistence.request.lag", CordaMetrics::timer)
+
+            /**
+             * Metric for the time taken for a full reconciliation run.
+             */
+            object ReconciliationRunTime : Metric<Timer>("db.reconciliation.run.time", CordaMetrics::timer)
+
+            /**
+             * Metric for the number of reconciled records for a reconciliation run.
+             */
+            object ReconciliationRecordsCount : Metric<DistributionSummary>("db.reconciliation.records.count", Metrics::summary)
+        }
     }
 
     /**
@@ -746,7 +781,7 @@ object CordaMetrics {
             })
     }
 
-    fun settableGauge(name: String, tags: Iterable<micrometerTag>): SettableGauge {
+    private fun settableGauge(name: String, tags: Iterable<micrometerTag>): SettableGauge {
         val gaugeValue = AtomicInteger()
         val gauge = Gauge.builder(name, gaugeValue, Number::toDouble)
             .tags(tags)
@@ -754,7 +789,7 @@ object CordaMetrics {
         return SettableGauge(gauge, gaugeValue)
     }
 
-    fun timer(name: String, tags: Iterable<micrometerTag>): Timer {
+    private fun timer(name: String, tags: Iterable<micrometerTag>): Timer {
         return Timer.builder(name)
             .publishPercentiles(0.50, 0.95, 0.99)
             .publishPercentileHistogram()

@@ -44,7 +44,6 @@ import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.time.Duration
-import java.time.Instant
 import javax.persistence.EntityExistsException
 import javax.persistence.EntityManager
 import javax.persistence.OptimisticLockException
@@ -85,7 +84,7 @@ open class JPABackingStoreImpl @Activate constructor(
 
     override fun session(holdingIdentity: HoldingIdentity, block: (BackingStore.Session) -> Unit) {
 
-        val sessionStartTime = Instant.now().toEpochMilli()
+        val sessionStartTime = System.nanoTime()
 
         val entityManagerFactory = dbConnectionManager.getOrCreateEntityManagerFactory(
             VirtualNodeDbType.UNIQUENESS.getSchemaName(holdingIdentity.shortHash),
@@ -115,7 +114,7 @@ open class JPABackingStoreImpl @Activate constructor(
                 .builder()
                 .withTag(CordaMetrics.Tag.SourceVirtualNode, holdingIdentity.shortHash.toString())
                 .build()
-                .record(Duration.ofMillis(Instant.now().toEpochMilli() - sessionStartTime))
+                .record(Duration.ofNanos(System.nanoTime() - sessionStartTime))
         }
     }
 
@@ -141,7 +140,7 @@ open class JPABackingStoreImpl @Activate constructor(
         override fun executeTransaction(
             block: (BackingStore.Session, BackingStore.Session.TransactionOps) -> Unit
         ) {
-            val transactionStartTime = Instant.now().toEpochMilli()
+            val transactionStartTime = System.nanoTime()
 
             try {
                 for (attemptNumber in 1..MAX_ATTEMPTS) {
@@ -227,7 +226,7 @@ open class JPABackingStoreImpl @Activate constructor(
                     .builder()
                     .withTag(CordaMetrics.Tag.SourceVirtualNode, holdingIdentity.shortHash.toString())
                     .build()
-                    .record(Duration.ofMillis(Instant.now().toEpochMilli() - transactionStartTime))
+                    .record(Duration.ofNanos(System.nanoTime() - transactionStartTime))
             }
         }
 
@@ -235,7 +234,7 @@ open class JPABackingStoreImpl @Activate constructor(
             states: Collection<UniquenessCheckStateRef>
         ): Map<UniquenessCheckStateRef, UniquenessCheckStateDetails> {
 
-            val queryStartTime = Instant.now().toEpochMilli()
+            val queryStartTime = System.nanoTime()
 
             val results = HashMap<
                     UniquenessCheckStateRef, UniquenessCheckStateDetails>()
@@ -268,7 +267,7 @@ open class JPABackingStoreImpl @Activate constructor(
                 .withTag(CordaMetrics.Tag.SourceVirtualNode, holdingIdentity.shortHash.toString())
                 .withTag(CordaMetrics.Tag.OperationName, "getStateDetails")
                 .build()
-                .record(Duration.ofMillis(Instant.now().toEpochMilli() - queryStartTime))
+                .record(Duration.ofNanos(System.nanoTime() - queryStartTime))
 
             return results
         }
@@ -277,7 +276,7 @@ open class JPABackingStoreImpl @Activate constructor(
             txIds: Collection<SecureHash>
         ): Map<out SecureHash, UniquenessCheckTransactionDetailsInternal> {
 
-            val queryStartTime = Instant.now().toEpochMilli()
+            val queryStartTime = System.nanoTime()
 
             val txPks = txIds.map {
                 UniquenessTxAlgoIdKey(it.algorithm, it.bytes)
@@ -321,7 +320,7 @@ open class JPABackingStoreImpl @Activate constructor(
                 .withTag(CordaMetrics.Tag.SourceVirtualNode, holdingIdentity.shortHash.toString())
                 .withTag(CordaMetrics.Tag.OperationName, "getTransactionDetails")
                 .build()
-                .record(Duration.ofMillis(Instant.now().toEpochMilli() - queryStartTime))
+                .record(Duration.ofNanos(System.nanoTime() - queryStartTime))
 
             return results
         }
@@ -330,7 +329,7 @@ open class JPABackingStoreImpl @Activate constructor(
             txEntity: UniquenessTransactionDetailEntity
         ): UniquenessCheckError? {
 
-            val queryStartTime = Instant.now().toEpochMilli()
+            val queryStartTime = System.nanoTime()
 
             val existing = entityManager.createNamedQuery(
                 "UniquenessRejectedTransactionEntity.select",
@@ -350,7 +349,7 @@ open class JPABackingStoreImpl @Activate constructor(
                     .withTag(CordaMetrics.Tag.SourceVirtualNode, holdingIdentity.shortHash.toString())
                     .withTag(CordaMetrics.Tag.OperationName, "getTransactionError")
                     .build()
-                    .record(Duration.ofMillis(Instant.now().toEpochMilli() - queryStartTime))
+                    .record(Duration.ofNanos(System.nanoTime() - queryStartTime))
             }
         }
 
@@ -401,7 +400,7 @@ open class JPABackingStoreImpl @Activate constructor(
                 transactionDetails: Collection<Pair<
                         UniquenessCheckRequestInternal, UniquenessCheckResult>>
             ) {
-                val commitStartTime = Instant.now().toEpochMilli()
+                val commitStartTime = System.nanoTime()
 
                 transactionDetails.forEach { (request, result) ->
                     entityManager.persist(
@@ -430,7 +429,7 @@ open class JPABackingStoreImpl @Activate constructor(
                     .builder()
                     .withTag(CordaMetrics.Tag.SourceVirtualNode, holdingIdentity.shortHash.toString())
                     .build()
-                    .record(Duration.ofMillis(Instant.now().toEpochMilli() - commitStartTime))
+                    .record(Duration.ofNanos(System.nanoTime() - commitStartTime))
             }
         }
     }

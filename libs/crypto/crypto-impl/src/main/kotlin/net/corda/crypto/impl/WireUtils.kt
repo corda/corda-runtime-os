@@ -66,7 +66,7 @@ private const val TO_SIGNATURE_SPEC_OPERATION_NAME = "toSignatureSpec"
 private const val TO_WIRE_OPERATION_NAME = "toWire"
 
 fun CryptoSignatureSpec.toSignatureSpec(serializer: AlgorithmParameterSpecEncodingService): SignatureSpec {
-    val startTime = Instant.now()
+    val startTime = System.nanoTime()
     val algorithmParams = if (params != null) {
         serializer.deserialize(
             SerializedAlgorithmParameterSpec(
@@ -87,13 +87,13 @@ fun CryptoSignatureSpec.toSignatureSpec(serializer: AlgorithmParameterSpecEncodi
         CordaMetrics.Metric.Crypto.SignatureSpecTimer.builder()
             .withTag(CordaMetrics.Tag.OperationName, TO_SIGNATURE_SPEC_OPERATION_NAME)
             .build()
-            .record(Duration.between(startTime, Instant.now()))
+            .record(Duration.ofNanos(System.nanoTime() - startTime))
     }
 }
 
 
 fun SignatureSpec.toWire(serializer: AlgorithmParameterSpecEncodingService): CryptoSignatureSpec {
-    val startTime = Instant.now()
+    val startTime = System.nanoTime()
     return when (this) {
         is CustomSignatureSpec -> CryptoSignatureSpec(
             signatureName,
@@ -112,7 +112,7 @@ fun SignatureSpec.toWire(serializer: AlgorithmParameterSpecEncodingService): Cry
         CordaMetrics.Metric.Crypto.SignatureSpecTimer.builder()
             .withTag(CordaMetrics.Tag.OperationName, TO_WIRE_OPERATION_NAME)
             .build()
-            .record(Duration.between(startTime, Instant.now()))
+            .record(Duration.ofNanos(System.nanoTime() - startTime))
     }
 }
 
