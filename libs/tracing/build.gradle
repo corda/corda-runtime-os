@@ -1,0 +1,46 @@
+plugins {
+    id 'corda.common-publishing'
+    id 'corda.common-library'
+}
+description 'Tracing'
+
+ext {
+    releasable = true
+}
+
+dependencies {
+    compileOnly 'org.osgi:osgi.annotation'
+    compileOnly 'org.osgi:osgi.core'
+    compileOnly 'org.osgi:org.osgi.service.component.annotations'
+
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    api 'net.corda:corda-base'
+    api 'net.corda:corda-application'
+    implementation 'net.corda:corda-config-schema'
+    implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
+    implementation "org.slf4j:slf4j-api:$slf4jVersion"
+
+    implementation project(":libs:configuration:configuration-core")
+    implementation project(":libs:messaging:messaging")
+
+    implementation("io.zipkin.reporter2:zipkin-sender-urlconnection:$zipkinVersion")
+    implementation("io.zipkin.brave:brave-context-slf4j:$braveVersion")
+    implementation("io.zipkin.brave:brave-instrumentation-kafka-clients:$braveVersion")
+    implementation("io.zipkin.brave:brave-instrumentation-servlet:$braveVersion")
+    implementation "org.apache.servicemix.bundles:org.apache.servicemix.bundles.kafka-clients:$kafkaClientVersion"
+
+
+    implementation "io.javalin:javalin-osgi:$javalinVersion"
+    constraints {
+        implementation("org.eclipse.jetty:jetty-server:$jettyVersion") {
+            because 'Javalin uses an older version of Jetty which is exposed to CVE-2023-26048 and CVE-2023-26049. ' +
+                    'This might be resolved in the future versions of Javalin.'
+        }
+    }
+
+    testImplementation "org.assertj:assertj-core:$assertjVersion"
+    testImplementation "com.google.jimfs:jimfs:$jimfsVersion"
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+
+    testRuntimeOnly 'org.osgi:osgi.core'
+}

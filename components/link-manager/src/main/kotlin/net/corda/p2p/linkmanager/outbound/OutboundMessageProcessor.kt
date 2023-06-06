@@ -31,6 +31,7 @@ import net.corda.p2p.linkmanager.metrics.recordInboundMessagesMetric
 import net.corda.p2p.linkmanager.sessions.PendingSessionMessageQueues
 import net.corda.p2p.linkmanager.sessions.SessionManager
 import net.corda.schema.Schemas
+import net.corda.tracing.traceEventProcessing
 import net.corda.utilities.Either
 import net.corda.utilities.debug
 import net.corda.utilities.time.Clock
@@ -83,9 +84,9 @@ internal class OutboundMessageProcessor(
     }
 
     override fun onNext(events: List<EventLogRecord<String, AppMessage>>): List<Record<*, *>> {
-        val records = mutableListOf<Record<String, *>>()
+        val records = mutableListOf<Record<*, *>>()
         for (event in events) {
-            records += processEvent(event)
+            records += traceEventProcessing(event,"P2P Link Manager Outbound Event") { processEvent(event)}
         }
         return records
     }

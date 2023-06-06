@@ -10,11 +10,13 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.TimerEvent
+import net.corda.metrics.CordaMetrics
 import net.corda.reconciliation.ReconcilerReader
 import net.corda.reconciliation.ReconcilerWriter
 import net.corda.utilities.debug
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.slf4j.LoggerFactory
+import java.time.Duration
 
 @Suppress("LongParameterList")
 internal class ReconcilerEventHandler<K : Any, V : Any>(
@@ -71,17 +73,34 @@ internal class ReconcilerEventHandler<K : Any, V : Any>(
 
     private fun reconcileAndScheduleNext(coordinator: LifecycleCoordinator) {
         logger.info("Initiating reconciliation")
+        var reconciliationOutcome = "FAILED"
+        val startTime = System.currentTimeMillis()
+        var reconciliationRunTime = startTime
+        var reconciledCount = 0
         try {
-            val startTime = System.currentTimeMillis()
-            reconcile()
-            val endTime = System.currentTimeMillis()
-            logger.info("Reconciliation completed in ${endTime - startTime} ms")
+            reconciledCount = reconcile()
+            reconciliationOutcome = "SUCCEEDED"
+            reconciliationRunTime = System.currentTimeMillis() - startTime
+            logger.info("Reconciliation completed in $reconciliationRunTime ms")
             scheduleNextReconciliation(coordinator)
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
             // An error here could be a transient or not exception. We should transition to `DOWN` and wait
             // on subsequent `RegistrationStatusChangeEvent` to see if it is going to be a `DOWN` or an `ERROR`.
+            reconciliationRunTime = System.currentTimeMillis() - startTime
             logger.warn("Reconciliation failed. Terminating reconciliations", e)
             coordinator.updateStatus(LifecycleStatus.DOWN)
+        } finally {
+            CordaMetrics.Metric.Db.ReconciliationRunTime.builder()
+                .withTag(CordaMetrics.Tag.OperationName, name)
+                .withTag(CordaMetrics.Tag.OperationStatus, reconciliationOutcome)
+                .build()
+                .record(Duration.ofMillis(reconciliationRunTime))
+
+            CordaMetrics.Metric.Db.ReconciliationRecordsCount.builder()
+                .withTag(CordaMetrics.Tag.OperationName, name)
+                .withTag(CordaMetrics.Tag.OperationStatus, reconciliationOutcome)
+                .build()
+                .record(reconciledCount.toDouble())
         }
     }
 
@@ -91,7 +110,7 @@ internal class ReconcilerEventHandler<K : Any, V : Any>(
      * @throws [ReconciliationException] to notify an error occurred at kafka or db [ReconcilerReader.getAllVersionedRecords].
      */
     @Suppress("ComplexMethod")
-    fun reconcile() {
+    fun reconcile(): Int {
         val kafkaRecords =
             kafkaReader.getAllVersionedRecords()?.asSequence()?.associateBy { it.key }
                 ?: throw ReconciliationException("Error occurred while retrieving kafka records")
@@ -114,6 +133,7 @@ internal class ReconcilerEventHandler<K : Any, V : Any>(
             }
                 ?: throw ReconciliationException("Error occurred while retrieving db records")
 
+        var reconciledCount = 0
         toBeReconciledDbRecords.use {
             it.forEach { dbRecord ->
                 if (dbRecord.isDeleted) {
@@ -121,8 +141,11 @@ internal class ReconcilerEventHandler<K : Any, V : Any>(
                 } else {
                     writer.put(dbRecord.key, dbRecord.value)
                 }
+                reconciledCount++
             }
         }
+
+        return reconciledCount
     }
 
     private fun scheduleNextReconciliation(coordinator: LifecycleCoordinator) {

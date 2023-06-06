@@ -11,6 +11,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.listener.PartitionAssignmentListener
 import net.corda.messaging.config.ResolvedSubscriptionConfig
+import net.corda.messaging.utils.toRecord
 
 /**
  * Implementation of a DurableSubscription.
@@ -42,8 +43,10 @@ internal class DurableSubscriptionImpl<K : Any, V : Any>(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
 ) : Subscription<K, V> {
 
-    private val subscription = EventLogSubscriptionImpl(config, cordaConsumerBuilder, cordaProducerBuilder,
-        ForwardingEventLogProcessor(processor), partitionAssignmentListener, lifecycleCoordinatorFactory)
+    private val subscription = EventLogSubscriptionImpl(
+        config, cordaConsumerBuilder, cordaProducerBuilder,
+        ForwardingEventLogProcessor(processor), partitionAssignmentListener, lifecycleCoordinatorFactory
+    )
 
     override val subscriptionName: LifecycleCoordinatorName
         get() = subscription.subscriptionName
@@ -62,9 +65,10 @@ internal class DurableSubscriptionImpl<K : Any, V : Any>(
     /**
      * A simple processor that forwards events to the underlying durable processor.
      */
-    class ForwardingEventLogProcessor<K: Any, V: Any>(private val durableProcessor: DurableProcessor<K, V>): EventLogProcessor<K, V> {
+    class ForwardingEventLogProcessor<K : Any, V : Any>(private val durableProcessor: DurableProcessor<K, V>) :
+        EventLogProcessor<K, V> {
         override fun onNext(events: List<EventLogRecord<K, V>>): List<Record<*, *>> {
-            val records = events.map { Record(it.topic, it.key, it.value) }
+            val records = events.map { it.toRecord() }
             return durableProcessor.onNext(records)
         }
 
