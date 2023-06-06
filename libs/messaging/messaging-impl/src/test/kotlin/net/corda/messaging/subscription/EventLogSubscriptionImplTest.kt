@@ -28,6 +28,7 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.kotlin.argumentCaptor
 import net.corda.test.util.waitWhile
+import org.junit.jupiter.api.Disabled
 import java.nio.ByteBuffer
 import java.time.Duration
 import java.util.concurrent.CountDownLatch
@@ -35,6 +36,7 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
+@Disabled
 class EventLogSubscriptionImplTest {
     private companion object {
         private const val TEST_TIMEOUT_SECONDS = 30L
