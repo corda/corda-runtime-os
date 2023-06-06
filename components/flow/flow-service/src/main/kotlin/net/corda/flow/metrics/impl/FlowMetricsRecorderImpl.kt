@@ -3,8 +3,6 @@ package net.corda.flow.metrics.impl
 import net.corda.flow.metrics.FlowMetricsRecorder
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.metrics.CordaMetrics
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
 import java.time.Duration
 
 class FlowMetricsRecorderImpl(
