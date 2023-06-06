@@ -34,6 +34,7 @@ dependencies {
     implementation project(':applications:workers:worker-common')
     implementation project(':libs:configuration:configuration-core')
     implementation project(':libs:platform-info')
+    implementation project(':libs:tracing')
     implementation project(':libs:configuration:configuration-validation')
     implementation project(':processors:rest-processor')
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'

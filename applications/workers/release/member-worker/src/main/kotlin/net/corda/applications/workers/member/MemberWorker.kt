@@ -14,6 +14,8 @@ import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.processors.member.MemberProcessor
+import net.corda.tracing.configureTracing
+import net.corda.tracing.shutdownTracing
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -55,6 +57,8 @@ class MemberWorker @Activate constructor(
         if (printHelpOrVersion(params.defaultParams, MemberWorker::class.java, shutDownService)) return
         setupMonitor(workerMonitor, params.defaultParams, this.javaClass.simpleName)
 
+        configureTracing("Member Worker", params.defaultParams.zipkinTraceUrl)
+
         val config = getBootstrapConfig(
             secretsServiceFactoryResolver,
             params.defaultParams,
@@ -67,6 +71,7 @@ class MemberWorker @Activate constructor(
         logger.info("Member worker stopping.")
         processor.stop()
         workerMonitor.stop()
+        shutdownTracing()
     }
 }
 

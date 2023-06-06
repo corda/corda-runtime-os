@@ -13,6 +13,7 @@ dependencies {
     implementation project(":libs:lifecycle:lifecycle")
     implementation project(":libs:messaging:messaging")
     implementation project(":libs:flows:flow-mapper")
+    implementation project(":libs:tracing")
     implementation project(':libs:utilities')
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
