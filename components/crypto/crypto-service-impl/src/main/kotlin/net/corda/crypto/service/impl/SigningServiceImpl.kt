@@ -1,8 +1,6 @@
 package net.corda.crypto.service.impl
 
 import com.github.benmanes.caffeine.cache.Cache
-import com.github.benmanes.caffeine.cache.Caffeine
-import net.corda.cache.caffeine.CacheFactoryImpl
 import net.corda.crypto.cipher.suite.CRYPTO_CATEGORY
 import net.corda.crypto.cipher.suite.CRYPTO_TENANT_ID
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
@@ -15,7 +13,6 @@ import net.corda.crypto.cipher.suite.SharedSecretWrappedSpec
 import net.corda.crypto.cipher.suite.SigningWrappedSpec
 import net.corda.crypto.cipher.suite.publicKeyId
 import net.corda.crypto.cipher.suite.schemes.KeyScheme
-import net.corda.crypto.config.impl.CryptoSigningServiceConfig
 import net.corda.crypto.core.DigitalSignatureWithKey
 import net.corda.crypto.core.InvalidParamsException
 import net.corda.crypto.core.KeyAlreadyExistsException
@@ -35,7 +32,6 @@ import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
 import org.slf4j.LoggerFactory
 import java.security.PublicKey
-import java.util.concurrent.TimeUnit
 
 data class CacheKey(val tenantId: String, val publicKeyId: ShortHash)
 
@@ -58,32 +54,6 @@ class SigningServiceImpl(
     private val cache: Cache<CacheKey, SigningKeyInfo>,
     private val hsmStore: HSMStore,
 ) : SigningService {
-
-    /**
-     * Secondary constructor used for production purposes, so that the caller does not need to set the
-     * cache up themselves but can instead just supply the config.
-     */
-    @Suppress("LongParameterList")
-    constructor(
-        cryptoService: CryptoService,
-        signingRepositoryFactory: SigningRepositoryFactory,
-        schemeMetadata: CipherSchemeMetadata,
-        digestService: PlatformDigestService,
-        config: CryptoSigningServiceConfig,
-        hsmStore: HSMStore,
-    ) : this(
-        cryptoService=cryptoService,
-        signingRepositoryFactory=signingRepositoryFactory,
-        schemeMetadata=schemeMetadata,
-        digestService=digestService,
-        cache = CacheFactoryImpl().build(
-            "Signing-Key-Cache",
-            Caffeine.newBuilder()
-                .expireAfterAccess(config.cache.expireAfterAccessMins, TimeUnit.MINUTES)
-                .maximumSize(config.cache.maximumSize)
-        ),
-        hsmStore = hsmStore
-    )
 
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)

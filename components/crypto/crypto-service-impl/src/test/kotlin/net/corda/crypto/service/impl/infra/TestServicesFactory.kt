@@ -1,6 +1,8 @@
 package net.corda.crypto.service.impl.infra
 
+import com.github.benmanes.caffeine.cache.Caffeine
 import com.typesafe.config.ConfigFactory
+import net.corda.cache.caffeine.CacheFactoryImpl
 import java.security.KeyPairGenerator
 import java.security.Provider
 import java.util.concurrent.ConcurrentHashMap
@@ -34,6 +36,7 @@ import net.corda.lifecycle.test.impl.TestLifecycleCoordinatorFactoryImpl
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.test.util.eventually
 import net.corda.v5.crypto.SignatureSpec
+import java.util.concurrent.TimeUnit
 import kotlin.test.assertEquals
 
 
@@ -185,13 +188,19 @@ class TestServicesFactory {
         )
     }
 
+    val signingConfig = cryptoConfig.signingService()
     val signingService: SigningService by lazy {
         SigningServiceImpl(
             cryptoService = cryptoService,
             signingRepositoryFactory = { signingRepository },
             digestService = PlatformDigestServiceImpl(schemeMetadata),
             schemeMetadata = schemeMetadata,
-            config = cryptoConfig.signingService(),
+            cache = CacheFactoryImpl().build(
+                "Signing-Key-Cache",
+                Caffeine.newBuilder()
+                    .expireAfterAccess(signingConfig.cache.expireAfterAccessMins, TimeUnit.MINUTES)
+                    .maximumSize(signingConfig.cache.maximumSize)
+            ),
             hsmStore = hsmStore
         )
     }
