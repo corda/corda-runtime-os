@@ -31,7 +31,7 @@ object Unlimited : SampleRate
 data class PerSecond(val samplesPerSecond: Int) : SampleRate
 
 @Suppress("TooManyFunctions")
-class BraveTracingService(serviceName: String, zipkinHost: String, samplesPerSecond: SampleRate) : TracingService {
+internal class BraveTracingService(serviceName: String, zipkinHost: String, samplesPerSecond: SampleRate) : TracingService {
 
     private val resourcesToClose = Stack<AutoCloseable>()
 
