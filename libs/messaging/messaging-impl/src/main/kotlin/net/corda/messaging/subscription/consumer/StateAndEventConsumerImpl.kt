@@ -66,8 +66,9 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
     private fun createGaugesForInMemoryStates(partitions: Collection<Int>) {
         partitions.forEach { partition ->
             inMemoryStatesPerPartitionGaugeCache.computeIfAbsent(partition) {
-                CordaMetrics.Metric.Messaging.StateAndEventConsumerInMemoryStoreCount { currentStates[partition]?.size ?: 0 }
+                CordaMetrics.Metric.Messaging.ConsumerInMemoryStore { currentStates[partition]?.size ?: 0 }
                     .builder()
+                    .withTag(CordaMetrics.Tag.MessagePatternType, MetricsConstants.STATE_AND_EVENT_PATTERN_TYPE)
                     .withTag(CordaMetrics.Tag.MessagePatternClientId, config.clientId)
                     .withTag(CordaMetrics.Tag.Partition, "$partition")
                     .build()
