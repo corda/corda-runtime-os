@@ -1,5 +1,6 @@
 package net.corda.messaging.subscription.consumer
 
+import io.micrometer.core.instrument.Gauge
 import net.corda.lifecycle.Resource
 import net.corda.messagebus.api.CordaTopicPartition
 import net.corda.messagebus.api.consumer.CordaConsumer
@@ -67,12 +68,16 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
 
     private fun recordCurrentStatesMetrics() {
         currentStates.forEach { (partition, statesMap) ->
-            CordaMetrics.Metric.Messaging.StateAndEventConsumerInMemoryStoreCount { statesMap.keys.size }.builder()
-                .withTag(CordaMetrics.Tag.MessagePatternClientId, config.clientId)
-                .withTag(CordaMetrics.Tag.Partition, "$partition")
-                .build()
+            currentStatesMetricCache.computeIfAbsent(partition) {
+                CordaMetrics.Metric.Messaging.StateAndEventConsumerInMemoryStoreCount { statesMap.keys.size }.builder()
+                    .withTag(CordaMetrics.Tag.MessagePatternClientId, config.clientId)
+                    .withTag(CordaMetrics.Tag.Partition, "$partition")
+                    .build()
+            }
         }
     }
+
+    private val currentStatesMetricCache = ConcurrentHashMap<Int, Gauge>()
 
     private val statePollTimer = CordaMetrics.Metric.Messaging.MessagePollTime.builder()
         .withTag(CordaMetrics.Tag.MessagePatternType, MetricsConstants.STATE_AND_EVENT_PATTERN_TYPE)
@@ -216,6 +221,7 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
         stateConsumer.close()
         executor.shutdown()
         metricRecorder.shutdown()
+        currentStatesMetricCache.values.forEach { CordaMetrics.registry.remove(it) }
     }
 
     private fun removeAndReturnSyncedPartitions(): Set<CordaTopicPartition> {
