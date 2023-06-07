@@ -6,6 +6,8 @@ import io.micrometer.core.instrument.Gauge
 import io.micrometer.core.instrument.Meter
 import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.core.instrument.Metrics
+import io.micrometer.core.instrument.Tags
+import io.micrometer.core.instrument.Tag as micrometerTag
 import io.micrometer.core.instrument.Timer
 import io.micrometer.core.instrument.binder.system.DiskSpaceMetrics
 import io.micrometer.core.instrument.composite.CompositeMeterRegistry
@@ -13,9 +15,8 @@ import io.micrometer.core.instrument.config.MeterFilter
 import io.micrometer.core.instrument.noop.NoopMeter
 import java.nio.file.FileSystems
 import java.nio.file.Path
-import java.util.concurrent.atomic.AtomicInteger
 import java.util.function.Supplier
-import io.micrometer.core.instrument.Tag as micrometerTag
+import java.util.function.ToDoubleFunction
 
 
 object CordaMetrics {
@@ -25,7 +26,7 @@ object CordaMetrics {
     ) {
 
         fun builder(): MeterBuilder<T> {
-            return MeterBuilder(this.metricsName, this.meter)
+            return MeterBuilder(metricsName, meter)
         }
 
         // NOTE: please ensure the metric names adhere to the conventions described on https://micrometer.io/docs/concepts#_naming_meters
@@ -237,12 +238,12 @@ object CordaMetrics {
         /**
          * Number of outbound peer-to-peer sessions.
          */
-        class OutboundSessionCount(computation: Supplier<Number>) : ComputedValue("p2p.session.outbound", computation)
+        class OutboundSessionCount(computation: Supplier<Number>): ComputedValue<Nothing>("p2p.session.outbound", computation)
 
         /**
          * Number of inbound peer-to-peer sessions.
          */
-        class InboundSessionCount(computation: Supplier<Number>) : ComputedValue("p2p.session.inbound", computation)
+        class InboundSessionCount(computation: Supplier<Number>): ComputedValue<Nothing>("p2p.session.inbound", computation)
 
         /**
          * Time it took for an inbound request to the p2p gateway to be processed.
@@ -454,9 +455,10 @@ object CordaMetrics {
             /**
              * Metric to capture the changes in group size.
              */
-            object MemberListCacheSize: Metric<SettableGauge>(
+            class MemberListCacheSize<T : List<*>>(list: T?): ComputedValue<T>(
                 "$PREFIX.memberlist.cache.size",
-                CordaMetrics::settableGauge
+                list,
+                Collection<*>::doubleSize
             )
         }
 
@@ -534,15 +536,37 @@ object CordaMetrics {
         }
 
         /**
-         * A [Gauge] metric that computes its value using a [Supplier] lambda.
-         * @param name A unique name for this [Gauge].
-         * @param computation A lambda to compute our current value.
+         * A [Gauge] metric that computes its value using a lambda.
          */
-        sealed class ComputedValue(name: String, computation: Supplier<Number>) : Metric<Gauge>(name, meter = { n, tags ->
-            Gauge.builder(n, computation)
-                .tags(tags)
-                .register(registry)
-        })
+        sealed class ComputedValue<T> private constructor(name: String, meter: (String, Iterable<micrometerTag>) -> Gauge)
+            : Metric<Gauge>(name, meter) {
+
+            /**
+             * Creates a [Gauge] for the value of [computation]. The [MeterRegistry] will hold
+             * a strong reference to [computation], and hence to any objects it also uses.
+             *
+             * @param name A unique name for this [Gauge].
+             * @param computation A lambda to compute our current value.
+             */
+            constructor(name: String, computation: Supplier<Number>) : this(name, meter = { n, tags ->
+                Gauge.builder(n, computation)
+                    .tags(tags)
+                    .register(registry)
+            })
+
+            /**
+             * Create a [Gauge] for a property of [weakObj].
+             *
+             * @param name A unique name for this [Gauge].
+             * @param weakObj A weakly referenced object for applying [computation].
+             * @param computation A lambda to compute our current value using [weakObj].
+             */
+            constructor(name: String, weakObj: T?, computation: ToDoubleFunction<T>) : this(name, meter = { n, tags ->
+                Gauge.builder(n, weakObj, computation)
+                    .tags(tags)
+                    .register(registry)
+            })
+        }
 
         class DiskSpace(path: Path) : Metric<NoopMeter>("", meter = { _, tags ->
             if (path.fileSystem == FileSystems.getDefault()) {
@@ -785,14 +809,6 @@ object CordaMetrics {
             })
     }
 
-    private fun settableGauge(name: String, tags: Iterable<micrometerTag>): SettableGauge {
-        val gaugeValue = AtomicInteger()
-        val gauge = Gauge.builder(name, gaugeValue, Number::toDouble)
-            .tags(tags)
-            .register(registry)
-        return SettableGauge(gauge, gaugeValue)
-    }
-
     private fun timer(name: String, tags: Iterable<micrometerTag>): Timer {
         return Timer.builder(name)
             .publishPercentiles(0.50, 0.95, 0.99)
@@ -805,7 +821,15 @@ object CordaMetrics {
         val name: String,
         val func: (String, Iterable<micrometerTag>) -> T
     ) {
-        val allTags: MutableList<io.micrometer.core.instrument.Tag> = mutableListOf()
+        val allTags: MutableList<micrometerTag> = mutableListOf()
+
+        /**
+         * Remove all tags from this builder.
+         */
+        fun resetTags(): MeterBuilder<T> {
+            allTags.clear()
+            return this
+        }
 
         /**
          * Tag the metric with the Holding ID short hash for the Virtual Node.
@@ -815,15 +839,23 @@ object CordaMetrics {
         }
 
         fun withTag(key: Tag, value: String): MeterBuilder<T> {
-            allTags.add(io.micrometer.core.instrument.Tag.of(key.value, value))
+            allTags.add(micrometerTag.of(key.value, value))
             return this
         }
 
         fun build(): T {
             return func(name, allTags)
         }
+
+        // A Meter is uniquely identified by just its name and tags.
+        fun buildPreFilterId(): Meter.Id {
+            return Meter.Id(name, Tags.of(allTags), null, null, Meter.Type.OTHER)
+        }
     }
 }
+
+private val Collection<*>.doubleSize: Double
+    get() = size.toDouble()
 
 /**
  * This is a dummy "placeholder" meter.
