@@ -19,7 +19,7 @@ import java.security.Security
 import java.text.ParseException
 
 /** An implementation of [SecurityManagerService]. */
-@Suppress("unused")
+@Suppress("unused","UNUSED_PARAMETER")
 @Component(immediate = true, service = [SecurityManagerService::class])
 class SecurityManagerServiceImpl @Activate constructor(
     @Reference
