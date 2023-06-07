@@ -3,6 +3,7 @@ package net.corda.crypto.service
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.cipher.suite.schemes.KeyScheme
 import net.corda.crypto.core.DigitalSignatureWithKey
+import net.corda.crypto.core.KeyOrderBy
 import net.corda.crypto.core.ShortHash
 import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.crypto.SecureHash
