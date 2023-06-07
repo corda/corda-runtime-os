@@ -1,7 +1,7 @@
 package net.corda.crypto.service.impl.bus
 
-import net.corda.crypto.cipher.suite.CryptoService
 import net.corda.crypto.config.impl.RetryingConfig
+import net.corda.crypto.core.CryptoService
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.core.ShortHash
 import net.corda.crypto.core.publicKeyIdFromBytes
