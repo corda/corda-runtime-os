@@ -13,7 +13,7 @@ import net.corda.crypto.core.publicKeyIdFromBytes
 import net.corda.crypto.persistence.SigningKeyFilterMapImpl
 import net.corda.crypto.persistence.SigningKeyInfo
 import net.corda.crypto.persistence.SigningKeyOrderBy
-import net.corda.crypto.persistence.SigningKeyStatus
+import net.corda.crypto.core.SigningKeyStatus
 import net.corda.crypto.persistence.SigningPublicKeySaveContext
 import net.corda.crypto.persistence.SigningWrappedKeySaveContext
 import net.corda.crypto.persistence.alias
