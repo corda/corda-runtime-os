@@ -61,11 +61,6 @@ class SigningServiceImpl(
 
     data class OwnedKeyRecord(val publicKey: PublicKey, val data: SigningKeyInfo)
 
-    override fun getSupportedSchemes(tenantId: String, category: String): List<String> {
-        logger.debug { "getSupportedSchemes(tenant=$tenantId, category=$category)" }
-        return cryptoService.supportedSchemes.map { it.key.codeName }
-    }
-
     override fun querySigningKeys(
         tenantId: String,
         skip: Int,

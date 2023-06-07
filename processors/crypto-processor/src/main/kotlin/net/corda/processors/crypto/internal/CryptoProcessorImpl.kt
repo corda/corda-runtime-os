@@ -322,8 +322,9 @@ class CryptoProcessorImpl @Activate constructor(
 
         // make the processors
         val retryingConfig = cryptoConfig.retrying()
-        val flowOpsProcessor = CryptoFlowOpsBusProcessor(cryptoService, signingService, externalEventResponseFactory, retryingConfig)
-        val rpcOpsProcessor = CryptoOpsBusProcessor(signingService, retryingConfig)
+        val flowOpsProcessor =
+            CryptoFlowOpsBusProcessor(cryptoService, signingService, externalEventResponseFactory, retryingConfig)
+        val rpcOpsProcessor = CryptoOpsBusProcessor(signingService, cryptoService, retryingConfig)
         val hsmRegistrationProcessor = HSMRegistrationBusProcessor(hsmService, retryingConfig)
 
         // now make and start the subscriptions

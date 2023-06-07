@@ -4,6 +4,7 @@ import java.nio.ByteBuffer
 import java.time.Instant
 import java.util.concurrent.CompletableFuture
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
+import net.corda.crypto.cipher.suite.CryptoService
 import net.corda.crypto.cipher.suite.schemes.KeyScheme
 import net.corda.crypto.config.impl.RetryingConfig
 import net.corda.crypto.core.InvalidParamsException
@@ -48,6 +49,7 @@ import org.slf4j.LoggerFactory
 @Suppress("LongParameterList")
 class CryptoOpsBusProcessor(
     private val signingService: SigningService,
+    private val cryptoService: CryptoService,
     config: RetryingConfig,
 ) :
     RPCResponderProcessor<RpcOpsRequest, RpcOpsResponse> {
@@ -95,14 +97,8 @@ class CryptoOpsBusProcessor(
     @Suppress("ComplexMethod")
     private fun handleRequest(request: Any, context: CryptoRequestContext, signingService: SigningService): Any {
 
-        fun handleSupportedSchemesRpcQuery(request: SupportedSchemesRpcQuery): CryptoKeySchemes {
-            return CryptoKeySchemes(
-                signingService.getSupportedSchemes(
-                    context.tenantId,
-                    request.category
-                )
-            )
-        }
+        fun handleSupportedSchemesRpcQuery(): CryptoKeySchemes =
+            CryptoKeySchemes(cryptoService.supportedSchemes.map { it.key.codeName })
 
         fun handleByIdsRpcQuery(request: ByIdsRpcQuery): CryptoSigningKeys {
             val foundKeys =
@@ -218,7 +214,7 @@ class CryptoOpsBusProcessor(
             .build()
             .recordCallable<Any> {
                 when (request) {
-                    is SupportedSchemesRpcQuery -> handleSupportedSchemesRpcQuery(request)
+                    is SupportedSchemesRpcQuery -> handleSupportedSchemesRpcQuery()
                     is ByIdsRpcQuery -> handleByIdsRpcQuery(request)
                     is KeysRpcQuery -> handleKeysRpcQuery(request)
                     is DeriveSharedSecretCommand -> handleDeriveSharedSecretCommand(request)
