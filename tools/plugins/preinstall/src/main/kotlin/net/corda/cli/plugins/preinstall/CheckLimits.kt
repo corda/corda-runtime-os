@@ -22,46 +22,61 @@ class CheckLimits : Callable<Int>, PluginContext() {
 
     private var resourceRequestsChecked = false
 
-    private val logger = getLogger()
+    private fun parseMemoryString(memoryString: String): Double {
+        val regex = Regex("(\\d+)([EPTGMKk]?i?[Bb]?)?")
 
-    // split resource into a digit portion and a unit portion
-    private fun parseResourceString(resourceString: String): Long {
-        val regex = Regex("(\\d+)([EPTGMK]?i?[Bb]?)?")
-
-        val (value, unit) = regex.matchEntire(resourceString)?.destructured
-            ?: throw IllegalArgumentException("Invalid memory string format: $resourceString")
+        val (value, unit) = regex.matchEntire(memoryString)?.destructured
+            ?: throw IllegalArgumentException("Invalid memory string format: $memoryString")
 
         // https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#setting-requests-and-limits-for-local-ephemeral-storage
-        val multiplier = when (unit.uppercase()) {
-            "E", "EB" -> 1024L * 1024L * 1024L * 1024L * 1024L * 1024L
-            "P", "PB" -> 1024L * 1024L * 1024L * 1024L * 1024L
-            "T", "TB" -> 1024L * 1024L * 1024L * 1024L
-            "G", "GB" -> 1024L * 1024L * 1024L
-            "M", "MB" -> 1024L * 1024L
-            "K", "KB" -> 1024L
-            "EI", "EIB" -> 1000L * 1000L * 1000L * 1000L * 1000L * 1000L
-            "PI", "PIB" -> 1000L * 1000L * 1000L * 1000L * 1000L
-            "TI", "TIB" -> 1000L * 1000L * 1000L * 1000L
-            "GI", "GIB" -> 1000L * 1000L * 1000L
-            "MI", "MIB" -> 1000L * 1000L
-            "KI", "KIB" -> 1000L
-            "B" -> 1L
-            else -> if (unit.isEmpty()) 1L else throw IllegalArgumentException("Invalid memory unit: $unit")
-        }
+        val multiplier: Double =
+            when (unit.uppercase()) {
+                "E", "EB" -> 1000.0 * 1000 * 1000 * 1000 * 1000 * 1000
+                "P", "PB" -> 1000.0 * 1000 * 1000 * 1000 * 1000
+                "T", "TB" -> 1000.0 * 1000 * 1000 * 1000
+                "G", "GB" -> 1000.0 * 1000 * 1000
+                "M", "MB" -> 1000.0 * 1000
+                "K", "KB" -> 1000.0
+                "EI", "EIB" -> 1024.0 * 1024 * 1024 * 1024 * 1024 * 1024
+                "PI", "PIB" -> 1024.0 * 1024 * 1024 * 1024 * 1024
+                "TI", "TIB" -> 1024.0 * 1024 * 1024 * 1024
+                "GI", "GIB" -> 1024.0 * 1024 * 1024
+                "MI", "MIB" -> 1024.0 * 1024
+                "KI", "KIB" -> 1024.0
+                "", "B" -> 1.0
+                else -> throw IllegalArgumentException("Invalid memory unit: $unit")
+            }
 
-        logger.debug("$resourceString -> $value x $multiplier = ${value.toLong() * multiplier} bytes")
+        val result: Double = value.toDouble() * multiplier
 
-        return (value.toLong() * multiplier)
+        logger.debug("{} -> {} x {} = {} bytes", memoryString, value, multiplier, result)
+        return result
     }
 
-    // check the individual resource limits supplied
-    private fun checkResource(requestString: String, limitString: String) {
-        val limit: Long = parseResourceString(limitString)
-        val request: Long = parseResourceString(requestString)
+    private fun parseCpuString(cpuString: String): Double {
+        val regex = Regex("(\\d*\\.?\\d+)([EPTGMkm])?")
 
-        if (limit < request) {
-            throw ResourceLimitsExceededException("Request ($requestString) is greater than it's limit ($limitString)")
-        }
+        val (value, unit) = regex.matchEntire(cpuString)?.destructured
+            ?: throw IllegalArgumentException("Invalid CPU string format: $cpuString")
+
+        // https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#setting-requests-and-limits-for-local-ephemeral-storage
+        val multiplier: Double =
+            when (unit) {
+                "E" -> 1000.0 * 1000 * 1000 * 1000 * 1000 * 1000
+                "P" -> 1000.0 * 1000 * 1000 * 1000 * 1000
+                "T" -> 1000.0 * 1000 * 1000 * 1000
+                "G" -> 1000.0 * 1000 * 1000
+                "M" -> 1000.0 * 1000
+                "k" -> 1000.0
+                "" -> 1.0
+                "m" -> 0.001
+                else -> throw IllegalArgumentException("Invalid CPU unit: $unit")
+            }
+
+        val result: Double = value.toDouble() * multiplier
+
+        logger.debug("{} -> {} x {} = {}", cpuString, value, multiplier, result)
+        return result
     }
 
     // use the checkResource function to check each individual resource
@@ -88,7 +103,11 @@ class CheckLimits : Callable<Int>, PluginContext() {
                 }
                 report.addEntry(ReportEntry("${name.uppercase()} memory resources contains both a request and a limit", true))
                 logger.info("Memory: \n\t request - ${requests.memory}\n\t limit - ${limits.memory}")
-                checkResource(requests.memory!!, limits.memory!!)
+                val limit = parseMemoryString(limits.memory!!)
+                val request = parseMemoryString(requests.memory!!)
+                if (limit < request) {
+                    throw ResourceLimitsExceededException("Request ($requests.memory!!) is greater than it's limit ($limits.memory!!)")
+                }
             }
 
             if (requests?.cpu == null) {
@@ -105,7 +124,11 @@ class CheckLimits : Callable<Int>, PluginContext() {
                 }
                 report.addEntry(ReportEntry("${name.uppercase()} cpu resources contains both a request and a limit", true))
                 logger.info("CPU: \n\t request - ${requests.cpu}\n\t limit - ${limits.cpu}")
-                checkResource(requests.cpu!!, limits.cpu!!)
+                val limit: Double = parseCpuString(limits.cpu!!)
+                val request: Double = parseCpuString(requests.cpu!!)
+                if (limit < request) {
+                    throw ResourceLimitsExceededException("Request ($requests.cpu!!) is greater than it's limit ($limits.cpu!!)")
+                }
             }
 
             report.addEntry(ReportEntry("Parse \"$name\" resource strings", true))
@@ -135,6 +158,7 @@ class CheckLimits : Callable<Int>, PluginContext() {
             defaultRequests = it.requests
         }
 
+        checkResources(yaml.workers?.crypto?.resources, "crypto")
         checkResources(yaml.bootstrap?.resources, "bootstrap")
         checkResources(yaml.workers?.db?.resources, "DB")
         checkResources(yaml.workers?.flow?.resources, "flow")

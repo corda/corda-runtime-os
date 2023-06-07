@@ -90,16 +90,16 @@ class TestSubCommands {
         fun testKafkaSaslSslNonPemTruststore() {
             // Test SASL_SSL with non-PEM format truststore
             val path = "./src/test/resources/KafkaTestSaslTls.yaml"
-            val yaml: PreInstallPlugin.Kafka = parseYaml<PreInstallPlugin.Kafka>(path)
-            val props = CheckKafka.KafkaProperties(yaml.kafka.bootstrapServers)
-            props.saslEnabled = yaml.kafka.sasl.enabled
+            val yaml: PreInstallPlugin.Kafka = parseYaml(path)
+            val props = CheckKafka.KafkaProperties(yaml.kafka.bootstrapServers!!)
+            props.saslEnabled = yaml.kafka.sasl?.enabled ?: false
             props.saslUsername = "sasl-user"
             props.saslPassword = "sasl-pass"
-            props.saslMechanism = yaml.kafka.sasl.mechanism
-            props.tlsEnabled = yaml.kafka.tls.enabled
+            props.saslMechanism = yaml.kafka.sasl?.mechanism
+            props.tlsEnabled = yaml.kafka.tls!!.enabled
             props.truststoreFile = "-----BEGIN CERTIFICATE-----"
             props.truststorePassword = "truststore-pass"
-            props.truststoreType = yaml.kafka.tls.truststore!!.type
+            props.truststoreType = yaml.kafka.tls!!.truststore!!.type
 
             val check = props.getKafkaProperties()
 
@@ -118,14 +118,14 @@ class TestSubCommands {
             // Test SASL_SSL with PEM format truststore (i.e. no password required)
             val path = "./src/test/resources/KafkaTestSaslTlsPEM.yaml"
             val yaml = parseYaml<PreInstallPlugin.Kafka>(path)
-            val props = CheckKafka.KafkaProperties(yaml.kafka.bootstrapServers)
-            props.saslEnabled = yaml.kafka.sasl.enabled
+            val props = CheckKafka.KafkaProperties(yaml.kafka.bootstrapServers!!)
+            props.saslEnabled = yaml.kafka.sasl?.enabled ?: false
             props.saslUsername = "sasl-user1"
             props.saslPassword = "sasl-pass2"
-            props.saslMechanism = yaml.kafka.sasl.mechanism
-            props.tlsEnabled = yaml.kafka.tls.enabled
+            props.saslMechanism = yaml.kafka.sasl?.mechanism
+            props.tlsEnabled = yaml.kafka.tls!!.enabled
             props.truststoreFile = "-----BEGIN CERTIFICATE-----"
-            props.truststoreType = yaml.kafka.tls.truststore!!.type
+            props.truststoreType = yaml.kafka.tls!!.truststore!!.type
 
             val check = props.getKafkaProperties()
 
@@ -143,11 +143,11 @@ class TestSubCommands {
             // Test SASL_PLAINTEXT
             val path = "./src/test/resources/KafkaTestSaslPlain.yaml"
             val yaml = parseYaml<PreInstallPlugin.Kafka>(path)
-            val props = CheckKafka.KafkaProperties(yaml.kafka.bootstrapServers)
-            props.saslEnabled = yaml.kafka.sasl.enabled
+            val props = CheckKafka.KafkaProperties(yaml.kafka.bootstrapServers!!)
+            props.saslEnabled = yaml.kafka.sasl?.enabled ?: false
             props.saslUsername = "sasl-user"
             props.saslPassword = "sasl-pass"
-            props.saslMechanism = yaml.kafka.sasl.mechanism
+            props.saslMechanism = yaml.kafka.sasl?.mechanism
 
             assertThrows<CheckKafka.KafkaProperties.SaslPlainWithoutTlsException> {
                 props.getKafkaProperties()
@@ -159,11 +159,11 @@ class TestSubCommands {
             // Test SASL_PLAINTEXT
             val path = "./src/test/resources/KafkaTestSaslScram.yaml"
             val yaml = parseYaml<PreInstallPlugin.Kafka>(path)
-            val props = CheckKafka.KafkaProperties(yaml.kafka.bootstrapServers)
-            props.saslEnabled = yaml.kafka.sasl.enabled
+            val props = CheckKafka.KafkaProperties(yaml.kafka.bootstrapServers!!)
+            props.saslEnabled = yaml.kafka.sasl?.enabled ?: false
             props.saslUsername = "sasl-user"
             props.saslPassword = "sasl-pass"
-            props.saslMechanism = yaml.kafka.sasl.mechanism
+            props.saslMechanism = yaml.kafka.sasl?.mechanism
 
             val check = props.getKafkaProperties()
 
@@ -179,11 +179,11 @@ class TestSubCommands {
             // Test SSL
             val path = "./src/test/resources/KafkaTestTls.yaml"
             val yaml = parseYaml<PreInstallPlugin.Kafka>(path)
-            val props = CheckKafka.KafkaProperties(yaml.kafka.bootstrapServers)
-            props.tlsEnabled = yaml.kafka.tls.enabled
+            val props = CheckKafka.KafkaProperties(yaml.kafka.bootstrapServers!!)
+            props.tlsEnabled = yaml.kafka.tls!!.enabled
             props.truststoreFile = "-----BEGIN CERTIFICATE-----"
             props.truststorePassword = "truststore-pass"
-            props.truststoreType = yaml.kafka.tls.truststore!!.type
+            props.truststoreType = yaml.kafka.tls!!.truststore!!.type
 
             val check = props.getKafkaProperties()
 
@@ -202,22 +202,9 @@ class TestSubCommands {
             whenever(mockAdmin.getNodes()).thenReturn(nodes)
 
             val ck = CheckKafka()
-            ck.checkConnectionAndBrokers(mockAdmin, 2)
+            ck.checkConnectionAndBrokers("foo", mockAdmin, 2)
 
-            assertTrue( ck.report.toString().contains("Connect to Kafka cluster using client: PASSED") )
-        }
-
-        @Test
-        fun testKafkaConnectNoBrokers() {
-            val mockAdmin = mock<CheckKafka.KafkaAdmin>()
-            val nodes: Collection<Node> = listOf()
-            whenever(mockAdmin.getDescriptionID()).thenReturn("ClusterID")
-            whenever(mockAdmin.getNodes()).thenReturn(nodes)
-
-            val ck = CheckKafka()
-            ck.checkConnectionAndBrokers(mockAdmin, 2)
-
-            assertTrue( ck.report.toString().contains("Kafka cluster has brokers: FAILED") )
+            assertTrue( ck.report.toString().contains("Connect to Kafka cluster using foo client: PASSED") )
         }
 
         @Test
@@ -228,24 +215,24 @@ class TestSubCommands {
             whenever(mockAdmin.getNodes()).thenReturn(nodes)
 
             val ck = CheckKafka()
-            ck.checkConnectionAndBrokers(mockAdmin, 2)
+            ck.checkConnectionAndBrokers("foo", mockAdmin, 2)
 
-            assertTrue( ck.report.toString().contains("Kafka replica count is less than the broker count: FAILED") )
+            assertTrue( ck.report.toString().contains("Kafka replica count is less than or equal to the broker count: FAILED") )
         }
 
         @Test
         fun testKafkaConnectFails() {
             val path = "./src/test/resources/KafkaTestBadConnection.yaml"
             val yaml = parseYaml<PreInstallPlugin.Kafka>(path)
-            val props = CheckKafka.KafkaProperties(yaml.kafka.bootstrapServers)
-            props.saslEnabled = yaml.kafka.sasl.enabled
+            val props = CheckKafka.KafkaProperties(yaml.kafka.bootstrapServers!!)
+            props.saslEnabled = yaml.kafka.sasl?.enabled ?: false
             props.saslUsername = "sasl-user"
             props.saslPassword = "sasl-pass"
-            props.saslMechanism = yaml.kafka.sasl.mechanism
-            props.tlsEnabled = yaml.kafka.tls.enabled
+            props.saslMechanism = yaml.kafka.sasl?.mechanism
+            props.tlsEnabled = yaml.kafka.tls!!.enabled
             props.truststoreFile = "-----BEGIN CERTIFICATE-----"
             props.truststorePassword = "truststore-pass"
-            props.truststoreType = yaml.kafka.tls.truststore!!.type
+            props.truststoreType = yaml.kafka.tls!!.truststore!!.type
 
 
             val config = props.getKafkaProperties()

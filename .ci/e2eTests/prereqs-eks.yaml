@@ -8,10 +8,10 @@ kafka:
   replicaCount: 7
   resources:
     requests:
-      memory: 390Mi
+      memory: 780Mi
       cpu: 1000m
     limits:
-      memory: 800Mi
+      memory: 1600Mi
       cpu: 1000m
   startupProbe:
     enabled: true
