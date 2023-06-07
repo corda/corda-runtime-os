@@ -74,6 +74,22 @@ object CordaMetrics {
         object FlowRunTime : Metric<Timer>("flow.run.time", CordaMetrics::timer)
 
         /**
+         * Metric to capture the changes in producer object size.
+         */
+        object ObjectProducerSize: Metric<SettableGauge>(
+            "producer.object.size",
+            CordaMetrics::settableGauge
+        )
+
+        /**
+         * Metric to capture the changes in producer object size.
+         */
+        object ObjectProducerSizeSum: Metric<Counter>(
+            "producer.object.counter",
+            Metrics::counter
+        )
+
+        /**
          * Metric for flow fiber serialization.
          */
         object FlowFiberSerializationTime : Metric<Timer>("flow.fiber.serialization.time", CordaMetrics::timer)

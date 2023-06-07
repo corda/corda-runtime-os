@@ -49,6 +49,12 @@ internal class CompactedSubscriptionImpl<K : Any, V : Any>(
         .withTag(CordaMetrics.Tag.OperationName, MetricsConstants.ON_SNAPSHOT_OPERATION)
         .build()
 
+
+    private val recordCounter = CordaMetrics.Metric.MessageProcessedCounter.builder()
+        .withTag(CordaMetrics.Tag.MessagePatternType, MetricsConstants.COMPACTED_PATTERN_TYPE)
+        .withTag(CordaMetrics.Tag.MembershipGroup, config.group)
+        .build()
+
     override fun close() = threadLooper.close()
 
     override fun start() {
@@ -188,5 +194,6 @@ internal class CompactedSubscriptionImpl<K : Any, V : Any>(
 
             processorMeter.recordCallable { processor.onNext(it.toRecord(), oldValue, currentData) }
         }
+        recordCounter.increment(cordaConsumerRecords.size.toDouble())
     }
 }

@@ -13,6 +13,7 @@ import net.corda.data.chunking.Chunk
 import net.corda.data.chunking.ChunkKey
 import net.corda.messagebus.api.producer.CordaProducerRecord
 import net.corda.messaging.api.chunking.ChunkSerializerService
+import net.corda.metrics.CordaMetrics
 import net.corda.utilities.debug
 import net.corda.utilities.trace
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -38,9 +39,14 @@ class ChunkSerializerServiceImpl(
     private val maxRecordSize = (maxAllowedMessageSize - CORDA_RECORD_OVERHEAD).toInt()
     private val maxChunkSize = (maxAllowedMessageSize - APP_LEVEL_CHUNK_MESSAGE_OVERHEAD).toInt()
 
+    private val objectSize = CordaMetrics.Metric.ObjectProducerSize.builder().build()
+    private val objectSizeSum = CordaMetrics.Metric.ObjectProducerSizeSum.builder()
+        .build()
+
     override fun generateChunks(anyObject: Any): List<Chunk> {
         logger.debug { "Generating chunks for object of type ${anyObject::class.java}" }
         val bytes = tryToSerialize(anyObject)
+
         if (bytes == null || bytes.size <= maxChunkSize) {
             return emptyList()
         }
@@ -50,6 +56,11 @@ class ChunkSerializerServiceImpl(
     override fun generateChunkedRecords(producerRecord: CordaProducerRecord<*, *>): List<CordaProducerRecord<*, *>> {
         val serializedKey = tryToSerialize(producerRecord.key)
         val valueBytes = tryToSerialize(producerRecord.value)
+        if (valueBytes != null) {
+            objectSizeSum.increment(valueBytes.size.toDouble())
+            objectSize.set(valueBytes.size)
+        }
+
         if (serializedKey == null || valueBytes == null || valueBytes.size <= maxRecordSize) {
             return emptyList()
         }
