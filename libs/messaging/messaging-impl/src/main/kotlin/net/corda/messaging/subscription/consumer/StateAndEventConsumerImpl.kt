@@ -70,7 +70,6 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
         currentStates.keys.forEach { partition ->
             currentStatesMetricCache.computeIfAbsent(partition) {
                 CordaMetrics.Metric.Messaging.StateAndEventConsumerInMemoryStoreCount.builder()
-                    .withTag(CordaMetrics.Tag.MessagePatternType, MetricsConstants.STATE_AND_EVENT_PATTERN_TYPE)
                     .withTag(CordaMetrics.Tag.MessagePatternClientId, config.clientId)
                     .withTag(CordaMetrics.Tag.Partition, "$partition")
                     .build()

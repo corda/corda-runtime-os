@@ -193,6 +193,7 @@ class CordaKafkaProducerImpl(
             .mapValues { (_, records) -> records.size }
             .forEach { (topic, count) ->
                 CordaMetrics.Metric.Messaging.ProducerChunksGenerated.builder()
+                    .withTag(CordaMetrics.Tag.MessagePatternClientId, config.clientId)
                     .withTag(CordaMetrics.Tag.Topic, topic)
                     .build()
                     .record(count.toDouble())

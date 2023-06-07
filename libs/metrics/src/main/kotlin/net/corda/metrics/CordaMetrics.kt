@@ -652,11 +652,6 @@ object CordaMetrics {
             object ConsumerRecordsConsumedCount : Metric<DistributionSummary>("consumer.records.consumed", Metrics::summary)
 
             /**
-             * Size of consumer's record buffer.
-             */
-            object ConsumerRecordBufferSize : Metric<DistributionSummary>("consumer.record.buffer", Metrics::summary)
-
-            /**
              * Generic consumer poll time, time taken by kafka to respond to consumer polls for each client ID.
              */
             object ConsumerPollTime : Metric<Timer>("consumer.poll.time", CordaMetrics::timer)
