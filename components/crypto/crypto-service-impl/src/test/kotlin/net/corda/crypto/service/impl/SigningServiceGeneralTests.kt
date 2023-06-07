@@ -22,7 +22,7 @@ import net.corda.crypto.persistence.HSMStore
 import net.corda.crypto.persistence.SigningKeyInfo
 import net.corda.crypto.persistence.SigningKeyOrderBy
 import net.corda.crypto.persistence.SigningKeyStatus
-import net.corda.crypto.service.KeyOrderBy
+import net.corda.crypto.core.KeyOrderBy
 import net.corda.crypto.softhsm.SigningRepository
 import net.corda.crypto.testkit.SecureHashUtils
 import net.corda.data.crypto.wire.hsm.HSMAssociationInfo

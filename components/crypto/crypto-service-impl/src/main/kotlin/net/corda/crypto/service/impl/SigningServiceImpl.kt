@@ -21,7 +21,7 @@ import net.corda.crypto.persistence.HSMStore
 import net.corda.crypto.persistence.SigningKeyInfo
 import net.corda.crypto.persistence.SigningKeyOrderBy
 import net.corda.crypto.persistence.SigningWrappedKeySaveContext
-import net.corda.crypto.service.KeyOrderBy
+import net.corda.crypto.core.KeyOrderBy
 import net.corda.crypto.service.SigningService
 import net.corda.crypto.softhsm.SigningRepositoryFactory
 import net.corda.metrics.CordaMetrics
