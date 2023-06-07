@@ -1,0 +1,37 @@
+kafka:
+  nodeSelector:
+    node: "prereqs"
+  tolerations:
+    - effect: "NoSchedule"
+      key: "node"
+      value: "prereqs"
+  zookeeper:
+    nodeSelector:
+      node: "prereqs"
+    tolerations:
+      - effect: "NoSchedule"
+        key: "node"
+        value: "prereqs"
+  resources:
+    requests:
+      memory: 780Mi
+      cpu: 1000m
+    limits:
+      memory: 1600Mi
+      cpu: 1000m
+
+postgresql:
+  primary:
+    nodeSelector:
+      node: "prereqs"
+    tolerations:
+      - effect: "NoSchedule"
+        key: "node"
+        value: "prereqs"
+    resources:
+      requests:
+        memory: 256Mi
+        cpu: 300m
+      limits:  
+        memory: 512Mi
+        cpu: 600m

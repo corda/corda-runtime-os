@@ -216,7 +216,7 @@ class CliParameters {
         names = ["--mode"],
         description = [" Default to \${DEFAULT-VALUE}."]
     )
-    val simulationMode: SimulationMode? = null
+    var simulationMode: SimulationMode? = null
 
     @CommandLine.Option(
         names = ["--send-topic"],

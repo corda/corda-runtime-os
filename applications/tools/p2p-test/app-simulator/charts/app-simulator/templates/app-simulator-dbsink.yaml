@@ -69,4 +69,8 @@ spec:
       nodeSelector:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+      tolerations:
+        - effect: "NoSchedule"
+          key: "node"
+          value: "prereqs"
 {{- end }}

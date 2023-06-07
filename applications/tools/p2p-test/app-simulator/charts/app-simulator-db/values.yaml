@@ -1,6 +1,3 @@
-imagePullSecrets:
-  - docker-registry-cred
-
 # values for configuring bitnami/postgres sub-chart.
 postgresql:
   # values configuring the permissions of volumes.
@@ -24,11 +21,11 @@ postgresql:
   # primary (read/write instance) configuration.
   primary:
     nodeSelector:
-      node: prereqs
+      node: "prereqs"
     tolerations:
-        - effect: NoSchedule
-          key: node
-          value: prereqs
+      - effect: "NoSchedule"
+        key: "node"
+        value: "prereqs"
     # Custom init configuration..
     initdb:
       # -- ConfigMap-like object containing scripts to be executed on startup.

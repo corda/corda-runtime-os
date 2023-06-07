@@ -350,6 +350,10 @@ else
   kubectl port-forward --namespace $MGM_CLUSTER_NAMESPACE deployment/corda-rest-worker $MGM_RPC_PORT:8888 &
 fi
 
+rm -rf /tmp/onboard
+mkdir -p /tmp/onboard
+cd /tmp/onboard
+
 sleep 15
 
 build_cli_tool
