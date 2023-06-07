@@ -4,9 +4,9 @@ import java.nio.ByteBuffer
 import java.time.Instant
 import java.util.concurrent.CompletableFuture
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
-import net.corda.crypto.cipher.suite.CryptoService
 import net.corda.crypto.cipher.suite.schemes.KeyScheme
 import net.corda.crypto.config.impl.RetryingConfig
+import net.corda.crypto.core.CryptoService
 import net.corda.crypto.core.InvalidParamsException
 import net.corda.crypto.core.KeyAlreadyExistsException
 import net.corda.crypto.core.SecureHashImpl

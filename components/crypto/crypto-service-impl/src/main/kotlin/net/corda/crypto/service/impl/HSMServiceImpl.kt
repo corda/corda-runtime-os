@@ -1,10 +1,10 @@
 package net.corda.crypto.service.impl
 
 import net.corda.crypto.cipher.suite.CRYPTO_TENANT_ID
-import net.corda.crypto.cipher.suite.CryptoService
 import net.corda.crypto.config.impl.MasterKeyPolicy
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoConsts.SOFT_HSM_ID
+import net.corda.crypto.core.CryptoService
 import net.corda.crypto.core.InvalidParamsException
 import net.corda.crypto.persistence.HSMStore
 import net.corda.crypto.service.HSMService
