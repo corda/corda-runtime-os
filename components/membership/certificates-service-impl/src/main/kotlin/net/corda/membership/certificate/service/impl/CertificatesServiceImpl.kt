@@ -115,8 +115,8 @@ class CertificatesServiceImpl internal constructor(
                     configHandle = null
                     rpcSubscription?.close()
                     rpcSubscription = null
+                    coordinator.updateStatus(event.status)
                 }
-                coordinator.updateStatus(event.status)
             }
 
             is ConfigChangedEvent -> {
@@ -134,6 +134,7 @@ class CertificatesServiceImpl internal constructor(
                 ).also {
                     it.start()
                 }
+                coordinator.updateStatus(LifecycleStatus.UP)
             }
 
             else -> {
