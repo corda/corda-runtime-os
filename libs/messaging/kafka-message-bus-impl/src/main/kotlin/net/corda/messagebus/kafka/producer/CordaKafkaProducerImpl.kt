@@ -274,7 +274,7 @@ class CordaKafkaProducerImpl(
     @Suppress("ThrowsCount")
     private fun initTransactionForProducer() {
         tryWithCleanupOnFailure("initializing producer for transactions", abortTransactionOnFailure = false) {
-            producer.initTransactions()
+//            producer.initTransactions()
         }
     }
 
@@ -318,7 +318,7 @@ class CordaKafkaProducerImpl(
                 // There is no other producer, we are not a zombie, and so don't need to be fenced, we can simply abort and retry.
             is KafkaException -> {
                 if (abortTransaction) {
-                    abortTransaction()
+//                    abortTransaction()
                 }
                 throw CordaMessageAPIIntermittentException("Error occurred $errorString", ex)
             }
