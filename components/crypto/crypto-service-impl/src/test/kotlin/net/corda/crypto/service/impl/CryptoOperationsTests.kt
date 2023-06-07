@@ -17,7 +17,7 @@ import net.corda.crypto.hes.HybridEncryptionParams
 import net.corda.crypto.hes.impl.EphemeralKeyPairEncryptorImpl
 import net.corda.crypto.hes.impl.StableKeyPairDecryptorImpl
 import net.corda.crypto.impl.CompositeKeyProviderImpl
-import net.corda.crypto.persistence.SigningKeyInfo
+import net.corda.crypto.core.SigningKeyInfo
 import net.corda.crypto.core.KeyOrderBy
 import net.corda.crypto.service.SigningService
 import net.corda.crypto.service.impl.infra.TestCryptoOpsClient

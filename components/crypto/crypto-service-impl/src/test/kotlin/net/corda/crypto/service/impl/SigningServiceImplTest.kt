@@ -4,7 +4,7 @@ import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.cipher.suite.schemes.KeyScheme
 import net.corda.crypto.core.KeyAlreadyExistsException
 import net.corda.crypto.persistence.HSMStore
-import net.corda.crypto.persistence.SigningKeyInfo
+import net.corda.crypto.core.SigningKeyInfo
 import net.corda.crypto.softhsm.SigningRepository
 import net.corda.data.crypto.wire.hsm.HSMAssociationInfo
 import org.junit.jupiter.api.Test

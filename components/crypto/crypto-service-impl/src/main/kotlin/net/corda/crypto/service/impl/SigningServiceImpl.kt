@@ -19,7 +19,7 @@ import net.corda.crypto.core.KeyAlreadyExistsException
 import net.corda.crypto.core.ShortHash
 import net.corda.crypto.core.fullIdHash
 import net.corda.crypto.persistence.HSMStore
-import net.corda.crypto.persistence.SigningKeyInfo
+import net.corda.crypto.core.SigningKeyInfo
 import net.corda.crypto.persistence.SigningKeyOrderBy
 import net.corda.crypto.persistence.SigningWrappedKeySaveContext
 import net.corda.crypto.core.KeyOrderBy

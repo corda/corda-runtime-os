@@ -1,7 +1,5 @@
-package net.corda.crypto.persistence
+package net.corda.crypto.core
 
-import net.corda.crypto.core.ShortHash
-import net.corda.crypto.core.SigningKeyStatus
 import net.corda.v5.crypto.SecureHash
 import java.time.Instant
 

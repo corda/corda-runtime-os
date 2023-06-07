@@ -1,7 +1,7 @@
 package net.corda.crypto.softhsm.impl.infra
 
 import net.corda.crypto.core.ShortHash
-import net.corda.crypto.persistence.SigningKeyInfo
+import net.corda.crypto.core.SigningKeyInfo
 import net.corda.crypto.persistence.SigningKeyOrderBy
 import net.corda.crypto.persistence.SigningPublicKeySaveContext
 import net.corda.crypto.persistence.SigningWrappedKeySaveContext
@@ -12,8 +12,8 @@ import java.security.PublicKey
 class TestSigningRepository : SigningRepository {
     override fun savePublicKey(context: SigningPublicKeySaveContext): SigningKeyInfo = throw NotImplementedError()
 
-    override fun savePrivateKey(context: SigningWrappedKeySaveContext): SigningKeyInfo  = throw NotImplementedError()
-    override fun findKey(alias: String): SigningKeyInfo? =throw NotImplementedError()
+    override fun savePrivateKey(context: SigningWrappedKeySaveContext): SigningKeyInfo = throw NotImplementedError()
+    override fun findKey(alias: String): SigningKeyInfo? = throw NotImplementedError()
     override fun findKey(publicKey: PublicKey): SigningKeyInfo? =  throw NotImplementedError()
 
     override fun query(
