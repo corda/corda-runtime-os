@@ -321,11 +321,8 @@ on_board_node() {
    echo Node $2 Ledger Key Id: $NODE_LEDGER_KEY_ID
 
    # Generate Key Pair for TLS for Member
-   if [ $CLUSTER_MODE == "SINGLE_CLUSTER" ]
+   if [ "$CLUSTER_MODE" != "SINGLE_CLUSTER" ]
    then
-     NODE_TLS_KEY_ID=$6
-     echo NODE $2 TLS Key Id: $NODE_TLS_KEY_ID
-   else
      NODE_TLS_KEY_ID=$(assign_hsm_and_generate_tls_key_pair $1)
      echo NODE $2 TLS Key Id: $NODE_TLS_KEY_ID
 
@@ -340,7 +337,7 @@ on_board_node() {
    register_node $1 $NODE_HOLDING_ID_SHORT_HASH $NODE_SESSION_KEY_ID $5 $NODE_LEDGER_KEY_ID
 }
 
-if [ $CLUSTER_MODE == "SINGLE_CLUSTER" ]
+if [ "$CLUSTER_MODE" == "SINGLE_CLUSTER" ]
 then
   ps -ef | grep port-forward | grep $A_RPC_PORT:8888 | awk '{print $2}' |  xargs kill || echo
   kubectl port-forward --namespace $A_CLUSTER_NAMESPACE deployment/corda-rest-worker $A_RPC_PORT:8888 &
@@ -364,6 +361,6 @@ java -jar $CA_JAR --home=./ca create-ca
 
 on_board_mgm
 
-on_board_node $A_RPC $A_X500_NAME $A_GATEWAY_ADDRESS a_tls $A_GATEWAY_ENDPOINT $MGM_HOLDING_ID_SHORT_HASH
+on_board_node $A_RPC $A_X500_NAME $A_GATEWAY_ADDRESS a_tls $A_GATEWAY_ENDPOINT
 
-on_board_node $B_RPC $B_X500_NAME $B_GATEWAY_ADDRESS b_tls $B_GATEWAY_ENDPOINT $MGM_HOLDING_ID_SHORT_HASH
+on_board_node $B_RPC $B_X500_NAME $B_GATEWAY_ADDRESS b_tls $B_GATEWAY_ENDPOINT

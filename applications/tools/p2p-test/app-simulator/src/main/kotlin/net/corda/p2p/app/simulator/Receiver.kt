@@ -75,18 +75,9 @@ class Receiver(private val subscriptionFactory: SubscriptionFactory,
                     //Only JSON deserialize messages from another app-simulator (not sent by the MGM for example).
                     if (authenticatedMessage.header.subsystem == APP_SIMULATOR_SUBSYSTEM) {
                         val payload = objectMapper.readValue<MessagePayload>(authenticatedMessage.payload.array())
-                        val messageReceivedEvent = MessageReceivedEvent(
-                            payload.sender,
-                            authenticatedMessage.header.messageId,
-                            payload.sendTimestamp,
-                            now,
-                            Duration.between(payload.sendTimestamp, now)
-                        )
-                        Record(
-                            destinationTopic,
-                            messageReceivedEvent.messageId,
-                            objectMapper.writeValueAsString(messageReceivedEvent)
-                        )
+                        val messageReceivedEvent = MessageReceivedEvent(payload.sender,
+                            authenticatedMessage.header.messageId, payload.sendTimestamp, now, Duration.between(payload.sendTimestamp, now))
+                        Record(destinationTopic, messageReceivedEvent.messageId, objectMapper.writeValueAsString(messageReceivedEvent))
                     } else {
                         null
                     }
