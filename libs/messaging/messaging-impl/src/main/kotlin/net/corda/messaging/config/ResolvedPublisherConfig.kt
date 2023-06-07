@@ -27,7 +27,12 @@ internal data class ResolvedPublisherConfig(
          */
         fun merge(publisherConfig: PublisherConfig, messagingConfig: SmartConfig): ResolvedPublisherConfig {
             val transactionalFlag = if (publisherConfig.transactional) "TRANSACTIONAL" else "ASYNCHRONOUS"
-            val clientId = "$transactionalFlag--${publisherConfig.clientId}--${publisherConfig.topic}--${UUID.randomUUID()}"
+            val origClientIdWithoutSpaces = publisherConfig.clientId.replace(
+                " ",
+                "_"
+            )
+            val clientId =
+                "$transactionalFlag--$origClientIdWithoutSpaces--${publisherConfig.topic}--${UUID.randomUUID()}"
             return ResolvedPublisherConfig(
                 clientId,
                 messagingConfig.getInt(INSTANCE_ID),
