@@ -74,19 +74,19 @@ internal class ReconcilerEventHandler<K : Any, V : Any>(
     private fun reconcileAndScheduleNext(coordinator: LifecycleCoordinator) {
         logger.info("Initiating reconciliation")
         var reconciliationOutcome = "FAILED"
-        val startTime = System.currentTimeMillis()
+        val startTime = System.nanoTime()
         var reconciliationRunTime = startTime
         var reconciledCount = 0
         try {
             reconciledCount = reconcile()
             reconciliationOutcome = "SUCCEEDED"
-            reconciliationRunTime = System.currentTimeMillis() - startTime
+            reconciliationRunTime = System.nanoTime() - startTime
             logger.info("Reconciliation completed in $reconciliationRunTime ms")
             scheduleNextReconciliation(coordinator)
         } catch (e: Throwable) {
             // An error here could be a transient or not exception. We should transition to `DOWN` and wait
             // on subsequent `RegistrationStatusChangeEvent` to see if it is going to be a `DOWN` or an `ERROR`.
-            reconciliationRunTime = System.currentTimeMillis() - startTime
+            reconciliationRunTime = System.nanoTime() - startTime
             logger.warn("Reconciliation failed. Terminating reconciliations", e)
             coordinator.updateStatus(LifecycleStatus.DOWN)
         } finally {
@@ -94,7 +94,7 @@ internal class ReconcilerEventHandler<K : Any, V : Any>(
                 .withTag(CordaMetrics.Tag.OperationName, name)
                 .withTag(CordaMetrics.Tag.OperationStatus, reconciliationOutcome)
                 .build()
-                .record(Duration.ofMillis(reconciliationRunTime))
+                .record(Duration.ofNanos(reconciliationRunTime))
 
             CordaMetrics.Metric.Db.ReconciliationRecordsCount.builder()
                 .withTag(CordaMetrics.Tag.OperationName, name)
