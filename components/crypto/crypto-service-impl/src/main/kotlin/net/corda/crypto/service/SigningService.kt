@@ -25,14 +25,6 @@ interface SigningService {
     val schemeMetadata: CipherSchemeMetadata
 
     /**
-     * Returns the list of schemes codes which are supported by the associated HSM integration.
-     *
-     * @param tenantId the tenant's id.
-     * @param category the HSM's category.
-     */
-    fun getSupportedSchemes(tenantId: String, category: String): List<String>
-
-    /**
      * Returns list of keys satisfying the filter condition. All filter values are combined as AND.
      *
      * @param skip the response paging information, number of records to skip.
