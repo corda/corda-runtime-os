@@ -18,6 +18,7 @@ import net.corda.crypto.cipher.suite.schemes.KeySchemeCapability
 import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.core.aes.WrappingKey
 import net.corda.crypto.core.aes.WrappingKeyImpl
+import net.corda.crypto.core.isRecoverable
 import net.corda.crypto.hes.core.impl.deriveDHSharedSecret
 import net.corda.crypto.impl.SignatureInstances
 import net.corda.crypto.impl.getSigningData
@@ -28,6 +29,7 @@ import net.corda.crypto.softhsm.deriveSupportedSchemes
 import net.corda.metrics.CordaMetrics
 import net.corda.utilities.debug
 import net.corda.utilities.trace
+import net.corda.v5.crypto.exceptions.CryptoException
 import org.slf4j.LoggerFactory
 import java.io.Closeable
 import java.security.KeyPairGenerator
@@ -85,12 +87,23 @@ class SoftCryptoService(
 
     override val extensions = listOf(CryptoServiceExtensions.REQUIRE_WRAPPING_KEY)
 
+    private fun <R> recoverable(description: String, block: () -> R) = try {
+        block()
+    } catch (e: RuntimeException) {
+        if (!e.isRecoverable())
+            throw e
+        else
+            throw CryptoException("Calling $description failed in a potentially recoverable way", e)
+    }
+
     override fun createWrappingKey(wrappingKeyAlias: String, failIfExists: Boolean, context: Map<String, String>) {
         require(wrappingKeyAlias != "") { "Alias must not be empty" }
         val isCached = wrappingKeyCache?.getIfPresent(wrappingKeyAlias) != null
         val tenantId = computeTenantId(context)
-        val isAvailable = if (isCached) true else wrappingRepositoryFactory.create(tenantId).use {
-            it.findKey(wrappingKeyAlias) != null
+        val isAvailable = if (isCached) true else recoverable("createWrappingKey findKey") {
+            wrappingRepositoryFactory.create(tenantId).use {
+                it.findKey(wrappingKeyAlias) != null
+            }
         }
         logger.trace {
             "createWrappingKey(alias=$wrappingKeyAlias failIfExists=$failIfExists) cached=$isCached available=$isAvailable"
@@ -100,13 +113,13 @@ class SoftCryptoService(
             logger.debug { "Not creating wrapping key for '$wrappingKeyAlias' since a key is available" }
             return
         }
-        val wrappingKey = wrappingKeyFactory(schemeMetadata)
+        val wrappingKey = recoverable("createWrappingKey generate wrapping key") { wrappingKeyFactory(schemeMetadata) }
         val parentKeyName = context.get("wrappingKey") ?: defaultUnmanagedWrappingKeyName
         val parentKey = unmanagedWrappingKeys.get(parentKeyName)
         if (parentKey == null) {
             throw IllegalStateException("No wrapping key $parentKeyName found")
         }
-        val wrappingKeyEncrypted = parentKey.wrap(wrappingKey)
+        val wrappingKeyEncrypted = recoverable("wrap") { parentKey.wrap(wrappingKey) }
         val wrappingKeyInfo =
             WrappingKeyInfo(
                 WRAPPING_KEY_ENCODING_VERSION,
@@ -115,8 +128,10 @@ class SoftCryptoService(
                 1,
                 parentKeyName
             )
-        wrappingRepositoryFactory.create(tenantId).use {
-            it.saveKey(wrappingKeyAlias, wrappingKeyInfo)
+        recoverable("createWrappingKey save key") {
+            wrappingRepositoryFactory.create(tenantId).use {
+                it.saveKey(wrappingKeyAlias, wrappingKeyInfo)
+            }
         }
         logger.trace("Stored wrapping key alias $wrappingKeyAlias context ${context.toString()}")
         wrappingKeyCache?.put(wrappingKeyAlias, wrappingKey)
@@ -132,7 +147,8 @@ class SoftCryptoService(
         require(spec is SharedSecretWrappedSpec) {
             "The service supports only ${SharedSecretWrappedSpec::class.java}"
         }
-        val otherPublicKeyScheme = schemeMetadata.findKeyScheme(spec.otherPublicKey)
+        val otherPublicKeyScheme =
+            recoverable("deriveSharedSecret find scheme") { schemeMetadata.findKeyScheme(spec.otherPublicKey) }
         require(spec.keyScheme.canDo(KeySchemeCapability.SHARED_SECRET_DERIVATION)) {
             "The key scheme '${spec.keyScheme}' must support the Diffie–Hellman key agreement."
         }
@@ -141,11 +157,13 @@ class SoftCryptoService(
         }
         logger.info("deriveSharedSecret(spec={})", spec)
         val provider = schemeMetadata.providers.getValue(spec.keyScheme.providerName)
-        return deriveDHSharedSecret(
-            provider,
-            obtainAndStorePrivateKey(spec.publicKey, spec.keyMaterialSpec, computeTenantId(context)),
-            spec.otherPublicKey
-        )
+        return recoverable("derviceSharedSecret do deriveDHSharedSecret") {
+            deriveDHSharedSecret(
+                provider,
+                obtainAndStorePrivateKey(spec.publicKey, spec.keyMaterialSpec, computeTenantId(context)),
+                spec.otherPublicKey
+            )
+        }
     }
 
     override fun generateKeyPair(spec: KeyGenerationSpec, context: Map<String, String>): GeneratedWrappedKey {
@@ -181,14 +199,16 @@ class SoftCryptoService(
         context.get("tenantId") ?: CryptoTenants.CRYPTO
 
     override fun sign(spec: SigningWrappedSpec, data: ByteArray, context: Map<String, String>): ByteArray {
-        require(data.isNotEmpty()) {
-            "Signing of an empty array is not permitted."
-        }
-        require(supportedSchemes.containsKey(spec.keyScheme)) {
-            "Unsupported key scheme: ${spec.keyScheme.codeName}"
-        }
-        require(spec.keyScheme.canDo(KeySchemeCapability.SIGN)) {
-            "Key scheme: ${spec.keyScheme.codeName} cannot be used for signing."
+        recoverable("sign check requirements") {
+            require(data.isNotEmpty()) {
+                "Signing of an empty array is not permitted."
+            }
+            require(supportedSchemes.containsKey(spec.keyScheme)) {
+                "Unsupported key scheme: ${spec.keyScheme.codeName}"
+            }
+            require(spec.keyScheme.canDo(KeySchemeCapability.SIGN)) {
+                "Key scheme: ${spec.keyScheme.codeName} cannot be used for signing."
+            }
         }
         logger.debug { "sign(spec=$spec)" }
         return sign(
@@ -201,17 +221,19 @@ class SoftCryptoService(
     private fun sign(spec: SigningWrappedSpec, privateKey: PrivateKey, data: ByteArray): ByteArray {
         val startTime = System.nanoTime()
         val signingData = spec.signatureSpec.getSigningData(digestService, data)
-        val signatureBytes = if (spec.signatureSpec is CustomSignatureSpec && spec.keyScheme.algorithmName == "RSA") {
-            // when the hash is precalculated and the key is RSA the actual sign operation is encryption
-            val cipher = Cipher.getInstance(spec.signatureSpec.signatureName, providerFor(spec.keyScheme))
-            cipher.init(Cipher.ENCRYPT_MODE, privateKey)
-            cipher.doFinal(signingData)
-        } else {
-            signatureInstances.withSignature(spec.keyScheme, spec.signatureSpec) { signature ->
-                spec.signatureSpec.getParamsSafely()?.let { params -> signature.setParameter(params) }
-                signature.initSign(privateKey, schemeMetadata.secureRandom)
-                signature.update(signingData)
-                signature.sign()
+        val signatureBytes = recoverable("sign") {
+            if (spec.signatureSpec is CustomSignatureSpec && spec.keyScheme.algorithmName == "RSA") {
+                // when the hash is precalculated and the key is RSA the actual sign operation is encryption
+                val cipher = Cipher.getInstance(spec.signatureSpec.signatureName, providerFor(spec.keyScheme))
+                cipher.init(Cipher.ENCRYPT_MODE, privateKey)
+                cipher.doFinal(signingData)
+            } else {
+                signatureInstances.withSignature(spec.keyScheme, spec.signatureSpec) { signature ->
+                    spec.signatureSpec.getParamsSafely()?.let { params -> signature.setParameter(params) }
+                    signature.initSign(privateKey, schemeMetadata.secureRandom)
+                    signature.update(signingData)
+                    signature.sign()
+                }
             }
         }
         CordaMetrics.Metric.Crypto.SignTimer
@@ -225,31 +247,33 @@ class SoftCryptoService(
     private fun providerFor(scheme: KeyScheme): Provider = schemeMetadata.providers.getValue(scheme.providerName)
 
     private fun obtainAndStoreWrappingKey(alias: String, tenantId: String): WrappingKey =
-        CordaMetrics.Metric.Crypto.WrappingKeyCreationTimer.builder()
-            .withTag(CordaMetrics.Tag.Tenant, tenantId)
-            .build()
-            .recordCallable {
-                wrappingKeyCache?.getIfPresent(alias) ?: run {
-                    // use IllegalArgumentException instead for not found?
-                    val wrappingKeyInfo = wrappingRepositoryFactory.create(tenantId).use { it.findKey(alias) }
-                        ?: throw IllegalStateException("Wrapping key with alias $alias not found")
-                    require(wrappingKeyInfo.encodingVersion == WRAPPING_KEY_ENCODING_VERSION) {
-                        "Unknown wrapping key encoding. Expected to be $WRAPPING_KEY_ENCODING_VERSION"
-                    }
-                    val parentKey = unmanagedWrappingKeys.get(wrappingKeyInfo.parentKeyAlias)
-                    if (parentKey == null) {
-                        throw IllegalStateException("Unknown parent key ${wrappingKeyInfo.parentKeyAlias} for $alias")
-                    }
-                    // TODO remove this restriction? Different levels of wrapping key could sensibly use different algorithms
-                    require(parentKey.algorithm == wrappingKeyInfo.algorithmName) {
-                        "Expected algorithm is ${parentKey.algorithm} but was ${wrappingKeyInfo.algorithmName}"
-                    }
+        recoverable("obtainAndStoreWrappingKey") {
+            CordaMetrics.Metric.Crypto.WrappingKeyCreationTimer.builder()
+                .withTag(CordaMetrics.Tag.Tenant, tenantId)
+                .build()
+                .recordCallable {
+                    wrappingKeyCache?.getIfPresent(alias) ?: run {
+                        // use IllegalArgumentException instead for not found?
+                        val wrappingKeyInfo = wrappingRepositoryFactory.create(tenantId).use { it.findKey(alias) }
+                            ?: throw IllegalStateException("Wrapping key with alias $alias not found")
+                        require(wrappingKeyInfo.encodingVersion == WRAPPING_KEY_ENCODING_VERSION) {
+                            "Unknown wrapping key encoding. Expected to be $WRAPPING_KEY_ENCODING_VERSION"
+                        }
+                        val parentKey = unmanagedWrappingKeys.get(wrappingKeyInfo.parentKeyAlias)
+                        if (parentKey == null) {
+                            throw IllegalStateException("Unknown parent key ${wrappingKeyInfo.parentKeyAlias} for $alias")
+                        }
+                        // TODO remove this restriction? Different levels of wrapping key could sensibly use different algorithms
+                        require(parentKey.algorithm == wrappingKeyInfo.algorithmName) {
+                            "Expected algorithm is ${parentKey.algorithm} but was ${wrappingKeyInfo.algorithmName}"
+                        }
 
-                    parentKey.unwrapWrappingKey(wrappingKeyInfo.keyMaterial).also {
-                        wrappingKeyCache?.put(alias, it)
+                        parentKey.unwrapWrappingKey(wrappingKeyInfo.keyMaterial).also {
+                            wrappingKeyCache?.put(alias, it)
+                        }
                     }
-                }
-            }!!
+                }!!
+        }
 
     private fun obtainAndStorePrivateKey(publicKey: PublicKey, spec: KeyMaterialSpec, tenantId: String): PrivateKey =
         privateKeyCache?.getIfPresent(publicKey) ?: obtainAndStoreWrappingKey(spec.wrappingKeyAlias, tenantId).unwrap(
