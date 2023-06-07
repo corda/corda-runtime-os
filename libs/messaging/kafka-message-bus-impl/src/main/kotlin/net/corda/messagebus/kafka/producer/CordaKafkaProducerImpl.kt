@@ -148,13 +148,13 @@ class CordaKafkaProducerImpl(
 
     override fun beginTransaction() {
         tryWithCleanupOnFailure("beginning transaction", abortTransactionOnFailure = false) {
-            producer.beginTransaction()
+//            producer.beginTransaction()
         }
     }
 
     override fun abortTransaction() {
         tryWithCleanupOnFailure("aborting transaction", abortTransactionOnFailure = false) {
-            producer.abortTransaction()
+//            producer.abortTransaction()
         }
     }
 
@@ -191,7 +191,7 @@ class CordaKafkaProducerImpl(
      * @return null if successful, exception instance transaction can be retried, otherwise throws whatever thrown by the producer.
      */
     private fun commitTransactionAndCatchRetryable() = try {
-        producer.commitTransaction()
+//        producer.commitTransaction()
         null
     } catch (ex: TimeoutException) {
         ex
