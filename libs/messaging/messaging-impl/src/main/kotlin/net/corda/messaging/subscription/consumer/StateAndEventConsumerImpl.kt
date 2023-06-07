@@ -22,6 +22,7 @@ import java.time.Duration
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 
 @Suppress("LongParameterList", "TooManyFunctions")
 internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
@@ -60,6 +61,23 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
     private val currentStates = partitionState.currentStates
     private val partitionsToSync = ConcurrentHashMap.newKeySet<CordaTopicPartition>()
     private val inSyncPartitions = ConcurrentHashMap.newKeySet<CordaTopicPartition>()
+
+    private val metricRecorder = Executors.newSingleThreadScheduledExecutor().also {
+        it.scheduleAtFixedRate({ recordCurrentStatesMetrics() }, 5, 5, TimeUnit.SECONDS)
+    }
+
+    private fun recordCurrentStatesMetrics() {
+        currentStates.keys.forEach { partition ->
+            currentStatesMetricCache.computeIfAbsent(partition) {
+                CordaMetrics.Metric.Messaging.StateAndEventConsumerInMemoryStoreCount.builder()
+                    .withTag(CordaMetrics.Tag.MessagePatternType, MetricsConstants.STATE_AND_EVENT_PATTERN_TYPE)
+                    .withTag(CordaMetrics.Tag.MessagePatternClientId, config.clientId)
+                    .withTag(CordaMetrics.Tag.Partition, "$partition")
+                    .build()
+            }
+                .record((currentStates[partition]?.keys?.size ?: 0).toDouble())
+        }
+    }
 
     private val currentStatesMetricCache = ConcurrentHashMap<Int, DistributionSummary>()
 
@@ -198,14 +216,13 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
                 onPartitionsSynchronized(syncedPartitions)
             }
         }
-
-        recordInMemoryStatesCount()
     }
 
     override fun close() {
         eventConsumer.close()
         stateConsumer.close()
         executor.shutdown()
+        metricRecorder.shutdown()
     }
 
     private fun removeAndReturnSyncedPartitions(): Set<CordaTopicPartition> {
@@ -365,20 +382,6 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
                 // Keeps the old state
                 currentState
             }
-        }
-    }
-
-    private fun recordInMemoryStatesCount() {
-        currentStates.keys.forEach { partition ->
-            val statesInPartition = currentStates[partition]?.size ?: 0
-            currentStatesMetricCache.computeIfAbsent(partition) {
-                CordaMetrics.Metric.Messaging.StateAndEventConsumerInMemoryStoreCount.builder()
-                    .withTag(CordaMetrics.Tag.MessagePatternType, MetricsConstants.STATE_AND_EVENT_PATTERN_TYPE)
-                    .withTag(CordaMetrics.Tag.MessagePatternClientId, config.clientId)
-                    .withTag(CordaMetrics.Tag.Partition, "$partition")
-                    .build()
-            }
-                .record(statesInPartition.toDouble())
         }
     }
 
