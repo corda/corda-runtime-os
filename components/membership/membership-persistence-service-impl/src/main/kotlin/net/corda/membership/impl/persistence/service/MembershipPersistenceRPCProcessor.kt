@@ -17,7 +17,7 @@ internal class MembershipPersistenceRPCProcessor(
 ) : RPCResponderProcessor<MembershipPersistenceRequest, MembershipPersistenceResponse> {
 
     private companion object {
-        val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     override fun onNext(

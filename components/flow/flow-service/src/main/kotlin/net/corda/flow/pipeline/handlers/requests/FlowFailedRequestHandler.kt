@@ -1,6 +1,5 @@
 package net.corda.flow.pipeline.handlers.requests
 
-import net.corda.data.flow.output.FlowStates
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.flow.fiber.FlowIORequest
@@ -10,7 +9,6 @@ import net.corda.flow.pipeline.exceptions.FlowProcessingExceptionTypes.FLOW_FAIL
 import net.corda.flow.pipeline.factory.FlowMessageFactory
 import net.corda.flow.pipeline.factory.FlowRecordFactory
 import net.corda.flow.pipeline.handlers.requests.helper.getRecords
-import net.corda.flow.pipeline.handlers.requests.helper.recordFlowRuntimeMetric
 import net.corda.flow.pipeline.sessions.FlowSessionManager
 import net.corda.flow.pipeline.sessions.FlowSessionStateException
 import org.osgi.service.component.annotations.Activate
@@ -41,7 +39,6 @@ class FlowFailedRequestHandler @Activate constructor(
 
     override fun postProcess(context: FlowEventContext<Any>, request: FlowIORequest.FlowFailed): FlowEventContext<Any> {
         val checkpoint = context.checkpoint
-        recordFlowRuntimeMetric(checkpoint, FlowStates.FAILED.toString())
 
         try {
             val sessionIds = checkpoint.sessions.map { it.sessionId }

@@ -5,7 +5,6 @@ import io.javalin.http.Context
 import io.javalin.http.ForbiddenResponse
 import io.javalin.http.UnauthorizedResponse
 import java.time.Duration
-import java.time.Instant
 import javax.security.auth.login.FailedLoginException
 import net.corda.metrics.CordaMetrics
 import net.corda.rest.exception.HttpApiException
@@ -107,7 +106,7 @@ internal object ContextUtils {
                 methodLogger.debug { "Invoke method \"${method.method.name}\" for route info." }
                 methodLogger.trace { "Get parameter values." }
 
-                val startTime = Instant.now()
+                val startTime = System.nanoTime()
                 try {
                     validateRequestContentType(this, ctx)
 
@@ -137,13 +136,11 @@ internal object ContextUtils {
                         cleanUpMultipartRequest(ctx)
                     }
 
-                    val endTime = Instant.now()
-
                     CordaMetrics.Metric.HttpRequestTime.builder()
-                        .withTag(CordaMetrics.Tag.UriPath, "${ctx.matchedPath()}")
-                        .withTag(CordaMetrics.Tag.HttpMethod, "$ctxMethod")
+                        .withTag(CordaMetrics.Tag.UriPath, ctx.matchedPath())
+                        .withTag(CordaMetrics.Tag.HttpMethod, ctxMethod)
                         .withTag(CordaMetrics.Tag.OperationStatus, "${ctx.status()}")
-                        .build().record(Duration.between(startTime, endTime))
+                        .build().record(Duration.ofNanos(System.nanoTime() - startTime))
                 }
             }
         }

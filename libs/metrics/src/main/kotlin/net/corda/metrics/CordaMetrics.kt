@@ -6,11 +6,16 @@ import io.micrometer.core.instrument.Gauge
 import io.micrometer.core.instrument.Meter
 import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.core.instrument.Metrics
+import io.micrometer.core.instrument.Tag as micrometerTag
 import io.micrometer.core.instrument.Timer
+import io.micrometer.core.instrument.binder.system.DiskSpaceMetrics
 import io.micrometer.core.instrument.composite.CompositeMeterRegistry
 import io.micrometer.core.instrument.config.MeterFilter
+import io.micrometer.core.instrument.noop.NoopMeter
+import java.nio.file.FileSystems
+import java.nio.file.Path
 import java.util.concurrent.atomic.AtomicInteger
-import io.micrometer.core.instrument.Tag as micrometerTag
+import java.util.function.Supplier
 
 
 object CordaMetrics {
@@ -222,12 +227,12 @@ object CordaMetrics {
         /**
          * Number of outbound peer-to-peer sessions.
          */
-        object OutboundSessionCount : Metric<SettableGauge>("p2p.session.outbound", CordaMetrics::settableGauge)
+        class OutboundSessionCount(computation: Supplier<Number>) : ComputedValue("p2p.session.outbound", computation)
 
         /**
          * Number of inbound peer-to-peer sessions.
          */
-        object InboundSessionCount : Metric<SettableGauge>("p2p.session.inbound", CordaMetrics::settableGauge)
+        class InboundSessionCount(computation: Supplier<Number>) : ComputedValue("p2p.session.inbound", computation)
 
         /**
          * Time it took for an inbound request to the p2p gateway to be processed.
@@ -338,51 +343,112 @@ object CordaMetrics {
          */
         object UniquenessBackingStoreDbReadTime: Metric<Timer>("uniqueness.backingstore.db.read.time", CordaMetrics::timer)
 
-        /**
-         * Total time taken for a membership persistence handler to execute.
-         */
-        object MembershipPersistenceHandler: Metric<Timer>(
-            "membership.persistence.handler.time",
-            CordaMetrics::timer
-        )
+        object Crypto {
+            private const val PREFIX = "crypto"
 
-        /**
-         * The time taken by crypto flow operations.
-         */
-        object CryptoFlowOpsProcessorExecutionTime: Metric<Timer>("crypto.flow.processor.execution.time", CordaMetrics::timer)
+            /**
+             * The time taken by crypto flow operations.
+             */
+            object FlowOpsProcessorExecutionTime: Metric<Timer>("$PREFIX.flow.processor.execution.time", CordaMetrics::timer)
 
-        /**
-         * The time taken by crypto operations.
-         */
-        object CryptoOpsProcessorExecutionTime: Metric<Timer>("crypto.processor.execution.time", CordaMetrics::timer)
+            /**
+             * The time taken by crypto operations invoked by RPC message pattern requests.
+             */
+            object OpsProcessorExecutionTime: Metric<Timer>("$PREFIX.processor.execution.time", CordaMetrics::timer)
 
-        /**
-         * The time taken by crypto operations.
-         */
-        object WrappingKeyCreationTimer: Metric<Timer>("crypto.wrapping.key.creation.time", CordaMetrics::timer)
+            /**
+             * The time taken for wrapping key creation in crypto operations.
+             */
+            object WrappingKeyCreationTimer: Metric<Timer>("$PREFIX.wrapping.key.creation.time", CordaMetrics::timer)
 
-        /**
-         * The time taken to create entity manager factories.
-         */
-        object EntityManagerFactoryCreationTimer: Metric<Timer>("entity.manager.factory.creation.time", CordaMetrics::timer)
+            /**
+             * The time taken to create entity manager factories.
+             */
+            object EntityManagerFactoryCreationTimer: Metric<Timer>("entity.manager.factory.creation.time", CordaMetrics::timer)
 
-        /**
-         * The time taken to create entity manager factories.
-         */
-        object SoftCryptoSignTimer: Metric<Timer>("soft.crypto.sign.time", CordaMetrics::timer)
+            /**
+             * The time taken for crypto signing.
+             */
+            object SignTimer: Metric<Timer>("$PREFIX.sign.time", CordaMetrics::timer)
 
-        /**
-         * The time taken to create entity manager factories.
-         */
-        object CryptoSigningKeyLookupTimer: Metric<Timer>("crypto.signing.key.lookup.time", CordaMetrics::timer)
+            /**
+             * The time taken for crypto signing key lookup.
+             */
+            object SigningKeyLookupTimer: Metric<Timer>("$PREFIX.signing.key.lookup.time", CordaMetrics::timer)
 
-        /**
-         * Time taken for a membership persistence transaction to complete.
-         */
-        object MembershipPersistenceTransaction: Metric<Timer>(
-            "membership.persistence.transaction.time",
-            CordaMetrics::timer
-        )
+            /**
+             * The time taken to get crypto signing repository instances.
+             */
+            object SigningRepositoryGetInstanceTimer: Metric<Timer>("$PREFIX.signing.repository.get.instance.time", CordaMetrics::timer)
+
+            /**
+             * The time taken for crypto service sign operation.
+             */
+            object GetOwnedKeyRecordTimer: Metric<Timer>("$PREFIX.get.owned.key.record.time", CordaMetrics::timer)
+
+            /**
+             * The time taken for crypto cipher scheme operations.
+             */
+            object CipherSchemeTimer: Metric<Timer>("$PREFIX.cipher.scheme.time", CordaMetrics::timer)
+
+            /**
+             * The time taken for crypto signature spec operations.
+             */
+            object SignatureSpecTimer: Metric<Timer>("$PREFIX.signature.spec.time", CordaMetrics::timer)
+
+        }
+
+        object Membership {
+            private const val PREFIX = "membership"
+
+            /**
+             * Time taken for a membership persistence transaction to complete.
+             */
+            object PersistenceTransactionExecutionTime: Metric<Timer>(
+                "$PREFIX.persistence.transaction.time",
+                CordaMetrics::timer
+            )
+
+            /**
+             * Total time taken for a membership persistence handler to execute.
+             */
+            object PersistenceHandlerExecutionTime: Metric<Timer>(
+                "$PREFIX.persistence.handler.time",
+                CordaMetrics::timer
+            )
+
+            /**
+             * Time taken by each stage of network registration.
+             */
+            object RegistrationHandlerExecutionTime: Metric<Timer>(
+                "$PREFIX.registration.handler.time",
+                CordaMetrics::timer
+            )
+
+            /**
+             * Time taken by each membership actions handler (e.g. distribute network data).
+             */
+            object ActionsHandlerExecutionTime: Metric<Timer>(
+                "$PREFIX.actions.handler.time",
+                CordaMetrics::timer
+            )
+
+            /**
+             * Time taken to execute each stage of network synchronisation between members and the MGM.
+             */
+            object SyncHandlerExecutionTime: Metric<Timer>(
+                "$PREFIX.sync.handler.time",
+                CordaMetrics::timer
+            )
+
+            /**
+             * Metric to capture the changes in group size.
+             */
+            object MemberListCacheSize: Metric<SettableGauge>(
+                "$PREFIX.memberlist.cache.size",
+                CordaMetrics::settableGauge
+            )
+        }
 
         /**
          * The time taken by crypto operations from the flow side.
@@ -456,6 +522,24 @@ object CordaMetrics {
              */
             object DeserializationTime : Metric<Timer>("serialization.amqp.deserialization.time", CordaMetrics::timer)
         }
+
+        /**
+         * A [Gauge] metric that computes its value using a [Supplier] lambda.
+         * @param name A unique name for this [Gauge].
+         * @param computation A lambda to compute our current value.
+         */
+        sealed class ComputedValue(name: String, computation: Supplier<Number>) : Metric<Gauge>(name, meter = { n, tags ->
+            Gauge.builder(n, computation)
+                .tags(tags)
+                .register(registry)
+        })
+
+        class DiskSpace(path: Path) : Metric<NoopMeter>("", meter = { _, tags ->
+            if (path.fileSystem == FileSystems.getDefault()) {
+                DiskSpaceMetrics(path.toFile(), tags).bindTo(registry)
+            }
+            VoidMeter
+        })
     }
 
     /**
@@ -521,6 +605,11 @@ object CordaMetrics {
         FlowEvent("flow.event"),
 
         /**
+         * Label for a type of content.
+         */
+        ContentsType("contents.type"),
+
+        /**
          * The status of the operation. Can be used to indicate whether an operation was successful or failed.
          */
         OperationStatus("status"),
@@ -571,7 +660,26 @@ object CordaMetrics {
          */
         ResultType("result.type"),
 
+        /**
+         * Method to lookup signing keys. Currently used by SingingRepositoryImpl to indicate whether the lookup is via public key hashes or
+         * public key short hashes.
+         */
         SigningKeyLookupMethod("lookup.method"),
+
+        /**
+         * Label to identify the method inside a class / implementation.
+         */
+        PublicKeyType("publickey.type"),
+
+        /**
+         * Identifies the signature signing scheme name to create signatures during crypto signing operations.
+         */
+        SignatureSpec("signature.spec"),
+
+        /**
+         * Identifier of a tenant either a virtual node identifier or cluster level tenant id.
+         */
+        Tenant("tenant"),
 
         /**
          * Boolean value indicating whether the metric relates to a duplicate request. Used by the
@@ -606,6 +714,15 @@ object CordaMetrics {
         ConnectionResult("connection.result")
     }
 
+    /**
+     * Prometheus requires the same set of tags to be populated for a specific metric name.
+     * Otherwise, metrics will be (silently) not exported.
+     *
+     * This value can be used to comply with this rule in scenarios where a tag is not relevant in some conditions,
+     * but it still needs to be populated in order to avoid lost data points.
+     */
+    const val NOT_APPLICABLE_TAG_VALUE = "not_applicable"
+
     val registry: CompositeMeterRegistry = Metrics.globalRegistry
 
     /**
@@ -615,27 +732,27 @@ object CordaMetrics {
      * @param registry Registry instance
      */
     fun configure(workerType: String, registry: MeterRegistry) {
-        this.registry.add(registry)
-        this.registry.config()
+        this.registry.add(registry).config()
+            .commonTags(Tag.WorkerType.value, workerType)
             .meterFilter(object : MeterFilter {
                 override fun map(id: Meter.Id): Meter.Id {
                     // prefix all metrics with `corda`, except standard JVM and Process metrics
                     @Suppress("ComplexCondition")
-                    if (
+                    return if (
                         id.name.startsWith("corda") ||
                         id.name.startsWith("jvm") ||
                         id.name.startsWith("system") ||
                         id.name.startsWith("process")
                     ) {
-                        return id
+                        id
+                    } else {
+                        id.withName("corda." + id.name)
                     }
-                    return id.withName("corda." + id.name)
                 }
             })
-            .commonTags(Tag.WorkerType.value, workerType)
     }
 
-    fun settableGauge(name: String, tags: Iterable<micrometerTag>): SettableGauge {
+    private fun settableGauge(name: String, tags: Iterable<micrometerTag>): SettableGauge {
         val gaugeValue = AtomicInteger()
         val gauge = Gauge.builder(name, gaugeValue, Number::toDouble)
             .tags(tags)
@@ -643,9 +760,10 @@ object CordaMetrics {
         return SettableGauge(gauge, gaugeValue)
     }
 
-    fun timer(name: String, tags: Iterable<micrometerTag>): Timer {
+    private fun timer(name: String, tags: Iterable<micrometerTag>): Timer {
         return Timer.builder(name)
             .publishPercentiles(0.50, 0.95, 0.99)
+            .publishPercentileHistogram()
             .tags(tags)
             .register(registry)
     }
@@ -673,3 +791,9 @@ object CordaMetrics {
         }
     }
 }
+
+/**
+ * This is a dummy "placeholder" meter.
+ */
+@Suppress("NULLABILITY_MISMATCH_BASED_ON_JAVA_ANNOTATIONS")
+private object VoidMeter : NoopMeter(null)
