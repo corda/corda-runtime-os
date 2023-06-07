@@ -59,7 +59,7 @@ internal class ConfigReadServiceEventHandler(
     val publisher by lazy {
         publisherFactory.createPublisher(
             PublisherConfig(
-                "ConfigReadServiceEventHandler Avro Schema publisher", false
+                "ConfigReadServiceEventHandler_Avro_Schema_publisher", false
             ), configuration.getConfig(ConfigKeys.MESSAGING_CONFIG)
         )
     }
