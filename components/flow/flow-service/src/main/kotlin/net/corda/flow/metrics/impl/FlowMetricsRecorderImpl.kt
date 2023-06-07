@@ -88,7 +88,6 @@ class FlowMetricsRecorderImpl(
             .withTag(CordaMetrics.Tag.FlowClass, flowCheckpoint.flowStartContext.flowClassName)
             .withTag(CordaMetrics.Tag.FlowEvent, flowEventType)
             .build().increment()
-
     }
 
     override fun recordFlowSessionMessagesSent(flowEventType: String) {

@@ -22,12 +22,14 @@ dependencies {
     implementation "net.corda:corda-avro-schema"
     implementation "net.corda:corda-config-schema"
     implementation "net.corda:corda-topic-schema"
+    implementation project(":libs:metrics")
 
     testImplementation "org.assertj:assertj-core:$assertjVersion"
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation project(":testing:flow:flow-utilities")
     testImplementation project(":libs:flows:flow-utils")
+
 }
 
 description 'Session Manager Impl lib'

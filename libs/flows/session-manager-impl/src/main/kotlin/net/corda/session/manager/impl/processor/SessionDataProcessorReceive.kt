@@ -1,6 +1,5 @@
 package net.corda.session.manager.impl.processor
 
-import java.time.Instant
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.session.SessionClose
 import net.corda.data.flow.event.session.SessionData
@@ -14,6 +13,9 @@ import net.corda.session.manager.impl.processor.helper.recalcHighWatermark
 import net.corda.utilities.debug
 import net.corda.utilities.trace
 import org.slf4j.LoggerFactory
+import java.time.Instant
+import net.corda.metrics.CordaMetrics
+
 
 /**
  * Process a [SessionData] event received from a counterparty.
@@ -57,6 +59,11 @@ class SessionDataProcessorReceive(
         return if (seqNum >= expectedNextSeqNum) {
             getSessionStateForDataEvent(sessionState, sessionId, seqNum, expectedNextSeqNum)
         } else {
+            val flowSessionMessageReceivedDuplicates = CordaMetrics.Metric.FlowSessionMessagesReceivedDuplicatesCount.builder()
+                .forVirtualNode(sessionEvent.initiatedIdentity.x500Name)
+                .withTag(CordaMetrics.Tag.FlowClass, sessionState.receivedEventsState.javaClass)
+                .withTag(CordaMetrics.Tag.FlowEvent, sessionEvent.payload::class.simpleName)
+                .build().increment()
             logger.debug {
                 "Duplicate message received on key $key with sessionId $sessionId with sequence number of $seqNum when next" +
                         " expected seqNum is $expectedNextSeqNum"
