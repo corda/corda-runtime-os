@@ -22,7 +22,6 @@ import java.time.Duration
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
-import java.util.concurrent.TimeUnit
 
 @Suppress("LongParameterList", "TooManyFunctions")
 internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
@@ -62,22 +61,19 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
     private val partitionsToSync = ConcurrentHashMap.newKeySet<CordaTopicPartition>()
     private val inSyncPartitions = ConcurrentHashMap.newKeySet<CordaTopicPartition>()
 
-    private val metricRecorder = Executors.newSingleThreadScheduledExecutor().also {
-        it.scheduleAtFixedRate({ recordCurrentStatesMetrics() }, 5, 5, TimeUnit.SECONDS)
-    }
-
-    private fun recordCurrentStatesMetrics() {
-        currentStates.forEach { (partition, statesMap) ->
-            currentStatesMetricCache.computeIfAbsent(partition) {
-                CordaMetrics.Metric.Messaging.StateAndEventConsumerInMemoryStoreCount { statesMap.keys.size }.builder()
+    // a map of gauges, each one recording the number of states currently in memory for each partition
+    private val inMemoryStatesPerPartitionGaugeCache = ConcurrentHashMap<Int, Gauge>()
+    private fun createGaugesForInMemoryStates(partitions: Collection<Int>) {
+        partitions.forEach { partition ->
+            inMemoryStatesPerPartitionGaugeCache.computeIfAbsent(partition) {
+                CordaMetrics.Metric.Messaging.StateAndEventConsumerInMemoryStoreCount { currentStates[partition]?.size ?: 0 }
+                    .builder()
                     .withTag(CordaMetrics.Tag.MessagePatternClientId, config.clientId)
                     .withTag(CordaMetrics.Tag.Partition, "$partition")
                     .build()
             }
         }
     }
-
-    private val currentStatesMetricCache = ConcurrentHashMap<Int, Gauge>()
 
     private val statePollTimer = CordaMetrics.Metric.Messaging.MessagePollTime.builder()
         .withTag(CordaMetrics.Tag.MessagePatternType, MetricsConstants.STATE_AND_EVENT_PATTERN_TYPE)
@@ -123,6 +119,7 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
                 listener.onPartitionSynced(getStatesForPartition(partition.partition))
             }
         }
+        createGaugesForInMemoryStates(partitions.map { it.partition })
     }
 
     private fun onPartitionsSynchronized(partitions: Set<CordaTopicPartition>) {
@@ -220,8 +217,7 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
         eventConsumer.close()
         stateConsumer.close()
         executor.shutdown()
-        metricRecorder.shutdown()
-        currentStatesMetricCache.values.forEach { CordaMetrics.registry.remove(it) }
+        inMemoryStatesPerPartitionGaugeCache.values.forEach { CordaMetrics.registry.remove(it) }
     }
 
     private fun removeAndReturnSyncedPartitions(): Set<CordaTopicPartition> {
