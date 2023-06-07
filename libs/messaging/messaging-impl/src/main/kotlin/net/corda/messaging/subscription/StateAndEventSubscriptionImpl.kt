@@ -33,6 +33,7 @@ import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
 import java.time.Clock
 import java.util.*
+import java.util.concurrent.CompletableFuture
 
 @Suppress("LongParameterList")
 internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
@@ -48,6 +49,7 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
 
     private val log = LoggerFactory.getLogger("${this.javaClass.name}-${config.clientId}")
 
+    private var batchPublishFuture = CompletableFuture<Unit>().apply { this.complete(Unit) }
     private var nullableProducer: CordaProducer? = null
     private var nullableStateAndEventConsumer: StateAndEventConsumer<K, S, E>? = null
     private var nullableEventConsumer: CordaConsumer<K, E>? = null
@@ -244,30 +246,40 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                 }
             }
         } catch (ex: StateAndEventConsumer.RebalanceInProgressException) {
-            log.warn ("Abandoning processing of events(keys: ${events.joinToString { it.key.toString() }}, " +
-                    "size: ${events.size}) due to rebalance", ex)
+            log.warn(
+                "Abandoning processing of events(keys: ${events.joinToString { it.key.toString() }}, " +
+                        "size: ${events.size}) due to rebalance", ex
+            )
             return true
         }
 
-        commitTimer.recordCallable {
-            producer.beginTransaction()
-            producer.sendRecords(outputRecords.toCordaProducerRecords())
-            if (deadLetterRecords.isNotEmpty()) {
-                producer.sendRecords(deadLetterRecords.map {
-                    CordaProducerRecord(
-                        getDLQTopic(eventTopic),
-                        UUID.randomUUID().toString(),
-                        it
-                    )
-                })
-                deadLetterRecords.clear()
-            }
-            producer.sendRecordOffsetsToTransaction(eventConsumer, events)
-            producer.commitTransaction()
-        }
-        log.debug { "Processing events(keys: ${events.joinToString { it.key.toString() }}, size: ${events.size}) complete." }
+        // Wait if previous batch has not been published
+        batchPublishFuture.get()
 
-        stateAndEventConsumer.updateInMemoryStatePostCommit(updatedStates, clock)
+        batchPublishFuture = CompletableFuture.supplyAsync {
+            commitTimer.recordCallable {
+                producer.beginTransaction()
+                producer.sendRecords(outputRecords.toCordaProducerRecords())
+                if (deadLetterRecords.isNotEmpty()) {
+                    producer.sendRecords(deadLetterRecords.map {
+                        CordaProducerRecord(
+                            getDLQTopic(eventTopic),
+                            UUID.randomUUID().toString(),
+                            it
+                        )
+                    })
+                    deadLetterRecords.clear()
+                }
+                // producer.sendRecordOffsetsToTransaction(eventConsumer, events)
+                producer.commitTransaction()
+            }
+
+
+            log.debug { "Processing events(keys: ${events.joinToString { it.key.toString() }}, size: ${events.size}) complete." }
+
+            stateAndEventConsumer.updateInMemoryStatePostCommit(updatedStates, clock)
+        }
+
         return false
     }
 
@@ -324,7 +336,12 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
     /**
      * If the new state requires old chunk keys to be cleared then generate cleanup records to set those ChunkKeys to null
      */
-    private fun generateChunkKeyCleanupRecords(key: K, state: S?, updatedState: S?, outputRecords: MutableList<Record<*, *>>) {
+    private fun generateChunkKeyCleanupRecords(
+        key: K,
+        state: S?,
+        updatedState: S?,
+        outputRecords: MutableList<Record<*, *>>
+    ) {
         chunkSerializerService.getChunkKeysToClear(key, state, updatedState)?.let { chunkKeys ->
             chunkKeys.map { chunkKey ->
                 outputRecords.add(Record(stateTopic, chunkKey, null))
