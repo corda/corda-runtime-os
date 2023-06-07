@@ -27,7 +27,7 @@ import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.core.aes.WrappingKey
 import net.corda.crypto.core.aes.WrappingKeyImpl
 import net.corda.crypto.persistence.HSMStore
-import net.corda.crypto.persistence.SigningKeyInfo
+import net.corda.crypto.core.SigningKeyInfo
 import net.corda.crypto.persistence.db.model.CryptoEntities
 import net.corda.crypto.persistence.getEntityManagerFactory
 import net.corda.crypto.service.HSMService

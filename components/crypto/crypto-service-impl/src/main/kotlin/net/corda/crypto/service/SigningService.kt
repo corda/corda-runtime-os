@@ -8,7 +8,7 @@ import net.corda.crypto.core.ShortHash
 import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
-import net.corda.crypto.persistence.SigningKeyInfo
+import net.corda.crypto.core.SigningKeyInfo
 import java.security.KeyPair
 import java.security.PublicKey
 

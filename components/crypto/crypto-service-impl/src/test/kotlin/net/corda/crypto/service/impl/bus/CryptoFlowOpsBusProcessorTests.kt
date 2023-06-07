@@ -16,7 +16,7 @@ import net.corda.crypto.flow.CryptoFlowOpsTransformer.Companion.REQUEST_OP_KEY
 import net.corda.crypto.flow.CryptoFlowOpsTransformer.Companion.REQUEST_TTL_KEY
 import net.corda.crypto.flow.CryptoFlowOpsTransformer.Companion.RESPONSE_TOPIC
 import net.corda.crypto.flow.impl.CryptoFlowOpsTransformerImpl
-import net.corda.crypto.persistence.SigningKeyInfo
+import net.corda.crypto.core.SigningKeyInfo
 import net.corda.crypto.service.impl.SigningServiceImpl
 import net.corda.crypto.service.impl.infra.ActResult
 import net.corda.crypto.service.impl.infra.ActResultTimestamps
@@ -38,7 +38,6 @@ import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys
-import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
 import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash

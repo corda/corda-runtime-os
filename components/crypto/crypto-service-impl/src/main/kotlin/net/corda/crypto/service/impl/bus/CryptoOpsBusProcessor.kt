@@ -15,7 +15,7 @@ import net.corda.crypto.impl.retrying.BackoffStrategy
 import net.corda.crypto.impl.retrying.CryptoRetryingExecutor
 import net.corda.crypto.impl.toMap
 import net.corda.crypto.impl.toSignatureSpec
-import net.corda.crypto.persistence.SigningKeyInfo
+import net.corda.crypto.core.SigningKeyInfo
 import net.corda.crypto.core.KeyOrderBy
 import net.corda.crypto.service.SigningService
 import net.corda.data.crypto.SecureHashes
