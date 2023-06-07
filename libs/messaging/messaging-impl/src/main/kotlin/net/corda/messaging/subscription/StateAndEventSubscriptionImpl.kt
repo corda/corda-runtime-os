@@ -256,24 +256,24 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         // Wait if previous batch has not been published
         batchPublishFuture.get()
 
+        val dlqList = deadLetterRecords.toList()
+        deadLetterRecords.clear()
         batchPublishFuture = CompletableFuture.supplyAsync {
             commitTimer.recordCallable {
                 producer.beginTransaction()
                 producer.sendRecords(outputRecords.toCordaProducerRecords())
-                if (deadLetterRecords.isNotEmpty()) {
-                    producer.sendRecords(deadLetterRecords.map {
+                if (dlqList.isNotEmpty()) {
+                    producer.sendRecords(dlqList.map {
                         CordaProducerRecord(
                             getDLQTopic(eventTopic),
                             UUID.randomUUID().toString(),
                             it
                         )
                     })
-                    deadLetterRecords.clear()
                 }
                 // producer.sendRecordOffsetsToTransaction(eventConsumer, events)
                 producer.commitTransaction()
             }
-
 
             log.debug { "Processing events(keys: ${events.joinToString { it.key.toString() }}, size: ${events.size}) complete." }
 
