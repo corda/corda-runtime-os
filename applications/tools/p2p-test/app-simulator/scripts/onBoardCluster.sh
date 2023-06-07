@@ -31,7 +31,7 @@ build_cli_tool() {
    ./gradlew build
 
    cd $REPO_TOP_LEVEL_DIR
-   ./gradlew :tools:plugins:package:build :tools:plugins:mgm:build
+   ./gradlew :tools:plugins:package:build :tools:plugins:mgm:build :applications:tools:p2p-test:fake-ca:build
    cd $WORKING_DIR
    cp $REPO_TOP_LEVEL_DIR/tools/plugins/package/build/libs/package-cli-plugin-*.jar $REPO_TOP_LEVEL_DIR/tools/plugins/mgm/build/libs/mgm-cli*.jar $CORDA_CLI_DIR/build/plugins/
 }

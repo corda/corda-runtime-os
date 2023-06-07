@@ -16,4 +16,4 @@ kubectl port-forward --namespace $APP_SIMULATOR_DB_NAMESPACE svc/db-postgresql 5
 
 echo "Starting Receiver"
 
-helm upgrade --install app-simulator $APP_SIMULATOR_CHART_DIR -f receiver.yaml -n $B_CLUSTER_NAMESPACE --set db.appSimulator.password=$POSTGRES_ADMIN_PASSWORD --set "imagePullSecrets={docker-registry-cred}" --set image.tag=$DOCKER_IMAGE_VERSION --set "db.appSimulator.namespace=$APP_SIMULATOR_DB_NAMESPACE"  --wait
+helm upgrade --install app-simulator $APP_SIMULATOR_CHART_DIR -f receiver.yaml -n $B_CLUSTER_NAMESPACE --set db.appSimulator.password=$POSTGRES_ADMIN_PASSWORD --set "imagePullSecrets={docker-registry-cred}" --set image.tag=$DOCKER_IMAGE_VERSION --set "db.appSimulator.namespace=$APP_SIMULATOR_DB_NAMESPACE" --set appSimulators.receiver.topicCreation.replicationFactor=3  --wait

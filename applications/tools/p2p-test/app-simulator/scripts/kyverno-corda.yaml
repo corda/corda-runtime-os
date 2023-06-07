@@ -1,0 +1,8 @@
+imagePullSecrets:
+- docker-registry-cred
+
+tolerations:
+  - key: "node" 
+    effect: "NoSchedule" 
+    value: "corda"
+nodeSelector: { node: "corda" }

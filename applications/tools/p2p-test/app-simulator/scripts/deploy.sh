@@ -12,10 +12,12 @@ deploy() {
    kubectl create ns $namespace
 
    echo Installing prereqs into $namespace
+   echo "$SCRIPT_DIR/kyverno.yaml"
    helm upgrade --install prereqs -n $namespace \
      oci://corda-os-docker.software.r3.com/helm-charts/corda-dev \
      --set image.registry="corda-os-docker.software.r3.com" \
      --set kafka.replicaCount=$KAFKA_REPLICAS,kafka.zookeeper.replicaCount=$KAFKA_ZOOKEEPER_REPLICAS \
+     --values "$SCRIPT_DIR/kyverno-prereqs.yaml" \
      --render-subchart-notes \
      --timeout 10m \
      --wait
@@ -24,7 +26,9 @@ deploy() {
    helm upgrade --install corda -n $namespace oci://corda-os-docker.software.r3.com/helm-charts/release/os/5.0/corda \
      --set "imagePullSecrets={docker-registry-cred}" --set image.tag=$DOCKER_IMAGE_VERSION \
      --set image.registry="corda-os-docker.software.r3.com" --values $REPO_TOP_LEVEL_DIR/values.yaml \
-     --values $REPO_TOP_LEVEL_DIR/debug.yaml --wait --version $CORDA_CHART_VERSION
+     --values $REPO_TOP_LEVEL_DIR/debug.yaml --wait --version $CORDA_CHART_VERSION \
+     --values "$SCRIPT_DIR/kyverno-corda.yaml" \
+     --set bootstrap.kafka.partitions=10
 }
 
 if [ $# -eq 0 ]

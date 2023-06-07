@@ -1,0 +1,22 @@
+kafka:
+  nodeSelector:
+    node: prereqs
+  tolerations:
+  - effect: NoSchedule
+    key: node
+    value: prereqs
+  zookeeper:
+    nodeSelector:
+      node: prereqs
+    tolerations:
+    - effect: NoSchedule
+      key: node
+      value: prereqs
+postgresql:
+  primary:
+    nodeSelector:
+      node: prereqs
+    tolerations:
+    - effect: NoSchedule
+      key: node
+      value: prereqs
