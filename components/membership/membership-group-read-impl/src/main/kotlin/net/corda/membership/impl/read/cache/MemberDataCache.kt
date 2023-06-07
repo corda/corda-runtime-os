@@ -40,8 +40,8 @@ interface MemberDataCache<T> {
      */
     class Impl<T> : MemberDataCache<T> {
 
-        companion object {
-            val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        private companion object {
+            private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         }
 
         private val cache = ConcurrentHashMap<HoldingIdentity, T>()

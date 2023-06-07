@@ -23,6 +23,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
+import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 @Component(
@@ -35,11 +36,13 @@ class SigningServiceImpl @Activate constructor(
     @Reference(service = ExternalEventExecutor::class)
     private val externalEventExecutor: ExternalEventExecutor,
     @Reference(service = KeyEncodingService::class)
-    private val keyEncodingService: KeyEncodingService
+    private val keyEncodingService: KeyEncodingService,
+    @Reference(service = MySigningKeysCache::class)
+    private val mySigningKeysCache: MySigningKeysCache
 ) : SigningService, UsedByFlow, SingletonSerializeAsToken {
 
     private companion object {
-        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        private val log: Logger = LoggerFactory.getLogger(SigningServiceImpl::class.java)
     }
 
     @Suspendable
@@ -61,13 +64,20 @@ class SigningServiceImpl @Activate constructor(
 
     @Suspendable
     override fun findMySigningKeys(keys: Set<PublicKey>): Map<PublicKey, PublicKey?> {
-        return recordSuspendable({ cryptoFlowTimer("findMySigningKeys") }) @Suspendable {
-            val compositeKeys: Set<CompositeKey> = keys.filterIsInstanceTo(linkedSetOf(), CompositeKey::class.java)
-            val plainKeys = keys - compositeKeys
+        val operation = operation@ @Suspendable {
+            val cachedKeys = mySigningKeysCache.get(keys)
+
+            if (cachedKeys.size == keys.size) {
+                return@operation cachedKeys
+            }
+
+            val keysToFind = keys - cachedKeys.keys
+
+            val compositeKeys: Set<CompositeKey> = keysToFind.filterIsInstanceTo(linkedSetOf(), CompositeKey::class.java)
+            val plainKeys = keysToFind - compositeKeys
             val compositeKeysLeaves: Set<PublicKey> = compositeKeys.flatMapTo(linkedSetOf()) {
                 it.leafKeys
             }
-
             val foundSigningKeys = externalEventExecutor.execute(
                 FilterMyKeysExternalEventFactory::class.java,
                 plainKeys + compositeKeysLeaves
@@ -102,8 +112,12 @@ class SigningServiceImpl @Activate constructor(
                 foundLeaf
             }
 
-            plainKeysReqResp + compositeKeysReqResp
+            mySigningKeysCache.putAll(plainKeysReqResp)
+            mySigningKeysCache.putAll(compositeKeysReqResp)
+
+            return@operation cachedKeys + plainKeysReqResp + compositeKeysReqResp
         }
+        return recordSuspendable({ cryptoFlowTimer("findMySigningKeys") }, operation)
     }
 
     private fun cryptoFlowTimer(operationName: String): Timer {
