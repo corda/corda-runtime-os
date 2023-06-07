@@ -32,7 +32,7 @@ class SigningServiceImplTest {
         signingRepositoryFactory = { repo },
         schemeMetadata = schemeMetadata,
         digestService = mock(),
-        cache = mock(),
+        signingKeyInfoCache = mock(),
         hsmStore = mockHsmStore
     )
 

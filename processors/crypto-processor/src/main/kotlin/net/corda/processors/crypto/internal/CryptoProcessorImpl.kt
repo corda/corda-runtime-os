@@ -316,7 +316,7 @@ class CryptoProcessorImpl @Activate constructor(
             ),
             schemeMetadata = schemeMetadata,
             digestService = digestService,
-            cache = signingCache,
+            signingKeyInfoCache = signingCache,
             hsmStore = hsmStore
         )
 

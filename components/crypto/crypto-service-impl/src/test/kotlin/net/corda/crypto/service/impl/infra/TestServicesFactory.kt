@@ -195,7 +195,7 @@ class TestServicesFactory {
             signingRepositoryFactory = { signingRepository },
             digestService = PlatformDigestServiceImpl(schemeMetadata),
             schemeMetadata = schemeMetadata,
-            cache = CacheFactoryImpl().build(
+            signingKeyInfoCache = CacheFactoryImpl().build(
                 "Signing-Key-Cache",
                 Caffeine.newBuilder()
                     .expireAfterAccess(signingConfig.cache.expireAfterAccessMins, TimeUnit.MINUTES)

@@ -50,7 +50,7 @@ class SigningServiceImpl(
     private val signingRepositoryFactory: SigningRepositoryFactory,
     override val schemeMetadata: CipherSchemeMetadata,
     private val digestService: PlatformDigestService,
-    private val cache: Cache<CacheKey, SigningKeyInfo>,
+    private val signingKeyInfoCache: Cache<CacheKey, SigningKeyInfo>,
     private val hsmStore: HSMStore,
 ) : SigningService {
 
@@ -92,7 +92,7 @@ class SigningServiceImpl(
         // uniqueness constraints to stop clashes from being created.
 
         val cachedKeys =
-            cache.getAllPresent(keyIds.mapTo(mutableSetOf()) {
+            signingKeyInfoCache.getAllPresent(keyIds.mapTo(mutableSetOf()) {
                 CacheKey(tenantId, it)
             }).mapTo(mutableSetOf()) { it.value }
         val notFound: List<ShortHash> = keyIds - cachedKeys.map { it.id }.toSet()
@@ -100,7 +100,7 @@ class SigningServiceImpl(
         val fetchedKeys = signingRepositoryFactory.getInstance(tenantId).use {
             it.lookupByPublicKeyShortHashes(notFound.toMutableSet())
         }
-        fetchedKeys.forEach { cache.put(CacheKey(tenantId, it.id), it) }
+        fetchedKeys.forEach { signingKeyInfoCache.put(CacheKey(tenantId, it.id), it) }
 
         return cachedKeys + fetchedKeys
     }
@@ -119,7 +119,7 @@ class SigningServiceImpl(
             }.filterNotNull()
 
         val keyIds = fullKeyIds.map { ShortHash.of(it) }
-        val cachedMap = cache.getAllPresent(keyIds.mapTo(mutableSetOf()) { CacheKey(tenantId, it) })
+        val cachedMap = signingKeyInfoCache.getAllPresent(keyIds.mapTo(mutableSetOf()) { CacheKey(tenantId, it) })
         val cachedKeys = cachedMap.map { it.value }
         val cachedMatchingKeys = filterOutMismatches(cachedKeys)
         if (cachedMatchingKeys.size == fullKeyIds.size) return cachedMatchingKeys
@@ -133,7 +133,7 @@ class SigningServiceImpl(
         }
         val fetchedMatchingKeys = filterOutMismatches(fetchedKeys)
         fetchedMatchingKeys.forEach {
-            cache.put(CacheKey(tenantId, it.id), it)
+            signingKeyInfoCache.put(CacheKey(tenantId, it.id), it)
         }
         return cachedMatchingKeys + fetchedMatchingKeys
     }
@@ -312,7 +312,7 @@ class SigningServiceImpl(
                     hsmId = "SOFT" // TODO remove field
                 )
             val signingKeyInfo = repo.savePrivateKey(saveContext)
-            cache.put(CacheKey(tenantId, signingKeyInfo.id), signingKeyInfo)
+            signingKeyInfoCache.put(CacheKey(tenantId, signingKeyInfo.id), signingKeyInfo)
             return schemeMetadata.toSupportedPublicKey(key.publicKey)
         }
     }
@@ -335,11 +335,11 @@ class SigningServiceImpl(
         val requestedFullKeyId = publicKey.fullIdHash(schemeMetadata, digestService)
         val keyId = ShortHash.of(requestedFullKeyId)
         val cacheKey = CacheKey(tenantId, keyId)
-        val signingKeyInfo = cache.getIfPresent(cacheKey) ?: run {
+        val signingKeyInfo = signingKeyInfoCache.getIfPresent(cacheKey) ?: run {
             val repo = signingRepositoryFactory.getInstance(tenantId)
             val result = repo.findKey(publicKey)
             if (result == null) throw IllegalArgumentException("The public key '${publicKey.publicKeyId()}' was not found")
-            cache.put(cacheKey, result)
+            signingKeyInfoCache.put(cacheKey, result)
             result
         }
         if (signingKeyInfo.fullId != requestedFullKeyId) throw IllegalArgumentException(

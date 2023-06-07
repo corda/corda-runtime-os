@@ -339,7 +339,7 @@ class SigningServiceGeneralTests {
         signingRepositoryFactory = { repo },
         schemeMetadata = schemeMetadata,
         digestService = mockDigestService(),
-        cache = cache ?: makeCache(),
+        signingKeyInfoCache = cache ?: makeCache(),
         hsmStore = mockHsmStore,
     )
 
@@ -427,7 +427,7 @@ class SigningServiceGeneralTests {
             cryptoService = mock(),
             schemeMetadata = schemeMetadata,
             digestService = mockDigestService(),
-            cache = cache,
+            signingKeyInfoCache = cache,
             hsmStore = mockHsmStore,
         )
         if (keysInCache >= 1) populateCache(cache, shortKeyId0, fullKeyId0)
@@ -475,7 +475,7 @@ class SigningServiceGeneralTests {
             cryptoService = mock(),
             schemeMetadata = schemeMetadata,
             digestService = mockDigestService(),
-            cache = cache,
+            signingKeyInfoCache = cache,
             hsmStore = mockHsmStore,
         )
         val lookedUpByFullKeyIdsKeys =
