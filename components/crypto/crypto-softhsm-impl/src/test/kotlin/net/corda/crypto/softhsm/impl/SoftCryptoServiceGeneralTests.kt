@@ -19,11 +19,15 @@ import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256K1_CODE_NAME
 import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.crypto.KeySchemeCodes.EDDSA_ED25519_CODE_NAME
 import net.corda.v5.crypto.KeySchemeCodes.X25519_CODE_NAME
+import net.corda.v5.crypto.exceptions.CryptoException
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.mockito.kotlin.any
+import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.mock
 import java.util.UUID
+import javax.persistence.QueryTimeoutException
 import kotlin.test.assertTrue
 
 /* SoftCryptoService tests that do not require wrapping keys */
@@ -72,7 +76,6 @@ class SoftCryptoServiceGeneralTests {
             )
         }
     }
-
 
     @Test
     fun `Should throw IllegalArgumentException when signing empty data array`() {
@@ -204,4 +207,26 @@ class SoftCryptoServiceGeneralTests {
             schemeMetadata.schemes.contains(it.key)
         })
     }
+
+    @Test
+    fun `Should throw CryptoException when a DB query fails with QueryTimeoutException`() {
+        val cryptoServiceExploding = makeSoftCryptoService(wrappingRepository = mock() {
+            on { findKey(any()) } doThrow QueryTimeoutException()
+        })
+        assertThrows<CryptoException> {
+            cryptoServiceExploding.createWrappingKey("foo", true, emptyMap())
+        }
+    }
+
+    @Test
+    fun `Should throw original exception when a DB query fails with IllegalStateException`() {
+        val cryptoServiceExploding = makeSoftCryptoService(wrappingRepository = mock() {
+            on { findKey(any()) } doThrow IllegalStateException()
+        })
+        assertThrows<IllegalStateException> {
+            cryptoServiceExploding.createWrappingKey("foo", true, emptyMap())
+        }
+    }
+
+
 }
