@@ -224,6 +224,29 @@
                 }
             ]
         },
+        "tracing": {
+            "type": "object",
+            "title": "Distributed tracing configuration",
+            "additionalProperties": false,
+            "required": [
+                "endpoint"
+            ],
+            "properties": {
+                "endpoint": {
+                    "type": "string",
+                    "default": "",
+                    "title": "URL for endpoint to send Zipkin-format distributed traces to",
+                    "examples": [
+                        "http://tempo:9411"
+                    ]
+                }
+            },
+            "examples": [
+                {
+                    "endpoint": "http://tempo:9411"
+                }
+            ]
+        },
         "dumpHostPath": {
             "type": "string",
             "default": "",

@@ -16,7 +16,9 @@ import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SignatureSpec
 import java.nio.ByteBuffer
 import java.security.spec.AlgorithmParameterSpec
+import java.time.Duration
 import java.time.Instant
+import net.corda.metrics.CordaMetrics
 
 val emptyKeyValuePairList = KeyValuePairList(emptyList())
 
@@ -60,7 +62,11 @@ fun List<KeyValuePair>.toMap(): Map<String, String> {
     return map
 }
 
+private const val TO_SIGNATURE_SPEC_OPERATION_NAME = "toSignatureSpec"
+private const val TO_WIRE_OPERATION_NAME = "toWire"
+
 fun CryptoSignatureSpec.toSignatureSpec(serializer: AlgorithmParameterSpecEncodingService): SignatureSpec {
+    val startTime = System.nanoTime()
     val algorithmParams = if (params != null) {
         serializer.deserialize(
             SerializedAlgorithmParameterSpec(
@@ -77,23 +83,38 @@ fun CryptoSignatureSpec.toSignatureSpec(serializer: AlgorithmParameterSpecEncodi
         }
         algorithmParams != null -> ParameterizedSignatureSpec(signatureName, algorithmParams)
         else -> SignatureSpecImpl(signatureName)
+    }.also {
+        CordaMetrics.Metric.Crypto.SignatureSpecTimer.builder()
+            .withTag(CordaMetrics.Tag.OperationName, TO_SIGNATURE_SPEC_OPERATION_NAME)
+            .build()
+            .record(Duration.ofNanos(System.nanoTime() - startTime))
     }
 }
 
-fun SignatureSpec.toWire(serializer: AlgorithmParameterSpecEncodingService): CryptoSignatureSpec =
-    when(this) {
+
+fun SignatureSpec.toWire(serializer: AlgorithmParameterSpecEncodingService): CryptoSignatureSpec {
+    val startTime = System.nanoTime()
+    return when (this) {
         is CustomSignatureSpec -> CryptoSignatureSpec(
             signatureName,
             customDigestName.name,
             params?.serialize(serializer)
         )
+
         is ParameterizedSignatureSpec -> CryptoSignatureSpec(
             signatureName,
             null,
             params.serialize(serializer)
         )
+
         else -> CryptoSignatureSpec(signatureName, null, null)
+    }.also {
+        CordaMetrics.Metric.Crypto.SignatureSpecTimer.builder()
+            .withTag(CordaMetrics.Tag.OperationName, TO_WIRE_OPERATION_NAME)
+            .build()
+            .record(Duration.ofNanos(System.nanoTime() - startTime))
     }
+}
 
 private fun AlgorithmParameterSpec.serialize(
     serializer: AlgorithmParameterSpecEncodingService

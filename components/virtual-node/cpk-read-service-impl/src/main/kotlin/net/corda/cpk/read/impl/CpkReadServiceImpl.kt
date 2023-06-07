@@ -168,8 +168,9 @@ class CpkReadServiceImpl (
     }
 
     private fun onCpkAssembled(cpkFileChecksum: SecureHash, cpk: Cpk) {
-        logger.info("${this::class.java.simpleName} storing:  $cpkFileChecksum")
-        cpksByChecksum[cpkFileChecksum] = cpk
+        if (cpksByChecksum.putIfAbsent(cpkFileChecksum, cpk) == null) {
+            logger.info("Storing: {}", cpkFileChecksum)
+        }
     }
 
     override val isRunning: Boolean

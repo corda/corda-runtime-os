@@ -69,21 +69,13 @@ fun assembleFileFromChunks(
  * @throws ValidationException
  */
 fun FileInfo.validateAndGetCpi(cpiPartsDir: Path, requestId: String): Cpi {
-    val cpi: Cpi =
-        try {
-            Files.newInputStream(this.path).use { CpiReader.readCpi(it, cpiPartsDir) }
-        } catch (ex: Exception) {
-            when (ex) {
-                is PackagingException -> {
-                    throw ValidationException("Invalid CPI.  ${ex.message}", requestId, ex)
-                }
-
-                else -> {
-                    throw ValidationException("Unexpected exception when unpacking CPI.  ${ex.message}", requestId, ex)
-                }
-            }
-        }
-    return cpi
+    return try {
+        Files.newInputStream(path).use { CpiReader.readCpi(it, cpiPartsDir) }
+    } catch (ex: PackagingException) {
+        throw ValidationException("Invalid CPI: ${ex.message}", requestId, ex)
+    } catch (ex: Exception) {
+        throw ValidationException("Unexpected exception when unpacking CPI: ${ex.message}", requestId, ex)
+    }
 }
 
 /**

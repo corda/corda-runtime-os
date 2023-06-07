@@ -66,14 +66,14 @@ class MessageBusConfigResolverTest {
                     mapOf(
                         BOOTSTRAP_SERVERS_PROP to "kafka:1001",
                         SSL_KEYSTORE_PROP to "foo/bar",
-                        CLIENT_ID_PROP to "stateConsumer-$CLIENT_ID"
+                        CLIENT_ID_PROP to "stateConsumer--$CLIENT_ID"
                     )
                 ),
                 ConsumerRoles.SAE_EVENT to getExpectedConsumerProperties(
                     mapOf(
                         BOOTSTRAP_SERVERS_PROP to "kafka:1001",
                         SSL_KEYSTORE_PROP to "foo/bar",
-                        CLIENT_ID_PROP to "eventConsumer-$CLIENT_ID"
+                        CLIENT_ID_PROP to "eventConsumer--$CLIENT_ID"
                     )
                 ),
                 ConsumerRoles.EVENT_LOG to getExpectedConsumerProperties(
@@ -149,10 +149,10 @@ class MessageBusConfigResolverTest {
         private fun getExpectedConsumerProperties(overrides: Map<String, String?>): Properties {
             val defaults = mapOf(
                 GROUP_ID_PROP to GROUP_NAME,
-                CLIENT_ID_PROP to "consumer-$CLIENT_ID",
+                CLIENT_ID_PROP to "consumer--$CLIENT_ID",
                 ISOLATION_LEVEL_PROP to "read_committed",
                 BOOTSTRAP_SERVERS_PROP to "localhost:9092",
-                SESSION_TIMEOUT_PROP to "6000",
+                SESSION_TIMEOUT_PROP to "60000",
                 AUTO_OFFSET_RESET_PROP to "earliest"
             )
             val properties = Properties()
@@ -168,7 +168,7 @@ class MessageBusConfigResolverTest {
         private fun getExpectedProducerProperties(overrides: Map<String, String?>): Properties {
             val defaults = mapOf(
                 GROUP_ID_PROP to GROUP_NAME,
-                CLIENT_ID_PROP to "producer-$CLIENT_ID",
+                CLIENT_ID_PROP to "producer--$CLIENT_ID",
                 TRANSACTIONAL_ID_PROP to "$CLIENT_ID-$INSTANCE_ID",
                 BOOTSTRAP_SERVERS_PROP to "localhost:9092",
                 ACKS_PROP to "all"
