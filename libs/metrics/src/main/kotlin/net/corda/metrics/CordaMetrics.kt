@@ -633,17 +633,17 @@ object CordaMetrics {
             /**
              * Measure for the number of in-memory states held in StateAndEvent patterns.
              */
-            object CompactedConsumerInMemoryStoreCount : Metric<DistributionSummary>(
+            class CompactedConsumerInMemoryStoreCount(computation: Supplier<Number>) : ComputedValue<Nothing>(
                 "consumer.compacted.inmemory.store",
-                Metrics::summary
+                computation
             )
 
             /**
              * Measure for the number of in-memory states held in StateAndEvent patterns.
              */
-            object StateAndEventConsumerInMemoryStoreCount : Metric<DistributionSummary>(
+            class StateAndEventConsumerInMemoryStoreCount(computation: Supplier<Number>) : ComputedValue<Nothing>(
                 "consumer.stateandevent.inmemory.store",
-                Metrics::summary
+                computation
             )
 
             /**

@@ -1,6 +1,5 @@
 package net.corda.messaging.subscription.consumer
 
-import io.micrometer.core.instrument.DistributionSummary
 import net.corda.lifecycle.Resource
 import net.corda.messagebus.api.CordaTopicPartition
 import net.corda.messagebus.api.consumer.CordaConsumer
@@ -67,18 +66,13 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
     }
 
     private fun recordCurrentStatesMetrics() {
-        currentStates.keys.forEach { partition ->
-            currentStatesMetricCache.computeIfAbsent(partition) {
-                CordaMetrics.Metric.Messaging.StateAndEventConsumerInMemoryStoreCount.builder()
-                    .withTag(CordaMetrics.Tag.MessagePatternClientId, config.clientId)
-                    .withTag(CordaMetrics.Tag.Partition, "$partition")
-                    .build()
-            }
-                .record((currentStates[partition]?.keys?.size ?: 0).toDouble())
+        currentStates.forEach { (partition, statesMap) ->
+            CordaMetrics.Metric.Messaging.StateAndEventConsumerInMemoryStoreCount { statesMap.keys.size }.builder()
+                .withTag(CordaMetrics.Tag.MessagePatternClientId, config.clientId)
+                .withTag(CordaMetrics.Tag.Partition, "$partition")
+                .build()
         }
     }
-
-    private val currentStatesMetricCache = ConcurrentHashMap<Int, DistributionSummary>()
 
     private val statePollTimer = CordaMetrics.Metric.Messaging.MessagePollTime.builder()
         .withTag(CordaMetrics.Tag.MessagePatternType, MetricsConstants.STATE_AND_EVENT_PATTERN_TYPE)
