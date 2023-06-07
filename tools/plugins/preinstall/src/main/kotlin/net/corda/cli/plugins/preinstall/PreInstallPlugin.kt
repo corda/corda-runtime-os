@@ -61,25 +61,23 @@ class PreInstallPlugin : Plugin() {
         }
 
         // get the credentials (.value) or credentials from a secret (.valueFrom.secretKeyRef...) from a SecretValues
-        // object, and a namespace (if the credential is in a secret)
+        // object (or default values), and a namespace (if the credential is in a secret)
         @Suppress("ThrowsCount")
         fun getCredential(defaultValues: SecretValues?, values: SecretValues?, namespace: String?): String {
-            val secretName = valueOrDefault(defaultValues?.valueFrom?.secretKeyRef?.name, values?.valueFrom?.secretKeyRef?.name)
-            if (secretName.isNullOrEmpty())  {
-                val credential = valueOrDefault(defaultValues?.value, values?.value)
-                if (credential.isNullOrEmpty()) {
-                    throw SecretException("No secretKeyRef name or value provided.")
-                }
-                return credential
+            if (!values?.valueFrom?.secretKeyRef?.name.isNullOrEmpty()) {
+                return getSecret(values?.valueFrom?.secretKeyRef?.name!!, values.valueFrom.secretKeyRef.key, namespace)
             }
-
-            val secretKey = valueOrDefault(defaultValues?.valueFrom?.secretKeyRef?.key, values?.valueFrom?.secretKeyRef?.key)
-            val encoded = getSecret(secretName, secretKey, namespace) ?:
-            throw SecretException("Secret $secretName has no key $secretKey.")
-            return String(Base64.getDecoder().decode(encoded))
+            if (!values?.value.isNullOrEmpty()) {
+                return values?.value!!
+            }
+            if (!defaultValues?.valueFrom?.secretKeyRef?.name.isNullOrEmpty()) {
+                return getSecret(defaultValues?.valueFrom?.secretKeyRef?.name!!, defaultValues.valueFrom.secretKeyRef.key, namespace)
+            }
+            if (!defaultValues?.value.isNullOrEmpty()) {
+                return defaultValues?.value!!
+            }
+            throw SecretException("No secretKeyRef name or value provided.")
         }
-
-        private fun valueOrDefault(default: String?, value: String?) = if (value.isNullOrEmpty()) default else value
 
         // get the credentials (.value) or credentials from a secret (.valueFrom.secretKeyRef...) from a SecretValues
         // object, and a namespace (if the credential is in a secret)
@@ -93,14 +91,11 @@ class PreInstallPlugin : Plugin() {
                 }
                 return credential
             }
-
-            val secretKey = values.valueFrom.secretKeyRef.key
-            val encoded = getSecret(secretName, secretKey, namespace) ?:
-                throw SecretException("Secret $secretName has no key $secretKey.")
-            return String(Base64.getDecoder().decode(encoded))
+            return getSecret(secretName, values.valueFrom.secretKeyRef.key, namespace)
         }
 
-        private fun getSecret(secretName: String, secretKey: String?, namespace: String?): String? {
+        @Suppress("ThrowsCount")
+        private fun getSecret(secretName: String, secretKey: String?, namespace: String?): String {
             if (secretKey.isNullOrEmpty()) {
                 throw SecretException("No secret key provided with secret name $secretName.")
             }
@@ -111,7 +106,8 @@ class PreInstallPlugin : Plugin() {
                 } else {
                     client.secrets().withName(secretName).get()
                 }
-                secret.data[secretKey]
+                val encoded = secret.data[secretKey] ?: throw SecretException("Secret $secretName has no key $secretKey.")
+                String(Base64.getDecoder().decode(encoded))
             } catch (e: KubernetesClientException) {
                 throw SecretException("Could not read secret $secretName with key $secretKey.", e)
             }

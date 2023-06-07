@@ -259,4 +259,25 @@ class TestSubCommands {
         report.addEntry(ReportEntry("Is magical", false, Exception("Not magic")))
         assertEquals(false, report.testsPassed())
     }
+
+    @Test
+    fun testGetCredentialsPrefersWorkerValues() {
+        val mockAdmin = mock<CheckKafka.KafkaAdmin>()
+        val nodes: Collection<Node> = listOf(Node(0, "localhost", 9092))
+        whenever(mockAdmin.getDescriptionID()).thenReturn("ClusterID")
+        whenever(mockAdmin.getNodes()).thenReturn(nodes)
+
+        val ck = CheckKafka()
+        val defaultValues = PreInstallPlugin.SecretValues(
+            PreInstallPlugin.ValueFrom(PreInstallPlugin.SecretKeyRef("defaultKey", "defaultName")),
+            "defaultValue"
+        )
+        val workerValues = PreInstallPlugin.SecretValues(
+            PreInstallPlugin.ValueFrom(PreInstallPlugin.SecretKeyRef("workerKey", "")),
+            "workerValue"
+        )
+        val credential = ck.getCredential(defaultValues, workerValues, "namespace")
+
+        assertEquals("workerValue", credential)
+    }
 }
