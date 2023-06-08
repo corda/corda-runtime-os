@@ -1,5 +1,6 @@
 package net.corda.session.mapper.service
 
+import java.util.concurrent.Executors
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.flow.mapper.factory.FlowMapperEventExecutorFactory
@@ -30,7 +31,6 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Deactivate
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
-import java.util.concurrent.Executors
 
 @Component(service = [FlowMapperService::class])
 class FlowMapperService @Activate constructor(
@@ -103,7 +103,7 @@ class FlowMapperService @Activate constructor(
                 ScheduledTaskState(
                     Executors.newSingleThreadScheduledExecutor(),
                     publisherFactory.createPublisher(
-                        PublisherConfig("$CONSUMER_GROUP-cleanup-publisher"),
+                        PublisherConfig("$CONSUMER_GROUP-cleanup-publisher", topic = FLOW_MAPPER_EVENT_TOPIC),
                         messagingConfig
                     ),
                     mutableMapOf()
