@@ -81,7 +81,6 @@ internal class ReconcilerEventHandler<K : Any, V : Any>(
             reconciledCount = reconcile()
             reconciliationOutcome = "SUCCEEDED"
             reconciliationEndTime = System.nanoTime()
-            logger.info("Reconciliation completed in ${reconciliationEndTime - startTime} ns")
             scheduleNextReconciliation(coordinator)
         } catch (e: Throwable) {
             // An error here could be a transient or not exception. We should transition to `DOWN` and wait
@@ -90,11 +89,13 @@ internal class ReconcilerEventHandler<K : Any, V : Any>(
             logger.warn("Reconciliation failed. Terminating reconciliations", e)
             coordinator.updateStatus(LifecycleStatus.DOWN)
         } finally {
+            val reconciliationTime = Duration.ofNanos(reconciliationEndTime - startTime)
+            logger.info("Reconciliation completed in ${reconciliationTime.toMillis()} ms")
             CordaMetrics.Metric.Db.ReconciliationRunTime.builder()
                 .withTag(CordaMetrics.Tag.OperationName, name)
                 .withTag(CordaMetrics.Tag.OperationStatus, reconciliationOutcome)
                 .build()
-                .record(Duration.ofNanos(reconciliationEndTime - startTime))
+                .record(reconciliationTime)
 
             CordaMetrics.Metric.Db.ReconciliationRecordsCount.builder()
                 .withTag(CordaMetrics.Tag.OperationName, name)
