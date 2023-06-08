@@ -1,13 +1,14 @@
 #!/bin/bash
 
-source settings.sh
 set -e
+SCRIPT_DIR=$(dirname ${BASH_SOURCE[0]})
+source "$SCRIPT_DIR/settings.sh"
 
 MGM_HOLDING_ID_SHORT_HASH=$(cat $MGM_HOLDING_ID_FILE)
 GROUP_ID=$(curl --fail-with-body -s -S --insecure -u admin:admin -X GET https://$MGM_RPC/api/v1/members/$MGM_HOLDING_ID_SHORT_HASH | jq '.members[0].memberContext."corda.groupId"' | tr -d '"')
 
+kubectl delete ns $APP_SIMULATOR_DB_NAMESPACE || echo ''
 kubectl create ns $APP_SIMULATOR_DB_NAMESPACE
-
 helm upgrade --install -n $APP_SIMULATOR_DB_NAMESPACE db $APP_SIMULATOR_DB_CHART_DIR --render-subchart-notes --wait
 
 POSTGRES_ADMIN_PASSWORD=$(kubectl get secret --namespace $APP_SIMULATOR_DB_NAMESPACE db-postgresql -o jsonpath="{.data.postgres-password}" | base64 --decode)
