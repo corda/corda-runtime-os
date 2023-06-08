@@ -54,34 +54,30 @@ class CheckPostgres : Callable<Int>, PluginContext() {
             return 1
         }
 
-        // Get DB credentials from values or secrets
-        val username: String
-        val password: String
-        var bootstrapUsername: String? = null
-        var bootstrapPassword: String? = null
-
-        try {
-            username = getCredential(yaml.db.cluster.username, namespace)
-            password = getCredential(yaml.db.cluster.password, namespace)
-            yaml.bootstrap?.db?.cluster?.username?.let { bootstrapUsername = getCredential(it, namespace) }
-            yaml.bootstrap?.db?.cluster?.password?.let { bootstrapPassword = getCredential(it, namespace) }
-            report.addEntry(PreInstallPlugin.ReportEntry("Get PostgreSQL credentials", true))
-        } catch (e: Exception) {
-            report.addEntry(PreInstallPlugin.ReportEntry("Get PostgreSQL credentials", false, e))
-            logger.error(report.failingTests())
-            return 1
-        }
-
         // Create the URL using DB host and port
         val postgresUrl = "jdbc:postgresql://${yaml.db.cluster.host}:${yaml.db.cluster.port}/${yaml.db.cluster.database}"
         report.addEntry(PreInstallPlugin.ReportEntry("Create PostgreSQL URL with DB host", true))
 
-        // Try connecting to the DB URL using supplied credentials
-        connect(postgresUrl, username, password, "DB")
+        if (yaml.bootstrap?.db?.enabled == true) {
+            try {
+                val bootstrapUsername =
+                    getCredential(yaml.db.cluster.username, yaml.bootstrap.db.cluster?.username, namespace)
+                val bootstrapPassword =
+                    getCredential(yaml.db.cluster.password, yaml.bootstrap.db.cluster?.password, namespace)
+                report.addEntry(PreInstallPlugin.ReportEntry("Get bootstrap PostgreSQL credentials", true))
+                connect(postgresUrl, bootstrapUsername, bootstrapPassword, "bootstrap")
+            } catch (e: Exception) {
+                report.addEntry(PreInstallPlugin.ReportEntry("Get bootstrap PostgreSQL credentials", false, e))
+            }
+        }
 
-        // If the bootstrap credentials exist, try connecting to the DB URL using them
-        if (bootstrapUsername != null && bootstrapUsername != username && bootstrapPassword != null) {
-            connect(postgresUrl, bootstrapUsername!!, bootstrapPassword!!, "bootstrap")
+        try {
+            val username = getCredential(yaml.db.cluster.username, namespace)
+            val password = getCredential(yaml.db.cluster.password, namespace)
+            report.addEntry(PreInstallPlugin.ReportEntry("Get DB PostgreSQL credentials", true))
+            connect(postgresUrl, username, password, "DB")
+        } catch (e: Exception) {
+            report.addEntry(PreInstallPlugin.ReportEntry("Get DB PostgreSQL credentials", false, e))
         }
 
         return if (report.testsPassed()) {
