@@ -33,6 +33,7 @@ import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
 import java.time.Clock
 import java.util.*
+import kotlin.math.max
 
 @Suppress("LongParameterList")
 internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
@@ -53,6 +54,12 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
     private var nullableEventConsumer: CordaConsumer<K, E>? = null
     private var threadLooper =
         ThreadLooper(log, config, lifecycleCoordinatorFactory, "state/event processing thread", ::runConsumeLoop)
+
+    // HACK - additional metrics for validation the ... metrics
+    //  not too bothered about multi-threading issues, so simple ints
+    private var maxTotal = 0L
+    private var numberOfBatches = 0L
+    private var runningTotalMs = 0L
 
     private val producer: CordaProducer
         get() {
@@ -185,7 +192,60 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         nullableStateAndEventConsumer = null
     }
 
+    class ProcessTrace() {
+        private var batchStart = System.nanoTime()
+        var batchSize = 0
+        private var updatedStatesMs = 0L
+        private var processEventsDurationMs = 0L
+        private var beginDurationMs = 0L
+        private var sendDurationMs = 0L
+        private var sendOffsetDurationMs = 0L
+        private var commitDurationMs = 0L
+        var totalDuractionMs = 0L
+        var avg = 0L
+        var maxTotal = 0L
+
+        override fun toString(): String {
+            return "Batch Size: $batchSize, Process: ${processEventsDurationMs}ms Begin: ${beginDurationMs}ms, Send: ${sendDurationMs}ms, " +
+                    "Send Offsets: ${sendOffsetDurationMs}ms, Commit: ${commitDurationMs}ms, " +
+                    "Total:${totalDuractionMs}ms, Avg: ${avg}ms, Max: ${maxTotal}ms"
+        }
+
+        fun recordProcessEvents() {
+            processEventsDurationMs = timeToMillis()
+        }
+
+        fun recordBeginTx() {
+            beginDurationMs = timeToMillis()
+        }
+
+        fun recordSendRecords() {
+            sendDurationMs = timeToMillis()
+        }
+
+        fun recordSendOffsets() {
+            sendOffsetDurationMs = timeToMillis()
+        }
+
+        fun recordUpdatedStates() {
+            updatedStatesMs = timeToMillis()
+        }
+
+        fun recordCommitTx() {
+            commitDurationMs = timeToMillis()
+        }
+
+        fun recordTotal() {
+            totalDuractionMs = timeToMillis()
+        }
+
+        private fun timeToMillis(): Long {
+            return (System.nanoTime()-batchStart)/ 1000000
+        }
+    }
+
     private fun processBatchOfEvents() {
+        val trace = ProcessTrace()
         var attempts = 0
         var keepProcessing = true
         while (keepProcessing && !threadLooper.loopStopped) {
@@ -197,9 +257,17 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                 val batches = getEventsByBatch(records).iterator()
                 while (!rebalanceOccurred && batches.hasNext()) {
                     val batch = batches.next()
-                    rebalanceOccurred = tryProcessBatchOfEvents(batch)
+                    rebalanceOccurred = tryProcessBatchOfEvents(batch, trace)
                 }
                 keepProcessing = false // We only want to do one batch at a time
+                trace.recordTotal()
+                trace.batchSize = records.size
+                numberOfBatches++
+                runningTotalMs += trace.totalDuractionMs
+                maxTotal = max(trace.totalDuractionMs, maxTotal)
+                trace.maxTotal = maxTotal
+                trace.avg = runningTotalMs
+                log.info(trace.toString())
             } catch (ex: Exception) {
                 when (ex) {
                     is CordaMessageAPIIntermittentException -> {
@@ -224,7 +292,7 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
      *
      * @return false if the batch had to be abandoned due to a rebalance
      */
-    private fun tryProcessBatchOfEvents(events: List<CordaConsumerRecord<K, E>>): Boolean {
+    private fun tryProcessBatchOfEvents(events: List<CordaConsumerRecord<K, E>>, trace: ProcessTrace): Boolean {
         val outputRecords = mutableListOf<Record<*, *>>()
         val updatedStates: MutableMap<Int, MutableMap<K, S?>> = mutableMapOf()
         // Pre-populate the updated states with the current in-memory state.
@@ -234,6 +302,7 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                 stateAndEventConsumer.getInMemoryStateValue(key)
             }
         }
+        trace.recordUpdatedStates()
 
         log.debug { "Processing events(keys: ${events.joinToString { it.key.toString() }}, size: ${events.size})" }
         try {
@@ -249,9 +318,13 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
             return true
         }
 
+        trace.recordProcessEvents()
+
         commitTimer.recordCallable {
             producer.beginTransaction()
+            trace.recordBeginTx()
             producer.sendRecords(outputRecords.toCordaProducerRecords())
+            trace.recordSendRecords()
             if (deadLetterRecords.isNotEmpty()) {
                 producer.sendRecords(deadLetterRecords.map {
                     CordaProducerRecord(
@@ -263,7 +336,9 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                 deadLetterRecords.clear()
             }
             producer.sendRecordOffsetsToTransaction(eventConsumer, events)
+            trace.recordSendOffsets()
             producer.commitTransaction()
+            trace.recordCommitTx()
         }
         log.debug { "Processing events(keys: ${events.joinToString { it.key.toString() }}, size: ${events.size}) complete." }
 
