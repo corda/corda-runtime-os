@@ -1,10 +1,10 @@
 package net.corda.session.manager.impl.processor
 
-import java.time.Instant
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.session.SessionClose
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
+import net.corda.metrics.CordaMetrics
 import net.corda.session.manager.impl.SessionEventProcessor
 import net.corda.session.manager.impl.processor.helper.generateErrorEvent
 import net.corda.session.manager.impl.processor.helper.generateErrorSessionStateFromSessionEvent
@@ -12,6 +12,7 @@ import net.corda.session.manager.impl.processor.helper.recalcHighWatermark
 import net.corda.utilities.debug
 import net.corda.utilities.trace
 import org.slf4j.LoggerFactory
+import java.time.Instant
 
 
 /**
@@ -48,6 +49,9 @@ class SessionCloseProcessorReceive(
             val sessionCloseOnQueue = undeliveredReceivedMessages.any { it.payload is SessionClose }
             if (sessionCloseOnQueue || sessionState.status == SessionStateType.CLOSED) {
                 //duplicate
+                CordaMetrics.Metric.FlowSessionMessagesReceivedDuplicatesCount.builder()
+                    .withTag(CordaMetrics.Tag.FlowEvent, sessionEvent.payload::class.java.name)
+                    .build().increment()
                 logger.debug {
                     "Received duplicate SessionClose on key $key and sessionId $sessionId with seqNum of $seqNum " +
                             "when last processed seqNum was $lastProcessedSeqNum. Current SessionState: $sessionState"
