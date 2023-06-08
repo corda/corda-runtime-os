@@ -45,6 +45,11 @@ metrics:
     # -- Labels that can be used so PodMonitor is discovered by Prometheus
     labels: {}
 
+# Distributed tracing configuration
+tracing:
+  # -- URL for endpoint to send Zipkin-format distributed traces to e.g. http://tempo:9411
+  endpoint: ""
+
 # -- Path on Kubernetes hosts to mount on Corda workers for collecting dumps
 dumpHostPath: ""
 

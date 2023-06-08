@@ -15,6 +15,7 @@ dependencies {
     implementation project(":libs:configuration:configuration-core")
     implementation project(":libs:configuration:configuration-merger")
     implementation project(":libs:metrics")
+    implementation project(":libs:tracing")
     implementation project(":libs:utilities")
     api project(":libs:serialization:serialization-avro")
 

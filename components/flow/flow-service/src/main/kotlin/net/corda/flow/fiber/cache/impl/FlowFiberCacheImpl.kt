@@ -3,22 +3,32 @@ package net.corda.flow.fiber.cache.impl
 import com.github.benmanes.caffeine.cache.Cache
 import com.github.benmanes.caffeine.cache.Caffeine
 import net.corda.cache.caffeine.CacheFactoryImpl
-import org.osgi.service.component.annotations.Activate
-import org.osgi.service.component.annotations.Component
-import java.time.Duration
 import net.corda.data.flow.FlowKey
-import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.fiber.FlowFiberImpl
 import net.corda.flow.fiber.cache.FlowFiberCache
+import net.corda.sandboxgroupcontext.SandboxGroupType
+import net.corda.sandboxgroupcontext.SandboxedCache
+import net.corda.sandboxgroupcontext.VirtualNodeContext
+import net.corda.sandboxgroupcontext.service.CacheEviction
 import net.corda.utilities.debug
+import net.corda.virtualnode.HoldingIdentity
+import net.corda.virtualnode.toAvro
+import org.osgi.service.component.annotations.Activate
+import org.osgi.service.component.annotations.Component
+import org.osgi.service.component.annotations.Deactivate
+import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
+import java.time.Duration
 
 @Suppress("unused")
 @Component(service = [FlowFiberCache::class])
-class FlowFiberCacheImpl @Activate constructor() : FlowFiberCache {
+class FlowFiberCacheImpl @Activate constructor(
+    @Reference(service = CacheEviction::class)
+    private val cacheEviction: CacheEviction
+) : FlowFiberCache, SandboxedCache {
 
     private companion object {
-        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        private val logger = LoggerFactory.getLogger(FlowFiberCacheImpl::class.java)
         private const val FLOW_FIBER_CACHE_MAX_SIZE_PROPERTY_NAME = "net.corda.flow.fiber.cache.maximumSize"
         private const val FLOW_FIBER_CACHE_EXPIRE_AFTER_WRITE_SECONDS_PROPERTY_NAME = "net.corda.flow.fiber.cache.expireAfterWriteSeconds"
     }
@@ -32,6 +42,28 @@ class FlowFiberCacheImpl @Activate constructor() : FlowFiberCache {
             .maximumSize(maximumSize)
             .expireAfterWrite(Duration.ofSeconds(expireAfterWriteSeconds))
     )
+
+    init {
+        if (!cacheEviction.addEvictionListener(SandboxGroupType.FLOW, ::onEviction)) {
+            logger.error("FAILED TO ADD EVICTION LISTENER")
+        }
+    }
+
+    @Suppress("unused")
+    @Deactivate
+    fun shutdown() {
+        if (!cacheEviction.removeEvictionListener(SandboxGroupType.FLOW, ::onEviction)) {
+            logger.error("FAILED TO REMOVE EVICTION LISTENER")
+        }
+    }
+
+    private fun onEviction(vnc: VirtualNodeContext) {
+        logger.debug {
+            "Evicting cached items from ${cache::class.java} with holding identity: ${vnc.holdingIdentity} and sandbox type: " +
+                    SandboxGroupType.FLOW
+        }
+        remove(vnc.holdingIdentity)
+    }
 
     override fun put(key: FlowKey, fiber: FlowFiberImpl) {
         cache.put(key, fiber)
@@ -53,7 +85,8 @@ class FlowFiberCacheImpl @Activate constructor() : FlowFiberCache {
 
     override fun remove(holdingIdentity: HoldingIdentity) {
         logger.debug { "Flow fiber cache removing holdingIdentity $holdingIdentity" }
-        val keysToInvalidate = cache.asMap().keys.filter { holdingIdentity == it.identity }
+        val holdingIdentityToRemove = holdingIdentity.toAvro()
+        val keysToInvalidate = cache.asMap().keys.filter { holdingIdentityToRemove == it.identity }
         cache.invalidateAll(keysToInvalidate)
         cache.cleanUp()
     }
