@@ -307,6 +307,8 @@ class PreInstallPlugin : Plugin() {
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     data class BootstrapCluster(
+        @JsonProperty("enabled")
+        val enabled: Boolean,
         @JsonProperty("cluster")
         val cluster: BootstrapCredentials?
     )
