@@ -17,9 +17,12 @@ import net.corda.virtualnode.toCorda
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.security.PublicKey
 
@@ -30,8 +33,14 @@ class SigningServiceImplTest {
     private val sandbox = mock<SandboxGroupContext>()
     private val virtualNodeContext = mock<VirtualNodeContext>()
     private val currentSandboxGroupContext = mock<CurrentSandboxGroupContext>()
+    private val mySigningKeysCache = mock<MySigningKeysCache>()
     private val captor = argumentCaptor<SignParameters>()
-    private val signingService = SigningServiceImpl(currentSandboxGroupContext, externalEventExecutor, keyEncodingService)
+    private val signingService = SigningServiceImpl(
+        currentSandboxGroupContext,
+        externalEventExecutor,
+        keyEncodingService,
+        mySigningKeysCache
+    )
 
     @BeforeEach
     fun beforeEach() {
@@ -60,6 +69,7 @@ class SigningServiceImplTest {
     fun `find my signing keys returns requested signing keys to owned signing keys`() {
         val key1 = mock<PublicKey>()
         val key2 = mock<PublicKey>()
+        whenever(mySigningKeysCache.get(any())).thenReturn(emptyMap())
         whenever(
             externalEventExecutor.execute(
                 FilterMyKeysExternalEventFactory::class.java,
@@ -68,6 +78,7 @@ class SigningServiceImplTest {
         ).thenReturn(listOf(key1))
 
         assertEquals(mapOf(key1 to key1, key2 to null), signingService.findMySigningKeys(setOf(key1, key2)))
+        verify(mySigningKeysCache).putAll(mapOf(key1 to key1, key2 to null))
     }
 
     @Test
@@ -76,6 +87,7 @@ class SigningServiceImplTest {
         val compositeKeyLeaf1 = mock<PublicKey>()
         val compositeKeyLeaf2 = mock<PublicKey>()
         val compositeKey = mock<CompositeKey>()
+        whenever(mySigningKeysCache.get(any())).thenReturn(emptyMap())
         whenever(compositeKey.leafKeys).thenReturn(setOf(compositeKeyLeaf1, compositeKeyLeaf2))
         whenever(
             externalEventExecutor.execute(
@@ -88,6 +100,8 @@ class SigningServiceImplTest {
             mapOf(plainKey to plainKey, compositeKey to compositeKeyLeaf1),
             signingService.findMySigningKeys(setOf(plainKey, compositeKey))
         )
+        verify(mySigningKeysCache).putAll(mapOf(plainKey to plainKey))
+        verify(mySigningKeysCache).putAll(mapOf(compositeKey to compositeKeyLeaf1))
     }
 
     @Test
@@ -95,6 +109,7 @@ class SigningServiceImplTest {
         val compositeKeyLeaf1 = mock<PublicKey>()
         val compositeKeyLeaf2 = mock<PublicKey>()
         val compositeKey = mock<CompositeKey>()
+        whenever(mySigningKeysCache.get(any())).thenReturn(emptyMap())
         whenever(compositeKey.leafKeys).thenReturn(setOf(compositeKeyLeaf1, compositeKeyLeaf2))
         whenever(
             externalEventExecutor.execute(
@@ -107,5 +122,32 @@ class SigningServiceImplTest {
             mapOf(compositeKey to compositeKeyLeaf1),
             signingService.findMySigningKeys(setOf(compositeKey))
         )
+        verify(mySigningKeysCache).putAll(mapOf(compositeKey to compositeKeyLeaf1))
+    }
+
+    @Test
+    fun `find my signing keys returns early when all keys are cached`() {
+        val key1 = mock<PublicKey>()
+        val key2 = mock<PublicKey>()
+        whenever(mySigningKeysCache.get(setOf(key1, key2))).thenReturn(mapOf(key1 to key1, key2 to null))
+        verify(externalEventExecutor, never()).execute(eq(FilterMyKeysExternalEventFactory::class.java), any())
+        assertEquals(mapOf(key1 to key1, key2 to null), signingService.findMySigningKeys(setOf(key1, key2)))
+        verify(mySigningKeysCache, never()).putAll(any())
+    }
+
+    @Test
+    fun `find my signing keys doesn't include cached keys in external event`() {
+        val key1 = mock<PublicKey>()
+        val key2 = mock<PublicKey>()
+        val key3 = mock<PublicKey>()
+        whenever(mySigningKeysCache.get(setOf(key1, key2, key3))).thenReturn(mapOf(key1 to key1))
+        whenever(
+            externalEventExecutor.execute(
+                FilterMyKeysExternalEventFactory::class.java,
+                setOf(key2, key3)
+            )
+        ).thenReturn(listOf(key2))
+        assertEquals(mapOf(key1 to key1, key2 to key2, key3 to null), signingService.findMySigningKeys(setOf(key1, key2, key3)))
+        verify(mySigningKeysCache).putAll(mapOf(key2 to key2, key3 to null))
     }
 }

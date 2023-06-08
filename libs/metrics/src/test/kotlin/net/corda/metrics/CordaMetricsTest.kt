@@ -2,6 +2,7 @@ package net.corda.metrics
 
 import io.micrometer.core.instrument.Meter
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
+import net.corda.metrics.CordaMetrics.Tag.ContentsType
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Condition
 import org.junit.jupiter.api.BeforeEach
@@ -33,7 +34,7 @@ class CordaMetricsTest {
     @Test
     fun `gauge with computed values`() {
         val items = mutableListOf<String>()
-        val gauge = CordaMetrics.Metric.OutboundSessionCount { items.size }.builder().build()
+        val gauge = CordaMetrics.Metric.OutboundSessionCount(items::size).builder().build()
         assertThat(CordaMetrics.registry.meters)
             .hasSize(1)
             .element(0).isEqualTo(gauge).has(singleValueOf(0))
@@ -43,6 +44,54 @@ class CordaMetricsTest {
 
         items += "Goodbye, Cruel Metrics!"
         assertThat(gauge).has(singleValueOf(2))
+
+        val gaugeId = CordaMetrics.Metric.OutboundSessionCount { Double.NaN }.builder().buildPreFilterId()
+        CordaMetrics.registry.removeByPreFilterId(gaugeId)
+
+        assertThat(CordaMetrics.registry.meters).isEmpty()
+    }
+
+    @Test
+    fun `gauge with computed property of weak object`() {
+        val items = mutableListOf<String>()
+        val gauge = CordaMetrics.Metric.Membership.MemberListCacheSize(items).builder().build()
+        assertThat(CordaMetrics.registry.meters)
+            .hasSize(1)
+            .element(0).isEqualTo(gauge).has(singleValueOf(0))
+
+        items += "Hello Weak Object!"
+        assertThat(gauge).has(singleValueOf(1))
+
+        items += "Goodbye, Cruel Object!"
+        assertThat(gauge).has(singleValueOf(2))
+
+        val gaugeId = CordaMetrics.Metric.Membership.MemberListCacheSize(null).builder().buildPreFilterId()
+        CordaMetrics.registry.removeByPreFilterId(gaugeId)
+
+        assertThat(CordaMetrics.registry.meters).isEmpty()
+    }
+
+    @Test
+    fun `gauges with tags`() {
+        val things = mutableListOf<String>()
+        val thingsGauge = CordaMetrics.Metric.InboundSessionCount(things::size).builder()
+            .withTag(ContentsType, "things")
+            .build()
+
+        val stuff = mutableListOf<String>()
+        val stuffGauge = CordaMetrics.Metric.InboundSessionCount(stuff::size).builder()
+            .withTag(ContentsType, "stuff")
+            .build()
+
+        assertThat(CordaMetrics.registry.meters)
+            .containsExactlyInAnyOrder(thingsGauge, stuffGauge)
+
+        val thingsGaugeId = CordaMetrics.Metric.InboundSessionCount { Double.NaN }.builder()
+            .withTag(ContentsType, "things")
+            .buildPreFilterId()
+        CordaMetrics.registry.removeByPreFilterId(thingsGaugeId)
+
+        assertThat(CordaMetrics.registry.meters).containsExactly(stuffGauge)
     }
 
     @Test
