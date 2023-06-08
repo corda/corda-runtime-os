@@ -16,6 +16,10 @@ import net.corda.crypto.cipher.suite.schemes.KeyScheme
 import net.corda.crypto.cipher.suite.schemes.KeySchemeCapability
 import net.corda.crypto.core.CryptoService
 import net.corda.crypto.core.CryptoTenants
+import net.corda.crypto.core.DigitalSignatureWithKey
+import net.corda.crypto.core.KeyOrderBy
+import net.corda.crypto.core.ShortHash
+import net.corda.crypto.core.SigningKeyInfo
 import net.corda.crypto.core.aes.WrappingKey
 import net.corda.crypto.core.aes.WrappingKeyImpl
 import net.corda.crypto.core.isRecoverable
@@ -29,6 +33,8 @@ import net.corda.crypto.softhsm.deriveSupportedSchemes
 import net.corda.metrics.CordaMetrics
 import net.corda.utilities.debug
 import net.corda.utilities.trace
+import net.corda.v5.crypto.SecureHash
+import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.exceptions.CryptoException
 import org.slf4j.LoggerFactory
 import java.io.Closeable
@@ -61,11 +67,11 @@ const val PRIVATE_KEY_ENCODING_VERSION: Int = 1
  *        `{ WrappingKeyImpl.generateWrappingKey(it) }`
  */
 
-@Suppress("LongParameterList")
+@Suppress("LongParameterList", "TooManyFunctions")
 class SoftCryptoService(
     private val wrappingRepositoryFactory: WrappingRepositoryFactory,
     private val signingRepositoryFactory: SigningRepositoryFactory,
-    private val schemeMetadata: CipherSchemeMetadata,
+    override val schemeMetadata: CipherSchemeMetadata,
     private val defaultUnmanagedWrappingKeyName: String,
     private val unmanagedWrappingKeys: Map<String, WrappingKey>,
     private val digestService: PlatformDigestService,
@@ -281,6 +287,81 @@ class SoftCryptoService(
         ).also {
             privateKeyCache?.put(publicKey, it)
         }
+
+
+    override fun querySigningKeys(
+        tenantId: String,
+        skip: Int,
+        take: Int,
+        orderBy: KeyOrderBy,
+        filter: Map<String, String>,
+    ): Collection<SigningKeyInfo> = TODO("finish porting SigningService functions")
+
+    override fun lookupSigningKeysByPublicKeyShortHash(
+        tenantId: String,
+        keyIds: List<ShortHash>,
+    ): Collection<SigningKeyInfo> = TODO("finish porting SigningService functions")
+
+    override fun lookupSigningKeysByPublicKeyHashes(
+        tenantId: String,
+        fullKeyIds: List<SecureHash>,
+    ): Collection<SigningKeyInfo> = TODO("finish porting SigningService functions")
+
+    override fun createWrappingKey(
+        hsmId: String,
+        failIfExists: Boolean,
+        masterKeyAlias: String,
+        context: Map<String, String>,
+    ) = TODO("finish porting SigningService functions")
+
+    override fun generateKeyPair(
+        tenantId: String,
+        category: String,
+        alias: String,
+        scheme: KeyScheme,
+        context: Map<String, String>,
+    ): PublicKey = TODO("finish porting SigningService functions")
+
+    override fun deriveSharedSecret(
+        tenantId: String,
+        publicKey: PublicKey,
+        otherPublicKey: PublicKey,
+        context: Map<String, String>,
+    ): ByteArray = TODO("finish porting SigningService functions")
+
+    override fun generateKeyPair(
+        tenantId: String,
+        category: String,
+        alias: String,
+        externalId: String,
+        scheme: KeyScheme,
+        context: Map<String, String>,
+    ): PublicKey = TODO("finish porting SigningService functions")
+
+    override fun freshKey(
+        tenantId: String,
+        category: String,
+        scheme: KeyScheme,
+        context: Map<String, String>,
+    ): PublicKey = TODO("finish porting SigningService functions")
+
+
+    override fun freshKey(
+        tenantId: String,
+        category: String,
+        externalId: String,
+        scheme: KeyScheme,
+        context: Map<String, String>,
+    ): PublicKey = TODO("finish porting SigningService functions")
+
+    override fun sign(
+        tenantId: String,
+        publicKey: PublicKey,
+        signatureSpec: SignatureSpec,
+        data: ByteArray,
+        context: Map<String, String>,
+    ): DigitalSignatureWithKey = TODO("finish porting SigningService functions")
+
 
     override fun close() {
     }
