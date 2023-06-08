@@ -78,7 +78,7 @@ class Receiver(private val subscriptionFactory: SubscriptionFactory,
                     val messageReceivedEvent = MessageReceivedEvent(payload.sender,
                         authenticatedMessage.header.messageId, payload.sendTimestamp, now, Duration.between(payload.sendTimestamp, now))
                     Record(destinationTopic, messageReceivedEvent.messageId, objectMapper.writeValueAsString(messageReceivedEvent))
-                }  else {
+                } else {
                     null
                 }
             }
