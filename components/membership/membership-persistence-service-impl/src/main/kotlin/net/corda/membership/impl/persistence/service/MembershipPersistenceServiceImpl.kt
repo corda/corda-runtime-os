@@ -71,7 +71,7 @@ class MembershipPersistenceServiceImpl @Activate constructor(
 ) : MembershipPersistenceService {
 
     private companion object {
-        val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
         const val GROUP_NAME = "membership.db.persistence"
         const val CLIENT_NAME = "membership.db.persistence"

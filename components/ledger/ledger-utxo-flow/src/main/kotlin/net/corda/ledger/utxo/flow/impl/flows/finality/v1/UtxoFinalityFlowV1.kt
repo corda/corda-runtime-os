@@ -5,6 +5,7 @@ import net.corda.ledger.common.flow.flows.Payload
 import net.corda.ledger.common.flow.transaction.TransactionMissingSignaturesException
 import net.corda.ledger.notary.worker.selection.NotaryVirtualNodeSelectorService
 import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackchainSenderFlow
+import net.corda.ledger.utxo.flow.impl.flows.backchain.dependencies
 import net.corda.ledger.utxo.flow.impl.flows.finality.getVisibleStateIndexes
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.sandbox.CordaSystemFlow
@@ -78,7 +79,13 @@ class UtxoFinalityFlowV1(
     private fun sendTransactionAndBackchainToCounterparties() {
         sessions.forEach {
             it.send(initialTransaction)
-            flowEngine.subFlow(TransactionBackchainSenderFlow(initialTransaction.id, it))
+            if (initialTransaction.dependencies.isNotEmpty()) {
+                flowEngine.subFlow(TransactionBackchainSenderFlow(initialTransaction.id, it))
+            } else {
+                log.trace {
+                    "Transaction with id ${initialTransaction.id} has no dependencies so backchain resolution will not be performed."
+                }
+            }
         }
     }
 

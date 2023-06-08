@@ -118,7 +118,7 @@ class CertificatesServiceImplTest {
 
             handler.firstValue.processEvent(StopEvent(), coordinator)
 
-            verify(registrationHandle, times(2)).close()
+            verify(registrationHandle, times(1)).close()
             verify(configHandle).close()
             verify(subscription).close()
         }
@@ -248,7 +248,7 @@ class CertificatesServiceImplTest {
         }
 
         @Test
-        fun `ConfigChangedEvent will start and follow the subscription`() {
+        fun `ConfigChangedEvent will start`() {
             whenever(subscription.subscriptionName).doReturn(mock())
             val event = ConfigChangedEvent(
                 emptySet(),
@@ -258,14 +258,11 @@ class CertificatesServiceImplTest {
             handler.firstValue.processEvent(event, coordinator)
 
             verify(subscription).start()
-            verify(coordinator).followStatusChangesByName(setOf(subscription.subscriptionName))
         }
 
         @Test
         fun `second ConfigChangedEvent will stop the subscription`() {
-            val registration = mock<RegistrationHandle>()
             whenever(subscription.subscriptionName).doReturn(mock())
-            whenever(coordinator.followStatusChangesByName(setOf(subscription.subscriptionName))).doReturn(registration)
             val event = ConfigChangedEvent(
                 emptySet(),
                 mapOf(ConfigKeys.MESSAGING_CONFIG to mock())
@@ -275,7 +272,6 @@ class CertificatesServiceImplTest {
             handler.firstValue.processEvent(event, coordinator)
 
             verify(subscription).close()
-            verify(registration).close()
         }
     }
 }

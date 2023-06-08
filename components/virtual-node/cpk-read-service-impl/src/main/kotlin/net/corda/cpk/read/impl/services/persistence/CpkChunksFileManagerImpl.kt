@@ -9,20 +9,24 @@ import net.corda.utilities.posixOptional
 import net.corda.v5.crypto.SecureHash
 import org.slf4j.LoggerFactory
 import java.nio.channels.FileChannel
+import java.nio.channels.SeekableByteChannel
 import java.nio.file.Files
 import java.nio.file.Path
-import java.nio.file.StandardOpenOption.CREATE
+import java.nio.file.StandardCopyOption.ATOMIC_MOVE
 import java.nio.file.StandardOpenOption.READ
-import java.nio.file.StandardOpenOption.TRUNCATE_EXISTING
 import java.nio.file.StandardOpenOption.WRITE
+import java.nio.file.attribute.DosFileAttributeView
+import java.nio.file.attribute.PosixFileAttributeView
 import java.nio.file.attribute.PosixFilePermission.OWNER_EXECUTE
 import java.nio.file.attribute.PosixFilePermission.OWNER_READ
 import java.nio.file.attribute.PosixFilePermission.OWNER_WRITE
 import java.nio.file.attribute.PosixFilePermissions.asFileAttribute
+import java.util.Collections.singleton
 import java.util.SortedSet
+import java.util.function.Consumer
 
 /**
- * Creates resources on disk, that something needs to clear them on shutdown.
+ * Creates resources on disk, that something needs to remove on shutdown.
  */
 class CpkChunksFileManagerImpl(private val cpkCacheDir: Path) : CpkChunksFileManager {
     companion object {
@@ -32,7 +36,7 @@ class CpkChunksFileManagerImpl(private val cpkCacheDir: Path) : CpkChunksFileMan
 
         private val CPK_DIRECTORY_PERMISSIONS = asFileAttribute(setOf(OWNER_READ, OWNER_WRITE, OWNER_EXECUTE))
         private val CPK_FILE_PERMISSIONS = asFileAttribute(setOf(OWNER_READ, OWNER_WRITE))
-        private val CREATE_OR_REPLACE = setOf(CREATE, WRITE, TRUNCATE_EXISTING)
+        private val READ_ONLY = singleton(OWNER_READ)
 
         internal fun SecureHash.toCpkDirName() = toHexString()
 
@@ -61,10 +65,15 @@ class CpkChunksFileManagerImpl(private val cpkCacheDir: Path) : CpkChunksFileMan
             @Suppress("SpreadOperator")
             Files.createDirectory(cpkXDir, *cpkXDir.posixOptional(CPK_DIRECTORY_PERMISSIONS))
         }
-        val filePath = cpkXDir.resolve(chunkId.toFileName())
-        @Suppress("SpreadOperator")
-        Files.newByteChannel(filePath, CREATE_OR_REPLACE, *filePath.posixOptional(CPK_FILE_PERMISSIONS)).use { channel ->
-            channel.write(chunk.data)
+
+        cpkXDir.resolve(chunkId.toFileName()).also { chunkFile ->
+            if (!Files.isRegularFile(chunkFile)) {
+                // Write the chunk's contents to an invisible temporary file, and only
+                // move this file to its proper name once writing is complete.
+                writeAtomically(chunkFile, ".chunk-") { output ->
+                    output.write(chunk.data)
+                }
+            }
         }
     }
 
@@ -77,13 +86,43 @@ class CpkChunksFileManagerImpl(private val cpkCacheDir: Path) : CpkChunksFileMan
             return null
         }
 
-        return cpkXDir.resolve(cpkChecksum.toCpkFileName()).also { cpkFilePath ->
-            @Suppress("SpreadOperator")
-            Files.newByteChannel(cpkFilePath, CREATE_OR_REPLACE, *cpkFilePath.posixOptional(CPK_FILE_PERMISSIONS)).use { output ->
-                chunkParts.forEach { chunkId ->
-                    val cpkChunkPath = cpkXDir.resolve(chunkId.toFileName())
-                    FileChannel.open(cpkChunkPath, READ).use(output::writeFile)
+        return cpkXDir.resolve(cpkChecksum.toCpkFileName()).also { cpkFile ->
+            if (!Files.isRegularFile(cpkFile)) {
+                // Assemble the chunks into an invisible temporary file, and only
+                // move this file to its proper name once writing is complete.
+                writeAtomically(cpkFile, ".cpk-") { output ->
+                    chunkParts.forEach { chunkId ->
+                        val cpkChunkPath = cpkXDir.resolve(chunkId.toFileName())
+                        FileChannel.open(cpkChunkPath, READ).use(output::writeFile)
+                    }
                 }
+            }
+        }
+    }
+
+    private fun writeAtomically(target: Path, tempPrefix: String, writer: Consumer<SeekableByteChannel>) {
+        val directory = target.parent
+        @Suppress("SpreadOperator")
+        Files.createTempFile(directory, tempPrefix, "", *directory.posixOptional(CPK_FILE_PERMISSIONS)).also { tempFile ->
+            try {
+                Files.newByteChannel(tempFile, WRITE).use(writer::accept)
+                setReadOnly(tempFile)
+
+                // Rename our temporary file as the final step.
+                Files.move(tempFile, target, ATOMIC_MOVE)
+            } catch (e: Exception) {
+                Files.delete(tempFile)
+                throw e
+            }
+        }
+    }
+
+    private fun setReadOnly(file: Path) {
+        Files.getFileAttributeView(file, PosixFileAttributeView::class.java)?.also { view ->
+            view.setPermissions(READ_ONLY)
+        } ?: run {
+            Files.getFileAttributeView(file, DosFileAttributeView::class.java)?.also { view ->
+                view.setReadOnly(true)
             }
         }
     }

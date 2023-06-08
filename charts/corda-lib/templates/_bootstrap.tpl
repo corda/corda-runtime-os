@@ -1,4 +1,105 @@
 {{/*
+Preinstall Checks
+*/}}
+{{- define "corda.bootstrapPreinstallJob" -}}
+{{- if .Values.bootstrap.preinstallCheck.enabled }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  annotations:
+    "helm.sh/hook": pre-install
+    "helm.sh/hook-weight": "-3"
+  name: {{ include "corda.fullname" . }}-preinstall-role
+rules:
+- apiGroups: [""]
+  resources: ["secrets"]
+  verbs: ["get", "watch", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  annotations:
+    "helm.sh/hook": pre-install
+    "helm.sh/hook-weight": "-2"
+  name: {{ include "corda.fullname" . }}-preinstall-role-binding
+subjects:
+- kind: ServiceAccount
+  name: {{ include "corda.fullname" . }}-preinstall-service-account
+roleRef:
+  kind: Role
+  name: {{ include "corda.fullname" . }}-preinstall-role
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  annotations:
+    "helm.sh/hook": pre-install
+    "helm.sh/hook-weight": "-4"
+  name: {{ include "corda.fullname" . }}-preinstall-service-account
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "corda.fullname" . }}-preinstall-checks
+  labels:
+    {{- include "corda.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": pre-install
+    "helm.sh/hook-weight": "-1"
+spec:
+  template:
+    metadata:
+      labels:
+        {{- include "corda.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- include "corda.imagePullSecrets" . | nindent 6 }}
+      {{- include "corda.tolerations" . | nindent 6 }}
+      serviceAccountName: {{ include "corda.fullname" . }}-preinstall-service-account
+      securityContext:
+        runAsUser: 10001
+        runAsGroup: 10002
+        fsGroup: 1000
+      containers:
+        - name: preinstall-checks
+          image: {{ include "corda.bootstrapCliImage" . }}
+          imagePullPolicy: {{ .Values.imagePullPolicy }}
+          {{- include "corda.containerSecurityContext" . | nindent 10 }}
+          {{- include "corda.bootstrapResources" . | nindent 10 }}
+          args: ['preinstall', 'run-all', '/tmp/values.yaml']
+          volumeMounts:
+            - mountPath: /tmp
+              name: temp
+            {{ include "corda.log4jVolumeMount" . | nindent 12 }}
+          env:
+            {{ include "corda.bootstrapCliEnv" . | nindent 12 }}
+      initContainers:
+        - name: create-preinstall-values
+          image: {{ include "corda.bootstrapCliImage" . }}
+          imagePullPolicy: {{ .Values.imagePullPolicy }}
+          {{- include "corda.bootstrapResources" . | nindent 10 }}
+          {{- include "corda.containerSecurityContext" . | nindent 10 }}
+          command:
+            - /bin/bash
+            - -c
+          args:
+            - |
+                echo -e {{ toYaml .Values | quote }} > /tmp/values.yaml
+          volumeMounts:
+            - mountPath: /tmp
+              name: temp
+      volumes:
+        - name: temp
+          emptyDir: {}
+        {{ include "corda.log4jVolume" . | nindent 8 }}
+      restartPolicy: Never
+      {{- include "corda.bootstrapNodeSelector" . | nindent 6 }}
+  backoffLimit: 0
+{{- end }}
+{{- end }}
+
+{{/*
 DB bootstrap job
 */}}
 {{- define "corda.bootstrapDbJob" -}}
@@ -183,7 +284,6 @@ spec:
             - -c
           args:
             - |
-                mkdir /tmp
                 touch /tmp/config.properties
                 {{- if .Values.kafka.tls.enabled }}
                 {{- if .Values.kafka.sasl.enabled }}
