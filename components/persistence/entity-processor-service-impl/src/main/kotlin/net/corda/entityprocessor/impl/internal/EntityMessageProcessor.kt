@@ -95,7 +95,7 @@ class EntityMessageProcessor(
                 MDC_EXTERNAL_EVENT_ID to request.flowExternalEventContext.requestId
             )
         ) {
-            val startTime = Instant.now()
+            val startTime = System.nanoTime()
             var requestOutcome = "FAILED"
             try {
                 val holdingIdentity = request.holdingIdentity.toCorda()
@@ -118,7 +118,7 @@ class EntityMessageProcessor(
                     .withTag(CordaMetrics.Tag.OperationName, request.request::class.java.name)
                     .withTag(CordaMetrics.Tag.OperationStatus, requestOutcome)
                     .build()
-                    .record(Duration.between(startTime, Instant.now()))
+                    .record(Duration.ofNanos(System.nanoTime() - startTime))
 
                 currentSandboxGroupContext.remove()
             }
