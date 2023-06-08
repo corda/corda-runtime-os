@@ -10,22 +10,15 @@ import net.corda.crypto.cipher.suite.SignatureSpecImpl
 import net.corda.crypto.cipher.suite.schemes.ECDSA_SECP256R1_TEMPLATE
 import net.corda.crypto.component.test.utils.generateKeyPair
 import net.corda.crypto.core.CryptoConsts
-import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.ALIAS_FILTER
-import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.CATEGORY_FILTER
-import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.CREATED_AFTER_FILTER
-import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.CREATED_BEFORE_FILTER
-import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.MASTER_KEY_ALIAS_FILTER
-import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.SCHEME_CODE_NAME_FILTER
 import net.corda.crypto.core.CryptoService
 import net.corda.crypto.core.KeyAlreadyExistsException
+import net.corda.crypto.core.KeyOrderBy
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.core.ShortHash
+import net.corda.crypto.core.SigningKeyInfo
+import net.corda.crypto.core.SigningKeyStatus
 import net.corda.crypto.core.parseSecureHash
 import net.corda.crypto.persistence.HSMStore
-import net.corda.crypto.core.SigningKeyInfo
-import net.corda.crypto.persistence.SigningKeyOrderBy
-import net.corda.crypto.core.SigningKeyStatus
-import net.corda.crypto.core.KeyOrderBy
 import net.corda.crypto.softhsm.SigningRepository
 import net.corda.crypto.testkit.SecureHashUtils
 import net.corda.data.crypto.wire.hsm.HSMAssociationInfo
@@ -40,7 +33,6 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.CsvSource
-import org.junit.jupiter.params.provider.MethodSource
 import org.mockito.ArgumentMatchers.anyString
 import org.mockito.Mockito
 import org.mockito.kotlin.any
@@ -265,74 +257,6 @@ class SigningServiceGeneralTests {
         verify(repo, times(2)).findKey(anyString())
     }
 
-    @Test
-    fun `Should pass all parameters to cache for lookup function`() {
-        val skip = 17
-        val take = 21
-        val orderBy: KeyOrderBy = KeyOrderBy.ALIAS
-        val category: String = CryptoConsts.Categories.TLS
-        val schemeCodeName: String = UUID.randomUUID().toString()
-        val alias: String = UUID.randomUUID().toString()
-        val masterKeyAlias: String = UUID.randomUUID().toString()
-        val createdAfter: Instant = Instant.now().plusSeconds(-5)
-        val createdBefore: Instant = Instant.now()
-        val store = mock<SigningRepository> {
-            on { query(any(), any(), any(), any()) } doReturn emptyList()
-        }
-        val signingService = makeSigningServiceImpl(store)
-        val filter = mapOf(
-            CATEGORY_FILTER to category,
-            SCHEME_CODE_NAME_FILTER to schemeCodeName,
-            ALIAS_FILTER to alias,
-            MASTER_KEY_ALIAS_FILTER to masterKeyAlias,
-            CREATED_AFTER_FILTER to createdAfter.toString(),
-            CREATED_BEFORE_FILTER to createdBefore.toString()
-        )
-        val result = signingService.querySigningKeys(
-            tenantId,
-            skip,
-            take,
-            orderBy,
-            filter
-        )
-        assertThat(result).isNotNull
-        assertThat(result.size).isEqualTo(0)
-        verify(store, times(1)).query(
-            skip,
-            take,
-            SigningKeyOrderBy.ALIAS,
-            filter
-        )
-    }
-
-
-    @ParameterizedTest
-    @MethodSource("keyOrders")
-    fun `Should pass order by to lookup function`(orderBy: KeyOrderBy) {
-        val skip = 17
-        val take = 21
-        val tenantId: String = UUID.randomUUID().toString()
-        val repo = mock<SigningRepository> {
-            on { query(any(), any(), any(), any()) } doReturn emptyList()
-        }
-        val signingService = makeSigningServiceImpl(repo)
-        val filter = emptyMap<String, String>()
-        val result = signingService.querySigningKeys(
-            tenantId,
-            skip,
-            take,
-            orderBy,
-            filter
-        )
-        assertThat(result).isNotNull
-        assertThat(result.size).isEqualTo(0)
-        verify(repo, times(1)).query(
-            skip,
-            take,
-            SigningKeyOrderBy.valueOf(orderBy.toString()),
-            filter
-        )
-    }
 
     private fun makeSigningServiceImpl(
         repo: SigningRepository,
