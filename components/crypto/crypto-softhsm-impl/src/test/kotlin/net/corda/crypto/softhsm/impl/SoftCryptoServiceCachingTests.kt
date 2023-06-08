@@ -10,20 +10,26 @@ import net.corda.crypto.cipher.suite.KeyMaterialSpec
 import net.corda.crypto.cipher.suite.sha256Bytes
 import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.core.aes.WrappingKeyImpl
+import net.corda.crypto.persistence.HSMStore
 import net.corda.crypto.persistence.WrappingKeyInfo
 import net.corda.crypto.softhsm.WrappingRepository
 import net.corda.crypto.softhsm.impl.infra.CountingWrappingKey
 import net.corda.crypto.softhsm.impl.infra.TestSigningRepository
 import net.corda.crypto.softhsm.impl.infra.TestWrappingRepository
 import net.corda.crypto.softhsm.impl.infra.makePrivateKeyCache
+import net.corda.crypto.softhsm.impl.infra.makeSigningKeyInfoCache
 import net.corda.crypto.softhsm.impl.infra.makeSoftCryptoService
 import net.corda.crypto.softhsm.impl.infra.makeWrappingKeyCache
+import net.corda.data.crypto.wire.hsm.HSMAssociationInfo
 import net.corda.v5.base.util.EncodingUtils
 import net.corda.v5.crypto.KeySchemeCodes.RSA_CODE_NAME
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
+import org.mockito.kotlin.any
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.mock
 import java.security.KeyPairGenerator
 import java.security.Provider
 import kotlin.test.assertEquals
@@ -45,6 +51,7 @@ class SoftCryptoServiceCachingTests {
         // setup
         val privateKeyCache = if (cachePrivateKeys) makePrivateKeyCache() else null
         val wrappingKeyCache = makeWrappingKeyCache()
+        val signingKeyInfoCache = makeSigningKeyInfoCache()
         val wrappingKeyAlias = "wrapper1"
         val wrapCount = AtomicInteger()
         val unwrapCount = AtomicInteger()
@@ -55,6 +62,12 @@ class SoftCryptoServiceCachingTests {
         val vnodeTenantId = EncodingUtils.toHex(UUID.randomUUID().toString().toByteArray().sha256Bytes()).take(12)
         val clusterWrappingRepository = TestWrappingRepository()
         val vnodeWrappingRepository = TestWrappingRepository()
+        val association = mock<HSMAssociationInfo> {
+            on { masterKeyAlias }.thenReturn(wrappingKeyAlias)
+        }
+        val hsmStore = mock<HSMStore> {
+            on { findTenantAssociation(any(), any()) } doReturn association
+        }
         val myCryptoService = SoftCryptoService(
             privateKeyCache = privateKeyCache,
             wrappingKeyCache = wrappingKeyCache,
@@ -78,7 +91,9 @@ class SoftCryptoServiceCachingTests {
                     else -> vnodeWrappingRepository
                 }
             },
-            signingRepositoryFactory = { TestSigningRepository() }
+            signingRepositoryFactory = { TestSigningRepository() },
+            signingKeyInfoCache = signingKeyInfoCache,
+            hsmStore = hsmStore
         )
         val rsaScheme =
             myCryptoService.supportedSchemes.filter { it.key.codeName == RSA_CODE_NAME }.toList().first().first

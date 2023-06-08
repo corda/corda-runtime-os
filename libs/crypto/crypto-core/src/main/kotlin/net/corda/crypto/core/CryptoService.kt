@@ -68,29 +68,6 @@ interface CryptoService {
     val supportedSchemes: Map<KeyScheme, List<SignatureSpec>>
 
     /**
-     * Generates and optionally stores a key pair. The implementation is free to decide how the generated key
-     * is stored - either in the corresponding HSM or wrapped and exported. The rule of thumb would be in the [spec]
-     * has the [KeyGenerationSpec.alias] defined then it's expected that the key will be stored in the HSM otherwise
-     * wrapped and exported but as mentioned above it's up to the concrete implementation. Such behaviour must be
-     * defined beforehand and advertised. If the key is exported, its key material will be persisted
-     * on the platform side.
-     *
-     * @param spec parameters to generate the key pair.
-     * @param context the optional key/value operation context. The context will have at least two variables defined -
-     * 'tenantId' and 'category'.
-     *
-     * @return Information about the generated key, could be either [GeneratedPublicKey] or [GeneratedWrappedKey]
-     * depending on how the key is generated and persisted or wrapped and exported.
-     *
-     * @throws IllegalArgumentException the key scheme is not supported or in general the input parameters are wrong
-     * @throws net.corda.v5.crypto.exceptions.CryptoException, non-recoverable
-     */
-    fun generateKeyPair(
-        spec: KeyGenerationSpec,
-        context: Map<String, String>
-    ): GeneratedKey
-
-    /**
      * Signs a byte array using the private key identified by the input arguments.
      *
      * @param spec [SigningWrappedSpec] to be used for signing.
@@ -238,36 +215,37 @@ interface CryptoService {
         context: Map<String, String>,
     )
 
+
     /**
-     * Generates a new random key pair using the configured default key scheme and adds it to the internal key storage.
+     * Generates and optionally stores a key pair. The implementation is free to decide how the generated key
+     * is stored - either in the corresponding HSM or wrapped and exported. The rule of thumb would be in the [spec]
+     * has the [KeyGenerationSpec.alias] defined then it's expected that the key will be stored in the HSM otherwise
+     * wrapped and exported but as mentioned above it's up to the concrete implementation. Such behaviour must be
+     * defined beforehand and advertised. If the key is exported, its key material will be persisted
+     * on the platform side.
      *
-     * @param tenantId the tenant's id which the key pair is generated for.
-     * @param category The HSM category, such as TLS, LEDGER, etc.
-     * @param alias the tenant defined key alias for the key pair to be generated.
-     * @param scheme the key's scheme code name describing which type of the key to generate.
-     * @param context the optional key/value operation context.
+     * @param spec parameters to generate the key pair.
+     * @param context the optional key/value operation context. The context will have at least two variables defined -
+     * 'tenantId' and 'category'.
      *
-     * The [tenantId] and [category] are used to find which HSM is being used to persist the actual key. After the key
-     * is generated that information is stored alongside with other metadata so it wil be possible to find the HSM
-     * storing the private key.
+     * @return Information about the generated key, could be either [GeneratedPublicKey] or [GeneratedWrappedKey]
+     * depending on how the key is generated and persisted or wrapped and exported.
      *
-     * @return The public part of the pair.
+     * @throws IllegalArgumentException the key scheme is not supported or in general the input parameters are wrong
+     * @throws net.corda.v5.crypto.exceptions.CryptoException, non-recoverable
      */
     fun generateKeyPair(
-        tenantId: String,
-        category: String,
-        alias: String,
-        scheme: KeyScheme,
-        context: Map<String, String> = EMPTY_CONTEXT,
-    ): PublicKey
+        spec: KeyGenerationSpec,
+        context: Map<String, String>,
+    ): GeneratedKey
 
     /**
      * Generates a new random key pair using the configured default key scheme and adds it to the internal key storage.
      *
      * @param tenantId the tenant's id which the key pair is generated for.
      * @param category The HSM category, such as TLS, LEDGER, etc.
-     * @param alias the tenant defined key alias for the key pair to be generated.
-     * @param externalId the external id to be associated with the key.
+     * @param alias the tenant defined key alias for the key pair to be generated, or null if not required.
+     * @param externalId the external id to be associated with the key, or null if not required
      * @param scheme the key's scheme code name describing which type of the key to generate.
      * @param context the optional key/value operation context.
      *
@@ -281,8 +259,8 @@ interface CryptoService {
     fun generateKeyPair(
         tenantId: String,
         category: String,
-        alias: String,
-        externalId: String,
+        alias: String? = null,
+        externalId: String? = null,
         scheme: KeyScheme,
         context: Map<String, String> = EMPTY_CONTEXT,
     ): PublicKey
