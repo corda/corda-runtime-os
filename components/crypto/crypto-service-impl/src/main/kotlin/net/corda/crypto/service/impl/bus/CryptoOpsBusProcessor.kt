@@ -122,7 +122,7 @@ class CryptoOpsBusProcessor(
         }
 
         fun handleKeysRpcQuery(request: KeysRpcQuery): CryptoSigningKeys {
-            val found = signingService.querySigningKeys(
+            val found = cryptoService.querySigningKeys(
                 tenantId = context.tenantId,
                 skip = request.skip,
                 take = request.take,

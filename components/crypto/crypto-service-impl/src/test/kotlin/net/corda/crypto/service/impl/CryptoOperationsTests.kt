@@ -11,6 +11,7 @@ import net.corda.crypto.component.test.utils.generateKeyPair
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.ALIAS_FILTER
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.MASTER_KEY_ALIAS_FILTER
+import net.corda.crypto.core.CryptoService
 import net.corda.crypto.core.ShortHash
 import net.corda.crypto.core.publicKeyIdFromBytes
 import net.corda.crypto.hes.HybridEncryptionParams
@@ -65,7 +66,8 @@ class CryptoOperationsTests {
         class SigningAliasedKeyInfo(
             val alias: String,
             val publicKey: PublicKey,
-            val signingService: SigningService
+            val signingService: SigningService,
+            val cryptoService: CryptoService,
         )
 
         class SigningFreshKeyInfo(
@@ -100,6 +102,7 @@ class CryptoOperationsTests {
                 SigningAliasedKeyInfo(
                     alias = alias,
                     signingService = factory.signingService,
+                    cryptoService = factory.cryptoService,
                     publicKey = factory.signingService.generateKeyPair(
                         tenantId = tenantId,
                         category = CryptoConsts.Categories.LEDGER,
@@ -427,7 +430,7 @@ class CryptoOperationsTests {
         scheme: KeyScheme
     ) {
         val info = signingAliasedKeys.getValue(scheme)
-        val returned = info.signingService.querySigningKeys(
+        val returned = info.cryptoService.querySigningKeys(
             tenantId = tenantId,
             skip = 0,
             take = 50,
@@ -447,7 +450,7 @@ class CryptoOperationsTests {
         scheme: KeyScheme
     ) {
         val info = signingAliasedKeys.getValue(scheme)
-        val returned = info.signingService.querySigningKeys(
+        val returned = info.cryptoService.querySigningKeys(
             tenantId = tenantId,
             skip = 0,
             take = 50,

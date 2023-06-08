@@ -11,8 +11,11 @@ import net.corda.crypto.cipher.suite.SignatureSpecs
 import net.corda.crypto.cipher.suite.SigningWrappedSpec
 import net.corda.crypto.component.test.utils.generateKeyPair
 import net.corda.crypto.core.CryptoConsts
+import net.corda.crypto.core.KeyOrderBy
 import net.corda.crypto.impl.CipherSchemeMetadataProvider
+import net.corda.crypto.persistence.SigningKeyOrderBy
 import net.corda.crypto.persistence.WrappingKeyInfo
+import net.corda.crypto.softhsm.SigningRepository
 import net.corda.crypto.softhsm.impl.infra.TestWrappingRepository
 import net.corda.crypto.softhsm.impl.infra.makeSoftCryptoService
 import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256K1_CODE_NAME
@@ -23,9 +26,15 @@ import net.corda.v5.crypto.exceptions.CryptoException
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.MethodSource
 import org.mockito.kotlin.any
+import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.times
+import org.mockito.kotlin.verify
+import java.time.Instant
 import java.util.UUID
 import javax.persistence.QueryTimeoutException
 import kotlin.test.assertTrue
@@ -43,6 +52,12 @@ class SoftCryptoServiceGeneralTests {
         schemeMetadata = schemeMetadata,
         rootWrappingKey = mock(),
     )
+    private val tenantId = UUID.randomUUID().toString()
+
+    companion object {
+        @JvmStatic
+        fun keyOrders() = KeyOrderBy.values()
+    }
 
     @Test
     fun `Should throw IllegalStateException when wrapping key alias exists and failIfExists is true`() {
@@ -226,6 +241,75 @@ class SoftCryptoServiceGeneralTests {
         assertThrows<IllegalStateException> {
             cryptoServiceExploding.createWrappingKey("foo", true, emptyMap())
         }
+    }
+
+
+    @Test
+    fun `Should pass all parameters to cache for lookup function`() {
+        val skip = 17
+        val take = 21
+        val orderBy: KeyOrderBy = KeyOrderBy.ALIAS
+        val category: String = CryptoConsts.Categories.TLS
+        val schemeCodeName: String = UUID.randomUUID().toString()
+        val alias: String = UUID.randomUUID().toString()
+        val masterKeyAlias: String = UUID.randomUUID().toString()
+        val createdAfter: Instant = Instant.now().plusSeconds(-5)
+        val createdBefore: Instant = Instant.now()
+        val store = mock<SigningRepository> {
+            on { query(any(), any(), any(), any()) } doReturn emptyList()
+        }
+        val filter = mapOf(
+            CryptoConsts.SigningKeyFilters.CATEGORY_FILTER to category,
+            CryptoConsts.SigningKeyFilters.SCHEME_CODE_NAME_FILTER to schemeCodeName,
+            CryptoConsts.SigningKeyFilters.ALIAS_FILTER to alias,
+            CryptoConsts.SigningKeyFilters.MASTER_KEY_ALIAS_FILTER to masterKeyAlias,
+            CryptoConsts.SigningKeyFilters.CREATED_AFTER_FILTER to createdAfter.toString(),
+            CryptoConsts.SigningKeyFilters.CREATED_BEFORE_FILTER to createdBefore.toString()
+        )
+        val cryptoServiceWithMockSigningRepository = makeSoftCryptoService(
+            wrappingRepository = cryptoRepositoryWrapping,
+            signingRepository = store,
+            schemeMetadata = schemeMetadata,
+            rootWrappingKey = mock(),
+        )
+        val result = cryptoServiceWithMockSigningRepository.querySigningKeys(tenantId, skip, take, orderBy, filter)
+        assertThat(result).isNotNull
+        assertThat(result.size).isEqualTo(0)
+        verify(store, times(1)).query(skip, take, SigningKeyOrderBy.ALIAS, filter)
+    }
+
+
+    @ParameterizedTest
+    @MethodSource("keyOrders")
+    fun `Should pass order by to lookup function`(orderBy: KeyOrderBy) {
+        val skip = 17
+        val take = 21
+        val tenantId: String = UUID.randomUUID().toString()
+        val repo = mock<SigningRepository> {
+            on { query(any(), any(), any(), any()) } doReturn emptyList()
+        }
+        val cryptoServiceWithMockSigningRepository = makeSoftCryptoService(
+            wrappingRepository = cryptoRepositoryWrapping,
+            signingRepository = repo,
+            schemeMetadata = schemeMetadata,
+            rootWrappingKey = mock(),
+        )
+        val filter = emptyMap<String, String>()
+        val result = cryptoServiceWithMockSigningRepository.querySigningKeys(
+            tenantId,
+            skip,
+            take,
+            orderBy,
+            filter
+        )
+        assertThat(result).isNotNull
+        assertThat(result.size).isEqualTo(0)
+        verify(repo, times(1)).query(
+            skip,
+            take,
+            SigningKeyOrderBy.valueOf(orderBy.toString()),
+            filter
+        )
     }
 
 

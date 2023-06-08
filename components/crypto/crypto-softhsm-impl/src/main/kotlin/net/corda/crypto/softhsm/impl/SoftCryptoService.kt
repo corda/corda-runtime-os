@@ -26,6 +26,7 @@ import net.corda.crypto.core.isRecoverable
 import net.corda.crypto.hes.core.impl.deriveDHSharedSecret
 import net.corda.crypto.impl.SignatureInstances
 import net.corda.crypto.impl.getSigningData
+import net.corda.crypto.persistence.SigningKeyOrderBy
 import net.corda.crypto.persistence.WrappingKeyInfo
 import net.corda.crypto.softhsm.SigningRepositoryFactory
 import net.corda.crypto.softhsm.WrappingRepositoryFactory
@@ -295,7 +296,22 @@ class SoftCryptoService(
         take: Int,
         orderBy: KeyOrderBy,
         filter: Map<String, String>,
-    ): Collection<SigningKeyInfo> = TODO("finish porting SigningService functions")
+    ): Collection<SigningKeyInfo> {
+        logger.debug {
+            "lookup(tenantId=$tenantId, skip=$skip, take=$take, orderBy=$orderBy, filter=[${filter.keys.joinToString()}]"
+        }
+        // It isn't easy to use the cache here, since the cache is keyed only by public key and we are
+        // querying
+        // TODO scan the SigningKeyInfo values we have first in cache?
+        return signingRepositoryFactory.getInstance(tenantId).use {
+            it.query(
+                skip,
+                take,
+                SigningKeyOrderBy.valueOf(orderBy.name),
+                filter
+            )
+        }
+    }
 
     override fun lookupSigningKeysByPublicKeyShortHash(
         tenantId: String,

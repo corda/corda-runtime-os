@@ -17,12 +17,10 @@ import net.corda.crypto.core.DigitalSignatureWithKey
 import net.corda.crypto.core.InvalidParamsException
 import net.corda.crypto.core.KeyAlreadyExistsException
 import net.corda.crypto.core.ShortHash
+import net.corda.crypto.core.SigningKeyInfo
 import net.corda.crypto.core.fullIdHash
 import net.corda.crypto.persistence.HSMStore
-import net.corda.crypto.core.SigningKeyInfo
-import net.corda.crypto.persistence.SigningKeyOrderBy
 import net.corda.crypto.persistence.SigningWrappedKeySaveContext
-import net.corda.crypto.core.KeyOrderBy
 import net.corda.crypto.service.SigningService
 import net.corda.crypto.softhsm.SigningRepositoryFactory
 import net.corda.metrics.CordaMetrics
@@ -62,27 +60,6 @@ class SigningServiceImpl(
 
     data class OwnedKeyRecord(val publicKey: PublicKey, val data: SigningKeyInfo)
 
-    override fun querySigningKeys(
-        tenantId: String,
-        skip: Int,
-        take: Int,
-        orderBy: KeyOrderBy,
-        filter: Map<String, String>,
-    ): Collection<SigningKeyInfo> {
-        logger.debug {
-            "lookup(tenantId=$tenantId, skip=$skip, take=$take, orderBy=$orderBy, filter=[${filter.keys.joinToString()}]"
-        }
-        // It isn't easy to use the cache here, since the cache is keyed only by public key and we are
-        // querying
-        return signingRepositoryFactory.getInstance(tenantId).use {
-            it.query(
-                skip,
-                take,
-                orderBy.toSigningKeyOrderBy(),
-                filter
-            )
-        }
-    }
 
     override fun lookupSigningKeysByPublicKeyShortHash(
         tenantId: String,
@@ -370,6 +347,3 @@ class SigningServiceImpl(
         )
     }
 }
-
-private fun KeyOrderBy.toSigningKeyOrderBy(): SigningKeyOrderBy =
-    SigningKeyOrderBy.valueOf(name)

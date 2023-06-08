@@ -3,12 +3,11 @@ package net.corda.crypto.service
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.cipher.suite.schemes.KeyScheme
 import net.corda.crypto.core.DigitalSignatureWithKey
-import net.corda.crypto.core.KeyOrderBy
 import net.corda.crypto.core.ShortHash
+import net.corda.crypto.core.SigningKeyInfo
 import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
-import net.corda.crypto.core.SigningKeyInfo
 import java.security.KeyPair
 import java.security.PublicKey
 
@@ -24,31 +23,6 @@ interface SigningService {
      * Return an instance of the [CipherSchemeMetadata] which is used by the current instance of [SigningService]
      */
     val schemeMetadata: CipherSchemeMetadata
-
-    /**
-     * Returns list of keys satisfying the filter condition. All filter values are combined as AND.
-     *
-     * @param skip the response paging information, number of records to skip.
-     * @param take the response paging information, number of records to return, the actual number may be less than
-     * requested.
-     * @param orderBy the order by.
-     * @param tenantId the tenant's id which the keys belong to.
-     * @param filter the layered property map of the filter parameters such as
-     * category (the HSM's category which handles the keys),
-     * schemeCodeName (the key's signature scheme name),
-     * alias (the alias which is assigned by the tenant),
-     * masterKeyAlias (the wrapping key alias),
-     * externalId (an id associated with the key),
-     * createdAfter (specifies inclusive time after which a key was created),
-     * createdBefore (specifies inclusive time before which a key was created).
-     */
-    fun querySigningKeys(
-        tenantId: String,
-        skip: Int,
-        take: Int,
-        orderBy: KeyOrderBy,
-        filter: Map<String, String>,
-    ): Collection<SigningKeyInfo>
 
     /**
      * Looks for keys by key ids.
