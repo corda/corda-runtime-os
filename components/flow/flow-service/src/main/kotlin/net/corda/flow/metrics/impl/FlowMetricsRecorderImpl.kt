@@ -104,6 +104,7 @@ class FlowMetricsRecorderImpl(
             .withTag(CordaMetrics.Tag.FlowClass, flowCheckpoint.flowStartContext.flowClassName)
             .build().record(eventsProcessed.toDouble())
     }
+
     override fun recordFlowSessionMessagesReplayed(flowEventType: String) {
         CordaMetrics.Metric.FlowSessionMessagesReplayedCount.builder()
             .forVirtualNode(flowCheckpoint.holdingIdentity.shortHash.toString())
@@ -117,13 +118,5 @@ class FlowMetricsRecorderImpl(
             .forVirtualNode(flowCheckpoint.holdingIdentity.shortHash.toString())
             .withTag(CordaMetrics.Tag.FlowClass, flowCheckpoint.flowStartContext.flowClassName)
             .build().record(fiberSuspensions.toDouble())
-    }
-
-    override fun recordFlowSessionMessagesReceivedDuplicates(flowEventType: String) {
-        CordaMetrics.Metric.FlowSessionMessagesReceivedCount.builder()
-            .forVirtualNode(flowCheckpoint.holdingIdentity.shortHash.toString())
-            .withTag(CordaMetrics.Tag.FlowClass, flowCheckpoint.flowStartContext.flowClassName)
-            .withTag(CordaMetrics.Tag.FlowEvent, flowEventType)
-            .build().increment()
     }
 }
