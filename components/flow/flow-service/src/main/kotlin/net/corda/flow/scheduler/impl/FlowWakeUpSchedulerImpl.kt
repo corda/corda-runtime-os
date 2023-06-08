@@ -1,5 +1,10 @@
 package net.corda.flow.scheduler.impl
 
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.Executors
+import java.util.concurrent.ScheduledExecutorService
+import java.util.concurrent.ScheduledFuture
+import java.util.concurrent.TimeUnit
 import net.corda.data.flow.event.Wakeup
 import net.corda.data.flow.state.checkpoint.Checkpoint
 import net.corda.flow.pipeline.factory.FlowRecordFactory
@@ -10,16 +15,12 @@ import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.metrics.CordaMetrics
+import net.corda.schema.Schemas.Flow.FLOW_EVENT_TOPIC
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.virtualnode.toCorda
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.Executors
-import java.util.concurrent.ScheduledExecutorService
-import java.util.concurrent.ScheduledFuture
-import java.util.concurrent.TimeUnit
 
 @Component(service = [FlowWakeUpScheduler::class])
 class FlowWakeUpSchedulerImpl constructor(
@@ -41,7 +42,7 @@ class FlowWakeUpSchedulerImpl constructor(
 
     override fun onConfigChange(config: Map<String, SmartConfig>) {
         publisher?.close()
-        publisher = publisherFactory.createPublisher(PublisherConfig("FlowWakeUpRestResource"), config.getConfig(MESSAGING_CONFIG))
+        publisher = publisherFactory.createPublisher(PublisherConfig("FlowWakeUpRestResource", topic = FLOW_EVENT_TOPIC), config.getConfig(MESSAGING_CONFIG))
     }
 
     override fun onPartitionSynced(states: Map<String, Checkpoint>) {
