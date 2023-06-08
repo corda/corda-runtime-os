@@ -263,7 +263,7 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
 
     override fun waitForFunctionToFinish(function: () -> Any, maxTimeout: Long, timeoutErrorMessage: String): CompletableFuture<Any> {
         val future: CompletableFuture<Any> = CompletableFuture.supplyAsync(
-            { function() },
+            function,
             wrapWithTracingExecutor(executor))
         future.tryGetResult(getInitialConsumerTimeout())
 
