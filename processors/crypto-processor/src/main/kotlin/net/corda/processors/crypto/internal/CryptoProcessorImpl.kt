@@ -11,7 +11,6 @@ import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.cipher.suite.PlatformDigestService
 import net.corda.crypto.config.impl.ALIAS
 import net.corda.crypto.config.impl.CACHING
-import net.corda.crypto.config.impl.CryptoSigningServiceConfig
 import net.corda.crypto.config.impl.DEFAULT
 import net.corda.crypto.config.impl.DEFAULT_WRAPPING_KEY
 import net.corda.crypto.config.impl.EXPIRE_AFTER_ACCESS_MINS
@@ -24,20 +23,18 @@ import net.corda.crypto.config.impl.retrying
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoService
 import net.corda.crypto.core.CryptoTenants
+import net.corda.crypto.core.SigningKeyInfo
 import net.corda.crypto.core.aes.WrappingKey
 import net.corda.crypto.core.aes.WrappingKeyImpl
 import net.corda.crypto.persistence.HSMStore
-import net.corda.crypto.core.SigningKeyInfo
 import net.corda.crypto.persistence.db.model.CryptoEntities
 import net.corda.crypto.persistence.getEntityManagerFactory
 import net.corda.crypto.service.HSMService
-import net.corda.crypto.service.impl.CacheKey
 import net.corda.crypto.service.impl.HSMServiceImpl
-import net.corda.crypto.service.impl.SigningServiceImpl
 import net.corda.crypto.service.impl.bus.CryptoFlowOpsBusProcessor
 import net.corda.crypto.service.impl.bus.CryptoOpsBusProcessor
 import net.corda.crypto.service.impl.bus.HSMRegistrationBusProcessor
-import net.corda.crypto.softhsm.impl.SigningRepositoryFactoryImpl
+import net.corda.crypto.softhsm.impl.CacheKey
 import net.corda.crypto.softhsm.impl.SigningRepositoryImpl
 import net.corda.crypto.softhsm.impl.SoftCryptoService
 import net.corda.crypto.softhsm.impl.WrappingRepositoryImpl
@@ -242,6 +239,12 @@ class CryptoProcessorImpl @Activate constructor(
                 .expireAfterAccess(expireAfterAccessMins, TimeUnit.MINUTES)
                 .maximumSize(maximumSize)
         )
+        val signingKeyInfoCache: Cache<CacheKey, SigningKeyInfo> = CacheFactoryImpl().build(
+            "Signing-Key-Cache",
+            Caffeine.newBuilder()
+                .expireAfterAccess(expireAfterAccessMins, TimeUnit.MINUTES)
+                .maximumSize(maximumSize)
+        )
         cryptoService = SoftCryptoService(
             wrappingRepositoryFactory = { tenantId ->
                 WrappingRepositoryImpl(
@@ -274,12 +277,14 @@ class CryptoProcessorImpl @Activate constructor(
             unmanagedWrappingKeys = unmanagedWrappingKeys,
             wrappingKeyCache = wrappingKeyCache,
             privateKeyCache = privateKeyCache,
+            signingKeyInfoCache = signingKeyInfoCache,
             keyPairGeneratorFactory = { algorithm: String, provider: Provider ->
                 KeyPairGenerator.getInstance(algorithm, provider)
             },
             wrappingKeyFactory = {
                 WrappingKeyImpl.generateWrappingKey(it)
-            }
+            },
+            hsmStore = hsmStore,
         )
     }
 
@@ -296,35 +301,12 @@ class CryptoProcessorImpl @Activate constructor(
     private fun startBusProcessors(event: ConfigChangedEvent, coordinator: LifecycleCoordinator) {
         val cryptoConfig = event.config.getConfig(CRYPTO_CONFIG)
 
-        val config = CryptoSigningServiceConfig(event.config.getConfig(CRYPTO_CONFIG))
-        val signingCache:  Cache<CacheKey, SigningKeyInfo> = CacheFactoryImpl().build(
-            "Signing-Key-Cache",
-            Caffeine.newBuilder()
-                .expireAfterAccess(config.cache.expireAfterAccessMins, TimeUnit.MINUTES)
-                .maximumSize(config.cache.maximumSize)
-        )
-        // first make the signing service object, which both processors will consume
-        val signingService = SigningServiceImpl(
-            cryptoService = cryptoService,
-            signingRepositoryFactory = SigningRepositoryFactoryImpl(
-                dbConnectionManager,
-                virtualNodeInfoReadService,
-                jpaEntitiesRegistry,
-                keyEncodingService,
-                digestService,
-                layeredPropertyMapFactory
-            ),
-            schemeMetadata = schemeMetadata,
-            digestService = digestService,
-            signingKeyInfoCache = signingCache,
-            hsmStore = hsmStore
-        )
 
         // make the processors
         val retryingConfig = cryptoConfig.retrying()
         val flowOpsProcessor =
-            CryptoFlowOpsBusProcessor(cryptoService, signingService, externalEventResponseFactory, retryingConfig)
-        val rpcOpsProcessor = CryptoOpsBusProcessor(signingService, cryptoService, retryingConfig)
+            CryptoFlowOpsBusProcessor(cryptoService, externalEventResponseFactory, retryingConfig)
+        val rpcOpsProcessor = CryptoOpsBusProcessor(cryptoService, retryingConfig)
         val hsmRegistrationProcessor = HSMRegistrationBusProcessor(hsmService, retryingConfig)
 
         // now make and start the subscriptions

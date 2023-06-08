@@ -106,7 +106,9 @@ class SoftCryptoServiceOperationsTests {
             },
             wrappingKeyCache = wrappingKeyCache,
             signingRepositoryFactory = { signingRepository },
-            privateKeyCache = null
+            privateKeyCache = null,
+            signingKeyInfoCache = mock(),
+            hsmStore = mock()
         )
         private val category = CryptoConsts.Categories.LEDGER
         private val defaultContext = mapOf(CRYPTO_TENANT_ID to tenantId, CRYPTO_CATEGORY to category)

@@ -1,41 +1,75 @@
 package net.corda.crypto.softhsm.impl
 
+import com.github.benmanes.caffeine.cache.Cache
+import com.github.benmanes.caffeine.cache.Caffeine
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
+import net.corda.cipher.suite.impl.PlatformDigestServiceImpl
 import net.corda.crypto.cipher.suite.CRYPTO_CATEGORY
 import net.corda.crypto.cipher.suite.CRYPTO_TENANT_ID
 import net.corda.crypto.cipher.suite.CryptoServiceExtensions
+import net.corda.crypto.cipher.suite.GeneratedWrappedKey
 import net.corda.crypto.cipher.suite.KeyGenerationSpec
 import net.corda.crypto.cipher.suite.KeyMaterialSpec
+import net.corda.crypto.cipher.suite.PlatformDigestService
 import net.corda.crypto.cipher.suite.SharedSecretWrappedSpec
+import net.corda.crypto.cipher.suite.SignatureSpecImpl
 import net.corda.crypto.cipher.suite.SignatureSpecs
 import net.corda.crypto.cipher.suite.SigningWrappedSpec
+import net.corda.crypto.cipher.suite.schemes.ECDSA_SECP256R1_TEMPLATE
+import net.corda.crypto.cipher.suite.schemes.KeyScheme
 import net.corda.crypto.component.test.utils.generateKeyPair
 import net.corda.crypto.core.CryptoConsts
+import net.corda.crypto.core.KeyAlreadyExistsException
 import net.corda.crypto.core.KeyOrderBy
+import net.corda.crypto.core.SecureHashImpl
+import net.corda.crypto.core.ShortHash
+import net.corda.crypto.core.SigningKeyInfo
+import net.corda.crypto.core.SigningKeyStatus
+import net.corda.crypto.core.aes.WrappingKey
+import net.corda.crypto.core.aes.WrappingKeyImpl
+import net.corda.crypto.core.parseSecureHash
 import net.corda.crypto.impl.CipherSchemeMetadataProvider
+import net.corda.crypto.persistence.HSMStore
 import net.corda.crypto.persistence.SigningKeyOrderBy
 import net.corda.crypto.persistence.WrappingKeyInfo
 import net.corda.crypto.softhsm.SigningRepository
+import net.corda.crypto.softhsm.WrappingRepository
 import net.corda.crypto.softhsm.impl.infra.TestWrappingRepository
+import net.corda.crypto.softhsm.impl.infra.makeSigningKeyInfoCache
 import net.corda.crypto.softhsm.impl.infra.makeSoftCryptoService
+import net.corda.crypto.testkit.SecureHashUtils
+import net.corda.data.crypto.wire.hsm.HSMAssociationInfo
+import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256K1_CODE_NAME
 import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.crypto.KeySchemeCodes.EDDSA_ED25519_CODE_NAME
 import net.corda.v5.crypto.KeySchemeCodes.X25519_CODE_NAME
+import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.exceptions.CryptoException
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.CsvSource
 import org.junit.jupiter.params.provider.MethodSource
+import org.mockito.ArgumentMatchers
+import org.mockito.Mockito
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argThat
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
+import org.mockito.kotlin.whenever
+import java.security.KeyPairGenerator
+import java.security.Provider
+import java.security.PublicKey
 import java.time.Instant
 import java.util.UUID
+import java.util.concurrent.TimeUnit
 import javax.persistence.QueryTimeoutException
 import kotlin.test.assertTrue
 
@@ -44,7 +78,7 @@ class SoftCryptoServiceGeneralTests {
     private val schemeMetadata = CipherSchemeMetadataImpl()
     private val UNSUPPORTED_SIGNATURE_SCHEME = CipherSchemeMetadataProvider().COMPOSITE_KEY_TEMPLATE.makeScheme("BC")
     private val cryptoRepositoryWrapping = TestWrappingRepository()
-    private val sampleWrappingKeyInfo = WrappingKeyInfo(1, "n", byteArrayOf(), 1, "wrappingKey")
+    private val sampleWrappingKeyInfo = WrappingKeyInfo(1, "AES", byteArrayOf(), 1, "root")
     val defaultContext =
         mapOf(CRYPTO_TENANT_ID to UUID.randomUUID().toString(), CRYPTO_CATEGORY to CryptoConsts.Categories.LEDGER)
     private val service = makeSoftCryptoService(
@@ -52,11 +86,35 @@ class SoftCryptoServiceGeneralTests {
         schemeMetadata = schemeMetadata,
         rootWrappingKey = mock(),
     )
-    private val tenantId = UUID.randomUUID().toString()
 
     companion object {
         @JvmStatic
         fun keyOrders() = KeyOrderBy.values()
+
+        private val tenantId = UUID.randomUUID().toString()
+
+        private val masterKeyAlias = "root"
+
+        // Remember key ids cannot clash for same tenant so short keys of testing keys need to be different
+        val fullKeyId0 = parseSecureHash("SHA-256:ABC12345678911111111111111")
+        val shortKeyId0 = ShortHash.of(fullKeyId0)
+        val signingKeyInfo0 = mock<SigningKeyInfo> {
+            on { fullId }.thenReturn(fullKeyId0)
+            on { id }.thenReturn(shortKeyId0)
+        }
+        val fullKeyId1 = parseSecureHash("SHA-256:BBC12345678911111111111111")
+        val shortKeyId1 = ShortHash.of(fullKeyId1)
+        val signingKeyInfo1 = mock<SigningKeyInfo> {
+            on { fullId }.thenReturn(fullKeyId1)
+            on { id }.thenReturn(shortKeyId1)
+        }
+
+        val association = mock<HSMAssociationInfo> {
+            on { masterKeyAlias }.thenReturn(masterKeyAlias)
+        }
+        val mockHsmStore = mock<HSMStore> {
+            on { findTenantAssociation(any(), any()) } doReturn association
+        }
     }
 
     @Test
@@ -313,4 +371,451 @@ class SoftCryptoServiceGeneralTests {
     }
 
 
+    @Test
+    fun `Should throw original exception failing signing`() {
+        val exception = RuntimeException("")
+        val repo = mock<SigningRepository> {
+            on { findKey(any<PublicKey>()) } doThrow exception
+        }
+        val publicKey = mock<PublicKey> {
+            on { encoded } doReturn UUID.randomUUID().toString().toByteArray()
+        }
+        val data = ByteArray(2)
+        val signatureSpec = SignatureSpecImpl("NONE")
+        val service = makeSoftCryptoService(
+            wrappingRepository = cryptoRepositoryWrapping,
+            schemeMetadata = schemeMetadata,
+            rootWrappingKey = mock(),
+            signingRepository = repo
+        )
+        val thrown = Assertions.assertThrows(exception::class.java) {
+            service.sign(
+                tenantId = tenantId,
+                publicKey = publicKey,
+                signatureSpec = signatureSpec,
+                data = data,
+                context = emptyMap()
+            )
+        }
+        Assertions.assertSame(exception, thrown)
+        Mockito.verify(repo, times(1)).findKey(any<PublicKey>())
+    }
+
+    @Test
+    fun `Should throw IllegalArgumentException when key is not found for signing`() {
+        val repo = mock<SigningRepository> {
+            on { findKey(any<PublicKey>()) } doReturn null
+        }
+        val cryptoService = makeSoftCryptoService(signingRepository = repo)
+        val publicKey = mock<PublicKey> {
+            on { encoded } doReturn UUID.randomUUID().toString().toByteArray()
+        }
+        Assertions.assertThrows(IllegalArgumentException::class.java) {
+            cryptoService.sign(
+                tenantId = tenantId,
+                publicKey = publicKey,
+                signatureSpec = SignatureSpecImpl("NONE"),
+                data = ByteArray(2),
+                context = emptyMap()
+            )
+        }
+    }
+
+    private fun mockDigestService() = mock<PlatformDigestService> {
+        on { hash(any<ByteArray>(), any()) } doReturn SecureHashUtils.randomSecureHash()
+    }
+
+    private fun makeCache(): Cache<CacheKey, SigningKeyInfo> =
+        Caffeine.newBuilder()
+            .expireAfterAccess(3600, TimeUnit.MINUTES)
+            .maximumSize(3).build()
+
+    @Test
+    fun `Should throw original exception failing derivation`() {
+        val exception = RuntimeException("")
+        val repo = mock<SigningRepository> {
+            on { findKey(any<PublicKey>()) } doThrow exception
+        }
+        val cryptoService = makeSoftCryptoService(signingRepository = repo)
+        val thrown = Assertions.assertThrows(exception::class.java) {
+            cryptoService.deriveSharedSecret(
+                tenantId = UUID.randomUUID().toString(),
+                publicKey = mock {
+                    on { encoded } doReturn UUID.randomUUID().toString().toByteArray()
+                },
+                otherPublicKey = mock {
+                    on { encoded } doReturn UUID.randomUUID().toString().toByteArray()
+                },
+                context = emptyMap()
+            )
+        }
+        Assertions.assertSame(exception, thrown)
+        verify(repo, times(1)).findKey(any<PublicKey>())
+    }
+
+    @Test
+    fun `Should throw IllegalArgumentException when key is not found for deriving`() {
+        val repo = mock<SigningRepository> {
+            on { findKey(any<PublicKey>()) } doReturn null
+        }
+        val cryptoService = makeSoftCryptoService(signingRepository = repo)
+        Assertions.assertThrows(IllegalArgumentException::class.java) {
+            cryptoService.deriveSharedSecret(
+                tenantId = UUID.randomUUID().toString(),
+                publicKey = mock {
+                    on { encoded } doReturn UUID.randomUUID().toString().toByteArray()
+                },
+                otherPublicKey = mock {
+                    on { encoded } doReturn UUID.randomUUID().toString().toByteArray()
+                },
+                context = emptyMap()
+            )
+        }
+    }
+
+    @Test
+    fun `Should throw KeyAlreadyExistsException when generating key with existing alias`() {
+        val existingKey = SigningKeyInfo(
+            id = ShortHash.of("0123456789AB"),
+            fullId = parseSecureHash("SHA-256:0123456789ABCDEF"),
+            tenantId = UUID.randomUUID().toString(),
+            category = CryptoConsts.Categories.LEDGER,
+            alias = "alias1",
+            hsmAlias = null,
+            publicKey = UUID.randomUUID().toString().toByteArray(),
+            keyMaterial = UUID.randomUUID().toString().toByteArray(),
+            masterKeyAlias = masterKeyAlias,
+            externalId = null,
+            schemeCodeName = ECDSA_SECP256R1_CODE_NAME,
+            encodingVersion = 1,
+            hsmId = UUID.randomUUID().toString(),
+            timestamp = Instant.now(),
+            status = SigningKeyStatus.NORMAL
+        )
+        val repo = mock<SigningRepository> {
+            on { findKey(ArgumentMatchers.anyString()) } doReturn existingKey
+        }
+        val cryptoService = makeSoftCryptoService(signingRepository = repo)
+        Assertions.assertThrows(KeyAlreadyExistsException::class.java) {
+            cryptoService.generateKeyPair(
+                tenantId = UUID.randomUUID().toString(),
+                category = CryptoConsts.Categories.LEDGER,
+                alias = "alias1",
+                externalId = null,
+                scheme = schemeMetadata.findKeyScheme(ECDSA_SECP256R1_CODE_NAME),
+                context = emptyMap()
+            )
+        }
+        Assertions.assertThrows(KeyAlreadyExistsException::class.java) {
+            cryptoService.generateKeyPair(
+                tenantId = UUID.randomUUID().toString(),
+                category = CryptoConsts.Categories.LEDGER,
+                alias = "alias1",
+                externalId = UUID.randomUUID().toString(),
+                scheme = schemeMetadata.findKeyScheme(ECDSA_SECP256R1_CODE_NAME),
+                context = emptyMap()
+            )
+        }
+    }
+
+    @Test
+    fun `Should throw original when failing key generation with alias`() {
+        val exception = RuntimeException("")
+        val repo = mock<SigningRepository> {
+            on { findKey(ArgumentMatchers.anyString()) } doThrow exception
+        }
+        val cryptoService = makeSoftCryptoService(signingRepository = repo)
+        var thrown = Assertions.assertThrows(exception::class.java) {
+            cryptoService.generateKeyPair(
+                tenantId = UUID.randomUUID().toString(),
+                category = CryptoConsts.Categories.LEDGER,
+                alias = UUID.randomUUID().toString(),
+                scheme = schemeMetadata.findKeyScheme(ECDSA_SECP256R1_CODE_NAME),
+                context = emptyMap()
+            )
+        }
+        Assertions.assertSame(exception, thrown)
+        thrown = Assertions.assertThrows(exception::class.java) {
+            cryptoService.generateKeyPair(
+                tenantId = UUID.randomUUID().toString(),
+                category = CryptoConsts.Categories.LEDGER,
+                alias = UUID.randomUUID().toString(),
+                externalId = UUID.randomUUID().toString(),
+                scheme = schemeMetadata.findKeyScheme(ECDSA_SECP256R1_CODE_NAME),
+                context = emptyMap()
+            )
+        }
+        Assertions.assertSame(exception, thrown)
+        verify(repo, times(2)).findKey(ArgumentMatchers.anyString())
+    }
+
+
+    @Test
+    @Suppress("ComplexMethod", "MaxLineLength")
+    fun `Should save generated key with alias`() {
+        val generatedKey = GeneratedWrappedKey(
+            publicKey = generateKeyPair(schemeMetadata, ECDSA_SECP256R1_CODE_NAME).public,
+            keyMaterial = byteArrayOf(42),
+            encodingVersion = 1
+        )
+        val expectedAlias = UUID.randomUUID().toString()
+        val signingKeyInfo = mock<SigningKeyInfo> { on { id } doReturn ShortHash.of("1234567890AB") }
+        val repo = mock<SigningRepository> {
+            on { savePrivateKey(any()) } doReturn signingKeyInfo
+        }
+        val scheme = ECDSA_SECP256R1_TEMPLATE.makeScheme("BC")
+        val wrappingRepository = mock<WrappingRepository>() {
+            on { findKey(any()) } doReturn sampleWrappingKeyInfo
+        }
+        val association = mock<HSMAssociationInfo> {
+            on { masterKeyAlias }.thenReturn("root")
+        }
+        val service = object : SoftCryptoService(
+            wrappingRepositoryFactory = { wrappingRepository },
+            signingRepositoryFactory = { repo },
+            schemeMetadata = schemeMetadata,
+            defaultUnmanagedWrappingKeyName = "root",
+            unmanagedWrappingKeys = mapOf("root" to WrappingKeyImpl.generateWrappingKey(schemeMetadata)),
+            digestService = PlatformDigestServiceImpl(schemeMetadata),
+            wrappingKeyCache = null,
+            privateKeyCache = null,
+            keyPairGeneratorFactory = { algorithm: String, provider: Provider ->
+                KeyPairGenerator.getInstance(algorithm, provider)
+            },
+            wrappingKeyFactory = { WrappingKeyImpl.generateWrappingKey(it) },
+            signingKeyInfoCache = makeSigningKeyInfoCache(),
+            hsmStore = mock<HSMStore> {
+                on { findTenantAssociation(any(), any()) } doReturn association
+            }
+        ) {
+            override fun generateKeyPair(spec: KeyGenerationSpec, context: Map<String, String>): GeneratedWrappedKey =
+                generatedKey
+        }
+        var result = service.generateKeyPair(
+            tenantId = tenantId,
+            category = CryptoConsts.Categories.LEDGER,
+            scheme = scheme,
+            alias = expectedAlias
+        )
+        assertThat(generatedKey.publicKey).isEqualTo(result)
+        val expectedExternalId = UUID.randomUUID().toString()
+        result = service.generateKeyPair(
+            tenantId = tenantId,
+            category = CryptoConsts.Categories.LEDGER,
+            externalId = expectedExternalId,
+            scheme = scheme,
+            alias = expectedAlias
+        )
+        assertThat(generatedKey.publicKey).isEqualTo(result)
+        verify(repo, times(1)).savePrivateKey(
+            argThat {
+                key == generatedKey &&
+                        alias == expectedAlias &&
+                        externalId == null &&
+                        keyScheme == scheme
+            }
+        )
+        verify(repo, times(1)).savePrivateKey(
+            argThat {
+                key == generatedKey &&
+                        alias == expectedAlias &&
+                        externalId == expectedExternalId &&
+                        keyScheme == scheme
+            }
+        )
+    }
+
+    @Test
+    fun `repository can correctly looks up a signing key by short ids`() {
+        val hashA = ShortHash.of("0123456789AB")
+        val hashB = ShortHash.of("123456789ABC")
+        val keys = listOf(hashA, hashB)
+        val mockCachedKey = mock<SigningKeyInfo> { on { id } doReturn hashA }
+        val queryCap = argumentCaptor<Iterable<CacheKey>>()
+        val cache = mock<Cache<CacheKey, SigningKeyInfo>> {
+            on { getAllPresent(queryCap.capture()) } doReturn mapOf(
+                CacheKey("tenant", hashA) to mockCachedKey
+            )
+        }
+        val keyIdsCap = argumentCaptor<Set<ShortHash>>()
+        val signingKeyInfo = mock<SigningKeyInfo> { on { id } doReturn mock() }
+        val repo = mock<SigningRepository> {
+            on { lookupByPublicKeyShortHashes(keyIdsCap.capture()) } doReturn setOf(signingKeyInfo)
+        }
+
+        val cryptoService = makeSoftCryptoService(signingRepository = repo, signingKeyInfoCache = cache)
+        cryptoService.lookupSigningKeysByPublicKeyShortHash("tenant", keys)
+
+        val cacheKeys = setOf(CacheKey("tenant", hashA), CacheKey("tenant", hashB))
+        queryCap.allValues.single().forEach {
+            assertThat(it in cacheKeys)
+        }
+        assertThat(keyIdsCap.allValues.single()).isEqualTo(setOf(hashB))
+    }
+
+    @Test
+    fun `repository correctly looks up a signing key by full ids when needs both cache and database`() {
+        val hashA = SecureHashImpl(DigestAlgorithmName.SHA2_256.name, "0123456789AB".toByteArray())
+        val hashB = SecureHashImpl(DigestAlgorithmName.SHA2_256.name, "123456789ABC".toByteArray())
+        val shortA = ShortHash.of(hashA)
+        val shortB = ShortHash.of(hashB)
+        val keys = listOf(hashA, hashB)
+        val queryCap = argumentCaptor<Iterable<CacheKey>>()
+        val mockCachedKey = mock<SigningKeyInfo> { on { fullId } doReturn hashA }
+        val cache = mock<Cache<CacheKey, SigningKeyInfo>> {
+            on { getAllPresent(queryCap.capture()) } doReturn mapOf(
+                CacheKey("tenant", shortA) to mockCachedKey
+            )
+        }
+        val fullIdsCap = argumentCaptor<Set<SecureHash>>()
+        val signingKeyInfo = mock<SigningKeyInfo> { on { id } doReturn mock() }
+        val repo = mock<SigningRepository> {
+            on { lookupByPublicKeyHashes(fullIdsCap.capture()) } doReturn setOf(signingKeyInfo)
+        }
+
+        val cryptoService = makeSoftCryptoService(signingRepository = repo, signingKeyInfoCache = cache)
+        cryptoService.lookupSigningKeysByPublicKeyHashes("tenant", keys)
+
+        val cacheKeys = setOf(CacheKey("tenant", shortA), CacheKey("tenant", shortB))
+        queryCap.allValues.single().forEach {
+            assertThat(it in cacheKeys)
+        }
+        assertThat(fullIdsCap.allValues.single()).isEqualTo(setOf(hashB))
+    }
+
+
+    @ParameterizedTest
+    @CsvSource("0,false", "1,false", "2,false", "0,true", "1,true", "2,true")
+    fun `lookup returns requested keys from cache and db`(
+        keysInCache: Int,
+        longHashes: Boolean,
+    ) {
+        val shortHashCaptor = argumentCaptor<Set<ShortHash>>()
+        val hashCaptor = argumentCaptor<Set<SecureHash>>()
+        val mockDbResults = if (keysInCache == 0) setOf(signingKeyInfo0, signingKeyInfo1) else setOf(signingKeyInfo1)
+
+        val repo = if (longHashes) (mock<SigningRepository> {
+            on { lookupByPublicKeyHashes(hashCaptor.capture()) }.thenReturn(mockDbResults)
+        }) else (mock<SigningRepository> {
+            on { lookupByPublicKeyShortHashes(shortHashCaptor.capture()) }.thenReturn(mockDbResults)
+        })
+        val cache = makeCache()
+        var repoCount = 0
+        val cryptoService = SoftCryptoService(
+            wrappingRepositoryFactory = { mock<WrappingRepository>() },
+            signingRepositoryFactory = {
+                repoCount++
+                repo
+            },
+            schemeMetadata = schemeMetadata,
+            defaultUnmanagedWrappingKeyName = "root",
+            unmanagedWrappingKeys = mapOf("root" to mock<WrappingKey>()),
+            digestService = mockDigestService(),
+            wrappingKeyCache = null,
+            privateKeyCache = null,
+            keyPairGeneratorFactory = { algorithm: String, provider: Provider ->
+                KeyPairGenerator.getInstance(algorithm, provider)
+            },
+            signingKeyInfoCache = cache,
+            hsmStore = mockHsmStore,
+        )
+        if (keysInCache >= 1) populateCache(cache, shortKeyId0, fullKeyId0)
+        if (keysInCache >= 2) populateCache(cache, shortKeyId1, fullKeyId1)
+        fun doLookup() = if (longHashes)
+            cryptoService.lookupSigningKeysByPublicKeyHashes(tenantId, listOf(fullKeyId0, fullKeyId1))
+        else
+            cryptoService.lookupSigningKeysByPublicKeyShortHash(tenantId, listOf(shortKeyId0, shortKeyId1))
+
+        val r = doLookup()
+        Assertions.assertEquals(
+            setOf(fullKeyId0, fullKeyId1).map { it.toString() }.toSet(),
+            r.map { it.fullId.toString() }.toSet()
+        )
+        assertThat(repoCount).isEqualTo(if (keysInCache == 2) 0 else 1)
+        if (longHashes) {
+            if (keysInCache == 0) Assertions.assertEquals(setOf(fullKeyId0, fullKeyId1), hashCaptor.firstValue)
+            if (keysInCache == 1) Assertions.assertEquals(setOf(fullKeyId1), hashCaptor.firstValue)
+        } else {
+            if (keysInCache == 0) Assertions.assertEquals(setOf(shortKeyId0, shortKeyId1), shortHashCaptor.firstValue)
+            if (keysInCache == 1) Assertions.assertEquals(setOf(shortKeyId1), shortHashCaptor.firstValue)
+        }
+        // looking again should result in no more database access 
+        val r2 = doLookup()
+        assertThat(r).isEqualTo(r2)
+        assertThat(repoCount).isEqualTo(if (keysInCache == 2) 0 else 1)
+    }
+
+    @Test
+    fun `lookupSigningKeysByPublicKeyHashes will not return clashed keys on short key id`() {
+        val mockDbResults = setOf(signingKeyInfo0)
+        val requestedFullKeyId = parseSecureHash("SHA-256:ABC12345678911111111111112")
+        val hashCaptor = argumentCaptor<Set<SecureHash>>()
+        val cache = makeCache()
+        var repoCount = 0
+        val repo = mock<SigningRepository> {
+            on { lookupByPublicKeyHashes(hashCaptor.capture()) }.thenReturn(mockDbResults)
+        }
+        populateCache(cache, shortKeyId0, fullKeyId0)
+        val cryptoService = SoftCryptoService(
+            wrappingRepositoryFactory = { mock<WrappingRepository>() },
+            signingRepositoryFactory = {
+                repoCount++
+                repo
+            },
+            schemeMetadata = schemeMetadata,
+            defaultUnmanagedWrappingKeyName = "root",
+            unmanagedWrappingKeys = mapOf("root" to mock<WrappingKey>()),
+            digestService = mockDigestService(),
+            wrappingKeyCache = null,
+            privateKeyCache = null,
+            keyPairGeneratorFactory = { algorithm: String, provider: Provider ->
+                KeyPairGenerator.getInstance(algorithm, provider)
+            },
+            signingKeyInfoCache = cache,
+            hsmStore = mockHsmStore,
+        )
+        val lookedUpByFullKeyIdsKeys =
+            cryptoService.lookupSigningKeysByPublicKeyHashes(tenantId, listOf(requestedFullKeyId))
+        Assertions.assertEquals(0, lookedUpByFullKeyIdsKeys.size)
+
+        // since we could not find anything in the cache which is 
+        // suitable we should have gone to the repository
+        Assertions.assertEquals(1, repoCount)
+    }
+
+
+    private fun populateCache(
+        cache: Cache<CacheKey, SigningKeyInfo>,
+        shortKeyId: ShortHash,
+        fullKeyId: SecureHash,
+    ) {
+        cache.put(
+            CacheKey(tenantId, shortKeyId),
+            mock<SigningKeyInfo> {
+                on { fullId }.thenReturn(fullKeyId)
+                on { id }.thenReturn(shortKeyId)
+            }
+        )
+
+
+    }
+
+
+    @Test
+    fun `generateKeyPair throws KeyAlreadyExistsException if the key already exists`() {
+        val tenantId = "ID"
+        val category = "category"
+        val alias = "alias"
+        val scheme = mock<KeyScheme>()
+        val context = emptyMap<String, String>()
+        val key = mock<SigningKeyInfo>()
+        val repo = mock<SigningRepository>()
+
+        whenever(repo.findKey(alias)).doReturn(key)
+
+        val service = makeSoftCryptoService(signingRepository = repo, hsmStore = mockHsmStore)
+        assertThrows<KeyAlreadyExistsException> {
+            service.generateKeyPair(tenantId, category, alias, scheme = scheme, context = context)
+        }
+    }
 }

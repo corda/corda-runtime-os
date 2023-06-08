@@ -135,7 +135,6 @@ class CryptoOpsBusProcessorTests {
         tenantId = UUID.randomUUID().toString()
         factory = TestServicesFactory()
         processor = CryptoOpsBusProcessor(
-            factory.signingService,
             factory.cryptoService,
             configEvent.config.toCryptoConfig().retrying()
         )

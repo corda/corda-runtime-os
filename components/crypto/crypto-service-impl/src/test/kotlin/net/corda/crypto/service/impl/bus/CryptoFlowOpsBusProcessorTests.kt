@@ -9,6 +9,7 @@ import net.corda.crypto.client.CryptoOpsProxyClient
 import net.corda.crypto.config.impl.createDefaultCryptoConfig
 import net.corda.crypto.config.impl.retrying
 import net.corda.crypto.config.impl.toCryptoConfig
+import net.corda.crypto.core.CryptoService
 import net.corda.crypto.core.DigitalSignatureWithKey
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.core.fullId
@@ -17,7 +18,6 @@ import net.corda.crypto.flow.CryptoFlowOpsTransformer.Companion.REQUEST_TTL_KEY
 import net.corda.crypto.flow.CryptoFlowOpsTransformer.Companion.RESPONSE_TOPIC
 import net.corda.crypto.flow.impl.CryptoFlowOpsTransformerImpl
 import net.corda.crypto.core.SigningKeyInfo
-import net.corda.crypto.service.impl.SigningServiceImpl
 import net.corda.crypto.service.impl.infra.ActResult
 import net.corda.crypto.service.impl.infra.ActResultTimestamps
 import net.corda.crypto.service.impl.infra.act
@@ -64,52 +64,53 @@ import kotlin.test.assertTrue
     companion object {
         private val configEvent = ConfigChangedEvent(
             setOf(ConfigKeys.CRYPTO_CONFIG),
-            mapOf(ConfigKeys.CRYPTO_CONFIG to
-                    SmartConfigFactory.createWithoutSecurityServices().create(
-                        createDefaultCryptoConfig("pass", "salt")
-                )
+            mapOf(
+                ConfigKeys.CRYPTO_CONFIG to
+                        SmartConfigFactory.createWithoutSecurityServices().create(
+                            createDefaultCryptoConfig("pass", "salt")
+                        )
             )
         )
     }
 
-    private lateinit var tenantId: String
-    private lateinit var componentName: String
-    private lateinit var eventTopic: String
-    private lateinit var responseTopic: String
-    private lateinit var keyEncodingService: KeyEncodingService
-    private lateinit var cryptoOpsClient: CryptoOpsProxyClient
-    private lateinit var signingService: SigningServiceImpl
-    private lateinit var externalEventResponseFactory: ExternalEventResponseFactory
-    private lateinit var processor: CryptoFlowOpsBusProcessor
-    private lateinit var digestService: DigestService
+     private lateinit var tenantId: String
+     private lateinit var componentName: String
+     private lateinit var eventTopic: String
+     private lateinit var responseTopic: String
+     private lateinit var keyEncodingService: KeyEncodingService
+     private lateinit var cryptoOpsClient: CryptoOpsProxyClient
+     private lateinit var cryptoService: CryptoService
+     private lateinit var externalEventResponseFactory: ExternalEventResponseFactory
+     private lateinit var processor: CryptoFlowOpsBusProcessor
+     private lateinit var digestService: DigestService
 
-    private val flowOpsResponseArgumentCaptor = argumentCaptor<FlowOpsResponse>()
+     private val flowOpsResponseArgumentCaptor = argumentCaptor<FlowOpsResponse>()
 
-    private fun buildTransformer(ttl: Long = 123): CryptoFlowOpsTransformerImpl =
-        CryptoFlowOpsTransformerImpl(
-            serializer = mock(),
-            requestingComponent = componentName,
-            responseTopic = responseTopic,
-            keyEncodingService = keyEncodingService,
-            digestService = digestService,
-            requestValidityWindowSeconds = ttl
-        )
+     private fun buildTransformer(ttl: Long = 123): CryptoFlowOpsTransformerImpl =
+         CryptoFlowOpsTransformerImpl(
+             serializer = mock(),
+             requestingComponent = componentName,
+             responseTopic = responseTopic,
+             keyEncodingService = keyEncodingService,
+             digestService = digestService,
+             requestValidityWindowSeconds = ttl
+         )
 
-    private fun mockPublicKey(): PublicKey {
-        val serialisedPublicKey = Random(Instant.now().toEpochMilli()).nextBytes(256)
-        return mock {
-            on { encoded } doReturn serialisedPublicKey
-        }
-    }
+     private fun mockPublicKey(): PublicKey {
+         val serialisedPublicKey = Random(Instant.now().toEpochMilli()).nextBytes(256)
+         return mock {
+             on { encoded } doReturn serialisedPublicKey
+         }
+     }
 
-    private inline fun <reified REQUEST, reified RESPONSE> assertResponseContext(
-        result: ActResult<List<Record<*, *>>>,
-        flowOpsResponse: FlowOpsResponse,
-        ttl: Long = 123
-    ): RESPONSE {
-        assertNotNull(result.value)
+     private inline fun <reified REQUEST, reified RESPONSE> assertResponseContext(
+         result: ActResult<List<Record<*, *>>>,
+         flowOpsResponse: FlowOpsResponse,
+         ttl: Long = 123,
+     ): RESPONSE {
+         assertNotNull(result.value)
 //        assertEquals(1, result.value?.size)
-        assertInstanceOf(RESPONSE::class.java, flowOpsResponse.response)
+         assertInstanceOf(RESPONSE::class.java, flowOpsResponse.response)
         val context = flowOpsResponse.context
         val resp = flowOpsResponse.response as RESPONSE
         assertResponseContext<REQUEST>(result, context, ttl)
@@ -172,12 +173,12 @@ import kotlin.test.assertTrue
             on { decodePublicKey(any<ByteArray>()) } doReturn publicKeyMock
             on { encodeAsByteArray(any()) } doReturn byteArrayOf(42)
         }
-        signingService = mock<SigningServiceImpl> {
+        cryptoService = mock<CryptoService> {
             on { sign(any(), any(), any(), any(), any()) } doReturn signatureMock
             on { schemeMetadata } doReturn schemeMetadataMock
         }
         val retryingConfig = configEvent.config.toCryptoConfig().retrying()
-        processor = CryptoFlowOpsBusProcessor(mock(), signingService, externalEventResponseFactory, retryingConfig)
+        processor = CryptoFlowOpsBusProcessor(cryptoService, externalEventResponseFactory, retryingConfig)
         digestService = mock<DigestService>().also {
             fun capture() {
                 val bytesCaptor = argumentCaptor<ByteArray>()
@@ -285,11 +286,11 @@ import kotlin.test.assertTrue
              capturedTenantIds.add(it.getArgument(0))
              lookedUpSigningKeys.add(it.getArgument<List<SecureHash>>(1).map { it.toString() })
              myPublicKeys.map { mockSigningKeyInfo(it) }
-         }.whenever(signingService).lookupSigningKeysByPublicKeyHashes(any(), any())
+         }.whenever(cryptoService).lookupSigningKeysByPublicKeyHashes(any(), any())
          doAnswer {
              capturedTenantIds.add(it.getArgument(0))
              DigitalSignatureWithKey(myPublicKeys.first(), byteArrayOf(42))
-         }.whenever(signingService).sign(any(), any(), any(), any(), any())
+         }.whenever(cryptoService).sign(any(), any(), any(), any(), any())
 
          val transformer = buildTransformer()
          val flowOps = indices.map { flowOpCallbacks.get(it)(transformer, flowExternalEventContexts.get(it)) }
