@@ -90,7 +90,7 @@ internal class ReconcilerEventHandler<K : Any, V : Any>(
             coordinator.updateStatus(LifecycleStatus.DOWN)
         } finally {
             val reconciliationTime = Duration.ofNanos(reconciliationEndTime - startTime)
-            logger.info("Reconciliation completed in ${reconciliationTime.toMillis()} ms")
+            logger.info("Reconciliation $reconciliationOutcome in ${reconciliationTime.toMillis()} ms")
             CordaMetrics.Metric.Db.ReconciliationRunTime.builder()
                 .withTag(CordaMetrics.Tag.OperationName, name)
                 .withTag(CordaMetrics.Tag.OperationStatus, reconciliationOutcome)
