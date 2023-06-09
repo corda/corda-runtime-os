@@ -7,6 +7,7 @@ plugins {
 def constants = new Properties()
 file("$rootDir/../gradle.properties").withInputStream { InputStream input -> constants.load(input) }
 def bndVersion = constants.getProperty('bndVersion')
+def bndlibVersion = constants.getProperty('bndlibVersion')
 def artifactoryContextUrl = constants.getProperty('artifactoryContextUrl')
 def jibCoreVersion = constants.getProperty('jibCoreVersion')
 def internalPublishVersion = constants.getProperty('internalPublishVersion')
@@ -14,8 +15,20 @@ def gradleEnterpriseVersion = constants.getProperty('gradleEnterpriseVersion')
 def log4jVersion = constants.getProperty('log4jVersion')
 
 dependencies {
+    constraints {
+        implementation('biz.aQute.bnd:biz.aQute.bnd.embedded-repo') {
+            version {
+                require bndlibVersion
+            }
+        }
+        implementation('biz.aQute.bnd:biz.aQute.resolve') {
+            version {
+                require bndlibVersion
+            }
+        }
+    }
     implementation "biz.aQute.bnd:biz.aQute.bnd.gradle:$bndVersion"
-    implementation "biz.aQute.bnd:biz.aQute.bndlib:$bndVersion"
+    implementation "biz.aQute.bnd:biz.aQute.bndlib:$bndlibVersion"
 
     implementation "com.google.cloud.tools:jib-core:$jibCoreVersion"
     implementation "com.gradle:gradle-enterprise-gradle-plugin:$gradleEnterpriseVersion"
