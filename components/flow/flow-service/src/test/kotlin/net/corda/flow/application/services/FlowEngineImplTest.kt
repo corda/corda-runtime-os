@@ -28,7 +28,6 @@ class FlowEngineImplTest {
     private val flowStack = flowFiberService.flowStack
     private val sandboxDependencyInjector = flowFiberService.flowFiberExecutionContext.sandboxGroupContext.dependencyInjector
     private val flowFiber = flowFiberService.flowFiber
-    private val flowMetrics = mock<FlowMetrics>()
 
     private val flowStackItem = FlowStackItem.newBuilder()
         .setFlowName("flow-id")
@@ -79,7 +78,7 @@ class FlowEngineImplTest {
 
         // verify unordered calls.
         verify(sandboxDependencyInjector).injectServices(subFlow)
-        verify(flowStack).push(subFlow, flowMetrics)
+        verify(flowStack).push(subFlow, flowFiber.getExecutionContext().flowMetrics)
 
         // verify ordered calls
         inOrder(sandboxDependencyInjector, flowFiber, flowStack, subFlow) {
@@ -97,7 +96,7 @@ class FlowEngineImplTest {
 
         // verify unordered calls.
         verify(sandboxDependencyInjector).injectServices(subFlow)
-        verify(flowStack).push(subFlow, flowMetrics)
+        verify(flowStack).push(subFlow, flowFiber.getExecutionContext().flowMetrics)
 
         // verify ordered calls
         inOrder(sandboxDependencyInjector, flowFiber, flowStack, subFlow) {
@@ -125,7 +124,7 @@ class FlowEngineImplTest {
 
         // verify unordered calls.
         verify(sandboxDependencyInjector).injectServices(subFlow)
-        verify(flowStack).push(subFlow, flowMetrics)
+        verify(flowStack).push(subFlow, flowFiber.getExecutionContext().flowMetrics)
 
         // verify ordered calls
         inOrder(sandboxDependencyInjector, flowFiber, flowStack, subFlow) {
@@ -149,7 +148,7 @@ class FlowEngineImplTest {
 
         // verify unordered calls.
         verify(sandboxDependencyInjector).injectServices(subFlow)
-        verify(flowStack).push(subFlow, flowMetrics)
+        verify(flowStack).push(subFlow, flowFiber.getExecutionContext().flowMetrics)
 
         // verify ordered calls
         inOrder(sandboxDependencyInjector, flowFiber, flowStack, subFlow) {
