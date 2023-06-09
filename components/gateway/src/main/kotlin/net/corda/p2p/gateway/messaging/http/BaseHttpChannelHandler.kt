@@ -1,5 +1,6 @@
 package net.corda.p2p.gateway.messaging.http
 
+import io.micrometer.core.instrument.Counter
 import io.netty.buffer.ByteBuf
 import io.netty.channel.ChannelHandlerContext
 import io.netty.channel.SimpleChannelInboundHandler
@@ -7,12 +8,16 @@ import io.netty.handler.codec.http.HttpObject
 import io.netty.handler.ssl.SslHandshakeCompletionEvent
 import io.netty.handler.ssl.SslHandshakeTimeoutException
 import io.netty.handler.timeout.IdleStateEvent
+import net.corda.metrics.CordaMetrics
 import org.slf4j.Logger
+import java.net.InetSocketAddress
+import java.net.SocketAddress
 import java.nio.channels.ClosedChannelException
 import javax.net.ssl.SSLException
 
 abstract class BaseHttpChannelHandler(private val eventListener: HttpConnectionListener,
-                                      private val logger: Logger): SimpleChannelInboundHandler<HttpObject>() {
+                                      private val logger: Logger,
+                                      private val handlerType: HandlerType): SimpleChannelInboundHandler<HttpObject>() {
 
     private companion object {
         val messagesNotToLog = listOf(
@@ -65,8 +70,10 @@ abstract class BaseHttpChannelHandler(private val eventListener: HttpConnectionL
                 if (evt.isSuccess) {
                     val ch = ctx.channel()
                     logger.info("Handshake with ${ctx.channel().remoteAddress()} successful")
+                    getConnectionMetric(ctx.channel().remoteAddress(), "success").increment()
                     eventListener.onOpen(HttpConnectionEvent(ch))
                 } else {
+                    getConnectionMetric(ctx.channel().remoteAddress(), "failure").increment()
                     val cause = evt.cause()
                     when {
                         cause is ClosedChannelException -> logger.warn("SSL handshake closed early")
@@ -117,4 +124,24 @@ abstract class BaseHttpChannelHandler(private val eventListener: HttpConnectionL
         ctx.close()
     }
 
+    private fun getConnectionMetric(remoteAddress: SocketAddress, connectionResult: String): Counter {
+        val metricsBuilder = when(handlerType) {
+            HandlerType.SERVER -> CordaMetrics.Metric.InboundGatewayConnections.builder()
+            HandlerType.CLIENT -> CordaMetrics.Metric.OutboundGatewayConnections.builder()
+        }
+        metricsBuilder.withTag(CordaMetrics.Tag.ConnectionResult, connectionResult)
+        if (remoteAddress is InetSocketAddress) {
+            when(handlerType) {
+                HandlerType.SERVER -> metricsBuilder.withTag(CordaMetrics.Tag.SourceEndpoint, remoteAddress.hostString)
+                HandlerType.CLIENT -> metricsBuilder.withTag(CordaMetrics.Tag.DestinationEndpoint, remoteAddress.hostString)
+            }
+        }
+        return metricsBuilder.build()
+    }
+
+}
+
+enum class HandlerType {
+    CLIENT,
+    SERVER
 }

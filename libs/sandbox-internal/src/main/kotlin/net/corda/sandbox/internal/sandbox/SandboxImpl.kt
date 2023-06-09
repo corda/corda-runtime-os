@@ -2,6 +2,8 @@ package net.corda.sandbox.internal.sandbox
 
 import net.corda.sandbox.SandboxException
 import org.osgi.framework.Bundle
+import org.osgi.framework.Constants.SYSTEM_BUNDLE_ID
+import org.osgi.framework.Constants.SYSTEM_BUNDLE_SYMBOLICNAME
 import org.slf4j.LoggerFactory
 import java.util.Collections.unmodifiableSet
 import java.util.UUID
@@ -38,8 +40,14 @@ internal open class SandboxImpl(
     }
 
     override fun loadClass(className: String, bundleName: String): Class<*>? {
-        val bundle = allBundles.find { bundle ->
-            bundle.symbolicName == bundleName
+        val bundle = if (bundleName == SYSTEM_BUNDLE_SYMBOLICNAME) {
+            allBundles.find { bundle ->
+                bundle.bundleId == SYSTEM_BUNDLE_ID
+            }
+        } else {
+            allBundles.find { bundle ->
+                bundle.symbolicName == bundleName
+            }
         } ?: return null
 
         return try {

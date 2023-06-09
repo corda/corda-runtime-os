@@ -1,5 +1,11 @@
 package net.corda.sandbox.internal
 
+import java.util.Collections.unmodifiableMap
+import java.util.Collections.unmodifiableSortedMap
+import java.util.SortedMap
+import java.util.TreeMap
+import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
 import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.sandbox.SandboxException
 import net.corda.sandbox.SandboxGroup
@@ -12,11 +18,6 @@ import net.corda.sandbox.internal.sandbox.Sandbox
 import net.corda.sandbox.internal.utilities.BundleUtils
 import org.osgi.framework.Bundle
 import org.slf4j.LoggerFactory
-import java.util.Collections.unmodifiableSortedMap
-import java.util.SortedMap
-import java.util.TreeMap
-import java.util.UUID
-import java.util.concurrent.ConcurrentHashMap
 
 /**
  * An implementation of the [SandboxGroup] interface.
@@ -37,6 +38,17 @@ internal class SandboxGroupImpl(
 
     private companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+
+        private val primitiveTypes = unmodifiableMap(setOf(
+            Long::class.java,
+            Int::class.java,
+            Short::class.java,
+            Byte::class.java,
+            Char::class.java,
+            Boolean::class.java,
+            Double::class.java,
+            Float::class.java
+        ).associateBy(Class<*>::getName))
 
         private fun Throwable.withSuppressed(exceptions: Iterable<Throwable>): Throwable {
             exceptions.forEach(::addSuppressed)
@@ -91,6 +103,9 @@ internal class SandboxGroupImpl(
         }
     }
 
+    private val staticTagCache = ConcurrentHashMap<Class<*>, String>()
+    private val evolvableTagCache = ConcurrentHashMap<Class<*>, String>()
+
     override fun getStaticTag(klass: Class<*>) = staticTagCache.computeIfAbsent(klass) {
         getClassTag(klass, isStaticTag = true)
     }
@@ -99,9 +114,6 @@ internal class SandboxGroupImpl(
         getClassTag(klass, isStaticTag = false)
     }
 
-    private val staticTagCache = ConcurrentHashMap<Class<*>, String>()
-    private val evolvableTagCache = ConcurrentHashMap<Class<*>, String>()
-
     @Suppress("ComplexMethod", "NestedBlockDepth")
     override fun getClass(className: String, serialisedClassTag: String): Class<*> {
         val classTag = classTagFactory.deserialise(serialisedClassTag)
@@ -109,7 +121,7 @@ internal class SandboxGroupImpl(
         return when (classTag.classType) {
             ClassType.NonBundleClass -> {
                 try {
-                    bundleUtils.loadClassFromSystemBundle(className)
+                    primitiveTypes[className] ?: bundleUtils.loadClassFromSystemBundle(className)
                 } catch (e: ClassNotFoundException) {
                     throw SandboxException(
                         "Class $className was not from a bundle, and could not be found in the system classloader."
@@ -126,7 +138,7 @@ internal class SandboxGroupImpl(
                         cpkSandboxes.find {
                             it.cpkMetadata.cpkId.signerSummaryHash == classTag.cpkSignerSummaryHash &&
                                     (it.cpkMetadata.cpkId.name == classTag.cordaCpkCordappName || // CPK given names match or
-                                    it.mainBundle.symbolicName == classTag.classBundleName) // symbolic names of class bundle match
+                                            it.mainBundle.symbolicName == classTag.classBundleName) // symbolic names of class bundle match
                         }?.let { Pair(it, it.mainBundle.symbolicName) } // only load evolvable classes from the main bundle
                     }
                 } ?: throw SandboxException(

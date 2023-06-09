@@ -14,6 +14,8 @@
     javax.xml.stream;version=1.0.0,\
     javax.xml.stream.events;version=1.0.0,\
     javax.xml.stream.util;version=1.0.0,\
+    javax.annotation;version=3.0.0,\
+    javax.annotation.meta;version=3.0.0,\
     sun.security.x509
 
 -runproperties: \
@@ -24,6 +26,7 @@
     org.slf4j.simpleLogger.dateTimeFormat='yyyy-MM-dd HH:mm:ss:SSS Z'
 
 -runrequires: \
+    bnd.identity;id='net.corda.metrics',\
     bnd.identity;id='net.corda.flow-mapper-impl',\
     bnd.identity;id='${project.archivesBaseName}-tests',\
     bnd.identity;id='net.corda.flow-utilities',\

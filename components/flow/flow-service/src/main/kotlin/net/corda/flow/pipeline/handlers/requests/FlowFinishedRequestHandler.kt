@@ -44,6 +44,9 @@ class FlowFinishedRequestHandler @Activate constructor(
 
         log.info("Flow [${checkpoint.flowId}] completed successfully")
         checkpoint.markDeleted()
+
+        context.flowMetrics.flowCompletedSuccessfully()
+
         return context.copy(outputRecords = context.outputRecords + records)
     }
 }

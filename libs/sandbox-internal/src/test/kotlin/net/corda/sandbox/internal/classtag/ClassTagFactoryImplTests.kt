@@ -20,7 +20,6 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import org.mockito.kotlin.mock
 import java.util.UUID.randomUUID
 
 const val MOCK_BUNDLE_NAME = "mock_bundle_symbolic_name"
@@ -135,7 +134,7 @@ class ClassTagFactoryImplTests {
     @Test
     fun `throws if asked to create a class tag for a bundle with no symbolic name`() {
         assertThrows<SandboxException> {
-            classTagFactory.createSerialisedTag(false, mock(), null)
+            classTagFactory.createSerialisedTag(false, mockBundle(bundleSymbolicName = null), null)
         }
     }
 

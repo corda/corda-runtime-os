@@ -25,6 +25,7 @@ import net.corda.crypto.impl.getSigningData
 import net.corda.crypto.persistence.WrappingKeyInfo
 import net.corda.crypto.softhsm.WrappingRepositoryFactory
 import net.corda.crypto.softhsm.deriveSupportedSchemes
+import net.corda.metrics.CordaMetrics
 import net.corda.utilities.debug
 import net.corda.utilities.trace
 import org.slf4j.LoggerFactory
@@ -198,46 +199,56 @@ class SoftCryptoService(
     }
 
     private fun sign(spec: SigningSpec, privateKey: PrivateKey, data: ByteArray): ByteArray {
-        val signingData = spec.signatureSpec.getSigningData(digestService, data)
-        val signatureBytes = if (spec.signatureSpec is CustomSignatureSpec && spec.keyScheme.algorithmName == "RSA") {
-            // when the hash is precalculated and the key is RSA the actual sign operation is encryption
-            val cipher = Cipher.getInstance(spec.signatureSpec.signatureName, providerFor(spec.keyScheme))
-            cipher.init(Cipher.ENCRYPT_MODE, privateKey)
-            cipher.doFinal(signingData)
-        } else {
-            signatureInstances.withSignature(spec.keyScheme, spec.signatureSpec) { signature ->
-                spec.signatureSpec.getParamsSafely()?.let { params -> signature.setParameter(params) }
-                signature.initSign(privateKey, schemeMetadata.secureRandom)
-                signature.update(signingData)
-                signature.sign()
-            }
-        }
-        return signatureBytes
+        return CordaMetrics.Metric.SoftCryptoSignTimer
+            .builder()
+            .build()
+            .recordCallable {
+                val signingData = spec.signatureSpec.getSigningData(digestService, data)
+                val signatureBytes = if (spec.signatureSpec is CustomSignatureSpec && spec.keyScheme.algorithmName == "RSA") {
+                    // when the hash is precalculated and the key is RSA the actual sign operation is encryption
+                    val cipher = Cipher.getInstance(spec.signatureSpec.signatureName, providerFor(spec.keyScheme))
+                    cipher.init(Cipher.ENCRYPT_MODE, privateKey)
+                    cipher.doFinal(signingData)
+                } else {
+                    signatureInstances.withSignature(spec.keyScheme, spec.signatureSpec) { signature ->
+                        spec.signatureSpec.getParamsSafely()?.let { params -> signature.setParameter(params) }
+                        signature.initSign(privateKey, schemeMetadata.secureRandom)
+                        signature.update(signingData)
+                        signature.sign()
+                    }
+                }
+                signatureBytes
+            }!!
     }
 
     private fun providerFor(scheme: KeyScheme): Provider = schemeMetadata.providers.getValue(scheme.providerName)
 
     private fun obtainAndStoreWrappingKey(alias: String, tenantId: String): WrappingKey =
-        wrappingKeyCache?.getIfPresent(alias) ?: run {
-            // use IllegalArgumentException instead for not found?
-            val wrappingKeyInfo = wrappingRepositoryFactory.create(tenantId).use { it.findKey(alias) }
-                ?: throw IllegalStateException("Wrapping key with alias $alias not found")
-            require(wrappingKeyInfo.encodingVersion == WRAPPING_KEY_ENCODING_VERSION) {
-                "Unknown wrapping key encoding. Expected to be $WRAPPING_KEY_ENCODING_VERSION"
-            }
-            val parentKey = unmanagedWrappingKeys.get(wrappingKeyInfo.parentKeyAlias)
-            if (parentKey == null) {
-                throw IllegalStateException("Unknown parent key ${wrappingKeyInfo.parentKeyAlias} for $alias")
-            }
-            // TODO remove this restriction? Different levels of wrapping key could sensibly use different algorithms
-            require(parentKey.algorithm == wrappingKeyInfo.algorithmName) {
-                "Expected algorithm is ${parentKey.algorithm} but was ${wrappingKeyInfo.algorithmName}"
-            }
+        CordaMetrics.Metric.WrappingKeyCreationTimer.builder()
+            .withTag(CordaMetrics.Tag.VirtualNode, tenantId)
+            .build()
+            .recordCallable {
+                wrappingKeyCache?.getIfPresent(alias) ?: run {
+                    // use IllegalArgumentException instead for not found?
+                    val wrappingKeyInfo = wrappingRepositoryFactory.create(tenantId).use { it.findKey(alias) }
+                        ?: throw IllegalStateException("Wrapping key with alias $alias not found")
+                    require(wrappingKeyInfo.encodingVersion == WRAPPING_KEY_ENCODING_VERSION) {
+                        "Unknown wrapping key encoding. Expected to be $WRAPPING_KEY_ENCODING_VERSION"
+                    }
+                    val parentKey = unmanagedWrappingKeys.get(wrappingKeyInfo.parentKeyAlias)
+                    if (parentKey == null) {
+                        throw IllegalStateException("Unknown parent key ${wrappingKeyInfo.parentKeyAlias} for $alias")
+                    }
+                    // TODO remove this restriction? Different levels of wrapping key could sensibly use different algorithms
+                    require(parentKey.algorithm == wrappingKeyInfo.algorithmName) {
+                        "Expected algorithm is ${parentKey.algorithm} but was ${wrappingKeyInfo.algorithmName}"
+                    }
 
-            return parentKey.unwrapWrappingKey(wrappingKeyInfo.keyMaterial).also {
-                wrappingKeyCache?.put(alias, it)
-            }
-        }
+                    parentKey.unwrapWrappingKey(wrappingKeyInfo.keyMaterial).also {
+                        wrappingKeyCache?.put(alias, it)
+                    }
+                }
+            }!!
 
     private fun obtainAndStorePrivateKey(publicKey: PublicKey, spec: KeyMaterialSpec, tenantId: String): PrivateKey =
         privateKeyCache?.getIfPresent(publicKey) ?: obtainAndStoreWrappingKey(spec.wrappingKeyAlias, tenantId).unwrap(
