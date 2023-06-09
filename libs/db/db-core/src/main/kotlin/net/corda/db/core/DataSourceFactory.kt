@@ -30,7 +30,6 @@ interface DataSourceFactory {
      * @param validationTimeout maximum amount of time that a connection will be tested for aliveness. Default - 5 seconds.
      */
     @Suppress("LongParameterList")
-    // TODO I understand the default config now always comes from `SmartConfig` so perhaps all the below defaults should be removed now
     fun create(
         driverClass: String,
         jdbcUrl: String,

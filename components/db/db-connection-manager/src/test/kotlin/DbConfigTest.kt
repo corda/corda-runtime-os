@@ -103,6 +103,10 @@ class DbConfigTest {
             pass,
             maximumPoolSize = DB_POOL_MAX_SIZE,
             minimumPoolSize = null,
+            idleTimeout = durationOfSeconds(idleTimeout),
+            maxLifetime = durationOfSeconds(maxLifetime),
+            keepaliveTime = durationOfSeconds(keepaliveTime),
+            validationTimeout = durationOfSeconds(validationTimeout)
         )
     }
 
@@ -122,6 +126,10 @@ class DbConfigTest {
             pass,
             maximumPoolSize = DB_POOL_MAX_SIZE,
             minimumPoolSize = minPoolSize,
+            idleTimeout = durationOfSeconds(idleTimeout),
+            maxLifetime = durationOfSeconds(maxLifetime),
+            keepaliveTime = durationOfSeconds(keepaliveTime),
+            validationTimeout = durationOfSeconds(validationTimeout)
         )
     }
 
