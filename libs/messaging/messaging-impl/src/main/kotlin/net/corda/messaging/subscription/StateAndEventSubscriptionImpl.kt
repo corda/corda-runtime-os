@@ -58,7 +58,7 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
     // HACK - additional metrics for validation the ... metrics
     //  not too bothered about multi-threading issues, so simple ints
     private var maxTotal = 0.0
-    private var numberOfBatches = 0L
+    private var numberOfRecordings = 0L
     private var runningTotalMs = 0.0
 
     private val producer: CordaProducer
@@ -260,11 +260,11 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                     rebalanceOccurred = tryProcessBatchOfEvents(batch, trace)
                     trace.recordTotal()
                     trace.batchSize = batch.size
-                    numberOfBatches++
+                    numberOfRecordings++
                     runningTotalMs += trace.totalDuractionMs
                     maxTotal = max(trace.totalDuractionMs, maxTotal)
                     trace.maxTotal = maxTotal
-                    trace.avg = runningTotalMs
+                    trace.avg = runningTotalMs/numberOfRecordings
                     log.info(trace.toString())
                 }
                 keepProcessing = false // We only want to do one batch at a time
