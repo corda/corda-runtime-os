@@ -15,25 +15,24 @@ class BraveRecordTracing(tracing: Tracing) {
     private val tracingContextExtractor = tracing.propagation().extractor(recordHeaderGetter)
 
     fun nextSpan(record: Record<*, *>): Span {
-        return nextSpan(record.topic, record.headers)
+        return nextSpan(record.headers).apply { tag("topic.name", record.topic) }
     }
 
     fun nextSpan(record: EventLogRecord<*, *>): Span {
-        return nextSpan(record.topic, record.headers)
+        return nextSpan(record.headers).apply { tag("topic.name", record.topic) }
+    }
+
+    fun nextSpan(headers: List<Pair<String, String>>): Span {
+        val extracted = tracingContextExtractor.extract(headers)
+        return if (extracted == null) {
+            tracer.nextSpan()
+        } else {
+            tracer.nextSpan(extracted)
+        }
     }
 
     fun createBatchPublishTracing(clientId: String): BraveBatchPublishTracing {
         return BraveBatchPublishTracing(clientId, tracer, tracingContextExtractor)
-    }
-
-    private fun nextSpan(topic: String, headers: List<Pair<String, String>>): Span {
-        val extracted = tracingContextExtractor.extract(headers)
-        val span = tracer.nextSpan(extracted)
-        if (extracted.context() == null && !span.isNoop) {
-            span.tag("kafka.topic", topic)
-        }
-
-        return span
     }
 }
 

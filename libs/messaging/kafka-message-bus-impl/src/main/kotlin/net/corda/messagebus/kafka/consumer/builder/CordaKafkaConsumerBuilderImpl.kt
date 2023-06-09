@@ -1,7 +1,6 @@
 package net.corda.messagebus.kafka.consumer.builder
 
 import io.micrometer.core.instrument.binder.kafka.KafkaClientMetrics
-import java.util.Properties
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messagebus.api.configuration.ConsumerConfig
 import net.corda.messagebus.api.consumer.CordaConsumer
@@ -13,7 +12,6 @@ import net.corda.messagebus.kafka.serialization.CordaAvroDeserializerImpl
 import net.corda.messagebus.kafka.utils.KafkaRetryUtils.executeKafkaActionWithRetry
 import net.corda.messaging.api.chunking.MessagingChunkFactory
 import net.corda.schema.registry.AvroSchemaRegistry
-import net.corda.tracing.wrapWithTracingConsumer
 import org.apache.kafka.clients.consumer.KafkaConsumer
 import org.osgi.framework.FrameworkUtil
 import org.osgi.framework.wiring.BundleWiring
@@ -22,6 +20,7 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.util.Properties
 
 /**
  * Generate a Corda Kafka Consumer.
@@ -61,7 +60,7 @@ class CordaKafkaConsumerBuilderImpl @Activate constructor(
                 val consumer = createKafkaConsumer(kafkaProperties, keyDeserializer, valueDeserializer)
                 CordaKafkaConsumerImpl(
                     resolvedConfig,
-                    wrapWithTracingConsumer(consumer),
+                    consumer,
                     listener,
                     consumerChunkDeserializerService,
                     KafkaClientMetrics(consumer)

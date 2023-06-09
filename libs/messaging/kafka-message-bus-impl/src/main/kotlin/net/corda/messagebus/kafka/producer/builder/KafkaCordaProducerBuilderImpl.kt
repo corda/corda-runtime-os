@@ -1,7 +1,6 @@
 package net.corda.messagebus.kafka.producer.builder
 
 import io.micrometer.core.instrument.binder.kafka.KafkaClientMetrics
-import java.util.Properties
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messagebus.api.configuration.ProducerConfig
 import net.corda.messagebus.api.producer.CordaProducer
@@ -14,7 +13,6 @@ import net.corda.messaging.api.chunking.MessagingChunkFactory
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.schema.configuration.MessagingConfig
 import net.corda.schema.registry.AvroSchemaRegistry
-import net.corda.tracing.wrapWithTracingProducer
 import org.apache.kafka.clients.producer.KafkaProducer
 import org.osgi.framework.FrameworkUtil
 import org.osgi.framework.wiring.BundleWiring
@@ -23,6 +21,7 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.util.Properties
 
 /**
  * Builder for a Kafka Producer.
@@ -60,7 +59,7 @@ class KafkaCordaProducerBuilderImpl @Activate constructor(
                 val producerChunkService = messagingChunkFactory.createChunkSerializerService(maxAllowedMessageSize)
                 CordaKafkaProducerImpl(
                     resolvedConfig,
-                    wrapWithTracingProducer(producer),
+                    producer,
                     producerChunkService,
                     KafkaClientMetrics(producer)
                 )

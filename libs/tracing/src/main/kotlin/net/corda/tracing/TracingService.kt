@@ -2,8 +2,6 @@ package net.corda.tracing
 
 import net.corda.messaging.api.records.EventLogRecord
 import net.corda.messaging.api.records.Record
-import org.apache.kafka.clients.consumer.Consumer
-import org.apache.kafka.clients.producer.Producer
 import java.util.concurrent.ExecutorService
 import javax.servlet.Filter
 
@@ -17,13 +15,15 @@ interface TracingService : AutoCloseable {
 
     fun <R> nextSpan(operationName: String, record: EventLogRecord<*, *>, processingBlock: TraceContext.() -> R): R
 
+    fun <R> nextSpan(
+        operationName: String,
+        headers: List<Pair<String, String>>,
+        processingBlock: TraceContext.() -> R
+    ): R
+
     fun getOrCreateBatchPublishTracing(clientId: String): BatchPublishTracing
 
     fun wrapWithTracingExecutor(executor: ExecutorService): ExecutorService
-
-    fun <K, V> wrapWithTracingProducer(kafkaProducer: Producer<K, V>): Producer<K, V>
-
-    fun <K, V> wrapWithTracingConsumer(kafkaConsumer: Consumer<K, V>): Consumer<K, V>
 
     fun getTracedServletFilter(): Filter
 

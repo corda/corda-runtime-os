@@ -33,6 +33,7 @@ class BraveBatchPublishTracing(
             }.map { grp ->
                 tracer.nextSpan(grp.value.first())
                     .name("Send Batch - $clientId")
+                    .tag("send.client.id",clientId)
                     .tag("send.batch.size", grp.value.size.toString())
                     .tag("send.batch.parent.size", recordHeaders.size.toString())
                     .start()

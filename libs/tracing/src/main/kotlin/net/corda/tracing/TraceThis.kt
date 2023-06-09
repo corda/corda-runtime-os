@@ -8,8 +8,6 @@ import net.corda.messaging.api.records.EventLogRecord
 import net.corda.messaging.api.records.Record
 import net.corda.tracing.impl.BraveTracingService
 import net.corda.tracing.impl.TracingState
-import org.apache.kafka.clients.consumer.Consumer
-import org.apache.kafka.clients.producer.Producer
 import org.eclipse.jetty.servlet.FilterHolder
 import java.util.EnumSet
 import java.util.concurrent.ExecutorService
@@ -36,14 +34,6 @@ fun wrapWithTracingExecutor(executor: ExecutorService): ExecutorService {
     return TracingState.currentTraceService.wrapWithTracingExecutor(executor)
 }
 
-fun <K, V> wrapWithTracingConsumer(kafkaConsumer: Consumer<K, V>): Consumer<K, V> {
-    return TracingState.currentTraceService.wrapWithTracingConsumer(kafkaConsumer)
-}
-
-fun <K, V> wrapWithTracingProducer(kafkaProducer: Producer<K, V>): Producer<K, V> {
-    return TracingState.currentTraceService.wrapWithTracingProducer(kafkaProducer)
-}
-
 fun traceBatch(operationName: String): BatchRecordTracer {
     return TracingState.currentTraceService.traceBatch(operationName)
 }
@@ -52,7 +42,7 @@ fun <R> trace(operationName: String, processingBlock: TraceContext.() -> R): R {
     return TracingState.currentTraceService.nextSpan(operationName, processingBlock)
 }
 
-fun getOrCreateBatchPublishTracing(clientId:String):BatchPublishTracing{
+fun getOrCreateBatchPublishTracing(clientId: String): BatchPublishTracing {
     return TracingState.currentTraceService.getOrCreateBatchPublishTracing(clientId)
 }
 
@@ -60,6 +50,16 @@ fun addTraceContextToRecords(records: List<Record<*, *>>): List<Record<*, *>> = 
 
 fun addTraceContextToRecord(it: Record<*, *>): Record<out Any, out Any> {
     return it.copy(headers = TracingState.currentTraceService.addTraceHeaders(it.headers))
+}
+
+fun traceSend(
+    headers: List<Pair<String,String>>,
+    operationName: String,
+    processingBlock: TraceContext.() -> Unit
+) {
+    return TracingState.currentTraceService.nextSpan(operationName, headers) {
+        processingBlock(this)
+    }
 }
 
 fun traceEventProcessing(
