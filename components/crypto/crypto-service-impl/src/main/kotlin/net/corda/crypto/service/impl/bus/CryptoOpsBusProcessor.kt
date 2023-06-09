@@ -162,25 +162,15 @@ class CryptoOpsBusProcessor(
             return CryptoPublicKey(ByteBuffer.wrap(cryptoService.schemeMetadata.encodeAsByteArray(keyPair.publicKey)))
         }
 
-        fun handleGenerateFreshKeyRpcCommand(request: GenerateFreshKeyRpcCommand): CryptoPublicKey {
-            val publicKey = if (request.externalId.isNullOrBlank()) {
-                cryptoService.freshKey(
-                    tenantId = context.tenantId,
-                    category = request.category,
-                    scheme = cryptoService.schemeMetadata.findKeySchemeOrThrow(request.schemeCodeName),
-                    context = request.context.items.toMap()
-                )
-            } else {
-                cryptoService.freshKey(
-                    tenantId = context.tenantId,
-                    category = request.category,
-                    externalId = request.externalId,
-                    scheme = cryptoService.schemeMetadata.findKeySchemeOrThrow(request.schemeCodeName),
-                    context = request.context.items.toMap()
-                )
-            }
-            return CryptoPublicKey(ByteBuffer.wrap(cryptoService.schemeMetadata.encodeAsByteArray(publicKey)))
-        }
+        fun handleGenerateFreshKeyRpcCommand(request: GenerateFreshKeyRpcCommand): CryptoPublicKey =
+            cryptoService.generateKeyPair(
+                tenantId = context.tenantId,
+                category = request.category,
+                alias = null,
+                externalId = request.externalId,
+                scheme = cryptoService.schemeMetadata.findKeySchemeOrThrow(request.schemeCodeName),
+                context = request.context.items.toMap()
+            ).let { CryptoPublicKey(ByteBuffer.wrap(cryptoService.schemeMetadata.encodeAsByteArray(it.publicKey))) }
 
         fun handleGenerateWrappingKeyRpcCommand(request: GenerateWrappingKeyRpcCommand): CryptoNoContentValue {
             cryptoService.createWrappingKey(

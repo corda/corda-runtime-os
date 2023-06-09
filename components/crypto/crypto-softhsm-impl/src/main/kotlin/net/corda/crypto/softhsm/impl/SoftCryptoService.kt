@@ -453,38 +453,6 @@ open class SoftCryptoService(
         createWrappingKey(masterKeyAlias, failIfExists, context)
     }
 
-    // TODO remove me from interface? happy to let callers just pass in ull for alias and externalId
-    override fun freshKey(
-        tenantId: String,
-        category: String,
-        scheme: KeyScheme,
-        context: Map<String, String>,
-    ): PublicKey =
-        generateKeyPair(
-            tenantId = tenantId,
-            category = category,
-            alias = null,
-            externalId = null,
-            scheme = scheme,
-            context = context
-        ).publicKey
-
-    override fun freshKey(
-        tenantId: String,
-        category: String,
-        externalId: String,
-        scheme: KeyScheme,
-        context: Map<String, String>,
-    ): PublicKey =
-        generateKeyPair(
-            tenantId = tenantId,
-            category = category,
-            alias = null,
-            externalId = externalId,
-            scheme = scheme,
-            context = context
-        ).publicKey
-
     // TODO - group the sign methods
     override fun sign(
         tenantId: String,
