@@ -91,7 +91,7 @@ class DbConfigTest {
     }
 
     @Test
-    fun `when minimum pull size exsits, the createFromConfig will read it`() {
+    fun `when minimum pull size exists, the createFromConfig will read it`() {
         val configWithMin = minimalSmartConfig.withValue(
             DB_POOL_MIN_SIZE,
             ConfigValueFactory.fromAnyRef(minPoolSize),
