@@ -14,7 +14,7 @@ kubectl create ns $APP_SIMULATOR_DB_NAMESPACE
 helm upgrade --install -n $APP_SIMULATOR_DB_NAMESPACE db $APP_SIMULATOR_DB_CHART_DIR --render-subchart-notes --wait
 
 POSTGRES_ADMIN_PASSWORD=$(kubectl get secret --namespace $APP_SIMULATOR_DB_NAMESPACE db-postgresql -o jsonpath="{.data.postgres-password}" | base64 --decode)
-ps -ef | grep port-forward | grep svc/db-postgresql | grep 5432 | awk '{print $2}' | xargs kill
+ps -ef | grep port-forward | grep svc/db-postgresql | grep 5432 | awk '{print $2}' | xargs kill || echo ''
 kubectl port-forward --namespace $APP_SIMULATOR_DB_NAMESPACE svc/db-postgresql 5432:5432 &
 
 echo "Starting Receiver"

@@ -18,6 +18,7 @@ import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.app.simulator.AppSimulator.Companion.APP_SIMULATOR_SUBSYSTEM
 import net.corda.p2p.app.simulator.AppSimulatorTopicCreator.Companion.APP_RECEIVED_MESSAGES_TOPIC
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
+import net.corda.schema.configuration.MessagingConfig
 import org.slf4j.LoggerFactory
 import java.io.Closeable
 import java.time.Duration
@@ -45,6 +46,7 @@ class Receiver(private val subscriptionFactory: SubscriptionFactory,
                 INSTANCE_ID,
                 ConfigValueFactory.fromAnyRef("${commonConfig.parameters.instanceId}-$client".hashCode())
             )
+                .withValue(MessagingConfig.MAX_ALLOWED_MSG_SIZE, ConfigValueFactory.fromAnyRef(10000000))
             val messagingConfig = configMerger.getMessagingConfig(configWithInstanceId)
 
             val subscription = subscriptionFactory.createEventLogSubscription(subscriptionConfig,
