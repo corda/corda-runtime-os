@@ -169,7 +169,9 @@ internal class VirtualNodeDbFactoryImpl(
 
             // TODO support for CharArray passwords in SmartConfig
             val config = createDbConfig(
-                smartConfigFactory, user, password.concatToString(),
+                smartConfigFactory,
+                user,
+                password.concatToString(),
                 jdbcUrl = jdbcUrl,
                 maxPoolSize = maxPoolSize,
                 minPoolSize = minPoolSize,
