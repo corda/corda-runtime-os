@@ -5,10 +5,13 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import net.corda.metrics.CordaMetrics.Tag.MembershipGroup
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Condition
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.parallel.ResourceLock
 import kotlin.math.roundToLong
 
+@ResourceLock("corda-metrics")
 class CordaMetricsTest {
     private val meterSourceName = "Testing"
     private val registry = SimpleMeterRegistry()
@@ -20,10 +23,15 @@ class CordaMetricsTest {
     }
 
     @BeforeEach
-    @Test
     fun setup() {
-        CordaMetrics.registry.clear()
         CordaMetrics.configure(meterSourceName, registry)
+        assertThat(CordaMetrics.registry.registries).hasSize(1)
+    }
+
+    @AfterEach
+    fun done() {
+        CordaMetrics.registry.clear()
+        CordaMetrics.registry.remove(registry)
     }
 
     @Test
