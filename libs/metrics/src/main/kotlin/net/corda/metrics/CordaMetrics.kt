@@ -9,14 +9,16 @@ import io.micrometer.core.instrument.Metrics
 import io.micrometer.core.instrument.Tags
 import io.micrometer.core.instrument.Tag as micrometerTag
 import io.micrometer.core.instrument.Timer
-import io.micrometer.core.instrument.binder.system.DiskSpaceMetrics
+import io.micrometer.core.instrument.binder.BaseUnits
 import io.micrometer.core.instrument.composite.CompositeMeterRegistry
 import io.micrometer.core.instrument.config.MeterFilter
-import io.micrometer.core.instrument.noop.NoopMeter
+import io.micrometer.core.instrument.noop.NoopGauge
+import java.io.File
 import java.nio.file.FileSystems
 import java.nio.file.Path
 import java.util.function.Supplier
 import java.util.function.ToDoubleFunction
+import java.util.function.ToLongFunction
 
 
 object CordaMetrics {
@@ -558,12 +560,37 @@ object CordaMetrics {
             })
         }
 
-        class DiskSpace(path: Path) : Metric<NoopMeter>("", meter = { _, tags ->
-            if (path.fileSystem == FileSystems.getDefault()) {
-                DiskSpaceMetrics(path.toFile(), tags).bindTo(registry)
+        sealed class DiskSpace(private val name: String, private val path: Path) {
+            sealed class Value(
+                name: String,
+                description: String,
+                path: Path,
+                computation: ToLongFunction<File>
+            ): Metric<Gauge>(name, meter = { n, tags ->
+                if (path.fileSystem == FileSystems.getDefault()) {
+                    val file = path.toFile()
+                    Gauge.builder(n, file) { f -> computation.applyAsLong(f).toDouble() }
+                        .tags(Tags.concat(tags, "path", file.absolutePath))
+                        .description(description)
+                        .baseUnit(BaseUnits.BYTES)
+                        .strongReference(true)
+                        .register(registry)
+                } else {
+                    // The filesystem does not support Path.toFile()
+                    VoidGauge
+                }
+            })
+
+            inner class TotalSpace: Value("${name}.disk.total", "Total space for path", path, File::getTotalSpace)
+            inner class UsableSpace: Value("${name}.disk.free", "Usable space for path", path, File::getUsableSpace)
+
+            fun metrics(): List<Metric<Gauge>> {
+                return listOf(TotalSpace(), UsableSpace())
             }
-            VoidMeter
-        })
+
+            class Cpks(path: Path): DiskSpace("cpks", path)
+            class CpkChunks(path: Path): DiskSpace("cpk.chunks", path)
+        }
 
         object Db {
 
@@ -650,11 +677,6 @@ object CordaMetrics {
          * The flow event type this metric was recorded for.
          */
         FlowEvent("flow.event"),
-
-        /**
-         * Label for a type of content.
-         */
-        ContentsType("contents.type"),
 
         /**
          * The status of the operation. Can be used to indicate whether an operation was successful or failed.
@@ -848,7 +870,6 @@ private val Collection<*>.doubleSize: Double
     get() = size.toDouble()
 
 /**
- * This is a dummy "placeholder" meter.
+ * This is a dummy "placeholder" gauge.
  */
-@Suppress("NULLABILITY_MISMATCH_BASED_ON_JAVA_ANNOTATIONS")
-private object VoidMeter : NoopMeter(null)
+private object VoidGauge : NoopGauge(Meter.Id("", Tags.empty(), null, null, Meter.Type.GAUGE))
