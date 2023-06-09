@@ -32,40 +32,24 @@ fun DataSourceFactory.createFromConfig(config: SmartConfig): CloseableDataSource
     DbConfig.log.debug("Given configuration: ${config.toSafeConfig().root().render(ConfigRenderOptions.concise())}")
     DbConfig.log.debug("Fallback configuration: ${dbFallbackConfig.root().render(ConfigRenderOptions.concise())}")
 
-    // TODO all the following configuration reading should probably be changed to mandatory (i.e. throw if not found),
-    //  since, with the config defaulting process it should all be there.
     val driver = configWithFallback.getString(DatabaseConfig.JDBC_DRIVER)
     val jdbcUrl = configWithFallback.getString(DatabaseConfig.JDBC_URL)
     val maxPoolSize = configWithFallback.getInt(DatabaseConfig.DB_POOL_MAX_SIZE)
+    // The below `hashPath` takes care the case where DB_POOL_MIN_SIZE is null (and not if present, it will always be present)
     val minPoolSize = if(configWithFallback.hasPath(DatabaseConfig.DB_POOL_MIN_SIZE)) {
         configWithFallback.getInt(DatabaseConfig.DB_POOL_MIN_SIZE)
     } else {
         null
     }
 
-    val idleTimeout = if (configWithFallback.hasPath(DatabaseConfig.DB_POOL_IDLE_TIMEOUT)) {
-        configWithFallback.getInt(DatabaseConfig.DB_POOL_IDLE_TIMEOUT)
-    } else {
-        120
-    }.toLong().run(Duration::ofSeconds)
-
-    val maxLifetime = if (configWithFallback.hasPath(DatabaseConfig.DB_POOL_MAX_LIFETIME)) {
-        configWithFallback.getInt(DatabaseConfig.DB_POOL_MAX_LIFETIME)
-    } else {
-        1800
-    }.toLong().run(Duration::ofSeconds)
-
-    val keepaliveTime = if (configWithFallback.hasPath(DatabaseConfig.DB_POOL_KEEP_ALIVE_TIME)) {
-        configWithFallback.getInt(DatabaseConfig.DB_POOL_KEEP_ALIVE_TIME)
-    } else {
-        0
-    }.toLong().run(Duration::ofSeconds)
-
-    val validationTimeout = if (configWithFallback.hasPath(DatabaseConfig.DB_POOL_VALIDATION_TIMEOUT)) {
-        configWithFallback.getInt(DatabaseConfig.DB_POOL_VALIDATION_TIMEOUT)
-    } else {
-        5
-    }.toLong().run(Duration::ofSeconds)
+    val idleTimeout =
+        configWithFallback.getInt(DatabaseConfig.DB_POOL_IDLE_TIMEOUT).toLong().run(Duration::ofSeconds)
+    val maxLifetime =
+        configWithFallback.getInt(DatabaseConfig.DB_POOL_MAX_LIFETIME).toLong().run(Duration::ofSeconds)
+    val keepaliveTime =
+        configWithFallback.getInt(DatabaseConfig.DB_POOL_KEEP_ALIVE_TIME).toLong().run(Duration::ofSeconds)
+    val validationTimeout =
+        configWithFallback.getInt(DatabaseConfig.DB_POOL_VALIDATION_TIMEOUT).toLong().run(Duration::ofSeconds)
 
     val username = if (configWithFallback.hasPath(DatabaseConfig.DB_USER)) configWithFallback.getString(DatabaseConfig.DB_USER) else
         throw DBConfigurationException(
