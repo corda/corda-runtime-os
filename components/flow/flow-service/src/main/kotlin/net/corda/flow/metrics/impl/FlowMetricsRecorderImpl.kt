@@ -5,6 +5,7 @@ import net.corda.flow.state.FlowCheckpoint
 import net.corda.metrics.CordaMetrics
 import java.time.Duration
 
+@Suppress("TooManyFunctions")
 class FlowMetricsRecorderImpl(
     private val flowCheckpoint: FlowCheckpoint
 ) : FlowMetricsRecorder {

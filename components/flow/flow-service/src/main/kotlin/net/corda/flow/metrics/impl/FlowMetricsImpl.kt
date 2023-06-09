@@ -195,9 +195,9 @@ class FlowMetricsImpl(
 
     /**
      * @property flowProcessingStartTime The start time of the top level flow.
-     * @property flowStackItemMetricStates Includes all SubFlows as well as the top level flow, after the initial flow stack item has been added.
-     * Some metrics reference the flow class name from the flow start context in the scenario that the flow stack for the top level flow
-     * has not been added yet.
+     * @property flowStackItemMetricStates Includes all SubFlows as well as the top level flow, after the initial flow stack item has been
+     * added. Some metrics reference the flow class name from the flow start context in the scenario that the flow stack for the top level
+     * flow has not been added yet.
      */
     private class FlowMetricState {
         var flowProcessingStartTime: Long = 0
