@@ -11,6 +11,7 @@ import net.corda.libs.configuration.validation.getConfigurationDefaults
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.DatabaseConfig
 import org.slf4j.LoggerFactory
+import java.time.Duration
 import javax.sql.DataSource
 
 internal object DbConfig {
@@ -39,6 +40,11 @@ fun DataSourceFactory.createFromConfig(config: SmartConfig): CloseableDataSource
     } else {
         null
     }
+    val idleTimeout = configWithFallback.getInt(DatabaseConfig.DB_POOL_IDLE_TIMEOUT).toLong().run(Duration::ofSeconds)
+    val maxLifetime = configWithFallback.getInt(DatabaseConfig.DB_POOL_MAX_LIFETIME).toLong().run(Duration::ofSeconds)
+    val keepaliveTime = configWithFallback.getInt(DatabaseConfig.DB_POOL_KEEP_ALIVE_TIME).toLong().run(Duration::ofSeconds)
+    val validationTimeout =
+        configWithFallback.getInt(DatabaseConfig.DB_POOL_VALIDATION_TIMEOUT).toLong().run(Duration::ofSeconds)
 
     val username = if (configWithFallback.hasPath(DatabaseConfig.DB_USER)) configWithFallback.getString(DatabaseConfig.DB_USER) else
         throw DBConfigurationException(
@@ -59,6 +65,10 @@ fun DataSourceFactory.createFromConfig(config: SmartConfig): CloseableDataSource
         password = password,
         maximumPoolSize = maxPoolSize,
         minimumPoolSize = minPoolSize,
+        idleTimeout = idleTimeout,
+        maxLifetime = maxLifetime,
+        keepaliveTime = keepaliveTime,
+        validationTimeout = validationTimeout
     )
 }
 

@@ -8,7 +8,6 @@ import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.libs.configuration.secret.SecretsLookupService
 import net.corda.schema.configuration.DatabaseConfig
-import net.corda.schema.configuration.DatabaseConfig.DB_POOL_MIN_SIZE
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -16,6 +15,7 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
+import java.time.Duration
 
 class DbConfigTest {
     companion object {
@@ -38,6 +38,11 @@ class DbConfigTest {
     private val url = "url"
     private val poolsize = 987
     private val minPoolSize = 5
+    private val idleTimeout = 120
+    private val maxLifetime = 1800
+    private val keepaliveTime = 0
+    private val validationTimeout = 5
+
     private val fullConfig = """
         ${DatabaseConfig.JDBC_DRIVER}=$driver
         ${DatabaseConfig.JDBC_URL}=$url
@@ -45,6 +50,10 @@ class DbConfigTest {
         ${DatabaseConfig.DB_USER}=$user
         ${DatabaseConfig.DB_PASS}=$pass
         ${DatabaseConfig.DB_POOL_MIN_SIZE}=null
+        ${DatabaseConfig.DB_POOL_IDLE_TIMEOUT}=$idleTimeout
+        ${DatabaseConfig.DB_POOL_MAX_LIFETIME}=$maxLifetime
+        ${DatabaseConfig.DB_POOL_KEEP_ALIVE_TIME}=$keepaliveTime
+        ${DatabaseConfig.DB_POOL_VALIDATION_TIMEOUT}=$validationTimeout
     """.trimIndent()
     private val fullSmartConfig = SmartConfigImpl(
         ConfigFactory.parseString(fullConfig),
@@ -73,8 +82,15 @@ class DbConfigTest {
             password = pass,
             maximumPoolSize = poolsize,
             minimumPoolSize = null,
+            idleTimeout = durationOfSeconds(idleTimeout),
+            maxLifetime = durationOfSeconds(maxLifetime),
+            keepaliveTime = durationOfSeconds(keepaliveTime),
+            validationTimeout = durationOfSeconds(validationTimeout)
         )
     }
+
+    private fun durationOfSeconds(duration: Int) =
+        Duration.ofSeconds(duration.toLong())
 
     @Test
     fun `when default config return datasource`() {
@@ -93,7 +109,7 @@ class DbConfigTest {
     @Test
     fun `when minimum pull size exists, the createFromConfig will read it`() {
         val configWithMin = minimalSmartConfig.withValue(
-            DB_POOL_MIN_SIZE,
+            DatabaseConfig.DB_POOL_MIN_SIZE,
             ConfigValueFactory.fromAnyRef(minPoolSize),
         )
 
