@@ -18,6 +18,7 @@ import net.corda.v5.application.interop.facade.FacadeRequest
 import net.corda.v5.application.interop.facade.FacadeResponse
 import net.corda.v5.application.interop.parameters.TypedParameter
 import net.corda.v5.application.interop.parameters.TypedParameterValue
+import net.corda.v5.base.annotations.Suspendable
 
 object FacadeServerDispatchers {
 
@@ -57,6 +58,7 @@ class FacadeServerDispatcher(
     val target: Any
 ) : (FacadeRequest) -> FacadeResponse {
     @Suppress("SpreadOperator", "UNCHECKED_CAST")
+    @Suspendable
     override fun invoke(request: FacadeRequest): FacadeResponse {
         val boundMethod = binding.bindingFor(request.methodName) ?: throw FacadeMethodDispatchException(
             "No method on ${target.javaClass} is bound to request method ${request.methodName}"
@@ -70,6 +72,7 @@ class FacadeServerDispatcher(
     }
 
     @Suppress("UNCHECKED_CAST")
+    @Suspendable
     private fun getOutParameterValues(
         result: Any,
         outParameterBindings: FacadeOutParameterBindings
@@ -91,6 +94,7 @@ class FacadeServerDispatcher(
         }
     }
 
+    @Suspendable
     private fun buildMethodArguments(
         boundMethod: FacadeMethodBinding,
         request: FacadeRequest

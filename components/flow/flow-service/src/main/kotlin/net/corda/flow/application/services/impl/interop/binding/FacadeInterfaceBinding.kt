@@ -29,7 +29,9 @@ data class FacadeInterfaceBinding(
      * Obtain the [FacadeMethodBinding] for a given [Method] on the bound interface.
      * @param interfaceMethod The [Method] to get the binding for
      */
-    fun bindingFor(interfaceMethod: Method): FacadeMethodBinding? = bindingsByMethod[interfaceMethod]
+    fun bindingFor(interfaceMethod: Method): FacadeMethodBinding? = bindingsByMethod[interfaceMethod] ?:
+    bindingsByMethod.firstNotNullOfOrNull { (key,value) -> //TODO see CORE-14308
+        if (key.toString() == interfaceMethod.toString() ) value else null }
 
     /**
      * Utility method for writing tests in Kotlin - enables us to request the binding for a method by passing in a

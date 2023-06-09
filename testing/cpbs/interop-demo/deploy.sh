@@ -5,7 +5,7 @@ context=docker-desktop
 namespace=corda
 groupPolicyFile=GroupPolicy1
 cpi=demo1
-identity1=("C=GB, L=London, O=Alice" "C=GB, L=London, O=Simon" "C=GB, L=London, O=Notary")
+identity1=("C=GB, L=London, O=Alice" "C=GB, L=London, O=Bob" "C=GB, L=London, O=Notary")
 GROUP1_NOTARY_SERVICE_NAME="C=GB, L=London, O=Notary Service"
 
 SECONDS=0
@@ -56,7 +56,7 @@ kubectl port-forward --namespace "$namespace" deployment/corda-rest-worker 8888 
 rm -r register-member
 mkdir -p register-member
 cd corda-runtime-os
-./gradlew tools:plugins package:assemble tools:plugins:mgm:assemble
+./gradlew tools:plugins:package:assemble tools:plugins:mgm:assemble
 cd ../corda-cli-plugin-host
 echo "Step Group Policy for $cpi and Identity ${identity1[@]}"
 ./build/generatedScripts/corda-cli.sh mgm groupPolicy "--name=${identity1[@]:0:1}" "--name=${identity1[@]:1:1}" "--name=${identity1[@]:2:1}" --endpoint-protocol=1 --endpoint="http://localhost:1080" > "../register-member/$groupPolicyFile.json"
@@ -168,11 +168,14 @@ curl --insecure -u admin:admin -X GET "https://localhost:8888/api/v1/members/$SH
 
 groupPolicyFile=GroupPolicy2
 cpi=demo2
-identity1=("C=GB, L=London, O=Bob")
+identity1=("C=GB, L=London, O=Alice2" "C=GB, L=London, O=Bob2" "C=US, L=Chicago, O=Notary")
+GROUP2_NOTARY_SERVICE_NAME="C=US, L=Chicago, O=Notary Service"
+
+
 echo "Step Group Policy for $cpi and Identity ${identity1[@]:0:1}"
 printf "\n"
 cd ../corda-cli-plugin-host
-./build/generatedScripts/corda-cli.sh mgm groupPolicy "--name=${identity1[@]:0:1}" --endpoint-protocol=1 --endpoint="http://localhost:1080" > "../register-member/$groupPolicyFile.json"
+./build/generatedScripts/corda-cli.sh mgm groupPolicy "--name=${identity1[@]:0:1}" "--name=${identity1[@]:1:1}" "--name=${identity1[@]:2:1}" --endpoint-protocol=1 --endpoint="http://localhost:1080" > "../register-member/$groupPolicyFile.json"
 
 echo "Installing cpi for group $cpi"
 printf "\n"
@@ -197,7 +200,7 @@ sleep 10
 CPI_CHECKSUM=$(curl --insecure -u admin:admin "https://localhost:8888/api/v1/cpi/status/$CPI_ID" | jq -r .cpiFileChecksum)
 echo "CPI_CHECKSUM=$CPI_CHECKSUM"
 echo "Installing Identities of group $cpi"
-for VARIABLE in "${identity1[@]}"
+for VARIABLE in "${identity1[@]:0:2}"
 do
     echo "Installing identity $VARIABLE"
     REQUEST_BODY=$(printf '{ "request": { "cpiFileChecksum": "%s", "x500Name": "%s" }}' "$CPI_CHECKSUM" "$VARIABLE")
@@ -211,6 +214,43 @@ do
 done
 BOB_HASH="$SHORT"
 printf "\nBOB_HASH=%s\n" "$BOB_HASH"
+
+
+
+
+VARIABLE="${identity1[@]:2:1}"
+echo "Installing notary=$VARIABLE, service name=$GROUP2_NOTARY_SERVICE_NAME"
+../corda-cli-plugin-host/build/generatedScripts/corda-cli.sh package create-cpi \
+    --cpb notary-plugin-non-validating-server-5.1.0-INTEROP.0-SNAPSHOT-package.cpb \
+    --group-policy "$groupPolicyFile.json" \
+    --cpi-name "notary$cpi" \
+    --cpi-version "1.0.0.0-SNAPSHOT" \
+    --file "notary$cpi.cpi" \
+    --keystore signingkeys.pfx \
+    --storepass "keystore password" \
+    --key "signing key 1"
+
+NOTARY_CPI_ID=$(curl --insecure -u admin:admin -F "upload=@./notary$cpi.cpi" https://localhost:8888/api/v1/cpi/ | jq -r .id)
+sleep 20
+echo "CPI_ID FOR notary$cpi=$NOTARY_CPI_ID"
+printf "\n"
+NOTARY_CPI_CHECKSUM=$(curl --insecure -u admin:admin "https://localhost:8888/api/v1/cpi/status/$NOTARY_CPI_ID" | jq -r .cpiFileChecksum)
+echo "NOTARY_CPI_CHECKSUM=$NOTARY_CPI_CHECKSUM"
+
+printf "\n"
+REQUEST_BODY=$(printf '{ "request": { "cpiFileChecksum": "%s", "x500Name": "%s" }}' "$NOTARY_CPI_CHECKSUM" "$VARIABLE")
+REQUEST_ID=$(curl --insecure -u admin:admin -d "$REQUEST_BODY" https://localhost:8888/api/v1/virtualnode | jq -r '.requestId')
+echo "REQUEST_ID=$REQUEST_ID"
+printf "\n"
+sleep 20
+SHORT=$(curl --insecure -u admin:admin -X GET "https://localhost:8888/api/v1/virtualnode/status/$REQUEST_ID" -H 'accept: application/json' | jq -r .resourceId)
+echo "$VARIABLE=$SHORT"
+printf "\n"
+curl --insecure -u admin:admin -d '{ "memberRegistrationRequest": { "context": { "corda.key.scheme": "CORDA.ECDSA.SECP256R1", "corda.roles.0" : "notary", "corda.notary.service.name" : "'"$GROUP2_NOTARY_SERVICE_NAME"'", "corda.notary.service.flow.protocol.name" : "com.r3.corda.notary.plugin.nonvalidating", "corda.notary.service.flow.protocol.version.0": "1" } } }' "https://localhost:8888/api/v1/membership/$SHORT"
+curl --insecure -u admin:admin -X GET "https://localhost:8888/api/v1/members/$SHORT"
+
+
+
 
 duration="$SECONDS"
 printf "\n$(($duration / 60)) minutes and $(($duration % 60)) seconds elapsed.\n"
@@ -226,5 +266,24 @@ curl --insecure -u admin:admin -X POST \
 }}}'
 printf "\n"
 sleep 15
+curl_result=$(curl --insecure -u admin:admin -X GET "https://localhost:8888/api/v1/flow/$ALICE_HASH/$clientRequestId" -H 'accept: application/json')
+echo $curl_result
+printf "\n"
+
+STATE_ID=$(echo $curl_result | jq -r .flowResult | jq .stateId | tr -d '"')
+clientRequestId="$RANDOM"
+curl --insecure -u admin:admin -X POST \
+  "https://localhost:8888/api/v1/flow/$ALICE_HASH" \
+  -H 'accept: application/json' -H 'Content-Type: application/json' \
+  -d '{"clientRequestId": "'$clientRequestId'",
+  "flowClassName": "com.r3.corda.demo.interop.tokens.workflows.interop.SimpleReserveTokensFlowV2",
+  "requestBody": {
+  "interopGroupId" : "3dfc0aae-be7c-44c2-aa4f-4d0d7145cf08",
+  "facadeId" : "org.corda.interop/platform/tokens/v2.0",
+  "payload" : "'"$STATE_ID"'",
+  "alias" : "C=GB, L=London, O=Alice2 Alias"
+}}}'
+printf "\n"
+sleep 10
 curl --insecure -u admin:admin -X GET "https://localhost:8888/api/v1/flow/$ALICE_HASH/$clientRequestId" -H 'accept: application/json'
 printf "\n"
