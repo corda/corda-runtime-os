@@ -6,6 +6,7 @@ import net.corda.flow.application.services.impl.FlowEngineImpl
 import net.corda.flow.application.versioning.impl.RESET_VERSIONING_MARKER
 import net.corda.flow.application.versioning.impl.VERSIONING_PROPERTY_NAME
 import net.corda.flow.fiber.FlowIORequest
+import net.corda.flow.pipeline.metrics.FlowMetrics
 import net.corda.flow.utils.mutableKeyValuePairList
 import net.corda.v5.application.flows.SubFlow
 import net.corda.v5.base.types.MemberX500Name
@@ -27,6 +28,7 @@ class FlowEngineImplTest {
     private val flowStack = flowFiberService.flowStack
     private val sandboxDependencyInjector = flowFiberService.flowFiberExecutionContext.sandboxGroupContext.dependencyInjector
     private val flowFiber = flowFiberService.flowFiber
+    private val flowMetrics = mock<FlowMetrics>()
 
     private val flowStackItem = FlowStackItem.newBuilder()
         .setFlowName("flow-id")
@@ -77,7 +79,7 @@ class FlowEngineImplTest {
 
         // verify unordered calls.
         verify(sandboxDependencyInjector).injectServices(subFlow)
-        verify(flowStack).push(subFlow)
+        verify(flowStack).push(subFlow, flowMetrics)
 
         // verify ordered calls
         inOrder(sandboxDependencyInjector, flowFiber, flowStack, subFlow) {
@@ -95,7 +97,7 @@ class FlowEngineImplTest {
 
         // verify unordered calls.
         verify(sandboxDependencyInjector).injectServices(subFlow)
-        verify(flowStack).push(subFlow)
+        verify(flowStack).push(subFlow, flowMetrics)
 
         // verify ordered calls
         inOrder(sandboxDependencyInjector, flowFiber, flowStack, subFlow) {
@@ -123,7 +125,7 @@ class FlowEngineImplTest {
 
         // verify unordered calls.
         verify(sandboxDependencyInjector).injectServices(subFlow)
-        verify(flowStack).push(subFlow)
+        verify(flowStack).push(subFlow, flowMetrics)
 
         // verify ordered calls
         inOrder(sandboxDependencyInjector, flowFiber, flowStack, subFlow) {
@@ -147,7 +149,7 @@ class FlowEngineImplTest {
 
         // verify unordered calls.
         verify(sandboxDependencyInjector).injectServices(subFlow)
-        verify(flowStack).push(subFlow)
+        verify(flowStack).push(subFlow, flowMetrics)
 
         // verify ordered calls
         inOrder(sandboxDependencyInjector, flowFiber, flowStack, subFlow) {
