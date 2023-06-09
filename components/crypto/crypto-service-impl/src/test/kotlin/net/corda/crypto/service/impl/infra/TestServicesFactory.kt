@@ -155,14 +155,9 @@ class TestServicesFactory {
     val secondLevelWrappingKeyWrapped = rootWrappingKey.wrap(secondLevelWrappingKey)
     val secondLevelWrappingKeyInfo = WrappingKeyInfo(1, "AES", secondLevelWrappingKeyWrapped, 1, "root")
     val wrappingRepository = TestWrappingRepository(secondLevelWrappingKeyInfo)
-
     val association = mock<HSMAssociationInfo> {
         on { masterKeyAlias }.thenReturn("second")
     }
-    val mockHsmStore = mock<HSMStore> {
-        on { findTenantAssociation(any(), any()) } doReturn association
-    }
-
     val cryptoService: CryptoService by lazy {
         SoftCryptoService(
             wrappingRepositoryFactory = { wrappingRepository },
@@ -182,7 +177,11 @@ class TestServicesFactory {
                 signingRepository
             },
             signingKeyInfoCache = mock(),
-            hsmStore = mockHsmStore,
+            // would like to use makeHSMStore in the crypto-softhsm-impl project but
+            // don't want the extra dependency
+            hsmStore = mock<HSMStore> {
+                on { findTenantAssociation(any(), any()) } doReturn association
+            },
         )
     }
 
