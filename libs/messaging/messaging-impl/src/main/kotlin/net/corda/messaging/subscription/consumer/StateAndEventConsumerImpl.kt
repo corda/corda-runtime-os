@@ -63,10 +63,10 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
 
     // a map of gauges, each one recording the number of states currently in memory for each partition
     private val inMemoryStatesPerPartitionGaugeCache = ConcurrentHashMap<Int, Gauge>()
-    private fun createGaugesForInMemoryStates(partitions: Collection<Int>) {
+    private fun createGaugesForInMemoryStates(partitions: List<Int>) {
         partitions.forEach { partition ->
             inMemoryStatesPerPartitionGaugeCache.computeIfAbsent(partition) {
-                CordaMetrics.Metric.Messaging.ConsumerInMemoryStore { currentStates[partition]?.size ?: 0 }
+                CordaMetrics.Metric.Messaging.StateAndEventConsumerInMemoryStore { currentStates[partition]?.size ?: 0 }
                     .builder()
                     .withTag(CordaMetrics.Tag.MessagePatternType, MetricsConstants.STATE_AND_EVENT_PATTERN_TYPE)
                     .withTag(CordaMetrics.Tag.MessagePatternClientId, config.clientId)

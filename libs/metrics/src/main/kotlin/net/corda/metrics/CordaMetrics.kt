@@ -639,6 +639,14 @@ object CordaMetrics {
             )
 
             /**
+             * Measure for the number of in-memory states held in state and event consumers.
+             */
+            class StateAndEventConsumerInMemoryStore(computation: Supplier<Number>) : ComputedValue<Nothing>(
+                "consumer.stateandevent.inmemory.store",
+                computation
+            )
+
+            /**
              * Counter for the number of records a consumer has consumed.
              */
             object ConsumerRecordsConsumedCount : Metric<DistributionSummary>("consumer.records.consumed", Metrics::summary)
