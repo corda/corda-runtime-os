@@ -620,18 +620,18 @@ object CordaMetrics {
             object ProducerChunksGenerated : Metric<DistributionSummary>("producer.chunks.generated", Metrics::summary)
 
             /**
-             * Measure for the number of in-memory states held in consumer messaging patterns.
+             * Measure for the number of in-memory states held in compacted consumers.
              */
-            class ConsumerInMemoryStore(computation: Supplier<Number>) : ComputedValue<Nothing>(
-                "consumer.inmemory.store",
+            class CompactedConsumerInMemoryStore(computation: Supplier<Number>) : ComputedValue<Nothing>(
+                "consumer.compacted.inmemory.store",
                 computation
             )
 
             /**
-             * Measure for the number of in-memory states held in state and event consumers.
+             * Measure for the number of in-memory states held in consumers with partitions.
              */
-            class StateAndEventConsumerInMemoryStore(computation: Supplier<Number>) : ComputedValue<Nothing>(
-                "consumer.stateandevent.inmemory.store",
+            class PartitionedConsumerInMemoryStore(computation: Supplier<Number>) : ComputedValue<Nothing>(
+                "consumer.partitioned.inmemory.store",
                 computation
             )
 
