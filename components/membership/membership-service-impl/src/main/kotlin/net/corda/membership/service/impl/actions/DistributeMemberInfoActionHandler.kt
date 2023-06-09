@@ -110,16 +110,16 @@ class DistributeMemberInfoActionHandler(
             }
         }
 
-        val allActiveMembers = groupReader.lookup()
-        val allActiveMembersExcludingMgm = allActiveMembers.filterNot { it.isMgm }
+        val allNonPendingMembers = groupReader.lookup(ACTIVE_OR_SUSPENDED)
+        val allNonPendingMembersExcludingMgm = allNonPendingMembers.filterNot { it.isMgm }
         //If the updated member is suspended then we only send its own member info to itself (so it can tell it has been suspended).
         val membersToDistributeToUpdatedMember = if (updatedMemberInfo.status == MEMBER_STATUS_SUSPENDED) {
             listOf(updatedMemberInfo)
         } else {
-            allActiveMembersExcludingMgm
+            allNonPendingMembersExcludingMgm
         }
 
-        val mgm = allActiveMembers.first { it.isMgm }
+        val mgm = allNonPendingMembers.first { it.isMgm }
 
         val membersSignaturesQuery = membershipQueryClient.queryMembersSignatures(
             mgm.holdingIdentity,
@@ -134,7 +134,7 @@ class DistributeMemberInfoActionHandler(
         }
         val membershipPackageFactory = createMembershipPackageFactory(mgm, membersToDistributeToUpdatedMember, membersSignatures)
 
-        // Send all approved members from the same group to the newly approved member over P2P
+        // Send all non-pending members from the same group to the newly approved member over P2P
         val membersToDistributeToUpdatedMemberPackage = try {
             membershipPackageFactory(membersToDistributeToUpdatedMember, groupParameters)
         } catch (except: CordaRuntimeException) {
@@ -151,7 +151,7 @@ class DistributeMemberInfoActionHandler(
             filter = ACTIVE_OR_SUSPENDED
         )
 
-        // Send the newly approved member to all other members in the same group over P2P
+        // Send the newly approved member to all other active members in the same group over P2P
         val memberPackage = try {
             membershipPackageFactory(listOf(updatedMemberInfo), groupParameters)
         } catch (except: CordaRuntimeException) {
@@ -161,8 +161,8 @@ class DistributeMemberInfoActionHandler(
             }
         }
 
-        val updatedMemberToAllMembers = allActiveMembersExcludingMgm.filter {
-            it.holdingIdentity != updatedMember.toCorda()
+        val updatedMemberToAllActiveMembers = allNonPendingMembersExcludingMgm.filter {
+            it.holdingIdentity != updatedMember.toCorda() && it.isActive
         }.map { memberToSendUpdateTo ->
             p2pRecordsFactory.createAuthenticatedMessageRecord(
                 source = approvedBy,
@@ -172,7 +172,7 @@ class DistributeMemberInfoActionHandler(
             )
         }
 
-        return updatedMemberToAllMembers + allMembersToUpdatedMember
+        return updatedMemberToAllActiveMembers + allMembersToUpdatedMember
     }
 
     private fun recordToRequeueDistribution(
