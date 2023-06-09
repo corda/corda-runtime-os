@@ -9,8 +9,8 @@ import net.corda.cpk.read.impl.services.persistence.CpkChunksFileManagerImpl.Com
 import net.corda.crypto.core.parseSecureHash
 import net.corda.crypto.core.toCorda
 import net.corda.data.chunking.CpkChunkId
-import net.corda.utilities.inputStream
-import net.corda.v5.crypto.SecureHash
+import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Condition
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -20,7 +20,10 @@ import java.nio.ByteBuffer
 import java.nio.file.FileSystem
 import java.nio.file.Files
 import java.nio.file.Path
-import java.nio.file.StandardOpenOption
+import java.nio.file.StandardOpenOption.CREATE_NEW
+import java.nio.file.StandardOpenOption.WRITE
+import java.nio.file.attribute.PosixFilePermission
+import java.nio.file.attribute.PosixFilePermission.OWNER_READ
 
 class CpkChunksFileManagerImplTest {
     private lateinit var commonCpkCacheDir: Path
@@ -34,8 +37,11 @@ class CpkChunksFileManagerImplTest {
 
     @BeforeEach
     fun setUp() {
-        fs = Jimfs.newFileSystem(Configuration.unix())
-        commonCpkCacheDir = fs.getPath("/cpks").apply { Files.createDirectories(this) }
+        val posix = Configuration.unix().toBuilder()
+            .setAttributeViews("basic", "posix", "dos")
+            .build()
+        fs = Jimfs.newFileSystem(posix)
+        commonCpkCacheDir = fs.getPath("/cpks").apply(Files::createDirectories)
         cpkChunksFileManagerImpl = CpkChunksFileManagerImpl(commonCpkCacheDir)
     }
 
@@ -45,8 +51,8 @@ class CpkChunksFileManagerImplTest {
     }
 
     private fun CpkChunkId.toPath(): Path {
-        val cpkXDir = commonCpkCacheDir.resolve(fs.getPath(this.cpkChecksum.toCorda().toCpkDirName()))
-        if (!Files.exists(cpkXDir)) {
+        val cpkXDir = commonCpkCacheDir.resolve(fs.getPath(cpkChecksum.toCorda().toCpkDirName()))
+        if (!Files.isDirectory(cpkXDir)) {
             Files.createDirectory(cpkXDir)
         }
         val fileName = this.toFileName()
@@ -55,26 +61,14 @@ class CpkChunksFileManagerImplTest {
 
     private fun CpkChunkId.toDummyFile(): Path {
         val filePath = toPath()
-        Files.newByteChannel(filePath, StandardOpenOption.WRITE, StandardOpenOption.CREATE_NEW).use {
-            it.position(0)
-            it.write(ByteBuffer.wrap(ByteArray(0)))
+        Files.newByteChannel(filePath, WRITE, CREATE_NEW).use { channel ->
+            channel.write(ByteBuffer.allocate(0))
         }
         return filePath
     }
 
-    private fun cpkChunkFileExists(chunkId: CpkChunkId) =
-        Files.exists(chunkId.toPath())
-
-    private fun getCpkChunkContent(chunkId: CpkChunkId): ByteArray {
-        val filePath = chunkId.toPath()
-        val inStream = filePath.inputStream()
-        return inStream.readAllBytes()
-    }
-
-    private fun getAssembledCpkContent(checksum: SecureHash): ByteArray {
-        val filePath = commonCpkCacheDir.resolve(checksum.toCpkDirName()).resolve(checksum.toCpkFileName())
-        val inStream = filePath.inputStream()
-        return inStream.readAllBytes()
+    private fun posixPermissionsExactly(expected: Set<PosixFilePermission>): Condition<Path> {
+        return Condition({ actual -> Files.getPosixFilePermissions(actual) == expected }, "POSIX permissions %s", expected)
     }
 
     @Test
@@ -103,10 +97,10 @@ class CpkChunksFileManagerImplTest {
         val (cpkChunkId, chunk) =
             Helpers.dummyCpkChunkIdToChunk(parseSecureHash(DUMMY_HASH), 0, parseSecureHash(DUMMY_HASH), bytes)
         cpkChunksFileManagerImpl.writeChunkFile(cpkChunkId, chunk)
-        assertTrue(cpkChunkFileExists(cpkChunkId))
-
-        val bytesRead = getCpkChunkContent(cpkChunkId)
-        assertTrue(bytes.contentEquals(bytesRead))
+        assertThat(cpkChunkId.toPath())
+            .isRegularFile
+            .has(posixPermissionsExactly(setOf(OWNER_READ)))
+            .hasBinaryContent(bytes)
     }
 
     @Test
@@ -122,6 +116,9 @@ class CpkChunksFileManagerImplTest {
         cpkChunksFileManagerImpl.writeChunkFile(cpkChunkId0, chunk0)
         cpkChunksFileManagerImpl.writeChunkFile(cpkChunkId1, chunk1)
         cpkChunksFileManagerImpl.assembleCpk(cpkChecksum, sortedSetOf(cpkChunkId0, cpkChunkId1))
-        assertTrue(byteArrayOf(0x01, 0x02, 0x03, 0x04).contentEquals(getAssembledCpkContent(cpkChecksum)))
+        assertThat(commonCpkCacheDir.resolve(cpkChecksum.toCpkDirName()).resolve(cpkChecksum.toCpkFileName()))
+            .isRegularFile
+            .has(posixPermissionsExactly(setOf(OWNER_READ)))
+            .hasBinaryContent(byteArrayOf(0x01, 0x02, 0x03, 0x04))
     }
 }

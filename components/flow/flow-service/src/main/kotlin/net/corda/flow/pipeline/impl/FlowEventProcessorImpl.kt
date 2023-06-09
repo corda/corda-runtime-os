@@ -15,6 +15,7 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.schema.configuration.MessagingConfig.Subscription.PROCESSOR_TIMEOUT
+import net.corda.tracing.traceStateAndEventExecution
 import net.corda.utilities.withMDC
 import net.corda.utilities.debug
 import net.corda.utilities.trace
@@ -48,8 +49,11 @@ class FlowEventProcessorImpl(
     ): StateAndEventProcessor.Response<Checkpoint> {
         val flowEvent = event.value
         val mdcProperties = flowMDCService.getMDCLogging(state, flowEvent, event.key)
+        val eventType = event.value?.payload?.javaClass?.simpleName ?: "Unknown"
         return withMDC(mdcProperties) {
-            getFlowPipelineResponse(flowEvent, event, state, mdcProperties)
+            traceStateAndEventExecution(event, "Flow Event - $eventType") {
+                getFlowPipelineResponse(flowEvent, event, state, mdcProperties)
+            }
         }
     }
 

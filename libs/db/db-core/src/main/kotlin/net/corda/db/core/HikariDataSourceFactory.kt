@@ -67,7 +67,13 @@ class HikariDataSourceFactory(
         conf.isReadOnly = isReadOnly
         conf.maximumPoolSize = maximumPoolSize
         conf.minimumIdle = minimumPoolSize
-        conf.idleTimeout = idleTimeout.toMillis()
+        // Do not set idle timeout when minimumIdle == maximumPoolSize as it will have no effect and
+        // will emit a warning like:
+        // " idleTimeout has been set but has no effect because the pool is operating as a fixed size pool"
+        if (maximumPoolSize > minimumPoolSize) {
+            conf.idleTimeout = idleTimeout.toMillis()
+        }
+
         conf.maxLifetime = maxLifetime.toMillis()
         if(Duration.ZERO != keepaliveTime)
             conf.keepaliveTime = keepaliveTime.toMillis()

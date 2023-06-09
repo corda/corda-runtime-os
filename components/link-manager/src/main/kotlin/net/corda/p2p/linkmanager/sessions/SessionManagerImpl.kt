@@ -36,6 +36,8 @@ import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.metrics.CordaMetrics
+import net.corda.metrics.CordaMetrics.Metric.InboundSessionCount
+import net.corda.metrics.CordaMetrics.Metric.OutboundSessionCount
 import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.membership.lib.MemberInfoExtension.Companion.sessionInitiationKeys
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolInitiator
@@ -119,20 +121,20 @@ internal class SessionManagerImpl(
         messagingConfiguration,
         groupPolicyProvider,
         membershipGroupReaderProvider,
-        clock,
+        clock
     ),
 
-    executorServiceFactory: () -> ScheduledExecutorService = { Executors.newSingleThreadScheduledExecutor() },
+    executorServiceFactory: () -> ScheduledExecutorService = Executors::newSingleThreadScheduledExecutor
 ) : SessionManager {
 
-    companion object {
+    private companion object {
         private const val SESSION_MANAGER_CLIENT_ID = "session-manager"
     }
 
     private val pendingInboundSessions = ConcurrentHashMap<String, AuthenticationProtocolResponder>()
     private val activeInboundSessions = ConcurrentHashMap<String, Pair<SessionManager.Counterparties, Session>>()
 
-    private val logger = LoggerFactory.getLogger(this::class.java.name)
+    private val logger = LoggerFactory.getLogger(this::class.java)
 
     private val sessionNegotiationLock = ReentrantReadWriteLock()
 
@@ -163,15 +165,17 @@ internal class SessionManagerImpl(
     )
 
     private val revocationCheckerClient = RevocationCheckerClient(publisherFactory, coordinatorFactory, messagingConfiguration)
-    private val executorService = executorServiceFactory().also {
-        it.scheduleAtFixedRate({ recordTotalSessionMetrics() }, 5, 5, TimeUnit.SECONDS)
-    }
+    private val executorService = executorServiceFactory()
+
+    // These metrics must be removed on shutdown as the MeterRegistry holds references to their lambdas.
+    private val outboundSessionCount = OutboundSessionCount { outboundSessionPool.getAllSessionIds().size }.builder().build()
+    private val inboundSessionCount = InboundSessionCount { activeInboundSessions.size + pendingInboundSessions.size }.builder().build()
 
     override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,
         coordinatorFactory,
         ::onTileStart,
-        onClose = { executorService.shutdownNow() },
+        ::onTileClose,
         dependentChildren = setOf(
             heartbeatManager.dominoTile.coordinatorName, sessionReplayer.dominoTile.coordinatorName,
             LifecycleCoordinatorName.forComponent<GroupPolicyProvider>(),
@@ -363,6 +367,12 @@ internal class SessionManagerImpl(
             }
             if (records.isNotEmpty()) publisher.publish(records)
         }
+    }
+
+    private fun onTileClose() {
+        executorService.shutdownNow()
+        CordaMetrics.registry.remove(inboundSessionCount)
+        CordaMetrics.registry.remove(outboundSessionCount)
     }
 
     private fun refreshOutboundSession(sessionCounterparties: SessionCounterparties, sessionId: String) {
@@ -793,7 +803,7 @@ internal class SessionManagerImpl(
         }
 
         session.generateHandshakeSecrets()
-        val ourIdentityData = session.validatePeerHandshakeMessageHandleError(message, peer,) ?: return null
+        val ourIdentityData = session.validatePeerHandshakeMessageHandleError(message, peer) ?: return null
         // Find the correct Holding Identity to use (using the public key hash).
         val ourIdentityInfo = linkManagerHostingMap.getInfo(ourIdentityData.responderPublicKeyHash, ourIdentityData.groupId)
         if (ourIdentityInfo == null) {
@@ -901,13 +911,6 @@ internal class SessionManagerImpl(
         return false
     }
 
-    private fun recordTotalSessionMetrics() {
-        CordaMetrics.Metric.OutboundSessionCount.builder()
-            .build().set(outboundSessionPool.getAllSessionIds().size)
-        CordaMetrics.Metric.InboundSessionCount.builder()
-            .build().set(activeInboundSessions.size + pendingInboundSessions.size)
-    }
-
     class HeartbeatManager(
         publisherFactory: PublisherFactory,
         private val configurationReaderService: ConfigurationReadService,
@@ -972,7 +975,7 @@ internal class SessionManagerImpl(
         override val dominoTile = ComplexDominoTile(
             this::class.java.simpleName,
             coordinatorFactory,
-            onClose = { executorService.shutdownNow() },
+            onClose = executorService::shutdownNow,
             dependentChildren = setOf(
                 LifecycleCoordinatorName.forComponent<GroupPolicyProvider>(),
                 LifecycleCoordinatorName.forComponent<MembershipGroupReaderProvider>(),

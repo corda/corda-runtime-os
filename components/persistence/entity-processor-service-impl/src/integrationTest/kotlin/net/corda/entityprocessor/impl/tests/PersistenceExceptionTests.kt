@@ -24,6 +24,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.persistence.common.EntitySandboxServiceFactory
 import net.corda.persistence.common.ResponseFactory
 import net.corda.persistence.common.getSerializationService
+import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.test.util.dsl.entities.cpx.getCpkFileHashes
 import net.corda.testing.sandboxes.SandboxSetup
 import net.corda.testing.sandboxes.fetchService
@@ -73,6 +74,7 @@ class PersistenceExceptionTests {
     private lateinit var cpkReadService: CpkReadService
     private lateinit var virtualNodeInfoReadService: VirtualNodeInfoReadService
     private lateinit var responseFactory: ResponseFactory
+    private lateinit var currentSandboxGroupContext: CurrentSandboxGroupContext
 
     @BeforeAll
     fun setup(
@@ -91,6 +93,7 @@ class PersistenceExceptionTests {
             cpkReadService = setup.fetchService(timeout = 5000)
             virtualNodeInfoReadService = setup.fetchService(timeout = 5000)
             responseFactory = setup.fetchService(timeout = 5000)
+            currentSandboxGroupContext = setup.fetchService(timeout = 5000)
         }
     }
 
@@ -106,8 +109,12 @@ class PersistenceExceptionTests {
                 dbConnectionManager
             )
 
-        val processor =
-            EntityMessageProcessor(entitySandboxService, responseFactory, this::noOpPayloadCheck)
+        val processor = EntityMessageProcessor(
+            currentSandboxGroupContext,
+            entitySandboxService,
+            responseFactory,
+            this::noOpPayloadCheck
+        )
 
         // Insert some non-existent CPK hashes to our external event to trigger CPK not available error
         ignoredRequest.flowExternalEventContext.contextProperties = KeyValuePairList(
@@ -149,8 +156,12 @@ class PersistenceExceptionTests {
                 dbConnectionManager
             )
 
-        val processor =
-            EntityMessageProcessor(brokenEntitySandboxService, responseFactory, this::noOpPayloadCheck)
+        val processor = EntityMessageProcessor(
+            currentSandboxGroupContext,
+            brokenEntitySandboxService,
+            responseFactory,
+            this::noOpPayloadCheck
+        )
 
         // Now "send" the request for processing and "receive" the responses.
         val responses = processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), ignoredRequest)))
@@ -194,8 +205,12 @@ class PersistenceExceptionTests {
                 dbConnectionManager
             )
 
-        val processor =
-            EntityMessageProcessor(entitySandboxService, responseFactory, this::noOpPayloadCheck)
+        val processor = EntityMessageProcessor(
+                currentSandboxGroupContext,
+                entitySandboxService,
+                responseFactory,
+                this::noOpPayloadCheck
+            )
 
         // Now "send" the request for processing and "receive" the responses.
         val responses = processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), badRequest)))

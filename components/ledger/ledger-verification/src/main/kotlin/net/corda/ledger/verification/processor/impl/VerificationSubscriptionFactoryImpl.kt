@@ -8,6 +8,7 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
+import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.schema.Schemas
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -15,6 +16,8 @@ import org.osgi.service.component.annotations.Reference
 
 @Component(service = [VerificationSubscriptionFactory::class])
 class VerificationSubscriptionFactoryImpl @Activate constructor(
+    @Reference(service = CurrentSandboxGroupContext::class)
+    private val currentSandboxGroupContext: CurrentSandboxGroupContext,
     @Reference(service = SubscriptionFactory::class)
     private val subscriptionFactory: SubscriptionFactory,
     @Reference(service = VerificationSandboxService::class)
@@ -30,6 +33,7 @@ class VerificationSubscriptionFactoryImpl @Activate constructor(
         val subscriptionConfig = SubscriptionConfig(GROUP_NAME, Schemas.Verification.VERIFICATION_LEDGER_PROCESSOR_TOPIC)
 
         val processor = VerificationRequestProcessor(
+            currentSandboxGroupContext,
             verificationSandboxService,
             VerificationRequestHandlerImpl(responseFactory),
             responseFactory

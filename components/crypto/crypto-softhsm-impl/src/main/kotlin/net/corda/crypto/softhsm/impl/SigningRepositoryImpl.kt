@@ -185,14 +185,6 @@ class SigningRepositoryImpl(
                 ).setParameter("tenantId", tenantId)
                     .setParameter("fullKeyId", requestedFullKeyId.toString())
                     .resultList.singleOrNull()?.joinSigningKeyInfo(em)
-                em.createQuery<SigningKeyEntity?>(
-                    "FROM ${SigningKeyEntity::class.java.simpleName} " +
-                            "WHERE tenantId=:tenantId " +
-                            "AND fullKeyId=:fullKeyId",
-                    SigningKeyEntity::class.java
-                ).setParameter("tenantId", tenantId)
-                    .setParameter("fullKeyId", requestedFullKeyId.toString())
-                    .resultList.singleOrNull<SigningKeyEntity?>()?.joinSigningKeyInfo(em)
             }
         }
     }
@@ -223,7 +215,7 @@ class SigningRepositoryImpl(
         require(keyIds.size <= KEY_LOOKUP_INPUT_ITEMS_LIMIT) {
             "The number of ids exceeds $KEY_LOOKUP_INPUT_ITEMS_LIMIT"
         }
-        return CordaMetrics.Metric.CryptoSigningKeyLookupTimer.builder()
+        return CordaMetrics.Metric.Crypto.SigningKeyLookupTimer.builder()
             .withTag(CordaMetrics.Tag.SigningKeyLookupMethod, "PublicKeyShortHashes")
             .build()
             .recordCallable {
@@ -246,7 +238,7 @@ class SigningRepositoryImpl(
             "The number of ids exceeds $KEY_LOOKUP_INPUT_ITEMS_LIMIT"
         }
 
-        return CordaMetrics.Metric.CryptoSigningKeyLookupTimer.builder()
+        return CordaMetrics.Metric.Crypto.SigningKeyLookupTimer.builder()
             .withTag(CordaMetrics.Tag.SigningKeyLookupMethod, "PublicKeyHashes")
             .build()
             .recordCallable {

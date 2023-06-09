@@ -1,5 +1,6 @@
 package net.corda.cpk.read.impl
 
+import io.micrometer.core.instrument.Meter
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpk.read.CpkReadService
@@ -21,8 +22,9 @@ import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
+import net.corda.metrics.CordaMetrics
+import net.corda.metrics.CordaMetrics.Metric.DiskSpace
 import net.corda.schema.Schemas
-import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.utilities.PathProvider
@@ -37,6 +39,7 @@ import org.osgi.service.component.annotations.Deactivate
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.nio.file.Path
 import java.util.concurrent.ConcurrentHashMap
 
 @Component(service = [CpkReadService::class])
@@ -65,7 +68,7 @@ class CpkReadServiceImpl (
     )
 
     companion object {
-        val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        private val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
         const val CPK_CACHE_DIR = "cpk-cache"
         const val CPK_PARTS_DIR = "cpk-parts"
@@ -82,6 +85,7 @@ class CpkReadServiceImpl (
     internal var cpkChunksKafkaReaderSubscription: AutoCloseable? = null
 
     private val cpksByChecksum = ConcurrentHashMap<SecureHash, Cpk>()
+    private val meterIds = mutableListOf<Meter.Id>()
 
     /**
      * Event loop
@@ -106,10 +110,7 @@ class CpkReadServiceImpl (
             configSubscription?.close()
             configSubscription = configReadService.registerComponentForUpdates(
                 coordinator,
-                setOf(
-                    ConfigKeys.BOOT_CONFIG,
-                    ConfigKeys.MESSAGING_CONFIG
-                )
+                setOf(BOOT_CONFIG, MESSAGING_CONFIG)
             )
         } else {
             logger.warn(
@@ -142,28 +143,42 @@ class CpkReadServiceImpl (
         cpksByChecksum[cpkFileChecksum]
 
     private fun createCpkChunksKafkaReader(messagingConfig: SmartConfig, bootConfig: SmartConfig) {
-        val (cpkCacheDir, cpkPartsDir) = try {
-            workspacePathProvider.getOrCreate(bootConfig, CPK_CACHE_DIR) to
-                    tempPathProvider.getOrCreate(bootConfig, CPK_PARTS_DIR)
+        val cpkCacheDir: Path
+        val cpkPartsDir: Path
+
+        try {
+            cpkCacheDir = workspacePathProvider.getOrCreate(bootConfig, CPK_CACHE_DIR)
+            cpkPartsDir = tempPathProvider.getOrCreate(bootConfig, CPK_PARTS_DIR)
         } catch (e: Exception) {
             logger.error("Error while trying to create directories. Component shuts down.", e)
             closeResources()
             return
         }
 
+        // Just in case the directory configurations have changed.
+        removeMetrics()
+
+        // Monitor the amount of available disk space in these two directories.
+        arrayOf(DiskSpace.Cpks(cpkCacheDir), DiskSpace.CpkChunks(cpkPartsDir))
+            .flatMap(DiskSpace::metrics)
+            .map { metric ->
+                metric.builder().build()
+            }.mapTo(meterIds, Meter::getId)
+
         val cpkChunksFileManager = CpkChunksFileManagerImpl(cpkCacheDir)
         cpkChunksKafkaReaderSubscription?.close()
         cpkChunksKafkaReaderSubscription =
             subscriptionFactory.createCompactedSubscription(
                 SubscriptionConfig(CPK_READ_GROUP, Schemas.VirtualNode.CPK_FILE_TOPIC),
-                CpkChunksKafkaReader(cpkPartsDir, cpkChunksFileManager, this::onCpkAssembled),
+                CpkChunksKafkaReader(cpkPartsDir, cpkChunksFileManager, ::onCpkAssembled),
                 messagingConfig
             ).also { it.start() }
     }
 
     private fun onCpkAssembled(cpkFileChecksum: SecureHash, cpk: Cpk) {
-        logger.info("${this::class.java.simpleName} storing:  $cpkFileChecksum")
-        cpksByChecksum[cpkFileChecksum] = cpk
+        if (cpksByChecksum.putIfAbsent(cpkFileChecksum, cpk) == null) {
+            logger.info("Storing: {}", cpkFileChecksum)
+        }
     }
 
     override val isRunning: Boolean
@@ -179,7 +194,12 @@ class CpkReadServiceImpl (
         coordinator.stop()
     }
 
+    private fun removeMetrics() {
+        meterIds.onEach(CordaMetrics.registry::remove).clear()
+    }
+
     private fun closeResources() {
+        removeMetrics()
         configReadServiceRegistration?.close()
         configReadServiceRegistration = null
         configSubscription?.close()

@@ -1,5 +1,6 @@
 package net.corda.chunking.db.impl.tests
 
+import com.google.common.jimfs.Configuration
 import com.google.common.jimfs.Jimfs
 import java.nio.file.FileSystem
 import java.nio.file.Files
@@ -98,7 +99,10 @@ class RecreateBinaryTest {
 
     @BeforeEach
     fun beforeEach() {
-        fs = Jimfs.newFileSystem()
+        val posix = Configuration.unix().toBuilder()
+            .setAttributeViews("basic", "posix")
+            .build()
+        fs = Jimfs.newFileSystem(posix)
     }
 
     @AfterEach

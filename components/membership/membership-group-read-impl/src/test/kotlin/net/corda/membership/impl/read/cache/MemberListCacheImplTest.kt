@@ -1,5 +1,8 @@
 package net.corda.membership.impl.read.cache
 
+import io.micrometer.core.instrument.Gauge
+import io.micrometer.core.instrument.Meter
+import io.micrometer.core.instrument.Tag as micrometerTag
 import net.corda.membership.impl.read.TestProperties.Companion.GROUP_ID_1
 import net.corda.membership.impl.read.TestProperties.Companion.GROUP_ID_2
 import net.corda.membership.impl.read.TestProperties.Companion.aliceName
@@ -9,20 +12,30 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTI
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_PENDING
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_SUSPENDED
 import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
+import net.corda.metrics.CordaMetrics
+import net.corda.test.util.metrics.CORDA_METRICS_LOCK
+import net.corda.test.util.metrics.EachTestCordaMetrics
 import net.corda.v5.membership.MGMContext
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertNotNull
+import org.assertj.core.api.Condition
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.junit.jupiter.api.extension.RegisterExtension
+import org.junit.jupiter.api.parallel.ResourceLock
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
+import kotlin.math.roundToLong
 
+@ResourceLock(CORDA_METRICS_LOCK)
 class MemberListCacheImplTest {
     private lateinit var memberListCache: MemberListCache
+
+    @Suppress("unused")
+    @RegisterExtension
+    private val metrics = EachTestCordaMetrics("MemberList Testing")
 
     private val alice = aliceName
     private val bob = bobName
@@ -51,6 +64,20 @@ class MemberListCacheImplTest {
         on { name } doReturn alice
     }
 
+    @Suppress("SameParameterValue")
+    private fun nameOf(expected: String): Condition<in Meter> {
+        return Condition<Meter>({ m -> m.id.name == expected }, "name of %s", expected)
+    }
+
+    private fun tagOf(tag: CordaMetrics.Tag, tagValue: String): Condition<in Meter> {
+        val expectedTag = micrometerTag.of(tag.value, tagValue)
+        return Condition<Meter>({ m -> m.id.tags.contains(expectedTag) }, "tag of %s", expectedTag)
+    }
+
+    private fun singleValueOf(expected: Long): Condition<in Meter> {
+        return Condition<Meter>({ m -> m.measure().single().value.roundToLong() == expected }, "value of %d", expected)
+    }
+
     @BeforeEach
     fun setUp() {
         memberListCache = MemberListCache.Impl()
@@ -58,31 +85,45 @@ class MemberListCacheImplTest {
 
     @Test
     fun `Get member list before any data is cached`() {
-        assertMemberList(lookupWithDefaults())
+        assertThat(lookupWithDefaults()).isEmpty()
     }
 
     @Test
     fun `Add member list to cache then read same member from cache`() {
-        memberListCache.put(aliceIdGroup1, listOf(bobInfo))
-        assertMemberList(lookupWithDefaults(), bobInfo)
+        memberListCache.put(aliceIdGroup1, listOf(aliceInfo, bobInfo))
+        assertThat(lookupWithDefaults()).containsExactlyInAnyOrder(aliceInfo, bobInfo)
+        assertThat(CordaMetrics.registry.meters)
+            .hasSize(1)
+            .element(0).isInstanceOf(Gauge::class.java)
+            .has(nameOf("corda.membership.memberlist.cache.size"))
+            .has(tagOf(CordaMetrics.Tag.MembershipGroup, aliceIdGroup1.groupId))
+            .has(tagOf(CordaMetrics.Tag.VirtualNode, aliceIdGroup1.shortHash.value))
+            .has(singleValueOf(2))
     }
 
     @Test
     fun `Add single member to cache then read same member from cache`() {
         addToCacheWithDefaults()
-        assertMemberList(lookupWithDefaults(), bobInfo)
+        assertThat(lookupWithDefaults()).containsExactly(bobInfo)
+        assertThat(CordaMetrics.registry.meters)
+            .hasSize(1)
+            .element(0).isInstanceOf(Gauge::class.java)
+            .has(nameOf("corda.membership.memberlist.cache.size"))
+            .has(tagOf(CordaMetrics.Tag.MembershipGroup, aliceIdGroup1.groupId))
+            .has(tagOf(CordaMetrics.Tag.VirtualNode, aliceIdGroup1.shortHash.value))
+            .has(singleValueOf(1))
     }
 
     @Test
     fun `Cache for one member and lookup for a different member`() {
         addToCacheWithDefaults()
-        assertMemberList(lookupWithDefaults(bobIdGroup1))
+        assertThat(lookupWithDefaults(bobIdGroup1)).isEmpty()
     }
 
     @Test
     fun `Cache for one group and lookup for a different empty group`() {
         addToCacheWithDefaults()
-        assertMemberList(lookupWithDefaults(aliceIdGroup2))
+        assertThat(lookupWithDefaults(aliceIdGroup2)).isEmpty()
     }
 
     @Test
@@ -90,8 +131,8 @@ class MemberListCacheImplTest {
         addToCacheWithDefaults()
         addToCacheWithDefaults(aliceIdGroup2, memberInfo = aliceInfo)
 
-        assertMemberList(lookupWithDefaults(), bobInfo)
-        assertMemberList(lookupWithDefaults(aliceIdGroup2), aliceInfo)
+        assertThat(lookupWithDefaults()).containsExactly(bobInfo)
+        assertThat(lookupWithDefaults(aliceIdGroup2)).containsExactly(aliceInfo)
     }
 
     @Test
@@ -100,9 +141,9 @@ class MemberListCacheImplTest {
         addToCacheWithDefaults(aliceIdGroup2, memberInfo = aliceInfo)
 
         val cache = memberListCache.getAll()
-        assertThat(cache.size).isEqualTo(2)
-        assertMemberList(cache.get(aliceIdGroup1), bobInfo)
-        assertMemberList(cache.get(aliceIdGroup2), aliceInfo)
+        assertThat(cache).hasSize(2)
+        assertThat(cache[aliceIdGroup1]).containsExactly(bobInfo)
+        assertThat(cache[aliceIdGroup2]).containsExactly(aliceInfo)
     }
 
     @Test
@@ -110,16 +151,20 @@ class MemberListCacheImplTest {
         addToCacheWithDefaults()
         addToCacheWithDefaults(bobIdGroup1, memberInfo = aliceInfo)
 
-        assertMemberList(lookupWithDefaults(), bobInfo)
-        assertMemberList(lookupWithDefaults(bobIdGroup1), aliceInfo)
+        assertThat(lookupWithDefaults()).containsExactly(bobInfo)
+        assertThat(lookupWithDefaults(bobIdGroup1)).containsExactly(aliceInfo)
     }
 
     @Test
-    fun `Cache output cannot be cast to mutable list`() {
+    fun `Cache output is immutable`() {
         addToCacheWithDefaults()
         val lookupResult = lookupWithDefaults()
+        assertThat(lookupResult).isNotEmpty
         assertThrows<ClassCastException> {
             lookupResult as MutableList<MemberInfo>
+        }
+        assertThrows<UnsupportedOperationException> {
+            java.util.List::class.java.cast(lookupResult).clear()
         }
     }
 
@@ -137,7 +182,7 @@ class MemberListCacheImplTest {
 
         addToCacheWithDefaults(memberInfo = originalInfo)
         addToCacheWithDefaults(memberInfo = updatedInfo)
-        assertMemberList(lookupWithDefaults(), updatedInfo)
+        assertThat(lookupWithDefaults()).containsExactly(updatedInfo)
     }
 
     @Test
@@ -145,7 +190,6 @@ class MemberListCacheImplTest {
         val originalInfo = mock<MemberInfo> {
             on { mgmProvidedContext } doReturn suspendedContext
             on { name } doReturn charlie
-
         }
         val updatedInfo = mock<MemberInfo> {
             on { mgmProvidedContext } doReturn suspendedContext
@@ -154,7 +198,7 @@ class MemberListCacheImplTest {
 
         addToCacheWithDefaults(memberInfo = originalInfo)
         addToCacheWithDefaults(memberInfo = updatedInfo)
-        assertMemberList(lookupWithDefaults(), updatedInfo)
+        assertThat(lookupWithDefaults()).containsExactly(updatedInfo)
     }
 
     @Test
@@ -170,7 +214,7 @@ class MemberListCacheImplTest {
 
         addToCacheWithDefaults(memberInfo = originalInfo)
         addToCacheWithDefaults(memberInfo = updatedInfo)
-        assertMemberList(lookupWithDefaults(), updatedInfo)
+        assertThat(lookupWithDefaults()).containsExactly(updatedInfo)
     }
 
     @Test
@@ -187,10 +231,10 @@ class MemberListCacheImplTest {
         addToCacheWithDefaults(memberInfo = activeInfo)
         // suspend member
         addToCacheWithDefaults(memberInfo = suspendedInfo)
-        assertMemberList(lookupWithDefaults(), suspendedInfo)
+        assertThat(lookupWithDefaults()).containsExactly(suspendedInfo)
         // activate member
         addToCacheWithDefaults(memberInfo = activeInfo)
-        assertMemberList(lookupWithDefaults(), activeInfo)
+        assertThat(lookupWithDefaults()).containsExactly(activeInfo)
     }
 
     @Test
@@ -211,6 +255,17 @@ class MemberListCacheImplTest {
         assertThat(lookupWithDefaults()).containsExactlyInAnyOrder(bobInfo, originalInfo, updatedInfo)
     }
 
+    @Test
+    fun `clear empties the cache`() {
+        memberListCache.put(aliceIdGroup1, listOf(bobInfo))
+        assertThat(lookupWithDefaults()).containsExactly(bobInfo)
+        assertThat(CordaMetrics.registry.meters).hasSize(1)
+
+        memberListCache.clear()
+        assertThat(lookupWithDefaults()).isEmpty()
+        assertThat(CordaMetrics.registry.meters).isEmpty()
+    }
+
     private fun lookupWithDefaults(
         holdingIdentity: HoldingIdentity = aliceIdGroup1
     ): List<MemberInfo>? {
@@ -222,15 +277,5 @@ class MemberListCacheImplTest {
         memberInfo: MemberInfo = bobInfo
     ) {
         memberListCache.put(holdingIdentity, memberInfo)
-    }
-
-    private fun assertMemberList(memberList: List<MemberInfo>?, expectedMemberInfo: MemberInfo? = null) {
-        assertNotNull(memberList)
-        if (expectedMemberInfo == null) {
-            assertEquals(0, memberList!!.size)
-        } else {
-            assertEquals(1, memberList!!.size)
-            assertEquals(expectedMemberInfo, memberList[0])
-        }
     }
 }
