@@ -8,6 +8,7 @@ import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.cipher.suite.KeyGenerationSpec
 import net.corda.crypto.cipher.suite.KeyMaterialSpec
 import net.corda.crypto.cipher.suite.sha256Bytes
+import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.core.aes.WrappingKeyImpl
 import net.corda.crypto.persistence.HSMStore
@@ -107,14 +108,20 @@ class SoftCryptoServiceCachingTests {
         assertNotNull(wrappingKey)
 
         // make two key pairs
-        val keyPair1 =
-            myCryptoService.generateKeyPair(KeyGenerationSpec(rsaScheme, "key-1", wrappingKeyAlias), emptyMap())
-        val keyPair2 =
-            myCryptoService.generateKeyPair(KeyGenerationSpec(rsaScheme, "key-2", wrappingKeyAlias), emptyMap())
+        val keyPairs = arrayOf(0, 1).map {
+            myCryptoService.generateKeyPair(
+                vnodeTenantId,
+                CryptoConsts.Categories.LEDGER,
+                "key-$it",
+                null,
+                rsaScheme,
+                mapOf("parentKeyAlias" to wrappingKeyAlias)
+            )
+        }
 
         // if we have a private key cache, it should now have entries for both key pairs
-        val privateKey1FromCache = privateKeyCache?.getIfPresent(keyPair1.publicKey)
-        val privateKey2FromCache = privateKeyCache?.getIfPresent(keyPair2.publicKey)
+        val privateKey1FromCache = privateKeyCache?.getIfPresent(keyPairs[0].publicKey)
+        val privateKey2FromCache = privateKeyCache?.getIfPresent(keyPairs[1].publicKey)
 
         if (privateKeyCache != null) {
             assertNotNull(privateKey1FromCache)
@@ -122,26 +129,23 @@ class SoftCryptoServiceCachingTests {
         }
 
         // clear the private key cache, if there is one
-        privateKeyCache?.invalidate(keyPair1.publicKey)
-        privateKeyCache?.invalidate(keyPair2.publicKey)
+        keyPairs.forEach { privateKeyCache?.invalidate(it.publicKey) }
 
         // make spec objects with the public key material 
-        val key1Spec = KeyMaterialSpec(keyPair1.keyMaterial, wrappingKeyAlias, keyPair1.encodingVersion)
-        val key2Spec = KeyMaterialSpec(keyPair2.keyMaterial, wrappingKeyAlias, keyPair2.encodingVersion)
+        val keySpecs = keyPairs.map { KeyMaterialSpec(it.keyMaterial, wrappingKeyAlias, it.encodingVersion) }
 
-        val key1direct = wrappingKey.unwrap(key1Spec.keyMaterial)
-        val key2direct = wrappingKey.unwrap(key2Spec.keyMaterial)
+        val keysDirect = keySpecs.map { wrappingKey.unwrap(it.keyMaterial) }
 
         // the keys we pulled out are reconstructed from encrypted key material, so are
         // not the same objects but are equal to what we got from the cache before
         if (privateKey1FromCache != null) {
-            assertNotSame(key1direct, privateKey1FromCache)
-            assertEquals(key1direct, privateKey1FromCache)
+            assertNotSame(keysDirect[0], privateKey1FromCache)
+            assertEquals(keysDirect[0], privateKey1FromCache)
 
         }
         if (privateKey2FromCache != null) {
-            assertNotSame(key2direct, privateKey2FromCache)
-            assertEquals(key2direct, privateKey2FromCache)
+            assertNotSame(keysDirect[1], privateKey2FromCache)
+            assertEquals(keysDirect[1], privateKey2FromCache)
         }
 
         assertThat(unwrapCount.get()).isEqualTo(2)
