@@ -7,7 +7,6 @@ import io.micrometer.core.instrument.Meter
 import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.core.instrument.Metrics
 import io.micrometer.core.instrument.Tags
-import io.micrometer.core.instrument.Tag as micrometerTag
 import io.micrometer.core.instrument.Timer
 import io.micrometer.core.instrument.binder.BaseUnits
 import io.micrometer.core.instrument.composite.CompositeMeterRegistry
@@ -19,6 +18,7 @@ import java.nio.file.Path
 import java.util.function.Supplier
 import java.util.function.ToDoubleFunction
 import java.util.function.ToLongFunction
+import io.micrometer.core.instrument.Tag as micrometerTag
 
 
 object CordaMetrics {
@@ -193,7 +193,8 @@ object CordaMetrics {
          *
          * The number of duplicated messages received by sessions.
          */
-        object FlowSessionMessagesReceivedDuplicatesCount: Metric<Counter>("flow.session.messages.received.duplicates.count", Metrics::counter)
+        object FlowSessionMessagesReceivedDuplicatesCount:
+            Metric<Counter>("flow.session.messages.received.duplicates.count", Metrics::counter)
 
         /**
          * The number of messages sent by sessions.

@@ -22,7 +22,7 @@ internal class FlowMetricsImplTest {
         val sessionId = "sessionId"
         val flowEventType = "SessionData"
         val sequenceNumber = 1L
-        val HSSN = 3L
+        val highestSeenSequenceNumber = 3L
         val recordTimestamp = 100L
 
         val flowMetricsStateString: String
@@ -30,7 +30,7 @@ internal class FlowMetricsImplTest {
         val flowMetricStateObject = FlowMetricsImpl.FlowMetricState()
         val sessionMetricStateObject = FlowMetricsImpl.SessionMetricState()
 
-        sessionMetricStateObject.highestSeenSequenceNumber = HSSN
+        sessionMetricStateObject.highestSeenSequenceNumber = highestSeenSequenceNumber
         flowMetricStateObject.sessionMetricStateBySessionId[sessionId] = sessionMetricStateObject
 
         val flowMetricsRecorder = mock<FlowMetricsRecorder>()
@@ -50,7 +50,7 @@ internal class FlowMetricsImplTest {
         val sessionId = "sessionId"
         val flowEventType = "SessionData"
         val sequenceNumber = 3L
-        val HSSN = 1L
+        val highestSeenSequenceNumber = 1L
         val recordTimestamp = 100L
 
         val flowMetricsStateString: String
@@ -58,7 +58,7 @@ internal class FlowMetricsImplTest {
         val flowMetricStateObject = FlowMetricsImpl.FlowMetricState()
         val sessionMetricStateObject = FlowMetricsImpl.SessionMetricState()
 
-        sessionMetricStateObject.highestSeenSequenceNumber = HSSN
+        sessionMetricStateObject.highestSeenSequenceNumber = highestSeenSequenceNumber
         flowMetricStateObject.sessionMetricStateBySessionId[sessionId] = sessionMetricStateObject
 
         val flowMetricsRecorder = mock<FlowMetricsRecorder>()
@@ -78,7 +78,7 @@ internal class FlowMetricsImplTest {
         val sessionId = "sessionId"
         val flowEventType = "SessionData"
         var sequenceNumber = 1L
-        val HSSN = 0L
+        val highestSeenSequenceNumber = 0L
         val recordTimestamp = 100L
 
         val flowMetricsStateString: String
@@ -86,7 +86,7 @@ internal class FlowMetricsImplTest {
         val flowMetricStateObject = FlowMetricsImpl.FlowMetricState()
         val sessionMetricStateObject = FlowMetricsImpl.SessionMetricState()
 
-        sessionMetricStateObject.highestSeenSequenceNumber = HSSN
+        sessionMetricStateObject.highestSeenSequenceNumber = highestSeenSequenceNumber
         flowMetricStateObject.sessionMetricStateBySessionId[sessionId] = sessionMetricStateObject
 
         val flowMetricsRecorder = mock<FlowMetricsRecorder>()
@@ -106,7 +106,7 @@ internal class FlowMetricsImplTest {
         val sessionId = "sessionId"
         val flowEventType = "SessionData"
         val sequenceNumber = 3L
-        val HSSN = 3L
+        val highestSeenSequenceNumber = 3L
         val recordTimestamp = 100L
 
         val flowMetricsStateString: String
@@ -114,7 +114,7 @@ internal class FlowMetricsImplTest {
         val flowMetricStateObject = FlowMetricsImpl.FlowMetricState()
         val sessionMetricStateObject = FlowMetricsImpl.SessionMetricState()
 
-        sessionMetricStateObject.highestSeenSequenceNumber = HSSN
+        sessionMetricStateObject.highestSeenSequenceNumber = highestSeenSequenceNumber
         flowMetricStateObject.sessionMetricStateBySessionId[sessionId] = sessionMetricStateObject
 
         val flowMetricsRecorder = mock<FlowMetricsRecorder>()
@@ -134,7 +134,7 @@ internal class FlowMetricsImplTest {
         val sessionId = "sessionId"
         val flowEventType = "SessionData"
         var sequenceNumber = 6L
-        val HSSN = 3L
+        val highestSeenSequenceNumber = 3L
         val recordTimestamp = 100L
 
         val flowMetricsStateString: String
@@ -142,7 +142,7 @@ internal class FlowMetricsImplTest {
         val flowMetricStateObject = FlowMetricsImpl.FlowMetricState()
         val sessionMetricStateObject = FlowMetricsImpl.SessionMetricState()
 
-        sessionMetricStateObject.highestSeenSequenceNumber = HSSN
+        sessionMetricStateObject.highestSeenSequenceNumber = highestSeenSequenceNumber
         flowMetricStateObject.sessionMetricStateBySessionId[sessionId] = sessionMetricStateObject
 
         val flowMetricsRecorder = mock<FlowMetricsRecorder>()
