@@ -29,16 +29,15 @@ import net.corda.crypto.core.aes.WrappingKey
 import net.corda.crypto.core.aes.WrappingKeyImpl
 import net.corda.crypto.core.parseSecureHash
 import net.corda.crypto.impl.CipherSchemeMetadataProvider
-import net.corda.crypto.persistence.HSMStore
 import net.corda.crypto.persistence.SigningKeyOrderBy
 import net.corda.crypto.persistence.WrappingKeyInfo
 import net.corda.crypto.softhsm.SigningRepository
 import net.corda.crypto.softhsm.WrappingRepository
 import net.corda.crypto.softhsm.impl.infra.TestWrappingRepository
+import net.corda.crypto.softhsm.impl.infra.makeHSMStore
 import net.corda.crypto.softhsm.impl.infra.makeSigningKeyInfoCache
 import net.corda.crypto.softhsm.impl.infra.makeSoftCryptoService
 import net.corda.crypto.testkit.SecureHashUtils
-import net.corda.data.crypto.wire.hsm.HSMAssociationInfo
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256K1_CODE_NAME
 import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256R1_CODE_NAME
@@ -107,13 +106,6 @@ class SoftCryptoServiceGeneralTests {
         val signingKeyInfo1 = mock<SigningKeyInfo> {
             on { fullId }.thenReturn(fullKeyId1)
             on { id }.thenReturn(shortKeyId1)
-        }
-
-        val association = mock<HSMAssociationInfo> {
-            on { masterKeyAlias }.thenReturn(masterKeyAlias)
-        }
-        val mockHsmStore = mock<HSMStore> {
-            on { findTenantAssociation(any(), any()) } doReturn association
         }
     }
 
@@ -567,9 +559,6 @@ class SoftCryptoServiceGeneralTests {
         val wrappingRepository = mock<WrappingRepository>() {
             on { findKey(any()) } doReturn sampleWrappingKeyInfo
         }
-        val association = mock<HSMAssociationInfo> {
-            on { masterKeyAlias }.thenReturn("root")
-        }
         val service = object : SoftCryptoService(
             wrappingRepositoryFactory = { wrappingRepository },
             signingRepositoryFactory = { repo },
@@ -584,9 +573,7 @@ class SoftCryptoServiceGeneralTests {
             },
             wrappingKeyFactory = { WrappingKeyImpl.generateWrappingKey(it) },
             signingKeyInfoCache = makeSigningKeyInfoCache(),
-            hsmStore = mock<HSMStore> {
-                on { findTenantAssociation(any(), any()) } doReturn association
-            }
+            hsmStore = makeHSMStore(masterKeyAlias)
         ) {
             override fun generateKeyPair(spec: KeyGenerationSpec, context: Map<String, String>): GeneratedWrappedKey =
                 generatedKey
@@ -717,7 +704,7 @@ class SoftCryptoServiceGeneralTests {
                 KeyPairGenerator.getInstance(algorithm, provider)
             },
             signingKeyInfoCache = cache,
-            hsmStore = mockHsmStore,
+            hsmStore = makeHSMStore()
         )
         if (keysInCache >= 1) populateCache(cache, shortKeyId0, fullKeyId0)
         if (keysInCache >= 2) populateCache(cache, shortKeyId1, fullKeyId1)
@@ -772,7 +759,7 @@ class SoftCryptoServiceGeneralTests {
                 KeyPairGenerator.getInstance(algorithm, provider)
             },
             signingKeyInfoCache = cache,
-            hsmStore = mockHsmStore,
+            hsmStore = makeHSMStore(),
         )
         val lookedUpByFullKeyIdsKeys =
             cryptoService.lookupSigningKeysByPublicKeyHashes(tenantId, listOf(requestedFullKeyId))
@@ -813,7 +800,7 @@ class SoftCryptoServiceGeneralTests {
 
         whenever(repo.findKey(alias)).doReturn(key)
 
-        val service = makeSoftCryptoService(signingRepository = repo, hsmStore = mockHsmStore)
+        val service = makeSoftCryptoService(signingRepository = repo, hsmStore = makeHSMStore())
         assertThrows<KeyAlreadyExistsException> {
             service.generateKeyPair(tenantId, category, alias, scheme = scheme, context = context)
         }

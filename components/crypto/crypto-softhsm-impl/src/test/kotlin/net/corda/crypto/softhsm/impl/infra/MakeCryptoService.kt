@@ -13,14 +13,11 @@ import net.corda.crypto.softhsm.SigningRepository
 import net.corda.crypto.softhsm.WrappingRepository
 import net.corda.crypto.softhsm.impl.CacheKey
 import net.corda.crypto.softhsm.impl.SoftCryptoService
-import net.corda.data.crypto.wire.hsm.HSMAssociationInfo
-import org.mockito.kotlin.any
-import org.mockito.kotlin.doReturn
-import org.mockito.kotlin.mock
 import java.security.KeyPairGenerator
 import java.security.PrivateKey
 import java.security.Provider
 import java.security.PublicKey
+
 
 @Suppress("LongParameterList")
 fun makeSoftCryptoService(
@@ -36,12 +33,7 @@ fun makeSoftCryptoService(
     signingRepository: SigningRepository = TestSigningRepository(),
     hsmStore: HSMStore? = null,
 ): CryptoService {
-    val association = mock<HSMAssociationInfo> {
-        on { masterKeyAlias }.thenReturn("root")
-    }
-    val hsmStoreDefined = hsmStore ?: mock<HSMStore> {
-        on { findTenantAssociation(any(), any()) } doReturn association
-    }
+    val hsmStoreDefined = hsmStore ?: makeHSMStore("root")
     return SoftCryptoService(
         wrappingRepositoryFactory = { wrappingRepository },
         signingRepositoryFactory = { signingRepository },
