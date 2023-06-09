@@ -141,7 +141,7 @@ class CryptoOpsBusProcessor(
         }
 
         fun handleGenerateKeyPairCommand(request: GenerateKeyPairCommand): CryptoPublicKey {
-            val publicKey = if (request.externalId.isNullOrBlank()) {
+            val keyPair = if (request.externalId.isNullOrBlank()) {
                 cryptoService.generateKeyPair(
                     tenantId = context.tenantId,
                     category = request.category,
@@ -159,7 +159,7 @@ class CryptoOpsBusProcessor(
                     context = request.context.items.toMap()
                 )
             }
-            return CryptoPublicKey(ByteBuffer.wrap(cryptoService.schemeMetadata.encodeAsByteArray(publicKey)))
+            return CryptoPublicKey(ByteBuffer.wrap(cryptoService.schemeMetadata.encodeAsByteArray(keyPair.publicKey)))
         }
 
         fun handleGenerateFreshKeyRpcCommand(request: GenerateFreshKeyRpcCommand): CryptoPublicKey {

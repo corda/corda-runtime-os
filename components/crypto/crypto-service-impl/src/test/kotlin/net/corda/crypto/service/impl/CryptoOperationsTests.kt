@@ -101,7 +101,7 @@ class CryptoOperationsTests {
                         category = CryptoConsts.Categories.LEDGER,
                         alias = alias,
                         scheme = it
-                    )
+                    ).publicKey
                 )
             }
             signingFreshKeys = factory.cryptoService.supportedSchemes.keys.associateWith {

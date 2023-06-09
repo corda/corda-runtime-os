@@ -229,7 +229,7 @@ open class SoftCryptoService(
         externalId: String?,
         scheme: KeyScheme,
         context: Map<String, String>,
-    ): PublicKey {
+    ): GeneratedWrappedKey {
         logger.info("generateKeyPair(tenant={}, category={}, alias={}))", tenantId, category, alias)
         val parentKeyAlias =
             context.get("parentKeyAlias") ?: hsmStore.findTenantAssociation(tenantId, category)?.masterKeyAlias
@@ -250,25 +250,25 @@ open class SoftCryptoService(
                 alias
             )
 
-            val key = generateKeyPair(
+            return generateKeyPair(
                 KeyGenerationSpec(scheme, alias, parentKeyAlias),
                 context + mapOf(
                     CRYPTO_TENANT_ID to tenantId,
                     CRYPTO_CATEGORY to category
                 )
-            )
-            val saveContext = SigningWrappedKeySaveContext(
-                key = key,
-                masterKeyAlias = parentKeyAlias,
-                externalId = externalId,
-                alias = alias,
-                keyScheme = scheme,
-                category = category,
-                hsmId = "SOFT" // TODO remove field
-            )
-            val signingKeyInfo = repo.savePrivateKey(saveContext)
-            signingKeyInfoCache.put(CacheKey(tenantId, signingKeyInfo.id), signingKeyInfo)
-            return key.publicKey
+            ).also { key ->
+                val saveContext = SigningWrappedKeySaveContext(
+                    key = key,
+                    masterKeyAlias = parentKeyAlias,
+                    externalId = externalId,
+                    alias = alias,
+                    keyScheme = scheme,
+                    category = category,
+                    hsmId = "SOFT" // TODO remove field
+                )
+                val signingKeyInfo = repo.savePrivateKey(saveContext)
+                signingKeyInfoCache.put(CacheKey(tenantId, signingKeyInfo.id), signingKeyInfo)
+            }
         }
     }
 
@@ -467,7 +467,7 @@ open class SoftCryptoService(
             externalId = null,
             scheme = scheme,
             context = context
-        )
+        ).publicKey
 
     override fun freshKey(
         tenantId: String,
@@ -483,7 +483,7 @@ open class SoftCryptoService(
             externalId = externalId,
             scheme = scheme,
             context = context
-        )
+        ).publicKey
 
     // TODO - group the sign methods
     override fun sign(
