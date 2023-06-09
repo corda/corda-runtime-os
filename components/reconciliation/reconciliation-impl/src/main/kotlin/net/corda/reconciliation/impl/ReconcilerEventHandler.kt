@@ -74,27 +74,28 @@ internal class ReconcilerEventHandler<K : Any, V : Any>(
     private fun reconcileAndScheduleNext(coordinator: LifecycleCoordinator) {
         logger.info("Initiating reconciliation")
         var reconciliationOutcome = "FAILED"
-        val startTime = System.currentTimeMillis()
-        var reconciliationRunTime = startTime
+        val startTime = System.nanoTime()
+        var reconciliationEndTime = startTime
         var reconciledCount = 0
         try {
             reconciledCount = reconcile()
             reconciliationOutcome = "SUCCEEDED"
-            reconciliationRunTime = System.currentTimeMillis() - startTime
-            logger.info("Reconciliation completed in $reconciliationRunTime ms")
+            reconciliationEndTime = System.nanoTime()
             scheduleNextReconciliation(coordinator)
         } catch (e: Throwable) {
             // An error here could be a transient or not exception. We should transition to `DOWN` and wait
             // on subsequent `RegistrationStatusChangeEvent` to see if it is going to be a `DOWN` or an `ERROR`.
-            reconciliationRunTime = System.currentTimeMillis() - startTime
+            reconciliationEndTime = System.nanoTime()
             logger.warn("Reconciliation failed. Terminating reconciliations", e)
             coordinator.updateStatus(LifecycleStatus.DOWN)
         } finally {
+            val reconciliationTime = Duration.ofNanos(reconciliationEndTime - startTime)
+            logger.info("Reconciliation $reconciliationOutcome in ${reconciliationTime.toMillis()} ms")
             CordaMetrics.Metric.Db.ReconciliationRunTime.builder()
                 .withTag(CordaMetrics.Tag.OperationName, name)
                 .withTag(CordaMetrics.Tag.OperationStatus, reconciliationOutcome)
                 .build()
-                .record(Duration.ofMillis(reconciliationRunTime))
+                .record(reconciliationTime)
 
             CordaMetrics.Metric.Db.ReconciliationRecordsCount.builder()
                 .withTag(CordaMetrics.Tag.OperationName, name)
