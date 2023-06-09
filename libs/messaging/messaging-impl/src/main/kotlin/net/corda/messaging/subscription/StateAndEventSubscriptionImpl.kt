@@ -57,9 +57,9 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
 
     // HACK - additional metrics for validation the ... metrics
     //  not too bothered about multi-threading issues, so simple ints
-    private var maxTotal = 0L
+    private var maxTotal = 0.0
     private var numberOfBatches = 0L
-    private var runningTotalMs = 0L
+    private var runningTotalMs = 0.0
 
     private val producer: CordaProducer
         get() {
@@ -192,22 +192,22 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         nullableStateAndEventConsumer = null
     }
 
-    class ProcessTrace() {
+    class ProcessTrace {
         private var batchStart = System.nanoTime()
         var batchSize = 0
-        private var updatedStatesMs = 0L
-        private var processEventsDurationMs = 0L
-        private var beginDurationMs = 0L
-        private var sendDurationMs = 0L
-        private var sendOffsetDurationMs = 0L
-        private var commitDurationMs = 0L
-        var totalDuractionMs = 0L
-        var avg = 0L
-        var maxTotal = 0L
+        private var updatedStatesMs = 0.0
+        private var processEventsDurationMs = 0.0
+        private var beginDurationMs = 0.0
+        private var sendDurationMs = 0.0
+        private var sendOffsetDurationMs = 0.0
+        private var commitDurationMs = 0.0
+        var totalDuractionMs = 0.0
+        var avg = 0.0
+        var maxTotal = 0.0
 
         override fun toString(): String {
-            return "Batch Size: $batchSize, Process: ${processEventsDurationMs}ms Begin: ${beginDurationMs}ms, Send: ${sendDurationMs}ms, " +
-                    "Send Offsets: ${sendOffsetDurationMs}ms, Commit: ${commitDurationMs}ms, " +
+            return "Batch Size: $batchSize, Process: ${processEventsDurationMs}ms Begin: ${beginDurationMs}ms, " +
+                    "Send: ${sendDurationMs}ms, Send Offsets: ${sendOffsetDurationMs}ms, Commit: ${commitDurationMs}ms, " +
                     "Total:${totalDuractionMs}ms, Avg: ${avg}ms, Max: ${maxTotal}ms"
         }
 
@@ -239,8 +239,8 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
             totalDuractionMs = timeToMillis()
         }
 
-        private fun timeToMillis(): Long {
-            return (System.nanoTime()-batchStart)/ 1000000
+        private fun timeToMillis(): Double {
+            return (System.nanoTime()-batchStart).div(1000000.toDouble())
         }
     }
 
