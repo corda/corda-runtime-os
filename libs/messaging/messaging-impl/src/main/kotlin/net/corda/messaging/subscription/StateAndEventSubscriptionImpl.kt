@@ -192,7 +192,7 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         nullableStateAndEventConsumer = null
     }
 
-    class ProcessTrace {
+    class ProcessTrace(val stateTopic: String, val eventTopic: String) {
         private var batchStart = System.nanoTime()
         var batchSize = 0
         private var updatedStatesMs = 0.0
@@ -206,7 +206,7 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         var maxTotal = 0.0
 
         override fun toString(): String {
-            return "Batch Size: $batchSize, Process: ${processEventsDurationMs}ms Begin: ${beginDurationMs}ms, " +
+            return "[$stateTopic/$eventTopic] Batch Size: $batchSize, Process: ${processEventsDurationMs}ms Begin: ${beginDurationMs}ms, " +
                     "Send: ${sendDurationMs}ms, Send Offsets: ${sendOffsetDurationMs}ms, Commit: ${commitDurationMs}ms, " +
                     "Total:${totalDuractionMs}ms, Avg: ${avg}ms, Max: ${maxTotal}ms"
         }
@@ -245,7 +245,6 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
     }
 
     private fun processBatchOfEvents() {
-        val trace = ProcessTrace()
         var attempts = 0
         var keepProcessing = true
         while (keepProcessing && !threadLooper.loopStopped) {
@@ -256,18 +255,19 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                 batchSizeHistogram.record(records.size.toDouble())
                 val batches = getEventsByBatch(records).iterator()
                 while (!rebalanceOccurred && batches.hasNext()) {
+                    val trace = ProcessTrace(stateTopic, eventTopic)
                     val batch = batches.next()
                     rebalanceOccurred = tryProcessBatchOfEvents(batch, trace)
+                    trace.recordTotal()
+                    trace.batchSize = batch.size
+                    numberOfBatches++
+                    runningTotalMs += trace.totalDuractionMs
+                    maxTotal = max(trace.totalDuractionMs, maxTotal)
+                    trace.maxTotal = maxTotal
+                    trace.avg = runningTotalMs
+                    log.info(trace.toString())
                 }
                 keepProcessing = false // We only want to do one batch at a time
-                trace.recordTotal()
-                trace.batchSize = records.size
-                numberOfBatches++
-                runningTotalMs += trace.totalDuractionMs
-                maxTotal = max(trace.totalDuractionMs, maxTotal)
-                trace.maxTotal = maxTotal
-                trace.avg = runningTotalMs
-                log.info(trace.toString())
             } catch (ex: Exception) {
                 when (ex) {
                     is CordaMessageAPIIntermittentException -> {
