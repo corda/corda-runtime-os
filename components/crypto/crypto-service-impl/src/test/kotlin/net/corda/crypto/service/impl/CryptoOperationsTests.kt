@@ -108,22 +108,27 @@ class CryptoOperationsTests {
                 val externalId = UUID.randomUUID().toString()
                 SigningFreshKeyInfo(
                     externalId = externalId,
-                    publicKey = factory.cryptoService.freshKey(
+                    publicKey = factory.cryptoService.generateKeyPair(
                         tenantId = tenantId,
                         category = CryptoConsts.Categories.CI,
+                        alias = null,
                         externalId = externalId,
-                        scheme = it
-                    )
+                        scheme = it,
+                        context = emptyMap()
+                    ).publicKey
                 )
             }
             signingFreshKeysWithoutExternalId = factory.cryptoService.supportedSchemes.keys.associateWith {
                 SigningFreshKeyInfo(
                     externalId = null,
-                    publicKey = factory.cryptoService.freshKey(
+                    publicKey = factory.cryptoService.generateKeyPair(
                         tenantId = tenantId,
                         category = CryptoConsts.Categories.CI,
-                        scheme = it
-                    )
+                        alias = null,
+                        externalId = null,
+                        scheme = it,
+                        context = emptyMap()
+                    ).publicKey
                 )
             }
             unknownKeyPairs = factory.cryptoService.supportedSchemes.keys.associateWith {

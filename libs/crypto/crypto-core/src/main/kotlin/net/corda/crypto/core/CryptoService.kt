@@ -11,7 +11,6 @@ import net.corda.crypto.cipher.suite.schemes.KeyScheme
 import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
-import java.security.KeyPair
 import java.security.PublicKey
 
 /**
@@ -265,43 +264,6 @@ interface CryptoService {
         scheme: KeyScheme,
         context: Map<String, String> = EMPTY_CONTEXT,
     ): GeneratedWrappedKey
-
-    /**
-     * Generates a new random [KeyPair] and adds it to the internal key storage.
-     *
-     * @param tenantId the tenant's id which the key pair is generated for.
-     * @param category The HSM category, such as ACCOUNTS, CI, etc.
-     * @param scheme the key's scheme code name describing which type of the key to generate.
-     * @param context the optional key/value operation context.
-     *
-     * @return The [PublicKey] of the generated [KeyPair].
-     */
-    fun freshKey(
-        tenantId: String,
-        category: String,
-        scheme: KeyScheme,
-        context: Map<String, String> = EMPTY_CONTEXT,
-    ): PublicKey
-
-    /**
-     * Generates a new random [KeyPair] and adds it to the internal key storage. Associates the public key to
-     * an external id.
-     *
-     * @param tenantId the tenant's id which the key pair is generated for.
-     * @param category The HSM category, such as ACCOUNTS, CI, etc.
-     * @param externalId the external id to be associated with the key.
-     * @param scheme the key's scheme code name describing which type of the key to generate.
-     * @param context the optional key/value operation context.
-     *
-     * @return The [PublicKey] of the generated [KeyPair].
-     */
-    fun freshKey(
-        tenantId: String,
-        category: String,
-        externalId: String,
-        scheme: KeyScheme,
-        context: Map<String, String> = EMPTY_CONTEXT,
-    ): PublicKey
 
     /**
      * Using the provided signing public key internally looks up the matching private key and signs the data.
