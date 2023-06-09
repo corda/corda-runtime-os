@@ -4,7 +4,7 @@ db:
 
 appSimulators:
    sender:
-      totalNumberOfMessages: 100
-      interBatchDelay: "PT0.1S"
+      totalNumberOfMessages: 1000
+      interBatchDelay: "PT0.2S"
       batchSize: 100
       enabled: true

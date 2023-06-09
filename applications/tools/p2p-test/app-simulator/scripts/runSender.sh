@@ -2,10 +2,12 @@
 
 set -e
 SCRIPT_DIR=$(dirname ${BASH_SOURCE[0]})
+SCRIPT_DIR=$(realpath $SCRIPT_DIR)
 source "$SCRIPT_DIR/settings.sh"
 
 echo "Starting Sender"
 
+cd /tmp/onboard
 MGM_HOLDING_ID_SHORT_HASH=$(cat $MGM_HOLDING_ID_FILE)
 GROUP_ID=$(curl --fail-with-body -s -S --insecure -u admin:admin -X GET https://$MGM_RPC/api/v1/members/$MGM_HOLDING_ID_SHORT_HASH | jq '.members[0].memberContext."corda.groupId"' | tr -d '"')
 
