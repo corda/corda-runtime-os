@@ -208,11 +208,13 @@ open class SoftCryptoService(
             keyPairGenerator.initialize(keySize, schemeMetadata.secureRandom)
         }
         val keyPair = keyPairGenerator.generateKeyPair()
+        val publicKeySupported = schemeMetadata.toSupportedPublicKey(keyPair.public)
+
         val wrappingKey = obtainAndStoreWrappingKey(spec.wrappingKeyAlias, tenantId)
         val keyMaterial = wrappingKey.wrap(keyPair.private)
-        privateKeyCache?.put(keyPair.public, keyPair.private)
+        privateKeyCache?.put(publicKeySupported, keyPair.private)
         return GeneratedWrappedKey(
-            publicKey = keyPair.public,
+            publicKey = publicKeySupported,
             keyMaterial = keyMaterial,
             encodingVersion = PRIVATE_KEY_ENCODING_VERSION
         )
@@ -248,7 +250,6 @@ open class SoftCryptoService(
                 alias
             )
 
-            // TODO always return GeneratedWrappedKey here
             val key = generateKeyPair(
                 KeyGenerationSpec(scheme, alias, parentKeyAlias),
                 context + mapOf(
@@ -267,7 +268,7 @@ open class SoftCryptoService(
             )
             val signingKeyInfo = repo.savePrivateKey(saveContext)
             signingKeyInfoCache.put(CacheKey(tenantId, signingKeyInfo.id), signingKeyInfo)
-            return schemeMetadata.toSupportedPublicKey(key.publicKey)
+            return key.publicKey
         }
     }
 
