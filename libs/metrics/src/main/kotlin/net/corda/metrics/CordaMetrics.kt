@@ -610,17 +610,6 @@ object CordaMetrics {
             object MessageProcessorTime : Metric<Timer>("messaging.processor.time", CordaMetrics::timer)
 
             /**
-             * The time inside poll call to CordaKafkaConsumer. Includes waiting for messages from the bus and some other post-processing
-             * around partition assignment and record buffering.
-             */
-            object MessagePollTime : Metric<Timer>("messaging.poll.time", CordaMetrics::timer)
-
-            /**
-             * The size of batches of messages received in a poll from the message bus.
-             */
-            object MessageBatchSize : Metric<DistributionSummary>("messaging.batch.size", Metrics::summary)
-
-            /**
              * The time taken to commit a processed batch of messages back to the bus.
              */
             object MessageCommitTime : Metric<Timer>("messaging.commit.time", CordaMetrics::timer)

@@ -76,19 +76,6 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
         }
     }
 
-    private val statePollTimer = CordaMetrics.Metric.Messaging.MessagePollTime.builder()
-        .withTag(CordaMetrics.Tag.MessagePatternType, MetricsConstants.STATE_AND_EVENT_PATTERN_TYPE)
-        .withTag(CordaMetrics.Tag.MessagePatternClientId, config.clientId)
-        .withTag(CordaMetrics.Tag.OperationName, MetricsConstants.STATE_POLL_OPERATION)
-        .build()
-
-    private val eventPollTimer = CordaMetrics.Metric.Messaging.MessagePollTime.builder()
-        .withTag(CordaMetrics.Tag.MessagePatternType, MetricsConstants.STATE_AND_EVENT_PATTERN_TYPE)
-        .withTag(CordaMetrics.Tag.MessagePatternClientId, config.clientId)
-        .withTag(CordaMetrics.Tag.OperationName, MetricsConstants.EVENT_POLL_OPERATION)
-        .build()
-
-
     private var pollIntervalCutoff = 0L
 
     override fun onPartitionsAssigned(partitions: Set<CordaTopicPartition>) {
@@ -192,10 +179,8 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
             return
         }
 
-        val states = statePollTimer.recordCallable {
-            stateConsumer.poll(STATE_POLL_TIMEOUT)
-        }
-        states?.forEach { state ->
+        val states = stateConsumer.poll(STATE_POLL_TIMEOUT)
+        states.forEach { state ->
             log.trace { "Processing state: $state" }
             // This condition should always be true. This can however guard against a potential race where the partition
             // is revoked while states are being processed, resulting in the partition no longer being required to sync.
@@ -235,11 +220,9 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
     override fun pollEvents(): List<CordaConsumerRecord<K, E>> {
         return when {
             inSyncPartitions.isNotEmpty() -> {
-                eventPollTimer.recordCallable {
-                    eventConsumer.poll(EVENT_POLL_TIMEOUT).also {
-                        log.debug { "Received ${it.size} events on keys ${it.joinToString { it.key.toString() }}" }
-                    }
-                }!!
+                eventConsumer.poll(EVENT_POLL_TIMEOUT).also {
+                    log.debug { "Received ${it.size} events on keys ${it.joinToString { it.key.toString() }}" }
+                }
             }
             partitionsToSync.isEmpty() -> {
                 // Call poll more frequently to trigger a rebalance of the event consumer.

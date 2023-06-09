@@ -83,11 +83,6 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         .withTag(CordaMetrics.Tag.OperationName, MetricsConstants.BATCH_PROCESS_OPERATION)
         .build()
 
-    private val batchSizeHistogram = CordaMetrics.Metric.Messaging.MessageBatchSize.builder()
-        .withTag(CordaMetrics.Tag.MessagePatternType, MetricsConstants.STATE_AND_EVENT_PATTERN_TYPE)
-        .withTag(CordaMetrics.Tag.MessagePatternClientId, config.clientId)
-        .build()
-
     private val commitTimer = CordaMetrics.Metric.Messaging.MessageCommitTime.builder()
         .withTag(CordaMetrics.Tag.MessagePatternType, MetricsConstants.STATE_AND_EVENT_PATTERN_TYPE)
         .withTag(CordaMetrics.Tag.MessagePatternClientId, config.clientId)
@@ -193,7 +188,6 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                 log.debug { "Polling and processing events" }
                 var rebalanceOccurred = false
                 val records = stateAndEventConsumer.pollEvents()
-                batchSizeHistogram.record(records.size.toDouble())
                 val batches = getEventsByBatch(records).iterator()
                 while (!rebalanceOccurred && batches.hasNext()) {
                     val batch = batches.next()
