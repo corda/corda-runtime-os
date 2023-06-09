@@ -596,7 +596,7 @@ class SoftCryptoServiceGeneralTests {
             category = CryptoConsts.Categories.LEDGER,
             scheme = scheme,
             alias = expectedAlias
-        )
+        ).publicKey
         assertThat(generatedKey.publicKey).isEqualTo(result)
         val expectedExternalId = UUID.randomUUID().toString()
         result = service.generateKeyPair(
@@ -605,7 +605,7 @@ class SoftCryptoServiceGeneralTests {
             externalId = expectedExternalId,
             scheme = scheme,
             alias = expectedAlias
-        )
+        ).publicKey
         assertThat(generatedKey.publicKey).isEqualTo(result)
         verify(repo, times(1)).savePrivateKey(
             argThat {
