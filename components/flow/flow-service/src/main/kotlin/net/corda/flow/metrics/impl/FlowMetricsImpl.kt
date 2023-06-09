@@ -32,7 +32,7 @@ class FlowMetricsImpl(
         )
     }
 
-    private val currentSubFlowMetricState: SubFlowMetricState get() = currentState.subFlowMetricStates.last()
+    private val currentFlowStackItemMetricState: FlowStackItemMetricState get() = currentState.flowStackItemMetricStates.last()
 
     override fun flowEventReceived(flowEventType: String) {
         // Record the event lag
@@ -50,10 +50,10 @@ class FlowMetricsImpl(
     override fun flowFiberEntered() {
         fiberStartTime = clock.nowInMillis()
         // If we were waiting on a suspension then record the wait time.
-        currentState.subFlowMetricStates.lastOrNull()?.run {
+        currentState.flowStackItemMetricStates.lastOrNull()?.run {
             if (suspensionAction != null && suspensionTimestampMillis != null) {
                 val flowSuspensionTime = clock.nowInMillis() - suspensionTimestampMillis!!
-                flowMetricsRecorder.recordFlowSuspensionCompletion(name, suspensionAction!!, flowSuspensionTime)
+                flowMetricsRecorder.recordFlowSuspensionCompletion(name, isSubFlow, suspensionAction!!, flowSuspensionTime)
                 totalSuspensionTime += flowSuspensionTime
                 suspensionAction = null
                 suspensionTimestampMillis = null
@@ -63,8 +63,8 @@ class FlowMetricsImpl(
 
     override fun flowFiberExited() {
         fiberExecutionTime = clock.nowInMillis() - fiberStartTime
-        currentSubFlowMetricState.run {
-            flowMetricsRecorder.recordFiberExecution(name, fiberExecutionTime)
+        currentFlowStackItemMetricState.run {
+            flowMetricsRecorder.recordFiberExecution(name, isSubFlow, fiberExecutionTime)
             totalFiberExecutionTime += fiberExecutionTime
             suspensionCount++
             suspensionAction = null
@@ -74,7 +74,7 @@ class FlowMetricsImpl(
 
     override fun flowFiberExitedWithSuspension(suspensionOperationName: String?) {
         flowFiberExited()
-        currentSubFlowMetricState.apply {
+        currentFlowStackItemMetricState.apply {
             suspensionAction = suspensionOperationName
             suspensionTimestampMillis = clock.nowInMillis()
             totalFiberSuspensionCount++
@@ -83,8 +83,8 @@ class FlowMetricsImpl(
 
     override fun flowEventCompleted(flowEventType: String) {
         val pipelineExecutionTime = clock.instant().toEpochMilli() - eventReceivedTimestampMillis
-        currentSubFlowMetricState.run {
-            flowMetricsRecorder.recordPipelineExecution(name, pipelineExecutionTime, flowEventType)
+        currentFlowStackItemMetricState.run {
+            flowMetricsRecorder.recordPipelineExecution(name, isSubFlow, pipelineExecutionTime, flowEventType)
             totalPipelineExecutionTime += pipelineExecutionTime
             totalEventProcessedCount++
         }
@@ -100,42 +100,76 @@ class FlowMetricsImpl(
     }
 
     override fun flowSessionMessageSent(flowEventType: String) {
-        flowMetricsRecorder.recordFlowSessionMessagesSent(currentSubFlowMetricState.name, flowEventType)
+        flowMetricsRecorder.recordFlowSessionMessagesSent(
+            currentFlowStackItemMetricState.name,
+            isSubFlow = currentState.flowStackItemMetricStates.size > 1,
+            flowEventType
+        )
     }
 
     override fun flowSessionMessageReceived(flowEventType: String) {
         // Use the flow context's class name if the subflow stack hasn't been initialised yet.
-        val flowName = currentState.subFlowMetricStates.lastOrNull()?.name ?: flowCheckpoint.flowStartContext.flowClassName
-        flowMetricsRecorder.recordFlowSessionMessagesReceived(flowName, flowEventType)
+        val (flowName, isSubFlow) = when (val currentFlowStackItem = currentState.flowStackItemMetricStates.lastOrNull()) {
+            null -> flowCheckpoint.flowStartContext.flowClassName to false
+            else -> currentFlowStackItem.name to currentFlowStackItem.isSubFlow
+        }
+        flowMetricsRecorder.recordFlowSessionMessagesReceived(flowName, isSubFlow, flowEventType)
     }
 
     override fun subFlowStarted() {
-        val subFlowMetricState = SubFlowMetricState().apply {
+        val flowStackItemMetricState = FlowStackItemMetricState().apply {
             name = requireNotNull(flowCheckpoint.flowStack.peek()?.flowName) { "Flow stack is empty" }
         }
-        currentState.subFlowMetricStates.add(subFlowMetricState)
-        subFlowMetricState.flowProcessingStartTime = clock.nowInMillis()
+        if (currentState.flowStackItemMetricStates.isEmpty()) {
+            flowStackItemMetricState.isSubFlow = true
+        }
+        currentState.flowStackItemMetricStates.add(flowStackItemMetricState)
+        flowStackItemMetricState.flowProcessingStartTime = clock.nowInMillis()
     }
 
     override fun subFlowFinished(completionStatus: FlowStates) {
-        currentState.subFlowMetricStates.removeLast().let { finishedSubFlow ->
+        currentState.flowStackItemMetricStates.removeLast().let { finishedFlowStackItem ->
 
             val currentTime = clock.nowInMillis()
-            val flowCompletionTime = currentTime - finishedSubFlow.flowProcessingStartTime
+            val flowCompletionTime = currentTime - finishedFlowStackItem.flowProcessingStartTime
 
-            flowMetricsRecorder.recordSubFlowCompletion(finishedSubFlow.name, flowCompletionTime, completionStatus.toString())
-            flowMetricsRecorder.recordTotalSuspensionTime(finishedSubFlow.name, finishedSubFlow.totalSuspensionTime)
-            flowMetricsRecorder.recordTotalFiberExecutionTime(finishedSubFlow.name, finishedSubFlow.totalFiberExecutionTime)
-            flowMetricsRecorder.recordTotalPipelineExecutionTime(finishedSubFlow.name, finishedSubFlow.totalPipelineExecutionTime)
-            flowMetricsRecorder.recordTotalEventsProcessed(finishedSubFlow.name, finishedSubFlow.totalEventProcessedCount)
-            flowMetricsRecorder.recordTotalFiberSuspensions(finishedSubFlow.name, finishedSubFlow.totalFiberSuspensionCount)
+            flowMetricsRecorder.recordSubFlowCompletion(
+                finishedFlowStackItem.name,
+                flowCompletionTime,
+                completionStatus.toString()
+            )
+            flowMetricsRecorder.recordTotalSuspensionTime(
+                finishedFlowStackItem.name,
+                finishedFlowStackItem.isSubFlow,
+                finishedFlowStackItem.totalSuspensionTime
+            )
+            flowMetricsRecorder.recordTotalFiberExecutionTime(
+                finishedFlowStackItem.name,
+                finishedFlowStackItem.isSubFlow,
+                finishedFlowStackItem.totalFiberExecutionTime
+            )
+            flowMetricsRecorder.recordTotalPipelineExecutionTime(
+                finishedFlowStackItem.name,
+                finishedFlowStackItem.isSubFlow,
+                finishedFlowStackItem.totalPipelineExecutionTime
+            )
+            flowMetricsRecorder.recordTotalEventsProcessed(
+                finishedFlowStackItem.name,
+                finishedFlowStackItem.isSubFlow,
+                finishedFlowStackItem.totalEventProcessedCount
+            )
+            flowMetricsRecorder.recordTotalFiberSuspensions(
+                finishedFlowStackItem.name,
+                finishedFlowStackItem.isSubFlow,
+                finishedFlowStackItem.totalFiberSuspensionCount
+            )
 
-            currentSubFlowMetricState.apply {
-                totalSuspensionTime += finishedSubFlow.totalSuspensionTime
-                totalFiberExecutionTime += finishedSubFlow.totalFiberExecutionTime
-                totalPipelineExecutionTime += finishedSubFlow.totalPipelineExecutionTime
-                totalEventProcessedCount += finishedSubFlow.totalEventProcessedCount
-                totalFiberSuspensionCount += finishedSubFlow.totalFiberSuspensionCount
+            currentFlowStackItemMetricState.apply {
+                totalSuspensionTime += finishedFlowStackItem.totalSuspensionTime
+                totalFiberExecutionTime += finishedFlowStackItem.totalFiberExecutionTime
+                totalPipelineExecutionTime += finishedFlowStackItem.totalPipelineExecutionTime
+                totalEventProcessedCount += finishedFlowStackItem.totalEventProcessedCount
+                totalFiberSuspensionCount += finishedFlowStackItem.totalFiberSuspensionCount
             }
         }
     }
@@ -145,13 +179,13 @@ class FlowMetricsImpl(
         val flowCompletionTime = currentTime - currentState.flowProcessingStartTime
         val flowRunTime = currentTime - flowCheckpoint.flowStartContext.createdTimestamp.toEpochMilli()
 
-        currentSubFlowMetricState.run {
+        currentFlowStackItemMetricState.run {
             flowMetricsRecorder.recordFlowCompletion(name, flowCompletionTime, flowRunTime, completionStatus)
-            flowMetricsRecorder.recordTotalSuspensionTime(name, totalSuspensionTime)
-            flowMetricsRecorder.recordTotalFiberExecutionTime(name, totalFiberExecutionTime)
-            flowMetricsRecorder.recordTotalPipelineExecutionTime(name, totalPipelineExecutionTime)
-            flowMetricsRecorder.recordTotalEventsProcessed(name, totalEventProcessedCount)
-            flowMetricsRecorder.recordTotalFiberSuspensions(name, totalFiberSuspensionCount)
+            flowMetricsRecorder.recordTotalSuspensionTime(name, isSubFlow, totalSuspensionTime)
+            flowMetricsRecorder.recordTotalFiberExecutionTime(name, isSubFlow, totalFiberExecutionTime)
+            flowMetricsRecorder.recordTotalPipelineExecutionTime(name, isSubFlow, totalPipelineExecutionTime)
+            flowMetricsRecorder.recordTotalEventsProcessed(name, isSubFlow, totalEventProcessedCount)
+            flowMetricsRecorder.recordTotalFiberSuspensions(name, isSubFlow, totalFiberSuspensionCount)
         }
     }
 
@@ -161,17 +195,18 @@ class FlowMetricsImpl(
 
     /**
      * @property flowProcessingStartTime The start time of the top level flow.
-     * @property subFlowMetricStates Includes all SubFlows as well as the top level flow, after the initial flow stack item has been added.
+     * @property flowStackItemMetricStates Includes all SubFlows as well as the top level flow, after the initial flow stack item has been added.
      * Some metrics reference the flow class name from the flow start context in the scenario that the flow stack for the top level flow
      * has not been added yet.
      */
     private class FlowMetricState {
         var flowProcessingStartTime: Long = 0
-        val subFlowMetricStates: ArrayList<SubFlowMetricState> = arrayListOf()
+        val flowStackItemMetricStates: ArrayList<FlowStackItemMetricState> = arrayListOf()
     }
 
-    private class SubFlowMetricState {
+    private class FlowStackItemMetricState {
         var name: String = ""
+        var isSubFlow: Boolean = false
         var flowProcessingStartTime: Long = 0
         var suspensionTimestampMillis: Long? = null
         var suspensionAction: String? = null
