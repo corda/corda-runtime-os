@@ -229,8 +229,10 @@ open class SoftCryptoService(
         context: Map<String, String>,
     ): PublicKey {
         logger.info("generateKeyPair(tenant={}, category={}, alias={}))", tenantId, category, alias)
-        val association = hsmStore.findTenantAssociation(tenantId, category)
+        val parentKeyAlias =
+            context.get("parentKeyAlias") ?: hsmStore.findTenantAssociation(tenantId, category)?.masterKeyAlias
             ?: throw InvalidParamsException("The tenant '$tenantId' is not configured for category '$category'.")
+
         signingRepositoryFactory.getInstance(tenantId).use { repo ->
             if (alias != null && repo.findKey(alias) != null) {
                 throw KeyAlreadyExistsException(
@@ -240,7 +242,7 @@ open class SoftCryptoService(
                 )
             }
             logger.trace(
-                "generateKeyPair for tenant={}, category={}, alias={} using wrapping key ${association.masterKeyAlias}",
+                "generateKeyPair for tenant={}, category={}, alias={} using wrapping key ${parentKeyAlias}",
                 tenantId,
                 category,
                 alias
@@ -248,7 +250,7 @@ open class SoftCryptoService(
 
             // TODO always return GeneratedWrappedKey here
             val key = generateKeyPair(
-                KeyGenerationSpec(scheme, alias, association.masterKeyAlias),
+                KeyGenerationSpec(scheme, alias, parentKeyAlias),
                 context + mapOf(
                     CRYPTO_TENANT_ID to tenantId,
                     CRYPTO_CATEGORY to category
@@ -256,7 +258,7 @@ open class SoftCryptoService(
             )
             val saveContext = SigningWrappedKeySaveContext(
                 key = key,
-                masterKeyAlias = association.masterKeyAlias,
+                masterKeyAlias = parentKeyAlias,
                 externalId = externalId,
                 alias = alias,
                 keyScheme = scheme,
