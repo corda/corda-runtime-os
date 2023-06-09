@@ -66,4 +66,8 @@ class DefaultWorkerParams(healthPortOverride: Int = WORKER_MONITOR_PORT) {
 
     @Option(names = ["--send-trace-to"], description = ["URL of server that accepts Zipkin format traces."])
     var zipkinTraceUrl: String? = null
+
+    @Option(names = ["--trace-samples-per-second"], description = ["Number of request traces to sample per second, " +
+            "defaults to 1 sample per second. Set to \"unlimited\" to record all samples"])
+    var traceSamplesPerSecond: String? = null
 }

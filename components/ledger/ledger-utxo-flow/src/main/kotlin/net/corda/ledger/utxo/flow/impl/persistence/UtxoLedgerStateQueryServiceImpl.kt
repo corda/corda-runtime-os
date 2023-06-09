@@ -24,7 +24,7 @@ import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 
 @Component(
-    service = [ UtxoLedgerStateQueryService::class, UsedByFlow::class ],
+    service = [UtxoLedgerStateQueryService::class, UsedByFlow::class],
     scope = PROTOTYPE
 )
 class UtxoLedgerStateQueryServiceImpl @Activate constructor(
@@ -37,26 +37,30 @@ class UtxoLedgerStateQueryServiceImpl @Activate constructor(
 ) : UtxoLedgerStateQueryService, UsedByFlow, SingletonSerializeAsToken {
 
     @Suspendable
-    override fun <T: ContractState> findUnconsumedStatesByType(stateClass: Class<out T>): List<StateAndRef<T>> {
+    override fun <T : ContractState> findUnconsumedStatesByType(stateClass: Class<out T>): List<StateAndRef<T>> {
         return recordSuspendable({ ledgerPersistenceFlowTimer(FindUnconsumedStatesByType) }) @Suspendable {
             wrapWithPersistenceException {
                 externalEventExecutor.execute(
                     FindUnconsumedStatesByTypeExternalEventFactory::class.java,
                     FindUnconsumedStatesByTypeParameters(stateClass)
                 )
-            }.map { it.toStateAndRef(serializationService)}
+            }.map { it.toStateAndRef(serializationService) }
         }
     }
 
     @Suspendable
     override fun resolveStateRefs(stateRefs: Iterable<StateRef>): List<StateAndRef<*>> {
         return recordSuspendable({ ledgerPersistenceFlowTimer(ResolveStateRefs) }) @Suspendable {
-            wrapWithPersistenceException {
-                externalEventExecutor.execute(
-                    ResolveStateRefsExternalEventFactory::class.java,
-                    ResolveStateRefsParameters(stateRefs)
-                )
-            }.map { it.toStateAndRef<ContractState>(serializationService) }
+            if (stateRefs.count() == 0) {
+                emptyList()
+            } else {
+                wrapWithPersistenceException {
+                    externalEventExecutor.execute(
+                        ResolveStateRefsExternalEventFactory::class.java,
+                        ResolveStateRefsParameters(stateRefs)
+                    )
+                }.map { it.toStateAndRef<ContractState>(serializationService) }
+            }
         }
     }
 
