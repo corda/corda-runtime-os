@@ -1,0 +1,9 @@
+-classpath: parallel-consumer-core-0.5.2.5.jar
+Bundle-SymbolicName: io.confluent.parallelconsumer
+ver: 0.5.2.5
+-output: ${bsn}-osgi-${ver}.jar
+Bundle-Version: ${ver}
+Import-Package: \
+	lombok.*;resolution:=optional, \
+	*
+Export-Package: *;version=${ver}

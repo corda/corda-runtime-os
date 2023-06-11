@@ -1,0 +1,14 @@
+-classpath: pl.tlinkowski.unij.service.collect.jdk10-0.1.3.jar
+Bundle-SymbolicName: pl.tlinkowski.unij.service.collect.jdk10
+ver: 0.1.3
+-output: ${bsn}-osgi-${ver}.jar
+Bundle-Version: ${ver}
+Export-Package: *;version=${ver}
+
+# SPI
+Require-Capability: osgi.extender; \
+	filter:="(osgi.extender=osgi.serviceloader.registrar)"
+
+Provide-Capability: osgi.serviceloader; \
+	osgi.serviceloader= pl.tlinkowski.unij.service.api.collect.UnmodifiableMapFactory
+

@@ -6,11 +6,12 @@ plugins {
 
 ext {
     // Use db message bus emulation by default, but allow switching to kafka without manually updating the build file
-    if (!project.hasProperty('busImpl')) {
-        busImplementation = 'db-message-bus-impl'
-    } else {
-        busImplementation = "${busImpl}-message-bus-impl"
-    }
+//    if (!project.hasProperty('busImpl')) {
+//        busImplementation = 'db-message-bus-impl'
+//    } else {
+//        busImplementation = "${busImpl}-message-bus-impl"
+//    }
+    busImplementation = "kafka-message-bus-impl"
 }
 
 description 'Combined Worker'

@@ -1,0 +1,6 @@
+-classpath: pl.tlinkowski.unij.service.api-0.1.3.jar
+Bundle-SymbolicName: pl.tlinkowski.unij.service.api
+ver: 0.1.3
+-output: ${bsn}-osgi-${ver}.jar
+Bundle-Version: ${ver}
+Export-Package: *;version=${ver}

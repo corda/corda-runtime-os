@@ -1,7 +1,6 @@
 package net.corda.messagebus.kafka.consumer.builder
 
 import io.micrometer.core.instrument.binder.kafka.KafkaClientMetrics
-import java.util.Properties
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messagebus.api.configuration.ConsumerConfig
 import net.corda.messagebus.api.consumer.CordaConsumer
@@ -11,12 +10,10 @@ import net.corda.messagebus.kafka.config.MessageBusConfigResolver
 import net.corda.messagebus.kafka.consumer.CordaKafkaConsumerImpl
 import net.corda.messagebus.kafka.serialization.CordaAvroDeserializerImpl
 import net.corda.messagebus.kafka.utils.KafkaRetryUtils.executeKafkaActionWithRetry
+import net.corda.messagebus.kafka.utils.createKafkaConsumer
 import net.corda.messaging.api.chunking.MessagingChunkFactory
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.tracing.wrapWithTracingConsumer
-import org.apache.kafka.clients.consumer.KafkaConsumer
-import org.osgi.framework.FrameworkUtil
-import org.osgi.framework.wiring.BundleWiring
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -73,27 +70,5 @@ class CordaKafkaConsumerBuilderImpl @Activate constructor(
             },
             log = log
         )
-    }
-
-    private fun <K : Any, V : Any> createKafkaConsumer(
-        kafkaProperties: Properties,
-        keyDeserializer: CordaAvroDeserializerImpl<K>,
-        valueDeserializer: CordaAvroDeserializerImpl<V>,
-    ): KafkaConsumer<Any, Any> {
-        val contextClassLoader = Thread.currentThread().contextClassLoader
-        val currentBundle = FrameworkUtil.getBundle(KafkaConsumer::class.java)
-
-        return try {
-            if (currentBundle != null) {
-                Thread.currentThread().contextClassLoader = currentBundle.adapt(BundleWiring::class.java).classLoader
-            }
-            KafkaConsumer(
-                kafkaProperties,
-                keyDeserializer,
-                valueDeserializer
-            )
-        } finally {
-            Thread.currentThread().contextClassLoader = contextClassLoader
-        }
     }
 }
