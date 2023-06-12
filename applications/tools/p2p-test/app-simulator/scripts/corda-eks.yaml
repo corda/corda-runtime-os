@@ -5,3 +5,13 @@ resources:
   limits:
     memory: "1250Mi"
     cpu: "1000m"
+tolerations:
+  - key: "node"
+    effect: "NoSchedule"
+    value: "corda"
+nodeSelector: { node: "corda" }
+metrics:
+  podMonitor:
+    enabled: true
+    labels:
+      release: observability
