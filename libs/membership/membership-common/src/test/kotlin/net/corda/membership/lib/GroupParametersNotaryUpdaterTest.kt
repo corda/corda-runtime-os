@@ -8,6 +8,7 @@ import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.NOTARY_SE
 import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.NOTARY_SERVICE_NAME_KEY
 import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.NOTARY_SERVICE_PROTOCOL_KEY
 import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.NOTARY_SERVICE_PROTOCOL_VERSIONS_KEY
+import net.corda.membership.lib.exceptions.InvalidGroupParametersUpdateException
 import net.corda.membership.lib.notary.MemberNotaryDetails
 import net.corda.membership.lib.notary.MemberNotaryKey
 import net.corda.test.util.time.TestClock
@@ -22,7 +23,6 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import java.security.PublicKey
 import java.time.Instant
-import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import org.junit.jupiter.api.assertThrows
 
 class GroupParametersNotaryUpdaterTest {
@@ -80,7 +80,9 @@ class GroupParametersNotaryUpdaterTest {
         val notaryKey = MemberNotaryKey(publicKey, mock(), mock())
         val notaryToAdd = MemberNotaryDetails(notaryAx500Name, null, setOf(1, 3), listOf(notaryKey))
 
-        val ex = assertThrows<MembershipPersistenceException> { notaryUpdater.addNewNotaryService(originalGroupParameters, notaryToAdd) }
+        val ex = assertThrows<InvalidGroupParametersUpdateException> {
+            notaryUpdater.addNewNotaryService(originalGroupParameters, notaryToAdd)
+        }
         assertThat(ex).hasMessageContaining("protocol must be specified")
     }
 
@@ -90,7 +92,9 @@ class GroupParametersNotaryUpdaterTest {
         val notaryKey = MemberNotaryKey(publicKey, mock(), mock())
         val notaryToAdd = MemberNotaryDetails(notaryAx500Name, NOTARY_PROTOCOL_A, emptySet(), listOf(notaryKey))
 
-        val ex = assertThrows<MembershipPersistenceException> { notaryUpdater.addNewNotaryService(originalGroupParameters, notaryToAdd) }
+        val ex = assertThrows<InvalidGroupParametersUpdateException> {
+            notaryUpdater.addNewNotaryService(originalGroupParameters, notaryToAdd)
+        }
         assertThat(ex).hasMessageContaining("protocol versions are missing")
     }
 
@@ -175,7 +179,7 @@ class GroupParametersNotaryUpdaterTest {
         val notaryKey = MemberNotaryKey(publicKey, mock(), mock())
         val notaryDetails = MemberNotaryDetails(notaryAx500Name, "incorrect.plugin.type", emptySet(), listOf(notaryKey))
 
-        val ex = assertThrows<MembershipPersistenceException> { notaryUpdater.updateExistingNotaryService(
+        val ex = assertThrows<InvalidGroupParametersUpdateException> { notaryUpdater.updateExistingNotaryService(
             currentGroupParameters,
             notaryDetails,
             5,
@@ -197,7 +201,7 @@ class GroupParametersNotaryUpdaterTest {
         val notaryKey = MemberNotaryKey(publicKey, mock(), mock())
         val notaryDetails = MemberNotaryDetails(notaryAx500Name, NOTARY_PROTOCOL_A, emptySet(), listOf(notaryKey))
 
-        val ex = assertThrows<MembershipPersistenceException> { notaryUpdater.updateExistingNotaryService(
+        val ex = assertThrows<InvalidGroupParametersUpdateException> { notaryUpdater.updateExistingNotaryService(
             currentGroupParameters,
             notaryDetails,
             5,
@@ -352,7 +356,7 @@ class GroupParametersNotaryUpdaterTest {
         val otherNotary1 = MemberNotaryDetails(notaryBx500Name, NOTARY_PROTOCOL_A, setOf(1), listOf(notaryKey))
         val otherNotary2 = MemberNotaryDetails(notaryCx500Name, NOTARY_PROTOCOL_A, setOf(1), listOf(notaryKey))
 
-        val ex = assertThrows<MembershipPersistenceException> { notaryUpdater.removeNotaryFromExistingNotaryService(
+        val ex = assertThrows<InvalidGroupParametersUpdateException> { notaryUpdater.removeNotaryFromExistingNotaryService(
             currentGroupParameters,
             notaryToRemove,
             5,
@@ -376,7 +380,7 @@ class GroupParametersNotaryUpdaterTest {
         val otherNotary1 = MemberNotaryDetails(notaryBx500Name, NOTARY_PROTOCOL_A, setOf(1), listOf(notaryKey))
         val otherNotary2 = MemberNotaryDetails(notaryCx500Name, NOTARY_PROTOCOL_A, setOf(1), listOf(notaryKey))
 
-        val ex = assertThrows<MembershipPersistenceException> { notaryUpdater.removeNotaryFromExistingNotaryService(
+        val ex = assertThrows<InvalidGroupParametersUpdateException> { notaryUpdater.removeNotaryFromExistingNotaryService(
             currentGroupParameters,
             notaryToRemove,
             5,
