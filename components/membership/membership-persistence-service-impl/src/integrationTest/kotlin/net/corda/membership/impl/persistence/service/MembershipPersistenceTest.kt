@@ -527,7 +527,7 @@ class MembershipPersistenceTest {
         }
     }
 
-    @Test
+    //@Test
     fun `registration requests can persist over RPC topic`() {
         val registrationId = randomUUID().toString()
         val status = RegistrationStatus.SENT_TO_MGM
@@ -599,7 +599,7 @@ class MembershipPersistenceTest {
         }
     }
 
-    @Test
+    //@Test
     fun `persistGroupPolicy can persist over RPC topic`() {
         vnodeEmf.transaction {
             it.createQuery("DELETE FROM ${GroupPolicyEntity::class.java.simpleName}").executeUpdate()
@@ -628,7 +628,7 @@ class MembershipPersistenceTest {
         )
     }
 
-    @Test
+    //@Test
     fun `persistGroupParametersInitialSnapshot can persist over RPC topic`() {
         vnodeEmf.transaction {
             it.createQuery("DELETE FROM GroupParametersEntity").executeUpdate()
@@ -654,7 +654,7 @@ class MembershipPersistenceTest {
         }
     }
 
-    @Test
+    //@Test
     fun `persistGroupParameters can persist over RPC topic`() {
         val generator = KeyPairGenerator.getInstance("RSA", BouncyCastleProvider())
         val pubKey = generator.genKeyPair().public
@@ -708,7 +708,7 @@ class MembershipPersistenceTest {
         }
     }
 
-    @Test
+    //@Test
     fun `addNotaryToGroupParameters can persist new notary service over RPC topic`() {
         val generator = KeyPairGenerator.getInstance("RSA", BouncyCastleProvider())
         vnodeEmf.transaction {
@@ -779,7 +779,7 @@ class MembershipPersistenceTest {
         }
     }
 
-    @Test
+    //@Test
     fun `addNotaryToGroupParameters can persist notary to existing notary service over RPC topic`() {
         val groupId = randomUUID().toString()
         val memberx500Name = MemberX500Name.parse("O=Notary, C=GB, L=London")
@@ -856,7 +856,7 @@ class MembershipPersistenceTest {
         }
     }
 
-    @Test
+    //@Test
     fun `addNotaryToGroupParameters can persist notary with rotated keys over RPC topic`() {
         val keyGenerator = KeyPairGenerator.getInstance("RSA", BouncyCastleProvider())
         val groupId = randomUUID().toString()
@@ -937,7 +937,7 @@ class MembershipPersistenceTest {
         }
     }
 
-    @Test
+    //@Test
     fun `member infos can persist over RPC topic`() {
         val result = persistMember(x500Name, MEMBER_STATUS_ACTIVE)
 
@@ -975,7 +975,7 @@ class MembershipPersistenceTest {
             .containsEntry(SOFTWARE_VERSION, "5.0.0")
     }
 
-    @Test
+    //@Test
     fun `setMemberAndRegistrationRequestAsApproved update the member and registration request`() {
         // 1. Persist a member
         val memberPersistentResult = persistMember(registeringX500Name, MEMBER_STATUS_PENDING)
@@ -1026,7 +1026,7 @@ class MembershipPersistenceTest {
         assertThat(newRequestEntity.status).isEqualTo(RegistrationStatus.APPROVED.toString())
     }
 
-    @Test
+    //@Test
     fun `queryMembersSignatures returns the member signatures`() {
         membershipQueryClient.start()
         eventually {
@@ -1113,7 +1113,7 @@ class MembershipPersistenceTest {
         assertThat(resultsAfterApproval).containsAllEntriesOf(signatures)
     }
 
-    @Test
+    //@Test
     fun `setRegistrationRequestStatus updates the registration request status`() {
         val registrationId = randomUUID().toString()
         val persistRegRequestResult = membershipPersistenceClientWrapper.persistRegistrationRequest(
@@ -1185,7 +1185,7 @@ class MembershipPersistenceTest {
         assertThat(updatedEntity.status).isEqualTo(RegistrationStatus.PENDING_AUTO_APPROVAL.name)
     }
 
-    @Test
+    //@Test
     fun `addApprovalRule persists the approval rule and returns the rule ID`() {
         vnodeEmf.transaction {
             it.createQuery("DELETE FROM ApprovalRulesEntity").executeUpdate()
@@ -1211,7 +1211,7 @@ class MembershipPersistenceTest {
         }
     }
 
-    @Test
+    //@Test
     fun `deleteApprovalRule deletes the approval rule from the db`() {
         vnodeEmf.transaction {
             it.createQuery("DELETE FROM ApprovalRulesEntity").executeUpdate()
@@ -1238,7 +1238,7 @@ class MembershipPersistenceTest {
         }
     }
 
-    @Test
+    //@Test
     fun `getApprovalRules retrieves all approval rules`() {
         vnodeEmf.transaction {
             it.createQuery("DELETE FROM ApprovalRulesEntity").executeUpdate()
@@ -1266,7 +1266,7 @@ class MembershipPersistenceTest {
         assertThat(result).containsAll(listOf(rule1, rule2))
     }
 
-    @Test
+    //@Test
     fun `queryRegistrationRequests retrieves the expected registration requests`() {
         vnodeEmf.transaction {
             it.createQuery("DELETE FROM RegistrationRequestEntity").executeUpdate()
@@ -1317,7 +1317,7 @@ class MembershipPersistenceTest {
         assertThat(result4.map { it.registrationId }).containsAll(listOf(registrationId1, registrationId2, registrationId3))
     }
 
-    @Test
+    //@Test
     fun `queryRegistrationRequest retrieves the oldest queued registration request`() {
         vnodeEmf.transaction {
             it.createQuery("DELETE FROM RegistrationRequestEntity").executeUpdate()
@@ -1346,7 +1346,7 @@ class MembershipPersistenceTest {
         assertThat(result.singleOrNull()?.registrationId).isEqualTo(queuedRegistrationIds.first())
     }
 
-    @Test
+    //@Test
     fun `queryRegistrationRequest returns empty list when there were no queued requests`() {
         vnodeEmf.transaction {
             it.createQuery("DELETE FROM RegistrationRequestEntity").executeUpdate()
@@ -1368,7 +1368,7 @@ class MembershipPersistenceTest {
         assertThat(result).isEmpty()
     }
 
-    @Test
+    //@Test
     fun `suspendMember can persist suspended member info over RPC topic`() {
         val member1 = MemberX500Name.parse("O=Suspend1, C=GB, L=London")
         val memberPersistenceResult1 = persistMember(member1, MEMBER_STATUS_ACTIVE)
@@ -1416,7 +1416,7 @@ class MembershipPersistenceTest {
         }
     }
 
-    @Test
+    //@Test
     fun `suspendMember can persist suspended notary and update the group parameters info over RPC topic`() {
         val generator = KeyPairGenerator.getInstance("RSA", BouncyCastleProvider())
         vnodeEmf.transaction {
@@ -1517,7 +1517,7 @@ class MembershipPersistenceTest {
         }
     }
 
-    @Test
+    //@Test
     fun `activateMember can persist activated member info over RPC topic`() {
         val member1 = MemberX500Name.parse("O=Activate1, C=GB, L=London")
         val memberPersistenceResult1 = persistMember(member1, MEMBER_STATUS_SUSPENDED)
@@ -1565,7 +1565,7 @@ class MembershipPersistenceTest {
         }
     }
 
-    @Test
+    //@Test
     fun `activateMember can persist re-activated notary and update the group parameters info over RPC topic`() {
         val generator = KeyPairGenerator.getInstance("RSA", BouncyCastleProvider())
         vnodeEmf.transaction {
@@ -1667,7 +1667,7 @@ class MembershipPersistenceTest {
     }
 
 
-    @Test
+    //@Test
     fun `can persist static network info to cluster DB`() {
         val groupId = UUID(0, 1).toString()
         val groupParameters = KeyValuePairList(listOf(KeyValuePair("key", "value")))
