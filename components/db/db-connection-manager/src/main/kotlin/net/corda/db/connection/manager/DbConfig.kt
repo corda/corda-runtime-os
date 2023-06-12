@@ -83,24 +83,22 @@ fun createDbConfig(
     username: String,
     password: String,
     jdbcDriver: String? = null,
-    jdbcUrl: String? = null,
-    maxPoolSize: Int? = null,
-    minPoolSize: Int? = null,
+    jdbcUrl: String,
+    maxPoolSize: Int,
+    minPoolSize: Int?,
     idleTimeout: Int,
     maxLifetime: Int,
     keepaliveTime: Int,
     validationTimeout: Int,
-    key: String = "database-password"
+    key: String
 ): SmartConfig {
     var config =
         smartConfigFactory.makeSecret(password, key).atPath(DatabaseConfig.DB_PASS)
             .withValue(DatabaseConfig.DB_USER, ConfigValueFactory.fromAnyRef(username))
     if(null != jdbcDriver)
         config = config.withValue(DatabaseConfig.JDBC_DRIVER, ConfigValueFactory.fromAnyRef(jdbcDriver))
-    if(null != jdbcUrl)
-        config = config.withValue(DatabaseConfig.JDBC_URL, ConfigValueFactory.fromAnyRef(jdbcUrl))
-    if(null != maxPoolSize)
-        config = config.withValue(DatabaseConfig.DB_POOL_MAX_SIZE, ConfigValueFactory.fromAnyRef(maxPoolSize))
+    config = config.withValue(DatabaseConfig.JDBC_URL, ConfigValueFactory.fromAnyRef(jdbcUrl))
+    config = config.withValue(DatabaseConfig.DB_POOL_MAX_SIZE, ConfigValueFactory.fromAnyRef(maxPoolSize))
     if(null != minPoolSize)
         config = config.withValue(DatabaseConfig.DB_POOL_MIN_SIZE, ConfigValueFactory.fromAnyRef(minPoolSize))
 

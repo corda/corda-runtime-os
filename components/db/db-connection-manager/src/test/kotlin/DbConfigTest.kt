@@ -166,7 +166,8 @@ class DbConfigTest {
             idleTimeout = 0,
             maxLifetime = 0,
             keepaliveTime = 0,
-            validationTimeout = 0)
+            validationTimeout = 0,
+            key = "database-password")
 
         assertThat(createdConfig.getString(DatabaseConfig.DB_USER)).isEqualTo(user)
         assertThat(createdConfig.getConfig(DatabaseConfig.DB_PASS)).isEqualTo(secretConfig)
@@ -185,45 +186,15 @@ class DbConfigTest {
             pass,
             jdbcUrl = url,
             maxPoolSize = poolsize,
+            minPoolSize = null,
             idleTimeout = 0,
             maxLifetime = 0,
             keepaliveTime = 0,
-            validationTimeout = 0
+            validationTimeout = 0,
+            key = "database-password"
         )
 
         assertThat(createdConfig.hasPath(DatabaseConfig.JDBC_DRIVER)).isFalse
-    }
-
-    @Test
-    fun `when createDbConfig leave default url empty`() {
-        val createdConfig = createDbConfig(
-            smartConfigFactory,
-            user,
-            pass,
-            jdbcDriver = driver,
-            maxPoolSize = poolsize,
-            idleTimeout = 0,
-            maxLifetime = 0,
-            keepaliveTime = 0,
-            validationTimeout = 0)
-
-        assertThat(createdConfig.hasPath(DatabaseConfig.JDBC_URL)).isFalse
-    }
-
-    @Test
-    fun `when createDbConfig leave default poolsize empty`() {
-        val createdConfig = createDbConfig(
-            smartConfigFactory,
-            user,
-            pass,
-            jdbcUrl = url,
-            jdbcDriver = driver,
-            idleTimeout = 0,
-            maxLifetime = 0,
-            keepaliveTime = 0,
-            validationTimeout = 0)
-
-        assertThat(createdConfig.hasPath(DatabaseConfig.DB_POOL_MAX_SIZE)).isFalse
     }
 
     @Test
@@ -233,11 +204,14 @@ class DbConfigTest {
             user,
             pass,
             jdbcUrl = url,
+            maxPoolSize = poolsize,
+            minPoolSize = null,
             jdbcDriver = driver,
             idleTimeout = 0,
             maxLifetime = 0,
             keepaliveTime = 0,
-            validationTimeout = 0)
+            validationTimeout = 0,
+            key = "database-password")
 
         assertThat(createdConfig.hasPath(DatabaseConfig.DB_POOL_MIN_SIZE)).isFalse
     }
