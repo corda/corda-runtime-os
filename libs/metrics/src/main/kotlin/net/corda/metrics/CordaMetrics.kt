@@ -6,16 +6,19 @@ import io.micrometer.core.instrument.Gauge
 import io.micrometer.core.instrument.Meter
 import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.core.instrument.Metrics
+import io.micrometer.core.instrument.Tags
 import io.micrometer.core.instrument.Tag as micrometerTag
 import io.micrometer.core.instrument.Timer
-import io.micrometer.core.instrument.binder.system.DiskSpaceMetrics
+import io.micrometer.core.instrument.binder.BaseUnits
 import io.micrometer.core.instrument.composite.CompositeMeterRegistry
 import io.micrometer.core.instrument.config.MeterFilter
-import io.micrometer.core.instrument.noop.NoopMeter
+import io.micrometer.core.instrument.noop.NoopGauge
+import java.io.File
 import java.nio.file.FileSystems
 import java.nio.file.Path
-import java.util.concurrent.atomic.AtomicInteger
 import java.util.function.Supplier
+import java.util.function.ToDoubleFunction
+import java.util.function.ToLongFunction
 
 
 object CordaMetrics {
@@ -25,7 +28,7 @@ object CordaMetrics {
     ) {
 
         fun builder(): MeterBuilder<T> {
-            return MeterBuilder(this.metricsName, this.meter)
+            return MeterBuilder(metricsName, meter)
         }
 
         // NOTE: please ensure the metric names adhere to the conventions described on https://micrometer.io/docs/concepts#_naming_meters
@@ -63,17 +66,17 @@ object CordaMetrics {
         /**
          * FLOW METRICS
          *
-         * Time it took for a flow to complete successfully or to error.
+         * Time it took for a flow or subFlow to complete successfully or to error.
          */
         object FlowRunTime : Metric<Timer>("flow.run.time", CordaMetrics::timer)
 
         /**
-         * Metric for flow fiber serialization.
+         * Metric for flow or subFlow fiber serialization.
          */
         object FlowFiberSerializationTime : Metric<Timer>("flow.fiber.serialization.time", CordaMetrics::timer)
 
         /**
-         * Metric for flow fiber deserialization.
+         * Metric for flow or subFlow fiber deserialization.
          */
         object FlowFiberDeserializationTime : Metric<Timer>("flow.fiber.deserialization.time", CordaMetrics::timer)
 
@@ -111,12 +114,12 @@ object CordaMetrics {
 
 
         /**
-         * Metric for the total time spent in the pipeline code across the execution time of a flow.
+         * Metric for the total time spent in the pipeline code across the execution time of a flow or subFlow.
          */
         object FlowPipelineExecutionTime : Metric<Timer>("flow.pipeline.execution.time", CordaMetrics::timer)
 
         /**
-         * Metric for the total time spent executing user code across the execution time of a flow.
+         * Metric for the total time spent executing user code across the execution time of a flow or subFlow.
          */
         object FlowFiberExecutionTime : Metric<Timer>("flow.fiber.execution.time", CordaMetrics::timer)
 
@@ -134,7 +137,7 @@ object CordaMetrics {
         object FlowEventSuspensionWaitTime : Metric<Timer>("flow.event.suspension.wait.time", CordaMetrics::timer)
 
         /**
-         * Number of times a scheduled wakeup is published for flows.
+         * Number of times a scheduled wakeup is published for flows and subFlows.
          */
         object FlowScheduledWakeupCount : Metric<Counter>("flow.scheduled.wakeup.count", Metrics::counter)
 
@@ -144,7 +147,7 @@ object CordaMetrics {
         object FlowEventProcessedCount : Metric<DistributionSummary>("flow.event.processed.count", Metrics::summary)
 
         /**
-         * Number of flow events that lead to a fiber resume for a single flow.
+         * Number of flow events that lead to a fiber resume for a single flow or subFlow.
          */
         object FlowFiberSuspensionCount : Metric<DistributionSummary>("flow.fiber.suspension.total.count", Metrics::summary)
 
@@ -227,12 +230,12 @@ object CordaMetrics {
         /**
          * Number of outbound peer-to-peer sessions.
          */
-        class OutboundSessionCount(computation: Supplier<Number>) : ComputedValue("p2p.session.outbound", computation)
+        class OutboundSessionCount(computation: Supplier<Number>): ComputedValue<Nothing>("p2p.session.outbound", computation)
 
         /**
          * Number of inbound peer-to-peer sessions.
          */
-        class InboundSessionCount(computation: Supplier<Number>) : ComputedValue("p2p.session.inbound", computation)
+        class InboundSessionCount(computation: Supplier<Number>): ComputedValue<Nothing>("p2p.session.inbound", computation)
 
         /**
          * Time it took for an inbound request to the p2p gateway to be processed.
@@ -444,9 +447,10 @@ object CordaMetrics {
             /**
              * Metric to capture the changes in group size.
              */
-            object MemberListCacheSize: Metric<SettableGauge>(
+            class MemberListCacheSize<T : List<*>>(list: T?): ComputedValue<T>(
                 "$PREFIX.memberlist.cache.size",
-                CordaMetrics::settableGauge
+                list,
+                Collection<*>::doubleSize
             )
         }
 
@@ -524,22 +528,69 @@ object CordaMetrics {
         }
 
         /**
-         * A [Gauge] metric that computes its value using a [Supplier] lambda.
-         * @param name A unique name for this [Gauge].
-         * @param computation A lambda to compute our current value.
+         * A [Gauge] metric that computes its value using a lambda.
          */
-        sealed class ComputedValue(name: String, computation: Supplier<Number>) : Metric<Gauge>(name, meter = { n, tags ->
-            Gauge.builder(n, computation)
-                .tags(tags)
-                .register(registry)
-        })
+        sealed class ComputedValue<T> private constructor(name: String, meter: (String, Iterable<micrometerTag>) -> Gauge)
+            : Metric<Gauge>(name, meter) {
 
-        class DiskSpace(path: Path) : Metric<NoopMeter>("", meter = { _, tags ->
-            if (path.fileSystem == FileSystems.getDefault()) {
-                DiskSpaceMetrics(path.toFile(), tags).bindTo(registry)
+            /**
+             * Creates a [Gauge] for the value of [computation]. The [MeterRegistry] will hold
+             * a strong reference to [computation], and hence to any objects it also uses.
+             *
+             * @param name A unique name for this [Gauge].
+             * @param computation A lambda to compute our current value.
+             */
+            constructor(name: String, computation: Supplier<Number>) : this(name, meter = { n, tags ->
+                Gauge.builder(n, computation)
+                    .tags(tags)
+                    .register(registry)
+            })
+
+            /**
+             * Create a [Gauge] for a property of [weakObj].
+             *
+             * @param name A unique name for this [Gauge].
+             * @param weakObj A weakly referenced object for applying [computation].
+             * @param computation A lambda to compute our current value using [weakObj].
+             */
+            constructor(name: String, weakObj: T?, computation: ToDoubleFunction<T>) : this(name, meter = { n, tags ->
+                Gauge.builder(n, weakObj, computation)
+                    .tags(tags)
+                    .register(registry)
+            })
+        }
+
+        sealed class DiskSpace(private val name: String, private val path: Path) {
+            sealed class Value(
+                name: String,
+                description: String,
+                path: Path,
+                computation: ToLongFunction<File>
+            ): Metric<Gauge>(name, meter = { n, tags ->
+                if (path.fileSystem == FileSystems.getDefault()) {
+                    val file = path.toFile()
+                    Gauge.builder(n, file) { f -> computation.applyAsLong(f).toDouble() }
+                        .tags(Tags.concat(tags, "path", file.absolutePath))
+                        .description(description)
+                        .baseUnit(BaseUnits.BYTES)
+                        .strongReference(true)
+                        .register(registry)
+                } else {
+                    // The filesystem does not support Path.toFile()
+                    VoidGauge
+                }
+            })
+
+            inner class TotalSpace: Value("${name}.disk.total", "Total space for path", path, File::getTotalSpace)
+            inner class UsableSpace: Value("${name}.disk.free", "Usable space for path", path, File::getUsableSpace)
+
+            fun metrics(): List<Metric<Gauge>> {
+                return listOf(TotalSpace(), UsableSpace())
             }
-            VoidMeter
-        })
+
+            class Cpks(path: Path): DiskSpace("cpks", path)
+            class CpkChunks(path: Path): DiskSpace("cpk.chunks", path)
+        }
 
         object Db {
 
@@ -618,6 +669,11 @@ object CordaMetrics {
         FlowClass("flow.class"),
 
         /**
+         * Flow class for which the metric is applicable.
+         */
+        FlowType("flow.type"),
+
+        /**
          * The flow suspension action this metric was recorded for.
          */
         FlowSuspensionAction("flow.suspension.action"),
@@ -626,11 +682,6 @@ object CordaMetrics {
          * The flow event type this metric was recorded for.
          */
         FlowEvent("flow.event"),
-
-        /**
-         * Label for a type of content.
-         */
-        ContentsType("contents.type"),
 
         /**
          * The status of the operation. Can be used to indicate whether an operation was successful or failed.
@@ -775,14 +826,6 @@ object CordaMetrics {
             })
     }
 
-    private fun settableGauge(name: String, tags: Iterable<micrometerTag>): SettableGauge {
-        val gaugeValue = AtomicInteger()
-        val gauge = Gauge.builder(name, gaugeValue, Number::toDouble)
-            .tags(tags)
-            .register(registry)
-        return SettableGauge(gauge, gaugeValue)
-    }
-
     private fun timer(name: String, tags: Iterable<micrometerTag>): Timer {
         return Timer.builder(name)
             .publishPercentiles(0.50, 0.95, 0.99)
@@ -795,7 +838,15 @@ object CordaMetrics {
         val name: String,
         val func: (String, Iterable<micrometerTag>) -> T
     ) {
-        val allTags: MutableList<io.micrometer.core.instrument.Tag> = mutableListOf()
+        val allTags: MutableList<micrometerTag> = mutableListOf()
+
+        /**
+         * Remove all tags from this builder.
+         */
+        fun resetTags(): MeterBuilder<T> {
+            allTags.clear()
+            return this
+        }
 
         /**
          * Tag the metric with the Holding ID short hash for the Virtual Node.
@@ -805,18 +856,25 @@ object CordaMetrics {
         }
 
         fun withTag(key: Tag, value: String): MeterBuilder<T> {
-            allTags.add(io.micrometer.core.instrument.Tag.of(key.value, value))
+            allTags.add(micrometerTag.of(key.value, value))
             return this
         }
 
         fun build(): T {
             return func(name, allTags)
         }
+
+        // A Meter is uniquely identified by just its name and tags.
+        fun buildPreFilterId(): Meter.Id {
+            return Meter.Id(name, Tags.of(allTags), null, null, Meter.Type.OTHER)
+        }
     }
 }
 
+private val Collection<*>.doubleSize: Double
+    get() = size.toDouble()
+
 /**
- * This is a dummy "placeholder" meter.
+ * This is a dummy "placeholder" gauge.
  */
-@Suppress("NULLABILITY_MISMATCH_BASED_ON_JAVA_ANNOTATIONS")
-private object VoidMeter : NoopMeter(null)
+private object VoidGauge : NoopGauge(Meter.Id("", Tags.empty(), null, null, Meter.Type.GAUGE))

@@ -66,7 +66,7 @@ class DBWorker @Activate constructor(
         if (printHelpOrVersion(params.defaultParams, DBWorker::class.java, shutDownService)) return
         setupMonitor(workerMonitor, params.defaultParams, this.javaClass.simpleName)
 
-        configureTracing("DB Worker", params.defaultParams.zipkinTraceUrl)
+        configureTracing("DB Worker", params.defaultParams.zipkinTraceUrl, params.defaultParams.traceSamplesPerSecond)
 
         val databaseConfig = PathAndConfig(BOOT_DB, params.databaseParams)
         val config = getBootstrapConfig(

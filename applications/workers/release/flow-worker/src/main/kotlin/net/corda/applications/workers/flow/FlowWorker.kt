@@ -67,7 +67,7 @@ class FlowWorker @Activate constructor(
         if (printHelpOrVersion(params.defaultParams, FlowWorker::class.java, shutDownService)) return
         setupMonitor(workerMonitor, params.defaultParams, this.javaClass.simpleName)
 
-        configureTracing("Flow Worker", params.defaultParams.zipkinTraceUrl)
+        configureTracing("Flow Worker", params.defaultParams.zipkinTraceUrl, params.defaultParams.traceSamplesPerSecond)
 
         val config = getBootstrapConfig(
             secretsServiceFactoryResolver,

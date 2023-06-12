@@ -3,6 +3,7 @@ package net.corda.internal.serialization.amqp.helper
 import net.corda.flow.fiber.FlowFiber
 import net.corda.flow.fiber.FlowFiberExecutionContext
 import net.corda.flow.fiber.FlowFiberService
+import net.corda.flow.pipeline.metrics.FlowMetrics
 import net.corda.flow.pipeline.sandbox.FlowSandboxGroupContext
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.membership.read.MembershipGroupReader
@@ -23,14 +24,15 @@ class TestFlowFiberServiceWithSerialization(
     init {
         val bobX500 = "CN=Bob, O=Bob Corp, L=LDN, C=GB"
         val bobX500Name = MemberX500Name.parse(bobX500)
-        val holdingIdentity =  HoldingIdentity(bobX500Name,"group1")
+        val holdingIdentity = HoldingIdentity(bobX500Name, "group1")
         val flowFiberExecutionContext = FlowFiberExecutionContext(
             mock(FlowCheckpoint::class.java),
             mockFlowSandboxGroupContext,
             holdingIdentity,
             membershipGroupReader,
             currentSandboxGroupContext,
-            emptyMap()
+            emptyMap(),
+            mock(FlowMetrics::class.java)
         )
 
         Mockito.`when`(mockFlowFiber.getExecutionContext()).thenReturn(flowFiberExecutionContext)

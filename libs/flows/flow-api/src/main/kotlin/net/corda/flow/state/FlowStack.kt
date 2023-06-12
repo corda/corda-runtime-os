@@ -2,6 +2,7 @@ package net.corda.flow.state
 
 import net.corda.data.KeyValuePairList
 import net.corda.data.flow.state.checkpoint.FlowStackItem
+import net.corda.flow.pipeline.metrics.FlowMetrics
 import net.corda.serialization.checkpoint.NonSerializable
 import net.corda.v5.application.flows.Flow
 
@@ -32,6 +33,7 @@ interface FlowStack : NonSerializable {
         flow: Flow,
         contextUserProperties: KeyValuePairList,
         contextPlatformProperties: KeyValuePairList,
+        flowMetrics: FlowMetrics
     ): FlowStackItem
 
     /**
@@ -40,7 +42,7 @@ interface FlowStack : NonSerializable {
      * @param flow the flow to be pushed onto the stack
      * @return the [FlowStackItem] created
      */
-    fun push(flow: Flow): FlowStackItem
+    fun push(flow: Flow, flowMetrics: FlowMetrics): FlowStackItem
 
     /**
      * Finds the nearest matching [FlowStackItem] to the top of the stack that matches the predicate

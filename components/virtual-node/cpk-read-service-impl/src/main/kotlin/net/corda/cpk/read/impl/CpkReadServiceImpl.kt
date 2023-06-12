@@ -1,5 +1,6 @@
 package net.corda.cpk.read.impl
 
+import io.micrometer.core.instrument.Meter
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpk.read.CpkReadService
@@ -22,7 +23,7 @@ import net.corda.lifecycle.createCoordinator
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.metrics.CordaMetrics
-import net.corda.metrics.CordaMetrics.Tag.ContentsType
+import net.corda.metrics.CordaMetrics.Metric.DiskSpace
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
@@ -38,6 +39,7 @@ import org.osgi.service.component.annotations.Deactivate
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.nio.file.Path
 import java.util.concurrent.ConcurrentHashMap
 
 @Component(service = [CpkReadService::class])
@@ -83,6 +85,7 @@ class CpkReadServiceImpl (
     internal var cpkChunksKafkaReaderSubscription: AutoCloseable? = null
 
     private val cpksByChecksum = ConcurrentHashMap<SecureHash, Cpk>()
+    private val meterIds = mutableListOf<Meter.Id>()
 
     /**
      * Event loop
@@ -140,22 +143,27 @@ class CpkReadServiceImpl (
         cpksByChecksum[cpkFileChecksum]
 
     private fun createCpkChunksKafkaReader(messagingConfig: SmartConfig, bootConfig: SmartConfig) {
-        val (cpkCacheDir, cpkPartsDir) = try {
-            workspacePathProvider.getOrCreate(bootConfig, CPK_CACHE_DIR) to
-                    tempPathProvider.getOrCreate(bootConfig, CPK_PARTS_DIR)
+        val cpkCacheDir: Path
+        val cpkPartsDir: Path
+
+        try {
+            cpkCacheDir = workspacePathProvider.getOrCreate(bootConfig, CPK_CACHE_DIR)
+            cpkPartsDir = tempPathProvider.getOrCreate(bootConfig, CPK_PARTS_DIR)
         } catch (e: Exception) {
             logger.error("Error while trying to create directories. Component shuts down.", e)
             closeResources()
             return
         }
 
+        // Just in case the directory configurations have changed.
+        removeMetrics()
+
         // Monitor the amount of available disk space in these two directories.
-        CordaMetrics.Metric.DiskSpace(cpkCacheDir).builder()
-            .withTag(ContentsType, "CPKs")
-            .build()
-        CordaMetrics.Metric.DiskSpace(cpkPartsDir).builder()
-            .withTag(ContentsType, "CPK chunks")
-            .build()
+        arrayOf(DiskSpace.Cpks(cpkCacheDir), DiskSpace.CpkChunks(cpkPartsDir))
+            .flatMap(DiskSpace::metrics)
+            .map { metric ->
+                metric.builder().build()
+            }.mapTo(meterIds, Meter::getId)
 
         val cpkChunksFileManager = CpkChunksFileManagerImpl(cpkCacheDir)
         cpkChunksKafkaReaderSubscription?.close()
@@ -186,7 +194,12 @@ class CpkReadServiceImpl (
         coordinator.stop()
     }
 
+    private fun removeMetrics() {
+        meterIds.onEach(CordaMetrics.registry::remove).clear()
+    }
+
     private fun closeResources() {
+        removeMetrics()
         configReadServiceRegistration?.close()
         configReadServiceRegistration = null
         configSubscription?.close()

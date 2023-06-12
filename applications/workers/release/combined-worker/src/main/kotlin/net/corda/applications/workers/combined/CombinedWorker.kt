@@ -149,7 +149,7 @@ class CombinedWorker @Activate constructor(
 
         setupMonitor(workerMonitor, params.defaultParams, this.javaClass.simpleName)
 
-        configureTracing("Combined Worker", params.defaultParams.zipkinTraceUrl)
+        configureTracing("Combined Worker", params.defaultParams.zipkinTraceUrl, params.defaultParams.traceSamplesPerSecond)
 
         JavaSerialisationFilter.install()
 
