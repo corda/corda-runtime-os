@@ -248,12 +248,13 @@ internal class ReplayScheduler<K: SessionManager.BaseCounterparties, M>(
         replayingMessageIdsPerCounterparties.compute(counterparties) { _, replayingMessagesForCounterparties ->
             val removed = replayInfoPerMessageId.remove(messageId)?.future?.cancel(false) ?: false
             replayingMessagesForCounterparties?.remove(messageId)
-            if (removed) {
-                queuedMessagesPerCounterparties[counterparties]?.poll()?.let {
-                    addForReplay(it.originalAttemptTimestamp, it.uniqueId, it.message, counterparties)
+            queuedMessagesPerCounterparties[counterparties]?.let { queuedMessages ->
+                queuedMessages.removeMessage(messageId)
+                if (removed) {
+                    queuedMessages.poll()?.let {
+                        addForReplay(it.originalAttemptTimestamp, it.uniqueId, it.message, counterparties)
+                    }
                 }
-            } else {
-                queuedMessagesPerCounterparties[counterparties]?.removeMessage(messageId)
             }
             if (replayingMessagesForCounterparties?.isEmpty() == true) {
                 queuedMessagesPerCounterparties.remove(counterparties)

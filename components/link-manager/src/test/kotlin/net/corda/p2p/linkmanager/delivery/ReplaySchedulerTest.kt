@@ -471,6 +471,51 @@ class ReplaySchedulerTest {
         assertThat(tracker.messages).containsExactlyInAnyOrderElementsOf(messageIds)
     }
 
+    @Test
+    fun `currently replaying messages which are also queued are removed from the queue when removed from replay`() {
+        val messageCap = 1
+        val tracker = TrackReplayedMessages()
+        val replayScheduler = ReplayScheduler<SessionManager.SessionCounterparties, String>(
+            coordinatorFactory,
+            service,
+            true,
+            tracker::replayMessage,
+            {mockTimeFacilitiesProvider.mockScheduledExecutor},
+            clock = mockTimeFacilitiesProvider.clock)
+        replayScheduler.start()
+        setRunning()
+        configHandler.applyNewConfiguration(
+            ReplayScheduler.ReplaySchedulerConfig.ExponentialBackoffReplaySchedulerConfig(
+                replayPeriod,
+                replayPeriod,
+                messageCap
+            ),
+            null,
+            configResourcesHolder
+        )
+
+        // Add a message for replay
+        val replayingMessageId = UUID.randomUUID().toString()
+        replayScheduler.addForReplay(0, replayingMessageId, replayingMessageId, sessionCounterparties)
+
+        // Queue a message
+        val queuedMessageId = UUID.randomUUID().toString()
+        replayScheduler.addForReplay(0, queuedMessageId, queuedMessageId, sessionCounterparties)
+
+        // Queue the original message again
+        replayScheduler.addForReplay(0, replayingMessageId, replayingMessageId, sessionCounterparties)
+
+        mockTimeFacilitiesProvider.advanceTime(replayPeriod)
+        replayScheduler.removeFromReplay(replayingMessageId, sessionCounterparties)
+        mockTimeFacilitiesProvider.advanceTime(replayPeriod)
+        replayScheduler.removeFromReplay(queuedMessageId, sessionCounterparties)
+        mockTimeFacilitiesProvider.advanceTime(replayPeriod)
+
+        assertThat(tracker.messages).containsExactlyElementsOf(
+            listOf(replayingMessageId, queuedMessageId)
+        )
+    }
+
     class MyException: Exception("Ohh No")
 
     class TrackReplayedMessages {
