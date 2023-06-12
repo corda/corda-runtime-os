@@ -1,11 +1,11 @@
 context=docker-desktop
-namespace=mathernamespace
+namespace=corda
 
 
 
 groupPolicyFile=GroupPolicy1
 cpi=demo1
-identity1=("C=GB, L=London, O=Alice" "C=GB, L=London, O=Simon" "C=GB, L=London, O=Notary")
+identity1=("C=GB, L=London, O=Alice" "C=GB, L=London, O=Bob" "C=GB, L=London, O=Notary")
 
 GROUP1_NOTARY_SERVICE_NAME="C=GB, L=London, O=Notary Service"
 
@@ -47,10 +47,10 @@ sleep 5
 echo "Installing Corda..."
 cd ../corda-runtime-os
 
-echo "run ./gradlew publishOSGiImage ..."
+#echo "run ./gradlew publishOSGiImage ..."
 #./gradlew publishOSGiImage -PbaseImage=docker-remotes.software.r3.com/azul/zulu-openjdk
 
-# other gradle options 
+# other gradle options
 #./gradlew :applications:workers:release:flow-worker:publishOSGiImage -PbaseImage=docker-remotes.software.r3.com/azul/zulu-openjdk
 # ./gradlew :tools:plugins:plugins-rest:jar :applications:workers:release:crypto-worker:publishOSGiImage :applications:workers:release:db-worker:publishOSGiImage \
 #  :applications:workers:release:flow-worker:publishOSGiImage :applications:workers:release:member-worker:publishOSGiImage :applications:workers:release:p2p-gateway-worker:publishOSGiImage \
@@ -58,7 +58,7 @@ echo "run ./gradlew publishOSGiImage ..."
 sleep 5
 for VARIABLE in corda-os-rest-worker corda-os-p2p-link-manager-worker corda-os-p2p-gateway-worker \
  corda-os-member-worker corda-os-flow-worker corda-os-db-worker corda-os-crypto-worker corda-os-combined-worker corda-os-app-simulator corda-os-plugins
-do 
+do
  docker tag "corda-os-docker-dev.software.r3.com/"$VARIABLE":latest-local-5.1.0-INTEROP" "corda-os-docker-dev.software.r3.com/"$VARIABLE":latest-local"
  sleep 2
 done
@@ -146,7 +146,7 @@ pwd
     --keystore signingkeys.pfx \
     --storepass "keystore password" \
     --key "signing key 1"
-    
+
 sleep 8
 CPI_ID=$(curl --insecure -u admin:admin -F upload=@./$cpi.cpi https://localhost:8888/api/v1/cpi/| jq -r '.id')     #not macOS script has   "upload=@./$cpi.cpi"
 echo CPI_ID=$CPI_ID
@@ -156,9 +156,9 @@ CPI_CHECKSUM=$(curl --insecure -u admin:admin https://localhost:8888/api/v1/cpi/
 echo CPI_CHECKSUM=$CPI_CHECKSUM
 echo "Installing Identities of group "$cpi
 #For the following, when running in GitBash "$identity1" works with $Identity in quotes
-#for VARIABLE in "$identity1"  
+#for VARIABLE in "$identity1"
 
-for VARIABLE in "${identity1[@]:0:1}"                                                                                                            
+for VARIABLE in "${identity1[@]:0:1}"
 do
  REQUEST_ID=$(curl --insecure -u admin:admin -d '{ "request": { "cpiFileChecksum": "'$CPI_CHECKSUM'", "x500Name": '\""$VARIABLE"\"'  } }' https://localhost:8888/api/v1/virtualnode | jq -r '.requestId' )   # macOS has  REQUEST_BODY=$(printf '{ "request": { "cpiFileChecksum": "%s", "x500Name": "%s" }}' "$CPI_CHECKSUM" "$VARIABLE")
  echo REQUEST_ID=$REQUEST_ID
@@ -173,7 +173,7 @@ do
 done
 
 
-for VARIABLE in "${identity1[@]:1:1}"                                                                                                            
+for VARIABLE in "${identity1[@]:1:1}"
 do
  REQUEST_ID=$(curl --insecure -u admin:admin -d '{ "request": { "cpiFileChecksum": "'$CPI_CHECKSUM'", "x500Name": '\""$VARIABLE"\"'  } }' https://localhost:8888/api/v1/virtualnode | jq -r '.requestId' )   # macOS has  REQUEST_BODY=$(printf '{ "request": { "cpiFileChecksum": "%s", "x500Name": "%s" }}' "$CPI_CHECKSUM" "$VARIABLE")
  echo REQUEST_ID=$REQUEST_ID
@@ -202,7 +202,7 @@ echo "Installing notary="$VARIABLE", service name=$GROUP1_NOTARY_SERVICE_NAME"
     --storepass "keystore password" \
     --key "signing key 1"
 
-	
+
 NOTARY_CPI_ID=$(curl --insecure -u admin:admin -F "upload=@./notary$cpi.cpi" https://localhost:8888/api/v1/cpi/ | jq -r .id)
 sleep 20
 echo "CPI_ID FOR notary$cpi=$NOTARY_CPI_ID"
@@ -225,12 +225,13 @@ curl --insecure -u admin:admin -X GET "https://localhost:8888/api/v1/members/$SH
 
 groupPolicyFile2=GroupPolicy2
 cpi=demo2
-identity3="C=GB, L=London, O=Bob"
+identity3=("C=GB, L=London, O=Alice2" "C=GB, L=London, O=Bob2" "C=US, L=Chicago, O=Notary")
+GROUP2_NOTARY_SERVICE_NAME="C=US, L=Chicago, O=Notary Service"
 echo "Installing cpi for group "$cpi
 cd ../corda-cli-plugin-host
 #For the following, when running in GitBash "$identity1" works with $Identity in quotes
 echo "create group policy file"
-./build/generatedScripts/corda-cli.sh mgm groupPolicy --name="$identity3" --endpoint-protocol=1 --endpoint="http://localhost:1080" > ../register-member/$groupPolicyFile2.json
+./build/generatedScripts/corda-cli.sh mgm groupPolicy "--name=${identity3[@]:0:1}" "--name=${identity3[@]:1:1}" "--name=${identity3[@]:2:1}" --endpoint-protocol=1 --endpoint="http://localhost:1080" > "../register-member/$groupPolicyFile2.json"    # no more  ./gradlew build -x test
 echo "changing into corda-runtime-os directory"
 cd ../corda-runtime-os
 echo "do gradle responer test"
@@ -261,7 +262,18 @@ sleep 5
 CPI_CHECKSUM=$(curl --insecure -u admin:admin https://localhost:8888/api/v1/cpi/status/$CPI_ID | jq -r '.cpiFileChecksum')
 echo CPI_CHECKSUM=$CPI_CHECKSUM
 echo "Installing Identities of group "$cpi
-for VARIABLE in "$identity3"
+for VARIABLE in "${identity3[@]:0:1}"
+do
+ #When running in GitBash white space in $VARIABLE needs to be handled with '\""$VARIABLE"\"'  instead of "'$VARIABLE'"
+ REQUEST_ID=$(curl --insecure -u admin:admin -d '{ "request": { "cpiFileChecksum": "'$CPI_CHECKSUM'", "x500Name": '\""$VARIABLE"\"'  } }' https://localhost:8888/api/v1/virtualnode | jq -r '.requestId' )
+ echo REQUEST_ID=$REQUEST_ID
+ sleep 5
+ SHORT=$(curl --insecure -u admin:admin -X 'GET' 'https://localhost:8888/api/v1/virtualnode/status/'$REQUEST_ID'' -H 'accept: application/json' | jq -r '.resourceId')
+ echo $VARIABLE=$SHORT
+ curl --insecure -u admin:admin -d '{ "memberRegistrationRequest": { "context": { "corda.key.scheme": "CORDA.ECDSA.SECP256R1" } } }' https://localhost:8888/api/v1/membership/$SHORT
+ curl --insecure -u admin:admin -X GET https://localhost:8888/api/v1/members/$SHORT
+done
+for VARIABLE in "${identity3[@]:1:1}"
 do
  #When running in GitBash white space in $VARIABLE needs to be handled with '\""$VARIABLE"\"'  instead of "'$VARIABLE'"
  REQUEST_ID=$(curl --insecure -u admin:admin -d '{ "request": { "cpiFileChecksum": "'$CPI_CHECKSUM'", "x500Name": '\""$VARIABLE"\"'  } }' https://localhost:8888/api/v1/virtualnode | jq -r '.requestId' )
@@ -273,8 +285,8 @@ do
  curl --insecure -u admin:admin -X GET https://localhost:8888/api/v1/members/$SHORT
 done
 
-BOB_HASH="$SHORT"
-printf "\nBOB_HASH=%s\n" "$BOB_HASH"
+#BOB_HASH="$SHORT"
+#printf "\nBOB_HASH=%s\n" "$BOB_HASH"
 
 
 
@@ -319,5 +331,3 @@ curl --insecure -u admin:admin -X GET "https://localhost:8888/api/v1/flow/$ALICE
 printf "\n"
 
 cd ..
-
-
