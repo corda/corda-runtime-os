@@ -97,22 +97,18 @@ class FlowMetricsImpl(
         }
         flowMetricsRecorder.recordFlowSessionMessagesSent(flowEventType)
 
-        when {
-            isReplay(sequenceNumber, sessionMetricState) -> {
-                flowMetricsRecorder.recordFlowSessionMessagesReplayed(flowEventType)
+        if (isAckOrError(sequenceNumber)) return
+
+        if (isReplay(sequenceNumber, sessionMetricState)) {
+            flowMetricsRecorder.recordFlowSessionMessagesReplayed(flowEventType)
+        } else {
+            val cache = sequenceNumberCache.computeIfAbsent(sessionId) {
+                mutableSetOf()
             }
-            isAckOrError(sequenceNumber) -> {
-                //ignore
-            }
-            else -> {
-                val cache = sequenceNumberCache.computeIfAbsent(sessionId) {
-                    mutableSetOf()
-                }
-                cache.add(sequenceNumber)
-                while(cache.contains(sessionMetricState.highestSeenSequenceNumber + 1)) {
-                    sessionMetricState.highestSeenSequenceNumber++
-                    cache.remove(sessionMetricState.highestSeenSequenceNumber)
-                }
+            cache.add(sequenceNumber)
+            while(cache.contains(sessionMetricState.highestSeenSequenceNumber + 1)) {
+                sessionMetricState.highestSeenSequenceNumber++
+                cache.remove(sessionMetricState.highestSeenSequenceNumber)
             }
         }
     }
