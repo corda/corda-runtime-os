@@ -49,7 +49,7 @@ metrics:
 tracing:
   # -- URL for endpoint to send Zipkin-format distributed traces to e.g. http://tempo:9411
   endpoint: ""
-  # --  Number of request traces to sample per second, defaults to 1 sample per second. Set to 'unlimited' to record all traces
+  # --  Number of request traces to sample per second, defaults to 1 sample per second. Set to 'unlimited' to record all traces, but in this case amount of tracing data produced can be quite vast.
   samplesPerSecond: "1"
 
 # -- Path on Kubernetes hosts to mount on Corda workers for collecting dumps
