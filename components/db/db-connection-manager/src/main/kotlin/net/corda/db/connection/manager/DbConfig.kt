@@ -86,6 +86,10 @@ fun createDbConfig(
     jdbcUrl: String? = null,
     maxPoolSize: Int? = null,
     minPoolSize: Int? = null,
+    idleTimeout: Int,
+    maxLifetime: Int,
+    keepaliveTime: Int,
+    validationTimeout: Int,
     key: String = "database-password"
 ): SmartConfig {
     var config =
@@ -99,6 +103,11 @@ fun createDbConfig(
         config = config.withValue(DatabaseConfig.DB_POOL_MAX_SIZE, ConfigValueFactory.fromAnyRef(maxPoolSize))
     if(null != minPoolSize)
         config = config.withValue(DatabaseConfig.DB_POOL_MIN_SIZE, ConfigValueFactory.fromAnyRef(minPoolSize))
+
+    config = config.withValue(DatabaseConfig.DB_POOL_IDLE_TIMEOUT, ConfigValueFactory.fromAnyRef(idleTimeout))
+    config = config.withValue(DatabaseConfig.DB_POOL_MAX_LIFETIME, ConfigValueFactory.fromAnyRef(maxLifetime))
+    config = config.withValue(DatabaseConfig.DB_POOL_KEEP_ALIVE_TIME, ConfigValueFactory.fromAnyRef(keepaliveTime))
+    config = config.withValue(DatabaseConfig.DB_POOL_VALIDATION_TIMEOUT, ConfigValueFactory.fromAnyRef(validationTimeout))
     return config
 
 }
