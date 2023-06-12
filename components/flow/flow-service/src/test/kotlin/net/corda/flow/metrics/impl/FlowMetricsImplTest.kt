@@ -21,6 +21,8 @@ internal class FlowMetricsImplTest {
     fun `handles replay`() {
         val sessionId = "sessionId"
         val flowEventType = "SessionData"
+        val flowName = "myFlow"
+        val isSubFlow = false
         val sequenceNumber = 1L
         val highestSeenSequenceNumber = 3L
         val recordTimestamp = 100L
@@ -41,14 +43,16 @@ internal class FlowMetricsImplTest {
         val flowMetricsImpl = FlowMetricsImpl(clock, flowMetricsRecorder, checkpoint, recordTimestamp)
         flowMetricsImpl.flowSessionMessageSent(flowEventType, sessionId, sequenceNumber)
 
-        verify(flowMetricsRecorder, times(1)).recordFlowSessionMessagesReplayed(flowEventType)
-        verify(flowMetricsRecorder, times(1)).recordFlowSessionMessagesSent(flowEventType)
+        verify(flowMetricsRecorder, times(1)).recordFlowSessionMessagesReplayed(flowName, isSubFlow, flowEventType)
+        verify(flowMetricsRecorder, times(1)).recordFlowSessionMessagesSent(flowName, isSubFlow, flowEventType)
     }
 
     @Test
     fun `handles out-of-order`() {
         val sessionId = "sessionId"
         val flowEventType = "SessionData"
+        val flowName = "myFlow"
+        val isSubFlow = false
         val sequenceNumber = 3L
         val highestSeenSequenceNumber = 1L
         val recordTimestamp = 100L
@@ -69,14 +73,16 @@ internal class FlowMetricsImplTest {
         val flowMetricsImpl = FlowMetricsImpl(clock, flowMetricsRecorder, checkpoint, recordTimestamp)
         flowMetricsImpl.flowSessionMessageSent(flowEventType, sessionId, sequenceNumber)
 
-        verify(flowMetricsRecorder, times(0)).recordFlowSessionMessagesReplayed(flowEventType)
-        verify(flowMetricsRecorder, times(1)).recordFlowSessionMessagesSent(flowEventType)
+        verify(flowMetricsRecorder, times(0)).recordFlowSessionMessagesReplayed(flowName, isSubFlow, flowEventType)
+        verify(flowMetricsRecorder, times(1)).recordFlowSessionMessagesSent(flowName, isSubFlow, flowEventType)
     }
 
     @Test
     fun `handles in-order non-replay`() {
         val sessionId = "sessionId"
         val flowEventType = "SessionData"
+        val flowName = "myFlow"
+        val isSubFlow = false
         var sequenceNumber = 1L
         val highestSeenSequenceNumber = 0L
         val recordTimestamp = 100L
@@ -97,14 +103,16 @@ internal class FlowMetricsImplTest {
         val flowMetricsImpl = FlowMetricsImpl(clock, flowMetricsRecorder, checkpoint, recordTimestamp)
         flowMetricsImpl.flowSessionMessageSent(flowEventType, sessionId, sequenceNumber)
 
-        verify(flowMetricsRecorder, times(0)).recordFlowSessionMessagesReplayed(flowEventType)
-        verify(flowMetricsRecorder, times(1)).recordFlowSessionMessagesSent(flowEventType)
+        verify(flowMetricsRecorder, times(0)).recordFlowSessionMessagesReplayed(flowName, isSubFlow, flowEventType)
+        verify(flowMetricsRecorder, times(1)).recordFlowSessionMessagesSent(flowName, isSubFlow, flowEventType)
     }
 
     @Test
     fun `handles replay where both sequence numbers and HSSN are the same`() {
         val sessionId = "sessionId"
         val flowEventType = "SessionData"
+        val flowName = "myFlow"
+        val isSubFlow = false
         val sequenceNumber = 3L
         val highestSeenSequenceNumber = 3L
         val recordTimestamp = 100L
@@ -125,14 +133,16 @@ internal class FlowMetricsImplTest {
         val flowMetricsImpl = FlowMetricsImpl(clock, flowMetricsRecorder, checkpoint, recordTimestamp)
         flowMetricsImpl.flowSessionMessageSent(flowEventType, sessionId, sequenceNumber)
 
-        verify(flowMetricsRecorder, times(1)).recordFlowSessionMessagesReplayed(flowEventType)
-        verify(flowMetricsRecorder, times(1)).recordFlowSessionMessagesSent(flowEventType)
+        verify(flowMetricsRecorder, times(1)).recordFlowSessionMessagesReplayed(flowName, isSubFlow, flowEventType)
+        verify(flowMetricsRecorder, times(1)).recordFlowSessionMessagesSent(flowName, isSubFlow, flowEventType)
     }
 
     @Test
     fun `handles out-of-order non-replay multiple messages`() {
         val sessionId = "sessionId"
         val flowEventType = "SessionData"
+        val flowName = "myFlow"
+        val isSubFlow = false
         var sequenceNumber = 6L
         val highestSeenSequenceNumber = 3L
         val recordTimestamp = 100L
@@ -153,13 +163,13 @@ internal class FlowMetricsImplTest {
         val flowMetricsImpl = FlowMetricsImpl(clock, flowMetricsRecorder, checkpoint, recordTimestamp)
         flowMetricsImpl.flowSessionMessageSent(flowEventType, sessionId, sequenceNumber)
 
-        verify(flowMetricsRecorder, times(0)).recordFlowSessionMessagesReplayed(flowEventType)
-        verify(flowMetricsRecorder, times(1)).recordFlowSessionMessagesSent(flowEventType)
+        verify(flowMetricsRecorder, times(0)).recordFlowSessionMessagesReplayed(flowName, isSubFlow, flowEventType)
+        verify(flowMetricsRecorder, times(1)).recordFlowSessionMessagesSent(flowName, isSubFlow, flowEventType)
 
         sequenceNumber = 5L
         flowMetricsImpl.flowSessionMessageSent(flowEventType, sessionId, sequenceNumber)
 
-        verify(flowMetricsRecorder, times(0)).recordFlowSessionMessagesReplayed(flowEventType)
-        verify(flowMetricsRecorder, times(2)).recordFlowSessionMessagesSent(flowEventType)
+        verify(flowMetricsRecorder, times(0)).recordFlowSessionMessagesReplayed(flowName, isSubFlow, flowEventType)
+        verify(flowMetricsRecorder, times(2)).recordFlowSessionMessagesSent(flowName, isSubFlow, flowEventType)
     }
 }
