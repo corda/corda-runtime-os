@@ -105,6 +105,9 @@ class FlowMetricsImpl(
         val sessionMetricState = currentState.sessionMetricStateBySessionId.computeIfAbsent(sessionId) {
             SessionMetricState()
         }
+
+
+
         flowMetricsRecorder.recordFlowSessionMessagesSent(
             currentFlowStackItemMetricState.name,
             isSubFlow = currentState.flowStackItemMetricStates.size > 1,

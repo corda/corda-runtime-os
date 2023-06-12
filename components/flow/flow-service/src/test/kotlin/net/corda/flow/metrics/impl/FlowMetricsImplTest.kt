@@ -32,6 +32,11 @@ internal class FlowMetricsImplTest {
         val flowMetricStateObject = FlowMetricsImpl.FlowMetricState()
         val sessionMetricStateObject = FlowMetricsImpl.SessionMetricState()
 
+        val flowStackItemMetricStateObject = FlowMetricsImpl.FlowStackItemMetricState()
+        flowStackItemMetricStateObject.name = flowName
+        flowStackItemMetricStateObject.isSubFlow = isSubFlow
+        flowMetricStateObject.flowStackItemMetricStates.add(flowStackItemMetricStateObject)
+
         sessionMetricStateObject.highestSeenSequenceNumber = highestSeenSequenceNumber
         flowMetricStateObject.sessionMetricStateBySessionId[sessionId] = sessionMetricStateObject
 
@@ -61,6 +66,11 @@ internal class FlowMetricsImplTest {
         val checkpoint = mock<FlowCheckpoint>()
         val flowMetricStateObject = FlowMetricsImpl.FlowMetricState()
         val sessionMetricStateObject = FlowMetricsImpl.SessionMetricState()
+
+        val flowStackItemMetricStateObject = FlowMetricsImpl.FlowStackItemMetricState()
+        flowStackItemMetricStateObject.name = flowName
+        flowStackItemMetricStateObject.isSubFlow = isSubFlow
+        flowMetricStateObject.flowStackItemMetricStates.add(flowStackItemMetricStateObject)
 
         sessionMetricStateObject.highestSeenSequenceNumber = highestSeenSequenceNumber
         flowMetricStateObject.sessionMetricStateBySessionId[sessionId] = sessionMetricStateObject
@@ -92,6 +102,11 @@ internal class FlowMetricsImplTest {
         val flowMetricStateObject = FlowMetricsImpl.FlowMetricState()
         val sessionMetricStateObject = FlowMetricsImpl.SessionMetricState()
 
+        val flowStackItemMetricStateObject = FlowMetricsImpl.FlowStackItemMetricState()
+        flowStackItemMetricStateObject.name = flowName
+        flowStackItemMetricStateObject.isSubFlow = isSubFlow
+        flowMetricStateObject.flowStackItemMetricStates.add(flowStackItemMetricStateObject)
+
         sessionMetricStateObject.highestSeenSequenceNumber = highestSeenSequenceNumber
         flowMetricStateObject.sessionMetricStateBySessionId[sessionId] = sessionMetricStateObject
 
@@ -122,6 +137,11 @@ internal class FlowMetricsImplTest {
         val flowMetricStateObject = FlowMetricsImpl.FlowMetricState()
         val sessionMetricStateObject = FlowMetricsImpl.SessionMetricState()
 
+        val flowStackItemMetricStateObject = FlowMetricsImpl.FlowStackItemMetricState()
+        flowStackItemMetricStateObject.name = flowName
+        flowStackItemMetricStateObject.isSubFlow = isSubFlow
+        flowMetricStateObject.flowStackItemMetricStates.add(flowStackItemMetricStateObject)
+
         sessionMetricStateObject.highestSeenSequenceNumber = highestSeenSequenceNumber
         flowMetricStateObject.sessionMetricStateBySessionId[sessionId] = sessionMetricStateObject
 
@@ -151,6 +171,11 @@ internal class FlowMetricsImplTest {
         val checkpoint = mock<FlowCheckpoint>()
         val flowMetricStateObject = FlowMetricsImpl.FlowMetricState()
         val sessionMetricStateObject = FlowMetricsImpl.SessionMetricState()
+
+        val flowStackItemMetricStateObject = FlowMetricsImpl.FlowStackItemMetricState()
+        flowStackItemMetricStateObject.name = flowName
+        flowStackItemMetricStateObject.isSubFlow = isSubFlow
+        flowMetricStateObject.flowStackItemMetricStates.add(flowStackItemMetricStateObject)
 
         sessionMetricStateObject.highestSeenSequenceNumber = highestSeenSequenceNumber
         flowMetricStateObject.sessionMetricStateBySessionId[sessionId] = sessionMetricStateObject
