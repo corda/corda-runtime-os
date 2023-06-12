@@ -113,7 +113,10 @@ class FlowMetricsImpl(
         if (isAckOrError(sequenceNumber)) return
 
         if (isReplay(sequenceNumber, sessionMetricState)) {
-            flowMetricsRecorder.recordFlowSessionMessagesReplayed(flowEventType)
+            flowMetricsRecorder.recordFlowSessionMessagesReplayed(
+                currentFlowStackItemMetricState.name,
+                isSubFlow = currentState.flowStackItemMetricStates.size > 1,
+                flowEventType)
         } else {
             val cache = sequenceNumberCache.computeIfAbsent(sessionId) {
                 mutableSetOf()

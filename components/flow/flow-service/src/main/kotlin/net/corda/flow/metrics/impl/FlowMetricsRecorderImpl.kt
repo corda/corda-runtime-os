@@ -108,10 +108,11 @@ class FlowMetricsRecorderImpl(
             .build().increment()
     }
 
-    override fun recordFlowSessionMessagesReplayed(flowEventType: String) {
+    override fun recordFlowSessionMessagesReplayed(flowName: String, isSubFlow:Boolean, flowEventType: String) {
         CordaMetrics.Metric.FlowSessionMessagesReplayedCount.builder()
             .forVirtualNode(flowCheckpoint.holdingIdentity.shortHash.toString())
-            .withTag(CordaMetrics.Tag.FlowClass, flowCheckpoint.flowStartContext.flowClassName)
+            .withTag(CordaMetrics.Tag.FlowClass, flowName)
+            .withTag(CordaMetrics.Tag.FlowType, getFlowType(isSubFlow))
             .withTag(CordaMetrics.Tag.FlowEvent, flowEventType)
             .build().increment()
     }

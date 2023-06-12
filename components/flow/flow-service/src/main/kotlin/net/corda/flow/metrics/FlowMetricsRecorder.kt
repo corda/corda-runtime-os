@@ -15,6 +15,6 @@ interface FlowMetricsRecorder {
     fun recordTotalEventsProcessed(flowName: String, isSubFlow: Boolean, eventsProcessed: Long)
     fun recordTotalFiberSuspensions(flowName: String, isSubFlow: Boolean, fiberSuspensions: Long)
     fun recordSubFlowCompletion(subFlowName: String, runTimeMillis: Long, completionStatus: String)
-    fun recordFlowSessionMessagesReplayed(flowEventType: String)
+    fun recordFlowSessionMessagesReplayed(flowName: String, isSubFlow: Boolean, flowEventType: String)
 
 }
