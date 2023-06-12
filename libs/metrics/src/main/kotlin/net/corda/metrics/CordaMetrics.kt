@@ -588,8 +588,15 @@ object CordaMetrics {
                 return listOf(TotalSpace(), UsableSpace())
             }
 
+            /**
+             * Disk space used to store CPKs and their chunks.
+             */
             class Cpks(path: Path): DiskSpace("cpks", path)
-            class CpkChunks(path: Path): DiskSpace("cpk.chunks", path)
+
+            /**
+             * Disk space used to unpack CPKs.
+             */
+            class UnpackedCpks(path: Path): DiskSpace("cpks.unpacked", path)
         }
 
         object Db {

@@ -10,11 +10,17 @@ import java.io.IOException
 import java.io.InputStream
 import java.nio.channels.FileChannel
 import java.nio.channels.WritableByteChannel
+import java.nio.file.Files
+import java.nio.file.Path
+import java.nio.file.attribute.DosFileAttributeView
+import java.nio.file.attribute.PosixFileAttributeView
+import java.nio.file.attribute.PosixFilePermission.OWNER_READ
 import java.security.DigestInputStream
 import java.security.MessageDigest
 import java.security.cert.Certificate
 import java.security.cert.X509Certificate
 import java.util.Arrays
+import java.util.Collections.singleton
 import java.util.jar.JarEntry
 import java.util.jar.Manifest
 import javax.naming.ldap.LdapName
@@ -55,6 +61,22 @@ fun WritableByteChannel.writeFile(input: FileChannel) {
         val bytesWritten = input.transferTo(pos, bytesToWrite, this)
         pos += bytesWritten
         bytesToWrite -= bytesWritten
+    }
+}
+
+private val READ_ONLY = singleton(OWNER_READ)
+
+/**
+ * Updates [file] to be read-only. Compatible with both UNIX and Windows.
+ */
+@Throws(IOException::class)
+fun setReadOnly(file: Path) {
+    Files.getFileAttributeView(file, PosixFileAttributeView::class.java)?.also { view ->
+        view.setPermissions(READ_ONLY)
+    } ?: run {
+        Files.getFileAttributeView(file, DosFileAttributeView::class.java)?.also { view ->
+            view.setReadOnly(true)
+        }
     }
 }
 
