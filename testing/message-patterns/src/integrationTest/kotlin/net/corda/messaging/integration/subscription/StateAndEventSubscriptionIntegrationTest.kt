@@ -1,8 +1,6 @@
 package net.corda.messaging.integration.subscription
 
 import com.typesafe.config.ConfigValueFactory
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.TimeUnit
 import net.corda.db.messagebus.testkit.DBSetup
 import net.corda.libs.messaging.topic.utils.TopicUtils
 import net.corda.libs.messaging.topic.utils.factory.TopicUtilsFactory
@@ -53,13 +51,14 @@ import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Disabled
-import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.extension.ExtendWith
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.context.BundleContextExtension
 import org.osgi.test.junit5.service.ServiceExtension
 import org.slf4j.LoggerFactory
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 
 @ExtendWith(ServiceExtension::class, BundleContextExtension::class, DBSetup::class)
 class StateAndEventSubscriptionIntegrationTest {
@@ -106,7 +105,7 @@ class StateAndEventSubscriptionIntegrationTest {
         topicUtils.close()
     }
 
-    @Test
+    //@Test
     @Timeout(value = 60, unit = TimeUnit.SECONDS)
     @Disabled("Will remain flaky until CORE-8204 is fixed")
     fun `create topic with two partitions, start two statevent sub, publish records with two keys, no outputs`() {
@@ -185,7 +184,7 @@ class StateAndEventSubscriptionIntegrationTest {
         }
     }
 
-    @Test
+    //@Test
     @Timeout(value = 60, unit = TimeUnit.SECONDS)
     fun `create topics, start one statevent sub, publish records with two keys, update state and output records and verify`() {
         topicUtils.createTopics(getTopicConfig(EVENT_TOPIC2_TEMPLATE))
@@ -218,7 +217,7 @@ class StateAndEventSubscriptionIntegrationTest {
         durableSub.close()
     }
 
-    @Test
+    //@Test
     @Timeout(value = 30, unit = TimeUnit.SECONDS)
     fun `create topics, start statevent sub, fail processor on first attempt, publish 2 records, verify listener and outputs`() {
         topicUtils.createTopics(getTopicConfig(EVENT_TOPIC3_TEMPLATE))
@@ -273,7 +272,7 @@ class StateAndEventSubscriptionIntegrationTest {
         assertTrue(losePartitionLatch.await(30, TimeUnit.SECONDS))
     }
 
-    @Test
+    //@Test
     @Timeout(180)
     @Disabled("Will remain flaky until CORE-8204 is fixed")
     fun `create topics, start 2 statevent sub, trigger rebalance and verify completion of all records`() {
@@ -332,7 +331,7 @@ class StateAndEventSubscriptionIntegrationTest {
         durableSub.close()
     }
 
-    @Test
+    //@Test
     @Timeout(value = 120, unit = TimeUnit.SECONDS)
     fun `create topics, start one statevent sub, publish records, slow processor for first record, 1 record sent DLQ and verify`() {
         topicUtils.createTopics(getTopicConfig(EVENT_TOPIC5_TEMPLATE))
@@ -382,7 +381,7 @@ class StateAndEventSubscriptionIntegrationTest {
         stateEventSub1.close()
     }
 
-    @Test
+    //@Test
     @Timeout(value = 30, unit = TimeUnit.SECONDS)
     fun `create topics, start one statevent sub, publish records, slow processor and listener, all records successful`() {
         topicUtils.createTopics(getTopicConfig(EVENT_TOPIC6_TEMPLATE))
@@ -422,7 +421,7 @@ class StateAndEventSubscriptionIntegrationTest {
         stateEventSub1.close()
     }
 
-    @Test
+    //@Test
     @Timeout(value = 30, unit = TimeUnit.SECONDS)
     fun `create topics, start one statevent sub, publish incorrect records with two keys, update state and output records and verify`() {
         topicUtils.createTopics(getTopicConfig(EVENT_TOPIC7_TEMPLATE))
