@@ -7,6 +7,7 @@ import net.corda.flow.pipeline.metrics.FlowMetrics
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.utilities.time.Clock
 
+@Suppress("TooManyFunctions")
 class FlowMetricsImpl(
     private val clock: Clock,
     private val flowMetricsRecorder: FlowMetricsRecorder,

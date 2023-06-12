@@ -1,5 +1,6 @@
 package net.corda.flow.metrics
 
+@Suppress("TooManyFunctions")
 interface FlowMetricsRecorder {
     fun recordFlowEventLag(lagMilli: Long, flowEventType: String)
     fun recordFlowStartLag(lagMilli: Long)
