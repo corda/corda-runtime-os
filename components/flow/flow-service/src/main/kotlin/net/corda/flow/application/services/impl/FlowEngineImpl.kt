@@ -1,5 +1,6 @@
 package net.corda.flow.application.services.impl
 
+import net.corda.data.flow.output.FlowStates
 import net.corda.data.flow.state.checkpoint.FlowStackItem
 import net.corda.data.flow.state.checkpoint.FlowStackItemSession
 import net.corda.flow.application.versioning.impl.RESET_VERSIONING_MARKER
@@ -50,7 +51,7 @@ class FlowEngineImpl @Activate constructor(
         } catch (e: PrivilegedActionException) {
             throw e.exception
         }
-        getFiberExecutionContext().flowStackService.push(subFlow)
+        getFiberExecutionContext().flowStackService.push(subFlow, getFiberExecutionContext().flowMetrics)
 
         resetFlowVersioningInformationIfSubFlowIsInitiatingFlow()
 
@@ -63,6 +64,7 @@ class FlowEngineImpl @Activate constructor(
              */
 
             closeSessionsOnSubFlowFinish()
+            getFiberExecutionContext().flowMetrics.subFlowFinished(FlowStates.FAILED)
 
             return result
         } catch (t: Throwable) {
@@ -73,6 +75,7 @@ class FlowEngineImpl @Activate constructor(
             // as long as it catches it in the flow which initiated it. The only thing Corda needs to do here is mark
             // the sub-flow as failed and rethrow.
             errorSessionsOnSubFlowFinish(t)
+            getFiberExecutionContext().flowMetrics.subFlowFinished(FlowStates.FAILED)
             throw t
         } finally {
             popCurrentFlowStackItem()

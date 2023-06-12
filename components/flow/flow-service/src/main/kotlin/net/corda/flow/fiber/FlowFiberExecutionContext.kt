@@ -1,5 +1,6 @@
 package net.corda.flow.fiber
 
+import net.corda.flow.pipeline.metrics.FlowMetrics
 import net.corda.flow.pipeline.sandbox.FlowSandboxGroupContext
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.flow.state.FlowStack
@@ -16,7 +17,8 @@ class FlowFiberExecutionContext(
     val holdingIdentity: HoldingIdentity,
     val membershipGroupReader: MembershipGroupReader,
     val currentSandboxGroupContext: CurrentSandboxGroupContext,
-    val mdcLoggingData: Map<String, String>
+    val mdcLoggingData: Map<String, String>,
+    val flowMetrics: FlowMetrics
 ) : NonSerializable {
     val memberX500Name: MemberX500Name get() = holdingIdentity.x500Name
     val flowStackService: FlowStack get() = flowCheckpoint.flowStack
