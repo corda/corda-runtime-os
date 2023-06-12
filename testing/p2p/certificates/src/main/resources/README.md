@@ -1,5 +1,5 @@
-The keystore files used for the p2p integration tests have been created using www.tinycert.org in order to have a working
-OCSP responder.
+The keystore files used for the p2p integration tests have been created using either www.tinycert.org in order to have a working
+OCSP responder or openssl when there was no need to test revocation.
 
 # Overview of existing keystores
 
@@ -27,7 +27,7 @@ OCSP responder.
     - CN: 127.0.0.1
     - Alternates: 127.0.0.1 (as an IP not a DNS name)
 
-For sslkeystore_alice.jks and sslkeystore_bob.jks we also downloaded the certificates into certificate_alice.pem and certificate_bob.pem respectively.
+For sslkeystore_alice.jks and sslkeystore_bob.jks, we also stored the certificates into certificate_alice.pem and certificate_bob.pem respectively.
 
 The sslkeystore_c5.jks store contains the following subject alternate names. It is used for the HostnameMatcher unit tests.
 ```
@@ -147,7 +147,7 @@ openssl genrsa -out ca.key 2048
 
 4. Generate CA certificate
 ```bash
-openssl req -new -x509 -nodes -key ca.key -out cacert.pem -passin "pass:password" -passout "pass:password" -subj "/C=UK/CN=r3.com"
+openssl req -days 18000 -new -x509 -nodes -key ca.key -out cacert.pem -passin "pass:password" -passout "pass:password" -subj "/C=UK/CN=r3.com"
 ```
 
 ### Create Trust store
@@ -170,11 +170,11 @@ openssl genrsa -out <name>.key 2048
 
 2. Signing request for `<name>` with `<url>`:
 ```bash
-openssl req -new -key <name>.key -out <name>.csr -subj "/C=UK/CN=<url>" -addext "subjectAltName = DNS:<url>"
+openssl req -new -key <name>.key -out <name>.csr -subj "/C=GB/CN=<url>/O=<org>/L=London" -addext "subjectAltName = DNS:<url>" -addext "keyUsage = digitalSignature"
 ```
 (for example:
 ```bash
-openssl req -new -key alice.key -out alice.csr -subj "/C=UK/CN=www.alice.net" -addext "subjectAltName = DNS:www.alice.net"
+openssl req -new -key alice.key -out alice.csr -subj "/C=GB/CN=www.alice.net/O=R3_Test/L=London" -addext "subjectAltName = DNS:www.alice.net, DNS:alice.net" -addext "keyUsage = digitalSignature"
 ```
 )
 
@@ -188,7 +188,7 @@ cat <name>.cer <name>.key > <name>.combined.pem
 openssl pkcs12 -export -out <name>.combined.pkcs12 -in <name>.combined.pem -passin "pass:password" -passout "pass:password"
 keytool -v -importkeystore -srckeystore <name>.combined.pkcs12 -srcstoretype PKCS12 -destkeystore <name>.jks -deststoretype JKS -srcstorepass password -deststorepass password -noprompt
 ```
-
 This should create a key store named `<name>.jks`
+Note: Depending on the version of your Java, you might need to add the following parameters to the `openssl pkcs12` command: `openssl pkcs12 -certpbe PBE-SHA1-3DES -keypbe PBE-SHA1-3DES -macalg sha1 -export ..`. Otherwise, you might get a spurious error claiming the password for the keystore was incorrect.
 
-Repeat the same process for every key store that uses the same trust store
+Repeat the same process for every key store that uses the same trust store.

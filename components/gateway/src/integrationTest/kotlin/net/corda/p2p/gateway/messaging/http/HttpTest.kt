@@ -220,7 +220,7 @@ class HttpTest : TestBase() {
         ).use { server ->
             server.startAndWaitForStarted()
             HttpClient(
-                DestinationInfo(serverAddress, bobSNI[0], null, truststoreKeyStore, null),
+                DestinationInfo(serverAddress, bobSNI[0], null, truststoreKeyStoreWithRevocation, null),
                 aliceSslConfig,
                 NioEventLoopGroup(1),
                 NioEventLoopGroup(1),
