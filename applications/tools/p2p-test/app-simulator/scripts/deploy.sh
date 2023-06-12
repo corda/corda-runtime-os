@@ -10,13 +10,20 @@ deploy() {
    echo Creating $namespace
    kubectl delete ns $namespace || echo ''
    kubectl create ns $namespace
+   if kubectl get ns metrics-server > /dev/null 2>/dev/null ; then
+       prereqs_eks="$SCRIPT_DIR/prereqs-eks.metrics.yaml"
+       corda_eks="$SCRIPT_DIR/corda-eks.metrics.yaml"
+   else
+       prereqs_eks="$SCRIPT_DIR/prereqs-eks.yaml"
+       corda_eks="$SCRIPT_DIR/corda-eks.yaml"
+   fi
 
    echo Installing prereqs into $namespace
    helm upgrade --install prereqs -n $namespace \
      oci://corda-os-docker.software.r3.com/helm-charts/corda-dev \
      --set image.registry="corda-os-docker.software.r3.com" \
      --set kafka.replicaCount=$KAFKA_REPLICAS,kafka.zookeeper.replicaCount=$KAFKA_ZOOKEEPER_REPLICAS \
-     -f "$SCRIPT_DIR/prereqs-eks.yaml" \
+     -f "$prereqs_eks" \
      --render-subchart-notes \
      --timeout 10m \
      --wait
@@ -25,7 +32,7 @@ deploy() {
    helm upgrade --install corda -n $namespace oci://corda-os-docker.software.r3.com/helm-charts/release/os/5.0/corda \
      --set "imagePullSecrets={docker-registry-cred}" --set image.tag=$DOCKER_IMAGE_VERSION \
      --set image.registry="corda-os-docker.software.r3.com" --values $REPO_TOP_LEVEL_DIR/values.yaml \
-     -f "$SCRIPT_DIR/corda-eks.yaml" \
+     -f "$corda_eks" \
      --values $REPO_TOP_LEVEL_DIR/debug.yaml --wait --version $CORDA_CHART_VERSION
 }
 
