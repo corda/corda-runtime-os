@@ -444,48 +444,6 @@ class SoftCryptoServiceOperationsTests {
         assertThat(clusterWrappingRepository.findCounter[alias2]).isEqualTo(1)
     }
 
-    @Test
-    fun `generateKeyPair should throw IllegalArgumentException when encoding version is not recognised`() {
-        val alias = UUID.randomUUID().toString()
-        clusterWrappingRepository.saveKey(
-            alias, WrappingKeyInfo(
-                WRAPPING_KEY_ENCODING_VERSION + 1,
-                knownWrappingKey.algorithm,
-                rootWrappingKey.wrap(knownWrappingKey),
-                1, "enoch"
-            )
-        )
-        assertThrows<IllegalArgumentException> {
-            cryptoService.generateKeyPair(KeyGenerationSpec(rsaScheme, "key1", alias), emptyMap())
-        }
-    }
-
-
-    @Test
-    fun `generateKeyPair should throw IllegalArgumentException when key algorithm does not match master key`() {
-        val alias = UUID.randomUUID().toString()
-        clusterWrappingRepository.saveKey(
-            alias, WrappingKeyInfo(
-                WRAPPING_KEY_ENCODING_VERSION,
-                knownWrappingKey.algorithm + "!",
-                rootWrappingKey.wrap(knownWrappingKey),
-                1,
-                "Enoch"
-            )
-        )
-        assertThrows<IllegalStateException> {
-            cryptoService.generateKeyPair(KeyGenerationSpec(rsaScheme, "key1", alias), emptyMap())
-        }
-    }
-
-
-    @Test
-    fun `generateKeyPair should throw IllegalStateException when wrapping key is not found`() {
-        val alias = UUID.randomUUID().toString()
-        assertThrows<IllegalStateException> {
-            cryptoService.generateKeyPair(KeyGenerationSpec(rsaScheme, "key1", alias), emptyMap())
-        }
-    }
 
     @Test
     fun `wrapping key store can find keys that have been stored`() {
@@ -498,15 +456,6 @@ class SoftCryptoServiceOperationsTests {
         assertNull(clusterWrappingRepository.findKey(unknownAlias))
     }
 
-    @Test
-    fun `Should fail unwrap if master key alias is empty`() {
-        assertThrows<java.lang.IllegalArgumentException> {
-            cryptoService.createWrappingKey("", true, mapOf())
-        }
-        assertThrows<java.lang.IllegalStateException> {
-            cryptoService.generateKeyPair(KeyGenerationSpec(rsaScheme, "key1", ""), emptyMap())
-        }
-    }
     /*
     @ParameterizedTest
     @MethodSource("derivingSchemes")

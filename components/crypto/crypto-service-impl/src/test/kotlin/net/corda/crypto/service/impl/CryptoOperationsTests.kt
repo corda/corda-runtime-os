@@ -2,6 +2,7 @@ package net.corda.crypto.service.impl
 
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.cipher.suite.CustomSignatureSpec
+import net.corda.crypto.cipher.suite.KeyGenerationSpec
 import net.corda.crypto.cipher.suite.SignatureSpecs
 import net.corda.crypto.cipher.suite.SignatureVerificationService
 import net.corda.crypto.cipher.suite.publicKeyId
@@ -9,6 +10,7 @@ import net.corda.crypto.cipher.suite.schemes.KeyScheme
 import net.corda.crypto.cipher.suite.schemes.KeySchemeCapability
 import net.corda.crypto.component.test.utils.generateKeyPair
 import net.corda.crypto.core.CryptoConsts
+import net.corda.crypto.core.CryptoConsts.Categories.LEDGER
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.ALIAS_FILTER
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.MASTER_KEY_ALIAS_FILTER
 import net.corda.crypto.core.KeyOrderBy
@@ -19,8 +21,10 @@ import net.corda.crypto.hes.HybridEncryptionParams
 import net.corda.crypto.hes.impl.EphemeralKeyPairEncryptorImpl
 import net.corda.crypto.hes.impl.StableKeyPairDecryptorImpl
 import net.corda.crypto.impl.CompositeKeyProviderImpl
+import net.corda.crypto.persistence.WrappingKeyInfo
 import net.corda.crypto.service.impl.infra.TestCryptoOpsClient
 import net.corda.crypto.service.impl.infra.TestServicesFactory
+import net.corda.crypto.softhsm.impl.WRAPPING_KEY_ENCODING_VERSION
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.test.impl.TestLifecycleCoordinatorFactoryImpl
 import net.corda.test.util.createTestCase
@@ -47,7 +51,7 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import java.security.KeyPair
 import java.security.PublicKey
-import java.util.UUID
+import java.util.*
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
@@ -635,5 +639,72 @@ class CryptoOperationsTests {
         )
         assertArrayEquals(plainText, decryptedPlainTex)
     }
+
+    @Test
+    fun `Should fail high level unwrap if master key alias is empty`() {
+        val rsaScheme = schemeMetadata.findKeyScheme(RSA_CODE_NAME)
+        assertThrows<java.lang.IllegalArgumentException> {
+            factory.cryptoService.createWrappingKey("", true, mapOf())
+        }
+        assertThrows<java.lang.IllegalStateException> {
+            factory.cryptoService.generateKeyPair(tenantId, LEDGER, "key1", null, rsaScheme, mapOf("parentKeyAlias" to ""))
+        }
+    }
+
+    @Test
+    fun `high level generateKeyPair should throw IllegalStateException when wrapping key is not found`() {
+        val alias = UUID.randomUUID().toString()
+        val rsaScheme = schemeMetadata.findKeyScheme(RSA_CODE_NAME)
+        val e= assertThrows<IllegalStateException> {
+            factory.cryptoService.generateKeyPair(tenantId, LEDGER, "key1", null, rsaScheme, mapOf("parentKeyAlias" to alias))
+        }
+        assertThat(e.message).contains("Wrapping key with alias $alias not found")
+    }
+
+
+    private fun testWithBadWrappingKeyInfo(info: (TestServicesFactory) -> WrappingKeyInfo): java.lang.IllegalArgumentException {
+        val alias = UUID.randomUUID().toString()
+        val myFactory = TestServicesFactory()
+        val rsaScheme = myFactory.schemeMetadata.findKeyScheme(RSA_CODE_NAME)
+        myFactory.wrappingRepository.saveKey(alias, info(myFactory))
+        return assertThrows<java.lang.IllegalArgumentException> {
+            myFactory.cryptoService.generateKeyPair(
+                tenantId,
+                LEDGER,
+                "key1",
+                null,
+                rsaScheme,
+                mapOf("parentKeyAlias" to alias)
+            )
+        }
+    }
+
+    @Test
+    fun `generateKeyPair should throw IllegalArgumentException when key algorithm does not match master key`() {
+        val e= testWithBadWrappingKeyInfo {
+            WrappingKeyInfo(
+                WRAPPING_KEY_ENCODING_VERSION,
+                it.rootWrappingKey.algorithm + "!",
+                it.rootWrappingKey.wrap(factory.secondLevelWrappingKey),
+                1,
+                "root"
+            )
+        }
+        assertThat(e.message).contains("Expected algorithm")
+    }
+
+    @Test
+    fun `generateKeyPair should throw IllegalArgumentException when encoding version is not recognised`() {
+        val e= testWithBadWrappingKeyInfo {
+            WrappingKeyInfo(
+            WRAPPING_KEY_ENCODING_VERSION + 1,
+            it.secondLevelWrappingKey.algorithm,
+            it.rootWrappingKey.wrap(it.secondLevelWrappingKey),
+            1, "root"
+            )
+        }
+        assertThat(e.message).contains("Unknown wrapping key encoding. Expected to be 1")
+    }
+
 }
 
