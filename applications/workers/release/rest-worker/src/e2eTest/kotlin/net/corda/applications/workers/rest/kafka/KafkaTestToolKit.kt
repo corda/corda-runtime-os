@@ -2,8 +2,6 @@ package net.corda.applications.workers.rest.kafka
 
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
-import java.util.concurrent.TimeUnit
-import kotlin.random.Random
 import net.corda.applications.workers.rest.http.TestToolkit
 import net.corda.chunking.impl.ChunkBuilderServiceImpl
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
@@ -13,6 +11,7 @@ import net.corda.lifecycle.impl.LifecycleCoordinatorFactoryImpl
 import net.corda.lifecycle.impl.LifecycleCoordinatorSchedulerFactoryImpl
 import net.corda.lifecycle.impl.registry.LifecycleRegistryImpl
 import net.corda.messagebus.kafka.consumer.builder.CordaKafkaConsumerBuilderImpl
+import net.corda.messagebus.kafka.processor.builder.CordaKafkaParallelProcessorBuilder
 import net.corda.messagebus.kafka.producer.builder.KafkaCordaProducerBuilderImpl
 import net.corda.messagebus.kafka.serialization.CordaAvroSerializationFactoryImpl
 import net.corda.messaging.api.processor.DurableProcessor
@@ -29,6 +28,8 @@ import net.corda.schema.configuration.BootConfig
 import net.corda.schema.configuration.MessagingConfig
 import net.corda.schema.configuration.MessagingConfig.Bus.KAFKA_PROPERTIES_COMMON
 import net.corda.schema.registry.impl.AvroSchemaRegistryImpl
+import java.util.concurrent.TimeUnit
+import kotlin.random.Random
 
 class KafkaTestToolKit(
     private val toolkit: TestToolkit,
@@ -66,6 +67,10 @@ class KafkaTestToolKit(
     }
     private val producerBuilder by lazy {
         KafkaCordaProducerBuilderImpl(registry, messagingChunkFactory)
+    }
+
+    private val processorBuilder by lazy {
+        CordaKafkaParallelProcessorBuilder(registry)
     }
     private val coordinatorFactory by lazy {
         LifecycleCoordinatorFactoryImpl(
@@ -106,7 +111,7 @@ class KafkaTestToolKit(
             coordinatorFactory,
             producerBuilder,
             consumerBuilder,
-            stateAndEventBuilder,
+            processorBuilder,
             messagingChunkFactory
         )
     }

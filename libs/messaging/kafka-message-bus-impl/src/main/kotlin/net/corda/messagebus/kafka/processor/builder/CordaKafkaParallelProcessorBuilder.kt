@@ -28,6 +28,7 @@ class CordaKafkaParallelProcessorBuilder @Activate constructor(
 
     companion object {
         private val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        private val MAX_CONCURRENCY = 100
     }
 
     override fun <K : Any, V : Any> createProcessor(
@@ -99,7 +100,7 @@ class CordaKafkaParallelProcessorBuilder @Activate constructor(
                 producerConfig != null -> ParallelConsumerOptions.CommitMode.PERIODIC_TRANSACTIONAL_PRODUCER
                 else -> ParallelConsumerOptions.CommitMode.PERIODIC_CONSUMER_SYNC
             })
-            .maxConcurrency(3)
+            .maxConcurrency(MAX_CONCURRENCY)
             .consumer(consumer)
             .producer(producer)
             .build()
