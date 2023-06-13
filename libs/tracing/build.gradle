@@ -27,8 +27,11 @@ dependencies {
     implementation("io.zipkin.brave:brave-context-slf4j:$braveVersion")
     implementation("io.zipkin.brave:brave-instrumentation-kafka-clients:$braveVersion")
     implementation("io.zipkin.brave:brave-instrumentation-servlet:$braveVersion")
-    implementation "org.apache.servicemix.bundles:org.apache.servicemix.bundles.kafka-clients:$kafkaClientVersion"
-
+    implementation ("org.apache.servicemix.bundles:org.apache.servicemix.bundles.kafka-clients:$kafkaClientVersion") {
+        // Need to explicitly exclude this dependency (which seems non-essential), however it will prevent running
+        // Combined Worker on Mac M1. Please see README of Combined worker for more details.
+        exclude group: 'org.xerial.snappy'
+    }
 
     implementation "io.javalin:javalin-osgi:$javalinVersion"
     constraints {
