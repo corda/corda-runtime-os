@@ -17,7 +17,7 @@ data class SigningKeyInfo(
     val alias: String?,
     val hsmAlias: String?,
     val publicKey: ByteArray,
-    val keyMaterial: ByteArray?,
+    val keyMaterial: ByteArray,
     val schemeCodeName: String,
     val masterKeyAlias: String?,
     val externalId: String?,
@@ -39,10 +39,7 @@ data class SigningKeyInfo(
         if (alias != other.alias) return false
         if (hsmAlias != other.hsmAlias) return false
         if (!publicKey.contentEquals(other.publicKey)) return false
-        if (keyMaterial != null) {
-            if (other.keyMaterial == null) return false
-            if (!keyMaterial.contentEquals(other.keyMaterial)) return false
-        } else if (other.keyMaterial != null) return false
+        if (!keyMaterial.contentEquals(other.keyMaterial)) return false
         if (schemeCodeName != other.schemeCodeName) return false
         if (masterKeyAlias != other.masterKeyAlias) return false
         if (externalId != other.externalId) return false
@@ -62,7 +59,7 @@ data class SigningKeyInfo(
         result = 31 * result + (alias?.hashCode() ?: 0)
         result = 31 * result + (hsmAlias?.hashCode() ?: 0)
         result = 31 * result + publicKey.contentHashCode()
-        result = 31 * result + (keyMaterial?.contentHashCode() ?: 0)
+        result = 31 * result + (keyMaterial.contentHashCode())
         result = 31 * result + schemeCodeName.hashCode()
         result = 31 * result + (masterKeyAlias?.hashCode() ?: 0)
         result = 31 * result + (externalId?.hashCode() ?: 0)
