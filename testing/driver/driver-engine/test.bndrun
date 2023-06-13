@@ -1,0 +1,21 @@
+-runfw: org.apache.felix.framework
+-resolve.effective: resolve,active
+-runee: JavaSE-11
+-runtrace: true
+
+-runvm: \
+    --illegal-access=deny
+
+# The driver does not use Corda's Lifecycle code, so this
+# service should not exist inside our OSGi framework.
+-runsystemcapabilities: \
+    osgi.service;objectClass:List<String>='net.corda.lifecycle.LifecycleCoordinatorFactory';effective:=active
+
+-runrequires: \
+    bnd.identity;id='net.corda.driver-engine',\
+    bnd.identity;id='net.corda.ledger-consensual-flow',\
+    bnd.identity;id='slf4j.simple'
+
+-runstartlevel: \
+    order=sortbynameversion,\
+    begin=-1

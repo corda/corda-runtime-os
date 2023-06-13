@@ -11,6 +11,7 @@ import net.corda.internal.serialization.amqp.helper.createSerializerFactory
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
 import net.corda.ledger.common.testkit.createExample
+import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.sandboxgroupcontext.getObjectByKey
@@ -57,11 +58,13 @@ abstract class CommonLedgerIntegrationTest {
     lateinit var wireTransaction: WireTransaction
     lateinit var kryoSerializer: CheckpointSerializer
     lateinit var serializationService: SerializationService
+
+    @InjectService(timeout = TIMEOUT_MILLIS)
     lateinit var currentSandboxGroupContext: CurrentSandboxGroupContext
 
     @BeforeAll
     fun setup(
-        @InjectService(timeout = 10000)
+        @InjectService(timeout = TIMEOUT_MILLIS)
         sandboxSetup: SandboxSetup,
         @InjectBundleContext
         bundleContext: BundleContext,
@@ -80,7 +83,7 @@ abstract class CommonLedgerIntegrationTest {
         val cpiLoader = setup.fetchService<CpiLoader>(TIMEOUT_MILLIS)
         val cpiMetadata = cpiLoader.getCpiMetadata(virtualNodeInfo.cpiIdentifier).get()
             ?: fail("CpiMetadata is null ${virtualNodeInfo.cpiIdentifier}")
-        val cpks = cpiMetadata.cpksMetadata.map { it.fileChecksum }.toSet()
+        val cpks = cpiMetadata.cpksMetadata.mapTo(linkedSetOf(), CpkMetadata::fileChecksum)
 
         flowSandboxService = setup.fetchService(TIMEOUT_MILLIS)
         _sandboxGroupContext += flowSandboxService.get(virtualNodeInfo.holdingIdentity, cpks)
@@ -89,7 +92,6 @@ abstract class CommonLedgerIntegrationTest {
             _sandboxGroupContext.clear()
             virtualNode.releaseVirtualNode(virtualNodeContext)
         }
-        currentSandboxGroupContext = setup.fetchService(TIMEOUT_MILLIS)
         currentSandboxGroupContext.set(sandboxGroupContext)
 
         jsonMarshallingService = sandboxGroupContext.getSandboxSingletonService()

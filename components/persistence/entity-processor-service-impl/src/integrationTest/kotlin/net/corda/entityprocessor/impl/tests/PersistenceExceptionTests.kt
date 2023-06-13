@@ -63,6 +63,7 @@ import java.util.UUID
 class PersistenceExceptionTests {
     companion object {
         const val TOPIC = "pretend-topic"
+        private const val TIMEOUT_MILLIS = 10000L
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
@@ -74,11 +75,13 @@ class PersistenceExceptionTests {
     private lateinit var cpkReadService: CpkReadService
     private lateinit var virtualNodeInfoReadService: VirtualNodeInfoReadService
     private lateinit var responseFactory: ResponseFactory
-    private lateinit var currentSandboxGroupContext: CurrentSandboxGroupContext
+
+    @InjectService(timeout = TIMEOUT_MILLIS)
+    lateinit var currentSandboxGroupContext: CurrentSandboxGroupContext
 
     @BeforeAll
     fun setup(
-        @InjectService(timeout = 5000)
+        @InjectService(timeout = TIMEOUT_MILLIS)
         sandboxSetup: SandboxSetup,
         @InjectBundleContext
         bundleContext: BundleContext,
@@ -88,12 +91,11 @@ class PersistenceExceptionTests {
         logger.info("Setup test (test Directory: $testDirectory)")
         sandboxSetup.configure(bundleContext, testDirectory)
         lifecycle.accept(sandboxSetup) { setup ->
-            virtualNode = setup.fetchService(timeout = 5000)
-            cpiInfoReadService = setup.fetchService(timeout = 5000)
-            cpkReadService = setup.fetchService(timeout = 5000)
-            virtualNodeInfoReadService = setup.fetchService(timeout = 5000)
-            responseFactory = setup.fetchService(timeout = 5000)
-            currentSandboxGroupContext = setup.fetchService(timeout = 5000)
+            virtualNode = setup.fetchService(TIMEOUT_MILLIS)
+            cpiInfoReadService = setup.fetchService(TIMEOUT_MILLIS)
+            cpkReadService = setup.fetchService(TIMEOUT_MILLIS)
+            virtualNodeInfoReadService = setup.fetchService(TIMEOUT_MILLIS)
+            responseFactory = setup.fetchService(TIMEOUT_MILLIS)
         }
     }
 

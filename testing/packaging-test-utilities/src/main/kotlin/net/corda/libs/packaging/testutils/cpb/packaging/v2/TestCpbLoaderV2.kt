@@ -15,10 +15,10 @@ import net.corda.libs.packaging.hash
 import net.corda.libs.packaging.signerSummaryHash
 import net.corda.utilities.time.Clock
 import net.corda.v5.crypto.DigestAlgorithmName
-import java.io.ByteArrayInputStream
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.util.Arrays
+import java.util.Collections.unmodifiableList
 import java.util.jar.JarEntry
 import java.util.jar.JarInputStream
 import java.util.zip.ZipEntry
@@ -36,7 +36,7 @@ internal class TestCpbLoaderV2(private val clock: Clock) {
         // Calculate file hash
         val hash = calculateHash(byteArray)
 
-        JarInputStream(ByteArrayInputStream(byteArray), true).use { jarInputStream ->
+        JarInputStream(byteArray.inputStream(), true).use { jarInputStream ->
             val mainAttributes = jarInputStream.manifest.mainAttributes
             val cpks = mutableListOf<Cpk>()
 
@@ -83,12 +83,12 @@ internal class TestCpbLoaderV2(private val clock: Clock) {
                                 firstCpkEntry.certificates.asSequence().signerSummaryHash()
                         ),
                         fileChecksum = SecureHashImpl(DigestAlgorithmName.SHA2_256.name, hash),
-                        cpksMetadata = cpks.map { it.metadata },
+                        cpksMetadata = cpks.map(Cpk::metadata),
                         groupPolicy = null,
                         timestamp = clock.instant()
                     )
-                override val cpks =
-                    cpks
+                override val cpks
+                    get() = unmodifiableList(cpks)
 
                 private val cpksMap = cpks.associateBy { cpk ->
                     cpk.metadata.cpkId
