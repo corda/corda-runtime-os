@@ -1,10 +1,7 @@
 package net.corda.flow.fiber.factory
 
-import co.paralleluniverse.concurrent.util.ScheduledSingleThreadExecutor
 import co.paralleluniverse.fibers.FiberExecutorScheduler
 import co.paralleluniverse.fibers.FiberScheduler
-import java.util.UUID
-import java.util.concurrent.ExecutorService
 import net.corda.flow.fiber.FiberExceptionConstants
 import net.corda.flow.fiber.FiberFuture
 import net.corda.flow.fiber.FlowContinuation
@@ -19,6 +16,9 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Deactivate
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
+import java.util.UUID
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
 
 @Component
 @Suppress("Unused")
@@ -33,7 +33,7 @@ class FlowFiberFactoryImpl @Activate constructor(
 
     private val currentScheduler: FiberScheduler = FiberExecutorScheduler(
         "Same thread scheduler",
-        ScheduledSingleThreadExecutor()
+        Executors.newFixedThreadPool(100)
     )
 
     override fun createAndStartFlowFiber(
