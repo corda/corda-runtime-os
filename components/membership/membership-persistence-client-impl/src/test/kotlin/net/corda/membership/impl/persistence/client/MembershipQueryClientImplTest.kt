@@ -7,7 +7,8 @@ import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
-import net.corda.data.membership.PersistentSignedMemberInfo
+import net.corda.data.membership.PersistentMemberInfo
+import net.corda.data.membership.SignedData
 import net.corda.data.membership.StaticNetworkInfo
 import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.ApprovalRuleType
@@ -116,10 +117,14 @@ class MembershipQueryClientImplTest {
     private val testConfig =
         SmartConfigFactory.createWithoutSecurityServices().create(ConfigFactory.parseString("instanceId=1"))
 
-    private val signedMemberInfo: PersistentSignedMemberInfo = mock {
-        on { persistentMemberInfo } doReturn mock()
-        on { memberSignature } doReturn mock()
-        on { memberSignatureSpec } doReturn mock()
+    private val signedMemberContext = mock<SignedData> {
+        on { data } doReturn mock()
+        on { signature } doReturn mock()
+        on { signatureSpec } doReturn mock()
+    }
+    private val persistentMemberInfo: PersistentMemberInfo = mock {
+        on { signedMemberContext } doReturn signedMemberContext
+        on { serializedMgmContext } doReturn mock()
     }
 
     private fun postStartEvent() {
@@ -306,7 +311,7 @@ class MembershipQueryClientImplTest {
     @Test
     fun `request to persistence service is as expected`() {
         postConfigChangedEvent()
-        mockPersistenceResponse(MemberInfoQueryResponse(listOf(mock()), listOf(signedMemberInfo)))
+        mockPersistenceResponse(MemberInfoQueryResponse(listOf(persistentMemberInfo)))
 
         membershipQueryClient.queryMemberInfo(ourHoldingIdentity)
 
@@ -325,7 +330,7 @@ class MembershipQueryClientImplTest {
     @Test
     fun `successful request for all member info is correct`() {
         postConfigChangedEvent()
-        mockPersistenceResponse(MemberInfoQueryResponse(listOf(mock()), listOf(signedMemberInfo)))
+        mockPersistenceResponse(MemberInfoQueryResponse(listOf(persistentMemberInfo)))
 
         val queryResult = membershipQueryClient.queryMemberInfo(ourHoldingIdentity)
         assertThat(queryResult)
@@ -346,12 +351,7 @@ class MembershipQueryClientImplTest {
     @Test
     fun `successful request for list of member info is correct`() {
         postConfigChangedEvent()
-        val signedMemberInfo: PersistentSignedMemberInfo = mock {
-            on { persistentMemberInfo } doReturn mock()
-            on { memberSignature } doReturn mock()
-            on { memberSignatureSpec } doReturn mock()
-        }
-        mockPersistenceResponse(MemberInfoQueryResponse(listOf(mock()), listOf(signedMemberInfo)))
+        mockPersistenceResponse(MemberInfoQueryResponse(listOf(persistentMemberInfo)))
 
         val queryResult = membershipQueryClient.queryMemberInfo(ourHoldingIdentity, listOf(ourHoldingIdentity))
         assertThat(queryResult)
@@ -372,7 +372,7 @@ class MembershipQueryClientImplTest {
     @Test
     fun `successful request for member info with no results is correct`() {
         postConfigChangedEvent()
-        mockPersistenceResponse(MemberInfoQueryResponse(emptyList(), emptyList()))
+        mockPersistenceResponse(MemberInfoQueryResponse(emptyList()))
 
         assertThat(membershipQueryClient.queryMemberInfo(ourHoldingIdentity, listOf(ourHoldingIdentity))).isInstanceOf(
             MembershipQueryResult.Success::class.java
@@ -383,7 +383,7 @@ class MembershipQueryClientImplTest {
     fun `Mismatch in holding identity between RQ and RS causes failed response`() {
         postConfigChangedEvent()
         mockPersistenceResponse(
-            MemberInfoQueryResponse(emptyList(), emptyList()),
+            MemberInfoQueryResponse(emptyList()),
             holdingIdentityOverride = net.corda.data.identity.HoldingIdentity("O=BadName,L=London,C=GB", "BAD_ID")
         )
         assertThat(membershipQueryClient.queryMemberInfo(ourHoldingIdentity, listOf(ourHoldingIdentity))).isInstanceOf(
@@ -395,7 +395,7 @@ class MembershipQueryClientImplTest {
     fun `Mismatch in request timestamp between RQ and RS causes failed response`() {
         postConfigChangedEvent()
         mockPersistenceResponse(
-            MemberInfoQueryResponse(emptyList(), emptyList()),
+            MemberInfoQueryResponse(emptyList()),
             reqTimestampOverride = clock.instant().plusSeconds(5)
         )
         assertThat(membershipQueryClient.queryMemberInfo(ourHoldingIdentity, listOf(ourHoldingIdentity))).isInstanceOf(
@@ -407,7 +407,7 @@ class MembershipQueryClientImplTest {
     fun `Mismatch in request ID between RQ and RS causes failed response`() {
         postConfigChangedEvent()
         mockPersistenceResponse(
-            MemberInfoQueryResponse(emptyList(), emptyList()),
+            MemberInfoQueryResponse(emptyList()),
             reqIdOverride = "Group ID 3"
         )
         assertThat(membershipQueryClient.queryMemberInfo(ourHoldingIdentity, listOf(ourHoldingIdentity))).isInstanceOf(
@@ -419,7 +419,7 @@ class MembershipQueryClientImplTest {
     fun `Response timestamp before request timestamp causes failed response`() {
         postConfigChangedEvent()
         mockPersistenceResponse(
-            MemberInfoQueryResponse(emptyList(), emptyList()),
+            MemberInfoQueryResponse(emptyList()),
             rsTimestampOverride = clock.instant().minusSeconds(10)
         )
         assertThat(membershipQueryClient.queryMemberInfo(ourHoldingIdentity, listOf(ourHoldingIdentity))).isInstanceOf(

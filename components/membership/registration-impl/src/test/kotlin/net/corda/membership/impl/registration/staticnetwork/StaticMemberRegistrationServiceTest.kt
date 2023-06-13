@@ -395,7 +395,7 @@ class StaticMemberRegistrationServiceTest {
             verify(hsmRegistrationClient).assignSoftHSM(aliceId.value, LEDGER)
             verify(cryptoOpsClient).generateKeyPair(any(), eq(LEDGER), any(), any(), any<Map<String, String>>())
             verify(memberInfoFactory, times(3))
-                .createPersistentMemberInfo(any(), capturedMemberInfos.capture())
+                .createPersistentMemberInfo(any(), capturedMemberInfos.capture(), any(), any())
 
             (CryptoConsts.Categories.all.minus(listOf(LEDGER))).forEach {
                 verify(hsmRegistrationClient, never()).assignSoftHSM(aliceId.value, it)
@@ -874,7 +874,7 @@ class StaticMemberRegistrationServiceTest {
             registrationService.register(registrationId, alice, context)
 
             verify(memberInfoFactory, times(3))
-                .createPersistentMemberInfo(any(), capturedMemberInfos.capture())
+                .createPersistentMemberInfo(any(), capturedMemberInfos.capture(), any(), any())
             val notaryDetails = capturedMemberInfos.allValues.firstOrNull {
                 it.notaryDetails != null
             }?.notaryDetails
@@ -914,7 +914,7 @@ class StaticMemberRegistrationServiceTest {
             registrationService.register(registrationId, alice, context)
 
             verify(memberInfoFactory, times(3))
-                .createPersistentMemberInfo(any(), capturedMemberInfos.capture())
+                .createPersistentMemberInfo(any(), capturedMemberInfos.capture(), any(), any())
 
             assertThat(capturedPublishedList.firstValue.firstOrNull()?.value)
                 .isInstanceOf(PersistentMemberInfo::class.java)

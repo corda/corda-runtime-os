@@ -103,7 +103,10 @@ internal class SuspensionActivationEntityOperations(
         return memberInfoFactory.createPersistentMemberInfo(
             mgmHoldingIdentity,
             currentMemberInfo.memberContext,
-            serializedMgmContext
+            serializedMgmContext,
+            currentMemberInfo.memberSignatureKey,
+            currentMemberInfo.memberSignatureContent,
+            currentMemberInfo.memberSignatureSpec,
         )
     }
 }

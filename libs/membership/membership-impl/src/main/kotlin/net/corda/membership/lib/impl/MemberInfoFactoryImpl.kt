@@ -4,15 +4,18 @@ import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.KeyValuePairList
+import net.corda.data.crypto.wire.CryptoSignatureSpec
+import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.identity.HoldingIdentity
 import net.corda.data.membership.PersistentMemberInfo
+import net.corda.data.membership.SignedData
 import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.layeredpropertymap.create
 import net.corda.layeredpropertymap.toAvro
 import net.corda.membership.lib.MemberInfoFactory
+import net.corda.membership.lib.retrieveSignatureSpec
 import net.corda.membership.lib.toSortedMap
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.membership.MGMContext
 import net.corda.v5.membership.MemberContext
 import net.corda.v5.membership.MemberInfo
@@ -79,18 +82,100 @@ class MemberInfoFactoryImpl @Activate constructor(
     override fun createMemberInfo(
         memberInfo: PersistentMemberInfo
     ) = with(memberInfo) {
-        if (memberContextBytes == null || mgmContextBytes == null) {
+        if (signedMemberContext == null || serializedMgmContext == null) {
             createMemberInfo(
                 memberContext.toSortedMap(),
                 mgmContext.toSortedMap(),
             )
         } else {
             createMemberInfo(
-                deserialize(memberContextBytes.array()).toSortedMap(),
-                deserialize(mgmContextBytes.array()).toSortedMap(),
+                deserialize(signedMemberContext.data.array()).toSortedMap(),
+                deserialize(serializedMgmContext.array()).toSortedMap(),
             )
         }
     }
+
+    override fun createPersistentMemberInfo(
+        viewOwningMember: HoldingIdentity,
+        memberContext: ByteArray,
+        mgmContext: ByteArray,
+        memberSignature: CryptoSignatureWithKey,
+        memberSignatureSpec: CryptoSignatureSpec,
+    ): PersistentMemberInfo = PersistentMemberInfo.newBuilder()
+        .setViewOwningMember(viewOwningMember)
+        .setMemberContext(deserialize(memberContext))
+        .setMgmContext(deserialize(mgmContext))
+        .setSignedMemberContext(createSignedData(memberContext, memberSignature, memberSignatureSpec))
+        .setSerializedMgmContext(mgmContext.toByteBuffer())
+        .build()
+
+    override fun createPersistentMemberInfo(
+        viewOwningMember: HoldingIdentity,
+        memberContext: ByteArray,
+        mgmContext: ByteArray,
+        memberSignatureKey: ByteArray,
+        memberSignatureContent: ByteArray,
+        memberSignatureSpec: String
+    ): PersistentMemberInfo = PersistentMemberInfo.newBuilder()
+        .setViewOwningMember(viewOwningMember)
+        .setMemberContext(deserialize(memberContext))
+        .setMgmContext(deserialize(mgmContext))
+        .setSignedMemberContext(
+            createSignedData(
+                memberContext,
+                CryptoSignatureWithKey(memberSignatureKey.toByteBuffer(), memberSignatureContent.toByteBuffer()),
+                retrieveSignatureSpec(memberSignatureSpec)
+            )
+        )
+        .setSerializedMgmContext(mgmContext.toByteBuffer())
+        .build()
+
+    override fun createPersistentMemberInfo(
+        viewOwningMember: HoldingIdentity,
+        memberInfo: MemberInfo,
+        memberSignature: CryptoSignatureWithKey,
+        memberSignatureSpec: CryptoSignatureSpec,
+    ): PersistentMemberInfo = PersistentMemberInfo.newBuilder()
+        .setViewOwningMember(viewOwningMember)
+        .setMemberContext(memberInfo.memberProvidedContext.toAvro())
+        .setMgmContext(memberInfo.mgmProvidedContext.toAvro())
+        .setSignedMemberContext(
+            createSignedData(
+                serialize(memberInfo.memberProvidedContext.toAvro()),
+                memberSignature,
+                memberSignatureSpec,
+            )
+        )
+        .setSerializedMgmContext(serialize(memberInfo.mgmProvidedContext.toAvro()).toByteBuffer())
+        .build()
+
+    private fun createSignedData(
+        memberProvidedContext: ByteArray,
+        memberSignature: CryptoSignatureWithKey,
+        memberSignatureSpec: CryptoSignatureSpec,
+    ) = SignedData.newBuilder()
+        .setData(memberProvidedContext.toByteBuffer())
+        .setSignature(memberSignature)
+        .setSignatureSpec(memberSignatureSpec)
+        .build()
+
+    private fun ByteArray.toByteBuffer() = ByteBuffer.wrap(this)
+
+    /*override fun createPersistentMemberInfo(
+        viewOwningMember: HoldingIdentity,
+        signedMemberInfo: SignedMemberInfo
+    ): PersistentMemberInfo = PersistentMemberInfo.newBuilder()
+        .setMemberContext(signedMemberInfo.memberInfo.memberProvidedContext.toAvro())
+        .setMgmContext(signedMemberInfo.memberInfo.mgmProvidedContext.toAvro())
+        .setSignedMemberContext(
+            SignedData(
+                ByteBuffer.wrap(serializeKeyValuePairList(signedMemberInfo.memberInfo.memberProvidedContext.toAvro())),
+                signedMemberInfo.memberSignature,
+                signedMemberInfo.memberSignatureSpec,
+            )
+        )
+        .setSerializedMgmContext(ByteBuffer.wrap(serializeKeyValuePairList(signedMemberInfo.memberInfo.mgmProvidedContext.toAvro())))
+        .build()
 
     override fun createPersistentMemberInfo(
         viewOwningMember: HoldingIdentity,
@@ -118,4 +203,13 @@ class MemberInfoFactoryImpl @Activate constructor(
     private fun convertToByteBuffer(
         context: LayeredPropertyMap
     ) = ByteBuffer.wrap(serialize(context.toAvro()))
+
+    private fun createSignedMembershipContexts(
+        memberProvidedContext: ByteArray,
+        mgmProvidedContext: ByteArray
+    ): SignedContexts = SignedContexts.newBuilder()
+        .setMemberContext(ByteBuffer.wrap(memberProvidedContext))
+        .setMgmContext(ByteBuffer.wrap(mgmProvidedContext))
+        .build()
+     */
 }

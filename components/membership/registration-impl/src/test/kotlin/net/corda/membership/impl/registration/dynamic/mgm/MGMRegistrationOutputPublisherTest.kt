@@ -1,5 +1,7 @@
 package net.corda.membership.impl.registration.dynamic.mgm
 
+import net.corda.data.crypto.wire.CryptoSignatureSpec
+import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.event.MembershipEvent
 import net.corda.data.membership.event.registration.MgmOnboarded
@@ -18,6 +20,7 @@ import org.junit.jupiter.api.Test
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
+import java.nio.ByteBuffer
 import java.util.UUID
 
 class MGMRegistrationOutputPublisherTest {
@@ -37,7 +40,14 @@ class MGMRegistrationOutputPublisherTest {
     }
     private val persistentInfo = mock<PersistentMemberInfo>()
     private val memberInfoFactory = mock<MemberInfoFactory> {
-        on { createPersistentMemberInfo(holdingIdentity.toAvro(), memberInfo) } doReturn persistentInfo
+        on {
+            createPersistentMemberInfo(
+                holdingIdentity.toAvro(),
+                memberInfo,
+                CryptoSignatureWithKey(ByteBuffer.wrap(byteArrayOf()), ByteBuffer.wrap(byteArrayOf())),
+                CryptoSignatureSpec("", null, null),
+            )
+        } doReturn persistentInfo
     }
     private val mgmRegistrationOutputPublisher = MGMRegistrationOutputPublisher(memberInfoFactory)
 

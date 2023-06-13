@@ -31,6 +31,9 @@ import net.corda.messaging.api.records.Record
 import net.corda.test.util.time.TestClock
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.data.KeyValuePairList
+import net.corda.data.crypto.wire.CryptoSignatureSpec
+import net.corda.data.crypto.wire.CryptoSignatureWithKey
+import net.corda.data.membership.SignedData
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEYS
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
@@ -134,7 +137,11 @@ class MemberListProcessorTest {
                         aliceIdentity.toAvro(),
                         null,
                         null,
-                        member.memberProvidedContext.toAvro().toByteBuffer(),
+                        SignedData(
+                            member.memberProvidedContext.toAvro().toByteBuffer(),
+                            CryptoSignatureWithKey(ByteBuffer.wrap(byteArrayOf()), ByteBuffer.wrap(byteArrayOf())),
+                            CryptoSignatureSpec("", null, null),
+                        ),
                         member.mgmProvidedContext.toAvro().toByteBuffer(),
                     )
                 }
@@ -142,7 +149,11 @@ class MemberListProcessorTest {
                     holdingIdentity.toAvro(),
                     null,
                     null,
-                    member.memberProvidedContext.toAvro().toByteBuffer(),
+                    SignedData(
+                        member.memberProvidedContext.toAvro().toByteBuffer(),
+                        CryptoSignatureWithKey(ByteBuffer.wrap(byteArrayOf()), ByteBuffer.wrap(byteArrayOf())),
+                        CryptoSignatureSpec("", null, null),
+                    ),
                     member.mgmProvidedContext.toAvro().toByteBuffer(),
                 )
             }
@@ -251,9 +262,13 @@ class MemberListProcessorTest {
         val newRecord = Record("dummy-topic", topicData.key, topicData.value)
         val oldValue = PersistentMemberInfo(
             aliceIdentity.toAvro(),
-            alice.memberProvidedContext.toAvro(),
-            alice.mgmProvidedContext.toAvro(),
-            alice.memberProvidedContext.toAvro().toByteBuffer(),
+            null,
+            null,
+            SignedData(
+                alice.memberProvidedContext.toAvro().toByteBuffer(),
+                CryptoSignatureWithKey(ByteBuffer.wrap(byteArrayOf()), ByteBuffer.wrap(byteArrayOf())),
+                CryptoSignatureSpec("", null, null),
+            ),
             alice.mgmProvidedContext.toAvro().toByteBuffer(),
         )
         memberListProcessor.onNext(newRecord, oldValue, memberListFromTopic)
@@ -272,10 +287,14 @@ class MemberListProcessorTest {
         val newRecord = Record("dummy-topic", topicData.key, topicData.value)
         val oldValue = PersistentMemberInfo(
             aliceIdentity.toAvro(),
-            oldAlice.memberProvidedContext.toAvro(),
-            oldAlice.mgmProvidedContext.toAvro(),
-            ByteBuffer.wrap(byteArrayOf(1)),
-            ByteBuffer.wrap(byteArrayOf(1)),
+            null,
+            null,
+            SignedData(
+                oldAlice.memberProvidedContext.toAvro().toByteBuffer(),
+                CryptoSignatureWithKey(ByteBuffer.wrap(byteArrayOf()), ByteBuffer.wrap(byteArrayOf())),
+                CryptoSignatureSpec("", null, null),
+            ),
+            oldAlice.mgmProvidedContext.toAvro().toByteBuffer(),
         )
         memberListProcessor.onNext(newRecord, oldValue, memberList)
         assertThat(membershipGroupReadCache.memberListCache.get(aliceIdentity))

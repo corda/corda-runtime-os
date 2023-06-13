@@ -8,9 +8,9 @@ import net.corda.crypto.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.crypto.core.bytes
 import net.corda.crypto.core.toAvro
 import net.corda.crypto.core.toCorda
-import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializationFactory
-import net.corda.data.KeyValuePairList
+import net.corda.data.crypto.wire.CryptoSignatureSpec
+import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.command.synchronisation.member.ProcessMembershipUpdates
 import net.corda.data.membership.p2p.DistributionMetaData
 import net.corda.data.membership.p2p.MembershipPackage
@@ -36,7 +36,6 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
 import net.corda.membership.lib.MemberInfoExtension.Companion.sessionInitiationKeys
 import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.lib.MemberInfoFactory
-import net.corda.membership.lib.toSortedMap
 import net.corda.membership.p2p.helpers.MerkleTreeGenerator
 import net.corda.membership.p2p.helpers.P2pRecordsFactory
 import net.corda.membership.p2p.helpers.Verifier
@@ -240,11 +239,6 @@ class MemberSynchronisationServiceImpl internal constructor(
                 TimeUnit.MINUTES.toMillis(it)
             }
 
-        private val deserializer: CordaAvroDeserializer<KeyValuePairList> =
-            serializationFactory.createAvroDeserializer({
-                logger.error("Deserialization of KeyValuePairList from MembershipPackage failed while processing membership updates.")
-            }, KeyValuePairList::class.java)
-
         private fun delayToNextRequestInMilliSeconds(): Long {
             // Add noise to prevent all the members to ask for sync in the same time
             return maxDelayBetweenRequestsInMillis -
@@ -288,16 +282,7 @@ class MemberSynchronisationServiceImpl internal constructor(
 
             return try {
                 cancelCurrentRequestAndScheduleNewOne(viewOwningMember, mgm)
-                val updateMembersInfo = updates.membershipPackage.memberships?.memberships?.map { update ->
-                    val memberContext = deserializer.deserialize(update.memberContext.data.array())
-                        ?: throw CordaRuntimeException("Invalid member context")
-                    val mgmContext = deserializer.deserialize(update.mgmContext.data.array())
-                        ?: throw CordaRuntimeException("Invalid MGM context")
-                    val memberInfo = memberInfoFactory.createMemberInfo(
-                        memberContext.toSortedMap(),
-                        mgmContext.toSortedMap()
-                    )
-
+                val updateMembersPersistentInfo = updates.membershipPackage.memberships.memberships.map { update ->
                     verifier.verify(
                         memberInfo.sessionInitiationKeys,
                         update.memberContext.signature,
@@ -334,6 +319,9 @@ class MemberSynchronisationServiceImpl internal constructor(
                         persistentMemberInfo
                     )
                 }
+
+                val updateMembersInfo = memberInfoRecordMap.associate { it.first.id to it.first }
+                val persistentMemberInfoRecords = memberInfoRecordMap.map { it.second }
 
                 val packageHash = updates.membershipPackage.memberships?.hashCheck?.toCorda()
                 val allRecords = if (packageHash == null) {

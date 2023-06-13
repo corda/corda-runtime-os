@@ -94,7 +94,6 @@ import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 import java.security.PublicKey
 import java.time.Instant
-import java.util.SortedMap
 import java.util.concurrent.CompletableFuture
 import kotlin.test.assertFailsWith
 import net.corda.data.membership.SignedGroupParameters as AvroGroupParameters

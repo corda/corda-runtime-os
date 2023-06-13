@@ -20,7 +20,6 @@ import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.messaging.api.records.Record
 import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -64,8 +63,7 @@ class TestMembershipPersistenceClientImpl @Activate constructor(
     ): MembershipPersistenceOperation<InternalGroupParameters> = MembershipPersistenceOperationImpl(MembershipPersistenceResult.Success(groupParameters))
 
     override fun addNotaryToGroupParameters(
-        viewOwningIdentity: HoldingIdentity,
-        notary: MemberInfo,
+        notary: PersistentMemberInfo,
     ): MembershipPersistenceOperation<InternalGroupParameters> = MembershipPersistenceOperationImpl(MembershipPersistenceResult.Failure("Unsupported"))
 
     override fun persistRegistrationRequest(
@@ -77,7 +75,7 @@ class TestMembershipPersistenceClientImpl @Activate constructor(
         viewOwningIdentity: HoldingIdentity,
         approvedMember: HoldingIdentity,
         registrationRequestId: String,
-    ): MembershipPersistenceOperation<MemberInfo> = MembershipPersistenceOperationImpl(MembershipPersistenceResult.Failure("Unsupported"))
+    ): MembershipPersistenceOperation<PersistentMemberInfo> = MembershipPersistenceOperationImpl(MembershipPersistenceResult.Failure("Unsupported"))
 
     override fun setRegistrationRequestStatus(
         viewOwningIdentity: HoldingIdentity,

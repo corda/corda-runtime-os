@@ -104,12 +104,12 @@ class MembershipQueryClientImpl(
             buildMembershipRequestContext(viewOwningIdentity.toAvro()),
             QueryMemberInfo(holdingIdentityFilter.map { it.toAvro() }, statusFilter),
         ).execute("query member info") { payload: MemberInfoQueryResponse ->
-            logger.info("Found ${payload.signedMembers.size} results.")
-            payload.signedMembers.map {
-                MemberSignedMemberInfo(
-                    memberInfoFactory.createMemberInfo(it.persistentMemberInfo),
-                    it.memberSignature,
-                    it.memberSignatureSpec,
+            logger.info("Found ${payload.members.size} results.")
+            payload.members.map {
+                SignedMemberInfo(
+                    memberInfoFactory.createMemberInfo(it),
+                    it.signedMemberContext.signature,
+                    it.signedMemberContext.signatureSpec,
                 )
             }
         }

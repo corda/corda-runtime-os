@@ -76,6 +76,8 @@ class ApproveRegistrationHandlerTest {
 
         override fun createAsyncCommands() = emptyList<Record<*, *>>()
     }
+    private val persistentMemberInfo: PersistentMemberInfo = mock()
+    private val persistentNotaryInfo: PersistentMemberInfo = mock()
     private val membershipPersistenceClient = mock<MembershipPersistenceClient> {
         on {
             setMemberAndRegistrationRequestAsApproved(
@@ -83,18 +85,17 @@ class ApproveRegistrationHandlerTest {
                 member,
                 registrationId
             )
-        } doReturn SuccessOperation(memberInfo)
+        } doReturn SuccessOperation(persistentMemberInfo)
         on {
             setMemberAndRegistrationRequestAsApproved(
                 owner,
                 notary,
                 registrationId
             )
-        } doReturn SuccessOperation(notaryInfo)
+        } doReturn SuccessOperation(persistentNotaryInfo)
         on {
             addNotaryToGroupParameters(
-                mgm.holdingIdentity,
-                notaryInfo
+                persistentNotaryInfo
             )
         } doReturn SuccessOperation(mockSignedGroupParameters)
     }
@@ -128,9 +129,9 @@ class ApproveRegistrationHandlerTest {
     }
     private val writerService: GroupParametersWriterService = mock()
 
-    private val persistentMemberInfo: PersistentMemberInfo = mock()
     private val memberInfoFactory: MemberInfoFactory = mock {
-        on { createPersistentMemberInfo(eq(owner.toAvro()), eq(memberInfo)) } doReturn persistentMemberInfo
+        on { createMemberInfo(eq(persistentMemberInfo)) } doReturn memberInfo
+        on { createMemberInfo(eq(persistentNotaryInfo)) } doReturn notaryInfo
     }
 
     private val handler = ApproveRegistrationHandler(
@@ -201,10 +202,7 @@ class ApproveRegistrationHandlerTest {
 
         val results = handler.invoke(state, key, command)
 
-        verify(membershipPersistenceClient).addNotaryToGroupParameters(
-            viewOwningIdentity = mgm.holdingIdentity,
-            notary = notaryInfo,
-        )
+        verify(membershipPersistenceClient).addNotaryToGroupParameters(persistentNotaryInfo)
         assertThat(results.outputStates)
             .hasSize(4)
 
@@ -225,10 +223,7 @@ class ApproveRegistrationHandlerTest {
 
         val results = handler.invoke(state, key, command)
 
-        verify(membershipPersistenceClient, never()).addNotaryToGroupParameters(
-            viewOwningIdentity = mgm.holdingIdentity,
-            notary = memberInfo,
-        )
+        verify(membershipPersistenceClient, never()).addNotaryToGroupParameters(persistentMemberInfo)
         verify(groupReaderProvider, times(1)).getGroupReader(any())
         assertThat(results.updatedState).isNull()
         assertThat(results.outputStates)

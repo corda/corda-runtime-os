@@ -4,7 +4,6 @@ import io.micrometer.core.instrument.Timer
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.core.ShortHash
 import net.corda.avro.serialization.CordaAvroSerializationFactory
-import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.connection.manager.VirtualNodeDbType
@@ -64,16 +63,9 @@ internal abstract class BasePersistenceHandler<REQUEST, RESPONSE>(
         }
     }
 
-    fun retrieveSignatureSpec(signatureSpec: String) = if (signatureSpec.isEmpty()) {
-        CryptoSignatureSpec("", null, null)
-    } else {
-        CryptoSignatureSpec(signatureSpec, null, null)
-    }
-
-    private fun getEntityManagerFactory(holdingIdentityShortHash: ShortHash): EntityManagerFactory {
-        return dbConnectionManager.getOrCreateEntityManagerFactory(
-            name = VirtualNodeDbType.VAULT.getConnectionName(holdingIdentityShortHash),
-            privilege = DbPrivilege.DML,
+    private fun getEntityManagerFactory(info: VirtualNodeInfo): EntityManagerFactory {
+        return dbConnectionManager.createEntityManagerFactory(
+            connectionId = info.vaultDmlConnectionId,
             entitiesSet = jpaEntitiesRegistry.get(CordaDb.Vault.persistenceUnitName)
                 ?: throw java.lang.IllegalStateException(
                     "persistenceUnitName ${CordaDb.Vault.persistenceUnitName} is not registered."

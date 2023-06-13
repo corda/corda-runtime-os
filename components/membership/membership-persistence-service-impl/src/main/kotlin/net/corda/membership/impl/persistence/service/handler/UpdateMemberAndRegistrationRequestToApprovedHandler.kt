@@ -118,6 +118,9 @@ internal class UpdateMemberAndRegistrationRequestToApprovedHandler(
                     context.holdingIdentity,
                     member.memberContext,
                     serializedMgmContext,
+                    member.memberSignatureKey,
+                    member.memberSignatureContent,
+                    member.memberSignatureSpec,
                 )
             )
         }

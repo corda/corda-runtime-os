@@ -34,10 +34,11 @@ internal class PersistMemberInfoHandler(
 
 
     override fun invoke(context: MembershipRequestContext, request: PersistMemberInfo) {
-        if (request.members.isNotEmpty()) {
+        if (request.signedMembers.isNotEmpty()) {
+            logger.info("Persisting member information.")
             transaction(context.holdingIdentity.toCorda().shortHash) { em ->
-                request.members.forEach {
-                    val newMemberInfo = memberInfoFactory.createMemberInfo(it.persistentMemberInfo)
+                request.signedMembers.forEach {
+                    val newMemberInfo = memberInfoFactory.createMemberInfo(it)
                     logger.info(
                         "Persisting member information representing ${newMemberInfo.name} as viewed " +
                                 "by ${context.holdingIdentity.x500Name} in group ${context.holdingIdentity.groupId}."
@@ -79,11 +80,11 @@ internal class PersistMemberInfoHandler(
                         newMemberInfo.status == MEMBER_STATUS_PENDING,
                         newMemberInfo.status,
                         clock.instant(),
-                        it.persistentMemberInfo.memberContextBytes.array(),
-                        it.memberSignature.publicKey.array(),
-                        it.memberSignature.bytes.array(),
-                        it.memberSignatureSpec.signatureName,
-                        it.persistentMemberInfo.mgmContextBytes.array(),
+                        it.signedMemberContext.data.array(),
+                        it.signedMemberContext.signature.publicKey.array(),
+                        it.signedMemberContext.signature.bytes.array(),
+                        it.signedMemberContext.signatureSpec.signatureName,
+                        it.serializedMgmContext.array(),
                         newMemberInfo.serial,
                     )
                     em.merge(entity)

@@ -521,6 +521,11 @@ class StaticMemberRegistrationService(
                 memberInfoFactory.createPersistentMemberInfo(
                     owningMemberHoldingIdentity.toAvro(),
                     memberInfo,
+                    CryptoSignatureWithKey(
+                        ByteBuffer.wrap(byteArrayOf()),
+                        ByteBuffer.wrap(byteArrayOf())
+                    ),
+                    CryptoSignatureSpec("", null, null),
                 )
             )
         }

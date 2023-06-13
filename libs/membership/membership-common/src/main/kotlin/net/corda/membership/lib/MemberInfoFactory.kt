@@ -1,5 +1,7 @@
 package net.corda.membership.lib
 
+import net.corda.data.crypto.wire.CryptoSignatureSpec
+import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.identity.HoldingIdentity
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.v5.membership.MGMContext
@@ -51,6 +53,41 @@ interface MemberInfoFactory {
         memberInfo: PersistentMemberInfo
     ): MemberInfo
 
+    fun createMemberInfo(
+        memberContext: ByteArray,
+        mgmContext: ByteArray
+    ): MemberInfo
+
+    fun createPersistentMemberInfo(
+        viewOwningMember: HoldingIdentity,
+        memberContext: ByteArray,
+        mgmContext: ByteArray,
+        memberSignature: CryptoSignatureWithKey,
+        memberSignatureSpec: CryptoSignatureSpec,
+    ): PersistentMemberInfo
+
+    @Suppress("LongParameterList")
+    fun createPersistentMemberInfo(
+        viewOwningMember: HoldingIdentity,
+        memberContext: ByteArray,
+        mgmContext: ByteArray,
+        memberSignatureKey: ByteArray,
+        memberSignatureContent: ByteArray,
+        memberSignatureSpec: String,
+    ): PersistentMemberInfo
+
+    fun createPersistentMemberInfo(
+        viewOwningMember: HoldingIdentity,
+        memberInfo: MemberInfo,
+        memberSignature: CryptoSignatureWithKey,
+        memberSignatureSpec: CryptoSignatureSpec,
+    ): PersistentMemberInfo
+
+    /*fun createPersistentMemberInfo(
+        viewOwningMember: HoldingIdentity,
+        signedMemberInfo: SignedMemberInfo,
+    ): PersistentMemberInfo
+
     fun createPersistentMemberInfo(
         viewOwningMember: HoldingIdentity,
         memberInfo: MemberInfo,
@@ -58,7 +95,14 @@ interface MemberInfoFactory {
 
     fun createPersistentMemberInfo(
         viewOwningMember: HoldingIdentity,
-        memberProvidedContext: ByteArray,
-        mgmProvidedContext: ByteArray,
+        memberInfo: SignedMemberInfo,
     ): PersistentMemberInfo
+
+    fun createPersistentMemberInfo(
+        viewOwningMember: HoldingIdentity,
+        memberProvidedContext: ByteArray,
+        memberSignature: ByteArray,
+        memberSignatureSpec: ByteArray,
+        mgmProvidedContext: ByteArray,
+    ): PersistentMemberInfo*/
 }
