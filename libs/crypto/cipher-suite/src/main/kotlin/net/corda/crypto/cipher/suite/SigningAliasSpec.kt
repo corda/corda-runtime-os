@@ -4,7 +4,7 @@ import net.corda.crypto.cipher.suite.schemes.KeyScheme
 import net.corda.v5.crypto.SignatureSpec
 import java.security.PublicKey
 
-// TODO remove
+// TODO this is dead code - remove it
 
 /**
  * Parameters for signing operation when using the key stored in the HSM.

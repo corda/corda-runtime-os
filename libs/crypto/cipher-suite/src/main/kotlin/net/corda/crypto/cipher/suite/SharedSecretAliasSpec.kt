@@ -3,7 +3,7 @@ package net.corda.crypto.cipher.suite
 import net.corda.crypto.cipher.suite.schemes.KeyScheme
 import java.security.PublicKey
 
-// TODO remove
+// TODO this is dead code - remove it
 /**
  * Parameters for the Diffie–Hellman key agreement shared secret derivation when using the private key stored in the HSM.
  *
