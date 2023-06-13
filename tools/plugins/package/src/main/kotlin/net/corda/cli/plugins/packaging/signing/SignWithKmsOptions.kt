@@ -7,8 +7,11 @@ import picocli.CommandLine
  */
 
 class SignWithKmsOptions {
-    @CommandLine.Option(names = ["--key", "-k"], required = true, description = ["Key id of AWS KMS key"])
+    @CommandLine.Option(names = ["--key-id", "-k"], required = true, description = ["Key id of AWS KMS key"])
     lateinit var keyId: String
+
+    @CommandLine.Option(names = ["--cert-file"], required = true, description = ["Certificate chain file"])
+    lateinit var certFile: String
 
     @CommandLine.Option(names = ["--tsa", "-t"], description = ["Time Stamping Authority (TSA) URL"])
     var tsaUrl: String? = null

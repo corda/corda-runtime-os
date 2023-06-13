@@ -70,7 +70,7 @@ internal object SigningHelpers {
     fun signWithKms(
         unsignedInputCpx: Path,
         signedOutputCpx: Path,
-        certChain: Path,
+        certFile: Path,
         keyId: String,
         signerName: String,
         tsaUrl: String?
@@ -90,9 +90,8 @@ internal object SigningHelpers {
                 val privateKey = if (keyIsRsa) { KmsRSAKeyFactory.getPrivateKey(keyId) } else { KmsECKeyFactory.getPrivateKey(keyId) }
                 val jarsignerSignatureAlgorithm = if (keyIsRsa) { "SHA256withRSA" } else { "SHA256withECDSA" }
 
-                val certChainString = convertFileToX509Cert(certChain)
-                val certificateChain = listOf(certChainString)
-                val certPath = buildCertPath(certificateChain)
+                val certChain = readCertFromFile(certFile)
+                val certPath = buildCertPath(listOf(certChain))
 
                 // Create JarSigner
                 val builder = JarSigner.Builder(privateKey, certPath)
@@ -158,7 +157,7 @@ internal object SigningHelpers {
             .getInstance(STANDARD_CERT_FACTORY_TYPE)
             .generateCertPath(certificateChain)
 
-    private fun convertFileToX509Cert(certificate: Path): X509Certificate {
+    private fun readCertFromFile(certificate: Path): X509Certificate {
         val targetStream: InputStream = File(certificate.toUri()).inputStream()
         return CertificateFactory
             .getInstance(STANDARD_CERT_FACTORY_TYPE)
