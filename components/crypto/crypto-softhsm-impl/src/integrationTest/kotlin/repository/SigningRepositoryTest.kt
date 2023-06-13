@@ -53,7 +53,7 @@ class SigningRepositoryTest : CryptoRepositoryTest() {
     private val defaultTenantId = "Memento Mori"
     private val defaultMasterKeyName = "Domination's the name of the game"
 
-    private fun createPrivateKeyInfo(): SigningKeyInfo {
+    private fun createSigningKeyInfo(): SigningKeyInfo {
         val privKey = SecureHashUtils.randomBytes()
         val unique = UUID.randomUUID().toString()
         val key = SecureHashUtils.randomBytes()
@@ -149,7 +149,7 @@ class SigningRepositoryTest : CryptoRepositoryTest() {
 
         saveWrappingKey(emf, defaultMasterKeyName)
         val privateKeys = (0..2).map { _ ->
-            val info = createPrivateKeyInfo()
+            val info = createSigningKeyInfo()
             val ctx = createSigningWrappedKeySaveContext(info)
             repo.savePrivateKey(ctx)
         }
@@ -175,7 +175,7 @@ class SigningRepositoryTest : CryptoRepositoryTest() {
     @ParameterizedTest
     @MethodSource("emfs")
     fun `savePrivateKey and find by alias`(emf: EntityManagerFactory) {
-        val info = createPrivateKeyInfo()
+        val info = createSigningKeyInfo()
         saveWrappingKey(emf, info.masterKeyAlias!!)
 
         val ctx = createSigningWrappedKeySaveContext(info)
@@ -200,7 +200,7 @@ class SigningRepositoryTest : CryptoRepositoryTest() {
     @ParameterizedTest
     @MethodSource("emfs")
     fun `savePrivateKey twice fails`(emf: EntityManagerFactory) {
-        val info = createPrivateKeyInfo()
+        val info = createSigningKeyInfo()
         saveWrappingKey(emf, info.masterKeyAlias!!)
 
         val ctx = createSigningWrappedKeySaveContext(info)
@@ -222,7 +222,7 @@ class SigningRepositoryTest : CryptoRepositoryTest() {
     @ParameterizedTest
     @MethodSource("emfs")
     fun `save same key for 2 tenants should work`(emf: EntityManagerFactory) {
-        val info = createPrivateKeyInfo()
+        val info = createSigningKeyInfo()
         saveWrappingKey(emf, info.masterKeyAlias!!)
 
         val ctx = createSigningWrappedKeySaveContext(info)
