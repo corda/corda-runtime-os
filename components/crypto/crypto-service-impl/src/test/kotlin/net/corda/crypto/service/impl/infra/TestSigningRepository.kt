@@ -38,7 +38,7 @@ class TestSigningRepository: SigningRepository {
             alias = context.alias,
             hsmAlias = context.key.hsmAlias,
             publicKey = encodedKey,
-            keyMaterial = null,
+            keyMaterial = byteArrayOf(),
             schemeCodeName = context.keyScheme.codeName,
             masterKeyAlias = null,
             externalId = null,
