@@ -45,7 +45,7 @@ class CordaKafkaProducerImpl(
     private val config: ResolvedProducerConfig,
     private val producer: Producer<Any, Any>,
     private val chunkSerializerService: ChunkSerializerService,
-    private val producerMetricsBinder: MeterBinder,
+    private val producerMetricsBinder : MeterBinder,
 ) : CordaProducer {
     private val topicPrefix = config.topicPrefix
     private val transactional = config.transactional
@@ -119,27 +119,19 @@ class CordaKafkaProducerImpl(
      * @param callback for error handling in async producers
      * @param partition partition to send to. defaults to null.
      */
-    private fun sendRecord(
-        record: CordaProducerRecord<*, *>,
-        callback: CordaProducer.Callback? = null,
-        partition: Int? = null
-    ) {
+    private fun sendRecord(record: CordaProducerRecord<*, *>, callback: CordaProducer.Callback? = null, partition: Int? = null) {
         val chunkedRecords = chunkSerializerService.generateChunkedRecords(record)
         if (chunkedRecords.isNotEmpty()) {
             sendChunks(chunkedRecords, callback, partition)
         } else {
             traceSend(record.headers, "send $clientId") {
                 try {
-                    producer.send(
-                        record.toKafkaRecord(topicPrefix, partition),
-                        callback?.toTraceKafkaCallback(this)
-                    )
+                    producer.send(record.toKafkaRecord(topicPrefix, partition), callback?.toTraceKafkaCallback(this))
                 } catch (ex: CordaRuntimeException) {
                     errorAndFinish(ex)
                     val msg = "Failed to send record to topic ${record.topic} with key ${record.key}"
                     if (config.throwOnSerializationError) {
                         log.error(msg, ex)
-
                         throw ex
                     } else {
                         log.warn(msg, ex)
@@ -173,7 +165,7 @@ class CordaKafkaProducerImpl(
         }
         cordaProducerRecords.forEach {
             //note callback is only applicable to async calls which are not allowed
-            producer.send(it.toKafkaRecord(topicPrefix, partition))
+            producer.send(it.toKafkaRecord(topicPrefix,partition))
         }
     }
 
@@ -361,11 +353,8 @@ class CordaKafkaProducerImpl(
                 }
                 throw CordaMessageAPIIntermittentException("Error occurred $errorString", ex)
             }
-
             is CordaMessageAPIFatalException,
-            is CordaMessageAPIIntermittentException -> {
-                throw ex
-            }
+            is CordaMessageAPIIntermittentException -> { throw ex }
 
             else -> {
                 // Here we do not know what the exact cause of the exception is, but we do know Kafka has not told us we

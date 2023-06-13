@@ -1,6 +1,7 @@
 package net.corda.messagebus.kafka.producer.builder
 
 import io.micrometer.core.instrument.binder.kafka.KafkaClientMetrics
+import java.util.Properties
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messagebus.api.configuration.ProducerConfig
 import net.corda.messagebus.api.producer.CordaProducer
@@ -21,7 +22,6 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.util.Properties
 
 /**
  * Builder for a Kafka Producer.
