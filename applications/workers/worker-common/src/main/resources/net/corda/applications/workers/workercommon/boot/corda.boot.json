@@ -116,6 +116,21 @@
       },
       "additionalProperties": false
     },
+    "flow": {
+      "description": "Configuration options related to flow worker.",
+      "properties": {
+        "processor": {
+          "description": "Flow event processor params.",
+          "count": {
+            "description": "The number of flow event processors that the flow worker execute in parallel.",
+            "type": [
+              "integer"
+            ]
+          }
+        }
+      },
+      "additionalProperties": false
+    },
     "maxAllowedMessageSize": {
       "description": "Maximum allowed size, in bytes, for publishing Messages. This is required for initial push of config to Kafka.",
       "type": "integer",

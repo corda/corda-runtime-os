@@ -113,11 +113,12 @@ class CombinedWorker @Activate constructor(
         val databaseConfig = PathAndConfig(BootConfig.BOOT_DB, params.databaseParams)
         val cryptoConfig = PathAndConfig(BootConfig.BOOT_CRYPTO, createCryptoBootstrapParamsMap(params.hsmId))
         val restConfig = PathAndConfig(BootConfig.BOOT_REST, params.restParams)
+        val flowConfig = PathAndConfig(BootConfig.BOOT_FLOW, params.flowParams)
         val config = getBootstrapConfig(
             secretsServiceFactoryResolver,
             params.defaultParams,
             configurationValidatorFactory.createConfigValidator(),
-            listOf(databaseConfig, cryptoConfig, restConfig),
+            listOf(databaseConfig, cryptoConfig, restConfig, flowConfig),
         )
 
         val superUser = System.getenv("CORDA_DEV_POSTGRES_USER") ?: "postgres"
@@ -191,6 +192,9 @@ private class CombinedWorkerParams {
 
     @Option(names = ["-d", "--${BootConfig.BOOT_DB}"], description = ["Database parameters for the worker."])
     var databaseParams = emptyMap<String, String>()
+
+    @Option(names = ["-F", "--${BootConfig.BOOT_FLOW}"], description = ["Flow worker specific params."])
+    var flowParams = emptyMap<String, String>()
 
     @Option(names = ["-r", "--${BootConfig.BOOT_REST}"], description = ["REST parameters for the worker."])
     var restParams = emptyMap<String, String>()
