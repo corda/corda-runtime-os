@@ -21,7 +21,7 @@ class SigningAliasSpec(
     val hsmAlias: String,
     override val publicKey: PublicKey,
     override val keyScheme: KeyScheme,
-    override val signatureSpec: SignatureSpec,
+    override val signatureSpec: SignatureSpec
 ) : SigningSpec {
 
     /**
