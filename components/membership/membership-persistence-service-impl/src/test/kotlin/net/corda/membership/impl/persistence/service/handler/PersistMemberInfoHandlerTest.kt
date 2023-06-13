@@ -9,8 +9,7 @@ import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.PersistentMemberInfo
-import net.corda.data.membership.PersistentSignedMemberInfo
-import net.corda.data.membership.SignedContexts
+import net.corda.data.membership.SignedData
 import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.data.membership.db.request.command.PersistMemberInfo
 import net.corda.db.connection.manager.DbConnectionManager
@@ -68,6 +67,8 @@ class PersistMemberInfoHandlerTest {
     )
     private val ourRegistrationId = UUID.randomUUID().toString()
     private val clock = TestClock(Instant.ofEpochSecond(0))
+    private val byteBuffer = ByteBuffer.wrap(byteArrayOf(1))
+    private val emptyKeyValuePairList = KeyValuePairList(emptyList())
 
     private val memberProvidedContext: MemberContext = mock()
     private val signature = CryptoSignatureWithKey(
@@ -148,22 +149,21 @@ class PersistMemberInfoHandlerTest {
         ourHoldingIdentity.toAvro(),
     )
 
-    private fun getPersistMemberInfo(memberInfos: List<PersistentSignedMemberInfo>) = PersistMemberInfo(
-        memberInfos
+    // deprecated
+    private fun getPersistMemberInfo(memberInfos: List<PersistentMemberInfo>) = PersistMemberInfo(
+        emptyList(), memberInfos
     )
 
-    private fun getPersistentSignedMemberInfo() = PersistentSignedMemberInfo(
-        PersistentMemberInfo(
-            ourHoldingIdentity.toAvro(),
-            KeyValuePairList(emptyList()),
-            KeyValuePairList(emptyList()),
-            SignedContexts(
-                ByteBuffer.wrap(byteArrayOf(1)),
-                ByteBuffer.wrap(byteArrayOf(1)),
-            ),
+    private fun getPersistentMemberInfo() = PersistentMemberInfo(
+        ourHoldingIdentity.toAvro(),
+        emptyKeyValuePairList,
+        emptyKeyValuePairList,
+        SignedData(
+            byteBuffer,
+            signature,
+            signatureSpec,
         ),
-        signature,
-        signatureSpec,
+        byteBuffer,
     )
 
     @Test
@@ -182,7 +182,7 @@ class PersistMemberInfoHandlerTest {
 
     @Test
     fun `invoke with members persists`() {
-        val memberInfo = getPersistentSignedMemberInfo()
+        val memberInfo = getPersistentMemberInfo()
         val result = persistMemberInfoHandler.invoke(
             getMemberRequestContext(),
             getPersistMemberInfo(listOf(memberInfo))
@@ -199,7 +199,7 @@ class PersistMemberInfoHandlerTest {
         verify(jpaEntitiesRegistry).get(eq(CordaDb.Vault.persistenceUnitName))
         with(argumentCaptor<PersistentMemberInfo>()) {
             verify(memberInfoFactory).createMemberInfo(capture())
-            assertThat(firstValue).isEqualTo(memberInfo.persistentMemberInfo)
+            assertThat(firstValue).isEqualTo(memberInfo)
         }
         with(argumentCaptor<Any>()) {
             verify(entityManager).merge(capture())
@@ -215,11 +215,11 @@ class PersistMemberInfoHandlerTest {
 
     @Test
     fun `invoke does not persist if version already persisted`() {
-        val memberInfo = getPersistentSignedMemberInfo()
+        val memberInfo = getPersistentMemberInfo()
         val requestContext = getMemberRequestContext()
         val serializedMemberContext = "123".toByteArray()
         val serializedMgmContext = "456".toByteArray()
-        whenever(keyValuePairListDeserializer.deserialize(any())).doReturn(KeyValuePairList(emptyList()))
+        whenever(keyValuePairListDeserializer.deserialize(any())).doReturn(emptyKeyValuePairList)
         val memberInfoEntity = mock<MemberInfoEntity> {
             on { serialNumber } doReturn SERIAL_NUMBER
             on { memberContext } doReturn serializedMemberContext
@@ -237,7 +237,7 @@ class PersistMemberInfoHandlerTest {
 
         persistMemberInfoHandler.invoke(
             requestContext,
-            PersistMemberInfo(listOf(memberInfo))
+            PersistMemberInfo(emptyList(), listOf(memberInfo))
         )
 
         verify(entityManager, never()).merge(any<MemberInfoEntity>())
@@ -245,14 +245,14 @@ class PersistMemberInfoHandlerTest {
 
     @Test
     fun `invoke throws if already persisted member context differs`() {
-        val memberInfo = getPersistentSignedMemberInfo()
+        val memberInfo = getPersistentMemberInfo()
         val requestContext = getMemberRequestContext()
         val serializedMemberContext = "123".toByteArray()
         val serializedMgmContext = "456".toByteArray()
         whenever(keyValuePairListDeserializer.deserialize(eq(serializedMemberContext))).doReturn(
             KeyValuePairList(mutableListOf(KeyValuePair("100", "b")))
         )
-        whenever(keyValuePairListDeserializer.deserialize(eq(serializedMgmContext))).doReturn(KeyValuePairList(emptyList()))
+        whenever(keyValuePairListDeserializer.deserialize(eq(serializedMgmContext))).doReturn(emptyKeyValuePairList)
         val memberInfoEntity = mock<MemberInfoEntity> {
             on { serialNumber } doReturn SERIAL_NUMBER
             on { memberContext } doReturn serializedMemberContext
@@ -269,7 +269,7 @@ class PersistMemberInfoHandlerTest {
         ).doReturn (memberInfoEntity)
 
         assertThrows<MembershipPersistenceException> {
-            persistMemberInfoHandler.invoke(requestContext, PersistMemberInfo(listOf(memberInfo)))
+            persistMemberInfoHandler.invoke(requestContext, PersistMemberInfo(emptyList(), listOf(memberInfo)))
         }
 
         verify(entityManager, never()).merge(any<MemberInfoEntity>())
@@ -277,11 +277,11 @@ class PersistMemberInfoHandlerTest {
 
     @Test
     fun `invoke throws if already persisted mgm context differs`() {
-        val memberInfo = getPersistentSignedMemberInfo()
+        val memberInfo = getPersistentMemberInfo()
         val requestContext = getMemberRequestContext()
         val serializedMemberContext = "123".toByteArray()
         val serializedMgmContext = "456".toByteArray()
-        whenever(keyValuePairListDeserializer.deserialize(serializedMemberContext)).doReturn(KeyValuePairList(emptyList()))
+        whenever(keyValuePairListDeserializer.deserialize(serializedMemberContext)).doReturn(emptyKeyValuePairList)
         whenever(keyValuePairListDeserializer.deserialize(eq(serializedMgmContext))).doReturn(
             KeyValuePairList(mutableListOf(KeyValuePair("100", "b")))
         )
@@ -300,7 +300,7 @@ class PersistMemberInfoHandlerTest {
         ).doReturn (memberInfoEntity)
 
         assertThrows<MembershipPersistenceException> {
-            persistMemberInfoHandler.invoke(requestContext, PersistMemberInfo(listOf(memberInfo)))
+            persistMemberInfoHandler.invoke(requestContext, PersistMemberInfo(emptyList(), listOf(memberInfo)))
         }
 
         verify(entityManager, never()).merge(any<MemberInfoEntity>())
@@ -312,26 +312,24 @@ class PersistMemberInfoHandlerTest {
             KeyValuePair(MemberInfoExtension.CREATION_TIME, "a"),
             KeyValuePair(MemberInfoExtension.MODIFIED_TIME, "b")
         ))
-        val memberContextPairList = KeyValuePairList(emptyList())
+        val memberContextPairList = emptyKeyValuePairList
         val mgmContextBytes = byteArrayOf(1)
         val memberContextBytes = byteArrayOf(2)
-        val memberInfo = PersistentSignedMemberInfo(
-            PersistentMemberInfo(
-                ourHoldingIdentity.toAvro(),
-                memberContextPairList,
-                mgmContextPairList,
-                SignedContexts(
-                    ByteBuffer.wrap(memberContextBytes),
-                    ByteBuffer.wrap(mgmContextBytes),
-                )
+        val memberInfo = PersistentMemberInfo(
+            ourHoldingIdentity.toAvro(),
+            memberContextPairList,
+            mgmContextPairList,
+            SignedData(
+                ByteBuffer.wrap(memberContextBytes),
+                signature,
+                signatureSpec,
             ),
-            signature,
-            signatureSpec,
+            ByteBuffer.wrap(mgmContextBytes)
         )
         val requestContext = getMemberRequestContext()
         val serializedMemberContext = "123".toByteArray()
         val serializedMgmContext = "456".toByteArray()
-        whenever(keyValuePairListDeserializer.deserialize(serializedMemberContext)).doReturn(KeyValuePairList(emptyList()))
+        whenever(keyValuePairListDeserializer.deserialize(serializedMemberContext)).doReturn(memberContextPairList)
         whenever(keyValuePairListDeserializer.deserialize(eq(serializedMgmContext))).doReturn(
             KeyValuePairList(mutableListOf(
                 KeyValuePair(MemberInfoExtension.CREATION_TIME, "c"),
@@ -355,7 +353,7 @@ class PersistMemberInfoHandlerTest {
             any<LockModeType>())
         ).doReturn (memberInfoEntity)
 
-        persistMemberInfoHandler.invoke(requestContext, PersistMemberInfo(listOf(memberInfo)))
+        persistMemberInfoHandler.invoke(requestContext, PersistMemberInfo(emptyList(), listOf(memberInfo)))
 
         verify(entityManager, never()).merge(any<MemberInfoEntity>())
     }

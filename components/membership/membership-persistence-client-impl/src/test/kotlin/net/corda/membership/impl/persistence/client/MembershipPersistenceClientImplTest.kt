@@ -11,8 +11,6 @@ import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.PersistentMemberInfo
-import net.corda.data.membership.PersistentSignedMemberInfo
-import net.corda.data.membership.SignedContexts
 import net.corda.data.membership.SignedData
 import net.corda.data.membership.StaticNetworkInfo
 import net.corda.data.membership.common.ApprovalRuleDetails
@@ -157,6 +155,17 @@ class MembershipPersistenceClientImplTest {
         ByteBuffer.wrap("789".toByteArray()),
     )
     private val signatureSpec = CryptoSignatureSpec(null, null, null)
+    private val ourPersistentMemberInfo = PersistentMemberInfo(
+        ourHoldingIdentity.toAvro(),
+        KeyValuePairList(emptyList()),
+        KeyValuePairList(emptyList()),
+        SignedData(
+            ourMemberInfo.memberProvidedContext.toAvro().toByteBuffer(),
+            signature,
+            signatureSpec,
+        ),
+        ourMemberInfo.mgmProvidedContext.toAvro().toByteBuffer(),
+    )
     private val ourSignedMemberInfo = SignedMemberInfo(ourMemberInfo, signature, signatureSpec)
     private val registrationId = "Group ID 1"
     private val ourRegistrationRequest = RegistrationRequest(
@@ -384,20 +393,14 @@ class MembershipPersistenceClientImplTest {
         postConfigChangedEvent()
         mockPersistenceResponse()
 
-        val persistentMemberInfo = PersistentMemberInfo(
-            ourHoldingIdentity.toAvro(),
-            KeyValuePairList(emptyList()),
-            KeyValuePairList(emptyList()),
-            SignedContexts(
-                ByteBuffer.wrap(byteArrayOf(1)),
-                ByteBuffer.wrap(byteArrayOf(1)),
-            )
-        )
         whenever(
             memberInfoFactory.createPersistentMemberInfo(
-                ourHoldingIdentity.toAvro(), ourSignedMemberInfo.memberInfo
+                ourHoldingIdentity.toAvro(),
+                ourSignedMemberInfo.memberInfo,
+                ourSignedMemberInfo.memberSignature,
+                ourSignedMemberInfo.memberSignatureSpec,
             )
-        ).doReturn(persistentMemberInfo)
+        ).doReturn(ourPersistentMemberInfo)
 
         membershipPersistenceClient.persistMemberInfo(ourHoldingIdentity, listOf(ourSignedMemberInfo))
             .execute()
@@ -410,17 +413,9 @@ class MembershipPersistenceClientImplTest {
                 .isEqualTo(ourHoldingIdentity.toAvro())
 
             assertThat(firstValue.request).isInstanceOf(PersistMemberInfo::class.java)
-            assertThat((firstValue.request as PersistMemberInfo).members)
+            assertThat((firstValue.request as PersistMemberInfo).signedMembers)
                 .isNotEmpty
-                .isEqualTo(
-                    listOf(
-                        PersistentSignedMemberInfo(
-                            persistentMemberInfo,
-                            signature,
-                            signatureSpec
-                        )
-                    )
-                )
+                .isEqualTo(listOf(ourPersistentMemberInfo))
         }
     }
 
@@ -718,7 +713,7 @@ class MembershipPersistenceClientImplTest {
     inner class AddNotaryToGroupParametersTests {
         @Test
         fun `addNotaryToGroupParameters returns the correct epoch`() {
-            val notary = ourMemberInfo
+            val notary = ourPersistentMemberInfo
             val mockAvroGroupParameters = mock<AvroGroupParameters>()
             val mockGroupParameters = mock<SignedGroupParameters>()
             postConfigChangedEvent()
@@ -727,7 +722,7 @@ class MembershipPersistenceClientImplTest {
             )
             whenever(groupParametersFactory.create(mockAvroGroupParameters)).doReturn(mockGroupParameters)
 
-            val result = membershipPersistenceClient.addNotaryToGroupParameters(ourHoldingIdentity, notary)
+            val result = membershipPersistenceClient.addNotaryToGroupParameters(notary)
                 .execute()
 
             assertThat(result).isEqualTo(MembershipPersistenceResult.Success(mockGroupParameters))
@@ -735,13 +730,13 @@ class MembershipPersistenceClientImplTest {
 
         @Test
         fun `addNotaryToGroupParameters returns error in case of failure`() {
-            val notary = ourMemberInfo
+            val notary = ourPersistentMemberInfo
             postConfigChangedEvent()
             mockPersistenceResponse(
                 PersistenceFailedResponse("Placeholder error", ErrorKind.GENERAL),
             )
 
-            val result = membershipPersistenceClient.addNotaryToGroupParameters(ourHoldingIdentity, notary)
+            val result = membershipPersistenceClient.addNotaryToGroupParameters(notary)
                 .execute()
 
             assertThat(result).isEqualTo(MembershipPersistenceResult.Failure<KeyValuePairList>("Placeholder error"))
@@ -749,13 +744,13 @@ class MembershipPersistenceClientImplTest {
 
         @Test
         fun `addNotaryToGroupParameters returns failure for unexpected result`() {
-            val notary = ourMemberInfo
+            val notary = ourPersistentMemberInfo
             postConfigChangedEvent()
             mockPersistenceResponse(
                 null,
             )
 
-            val result = membershipPersistenceClient.addNotaryToGroupParameters(ourHoldingIdentity, notary)
+            val result = membershipPersistenceClient.addNotaryToGroupParameters(notary)
                 .execute()
 
             assertThat(result).isEqualTo(MembershipPersistenceResult.Failure<KeyValuePairList>("Unexpected response: null"))
@@ -763,39 +758,19 @@ class MembershipPersistenceClientImplTest {
 
         @Test
         fun `addNotaryToGroupParameters sends the correct data`() {
-            val memberContext: MemberContext = mock()
-            val mgmContext: MGMContext = mock()
-            val notaryInRequest: MemberInfo = mock {
-                on { memberProvidedContext } doReturn memberContext
-                on { mgmProvidedContext } doReturn mgmContext
-            }
-            val signedContexts = SignedContexts(
-                ByteBuffer.wrap(byteArrayOf(1)),
-                ByteBuffer.wrap(byteArrayOf(1)),
-            )
+            val notaryInRequest = ourPersistentMemberInfo
             postConfigChangedEvent()
             val argument = argumentCaptor<MembershipPersistenceRequest>()
             val response = CompletableFuture.completedFuture(mock<MembershipPersistenceResponse>())
             whenever(rpcSender.sendRequest(argument.capture())).thenReturn(response)
 
-            val persistentMemberInfo = PersistentMemberInfo(
-                ourHoldingIdentity.toAvro(),
-                memberContext.toAvro(),
-                mgmContext.toAvro(),
-                signedContexts,
-            )
-            whenever(
-                memberInfoFactory.createPersistentMemberInfo(
-                    ourHoldingIdentity.toAvro(), notaryInRequest
-                )
-            ).doReturn(persistentMemberInfo)
-
-            membershipPersistenceClient.addNotaryToGroupParameters(ourHoldingIdentity, notaryInRequest)
+            membershipPersistenceClient.addNotaryToGroupParameters(notaryInRequest)
                 .execute()
 
             val notary = (argument.firstValue.request as? AddNotaryToGroupParameters)?.notary
             assertThat(notary?.viewOwningMember).isEqualTo(ourHoldingIdentity.toAvro())
-            assertThat(notary?.signedData).isEqualTo(signedContexts)
+            assertThat(notary?.signedMemberContext).isEqualTo(notaryInRequest.signedMemberContext)
+            assertThat(notary?.serializedMgmContext).isEqualTo(notaryInRequest.serializedMgmContext)
         }
     }
 
@@ -930,22 +905,11 @@ class MembershipPersistenceClientImplTest {
         @Test
         fun `it returns the correct member info`() {
             val bob = createTestHoldingIdentity("O=Bob ,L=London, C=GB", ourGroupId)
-            val persistentMemberInfo = PersistentMemberInfo(
-                bob.toAvro(),
-                KeyValuePairList(emptyList()),
-                KeyValuePairList(emptyList()),
-                SignedContexts(
-                    ByteBuffer.wrap(byteArrayOf(1)),
-                    ByteBuffer.wrap(byteArrayOf(1)),
-                ),
-            )
-            val memberInfo = mock<MemberInfo>()
-            whenever(memberInfoFactory.createMemberInfo(persistentMemberInfo)).doReturn(memberInfo)
             val registrationRequestId = "registrationRequestId"
             postConfigChangedEvent()
             mockPersistenceResponse(
                 payload = UpdateMemberAndRegistrationRequestResponse(
-                    persistentMemberInfo
+                    ourPersistentMemberInfo
                 )
             )
 
@@ -955,7 +919,7 @@ class MembershipPersistenceClientImplTest {
                 registrationRequestId,
             )
 
-            assertThat(result.getOrThrow()).isSameAs(memberInfo)
+            assertThat(result.getOrThrow()).isSameAs(ourPersistentMemberInfo)
         }
 
         @Test

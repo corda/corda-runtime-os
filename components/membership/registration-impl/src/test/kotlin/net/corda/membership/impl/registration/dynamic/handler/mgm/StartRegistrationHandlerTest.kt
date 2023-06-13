@@ -238,7 +238,14 @@ class StartRegistrationHandlerTest {
         }
         memberInfoFactory = mock {
             on { createMemberInfo(any<SortedMap<String, String?>>(), any()) } doReturn pendingMemberInfo
-            on { createPersistentMemberInfo(eq(mgmHoldingIdentity), eq(pendingMemberInfo)) } doReturn persistentMemberInfo
+            on {
+                createPersistentMemberInfo(
+                    eq(mgmHoldingIdentity),
+                    eq(pendingMemberInfo),
+                    eq(registrationRequest.memberSignature),
+                    eq(registrationRequest.memberSignatureSpec),
+                )
+            } doReturn persistentMemberInfo
         }
         membershipPersistenceClient = mock {
             on {

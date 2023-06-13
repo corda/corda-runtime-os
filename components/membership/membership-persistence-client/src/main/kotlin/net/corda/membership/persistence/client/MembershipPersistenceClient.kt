@@ -108,8 +108,7 @@ interface MembershipPersistenceClient : Lifecycle {
      * payload will include a [InternalGroupParameters] of the newly persisted group parameters.
      */
     fun addNotaryToGroupParameters(
-        viewOwningIdentity: HoldingIdentity,
-        notary: MemberInfo
+        notary: PersistentMemberInfo,
     ): MembershipPersistenceOperation<InternalGroupParameters>
 
     /**
@@ -140,7 +139,7 @@ interface MembershipPersistenceClient : Lifecycle {
         viewOwningIdentity: HoldingIdentity,
         approvedMember: HoldingIdentity,
         registrationRequestId: String,
-    ): MembershipPersistenceOperation<MemberInfo>
+    ): MembershipPersistenceOperation<PersistentMemberInfo>
 
     /**
      * Set the status of an existing registration request.

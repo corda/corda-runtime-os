@@ -92,7 +92,6 @@ import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 import java.security.PublicKey
 import java.time.Instant
-import java.util.SortedMap
 import java.util.concurrent.CompletableFuture
 import kotlin.test.assertFailsWith
 import net.corda.data.membership.SignedGroupParameters as AvroGroupParameters
@@ -162,11 +161,6 @@ class MemberSynchronisationServiceImplTest {
         on { name } doReturn participantName
         on { groupId } doReturn GROUP_NAME
     }
-    private val memberInfoFactory: MemberInfoFactory = mock {
-        on { createMemberInfo(any()) } doReturn participant
-        on { createMemberInfo(any<SortedMap<String, String?>>(), any()) } doReturn participant
-        on { createPersistentMemberInfo(any(), any()) } doReturn mock()
-    }
     private val memberName = MemberX500Name("Alice", "London", "GB")
     private val member = HoldingIdentity(memberName, GROUP_NAME)
     private val memberContextList = KeyValuePairList(listOf(KeyValuePair(PARTY_NAME, participantName.toString())))
@@ -199,9 +193,21 @@ class MemberSynchronisationServiceImplTest {
         mgmSignature,
         mgmSignatureSpec
     )
+    private val persistentMemberInfo: PersistentMemberInfo = mock {
+        on { this.signedMemberContext } doReturn memberContext
+        on { this.serializedMgmContext } doReturn mgmContextData
+    }
     private val signedMemberInfo: SignedMemberInfo = mock {
         on { memberContext } doReturn memberContext
         on { mgmContext } doReturn mgmContext
+    }
+    private val memberInfoFactory: MemberInfoFactory = mock {
+        on { createMemberInfo(persistentMemberInfo) } doReturn participant
+        on {
+            createPersistentMemberInfo(
+                member.toAvro(), memberContext.data.array(), mgmContext.data.array(), memberSignature, memberSignatureSpec
+            )
+        } doReturn persistentMemberInfo
     }
     private val hash = SecureHash("algo", ByteBuffer.wrap(byteArrayOf(1, 2, 3)))
     private val signedMemberships: SignedMemberships = mock {
@@ -375,10 +381,8 @@ class MemberSynchronisationServiceImplTest {
                 )
             )
         )
-        val publishedMemberInfo = argumentCaptor<MemberInfo>()
 
         synchronisationService.processMembershipUpdates(updates)
-        verify(memberInfoFactory).createPersistentMemberInfo(any(), publishedMemberInfo.capture())
 
         val publishedMemberList = capturedPublishedList.firstValue
         assertSoftly {
@@ -388,9 +392,8 @@ class MemberSynchronisationServiceImplTest {
             it.assertThat(publishedMember.topic).isEqualTo(MEMBER_LIST_TOPIC)
             it.assertThat(publishedMember.key).isEqualTo("${member.shortHash}-${participant.id}")
             it.assertThat(publishedMember.value).isInstanceOf(PersistentMemberInfo::class.java)
-            val memberInfo = publishedMemberInfo.firstValue
-            it.assertThat(memberInfo.name).isEqualTo(participantName)
-            it.assertThat(memberInfo.mgmProvidedContext.entries).isEmpty()
+            val capturedPersistentMemberInfo = publishedMember.value as PersistentMemberInfo
+            it.assertThat(capturedPersistentMemberInfo).isEqualTo(persistentMemberInfo)
         }
     }
 

@@ -111,7 +111,9 @@ internal class StartRegistrationHandler(
             val pendingMemberInfo = buildPendingMemberInfo(registrationRequest)
             val persistentMemberInfo = memberInfoFactory.createPersistentMemberInfo(
                 mgmMemberInfo.holdingIdentity.toAvro(),
-                pendingMemberInfo
+                pendingMemberInfo,
+                registrationRequest.memberSignature,
+                registrationRequest.memberSignatureSpec,
             )
             val pendingMemberRecord = Record(
                 topic = Schemas.Membership.MEMBER_LIST_TOPIC,

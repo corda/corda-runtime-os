@@ -59,7 +59,6 @@ import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SignatureSpec
-import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro
 import org.osgi.service.component.annotations.Activate
@@ -125,24 +124,34 @@ class MembershipPersistenceClientImpl(
     ): MembershipPersistenceOperation<Unit> {
         logger.info("Persisting ${memberInfos.size} member info(s).")
         val avroViewOwningIdentity = viewOwningIdentity.toAvro()
+        val signedMemberList = createSignedMemberList(avroViewOwningIdentity, memberInfos)
         val request = MembershipPersistenceRequest(
             buildMembershipRequestContext(avroViewOwningIdentity),
             PersistMemberInfo(
-                memberInfos.map {
-                    PersistentSignedMemberInfo(
-                        memberInfoFactory.createPersistentMemberInfo(
-                            avroViewOwningIdentity,
-                            it.memberInfo,
-                        ),
-                        it.memberSignature,
-                        it.memberSignatureSpec,
-                    )
-                }
-
+                // first is deprecated data, which will be remove din future versions
+                signedMemberList.map { it.first },
+                signedMemberList.map { it.second },
             )
         )
         return request.operation(::nullToUnitConvertor)
     }
+
+    private fun createSignedMemberList(
+        viewOwningIdentity: net.corda.data.identity.HoldingIdentity,
+        memberInfos: Collection<SignedMemberInfo>
+    ) = memberInfos.map {
+            val persistentMemberInfo = memberInfoFactory.createPersistentMemberInfo(
+                viewOwningIdentity,
+                it.memberInfo,
+                it.memberSignature,
+                it.memberSignatureSpec,
+            )
+            PersistentSignedMemberInfo(
+                persistentMemberInfo,
+                it.memberSignature,
+                it.memberSignatureSpec,
+            ) to persistentMemberInfo
+        }
 
     override fun persistGroupPolicy(
         viewOwningIdentity: HoldingIdentity,
@@ -199,17 +208,13 @@ class MembershipPersistenceClientImpl(
     }
 
     override fun addNotaryToGroupParameters(
-        viewOwningIdentity: HoldingIdentity,
-        notary: MemberInfo
+        notary: PersistentMemberInfo,
     ): MembershipPersistenceOperation<InternalGroupParameters> {
         logger.info("Adding notary to persisted group parameters.")
         val request = MembershipPersistenceRequest(
-            buildMembershipRequestContext(viewOwningIdentity.toAvro()),
+            buildMembershipRequestContext(notary.viewOwningMember),
             AddNotaryToGroupParameters(
-                memberInfoFactory.createPersistentMemberInfo(
-                    viewOwningIdentity.toAvro(),
-                    notary,
-                )
+                notary
             )
         )
         return request.operation { payload ->
@@ -246,7 +251,7 @@ class MembershipPersistenceClientImpl(
         viewOwningIdentity: HoldingIdentity,
         approvedMember: HoldingIdentity,
         registrationRequestId: String,
-    ): MembershipPersistenceOperation<MemberInfo> {
+    ): MembershipPersistenceOperation<PersistentMemberInfo> {
         val request = MembershipPersistenceRequest(
             buildMembershipRequestContext(viewOwningIdentity.toAvro()),
             UpdateMemberAndRegistrationRequestToApproved(
@@ -256,8 +261,8 @@ class MembershipPersistenceClientImpl(
         )
 
         return request.operation { payload ->
-            dataToResultConvertor<UpdateMemberAndRegistrationRequestResponse, MemberInfo>(payload) {
-                memberInfoFactory.createMemberInfo(it.memberInfo)
+            dataToResultConvertor<UpdateMemberAndRegistrationRequestResponse, PersistentMemberInfo>(payload) {
+                it.memberInfo
             }
         }
     }

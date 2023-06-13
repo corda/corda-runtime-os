@@ -5,6 +5,7 @@ import net.corda.crypto.core.ShortHash
 import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.PersistentMemberInfo
+import net.corda.data.membership.SignedData
 import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.data.membership.db.request.query.QueryMemberInfo
 import net.corda.db.connection.manager.DbConnectionManager
@@ -118,10 +119,28 @@ class QueryMemberInfoHandlerTest {
     private val jpaEntitiesRegistry: JpaEntitiesRegistry = mock {
         on { get(eq(CordaDb.Vault.persistenceUnitName)) } doReturn mock()
     }
-    private val persistentInfo = mock<PersistentMemberInfo>()
+    private val signatureKey = "pk-$otherX500Name".toByteArray()
+    private val signatureContent = "sig-$otherX500Name".toByteArray()
+    private val signatureName = "dummySignatureSpec"
+    private val memberContext = mock<SignedData> {
+        on { signature } doReturn CryptoSignatureWithKey(ByteBuffer.wrap(signatureKey), ByteBuffer.wrap(signatureContent))
+        on { signatureSpec } doReturn CryptoSignatureSpec(signatureName, null, null)
+    }
+    private val mgmContext = ByteBuffer.wrap(byteArrayOf(1))
+    private val persistentInfo = mock<PersistentMemberInfo> {
+        on { signedMemberContext } doReturn memberContext
+        on { serializedMgmContext } doReturn mgmContext
+    }
     private val memberInfoFactory: MemberInfoFactory = mock {
         on {
-            createPersistentMemberInfo(ourHoldingIdentity.toAvro(), memberContextBytes, mgmContextBytes)
+            createPersistentMemberInfo(
+                ourHoldingIdentity.toAvro(),
+                memberContextBytes,
+                mgmContextBytes,
+                signatureKey,
+                signatureContent,
+                signatureName,
+            )
         } doReturn persistentInfo
     }
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService = mock {
@@ -150,9 +169,9 @@ class QueryMemberInfoHandlerTest {
         "OK",
         clock.instant(),
         memberContextBytes,
-        "pk-$otherX500Name".toByteArray(),
-        "sig-$otherX500Name".toByteArray(),
-        "dummySignatureSpec",
+        signatureKey,
+        signatureContent,
+        signatureName,
         mgmContextBytes,
         1L
     )
@@ -182,18 +201,18 @@ class QueryMemberInfoHandlerTest {
             getQueryMemberInfo(emptyList())
         )
 
-        assertThat(result.signedMembers).isNotEmpty.hasSize(1)
-        with(result.signedMembers.first()) {
-            assertThat(persistentMemberInfo).isEqualTo(persistentInfo)
-            assertThat(memberSignature).isEqualTo(
+        assertThat(result.members).isNotEmpty.hasSize(1)
+        with(result.members.first()) {
+            assertThat(serializedMgmContext).isEqualTo(persistentInfo.serializedMgmContext)
+            assertThat(signedMemberContext).isEqualTo(persistentInfo.signedMemberContext)
+            assertThat(signedMemberContext.signature).isEqualTo(
                 CryptoSignatureWithKey(
                     ByteBuffer.wrap(memberInfoEntity.memberSignatureKey),
                     ByteBuffer.wrap(memberInfoEntity.memberSignatureContent),
                 )
             )
-            assertThat(memberSignatureSpec).isEqualTo(
-                CryptoSignatureSpec(memberInfoEntity.memberSignatureSpec, null, null)
-            )
+            assertThat(signedMemberContext.signatureSpec)
+                .isEqualTo(CryptoSignatureSpec(memberInfoEntity.memberSignatureSpec, null, null))
         }
         verify(inHoldingId, never()).value(any<String>())
         verify(inStatus, never()).value(any<String>())
@@ -219,11 +238,11 @@ class QueryMemberInfoHandlerTest {
             getQueryMemberInfo(emptyList())
         )
 
-        assertThat(result.signedMembers).isEmpty()
+        assertThat(result.members).isEmpty()
         verify(inHoldingId, never()).value(any<String>())
         verify(inStatus, never()).value(any<String>())
         verify(entityManager, never()).find<MemberInfoEntity>(any(), any())
-        verify(memberInfoFactory, never()).createPersistentMemberInfo(any(), any(), any())
+        verify(memberInfoFactory, never()).createPersistentMemberInfo(any(), any(), any(), any(), any(), any())
         with(argumentCaptor<ShortHash>()) {
             verify(virtualNodeInfoReadService).getByHoldingIdentityShortHash(capture())
             assertThat(firstValue).isEqualTo(ourHoldingIdentity.shortHash)
@@ -245,16 +264,17 @@ class QueryMemberInfoHandlerTest {
             requestContext,
             getQueryMemberInfo(listOf(otherHoldingIdentity))
         )
-        assertThat(result.signedMembers).isNotEmpty.hasSize(1)
-        with(result.signedMembers.first()) {
-            assertThat(persistentMemberInfo).isEqualTo(persistentInfo)
-            assertThat(memberSignature).isEqualTo(
+        assertThat(result.members).isNotEmpty.hasSize(1)
+        with(result.members.first()) {
+            assertThat(serializedMgmContext).isEqualTo(persistentInfo.serializedMgmContext)
+            assertThat(signedMemberContext).isEqualTo(persistentInfo.signedMemberContext)
+            assertThat(signedMemberContext.signature).isEqualTo(
                 CryptoSignatureWithKey(
                     ByteBuffer.wrap(memberInfoEntity.memberSignatureKey),
                     ByteBuffer.wrap(memberInfoEntity.memberSignatureContent),
                 )
             )
-            assertThat(memberSignatureSpec).isEqualTo(
+            assertThat(signedMemberContext.signatureSpec).isEqualTo(
                 CryptoSignatureSpec(memberInfoEntity.memberSignatureSpec, null, null)
             )
         }
@@ -280,10 +300,10 @@ class QueryMemberInfoHandlerTest {
             getMemberRequestContext(),
             getQueryMemberInfo(listOf(otherHoldingIdentity))
         )
-        assertThat(result.signedMembers).isEmpty()
+        assertThat(result.members).isEmpty()
         verify(inHoldingId).value(otherHoldingIdentity.x500Name.toString())
         verify(inStatus, never()).value(any<String>())
-        verify(memberInfoFactory, never()).createPersistentMemberInfo(any(), any(), any())
+        verify(memberInfoFactory, never()).createPersistentMemberInfo(any(), any(), any(), any(), any(), any())
         with(argumentCaptor<ShortHash>()) {
             verify(virtualNodeInfoReadService).getByHoldingIdentityShortHash(capture())
             assertThat(firstValue).isEqualTo(ourHoldingIdentity.shortHash)
@@ -305,16 +325,17 @@ class QueryMemberInfoHandlerTest {
             requestContext,
             getQueryMemberInfo(emptyList(), listOf(MEMBER_STATUS_ACTIVE, MEMBER_STATUS_SUSPENDED))
         )
-        assertThat(result.signedMembers).isNotEmpty.hasSize(1)
-        with(result.signedMembers.first()) {
-            assertThat(persistentMemberInfo).isEqualTo(persistentInfo)
-            assertThat(memberSignature).isEqualTo(
+        assertThat(result.members).isNotEmpty.hasSize(1)
+        with(result.members.first()) {
+            assertThat(serializedMgmContext).isEqualTo(persistentInfo.serializedMgmContext)
+            assertThat(signedMemberContext).isEqualTo(persistentInfo.signedMemberContext)
+            assertThat(signedMemberContext.signature).isEqualTo(
                 CryptoSignatureWithKey(
                     ByteBuffer.wrap(memberInfoEntity.memberSignatureKey),
                     ByteBuffer.wrap(memberInfoEntity.memberSignatureContent),
                 )
             )
-            assertThat(memberSignatureSpec).isEqualTo(
+            assertThat(signedMemberContext.signatureSpec).isEqualTo(
                 CryptoSignatureSpec(memberInfoEntity.memberSignatureSpec, null, null)
             )
         }
@@ -343,16 +364,17 @@ class QueryMemberInfoHandlerTest {
             requestContext,
             getQueryMemberInfo(listOf(otherHoldingIdentity), listOf(MEMBER_STATUS_ACTIVE, MEMBER_STATUS_SUSPENDED))
         )
-        assertThat(result.signedMembers).isNotEmpty.hasSize(1)
-        with(result.signedMembers.first()) {
-            assertThat(persistentMemberInfo).isEqualTo(persistentInfo)
-            assertThat(memberSignature).isEqualTo(
+        assertThat(result.members).isNotEmpty.hasSize(1)
+        with(result.members.first()) {
+            assertThat(serializedMgmContext).isEqualTo(persistentInfo.serializedMgmContext)
+            assertThat(signedMemberContext).isEqualTo(persistentInfo.signedMemberContext)
+            assertThat(signedMemberContext.signature).isEqualTo(
                 CryptoSignatureWithKey(
                     ByteBuffer.wrap(memberInfoEntity.memberSignatureKey),
                     ByteBuffer.wrap(memberInfoEntity.memberSignatureContent),
                 )
             )
-            assertThat(memberSignatureSpec).isEqualTo(
+            assertThat(signedMemberContext.signatureSpec).isEqualTo(
                 CryptoSignatureSpec(memberInfoEntity.memberSignatureSpec, null, null)
             )
         }

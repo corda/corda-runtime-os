@@ -1,5 +1,7 @@
 package net.corda.virtualnode.write.db.impl.writer.asyncoperation.factories
 
+import net.corda.data.crypto.wire.CryptoSignatureSpec
+import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
 import net.corda.membership.lib.MemberInfoFactory
@@ -12,6 +14,7 @@ import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.toAvro
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeDbConnections
+import java.nio.ByteBuffer
 
 internal class RecordFactoryImpl(
     private val clock: Clock,
@@ -49,6 +52,11 @@ internal class RecordFactoryImpl(
             memberInfoFactory.createPersistentMemberInfo(
                 holdingIdentity.toAvro(),
                 mgmInfo,
+                CryptoSignatureWithKey(
+                    ByteBuffer.wrap(byteArrayOf()),
+                    ByteBuffer.wrap(byteArrayOf())
+                ),
+                CryptoSignatureSpec("", null, null),
             )
         )
     }

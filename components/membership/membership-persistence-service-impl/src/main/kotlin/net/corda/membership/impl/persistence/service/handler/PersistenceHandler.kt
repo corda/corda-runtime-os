@@ -3,7 +3,6 @@ package net.corda.membership.impl.persistence.service.handler
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.core.ShortHash
 import net.corda.avro.serialization.CordaAvroSerializationFactory
-import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.schema.CordaDb
@@ -58,12 +57,6 @@ internal abstract class BasePersistenceHandler<REQUEST, RESPONSE>(
 
     fun <R> transaction(block: (EntityManager) -> R): R {
         return dbConnectionManager.getClusterEntityManagerFactory().transaction(block)
-    }
-
-    fun retrieveSignatureSpec(signatureSpec: String) = if (signatureSpec.isEmpty()) {
-        CryptoSignatureSpec("", null, null)
-    } else {
-        CryptoSignatureSpec(signatureSpec, null, null)
     }
 
     private fun getEntityManagerFactory(info: VirtualNodeInfo): EntityManagerFactory {

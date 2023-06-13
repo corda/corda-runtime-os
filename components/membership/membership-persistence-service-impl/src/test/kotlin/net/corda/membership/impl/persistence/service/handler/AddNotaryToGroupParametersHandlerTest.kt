@@ -7,9 +7,11 @@ import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
+import net.corda.data.crypto.wire.CryptoSignatureWithKey
+import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.identity.HoldingIdentity
 import net.corda.data.membership.PersistentMemberInfo
-import net.corda.data.membership.SignedContexts
+import net.corda.data.membership.SignedData
 import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.data.membership.db.request.command.AddNotaryToGroupParameters
 import net.corda.db.connection.manager.DbConnectionManager
@@ -215,7 +217,15 @@ class AddNotaryToGroupParametersHandlerTest {
         knownIdentity,
         notaryInRequest.memberProvidedContext.toWire(),
         notaryInRequest.mgmProvidedContext.toWire(),
-        SignedContexts(ByteBuffer.wrap(byteArrayOf(1)), ByteBuffer.wrap(byteArrayOf(2)))
+        SignedData(
+            ByteBuffer.wrap(byteArrayOf(1)),
+            CryptoSignatureWithKey(
+                ByteBuffer.wrap(byteArrayOf(2)),
+                ByteBuffer.wrap(byteArrayOf(2)),
+            ),
+            CryptoSignatureSpec("", null, null),
+        ),
+        ByteBuffer.wrap(byteArrayOf(3)),
     )
     private val request = mock<AddNotaryToGroupParameters> {
         on { notary } doReturn persistentNotary

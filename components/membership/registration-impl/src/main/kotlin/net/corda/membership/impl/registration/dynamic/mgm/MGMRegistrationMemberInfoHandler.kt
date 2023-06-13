@@ -71,7 +71,7 @@ internal class MGMRegistrationMemberInfoHandler(
                 ByteBuffer.wrap(byteArrayOf()),
                 ByteBuffer.wrap(byteArrayOf())
             ),
-            CryptoSignatureSpec("", null, null)
+            CryptoSignatureSpec("", null, null),
         ).also {
             persistMemberInfo(holdingIdentity, it)
         }

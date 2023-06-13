@@ -82,17 +82,19 @@ internal class ApproveRegistrationHandler(
                     "Registering member's name '${approvedMember.x500Name}' is already in use as a notary service name."
                 )
             }
-            val memberInfo = membershipPersistenceClient.setMemberAndRegistrationRequestAsApproved(
+            val persistentMemberInfo = membershipPersistenceClient.setMemberAndRegistrationRequestAsApproved(
                 viewOwningIdentity = approvedBy.toCorda(),
                 approvedMember = approvedMember.toCorda(),
                 registrationRequestId = registrationId,
             ).getOrThrow()
 
+            val memberInfo = memberInfoFactory.createMemberInfo(persistentMemberInfo)
+
             // If approved member has notary role set, add notary to MGM's view of the group parameters.
             // Otherwise, retrieve epoch of current group parameters from the group reader.
             val epoch = if (memberInfo.notaryDetails != null) {
                 val mgmHoldingIdentity = mgm.holdingIdentity
-                val result = membershipPersistenceClient.addNotaryToGroupParameters(mgmHoldingIdentity, memberInfo)
+                val result = membershipPersistenceClient.addNotaryToGroupParameters(persistentMemberInfo)
                     .execute()
                 if (result is MembershipPersistenceResult.Failure) {
                     throw MembershipPersistenceException(
@@ -114,7 +116,6 @@ internal class ApproveRegistrationHandler(
             )
 
             // Push member to member list kafka topic
-            val persistentMemberInfo = memberInfoFactory.createPersistentMemberInfo(approvedBy, memberInfo)
             val memberRecord = Record(
                 topic = MEMBER_LIST_TOPIC,
                 key = "${approvedBy.toCorda().shortHash}-${approvedMember.toCorda().shortHash}",

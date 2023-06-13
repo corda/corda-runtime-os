@@ -33,11 +33,11 @@ internal class PersistMemberInfoHandler(
 
 
     override fun invoke(context: MembershipRequestContext, request: PersistMemberInfo) {
-        if (request.members.isNotEmpty()) {
+        if (request.signedMembers.isNotEmpty()) {
             logger.info("Persisting member information.")
             transaction(context.holdingIdentity.toCorda().shortHash) { em ->
-                request.members.forEach {
-                    val memberInfo = memberInfoFactory.createMemberInfo(it.persistentMemberInfo)
+                request.signedMembers.forEach {
+                    val memberInfo = memberInfoFactory.createMemberInfo(it)
                     val currentMemberInfo = em.find(
                         MemberInfoEntity::class.java,
                         MemberInfoEntityPrimaryKey(
@@ -50,8 +50,8 @@ internal class PersistMemberInfoHandler(
                     if (currentMemberInfo?.serialNumber == memberInfo.serial) {
                         val currentMemberContext = deserialize(currentMemberInfo.memberContext)
                         val currentMgmContext = deserialize(currentMemberInfo.mgmContext)
-                        val updatedMemberContext = deserialize(it.persistentMemberInfo.signedData.memberContext.array())
-                        val updatedMGMContext = deserialize(it.persistentMemberInfo.signedData.mgmContext.array())
+                        val updatedMemberContext = deserialize(it.signedMemberContext.data.array())
+                        val updatedMGMContext = deserialize(it.serializedMgmContext.array())
                         if (currentMemberContext.items != updatedMemberContext.items) {
                             throw MembershipPersistenceException("Cannot update member info with same serial number " +
                                 "(${memberInfo.serial}): member context differs from original.")
@@ -71,11 +71,11 @@ internal class PersistMemberInfoHandler(
                         memberInfo.status == MEMBER_STATUS_PENDING,
                         memberInfo.status,
                         clock.instant(),
-                        it.persistentMemberInfo.signedData.memberContext.array(),
-                        it.memberSignature.publicKey.array(),
-                        it.memberSignature.bytes.array(),
-                        it.memberSignatureSpec.signatureName,
-                        it.persistentMemberInfo.signedData.mgmContext.array(),
+                        it.signedMemberContext.data.array(),
+                        it.signedMemberContext.signature.publicKey.array(),
+                        it.signedMemberContext.signature.bytes.array(),
+                        it.signedMemberContext.signatureSpec.signatureName,
+                        it.serializedMgmContext.array(),
                         memberInfo.serial,
                     )
                     em.merge(entity)

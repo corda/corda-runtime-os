@@ -30,7 +30,6 @@ import net.corda.membership.network.writer.staticnetwork.StaticNetworkUtils.mgmS
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -75,10 +74,7 @@ internal class TestMembershipPersistenceClientImpl @Activate constructor(
         groupParameters: InternalGroupParameters,
     ) : MembershipPersistenceOperation<InternalGroupParameters> = Operation(MembershipPersistenceResult.Success(groupParameters))
 
-    override fun addNotaryToGroupParameters(
-        viewOwningIdentity: HoldingIdentity,
-        notary: MemberInfo,
-    ) = throw NotImplementedError("Not implemented for test service")
+    override fun addNotaryToGroupParameters(notary: PersistentMemberInfo) = throw NotImplementedError("Not implemented for test service")
 
     override fun persistRegistrationRequest(
         viewOwningIdentity: HoldingIdentity,
@@ -89,7 +85,8 @@ internal class TestMembershipPersistenceClientImpl @Activate constructor(
         viewOwningIdentity: HoldingIdentity,
         approvedMember: HoldingIdentity,
         registrationRequestId: String,
-    ) : MembershipPersistenceOperation<MemberInfo> = Operation(MembershipPersistenceResult.Failure<MemberInfo>("Unsupported!"))
+    ) : MembershipPersistenceOperation<PersistentMemberInfo> =
+        Operation(MembershipPersistenceResult.Failure("Unsupported!"))
 
     override fun setRegistrationRequestStatus(
         viewOwningIdentity: HoldingIdentity,

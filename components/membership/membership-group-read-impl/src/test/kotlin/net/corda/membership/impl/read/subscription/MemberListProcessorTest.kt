@@ -31,7 +31,9 @@ import net.corda.messaging.api.records.Record
 import net.corda.test.util.time.TestClock
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.data.KeyValuePairList
-import net.corda.data.membership.SignedContexts
+import net.corda.data.crypto.wire.CryptoSignatureSpec
+import net.corda.data.crypto.wire.CryptoSignatureWithKey
+import net.corda.data.membership.SignedData
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEYS
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
@@ -135,20 +137,24 @@ class MemberListProcessorTest {
                         aliceIdentity.toAvro(),
                         member.memberProvidedContext.toAvro(),
                         member.mgmProvidedContext.toAvro(),
-                        SignedContexts(
+                        SignedData(
                             member.memberProvidedContext.toAvro().toByteBuffer(),
-                            member.mgmProvidedContext.toAvro().toByteBuffer(),
+                            CryptoSignatureWithKey(ByteBuffer.wrap(byteArrayOf()), ByteBuffer.wrap(byteArrayOf())),
+                            CryptoSignatureSpec("", null, null),
                         ),
+                        member.mgmProvidedContext.toAvro().toByteBuffer(),
                     )
                 }
                 topicData[holdingIdentity.shortHash.value] = PersistentMemberInfo(
                     holdingIdentity.toAvro(),
                     member.memberProvidedContext.toAvro(),
                     member.mgmProvidedContext.toAvro(),
-                    SignedContexts(
+                    SignedData(
                         member.memberProvidedContext.toAvro().toByteBuffer(),
-                        member.mgmProvidedContext.toAvro().toByteBuffer(),
+                        CryptoSignatureWithKey(ByteBuffer.wrap(byteArrayOf()), ByteBuffer.wrap(byteArrayOf())),
+                        CryptoSignatureSpec("", null, null),
                     ),
+                    member.mgmProvidedContext.toAvro().toByteBuffer(),
                 )
             }
             return topicData
@@ -258,10 +264,12 @@ class MemberListProcessorTest {
             aliceIdentity.toAvro(),
             alice.memberProvidedContext.toAvro(),
             alice.mgmProvidedContext.toAvro(),
-            SignedContexts(
+            SignedData(
                 alice.memberProvidedContext.toAvro().toByteBuffer(),
-                alice.mgmProvidedContext.toAvro().toByteBuffer(),
+                CryptoSignatureWithKey(ByteBuffer.wrap(byteArrayOf()), ByteBuffer.wrap(byteArrayOf())),
+                CryptoSignatureSpec("", null, null),
             ),
+            alice.mgmProvidedContext.toAvro().toByteBuffer(),
         )
         memberListProcessor.onNext(newRecord, oldValue, memberListFromTopic)
         assertThat(membershipGroupReadCache.memberListCache.get(aliceIdentity))
@@ -281,10 +289,12 @@ class MemberListProcessorTest {
             aliceIdentity.toAvro(),
             oldAlice.memberProvidedContext.toAvro(),
             oldAlice.mgmProvidedContext.toAvro(),
-            SignedContexts(
-                ByteBuffer.wrap(byteArrayOf(1)),
-                ByteBuffer.wrap(byteArrayOf(1)),
+            SignedData(
+                oldAlice.memberProvidedContext.toAvro().toByteBuffer(),
+                CryptoSignatureWithKey(ByteBuffer.wrap(byteArrayOf()), ByteBuffer.wrap(byteArrayOf())),
+                CryptoSignatureSpec("", null, null),
             ),
+            oldAlice.mgmProvidedContext.toAvro().toByteBuffer(),
         )
         memberListProcessor.onNext(newRecord, oldValue, memberList)
         assertThat(membershipGroupReadCache.memberListCache.get(aliceIdentity))

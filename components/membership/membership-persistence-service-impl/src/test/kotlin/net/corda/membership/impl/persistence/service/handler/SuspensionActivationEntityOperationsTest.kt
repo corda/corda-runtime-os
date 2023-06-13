@@ -63,7 +63,7 @@ class SuspensionActivationEntityOperationsTest {
     }
     private val keyValuePairListDeserializer = mock<CordaAvroDeserializer<KeyValuePairList>>()
     private val memberInfoFactory = mock<MemberInfoFactory> {
-        on { createPersistentMemberInfo(any(), any(), any()) } doReturn mock()
+        on { createPersistentMemberInfo(any(), any(), any(), any(), any(), any()) } doReturn mock()
     }
     private val handler = SuspensionActivationEntityOperations(clock, keyValuePairListSerializer, memberInfoFactory)
 
@@ -206,7 +206,12 @@ class SuspensionActivationEntityOperationsTest {
         val newStatus = "newStatus"
         val persistentMemberInfoMock = mock<PersistentMemberInfo>()
         whenever(memberInfoFactory.createPersistentMemberInfo(
-            eq(mgmHoldingIdentity), eq(contextBytes), eq(serializedMGMContext))
+            eq(mgmHoldingIdentity),
+            eq(contextBytes),
+            eq(serializedMGMContext),
+            eq(signatureKey),
+            eq(signatureContent),
+            eq(SIGNATURE_SPEC))
         ).doReturn(persistentMemberInfoMock)
 
         val persistentMemberInfo = handler.updateStatus(

@@ -1,6 +1,7 @@
 package net.corda.membership.lib
 
 import net.corda.data.KeyValuePairList
+import net.corda.data.crypto.wire.CryptoSignatureSpec
 import java.util.*
 
 /**
@@ -22,4 +23,13 @@ fun KeyValuePairList.toSortedMap(): SortedMap<String, String?> {
     // (to avoid malicious attacks where extra data is attached to the end of the context)
     validateKeyOrder(this)
     return items.associate { it.key to it.value }.toSortedMap()
+}
+
+/**
+ * Recreates the signature spec based on the signature's name.
+ */
+fun retrieveSignatureSpec(signatureName: String) = if (signatureName.isEmpty()) {
+    CryptoSignatureSpec("", null, null)
+} else {
+    CryptoSignatureSpec(signatureName, null, null)
 }

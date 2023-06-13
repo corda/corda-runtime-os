@@ -15,6 +15,7 @@ import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
+import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.SignedData
 import net.corda.data.membership.StaticNetworkInfo
 import net.corda.data.membership.common.ApprovalRuleDetails
@@ -114,10 +115,10 @@ import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
-import net.corda.v5.membership.MemberInfo
 import net.corda.v5.membership.NotaryInfo
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
+import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
 import org.bouncycastle.jce.provider.BouncyCastleProvider
@@ -263,10 +264,9 @@ class MembershipPersistenceTest {
             }
 
             override fun addNotaryToGroupParameters(
-                viewOwningIdentity: HoldingIdentity,
-                notary: MemberInfo
+                notary: PersistentMemberInfo
             ) = safeCall {
-                membershipPersistenceClient.addNotaryToGroupParameters(viewOwningIdentity, notary)
+                membershipPersistenceClient.addNotaryToGroupParameters(notary)
             }
 
             override fun persistRegistrationRequest(
@@ -745,7 +745,14 @@ class MembershipPersistenceTest {
                 KeyValuePair(SERIAL, "1"),
             ).sorted()
         )
-        val notary = memberInfoFactory.createMemberInfo(memberContext.toSortedMap(), mgmContext.toSortedMap())
+        val notaryInfo = memberInfoFactory.createMemberInfo(memberContext.toSortedMap(), mgmContext.toSortedMap())
+        val notary = memberInfoFactory
+            .createPersistentMemberInfo(
+                viewOwningHoldingIdentity.toAvro(),
+                notaryInfo,
+                CryptoSignatureWithKey(ByteBuffer.wrap(byteArrayOf(1)), ByteBuffer.wrap(byteArrayOf(1))),
+                CryptoSignatureSpec(RSA_SHA256.signatureName, null, null),
+            )
         val expectedGroupParameters = listOf(
             KeyValuePair(EPOCH_KEY, "51"),
             KeyValuePair(String.format(NOTARY_SERVICE_NAME_KEY, 0), notaryServiceName),
@@ -754,8 +761,7 @@ class MembershipPersistenceTest {
             KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS_KEY, 0, 0), "1"),
         )
 
-        val persisted = membershipPersistenceClientWrapper.addNotaryToGroupParameters(viewOwningHoldingIdentity, notary)
-            .execute()
+        val persisted = membershipPersistenceClientWrapper.addNotaryToGroupParameters(notary).execute()
 
         assertThat(persisted).isInstanceOf(MembershipPersistenceResult.Success::class.java)
         with((persisted as? MembershipPersistenceResult.Success<InternalGroupParameters>)!!.payload.entries) {
@@ -801,7 +807,14 @@ class MembershipPersistenceTest {
                 KeyValuePair(SERIAL, "1"),
             ).sorted()
         )
-        val notary = memberInfoFactory.createMemberInfo(memberContext.toSortedMap(), mgmContext.toSortedMap())
+        val notaryInfo = memberInfoFactory.createMemberInfo(memberContext.toSortedMap(), mgmContext.toSortedMap())
+        val notary = memberInfoFactory
+            .createPersistentMemberInfo(
+                viewOwningHoldingIdentity.toAvro(),
+                notaryInfo,
+                CryptoSignatureWithKey(ByteBuffer.wrap(byteArrayOf(1)), ByteBuffer.wrap(byteArrayOf(1))),
+                CryptoSignatureSpec(RSA_SHA256.signatureName, null, null),
+            )
         vnodeEmf.transaction {
             it.createQuery("DELETE FROM GroupParametersEntity").executeUpdate()
             val entity = GroupParametersEntity(
@@ -832,7 +845,7 @@ class MembershipPersistenceTest {
             KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS_KEY, 0, 1), "2"),
         )
 
-        val persisted = membershipPersistenceClientWrapper.addNotaryToGroupParameters(viewOwningHoldingIdentity, notary)
+        val persisted = membershipPersistenceClientWrapper.addNotaryToGroupParameters(notary)
             .execute()
 
         assertThat(persisted).isInstanceOf(MembershipPersistenceResult.Success::class.java)
@@ -879,7 +892,14 @@ class MembershipPersistenceTest {
                 KeyValuePair(MODIFIED_TIME_KEY, clock.instant().toString())
             ).sorted()
         )
-        val notary = memberInfoFactory.createMemberInfo(memberContext.toSortedMap(), mgmContext.toSortedMap())
+        val notaryInfo = memberInfoFactory.createMemberInfo(memberContext.toSortedMap(), mgmContext.toSortedMap())
+        val notary = memberInfoFactory
+            .createPersistentMemberInfo(
+                viewOwningHoldingIdentity.toAvro(),
+                notaryInfo,
+                CryptoSignatureWithKey(ByteBuffer.wrap(byteArrayOf(1)), ByteBuffer.wrap(byteArrayOf(1))),
+                CryptoSignatureSpec(RSA_SHA256.signatureName, null, null),
+            )
         val oldNotaryKey = keyGenerator.genKeyPair().public
         val oldNotaryKeyAsString = keyEncodingService.encodeAsString(oldNotaryKey)
         val oldNotaryMemberContext = KeyValuePairList((memberContext.items.filterNot {
@@ -895,11 +915,11 @@ class MembershipPersistenceTest {
             KeyValuePair(SERIAL, "1"),
         )).sorted())
         val oldNotaryEntity = MemberInfoEntity(
-            notary.groupId,
-            notary.name.toString(),
+            notaryInfo.groupId,
+            notaryInfo.name.toString(),
             false,
-            notary.status,
-            notary.modifiedTime!!,
+            notaryInfo.status,
+            notaryInfo.modifiedTime!!,
             cordaAvroSerializer.serialize(oldNotaryMemberContext)!!,
             keyEncodingService.encodeAsByteArray(oldNotaryKey),
             byteArrayOf(1),
@@ -940,7 +960,7 @@ class MembershipPersistenceTest {
             KeyValuePair(String.format(NOTARY_SERVICE_KEYS_KEY, 0, 1), notaryKeyAsString),
         )
 
-        val persisted = membershipPersistenceClientWrapper.addNotaryToGroupParameters(viewOwningHoldingIdentity, notary)
+        val persisted = membershipPersistenceClientWrapper.addNotaryToGroupParameters(notary)
             .execute()
 
         assertThat(persisted).isInstanceOf(MembershipPersistenceResult.Success::class.java)
@@ -1038,9 +1058,11 @@ class MembershipPersistenceTest {
             registrationId,
         ).getOrThrow()
 
-        assertThat(approveResult.status).isEqualTo(MEMBER_STATUS_ACTIVE)
-        assertThat(approveResult.groupId).isEqualTo(groupId)
-        assertThat(approveResult.name).isEqualTo(registeringHoldingIdentity.x500Name)
+        val approveResultMemberInfo = memberInfoFactory.createMemberInfo(approveResult)
+
+        assertThat(approveResultMemberInfo.status).isEqualTo(MEMBER_STATUS_ACTIVE)
+        assertThat(approveResultMemberInfo.groupId).isEqualTo(groupId)
+        assertThat(approveResultMemberInfo.name).isEqualTo(registeringHoldingIdentity.x500Name)
         val newMemberEntity = vnodeEmf.createEntityManager().use {
             it.find(
                 MemberInfoEntity::class.java,
@@ -1463,8 +1485,15 @@ class MembershipPersistenceTest {
                 KeyValuePair(SERIAL, "1"),
             ).sorted()
         )
-        val notary = memberInfoFactory.createMemberInfo(memberContext.toSortedMap(), mgmContext.toSortedMap())
-        val persisted = membershipPersistenceClientWrapper.addNotaryToGroupParameters(viewOwningHoldingIdentity, notary)
+        val notaryInfo = memberInfoFactory.createMemberInfo(memberContext.toSortedMap(), mgmContext.toSortedMap())
+        val notary = memberInfoFactory
+            .createPersistentMemberInfo(
+                viewOwningHoldingIdentity.toAvro(),
+                notaryInfo,
+                CryptoSignatureWithKey(ByteBuffer.wrap(byteArrayOf(1)), ByteBuffer.wrap(byteArrayOf(1))),
+                CryptoSignatureSpec(RSA_SHA256.signatureName, null, null),
+            )
+        val persisted = membershipPersistenceClientWrapper.addNotaryToGroupParameters(notary)
             .execute()
         assertThat(persisted).isInstanceOf(MembershipPersistenceResult.Success::class.java)
 

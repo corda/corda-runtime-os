@@ -337,7 +337,12 @@ class MGMRegistrationServiceTest {
 
             val publishedList = registrationService.register(registrationRequest, mgm, properties)
 
-            verify(memberInfoFactory).createPersistentMemberInfo(eq(mgm.toAvro()), capturedMemberInfo.capture())
+            verify(memberInfoFactory).createPersistentMemberInfo(
+                eq(mgm.toAvro()),
+                capturedMemberInfo.capture(),
+                eq(CryptoSignatureWithKey(ByteBuffer.wrap(byteArrayOf()), ByteBuffer.wrap(byteArrayOf()))),
+                eq(CryptoSignatureSpec("", null, null)),
+            )
             val publishedMgmInfo = publishedList.first()
             val publishedEvent = publishedList.last()
             assertSoftly {

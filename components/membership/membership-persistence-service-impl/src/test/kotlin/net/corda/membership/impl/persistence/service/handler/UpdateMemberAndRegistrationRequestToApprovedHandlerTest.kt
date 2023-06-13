@@ -6,9 +6,11 @@ import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
+import net.corda.data.crypto.wire.CryptoSignatureSpec
+import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.identity.HoldingIdentity
 import net.corda.data.membership.PersistentMemberInfo
-import net.corda.data.membership.SignedContexts
+import net.corda.data.membership.SignedData
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.data.membership.db.request.command.UpdateMemberAndRegistrationRequestToApproved
@@ -139,20 +141,24 @@ class UpdateMemberAndRegistrationRequestToApprovedHandlerTest {
         member,
         deserialisedMemberContext,
         deserialisedMgmContext,
-        SignedContexts(
+        SignedData(
             ByteBuffer.wrap(memberContextBytes),
-            ByteBuffer.wrap(mgmContextBytes),
+            CryptoSignatureWithKey(ByteBuffer.wrap(byteArrayOf()), ByteBuffer.wrap(byteArrayOf())),
+            CryptoSignatureSpec("", null, null),
         ),
+        ByteBuffer.wrap(mgmContextBytes),
     )
     private val memberInfoFactory = mock<MemberInfoFactory> {
-        on { createPersistentMemberInfo(any(), any(), any()) } doReturn PersistentMemberInfo(
+        on { createPersistentMemberInfo(any(), any(), any(), any(), any(), any()) } doReturn PersistentMemberInfo(
             member,
             deserialisedMemberContext,
             deserialisedMgmContext,
-            SignedContexts(
+            SignedData(
                 ByteBuffer.wrap(memberContextBytes),
-                ByteBuffer.wrap(mgmContextBytes)
+                CryptoSignatureWithKey(ByteBuffer.wrap(byteArrayOf()), ByteBuffer.wrap(byteArrayOf())),
+                CryptoSignatureSpec("", null, null),
             ),
+            ByteBuffer.wrap(mgmContextBytes),
         )
     }
 

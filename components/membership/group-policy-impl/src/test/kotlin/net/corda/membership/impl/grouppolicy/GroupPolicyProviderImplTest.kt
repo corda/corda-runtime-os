@@ -5,8 +5,10 @@ import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.data.KeyValuePairList
+import net.corda.data.crypto.wire.CryptoSignatureSpec
+import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.PersistentMemberInfo
-import net.corda.data.membership.SignedContexts
+import net.corda.data.membership.SignedData
 import net.corda.layeredpropertymap.testkit.LayeredPropertyMapMocks
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.packaging.core.CpiIdentifier
@@ -256,11 +258,17 @@ class GroupPolicyProviderImplTest {
     }
 
     private val deprecatedContext = KeyValuePairList(emptyList())
+    private val byteBuffer = ByteBuffer.wrap(byteArrayOf())
     private fun createPersistentMemberInfo(owner: HoldingIdentity) = PersistentMemberInfo(
         owner.toAvro(),
         deprecatedContext,
         deprecatedContext,
-        SignedContexts(ByteBuffer.wrap(byteArrayOf(1)), ByteBuffer.wrap(byteArrayOf(1))),
+        SignedData(
+            byteBuffer,
+            CryptoSignatureWithKey(byteBuffer, byteBuffer),
+            CryptoSignatureSpec("", null, null),
+        ),
+        byteBuffer,
     )
 
     @BeforeEach

@@ -1,5 +1,7 @@
 package net.corda.virtualnode.write.db.impl.tests.writer.asyncoperation.factories
 
+import net.corda.data.crypto.wire.CryptoSignatureSpec
+import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.schema.Schemas.Membership.MEMBER_LIST_TOPIC
@@ -22,6 +24,7 @@ import org.junit.jupiter.api.Test
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
+import java.nio.ByteBuffer
 import java.time.Instant
 import java.util.UUID
 
@@ -30,16 +33,16 @@ class RecordFactoryImplTest {
 
     @Test
     fun `create mgm info record`() {
-        var memberProvidedContext = mock<MemberContext>().apply {
+        val memberProvidedContext = mock<MemberContext>().apply {
             whenever(this.parse("corda.groupId", String::class.java)).thenReturn(GROUP_ID1)
             whenever(entries).thenReturn(setOf())
         }
 
-        var mgmProvidedContext = mock<MGMContext>().apply {
+        val mgmProvidedContext = mock<MGMContext>().apply {
             whenever(entries).thenReturn(setOf())
         }
 
-        var mgmMemberInfo = mock<MemberInfo>().apply {
+        val mgmMemberInfo = mock<MemberInfo>().apply {
             whenever(this.name).thenReturn(MGM_X500_NAME)
             whenever(this.memberProvidedContext).thenReturn(memberProvidedContext)
             whenever(this.mgmProvidedContext).thenReturn(mgmProvidedContext)
@@ -48,7 +51,12 @@ class RecordFactoryImplTest {
         val persistentMemberInfo = mock<PersistentMemberInfo>()
 
         whenever(
-            memberInfoFactory.createPersistentMemberInfo(ALICE_HOLDING_ID1.toAvro(), mgmMemberInfo)
+            memberInfoFactory.createPersistentMemberInfo(
+                ALICE_HOLDING_ID1.toAvro(),
+                mgmMemberInfo,
+                CryptoSignatureWithKey(ByteBuffer.wrap(byteArrayOf()), ByteBuffer.wrap(byteArrayOf())),
+                CryptoSignatureSpec("", null, null),
+            )
         ).doReturn(persistentMemberInfo)
 
         val target = RecordFactoryImpl(mock(), memberInfoFactory)
