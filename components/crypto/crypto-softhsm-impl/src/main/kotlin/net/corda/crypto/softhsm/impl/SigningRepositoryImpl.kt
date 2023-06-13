@@ -264,16 +264,15 @@ class SigningRepositoryImpl(
 
 
 fun SigningKeyEntity.joinSigningKeyInfo(em: EntityManager): SigningKeyInfo {
-    val signingKeyMaterialEntity = em.createQuery(
+    val signingKeyMaterialEntity = requireNotNull(em.createQuery(
         "FROM ${SigningKeyMaterialEntity::class.java.simpleName} WHERE signingKeyId=:signingKeyId",
         SigningKeyMaterialEntity::class.java
     ).setParameter("signingKeyId", id)
-        .resultList.singleOrNull()
-    val wrappingKey = if (signingKeyMaterialEntity != null) {
-        em.createQuery(
-            "FROM WrappingKeyEntity WHERE id=:wrappingKeyId", WrappingKeyEntity::class.java,
-        ).setParameter("wrappingKeyId", signingKeyMaterialEntity.wrappingKeyId).resultList.singleOrNull()
-    } else null
+        .resultList.singleOrNull(), { "private key material for $id not found"})
+    val wrappingKey = em.createQuery(
+        "FROM WrappingKeyEntity WHERE id=:wrappingKeyId", WrappingKeyEntity::class.java
+    ).setParameter("wrappingKeyId", signingKeyMaterialEntity.wrappingKeyId).resultList.singleOrNull()
+
     return SigningKeyInfo(
         id = ShortHash.parse(keyId),
         fullId = parseSecureHash(fullKeyId),
@@ -282,7 +281,7 @@ fun SigningKeyEntity.joinSigningKeyInfo(em: EntityManager): SigningKeyInfo {
         alias = alias,
         hsmAlias = hsmAlias,
         publicKey = publicKey,
-        keyMaterial = signingKeyMaterialEntity?.keyMaterial,
+        keyMaterial = signingKeyMaterialEntity.keyMaterial,
         schemeCodeName = schemeCodeName,
         masterKeyAlias = wrappingKey?.alias,
         externalId = externalId,
