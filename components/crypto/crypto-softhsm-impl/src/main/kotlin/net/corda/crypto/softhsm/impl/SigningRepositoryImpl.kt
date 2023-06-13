@@ -264,11 +264,11 @@ class SigningRepositoryImpl(
 
 
 fun SigningKeyEntity.joinSigningKeyInfo(em: EntityManager): SigningKeyInfo {
-    val signingKeyMaterialEntity = em.createQuery(
+    val signingKeyMaterialEntity = requireNotNull(em.createQuery(
         "FROM ${SigningKeyMaterialEntity::class.java.simpleName} WHERE signingKeyId=:signingKeyId",
         SigningKeyMaterialEntity::class.java
     ).setParameter("signingKeyId", id)
-        .resultList.singleOrNull() ?: throw InvalidObjectException("private key material for $id not found")
+        .resultList.singleOrNull(), { "private key material for $id not found"})
     val wrappingKey = em.createQuery(
         "FROM WrappingKeyEntity WHERE id=:wrappingKeyId", WrappingKeyEntity::class.java
     ).setParameter("wrappingKeyId", signingKeyMaterialEntity.wrappingKeyId).resultList.singleOrNull()
