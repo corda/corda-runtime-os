@@ -505,8 +505,11 @@ class ReplaySchedulerTest {
         val queuedMessageId = UUID.randomUUID().toString()
         replayScheduler.addForReplay(0, queuedMessageId, queuedMessageId, sessionCounterparties)
 
-        // Queue the original message again
-        replayScheduler.addForReplay(0, replayingMessageId, replayingMessageId, sessionCounterparties)
+        // Force the same message on to the queue
+        replayScheduler.queuedMessagesPerCounterparties.compute(sessionCounterparties) { _, queue ->
+            queue?.queueMessage(ReplayScheduler.QueuedMessage(0, replayingMessageId, replayingMessageId))
+            queue
+        }
 
         mockTimeFacilitiesProvider.advanceTime(replayPeriod)
         replayScheduler.removeFromReplay(replayingMessageId, sessionCounterparties)
