@@ -47,6 +47,10 @@ class MemberInfoExtension {
         /** Key name for the session key signature spec **/
         const val SESSION_KEYS_SIGNATURE_SPEC = "$SESSION_KEYS.%s.signature.spec"
 
+        const val HISTORIC_SESSION_KEYS = "corda.historic.session.keys"
+        const val HISTORIC_SESSION_KEYS_PEM = "$HISTORIC_SESSION_KEYS.%s.pem"
+        const val HISTORIC_SESSION_KEYS_SIGNATURE_SPEC = "$HISTORIC_SESSION_KEYS.%s.signature.spec"
+
         /** Key name for notary service property. */
         const val NOTARY_SERVICE_PARTY_NAME = "corda.notaryService.name"
         const val NOTARY_SERVICE_SESSION_KEY = "corda.notaryService.session.key"
@@ -189,7 +193,7 @@ class MemberInfoExtension {
         /** Collection of ledger key hashes for member's node. */
         @JvmStatic
         val MemberInfo.ledgerKeyHashes: Collection<SecureHash>
-            get() = memberProvidedContext.parseSet(LEDGER_KEYS)
+            get() = getOrCalculateKeyHashes(LEDGER_KEYS) { ledgerKeys }
 
         /**
          * The member session initiation keys
@@ -205,19 +209,23 @@ class MemberInfoExtension {
          */
         @JvmStatic
         val MemberInfo.sessionKeyHashes: Collection<SecureHash>
-            get() = memberProvidedContext.parseSet<SecureHash>(SESSION_KEYS).let { storedKeys ->
-                if (storedKeys.isNotEmpty()) {
-                    storedKeys
-                } else {
-                    logger.warn(
-                        "Calculating the session key hash for $name in group $groupId. " +
-                                "It is preferable to store this hash in the member context to avoid calculating on each access."
-                    )
-                    sessionInitiationKeys.map {
-                        it.fullIdHash()
-                    }
-                }
-            }
+            get() = getOrCalculateKeyHashes(SESSION_KEYS) { sessionInitiationKeys }
+
+        /**
+         * The now historic member session initiation keys.
+         */
+        @JvmStatic
+        val MemberInfo.historicSessionInitiationKeys: Collection<PublicKey>
+            get() = memberProvidedContext.parseList(HISTORIC_SESSION_KEYS)
+
+        /**
+         * [SecureHash] for the historic session initiation keys.
+         * The hash value should be stored in the member context, but as a fallback it is calculated if not available.
+         * It is preferable to always store this in the member context to avoid the repeated calculation.
+         */
+        @JvmStatic
+        val MemberInfo.historicSessionKeyHashes: Collection<SecureHash>
+            get() = getOrCalculateKeyHashes(HISTORIC_SESSION_KEYS) { historicSessionInitiationKeys }
 
         /** Denotes whether this [MemberInfo] represents an MGM node. */
         @JvmStatic
@@ -273,5 +281,16 @@ class MemberInfoExtension {
          */
         @JvmStatic
         val MemberInfo.notaryKeys: List<PublicKey> get() = memberProvidedContext.parseList(NOTARY_KEYS)
+
+        private fun MemberInfo.getOrCalculateKeyHashes(
+            key: String,
+            keyListGetter: () -> Collection<PublicKey>
+        ) = memberProvidedContext.parseSet<SecureHash>(key).ifEmpty {
+            logger.warn(
+                "Calculating the key hash for $name in group $groupId for property $key. " +
+                        "It is preferable to store this hash in the member context to avoid calculating on each access."
+            )
+            keyListGetter().map { it.fullIdHash() }
+        }
     }
 }

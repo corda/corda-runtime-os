@@ -1,5 +1,6 @@
 package net.corda.membership.lib
 
+import net.corda.membership.lib.MemberInfoExtension.Companion.HISTORIC_SESSION_KEYS
 import net.corda.membership.lib.MemberInfoExtension.Companion.IS_STATIC_MGM
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_CPI_NAME
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_CPI_SIGNER_HASH
@@ -8,11 +9,15 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_ROLE
 import net.corda.membership.lib.MemberInfoExtension.Companion.ROLES_PREFIX
 import net.corda.membership.lib.MemberInfoExtension.Companion.SOFTWARE_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.cpiInfo
+import net.corda.membership.lib.MemberInfoExtension.Companion.historicSessionInitiationKeys
+import net.corda.membership.lib.MemberInfoExtension.Companion.historicSessionKeyHashes
 import net.corda.membership.lib.MemberInfoExtension.Companion.isNotary
 import net.corda.membership.lib.MemberInfoExtension.Companion.isStaticMgm
 import net.corda.membership.lib.MemberInfoExtension.Companion.softwareVersion
 import net.corda.utilities.parse
+import net.corda.utilities.parseList
 import net.corda.utilities.parseOrNull
+import net.corda.v5.crypto.SecureHash
 import net.corda.v5.membership.MGMContext
 import net.corda.v5.membership.MemberContext
 import net.corda.v5.membership.MemberInfo
@@ -21,8 +26,10 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
+import java.security.PublicKey
 
 class MemberInfoExtensionTest {
     private val memberContext: MemberContext = mock()
@@ -145,6 +152,111 @@ class MemberInfoExtensionTest {
             val result = assertDoesNotThrow { memberInfo.isNotary() }
 
             assertThat(result).isTrue
+        }
+    }
+
+    @Nested
+    inner class HistoricSessionKeyTest {
+        @Test
+        fun `empty list returned if no historic key information is not available`() {
+            whenever(memberContext.entries).doReturn(emptyMap<String, String>().entries)
+
+            assertThat(memberInfo.historicSessionInitiationKeys).isEmpty()
+        }
+
+        @Test
+        fun `empty list returned for key hashes if no historic key information is not available`() {
+            whenever(memberContext.entries).doReturn(emptyMap<String, String>().entries)
+
+            assertThat(memberInfo.historicSessionKeyHashes).isEmpty()
+        }
+
+        @Test
+        fun `single key returned when historic key information is available`() {
+            val mockKeyHashes: List<PublicKey> = listOf(mock())
+            whenever(
+                memberContext.parseList(eq(HISTORIC_SESSION_KEYS), eq(PublicKey::class.java))
+            ).doReturn(mockKeyHashes)
+
+            assertThat(memberInfo.historicSessionInitiationKeys).containsExactlyElementsOf(mockKeyHashes)
+        }
+
+        @Test
+        fun `single key hash returned when historic key information is available`() {
+            val mockKeyHashes: Set<SecureHash> = setOf(mock())
+            whenever(
+                memberContext.parseSet(eq(HISTORIC_SESSION_KEYS), eq(SecureHash::class.java))
+            ).doReturn(mockKeyHashes)
+
+            assertThat(memberInfo.historicSessionKeyHashes).containsExactlyElementsOf(mockKeyHashes)
+        }
+
+        @Test
+        fun `multiple keys returned when historic key information is available`() {
+            val mockKeyHashes: List<PublicKey> = listOf(mock(), mock(), mock(), mock())
+            whenever(
+                memberContext.parseList(eq(HISTORIC_SESSION_KEYS), eq(PublicKey::class.java))
+            ).doReturn(mockKeyHashes)
+
+            assertThat(memberInfo.historicSessionInitiationKeys).containsExactlyElementsOf(mockKeyHashes)
+        }
+
+        @Test
+        fun `multiple key hashes returned when historic key information is available`() {
+            val mockKeyHashes: Set<SecureHash> = setOf(mock(), mock(), mock(), mock())
+            whenever(
+                memberContext.parseSet(eq(HISTORIC_SESSION_KEYS), eq(SecureHash::class.java))
+            ).doReturn(mockKeyHashes)
+
+            assertThat(memberInfo.historicSessionKeyHashes).containsExactlyElementsOf(mockKeyHashes)
+        }
+
+        @Test
+        fun `key hashes calculated and returned when historic key information is available but hash is not`() {
+            whenever(
+                memberContext.parseSet(eq(HISTORIC_SESSION_KEYS), eq(SecureHash::class.java))
+            ).doReturn(emptySet())
+
+            val mockKey: PublicKey = mock {
+                on { encoded } doReturn "my-key".toByteArray()
+            }
+            whenever(
+                memberContext.parseList(eq(HISTORIC_SESSION_KEYS), eq(PublicKey::class.java))
+            ).doReturn(listOf(mockKey))
+
+            assertThat(memberInfo.historicSessionKeyHashes).hasSize(1)
+        }
+
+        @Test
+        fun `key hashes calculated and returned when multiple historic key information is available but hashes are not`() {
+            whenever(
+                memberContext.parseSet(eq(HISTORIC_SESSION_KEYS), eq(SecureHash::class.java))
+            ).doReturn(emptySet())
+
+            val mockKey1: PublicKey = mock {
+                on { encoded } doReturn "my-key-1".toByteArray()
+            }
+            val mockKey2: PublicKey = mock {
+                on { encoded } doReturn "my-key-2".toByteArray()
+            }
+            whenever(
+                memberContext.parseList(eq(HISTORIC_SESSION_KEYS), eq(PublicKey::class.java))
+            ).doReturn(listOf(mockKey1, mockKey2))
+
+            assertThat(memberInfo.historicSessionKeyHashes).hasSize(2)
+        }
+
+        @Test
+        fun `key hashes empty when historic key information is not available and hash is not either`() {
+            whenever(
+                memberContext.parseSet(eq(HISTORIC_SESSION_KEYS), eq(SecureHash::class.java))
+            ).doReturn(emptySet())
+
+            whenever(
+                memberContext.parseList(eq(HISTORIC_SESSION_KEYS), eq(PublicKey::class.java))
+            ).doReturn(emptyList())
+
+            assertThat(memberInfo.historicSessionKeyHashes).isEmpty()
         }
     }
 }
