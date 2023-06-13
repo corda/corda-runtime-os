@@ -64,7 +64,7 @@ class FlowEngineImpl @Activate constructor(
              */
 
             closeSessionsOnSubFlowFinish()
-            getFiberExecutionContext().flowMetrics.subFlowFinished(FlowStates.FAILED)
+            getFiberExecutionContext().flowMetrics.subFlowFinished(FlowStates.COMPLETED)
 
             return result
         } catch (t: Throwable) {
