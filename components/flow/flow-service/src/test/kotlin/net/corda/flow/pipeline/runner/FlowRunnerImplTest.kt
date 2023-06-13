@@ -100,7 +100,8 @@ class FlowRunnerImplTest {
             BOB_X500_HOLDING_IDENTITY.toCorda(),
             mock(),
             mock(),
-            emptyMap()
+            emptyMap(),
+            mock()
         )
         whenever(virtualNodeInfoReadService.get(any())).thenReturn(getMockVNodeInfo())
         whenever(cpiInfoReadService.get(any())).thenReturn(getMockCpiMetaData())
@@ -140,7 +141,14 @@ class FlowRunnerImplTest {
             )
         ).thenReturn(fiberFuture)
 
-        whenever(flowStack.pushWithContext(clientFlow, emptyKeyValuePairList(), platformContext.avro)).thenReturn(
+        whenever(
+            flowStack.pushWithContext(
+                eq(clientFlow),
+                eq(emptyKeyValuePairList()),
+                eq(platformContext.avro),
+                any()
+            )
+        ).thenReturn(
             flowStackItem
         )
 
@@ -198,9 +206,10 @@ class FlowRunnerImplTest {
 
         whenever(
             flowStack.pushWithContext(
-                initiatedFlow,
-                localContextProperties.userProperties,
-                localContextProperties.platformProperties
+                eq(initiatedFlow),
+                eq(localContextProperties.userProperties),
+                eq(localContextProperties.platformProperties),
+                any()
             )
         ).thenReturn(
             flowStackItem
