@@ -49,6 +49,7 @@ class AllowClientCertificate : Runnable {
             targetUrl = baseUrlFromClusterName(cordaClusterName, restWorkerDeploymentName)
             password = restPasswordFromClusterName(cordaClusterName)
             username = "admin"
+            insecure = true
         }
     } override fun run() {
         if (subjects.isEmpty()) {
