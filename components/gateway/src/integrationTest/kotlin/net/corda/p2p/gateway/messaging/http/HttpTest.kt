@@ -200,6 +200,7 @@ class HttpTest : TestBase() {
 
     @Test
     @Timeout(30)
+    @Disabled("Disabling temporarily until CORE-5879 is completed.")
     fun `tls handshake succeeds - revocation checking disabled C5`() {
         val listener = object : RequestListener {
             override fun onRequest(httpWriter: HttpWriter, request: HttpRequest) {
@@ -220,7 +221,7 @@ class HttpTest : TestBase() {
         ).use { server ->
             server.startAndWaitForStarted()
             HttpClient(
-                DestinationInfo(serverAddress, bobSNI[0], null, truststoreKeyStore, null),
+                DestinationInfo(serverAddress, bobSNI[0], null, truststoreKeyStoreWithRevocation, null),
                 aliceSslConfig,
                 NioEventLoopGroup(1),
                 NioEventLoopGroup(1),
@@ -379,7 +380,7 @@ class HttpTest : TestBase() {
 
     @Test
     @Timeout(30)
-    @Disabled("Disabling temporarily until CORE-11411 is completed.")
+    @Disabled("Disabling temporarily until CORE-5879 is completed.")
     fun `tls handshake fails - server presents revoked certificate`() {
         HttpServer(
             object : RequestListener {

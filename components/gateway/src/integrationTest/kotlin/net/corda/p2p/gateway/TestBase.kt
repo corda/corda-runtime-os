@@ -69,11 +69,19 @@ open class TestBase {
         Certificates.truststoreCertificatePem.readText()
     }
 
+    protected val truststoreWithRevocationCertificatePem by lazy {
+        Certificates.truststoreCertificateWithRevocationPem.readText()
+    }
+
     private val c4TruststoreCertificatePem by lazy {
         Certificates.c4TruststoreCertificatePem.readText()
     }
     protected val truststoreKeyStore by lazy {
         TrustStoresMap.TrustedCertificates(listOf(truststoreCertificatePem)).trustStore!!
+    }
+
+    protected val truststoreKeyStoreWithRevocation by lazy {
+        TrustStoresMap.TrustedCertificates(listOf(truststoreWithRevocationCertificatePem)).trustStore!!
     }
 
     protected val c4TruststoreKeyStore by lazy {
