@@ -57,7 +57,7 @@ internal class ReplayScheduler<K: SessionManager.BaseCounterparties, M>(
         ConcurrentHashMap<K, MutableSet<MessageId>>()
     private val replayInfoPerMessageId = ConcurrentHashMap<MessageId, ReplayInfo>()
     data class QueuedMessage<M>(val originalAttemptTimestamp: Long, val uniqueId: MessageId, val message: M)
-    private val queuedMessagesPerCounterparties = ConcurrentHashMap<K, MessageQueue<M>>()
+    internal val queuedMessagesPerCounterparties = ConcurrentHashMap<K, MessageQueue<M>>()
 
     /**
      * A Queue of QueuedMessages where messages can be removed from the queue by messageId.

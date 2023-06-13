@@ -549,16 +549,7 @@ class ReplaySchedulerTest {
         // Add the original message again for replay
         replayScheduler.addForReplay(0, replayingMessageId, replayingMessageId, sessionCounterparties)
 
-        @Suppress("unchecked_cast")
-        val queuedMessagesPerCounterparties = replayScheduler::class.memberProperties.singleOrNull {
-            it.name == "queuedMessagesPerCounterparties"
-        }?.apply {
-            isAccessible = true
-        }?.getter?.call(replayScheduler) as? ConcurrentHashMap<Any, Any>
-
-        assertThat(queuedMessagesPerCounterparties)
-            .isNotNull
-            .hasSize(0)
+        assertThat(replayScheduler.queuedMessagesPerCounterparties).hasSize(0)
     }
 
     class MyException: Exception("Ohh No")
