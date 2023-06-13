@@ -239,11 +239,25 @@
                     "examples": [
                         "http://tempo:9411"
                     ]
+                },
+                "samplesPerSecond": {
+                    "type": "string",
+                    "default": "1",
+                    "title": "Number of request traces to sample per second, defaults to 1 sample per second. Set to 'unlimited' to record all traces, but in this case amount of tracing data produced can be quite vast.",
+                    "examples": [
+                        "10",
+                        "unlimited"
+                    ]
                 }
             },
             "examples": [
                 {
-                    "endpoint": "http://tempo:9411"
+                    "endpoint": "http://tempo:9411",
+                    "samplesPerSecond": "10"
+                },
+                {
+                    "endpoint": "http://tempo:9411",
+                    "samplesPerSecond": "unlimited"
                 }
             ]
         },

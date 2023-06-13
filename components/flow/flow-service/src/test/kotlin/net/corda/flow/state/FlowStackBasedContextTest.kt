@@ -48,7 +48,7 @@ class FlowStackBasedContextTest {
 
     @Test
     fun `simple user context put and get`() {
-        flowStack.push(flow)
+        flowStack.push(flow, mock())
 
         assertThat(flowContext["key1"]).isNull()
 
@@ -78,7 +78,8 @@ class FlowStackBasedContextTest {
         flowStack.pushWithContext(
             flow,
             contextUserProperties = modifiedUserPropertiesLevel1,
-            contextPlatformProperties = platformPropertiesLevel1.avro
+            contextPlatformProperties = platformPropertiesLevel1.avro,
+            mock()
         )
 
         flowContext.put("key1", "value1")
@@ -86,7 +87,8 @@ class FlowStackBasedContextTest {
         flowStack.pushWithContext(
             flow,
             contextUserProperties = userPropertiesLevel2.avro,
-            contextPlatformProperties = platformPropertiesLevel2.avro
+            contextPlatformProperties = platformPropertiesLevel2.avro,
+            mock()
         )
 
         assertThat(flowContext["p-key1"]).isEqualTo("p-value1")
@@ -111,7 +113,7 @@ class FlowStackBasedContextTest {
 
     @Test
     fun `simple platform context put and get`() {
-        flowStack.push(flow)
+        flowStack.push(flow, mock())
 
         assertThat(flowContext["key1"]).isNull()
 
@@ -127,7 +129,8 @@ class FlowStackBasedContextTest {
         flowStack.pushWithContext(
             flow,
             contextUserProperties = userPropertiesLevel1.avro,
-            contextPlatformProperties = platformPropertiesLevel1.avro
+            contextPlatformProperties = platformPropertiesLevel1.avro,
+            mock()
         )
 
         flowContext.platformProperties["key1"] = "value1"
@@ -135,7 +138,8 @@ class FlowStackBasedContextTest {
         flowStack.pushWithContext(
             flow,
             contextUserProperties = userPropertiesLevel2.avro,
-            contextPlatformProperties = platformPropertiesLevel2.avro
+            contextPlatformProperties = platformPropertiesLevel2.avro,
+            mock()
         )
 
         flowContext.platformProperties["key2"] = "value2"
@@ -155,7 +159,8 @@ class FlowStackBasedContextTest {
         flowStack.pushWithContext(
             flow,
             contextUserProperties = emptyKeyValuePairList(),
-            contextPlatformProperties = platformPropertiesLevel1.avro
+            contextPlatformProperties = platformPropertiesLevel1.avro,
+            mock()
         )
 
         assertThrows<IllegalArgumentException> { flowContext.put("p-key1", "value") }
@@ -166,7 +171,8 @@ class FlowStackBasedContextTest {
         flowStack.pushWithContext(
             flow,
             contextUserProperties = emptyKeyValuePairList(),
-            contextPlatformProperties = platformPropertiesLevel1.avro
+            contextPlatformProperties = platformPropertiesLevel1.avro,
+            mock()
         )
 
         assertThrows<IllegalArgumentException> { flowContext.put("corda.property", "value") }
@@ -178,7 +184,8 @@ class FlowStackBasedContextTest {
         flowStack.pushWithContext(
             flow,
             contextUserProperties = emptyKeyValuePairList(),
-            contextPlatformProperties = platformPropertiesLevel1.avro
+            contextPlatformProperties = platformPropertiesLevel1.avro,
+            mock()
         )
 
         assertDoesNotThrow { flowContext.platformProperties["p-key1"] = "value" }
@@ -189,7 +196,8 @@ class FlowStackBasedContextTest {
         flowStack.pushWithContext(
             flow,
             contextUserProperties = userPropertiesLevel1.avro,
-            contextPlatformProperties = platformPropertiesLevel1.avro
+            contextPlatformProperties = platformPropertiesLevel1.avro,
+            mock()
         )
 
         flowContext.put("userkey1", "uservalue1")
@@ -198,7 +206,8 @@ class FlowStackBasedContextTest {
         flowStack.pushWithContext(
             flow,
             contextUserProperties = userPropertiesLevel2.avro,
-            contextPlatformProperties = platformPropertiesLevel2.avro
+            contextPlatformProperties = platformPropertiesLevel2.avro,
+            mock()
         )
 
         flowContext.put("userkey2", "uservalue2")
@@ -230,7 +239,8 @@ class FlowStackBasedContextTest {
         flowStack.pushWithContext(
             flow,
             contextUserProperties = userPropertiesLevel1.avro,
-            contextPlatformProperties = platformPropertiesLevel1.avro
+            contextPlatformProperties = platformPropertiesLevel1.avro,
+            mock()
         )
 
         flowContext.put("userkey1", "uservalue1")
@@ -239,7 +249,8 @@ class FlowStackBasedContextTest {
         flowStack.pushWithContext(
             flow,
             contextUserProperties = userPropertiesLevel2.avro,
-            contextPlatformProperties = platformPropertiesLevel2.avro
+            contextPlatformProperties = platformPropertiesLevel2.avro,
+            mock()
         )
 
         flowContext.put("userkey2", "uservalue2")
