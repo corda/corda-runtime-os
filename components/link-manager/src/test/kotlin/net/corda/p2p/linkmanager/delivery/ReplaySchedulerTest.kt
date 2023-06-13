@@ -25,6 +25,9 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.time.Duration
 import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
+import kotlin.reflect.full.memberProperties
+import kotlin.reflect.jvm.isAccessible
 
 class ReplaySchedulerTest {
 
@@ -514,6 +517,48 @@ class ReplaySchedulerTest {
         assertThat(tracker.messages).containsExactlyElementsOf(
             listOf(replayingMessageId, queuedMessageId)
         )
+    }
+
+    @Test
+    fun `messages which are replaying are not added to the queue to replay again`() {
+        val messageCap = 1
+        val tracker = TrackReplayedMessages()
+        val replayScheduler = ReplayScheduler<SessionManager.SessionCounterparties, String>(
+            coordinatorFactory,
+            service,
+            true,
+            tracker::replayMessage,
+            {mockTimeFacilitiesProvider.mockScheduledExecutor},
+            clock = mockTimeFacilitiesProvider.clock)
+        replayScheduler.start()
+        setRunning()
+        configHandler.applyNewConfiguration(
+            ReplayScheduler.ReplaySchedulerConfig.ExponentialBackoffReplaySchedulerConfig(
+                replayPeriod,
+                replayPeriod,
+                messageCap
+            ),
+            null,
+            configResourcesHolder
+        )
+
+        // Add a message for replay
+        val replayingMessageId = UUID.randomUUID().toString()
+        replayScheduler.addForReplay(0, replayingMessageId, replayingMessageId, sessionCounterparties)
+
+        // Add the original message again for replay
+        replayScheduler.addForReplay(0, replayingMessageId, replayingMessageId, sessionCounterparties)
+
+        @Suppress("unchecked_cast")
+        val queuedMessagesPerCounterparties = replayScheduler::class.memberProperties.singleOrNull {
+            it.name == "queuedMessagesPerCounterparties"
+        }?.apply {
+            isAccessible = true
+        }?.getter?.call(replayScheduler) as? ConcurrentHashMap<Any, Any>
+
+        assertThat(queuedMessagesPerCounterparties)
+            .isNotNull
+            .hasSize(0)
     }
 
     class MyException: Exception("Ohh No")

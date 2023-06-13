@@ -219,6 +219,9 @@ internal class ReplayScheduler<K: SessionManager.BaseCounterparties, M>(
                         set.add(messageId)
                         set
                     }
+                    replayingMessagesForCounterparties.contains(messageId) -> {
+                        replayingMessagesForCounterparties
+                    }
                     replayCalculator.get().shouldReplayMessage(replayingMessagesForCounterparties.size) -> {
                         scheduleForReplay(originalAttemptTimestamp, messageId, message)
                         replayingMessagesForCounterparties.add(messageId)
