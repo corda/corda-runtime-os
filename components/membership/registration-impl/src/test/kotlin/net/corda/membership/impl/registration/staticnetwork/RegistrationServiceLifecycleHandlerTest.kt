@@ -85,7 +85,6 @@ class RegistrationServiceLifecycleHandlerTest {
         platformInfoProvider,
         mock(),
         virtualNodeInfoReadService,
-        mock(),
         membershipGroupReaderProvider,
         membershipQueryClient,
     )
@@ -240,7 +239,6 @@ class RegistrationServiceLifecycleHandlerTest {
                 platformInfoProvider,
                 mock(),
                 virtualNodeInfoReadService,
-                mock(),
                 membershipGroupReaderProvider,
                 membershipQueryClient,
             )

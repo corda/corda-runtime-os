@@ -27,7 +27,6 @@ import net.corda.layeredpropertymap.testkit.LayeredPropertyMapMocks
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleStatus
-import net.corda.membership.groupparams.writer.service.GroupParametersWriterService
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.impl.registration.TEST_CPI_NAME
 import net.corda.membership.impl.registration.TEST_CPI_VERSION
@@ -115,7 +114,6 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
-import org.mockito.kotlin.doNothing
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
@@ -340,7 +338,6 @@ class StaticMemberRegistrationServiceTest {
 
         on { queryStaticNetworkInfo(any()) } doReturn MembershipQueryResult.Success(currentStaticNetworkInfo)
     }
-    private val groupParametersWriterService: GroupParametersWriterService = mock()
     private val notaryVirtualNodeLookup = mock<NotaryVirtualNodeLookup> {
         on { getNotaryVirtualNodes(any()) } doReturn emptyList()
     }
@@ -367,7 +364,6 @@ class StaticMemberRegistrationServiceTest {
         platformInfoProvider,
         groupParametersFactory,
         virtualNodeInfoReadService,
-        groupParametersWriterService,
         membershipGroupReaderProvider,
         membershipQueryClient,
     )
@@ -503,21 +499,6 @@ class StaticMemberRegistrationServiceTest {
                     status.capture()
                 )
             ).doReturn(SuccessOperation(mock()))
-            whenever(groupPolicyProvider.getGroupPolicy(knownIdentity)).thenReturn(groupPolicyWithStaticNetwork)
-            whenever(virtualNodeInfoReadService.get(knownIdentity)).thenReturn(buildTestVirtualNodeInfo(knownIdentity))
-            setUpPublisher()
-            registrationService.start()
-
-            registrationService.register(registrationId, knownIdentity, mockContext)
-
-            assertThat(status.firstValue).isEqualTo(mockSignedGroupParameters)
-        }
-
-        @Test
-        fun `registration publishes group parameters to Kafka for registering member`() {
-            val knownIdentity = HoldingIdentity(aliceName, "test-group")
-            val status = argumentCaptor<SignedGroupParameters>()
-            doNothing().whenever(groupParametersWriterService).put(any(), status.capture())
             whenever(groupPolicyProvider.getGroupPolicy(knownIdentity)).thenReturn(groupPolicyWithStaticNetwork)
             whenever(virtualNodeInfoReadService.get(knownIdentity)).thenReturn(buildTestVirtualNodeInfo(knownIdentity))
             setUpPublisher()
@@ -873,27 +854,6 @@ class StaticMemberRegistrationServiceTest {
             verify(persistenceClient, times(1)).persistGroupParameters(eq(bob), eq(mockSignedGroupParameters))
             verify(persistenceClient, times(1)).persistGroupParameters(eq(alice), eq(mockSignedGroupParameters))
             verify(persistenceClient, never()).persistGroupParameters(eq(charlie), eq(mockSignedGroupParameters))
-        }
-
-        @Test
-        fun `registration with notary role publishes group parameters to Kafka for all members who have vnodes set up`() {
-            val context = mapOf(
-                KEY_SCHEME to ECDSA_SECP256R1_CODE_NAME,
-                "${ROLES_PREFIX}.0" to "notary",
-                NOTARY_SERVICE_NAME to notary.toString(),
-                NOTARY_SERVICE_PROTOCOL to "net.corda.notary.MyNotaryService",
-                String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS, 0) to "1"
-            )
-            whenever(groupPolicyProvider.getGroupPolicy(bob)).thenReturn(groupPolicyWithStaticNetwork)
-            whenever(virtualNodeInfoReadService.get(bob)).thenReturn(buildTestVirtualNodeInfo(bob))
-            setUpPublisher()
-            registrationService.start()
-
-            registrationService.register(registrationId, bob, context)
-
-            verify(groupParametersWriterService).put(eq(bob), eq(mockSignedGroupParameters))
-            verify(groupParametersWriterService).put(eq(alice), eq(mockSignedGroupParameters))
-            verify(groupParametersWriterService, never()).put(eq(charlie), eq(mockSignedGroupParameters))
         }
 
         @Test

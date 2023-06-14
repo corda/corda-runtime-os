@@ -6,6 +6,10 @@ import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.ApprovalRuleType
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.preauth.PreAuthToken
+import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleCoordinatorName
+import net.corda.lifecycle.LifecycleStatus
+import net.corda.lifecycle.StartEvent
 import net.corda.membership.lib.InternalGroupParameters
 import net.corda.membership.lib.SignedMemberInfo
 import net.corda.membership.lib.approval.ApprovalRuleParams
@@ -20,13 +24,25 @@ import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
+import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.propertytypes.ServiceRanking
 import java.time.Instant
 import java.util.UUID
 
 @ServiceRanking(Int.MAX_VALUE)
 @Component(service = [MembershipPersistenceClient::class])
-class TestMembershipPersistenceClientImpl @Activate constructor() : MembershipPersistenceClient {
+class TestMembershipPersistenceClientImpl @Activate constructor(
+    @Reference(service = LifecycleCoordinatorFactory::class)
+    private val coordinatorFactory: LifecycleCoordinatorFactory,
+) : MembershipPersistenceClient {
+    private val coordinator =
+        coordinatorFactory.createCoordinator(
+            LifecycleCoordinatorName.forComponent<MembershipPersistenceClient>()
+        ) { event, coordinator ->
+            if (event is StartEvent) {
+                coordinator.updateStatus(LifecycleStatus.UP)
+            }
+        }
     override fun persistMemberInfo(
         viewOwningIdentity: HoldingIdentity,
         memberInfos: Collection<SignedMemberInfo>,
@@ -127,7 +143,7 @@ class TestMembershipPersistenceClientImpl @Activate constructor() : MembershipPe
 
     override val isRunning = true
 
-    override fun start() {}
+    override fun start() = coordinator.start()
 
     override fun stop() {}
 

@@ -10,6 +10,7 @@ import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.parseSecureHash
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializationFactory
+import net.corda.crypto.client.hsm.HSMRegistrationClient
 import net.corda.data.KeyValuePairList
 import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationSchemaVersion
@@ -51,6 +52,8 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.SESSION_KEYS_HASH
 import net.corda.membership.lib.MemberInfoExtension.Companion.SOFTWARE_VERSION
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.locally.hosted.identities.LocallyHostedIdentitiesService
+import net.corda.membership.persistence.client.MembershipPersistenceClient
+import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.registration.RegistrationProxy
 import net.corda.messaging.api.processor.PubSubProcessor
 import net.corda.messaging.api.publisher.config.PublisherConfig
@@ -126,6 +129,17 @@ class MemberRegistrationIntegrationTest {
         @InjectService(timeout = 5000)
         lateinit var keyEncodingService: KeyEncodingService
 
+        @InjectService(timeout = 5000)
+        lateinit var membershipQueryClient: MembershipQueryClient
+
+        @InjectService(timeout = 5000)
+        lateinit var membershipPersistenceClient: MembershipPersistenceClient
+
+        @InjectService(timeout = 5000)
+        lateinit var hsmRegistrationClient: HSMRegistrationClient
+
+
+
         lateinit var keyValuePairListDeserializer: CordaAvroDeserializer<KeyValuePairList>
         lateinit var requestDeserializer: CordaAvroDeserializer<MembershipRegistrationRequest>
         lateinit var unauthRequestDeserializer: CordaAvroDeserializer<UnauthenticatedRegistrationRequest>
@@ -166,6 +180,7 @@ class MemberRegistrationIntegrationTest {
                 tlsType: "ONE_WAY"
             }
         """
+        const val cryptoConfig = "{}"
         val schemaVersion = ConfigurationSchemaVersion(1, 0)
         val memberName = MemberX500Name("Alice", "London", "GB")
         val mgmName = MemberX500Name("Corda MGM", "London", "GB")
@@ -213,9 +228,11 @@ class MemberRegistrationIntegrationTest {
             cryptoOpsClient.start()
             locallyHostedIdentitiesService.start()
             membershipGroupReaderProvider.start()
+            membershipQueryClient.start()
+            membershipPersistenceClient.start()
+            hsmRegistrationClient.start()
 
             configurationReadService.bootstrapConfig(bootConfig)
-
 
             testVirtualNodeInfoReadService.putTestVirtualNodeInfo(
                 VirtualNodeInfo(
@@ -252,6 +269,15 @@ class MemberRegistrationIntegrationTest {
                         Schemas.Config.CONFIG_TOPIC,
                         ConfigKeys.P2P_GATEWAY_CONFIG,
                         Configuration(gatewayConfig, gatewayConfig, 0, schemaVersion)
+                    )
+                )
+            )
+            publisher.publish(
+                listOf(
+                    Record(
+                        Schemas.Config.CONFIG_TOPIC,
+                        ConfigKeys.CRYPTO_CONFIG,
+                        Configuration(cryptoConfig, cryptoConfig, 0, schemaVersion)
                     )
                 )
             )

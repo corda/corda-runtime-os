@@ -72,22 +72,24 @@ class SynchronisationProxyImpl @Activate constructor(
          * configuration, and delegates the processing of membership updates to it.
          *
          * @param updates Data package distributed by the MGM containing membership updates.
+         * @return list of records to send to the message bus
          *
          * @throws [SynchronisationProtocolSelectionException] if the synchronisation protocol could not be selected.
          * @throws [SynchronisationProtocolTypeException] if the configured protocol is not an [MemberSynchronisationService].
          */
-        fun processMembershipUpdates(updates: ProcessMembershipUpdates)
+        fun processMembershipUpdates(updates: ProcessMembershipUpdates): List<Record<*, *>>
 
         /**
          * Retrieves the appropriate instance of [MgmSynchronisationService] for a holding identity as specified in the CPI
          * configuration, and delegates the processing of membership sync requests to it.
          *
          * @param request The sync request which needs to be processed.
+         * @return list of records to send to the message bus
          *
          * @throws [SynchronisationProtocolSelectionException] if the synchronisation protocol could not be selected.
          * @throws [SynchronisationProtocolTypeException] if the configured protocol is not an [MgmSynchronisationService].
          */
-        fun processSyncRequest(request: ProcessSyncRequest)
+        fun processSyncRequest(request: ProcessSyncRequest): List<Record<*, *>>
     }
 
     private companion object {
@@ -228,20 +230,20 @@ class SynchronisationProxyImpl @Activate constructor(
     }
 
     private inner class ActiveImpl: InnerSynchronisationProxy {
-        override fun processMembershipUpdates(updates: ProcessMembershipUpdates) {
+        override fun processMembershipUpdates(updates: ProcessMembershipUpdates): List<Record<*, *>> {
             val service = getSynchronisationService(
                 updates.synchronisationMetaData.member.toCorda(),
                 MemberSynchronisationService::class.java
             )
-            service.processMembershipUpdates(updates)
+            return service.processMembershipUpdates(updates)
         }
 
-        override fun processSyncRequest(request: ProcessSyncRequest) {
+        override fun processSyncRequest(request: ProcessSyncRequest): List<Record<*, *>> {
             val service = getSynchronisationService(
                 request.synchronisationMetaData.mgm.toCorda(),
                 MgmSynchronisationService::class.java
             )
-            service.processSyncRequest(request)
+            return service.processSyncRequest(request)
         }
 
         private fun selectSynchronisationProtocol(viewOwningMember: HoldingIdentity): String =
@@ -283,11 +285,11 @@ class SynchronisationProxyImpl @Activate constructor(
         )
 
         override fun onNext(events: List<Record<String, SynchronisationCommand>>): List<Record<*, *>> {
-            events.forEach { record ->
+            return events.mapNotNull { record ->
                 try {
-                    record.value
+                    val value = record.value
                         ?: throw SynchronisationException("SynchronisationCommand with record key: ${record.key} was null.")
-                    when (record.value!!.command) {
+                    when (value.command) {
                         is ProcessMembershipUpdates -> {
                             logger.info("Received process membership updates command.")
                             handlers[ProcessMembershipUpdates::class.java]?.invoke(record)
@@ -298,15 +300,17 @@ class SynchronisationProxyImpl @Activate constructor(
                         }
                         else -> {
                             logger.warn("Unhandled synchronisation command received.")
+                            null
                         }
                     }
                 } catch (e: SynchronisationProtocolTypeException) {
                     logger.warn(FAILED_SYNC_MSG, e)
+                    null
                 } catch (e: Exception) {
                     logger.error(FAILED_SYNC_MSG, e)
+                    null
                 }
-            }
-            return emptyList()
+            }.flatten()
         }
 
         override val keyClass = String::class.java
@@ -314,18 +318,18 @@ class SynchronisationProxyImpl @Activate constructor(
     }
 
     interface SynchronisationHandler<T> {
-        fun invoke(event: Record<String, SynchronisationCommand>) {
+        fun invoke(event: Record<String, SynchronisationCommand>): List<Record<*, *>>? {
             event.value?.command?.let { command ->
                 if (commandType.isInstance(command)) {
                     @Suppress("unchecked_cast")
-                    return recordTimerMetric(command as T) { invoke(it) }
+                    return recordTimerMetric(command as T, ::invoke)
                 } else {
                     throw CordaRuntimeException("Invalid command: $command")
                 }
             } ?: throw CordaRuntimeException("Command cannot be null.")
         }
 
-        fun invoke(command: T)
+        fun invoke(command: T): List<Record<*, *>>?
 
         val commandType: Class<T>
 
@@ -336,21 +340,21 @@ class SynchronisationProxyImpl @Activate constructor(
 
         fun recordTimerMetric(
             command: T,
-            func: (T) -> Unit
-        ) {
+            func: (T) -> List<Record<*, *>>?
+        ): List<Record<*, *>>? {
             return getTimerMetric(
                 TimerMetricTypes.SYNC,
                 getOwnerHoldingId(command),
                 commandType.simpleName
             ).recordCallable {
                 func(command)
-            }!!
+            }
         }
     }
 
     private inner class ProcessMembershipUpdatesHandler : SynchronisationHandler<ProcessMembershipUpdates> {
-        override fun invoke(command: ProcessMembershipUpdates) {
-            processMembershipUpdates(command)
+        override fun invoke(command: ProcessMembershipUpdates): List<Record<*, *>> {
+            return processMembershipUpdates(command)
         }
 
         override val commandType: Class<ProcessMembershipUpdates>
@@ -362,8 +366,8 @@ class SynchronisationProxyImpl @Activate constructor(
     }
 
     private inner class ProcessSyncRequestHandler : SynchronisationHandler<ProcessSyncRequest> {
-        override fun invoke(command: ProcessSyncRequest) {
-            processSyncRequest(command)
+        override fun invoke(command: ProcessSyncRequest): List<Record<*, *>> {
+            return processSyncRequest(command)
         }
 
         override val commandType: Class<ProcessSyncRequest>

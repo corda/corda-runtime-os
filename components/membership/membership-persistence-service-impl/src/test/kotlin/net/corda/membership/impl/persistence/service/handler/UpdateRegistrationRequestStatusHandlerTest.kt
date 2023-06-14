@@ -89,6 +89,8 @@ class UpdateRegistrationRequestStatusHandlerTest {
         keyEncodingService,
         platformInfoProvider,
         mock(),
+        mock(),
+        mock(),
         transactionTimerFactory
     )
     private lateinit var updateRegistrationRequestStatusHandler: UpdateRegistrationRequestStatusHandler

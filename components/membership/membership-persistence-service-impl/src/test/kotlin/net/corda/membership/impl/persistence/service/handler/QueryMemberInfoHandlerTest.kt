@@ -105,6 +105,8 @@ class QueryMemberInfoHandlerTest {
         keyEncodingService,
         platformInfoProvider,
         mock(),
+        mock(),
+        mock(),
         transactionTimerFactory
     )
     private lateinit var queryMemberInfoHandler: QueryMemberInfoHandler
