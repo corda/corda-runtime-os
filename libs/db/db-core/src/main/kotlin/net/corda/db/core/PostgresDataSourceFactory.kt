@@ -1,5 +1,7 @@
 package net.corda.db.core
 
+import java.time.Duration
+
 class PostgresDataSourceFactory(
     private val datasourceFactory: DataSourceFactory = HikariDataSourceFactory()
 ) {
@@ -14,8 +16,12 @@ class PostgresDataSourceFactory(
             jdbcUrl = jdbcUrl,
             username = username,
             password = password,
-            minimumPoolSize = 1,
             maximumPoolSize = maximumPoolSize,
+            minimumPoolSize = 1,
+            idleTimeout = Duration.ofMinutes(2),
+            maxLifetime = Duration.ofMinutes(30),
+            keepaliveTime = Duration.ZERO,
+            validationTimeout = Duration.ofSeconds(5),
         )
     }
 }

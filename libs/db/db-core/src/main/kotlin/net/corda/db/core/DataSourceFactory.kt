@@ -37,11 +37,11 @@ interface DataSourceFactory {
         password: String,
         isAutoCommit: Boolean = false,
         isReadOnly: Boolean = false,
-        maximumPoolSize: Int = 10,
-        minimumPoolSize: Int? = null,
-        idleTimeout: Duration = Duration.ofMinutes(2),
-        maxLifetime: Duration = Duration.ofMinutes(30),
-        keepaliveTime: Duration = Duration.ZERO,
-        validationTimeout: Duration = Duration.ofSeconds(5),
+        maximumPoolSize: Int,
+        minimumPoolSize: Int?,
+        idleTimeout: Duration,
+        maxLifetime: Duration,
+        keepaliveTime: Duration,
+        validationTimeout: Duration,
     ): CloseableDataSource
 }
