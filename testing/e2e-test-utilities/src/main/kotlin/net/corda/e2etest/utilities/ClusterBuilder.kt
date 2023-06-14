@@ -159,6 +159,9 @@ class ClusterBuilder {
             |   } 
             | }""".trimMargin()
 
+    private fun createRbacUserBody(fullName: String, loginName: String) =
+        """{ "fullName" : "$fullName", "loginName" : "$loginName" }"""
+
     /** Create a virtual node */
     fun vNodeCreate(cpiHash: String, x500Name: String) =
         post("/api/v1/virtualnode", vNodeBody(cpiHash, x500Name))
@@ -249,6 +252,13 @@ class ClusterBuilder {
 
     /** Get all RBAC roles */
     fun getRbacRoles() = get("/api/v1/role")
+
+    /** Create new RBAC user */
+    fun createRbacUser(fullName: String, loginName: String) = post("/api/v1/user", createRbacUserBody(fullName, loginName))
+
+    /** Assign a specified role to a specified user */
+    fun assignRoleToUser(loginName: String, roleId: String) =
+        put("/api/v1/user/$loginName/role/$roleId", "")
 
     /** Start a flow */
     fun flowStart(
