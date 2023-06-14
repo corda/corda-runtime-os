@@ -55,7 +55,6 @@ dependencies {
     integrationTestRuntimeOnly project(':components:crypto:crypto-client-hsm-impl')
     integrationTestRuntimeOnly project(':components:db:db-connection-manager-impl')
     integrationTestRuntimeOnly project(':components:membership:membership-group-read-impl')
-    integrationTestRuntimeOnly project(':components:membership:membership-persistence-client-impl')
     integrationTestRuntimeOnly project(':libs:lifecycle:lifecycle-impl')
     integrationTestRuntimeOnly project(':libs:messaging:db-message-bus-impl')
     integrationTestRuntimeOnly project(':libs:messaging:messaging-impl')

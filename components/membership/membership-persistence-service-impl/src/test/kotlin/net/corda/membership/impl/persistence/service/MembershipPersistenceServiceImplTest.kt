@@ -138,7 +138,9 @@ class MembershipPersistenceServiceImplTest {
             cordaAvroSerializationFactory,
             keyEncodingService,
             platformInfoProvider,
-            mock()
+            mock(),
+            mock(),
+            mock(),
         )
         verify(coordinatorFactory).createCoordinator(any(), any())
     }

@@ -24,7 +24,6 @@ import net.corda.layeredpropertymap.toAvro
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleStatus
-import net.corda.membership.groupparams.writer.service.GroupParametersWriterService
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.impl.registration.KeyDetails
 import net.corda.membership.impl.registration.KeysFactory
@@ -113,7 +112,6 @@ class StaticMemberRegistrationService(
     internal val platformInfoProvider: PlatformInfoProvider,
     private val groupParametersFactory: GroupParametersFactory,
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
-    private val groupParametersWriterService: GroupParametersWriterService,
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
     private val membershipQueryClient: MembershipQueryClient,
     private val clock: Clock
@@ -163,8 +161,6 @@ class StaticMemberRegistrationService(
         groupParametersFactory: GroupParametersFactory,
         @Reference(service = VirtualNodeInfoReadService::class)
         virtualNodeInfoReadService: VirtualNodeInfoReadService,
-        @Reference(service = GroupParametersWriterService::class)
-        groupParametersWriterService: GroupParametersWriterService,
         @Reference(service = MembershipGroupReaderProvider::class)
         membershipGroupReaderProvider: MembershipGroupReaderProvider,
         @Reference(service = MembershipQueryClient::class)
@@ -185,7 +181,6 @@ class StaticMemberRegistrationService(
         platformInfoProvider,
         groupParametersFactory,
         virtualNodeInfoReadService,
-        groupParametersWriterService,
         membershipGroupReaderProvider,
         membershipQueryClient,
         UTCClock()
@@ -312,7 +307,6 @@ class StaticMemberRegistrationService(
         val holdingIdentity = memberInfo.holdingIdentity
         // Persist group parameters for this member, and publish to Kafka.
         persistenceClient.persistGroupParameters(holdingIdentity, signedGroupParameters).getOrThrow()
-        groupParametersWriterService.put(holdingIdentity, signedGroupParameters)
 
         // If this member is a notary, persist updated group parameters for other members who have a vnode set up.
         // Also publish to Kafka.
@@ -326,7 +320,6 @@ class StaticMemberRegistrationService(
                     .filter { virtualNodeInfoReadService.get(it) != null }
                     .forEach {
                         persistenceClient.persistGroupParameters(it, signedGroupParameters).getOrThrow()
-                        groupParametersWriterService.put(it, signedGroupParameters)
                     }
             }.join()
         }

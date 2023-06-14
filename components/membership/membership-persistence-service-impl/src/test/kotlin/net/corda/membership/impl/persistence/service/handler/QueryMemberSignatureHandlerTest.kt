@@ -78,6 +78,8 @@ class QueryMemberSignatureHandlerTest {
         keyEncodingService,
         platformInfoProvider,
         mock(),
+        mock(),
+        mock(),
         transactionTimerFactory
     )
     private val handler = QueryMemberSignatureHandler(service)

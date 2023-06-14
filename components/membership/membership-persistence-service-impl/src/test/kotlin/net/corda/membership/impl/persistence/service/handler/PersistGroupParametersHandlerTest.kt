@@ -15,11 +15,16 @@ import net.corda.data.membership.db.response.command.PersistGroupParametersRespo
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.schema.CordaDb
 import net.corda.membership.datamodel.GroupParametersEntity
+import net.corda.membership.groupparams.writer.service.GroupParametersWriterService
+import net.corda.membership.impl.persistence.service.RecoverableException
+import net.corda.membership.lib.GroupParametersFactory
 import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.EPOCH_KEY
+import net.corda.membership.lib.InternalGroupParameters
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.JpaEntitiesSet
 import net.corda.test.util.time.TestClock
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.virtualnode.toAvro
 import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
@@ -29,6 +34,7 @@ import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
@@ -147,13 +153,21 @@ class PersistGroupParametersHandlerTest {
         } doReturn entityManagerFactory
     }
     private val clock = TestClock(Instant.ofEpochMilli(10))
+    private val internalGroupParameters = mock<InternalGroupParameters>()
+    private val groupParametersFactory = mock<GroupParametersFactory> {
+        on { create(newSignedParams) } doReturn internalGroupParameters
+    }
+    private val groupParametersWriterService = mock<GroupParametersWriterService>()
     private val persistenceHandlerServices = mock<PersistenceHandlerServices> {
         on { cordaAvroSerializationFactory } doReturn serializationFactory
         on { jpaEntitiesRegistry } doReturn registry
         on { dbConnectionManager } doReturn connectionManager
         on { clock } doReturn clock
         on { transactionTimerFactory } doReturn { transactionTimer }
+        on { groupParametersFactory } doReturn groupParametersFactory
+        on { groupParametersWriterService } doReturn groupParametersWriterService
     }
+
     private val handler = PersistGroupParametersHandler(persistenceHandlerServices)
 
     private val requestContext = mock<MembershipRequestContext> {
@@ -226,5 +240,21 @@ class PersistGroupParametersHandlerTest {
             handler.invoke(requestContext, request)
         }
         assertThat(exception).hasMessageContaining("already exist with different parameters")
+    }
+
+    @Test
+    fun `invoke will put the parameters on the wire`() {
+        handler.invoke(requestContext, request)
+
+        verify(groupParametersWriterService).put(identity, internalGroupParameters)
+    }
+
+    @Test
+    fun `fail to put the parameters on the wire will throw an RecoverableException`() {
+        whenever(groupParametersWriterService.put(identity, internalGroupParameters)).doThrow(CordaRuntimeException(""))
+
+        assertThrows<RecoverableException> {
+            handler.invoke(requestContext, request)
+        }
     }
 }
