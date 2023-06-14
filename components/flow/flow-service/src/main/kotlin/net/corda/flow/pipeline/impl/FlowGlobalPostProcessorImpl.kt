@@ -89,8 +89,7 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
                 when (event.payload) {
                     is SessionData -> {
                         flowRecordFactory.createP2PEventRecord(event, cordaAvroSerializationFactory, context.config)
-                    }
-                    else -> {
+                    } else -> {
                         flowRecordFactory.createFlowMapperEventRecord(event.sessionId, event)
                     }
                 }
