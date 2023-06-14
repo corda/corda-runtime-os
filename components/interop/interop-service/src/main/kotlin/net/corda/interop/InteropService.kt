@@ -60,6 +60,7 @@ class InteropService @Activate constructor(
         private const val CONFIG_HANDLE = "CONFIG_HANDLE"
         private const val GROUP_NAME = "interop_alias_translator"
         private const val CLEANUP_TASK = "CLEANUP_TASK"
+        private const val INTEROP_ALIAS_IDENTITY_TOPIC = "interop.alias.identity"
     }
 
     private val coordinator = coordinatorFactory.createCoordinator<InteropService>(::eventHandler)
@@ -111,6 +112,15 @@ class InteropService @Activate constructor(
             subscriptionFactory.createCompactedSubscription(
                 SubscriptionConfig(GROUP_NAME, Schemas.P2P.P2P_HOSTED_IDENTITIES_TOPIC),
                 InteropAliasProcessor(publisher!!),
+                messagingConfig).also {
+                it.start()
+            }
+        }
+
+        coordinator.createManagedResource("InteropAliasIdentityProcessor.subscription") {
+            subscriptionFactory.createCompactedSubscription(
+                SubscriptionConfig(GROUP_NAME, INTEROP_ALIAS_IDENTITY_TOPIC),
+                InteropIdentityProcessor(),
                 messagingConfig).also {
                 it.start()
             }
