@@ -1,5 +1,6 @@
 package net.corda.flow.pipeline.impl
 
+import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.mapper.FlowMapperEvent
@@ -8,12 +9,7 @@ import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.state.external.ExternalEventState
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
-import net.corda.flow.ALICE_X500_HOLDING_IDENTITY
-import net.corda.flow.ALICE_X500_NAME
-import net.corda.flow.BOB_X500_HOLDING_IDENTITY
-import net.corda.flow.BOB_X500_NAME
-import net.corda.flow.FLOW_ID_1
-import net.corda.flow.REQUEST_ID_1
+import net.corda.flow.*
 import net.corda.flow.external.events.impl.ExternalEventManager
 import net.corda.flow.pipeline.exceptions.FlowPlatformException
 import net.corda.flow.pipeline.factory.FlowMessageFactory
@@ -26,21 +22,12 @@ import net.corda.messaging.api.records.Record
 import net.corda.session.manager.SessionManager
 import net.corda.virtualnode.HoldingIdentity
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.Assertions.assertFalse
-import org.junit.jupiter.api.Assertions.assertThrows
-import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.params.provider.Arguments
-import org.mockito.kotlin.any
-import org.mockito.kotlin.anyOrNull
-import org.mockito.kotlin.eq
-import org.mockito.kotlin.mock
-import org.mockito.kotlin.never
-import org.mockito.kotlin.times
-import org.mockito.kotlin.verify
-import org.mockito.kotlin.whenever
+import org.mockito.kotlin.*
 import java.time.Instant
 import java.util.stream.Stream
 
@@ -108,6 +95,7 @@ class FlowGlobalPostProcessorImplTest {
     private val flowRecordFactory = mock<FlowRecordFactory>()
     private val membershipGroupReaderProvider = mock<MembershipGroupReaderProvider>()
     private val membershipGroupReader = mock<MembershipGroupReader>()
+    private val cordaAvroSerializationFactory = mock<CordaAvroSerializationFactory>()
     private val flowMessageFactory = mock<FlowMessageFactory>()
     private val checkpoint = mock<FlowCheckpoint>()
     private val testContext = buildFlowEventContext(checkpoint, Any())
@@ -116,7 +104,8 @@ class FlowGlobalPostProcessorImplTest {
         sessionManager,
         flowMessageFactory,
         flowRecordFactory,
-        membershipGroupReaderProvider
+        membershipGroupReaderProvider,
+        cordaAvroSerializationFactory
     )
 
     @Suppress("Unused")

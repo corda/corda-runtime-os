@@ -91,8 +91,7 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
                     is SessionData -> {
                         log.info("**** Encountered Session Data, creating p2p record")
                         flowRecordFactory.createP2PEventRecord(event, cordaAvroSerializationFactory, context.config)
-                    }
-                    else -> {
+                    } else -> {
                         flowRecordFactory.createFlowMapperEventRecord(event.sessionId, event)
                     }
                 }
