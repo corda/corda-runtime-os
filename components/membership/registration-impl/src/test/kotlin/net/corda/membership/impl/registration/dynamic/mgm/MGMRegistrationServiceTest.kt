@@ -37,9 +37,9 @@ import net.corda.membership.impl.registration.TEST_PLATFORM_VERSION
 import net.corda.membership.impl.registration.TEST_SOFTWARE_VERSION
 import net.corda.membership.impl.registration.buildMockPlatformInfoProvider
 import net.corda.membership.impl.registration.buildTestVirtualNodeInfo
+import net.corda.membership.lib.MemberInfoExtension
 import net.corda.membership.lib.MemberInfoExtension.Companion.CREATION_TIME
 import net.corda.membership.lib.MemberInfoExtension.Companion.ECDH_KEY
-import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.IS_MGM
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_CPI_NAME
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_CPI_SIGNER_HASH
@@ -55,10 +55,10 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.SESSION_KEYS_HASH
 import net.corda.membership.lib.MemberInfoExtension.Companion.SOFTWARE_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.lib.MemberInfoExtension.Companion.URL_KEY
-import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
+import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.SignedGroupParameters
-import net.corda.membership.lib.impl.MemberInfoFactoryImpl
+import net.corda.membership.lib.SignedMemberInfo
 import net.corda.membership.lib.impl.converter.EndpointInfoConverter
 import net.corda.membership.lib.impl.converter.MemberNotaryDetailsConverter
 import net.corda.membership.lib.registration.RegistrationRequest
@@ -97,7 +97,6 @@ import org.mockito.Mockito
 import org.mockito.kotlin.KArgumentCaptor
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
-import org.mockito.kotlin.argThat
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doNothing
@@ -106,7 +105,6 @@ import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
-import org.mockito.kotlin.spy
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
@@ -114,6 +112,7 @@ import java.nio.ByteBuffer
 import java.security.PublicKey
 import java.util.Calendar
 import java.util.GregorianCalendar
+import java.util.SortedMap
 import java.util.UUID
 
 class MGMRegistrationServiceTest {
@@ -122,14 +121,14 @@ class MGMRegistrationServiceTest {
         const val SESSION_KEY_ID = "ABC123456789"
         const val ECDH_KEY_STRING = "5678"
         const val ECDH_KEY_ID = "BBC123456789"
+        const val GROUP_ID = "43b5b6e6-4f2d-498f-8b41-5e2f8f97e7e8"
 
         private val trustrootCert = this::class.java.getResource("/r3Com.pem")!!.readText()
     }
 
-    private val groupId = "43b5b6e6-4f2d-498f-8b41-5e2f8f97e7e8"
     private val registrationRequest = UUID(1L, 2L)
     private val mgmName = MemberX500Name("Corda MGM", "London", "GB")
-    private val mgm = HoldingIdentity(mgmName, groupId)
+    private val mgm = HoldingIdentity(mgmName, GROUP_ID)
     private val mgmId = mgm.shortHash
     private val sessionKey: PublicKey = mock {
         on { encoded } doReturn SESSION_KEY_STRING.toByteArray()
@@ -239,12 +238,38 @@ class MGMRegistrationServiceTest {
     private val cordaAvroSerializationFactory = mock<CordaAvroSerializationFactory> {
         on { createAvroSerializer<KeyValuePairList>(any()) } doReturn keyValuePairListSerializer
     }
-    private val memberInfoFactory: MemberInfoFactory = spy(
-        MemberInfoFactoryImpl(
-            layeredPropertyMapFactory,
-            cordaAvroSerializationFactory,
-        )
+
+    private val memberInfo = mock<MemberInfo>()
+    private val signedMemberInfo = mock<SignedMemberInfo> {
+        on { memberContextBytes } doReturn byteArrayOf(1)
+        on { memberProvidedContext } doReturn mock()
+        on { mgmProvidedContext } doReturn mock()
+        on { name } doReturn mgmName
+        on { groupId } doReturn GROUP_ID
+    }
+    private val persistentMemberInfo = mock<PersistentMemberInfo>()
+    private val signature = CryptoSignatureWithKey(
+        ByteBuffer.wrap(byteArrayOf()),
+        ByteBuffer.wrap(byteArrayOf())
     )
+    private val signatureSpec = CryptoSignatureSpec("", null, null)
+    private val memberInfoFactory: MemberInfoFactory = mock {
+        on { createMemberInfo(any<SortedMap<String, String?>>(), any()) } doReturn memberInfo
+        on { createSignedMemberInfo(
+                eq(memberInfo),
+                eq(signature),
+                eq(signatureSpec),
+            )
+        } doReturn signedMemberInfo
+        on {
+            createPersistentMemberInfo(
+                eq(mgm.toAvro()),
+                eq(signedMemberInfo),
+                eq(signature),
+                eq(signatureSpec),
+            )
+        } doReturn persistentMemberInfo
+    }
     private val membershipSchemaValidator: MembershipSchemaValidator = mock()
     private val membershipSchemaValidatorFactory: MembershipSchemaValidatorFactory = mock {
         on { createValidator() } doReturn membershipSchemaValidator
@@ -333,15 +358,13 @@ class MGMRegistrationServiceTest {
         fun `registration successfully builds MGM info and publishes it`() {
             postUpEvent()
             registrationService.start()
-            val capturedMemberInfo = argumentCaptor<MemberInfo>()
+            val capturedContext = argumentCaptor<SortedMap<String, String?>>()
 
             val publishedList = registrationService.register(registrationRequest, mgm, properties)
 
-            verify(memberInfoFactory).createPersistentMemberInfo(
-                eq(mgm.toAvro()),
-                capturedMemberInfo.capture(),
-                eq(CryptoSignatureWithKey(ByteBuffer.wrap(byteArrayOf()), ByteBuffer.wrap(byteArrayOf()))),
-                eq(CryptoSignatureSpec("", null, null)),
+            verify(memberInfoFactory).createMemberInfo(
+                capturedContext.capture(),
+                capturedContext.capture(),
             )
             val publishedMgmInfo = publishedList.first()
             val publishedEvent = publishedList.last()
@@ -355,11 +378,11 @@ class MGMRegistrationServiceTest {
                 it.assertThat(publishedMgmInfo.key).isEqualTo(expectedRecordKey)
                 it.assertThat(publishedEvent.key).isEqualTo(mgmId.value)
                 it.assertThat(publishedMgmInfo.value).isInstanceOf(PersistentMemberInfo::class.java)
-                val memberInfo = capturedMemberInfo.firstValue
-                it.assertThat(memberInfo.memberProvidedContext.entries.map { item -> item.key })
+                val memberProvidedContext = capturedContext.firstValue
+                it.assertThat(memberProvidedContext.entries.map { item -> item.key })
                     .containsExactlyInAnyOrderElementsOf(
                         listOf(
-                            GROUP_ID,
+                            MemberInfoExtension.GROUP_ID,
                             PARTY_NAME,
                             PARTY_SESSION_KEYS_PEM.format(0),
                             SESSION_KEYS_HASH.format(0),
@@ -373,7 +396,8 @@ class MGMRegistrationServiceTest {
                             PROTOCOL_VERSION.format(0),
                         )
                     )
-                it.assertThat(memberInfo.mgmProvidedContext.entries.map { item -> item.key })
+                val mgmProvidedContext = capturedContext.secondValue
+                it.assertThat(mgmProvidedContext.entries.map { item -> item.key })
                     .containsExactlyInAnyOrderElementsOf(
                         listOf(
                             CREATION_TIME,
@@ -385,15 +409,17 @@ class MGMRegistrationServiceTest {
                     )
 
                 fun getProperty(prop: String): String {
-                    return memberInfo.memberProvidedContext.entries.firstOrNull { item ->
+                    return memberProvidedContext.entries.firstOrNull { item ->
                             item.key == prop
-                        }?.value ?: memberInfo.mgmProvidedContext.entries.firstOrNull { item ->
+                        }?.value ?: mgmProvidedContext.entries.firstOrNull { item ->
                         item.key == prop
                     }?.value ?: fail("Could not find property within published member for test")
                 }
 
                 it.assertThat(getProperty(PARTY_NAME)).isEqualTo(mgmName.toString())
-                it.assertThat(getProperty(GROUP_ID)).isEqualTo(groupId)
+                it.assertThat(getProperty(MemberInfoExtension.GROUP_ID)).isEqualTo(
+                    GROUP_ID
+                )
                 it.assertThat(getProperty(STATUS)).isEqualTo(MEMBER_STATUS_ACTIVE)
                 it.assertThat(getProperty(IS_MGM)).isEqualTo("true")
                 it.assertThat(getProperty(PLATFORM_VERSION)).isEqualTo(TEST_PLATFORM_VERSION.toString())
@@ -458,20 +484,7 @@ class MGMRegistrationServiceTest {
 
             verify(membershipPersistenceClient).persistMemberInfo(
                 eq(mgm),
-                argThat {
-                    this.size == 1 &&
-                            this.first().memberInfo.isMgm &&
-                            this.first().memberInfo.name == mgmName &&
-                            this.first().memberSignature == CryptoSignatureWithKey(
-                                ByteBuffer.wrap(byteArrayOf()),
-                                ByteBuffer.wrap(byteArrayOf())
-                            ) &&
-                            this.first().memberSignatureSpec == CryptoSignatureSpec(
-                                "",
-                                null,
-                                null
-                            )
-                }
+                eq(listOf(signedMemberInfo)),
             )
         }
 

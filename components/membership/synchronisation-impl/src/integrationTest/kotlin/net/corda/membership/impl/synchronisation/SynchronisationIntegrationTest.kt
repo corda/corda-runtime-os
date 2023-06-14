@@ -423,7 +423,7 @@ class SynchronisationIntegrationTest {
             mgm.toCorda(),
             listOf(mgmInfo, requesterInfo, participantInfo)
         )
-        val requesterHash = merkleTreeGenerator.generateTree(listOf(requesterInfo)).root
+        val requesterHash = merkleTreeGenerator.generateTreeUsingSignedMembers(listOf(requesterInfo)).root
         val byteBuffer = ByteBuffer.wrap("123".toByteArray())
         val secureHash = SecureHash("algorithm", byteBuffer)
 
@@ -524,7 +524,7 @@ class SynchronisationIntegrationTest {
                 mgm.toCorda().shortHash.value,
                 mgmSessionKey,
                 mgmSignatureSpec,
-                merkleTreeGenerator.generateTree(listOf(it)).root.bytes
+                merkleTreeGenerator.generateTreeUsingSignedMembers(listOf(it)).root.bytes
             ).let { withKey ->
                 CryptoSignatureWithKey(
                     ByteBuffer.wrap(keyEncodingService.encodeAsByteArray(withKey.by)),
@@ -548,7 +548,7 @@ class SynchronisationIntegrationTest {
                 )
                 .build()
         }
-        val hash = merkleTreeGenerator.generateTree(members).root
+        val hash = merkleTreeGenerator.generateTreeUsingSignedMembers(members).root
         val membership = SignedMemberships.newBuilder()
             .setMemberships(signedMembers)
             .setHashCheck(hash.toAvro())

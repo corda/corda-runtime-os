@@ -65,7 +65,7 @@ internal class MGMRegistrationMemberInfoHandler(
         context: Map<String, String>
     ): SignedMemberInfo {
         logger.info("Started building mgm member info.")
-        return SignedMemberInfo(
+        return memberInfoFactory.createSignedMemberInfo(
             buildMgmInfo(holdingIdentity, context),
             CryptoSignatureWithKey(
                 ByteBuffer.wrap(byteArrayOf()),

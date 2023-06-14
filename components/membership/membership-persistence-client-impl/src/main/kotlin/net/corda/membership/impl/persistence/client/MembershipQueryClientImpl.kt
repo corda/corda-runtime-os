@@ -106,8 +106,9 @@ class MembershipQueryClientImpl(
         ).execute("query member info") { payload: MemberInfoQueryResponse ->
             logger.info("Found ${payload.members.size} results.")
             payload.members.map {
-                SignedMemberInfo(
-                    memberInfoFactory.createMemberInfo(it),
+                memberInfoFactory.createSignedMemberInfo(
+                    it.signedMemberContext.data.array(),
+                    it.serializedMgmContext.array(),
                     it.signedMemberContext.signature,
                     it.signedMemberContext.signatureSpec,
                 )

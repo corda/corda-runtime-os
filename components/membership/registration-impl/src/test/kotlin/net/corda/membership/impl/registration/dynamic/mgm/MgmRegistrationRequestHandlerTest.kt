@@ -50,7 +50,11 @@ class MgmRegistrationRequestHandlerTest {
     }
     private val signature = CryptoSignatureWithKey(ByteBuffer.wrap(byteArrayOf()), ByteBuffer.wrap(byteArrayOf()))
     private val signatureSpec = CryptoSignatureSpec("", null, null)
-    private val signedMemberInfo: SignedMemberInfo = SignedMemberInfo(memberInfo, signature, signatureSpec)
+    private val signedMemberInfo: SignedMemberInfo = mock {
+        on { memberContextBytes } doReturn "".toByteArray()
+        on { signature } doReturn signature
+        on { signatureSpec } doReturn signatureSpec
+    }
     private val cordaAvroSerializer: CordaAvroSerializer<KeyValuePairList> = mock {
         on { serialize(any()) } doReturn "".toByteArray()
     }

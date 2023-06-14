@@ -30,7 +30,6 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
 import net.corda.membership.lib.MemberInfoExtension.Companion.notaryDetails
 import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.lib.MemberInfoFactory
-import net.corda.membership.lib.SignedMemberInfo
 import net.corda.membership.lib.registration.RegistrationRequestHelpers.getPreAuthToken
 import net.corda.membership.lib.toMap
 import net.corda.membership.p2p.helpers.P2pRecordsFactory
@@ -135,7 +134,7 @@ internal class StartRegistrationHandler(
             val existingMemberInfos = membershipQueryClient.queryMemberInfo(
                 mgmHoldingId,
                 listOf(pendingMemberHoldingId)
-            ).getOrThrow().map { it.memberInfo }
+            ).getOrThrow()
             // The MemberX500Name is not a duplicate
             validateRegistrationRequest(
                 existingMemberInfos.isEmpty() || registrationRequest.serial != 0L
@@ -174,10 +173,10 @@ internal class StartRegistrationHandler(
             // Validate role-specific information if any role is set
             validateRoleInformation(mgmHoldingId, pendingMemberInfo)
 
-            val signedMemberInfo = SignedMemberInfo(
+            val signedMemberInfo = memberInfoFactory.createSignedMemberInfo(
                 pendingMemberInfo,
                 registrationRequest.memberSignature,
-                registrationRequest.memberSignatureSpec
+                registrationRequest.memberSignatureSpec,
             )
 
             // Persist pending member info

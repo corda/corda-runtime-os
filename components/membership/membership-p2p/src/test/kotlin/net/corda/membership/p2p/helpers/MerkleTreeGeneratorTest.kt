@@ -76,7 +76,7 @@ class MerkleTreeGeneratorTest {
 
     @Test
     fun `generateTree sends the correct data`() {
-        generator.generateTree(listOf(bob, alice))
+        generator.generateTreeUsingSignedMembers(listOf(bob, alice))
 
         assertThat(leaves.firstValue).containsExactly(
             aliceMemberSerialized,
@@ -88,7 +88,7 @@ class MerkleTreeGeneratorTest {
 
     @Test
     fun `generateTree returns the correct data`() {
-        val generatedTree = generator.generateTree(listOf(bob, alice))
+        val generatedTree = generator.generateTreeUsingSignedMembers(listOf(bob, alice))
 
         assertThat(generatedTree).isEqualTo(tree)
     }

@@ -45,6 +45,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.lib.MemberInfoExtension.Companion.URL_KEY
 import net.corda.membership.lib.SignedMemberInfo
 import net.corda.membership.lib.impl.MemberInfoFactoryImpl
+import net.corda.membership.lib.impl.SignedMemberInfoImpl
 import net.corda.membership.lib.impl.converter.EndpointInfoConverter
 import net.corda.membership.p2p.helpers.MembershipPackageFactory
 import net.corda.membership.p2p.helpers.MerkleTreeGenerator
@@ -67,7 +68,6 @@ import net.corda.test.util.time.TestClock
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.merkle.MerkleTree
-import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -169,11 +169,11 @@ class MgmSynchronisationServiceImplTest {
         cordaAvroSerializationFactory,
     )
 
-    private val mgmInfo = createMemberInfo(mgmName)
-    private val aliceInfo = createMemberInfo(aliceName)
-    private val bobInfo = createMemberInfo(bobName)
-    private val daisyInfo = createMemberInfo(daisyName)
-    private val simonInfo = createMemberInfo(simonName, status = MEMBER_STATUS_SUSPENDED)
+    private val mgmInfo = createSignedMemberInfo(mgmName)
+    private val aliceInfo = createSignedMemberInfo(aliceName)
+    private val bobInfo = createSignedMemberInfo(bobName)
+    private val daisyInfo = createSignedMemberInfo(daisyName)
+    private val simonInfo = createSignedMemberInfo(simonName, status = MEMBER_STATUS_SUSPENDED)
 
     private val memberInfosWithoutMgm = listOf(aliceInfo, bobInfo, daisyInfo)
     private val groupParameters: InternalGroupParameters = mock()
@@ -195,35 +195,31 @@ class MgmSynchronisationServiceImplTest {
         on { root } doReturn createSecureHash("algorithm2").toCorda()
     }
     private val merkleTreeGenerator: MerkleTreeGenerator = mock {
-        on { generateTree(argThat { contains(aliceInfo) && size == 1 }) } doReturn matchingMerkleTree
-        on { generateTree(argThat { contains(simonInfo) && size == 1 }) } doReturn matchingMerkleTree
-        on { generateTree(argThat { contains(bobInfo) && size == 1 }) } doReturn nonMatchingMerkleTree
-        on { generateTree(argThat { contains(daisyInfo) && size == 1 }) } doReturn nonMatchingMerkleTree
+        on { generateTreeUsingSignedMembers(argThat { contains(aliceInfo) && size == 1 }) } doReturn matchingMerkleTree
+        on { generateTreeUsingSignedMembers(argThat { contains(simonInfo) && size == 1 }) } doReturn matchingMerkleTree
+        on { generateTreeUsingSignedMembers(argThat { contains(bobInfo) && size == 1 }) } doReturn nonMatchingMerkleTree
+        on { generateTreeUsingSignedMembers(argThat { contains(daisyInfo) && size == 1 }) } doReturn nonMatchingMerkleTree
         on {
-            generateTree(
+            generateTreeUsingSignedMembers(
                 argThat { containsAll(memberInfosWithoutMgm) && size == memberInfosWithoutMgm.size }
             )
         } doReturn matchingMerkleTree
     }
-    private val signatures = createSignedInfos(memberInfosWithoutMgm)
-    private val aliceSignature = createSignedInfos(listOf(aliceInfo))
-    private val bobSignature = createSignedInfos(listOf(bobInfo))
-    private val simonSignature = createSignedInfos(listOf(simonInfo))
     private val membershipQueryClient: MembershipQueryClient = mock {
         on {
             queryMemberInfo(eq(mgm.toCorda()), eq(listOf(alice.toCorda())), eq(listOf(MEMBER_STATUS_ACTIVE, MEMBER_STATUS_SUSPENDED)))
         } doReturn MembershipQueryResult.Success(
-            aliceSignature
+            listOf(aliceInfo)
         )
         on {
             queryMemberInfo(eq(mgm.toCorda()), eq(listOf(bob.toCorda())), eq(listOf(MEMBER_STATUS_ACTIVE, MEMBER_STATUS_SUSPENDED)))
         } doReturn MembershipQueryResult.Success(
-            bobSignature
+            listOf(bobInfo)
         )
         on {
             queryMemberInfo(eq(mgm.toCorda()), eq(listOf(simon.toCorda())), eq(listOf(MEMBER_STATUS_ACTIVE, MEMBER_STATUS_SUSPENDED)))
         } doReturn MembershipQueryResult.Success(
-            simonSignature
+            listOf(simonInfo)
         )
         on {
             queryMemberInfo(eq(mgm.toCorda()), eq(listOf(daisy.toCorda())), eq(listOf(MEMBER_STATUS_ACTIVE, MEMBER_STATUS_SUSPENDED)))
@@ -238,7 +234,7 @@ class MgmSynchronisationServiceImplTest {
         on {
             queryMemberInfo(eq(mgm.toCorda()), eq(listOf(MEMBER_STATUS_ACTIVE, MEMBER_STATUS_SUSPENDED)))
         } doReturn MembershipQueryResult.Success(
-            signatures
+            memberInfosWithoutMgm
         )
     }
 
@@ -254,7 +250,7 @@ class MgmSynchronisationServiceImplTest {
         on {
             createMembershipPackage(
                 eq(signer),
-                eq(signatures),
+                eq(memberInfosWithoutMgm),
                 any(),
                 any(),
             )
@@ -262,7 +258,7 @@ class MgmSynchronisationServiceImplTest {
         on {
             createMembershipPackage(
                 eq(signer),
-                eq(bobSignature),
+                eq(listOf(bobInfo)),
                 any(),
                 any(),
             )
@@ -270,7 +266,7 @@ class MgmSynchronisationServiceImplTest {
         on {
             createMembershipPackage(
                 eq(signer),
-                eq(simonSignature),
+                eq(listOf(simonInfo)),
                 any(),
                 any(),
             )
@@ -346,29 +342,32 @@ class MgmSynchronisationServiceImplTest {
         )
     )
 
-    private fun createMemberInfo(name: String, status: String = MEMBER_STATUS_ACTIVE) = memberInfoFactory.createMemberInfo(
-        sortedMapOf(
-            GROUP_ID to GROUP,
-            PARTY_NAME to name,
-            Pair(String.format(URL_KEY, "0"), "http://localhost:8080"),
-            Pair(String.format(PROTOCOL_VERSION, "0"), "1"),
-            PLATFORM_VERSION to "5000",
-            SOFTWARE_VERSION to "5.0.0"
-        ),
-        sortedMapOf(
-            STATUS to status
+    private fun createSignedMemberInfo(name: String, status: String = MEMBER_STATUS_ACTIVE): SignedMemberInfo {
+        val memberInfo = memberInfoFactory.createMemberInfo(
+            sortedMapOf(
+                GROUP_ID to GROUP,
+                PARTY_NAME to name,
+                Pair(String.format(URL_KEY, "0"), "http://localhost:8080"),
+                Pair(String.format(PROTOCOL_VERSION, "0"), "1"),
+                PLATFORM_VERSION to "5000",
+                SOFTWARE_VERSION to "5.0.0"
+            ),
+            sortedMapOf(
+                STATUS to status
+            )
         )
-    )
-
-    private fun createSignedInfos(members: List<MemberInfo>) = members.map {
-        val name = it.name.toString()
-        SignedMemberInfo(
-            it,
+        val memberBytes = "member-$name".toByteArray()
+        val mgmBytes = "mgm-$name".toByteArray()
+        whenever(memberInfoFactory.createMemberInfo(memberBytes, mgmBytes)).doReturn(memberInfo)
+        return SignedMemberInfoImpl(
+            memberBytes,
+            mgmBytes,
             CryptoSignatureWithKey(
                 ByteBuffer.wrap("pk-$name".toByteArray()),
                 ByteBuffer.wrap("sig-$name".toByteArray()),
             ),
             CryptoSignatureSpec("dummy", null, null),
+            memberInfoFactory,
         )
     }
 
@@ -535,7 +534,7 @@ class MgmSynchronisationServiceImplTest {
         verify(mockPublisher, times(1)).publish(eq(listOf(allMembershipPackageRecord)))
         val membersPublished = capturedList.firstValue
         assertThat(membersPublished.size).isEqualTo(3)
-        assertThat(membersPublished).isEqualTo(signatures)
+        assertThat(membersPublished).isEqualTo(memberInfosWithoutMgm)
         synchronisationService.stop()
     }
 
@@ -555,7 +554,7 @@ class MgmSynchronisationServiceImplTest {
         verify(mockPublisher, times(1)).publish(eq(listOf(bobMembershipPackageRecord)))
         val membersPublished = capturedList.firstValue
         assertThat(membersPublished.size).isEqualTo(1)
-        assertThat(membersPublished).isEqualTo(bobSignature)
+        assertThat(membersPublished).isEqualTo(bobInfo)
         synchronisationService.stop()
     }
 
@@ -575,7 +574,7 @@ class MgmSynchronisationServiceImplTest {
         verify(mockPublisher, times(1)).publish(eq(listOf(simonMembershipPackageRecord)))
         val membersPublished = capturedList.firstValue
         assertThat(membersPublished.size).isEqualTo(1)
-        assertThat(membersPublished).isEqualTo(simonSignature)
+        assertThat(membersPublished).isEqualTo(simonInfo)
         synchronisationService.stop()
     }
 

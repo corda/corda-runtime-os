@@ -85,7 +85,6 @@ class MgmSynchronisationServiceImpl internal constructor(
         val membershipPackageFactory by lazy {
             MembershipPackageFactory(
                 clock,
-                cordaAvroSerializationFactory,
                 cipherSchemeMetadata,
                 DistributionType.SYNC,
                 merkleTreeGenerator,
@@ -226,13 +225,13 @@ class MgmSynchronisationServiceImpl internal constructor(
             val allNonPendingMembersExcludingMgm = services.membershipQueryClient.queryMemberInfo(
                 mgm.toCorda(),
                 listOf(MEMBER_STATUS_ACTIVE, MEMBER_STATUS_SUSPENDED),
-            ).getOrThrow().filterNot { it.memberInfo.isMgm }
+            ).getOrThrow().filterNot { it.isMgm }
             val groupParameters = groupReader.groupParameters
                 ?: throw CordaRuntimeException("Failed to retrieve group parameters for building membership packages.")
-            if (compareHashes(memberHashFromTheReq.toCorda(), requesterInfo.memberInfo)) {
+            if (compareHashes(memberHashFromTheReq.toCorda(), requesterInfo)) {
                 // member has the latest updates regarding its own membership
                 // will send all membership data from MGM
-                if (requesterInfo.memberInfo.status == MEMBER_STATUS_SUSPENDED) {
+                if (requesterInfo.status == MEMBER_STATUS_SUSPENDED) {
                     sendPackage(
                         mgm,
                         requester,
@@ -276,7 +275,7 @@ class MgmSynchronisationServiceImpl internal constructor(
             syncPackage.forEach { it.getOrThrow() }
         }
 
-        private fun compareHashes(memberHashSeenByMember: SecureHash, requester: MemberInfo):  Boolean {
+        private fun compareHashes(memberHashSeenByMember: SecureHash, requester: SignedMemberInfo):  Boolean {
             val memberHashSeenByMgm = calculateHash(requester)
             if (memberHashSeenByMember != memberHashSeenByMgm) {
                 return false
@@ -284,22 +283,21 @@ class MgmSynchronisationServiceImpl internal constructor(
             return true
         }
 
-        private fun calculateHash(memberInfo: MemberInfo): SecureHash {
-            return services.merkleTreeGenerator.generateTree(listOf(memberInfo)).root
+        private fun calculateHash(memberInfo: SignedMemberInfo): SecureHash {
+            return services.merkleTreeGenerator.generateTreeUsingSignedMembers(listOf(memberInfo)).root
         }
 
         private fun createMembershipPackage(
             mgm: MemberInfo,
-            signedMembers: Collection<SignedMemberInfo>,
+            members: Collection<SignedMemberInfo>,
             groupParameters: InternalGroupParameters,
         ): MembershipPackage {
             val mgmSigner = services.signerFactory.createSigner(mgm)
-            val members = signedMembers.map { it.memberInfo }
-            val membersTree = services.merkleTreeGenerator.generateTree(members)
+            val membersTree = services.merkleTreeGenerator.generateTreeUsingSignedMembers(members)
 
             return services.membershipPackageFactory.createMembershipPackage(
                 mgmSigner,
-                signedMembers,
+                members,
                 membersTree.root,
                 groupParameters,
             )

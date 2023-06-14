@@ -184,7 +184,7 @@ class MGMRegistrationService @Activate constructor(
 
                 expirationProcessor.scheduleProcessingOfExpiredRequests(member)
 
-                mgmRegistrationOutputPublisher.createRecords(mgmInfo.memberInfo)
+                mgmRegistrationOutputPublisher.createRecords(mgmInfo)
             } catch (ex: MGMRegistrationContextValidationException) {
                 throw InvalidMembershipRegistrationException(ex.reason, ex)
             } catch (ex: MGMRegistrationMemberInfoHandlingException) {

@@ -199,7 +199,7 @@ class DistributeMemberInfoActionHandlerTest {
     }
     private val merkleTreeProvider = mock<MerkleTreeProvider>()
     private val merkleTreeGenerator = mock<MerkleTreeGenerator> {
-        on { generateTree(any()) } doReturn merkleTree
+        on { generateTreeUsingSignedMembers(any()) } doReturn merkleTree
     }
     private val membershipPackage = mock<MembershipPackage>()
     private val membershipPackageFactory = mock<MembershipPackageFactory> {

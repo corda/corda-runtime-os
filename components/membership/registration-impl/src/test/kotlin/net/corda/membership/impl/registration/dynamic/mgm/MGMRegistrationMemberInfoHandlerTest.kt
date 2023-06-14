@@ -99,7 +99,10 @@ class MGMRegistrationMemberInfoHandlerTest {
     }
     private val signature = CryptoSignatureWithKey(ByteBuffer.wrap(byteArrayOf()), ByteBuffer.wrap(byteArrayOf()))
     private val signatureSpec = CryptoSignatureSpec("", null, null)
-    private val signedMemberInfo: SignedMemberInfo = SignedMemberInfo(memberInfo, signature, signatureSpec)
+    private val signedMemberInfo = mock<SignedMemberInfo> {
+        on { memberSignature } doReturn signature
+        on { memberSignatureSpec } doReturn signatureSpec
+    }
     private val memberContextCaptor = argumentCaptor<SortedMap<String, String?>>()
     private val memberContext
         get() = assertDoesNotThrow { memberContextCaptor.firstValue }
@@ -160,6 +163,7 @@ class MGMRegistrationMemberInfoHandlerTest {
     }
     private val memberInfoFactory: MemberInfoFactory = mock {
         on { createMemberInfo(memberContextCaptor.capture(), mgmContextCaptor.capture()) } doReturn memberInfo
+        on { createSignedMemberInfo(memberInfo, signature, signatureSpec) } doReturn signedMemberInfo
     }
     private val operation = mock<MembershipPersistenceOperation<Unit>> {
         on { execute() } doReturn MembershipPersistenceResult.success()
@@ -305,10 +309,8 @@ class MGMRegistrationMemberInfoHandlerTest {
         }
 
         SoftAssertions.assertSoftly {
-            it.assertThat(result.memberSignature)
-                .isEqualTo(CryptoSignatureWithKey(ByteBuffer.wrap(byteArrayOf()), ByteBuffer.wrap(byteArrayOf())))
-            it.assertThat(result.memberSignatureSpec)
-                .isEqualTo(CryptoSignatureSpec("", null, null))
+            it.assertThat(result.memberSignature).isEqualTo(signature)
+            it.assertThat(result.memberSignatureSpec).isEqualTo(signatureSpec)
         }
     }
 

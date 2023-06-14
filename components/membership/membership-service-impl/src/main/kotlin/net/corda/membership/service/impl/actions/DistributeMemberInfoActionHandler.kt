@@ -60,7 +60,6 @@ class DistributeMemberInfoActionHandler(
     ),
     private val membershipPackageFactory: MembershipPackageFactory = MembershipPackageFactory(
         clock,
-        cordaAvroSerializationFactory,
         cipherSchemeMetadata,
         DistributionType.STANDARD,
         merkleTreeGenerator,
@@ -81,7 +80,7 @@ class DistributeMemberInfoActionHandler(
                 listOf(updatedMember.toCorda()),
                 listOf(MEMBER_STATUS_ACTIVE, MEMBER_STATUS_SUSPENDED)
             )
-        val updatedSignedMemberInfo = when (updatedMemberQuery) {
+        val updatedMemberInfo = when (updatedMemberQuery) {
             is MembershipQueryResult.Success -> updatedMemberQuery.payload
             is MembershipQueryResult.Failure -> return recordToRequeueDistribution(key, request) {
                 logger.warn("Failed to query for updated member's info: ${updatedMemberQuery.errorMsg}." +
@@ -91,7 +90,6 @@ class DistributeMemberInfoActionHandler(
             logger.info("The MemberInfo retrieved from the message bus for ${updatedMember.x500Name} is not present yet. " +
                     "Republishing the distribute command to be processed later when the MemberInfo is available.")
         }
-        val updatedMemberInfo = updatedSignedMemberInfo.memberInfo
 
         request.minimumUpdatedMemberSerial?.let {
             if (request.minimumUpdatedMemberSerial > updatedMemberInfo.serial) {
@@ -127,23 +125,23 @@ class DistributeMemberInfoActionHandler(
                 approvedBy.toCorda(),
                 listOf(MEMBER_STATUS_ACTIVE, MEMBER_STATUS_SUSPENDED)
             )
-        val allNonPendingSignedMemberInfo = when (allNonPendingMembersQuery) {
+        val allNonPendingMemberInfo = when (allNonPendingMembersQuery) {
             is MembershipQueryResult.Success -> allNonPendingMembersQuery.payload
             is MembershipQueryResult.Failure -> return recordToRequeueDistribution(key, request) {
                 logger.warn("Failed to query for membership group's info: ${allNonPendingMembersQuery.errorMsg}." +
                         "Distributing the member info will be reattempted.")
             }
         }
-        val allNonPendingSignedMembersExcludingMgm = allNonPendingSignedMemberInfo.filterNot { it.memberInfo.isMgm }
+        val allNonPendingMembersExcludingMgm = allNonPendingMemberInfo.filterNot { it.isMgm }
         //If the updated member is suspended then we only send its own member info to itself (so it can tell it has been suspended).
         val membersToDistributeToUpdatedMember = if (updatedMemberInfo.status == MEMBER_STATUS_SUSPENDED) {
-            listOf(updatedSignedMemberInfo)
+            listOf(updatedMemberInfo)
         } else {
-            allNonPendingSignedMembersExcludingMgm
+            allNonPendingMembersExcludingMgm
         }
 
-        val mgm = allNonPendingSignedMemberInfo.first { it.memberInfo.isMgm }
-        val membershipPackageFactory = createMembershipPackageFactory(mgm.memberInfo, membersToDistributeToUpdatedMember)
+        val mgm = allNonPendingMemberInfo.first { it.isMgm }
+        val membershipPackageFactory = createMembershipPackageFactory(mgm, membersToDistributeToUpdatedMember)
 
         // Send all approved members from the same group to the newly approved member over P2P
         val membersToDistributeToUpdatedMemberPackage = try {
@@ -164,7 +162,7 @@ class DistributeMemberInfoActionHandler(
 
         // Send the newly approved member to all other members in the same group over P2P
         val memberPackage = try {
-            membershipPackageFactory(listOf(updatedSignedMemberInfo), groupParameters)
+            membershipPackageFactory(listOf(updatedMemberInfo), groupParameters)
         } catch (except: CordaRuntimeException) {
             return recordToRequeueDistribution(key, request) {
                 logger.warn("Failed to create membership package for distribution of the $updatedMember to the rest of the group. " +
@@ -172,12 +170,12 @@ class DistributeMemberInfoActionHandler(
             }
         }
 
-        val updatedMemberToAllMembers = allNonPendingSignedMembersExcludingMgm.filter {
-            it.memberInfo.holdingIdentity != updatedMember.toCorda() && it.memberInfo.isActive
+        val updatedMemberToAllMembers = allNonPendingMembersExcludingMgm.filter {
+            it.holdingIdentity != updatedMember.toCorda() && it.isActive
         }.map { memberToSendUpdateTo ->
             p2pRecordsFactory.createAuthenticatedMessageRecord(
                 source = approvedBy,
-                destination = memberToSendUpdateTo.memberInfo.holdingIdentity.toAvro(),
+                destination = memberToSendUpdateTo.holdingIdentity.toAvro(),
                 content = memberPackage,
                 minutesToWait = membershipConfig.getTtlMinutes(MembershipConfig.TtlsConfig.MEMBERS_PACKAGE_UPDATE),
             )
@@ -200,7 +198,7 @@ class DistributeMemberInfoActionHandler(
         members: Collection<SignedMemberInfo>,
     ): (Collection<SignedMemberInfo>, InternalGroupParameters) -> MembershipPackage {
         val mgmSigner = signerFactory.createSigner(mgm)
-        val membersTree = merkleTreeGenerator.generateTree(members.map { it.memberInfo })
+        val membersTree = merkleTreeGenerator.generateTreeUsingSignedMembers(members)
 
         return { membersToSend, groupParameters ->
             membershipPackageFactory.createMembershipPackage(

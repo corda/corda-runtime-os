@@ -250,7 +250,7 @@ class MemberSynchronisationServiceImplTest {
         on { root } doReturn hash.toCorda()
     }
     private val merkleTreeGenerator = mock<MerkleTreeGenerator> {
-        on { generateTree(any()) } doReturn tree
+        on { generateTreeUsingSignedMembers(any()) } doReturn tree
         on { createTree(any()) } doReturn tree
     }
     private val memberMgmContext = mock<MGMContext> {
@@ -641,7 +641,7 @@ class MemberSynchronisationServiceImplTest {
 
         verify(
             merkleTreeGenerator
-        ).generateTree(
+        ).generateTreeUsingSignedMembers(
             argThat {
                 this.contains(memberInfo) && this.contains(participant) && !this.contains(mgmInfo)
             }
@@ -659,7 +659,7 @@ class MemberSynchronisationServiceImplTest {
 
         verify(
             merkleTreeGenerator
-        ).generateTree(
+        ).generateTreeUsingSignedMembers(
             listOf(participant)
         )
     }
@@ -680,7 +680,7 @@ class MemberSynchronisationServiceImplTest {
 
         verify(
             merkleTreeGenerator
-        ).generateTree(
+        ).generateTreeUsingSignedMembers(
             listOf(memberInfo)
         )
     }

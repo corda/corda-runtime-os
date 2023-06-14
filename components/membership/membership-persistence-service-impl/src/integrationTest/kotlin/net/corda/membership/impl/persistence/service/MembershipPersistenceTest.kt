@@ -1100,7 +1100,7 @@ class MembershipPersistenceTest {
             listOf(MEMBER_STATUS_ACTIVE)
         ).getOrThrow()
         assertThat(result).hasSize(1)
-        with(result.first().memberInfo) {
+        with(result.first()) {
             assertThat(name).isEqualTo(bobId.x500Name)
             assertTrue(isActive)
         }
@@ -1138,7 +1138,7 @@ class MembershipPersistenceTest {
             viewOwningHoldingIdentity,
             signatures.keys
         ).getOrThrow().associate {
-            it.memberInfo.holdingIdentity to Pair(it.memberSignature, it.memberSignatureSpec)
+            it.holdingIdentity to Pair(it.memberSignature, it.memberSignatureSpec)
         }
         assertThat(results).containsAllEntriesOf(signatures)
     }

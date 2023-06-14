@@ -332,10 +332,10 @@ class MemberSynchronisationServiceImpl internal constructor(
                     val viewOwnerShortHash = viewOwningMember.shortHash.value
                     val latestViewOwnerMemberInfo = updateMembersInfo[viewOwnerShortHash] ?: knownMembers[viewOwnerShortHash]
                     val expectedHash = if (latestViewOwnerMemberInfo?.status == MEMBER_STATUS_SUSPENDED) {
-                        merkleTreeGenerator.generateTree(listOf(latestViewOwnerMemberInfo)).root
+                        merkleTreeGenerator.generateTreeUsingMembers(listOf(latestViewOwnerMemberInfo)).root
                     } else {
                         val allMembers = knownMembers + updateMembersInfo
-                        merkleTreeGenerator.generateTree(allMembers.values).root
+                        merkleTreeGenerator.generateTreeUsingMembers(allMembers.values).root
                     }
                     if (packageHash != expectedHash) {
                         persistentMemberInfoRecords + createSynchronisationRequestMessage(
@@ -397,7 +397,7 @@ class MemberSynchronisationServiceImpl internal constructor(
             memberIdentity.x500Name,
             MembershipStatusFilter.ACTIVE_OR_SUSPENDED
         ) ?: throw CordaRuntimeException("Unknown member $memberIdentity")
-        val memberHash = merkleTreeGenerator.generateTree(listOf(member))
+        val memberHash = merkleTreeGenerator.generateTreeUsingMembers(listOf(member))
             .root
             .toAvro()
         return p2pRecordsFactory.createAuthenticatedMessageRecord(
