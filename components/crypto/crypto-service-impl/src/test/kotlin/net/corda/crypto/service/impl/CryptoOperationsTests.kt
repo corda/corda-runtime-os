@@ -218,7 +218,7 @@ class CryptoOperationsTests {
                 assertEquals(category, key.category)
             }
             assertEquals(scheme.codeName, key.schemeCodeName)
-            assertThat(key.masterKeyAlias).isNotBlank
+            assertThat(key.wrappingKeyAlias).isNotBlank
             assertEquals(1, key.encodingVersion)
             assertArrayEquals(publicKey.encoded, key.publicKey)
         }

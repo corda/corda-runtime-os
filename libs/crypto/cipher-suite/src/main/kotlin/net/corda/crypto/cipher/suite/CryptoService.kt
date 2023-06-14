@@ -64,7 +64,7 @@ interface CryptoService {
      * @param context the optional key/value operation context. The context will have at least two variables defined -
      * 'tenantId' and 'category'.
      *
-     * @return Information about the generated key, could be either [GeneratedPublicKey] or [GeneratedWrappedKey]
+     * @return Information about the generated key
      * depending on how the key is generated and persisted or wrapped and exported.
      *
      * @throws IllegalArgumentException the key scheme is not supported or in general the input parameters are wrong
@@ -73,12 +73,12 @@ interface CryptoService {
     fun generateKeyPair(
         spec: KeyGenerationSpec,
         context: Map<String, String>
-    ): GeneratedKey
+    ): GeneratedWrappedKey
 
     /**
      * Signs a byte array using the private key identified by the input arguments.
      *
-     * @param spec (either [SigningAliasSpec] or [SigningWrappedSpec]) to be used for signing.
+     * @param spec [SigningWrappedSpec] to be used for signing.
      * @param data the data to be signed.
      * @param context the optional key/value operation context. The context will have at least one variable defined -
      * 'tenantId'.
@@ -90,9 +90,9 @@ interface CryptoService {
      * @throws net.corda.v5.crypto.exceptions.CryptoException, non-recoverable
      */
     fun sign(
-        spec: SigningSpec,
+        spec: SigningWrappedSpec,
         data: ByteArray,
-        context: Map<String, String>
+        context: Map<String, String>,
     ): ByteArray
 
     /**
@@ -136,7 +136,7 @@ interface CryptoService {
      * of the [SharedSecretSpec.publicKey] and [SharedSecretSpec.otherPublicKey] must be the same and
      * the scheme must support the key agreement secret derivation.
      *
-     * @param spec the operation parameters, see [SharedSecretAliasSpec] and [SharedSecretWrappedSpec]
+     * @param spec the operation parameters, [SharedSecretWrappedSpec]
      * @param context the optional key/value operation context. The context will have at least one variable defined -
      * 'tenantId'.
      *

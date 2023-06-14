@@ -4,11 +4,8 @@ import com.github.benmanes.caffeine.cache.Cache
 import com.github.benmanes.caffeine.cache.Caffeine
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
-import net.corda.crypto.cipher.suite.GeneratedPublicKey
 import net.corda.crypto.cipher.suite.PlatformDigestService
 import net.corda.crypto.cipher.suite.SignatureSpecImpl
-import net.corda.crypto.cipher.suite.schemes.ECDSA_SECP256R1_TEMPLATE
-import net.corda.crypto.component.test.utils.generateKeyPair
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.ALIAS_FILTER
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.CATEGORY_FILTER
@@ -24,7 +21,6 @@ import net.corda.crypto.persistence.SigningKeyInfo
 import net.corda.crypto.persistence.SigningKeyOrderBy
 import net.corda.crypto.persistence.SigningKeyStatus
 import net.corda.crypto.service.CryptoServiceFactory
-import net.corda.crypto.service.CryptoServiceRef
 import net.corda.crypto.service.KeyOrderBy
 import net.corda.crypto.softhsm.SigningRepository
 import net.corda.crypto.testkit.SecureHashUtils
@@ -43,7 +39,6 @@ import org.junit.jupiter.params.provider.MethodSource
 import org.mockito.ArgumentMatchers.anyString
 import org.mockito.Mockito
 import org.mockito.kotlin.any
-import org.mockito.kotlin.argThat
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
@@ -192,7 +187,7 @@ class SigningServiceGeneralTests {
             hsmAlias = null,
             publicKey = UUID.randomUUID().toString().toByteArray(),
             keyMaterial = UUID.randomUUID().toString().toByteArray(),
-            masterKeyAlias = UUID.randomUUID().toString(),
+            wrappingKeyAlias = UUID.randomUUID().toString(),
             externalId = null,
             schemeCodeName = ECDSA_SECP256R1_CODE_NAME,
             encodingVersion = 1,
@@ -336,75 +331,6 @@ class SigningServiceGeneralTests {
         digestService = mockDigestService(),
         cache = cache ?: makeCache()
     )
-
-    @Test
-    @Suppress("ComplexMethod")
-    fun `Should save generated key with alias`() {
-        val generatedKey = GeneratedPublicKey(
-            publicKey = generateKeyPair(schemeMetadata, ECDSA_SECP256R1_CODE_NAME).public,
-            hsmAlias = UUID.randomUUID().toString()
-        )
-        val expectedAlias = UUID.randomUUID().toString()
-        val signingKeyInfo = mock<SigningKeyInfo> { on { id } doReturn ShortHash.of("1234567890AB") }
-        val repo = mock<SigningRepository> {
-            on { savePublicKey(any()) } doReturn signingKeyInfo
-        }
-        val scheme = ECDSA_SECP256R1_TEMPLATE.makeScheme("BC")
-        val ref = CryptoServiceRef(
-            tenantId = tenantId,
-            category = CryptoConsts.Categories.LEDGER,
-            masterKeyAlias = UUID.randomUUID().toString(),
-            hsmId = UUID.randomUUID().toString(),
-            instance = mock {
-                on { generateKeyPair(any(), any()) } doReturn generatedKey
-            }
-        )
-        val signingService = SigningServiceImpl(
-            signingRepositoryFactory = { repo },
-            cryptoServiceFactory = mock {
-                on { findInstance(tenantId, CryptoConsts.Categories.LEDGER) } doReturn ref
-            },
-            schemeMetadata = schemeMetadata,
-            digestService = mockDigestService(),
-            cache = mock(),
-        )
-        var result = signingService.generateKeyPair(
-            tenantId = tenantId,
-            category = CryptoConsts.Categories.LEDGER,
-            scheme = scheme,
-            alias = expectedAlias
-        )
-        assertThat(generatedKey.publicKey).isEqualTo(result)
-        val expectedExternalId = UUID.randomUUID().toString()
-        result = signingService.generateKeyPair(
-            tenantId = tenantId,
-            category = CryptoConsts.Categories.LEDGER,
-            externalId = expectedExternalId,
-            scheme = scheme,
-            alias = expectedAlias
-        )
-        assertThat(generatedKey.publicKey).isEqualTo(result)
-        verify(repo, times(1)).savePublicKey(
-            argThat {
-                key == generatedKey &&
-                        alias == expectedAlias &&
-                        externalId == null &&
-                        keyScheme == scheme &&
-                        hsmId == ref.hsmId &&
-                        category == ref.category
-            }
-        )
-        verify(repo, times(1)).savePublicKey(
-            argThat {
-                key == generatedKey &&
-                        alias == expectedAlias &&
-                        externalId == expectedExternalId &&
-                        keyScheme == scheme &&
-                        hsmId == ref.hsmId &&
-                        category == ref.category
-            }
-        )
-    }
 
     @Test
     fun `repository can correctly looks up a signing key by short ids`() {

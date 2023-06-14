@@ -2,7 +2,6 @@ package repository
 
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.cipher.suite.impl.PlatformDigestServiceImpl
-import net.corda.crypto.cipher.suite.GeneratedPublicKey
 import net.corda.crypto.cipher.suite.GeneratedWrappedKey
 import net.corda.crypto.cipher.suite.schemes.KeyScheme
 import net.corda.crypto.cipher.suite.schemes.KeySchemeCapability
@@ -74,15 +73,8 @@ class SigningRepositoryTest : CryptoRepositoryTest() {
             status = SigningKeyStatus.NORMAL,
             keyMaterial = privKey,
             encodingVersion = 1,
-            masterKeyAlias = defaultMasterKeyName
+            wrappingKeyAlias = defaultMasterKeyName
         )
-    }
-
-    private fun createGeneratedPublicKey(info: SigningKeyInfo): GeneratedPublicKey {
-        val pubKey = mock<PublicKey> {
-            on { encoded } doReturn(info.publicKey)
-        }
-        return GeneratedPublicKey(pubKey, info.hsmAlias!!)
     }
 
     private fun createGeneratedWrappedKey(info: SigningKeyInfo): GeneratedWrappedKey {
@@ -162,7 +154,7 @@ class SigningRepositoryTest : CryptoRepositoryTest() {
         val privKey = createGeneratedWrappedKey(info)
         return SigningWrappedKeySaveContext(
             key = privKey,
-            masterKeyAlias = info.masterKeyAlias,
+            wrappingKeyAlias = info.wrappingKeyAlias,
             externalId = info.externalId,
             alias = info.alias,
             category = info.category,
@@ -176,7 +168,7 @@ class SigningRepositoryTest : CryptoRepositoryTest() {
     @MethodSource("emfs")
     fun `savePrivateKey and find by alias`(emf: EntityManagerFactory) {
         val info = createSigningKeyInfo()
-        saveWrappingKey(emf, info.masterKeyAlias!!)
+        saveWrappingKey(emf, info.wrappingKeyAlias)
 
         val ctx = createSigningWrappedKeySaveContext(info)
 
@@ -201,7 +193,7 @@ class SigningRepositoryTest : CryptoRepositoryTest() {
     @MethodSource("emfs")
     fun `savePrivateKey twice fails`(emf: EntityManagerFactory) {
         val info = createSigningKeyInfo()
-        saveWrappingKey(emf, info.masterKeyAlias!!)
+        saveWrappingKey(emf, info.wrappingKeyAlias)
 
         val ctx = createSigningWrappedKeySaveContext(info)
 
@@ -223,7 +215,7 @@ class SigningRepositoryTest : CryptoRepositoryTest() {
     @MethodSource("emfs")
     fun `save same key for 2 tenants should work`(emf: EntityManagerFactory) {
         val info = createSigningKeyInfo()
-        saveWrappingKey(emf, info.masterKeyAlias!!)
+        saveWrappingKey(emf, info.wrappingKeyAlias)
 
         val ctx = createSigningWrappedKeySaveContext(info)
 

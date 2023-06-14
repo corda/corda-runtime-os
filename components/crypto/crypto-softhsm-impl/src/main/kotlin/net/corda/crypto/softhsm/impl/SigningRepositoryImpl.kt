@@ -14,7 +14,6 @@ import net.corda.crypto.persistence.SigningKeyFilterMapImpl
 import net.corda.crypto.persistence.SigningKeyInfo
 import net.corda.crypto.persistence.SigningKeyOrderBy
 import net.corda.crypto.persistence.SigningKeyStatus
-import net.corda.crypto.persistence.SigningPublicKeySaveContext
 import net.corda.crypto.persistence.SigningWrappedKeySaveContext
 import net.corda.crypto.persistence.alias
 import net.corda.crypto.persistence.category
@@ -49,41 +48,6 @@ class SigningRepositoryImpl(
 ) : SigningRepository {
     override fun close() = entityManagerFactory.close()
 
-    // TODO - share code between the two save*Key methods
-    /**
-     * If short key id clashes with existing key for this [tenantId], [save] will fail. It will fail upon
-     * persisting to the DB due to unique constraint of <tenant id, short key id>.
-     */
-    override fun savePublicKey(context: SigningPublicKeySaveContext): SigningKeyInfo {
-        val publicKeyBytes = keyEncodingService.encodeAsByteArray(context.key.publicKey)
-        val keyId = publicKeyIdFromBytes(publicKeyBytes)
-        val fullKeyId = fullPublicKeyIdFromBytes(publicKeyBytes, digestService)
-        val now = Instant.now()
-        val entity = SigningKeyEntity(
-            id = UUID.randomUUID(),
-            tenantId = tenantId,
-            keyId = keyId,
-            fullKeyId = fullKeyId,
-            created = now,
-            category = context.category,
-            schemeCodeName = context.keyScheme.codeName,
-            publicKey = publicKeyBytes,
-            encodingVersion = null,
-            alias = context.alias,
-            hsmAlias = context.key.hsmAlias,
-            externalId = context.externalId,
-            hsmId = context.hsmId,
-            status = SigningKeyEntityStatus.NORMAL
-        )
-
-        entityManagerFactory.createEntityManager().transaction {
-            it.persist(entity)
-        }
-        return entityManagerFactory.createEntityManager().use {
-            entity.joinSigningKeyInfo(it)
-        }
-    }
-
     @Suppress("NestedBlockDepth")
     override fun savePrivateKey(context: SigningWrappedKeySaveContext): SigningKeyInfo {
         val publicKeyBytes = keyEncodingService.encodeAsByteArray(context.key.publicKey)
@@ -102,7 +66,7 @@ class SigningRepositoryImpl(
                     where(
                         equal(
                             root.get<String>("alias"),
-                            context.masterKeyAlias
+                            context.wrappingKeyAlias
                         )
                     ) // do not care about generation for now
                 }
@@ -114,7 +78,7 @@ class SigningRepositoryImpl(
                         it.id
                     }
             }
-                ?: throw InvalidParamsException("unable to find master wrapping key ${context.masterKeyAlias} in tenant $tenantId")
+                ?: throw InvalidParamsException("unable to find master wrapping key ${context.wrappingKeyAlias} in tenant $tenantId")
         }
 
         val materialEntity = SigningKeyMaterialEntity(
@@ -264,14 +228,16 @@ class SigningRepositoryImpl(
 
 
 fun SigningKeyEntity.joinSigningKeyInfo(em: EntityManager): SigningKeyInfo {
-    val signingKeyMaterialEntity = requireNotNull(em.createQuery(
+    val signingKeyMaterialEntity = checkNotNull(em.createQuery(
         "FROM ${SigningKeyMaterialEntity::class.java.simpleName} WHERE signingKeyId=:signingKeyId",
         SigningKeyMaterialEntity::class.java
     ).setParameter("signingKeyId", id)
-        .resultList.singleOrNull(), { "private key material for $id not found"})
-    val wrappingKey = em.createQuery(
+        .resultList.singleOrNull()) { "private key material for $id not found"}
+    val wrappingKey = checkNotNull(em.createQuery(
         "FROM WrappingKeyEntity WHERE id=:wrappingKeyId", WrappingKeyEntity::class.java
-    ).setParameter("wrappingKeyId", signingKeyMaterialEntity.wrappingKeyId).resultList.singleOrNull()
+    ).setParameter("wrappingKeyId", signingKeyMaterialEntity.wrappingKeyId).resultList.singleOrNull()) { 
+        "wrapping key for $id not found"
+    }
 
     return SigningKeyInfo(
         id = ShortHash.parse(keyId),
@@ -283,7 +249,7 @@ fun SigningKeyEntity.joinSigningKeyInfo(em: EntityManager): SigningKeyInfo {
         publicKey = publicKey,
         keyMaterial = signingKeyMaterialEntity.keyMaterial,
         schemeCodeName = schemeCodeName,
-        masterKeyAlias = wrappingKey?.alias,
+        wrappingKeyAlias = wrappingKey.alias,
         externalId = externalId,
         encodingVersion = encodingVersion,
         timestamp = created,

@@ -2,9 +2,6 @@ package net.corda.crypto.service.impl
 
 import com.github.benmanes.caffeine.cache.Cache
 import com.github.benmanes.caffeine.cache.Caffeine
-import java.security.InvalidParameterException
-import java.security.PublicKey
-import java.util.concurrent.TimeUnit
 import net.corda.cache.caffeine.CacheFactoryImpl
 import net.corda.crypto.cipher.suite.CRYPTO_CATEGORY
 import net.corda.crypto.cipher.suite.CRYPTO_TENANT_ID
@@ -23,8 +20,6 @@ import net.corda.crypto.core.ShortHash
 import net.corda.crypto.core.fullIdHash
 import net.corda.crypto.persistence.SigningKeyInfo
 import net.corda.crypto.persistence.SigningKeyOrderBy
-import net.corda.crypto.persistence.SigningPublicKeySaveContext
-import net.corda.crypto.persistence.SigningWrappedKeySaveContext
 import net.corda.crypto.service.CryptoServiceFactory
 import net.corda.crypto.service.KeyOrderBy
 import net.corda.crypto.service.SigningService
@@ -35,6 +30,8 @@ import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
 import org.slf4j.LoggerFactory
+import java.security.PublicKey
+import java.util.concurrent.TimeUnit
 
 data class CacheKey(val tenantId: String, val publicKeyId: ShortHash)
 
@@ -322,7 +319,6 @@ class SigningServiceImpl(
                     tenantId
                 )
             }
-            require(ref.masterKeyAlias != null) { "The master key alias must be defined for tenant $tenantId category $category" }
             logger.trace(
                 "generateKeyPair for tenant={}, category={}, alias={} using wrapping key ${ref.masterKeyAlias}",
                 tenantId,
@@ -338,11 +334,7 @@ class SigningServiceImpl(
                 )
             )
             val saveContext = ref.toSaveKeyContext(generatedKey, alias, scheme, externalId)
-            val signingKeyInfo = when (saveContext) {
-                is SigningWrappedKeySaveContext -> repo.savePrivateKey(saveContext)
-                is SigningPublicKeySaveContext -> repo.savePublicKey(saveContext)
-                else -> throw InvalidParameterException()
-            }
+            val signingKeyInfo = repo.savePrivateKey(saveContext)
             cache.put(CacheKey(tenantId, signingKeyInfo.id), signingKeyInfo)
             return schemeMetadata.toSupportedPublicKey(generatedKey.publicKey)
         }
@@ -386,9 +378,7 @@ class SigningServiceImpl(
         tenantId: String,
     ): KeyMaterialSpec {
         val keyMaterial: ByteArray = record.data.keyMaterial
-        val masterKeyAlias = record.data.masterKeyAlias ?: throw IllegalStateException(
-            "The master key alias for public key ${publicKey.publicKeyId()} of tenant $tenantId must be specified, but is null"
-        )
+        val masterKeyAlias = record.data.wrappingKeyAlias 
         val encodingVersion = record.data.encodingVersion ?: throw IllegalStateException(
             "The encoding version for public key ${publicKey.publicKeyId()} of tenant $tenantId must be specified, but is null"
         )
