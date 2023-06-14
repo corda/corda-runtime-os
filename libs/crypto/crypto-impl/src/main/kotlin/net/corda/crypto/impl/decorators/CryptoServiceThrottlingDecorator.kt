@@ -6,7 +6,7 @@ import net.corda.crypto.cipher.suite.CryptoThrottlingException
 import net.corda.crypto.cipher.suite.GeneratedKey
 import net.corda.crypto.cipher.suite.KeyGenerationSpec
 import net.corda.crypto.cipher.suite.SharedSecretSpec
-import net.corda.crypto.cipher.suite.SigningSpec
+import net.corda.crypto.cipher.suite.SigningWrappedSpec
 import net.corda.crypto.cipher.suite.schemes.KeyScheme
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.exceptions.CryptoException
@@ -74,7 +74,7 @@ class CryptoServiceThrottlingDecorator(
             cryptoService.generateKeyPair(spec, context)
         }
 
-    override fun sign(spec: SigningSpec, data: ByteArray, context: Map<String, String>): ByteArray =
+    override fun sign(spec: SigningWrappedSpec, data: ByteArray, context: Map<String, String>): ByteArray =
         executeWithBackingOff {
             cryptoService.sign(spec, data, context)
         }
