@@ -1841,21 +1841,21 @@ class MembershipPersistenceTest {
         var publicKey: PublicKey? = null
 
         override fun getEpoch() = 5
-        override val signature: DigitalSignatureWithKey
+        override val mgmSignature: DigitalSignatureWithKey
             get() = DigitalSignatureWithKey(
                 publicKey
                     ?: throw UnsupportedOperationException("Serialized parameters must be set in the test function"),
                 byteArrayOf(1)
             )
-        override val signatureSpec: SignatureSpec
+        override val mgmSignatureSpec: SignatureSpec
             get() = RSA_SHA256
 
 
-        override val bytes: ByteArray
+        override val groupParameters: ByteArray
             get() = serialisedParams
                 ?: throw UnsupportedOperationException("Serialized parameters must be set in the test function")
         override val hash: SecureHash
-            get() = bytes.hash()
+            get() = groupParameters.hash()
 
         override fun getModifiedTime() = clock.instant()
         override fun getNotaries(): List<NotaryInfo> = emptyList()

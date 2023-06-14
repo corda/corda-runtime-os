@@ -107,8 +107,8 @@ class SignedGroupParametersImplTest {
                     it.assertThat(notary.protocolVersions).containsExactlyInAnyOrder(2)
                 }
 
-            it.assertThat(params.signature).isEqualTo(signature)
-            it.assertThat(params.signatureSpec).isEqualTo(signatureSpec)
+            it.assertThat(params.mgmSignature).isEqualTo(signature)
+            it.assertThat(params.mgmSignatureSpec).isEqualTo(signatureSpec)
         }
     }
 

@@ -111,11 +111,11 @@ class GroupParametersFactoryTest {
             assertThat(groupParameters).isInstanceOf(SignedGroupParameters::class.java)
             assertThat(groupParameters.entries)
                 .containsExactlyElementsOf(groupParametersValues.entries)
-            assertThat(groupParameters.bytes).isEqualTo(serialisedGroupParameters)
-            assertThat((groupParameters as SignedGroupParameters).signatureSpec.signatureName)
+            assertThat(groupParameters.groupParameters).isEqualTo(serialisedGroupParameters)
+            assertThat((groupParameters as SignedGroupParameters).mgmSignatureSpec.signatureName)
                 .isEqualTo("SHA256withRSA")
-            assertThat(groupParameters.signature.by).isEqualTo(pubKey)
-            assertThat(groupParameters.signature.bytes).isEqualTo(sigBytes)
+            assertThat(groupParameters.mgmSignature.by).isEqualTo(pubKey)
+            assertThat(groupParameters.mgmSignature.bytes).isEqualTo(sigBytes)
         }
 
         @Test
@@ -132,7 +132,7 @@ class GroupParametersFactoryTest {
             assertThat(groupParameters).isInstanceOf(UnsignedGroupParameters::class.java)
             assertThat(groupParameters.entries)
                 .containsExactlyElementsOf(groupParametersValues.entries)
-            assertThat(groupParameters.bytes).isEqualTo(serialisedGroupParameters)
+            assertThat(groupParameters.groupParameters).isEqualTo(serialisedGroupParameters)
         }
     }
 

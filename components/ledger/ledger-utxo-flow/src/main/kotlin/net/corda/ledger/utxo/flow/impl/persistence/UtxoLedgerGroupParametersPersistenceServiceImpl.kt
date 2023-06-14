@@ -58,9 +58,9 @@ class UtxoLedgerGroupParametersPersistenceServiceImpl @Activate constructor(
                     PersistSignedGroupParametersIfDoNotExistExternalEventFactory::class.java,
                     with(signedGroupParameters) {
                         PersistSignedGroupParametersIfDoNotExistParameters(
-                            bytes,
-                            signature,
-                            signatureSpec
+                            groupParameters,
+                            mgmSignature,
+                            mgmSignatureSpec
                         )
                     }
                 )

@@ -26,9 +26,9 @@ class SignedGroupParametersKryoSerializer @Activate constructor(
     override val type: Class<SignedGroupParameters> get() = SignedGroupParameters::class.java
 
     override fun write(output: CheckpointOutput, obj: SignedGroupParameters) {
-        output.writeClassAndObject(obj.bytes)
-        output.writeClassAndObject(obj.signature)
-        output.writeClassAndObject(obj.signatureSpec)
+        output.writeClassAndObject(obj.groupParameters)
+        output.writeClassAndObject(obj.mgmSignature)
+        output.writeClassAndObject(obj.mgmSignatureSpec)
     }
 
     override fun read(input: CheckpointInput, type: Class<out SignedGroupParameters>): SignedGroupParameters {

@@ -90,8 +90,8 @@ class MembershipPackageFactory(
                 .build()
         }
         val signedGroupParameters = SignedGroupParameters(
-            ByteBuffer.wrap(groupParameters.bytes),
-            mgmSigner.sign(groupParameters.bytes).toAvro(),
+            ByteBuffer.wrap(groupParameters.groupParameters),
+            mgmSigner.sign(groupParameters.groupParameters).toAvro(),
             mgmSigner.signatureSpec.toAvro()
         )
         val membership = SignedMemberships.newBuilder()
