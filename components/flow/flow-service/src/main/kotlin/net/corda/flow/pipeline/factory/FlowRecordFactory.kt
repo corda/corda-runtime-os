@@ -1,5 +1,6 @@
 package net.corda.flow.pipeline.factory
 
+import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.SessionEvent
@@ -7,6 +8,7 @@ import net.corda.data.flow.event.StartFlow
 import net.corda.data.flow.event.Wakeup
 import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.output.FlowStatus
+import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.records.Record
 
 /**
@@ -23,6 +25,12 @@ interface FlowRecordFactory {
      * @return a new instance of a [FlowEvent] record.
      */
     fun createFlowEventRecord(flowId: String, payload: Any): Record<String, FlowEvent>
+
+    fun createP2PEventRecord(
+        event: SessionEvent,
+        serializerFactory: CordaAvroSerializationFactory,
+        flowConfig: SmartConfig
+    ) : Record<*, *>
 
     /**
      * Creates a [FlowStatus] record

@@ -1,8 +1,10 @@
 package net.corda.flow.pipeline.impl
 
+import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.event.mapper.ScheduleCleanup
+import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.output.FlowStatus
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
@@ -37,6 +39,8 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
     private val flowRecordFactory: FlowRecordFactory,
     @Reference(service = MembershipGroupReaderProvider::class)
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
+    @Reference(service = CordaAvroSerializationFactory::class)
+    private val cordaAvroSerializationFactory: CordaAvroSerializationFactory
 ) : FlowGlobalPostProcessor {
 
     private companion object {
@@ -58,7 +62,7 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
         return context.copy(outputRecords = context.outputRecords + outputRecords)
     }
 
-    private fun getSessionEvents(context: FlowEventContext<Any>, now: Instant): List<Record<*, FlowMapperEvent>> {
+    private fun getSessionEvents(context: FlowEventContext<Any>, now: Instant): List<Record<*, *>> {
         val checkpoint = context.checkpoint
         val doesCheckpointExist = checkpoint.doesExist
 
@@ -82,7 +86,14 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
             .flatMap { (_, events) -> events }
             .map { event ->
                 context.flowMetrics.flowSessionMessageSent(event.payload::class.java.name)
-                flowRecordFactory.createFlowMapperEventRecord(event.sessionId, event)
+                when (event.payload) {
+                    is SessionData -> {
+                        flowRecordFactory.createP2PEventRecord(event, cordaAvroSerializationFactory, context.config)
+                    }
+                    else -> {
+                        flowRecordFactory.createFlowMapperEventRecord(event.sessionId, event)
+                    }
+                }
             }
     }
 
