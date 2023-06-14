@@ -15,6 +15,7 @@ dependencies {
     implementation project(":libs:configuration:configuration-core")
     implementation project(":libs:configuration:configuration-merger")
     implementation project(":libs:metrics")
+    implementation project(":libs:tracing")
     implementation project(":libs:utilities")
     api project(":libs:serialization:serialization-avro")
 
@@ -35,4 +36,3 @@ dependencies {
     testRuntimeOnly 'org.osgi:osgi.core'
     testRuntimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
 }
-

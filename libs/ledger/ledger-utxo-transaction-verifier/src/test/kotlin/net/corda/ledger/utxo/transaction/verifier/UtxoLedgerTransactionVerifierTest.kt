@@ -19,6 +19,7 @@ import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.TransactionState
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
+import net.corda.virtualnode.HoldingIdentity
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -37,8 +38,9 @@ class UtxoLedgerTransactionVerifierTest {
     private val inputTransactionState = mock<TransactionState<ContractState>>()
     private val referenceTransactionState = mock<TransactionState<ContractState>>()
     private val metadata = mock<TransactionMetadata>()
+    val holdingIdentity = HoldingIdentity(MemberX500Name("ALICE", "LDN", "GB"), "group")
 
-    private val verifier = UtxoLedgerTransactionVerifier( { transaction } )
+    private val verifier = UtxoLedgerTransactionVerifier( { transaction }, holdingIdentity = holdingIdentity)
 
     @BeforeEach
     fun beforeEach() {

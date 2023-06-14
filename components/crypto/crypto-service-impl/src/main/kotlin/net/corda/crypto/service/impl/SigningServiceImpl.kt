@@ -3,6 +3,7 @@ package net.corda.crypto.service.impl
 import com.github.benmanes.caffeine.cache.Cache
 import com.github.benmanes.caffeine.cache.Caffeine
 import java.security.InvalidParameterException
+import java.security.PublicKey
 import java.util.concurrent.TimeUnit
 import net.corda.cache.caffeine.CacheFactoryImpl
 import net.corda.crypto.cipher.suite.CRYPTO_CATEGORY
@@ -19,7 +20,6 @@ import net.corda.crypto.cipher.suite.publicKeyId
 import net.corda.crypto.cipher.suite.schemes.KeyScheme
 import net.corda.crypto.config.impl.CryptoSigningServiceConfig
 import net.corda.crypto.core.DigitalSignatureWithKey
-import net.corda.crypto.core.KEY_LOOKUP_INPUT_ITEMS_LIMIT
 import net.corda.crypto.core.KeyAlreadyExistsException
 import net.corda.crypto.core.ShortHash
 import net.corda.crypto.core.fullIdHash
@@ -31,17 +31,17 @@ import net.corda.crypto.service.CryptoServiceFactory
 import net.corda.crypto.service.KeyOrderBy
 import net.corda.crypto.service.SigningService
 import net.corda.crypto.softhsm.SigningRepositoryFactory
+import net.corda.metrics.CordaMetrics
 import net.corda.utilities.debug
 import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
 import org.slf4j.LoggerFactory
-import java.security.PublicKey
 
 data class CacheKey(val tenantId: String, val publicKeyId: ShortHash)
 
 /**
- * 1. Provide a (mostly) cached versions of the signing key operations, unlike the signing key operations
+ * 1. Provide (mostly) cached versions of the signing key operations, unlike the signing key operations
  * in [SigningRepositoryImpl] which are uncached.
  *
  * 2. Provide wrapping key operations, routing to the appropriate crypto service implementation. The crypto
@@ -85,16 +85,16 @@ class SigningServiceImpl(
 
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        private const val SIGN_OPERATION_NAME = "sign"
     }
 
-    data class OwnedKeyRecord(val publicKey: PublicKey, val data: net.corda.crypto.persistence.SigningKeyInfo)
+    data class OwnedKeyRecord(val publicKey: PublicKey, val data: SigningKeyInfo)
 
     override fun getSupportedSchemes(tenantId: String, category: String): List<String> {
         logger.debug { "getSupportedSchemes(tenant=$tenantId, category=$category)" }
         val ref = cryptoServiceFactory.findInstance(tenantId = tenantId, category = category)
         return ref.instance.supportedSchemes.map { it.key.codeName }
     }
-
 
     override fun querySigningKeys(
         tenantId: String,
@@ -122,13 +122,16 @@ class SigningServiceImpl(
         tenantId: String,
         keyIds: List<ShortHash>,
     ): Collection<SigningKeyInfo> {
+        // Since we are looking up by short IDs there's nothing we can do to handle clashes
+        // on short IDs in this case, at this layer. We must therefore rely on the database
+        // uniqueness constraints to stop clashes from being created.
+
         val cachedKeys =
             cache.getAllPresent(keyIds.mapTo(mutableSetOf()) {
                 CacheKey(tenantId, it)
             }).mapTo(mutableSetOf()) { it.value }
-        if (cachedKeys.size == keyIds.size) return cachedKeys
         val notFound: List<ShortHash> = keyIds - cachedKeys.map { it.id }.toSet()
-
+        if (notFound.isEmpty()) return cachedKeys
         val fetchedKeys = signingRepositoryFactory.getInstance(tenantId).use {
             it.lookupByPublicKeyShortHashes(notFound.toMutableSet())
         }
@@ -137,30 +140,37 @@ class SigningServiceImpl(
         return cachedKeys + fetchedKeys
     }
 
-
     override fun lookupSigningKeysByPublicKeyHashes(
         tenantId: String,
         fullKeyIds: List<SecureHash>,
     ): Collection<SigningKeyInfo> {
+        fun filterOutMismatches(found: Collection<SigningKeyInfo>) =
+            found.map { foundSigningKeyInfo ->
+                if (fullKeyIds.contains(foundSigningKeyInfo.fullId)) {
+                    foundSigningKeyInfo
+                } else {
+                    null
+                }
+            }.filterNotNull()
+
         val keyIds = fullKeyIds.map { ShortHash.of(it) }
         val cachedMap = cache.getAllPresent(keyIds.mapTo(mutableSetOf()) { CacheKey(tenantId, it) })
-        val cachedList = cachedMap.map { it.value }
-        if (cachedMap.size == fullKeyIds.size) return cachedList
-
-        val notFound = fullKeyIds.filter {
-            !cachedMap.containsKey(CacheKey(tenantId, ShortHash.of(it)))
-        }
+        val cachedKeys = cachedMap.map { it.value }
+        val cachedMatchingKeys = filterOutMismatches(cachedKeys)
+        if (cachedMatchingKeys.size == fullKeyIds.size) return cachedMatchingKeys
+        val notFound = fullKeyIds.filter { hash -> cachedMatchingKeys.count { it.fullId == hash } == 0 }
+        // if fullKeyIds has duplicates it's possible that notFound is empty here, even though
+        // we didn't get as many records from the cache as the number of keys we expected
+        if (notFound.isEmpty()) return cachedMatchingKeys
 
         val fetchedKeys = signingRepositoryFactory.getInstance(tenantId).use {
             it.lookupByPublicKeyHashes(notFound.toMutableSet())
-                .map { foundKey ->
-                    foundKey.also {
-                        cache.put(CacheKey(tenantId, it.id), it)
-                    }
-                }
         }
-
-        return cachedList + fetchedKeys
+        val fetchedMatchingKeys = filterOutMismatches(fetchedKeys)
+        fetchedMatchingKeys.forEach {
+            cache.put(CacheKey(tenantId, it.id), it)
+        }
+        return cachedMatchingKeys + fetchedMatchingKeys
     }
 
     // TODO- ditch this method and have callers use crytpoServiceFactory directly?
@@ -249,7 +259,15 @@ class SigningServiceImpl(
         data: ByteArray,
         context: Map<String, String>
     ): DigitalSignatureWithKey {
-        val record = getOwnedKeyRecord(tenantId, publicKey)
+        val record =
+            CordaMetrics.Metric.Crypto.GetOwnedKeyRecordTimer.builder()
+                .withTag(CordaMetrics.Tag.OperationName, SIGN_OPERATION_NAME)
+                .withTag(CordaMetrics.Tag.PublicKeyType, publicKey::class.java.simpleName)
+                .build()
+                .recordCallable {
+                    getOwnedKeyRecord(tenantId, publicKey)
+                }!!
+
         logger.debug { "sign(tenant=$tenantId, publicKey=${record.data.id})" }
         val scheme = schemeMetadata.findKeyScheme(record.data.schemeCodeName)
         val cryptoService = cryptoServiceFactory.getInstance(record.data.hsmId)
@@ -268,6 +286,7 @@ class SigningServiceImpl(
         context: Map<String, String>,
     ): ByteArray {
         val record = getOwnedKeyRecord(tenantId, publicKey)
+
         logger.info(
             "deriveSharedSecret(tenant={}, publicKey={}, otherPublicKey={})",
             tenantId,
@@ -336,46 +355,35 @@ class SigningServiceImpl(
         }
     }
 
-    @Suppress("NestedBlockDepth")
+    @Suppress("ThrowsCount")
     private fun getOwnedKeyRecord(tenantId: String, publicKey: PublicKey): OwnedKeyRecord {
         if (publicKey is CompositeKey) {
-            val leafKeysIdsChunks = publicKey.leafKeys.map {
-                it.fullIdHash(schemeMetadata, digestService) to it
-            }.chunked(KEY_LOOKUP_INPUT_ITEMS_LIMIT)
-            for (chunk in leafKeysIdsChunks) {
-                val found = signingRepositoryFactory.getInstance(tenantId).lookupByPublicKeyHashes(
-                    chunk.map { it.first }.toMutableSet()
-                )
-                if (found.isNotEmpty()) {
-                    for (key in chunk) {
-                        val first = found.firstOrNull { it.fullId == key.first }
-                        if (first != null) {
-                            return OwnedKeyRecord(key.second, first)
-                        }
-                    }
-                }
-            }
+            val found = lookupSigningKeysByPublicKeyHashes(tenantId, publicKey.leafKeys.map { it.fullIdHash() })
+            val hit = found.firstOrNull()
+            if (hit != null) return OwnedKeyRecord(publicKey.leafKeys.filter { it.fullIdHash() == hit.fullId }
+                .first(), hit)
             throw IllegalArgumentException(
                 "The tenant $tenantId doesn't own any public key in '${publicKey.publicKeyId()}' composite key."
             )
-        } else {
-            // TODO - use cache?
-            return signingRepositoryFactory.getInstance(tenantId).use { repo->
-                repo.findKey(publicKey)?.let {
-                    // This is to make sure cached key by short id (db one looks with full id so should be OK) is the actual
-                    // requested key Sand not a different one that clashed on key id (short key id).
-                    if (it.fullId == publicKey.fullIdHash(schemeMetadata, digestService)) {
-                        it
-                    } else {
-                        null
-                    }
-                }?.let {
-                    OwnedKeyRecord(publicKey, it)
-                } ?: throw IllegalArgumentException(
-                    "The tenant $tenantId doesn't own public key '${publicKey.publicKeyId()}'."
-                )
-            }
         }
+        // now we are not dealing with composite keys
+
+        // Unfortunately this fullIdHash call is an extension function, which is hard to mock, so testing
+        // the happy path on this function is hard.
+        val requestedFullKeyId = publicKey.fullIdHash(schemeMetadata, digestService)
+        val keyId = ShortHash.of(requestedFullKeyId)
+        val cacheKey = CacheKey(tenantId, keyId)
+        val signingKeyInfo = cache.getIfPresent(cacheKey) ?: run {
+            val repo = signingRepositoryFactory.getInstance(tenantId)
+            val result = repo.findKey(publicKey)
+            if (result == null) throw IllegalArgumentException("The public key '${publicKey.publicKeyId()}' was not found")
+            cache.put(cacheKey, result)
+            result
+        }
+        if (signingKeyInfo.fullId != requestedFullKeyId) throw IllegalArgumentException(
+            "The tenant $tenantId doesn't own public key '${publicKey.publicKeyId()}'."
+        )
+        return OwnedKeyRecord(publicKey, signingKeyInfo)
     }
 
     @Suppress("ThrowsCount")

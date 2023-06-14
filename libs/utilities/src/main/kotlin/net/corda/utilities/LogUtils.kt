@@ -93,7 +93,11 @@ fun translateFlowContextToMDC(
  * Push the map of [mdcData] into the logging MDC
  */
 fun setMDC(mdcData: Map<String, String>) {
-    MDC.setContextMap(mdcData)
+    MDC.getMDCAdapter().apply {
+        mdcData.forEach {
+            put(it.key, it.value)
+        }
+    }
 }
 
 /**

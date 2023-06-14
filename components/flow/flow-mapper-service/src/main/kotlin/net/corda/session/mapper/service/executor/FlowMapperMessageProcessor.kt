@@ -10,6 +10,7 @@ import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.metrics.CordaMetrics
 import net.corda.schema.configuration.FlowConfig
+import net.corda.tracing.traceStateAndEventExecution
 import net.corda.utilities.debug
 import net.corda.utilities.time.UTCClock
 import net.corda.utilities.trace
@@ -45,6 +46,8 @@ class FlowMapperMessageProcessor(
         val key = event.key
         logger.trace { "Received event. Key: $key Event: ${event.value}" }
         val value = event.value ?: return StateAndEventProcessor.Response(state, emptyList())
+        val eventType = value.payload?.let { it.javaClass.simpleName } ?: "Unknown"
+
 
         CordaMetrics.Metric.FlowMapperEventLag.builder()
             .withTag(CordaMetrics.Tag.FlowEvent, value.payload::class.java.name)
@@ -52,20 +55,22 @@ class FlowMapperMessageProcessor(
         val eventProcessingTimer = CordaMetrics.Metric.FlowMapperEventProcessingTime.builder()
             .withTag(CordaMetrics.Tag.FlowEvent, value.payload::class.java.name)
             .build()
-        return eventProcessingTimer.recordCallable {
-            if (!isExpiredSessionEvent(value)) {
-                val executor = flowMapperEventExecutorFactory.create(key, value, state, flowConfig)
-                val result = executor.execute()
-                StateAndEventProcessor.Response(result.flowMapperState, result.outputEvents)
-            } else {
-                logger.debug {
-                    errorMsg.format("ignored", event, state)
+        return traceStateAndEventExecution(event, "Flow Mapper Event - $eventType") {
+            eventProcessingTimer.recordCallable {
+                if (!isExpiredSessionEvent(value)) {
+                    val executor = flowMapperEventExecutorFactory.create(key, value, state, flowConfig)
+                    val result = executor.execute()
+                    StateAndEventProcessor.Response(result.flowMapperState, result.outputEvents)
+                } else {
+                    logger.debug {
+                        errorMsg.format("ignored", event, state)
+                    }
+                    CordaMetrics.Metric.FlowMapperExpiredSessionEventCount.builder()
+                        .build().increment()
+                    StateAndEventProcessor.Response(state, emptyList())
                 }
-                CordaMetrics.Metric.FlowMapperExpiredSessionEventCount.builder()
-                    .build().increment()
-                StateAndEventProcessor.Response(state, emptyList())
-            }
-        }!!
+            }!!
+        }
     }
 
     /**

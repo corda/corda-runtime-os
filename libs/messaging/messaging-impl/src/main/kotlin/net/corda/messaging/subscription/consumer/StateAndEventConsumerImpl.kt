@@ -12,7 +12,9 @@ import net.corda.messaging.constants.MetricsConstants
 import net.corda.messaging.utils.tryGetResult
 import net.corda.metrics.CordaMetrics
 import net.corda.schema.Schemas.getStateAndEventStateTopic
+import net.corda.tracing.wrapWithTracingExecutor
 import net.corda.utilities.debug
+import net.corda.utilities.trace
 import org.slf4j.LoggerFactory
 import java.time.Clock
 import java.time.Duration
@@ -49,7 +51,7 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
         thread
     }
 
-    private val log = LoggerFactory.getLogger(config.loggerName)
+    private val log = LoggerFactory.getLogger("${this.javaClass.name}-${config.clientId}")
 
     private val maxPollInterval = config.processorTimeout.toMillis()
     private val initialProcessorTimeout = maxPollInterval / 4
@@ -170,7 +172,6 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
 
     override fun pollAndUpdateStates(syncPartitions: Boolean) {
         if (stateConsumer.assignment().isEmpty()) {
-            log.debug { "State consumer has no partitions assigned." }
             return
         }
 
@@ -178,7 +179,7 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
             stateConsumer.poll(STATE_POLL_TIMEOUT)
         }
         states?.forEach { state ->
-            log.debug { "Processing state: $state" }
+            log.trace { "Processing state: $state" }
             // This condition should always be true. This can however guard against a potential race where the partition
             // is revoked while states are being processed, resulting in the partition no longer being required to sync.
             val partition = CordaTopicPartition(state.topic.removeSuffix(STATE_TOPIC_SUFFIX), state.partition)
@@ -261,7 +262,9 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
     }
 
     override fun waitForFunctionToFinish(function: () -> Any, maxTimeout: Long, timeoutErrorMessage: String): CompletableFuture<Any> {
-        val future: CompletableFuture<Any> = CompletableFuture.supplyAsync({ function() }, executor)
+        val future: CompletableFuture<Any> = CompletableFuture.supplyAsync(
+            function,
+            wrapWithTracingExecutor(executor))
         future.tryGetResult(getInitialConsumerTimeout())
 
         if (!future.isDone) {

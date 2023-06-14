@@ -103,6 +103,7 @@ class QueryRegistrationRequestsHandlerTest {
         on { dbConnectionManager } doReturn dbConnectionManager
         on { jpaEntitiesRegistry } doReturn jpaEntitiesRegistry
         on { cordaAvroSerializationFactory } doReturn serializationFactory
+        on { transactionTimerFactory } doReturn { transactionTimer }
     }
     private val context = MembershipRequestContext(Instant.ofEpochSecond(0), null, holdingIdentity)
 

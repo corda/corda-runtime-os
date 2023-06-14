@@ -1,5 +1,6 @@
 package net.corda.p2p.gateway.messaging.http
 
+import io.micrometer.core.instrument.Counter
 import io.netty.buffer.ByteBuf
 import io.netty.channel.ChannelHandlerContext
 import io.netty.channel.SimpleChannelInboundHandler
@@ -7,12 +8,17 @@ import io.netty.handler.codec.http.HttpObject
 import io.netty.handler.ssl.SslHandshakeCompletionEvent
 import io.netty.handler.ssl.SslHandshakeTimeoutException
 import io.netty.handler.timeout.IdleStateEvent
+import net.corda.metrics.CordaMetrics
+import net.corda.metrics.CordaMetrics.NOT_APPLICABLE_TAG_VALUE
 import org.slf4j.Logger
+import java.net.InetSocketAddress
+import java.net.SocketAddress
 import java.nio.channels.ClosedChannelException
 import javax.net.ssl.SSLException
 
 abstract class BaseHttpChannelHandler(private val eventListener: HttpConnectionListener,
-                                      private val logger: Logger): SimpleChannelInboundHandler<HttpObject>() {
+                                      private val logger: Logger,
+                                      private val handlerType: HandlerType): SimpleChannelInboundHandler<HttpObject>() {
 
     private companion object {
         val messagesNotToLog = listOf(
@@ -65,8 +71,10 @@ abstract class BaseHttpChannelHandler(private val eventListener: HttpConnectionL
                 if (evt.isSuccess) {
                     val ch = ctx.channel()
                     logger.info("Handshake with ${ctx.channel().remoteAddress()} successful")
+                    getConnectionMetric(ctx.channel().remoteAddress(), "success").increment()
                     eventListener.onOpen(HttpConnectionEvent(ch))
                 } else {
+                    getConnectionMetric(ctx.channel().remoteAddress(), "failure").increment()
                     val cause = evt.cause()
                     when {
                         cause is ClosedChannelException -> logger.warn("SSL handshake closed early")
@@ -117,4 +125,38 @@ abstract class BaseHttpChannelHandler(private val eventListener: HttpConnectionL
         ctx.close()
     }
 
+    private fun getConnectionMetric(remoteAddress: SocketAddress, connectionResult: String): Counter {
+        // The address is always expected to be an InetSocketAddress, but populating the tag in any other case because prometheus
+        // requires the same set of tags to be populated for a specific metric name.
+        val remoteAddressValue = if (remoteAddress is InetSocketAddress) {
+            remoteAddress.hostString
+        } else {
+            NOT_APPLICABLE_TAG_VALUE
+        }
+
+        return when(handlerType) {
+            HandlerType.SERVER -> getServerCounter(remoteAddressValue, connectionResult)
+            HandlerType.CLIENT -> getClientCounter(remoteAddressValue, connectionResult)
+        }
+    }
+
+    private fun getServerCounter(remoteAddress: String, connectionResult: String): Counter {
+        return CordaMetrics.Metric.InboundGatewayConnections.builder()
+            .withTag(CordaMetrics.Tag.ConnectionResult, connectionResult)
+            .withTag(CordaMetrics.Tag.SourceEndpoint, remoteAddress)
+            .build()
+    }
+
+    private fun getClientCounter(remoteAddress: String, connectionResult: String): Counter {
+        return CordaMetrics.Metric.OutboundGatewayConnections.builder()
+            .withTag(CordaMetrics.Tag.ConnectionResult, connectionResult)
+            .withTag(CordaMetrics.Tag.DestinationEndpoint, remoteAddress)
+            .build()
+    }
+
+}
+
+enum class HandlerType {
+    CLIENT,
+    SERVER
 }

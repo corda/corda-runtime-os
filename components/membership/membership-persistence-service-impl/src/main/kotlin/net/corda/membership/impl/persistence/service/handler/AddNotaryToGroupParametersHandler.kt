@@ -29,6 +29,7 @@ internal class AddNotaryToGroupParametersHandler(
         val notaryServiceRegex = NOTARY_SERVICE_NAME_KEY.format("([0-9]+)").toRegex()
     }
 
+    override val operation = AddNotaryToGroupParameters::class.java
     private val keyValuePairListSerializer: CordaAvroSerializer<KeyValuePairList> =
         cordaAvroSerializationFactory.createAvroSerializer {
             logger.error("Failed to serialize key value pair list.")

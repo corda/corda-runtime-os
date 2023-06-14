@@ -1,6 +1,5 @@
 package net.corda.flow.pipeline.handlers.events
 
-import java.time.Instant
 import net.corda.data.KeyValuePairList
 import net.corda.data.flow.FlowInitiatorType
 import net.corda.data.flow.FlowKey
@@ -32,6 +31,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
+import java.time.Instant
 
 @Component(service = [FlowEventHandler::class])
 class SessionEventHandler @Activate constructor(
@@ -79,6 +79,8 @@ class SessionEventHandler @Activate constructor(
         }
 
         checkpoint.putSessionState(updatedSessionState)
+        //do this last because the Holding Identity won't be available until after the checkpoint has been initiated
+        context.flowMetrics.flowSessionMessageReceived(sessionEvent.payload::class.java.name)
 
         return context
     }
@@ -139,6 +141,7 @@ class SessionEventHandler @Activate constructor(
 
         //set initial session state, so it can be found when trying to send the confirmation message
         context.checkpoint.putSessionState(initialSessionState)
+        context.flowMetrics.flowStarted()
 
         sendConfirmMessage(initiatedFlowNameAndProtocol, requestedProtocolName, initiatorVersionsSupported, context, sessionId)
     }

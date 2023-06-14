@@ -14,7 +14,9 @@ import net.corda.ledger.persistence.processor.PersistenceRequestProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.persistence.common.EntitySandboxService
 import net.corda.persistence.common.ResponseFactory
+import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.sandboxgroupcontext.SandboxGroupContext
+import net.corda.sandboxgroupcontext.VirtualNodeContext
 import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
@@ -32,8 +34,11 @@ class PersistenceRequestProcessorTest {
     private val cordaHoldingIdentity = ALICE_X500_HOLDING_ID.toCorda()
     private val cpkHashes = mutableSetOf<SecureHash>()
     private val sandbox = mock<SandboxGroupContext>()
+    private val virtualNodeContext = mock<VirtualNodeContext>()
+    private val currentSandboxGroupContext = mock<CurrentSandboxGroupContext>()
 
     private val target = PersistenceRequestProcessor(
+        currentSandboxGroupContext,
         entitySandboxService,
         delegatedRequestHandlerSelector,
         responseFactory
@@ -42,6 +47,9 @@ class PersistenceRequestProcessorTest {
     @BeforeEach
     fun setup() {
         whenever(entitySandboxService.get(cordaHoldingIdentity, cpkHashes)).thenReturn(sandbox)
+        whenever(sandbox.virtualNodeContext).thenReturn(virtualNodeContext)
+        whenever(virtualNodeContext.holdingIdentity).thenReturn(cordaHoldingIdentity)
+        whenever(currentSandboxGroupContext.get()).thenReturn(sandbox)
     }
 
     @Test
@@ -113,3 +121,4 @@ class PersistenceRequestProcessorTest {
         }
     }
 }
+

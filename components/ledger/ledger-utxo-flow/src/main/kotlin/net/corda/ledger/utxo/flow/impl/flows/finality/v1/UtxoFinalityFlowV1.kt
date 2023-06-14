@@ -5,6 +5,7 @@ import net.corda.ledger.common.flow.flows.Payload
 import net.corda.ledger.common.flow.transaction.TransactionMissingSignaturesException
 import net.corda.ledger.notary.worker.selection.NotaryVirtualNodeSelectorService
 import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackchainSenderFlow
+import net.corda.ledger.utxo.flow.impl.flows.backchain.dependencies
 import net.corda.ledger.utxo.flow.impl.flows.finality.addTransactionIdToFlowContext
 import net.corda.ledger.utxo.flow.impl.flows.finality.getVisibleStateIndexes
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
@@ -78,25 +79,32 @@ class UtxoFinalityFlowV1(
 
     @Suspendable
     private fun sendTransactionAndBackchainToCounterparties() {
+        flowMessaging.sendAll(initialTransaction, sessions.toSet())
         sessions.forEach {
-            it.send(initialTransaction)
-            flowEngine.subFlow(TransactionBackchainSenderFlow(initialTransaction.id, it))
+            if (initialTransaction.dependencies.isNotEmpty()) {
+                flowEngine.subFlow(TransactionBackchainSenderFlow(initialTransaction.id, it))
+            } else {
+                log.trace {
+                    "Transaction with id ${initialTransaction.id} has no dependencies so backchain resolution will not be performed."
+                }
+            }
         }
     }
 
     @Suppress("MaxLineLength")
     @Suspendable
     private fun receiveSignaturesAndAddToTransaction(): Pair<UtxoSignedTransactionInternal, Map<FlowSession, List<DigitalSignatureAndMetadata>>> {
-        val signaturesPayloads = sessions.associateWith { session ->
-            try {
-                log.debug { "Requesting signatures from ${session.counterparty} for transaction $transactionId" }
+        val signaturesPayloads = try {
+            flowMessaging.receiveAllMap(
+                sessions.associateWith { Payload::class.java }
+            ).mapValues {
                 @Suppress("unchecked_cast")
-                session.receive(Payload::class.java) as Payload<List<DigitalSignatureAndMetadata>>
-            } catch (e: CordaRuntimeException) {
-                log.warn("Failed to receive signatures from ${session.counterparty} for transaction $transactionId")
-                persistInvalidTransaction(initialTransaction)
-                throw e
+                it.value as Payload<List<DigitalSignatureAndMetadata>>
             }
+        } catch (e: CordaRuntimeException) {
+            log.warn("Failed to receive signatures from ${sessions.map { it.counterparty }} for transaction $transactionId")
+            persistInvalidTransaction(initialTransaction)
+            throw e
         }
 
         var transaction = initialTransaction

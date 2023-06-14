@@ -11,6 +11,7 @@ import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.flow.transaction.TransactionSignatureServiceInternal
 import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
 import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionImpl
+import net.corda.ledger.utxo.flow.impl.persistence.external.events.ALICE_X500_HOLDING_IDENTITY
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.AbstractUtxoLedgerExternalEventFactory
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindTransactionExternalEventFactory
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.PersistTransactionExternalEventFactory
@@ -19,11 +20,15 @@ import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionImpl
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoLedgerTransactionFactory
 import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoSignedTransactionFactory
+import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
+import net.corda.sandboxgroupcontext.SandboxGroupContext
+import net.corda.sandboxgroupcontext.VirtualNodeContext
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.ledger.common.transaction.CordaPackageSummary
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
+import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
@@ -46,6 +51,9 @@ class UtxoLedgerPersistenceServiceImplTest {
     private val serializationService = mock<SerializationService>()
     private val transactionSignatureService = mock<TransactionSignatureServiceInternal>()
     private val utxoSignedTransactionFactory = mock<UtxoSignedTransactionFactory>()
+    private val sandbox = mock<SandboxGroupContext>()
+    private val virtualNodeContext = mock<VirtualNodeContext>()
+    private val currentSandboxGroupContext = mock<CurrentSandboxGroupContext>()
 
     private lateinit var utxoLedgerPersistenceService: UtxoLedgerPersistenceService
 
@@ -54,6 +62,7 @@ class UtxoLedgerPersistenceServiceImplTest {
     @BeforeEach
     fun setup() {
         utxoLedgerPersistenceService = UtxoLedgerPersistenceServiceImpl(
+            currentSandboxGroupContext,
             externalEventExecutor,
             serializationService,
             utxoSignedTransactionFactory
@@ -66,6 +75,10 @@ class UtxoLedgerPersistenceServiceImplTest {
                 any()
             )
         ).thenReturn(listOf(byteBuffer))
+
+        whenever(sandbox.virtualNodeContext).thenReturn(virtualNodeContext)
+        whenever(virtualNodeContext.holdingIdentity).thenReturn(ALICE_X500_HOLDING_IDENTITY.toCorda())
+        whenever(currentSandboxGroupContext.get()).thenReturn(sandbox)
     }
 
     @Test

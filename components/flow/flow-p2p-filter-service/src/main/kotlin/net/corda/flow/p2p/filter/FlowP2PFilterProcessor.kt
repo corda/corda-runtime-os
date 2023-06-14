@@ -12,6 +12,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC
 import net.corda.session.manager.Constants.Companion.FLOW_SESSION_SUBSYSTEM
 import net.corda.session.manager.Constants.Companion.INITIATED_SESSION_ID_SUFFIX
+import net.corda.tracing.traceEventProcessingNullableSingle
 import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
@@ -22,13 +23,18 @@ import java.nio.ByteBuffer
  * SessionEvent sessionId's are flipped to that of the counterparty, as well as the event key sessionId.
  * Messages are forwarded to the flow.mapper.event topic
  */
-class FlowP2PFilterProcessor(cordaAvroSerializationFactory: CordaAvroSerializationFactory) : DurableProcessor<String, AppMessage> {
+class FlowP2PFilterProcessor(cordaAvroSerializationFactory: CordaAvroSerializationFactory) :
+    DurableProcessor<String, AppMessage> {
 
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
-    private val cordaAvroDeserializer: CordaAvroDeserializer<SessionEvent> = cordaAvroSerializationFactory.createAvroDeserializer({},
-        SessionEvent::class.java)
+
+    private val cordaAvroDeserializer: CordaAvroDeserializer<SessionEvent> =
+        cordaAvroSerializationFactory.createAvroDeserializer(
+            {},
+            SessionEvent::class.java
+        )
 
     override fun onNext(
         events: List<Record<String, AppMessage>>
@@ -37,12 +43,14 @@ class FlowP2PFilterProcessor(cordaAvroSerializationFactory: CordaAvroSerializati
         events.forEach { appMessage ->
             val authMessage = appMessage.value?.message
             if (authMessage != null && authMessage is AuthenticatedMessage && authMessage.header.subsystem == FLOW_SESSION_SUBSYSTEM) {
-                getOutputRecord(authMessage.payload, appMessage.key)?.let { outputRecord ->
-                    outputEvents.add(outputRecord)
+
+                traceEventProcessingNullableSingle(appMessage, "Flow P2P Filter Event") {
+                    getOutputRecord(authMessage.payload, appMessage.key)
+                }?.let {
+                    outputEvents.add(it)
                 }
             }
         }
-
         return outputEvents
     }
 
@@ -55,9 +63,9 @@ class FlowP2PFilterProcessor(cordaAvroSerializationFactory: CordaAvroSerializati
     private fun getOutputRecord(
         payload: ByteBuffer,
         key: String
-    ) : Record<String, FlowMapperEvent>? {
+    ): Record<String, FlowMapperEvent>? {
         val sessionEvent = cordaAvroDeserializer.deserialize(payload.array())
-        logger.debug { "Processing message from p2p.in with subsystem $FLOW_SESSION_SUBSYSTEM. Key: $key, Event: $sessionEvent"}
+        logger.debug { "Processing message from p2p.in with subsystem $FLOW_SESSION_SUBSYSTEM. Key: $key, Event: $sessionEvent" }
 
         return if (sessionEvent != null) {
             sessionEvent.messageDirection = MessageDirection.INBOUND

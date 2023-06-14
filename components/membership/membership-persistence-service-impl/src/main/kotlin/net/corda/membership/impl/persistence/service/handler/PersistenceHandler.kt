@@ -1,5 +1,6 @@
 package net.corda.membership.impl.persistence.service.handler
 
+import io.micrometer.core.instrument.Timer
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.core.ShortHash
 import net.corda.avro.serialization.CordaAvroSerializationFactory
@@ -21,6 +22,11 @@ import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 
 internal interface PersistenceHandler<REQUEST, RESPONSE> {
+    /**
+     * Persistence operation identifier for logging and metrics purposes.
+     */
+    val operation: Class<REQUEST>
+
     fun invoke(context: MembershipRequestContext, request: REQUEST): RESPONSE?
 }
 
@@ -29,12 +35,13 @@ internal abstract class BasePersistenceHandler<REQUEST, RESPONSE>(
 ) : PersistenceHandler<REQUEST, RESPONSE> {
 
     companion object {
-        val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        internal val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     private val dbConnectionManager get() = persistenceHandlerServices.dbConnectionManager
     private val jpaEntitiesRegistry get() = persistenceHandlerServices.jpaEntitiesRegistry
     private val virtualNodeInfoReadService get() = persistenceHandlerServices.virtualNodeInfoReadService
+    private val transactionTimer get() = persistenceHandlerServices.transactionTimerFactory(operation.simpleName)
     val clock get() = persistenceHandlerServices.clock
     val cordaAvroSerializationFactory get() = persistenceHandlerServices.cordaAvroSerializationFactory
     val memberInfoFactory get() = persistenceHandlerServices.memberInfoFactory
@@ -50,14 +57,16 @@ internal abstract class BasePersistenceHandler<REQUEST, RESPONSE>(
             )
         val factory = getEntityManagerFactory(virtualNodeInfo)
         return try {
-            factory.transaction(block)
+            transactionTimer.recordCallable { factory.transaction(block) }!!
         } finally {
             factory.close()
         }
     }
 
     fun <R> transaction(block: (EntityManager) -> R): R {
-        return dbConnectionManager.getClusterEntityManagerFactory().transaction(block)
+        return dbConnectionManager.getClusterEntityManagerFactory().let {
+            transactionTimer.recordCallable { it.transaction(block) }!!
+        }
     }
 
     fun retrieveSignatureSpec(signatureSpec: String) = if (signatureSpec.isEmpty()) {
@@ -87,4 +96,5 @@ internal data class PersistenceHandlerServices(
     val keyEncodingService: KeyEncodingService,
     val platformInfoProvider: PlatformInfoProvider,
     val allowedCertificatesReaderWriterService: AllowedCertificatesReaderWriterService,
+    val transactionTimerFactory: (String) -> Timer
 )

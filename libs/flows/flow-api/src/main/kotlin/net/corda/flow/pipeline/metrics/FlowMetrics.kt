@@ -1,5 +1,7 @@
 package net.corda.flow.pipeline.metrics
 
+import net.corda.data.flow.output.FlowStates
+
 interface FlowMetrics {
     fun flowEventReceived(flowEventType: String)
 
@@ -16,4 +18,12 @@ interface FlowMetrics {
     fun flowCompletedSuccessfully()
 
     fun flowFailed()
+
+    fun flowSessionMessageSent(flowEventType: String)
+
+    fun flowSessionMessageReceived(flowEventType: String)
+
+    fun subFlowStarted()
+
+    fun subFlowFinished(completionStatus: FlowStates)
 }

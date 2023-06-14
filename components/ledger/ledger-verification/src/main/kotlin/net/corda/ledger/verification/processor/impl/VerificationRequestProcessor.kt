@@ -2,7 +2,6 @@ package net.corda.ledger.verification.processor.impl
 
 import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.flow.event.external.ExternalEventResponseErrorType
-import net.corda.data.ledger.persistence.LedgerTypes
 import net.corda.flow.external.events.responses.exceptions.NotAllowedCpkException
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
 import net.corda.flow.utils.toMap
@@ -12,6 +11,8 @@ import net.corda.ledger.verification.sandbox.VerificationSandboxService
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.metrics.CordaMetrics
+import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
+import net.corda.tracing.traceEventProcessingSingle
 import net.corda.utilities.MDC_CLIENT_ID
 import net.corda.utilities.MDC_EXTERNAL_EVENT_ID
 import net.corda.utilities.trace
@@ -21,13 +22,13 @@ import net.corda.virtualnode.toCorda
 import org.slf4j.LoggerFactory
 import java.io.NotSerializableException
 import java.time.Duration
-import java.time.Instant
 
 /**
  * Handles incoming requests, typically from the flow worker, and sends responses.
  */
 @Suppress("LongParameterList")
 class VerificationRequestProcessor(
+    private val currentSandboxGroupContext: CurrentSandboxGroupContext,
     private val verificationSandboxService: VerificationSandboxService,
     private val requestHandler: VerificationRequestHandler,
     private val responseFactory: ExternalEventResponseFactory
@@ -45,41 +46,49 @@ class VerificationRequestProcessor(
         log.trace { "onNext processing messages ${events.joinToString(",") { it.key }}" }
 
         return events
-            .mapNotNull { it.value }
-            .map { request ->
-                val startTime = Instant.now()
+            .filterNot { it.value == null }
+            .map { event ->
+                val startTime = System.nanoTime()
+                val request = event.value!!
                 val clientRequestId = request.flowExternalEventContext.contextProperties.toMap()[MDC_CLIENT_ID] ?: ""
                 val holdingIdentity = request.holdingIdentity.toCorda()
+                val requestType = request.javaClass.simpleName
+                traceEventProcessingSingle(event, "Ledger Persistence - $requestType") {
+                    withMDC(
+                        mapOf(
+                            MDC_CLIENT_ID to clientRequestId,
+                            MDC_EXTERNAL_EVENT_ID to request.flowExternalEventContext.requestId
+                        ) + translateFlowContextToMDC(request.flowExternalEventContext.contextProperties.toMap())
+                    ) {
+                        try {
+                            val sandbox = verificationSandboxService.get(holdingIdentity, request.cpkMetadata)
 
-                withMDC(
-                    mapOf(
-                        MDC_CLIENT_ID to clientRequestId,
-                        MDC_EXTERNAL_EVENT_ID to request.flowExternalEventContext.requestId
-                    ) + translateFlowContextToMDC(request.flowExternalEventContext.contextProperties.toMap())
-                ) {
-                    try {
-                        val sandbox = verificationSandboxService.get(holdingIdentity, request.cpkMetadata)
-                        requestHandler.handleRequest(sandbox, request)
-                    } catch (e: Exception) {
-                        errorResponse(request.flowExternalEventContext, e)
-                    }.also {
-                        CordaMetrics.Metric.LedgerTransactionVerificationTime
-                            .builder()
-                            .forVirtualNode(holdingIdentity.shortHash.toString())
-                            .withTag(CordaMetrics.Tag.FlowId, request.flowExternalEventContext.flowId)
-                            .withTag(CordaMetrics.Tag.LedgerType, LedgerTypes.UTXO.toString())
-                            .build()
-                            .record(Duration.between(startTime, Instant.now()))
+                            currentSandboxGroupContext.set(sandbox)
+
+                            requestHandler.handleRequest(sandbox, request)
+                        } catch (e: Exception) {
+                            errorResponse(request.flowExternalEventContext, e)
+                        } finally {
+                            currentSandboxGroupContext.remove()
+                        }.also {
+                            CordaMetrics.Metric.Ledger.TransactionVerificationTime
+                                .builder()
+                                .forVirtualNode(holdingIdentity.shortHash.toString())
+                                .build()
+                                .record(Duration.ofNanos(System.nanoTime() - startTime))
+                        }
                     }
                 }
             }
     }
 
-    private fun errorResponse(externalEventContext : ExternalEventContext, exception: Exception) = when (exception) {
+    private fun errorResponse(externalEventContext: ExternalEventContext, exception: Exception) = when (exception) {
         is NotAllowedCpkException, is NotSerializableException -> {
             log.error(errorMessage(externalEventContext, ExternalEventResponseErrorType.PLATFORM), exception)
             responseFactory.platformError(externalEventContext, exception)
-        } else -> {
+        }
+
+        else -> {
             log.warn(errorMessage(externalEventContext, ExternalEventResponseErrorType.TRANSIENT), exception)
             responseFactory.transientError(externalEventContext, exception)
         }

@@ -16,7 +16,7 @@ class PubSubConsumerRebalanceListenerTest {
 
     @BeforeEach
     fun beforeEach() {
-        listener = PubSubConsumerRebalanceListener("", "", consumer)
+        listener = PubSubConsumerRebalanceListener("", consumer)
     }
 
     @Test

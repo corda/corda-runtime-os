@@ -27,7 +27,7 @@ import net.corda.messaging.subscription.consumer.listener.LoggingConsumerRebalan
 import net.corda.messaging.utils.toCordaProducerRecords
 import net.corda.messaging.utils.toEventLogRecord
 import net.corda.metrics.CordaMetrics
-import net.corda.schema.Schemas.getStateAndEventDLQTopic
+import net.corda.schema.Schemas.getDLQTopic
 import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
 
@@ -57,7 +57,7 @@ internal class EventLogSubscriptionImpl<K : Any, V : Any>(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
 ) : Subscription<K, V> {
 
-    private val log = LoggerFactory.getLogger(config.loggerName)
+    private val log = LoggerFactory.getLogger("${this.javaClass.name}-${config.clientId}")
 
     private var threadLooper =
         ThreadLooper(log, config, lifecycleCoordinatorFactory, "durable processing thread", ::runConsumeLoop)
@@ -102,9 +102,9 @@ internal class EventLogSubscriptionImpl<K : Any, V : Any>(
                 log.debug { "Attempt: $attempts" }
                 deadLetterRecords = mutableListOf()
                 val rebalanceListener = if (partitionAssignmentListener == null) {
-                    LoggingConsumerRebalanceListener(config.topic, config.group, config.clientId)
+                    LoggingConsumerRebalanceListener(config.clientId)
                 } else {
-                    ForwardingRebalanceListener(config.topic, config.group, config.clientId, partitionAssignmentListener)
+                    ForwardingRebalanceListener(config.topic, config.clientId, partitionAssignmentListener)
                 }
                 val consumerConfig = ConsumerConfig(config.group, config.clientId, ConsumerRoles.EVENT_LOG)
                 consumer = cordaConsumerBuilder.createConsumer(
@@ -238,7 +238,7 @@ internal class EventLogSubscriptionImpl<K : Any, V : Any>(
             if(deadLetterRecords.isNotEmpty()) {
                 producer.sendRecords(deadLetterRecords.map {
                     CordaProducerRecord(
-                        getStateAndEventDLQTopic(config.topic),
+                        getDLQTopic(config.topic),
                         UUID.randomUUID().toString(),
                         it
                     )

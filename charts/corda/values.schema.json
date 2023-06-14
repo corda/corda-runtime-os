@@ -224,6 +224,43 @@
                 }
             ]
         },
+        "tracing": {
+            "type": "object",
+            "title": "Distributed tracing configuration",
+            "additionalProperties": false,
+            "required": [
+                "endpoint"
+            ],
+            "properties": {
+                "endpoint": {
+                    "type": "string",
+                    "default": "",
+                    "title": "URL for endpoint to send Zipkin-format distributed traces to",
+                    "examples": [
+                        "http://tempo:9411"
+                    ]
+                },
+                "samplesPerSecond": {
+                    "type": "string",
+                    "default": "1",
+                    "title": "Number of request traces to sample per second, defaults to 1 sample per second. Set to 'unlimited' to record all traces, but in this case amount of tracing data produced can be quite vast.",
+                    "examples": [
+                        "10",
+                        "unlimited"
+                    ]
+                }
+            },
+            "examples": [
+                {
+                    "endpoint": "http://tempo:9411",
+                    "samplesPerSecond": "10"
+                },
+                {
+                    "endpoint": "http://tempo:9411",
+                    "samplesPerSecond": "unlimited"
+                }
+            ]
+        },
         "dumpHostPath": {
             "type": "string",
             "default": "",

@@ -34,6 +34,8 @@ import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
+import net.corda.membership.lib.metrics.TimerMetricTypes
+import net.corda.membership.lib.metrics.getTimerMetric
 import net.corda.membership.mtls.allowed.list.service.AllowedCertificatesReaderWriterService
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.utilities.time.Clock
@@ -61,6 +63,7 @@ internal class HandlerFactories(
         keyEncodingService,
         platformInfoProvider,
         allowedCertificatesReaderWriterService,
+        ::getTransactionTimer
     )
     private val handlerFactories: Map<Class<*>, () -> PersistenceHandler<out Any, out Any>> = mapOf(
         PersistRegistrationRequest::class.java to { PersistRegistrationRequestHandler(persistenceHandlerServices) },
@@ -93,6 +96,12 @@ internal class HandlerFactories(
         UpdateStaticNetworkInfo::class.java to { UpdateStaticNetworkInfoHandler(persistenceHandlerServices) },
     )
 
+    private fun getTransactionTimer(operation: String) = getTimerMetric(
+        TimerMetricTypes.PERSISTENCE_TRANSACTION,
+        null,
+        operation
+    )
+
     private fun getHandler(requestClass: Class<*>): PersistenceHandler<Any, Any> {
         val factory = handlerFactories[requestClass] ?: throw MembershipPersistenceException(
             "No handler has been registered to handle the persistence request received." +
@@ -103,6 +112,13 @@ internal class HandlerFactories(
     }
 
     fun handle(request: MembershipPersistenceRequest): Any? {
-        return getHandler(request.request::class.java).invoke(request.context, request.request)
+        val rqClass = request.request::class.java
+        return getTimerMetric(
+            TimerMetricTypes.PERSISTENCE_HANDLER,
+            request.context.holdingIdentity,
+            rqClass.simpleName
+        ).recordCallable {
+            getHandler(rqClass).invoke(request.context, request.request)
+        }
     }
 }
