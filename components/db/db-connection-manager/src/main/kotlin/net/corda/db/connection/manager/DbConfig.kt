@@ -1,11 +1,9 @@
 package net.corda.db.connection.manager
 
 import com.typesafe.config.ConfigRenderOptions
-import com.typesafe.config.ConfigValueFactory
 import net.corda.db.core.CloseableDataSource
 import net.corda.db.core.DataSourceFactory
 import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.validation.ConfigurationDefaults.DB_SCHEMA_VER
 import net.corda.libs.configuration.validation.getConfigurationDefaults
 import net.corda.schema.configuration.ConfigKeys
@@ -76,37 +74,4 @@ fun DataSourceFactory.createFromConfig(config: SmartConfig): CloseableDataSource
         keepaliveTime = keepaliveTime,
         validationTimeout = validationTimeout
     )
-}
-
-@Suppress("LongParameterList")
-fun createDbConfig(
-    smartConfigFactory: SmartConfigFactory,
-    username: String,
-    password: String,
-    jdbcDriver: String? = null,
-    jdbcUrl: String,
-    maxPoolSize: Int,
-    minPoolSize: Int?,
-    idleTimeout: Int,
-    maxLifetime: Int,
-    keepaliveTime: Int,
-    validationTimeout: Int,
-    key: String
-): SmartConfig {
-    var config =
-        smartConfigFactory.makeSecret(password, key).atPath(DatabaseConfig.DB_PASS)
-            .withValue(DatabaseConfig.DB_USER, ConfigValueFactory.fromAnyRef(username))
-    if(null != jdbcDriver)
-        config = config.withValue(DatabaseConfig.JDBC_DRIVER, ConfigValueFactory.fromAnyRef(jdbcDriver))
-    config = config.withValue(DatabaseConfig.JDBC_URL, ConfigValueFactory.fromAnyRef(jdbcUrl))
-    config = config.withValue(DatabaseConfig.DB_POOL_MAX_SIZE, ConfigValueFactory.fromAnyRef(maxPoolSize))
-    if(null != minPoolSize)
-        config = config.withValue(DatabaseConfig.DB_POOL_MIN_SIZE, ConfigValueFactory.fromAnyRef(minPoolSize))
-
-    config = config.withValue(DatabaseConfig.DB_POOL_IDLE_TIMEOUT_SECONDS, ConfigValueFactory.fromAnyRef(idleTimeout))
-    config = config.withValue(DatabaseConfig.DB_POOL_MAX_LIFETIME_SECONDS, ConfigValueFactory.fromAnyRef(maxLifetime))
-    config = config.withValue(DatabaseConfig.DB_POOL_KEEPALIVE_TIME_SECONDS, ConfigValueFactory.fromAnyRef(keepaliveTime))
-    config = config.withValue(DatabaseConfig.DB_POOL_VALIDATION_TIMEOUT_SECONDS, ConfigValueFactory.fromAnyRef(validationTimeout))
-    return config
-
 }

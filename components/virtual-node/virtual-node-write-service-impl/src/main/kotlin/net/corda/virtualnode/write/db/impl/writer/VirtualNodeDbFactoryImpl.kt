@@ -1,6 +1,7 @@
 package net.corda.virtualnode.write.db.impl.writer
 
 import com.typesafe.config.ConfigFactory
+import com.typesafe.config.ConfigValueFactory
 import net.corda.crypto.core.ShortHash
 import net.corda.data.virtualnode.VirtualNodeCreateRequest
 import net.corda.db.admin.LiquibaseSchemaMigrator
@@ -9,10 +10,13 @@ import net.corda.db.connection.manager.VirtualNodeDbType
 import net.corda.db.connection.manager.VirtualNodeDbType.VAULT
 import net.corda.db.connection.manager.VirtualNodeDbType.UNIQUENESS
 import net.corda.db.connection.manager.VirtualNodeDbType.CRYPTO
-import net.corda.db.connection.manager.createDbConfig
 import net.corda.db.core.DbPrivilege
 import net.corda.db.core.DbPrivilege.DDL
 import net.corda.db.core.DbPrivilege.DML
+import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.configuration.SmartConfigFactory
+import net.corda.schema.configuration.DatabaseConfig
+import net.corda.utilities.VisibleForTesting
 import net.corda.virtualnode.write.db.impl.VirtualNodesDbAdmin
 import java.security.SecureRandom
 
@@ -209,4 +213,37 @@ internal class VirtualNodeDbFactoryImpl(
      * @return SmartConfig created from configuration String
      */
     private fun String.toSmartConfig() = smartConfigFactory.create(ConfigFactory.parseString(this))
+}
+
+@Suppress("LongParameterList")
+@VisibleForTesting
+internal fun createDbConfig(
+    smartConfigFactory: SmartConfigFactory,
+    username: String,
+    password: String,
+    jdbcDriver: String? = null,
+    jdbcUrl: String,
+    maxPoolSize: Int,
+    minPoolSize: Int?,
+    idleTimeout: Int,
+    maxLifetime: Int,
+    keepaliveTime: Int,
+    validationTimeout: Int,
+    key: String
+): SmartConfig {
+    var config =
+        smartConfigFactory.makeSecret(password, key).atPath(DatabaseConfig.DB_PASS)
+            .withValue(DatabaseConfig.DB_USER, ConfigValueFactory.fromAnyRef(username))
+    if(null != jdbcDriver)
+        config = config.withValue(DatabaseConfig.JDBC_DRIVER, ConfigValueFactory.fromAnyRef(jdbcDriver))
+    config = config.withValue(DatabaseConfig.JDBC_URL, ConfigValueFactory.fromAnyRef(jdbcUrl))
+    config = config.withValue(DatabaseConfig.DB_POOL_MAX_SIZE, ConfigValueFactory.fromAnyRef(maxPoolSize))
+    if(null != minPoolSize)
+        config = config.withValue(DatabaseConfig.DB_POOL_MIN_SIZE, ConfigValueFactory.fromAnyRef(minPoolSize))
+
+    config = config.withValue(DatabaseConfig.DB_POOL_IDLE_TIMEOUT, ConfigValueFactory.fromAnyRef(idleTimeout))
+    config = config.withValue(DatabaseConfig.DB_POOL_MAX_LIFETIME, ConfigValueFactory.fromAnyRef(maxLifetime))
+    config = config.withValue(DatabaseConfig.DB_POOL_KEEPALIVE_TIME, ConfigValueFactory.fromAnyRef(keepaliveTime))
+    config = config.withValue(DatabaseConfig.DB_POOL_VALIDATION_TIMEOUT, ConfigValueFactory.fromAnyRef(validationTimeout))
+    return config
 }
