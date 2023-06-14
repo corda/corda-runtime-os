@@ -57,6 +57,7 @@ internal class ReplayScheduler<K: SessionManager.BaseCounterparties, M>(
         ConcurrentHashMap<K, MutableSet<MessageId>>()
     private val replayInfoPerMessageId = ConcurrentHashMap<MessageId, ReplayInfo>()
     data class QueuedMessage<M>(val originalAttemptTimestamp: Long, val uniqueId: MessageId, val message: M)
+    @VisibleForTesting
     internal val queuedMessagesPerCounterparties = ConcurrentHashMap<K, MessageQueue<M>>()
 
     /**
