@@ -52,7 +52,7 @@ class DbConfigTest {
         ${DatabaseConfig.DB_POOL_MIN_SIZE}=null
         ${DatabaseConfig.DB_POOL_IDLE_TIMEOUT}=$idleTimeout
         ${DatabaseConfig.DB_POOL_MAX_LIFETIME}=$maxLifetime
-        ${DatabaseConfig.DB_POOL_KEEP_ALIVE_TIME}=$keepaliveTime
+        ${DatabaseConfig.DB_POOL_KEEPALIVE_TIME}=$keepaliveTime
         ${DatabaseConfig.DB_POOL_VALIDATION_TIMEOUT}=$validationTimeout
     """.trimIndent()
     private val fullSmartConfig = SmartConfigImpl(

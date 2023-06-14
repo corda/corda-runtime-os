@@ -48,7 +48,7 @@ fun DataSourceFactory.createFromConfig(config: SmartConfig): CloseableDataSource
     val maxLifetime =
         configWithFallback.getInt(DatabaseConfig.DB_POOL_MAX_LIFETIME).toLong().run(Duration::ofSeconds)
     val keepaliveTime =
-        configWithFallback.getInt(DatabaseConfig.DB_POOL_KEEP_ALIVE_TIME).toLong().run(Duration::ofSeconds)
+        configWithFallback.getInt(DatabaseConfig.DB_POOL_KEEPALIVE_TIME).toLong().run(Duration::ofSeconds)
     val validationTimeout =
         configWithFallback.getInt(DatabaseConfig.DB_POOL_VALIDATION_TIMEOUT).toLong().run(Duration::ofSeconds)
 
@@ -105,7 +105,7 @@ fun createDbConfig(
 
     config = config.withValue(DatabaseConfig.DB_POOL_IDLE_TIMEOUT, ConfigValueFactory.fromAnyRef(idleTimeout))
     config = config.withValue(DatabaseConfig.DB_POOL_MAX_LIFETIME, ConfigValueFactory.fromAnyRef(maxLifetime))
-    config = config.withValue(DatabaseConfig.DB_POOL_KEEP_ALIVE_TIME, ConfigValueFactory.fromAnyRef(keepaliveTime))
+    config = config.withValue(DatabaseConfig.DB_POOL_KEEPALIVE_TIME, ConfigValueFactory.fromAnyRef(keepaliveTime))
     config = config.withValue(DatabaseConfig.DB_POOL_VALIDATION_TIMEOUT, ConfigValueFactory.fromAnyRef(validationTimeout))
     return config
 
