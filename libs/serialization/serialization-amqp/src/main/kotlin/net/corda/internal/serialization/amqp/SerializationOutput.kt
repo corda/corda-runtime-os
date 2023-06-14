@@ -13,7 +13,9 @@ import java.io.NotSerializableException
 import java.io.OutputStream
 import java.lang.reflect.Type
 import java.lang.reflect.WildcardType
+import java.time.Duration
 import java.util.IdentityHashMap
+import java.util.concurrent.Semaphore
 
 data class BytesAndSchemas<T : Any>(
         val obj: SerializedBytes<T>,
@@ -39,6 +41,8 @@ open class SerializationOutput constructor(
     internal val schemaHistory: MutableSet<TypeNotation> = LinkedHashSet()
     private val metadata = Metadata()
 
+    private val semaphore = Semaphore(1)
+
     /**
      * Serialize the given object to AMQP, wrapped in our [Envelope] wrapper which carries an AMQP 1.0 schema, and prefixed
      * with a header to indicate that this is serialized with AMQP and not Kryo, and what version of the Corda implementation
@@ -46,13 +50,17 @@ open class SerializationOutput constructor(
      */
     @Throws(NotSerializableException::class)
     fun <T : Any> serialize(obj: T, context: SerializationContext): SerializedBytes<T> {
+        val startTime = System.nanoTime()
+        semaphore.acquire()
         try {
+            logger.error("BLOCKED ON SERIALIZATION TIME = ${Duration.ofNanos(startTime - System.nanoTime())}")
             return _serialize(obj, context)
         } catch (amqp: AMQPNotSerializableException) {
             amqp.log("Serialize", logger)
             throw NotSerializableException(amqp.mitigation)
         } finally {
             andFinally()
+            semaphore.release()
         }
     }
 
