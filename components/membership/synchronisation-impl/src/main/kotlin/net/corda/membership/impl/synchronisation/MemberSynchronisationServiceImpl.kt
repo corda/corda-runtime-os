@@ -368,7 +368,8 @@ class MemberSynchronisationServiceImpl internal constructor(
                 allRecords + persistRecords
             } catch (e: Exception) {
                 logger.warn(
-                    "Failed to process membership updates received by ${viewOwningMember.x500Name}. Will retry again soon.",
+                    "Failed to process membership updates received by ${viewOwningMember.x500Name}. " +
+                        "Will trigger a fresh sync with MGM.",
                     e,
                 )
                 createSynchroniseNowRequest(
@@ -437,7 +438,7 @@ class MemberSynchronisationServiceImpl internal constructor(
                 ),
             )
         } catch (e: Exception) {
-            logger.warn("Failed to trigger an immediate sync, will schedule on to be triggered later.", e)
+            logger.warn("Failed to trigger an immediate sync, will schedule one to be triggered later.", e)
             coordinator.setTimer(
                 key = "SendSyncRequest-${viewOwningMember.fullHash}",
                 delay = TimeUnit.MINUTES.toMillis(RESEND_NOW_MAX_IN_MINUTES),
