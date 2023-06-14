@@ -1,7 +1,9 @@
+package net.corda.db.connection.manager.impl.tests
+
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.db.connection.manager.DBConfigurationException
-import net.corda.db.connection.manager.createFromConfig
+import net.corda.db.connection.manager.impl.DataSourceFactoryHelper.createFromConfig
 import net.corda.db.core.DataSourceFactory
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.SmartConfigImpl
@@ -15,12 +17,13 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import java.time.Duration
 
-class DbConfigTest {
+class DataSourceFactoryHelperTest {
     companion object {
         private const val DEFAULT_JDBC_URL = "jdbc:postgresql://cluster-db:5432/cordacluster"
         private const val JDBC_DRIVER = "org.postgresql.Driver"
         private const val DB_POOL_MAX_SIZE = 10
     }
+
     private val dataSourceFactory =  mock<DataSourceFactory>()
     private val secretConfig = SmartConfigImpl(ConfigFactory.parseMap(mapOf(
         "secret" to "secret value"
@@ -134,20 +137,26 @@ class DbConfigTest {
     @Test
     fun `when username missing throw`() {
         assertThrows<DBConfigurationException> {
-            dataSourceFactory.createFromConfig(SmartConfigImpl(
+            dataSourceFactory.createFromConfig(
+                SmartConfigImpl(
                 ConfigFactory.parseString("${DatabaseConfig.DB_PASS}=pass"),
                 mock(),
-                mock()))
+                mock()
+                )
+            )
         }
     }
 
     @Test
     fun `when pass missing throw`() {
         assertThrows<DBConfigurationException> {
-            dataSourceFactory.createFromConfig(SmartConfigImpl(
+            dataSourceFactory.createFromConfig(
+                SmartConfigImpl(
                 ConfigFactory.parseString("${DatabaseConfig.DB_PASS}=user"),
                 mock(),
-                mock()))
+                mock()
+                )
+            )
         }
     }
 }

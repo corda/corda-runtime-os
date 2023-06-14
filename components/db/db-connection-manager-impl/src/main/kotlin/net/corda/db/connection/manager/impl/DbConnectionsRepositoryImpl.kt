@@ -3,7 +3,7 @@ package net.corda.db.connection.manager.impl
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigRenderOptions
 import net.corda.db.connection.manager.DbConnectionsRepository
-import net.corda.db.connection.manager.createFromConfig
+import net.corda.db.connection.manager.impl.DataSourceFactoryHelper.createFromConfig
 import net.corda.db.core.CloseableDataSource
 import net.corda.db.core.DataSourceFactory
 import net.corda.db.core.DbPrivilege

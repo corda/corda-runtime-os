@@ -3,8 +3,8 @@ package net.corda.db.connection.manager.impl.tests
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigRenderOptions
 import net.corda.db.connection.manager.DbConnectionOps
-import net.corda.db.connection.manager.createFromConfig
 import net.corda.db.connection.manager.impl.BootstrapConfigProvided
+import net.corda.db.connection.manager.impl.DataSourceFactoryHelper.createFromConfig
 import net.corda.db.connection.manager.impl.DbConnectionManagerImpl
 import net.corda.db.connection.manager.impl.DbConnectionRepositoryFactory
 import net.corda.db.connection.manager.impl.LateInitDbConnectionOps
