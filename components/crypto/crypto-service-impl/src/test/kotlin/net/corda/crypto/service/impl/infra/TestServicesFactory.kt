@@ -1,17 +1,22 @@
 package net.corda.crypto.service.impl.infra
 
+import com.github.benmanes.caffeine.cache.Cache
+import com.github.benmanes.caffeine.cache.Caffeine
 import com.typesafe.config.ConfigFactory
+import net.corda.cache.caffeine.CacheFactoryImpl
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.cipher.suite.impl.DigestServiceImpl
 import net.corda.cipher.suite.impl.PlatformDigestServiceImpl
 import net.corda.cipher.suite.impl.SignatureVerificationServiceImpl
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
+import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.cipher.suite.SignatureVerificationService
 import net.corda.crypto.component.test.utils.TestConfigurationReadService
 import net.corda.crypto.config.impl.createCryptoBootstrapParamsMap
 import net.corda.crypto.config.impl.createDefaultCryptoConfig
 import net.corda.crypto.core.CryptoConsts.SOFT_HSM_ID
 import net.corda.crypto.core.CryptoService
+import net.corda.crypto.core.SigningKeyInfo
 import net.corda.crypto.core.aes.WrappingKeyImpl
 import net.corda.crypto.persistence.HSMStore
 import net.corda.crypto.persistence.WrappingKeyInfo
@@ -29,6 +34,8 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import java.security.KeyPairGenerator
 import java.security.Provider
+import java.security.PublicKey
+import java.util.concurrent.TimeUnit
 import kotlin.test.assertEquals
 
 
@@ -158,6 +165,11 @@ class TestServicesFactory {
     val association = mock<HSMAssociationInfo> {
         on { masterKeyAlias }.thenReturn("second")
     }
+    val signingKeyInfoCache: Cache<PublicKey, SigningKeyInfo> = CacheFactoryImpl().build(
+        "test private key cache", Caffeine.newBuilder()
+            .expireAfterAccess(3600, TimeUnit.MINUTES)
+            .maximumSize(3)
+    )
     val cryptoService: CryptoService by lazy {
         SoftCryptoService(
             wrappingRepositoryFactory = { wrappingRepository },
@@ -176,7 +188,7 @@ class TestServicesFactory {
             signingRepositoryFactory = {
                 signingRepository
             },
-            signingKeyInfoCache = mock(),
+            signingKeyInfoCache = signingKeyInfoCache,
             // would like to use makeHSMStore in the crypto-softhsm-impl project but
             // don't want the extra dependency
             hsmStore = mock<HSMStore> {
@@ -188,6 +200,9 @@ class TestServicesFactory {
 
     val hsmService: HSMServiceImpl by lazy {
         HSMServiceImpl(hsmStore, cryptoService)
+    }
+
+    val keyEncodingService = mock<KeyEncodingService> {
     }
 }
 

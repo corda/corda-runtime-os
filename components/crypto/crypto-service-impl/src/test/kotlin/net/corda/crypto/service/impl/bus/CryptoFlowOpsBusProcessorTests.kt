@@ -12,12 +12,12 @@ import net.corda.crypto.config.impl.toCryptoConfig
 import net.corda.crypto.core.CryptoService
 import net.corda.crypto.core.DigitalSignatureWithKey
 import net.corda.crypto.core.SecureHashImpl
+import net.corda.crypto.core.SigningKeyInfo
 import net.corda.crypto.core.fullId
 import net.corda.crypto.flow.CryptoFlowOpsTransformer.Companion.REQUEST_OP_KEY
 import net.corda.crypto.flow.CryptoFlowOpsTransformer.Companion.REQUEST_TTL_KEY
 import net.corda.crypto.flow.CryptoFlowOpsTransformer.Companion.RESPONSE_TOPIC
 import net.corda.crypto.flow.impl.CryptoFlowOpsTransformerImpl
-import net.corda.crypto.core.SigningKeyInfo
 import net.corda.crypto.service.impl.infra.ActResult
 import net.corda.crypto.service.impl.infra.ActResultTimestamps
 import net.corda.crypto.service.impl.infra.act
@@ -26,6 +26,7 @@ import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoResponseContext
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
+import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.data.crypto.wire.CryptoSigningKeys
 import net.corda.data.crypto.wire.ops.flow.FlowOpsRequest
 import net.corda.data.crypto.wire.ops.flow.FlowOpsResponse
@@ -53,6 +54,7 @@ import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.nio.ByteBuffer
 import java.security.PublicKey
 import java.time.Instant
 import java.util.UUID
@@ -164,6 +166,7 @@ import kotlin.test.assertTrue
         cryptoOpsClient = mock()
         externalEventResponseFactory = mock()
         val publicKeyMock = mock<PublicKey> {
+            on { encoded } doReturn byteArrayOf(42)
         }
         val signatureMock = mock<DigitalSignatureWithKey> {
             on { by } doReturn publicKeyMock
@@ -173,12 +176,16 @@ import kotlin.test.assertTrue
             on { decodePublicKey(any<ByteArray>()) } doReturn publicKeyMock
             on { encodeAsByteArray(any()) } doReturn byteArrayOf(42)
         }
+        val singleSigningKeyInfo = listOf(mock<SigningKeyInfo> {
+            on { publicKey } doReturn publicKeyMock
+        })
         cryptoService = mock<CryptoService> {
             on { sign(any(), any(), any(), any(), any()) } doReturn signatureMock
             on { schemeMetadata } doReturn schemeMetadataMock
+            on { lookupSigningKeysByPublicKeyHashes(any(), any()) } doReturn singleSigningKeyInfo
         }
         val retryingConfig = configEvent.config.toCryptoConfig().retrying()
-        processor = CryptoFlowOpsBusProcessor(cryptoService, externalEventResponseFactory, retryingConfig)
+        processor = CryptoFlowOpsBusProcessor(cryptoService, externalEventResponseFactory, retryingConfig, keyEncodingService)
         digestService = mock<DigestService>().also {
             fun capture() {
                 val bytesCaptor = argumentCaptor<ByteArray>()
@@ -551,6 +558,9 @@ import kotlin.test.assertTrue
             }
         }
         on { timestamp } doAnswer { Instant.now() }
-        on { publicKey } doAnswer { keyEncodingService.encodeAsByteArray(key0) }
+        on { publicKey } doAnswer { key0 }
+        on { convertToCryptoSigningKey(any()) } doAnswer { mock<CryptoSigningKey>() {
+            on { publicKey } doAnswer  { ByteBuffer.wrap(keyEncodingService.encodeAsByteArray(key0)) }
+        } }
     }
 }

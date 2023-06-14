@@ -67,7 +67,7 @@ class SigningRepositoryImpl(
             created = now,
             category = context.category,
             schemeCodeName = context.keyScheme.codeName,
-            publicKey = publicKeyBytes,
+            publicKey = keyEncodingService.encodeAsByteArray(context.key.publicKey),
             encodingVersion = null,
             alias = context.alias,
             hsmAlias = context.key.hsmAlias,
@@ -80,7 +80,7 @@ class SigningRepositoryImpl(
             it.persist(entity)
         }
         return entityManagerFactory.createEntityManager().use {
-            entity.joinSigningKeyInfo(it)
+            entity.joinSigningKeyInfo(it, keyEncodingService)
         }
     }
 
@@ -152,7 +152,7 @@ class SigningRepositoryImpl(
             }
         }
 
-        return entityManagerFactory.createEntityManager().use { entity.joinSigningKeyInfo(it) }
+        return entityManagerFactory.createEntityManager().use { entity.joinSigningKeyInfo(it, keyEncodingService) }
     }
 
     override fun findKey(alias: String): SigningKeyInfo? {
@@ -169,7 +169,7 @@ class SigningRepositoryImpl(
             }
 
 
-            return result.firstOrNull()?.joinSigningKeyInfo(em)
+            return result.firstOrNull()?.joinSigningKeyInfo(em, keyEncodingService)
         }
     }
 
@@ -184,7 +184,7 @@ class SigningRepositoryImpl(
                     SigningKeyEntity::class.java
                 ).setParameter("tenantId", tenantId)
                     .setParameter("fullKeyId", requestedFullKeyId.toString())
-                    .resultList.singleOrNull()?.joinSigningKeyInfo(em)
+                    .resultList.singleOrNull()?.joinSigningKeyInfo(em, keyEncodingService)
             }
         }
     }
@@ -206,7 +206,7 @@ class SigningRepositoryImpl(
             builder.greaterThanOrEqualTo(SigningKeyEntity::created, map.createdAfter)
             builder.lessThanOrEqualTo(SigningKeyEntity::created, map.createdBefore)
             builder.build(skip, take, orderBy).resultList.map {
-                it.joinSigningKeyInfo(em)
+                it.joinSigningKeyInfo(em, keyEncodingService)
             }
         }
     }
@@ -227,7 +227,7 @@ class SigningRepositoryImpl(
                             SigningKeyEntity::class.java
                         ).setParameter("tenantId", tenantId)
                             .setParameter("keyIds", keyIdsStrings)
-                            .resultList.map { it.joinSigningKeyInfo(em) }
+                            .resultList.map { it.joinSigningKeyInfo(em, keyEncodingService) }
                     }
                 }
             }!!
@@ -255,7 +255,7 @@ class SigningRepositoryImpl(
                         )
                             .setParameter("tenantId", tenantId)
                             .setParameter("fullKeyIds", fullKeyIdsStrings)
-                            .resultList.map { it.joinSigningKeyInfo(em) }
+                            .resultList.map { it.joinSigningKeyInfo(em, keyEncodingService) }
                     }
                 }
             }!!
@@ -263,7 +263,7 @@ class SigningRepositoryImpl(
 }
 
 
-fun SigningKeyEntity.joinSigningKeyInfo(em: EntityManager): SigningKeyInfo {
+fun SigningKeyEntity.joinSigningKeyInfo(em: EntityManager, keyEncodingService: KeyEncodingService): SigningKeyInfo {
     val signingKeyMaterialEntity = requireNotNull(em.createQuery(
         "FROM ${SigningKeyMaterialEntity::class.java.simpleName} WHERE signingKeyId=:signingKeyId",
         SigningKeyMaterialEntity::class.java
@@ -280,7 +280,7 @@ fun SigningKeyEntity.joinSigningKeyInfo(em: EntityManager): SigningKeyInfo {
         category = category,
         alias = alias,
         hsmAlias = hsmAlias,
-        publicKey = publicKey,
+        publicKey = keyEncodingService.decodePublicKey(publicKey),
         keyMaterial = signingKeyMaterialEntity.keyMaterial,
         schemeCodeName = schemeCodeName,
         masterKeyAlias = wrappingKey?.alias,

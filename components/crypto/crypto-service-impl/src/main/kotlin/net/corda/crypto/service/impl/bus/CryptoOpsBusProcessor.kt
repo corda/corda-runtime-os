@@ -1,22 +1,19 @@
 package net.corda.crypto.service.impl.bus
 
-import java.nio.ByteBuffer
-import java.time.Instant
-import java.util.concurrent.CompletableFuture
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
+import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.cipher.suite.schemes.KeyScheme
 import net.corda.crypto.config.impl.RetryingConfig
 import net.corda.crypto.core.CryptoService
 import net.corda.crypto.core.InvalidParamsException
 import net.corda.crypto.core.KeyAlreadyExistsException
+import net.corda.crypto.core.KeyOrderBy
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.core.ShortHash
 import net.corda.crypto.impl.retrying.BackoffStrategy
 import net.corda.crypto.impl.retrying.CryptoRetryingExecutor
 import net.corda.crypto.impl.toMap
 import net.corda.crypto.impl.toSignatureSpec
-import net.corda.crypto.core.SigningKeyInfo
-import net.corda.crypto.core.KeyOrderBy
 import net.corda.data.crypto.SecureHashes
 import net.corda.data.crypto.ShortHashes
 import net.corda.data.crypto.wire.CryptoDerivedSharedSecret
@@ -26,7 +23,6 @@ import net.corda.data.crypto.wire.CryptoPublicKey
 import net.corda.data.crypto.wire.CryptoRequestContext
 import net.corda.data.crypto.wire.CryptoResponseContext
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
-import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.data.crypto.wire.CryptoSigningKeys
 import net.corda.data.crypto.wire.ops.rpc.RpcOpsRequest
 import net.corda.data.crypto.wire.ops.rpc.RpcOpsResponse
@@ -44,11 +40,15 @@ import net.corda.utilities.debug
 import net.corda.v5.crypto.SecureHash
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.nio.ByteBuffer
+import java.time.Instant
+import java.util.concurrent.CompletableFuture
 
 @Suppress("LongParameterList")
 class CryptoOpsBusProcessor(
     private val cryptoService: CryptoService,
     config: RetryingConfig,
+    private val keyEncodingService: KeyEncodingService
 ) :
     RPCResponderProcessor<RpcOpsRequest, RpcOpsResponse> {
     companion object {
@@ -116,7 +116,7 @@ class CryptoOpsBusProcessor(
                     else -> throw IllegalArgumentException("Unexpected type for ${avroKeyIds::class.java.name}")
                 }
 
-            return CryptoSigningKeys(foundKeys.map { it.toAvro() })
+            return CryptoSigningKeys(foundKeys.map { it.convertToCryptoSigningKey(keyEncodingService) })
         }
 
         fun handleKeysRpcQuery(request: KeysRpcQuery): CryptoSigningKeys {
@@ -127,7 +127,7 @@ class CryptoOpsBusProcessor(
                 orderBy = KeyOrderBy.valueOf(request.orderBy.name),
                 filter = request.filter.toMap()
             )
-            return CryptoSigningKeys(found.map { it.toAvro() })
+            return CryptoSigningKeys(found.map { it.convertToCryptoSigningKey(keyEncodingService) })
         }
 
         fun handleDeriveSharedSecretCommand(request: DeriveSharedSecretCommand): CryptoDerivedSharedSecret {
@@ -232,18 +232,3 @@ class CryptoOpsBusProcessor(
         }
     }
 }
-
-fun SigningKeyInfo.toAvro(): CryptoSigningKey =
-    CryptoSigningKey(
-        this.id.value,
-        this.tenantId,
-        this.category,
-        this.alias,
-        this.hsmAlias,
-        ByteBuffer.wrap(this.publicKey),
-        this.schemeCodeName,
-        this.masterKeyAlias,
-        this.encodingVersion,
-        this.externalId,
-        this.timestamp
-    )

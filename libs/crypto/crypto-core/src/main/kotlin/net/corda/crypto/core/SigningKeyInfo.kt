@@ -1,6 +1,10 @@
 package net.corda.crypto.core
 
+import net.corda.crypto.cipher.suite.KeyEncodingService
+import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.v5.crypto.SecureHash
+import java.nio.ByteBuffer
+import java.security.PublicKey
 import java.time.Instant
 
 /**
@@ -15,7 +19,7 @@ data class SigningKeyInfo(
     val category: String,
     val alias: String?,
     val hsmAlias: String?,
-    val publicKey: ByteArray,
+    val publicKey: PublicKey,
     val keyMaterial: ByteArray,
     val schemeCodeName: String,
     val masterKeyAlias: String?,
@@ -37,7 +41,7 @@ data class SigningKeyInfo(
         if (category != other.category) return false
         if (alias != other.alias) return false
         if (hsmAlias != other.hsmAlias) return false
-        if (!publicKey.contentEquals(other.publicKey)) return false
+        if (!publicKey.equals(other.publicKey)) return false
         if (!keyMaterial.contentEquals(other.keyMaterial)) return false
         if (schemeCodeName != other.schemeCodeName) return false
         if (masterKeyAlias != other.masterKeyAlias) return false
@@ -57,7 +61,7 @@ data class SigningKeyInfo(
         result = 31 * result + category.hashCode()
         result = 31 * result + (alias?.hashCode() ?: 0)
         result = 31 * result + (hsmAlias?.hashCode() ?: 0)
-        result = 31 * result + publicKey.contentHashCode()
+        result = 31 * result + publicKey.hashCode()
         result = 31 * result + (keyMaterial.contentHashCode())
         result = 31 * result + schemeCodeName.hashCode()
         result = 31 * result + (masterKeyAlias?.hashCode() ?: 0)
@@ -68,4 +72,18 @@ data class SigningKeyInfo(
         result = 31 * result + status.hashCode()
         return result
     }
+
+    fun convertToCryptoSigningKey(keyEncodingService: KeyEncodingService): CryptoSigningKey = CryptoSigningKey(
+        this.id.value,
+        this.tenantId,
+        this.category,
+        this.alias,
+        this.hsmAlias,
+        ByteBuffer.wrap(keyEncodingService.encodeAsByteArray(this.publicKey)),
+        this.schemeCodeName,
+        this.masterKeyAlias,
+        this.encodingVersion,
+        this.externalId,
+        this.timestamp
+    )
 }

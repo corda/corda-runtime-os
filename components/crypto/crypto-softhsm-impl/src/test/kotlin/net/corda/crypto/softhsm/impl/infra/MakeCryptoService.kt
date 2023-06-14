@@ -11,7 +11,6 @@ import net.corda.crypto.core.aes.WrappingKeyImpl
 import net.corda.crypto.persistence.HSMStore
 import net.corda.crypto.softhsm.SigningRepository
 import net.corda.crypto.softhsm.WrappingRepository
-import net.corda.crypto.softhsm.impl.CacheKey
 import net.corda.crypto.softhsm.impl.SoftCryptoService
 import java.security.KeyPairGenerator
 import java.security.PrivateKey
@@ -23,7 +22,7 @@ import java.security.PublicKey
 fun makeSoftCryptoService(
     privateKeyCache: Cache<PublicKey, PrivateKey>? = null,
     wrappingKeyCache: Cache<String, WrappingKey>? = null,
-    signingKeyInfoCache: Cache<CacheKey, SigningKeyInfo>? = null,
+    signingKeyInfoCache: Cache<PublicKey, SigningKeyInfo>? = null,
     schemeMetadata: CipherSchemeMetadataImpl = CipherSchemeMetadataImpl(),
     rootWrappingKey: WrappingKey = WrappingKeyImpl.generateWrappingKey(schemeMetadata),
     wrappingKeyFactory: (schemeMetadata: CipherSchemeMetadata) -> WrappingKey = { it ->

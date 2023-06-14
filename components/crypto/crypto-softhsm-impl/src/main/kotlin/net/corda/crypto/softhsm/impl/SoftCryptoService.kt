@@ -27,6 +27,7 @@ import net.corda.crypto.core.ShortHash
 import net.corda.crypto.core.SigningKeyInfo
 import net.corda.crypto.core.aes.WrappingKey
 import net.corda.crypto.core.aes.WrappingKeyImpl
+import net.corda.crypto.core.fullId
 import net.corda.crypto.core.fullIdHash
 import net.corda.crypto.core.isRecoverable
 import net.corda.crypto.hes.core.impl.deriveDHSharedSecret
@@ -58,7 +59,6 @@ import javax.crypto.Cipher
 const val WRAPPING_KEY_ENCODING_VERSION: Int = 1
 const val PRIVATE_KEY_ENCODING_VERSION: Int = 1
 
-data class CacheKey(val tenantId: String, val publicKeyId: ShortHash)
 data class OwnedKeyRecord(val publicKey: PublicKey, val data: SigningKeyInfo)
 
 /**
@@ -91,7 +91,7 @@ open class SoftCryptoService(
     private val digestService: PlatformDigestService,
     private val wrappingKeyCache: Cache<String, WrappingKey>?,
     private val privateKeyCache: Cache<PublicKey, PrivateKey>?,
-    private val signingKeyInfoCache: Cache<CacheKey, SigningKeyInfo>,
+    private val signingKeyInfoCache: Cache<PublicKey, SigningKeyInfo>,
     private val keyPairGeneratorFactory: (algorithm: String, provider: Provider) -> KeyPairGenerator,
     private val wrappingKeyFactory: (schemeMetadata: CipherSchemeMetadata) -> WrappingKey = {
         WrappingKeyImpl.generateWrappingKey(it)
@@ -267,7 +267,7 @@ open class SoftCryptoService(
                     hsmId = "SOFT" // TODO remove field
                 )
                 val signingKeyInfo = repo.savePrivateKey(saveContext)
-                signingKeyInfoCache.put(CacheKey(tenantId, signingKeyInfo.id), signingKeyInfo)
+                signingKeyInfoCache.put(signingKeyInfo.publicKey, signingKeyInfo)
             }
         }
     }
@@ -391,19 +391,18 @@ open class SoftCryptoService(
         // Since we are looking up by short IDs there's nothing we can do to handle clashes
         // on short IDs in this case, at this layer. We must therefore rely on the database
         // uniqueness constraints to stop clashes from being created.
-
-        val cachedKeys =
-            signingKeyInfoCache.getAllPresent(keyIds.mapTo(mutableSetOf()) {
-                CacheKey(tenantId, it)
-            }).mapTo(mutableSetOf()) { it.value }
-        val notFound: List<ShortHash> = keyIds - cachedKeys.map { it.id }.toSet()
-        if (notFound.isEmpty()) return cachedKeys
+        val cachedMap = signingKeyInfoCache.asMap()
+        val foundKeys = cachedMap.filterKeys { keyIds.contains(ShortHash.of(it.fullIdHash())) }
+        val shortIdsFound = foundKeys.values.map { it.id }
+        val cachedKeys = foundKeys.filter { cachedMap[it.key]?.tenantId == tenantId }
+        val notFound: List<ShortHash> = keyIds - shortIdsFound
+        if (notFound.isEmpty()) return cachedKeys.values
         val fetchedKeys = signingRepositoryFactory.getInstance(tenantId).use {
             it.lookupByPublicKeyShortHashes(notFound.toMutableSet())
         }
-        fetchedKeys.forEach { signingKeyInfoCache.put(CacheKey(tenantId, it.id), it) }
+        fetchedKeys.forEach { signingKeyInfoCache.put(it.publicKey, it) }
 
-        return cachedKeys + fetchedKeys
+        return cachedKeys.values + fetchedKeys
     }
 
     override fun lookupSigningKeysByPublicKeyHashes(
@@ -419,8 +418,10 @@ open class SoftCryptoService(
                 }
             }.filterNotNull()
 
-        val keyIds = fullKeyIds.map { ShortHash.of(it) }
-        val cachedMap = signingKeyInfoCache.getAllPresent(keyIds.mapTo(mutableSetOf()) { CacheKey(tenantId, it) })
+        val cachedMap = signingKeyInfoCache.asMap().filter {
+            fullKeyIds.contains( it.key.fullIdHash() )
+        }
+
         val cachedKeys = cachedMap.map { it.value }
         val cachedMatchingKeys = filterOutMismatches(cachedKeys)
         if (cachedMatchingKeys.size == fullKeyIds.size) return cachedMatchingKeys
@@ -434,7 +435,7 @@ open class SoftCryptoService(
         }
         val fetchedMatchingKeys = filterOutMismatches(fetchedKeys)
         fetchedMatchingKeys.forEach {
-            signingKeyInfoCache.put(CacheKey(tenantId, it.id), it)
+            signingKeyInfoCache.put(it.publicKey, it)
         }
         return cachedMatchingKeys + fetchedMatchingKeys
     }
@@ -519,21 +520,14 @@ open class SoftCryptoService(
         }
         // now we are not dealing with composite keys
 
-        // Unfortunately this fullIdHash call is an extension function, which is hard to mock, so testing
-        // the happy path on this function is hard.
-        val requestedFullKeyId = publicKey.fullIdHash(schemeMetadata, digestService)
-        val keyId = ShortHash.of(requestedFullKeyId)
-        val cacheKey = CacheKey(tenantId, keyId)
-        val signingKeyInfo = signingKeyInfoCache.getIfPresent(cacheKey) ?: run {
+        val signingKeyInfo = signingKeyInfoCache.getIfPresent(publicKey) ?: run {
             val repo = signingRepositoryFactory.getInstance(tenantId)
             val result = repo.findKey(publicKey)
             if (result == null) throw IllegalArgumentException("The public key '${publicKey.publicKeyId()}' was not found")
-            signingKeyInfoCache.put(cacheKey, result)
+            signingKeyInfoCache.put(result.publicKey, result)
             result
         }
-        if (signingKeyInfo.fullId != requestedFullKeyId) throw IllegalArgumentException(
-            "The tenant $tenantId doesn't own public key '${publicKey.publicKeyId()}'."
-        )
+
         return OwnedKeyRecord(publicKey, signingKeyInfo)
     }
 

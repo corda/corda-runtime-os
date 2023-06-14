@@ -136,7 +136,8 @@ class CryptoOpsBusProcessorTests {
         factory = TestServicesFactory()
         processor = CryptoOpsBusProcessor(
             factory.cryptoService,
-            configEvent.config.toCryptoConfig().retrying()
+            configEvent.config.toCryptoConfig().retrying(),
+            keyEncodingService = factory.keyEncodingService
         )
         CryptoConsts.Categories.all.forEach {
             factory.hsmService.assignSoftHSM(tenantId, it)
