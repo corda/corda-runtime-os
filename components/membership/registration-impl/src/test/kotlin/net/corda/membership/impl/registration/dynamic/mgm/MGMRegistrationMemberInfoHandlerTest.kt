@@ -31,7 +31,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.SOFTWARE_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.lib.MemberInfoExtension.Companion.URL_KEY
 import net.corda.membership.lib.MemberInfoFactory
-import net.corda.membership.lib.MemberSignedMemberInfo
+import net.corda.membership.lib.SignedMemberInfo
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceOperation
 import net.corda.membership.persistence.client.MembershipPersistenceResult
@@ -99,7 +99,10 @@ class MGMRegistrationMemberInfoHandlerTest {
     }
     private val signature = CryptoSignatureWithKey(ByteBuffer.wrap(byteArrayOf()), ByteBuffer.wrap(byteArrayOf()))
     private val signatureSpec = CryptoSignatureSpec("", null, null)
-    private val memberSignedMemberInfo: MemberSignedMemberInfo = MemberSignedMemberInfo(memberInfo, signature, signatureSpec)
+    private val signedMemberInfo = mock<SignedMemberInfo> {
+        on { memberSignature } doReturn signature
+        on { memberSignatureSpec } doReturn signatureSpec
+    }
     private val memberContextCaptor = argumentCaptor<SortedMap<String, String?>>()
     private val memberContext
         get() = assertDoesNotThrow { memberContextCaptor.firstValue }
@@ -160,13 +163,14 @@ class MGMRegistrationMemberInfoHandlerTest {
     }
     private val memberInfoFactory: MemberInfoFactory = mock {
         on { createMemberInfo(memberContextCaptor.capture(), mgmContextCaptor.capture()) } doReturn memberInfo
+        on { createSignedMemberInfo(memberInfo, signature, signatureSpec) } doReturn signedMemberInfo
     }
     private val operation = mock<MembershipPersistenceOperation<Unit>> {
         on { execute() } doReturn MembershipPersistenceResult.success()
     }
     private val membershipPersistenceClient: MembershipPersistenceClient = mock {
         on {
-            persistMemberInfo(eq(holdingIdentity), eq(listOf(memberSignedMemberInfo)))
+            persistMemberInfo(eq(holdingIdentity), eq(listOf(signedMemberInfo)))
         } doReturn Operation(MembershipPersistenceResult.success())
 
         on {
@@ -221,7 +225,7 @@ class MGMRegistrationMemberInfoHandlerTest {
             )
         }
 
-        assertThat(result).isEqualTo(memberSignedMemberInfo)
+        assertThat(result).isEqualTo(signedMemberInfo)
     }
 
     @Test
@@ -305,10 +309,8 @@ class MGMRegistrationMemberInfoHandlerTest {
         }
 
         SoftAssertions.assertSoftly {
-            it.assertThat(result.memberSignature)
-                .isEqualTo(CryptoSignatureWithKey(ByteBuffer.wrap(byteArrayOf()), ByteBuffer.wrap(byteArrayOf())))
-            it.assertThat(result.memberSignatureSpec)
-                .isEqualTo(CryptoSignatureSpec("", null, null))
+            it.assertThat(result.memberSignature).isEqualTo(signature)
+            it.assertThat(result.memberSignatureSpec).isEqualTo(signatureSpec)
         }
     }
 
@@ -372,7 +374,7 @@ class MGMRegistrationMemberInfoHandlerTest {
     fun `expected exception thrown if member info persistence fails`() {
         whenever(
             membershipPersistenceClient.persistMemberInfo(
-                eq(holdingIdentity), eq(listOf(memberSignedMemberInfo))
+                eq(holdingIdentity), eq(listOf(signedMemberInfo))
             )
         ).doReturn(Operation(MembershipPersistenceResult.Failure("")))
 
@@ -384,7 +386,7 @@ class MGMRegistrationMemberInfoHandlerTest {
         }
         verify(membershipPersistenceClient).persistMemberInfo(
             eq(holdingIdentity),
-            eq(listOf(memberSignedMemberInfo))
+            eq(listOf(signedMemberInfo))
         )
     }
 

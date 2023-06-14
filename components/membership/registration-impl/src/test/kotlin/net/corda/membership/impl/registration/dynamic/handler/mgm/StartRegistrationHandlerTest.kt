@@ -150,19 +150,21 @@ class StartRegistrationHandlerTest {
         on { serial } doReturn 1L
         on { platformVersion } doReturn 50100
     }
-    private val pendingMemberSignedMemberInfo: MemberSignedMemberInfo = mock {
-        on { memberInfo } doReturn pendingMemberInfo
+    private val pendingSignedMemberInfo: SignedMemberInfo = mock {
+        on { name } doReturn aliceX500Name
+        on { isActive } doReturn false
+        on { memberProvidedContext } doReturn memberMemberContext
+        on { mgmProvidedContext } doReturn memberMgmContext
+        on { status } doReturn MEMBER_STATUS_PENDING
+        on { serial } doReturn 1L
     }
-    private val activeMemberInfo: MemberInfo = mock {
+    private val activeSignedMemberInfo: SignedMemberInfo = mock {
         on { name } doReturn aliceX500Name
         on { isActive } doReturn true
         on { memberProvidedContext } doReturn memberMemberContext
         on { mgmProvidedContext } doReturn memberMgmContext
         on { status } doReturn MEMBER_STATUS_ACTIVE
         on { serial } doReturn 1L
-    }
-    private val activeMemberSignedMemberInfo: MemberSignedMemberInfo = mock {
-        on { memberInfo } doReturn activeMemberInfo
     }
     private val authenticatedMessageRecord = mock<Record<String, AppMessage>>()
     private val p2pRecordsFactory = mock<P2pRecordsFactory> {
@@ -539,7 +541,7 @@ class StartRegistrationHandlerTest {
 
     @Test
     fun `declined if member's current serial is larger than the serial in the request`() {
-        val activeMemberInfo: MemberInfo = mock {
+        val activeSignedMemberInfo: SignedMemberInfo = mock {
             on { name } doReturn aliceX500Name
             on { isActive } doReturn true
             on { memberProvidedContext } doReturn memberMemberContext
@@ -547,11 +549,8 @@ class StartRegistrationHandlerTest {
             on { status } doReturn MEMBER_STATUS_ACTIVE
             on { serial } doReturn 2L
         }
-        val activeMemberSignedMemberInfo: MemberSignedMemberInfo = mock {
-            on { memberInfo } doReturn activeMemberInfo
-        }
         whenever(membershipQueryClient.queryMemberInfo(eq(mgmHoldingIdentity.toCorda()), any(), any()))
-            .doReturn(MembershipQueryResult.Success(listOf(activeMemberSignedMemberInfo)))
+            .doReturn(MembershipQueryResult.Success(listOf(activeSignedMemberInfo)))
         whenever(membershipQueryClient.queryRegistrationRequest(eq(mgmHoldingIdentity.toCorda()), eq(registrationId)))
             .thenReturn(MembershipQueryResult.Success(createRegistrationRequest(serial = 1L)))
         with(handler.invoke(registrationState, Record(testTopic, testTopicKey, startRegistrationCommand))) {
@@ -756,7 +755,7 @@ class StartRegistrationHandlerTest {
                 mgmHoldingIdentity.toCorda(),
                 listOf(HoldingIdentity(aliceX500Name.toString(), groupId).toCorda())
             )
-        ).thenReturn(MembershipQueryResult.Success(listOf(pendingMemberSignedMemberInfo)))
+        ).thenReturn(MembershipQueryResult.Success(listOf(pendingSignedMemberInfo)))
 
         val registrationCommand = startRegistrationCommand
         val result = handler.invoke(RegistrationState(

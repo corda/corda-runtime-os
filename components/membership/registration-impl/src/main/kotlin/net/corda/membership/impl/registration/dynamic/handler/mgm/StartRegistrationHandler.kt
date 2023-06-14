@@ -29,7 +29,6 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
 import net.corda.membership.lib.MemberInfoExtension.Companion.notaryDetails
 import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.lib.MemberInfoFactory
-import net.corda.membership.lib.MemberSignedMemberInfo
 import net.corda.membership.lib.registration.RegistrationRequestHelpers.getPreAuthToken
 import net.corda.membership.lib.toMap
 import net.corda.membership.persistence.client.MembershipPersistenceClient

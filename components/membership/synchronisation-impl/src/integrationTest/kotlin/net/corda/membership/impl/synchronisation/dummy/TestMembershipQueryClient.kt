@@ -12,7 +12,8 @@ import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.StartEvent
 import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
-import net.corda.membership.lib.MemberSignedMemberInfo
+import net.corda.membership.lib.MemberInfoFactory
+import net.corda.membership.lib.SignedMemberInfo
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.persistence.client.MembershipQueryResult
 import net.corda.v5.base.types.LayeredPropertyMap
@@ -39,11 +40,13 @@ interface TestMembershipQueryClient : MembershipQueryClient {
 class TestMembershipQueryClientImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val coordinatorFactory: LifecycleCoordinatorFactory,
+    @Reference(service = MemberInfoFactory::class)
+    private val memberInfoFactory: MemberInfoFactory,
 ) : TestMembershipQueryClient {
     companion object {
         val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         private const val UNIMPLEMENTED_FUNCTION = "Called unimplemented function for test service"
-        private lateinit var members: List<MemberSignedMemberInfo>
+        private lateinit var members: List<SignedMemberInfo>
     }
 
     private val coordinator =
@@ -55,13 +58,13 @@ class TestMembershipQueryClientImpl @Activate constructor(
 
     override fun loadMembers(memberList: List<MemberInfo>) {
         members = memberList.map {
-            MemberSignedMemberInfo(
+            memberInfoFactory.createSignedMemberInfo(
                 it,
                 CryptoSignatureWithKey(
                     ByteBuffer.wrap(it.holdingIdentity.x500Name.toString().toByteArray()),
                     ByteBuffer.wrap(it.holdingIdentity.x500Name.toString().toByteArray()),
                 ),
-                CryptoSignatureSpec("", null, null)
+                CryptoSignatureSpec("", null, null),
             )
         }
     }
@@ -69,16 +72,16 @@ class TestMembershipQueryClientImpl @Activate constructor(
     override fun queryMemberInfo(
         viewOwningIdentity: HoldingIdentity,
         statusFilter: List<String>,
-    ): MembershipQueryResult<Collection<MemberSignedMemberInfo>> = MembershipQueryResult.Success(members)
+    ): MembershipQueryResult<Collection<SignedMemberInfo>> = MembershipQueryResult.Success(members)
 
     override fun queryMemberInfo(
         viewOwningIdentity: HoldingIdentity,
         holdingIdentityFilter: Collection<HoldingIdentity>,
         statusFilter: List<String>,
-    ): MembershipQueryResult<Collection<MemberSignedMemberInfo>> {
-        val result = mutableListOf<MemberSignedMemberInfo>()
+    ): MembershipQueryResult<Collection<SignedMemberInfo>> {
+        val result = mutableListOf<SignedMemberInfo>()
         holdingIdentityFilter.forEach { id ->
-            result.addAll(members.filter { it.memberInfo.holdingIdentity == id })
+            result.addAll(members.filter { it.holdingIdentity == id })
         }
         return MembershipQueryResult.Success(result)
     }

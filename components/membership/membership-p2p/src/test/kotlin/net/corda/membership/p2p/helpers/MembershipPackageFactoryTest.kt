@@ -78,7 +78,7 @@ class MembershipPackageFactoryTest {
                 on { root } doReturn treeRoot
             }
         }.onEach {
-            whenever(merkleTreeGenerator.generateTree(listOf(it.key))).doReturn(it.value)
+            whenever(merkleTreeGenerator.generateTreeUsingSignedMembers(listOf(it.key))).doReturn(it.value)
         }.onEach { entry ->
             val hash = entry.value.root.bytes
             val bytes = "bytes-${entry.key.name}".toByteArray()

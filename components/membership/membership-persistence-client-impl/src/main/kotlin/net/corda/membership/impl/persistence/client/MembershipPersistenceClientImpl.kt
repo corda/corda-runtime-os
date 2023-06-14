@@ -143,7 +143,8 @@ class MembershipPersistenceClientImpl(
     ) = memberInfos.map {
             val persistentMemberInfo = memberInfoFactory.createPersistentMemberInfo(
                 viewOwningIdentity,
-                it.memberInfo,
+                it.memberContextBytes,
+                it.mgmContextBytes,
                 it.memberSignature,
                 it.memberSignatureSpec,
             )
