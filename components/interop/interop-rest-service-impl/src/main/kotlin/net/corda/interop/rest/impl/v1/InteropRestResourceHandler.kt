@@ -1,4 +1,4 @@
-package net.corda.virtualnode.rest.impl.v1
+package net.corda.interop.rest.impl.v1
 
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService

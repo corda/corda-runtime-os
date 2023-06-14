@@ -1,4 +1,4 @@
-package net.corda.virtualnode.rest.impl.v1
+package net.corda.interop.processor
 
 import net.corda.data.interop.InteropAliasIdentity
 import net.corda.messaging.api.publisher.Publisher
