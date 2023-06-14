@@ -158,7 +158,7 @@ class FlowMetricsImpl(
         val flowStackItemMetricState = FlowStackItemMetricState().apply {
             name = requireNotNull(flowCheckpoint.flowStack.peek()?.flowName) { "Flow stack is empty" }
         }
-        if (currentState.flowStackItemMetricStates.isEmpty()) {
+        if (currentState.flowStackItemMetricStates.isNotEmpty()) {
             flowStackItemMetricState.isSubFlow = true
         }
         currentState.flowStackItemMetricStates.add(flowStackItemMetricState)
