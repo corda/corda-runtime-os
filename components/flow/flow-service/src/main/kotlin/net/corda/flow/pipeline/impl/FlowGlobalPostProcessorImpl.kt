@@ -86,7 +86,7 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
             .flatMap { (_, events) -> events }
             .map { event ->
                 context.flowMetrics.flowSessionMessageSent(event.payload::class.java.name)
-                log.info("**** event is type: ${event.payload::javaClass.name}")
+                log.info("**** event is type: ${event.payload::class.java.name}")
                 when (event.payload) {
                     is SessionData -> {
                         log.info("**** Encountered Session Data, creating p2p record")
