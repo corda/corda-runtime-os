@@ -57,7 +57,7 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
 
     // HACK - additional metrics for validation the ... metrics
     //  not too bothered about multi-threading issues, so simple ints
-    private var maxTotal = 0.0
+    private var maxTotalMs = 0.0
     private var numberOfRecordings = 0L
     private var runningTotalMs = 0.0
 
@@ -195,52 +195,70 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
     class ProcessTrace(val stateTopic: String, val eventTopic: String) {
         private var batchStart = System.nanoTime()
         var batchSize = 0
-        private var updatedStatesMs = 0.0
-        private var processEventsDurationMs = 0.0
-        private var beginDurationMs = 0.0
-        private var sendDurationMs = 0.0
-        private var sendOffsetDurationMs = 0.0
-        private var commitDurationMs = 0.0
-        var totalDuractionMs = 0.0
-        var avg = 0.0
-        var maxTotal = 0.0
+        private var updatedStatesDuration = 0L
+        private var processEventsDuration = 0L
+        private var beginDuration = 0L
+        private var sendDuration = 0L
+        private var sendOffsetDuration = 0L
+        private var commitDuration = 0L
+        private var dlqDuration = 0L
+        private var totalDuration = 0L
+        var avgMs = 0.0
+        var maxTotalMs = 0.0
+
+        val totalDurationMs get() = totalDuration.toMillis()
 
         override fun toString(): String {
-            return "[$stateTopic/$eventTopic] Batch Size: $batchSize, Process: ${processEventsDurationMs}ms Begin: ${beginDurationMs}ms, " +
-                    "Send: ${sendDurationMs}ms, Send Offsets: ${sendOffsetDurationMs}ms, Commit: ${commitDurationMs}ms, " +
-                    "Total:${totalDuractionMs}ms, Avg: ${avg}ms, Max: ${maxTotal}ms"
-        }
-
-        fun recordProcessEvents() {
-            processEventsDurationMs = timeToMillis()
-        }
-
-        fun recordBeginTx() {
-            beginDurationMs = timeToMillis()
-        }
-
-        fun recordSendRecords() {
-            sendDurationMs = timeToMillis()
-        }
-
-        fun recordSendOffsets() {
-            sendOffsetDurationMs = timeToMillis()
+            return "[$stateTopic/$eventTopic] Batch Size: $batchSize, " +
+                    "UpdateStates: ${timeDelta(batchStart, updatedStatesDuration)}ms, " +
+                    "Process: ${timeDelta(updatedStatesDuration, processEventsDuration)}ms, " +
+                    "Begin: ${timeDelta(processEventsDuration, beginDuration)}ms, " +
+                    "Send: ${timeDelta(beginDuration, sendDuration)}ms, " +
+                    "DLQ: ${timeDelta(sendDuration, dlqDuration)}ms, " +
+                    "Send Offsets: ${timeDelta(dlqDuration, sendOffsetDuration)}ms, " +
+                    "Commit: ${timeDelta(sendOffsetDuration, commitDuration)}ms, " +
+                    "Total: ${timeDelta(batchStart, totalDuration)}ms, " +
+                    "Avg: ${avgMs}ms, Max: ${maxTotalMs}ms"
         }
 
         fun recordUpdatedStates() {
-            updatedStatesMs = timeToMillis()
+            updatedStatesDuration = System.nanoTime()
+        }
+
+        fun recordProcessEvents() {
+            processEventsDuration = System.nanoTime()
+        }
+
+        fun recordBeginTx() {
+            beginDuration = System.nanoTime()
+        }
+
+        fun recordSendRecords() {
+            sendDuration = System.nanoTime()
+        }
+
+        fun recordDLQ() {
+            dlqDuration = System.nanoTime()
+        }
+
+        fun recordSendOffsets() {
+            sendOffsetDuration = System.nanoTime()
         }
 
         fun recordCommitTx() {
-            commitDurationMs = timeToMillis()
+            commitDuration = System.nanoTime()
         }
 
         fun recordTotal() {
-            totalDuractionMs = timeToMillis()
+            totalDuration = System.nanoTime()
         }
 
-        private fun timeToMillis(): Double {
-            return (System.nanoTime()-batchStart).div(1000000.toDouble())
+        private fun timeDelta(from: Long, to: Long): Double {
+            return (to-from).toMillis()
+        }
+
+        fun Long.toMillis(): Double {
+            return this.div(1000000.toDouble())
         }
     }
 
@@ -261,10 +279,10 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                     trace.recordTotal()
                     trace.batchSize = batch.size
                     numberOfRecordings++
-                    runningTotalMs += trace.totalDuractionMs
-                    maxTotal = max(trace.totalDuractionMs, maxTotal)
-                    trace.maxTotal = maxTotal
-                    trace.avg = runningTotalMs/numberOfRecordings
+                    runningTotalMs += trace.totalDurationMs
+                    maxTotalMs = max(trace.totalDurationMs, maxTotalMs)
+                    trace.maxTotalMs = maxTotalMs
+                    trace.avgMs = runningTotalMs/numberOfRecordings
                     log.info(trace.toString())
                 }
                 keepProcessing = false // We only want to do one batch at a time
@@ -325,7 +343,9 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
             trace.recordBeginTx()
             producer.sendRecords(outputRecords.toCordaProducerRecords())
             trace.recordSendRecords()
+            val now = System.nanoTime()
             if (deadLetterRecords.isNotEmpty()) {
+                log.trace("Sending ${deadLetterRecords.size} items to DLQ")
                 producer.sendRecords(deadLetterRecords.map {
                     CordaProducerRecord(
                         getDLQTopic(eventTopic),
@@ -335,6 +355,8 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                 })
                 deadLetterRecords.clear()
             }
+            log.info("DLQ: ${(System.nanoTime()-now).div(1000000.toDouble())}")
+            trace.recordDLQ()
             producer.sendRecordOffsetsToTransaction(eventConsumer, events)
             trace.recordSendOffsets()
             producer.commitTransaction()
