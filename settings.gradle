@@ -524,3 +524,10 @@ gradleEnterprise {
         }
     }
 }
+include 'libs:interop'
+findProject(':libs:interop')?.name = 'interop'
+include 'libs:interop:interop-endpoints'
+findProject(':libs:interop:interop-endpoints')?.name = 'interop-endpoints'
+include 'components:interop:interop-rest-service-impl'
+findProject(':components:interop:interop-rest-service-impl')?.name = 'interop-rest-service-impl'
+
