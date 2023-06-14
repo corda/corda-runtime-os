@@ -28,6 +28,9 @@ import java.security.PrivateKey
 import java.security.PublicKey
 import java.util.function.Function
 import javax.security.auth.x500.X500Principal
+import com.esotericsoftware.kryo.util.Pool
+import net.corda.kryoserialization.KryoCheckpointSerializer1
+import net.corda.kryoserialization.KryoCheckpointSerializer2
 
 class KryoCheckpointSerializerBuilderImpl(
     private val keyEncodingService: KeyEncodingService,
@@ -69,8 +72,8 @@ class KryoCheckpointSerializerBuilderImpl(
     }
 
     override fun build(): KryoCheckpointSerializer {
-        val classResolver = CordaClassResolver(sandboxGroup)
-        val classSerializer = ClassSerializer(sandboxGroup)
+//        val classResolver = CordaClassResolver(sandboxGroup)
+//        val classSerializer = ClassSerializer(sandboxGroup)
 
         val publicKeySerializers = listOf(
             PublicKey::class.java, EdDSAPublicKey::class.java, CompositeKey::class.java,
@@ -82,16 +85,38 @@ class KryoCheckpointSerializerBuilderImpl(
             X500Principal::class.java to X500PrincipalSerializer()
         )
 
-        val kryo = DefaultKryoCustomizer.customize(
-            kryoFactory.apply(classResolver),
-            serializers + publicKeySerializers + otherCustomSerializers,
-            classSerializer
-        )
+//        val kryo = DefaultKryoCustomizer.customize(
+//            kryoFactory.apply(classResolver),
+//            serializers + publicKeySerializers + otherCustomSerializers,
+//            classSerializer
+//        )
+//
+//        return KryoCheckpointSerializer1(kryo).also {
+//            // Clear the builder state
+//            serializers.clear()
+//            singletonInstances.clear()
+//        }
 
-        return KryoCheckpointSerializer(kryo).also {
+        // forced kryo serialization to be single threaded afaik by setting `maximumCapacity` to 1
+        // I was still getting errors when the pool was larger
+        val pool = object : Pool<Kryo>(true, false, 4) {
+            override fun create(): Kryo {
+                val classResolver = CordaClassResolver(sandboxGroup)
+                val classSerializer = ClassSerializer(sandboxGroup)
+                return DefaultKryoCustomizer.customize(
+                    kryoFactory.apply(classResolver),
+                    serializers + publicKeySerializers + otherCustomSerializers,
+                    classSerializer
+                ).also {
+                    classResolver.setKryo(it)
+                }
+            }
+        }
+
+        return KryoCheckpointSerializer2(pool).also {
             // Clear the builder state
-            serializers.clear()
-            singletonInstances.clear()
+//            serializers.clear()
+//            singletonInstances.clear()
         }
     }
 }
