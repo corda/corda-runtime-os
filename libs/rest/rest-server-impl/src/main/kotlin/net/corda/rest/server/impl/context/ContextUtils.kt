@@ -129,7 +129,10 @@ internal object ContextUtils {
                     ctx.header(Header.CACHE_CONTROL, "no-cache")
                     methodLogger.debug { "Invoke method \"${this.method.method.name}\" for route info completed." }
                 } catch (e: Exception) {
-                    methodLogger.info("Error invoking path '${this.fullPath}' - ${e.message}", e)
+                    "Error invoking path '${this.fullPath}' - ${e.message}".let {
+                        methodLogger.info(it)
+                        methodLogger.debug(it, e)
+                    }
                     throw HttpExceptionMapper.mapToResponse(e)
                 } finally {
                     if (ctx.isMultipartFormData()) {
