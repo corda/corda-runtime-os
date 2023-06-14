@@ -262,9 +262,9 @@ class GroupParametersWriterServiceTest {
 
             val ownerId = viewOwner.shortHash.toString()
             val groupParameters: SignedGroupParameters = mock {
-                on { bytes } doReturn serializedGroupParameters
-                on { signature } doReturn signature
-                on { signatureSpec } doReturn signatureSpec
+                on { groupParameters } doReturn serializedGroupParameters
+                on { mgmSignature } doReturn signature
+                on { mgmSignatureSpec } doReturn signatureSpec
             }
 
             writerService.put(viewOwner, groupParameters)
@@ -300,7 +300,7 @@ class GroupParametersWriterServiceTest {
 
             val ownerId = viewOwner.shortHash.toString()
             val groupParameters: UnsignedGroupParameters = mock {
-                on { bytes } doReturn serializedGroupParameters
+                on { groupParameters } doReturn serializedGroupParameters
             }
 
             writerService.put(viewOwner, groupParameters)

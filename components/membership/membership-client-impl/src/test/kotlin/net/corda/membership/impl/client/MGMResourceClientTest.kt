@@ -1492,7 +1492,7 @@ class MGMResourceClientTest {
             val mockMemberInfo = mock<PersistentMemberInfo>()
             val serializedGroupParameters = "group-params".toByteArray()
             val groupParameters = mock<InternalGroupParameters> {
-                on { bytes } doReturn serializedGroupParameters
+                on { groupParameters } doReturn serializedGroupParameters
                 on { epoch } doReturn groupParametersEpoch
             }
             whenever(membershipPersistenceClient.suspendMember(eq(holdingIdentity), eq(memberName), any(), any()))
@@ -1694,7 +1694,7 @@ class MGMResourceClientTest {
             val mockMemberInfo = mock<PersistentMemberInfo>()
             val serializedGroupParameters = "group-params".toByteArray()
             val groupParameters = mock<InternalGroupParameters> {
-                on { bytes } doReturn serializedGroupParameters
+                on { groupParameters } doReturn serializedGroupParameters
                 on { epoch } doReturn groupParametersEpoch
             }
             whenever(membershipPersistenceClient.activateMember(eq(holdingIdentity), eq(memberName), any(), any()))
