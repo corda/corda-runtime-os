@@ -27,6 +27,7 @@ val dbFallbackConfig = getConfigurationDefaults(ConfigKeys.DB_CONFIG, DB_SCHEMA_
  * @throws DBConfigurationException If required configuration attributes are missing.
  */
 fun DataSourceFactory.createFromConfig(config: SmartConfig): CloseableDataSource {
+    // We are falling back to the (same) defaults from the schema for both cluster and VNode datasource configurations
     val configWithFallback = config.withFallback(dbFallbackConfig)
 
     DbConfig.log.debug("Given configuration: ${config.toSafeConfig().root().render(ConfigRenderOptions.concise())}")
