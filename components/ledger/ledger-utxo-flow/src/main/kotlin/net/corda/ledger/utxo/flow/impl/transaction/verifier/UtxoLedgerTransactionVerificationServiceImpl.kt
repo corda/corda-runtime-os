@@ -27,6 +27,7 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 import java.nio.ByteBuffer
+import java.time.Duration
 
 @Component(
     service = [UtxoLedgerTransactionVerificationService::class, UsedByFlow::class],
@@ -51,28 +52,28 @@ class UtxoLedgerTransactionVerificationServiceImpl @Activate constructor(
 
     @Suspendable
     override fun verify(transaction: UtxoLedgerTransaction) {
-        recordSuspendable(::transactionVerificationFlowTimer) @Suspendable {
+        val startTime = System.nanoTime()
 
-            val signedGroupParameters = fetchAndVerifySignedGroupParameters(transaction)
-            verifyNotaryAllowed(transaction, signedGroupParameters)
+        val signedGroupParameters = fetchAndVerifySignedGroupParameters(transaction)
+        verifyNotaryAllowed(transaction, signedGroupParameters)
 
-            val verificationResult = externalEventExecutor.execute(
-                TransactionVerificationExternalEventFactory::class.java,
-                TransactionVerificationParameters(
-                    serialize(transaction.toContainer()),
-                    transaction.getCpkMetadata()
-                )
+        val verificationResult = externalEventExecutor.execute(
+            TransactionVerificationExternalEventFactory::class.java,
+            TransactionVerificationParameters(
+                serialize(transaction.toContainer()),
+                transaction.getCpkMetadata()
             )
+        )
 
-            if (verificationResult.status != TransactionVerificationStatus.VERIFIED) {
-                throw TransactionVerificationException(
-                    transaction.id,
-                    verificationResult.status,
-                    verificationResult.errorType,
-                    verificationResult.errorMessage
-                )
-            }
+        if (verificationResult.status != TransactionVerificationStatus.VERIFIED) {
+            throw TransactionVerificationException(
+                transaction.id,
+                verificationResult.status,
+                verificationResult.errorType,
+                verificationResult.errorMessage
+            )
         }
+        transactionVerificationFlowTimer().record(Duration.ofNanos(System.nanoTime() - startTime))
     }
 
     @Suspendable
