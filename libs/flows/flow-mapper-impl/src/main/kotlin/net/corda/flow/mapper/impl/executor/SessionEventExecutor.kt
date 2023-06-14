@@ -34,7 +34,7 @@ class SessionEventExecutor(
     }
 
     private val messageDirection = sessionEvent.messageDirection
-    private val outputTopic = getSessionEventOutputTopic(messageDirection)
+    private val outputTopic = getSessionEventOutputTopic(/*messageDirection*/)
 
     override fun execute(): FlowMapperResult {
         return if (flowMapperState == null) {
@@ -98,15 +98,27 @@ class SessionEventExecutor(
                     FlowMapperResult(flowMapperState, listOf())
                 } else {
                     if (sessionEvent.payload is SessionClose) {
+                        val ackEvent = SessionEvent(
+                            MessageDirection.OUTBOUND,
+                            instant,
+                            sessionEvent.sessionId,
+                            null,
+                            sessionEvent.initiatingIdentity,
+                            sessionEvent.initiatedIdentity,
+                            sessionEvent.sequenceNum,
+                            emptyList(),
+                            SessionAck()
+                        )
                         val outputRecord =
-                            createP2PRecord(
-                                sessionEvent,
-                                SessionAck(),
-                                instant,
-                                sessionEventSerializer,
-                                appMessageFactory,
-                                flowConfig
-                            )
+//                            createP2PRecord(
+//                                sessionEvent,
+//                                SessionAck(),
+//                                instant,
+//                                sessionEventSerializer,
+//                                appMessageFactory,
+//                                flowConfig
+//                            )
+                            Record(outputTopic, flowMapperState.flowId, FlowEvent(flowMapperState.flowId, ackEvent))
                         FlowMapperResult(flowMapperState, listOf(outputRecord))
                     } else {
                         FlowMapperResult(flowMapperState, listOf())
@@ -114,15 +126,16 @@ class SessionEventExecutor(
                 }
             }
             FlowMapperStateType.OPEN -> {
-                val outputRecord = if (messageDirection == MessageDirection.OUTBOUND) {
-                    Record(
-                        outputTopic,
-                        sessionEvent.sessionId,
-                        appMessageFactory(sessionEvent, sessionEventSerializer, flowConfig)
-                    )
-                } else {
+                val outputRecord =
+//                if (messageDirection == MessageDirection.OUTBOUND) {
+//                    Record(
+//                        outputTopic,
+//                        sessionEvent.sessionId,
+//                        appMessageFactory(sessionEvent, sessionEventSerializer, flowConfig)
+//                    )
+//                } else {
                     Record(outputTopic, flowMapperState.flowId, FlowEvent(flowMapperState.flowId, sessionEvent))
-                }
+//                }
                 FlowMapperResult(flowMapperState, listOf(outputRecord))
             }
             FlowMapperStateType.ERROR -> {
