@@ -78,7 +78,7 @@ interface CryptoService {
     /**
      * Signs a byte array using the private key identified by the input arguments.
      *
-     * @param spec (either [SigningAliasSpec] or [SigningWrappedSpec]) to be used for signing.
+     * @param spec [SigningWrappedSpec] to be used for signing.
      * @param data the data to be signed.
      * @param context the optional key/value operation context. The context will have at least one variable defined -
      * 'tenantId'.
@@ -90,9 +90,9 @@ interface CryptoService {
      * @throws net.corda.v5.crypto.exceptions.CryptoException, non-recoverable
      */
     fun sign(
-        spec: SigningSpec,
+        spec: SigningWrappedSpec,
         data: ByteArray,
-        context: Map<String, String>
+        context: Map<String, String>,
     ): ByteArray
 
     /**
@@ -136,7 +136,7 @@ interface CryptoService {
      * of the [SharedSecretSpec.publicKey] and [SharedSecretSpec.otherPublicKey] must be the same and
      * the scheme must support the key agreement secret derivation.
      *
-     * @param spec the operation parameters, see [SharedSecretAliasSpec] and [SharedSecretWrappedSpec]
+     * @param spec the operation parameters, [SharedSecretWrappedSpec]
      * @param context the optional key/value operation context. The context will have at least one variable defined -
      * 'tenantId'.
      *
