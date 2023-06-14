@@ -21,6 +21,7 @@ import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.params.ParameterizedTest
@@ -83,6 +84,9 @@ class MerkleTreeTest {
 
         @JvmStatic
         fun merkleProofTestSizes(): List<Int> = (1 until 12).toList()
+
+        @JvmStatic
+        fun merkleProofExtendedTestSizes(): List<Int> = (13 until 16).toList()
     }
 
     @Test
@@ -263,9 +267,20 @@ class MerkleTreeTest {
         assertNotEquals(tree1, tree2)
     }
 
-    @ParameterizedTest(name = "merkle proof tests for trees with {0} leaves")
+    @ParameterizedTest(name = "merkle proof tests for trees with sizes that run fast ({0} leaves)")
     @MethodSource("merkleProofTestSizes")
-    fun `merkle proofs`(treeSize: Int) {
+    fun `merkle proofs fast`(treeSize: Int) {
+        runMerkelProofTest(treeSize)
+    }
+
+    @Disabled
+    @ParameterizedTest(name = "merkle proof tests for trees with extended sizes that run slow ({0} leaves)")
+    @MethodSource("merkleProofExtendedTestSizes")
+    fun `merkle proofs slow `(treeSize: Int) {
+        runMerkelProofTest(treeSize)
+    }
+
+    private fun runMerkelProofTest(treeSize: Int) {
         val hashProvider = trivialHashDigestProvider
         val leafData = (0 until treeSize).map { it.toByteArray() }
         val merkleTree = MerkleTreeImpl.createMerkleTree(leafData, hashProvider)
