@@ -2,7 +2,6 @@ package repository
 
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.cipher.suite.impl.PlatformDigestServiceImpl
-import net.corda.crypto.cipher.suite.GeneratedPublicKey
 import net.corda.crypto.cipher.suite.GeneratedWrappedKey
 import net.corda.crypto.cipher.suite.schemes.KeyScheme
 import net.corda.crypto.cipher.suite.schemes.KeySchemeCapability
@@ -27,6 +26,8 @@ import net.corda.orm.utils.transaction
 import net.corda.orm.utils.use
 import net.corda.test.util.time.toSafeWindowsPrecision
 import net.corda.v5.base.types.LayeredPropertyMap
+import net.corda.v5.crypto.DigestAlgorithmName
+import net.corda.v5.crypto.KeySchemeCodes
 import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier
 import org.junit.jupiter.api.TestInstance
@@ -36,6 +37,7 @@ import org.junit.jupiter.params.provider.MethodSource
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import java.lang.IllegalArgumentException
+import java.security.KeyPairGenerator
 import java.security.PublicKey
 import java.security.spec.AlgorithmParameterSpec
 import java.time.Instant
@@ -49,16 +51,17 @@ import javax.persistence.PersistenceException
 class SigningRepositoryTest : CryptoRepositoryTest() {
     private val cipherSchemeMetadata = CipherSchemeMetadataImpl()
     private val digestService = PlatformDigestServiceImpl(cipherSchemeMetadata)
-
+    private val rsaScheme = cipherSchemeMetadata.findKeyScheme(KeySchemeCodes.RSA_CODE_NAME)
+    private val keyPairGenerator = KeyPairGenerator.getInstance(rsaScheme.algorithmName)
     private val defaultTenantId = "Memento Mori"
     private val defaultMasterKeyName = "Domination's the name of the game"
 
     private fun createSigningKeyInfo(): SigningKeyInfo {
-        val privKey = SecureHashUtils.randomBytes()
         val unique = UUID.randomUUID().toString()
-        val key = SecureHashUtils.randomBytes()
-        val keyId = publicKeyIdFromBytes(key)
-        val fullKey = fullPublicKeyIdFromBytes(key, digestService)
+        val keyPair = keyPairGenerator.generateKeyPair()
+        val keyId = publicKeyIdFromBytes(keyPair.public.encoded)
+        val fullKey = fullPublicKeyIdFromBytes(keyPair.public.encoded, digestService)
+
         return SigningKeyInfo(
             id = ShortHash.parse(keyId),
             fullId = parseSecureHash(fullKey),
@@ -66,30 +69,20 @@ class SigningRepositoryTest : CryptoRepositoryTest() {
             category = "c-$unique",
             alias = "a-$unique",
             hsmAlias = null,
-            publicKey = key,
+            publicKey = keyPair.public,
             schemeCodeName = "FOO",
             externalId = "e-$unique",
             timestamp = Instant.now().toSafeWindowsPrecision(),
             hsmId = "hi-$unique".take(36),
             status = SigningKeyStatus.NORMAL,
-            keyMaterial = privKey,
+            keyMaterial = keyPair.private.encoded,
             encodingVersion = 1,
             masterKeyAlias = defaultMasterKeyName
         )
     }
 
-    private fun createGeneratedPublicKey(info: SigningKeyInfo): GeneratedPublicKey {
-        val pubKey = mock<PublicKey> {
-            on { encoded } doReturn(info.publicKey)
-        }
-        return GeneratedPublicKey(pubKey, info.hsmAlias!!)
-    }
-
     private fun createGeneratedWrappedKey(info: SigningKeyInfo): GeneratedWrappedKey {
-        val pubKey = mock<PublicKey> {
-            on { encoded } doReturn(info.publicKey)
-        }
-        return GeneratedWrappedKey(pubKey, info.keyMaterial, info.encodingVersion!!)
+        return GeneratedWrappedKey(info.publicKey, info.keyMaterial, info.encodingVersion!!)
     }
 
     private fun createKeyScheme(info: SigningKeyInfo) =
@@ -388,9 +381,7 @@ class SigningRepositoryTest : CryptoRepositoryTest() {
             createLayeredPropertyMapFactory(),
         )
 
-        val lookFor = allKeys.map {
-            parseSecureHash(fullPublicKeyIdFromBytes(it.publicKey, digestService))
-        }
+        val lookFor = allKeys.map { digestService.hash(it.publicKey.encoded, DigestAlgorithmName.SHA2_256) }
         val found = repo.lookupByPublicKeyHashes(lookFor.toSet()).toList()
 
         assertThat(found)
@@ -447,7 +438,7 @@ class SigningRepositoryTest : CryptoRepositoryTest() {
         )
 
         val lookFor = allKeys.map {
-            ShortHash.of(parseSecureHash(fullPublicKeyIdFromBytes(it.publicKey, digestService)))
+            ShortHash.of(digestService.hash(it.publicKey.encoded, DigestAlgorithmName.SHA2_256))
         }
         val found = repo.lookupByPublicKeyShortHashes(lookFor.toSet()).toList()
         assertThat(found)
@@ -456,7 +447,7 @@ class SigningRepositoryTest : CryptoRepositoryTest() {
 
         // additionally going to assert that looking up by full hash should result in the same
         val lookFor2 = allKeys.map {
-            parseSecureHash(fullPublicKeyIdFromBytes(it.publicKey, digestService))
+            parseSecureHash(fullPublicKeyIdFromBytes(it.publicKey.encoded, digestService))
         }
         val found2 = repo.lookupByPublicKeyHashes(lookFor2.toSet())
         assertThat(found2).containsExactlyInAnyOrderElementsOf(found)

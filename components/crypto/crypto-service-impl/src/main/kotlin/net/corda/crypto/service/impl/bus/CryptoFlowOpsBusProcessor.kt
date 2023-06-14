@@ -1,5 +1,6 @@
 package net.corda.crypto.service.impl.bus
 
+import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.config.impl.RetryingConfig
 import net.corda.crypto.core.CryptoService
 import net.corda.crypto.core.SecureHashImpl
@@ -42,6 +43,7 @@ class CryptoFlowOpsBusProcessor(
     private val cryptoService: CryptoService,
     private val externalEventResponseFactory: ExternalEventResponseFactory,
     config: RetryingConfig,
+    private val keyEncodingService: KeyEncodingService
 ) : DurableProcessor<String, FlowOpsRequest> {
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -92,6 +94,7 @@ class CryptoFlowOpsBusProcessor(
                             ExceptionEnvelope("Expired", "Expired at $expireAt")
                         )
                     } else {
+                        // TODO - remove the retry here, Corda 5 architecture is that the flow should do the retries
                         val response = executor.executeWithRetry {
                             handleRequest(requestPayload, request.context)
                         }
@@ -154,7 +157,7 @@ class CryptoFlowOpsBusProcessor(
                 CryptoSigningKeys(cryptoService.lookupSigningKeysByPublicKeyHashes(
                     context.tenantId,
                     request.fullKeyIds.hashes.map { SecureHashImpl(it.algorithm, it.bytes.array()) }
-                ).map { it.toAvro() })
+                ).map { it.convertToCryptoSigningKey(keyEncodingService) })
 
             else -> throw IllegalArgumentException("Unknown request type ${request::class.java.name}")
         }
