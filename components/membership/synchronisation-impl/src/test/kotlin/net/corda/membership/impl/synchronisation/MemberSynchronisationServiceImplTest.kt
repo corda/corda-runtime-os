@@ -364,12 +364,12 @@ class MemberSynchronisationServiceImplTest {
         postConfigChangedEvent()
         synchronisationService.start()
 
-        val publishedMemberList = synchronisationService.processMembershipUpdates(updates)
+        val producedRecords = synchronisationService.processMembershipUpdates(updates)
 
         assertSoftly {
-            it.assertThat(publishedMemberList).hasSize(2)
+            it.assertThat(producedRecords).hasSize(2)
 
-            val publishedMember = publishedMemberList.first()
+            val publishedMember = producedRecords.first()
             it.assertThat(publishedMember.topic).isEqualTo(MEMBER_LIST_TOPIC)
             it.assertThat(publishedMember.key).isEqualTo("${member.shortHash}-${participant.id}")
             it.assertThat(publishedMember.value).isInstanceOf(PersistentMemberInfo::class.java)
@@ -435,7 +435,7 @@ class MemberSynchronisationServiceImplTest {
 
         synchronisationService.processMembershipUpdates(updates)
 
-        assertThat(captureDelay.lastValue).isLessThanOrEqualTo(5 * 1000 * 60)
+        assertThat(captureDelay.lastValue).isEqualTo(5 * 1000 * 60)
     }
 
     @Test
@@ -473,10 +473,10 @@ class MemberSynchronisationServiceImplTest {
         synchronisationService.start()
         whenever(signedMemberships.hashCheck) doReturn null
 
-        val publishedMemberList = synchronisationService.processMembershipUpdates(updates)
+        val producedRecords = synchronisationService.processMembershipUpdates(updates)
 
         assertSoftly {
-            it.assertThat(publishedMemberList)
+            it.assertThat(producedRecords)
                 .hasSize(3)
                 .anySatisfy {
                     assertThat(it.topic).isEqualTo(MEMBER_LIST_TOPIC)
