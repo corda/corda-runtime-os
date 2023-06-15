@@ -36,8 +36,10 @@ class VirtualNodeDbFactoryImplTest {
     private val dbConnectionManager = mock<DbConnectionManager> {
         on { clusterConfig } doReturn clusterConfiguration
     }
+
+    private val JDBC_URL = "jdbc:url"
     private val virtualNodesDbAdmin = mock<VirtualNodesDbAdmin> {
-        on { createJdbcUrl(any()) } doReturn "jdbc:url"
+        on { createJdbcUrl(any()) } doReturn JDBC_URL
     }
     private val schemaMigrator = mock<LiquibaseSchemaMigrator>()
     private val impl = VirtualNodeDbFactoryImpl(
@@ -47,7 +49,7 @@ class VirtualNodeDbFactoryImplTest {
     )
 
     @Test
-    fun `createVNodeDbs create a database with the correct pool size`() {
+    fun `createVNodeDbs creates expected VNode datasource configuration`() {
         val request = mock<VirtualNodeCreateRequest> {
             on { vaultDdlConnection } doReturn ""
             on { vaultDmlConnection } doReturn ""
@@ -62,11 +64,20 @@ class VirtualNodeDbFactoryImplTest {
             request,
         )
 
-        val vaultDmlConfig = dbs[VirtualNodeDbType.VAULT]?.dbConnections?.get(DbPrivilege.DML)?.config
-        verify(vaultDmlConfig!!).withValue(DatabaseConfig.DB_POOL_MAX_SIZE, ConfigValueFactory.fromAnyRef(10))
+        val vaultDmlConfig = dbs[VirtualNodeDbType.VAULT]?.dbConnections?.get(DbPrivilege.DML)?.config!!
+        verify(vaultDmlConfig).withValue(DatabaseConfig.DB_USER, ConfigValueFactory.fromAnyRef(JDBC_URL))
+        verify(vaultDmlConfig, never()).withValue(eq(DatabaseConfig.JDBC_DRIVER), any())
+        verify(vaultDmlConfig).withValue(DatabaseConfig.JDBC_URL, ConfigValueFactory.fromAnyRef(JDBC_URL))
+        // TODO A VNode DML max pool size datasource needs to be changed to 1. This will change in follow-up PR.
+        verify(vaultDmlConfig).withValue(DatabaseConfig.DB_POOL_MAX_SIZE, ConfigValueFactory.fromAnyRef(10))
+        // VNode DML min pool size needs to be 0, because VNodes connections can pile up and exhaust the DB
         verify(vaultDmlConfig).withValue(DatabaseConfig.DB_POOL_MIN_SIZE, ConfigValueFactory.fromAnyRef(0))
-        val vaultDdlConfig = dbs[VirtualNodeDbType.VAULT]?.dbConnections?.get(DbPrivilege.DDL)?.config
-        verify(vaultDdlConfig!!).withValue(DatabaseConfig.DB_POOL_MAX_SIZE, ConfigValueFactory.fromAnyRef(1))
+
+        val vaultDdlConfig = dbs[VirtualNodeDbType.VAULT]?.dbConnections?.get(DbPrivilege.DDL)?.config!!
+        verify(vaultDdlConfig, never()).withValue(eq(DatabaseConfig.JDBC_DRIVER), any())
+        verify(vaultDdlConfig).withValue(DatabaseConfig.JDBC_URL, ConfigValueFactory.fromAnyRef(JDBC_URL))
+        verify(vaultDdlConfig).withValue(DatabaseConfig.JDBC_URL, ConfigValueFactory.fromAnyRef(JDBC_URL))
+        verify(vaultDdlConfig).withValue(DatabaseConfig.DB_POOL_MAX_SIZE, ConfigValueFactory.fromAnyRef(1))
         verify(vaultDdlConfig, never()).withValue(eq(DatabaseConfig.DB_POOL_MIN_SIZE), any())
     }
 }
