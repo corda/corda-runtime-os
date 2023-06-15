@@ -373,15 +373,6 @@ subprojects {
     apply plugin: 'io.gitlab.arturbosch.detekt'
     apply plugin: 'jacoco'
 
-    // apply plugin: 'org.cyclonedx.bom'
-    // cyclonedxBom {
-    //     includeConfigs = ["runtimeClasspath"]
-    //     skipProjects = [rootProject.name]
-    //     skipConfigs = ["integrationTestCompileOnlyDependenciesMetadata", "testCompileOnlyDependenciesMetadata", "compileOnlyDependenciesMetadata", "apiDependenciesMetadata"]
-    //     destination = file("build/reports/SBOM")
-    //     outputName = "${project.name}-corda-runtime-os-sbom"   
-    // }
-
     version rootProject.version
     group 'net.corda'
 
