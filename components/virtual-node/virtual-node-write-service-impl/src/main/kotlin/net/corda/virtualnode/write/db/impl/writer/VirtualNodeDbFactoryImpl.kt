@@ -216,8 +216,7 @@ internal class VirtualNodeDbFactoryImpl(
 }
 
 @Suppress("LongParameterList")
-@VisibleForTesting
-internal fun createDbConfig(
+private fun createDbConfig(
     smartConfigFactory: SmartConfigFactory,
     username: String,
     password: String,
