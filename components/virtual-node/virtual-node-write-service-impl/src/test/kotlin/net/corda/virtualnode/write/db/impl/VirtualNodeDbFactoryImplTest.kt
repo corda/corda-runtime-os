@@ -65,7 +65,6 @@ class VirtualNodeDbFactoryImplTest {
         )
 
         val vaultDmlConfig = dbs[VirtualNodeDbType.VAULT]?.dbConnections?.get(DbPrivilege.DML)?.config!!
-        verify(vaultDmlConfig).withValue(DatabaseConfig.DB_USER, ConfigValueFactory.fromAnyRef(JDBC_URL))
         verify(vaultDmlConfig, never()).withValue(eq(DatabaseConfig.JDBC_DRIVER), any())
         verify(vaultDmlConfig).withValue(DatabaseConfig.JDBC_URL, ConfigValueFactory.fromAnyRef(JDBC_URL))
         // TODO A VNode DML max pool size datasource needs to be changed to 1. This will change in follow-up PR.
@@ -75,7 +74,6 @@ class VirtualNodeDbFactoryImplTest {
 
         val vaultDdlConfig = dbs[VirtualNodeDbType.VAULT]?.dbConnections?.get(DbPrivilege.DDL)?.config!!
         verify(vaultDdlConfig, never()).withValue(eq(DatabaseConfig.JDBC_DRIVER), any())
-        verify(vaultDdlConfig).withValue(DatabaseConfig.JDBC_URL, ConfigValueFactory.fromAnyRef(JDBC_URL))
         verify(vaultDdlConfig).withValue(DatabaseConfig.JDBC_URL, ConfigValueFactory.fromAnyRef(JDBC_URL))
         verify(vaultDdlConfig).withValue(DatabaseConfig.DB_POOL_MAX_SIZE, ConfigValueFactory.fromAnyRef(1))
         verify(vaultDdlConfig, never()).withValue(eq(DatabaseConfig.DB_POOL_MIN_SIZE), any())
