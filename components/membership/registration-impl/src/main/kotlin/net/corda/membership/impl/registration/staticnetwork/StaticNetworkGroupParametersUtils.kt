@@ -17,16 +17,11 @@ import net.corda.membership.network.writer.staticnetwork.StaticNetworkUtils.mgmS
 import net.corda.membership.network.writer.staticnetwork.StaticNetworkInfoMappingUtils.toCorda
 import net.corda.utilities.time.Clock
 import net.corda.v5.membership.MemberInfo
-import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
 import java.security.Signature
 
 
 object StaticNetworkGroupParametersUtils {
-
-    private const val SIGNATURE_SPEC_CONTEXT_KEY = "corda.membership.signature.spec"
-    private val logger = LoggerFactory.getLogger(this::class.java)
-
     /**
      * Adds a notary to the group parameters. Adds new (or rotated) notary keys if the specified notary service exists,
      * or creates a new notary service.

@@ -525,6 +525,40 @@ class StaticMemberRegistrationServiceTest {
                 registrationService.register(registrationId, alice, mockContext)
             }
         }
+
+        @Test
+        fun `registration pass when role is set to notary and notary service name already exists with the same name`() {
+            setUpPublisher()
+            registrationService.start()
+            val context = mapOf(
+                KEY_SCHEME to ECDSA_SECP256R1_CODE_NAME,
+                "${ROLES_PREFIX}.0" to "notary",
+                NOTARY_SERVICE_NAME to notary.toString(),
+                NOTARY_SERVICE_PROTOCOL to "net.corda.notary.MyNotaryService",
+                String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS, 0) to "1",
+            )
+            val mockNotaryDetails = MemberNotaryDetails(
+                notary,
+                null,
+                emptyList(),
+                emptyList()
+            )
+            val mockMemberContext: MemberContext = mock {
+                on { entries } doReturn mapOf(
+                    String.format(ROLES_PREFIX, 0) to MemberInfoExtension.NOTARY_ROLE
+                ).entries
+                on { parse(eq("corda.notary"), eq(MemberNotaryDetails::class.java)) } doReturn mockNotaryDetails
+            }
+            val mockNotaryMember: MemberInfo = mock {
+                on { memberProvidedContext } doReturn mockMemberContext
+                on { name } doReturn aliceName
+            }
+            whenever(groupReader.lookup()).thenReturn(listOf(mockNotaryMember))
+
+            assertDoesNotThrow {
+                registrationService.register(registrationId, alice, context)
+            }
+        }
     }
 
     @Nested

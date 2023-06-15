@@ -102,7 +102,7 @@ class StaticMemberRegistrationService(
     internal val keyEncodingService: KeyEncodingService,
     private val cryptoOpsClient: CryptoOpsClient,
     val configurationReadService: ConfigurationReadService,
-    private val coordinatorFactory: LifecycleCoordinatorFactory,
+    coordinatorFactory: LifecycleCoordinatorFactory,
     private val hsmRegistrationClient: HSMRegistrationClient,
     private val memberInfoFactory: MemberInfoFactory,
     private val persistenceClient: MembershipPersistenceClient,
@@ -265,7 +265,7 @@ class StaticMemberRegistrationService(
             )
             (records + createHostedIdentity(member, groupPolicy)).publish()
 
-            persistGroupParameters(memberInfo, staticMemberList)
+            persistGroupParameters(memberInfo, staticMemberList, membershipGroupReader)
 
             persistRegistrationRequest(registrationId, memberInfo)
 
@@ -293,9 +293,10 @@ class StaticMemberRegistrationService(
 
     private fun persistGroupParameters(
         memberInfo: MemberInfo,
-        staticMemberList: List<StaticMember>
+        staticMemberList: List<StaticMember>,
+        membershipGroupReader: MembershipGroupReader,
     ) {
-        val staticNetworkInfo = getCurrentStaticNetworkConfigWithRetry(memberInfo)
+        val staticNetworkInfo = getCurrentStaticNetworkConfigWithRetry(membershipGroupReader, memberInfo)
 
         val avroSignedGroupParameters = staticNetworkInfo.signGroupParameters(
             keyValuePairListSerializer,
@@ -372,9 +373,13 @@ class StaticMemberRegistrationService(
         val serviceName = MemberX500Name.parse(
             notaryInfo.first { it.first == MemberInfoExtension.NOTARY_SERVICE_NAME }.second
         )
+        val registeringMemberName = registeringMember.name?.let {
+            MemberX500Name.parse(it)
+        }
+
         //The notary service x500 name is different from the notary virtual node being registered.
         require(
-            MemberX500Name.parse(registeringMember.name!!) != serviceName
+            registeringMemberName != serviceName
         ) {
             "Notary service name invalid: Notary service name $serviceName and virtual node name cannot be the same."
         }
@@ -386,7 +391,10 @@ class StaticMemberRegistrationService(
         }
         // Allow only a single notary virtual node under each notary service.
         require(
-            membershipGroupReader.lookup().none { it.notaryDetails?.serviceName == serviceName }
+            membershipGroupReader
+                .lookup()
+                .filter { it.name != registeringMemberName }
+                .none { it.notaryDetails?.serviceName == serviceName }
         ) {
             throw InvalidMembershipRegistrationException("Notary service '$serviceName' already exists.")
         }
@@ -574,6 +582,7 @@ class StaticMemberRegistrationService(
     }
 
     private fun getCurrentStaticNetworkConfigWithRetry(
+        membershipGroupReader: MembershipGroupReader,
         memberInfo: MemberInfo,
         attempt: Int = 0
     ): StaticNetworkInfo {
@@ -591,14 +600,17 @@ class StaticMemberRegistrationService(
                     .map { it.notaryDetails!!.serviceProtocolVersions.toHashSet() }
                     .reduceOrNull { acc, it -> acc.apply { retainAll(it) } }
                     ?: emptySet()
+                val latestGroupParameters = membershipGroupReader.groupParameters?.toAvro() ?: currentStaticNetworkInfo.groupParameters
+                latestGroupParameters.addNotary(
+                    memberInfo,
+                    currentProtocolVersions,
+                    keyEncodingService,
+                    clock
+                )
+            }?.let { groupParameters ->
                 StaticNetworkInfo(
                     currentStaticNetworkInfo.groupId,
-                    currentStaticNetworkInfo.groupParameters.addNotary(
-                        memberInfo,
-                        currentProtocolVersions,
-                        keyEncodingService,
-                        clock
-                    ),
+                    groupParameters,
                     currentStaticNetworkInfo.mgmPublicSigningKey,
                     currentStaticNetworkInfo.mgmPrivateSigningKey,
                     currentStaticNetworkInfo.version
@@ -608,7 +620,7 @@ class StaticMemberRegistrationService(
             } ?: currentStaticNetworkInfo
         } catch (ex: MembershipPersistenceResult.PersistenceRequestException) {
             if (attempt < MAX_PERSISTENCE_RETRIES - 1) {
-                getCurrentStaticNetworkConfigWithRetry(memberInfo, attempt + 1)
+                getCurrentStaticNetworkConfigWithRetry(membershipGroupReader, memberInfo, attempt + 1)
             } else {
                 throw ex
             }
