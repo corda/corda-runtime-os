@@ -31,6 +31,7 @@ import net.corda.membership.certificate.client.CertificatesClient
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.read.MembershipGroupReaderProvider
+import net.corda.rest.exception.ResourceNotFoundException
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
@@ -72,12 +73,15 @@ class CertificatesClientImplTest {
         retrieveCertificates = settings.arguments()[5] as? ((ShortHash?, CertificateUsage, String) -> String?)
     }
     private val shortHash = ShortHash.of("AF77BF2471F3")
-
+    private val nonExistentHoldingID = ShortHash.of("AF77BF2471E4")
+    private val virtualNodeInfoReadService = mock<VirtualNodeInfoReadService> {
+        on { getByHoldingIdentityShortHash(shortHash) } doReturn mock()
+    }
     private val client = CertificatesClientImpl(
         coordinatorFactory,
         publisherFactory,
         configurationReadService,
-        mock(),
+        virtualNodeInfoReadService,
         mock(),
         mock(),
         mock(),
@@ -86,6 +90,16 @@ class CertificatesClientImplTest {
         mock(),
         mock(),
     )
+
+    private fun postConfigChangedEvent() {
+        handler.firstValue.processEvent(
+            ConfigChangedEvent(
+                emptySet(),
+                mapOf(ConfigKeys.MESSAGING_CONFIG to mock())
+            ),
+            coordinator
+        )
+    }
 
     @AfterEach
     fun cleanUp() {
@@ -97,11 +111,7 @@ class CertificatesClientImplTest {
         @Test
         fun `importCertificates sends an ImportCertificateRpcRequest`() {
             whenever(sender.sendRequest(any())).doReturn(mock())
-            val event = ConfigChangedEvent(
-                emptySet(),
-                mapOf(ConfigKeys.MESSAGING_CONFIG to mock())
-            )
-            handler.firstValue.processEvent(event, coordinator)
+            postConfigChangedEvent()
 
             client.importCertificates(CertificateUsage.REST_TLS, null, "alias", "certificate")
 
@@ -121,11 +131,7 @@ class CertificatesClientImplTest {
         @Test
         fun `importCertificates throws exception if service had issues`() {
             whenever(sender.sendRequest(any())).doReturn(CompletableFuture.failedFuture(Exception("Failure")))
-            val event = ConfigChangedEvent(
-                emptySet(),
-                mapOf(ConfigKeys.MESSAGING_CONFIG to mock())
-            )
-            handler.firstValue.processEvent(event, coordinator)
+            postConfigChangedEvent()
 
             val exception = assertThrows<Exception> {
                 client.importCertificates(CertificateUsage.P2P_TLS, null, "alias", "certificate")
@@ -143,17 +149,52 @@ class CertificatesClientImplTest {
             assertThat(exception).hasMessage("Certificates client is not ready")
                 .isInstanceOf(IllegalStateException::class.java)
         }
+
+        @Test
+        fun `importCertificates throws exception in case of non-existent holding identity ID`() {
+            postConfigChangedEvent()
+
+            val exception = assertThrows<ResourceNotFoundException> {
+                client.importCertificates(CertificateUsage.CODE_SIGNER, nonExistentHoldingID, "alias", "certificate")
+            }
+
+            assertThat(exception).hasMessageContaining("not found")
+        }
+    }
+
+    @Nested
+    inner class GetCertificateAliasesTests {
+        @Test
+        fun `getCertificateAliases throws exception in case of non-existent holding identity ID`() {
+            postConfigChangedEvent()
+
+            val exception = assertThrows<ResourceNotFoundException> {
+                client.getCertificateAliases(CertificateUsage.CODE_SIGNER, nonExistentHoldingID)
+            }
+
+            assertThat(exception).hasMessageContaining("not found")
+        }
+    }
+
+    @Nested
+    inner class RetrieveCertificatesTests {
+        @Test
+        fun `retrieveCertificates throws exception in case of non-existent holding identity ID`() {
+            postConfigChangedEvent()
+
+            val exception = assertThrows<ResourceNotFoundException> {
+                client.retrieveCertificates(nonExistentHoldingID, CertificateUsage.CODE_SIGNER, "alias")
+            }
+
+            assertThat(exception).hasMessageContaining("not found")
+        }
     }
 
     @Nested
     inner class SetupLocallyHostedIdentityTest {
         @Test
         fun `publishToLocallyHostedIdentities calls createIdentityRecord`() {
-            val event = ConfigChangedEvent(
-                emptySet(),
-                mapOf(ConfigKeys.MESSAGING_CONFIG to mock())
-            )
-            handler.firstValue.processEvent(event, coordinator)
+            postConfigChangedEvent()
 
             client.setupLocallyHostedIdentity(
                 shortHash,
@@ -183,11 +224,7 @@ class CertificatesClientImplTest {
         @Test
         fun `hostedIdentityEntryFactory creation send the correct sender`() {
             whenever(sender.sendRequest(any())).doReturn(mock())
-            val event = ConfigChangedEvent(
-                emptySet(),
-                mapOf(ConfigKeys.MESSAGING_CONFIG to mock())
-            )
-            handler.firstValue.processEvent(event, coordinator)
+            postConfigChangedEvent()
 
             retrieveCertificates?.invoke(null, CertificateUsage.P2P_SESSION, "alias")
 
@@ -222,11 +259,7 @@ class CertificatesClientImplTest {
         @Test
         fun `publishToLocallyHostedIdentities throws exception if publisher future fails`() {
             whenever(publisher.publish(any())).doReturn(listOf(CompletableFuture.failedFuture(CordaRuntimeException(""))))
-            val event = ConfigChangedEvent(
-                emptySet(),
-                mapOf(ConfigKeys.MESSAGING_CONFIG to mock())
-            )
-            handler.firstValue.processEvent(event, coordinator)
+            postConfigChangedEvent()
 
             assertThrows<CordaRuntimeException> {
                 client.setupLocallyHostedIdentity(
@@ -249,11 +282,7 @@ class CertificatesClientImplTest {
                 mockHostedIdentityEntryFactory.constructed().first()
                     .createIdentityRecord(any(), any(), any(), any(), anyOrNull())
             ).doReturn(record)
-            val event = ConfigChangedEvent(
-                emptySet(),
-                mapOf(ConfigKeys.MESSAGING_CONFIG to mock())
-            )
-            handler.firstValue.processEvent(event, coordinator)
+            postConfigChangedEvent()
 
             client.setupLocallyHostedIdentity(
                 shortHash,
@@ -274,11 +303,7 @@ class CertificatesClientImplTest {
     inner class PlumbingTests {
         @Test
         fun `isRunning return true if sender is running`() {
-            val event = ConfigChangedEvent(
-                emptySet(),
-                mapOf(ConfigKeys.MESSAGING_CONFIG to mock())
-            )
-            handler.firstValue.processEvent(event, coordinator)
+            postConfigChangedEvent()
 
             assertThat(client.isRunning).isTrue
         }
@@ -339,11 +364,7 @@ class CertificatesClientImplTest {
                 val configHandle = mock<Resource>()
                 whenever(configurationReadService.registerComponentForUpdates(any(), any())).doReturn(configHandle)
                 handler.firstValue.processEvent(StartEvent(), coordinator)
-                val event = ConfigChangedEvent(
-                    emptySet(),
-                    mapOf(ConfigKeys.MESSAGING_CONFIG to mock())
-                )
-                handler.firstValue.processEvent(event, coordinator)
+                postConfigChangedEvent()
                 val registrationStatusChangeEvent = RegistrationStatusChangeEvent(
                     registrationHandle,
                     LifecycleStatus.UP,
@@ -411,11 +432,7 @@ class CertificatesClientImplTest {
             fun `client set its state to up when sender goes UP`() {
                 val registrationHandle = mock<RegistrationHandle>()
                 whenever(coordinator.followStatusChangesByName(any())).doReturn(registrationHandle)
-                val event = ConfigChangedEvent(
-                    emptySet(),
-                    mapOf(ConfigKeys.MESSAGING_CONFIG to mock())
-                )
-                handler.firstValue.processEvent(event, coordinator)
+                postConfigChangedEvent()
 
                 handler.firstValue.processEvent(
                     RegistrationStatusChangeEvent(
@@ -456,11 +473,7 @@ class CertificatesClientImplTest {
             fun `client set its state to down when sender goes down`() {
                 val registrationHandle = mock<RegistrationHandle>()
                 whenever(coordinator.followStatusChangesByName(any())).doReturn(registrationHandle)
-                val event = ConfigChangedEvent(
-                    emptySet(),
-                    mapOf(ConfigKeys.MESSAGING_CONFIG to mock())
-                )
-                handler.firstValue.processEvent(event, coordinator)
+                postConfigChangedEvent()
 
                 handler.firstValue.processEvent(
                     RegistrationStatusChangeEvent(
