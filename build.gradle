@@ -77,7 +77,6 @@ allprojects {
     apply plugin: 'org.jetbrains.kotlin.jvm'
 
     if (it.toString().contains(":applications:workers:release:")) {
-        println("${it}-------------------")
         apply plugin: 'org.cyclonedx.bom'
         cyclonedxBom.dependsOn("assemble")
         cyclonedxBom {
@@ -282,11 +281,11 @@ allprojects {
     }
 }
 
-tasks.register('CreateSBOMZip', Zip) {
+tasks.register('createSBOMZip', Zip) {
     description = 'Create SBOM zip file for release'
     group = 'documentation'
     String srcDestination = buildDir.toString() + "/archive/SBOM/"
-    archiveFileName = "corda-runtime-os-SBOM-${project.version}.zip"
+    archiveFileName = "${project.name}-SBOM-${project.version}.zip"
     subprojects.each {
         if (it.toString().contains(":applications:workers:release:")) {
             String srcPath = it.buildDir.toString() + "/reports/SBOM/"
@@ -298,6 +297,21 @@ tasks.register('CreateSBOMZip', Zip) {
     }
     from srcDestination
     destinationDirectory = (file(buildDir.toString() + "/archive/corda-runtime-os-SBOM/"))
+}
+
+if (project.hasProperty('generateSBOM')) {
+    publishing {
+        publications {
+            sbom(MavenPublication) {
+                artifact createSBOMZip
+                artifactId "${project.name}-sbom"
+                groupId 'net.corda'
+            }
+        }
+    }
+    artifactoryPublish {
+        publications('sbom')
+    }
 }
 
 // Ensure that we both compile and run using Kotlin OSGi bundles.
