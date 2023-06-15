@@ -3,7 +3,7 @@ package net.corda.db.connection.manager.impl.tests
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.db.connection.manager.DBConfigurationException
-import net.corda.db.connection.manager.impl.DataSourceFactoryHelper.createFromConfig
+import net.corda.db.connection.manager.impl.createFromConfig
 import net.corda.db.core.DataSourceFactory
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.SmartConfigImpl

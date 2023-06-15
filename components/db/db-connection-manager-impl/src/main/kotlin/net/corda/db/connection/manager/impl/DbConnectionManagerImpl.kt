@@ -4,7 +4,6 @@ import net.corda.db.connection.manager.DBConfigurationException
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.connection.manager.DbConnectionOps
 import net.corda.db.connection.manager.DbConnectionsRepository
-import net.corda.db.connection.manager.impl.DataSourceFactoryHelper.createFromConfig
 import net.corda.db.core.CloseableDataSource
 import net.corda.db.core.DataSourceFactory
 import net.corda.db.core.HikariDataSourceFactory
