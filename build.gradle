@@ -28,6 +28,7 @@ plugins {
     id 'jacoco'
     id 'com.github.ben-manes.versions' // discover possible dependency version upgrades
     id 'org.jetbrains.dokka' apply false
+    id 'org.cyclonedx.bom' apply false
 }
 
 tasks.named("wrapper") {
@@ -74,6 +75,19 @@ allprojects {
     }
 
     apply plugin: 'org.jetbrains.kotlin.jvm'
+
+    if (it.toString().contains(":applications:workers:release:")) {
+        println("${it}-------------------")
+        apply plugin: 'org.cyclonedx.bom'
+        cyclonedxBom.dependsOn("assemble")
+        cyclonedxBom {
+            includeConfigs = ["runtimeClasspath"]
+            skipProjects = [rootProject.name]
+            skipConfigs = ["integrationTestCompileOnlyDependenciesMetadata", "testCompileOnlyDependenciesMetadata", "compileOnlyDependenciesMetadata", "apiDependenciesMetadata"]
+            destination = file("build/reports/SBOM")
+            outputName = "${project.name}-corda-runtime-os-sbom"   
+        }
+    }
 
     tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
         compilerOptions {
@@ -268,6 +282,24 @@ allprojects {
     }
 }
 
+tasks.register('CreateSBOMZip', Zip) {
+    // description = 'Create mutli module docs Site Jar'
+    // group = 'documentation'
+
+    archiveFileName = "corda-runtime-os-SBOM-${project.version}.zip"
+    subprojects.each {
+        if (it.toString().contains(":applications:workers:release:")) {
+            String srcPath = it.buildDir.toString() + "/reports/SBOM/"
+            String srcDestination = buildDir.toString() + "/archive/SBOM/"
+            it.copy{
+                from srcPath
+                into srcDestination
+            }
+        }
+    }
+    destinationDirectory = (file(buildDir.toString() + "/archive/corda-runtime-os-SBOM/"))
+}
+
 // Ensure that we both compile and run using Kotlin OSGi bundles.
 // We must ONLY invoke this for Kotlin's classpath configurations.
 void configureKotlinForOSGi(Configuration configuration) {
@@ -326,6 +358,15 @@ subprojects {
     apply plugin: 'kotlin-jpa'
     apply plugin: 'io.gitlab.arturbosch.detekt'
     apply plugin: 'jacoco'
+
+    // apply plugin: 'org.cyclonedx.bom'
+    // cyclonedxBom {
+    //     includeConfigs = ["runtimeClasspath"]
+    //     skipProjects = [rootProject.name]
+    //     skipConfigs = ["integrationTestCompileOnlyDependenciesMetadata", "testCompileOnlyDependenciesMetadata", "compileOnlyDependenciesMetadata", "apiDependenciesMetadata"]
+    //     destination = file("build/reports/SBOM")
+    //     outputName = "${project.name}-corda-runtime-os-sbom"   
+    // }
 
     version rootProject.version
     group 'net.corda'

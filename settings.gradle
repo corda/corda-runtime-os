@@ -50,6 +50,7 @@ pluginManagement {
         id "com.jfrog.artifactory" version artifactoryPluginVersion
         id 'io.snyk.gradle.plugin.snykplugin' version snykVersion
         id 'org.jetbrains.dokka' version dokkaVersion
+        id "org.cyclonedx.bom" version "1.7.4"
     }
 }
 
