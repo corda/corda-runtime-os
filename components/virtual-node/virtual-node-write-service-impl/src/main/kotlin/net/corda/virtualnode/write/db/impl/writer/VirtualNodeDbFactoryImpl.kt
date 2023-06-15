@@ -16,7 +16,6 @@ import net.corda.db.core.DbPrivilege.DML
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.schema.configuration.DatabaseConfig
-import net.corda.utilities.VisibleForTesting
 import net.corda.virtualnode.write.db.impl.VirtualNodesDbAdmin
 import java.security.SecureRandom
 
