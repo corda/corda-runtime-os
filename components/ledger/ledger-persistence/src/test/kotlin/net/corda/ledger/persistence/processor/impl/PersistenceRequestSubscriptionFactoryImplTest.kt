@@ -22,8 +22,9 @@ internal class PersistenceRequestSubscriptionFactoryImplTest {
 
         val expectedSubscription = mock<Subscription<String, LedgerPersistenceRequest>>()
         val expectedSubscriptionConfig = SubscriptionConfig(
-            "persistence.ledger.processor",
-            PERSISTENCE_LEDGER_PROCESSOR_TOPIC
+            groupName= "persistence.ledger.processor",
+            eventTopic = PERSISTENCE_LEDGER_PROCESSOR_TOPIC,
+            transactionalProducer = false
         )
 
         whenever(

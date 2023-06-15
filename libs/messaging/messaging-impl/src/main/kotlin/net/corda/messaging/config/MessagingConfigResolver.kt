@@ -39,11 +39,17 @@ internal class MessagingConfigResolver(private val smartConfigFactory: SmartConf
         subscriptionType: SubscriptionType,
         subscriptionConfig: SubscriptionConfig,
         messagingConfig: SmartConfig,
-        uniqueId: String
+        uniqueId: String,
+        transactionalProducer:Boolean = true
     ): ResolvedSubscriptionConfig {
         val config = messagingConfig.withFallback(defaults)
         return try {
-            ResolvedSubscriptionConfig.merge(subscriptionType, subscriptionConfig, config, uniqueId)
+            ResolvedSubscriptionConfig.merge(
+                subscriptionType,
+                subscriptionConfig,
+                config,
+                uniqueId,
+                transactionalProducer)
         } catch (e: ConfigException) {
             logger.error("Failed to resolve subscription config $subscriptionConfig: ${e.message}")
             throw CordaMessageAPIConfigException(

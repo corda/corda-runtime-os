@@ -14,5 +14,7 @@ data class ProducerConfig(
     val instanceId: Int,
     val transactional: Boolean,
     val role: ProducerRoles,
-    val throwOnSerializationError: Boolean = true
+    val throwOnSerializationError: Boolean = true,
+    val idempotent:Boolean = true,
+    val waitForAck:Boolean = true,
 )

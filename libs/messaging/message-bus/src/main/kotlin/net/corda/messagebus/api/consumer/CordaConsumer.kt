@@ -145,6 +145,8 @@ interface CordaConsumer<K : Any, V : Any> : AutoCloseable {
      */
     fun commitSyncOffsets(event: CordaConsumerRecord<K, V>, metaData: String? = null)
 
+    fun commitSyncAsync()
+
     /**
      * Get metadata about the partitions for a given topic.
      *

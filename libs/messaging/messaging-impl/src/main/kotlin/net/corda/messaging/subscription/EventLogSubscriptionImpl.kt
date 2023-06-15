@@ -1,6 +1,5 @@
 package net.corda.messaging.subscription
 
-import java.util.UUID
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
@@ -30,6 +29,7 @@ import net.corda.metrics.CordaMetrics
 import net.corda.schema.Schemas.getDLQTopic
 import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
+import java.util.UUID
 
 /**
  * Implementation of an EventLogSubscription.
@@ -58,14 +58,15 @@ internal class EventLogSubscriptionImpl<K : Any, V : Any>(
 ) : Subscription<K, V> {
 
     private val log = LoggerFactory.getLogger("${this.javaClass.name}-${config.clientId}")
-
+    private val transactionalProducer: Boolean = config.transactionalProducer
     private var threadLooper =
         ThreadLooper(log, config, lifecycleCoordinatorFactory, "durable processing thread", ::runConsumeLoop)
 
     private lateinit var deadLetterRecords: MutableList<ByteArray>
 
-    private val errorMsg = "Failed to read and process records from topic ${config.topic}, group ${config.group}, producerClientId " +
-            "${config.clientId}."
+    private val errorMsg =
+        "Failed to read and process records from topic ${config.topic}, group ${config.group}, producerClientId " +
+                "${config.clientId}."
 
     private val processorMeter = CordaMetrics.Metric.MessageProcessorTime.builder()
         .withTag(CordaMetrics.Tag.MessagePatternType, MetricsConstants.DURABLE_PATTERN_TYPE)
@@ -118,7 +119,16 @@ internal class EventLogSubscriptionImpl<K : Any, V : Any>(
                     },
                     rebalanceListener
                 )
-                val producerConfig = ProducerConfig(config.clientId, config.instanceId, true, ProducerRoles.EVENT_LOG, false)
+                val producerConfig =
+                    ProducerConfig(
+                        config.clientId,
+                        config.instanceId,
+                        config.transactionalProducer,
+                        ProducerRoles.EVENT_LOG,
+                        false,
+                        idempotent = config.transactionalProducer,
+                        waitForAck = config.transactionalProducer
+                        )
                 producer = cordaProducerBuilder.createProducer(producerConfig, config.messageBusConfig) { data ->
                     log.warn("Failed to serialize record from ${config.topic}")
                     deadLetterRecords.add(data)
@@ -138,6 +148,7 @@ internal class EventLogSubscriptionImpl<K : Any, V : Any>(
                             "$errorMsg Attempts: $attempts. Recreating consumer/producer and Retrying.", ex
                         )
                     }
+
                     else -> {
                         log.error(
                             "$errorMsg Attempts: $attempts. Closing subscription.", ex
@@ -231,7 +242,11 @@ internal class EventLogSubscriptionImpl<K : Any, V : Any>(
         try {
             log.debug { "Processing records(keys: ${cordaConsumerRecords.joinToString { it.key.toString() }}, " +
                     "size: ${cordaConsumerRecords.size})" }
-            producer.beginTransaction()
+
+            if(transactionalProducer) {
+                producer.beginTransaction()
+            }
+
             val outputs = processorMeter.recordCallable { processor.onNext(cordaConsumerRecords.map { it.toEventLogRecord() })
                 .toCordaProducerRecords() }!!
             producer.sendRecords(outputs)
@@ -245,8 +260,14 @@ internal class EventLogSubscriptionImpl<K : Any, V : Any>(
                 })
                 deadLetterRecords.clear()
             }
-            producer.sendAllOffsetsToTransaction(consumer)
-            producer.commitTransaction()
+
+            if(transactionalProducer) {
+                producer.sendAllOffsetsToTransaction(consumer)
+                producer.commitTransaction()
+            }else{
+                consumer.commitSyncAsync()
+            }
+
             log.debug { "Processing records(keys: ${cordaConsumerRecords.joinToString { it.key.toString() }}, " +
                     "size: ${cordaConsumerRecords.size}) complete." }
         } catch (ex: Exception) {

@@ -1,6 +1,5 @@
 package net.corda.messaging.subscription.factory
 
-import java.util.concurrent.ConcurrentHashMap
 import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -39,6 +38,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
 
 /**
  * Kafka implementation of the Subscription Factory.
@@ -143,13 +143,18 @@ class CordaSubscriptionFactory @Activate constructor(
         processor: EventLogProcessor<K, V>,
         messagingConfig: SmartConfig,
         partitionAssignmentListener: PartitionAssignmentListener?
+
     ): Subscription<K, V> {
         if (!messagingConfig.hasPath(INSTANCE_ID)) {
             throw CordaMessageAPIFatalException(
                 "Cannot create durable subscription producer for $subscriptionConfig. No instanceId configured"
             )
         }
-        val config = getConfig(SubscriptionType.EVENT_LOG, subscriptionConfig, messagingConfig)
+        val config = getConfig(
+            SubscriptionType.EVENT_LOG,
+            subscriptionConfig,
+            messagingConfig
+        )
         return EventLogSubscriptionImpl(
             config,
             cordaConsumerBuilder,
@@ -190,7 +195,8 @@ class CordaSubscriptionFactory @Activate constructor(
             subscriptionType,
             subscriptionConfig,
             messagingConfig,
-            UUID.randomUUID().toString()
+            UUID.randomUUID().toString(),
+            subscriptionConfig.transactionalProducer
         )
     }
 

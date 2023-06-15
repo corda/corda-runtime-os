@@ -1,7 +1,6 @@
 package net.corda.messagebus.kafka.config
 
 import com.typesafe.config.ConfigFactory
-import java.util.Properties
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.messagebus.api.configuration.AdminConfig
@@ -16,6 +15,7 @@ import net.corda.utilities.debug
 import org.apache.kafka.clients.producer.ProducerConfig.PARTITIONER_CLASS_CONFIG
 import org.osgi.framework.FrameworkUtil
 import org.slf4j.LoggerFactory
+import java.util.Properties
 
 /**
  * Resolve a Kafka bus configuration against the enforced and default configurations provided by the library.
@@ -33,6 +33,8 @@ internal class MessageBusConfigResolver(private val smartConfigFactory: SmartCon
         private const val GROUP_PATH = "group"
         private const val CLIENT_ID_PATH = "clientId"
         private const val TRANSACTIONAL_ID_PATH = "transactionalId"
+        private const val IDEMPOTENCY_PATH = "idempotencyType"
+        private const val ACKS_PATH = "ackType"
     }
 
     private val defaults = getResourceConfig(DEFAULT_CONFIG_FILE)
@@ -64,13 +66,13 @@ internal class MessageBusConfigResolver(private val smartConfigFactory: SmartCon
             .withFallback(defaults)
             .resolve()
 
-        logger.debug {"Resolved kafka configuration: ${resolvedConfig.toSafeConfig().root().render()}" }
+        logger.debug { "Resolved kafka configuration: ${resolvedConfig.toSafeConfig().root().render()}" }
 
         // Trim down to just the Kafka config for the specified role.
         val roleConfig = resolvedConfig.getConfig("roles.$rolePath")
         val properties = roleConfig.toKafkaProperties()
 
-        logger.debug {"Kafka properties for role $rolePath: $properties" }
+        logger.debug { "Kafka properties for role $rolePath: $properties" }
         return properties
     }
 
@@ -84,7 +86,7 @@ internal class MessageBusConfigResolver(private val smartConfigFactory: SmartCon
      * @return Resolved kafka properties
      */
     fun resolve(messageBusConfig: SmartConfig, adminConfig: AdminConfig): Properties {
-        return  resolve(messageBusConfig, "admin.admin", adminConfig.toSmartConfig())
+        return resolve(messageBusConfig, "admin.admin", adminConfig.toSmartConfig())
     }
 
     /**
@@ -96,7 +98,10 @@ internal class MessageBusConfigResolver(private val smartConfigFactory: SmartCon
      * @param consumerConfig User configurable values as well as the role to extract config for from the [messageBusConfig]
      * @return Resolved user configurable consumer values and kafka properties to be used for the given role type
      */
-    fun resolve(messageBusConfig: SmartConfig, consumerConfig: ConsumerConfig): Pair<ResolvedConsumerConfig, Properties> {
+    fun resolve(
+        messageBusConfig: SmartConfig,
+        consumerConfig: ConsumerConfig
+    ): Pair<ResolvedConsumerConfig, Properties> {
         val kafkaProperties = resolve(messageBusConfig, consumerConfig.role.configPath, consumerConfig.toSmartConfig())
         val resolvedConfig = ResolvedConsumerConfig(
             consumerConfig.group,
@@ -115,7 +120,10 @@ internal class MessageBusConfigResolver(private val smartConfigFactory: SmartCon
      * @param producerConfig User configurable values as well as the role to extract config for from the [messageBusConfig]
      * @return Resolved user configurable Kafka values and kafka properties to be used for the given role type
      */
-    fun resolve(messageBusConfig: SmartConfig, producerConfig: ProducerConfig): Pair<ResolvedProducerConfig, Properties> {
+    fun resolve(
+        messageBusConfig: SmartConfig,
+        producerConfig: ProducerConfig
+    ): Pair<ResolvedProducerConfig, Properties> {
         val kafkaProperties = resolve(messageBusConfig, producerConfig.role.configPath, producerConfig.toSmartConfig())
         //enforce the partitioner to be our custom partitioner for producers only
         kafkaProperties[PARTITIONER_CLASS_CONFIG] = KafkaProducerPartitioner::class.java
@@ -160,7 +168,9 @@ internal class MessageBusConfigResolver(private val smartConfigFactory: SmartCon
                 mapOf(
                     GROUP_PATH to group,
                     CLIENT_ID_PATH to clientId,
-                    TRANSACTIONAL_ID_PATH to "<undefined>"
+                    TRANSACTIONAL_ID_PATH to "<undefined>",
+                    ACKS_PATH to "<undefined>",
+                    IDEMPOTENCY_PATH to "<undefined>"
                 )
             )
         )
@@ -172,12 +182,27 @@ internal class MessageBusConfigResolver(private val smartConfigFactory: SmartCon
         } else {
             null
         }
+
+        val acks = if (waitForAck) {
+            "all"
+        } else {
+            "0"
+        }
+
+        val idempotency = if (idempotent) {
+            "true"
+        } else {
+            "false"
+        }
+
         return smartConfigFactory.create(
             ConfigFactory.parseMap(
                 mapOf(
                     CLIENT_ID_PATH to clientId,
                     GROUP_PATH to "<undefined>",
-                    TRANSACTIONAL_ID_PATH to transactionalId
+                    TRANSACTIONAL_ID_PATH to transactionalId,
+                    ACKS_PATH to acks,
+                    IDEMPOTENCY_PATH to idempotency,
                 )
             )
         )
@@ -189,7 +214,9 @@ internal class MessageBusConfigResolver(private val smartConfigFactory: SmartCon
                 mapOf(
                     CLIENT_ID_PATH to clientId,
                     GROUP_PATH to "<undefined>",
-                    TRANSACTIONAL_ID_PATH to "<undefined>"
+                    TRANSACTIONAL_ID_PATH to "<undefined>",
+                    ACKS_PATH to "<undefined>",
+                    IDEMPOTENCY_PATH to "<undefined>",
                 )
             )
         )
