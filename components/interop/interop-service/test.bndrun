@@ -21,6 +21,7 @@
 
 -runrequires: \
     bnd.identity;id='net.corda.interop-service',\
+    bnd.identity;id='net.corda.interop-rest-service-impl',\
     bnd.identity;id='net.corda.lifecycle-impl',\
     bnd.identity;id='net.corda.configuration-read-service-impl',\
     bnd.identity;id='${project.archivesBaseName}-tests',\

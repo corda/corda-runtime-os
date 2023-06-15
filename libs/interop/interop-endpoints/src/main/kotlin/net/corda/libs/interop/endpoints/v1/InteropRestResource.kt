@@ -1,17 +1,18 @@
 package net.corda.libs.interop.endpoints.v1
 
+import net.corda.libs.interop.endpoints.v1.types.CreateInterOpIdentityType
+import net.corda.libs.interop.endpoints.v1.types.InteropIdentityResponseType
 import net.corda.rest.RestResource
+import net.corda.rest.annotations.ClientRequestBodyParameter
 import net.corda.rest.annotations.HttpGET
 import net.corda.rest.annotations.HttpPUT
 import net.corda.rest.annotations.HttpRestResource
-import net.corda.rest.annotations.RestPathParameter
-import net.corda.rest.asynchronous.v1.AsyncResponse
 import net.corda.rest.response.ResponseEntity
 import java.util.UUID
 
 @HttpRestResource(
-    name = "Interop identities API",
-    description = "",
+    name = "Interop Identities API",
+    description = "The interop identity API consists of a number of endpoints to query and create interop identities.",
     path = "interop"
 )
 interface InteropRestResource : RestResource {
@@ -28,15 +29,23 @@ interface InteropRestResource : RestResource {
      * Asynchronous endpoint to create interop identity
      */
     @HttpPUT(
-        path = "{interOpIdentityX500}/{groupId}",
+        path = "{x500Name}/{groupId}",
         title = "Create interop identity.",
         description = "This method creates interop identity from x500name.",
         responseDescription = "Identifier for the request."
     )
     fun createInterOpIdentity(
-        @RestPathParameter(description = "The X500 name of the identity to create")
-        x500Name: String,
-        @RestPathParameter(description = "The groupId of the group the identity belongs to.")
-        groupId: UUID
-    ): ResponseEntity<AsyncResponse>
+//        @RestPathParameter(description = "The X500 name of the identity to create")
+//        x500Name: String,
+//        @RestPathParameter(description = "The groupId of the group the identity belongs to.")
+//        groupId: UUID
+        @ClientRequestBodyParameter(
+            description =
+            """
+                Details of the identity to be created: 
+                x500Name - name of the identity
+                groupId - group id of the interop group
+            """)
+        createInterOpIdentityType: CreateInterOpIdentityType
+    ): ResponseEntity<InteropIdentityResponseType>
 }

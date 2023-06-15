@@ -17,6 +17,7 @@
     bnd.identity;id='junit-jupiter-engine',\
     bnd.identity;id='junit-platform-launcher',\
     bnd.identity;id='slf4j.simple',\
+    bnd.identity;id='net.corda.interop-rest-service-impl',\
     bnd.identity;id='net.corda.rest-processor',\
     bnd.identity;id='net.corda.virtual-node-rest-service-impl',\
     bnd.identity;id='net.corda.virtual-node-rest-maintenance-impl',\

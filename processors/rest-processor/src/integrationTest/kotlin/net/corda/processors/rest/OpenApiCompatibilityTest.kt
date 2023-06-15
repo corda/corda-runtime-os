@@ -11,6 +11,7 @@ import net.corda.rest.server.config.models.RestServerSettings
 import net.corda.rest.server.factory.RestServerFactory
 import net.corda.libs.configuration.endpoints.v1.ConfigRestResource
 import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource
+import net.corda.libs.interop.endpoints.v1.InteropRestResource
 import net.corda.libs.permissions.endpoints.v1.permission.PermissionEndpoint
 import net.corda.libs.permissions.endpoints.v1.role.RoleEndpoint
 import net.corda.libs.permissions.endpoints.v1.user.UserEndpoint
@@ -59,7 +60,8 @@ class OpenApiCompatibilityTest {
             PermissionEndpoint::class.java, // REST
             RoleEndpoint::class.java, // REST
             UserEndpoint::class.java, // REST
-            VirtualNodeMaintenanceRestResource::class.java // REST
+            VirtualNodeMaintenanceRestResource::class.java, // REST
+            InteropRestResource::class.java // Interop
         )
 
         // `cardinality` is not equal to `importantRestResources.size` as there might be some test RestResource as well
