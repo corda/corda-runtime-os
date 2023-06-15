@@ -1,0 +1,61 @@
+plugins {
+    id 'corda.common-publishing'
+    id 'corda.common-library'
+    id 'corda.osgi-test-conventions'
+}
+
+description "Web3J service"
+
+dependencies {
+    compileOnly 'org.osgi:osgi.annotation'
+    compileOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
+    compileOnly 'org.osgi:org.osgi.service.component.annotations'
+    compileOnly "co.paralleluniverse:quasar-osgi-annotations:$quasarVersion"
+
+    implementation project(":components:configuration:configuration-read-service")
+    implementation project(":libs:lifecycle:lifecycle")
+    implementation project(":libs:messaging:messaging")
+    implementation project(":libs:flows:session-manager")
+    implementation project(':libs:serialization:serialization-avro')
+    implementation project(":libs:sandbox-types")
+    implementation project(":components:link-manager")
+    implementation project(':components:domino-logic')
+    implementation project(':components:membership:membership-group-read')
+    implementation project(":libs:membership:membership-impl")
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation "net.corda:corda-base"
+    implementation "net.corda:corda-avro-schema"
+    implementation "net.corda:corda-config-schema"
+    implementation "net.corda:corda-topic-schema"
+    implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
+    implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
+    implementation "net.corda:corda-application"
+    implementation 'net.corda:corda-interop'
+
+    // https://mvnrepository.com/artifact/org.web3j/core
+    implementation 'org.web3j:core:4.10.0'
+//    implementation "org.web3j:core:$web3jVersion"
+//    implementation "org.web3j:utils:$web3jVersion"
+
+
+    implementation project(":libs:membership:membership-common")
+    implementation "com.typesafe:config:$typeSafeConfigVersion"
+    implementation "org.slf4j:slf4j-api:$slf4jVersion"
+
+    testImplementation "org.assertj:assertj-core:$assertjVersion"
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    testImplementation project(":libs:flows:flow-utils")
+
+    integrationTestImplementation project(":testing:db-message-bus-testkit")
+
+    integrationTestRuntimeOnly project(":libs:crypto:cipher-suite-impl")
+    integrationTestRuntimeOnly project(":libs:lifecycle:lifecycle-impl")
+    integrationTestRuntimeOnly project(":components:configuration:configuration-read-service-impl")
+    integrationTestRuntimeOnly project(':libs:messaging:db-message-bus-impl')
+    integrationTestRuntimeOnly project(':libs:messaging:messaging-impl')
+    integrationTestRuntimeOnly project(":libs:schema-registry:schema-registry-impl")
+    integrationTestRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
+    integrationTestRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
+    integrationTestRuntimeOnly "com.sun.activation:javax.activation:$activationVersion"
+    integrationTestRuntimeOnly project(':components:membership:membership-group-read-impl')
+}
