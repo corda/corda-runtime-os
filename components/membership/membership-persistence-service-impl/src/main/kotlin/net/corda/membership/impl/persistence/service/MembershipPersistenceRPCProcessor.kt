@@ -24,7 +24,7 @@ internal class MembershipPersistenceRPCProcessor(
         request: MembershipPersistenceRequest,
         respFuture: CompletableFuture<MembershipPersistenceResponse>
     ) {
-        logger.info("Received membership persistence request: ${request.request::class.java}")
+        logger.info("Received membership persistence request: ${request.request::class.java} id: ${request.context.requestId}")
         val result = try {
             val result = handlerFactories.handle(
                 request,
@@ -35,7 +35,7 @@ internal class MembershipPersistenceRPCProcessor(
                 result
             }
         } catch (e: Exception) {
-            val error = "Exception thrown while processing membership persistence request: ${e.message}"
+            val error = "Exception thrown while processing membership persistence request: ${e.message} for ${request.context.requestId}"
             logger.warn(error)
             val kind = when (e) {
                 is InvalidEntityUpdateException -> ErrorKind.INVALID_ENTITY_UPDATE
