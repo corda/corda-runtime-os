@@ -51,7 +51,7 @@ class HsmRestResourceImpl @Activate constructor(
         }
     }
 
-    override fun assignedHsm(tenantId: String, category: String): HsmAssociationInfo? {
+    override fun assignedHsm(tenantId: String, category: String): HsmAssociationInfo {
         verifyTenantId(tenantId)
         return tryWithExceptionHandling(
             logger,
