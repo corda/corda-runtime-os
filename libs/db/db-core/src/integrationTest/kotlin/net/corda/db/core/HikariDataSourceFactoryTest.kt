@@ -28,6 +28,11 @@ class HikariDataSourceFactoryTest {
             username = "postgres",
             password = "password",
             maximumPoolSize = 1,
+            minimumPoolSize = null,
+            idleTimeout = Duration.ofMinutes(2),
+            maxLifetime = Duration.ofMinutes(30),
+            keepaliveTime = Duration.ZERO,
+            validationTimeout = Duration.ofSeconds(5),
         )
     }
     private val monitorPool by monitorPoolDelegate
@@ -52,7 +57,10 @@ class HikariDataSourceFactoryTest {
             password = "password",
             maximumPoolSize = maxConnections,
             minimumPoolSize = minConnections,
-            idleTimeout = idleTimeout
+            idleTimeout = idleTimeout,
+            maxLifetime = Duration.ofMinutes(30),
+            keepaliveTime = Duration.ZERO,
+            validationTimeout = Duration.ofSeconds(5),
         ).use { hf ->
             val connections1 = checkConnections()
             println("Pool has $connections1 connections.")

@@ -8,7 +8,6 @@ import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.libs.configuration.secret.SecretsLookupService
 import net.corda.schema.configuration.DatabaseConfig
-import net.corda.schema.configuration.DatabaseConfig.DB_POOL_MIN_SIZE
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -16,6 +15,7 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
+import java.time.Duration
 
 class DbConfigTest {
     companion object {
@@ -38,6 +38,11 @@ class DbConfigTest {
     private val url = "url"
     private val poolsize = 987
     private val minPoolSize = 5
+    private val idleTimeout = 120
+    private val maxLifetime = 1800
+    private val keepaliveTime = 0
+    private val validationTimeout = 5
+
     private val fullConfig = """
         ${DatabaseConfig.JDBC_DRIVER}=$driver
         ${DatabaseConfig.JDBC_URL}=$url
@@ -45,6 +50,10 @@ class DbConfigTest {
         ${DatabaseConfig.DB_USER}=$user
         ${DatabaseConfig.DB_PASS}=$pass
         ${DatabaseConfig.DB_POOL_MIN_SIZE}=null
+        ${DatabaseConfig.DB_POOL_IDLE_TIMEOUT_SECONDS}=$idleTimeout
+        ${DatabaseConfig.DB_POOL_MAX_LIFETIME_SECONDS}=$maxLifetime
+        ${DatabaseConfig.DB_POOL_KEEPALIVE_TIME_SECONDS}=$keepaliveTime
+        ${DatabaseConfig.DB_POOL_VALIDATION_TIMEOUT_SECONDS}=$validationTimeout
     """.trimIndent()
     private val fullSmartConfig = SmartConfigImpl(
         ConfigFactory.parseString(fullConfig),
@@ -73,8 +82,15 @@ class DbConfigTest {
             password = pass,
             maximumPoolSize = poolsize,
             minimumPoolSize = null,
+            idleTimeout = durationOfSeconds(idleTimeout),
+            maxLifetime = durationOfSeconds(maxLifetime),
+            keepaliveTime = durationOfSeconds(keepaliveTime),
+            validationTimeout = durationOfSeconds(validationTimeout)
         )
     }
+
+    private fun durationOfSeconds(duration: Int) =
+        Duration.ofSeconds(duration.toLong())
 
     @Test
     fun `when default config return datasource`() {
@@ -87,13 +103,17 @@ class DbConfigTest {
             pass,
             maximumPoolSize = DB_POOL_MAX_SIZE,
             minimumPoolSize = null,
+            idleTimeout = durationOfSeconds(idleTimeout),
+            maxLifetime = durationOfSeconds(maxLifetime),
+            keepaliveTime = durationOfSeconds(keepaliveTime),
+            validationTimeout = durationOfSeconds(validationTimeout)
         )
     }
 
     @Test
-    fun `when minimum pull size exsits, the createFromConfig will read it`() {
+    fun `when minimum pull size exists, the createFromConfig will read it`() {
         val configWithMin = minimalSmartConfig.withValue(
-            DB_POOL_MIN_SIZE,
+            DatabaseConfig.DB_POOL_MIN_SIZE,
             ConfigValueFactory.fromAnyRef(minPoolSize),
         )
 
@@ -106,6 +126,10 @@ class DbConfigTest {
             pass,
             maximumPoolSize = DB_POOL_MAX_SIZE,
             minimumPoolSize = minPoolSize,
+            idleTimeout = durationOfSeconds(idleTimeout),
+            maxLifetime = durationOfSeconds(maxLifetime),
+            keepaliveTime = durationOfSeconds(keepaliveTime),
+            validationTimeout = durationOfSeconds(validationTimeout)
         )
     }
 
@@ -131,7 +155,19 @@ class DbConfigTest {
 
     @Test
     fun `when createDbConfig can be read`() {
-        val createdConfig = createDbConfig(smartConfigFactory, user, pass, driver, url, poolsize, minPoolSize)
+        val createdConfig = createDbConfig(
+            smartConfigFactory,
+            user,
+            pass,
+            driver,
+            url,
+            poolsize,
+            minPoolSize,
+            idleTimeout = 0,
+            maxLifetime = 0,
+            keepaliveTime = 0,
+            validationTimeout = 0,
+            key = "database-password")
 
         assertThat(createdConfig.getString(DatabaseConfig.DB_USER)).isEqualTo(user)
         assertThat(createdConfig.getConfig(DatabaseConfig.DB_PASS)).isEqualTo(secretConfig)
@@ -144,28 +180,38 @@ class DbConfigTest {
 
     @Test
     fun `when createDbConfig leave default driver empty`() {
-        val createdConfig = createDbConfig(smartConfigFactory, user, pass, jdbcUrl = url, maxPoolSize = poolsize)
+        val createdConfig = createDbConfig(
+            smartConfigFactory,
+            user,
+            pass,
+            jdbcUrl = url,
+            maxPoolSize = poolsize,
+            minPoolSize = null,
+            idleTimeout = 0,
+            maxLifetime = 0,
+            keepaliveTime = 0,
+            validationTimeout = 0,
+            key = "database-password"
+        )
 
         assertThat(createdConfig.hasPath(DatabaseConfig.JDBC_DRIVER)).isFalse
     }
 
     @Test
-    fun `when createDbConfig leave default url empty`() {
-        val createdConfig = createDbConfig(smartConfigFactory, user, pass, jdbcDriver = driver, maxPoolSize = poolsize)
-
-        assertThat(createdConfig.hasPath(DatabaseConfig.JDBC_URL)).isFalse
-    }
-
-    @Test
-    fun `when createDbConfig leave default poolsize empty`() {
-        val createdConfig = createDbConfig(smartConfigFactory, user, pass, jdbcUrl = url, jdbcDriver = driver, )
-
-        assertThat(createdConfig.hasPath(DatabaseConfig.DB_POOL_MAX_SIZE)).isFalse
-    }
-
-    @Test
     fun `when createDbConfig leave default min pool size empty`() {
-        val createdConfig = createDbConfig(smartConfigFactory, user, pass, jdbcUrl = url, jdbcDriver = driver, )
+        val createdConfig = createDbConfig(
+            smartConfigFactory,
+            user,
+            pass,
+            jdbcUrl = url,
+            maxPoolSize = poolsize,
+            minPoolSize = null,
+            jdbcDriver = driver,
+            idleTimeout = 0,
+            maxLifetime = 0,
+            keepaliveTime = 0,
+            validationTimeout = 0,
+            key = "database-password")
 
         assertThat(createdConfig.hasPath(DatabaseConfig.DB_POOL_MIN_SIZE)).isFalse
     }

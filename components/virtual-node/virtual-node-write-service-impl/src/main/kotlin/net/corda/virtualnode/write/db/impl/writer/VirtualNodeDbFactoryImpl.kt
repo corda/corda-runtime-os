@@ -30,6 +30,10 @@ internal class VirtualNodeDbFactoryImpl(
         private const val ddlMaxPoolSize = 1
         private const val dmlMaxPoolSize = 10
         private const val dmlMinPoolSize = 0
+        private const val idleTimeout = 120
+        private const val maxLifetime = 1800 // 30 mins
+        private const val keepaliveTime = 0
+        private const val validationTimeout = 5
         private const val passwordLength = 64
         private val passwordSource = (('0'..'9') + ('A'..'Z') + ('a'..'z')).toCharArray()
         private val random = SecureRandom()
@@ -169,10 +173,16 @@ internal class VirtualNodeDbFactoryImpl(
 
             // TODO support for CharArray passwords in SmartConfig
             val config = createDbConfig(
-                smartConfigFactory, user, password.concatToString(),
+                smartConfigFactory,
+                user,
+                password.concatToString(),
                 jdbcUrl = jdbcUrl,
                 maxPoolSize = maxPoolSize,
                 minPoolSize = minPoolSize,
+                idleTimeout = idleTimeout,
+                maxLifetime = maxLifetime,
+                keepaliveTime = keepaliveTime,
+                validationTimeout = validationTimeout,
                 key = "corda-vault-$holdingIdentityShortHash-database-password"
             )
             return DbConnectionImpl(

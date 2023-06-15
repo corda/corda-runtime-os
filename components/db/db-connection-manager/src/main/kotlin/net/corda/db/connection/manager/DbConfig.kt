@@ -11,6 +11,7 @@ import net.corda.libs.configuration.validation.getConfigurationDefaults
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.DatabaseConfig
 import org.slf4j.LoggerFactory
+import java.time.Duration
 import javax.sql.DataSource
 
 internal object DbConfig {
@@ -26,6 +27,7 @@ val dbFallbackConfig = getConfigurationDefaults(ConfigKeys.DB_CONFIG, DB_SCHEMA_
  * @throws DBConfigurationException If required configuration attributes are missing.
  */
 fun DataSourceFactory.createFromConfig(config: SmartConfig): CloseableDataSource {
+    // We are falling back to the (same) defaults from the schema for both cluster and VNode datasource configurations
     val configWithFallback = config.withFallback(dbFallbackConfig)
 
     DbConfig.log.debug("Given configuration: ${config.toSafeConfig().root().render(ConfigRenderOptions.concise())}")
@@ -34,11 +36,21 @@ fun DataSourceFactory.createFromConfig(config: SmartConfig): CloseableDataSource
     val driver = configWithFallback.getString(DatabaseConfig.JDBC_DRIVER)
     val jdbcUrl = configWithFallback.getString(DatabaseConfig.JDBC_URL)
     val maxPoolSize = configWithFallback.getInt(DatabaseConfig.DB_POOL_MAX_SIZE)
+    // The below "has path" takes care the case where DB_POOL_MIN_SIZE is null (DB_POOL_MIN_SIZE will always be present)
     val minPoolSize = if(configWithFallback.hasPath(DatabaseConfig.DB_POOL_MIN_SIZE)) {
         configWithFallback.getInt(DatabaseConfig.DB_POOL_MIN_SIZE)
     } else {
         null
     }
+
+    val idleTimeout =
+        configWithFallback.getInt(DatabaseConfig.DB_POOL_IDLE_TIMEOUT_SECONDS).toLong().run(Duration::ofSeconds)
+    val maxLifetime =
+        configWithFallback.getInt(DatabaseConfig.DB_POOL_MAX_LIFETIME_SECONDS).toLong().run(Duration::ofSeconds)
+    val keepaliveTime =
+        configWithFallback.getInt(DatabaseConfig.DB_POOL_KEEPALIVE_TIME_SECONDS).toLong().run(Duration::ofSeconds)
+    val validationTimeout =
+        configWithFallback.getInt(DatabaseConfig.DB_POOL_VALIDATION_TIMEOUT_SECONDS).toLong().run(Duration::ofSeconds)
 
     val username = if (configWithFallback.hasPath(DatabaseConfig.DB_USER)) configWithFallback.getString(DatabaseConfig.DB_USER) else
         throw DBConfigurationException(
@@ -59,6 +71,10 @@ fun DataSourceFactory.createFromConfig(config: SmartConfig): CloseableDataSource
         password = password,
         maximumPoolSize = maxPoolSize,
         minimumPoolSize = minPoolSize,
+        idleTimeout = idleTimeout,
+        maxLifetime = maxLifetime,
+        keepaliveTime = keepaliveTime,
+        validationTimeout = validationTimeout
     )
 }
 
@@ -68,22 +84,29 @@ fun createDbConfig(
     username: String,
     password: String,
     jdbcDriver: String? = null,
-    jdbcUrl: String? = null,
-    maxPoolSize: Int? = null,
-    minPoolSize: Int? = null,
-    key: String = "database-password"
+    jdbcUrl: String,
+    maxPoolSize: Int,
+    minPoolSize: Int?,
+    idleTimeout: Int,
+    maxLifetime: Int,
+    keepaliveTime: Int,
+    validationTimeout: Int,
+    key: String
 ): SmartConfig {
     var config =
         smartConfigFactory.makeSecret(password, key).atPath(DatabaseConfig.DB_PASS)
             .withValue(DatabaseConfig.DB_USER, ConfigValueFactory.fromAnyRef(username))
     if(null != jdbcDriver)
         config = config.withValue(DatabaseConfig.JDBC_DRIVER, ConfigValueFactory.fromAnyRef(jdbcDriver))
-    if(null != jdbcUrl)
-        config = config.withValue(DatabaseConfig.JDBC_URL, ConfigValueFactory.fromAnyRef(jdbcUrl))
-    if(null != maxPoolSize)
-        config = config.withValue(DatabaseConfig.DB_POOL_MAX_SIZE, ConfigValueFactory.fromAnyRef(maxPoolSize))
+    config = config.withValue(DatabaseConfig.JDBC_URL, ConfigValueFactory.fromAnyRef(jdbcUrl))
+    config = config.withValue(DatabaseConfig.DB_POOL_MAX_SIZE, ConfigValueFactory.fromAnyRef(maxPoolSize))
     if(null != minPoolSize)
         config = config.withValue(DatabaseConfig.DB_POOL_MIN_SIZE, ConfigValueFactory.fromAnyRef(minPoolSize))
+
+    config = config.withValue(DatabaseConfig.DB_POOL_IDLE_TIMEOUT_SECONDS, ConfigValueFactory.fromAnyRef(idleTimeout))
+    config = config.withValue(DatabaseConfig.DB_POOL_MAX_LIFETIME_SECONDS, ConfigValueFactory.fromAnyRef(maxLifetime))
+    config = config.withValue(DatabaseConfig.DB_POOL_KEEPALIVE_TIME_SECONDS, ConfigValueFactory.fromAnyRef(keepaliveTime))
+    config = config.withValue(DatabaseConfig.DB_POOL_VALIDATION_TIMEOUT_SECONDS, ConfigValueFactory.fromAnyRef(validationTimeout))
     return config
 
 }
