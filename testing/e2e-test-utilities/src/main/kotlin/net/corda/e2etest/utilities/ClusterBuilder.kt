@@ -160,7 +160,7 @@ class ClusterBuilder {
             | }""".trimMargin()
 
     private fun createRbacUserBody(fullName: String, loginName: String, password: String) =
-        """{ "fullName" : "$fullName", "loginName" : "$loginName", "initialPassword" : "$password }"""
+        """{ "fullName" : "$fullName", "loginName" : "$loginName", "initialPassword" : "$password" }"""
 
     /** Create a virtual node */
     fun vNodeCreate(cpiHash: String, x500Name: String) =
