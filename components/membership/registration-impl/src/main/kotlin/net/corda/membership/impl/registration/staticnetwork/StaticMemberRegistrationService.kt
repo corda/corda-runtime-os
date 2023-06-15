@@ -593,15 +593,15 @@ class StaticMemberRegistrationService(
 
             // If the current member is a notary then the group parameters need to be updated
             memberInfo.notaryDetails?.let { notary ->
-                val currentProtocolVersions = membershipGroupReaderProvider.getGroupReader(memberInfo.holdingIdentity)
+                val currentProtocolVersions = membershipGroupReader
                     .notaryVirtualNodeLookup
                     .getNotaryVirtualNodes(notary.serviceName)
                     .filter { it.name != memberInfo.name }
                     .map { it.notaryDetails!!.serviceProtocolVersions.toHashSet() }
                     .reduceOrNull { acc, it -> acc.apply { retainAll(it) } }
                     ?: emptySet()
-                val latestGroupParameters = membershipGroupReader.groupParameters?.toAvro() ?: currentStaticNetworkInfo.groupParameters
-                latestGroupParameters.addNotary(
+                val latestGroupParameters = currentStaticNetworkInfo.groupParameters
+                latestGroupParameters?.addNotary(
                     memberInfo,
                     currentProtocolVersions,
                     keyEncodingService,
