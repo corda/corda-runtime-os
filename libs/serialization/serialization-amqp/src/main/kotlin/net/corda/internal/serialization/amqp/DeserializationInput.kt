@@ -37,10 +37,13 @@ data class ObjectAndEnvelope<out T>(val obj: T, val envelope: Envelope)
 class DeserializationInput constructor(
     private val serializerFactory: SerializerFactory
 ) {
+
     private val objectHistory: MutableList<Any> = mutableListOf()
-    private val logger = LoggerFactory.getLogger(this::class.java)
 
     companion object {
+
+        private val logger = LoggerFactory.getLogger(DeserializationInput::class.java)
+
         @VisibleForTesting
         @Throws(AMQPNoTypeNotSerializableException::class)
         fun <T> withDataBytes(

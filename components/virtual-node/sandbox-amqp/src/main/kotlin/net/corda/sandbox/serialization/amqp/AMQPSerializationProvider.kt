@@ -72,7 +72,7 @@ class AMQPSerializationProvider @Activate constructor(
         val factory = createSerializerFactory(context)
 
         val serializationOutput = { SerializationOutput(factory) }
-        val deserializationInput = DeserializationInput(factory)
+        val deserializationInput = { DeserializationInput(factory) }
 
         val serializationService = SerializationMetricsWrapper(
             serializationService = SerializationServiceImpl(
