@@ -14,7 +14,7 @@ import java.security.PrivilegedExceptionAction
 class SerializationServiceImpl(
 //    private val serializationOutput: SerializationOutput,
     private val serializationOutput: () -> SerializationOutput,
-    private val deserializationInput: DeserializationInput,
+    private val deserializationInput: () -> DeserializationInput,
     private val context: SerializationContext
 ) : SerializationService {
 
@@ -31,7 +31,7 @@ class SerializationServiceImpl(
     override fun <T : Any> deserialize(serializedBytes: SerializedBytes<T>, clazz: Class<T>): T {
         return try {
             AccessController.doPrivileged(PrivilegedExceptionAction {
-                deserializationInput.deserialize(serializedBytes.unwrap(), clazz, context)
+                deserializationInput().deserialize(serializedBytes.unwrap(), clazz, context)
             })
         } catch (e: PrivilegedActionException) {
             throw e.exception
@@ -41,7 +41,7 @@ class SerializationServiceImpl(
     override fun <T : Any> deserialize(bytes: ByteArray, clazz: Class<T>): T {
         return try {
             AccessController.doPrivileged(PrivilegedExceptionAction {
-                deserializationInput.deserialize(bytes.sequence(), clazz, context)
+                deserializationInput().deserialize(bytes.sequence(), clazz, context)
             })
         } catch (e: PrivilegedActionException) {
             throw e.exception
