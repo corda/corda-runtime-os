@@ -1,15 +1,14 @@
 package net.corda.flow.mapper.impl.executor
 
-import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
+import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.mapper.FlowMapperState
 import net.corda.data.flow.state.mapper.FlowMapperStateType
 import net.corda.flow.mapper.FlowMapperResult
 import net.corda.flow.mapper.executor.FlowMapperEventExecutor
-import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.records.Record
 import net.corda.metrics.CordaMetrics
 import net.corda.utilities.debug
@@ -21,8 +20,6 @@ class SessionInitExecutor(
     private val sessionEvent: SessionEvent,
     private val sessionInit: SessionInit,
     private val flowMapperState: FlowMapperState?,
-    private val sessionEventSerializer: CordaAvroSerializer<SessionEvent>,
-    private val flowConfig: SmartConfig,
 ) : FlowMapperEventExecutor {
 
     private companion object {
@@ -42,14 +39,16 @@ class SessionInitExecutor(
             //duplicate
             log.debug { "Duplicate SessionInit event received. Key: $eventKey, Event: $sessionEvent" }
             if (messageDirection == MessageDirection.OUTBOUND) {
+                sessionEvent.messageDirection = MessageDirection.INBOUND
+                sessionEvent.sessionId = toggleSessionId(sessionEvent.sessionId)
                 sessionInit.flowId = null
                 FlowMapperResult(
                     flowMapperState,
                     listOf(
                         Record(
                             outputTopic,
-                            eventKey,
-                            generateAppMessage(sessionEvent, sessionEventSerializer, flowConfig)
+                            sessionEvent.sessionId,
+                            FlowMapperEvent(sessionEvent)
                         )
                     )
                 )
@@ -88,8 +87,7 @@ class SessionInitExecutor(
         sessionInit: SessionInit,
     ): SessionInitOutputs {
         return if (messageDirection == MessageDirection.INBOUND) {
-            val flowId = generateFlowId() // TODO this needs to be sent back to new flow
-            // TODO also move filtering from p2p somewhere to flow mapper
+            val flowId = generateFlowId()
             sessionInit.flowId = flowId
             SessionInitOutputs(flowId, flowId, FlowEvent(flowId, sessionEvent))
         } else {
@@ -98,11 +96,13 @@ class SessionInitExecutor(
             val tmpFLowEventKey = sessionInit.flowId
             sessionInit.flowId = null
             sessionEvent.payload = sessionInit
+            sessionEvent.messageDirection = MessageDirection.INBOUND
+            sessionEvent.sessionId = toggleSessionId(sessionEvent.sessionId)
 
             SessionInitOutputs(
                 tmpFLowEventKey,
                 sessionEvent.sessionId,
-                generateAppMessage(sessionEvent, sessionEventSerializer, flowConfig)
+                FlowMapperEvent(sessionEvent)
             )
         }
     }

@@ -1,17 +1,15 @@
 package net.corda.flow.mapper.impl.executor
 
-import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
+import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.event.session.SessionError
 import net.corda.data.flow.state.mapper.FlowMapperState
 import net.corda.data.flow.state.mapper.FlowMapperStateType
-import net.corda.data.p2p.app.AppMessage
 import net.corda.flow.mapper.FlowMapperResult
 import net.corda.flow.mapper.executor.FlowMapperEventExecutor
-import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.records.Record
 import org.slf4j.LoggerFactory
 import java.time.Instant
@@ -22,9 +20,6 @@ class SessionErrorExecutor(
     private val sessionEvent: SessionEvent,
     private val flowMapperState: FlowMapperState?,
     private val instant: Instant,
-    private val sessionEventSerializer: CordaAvroSerializer<SessionEvent>,
-    private val appMessageFactory: (SessionEvent, CordaAvroSerializer<SessionEvent>, SmartConfig) -> AppMessage,
-    private val flowConfig: SmartConfig
 ) : FlowMapperEventExecutor {
 
     private companion object {
@@ -60,23 +55,28 @@ class SessionErrorExecutor(
             FlowMapperStateType.OPEN -> {
                 log.warn(errorMsg + "Forwarding event.")
                 flowMapperState.status = FlowMapperStateType.ERROR
+
                 if (messageDirection == MessageDirection.OUTBOUND) {
+                    val errEvent = SessionEvent(
+                        MessageDirection.INBOUND,
+                        instant,
+                        toggleSessionId(sessionEvent.sessionId),
+                        null,
+                        sessionEvent.initiatingIdentity,
+                        sessionEvent.initiatedIdentity,
+                        sessionEvent.receivedSequenceNum,
+                        emptyList(),
+                        SessionError(
+                            ExceptionEnvelope(
+                                "FlowMapper-SessionError",
+                                "Received SessionError with sessionId $sessionId"
+                            )
+                        )
+                    )
+
                     FlowMapperResult(
                         flowMapperState, listOf(
-                            createP2PRecord(
-                                sessionEvent,
-                                SessionError(
-                                    ExceptionEnvelope(
-                                        "FlowMapper-SessionError",
-                                        "Received SessionError with sessionId $sessionId"
-                                    )
-                                ),
-                                instant,
-                                sessionEventSerializer,
-                                appMessageFactory,
-                                flowConfig,
-                                sessionEvent.receivedSequenceNum
-                            )
+                            Record(outputTopic, errEvent.sessionId, FlowMapperEvent(errEvent))
                         )
                     )
                 } else {

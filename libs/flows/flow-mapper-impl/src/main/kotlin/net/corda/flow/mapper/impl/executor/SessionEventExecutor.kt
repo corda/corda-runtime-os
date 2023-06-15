@@ -13,7 +13,6 @@ import net.corda.data.flow.state.mapper.FlowMapperStateType
 import net.corda.flow.mapper.FlowMapperResult
 import net.corda.flow.mapper.executor.FlowMapperEventExecutor
 import net.corda.messaging.api.records.Record
-import net.corda.session.manager.Constants
 import org.slf4j.LoggerFactory
 import java.time.Instant
 
@@ -137,20 +136,6 @@ class SessionEventExecutor(
                 log.warn(errorMsg + "Ignoring event.")
                 FlowMapperResult(flowMapperState, listOf())
             }
-        }
-    }
-
-    /**
-     * Toggle the [sessionId] to that of the other party and return it.
-     * Initiating party sessionId will be a random UUID.
-     * Initiated party sessionId will be the initiating party session id with a suffix of "-INITIATED" added.
-     * @return the toggled session id
-     */
-    private fun toggleSessionId(sessionId: String): String {
-        return if (sessionId.endsWith(Constants.INITIATED_SESSION_ID_SUFFIX)) {
-            sessionId.removeSuffix(Constants.INITIATED_SESSION_ID_SUFFIX)
-        } else {
-            "$sessionId${Constants.INITIATED_SESSION_ID_SUFFIX}"
         }
     }
 }
