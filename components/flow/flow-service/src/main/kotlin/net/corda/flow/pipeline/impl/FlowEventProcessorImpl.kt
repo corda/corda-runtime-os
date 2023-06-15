@@ -1,6 +1,7 @@
 package net.corda.flow.pipeline.impl
 
 import net.corda.data.flow.event.FlowEvent
+import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.state.checkpoint.Checkpoint
 import net.corda.flow.pipeline.FlowEventExceptionProcessor
 import net.corda.flow.pipeline.FlowMDCService
@@ -16,9 +17,9 @@ import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.schema.configuration.MessagingConfig.Subscription.PROCESSOR_TIMEOUT
 import net.corda.tracing.traceStateAndEventExecution
-import net.corda.utilities.withMDC
 import net.corda.utilities.debug
 import net.corda.utilities.trace
+import net.corda.utilities.withMDC
 import org.slf4j.LoggerFactory
 
 class FlowEventProcessorImpl(
@@ -49,9 +50,15 @@ class FlowEventProcessorImpl(
     ): StateAndEventProcessor.Response<Checkpoint> {
         val flowEvent = event.value
         val mdcProperties = flowMDCService.getMDCLogging(state, flowEvent, event.key)
-        val eventType = event.value?.payload?.javaClass?.simpleName ?: "Unknown"
+        val eventPayload = event.value?.payload
+        val eventType = eventPayload?.javaClass?.simpleName ?: "Unknown"
+        val eventSubtype = when (eventPayload) {
+            is SessionEvent -> eventPayload.payload?.javaClass?.simpleName?.let { " - $it" } ?: " - Unknown"
+            else -> ""
+        }
+
         return withMDC(mdcProperties) {
-            traceStateAndEventExecution(event, "Flow Event - $eventType") {
+            traceStateAndEventExecution(event, "Flow Event - $eventType$eventSubtype") {
                 getFlowPipelineResponse(flowEvent, event, state, mdcProperties)
             }
         }

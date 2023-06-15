@@ -46,7 +46,12 @@ class FlowMapperMessageProcessor(
         val key = event.key
         logger.trace { "Received event. Key: $key Event: ${event.value}" }
         val value = event.value ?: return StateAndEventProcessor.Response(state, emptyList())
-        val eventType = value.payload?.let { it.javaClass.simpleName } ?: "Unknown"
+        val eventPayload = value.payload
+        val eventType = eventPayload?.javaClass?.simpleName ?: "Unknown"
+        val eventSubtype = when (eventPayload) {
+            is SessionEvent -> eventPayload.payload?.javaClass?.simpleName?.let { " - $it" } ?: " - Unknown"
+            else -> ""
+        }
 
 
         CordaMetrics.Metric.FlowMapperEventLag.builder()
@@ -55,7 +60,7 @@ class FlowMapperMessageProcessor(
         val eventProcessingTimer = CordaMetrics.Metric.FlowMapperEventProcessingTime.builder()
             .withTag(CordaMetrics.Tag.FlowEvent, value.payload::class.java.name)
             .build()
-        return traceStateAndEventExecution(event, "Flow Mapper Event - $eventType") {
+        return traceStateAndEventExecution(event, "Flow Mapper Event - $eventType$eventSubtype") {
             eventProcessingTimer.recordCallable {
                 if (!isExpiredSessionEvent(value)) {
                     val executor = flowMapperEventExecutorFactory.create(key, value, state, flowConfig)
