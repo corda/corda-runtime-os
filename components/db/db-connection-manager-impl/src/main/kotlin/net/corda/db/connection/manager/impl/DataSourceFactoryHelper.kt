@@ -9,12 +9,13 @@ import net.corda.libs.configuration.validation.ConfigurationDefaults.DB_SCHEMA_V
 import net.corda.libs.configuration.validation.getConfigurationDefaults
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.DatabaseConfig
+import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.time.Duration
 import javax.sql.DataSource
 
 private object DataSourceFactoryHelper {
-    val log = LoggerFactory.getLogger(DataSourceFactoryHelper::class.java)
+    val log: Logger = LoggerFactory.getLogger(DataSourceFactoryHelper::class.java)
 }
 
 /** Default values from configuration schema */
