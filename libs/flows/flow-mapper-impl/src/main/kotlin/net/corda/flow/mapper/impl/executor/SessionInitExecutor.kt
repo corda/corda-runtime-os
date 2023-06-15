@@ -30,7 +30,7 @@ class SessionInitExecutor(
     }
 
     private val messageDirection = sessionEvent.messageDirection
-    private val outputTopic = getSessionEventOutputTopic(messageDirection)
+    private val outputTopic = getSessionEventOutputTopic()
 
     override fun execute(): FlowMapperResult {
         return if (flowMapperState == null) {
@@ -88,7 +88,8 @@ class SessionInitExecutor(
         sessionInit: SessionInit,
     ): SessionInitOutputs {
         return if (messageDirection == MessageDirection.INBOUND) {
-            val flowId = generateFlowId()
+            val flowId = generateFlowId() // TODO this needs to be sent back to new flow
+            // TODO also move filtering from p2p somewhere to flow mapper
             sessionInit.flowId = flowId
             SessionInitOutputs(flowId, flowId, FlowEvent(flowId, sessionEvent))
         } else {

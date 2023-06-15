@@ -53,22 +53,42 @@ class SessionEventExecutor(
                         "counterparty. Key: $eventKey, Event: class ${sessionEvent.payload::class.java}, $sessionEvent"
             )
             val sessionId = sessionEvent.sessionId
+
+            val errEvent = SessionEvent(
+                MessageDirection.OUTBOUND,
+                instant,
+                sessionEvent.sessionId,
+                null,
+                sessionEvent.initiatingIdentity,
+                sessionEvent.initiatedIdentity,
+                sessionEvent.sequenceNum,
+                emptyList(),
+                SessionError(
+                    ExceptionEnvelope(
+                        "FlowMapper-SessionExpired",
+                        "Tried to process session event for expired session with sessionId $sessionId"
+                    )
+                )
+            )
+
             FlowMapperResult(
                 null, listOf(
-                    createP2PRecord(
-                        sessionEvent,
-                        SessionError(
-                            ExceptionEnvelope(
-                                "FlowMapper-SessionExpired",
-                                "Tried to process session event for expired session with sessionId $sessionId"
-                            )
-                        ),
-                        instant,
-                        sessionEventSerializer,
-                        appMessageFactory,
-                        flowConfig,
-                        0
-                    )
+                    // TODO counterparty flowId here?
+                    Record(outputTopic, flowId, FlowEvent(flowId, errEvent))
+//                    createP2PRecord(
+//                        sessionEvent,
+//                        SessionError(
+//                            ExceptionEnvelope(
+//                                "FlowMapper-SessionExpired",
+//                                "Tried to process session event for expired session with sessionId $sessionId"
+//                            )
+//                        ),
+//                        instant,
+//                        sessionEventSerializer,
+//                        appMessageFactory,
+//                        flowConfig,
+//                        0
+//                    )
                 )
             )
         } else {
