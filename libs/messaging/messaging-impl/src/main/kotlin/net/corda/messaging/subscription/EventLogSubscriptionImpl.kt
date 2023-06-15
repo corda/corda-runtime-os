@@ -1,6 +1,5 @@
 package net.corda.messaging.subscription
 
-import java.util.UUID
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
@@ -30,6 +29,7 @@ import net.corda.metrics.CordaMetrics
 import net.corda.schema.Schemas.getDLQTopic
 import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
+import java.util.UUID
 
 /**
  * Implementation of an EventLogSubscription.
@@ -71,6 +71,18 @@ internal class EventLogSubscriptionImpl<K : Any, V : Any>(
         .withTag(CordaMetrics.Tag.MessagePatternType, MetricsConstants.DURABLE_PATTERN_TYPE)
         .withTag(CordaMetrics.Tag.MessagePatternClientId, config.clientId)
         .withTag(CordaMetrics.Tag.OperationName, MetricsConstants.ON_NEXT_OPERATION)
+        .build()
+
+    private val processorBatchSendMeter = CordaMetrics.Metric.MessageProcessorBatchSendTime.builder()
+        .withTag(CordaMetrics.Tag.MessagePatternType, MetricsConstants.DURABLE_PATTERN_TYPE)
+        .withTag(CordaMetrics.Tag.MessagePatternClientId, config.clientId)
+        .withTag(CordaMetrics.Tag.OperationName, MetricsConstants.SEND_OPERATION)
+        .build()
+
+    private val processorSendCounter = CordaMetrics.Metric.MessageProcessorSendCount.builder()
+        .withTag(CordaMetrics.Tag.MessagePatternType, MetricsConstants.DURABLE_PATTERN_TYPE)
+        .withTag(CordaMetrics.Tag.MessagePatternClientId, config.clientId)
+        .withTag(CordaMetrics.Tag.OperationName, MetricsConstants.SEND_OPERATION)
         .build()
 
     override val isRunning: Boolean
@@ -231,22 +243,27 @@ internal class EventLogSubscriptionImpl<K : Any, V : Any>(
         try {
             log.debug { "Processing records(keys: ${cordaConsumerRecords.joinToString { it.key.toString() }}, " +
                     "size: ${cordaConsumerRecords.size})" }
-            producer.beginTransaction()
+
             val outputs = processorMeter.recordCallable { processor.onNext(cordaConsumerRecords.map { it.toEventLogRecord() })
                 .toCordaProducerRecords() }!!
-            producer.sendRecords(outputs)
-            if(deadLetterRecords.isNotEmpty()) {
-                producer.sendRecords(deadLetterRecords.map {
-                    CordaProducerRecord(
-                        getDLQTopic(config.topic),
-                        UUID.randomUUID().toString(),
-                        it
-                    )
-                })
-                deadLetterRecords.clear()
+
+            processorBatchSendMeter.recordCallable {
+                producer.beginTransaction()
+                producer.sendRecords(outputs)
+                if (deadLetterRecords.isNotEmpty()) {
+                    producer.sendRecords(deadLetterRecords.map {
+                        CordaProducerRecord(
+                            getDLQTopic(config.topic),
+                            UUID.randomUUID().toString(),
+                            it
+                        )
+                    })
+                    deadLetterRecords.clear()
+                }
+                producer.sendAllOffsetsToTransaction(consumer)
+                producer.commitTransaction()
             }
-            producer.sendAllOffsetsToTransaction(consumer)
-            producer.commitTransaction()
+            processorSendCounter.increment(outputs.size.toDouble())
             log.debug { "Processing records(keys: ${cordaConsumerRecords.joinToString { it.key.toString() }}, " +
                     "size: ${cordaConsumerRecords.size}) complete." }
         } catch (ex: Exception) {
