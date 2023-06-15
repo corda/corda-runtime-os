@@ -31,6 +31,7 @@ import javax.security.auth.x500.X500Principal
 import com.esotericsoftware.kryo.util.Pool
 import net.corda.kryoserialization.KryoCheckpointSerializer1
 import net.corda.kryoserialization.KryoCheckpointSerializer2
+import java.util.concurrent.atomic.AtomicInteger
 
 class KryoCheckpointSerializerBuilderImpl(
     private val keyEncodingService: KeyEncodingService,
@@ -42,6 +43,8 @@ class KryoCheckpointSerializerBuilderImpl(
 
     private val serializers: MutableMap<Class<*>, Serializer<*>> = mutableMapOf()
     private val singletonInstances: MutableMap<String, SingletonSerializeAsToken> = mutableMapOf()
+
+    val count = AtomicInteger(0)
 
     override fun addSerializer(
         clazz: Class<*>,
@@ -99,17 +102,19 @@ class KryoCheckpointSerializerBuilderImpl(
 
         // forced kryo serialization to be single threaded afaik by setting `maximumCapacity` to 1
         // I was still getting errors when the pool was larger
-        val pool = object : Pool<Kryo>(true, false, 4) {
-            override fun create(): Kryo {
+        val pool = object : Pool<MyKryo>(true, false, 4) {
+            override fun create(): MyKryo {
+                this.peak
                 val classResolver = CordaClassResolver(sandboxGroup)
                 val classSerializer = ClassSerializer(sandboxGroup)
-                return DefaultKryoCustomizer.customize(
+                return MyKryo(count.getAndIncrement(), DefaultKryoCustomizer.customize(
                     kryoFactory.apply(classResolver),
                     serializers + publicKeySerializers + otherCustomSerializers,
                     classSerializer
                 ).also {
                     classResolver.setKryo(it)
                 }
+                )
             }
         }
 
@@ -118,5 +123,11 @@ class KryoCheckpointSerializerBuilderImpl(
 //            serializers.clear()
 //            singletonInstances.clear()
         }
+    }
+}
+
+class MyKryo(val id: Int, val kryo: Kryo) {
+    override fun toString(): String {
+        return "MyKryo(count=$id)"
     }
 }

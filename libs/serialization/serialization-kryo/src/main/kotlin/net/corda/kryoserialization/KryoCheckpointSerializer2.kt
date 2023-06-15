@@ -2,12 +2,13 @@ package net.corda.kryoserialization
 
 import com.esotericsoftware.kryo.Kryo
 import com.esotericsoftware.kryo.util.Pool
+import net.corda.kryoserialization.impl.MyKryo
 import net.corda.serialization.checkpoint.CheckpointSerializer
 import org.slf4j.LoggerFactory
 import java.io.ByteArrayInputStream
 
 class KryoCheckpointSerializer2(
-    private val kryoPool: Pool<Kryo>,
+    private val kryoPool: Pool<MyKryo>,
 ) : CheckpointSerializer, KryoCheckpointSerializer {
 
     private companion object {
@@ -23,7 +24,8 @@ class KryoCheckpointSerializer2(
                 @Suppress("unchecked_cast")
                 kryoPool.obtain().let { kryo ->
                     try {
-                        kryo.readClassAndObject(this) as T
+                        log.error("USING KRYO : $kryo")
+                        kryo.kryo.readClassAndObject(this) as T
                     } finally {
                         kryoPool.free(kryo)
                     }
@@ -40,7 +42,8 @@ class KryoCheckpointSerializer2(
             kryoOutput {
                 kryoPool.obtain().let { kryo ->
                     try {
-                        kryo.writeClassAndObject(this, obj)
+                        log.error("USING KRYO : $kryo")
+                        kryo.kryo.writeClassAndObject(this, obj)
                     } finally {
                         kryoPool.free(kryo)
                     }
