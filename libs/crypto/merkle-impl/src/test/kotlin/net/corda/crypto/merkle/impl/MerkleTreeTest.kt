@@ -273,6 +273,8 @@ class MerkleTreeTest {
         runMerkelProofTest(treeSize)
     }
 
+    // This test should be run whenever the merkle tree implemenetation is changed. It is disabled on CI since 
+    // it can take 30 seconds.
     @Disabled
     @ParameterizedTest(name = "merkle proof tests for trees with extended sizes that run slow ({0} leaves)")
     @MethodSource("merkleProofExtendedTestSizes")
