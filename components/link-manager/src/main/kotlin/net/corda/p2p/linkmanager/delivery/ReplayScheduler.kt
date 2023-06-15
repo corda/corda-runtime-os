@@ -57,7 +57,8 @@ internal class ReplayScheduler<K: SessionManager.BaseCounterparties, M>(
         ConcurrentHashMap<K, MutableSet<MessageId>>()
     private val replayInfoPerMessageId = ConcurrentHashMap<MessageId, ReplayInfo>()
     data class QueuedMessage<M>(val originalAttemptTimestamp: Long, val uniqueId: MessageId, val message: M)
-    private val queuedMessagesPerCounterparties = ConcurrentHashMap<K, MessageQueue<M>>()
+    @VisibleForTesting
+    internal val queuedMessagesPerCounterparties = ConcurrentHashMap<K, MessageQueue<M>>()
 
     /**
      * A Queue of QueuedMessages where messages can be removed from the queue by messageId.
@@ -219,6 +220,9 @@ internal class ReplayScheduler<K: SessionManager.BaseCounterparties, M>(
                         set.add(messageId)
                         set
                     }
+                    replayingMessagesForCounterparties.contains(messageId) -> {
+                        replayingMessagesForCounterparties
+                    }
                     replayCalculator.get().shouldReplayMessage(replayingMessagesForCounterparties.size) -> {
                         scheduleForReplay(originalAttemptTimestamp, messageId, message)
                         replayingMessagesForCounterparties.add(messageId)
@@ -248,12 +252,13 @@ internal class ReplayScheduler<K: SessionManager.BaseCounterparties, M>(
         replayingMessageIdsPerCounterparties.compute(counterparties) { _, replayingMessagesForCounterparties ->
             val removed = replayInfoPerMessageId.remove(messageId)?.future?.cancel(false) ?: false
             replayingMessagesForCounterparties?.remove(messageId)
-            if (removed) {
-                queuedMessagesPerCounterparties[counterparties]?.poll()?.let {
-                    addForReplay(it.originalAttemptTimestamp, it.uniqueId, it.message, counterparties)
+            queuedMessagesPerCounterparties[counterparties]?.let { queuedMessages ->
+                queuedMessages.removeMessage(messageId)
+                if (removed) {
+                    queuedMessages.poll()?.let {
+                        addForReplay(it.originalAttemptTimestamp, it.uniqueId, it.message, counterparties)
+                    }
                 }
-            } else {
-                queuedMessagesPerCounterparties[counterparties]?.removeMessage(messageId)
             }
             if (replayingMessagesForCounterparties?.isEmpty() == true) {
                 queuedMessagesPerCounterparties.remove(counterparties)
