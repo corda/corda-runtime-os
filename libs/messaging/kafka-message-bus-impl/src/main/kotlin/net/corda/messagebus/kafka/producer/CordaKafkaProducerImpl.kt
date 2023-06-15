@@ -66,9 +66,9 @@ class CordaKafkaProducerImpl(
 
     private fun CordaProducer.Callback.toTraceKafkaCallback(ctx: TraceContext): Callback {
         return Callback { m, ex ->
-            ctx.traceTag("send.offset", m.offset().toString())
-            ctx.traceTag("send.partition", m.partition().toString())
             ctx.markInScope().use {
+                ctx.traceTag("send.offset", m.offset().toString())
+                ctx.traceTag("send.partition", m.partition().toString())
                 this.onCompletion(ex)
                 if (ex != null) {
                     ctx.errorAndFinish(ex)
