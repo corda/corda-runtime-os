@@ -8,7 +8,7 @@ import net.corda.crypto.cipher.suite.CryptoThrottlingException
 import net.corda.crypto.cipher.suite.GeneratedKey
 import net.corda.crypto.cipher.suite.KeyGenerationSpec
 import net.corda.crypto.cipher.suite.SharedSecretSpec
-import net.corda.crypto.cipher.suite.SigningSpec
+import net.corda.crypto.cipher.suite.SigningWrappedSpec
 import net.corda.crypto.cipher.suite.schemes.KeyScheme
 import net.corda.crypto.cipher.suite.schemes.RSA_TEMPLATE
 import net.corda.crypto.core.CryptoConsts
@@ -420,7 +420,7 @@ class CryptoServiceDecoratorTests {
         val data = UUID.randomUUID().toString().toByteArray()
         val expected = UUID.randomUUID().toString().toByteArray()
         val context = emptyMap<String, String>()
-        val spec = mock<SigningSpec>()
+        val spec = mock<SigningWrappedSpec>()
         whenever(
             cryptoService.sign(spec, data, context)
         ).thenReturn(expected)
@@ -435,7 +435,7 @@ class CryptoServiceDecoratorTests {
         val decorator = createDecorator()
         val data = UUID.randomUUID().toString().toByteArray()
         val context = emptyMap<String, String>()
-        val spec = mock<SigningSpec>()
+        val spec = mock<SigningWrappedSpec>()
         whenever(
             cryptoService.sign(spec, data, context)
         ).thenAnswer { throw expected }
@@ -453,7 +453,7 @@ class CryptoServiceDecoratorTests {
         val decorator = createDecorator()
         val data = UUID.randomUUID().toString().toByteArray()
         val context = emptyMap<String, String>()
-        val spec = mock<SigningSpec>()
+        val spec = mock<SigningWrappedSpec>()
         whenever(
             cryptoService.sign(spec, data, context)
         ).thenAnswer { throw expected }
@@ -470,7 +470,7 @@ class CryptoServiceDecoratorTests {
         val decorator = createDecorator()
         val data = UUID.randomUUID().toString().toByteArray()
         val context = emptyMap<String, String>()
-        val spec = mock<SigningSpec>()
+        val spec = mock<SigningWrappedSpec>()
         whenever(
             cryptoService.sign(spec, data, context)
         ).thenAnswer { throw e }
@@ -604,7 +604,7 @@ class CryptoServiceDecoratorTests {
         val decorator = createDecorator(0)
         val data = UUID.randomUUID().toString().toByteArray()
         val context = emptyMap<String, String>()
-        val spec = mock<SigningSpec>()
+        val spec = mock<SigningWrappedSpec>()
         val expected = UUID.randomUUID().toString().toByteArray()
         whenever(
             cryptoService.sign(spec, data, context)
@@ -620,7 +620,7 @@ class CryptoServiceDecoratorTests {
         val decorator = createDecorator(1)
         val data = UUID.randomUUID().toString().toByteArray()
         val context = emptyMap<String, String>()
-        val spec = mock<SigningSpec>()
+        val spec = mock<SigningWrappedSpec>()
         val expected = UUID.randomUUID().toString().toByteArray()
         whenever(
             cryptoService.sign(spec, data, context)
@@ -638,7 +638,7 @@ class CryptoServiceDecoratorTests {
         val decorator = createDecorator(2)
         val data = UUID.randomUUID().toString().toByteArray()
         val context = emptyMap<String, String>()
-        val spec = mock<SigningSpec>()
+        val spec = mock<SigningWrappedSpec>()
         val expected1 = UUID.randomUUID().toString().toByteArray()
         val expected2 = UUID.randomUUID().toString().toByteArray()
         whenever(
@@ -655,7 +655,7 @@ class CryptoServiceDecoratorTests {
         val decorator = createDecorator(2)
         val data = UUID.randomUUID().toString().toByteArray()
         val context = emptyMap<String, String>()
-        val spec = mock<SigningSpec>()
+        val spec = mock<SigningWrappedSpec>()
         val expected1 = UUID.randomUUID().toString().toByteArray()
         val expected2 = UUID.randomUUID().toString().toByteArray()
         whenever(
@@ -679,7 +679,7 @@ class CryptoServiceDecoratorTests {
         val decorator = createDecorator(2)
         val data = UUID.randomUUID().toString().toByteArray()
         val context = emptyMap<String, String>()
-        val spec = mock<SigningSpec>()
+        val spec = mock<SigningWrappedSpec>()
         val e = CryptoThrottlingException.createExponential(
             message = "error",
             initialBackoff = 100,

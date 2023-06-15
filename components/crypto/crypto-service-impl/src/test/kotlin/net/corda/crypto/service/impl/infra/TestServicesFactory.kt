@@ -15,7 +15,7 @@ import net.corda.crypto.cipher.suite.GeneratedKey
 import net.corda.crypto.cipher.suite.KeyGenerationSpec
 import net.corda.crypto.cipher.suite.SharedSecretSpec
 import net.corda.crypto.cipher.suite.SignatureVerificationService
-import net.corda.crypto.cipher.suite.SigningSpec
+import net.corda.crypto.cipher.suite.SigningWrappedSpec
 import net.corda.crypto.cipher.suite.schemes.KeyScheme
 import net.corda.crypto.component.test.utils.TestConfigurationReadService
 import net.corda.crypto.config.impl.createCryptoBootstrapParamsMap
@@ -245,7 +245,7 @@ class TestServicesFactory {
             return impl.generateKeyPair(spec, context)
         }
 
-        override fun sign(spec: SigningSpec, data: ByteArray, context: Map<String, String>): ByteArray {
+        override fun sign(spec: SigningWrappedSpec, data: ByteArray, context: Map<String, String>): ByteArray {
             if (context.containsKey("ctxTrackingId")) {
                 recordedCryptoContexts[context.getValue("ctxTrackingId")] = context
             }
