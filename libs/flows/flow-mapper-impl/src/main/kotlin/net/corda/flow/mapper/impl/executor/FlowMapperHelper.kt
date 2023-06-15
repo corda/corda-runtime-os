@@ -31,12 +31,12 @@ fun generateFlowId(): String {
  * Outbound records should be directed to the p2p out topic.
  * @return the output topic based on [messageDirection].
  */
-fun getSessionEventOutputTopic(/*messageDirection: MessageDirection*/): String {
-//    return if (messageDirection == MessageDirection.INBOUND) {
-        return Schemas.Flow.FLOW_EVENT_TOPIC
-//    } else {
-//        Schemas.P2P.P2P_OUT_TOPIC
-//    }
+fun getSessionEventOutputTopic(messageDirection: MessageDirection): String {
+    return if (messageDirection == MessageDirection.INBOUND) {
+        Schemas.Flow.FLOW_EVENT_TOPIC
+    } else {
+        Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC
+    }
 }
 
 /**
@@ -96,7 +96,7 @@ fun createP2PRecord(
     appMessageFactory: (SessionEvent, CordaAvroSerializer<SessionEvent>, SmartConfig) -> AppMessage,
     flowConfig: SmartConfig,
     receivedSequenceNumber: Int = sessionEvent.sequenceNum
-) : Record<*, *> {
+): Record<*, *> {
     val sessionId = sessionEvent.sessionId
     return Record(
         Schemas.P2P.P2P_OUT_TOPIC, sessionId, appMessageFactory(
