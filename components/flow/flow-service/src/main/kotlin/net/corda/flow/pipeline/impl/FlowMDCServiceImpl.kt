@@ -8,7 +8,8 @@ import net.corda.data.flow.state.checkpoint.Checkpoint
 import net.corda.data.flow.state.checkpoint.FlowState
 import net.corda.data.flow.state.external.ExternalEventStateType
 import net.corda.flow.pipeline.FlowMDCService
-import net.corda.flow.state.impl.FlowStateManager
+import net.corda.flow.state.impl.FlowStackBasedContext
+import net.corda.flow.state.impl.FlowStackImpl
 import net.corda.utilities.MDC_CLIENT_ID
 import net.corda.utilities.MDC_EXTERNAL_EVENT_ID
 import net.corda.utilities.MDC_FLOW_ID
@@ -81,20 +82,14 @@ class FlowMDCServiceImpl : FlowMDCService {
             MDC_FLOW_ID to flowId
         )
 
+        val platformProperties = state.flowState?.flowStackItems?.let {
+            FlowStackBasedContext(
+                FlowStackImpl(state.flowState?.flowStackItems!!)
+            ).flattenPlatformProperties()
+        } ?: emptyMap()
+
         // Extract properties starting with `corda.logged`
-        val loggedContextProperties = try {
-            translateFlowContextToMDC(
-                state.flowState
-                // TODO CORE-14185 Instantiating the FlowStateManager is heavyweight, find a better way to do this
-                .let(::FlowStateManager)
-                .flowContext
-                .flattenPlatformProperties()
-            )
-        } catch (e: Exception) {
-            // FlowStateManager construction might fail if the given flow state is not valid and cannot be built
-            // into an avro object (happens in unit tests), in that case we will default to an empty map
-            emptyMap()
-        }
+        val loggedContextProperties = translateFlowContextToMDC(platformProperties)
 
         setExternalEventIdIfNotComplete(flowState, mdcLogging)
         setSessionMDCFromEvent(event, mdcLogging)
