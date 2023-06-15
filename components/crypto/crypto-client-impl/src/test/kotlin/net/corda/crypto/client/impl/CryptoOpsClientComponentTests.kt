@@ -1,6 +1,7 @@
 package net.corda.crypto.client.impl
 
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
+import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.cipher.suite.CustomSignatureSpec
 import net.corda.crypto.cipher.suite.SignatureSpecs
 import net.corda.crypto.cipher.suite.publicKeyId
@@ -77,28 +78,7 @@ import kotlin.test.assertFalse
 import kotlin.test.assertNotSame
 import kotlin.test.assertTrue
 
-// If we have this setup in companion objects we have initialisation loop problem with ExecutionContext,
-// so we simply make them all file level read only declarations. No need to make private in test code.
-
-val schemeMetadata = CipherSchemeMetadataImpl()
-val knownTenantId = toHex(UUID.randomUUID().toString().toByteArray().sha256Bytes()).take(12)
-val knownAlias = UUID.randomUUID().toString()
-val knownOperationContext = mapOf(
-    UUID.randomUUID().toString() to UUID.randomUUID().toString()
-)
-val knownRawOperationContext = KeyValuePairList(
-    knownOperationContext.map {
-        KeyValuePair(it.key, it.value)
-    }
-)
-
-// most tests can share an execution context, so make one at file level to use in most cases
-val context = TestExecutionContext()
-val coordinatorFactory = context.coordinatorFactory
-val sender = context.sender
-val component = context.component
-
-class TestExecutionContext {
+class TestExecutionContext(val schemeMetadata: CipherSchemeMetadata) {
     val coordinatorFactory = TestLifecycleCoordinatorFactoryImpl()
     val configurationReadService: TestConfigurationReadService = TestConfigurationReadService(
         coordinatorFactory
@@ -130,6 +110,23 @@ class CryptoOpsClientComponentTests {
         fun knownCordaRPCAPIResponderExceptions(): List<Class<*>> =
             exceptionFactories.keys.map { Class.forName(it) }
 
+        val schemeMetadata = CipherSchemeMetadataImpl()
+        val knownTenantId = toHex(UUID.randomUUID().toString().toByteArray().sha256Bytes()).take(12)
+        val knownAlias = UUID.randomUUID().toString()
+        val knownOperationContext = mapOf(
+            UUID.randomUUID().toString() to UUID.randomUUID().toString()
+        )
+        val knownRawOperationContext = KeyValuePairList(
+            knownOperationContext.map {
+                KeyValuePair(it.key, it.value)
+            }
+        )
+
+        // most tests can share an execution context, so make one at file level to use in most cases
+        val context = TestExecutionContext(schemeMetadata)
+        val coordinatorFactory = context.coordinatorFactory
+        val sender = context.sender
+        val component = context.component
     }
 
     private fun setupCompletedResponse(respFactory: (RpcOpsRequest) -> Any) {
@@ -1016,7 +1013,7 @@ class CryptoOpsClientComponentTests {
 
     @Test
     fun `Should cleanup created resources when component is stopped`() {
-        val my = TestExecutionContext()
+        val my = TestExecutionContext(schemeMetadata)
         assertFalse(my.component.isRunning)
         assertThrows(IllegalStateException::class.java) {
             my.component.impl.ops
@@ -1037,7 +1034,7 @@ class CryptoOpsClientComponentTests {
 
     @Test
     fun `Should go UP and DOWN as its config reader goes UP and DOWN`() {
-        val my = TestExecutionContext()
+        val my = TestExecutionContext(schemeMetadata)
         assertFalse(my.component.isRunning)
         assertThrows(IllegalStateException::class.java) {
             my.component.impl.ops
@@ -1062,7 +1059,7 @@ class CryptoOpsClientComponentTests {
 
     @Test
     fun `Should go UP and DOWN as its downstream dependencies go UP and DOWN`() {
-        val my = TestExecutionContext()
+        val my = TestExecutionContext(schemeMetadata)
         assertFalse(my.component.isRunning)
         assertThrows(IllegalStateException::class.java) {
             my.component.impl.ops
@@ -1087,7 +1084,7 @@ class CryptoOpsClientComponentTests {
 
     @Test
     fun `Should recreate active implementation on config change`() {
-        val my = TestExecutionContext()
+        val my = TestExecutionContext(schemeMetadata)
         assertFalse(my.component.isRunning)
         assertThrows(IllegalStateException::class.java) {
             my.component.impl.ops
