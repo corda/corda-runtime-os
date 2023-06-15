@@ -283,20 +283,20 @@ allprojects {
 }
 
 tasks.register('CreateSBOMZip', Zip) {
-    // description = 'Create mutli module docs Site Jar'
-    // group = 'documentation'
-
+    description = 'Create SBOM zip file for release'
+    group = 'documentation'
+    String srcDestination = buildDir.toString() + "/archive/SBOM/"
     archiveFileName = "corda-runtime-os-SBOM-${project.version}.zip"
     subprojects.each {
         if (it.toString().contains(":applications:workers:release:")) {
             String srcPath = it.buildDir.toString() + "/reports/SBOM/"
-            String srcDestination = buildDir.toString() + "/archive/SBOM/"
             it.copy{
                 from srcPath
                 into srcDestination
             }
         }
     }
+    from srcDestination
     destinationDirectory = (file(buildDir.toString() + "/archive/corda-runtime-os-SBOM/"))
 }
 
