@@ -64,12 +64,12 @@ class CordaKafkaProducerImpl(
         const val asyncChunkErrorMessage = "Tried to send record which requires chunking using an asynchronous producer"
     }
 
-    private fun CordaProducer.Callback.toTraceKafkaCallback(ctx: TraceContext): Callback {
+    private fun toTraceKafkaCallback(callback: CordaProducer.Callback, ctx: TraceContext): Callback {
         return Callback { m, ex ->
             ctx.markInScope().use {
                 ctx.traceTag("send.offset", m.offset().toString())
                 ctx.traceTag("send.partition", m.partition().toString())
-                this.onCompletion(ex)
+                callback.onCompletion(ex)
                 if (ex != null) {
                     ctx.errorAndFinish(ex)
                 } else {
@@ -126,7 +126,8 @@ class CordaKafkaProducerImpl(
         } else {
             traceSend(record.headers, "send $clientId") {
                 try {
-                    producer.send(record.toKafkaRecord(topicPrefix, partition), callback?.toTraceKafkaCallback(this))
+                    producer.send(record.toKafkaRecord(topicPrefix, partition),
+                        toTraceKafkaCallback({ callback?.onCompletion(it) }, this))
                 } catch (ex: CordaRuntimeException) {
                     errorAndFinish(ex)
                     val msg = "Failed to send record to topic ${record.topic} with key ${record.key}"
