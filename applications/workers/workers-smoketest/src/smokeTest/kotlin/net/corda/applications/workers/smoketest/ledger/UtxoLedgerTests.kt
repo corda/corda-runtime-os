@@ -145,7 +145,7 @@ class UtxoLedgerTests {
         val utxoFlowResult = awaitRpcFlowFinished(aliceHoldingId, utxoFlowRequestId)
         assertThat(utxoFlowResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
         assertThat(utxoFlowResult.flowError).isNull()
-/*
+
         for (holdingId in listOf(aliceHoldingId, bobHoldingId, charlieHoldingId)) {
             val findTransactionFlowRequestId = startRpcFlow(
                 holdingId,
@@ -199,7 +199,6 @@ class UtxoLedgerTests {
         assertThat(parsedPeekFlowResult.errorMessage).isNull()
         assertThat(parsedPeekFlowResult.inputs).singleElement().extracting { it.testField }.isEqualTo(input)
         assertThat(parsedPeekFlowResult.outputs).singleElement().extracting { it.testField }.isEqualTo(evolvedMessage)
-  */
     }
 
 
