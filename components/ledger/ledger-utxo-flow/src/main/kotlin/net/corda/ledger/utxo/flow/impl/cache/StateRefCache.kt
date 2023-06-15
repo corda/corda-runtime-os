@@ -1,4 +1,4 @@
-package net.corda.ledger.utxo
+package net.corda.ledger.utxo.flow.impl.cache
 
 import net.corda.ledger.utxo.data.state.LazyStateAndRefImpl
 import net.corda.v5.ledger.utxo.StateRef

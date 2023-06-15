@@ -1,10 +1,10 @@
-package net.corda.ledger.utxo.flow.impl.cache
+package net.corda.ledger.utxo.flow.impl.cache.impl
 
 import com.github.benmanes.caffeine.cache.Cache
 import com.github.benmanes.caffeine.cache.Caffeine
 import net.corda.cache.caffeine.CacheFactoryImpl
-import net.corda.ledger.utxo.StateRefCache
 import net.corda.ledger.utxo.data.state.LazyStateAndRefImpl
+import net.corda.ledger.utxo.flow.impl.cache.StateRefCache
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.sandboxgroupcontext.SandboxGroupType
 import net.corda.sandboxgroupcontext.SandboxedCache
@@ -20,6 +20,7 @@ import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
+@Suppress("unused")
 @Component(service = [StateRefCache::class])
 class StateRefCacheImpl @Activate constructor(
     @Reference(service = CurrentSandboxGroupContext::class)
