@@ -42,14 +42,20 @@ class FlowFiberFactoryImpl @Activate constructor(
 
     private val currentScheduler = FiberExecutorScheduler(
         "Flow fiber scheduler",
-        ThreadPoolExecutor(
+        object : ThreadPoolExecutor(
             8,
             8,
             0L,
             TimeUnit.MILLISECONDS,
             LinkedBlockingQueue(),
-            ThreadFactoryBuilder().setNameFormat("flow-worker-%d").setDaemon(true).build()
-        )
+            ThreadFactoryBuilder().setNameFormat("flow-worker-%d").setDaemon(false).build()
+        ) {
+
+
+            override fun execute(command: Runnable) {
+                super.execute(command)
+            }
+        }
     )
 
 //    private val currentScheduler: FiberScheduler = FiberExecutorScheduler(
