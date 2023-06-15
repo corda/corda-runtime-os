@@ -44,13 +44,13 @@ fun DataSourceFactory.createFromConfig(config: SmartConfig): CloseableDataSource
     }
 
     val idleTimeout =
-        configWithFallback.getInt(DatabaseConfig.DB_POOL_IDLE_TIMEOUT).toLong().run(Duration::ofSeconds)
+        configWithFallback.getInt(DatabaseConfig.DB_POOL_IDLE_TIMEOUT_SECONDS).toLong().run(Duration::ofSeconds)
     val maxLifetime =
-        configWithFallback.getInt(DatabaseConfig.DB_POOL_MAX_LIFETIME).toLong().run(Duration::ofSeconds)
+        configWithFallback.getInt(DatabaseConfig.DB_POOL_MAX_LIFETIME_SECONDS).toLong().run(Duration::ofSeconds)
     val keepaliveTime =
-        configWithFallback.getInt(DatabaseConfig.DB_POOL_KEEPALIVE_TIME).toLong().run(Duration::ofSeconds)
+        configWithFallback.getInt(DatabaseConfig.DB_POOL_KEEPALIVE_TIME_SECONDS).toLong().run(Duration::ofSeconds)
     val validationTimeout =
-        configWithFallback.getInt(DatabaseConfig.DB_POOL_VALIDATION_TIMEOUT).toLong().run(Duration::ofSeconds)
+        configWithFallback.getInt(DatabaseConfig.DB_POOL_VALIDATION_TIMEOUT_SECONDS).toLong().run(Duration::ofSeconds)
 
     val username = if (configWithFallback.hasPath(DatabaseConfig.DB_USER)) configWithFallback.getString(DatabaseConfig.DB_USER) else
         throw DBConfigurationException(
@@ -103,10 +103,10 @@ fun createDbConfig(
     if(null != minPoolSize)
         config = config.withValue(DatabaseConfig.DB_POOL_MIN_SIZE, ConfigValueFactory.fromAnyRef(minPoolSize))
 
-    config = config.withValue(DatabaseConfig.DB_POOL_IDLE_TIMEOUT, ConfigValueFactory.fromAnyRef(idleTimeout))
-    config = config.withValue(DatabaseConfig.DB_POOL_MAX_LIFETIME, ConfigValueFactory.fromAnyRef(maxLifetime))
-    config = config.withValue(DatabaseConfig.DB_POOL_KEEPALIVE_TIME, ConfigValueFactory.fromAnyRef(keepaliveTime))
-    config = config.withValue(DatabaseConfig.DB_POOL_VALIDATION_TIMEOUT, ConfigValueFactory.fromAnyRef(validationTimeout))
+    config = config.withValue(DatabaseConfig.DB_POOL_IDLE_TIMEOUT_SECONDS, ConfigValueFactory.fromAnyRef(idleTimeout))
+    config = config.withValue(DatabaseConfig.DB_POOL_MAX_LIFETIME_SECONDS, ConfigValueFactory.fromAnyRef(maxLifetime))
+    config = config.withValue(DatabaseConfig.DB_POOL_KEEPALIVE_TIME_SECONDS, ConfigValueFactory.fromAnyRef(keepaliveTime))
+    config = config.withValue(DatabaseConfig.DB_POOL_VALIDATION_TIMEOUT_SECONDS, ConfigValueFactory.fromAnyRef(validationTimeout))
     return config
 
 }
