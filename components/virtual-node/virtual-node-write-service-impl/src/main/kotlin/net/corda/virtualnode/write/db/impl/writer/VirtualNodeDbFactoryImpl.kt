@@ -240,9 +240,9 @@ private fun createDbConfig(
     config = config.withValue(DatabaseConfig.DB_POOL_MAX_SIZE, ConfigValueFactory.fromAnyRef(maxPoolSize))
     if (minPoolSize != null)
         config = config.withValue(DatabaseConfig.DB_POOL_MIN_SIZE, ConfigValueFactory.fromAnyRef(minPoolSize))
-    config = config.withValue(DatabaseConfig.DB_POOL_IDLE_TIMEOUT, ConfigValueFactory.fromAnyRef(idleTimeout))
-    config = config.withValue(DatabaseConfig.DB_POOL_MAX_LIFETIME, ConfigValueFactory.fromAnyRef(maxLifetime))
-    config = config.withValue(DatabaseConfig.DB_POOL_KEEPALIVE_TIME, ConfigValueFactory.fromAnyRef(keepaliveTime))
-    config = config.withValue(DatabaseConfig.DB_POOL_VALIDATION_TIMEOUT, ConfigValueFactory.fromAnyRef(validationTimeout))
+    config = config.withValue(DatabaseConfig.DB_POOL_IDLE_TIMEOUT_SECONDS, ConfigValueFactory.fromAnyRef(idleTimeout))
+    config = config.withValue(DatabaseConfig.DB_POOL_MAX_LIFETIME_SECONDS, ConfigValueFactory.fromAnyRef(maxLifetime))
+    config = config.withValue(DatabaseConfig.DB_POOL_KEEPALIVE_TIME_SECONDS, ConfigValueFactory.fromAnyRef(keepaliveTime))
+    config = config.withValue(DatabaseConfig.DB_POOL_VALIDATION_TIMEOUT_SECONDS, ConfigValueFactory.fromAnyRef(validationTimeout))
     return config
 }
