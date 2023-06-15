@@ -50,7 +50,7 @@ class HsmRestResourceImplTest {
             whenever(hsmRegistrationClient.findHSM(tenantId, TLS)).doReturn(null)
 
             val e = assertThrows<ResourceNotFoundException> { ops.assignedHsm(tenantId, "tls") }
-            assertThat(e.message).contains("No association found for tenant ${tenantId} category tls")
+            assertThat(e).hasMessageContaining("No association found for tenant ${tenantId} category tls")
         }
 
         @Test
