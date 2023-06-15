@@ -15,11 +15,9 @@ interface TracingService : AutoCloseable {
 
     fun <R> nextSpan(operationName: String, record: EventLogRecord<*, *>, processingBlock: TraceContext.() -> R): R
 
-    fun <R> nextSpan(
+    fun nextSpan(
         operationName: String,
-        headers: List<Pair<String, String>>,
-        processingBlock: TraceContext.() -> R
-    ): R
+        headers: List<Pair<String, String>>): TraceContext
 
     fun getOrCreateBatchPublishTracing(clientId: String): BatchPublishTracing
 

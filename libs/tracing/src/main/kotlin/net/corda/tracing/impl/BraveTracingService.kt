@@ -136,15 +136,12 @@ internal class BraveTracingService(serviceName: String, zipkinHost: String, samp
         }
     }
 
-    override fun <R> nextSpan(
+    override fun nextSpan(
         operationName: String,
-        headers: List<Pair<String, String>>,
-        processingBlock: TraceContext.() -> R
-    ): R {
-        return recordTracing.nextSpan(headers).doTrace(operationName) {
-            val ctx = BraveTraceContext(tracer, this)
-            processingBlock(ctx)
-        }
+        headers: List<Pair<String, String>>
+    ): TraceContext {
+        val span = recordTracing.nextSpan(headers).name(operationName).start()
+        return BraveTraceContext(tracer, span)
     }
 
     override fun getOrCreateBatchPublishTracing(clientId: String): BatchPublishTracing {

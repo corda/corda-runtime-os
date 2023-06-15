@@ -124,12 +124,13 @@ class CordaKafkaProducerImpl(
         if (chunkedRecords.isNotEmpty()) {
             sendChunks(chunkedRecords, callback, partition)
         } else {
-            traceSend(record.headers, "send $clientId") {
+            val traceContext = traceSend(record.headers, "send $clientId")
+            traceContext.markInScope().use {
                 try {
                     producer.send(record.toKafkaRecord(topicPrefix, partition),
-                        toTraceKafkaCallback({ callback?.onCompletion(it) }, this))
+                        toTraceKafkaCallback({ exception -> callback?.onCompletion(exception) }, traceContext))
                 } catch (ex: CordaRuntimeException) {
-                    errorAndFinish(ex)
+                    traceContext.errorAndFinish(ex)
                     val msg = "Failed to send record to topic ${record.topic} with key ${record.key}"
                     if (config.throwOnSerializationError) {
                         log.error(msg, ex)

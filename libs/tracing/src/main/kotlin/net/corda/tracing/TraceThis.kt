@@ -71,12 +71,9 @@ fun addTraceContextToRecord(it: Record<*, *>): Record<out Any, out Any> {
 
 fun traceSend(
     headers: List<Pair<String,String>>,
-    operationName: String,
-    processingBlock: TraceContext.() -> Unit
-) {
-    return TracingState.currentTraceService.nextSpan(operationName, headers) {
-        processingBlock(this)
-    }
+    operationName: String
+): TraceContext {
+    return TracingState.currentTraceService.nextSpan(operationName, headers)
 }
 
 fun traceEventProcessing(

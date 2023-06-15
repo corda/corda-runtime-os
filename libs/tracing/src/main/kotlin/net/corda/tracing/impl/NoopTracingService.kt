@@ -93,12 +93,11 @@ class NoopTracingService : TracingService {
         return processingBlock(NoopTraceContext())
     }
 
-    override fun <R> nextSpan(
+    override fun nextSpan(
         operationName: String,
-        headers: List<Pair<String, String>>,
-        processingBlock: TraceContext.() -> R
-    ): R {
-        return processingBlock(NoopTraceContext())
+        headers: List<Pair<String, String>>
+    ): TraceContext {
+        return NoopTraceContext()
     }
 
     override fun getOrCreateBatchPublishTracing(clientId: String): BatchPublishTracing {
