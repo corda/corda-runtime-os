@@ -254,7 +254,8 @@ class ClusterBuilder {
     fun getRbacRoles() = get("/api/v1/role")
 
     /** Create new RBAC user */
-    fun createRbacUser(fullName: String, loginName: String, password: String) = post("/api/v1/user", createRbacUserBody(fullName, loginName, password))
+    fun createRbacUser(fullName: String, loginName: String, password: String) =
+        post("/api/v1/user", createRbacUserBody(fullName, loginName, password))
 
     /** Assign a specified role to a specified user */
     fun assignRoleToUser(loginName: String, roleId: String) =
