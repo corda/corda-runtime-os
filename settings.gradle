@@ -455,6 +455,8 @@ include 'tools:plugins:topic-config'
 include 'tools:plugins:virtual-node'
 include 'testing:cpbs:interop-token-demo-contracts'
 include 'testing:cpbs:interop-token-demo-workflows'
+include 'libs:interop:interop-endpoints'
+include 'components:interop:interop-rest-service-impl'
 
 // The following logic dictates if we use the composite build gradle functionality,
 // If this evaluates to true local source code will be used in place of binary dependencies.
@@ -524,10 +526,3 @@ gradleEnterprise {
         }
     }
 }
-include 'libs:interop'
-findProject(':libs:interop')?.name = 'interop'
-include 'libs:interop:interop-endpoints'
-findProject(':libs:interop:interop-endpoints')?.name = 'interop-endpoints'
-include 'components:interop:interop-rest-service-impl'
-findProject(':components:interop:interop-rest-service-impl')?.name = 'interop-rest-service-impl'
-
