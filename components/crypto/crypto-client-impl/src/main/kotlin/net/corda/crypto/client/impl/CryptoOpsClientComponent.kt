@@ -62,13 +62,14 @@ class CryptoOpsClientComponent @Activate constructor(
     ),
     configKeys = setOf(MESSAGING_CONFIG, CRYPTO_CONFIG)
 ), CryptoOpsClient, CryptoOpsProxyClient {
+    @Suppress("LongParameterList")
     constructor(
         coordinatorFactory: LifecycleCoordinatorFactory,
         publisherFactory: PublisherFactory,
         schemeMetadata: CipherSchemeMetadata,
         configurationReadService: ConfigurationReadService,
         digestService: PlatformDigestService,
-        retriesLimit: Int,
+        retriesLimit: Int = 3,
     ) : this(
         coordinatorFactory,
         publisherFactory,
