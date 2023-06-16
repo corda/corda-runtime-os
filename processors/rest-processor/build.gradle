@@ -49,6 +49,7 @@ dependencies {
     runtimeOnly project(":components:membership:membership-persistence-client-impl")
     runtimeOnly project(':components:virtual-node:virtual-node-rest-service-impl')
     runtimeOnly project(':components:virtual-node:virtual-node-rest-maintenance-impl')
+    runtimeOnly project(':components:interop:interop-rest-service-impl')
     runtimeOnly project(":components:permissions:permission-rest-resource-impl")
     runtimeOnly project(":components:membership:group-policy-impl")
 
@@ -82,6 +83,7 @@ dependencies {
     integrationTestImplementation project(':libs:permissions:permission-endpoint')
     integrationTestImplementation project(':libs:virtual-node:virtual-node-endpoints')
     integrationTestImplementation project(':libs:virtual-node:virtual-node-endpoints-maintenance')
+    integrationTestImplementation project(':libs:interop:interop-endpoints')
 
     integrationTestRuntimeOnly project(':libs:messaging:kafka-message-bus-impl')
     integrationTestRuntimeOnly 'org.osgi:osgi.core'
