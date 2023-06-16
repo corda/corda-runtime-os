@@ -86,6 +86,7 @@ class WorkerHelpers {
                 Triple(BootConfig.INSTANCE_ID,defaultParams.instanceId, Random.nextInt().absoluteValue),
                 Triple(BootConfig.TOPIC_PREFIX,defaultParams.topicPrefix, ""),
                 Triple(MAX_ALLOWED_MSG_SIZE,defaultParams.maxAllowedMessageSize, 972800),
+                Triple(BootConfig.BOOT_FLOW_TOPIC,defaultParams.flowEventTopic,"flow.event")
             )
             val defaultParamsMap = defaultParamsAndValues
                 .mapNotNull { t -> t.second?.let { t.first to t.second } }

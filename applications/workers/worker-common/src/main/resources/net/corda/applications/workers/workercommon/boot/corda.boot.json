@@ -24,6 +24,16 @@
         }
       }
     },
+    "flow": {
+      "description": "Configuration options for flow.",
+      "properties": {
+        "eventTopic": {
+          "description": "The event topic this flow worker is listening to.",
+          "type": "string",
+          "default": "flow.event"
+        }
+      }
+    },
     "crypto": {
       "description": "Configuration options specific to crypto worker.",
       "type": "object",

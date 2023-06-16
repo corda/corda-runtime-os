@@ -17,6 +17,8 @@ import net.corda.messaging.api.subscription.StateAndEventSubscription
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas.Flow.FLOW_EVENT_TOPIC
+import net.corda.schema.configuration.BootConfig
+import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.FLOW_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.schema.configuration.MessagingConfig.MAX_ALLOWED_MSG_SIZE
@@ -66,6 +68,8 @@ class FlowExecutorImpl constructor(
 
     override fun onConfigChange(config: Map<String, SmartConfig>) {
         try {
+            val topic = config.getConfig(BOOT_CONFIG).getString(BootConfig.BOOT_FLOW_TOPIC)
+            val consumerGroup = "$CONSUMER_GROUP-$topic"
             val messagingConfig = toMessagingConfig(config)
             val flowConfig = config.getConfig(FLOW_CONFIG)
                 .withValue(PROCESSOR_TIMEOUT, ConfigValueFactory.fromAnyRef(messagingConfig.getLong(PROCESSOR_TIMEOUT)))
@@ -76,7 +80,7 @@ class FlowExecutorImpl constructor(
             subscription?.close()
 
             subscription = subscriptionFactory.createStateAndEventSubscription(
-                SubscriptionConfig(CONSUMER_GROUP, FLOW_EVENT_TOPIC),
+                SubscriptionConfig(consumerGroup, topic),
                 flowEventProcessorFactory.create(flowConfig),
                 messagingConfig,
                 flowExecutorRebalanceListener
