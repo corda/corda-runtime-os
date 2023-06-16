@@ -35,6 +35,7 @@ import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.RPCConfig
+import net.corda.rest.exception.ResourceNotFoundException
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.utilities.concurrent.getOrThrow
@@ -53,7 +54,7 @@ class CertificatesClientImpl @Activate constructor(
     @Reference(service = ConfigurationReadService::class)
     private val configurationReadService: ConfigurationReadService,
     @Reference(service = VirtualNodeInfoReadService::class)
-    virtualNodeInfoReadService: VirtualNodeInfoReadService,
+    private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
     @Reference(service = CryptoOpsClient::class)
     cryptoOpsClient: CryptoOpsClient,
     @Reference(service = KeyEncodingService::class)
@@ -159,6 +160,10 @@ class CertificatesClientImpl @Activate constructor(
         return if (currentSender == null) {
             throw IllegalStateException("Certificates client is not ready")
         } else {
+            holdingIdentityId?.let {
+                virtualNodeInfoReadService.getByHoldingIdentityShortHash(it)?.holdingIdentity
+                    ?: throw ResourceNotFoundException("holdingIdentityId", it.value)
+            }
             currentSender.sendRequest(
                 CertificateRpcRequest(
                     usage,

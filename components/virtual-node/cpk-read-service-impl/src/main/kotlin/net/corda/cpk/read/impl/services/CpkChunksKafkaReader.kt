@@ -80,9 +80,8 @@ class CpkChunksKafkaReader(
     }
 
     private fun onAllChunksReceived(cpkChecksum: SecureHash, chunks: SortedSet<CpkChunkId>) {
-        val cpkPath = cpkChunksFileManager.assembleCpk(cpkChecksum, chunks)
-        cpkPath?.let {
-            val cpk = Files.newInputStream(it).use { inStream ->
+        cpkChunksFileManager.assembleCpk(cpkChecksum, chunks)?.let { cpkPath ->
+            val cpk = Files.newInputStream(cpkPath).use { inStream ->
                 CpkReader.readCpk(inStream, cpkPartsDir)
             }
             onCpkAssembled(cpk.metadata.fileChecksum, cpk)

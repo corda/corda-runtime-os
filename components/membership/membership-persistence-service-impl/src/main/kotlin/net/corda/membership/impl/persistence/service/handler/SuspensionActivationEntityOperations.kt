@@ -44,15 +44,17 @@ internal class SuspensionActivationEntityOperations(
             )
         }
         expectedSerial?.let {
-            require(member.serialNumber == it) {
+            if(member.serialNumber != it) {
                 throw InvalidEntityUpdateException(
                     "The provided serial number '$expectedSerial' does not match the current version '${member.serialNumber}' of " +
                             "MemberInfo for member '$memberName'."
                 )
             }
         }
-        require(member.status == expectedStatus) {
-            "This action cannot be performed on member '$memberName' because it has status '${member.status}'."
+        if(member.status != expectedStatus) {
+            throw InvalidEntityUpdateException(
+                "This action cannot be performed on member '$memberName' because it has status '${member.status}'."
+            )
         }
         return member
     }

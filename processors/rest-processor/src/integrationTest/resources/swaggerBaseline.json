@@ -263,11 +263,11 @@
         }, {
           "name" : "holdingidentityid",
           "in" : "path",
-          "description" : "The certificate holding identity ID",
+          "description" : "Holding identity ID of the virtual node that owns the certificate.",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description" : "The certificate holding identity ID",
+            "description" : "Holding identity ID of the virtual node that owns the certificate.",
             "nullable" : true,
             "example" : "string"
           }
