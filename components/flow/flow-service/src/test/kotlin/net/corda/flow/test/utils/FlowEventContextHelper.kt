@@ -40,6 +40,7 @@ fun <T> buildFlowEventContext(
         outputRecords,
         sendToDlq,
         emptyMap(),
+        mock(),
         mock()
     )
 }
@@ -62,6 +63,7 @@ fun <T> buildFlowEventContext(
         outputRecords,
         sendToDlq,
         emptyMap(),
+        mock(),
         mock()
     )
 }

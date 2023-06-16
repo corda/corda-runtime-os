@@ -119,10 +119,10 @@ fun traceEventProcessingSingle(
 fun <K : Any, S : Any, V : Any> traceStateAndEventExecution(
     event: Record<K, V>,
     operationName: String,
-    processingBlock: () -> StateAndEventProcessor.Response<S>
+    processingBlock: TraceContext.() -> StateAndEventProcessor.Response<S>
 ): StateAndEventProcessor.Response<S> {
     return TracingState.currentTraceService.nextSpan(operationName, event) {
-        val result = processingBlock()
+        val result = processingBlock(this)
         result.copy(responseEvents = addTraceContextToRecords(result.responseEvents))
     }
 }

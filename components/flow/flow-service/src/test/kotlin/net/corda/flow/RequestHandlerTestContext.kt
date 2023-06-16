@@ -66,6 +66,7 @@ class RequestHandlerTestContext<PAYLOAD>(val payload: PAYLOAD) {
         isRetryEvent,
         recordList,
         mdcProperties = emptyMap(),
-        flowMetrics =  mock()
+        flowMetrics =  mock(),
+        flowTraceContext = mock()
     )
 }

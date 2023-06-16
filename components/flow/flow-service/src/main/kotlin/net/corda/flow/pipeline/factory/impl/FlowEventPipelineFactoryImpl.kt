@@ -3,12 +3,12 @@ package net.corda.flow.pipeline.factory.impl
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.state.checkpoint.Checkpoint
 import net.corda.flow.fiber.FlowIORequest
+import net.corda.flow.fiber.cache.FlowFiberCache
 import net.corda.flow.metrics.FlowIORequestTypeConverter
 import net.corda.flow.metrics.FlowMetricsFactory
-import net.corda.flow.fiber.cache.FlowFiberCache
-import net.corda.flow.pipeline.events.FlowEventContext
 import net.corda.flow.pipeline.FlowEventPipeline
 import net.corda.flow.pipeline.FlowGlobalPostProcessor
+import net.corda.flow.pipeline.events.FlowEventContext
 import net.corda.flow.pipeline.factory.FlowEventPipelineFactory
 import net.corda.flow.pipeline.handlers.events.FlowEventHandler
 import net.corda.flow.pipeline.handlers.requests.FlowRequestHandler
@@ -17,6 +17,7 @@ import net.corda.flow.pipeline.impl.FlowEventPipelineImpl
 import net.corda.flow.pipeline.runner.FlowRunner
 import net.corda.flow.state.impl.FlowCheckpointFactory
 import net.corda.libs.configuration.SmartConfig
+import net.corda.tracing.TraceContext
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -97,6 +98,7 @@ class FlowEventPipelineFactoryImpl(
         event: FlowEvent,
         config: SmartConfig,
         mdcProperties: Map<String, String>,
+        traceContext:TraceContext,
         eventRecordTimestamp: Long
     ): FlowEventPipeline {
         val flowCheckpoint = flowCheckpointFactory.create(event.flowId, checkpoint, config)
@@ -110,7 +112,8 @@ class FlowEventPipelineFactoryImpl(
             config = config,
             outputRecords = emptyList(),
             mdcProperties = mdcProperties,
-            flowMetrics = metrics
+            flowMetrics = metrics,
+            flowTraceContext = traceContext
         )
 
         return FlowEventPipelineImpl(

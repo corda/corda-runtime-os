@@ -1,17 +1,14 @@
 package net.corda.flow.pipeline.impl
 
-import java.nio.ByteBuffer
-import java.util.concurrent.TimeUnit
-import java.util.concurrent.TimeoutException
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.Wakeup
 import net.corda.flow.fiber.FlowContinuation
 import net.corda.flow.fiber.FlowIORequest
-import net.corda.flow.metrics.FlowIORequestTypeConverter
-import net.corda.flow.pipeline.events.FlowEventContext
 import net.corda.flow.fiber.cache.FlowFiberCache
+import net.corda.flow.metrics.FlowIORequestTypeConverter
 import net.corda.flow.pipeline.FlowEventPipeline
 import net.corda.flow.pipeline.FlowGlobalPostProcessor
+import net.corda.flow.pipeline.events.FlowEventContext
 import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.flow.pipeline.exceptions.FlowMarkedForKillException
 import net.corda.flow.pipeline.exceptions.FlowTransientException
@@ -19,10 +16,15 @@ import net.corda.flow.pipeline.handlers.events.FlowEventHandler
 import net.corda.flow.pipeline.handlers.requests.FlowRequestHandler
 import net.corda.flow.pipeline.handlers.waiting.FlowWaitingForHandler
 import net.corda.flow.pipeline.runner.FlowRunner
+import net.corda.tracing.TraceTag
 import net.corda.utilities.trace
 import net.corda.virtualnode.OperationalStatus
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
+import net.corda.virtualnode.toCorda
 import org.slf4j.LoggerFactory
+import java.nio.ByteBuffer
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.TimeoutException
 
 /**
  * [FlowEventPipelineImpl] encapsulates the pipeline steps that are executed when a [FlowEvent] is received by a [FlowEventProcessor].
@@ -85,6 +87,17 @@ class FlowEventPipelineImpl(
         // event handler
         context.flowMetrics.flowEventReceived(updatedContext.inputEventPayload::class.java.name)
 
+        val checkpoint = context.checkpoint
+
+        context.flowTraceContext.apply {
+            val flowStartContext = checkpoint.flowStartContext
+            traceTag(TraceTag.FLOW_ID, checkpoint.flowId)
+            traceTag(TraceTag.FLOW_CLASS, flowStartContext.flowClassName)
+            traceTag(TraceTag.FLOW_REQUEST_ID, flowStartContext.requestId)
+            traceTag(TraceTag.FLOW_VNODE, checkpoint.holdingIdentity.shortHash.toString())
+            traceTag(TraceTag.FLOW_INITIATOR, flowStartContext.initiatedBy.toCorda().shortHash.toString())
+        }
+
         return this
     }
 
@@ -95,8 +108,10 @@ class FlowEventPipelineImpl(
         }
         val holdingIdentity = context.checkpoint.holdingIdentity
         val virtualNode = virtualNodeInfoReadService.get(holdingIdentity)
-            ?: throw FlowTransientException("Failed to find the virtual node info for holder " +
-                    "'HoldingIdentity(x500Name=${holdingIdentity.x500Name}, groupId=${holdingIdentity.groupId})'")
+            ?: throw FlowTransientException(
+                "Failed to find the virtual node info for holder " +
+                        "'HoldingIdentity(x500Name=${holdingIdentity.x500Name}, groupId=${holdingIdentity.groupId})'"
+            )
 
         if (virtualNode.flowOperationalStatus == OperationalStatus.INACTIVE) {
             throw FlowMarkedForKillException("Flow operational status is ${virtualNode.flowOperationalStatus.name}")
@@ -116,6 +131,7 @@ class FlowEventPipelineImpl(
             is FlowContinuation.Run, is FlowContinuation.Error -> {
                 updateContextFromFlowExecution(outcome, timeoutMilliseconds)
             }
+
             is FlowContinuation.Continue -> this
         }
     }

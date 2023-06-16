@@ -21,7 +21,7 @@ internal class BraveTraceContext(
 
     override fun traceVirtualNodeId(vNodeId: String) {
         BraveBaggageFields.VIRTUAL_NODE_ID.updateValue(vNodeId)
-        span.tag(TraceTag.FLOW_REQUEST_VNODE_ID, vNodeId)
+        span.tag(TraceTag.FLOW_VNODE, vNodeId)
     }
 
     override fun markInScope(): AutoCloseable{
@@ -29,6 +29,10 @@ internal class BraveTraceContext(
     }
 
     override fun errorAndFinish(e: Exception) {
+        span.error(e).finish()
+    }
+
+    override fun error(e: Exception) {
         span.error(e).finish()
     }
 

@@ -33,6 +33,9 @@ class NoopTracingService : TracingService {
         override fun errorAndFinish(e: Exception) {
         }
 
+        override fun error(e: Exception) {
+        }
+
         override fun finish() {
         }
     }
