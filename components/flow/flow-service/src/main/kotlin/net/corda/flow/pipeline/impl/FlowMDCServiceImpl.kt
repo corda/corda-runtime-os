@@ -82,8 +82,8 @@ class FlowMDCServiceImpl : FlowMDCService {
             MDC_FLOW_ID to flowId
         )
 
-        val platformProperties = state.flowState?.flowStackItems?.let {
-            FlowStackBasedContext(FlowStackImpl(it)).flattenPlatformProperties()
+        val platformProperties = state.flowState?.flowStackItems?.let { flowStackItems ->
+            FlowStackBasedContext(FlowStackImpl(flowStackItems)).flattenPlatformProperties()
         } ?: emptyMap()
 
         // Extract properties starting with `corda.logged`
