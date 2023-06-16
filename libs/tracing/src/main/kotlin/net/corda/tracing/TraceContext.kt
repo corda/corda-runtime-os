@@ -9,7 +9,7 @@ interface TraceContext {
 
     fun markInScope(): AutoCloseable
 
-    fun errorAndFinish(e:Exception)
+    fun errorAndFinish(e: Exception)
 
     fun finish()
 }
