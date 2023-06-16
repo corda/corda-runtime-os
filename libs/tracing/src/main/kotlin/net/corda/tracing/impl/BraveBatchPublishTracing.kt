@@ -25,11 +25,11 @@ class BraveBatchPublishTracing(
             .filter { it.context() != null }
             .groupBy { ctx ->
                 ctx.context().traceId()
-            }.map { grp ->
-                tracer.nextSpan(grp.value.first())
+            }.map { (_, traceContexts) ->
+                tracer.nextSpan(traceContexts.first())
                     .name("Send Batch - $clientId")
                     .tag("send.client.id",clientId)
-                    .tag("send.batch.size", grp.value.size.toString())
+                    .tag("send.batch.size", traceContexts.size.toString())
                     .tag("send.batch.parent.size", recordHeaders.size.toString())
                     .start()
             }
