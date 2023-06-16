@@ -83,7 +83,7 @@ dependencies {
     integrationTestImplementation project(':libs:permissions:permission-endpoint')
     integrationTestImplementation project(':libs:virtual-node:virtual-node-endpoints')
     integrationTestImplementation project(':libs:virtual-node:virtual-node-endpoints-maintenance')
-    integrationTestImplementation project(':libs:interop:interop-endpoints')
+    integrationTestImplementation project(':libs:interop:interop-rest')
 
     integrationTestRuntimeOnly project(':libs:messaging:kafka-message-bus-impl')
     integrationTestRuntimeOnly 'org.osgi:osgi.core'

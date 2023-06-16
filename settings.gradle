@@ -455,7 +455,7 @@ include 'tools:plugins:topic-config'
 include 'tools:plugins:virtual-node'
 include 'testing:cpbs:interop-token-demo-contracts'
 include 'testing:cpbs:interop-token-demo-workflows'
-include 'libs:interop:interop-endpoints'
+include 'libs:interop:interop-rest'
 include 'components:interop:interop-rest-service-impl'
 
 // The following logic dictates if we use the composite build gradle functionality,

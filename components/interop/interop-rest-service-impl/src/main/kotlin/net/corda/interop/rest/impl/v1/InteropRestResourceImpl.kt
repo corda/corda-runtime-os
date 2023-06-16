@@ -26,7 +26,7 @@ import java.util.*
 
 @Suppress("LongParameterList", "TooManyFunctions")
 @Component(service = [PluggableRestResource::class])
-internal class InteropRestResourceHandler @Activate constructor (
+internal class InteropRestResourceImpl @Activate constructor (
     @Reference(service = LifecycleCoordinatorFactory::class)
     coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = ConfigurationReadService::class)
