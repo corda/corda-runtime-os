@@ -14,6 +14,8 @@ import net.corda.cpk.write.CpkWriteService
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.schema.CordaDb
 import net.corda.entityprocessor.FlowPersistenceService
+import net.corda.interop.aliasinfo.read.InteropAliasInfoReadService
+import net.corda.interop.aliasinfo.write.InteropAliasInfoWriteService
 import net.corda.ledger.persistence.LedgerPersistenceService
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.datamodel.ConfigurationEntities
@@ -113,6 +115,11 @@ class DBProcessorImpl @Activate constructor(
     private val membershipGroupPolicyValidator: MembershipGroupPolicyValidator,
     @Reference(service = AllowedCertificatesReaderWriterService::class)
     private val allowedCertificatesReaderWriterService: AllowedCertificatesReaderWriterService,
+    // TODO: Temporarily added here, reevaluate this before merge
+    @Reference(service = InteropAliasInfoReadService::class)
+    private val interopAliasInfoReadService: InteropAliasInfoReadService,
+    @Reference(service = InteropAliasInfoWriteService::class)
+    private val interopAliasInfoWriteService: InteropAliasInfoWriteService
 ) : DBProcessor {
     init {
         // define the different DB Entity Sets
