@@ -1,4 +1,5 @@
-import net.corda.libs.packaging.internal.v2.CpiLoaderV2
+package net.corda.libs.packaging.internal.v2
+
 import net.corda.libs.packaging.testutils.TestUtils.ALICE
 import net.corda.libs.packaging.testutils.cpi.TestCpiV2Builder
 import org.junit.jupiter.api.Assertions.assertAll
