@@ -1,5 +1,6 @@
 package net.corda.ledger.utxo.flow.impl.flows.backchain.v1
 
+import net.corda.flow.application.services.FlowConfigService
 import net.corda.ledger.common.data.transaction.TransactionStatus.UNVERIFIED
 import net.corda.ledger.utxo.flow.impl.UtxoLedgerMetricRecorder
 import net.corda.ledger.utxo.flow.impl.flows.backchain.TopologicalSort
@@ -25,6 +26,8 @@ class TransactionBackchainReceiverFlowV1(
 
     private companion object {
         private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        private const val BACKCHAIN_BATCH_CONFIG_PATH = "backchain.batchsize"
+        private const val BACKCHAIN_DEFAULT_BATCH_SIZE = 10
     }
 
     @CordaInject
@@ -32,6 +35,9 @@ class TransactionBackchainReceiverFlowV1(
 
     @CordaInject
     lateinit var utxoLedgerMetricRecorder: UtxoLedgerMetricRecorder
+
+    @CordaInject
+    lateinit var flowConfigService: FlowConfigService
 
     @Suspendable
     override fun call(): TopologicalSort {
@@ -42,9 +48,18 @@ class TransactionBackchainReceiverFlowV1(
 
         val sortedTransactionIds = TopologicalSort()
 
+        val ledgerConfig = flowConfigService.getLedgerConfig()
+
+        val batchSize = if (ledgerConfig != null && ledgerConfig.hasPath(BACKCHAIN_BATCH_CONFIG_PATH)) {
+            ledgerConfig.getInt(BACKCHAIN_BATCH_CONFIG_PATH)
+        } else {
+            log.warn("Config path for backchain batch size does not exist, " +
+                    "defaulting batch size to $BACKCHAIN_DEFAULT_BATCH_SIZE")
+            BACKCHAIN_DEFAULT_BATCH_SIZE
+        }
+
         while (transactionsToRetrieve.isNotEmpty()) {
-            // For now, we'll assume a batch size of 1
-            val batch = setOf(transactionsToRetrieve.first())
+            val batch = transactionsToRetrieve.take(batchSize)
 
             log.trace {
                 "Backchain resolution of $initialTransactionIds - Requesting the content of transactions $batch from transaction backchain"
@@ -53,7 +68,7 @@ class TransactionBackchainReceiverFlowV1(
             @Suppress("unchecked_cast")
             val retrievedTransactions = session.sendAndReceive(
                 List::class.java,
-                TransactionBackchainRequestV1.Get(batch)
+                TransactionBackchainRequestV1.Get(batch.toSet())
             ) as List<UtxoSignedTransaction>
 
             log.trace { "Backchain resolution of $initialTransactionIds - Received content for transactions $batch" }

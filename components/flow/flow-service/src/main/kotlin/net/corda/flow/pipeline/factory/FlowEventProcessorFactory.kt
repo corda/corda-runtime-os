@@ -14,11 +14,10 @@ interface FlowEventProcessorFactory {
     /**
      * Creates a [FlowEventProcessor] instance.
      *
-     * @param config The configuration used within the flow event pipeline. The configuration block under the [FLOW_CONFIG] key should be
-     * used.
+     * @param configs The configurations used within the flow event pipeline.
      *
      * @return A [StateAndEventProcessor] instance.
      */
-    fun create(config: SmartConfig): StateAndEventProcessor<String, Checkpoint, FlowEvent>
+    fun create(configs: Map<String, SmartConfig>): StateAndEventProcessor<String, Checkpoint, FlowEvent>
 }
 

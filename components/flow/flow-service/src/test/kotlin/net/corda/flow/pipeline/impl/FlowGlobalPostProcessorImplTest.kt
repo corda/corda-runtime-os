@@ -130,7 +130,7 @@ class FlowGlobalPostProcessorImplTest {
             sessionManager.getMessagesToSend(
                 eq(sessionState1),
                 any(),
-                eq(testContext.config),
+                eq(testContext.flowConfig),
                 eq(ALICE_X500_HOLDING_IDENTITY)
             )
         ).thenReturn(sessionState1 to listOf(sessionEvent1, sessionEvent2))
@@ -138,7 +138,7 @@ class FlowGlobalPostProcessorImplTest {
             sessionManager.getMessagesToSend(
                 eq(sessionState2),
                 any(),
-                eq(testContext.config),
+                eq(testContext.flowConfig),
                 eq(ALICE_X500_HOLDING_IDENTITY)
             )
         ).thenReturn(sessionState2 to listOf(sessionEvent3))
@@ -147,7 +147,7 @@ class FlowGlobalPostProcessorImplTest {
             sessionManager.getMessagesToSend(
                 eq(sessionState3),
                 any(),
-                eq(testContext.config),
+                eq(testContext.flowConfig),
                 eq(ALICE_X500_HOLDING_IDENTITY)
             )
         ).thenReturn(sessionState3 to listOf(sessionEvent4))
@@ -275,7 +275,7 @@ class FlowGlobalPostProcessorImplTest {
         val updatedExternalEventState = ExternalEventState().apply { REQUEST_ID_1 }
 
         whenever(checkpoint.externalEventState).thenReturn(externalEventState)
-        whenever(externalEventManager.getEventToSend(eq(externalEventState), any(), eq(testContext.config)))
+        whenever(externalEventManager.getEventToSend(eq(externalEventState), any(), eq(testContext.flowConfig)))
             .thenReturn(updatedExternalEventState to externalEventRecord)
 
         val outputContext = flowGlobalPostProcessor.postProcess(testContext)
@@ -290,7 +290,7 @@ class FlowGlobalPostProcessorImplTest {
         val updatedExternalEventState = ExternalEventState().apply { REQUEST_ID_1 }
 
         whenever(checkpoint.externalEventState).thenReturn(externalEventState)
-        whenever(externalEventManager.getEventToSend(eq(externalEventState), any(), eq(testContext.config)))
+        whenever(externalEventManager.getEventToSend(eq(externalEventState), any(), eq(testContext.flowConfig)))
             .thenReturn(updatedExternalEventState to null)
 
         val outputContext = flowGlobalPostProcessor.postProcess(testContext)

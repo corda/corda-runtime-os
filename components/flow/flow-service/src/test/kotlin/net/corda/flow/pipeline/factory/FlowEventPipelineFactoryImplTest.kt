@@ -37,7 +37,7 @@ class FlowEventPipelineFactoryImplTest {
         whenever(create(any(), any())).thenReturn(flowMetrics)
     }
     private val flowIORequestTypeConverter = mock<FlowIORequestTypeConverter>()
-    private val config = flowEventContext.config
+    private val config = flowEventContext.flowConfig
     private val flowCheckpointFactory = mock<FlowCheckpointFactory>().also { factory ->
         whenever(factory.create(FLOW_ID_1, checkpoint, config)).thenReturn(flowCheckpoint)
     }

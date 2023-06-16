@@ -45,7 +45,7 @@ class ExternalEventResponseWaitingForHandler @Activate constructor(
                 resumeIfResponseReceived(context.checkpoint, externalEventState)
             }
             ExternalEventStateType.RETRY -> {
-                retryOrError(context.config, status.exception, externalEventState)
+                retryOrError(context.flowConfig, status.exception, externalEventState)
             }
             ExternalEventStateType.PLATFORM_ERROR -> {
                 log.debug { "Resuming flow with platform error received from external event response: ${status.exception}" }

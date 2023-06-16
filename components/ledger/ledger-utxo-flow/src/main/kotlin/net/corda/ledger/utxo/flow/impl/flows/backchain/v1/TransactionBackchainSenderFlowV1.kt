@@ -8,6 +8,7 @@ import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.utilities.trace
+import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.crypto.SecureHash
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -24,6 +25,9 @@ class TransactionBackchainSenderFlowV1(private val headTransactionIds: Set<Secur
     @CordaInject
     lateinit var utxoLedgerPersistenceService: UtxoLedgerPersistenceService
 
+    @CordaInject
+    lateinit var flowMessaging: FlowMessaging
+
     @Suspendable
     override fun call() {
         log.trace {
@@ -37,9 +41,7 @@ class TransactionBackchainSenderFlowV1(private val headTransactionIds: Set<Secur
                         utxoLedgerPersistenceService.find(id)
                             ?: throw CordaRuntimeException("Requested transaction does not exist locally")
                     }
-                    // sending in batches of 1
-                    // TODO Switch to [FlowMessaging.sendAll]
-                    transactions.map { session.send(listOf(it)) }
+                    flowMessaging.sendAll(transactions, setOf(session))
                     log.trace {
                         "Backchain resolution of $headTransactionIds - Sent backchain transactions ${transactions.map { it.id }} to " +
                                 session.counterparty

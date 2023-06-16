@@ -216,7 +216,7 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
                     )
                 )
             }
-            val errorEvents = flowSessionManager.getSessionErrorEventRecords(context.checkpoint, context.config, exceptionHandlingStartTime)
+            val errorEvents = flowSessionManager.getSessionErrorEventRecords(context.checkpoint, context.flowConfig, exceptionHandlingStartTime)
             val cleanupEvents = createCleanupEventsForSessions(
                 getScheduledCleanupExpiryTime(context, exceptionHandlingStartTime),
                 checkpoint.sessions.filterNot { it.hasScheduledCleanup }
@@ -289,7 +289,7 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
     }
 
     private fun getScheduledCleanupExpiryTime(context: FlowEventContext<*>, now: Instant): Long {
-        val flowCleanupTime = context.config.getLong(FlowConfig.SESSION_FLOW_CLEANUP_TIME)
+        val flowCleanupTime = context.flowConfig.getLong(FlowConfig.SESSION_FLOW_CLEANUP_TIME)
         return now.plusMillis(flowCleanupTime).toEpochMilli()
     }
 
