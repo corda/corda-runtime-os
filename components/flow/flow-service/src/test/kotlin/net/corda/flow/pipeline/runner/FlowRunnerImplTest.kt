@@ -184,7 +184,8 @@ class FlowRunnerImplTest {
         // content of the mapped local context is out of the scope of this test
         val localContextProperties = remoteToLocalContextMapper(
             remoteUserContextProperties = userContext.avro,
-            remotePlatformContextProperties = platformContext.avro
+            remotePlatformContextProperties = platformContext.avro,
+            mapOf("corda.account" to "account-zero")
         )
 
         val context = buildFlowEventContext<Any>(flowCheckpoint, sessionEvent)
