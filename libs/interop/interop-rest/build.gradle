@@ -3,7 +3,7 @@ plugins {
     id 'corda.common-publishing'
 }
 
-description 'Endpoint API for management of interop identites.'
+description 'Endpoint API for management of interop.'
 
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
