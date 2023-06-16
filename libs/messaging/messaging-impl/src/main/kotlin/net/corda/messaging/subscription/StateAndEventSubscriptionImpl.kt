@@ -278,7 +278,7 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         nullableStateAndEventConsumer = null
     }
 
-    private fun CoroutineScope.processBatchOfEvents() {
+    private fun CoroutineScope.processBatchOfEvents() = launch {
         var attempts = 0
         var keepProcessing = true
         while (keepProcessing && !threadLooper.loopStopped) {
@@ -292,7 +292,7 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
 //                    val batch = batches.next()
 //                    rebalanceOccurred = tryProcessBatchOfEvents(batch)
 //                }
-                while(!rebalanceOccurred) {
+                if(!rebalanceOccurred && records.isNotEmpty()) {
                         messageFanOut(records)
                 }
                 keepProcessing = false // We only want to do one batch at a time
