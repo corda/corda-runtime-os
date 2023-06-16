@@ -63,8 +63,8 @@ class BaseSerializationService(
                 schemeMetadata,
                 context.sandboxGroup as SandboxGroup
             )
-            val output = SerializationOutput(factory)
-            val input = DeserializationInput(factory)
+            val output = { SerializationOutput(factory) }
+            val input = { DeserializationInput(factory) }
 
             return SerializationServiceImpl(output, input, context)
         }

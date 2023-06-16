@@ -36,8 +36,8 @@ class TestSerializationService {
             cipherSchemeMetadata: CipherSchemeMetadata
         ) : SerializationService {
             val factory = getTestDefaultFactoryNoEvolution(registerMoreSerializers, cipherSchemeMetadata)
-            val output = SerializationOutput(factory)
-            val input = DeserializationInput(factory)
+            val output = { SerializationOutput(factory) }
+            val input = { DeserializationInput(factory) }
             val context = testSerializationContext
 
             return SerializationServiceImpl(output, input, context)
