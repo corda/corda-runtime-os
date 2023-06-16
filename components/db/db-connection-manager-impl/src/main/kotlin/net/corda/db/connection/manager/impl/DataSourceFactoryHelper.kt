@@ -52,14 +52,12 @@ fun DataSourceFactory.createFromConfig(config: SmartConfig): CloseableDataSource
     val validationTimeout =
         configWithFallback.getInt(DatabaseConfig.DB_POOL_VALIDATION_TIMEOUT_SECONDS).toLong().run(Duration::ofSeconds)
 
-    val username = if (configWithFallback.hasPath(DatabaseConfig.DB_USER)) configWithFallback.getString(
-        DatabaseConfig.DB_USER) else
+    val username = if (configWithFallback.hasPath(DatabaseConfig.DB_USER)) configWithFallback.getString(DatabaseConfig.DB_USER) else
         throw DBConfigurationException(
             "No username provided to connect to cluster database. Config key ${DatabaseConfig.DB_USER} must be provided." +
                     "Provided config: ${configWithFallback.root().render()}"
         )
-    val password = if (configWithFallback.hasPath(DatabaseConfig.DB_PASS)) configWithFallback.getString(
-        DatabaseConfig.DB_PASS) else
+    val password = if (configWithFallback.hasPath(DatabaseConfig.DB_PASS)) configWithFallback.getString(DatabaseConfig.DB_PASS) else
         throw DBConfigurationException(
             "No password provided to connect to cluster database. Config key ${DatabaseConfig.DB_PASS} must be provided." +
                     "Provided config: ${configWithFallback.root().render()}"
