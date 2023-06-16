@@ -155,30 +155,36 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         val eventsSinceCommit = mutableListOf<CordaConsumerRecord<*,*>>()
         val updatedStates: MutableMap<Int, MutableMap<K, S?>> = mutableMapOf()
 
+        fun beginTx() {
+            log.info("Begin tx")
+            beginTx = System.nanoTime()
+            producer.beginTransaction()
+            txStarted = true
+        }
+
         fun commitTx() {
-            log.info("Commit tx - $msgsInCommit since last commit")
+            log.info("Commit tx - $msgsInCommit messages, ${eventsSinceCommit.size} events,  since last commit")
             producer.sendRecordOffsetsToTransaction(eventConsumer, eventsSinceCommit)
             producer.commitTransaction()
-            txStarted = false
-            msgsInCommit = 0
             stateAndEventConsumer.updateInMemoryStatePostCommit(updatedStates, clock)
+            msgsInCommit = 0
+            txStarted = false
         }
 
         for (msg in msgs) {
-            if(!txStarted) {
-                log.info("Begin tx")
-                beginTx = System.nanoTime()
-                txStarted = true
-                producer.beginTransaction()
-            }
-            else if(System.nanoTime() - beginTx > 1_000_000 * 50) commitTx()
+            if(!txStarted) beginTx()
+
             msgsInCommit += msg.outputRecords.size
+            log.info("Sending ${msg.outputRecords}")
             producer.sendRecords(msg.outputRecords)
             eventsSinceCommit.add(msg.event)
             val state = updatedStates[msg.event.partition]?.get(msg.event.key)
             val thisEventUpdates = getUpdatesForEvent(state, msg.event)
             val updatedState = thisEventUpdates?.updatedState
             updatedStates.computeIfAbsent(msg.event.partition) { mutableMapOf() }[msg.event.key] = updatedState
+
+            // TODO: must introduce a ticker here to ensure we commit also when no events are flowing through.
+            if(System.nanoTime() - beginTx > 1_000_000 * 50) commitTx()
         }
         if(txStarted) commitTx()
     }
