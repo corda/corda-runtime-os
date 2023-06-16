@@ -7,6 +7,7 @@ import net.corda.flow.application.serialization.SerializationServiceInternal
 import net.corda.flow.application.sessions.FlowSessionInternal
 import net.corda.flow.application.sessions.SessionInfo
 import net.corda.flow.application.sessions.factory.FlowSessionFactory
+import net.corda.flow.application.sessions.utils.SessionUtils.verifySessionStatusNotErrorOrClose
 import net.corda.flow.application.versioning.impl.sessions.VersionReceivingFlowSession
 import net.corda.flow.application.versioning.impl.sessions.VersionSendingFlowSession
 import net.corda.flow.fiber.FlowFiber
@@ -20,12 +21,13 @@ import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.serialization.SingletonSerializeAsToken
+import org.apache.kafka.common.utils.Utils
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
-import java.util.UUID
-import net.corda.flow.application.sessions.utils.SessionUtils.verifySessionStatusNotErrorOrClose
+import java.nio.charset.StandardCharsets
+import java.util.*
 
 @Suppress("TooManyFunctions")
 @Component(service = [FlowMessaging::class, UsedByFlow::class], scope = PROTOTYPE)
@@ -171,7 +173,9 @@ class FlowMessagingImpl @Activate constructor(
         x500Name: MemberX500Name,
         flowContextPropertiesBuilder: FlowContextPropertiesBuilder?
     ): FlowSession {
-        val sessionId = UUID.randomUUID().toString()
+        val flowIdHash: Int =
+            Utils.toPositive(Utils.murmur2(fiber.flowId.toString().toByteArray(StandardCharsets.UTF_8)))
+        val sessionId = flowIdHash.toString(16).padStart(8, '0') + "/" + UUID.randomUUID().toString()
         checkFlowCanBeInitiated()
         addSessionIdToFlowStackItem(sessionId)
         return flowSessionFactory.createInitiatingFlowSession(sessionId, x500Name, flowContextPropertiesBuilder)

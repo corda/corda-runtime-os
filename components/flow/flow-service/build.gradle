@@ -22,6 +22,8 @@ dependencies {
     runtimeOnly project(':components:virtual-node:sandbox-amqp')
     runtimeOnly project(':components:virtual-node:sandbox-json')
 
+    implementation "org.apache.servicemix.bundles:org.apache.servicemix.bundles.kafka-clients:$kafkaClientVersion"
+
     implementation project(":libs:cache:cache-caffeine")
     implementation project(":libs:configuration:configuration-core")
     implementation project(":libs:crypto:crypto-core")
