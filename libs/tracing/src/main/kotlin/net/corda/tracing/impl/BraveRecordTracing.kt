@@ -15,11 +15,11 @@ class BraveRecordTracing(tracing: Tracing) {
     private val tracingContextExtractor = tracing.propagation().extractor(recordHeaderGetter)
 
     fun nextSpan(record: Record<*, *>): Span {
-        return nextSpan(record.headers).apply { tag("topic.name", record.topic) }
+        return nextSpan(record.headers)
     }
 
     fun nextSpan(record: EventLogRecord<*, *>): Span {
-        return nextSpan(record.headers).apply { tag("topic.name", record.topic) }
+        return nextSpan(record.headers)
     }
 
     fun nextSpan(headers: List<Pair<String, String>>): Span {
