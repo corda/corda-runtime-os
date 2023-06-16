@@ -20,6 +20,7 @@ import net.corda.tracing.traceStateAndEventExecution
 import net.corda.utilities.debug
 import net.corda.utilities.trace
 import net.corda.utilities.withMDC
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.slf4j.LoggerFactory
 
 class FlowEventProcessorImpl(
@@ -73,10 +74,10 @@ class FlowEventProcessorImpl(
         val pipeline = try {
             log.trace { "Flow [${event.key}] Received event: ${flowEvent.payload::class.java} / ${flowEvent.payload}" }
             flowEventPipelineFactory.create(state, flowEvent, config, mdcProperties,traceContext, event.timestamp)
-        } catch (ex: Exception) {
-            traceContext.error(ex)
+        } catch (t: Throwable) {
+            traceContext.error(CordaRuntimeException(t.message, t))
             // Without a pipeline there's a limit to what can be processed.
-            return flowEventExceptionProcessor.process(ex)
+            return flowEventExceptionProcessor.process(t)
         }
 
         // flow result timeout must be lower than the processor timeout as the processor thread will be killed by the subscription consumer
