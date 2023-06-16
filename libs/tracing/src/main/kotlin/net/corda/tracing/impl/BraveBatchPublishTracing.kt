@@ -21,14 +21,9 @@ class BraveBatchPublishTracing(
         // We then create a span for each sub batch to ensure we maintain the parent child relationships of the trace as
         // the incoming batch can contain messages with different trace contexts.
         batchSpans.addAll(
-            recordHeaders.mapNotNull { headers ->
-                val extracted = tracingContextExtractor.extract(headers)
-                if (extracted.context() == null) {
-                    null
-                } else {
-                    extracted
-                }
-            }.groupBy { ctx ->
+            recordHeaders.map(tracingContextExtractor::extract)
+            .filter { it.context() != null }
+            .groupBy { ctx ->
                 ctx.context().traceId()
             }.map { grp ->
                 tracer.nextSpan(grp.value.first())
