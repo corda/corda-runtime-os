@@ -1,5 +1,11 @@
 package net.corda.messaging.subscription
 
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.cancelChildren
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.channels.ReceiveChannel
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.deadletter.StateAndEventDeadLetterRecord
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -21,7 +27,6 @@ import net.corda.messaging.constants.MetricsConstants
 import net.corda.messaging.subscription.consumer.StateAndEventConsumer
 import net.corda.messaging.subscription.consumer.builder.StateAndEventBuilder
 import net.corda.messaging.subscription.consumer.listener.StateAndEventConsumerRebalanceListener
-import net.corda.messaging.utils.getEventsByBatch
 import net.corda.messaging.utils.toCordaProducerRecords
 import net.corda.messaging.utils.toRecord
 import net.corda.messaging.utils.tryGetResult
@@ -93,6 +98,85 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         .withTag(CordaMetrics.Tag.MessagePatternClientId, config.clientId)
         .build()
 
+    // Pipeline POC
+    data class StateAndEventData<K: Any, S: Any, E: Any>(val outputRecords: List<CordaProducerRecord<*, *>>, val event: CordaConsumerRecord<K, E>)
+    // channels used for messages to process
+    // capacity of the channel buffer TBD - producing function will suspend when buffer full
+    // number of channels should be configurable and indicate level of parallelism
+    val processingChannels = (1..5).map { Channel<CordaConsumerRecord<K, E>>(100) }
+
+    // channel used for messages that need sending - buffer TBD
+    val sendingChannel = Channel<StateAndEventData<K, S, E>>(1000)
+
+    private fun CoroutineScope.messageFanOut(events: List<CordaConsumerRecord<K, E>>) = launch {
+        // use hash of msg key to define which channel this goes into to avoid messages with the same ID going out-of-order
+        for(event in events) {
+            val channelId = event.key.hashCode().mod(processingChannels.size)
+            processingChannels[channelId].send(event)
+        }
+    }
+
+    private fun CoroutineScope.messageProcessor(id: Int, events: ReceiveChannel<CordaConsumerRecord<K, E>>) = launch {
+        for (event in events) {
+            log.info("Processor #$id is processing ${event.key} on ${Thread.currentThread().name}")
+
+            // simplistic interpretation
+            val key = event.key
+            val state = stateAndEventConsumer.getInMemoryStateValue(key)
+            val thisEventUpdates = getUpdatesForEvent(state, event)
+            if(thisEventUpdates == null) {
+                log.warn("TODO: handling null event updates")
+                continue
+            }
+            if(thisEventUpdates.markForDLQ) {
+                log.warn("TODO: handling DLQ")
+                continue
+            }
+            val updatedState = thisEventUpdates.updatedState
+            val outputRecords = mutableListOf<Record<*, *>>()
+            outputRecords.addAll(thisEventUpdates.responseEvents)
+            outputRecords.add(Record(stateTopic, key, updatedState))
+
+            sendingChannel.send(StateAndEventData(outputRecords.toCordaProducerRecords(), event))
+        }
+    }
+
+    private fun CoroutineScope.messageSender(msgs: Channel<StateAndEventData<K, S, E>>) = launch {
+        var beginTx = 0L
+        var txStarted = false
+        var msgsInCommit = 0
+        val eventsSinceCommit = mutableListOf<CordaConsumerRecord<*,*>>()
+        val updatedStates: MutableMap<Int, MutableMap<K, S?>> = mutableMapOf()
+
+        fun commitTx() {
+            log.info("Commit tx - $msgsInCommit since last commit")
+            producer.sendRecordOffsetsToTransaction(eventConsumer, eventsSinceCommit)
+            producer.commitTransaction()
+            txStarted = false
+            msgsInCommit = 0
+            stateAndEventConsumer.updateInMemoryStatePostCommit(updatedStates, clock)
+        }
+
+        for (msg in msgs) {
+            if(!txStarted) {
+                log.info("Begin tx")
+                beginTx = System.nanoTime()
+                txStarted = true
+                producer.beginTransaction()
+            }
+            else if(System.nanoTime() - beginTx > 1_000_000 * 50) commitTx()
+            msgsInCommit += msg.outputRecords.size
+            producer.sendRecords(msg.outputRecords)
+            eventsSinceCommit.add(msg.event)
+            val state = updatedStates[msg.event.partition]?.get(msg.event.key)
+            val thisEventUpdates = getUpdatesForEvent(state, msg.event)
+            val updatedState = thisEventUpdates?.updatedState
+            updatedStates.computeIfAbsent(msg.event.partition) { mutableMapOf() }[msg.event.key] = updatedState
+        }
+        if(txStarted) commitTx()
+    }
+    // ...
+
     /**
      * Is the subscription running.
      */
@@ -120,58 +204,67 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
 
         while (!threadLooper.loopStopped) {
             attempts++
-            try {
-                deadLetterRecords = mutableListOf()
-                nullableProducer = builder.createProducer(config) { data ->
-                    log.warn("Failed to serialize record from ${config.topic}")
-                    deadLetterRecords.add(data)
-                }
-                val (stateAndEventConsumerTmp, rebalanceListener) = builder.createStateEventConsumerAndRebalanceListener(
-                    config,
-                    processor.keyClass,
-                    processor.stateValueClass,
-                    processor.eventValueClass,
-                    stateAndEventListener,
-                    { data ->
-                        log.error("Failed to deserialize state record from $stateTopic")
-                        deadLetterRecords.add(data)
-                    },
-                    { data ->
-                        log.error("Failed to deserialize event record from $eventTopic")
+            // TODO - not sure runblocking here is correct.
+            runBlocking {
+                try {
+                    deadLetterRecords = mutableListOf()
+                    nullableProducer = builder.createProducer(config) { data ->
+                        log.warn("Failed to serialize record from ${config.topic}")
                         deadLetterRecords.add(data)
                     }
-                )
-                nullableRebalanceListener = rebalanceListener
-                val eventConsumerTmp = stateAndEventConsumerTmp.eventConsumer
-                nullableStateAndEventConsumer = stateAndEventConsumerTmp
-                nullableEventConsumer = eventConsumerTmp
-                eventConsumerTmp.subscribe(eventTopic, rebalanceListener)
-                threadLooper.updateLifecycleStatus(LifecycleStatus.UP)
+                    val (stateAndEventConsumerTmp, rebalanceListener) = builder.createStateEventConsumerAndRebalanceListener(
+                        config,
+                        processor.keyClass,
+                        processor.stateValueClass,
+                        processor.eventValueClass,
+                        stateAndEventListener,
+                        { data ->
+                            log.error("Failed to deserialize state record from $stateTopic")
+                            deadLetterRecords.add(data)
+                        },
+                        { data ->
+                            log.error("Failed to deserialize event record from $eventTopic")
+                            deadLetterRecords.add(data)
+                        }
+                    )
+                    nullableRebalanceListener = rebalanceListener
+                    val eventConsumerTmp = stateAndEventConsumerTmp.eventConsumer
+                    nullableStateAndEventConsumer = stateAndEventConsumerTmp
+                    nullableEventConsumer = eventConsumerTmp
+                    eventConsumerTmp.subscribe(eventTopic, rebalanceListener)
+                    threadLooper.updateLifecycleStatus(LifecycleStatus.UP)
 
-                while (!threadLooper.loopStopped) {
-                    stateAndEventConsumerTmp.pollAndUpdateStates(true)
-                    processBatchOfEvents()
-                }
-
-            } catch (ex: Exception) {
-                when (ex) {
-                    is CordaMessageAPIIntermittentException -> {
-                        log.warn(
-                            "$errorMsg Attempts: $attempts. Recreating " +
-                                    "consumer/producer and Retrying.", ex
-                        )
+                    messageSender(sendingChannel)
+                    for(x in processingChannels.indices) {
+                        messageProcessor(x, processingChannels[x])
                     }
 
-                    else -> {
-                        log.error(
-                            "$errorMsg Attempts: $attempts. Closing subscription.", ex
-                        )
-                        threadLooper.updateLifecycleStatus(LifecycleStatus.ERROR, errorMsg)
-                        threadLooper.stopLoop()
+                    while (!threadLooper.loopStopped) {
+                        stateAndEventConsumerTmp.pollAndUpdateStates(true)
+                        processBatchOfEvents()
                     }
+
+                } catch (ex: Exception) {
+                    when (ex) {
+                        is CordaMessageAPIIntermittentException -> {
+                            log.warn(
+                                "$errorMsg Attempts: $attempts. Recreating " +
+                                        "consumer/producer and Retrying.", ex
+                            )
+                        }
+
+                        else -> {
+                            log.error(
+                                "$errorMsg Attempts: $attempts. Closing subscription.", ex
+                            )
+                            threadLooper.updateLifecycleStatus(LifecycleStatus.ERROR, errorMsg)
+                            threadLooper.stopLoop()
+                        }
+                    }
+                } finally {
+                    closeStateAndEventProducerConsumer()
+                    coroutineContext.cancelChildren()
                 }
-            } finally {
-                closeStateAndEventProducerConsumer()
             }
         }
         nullableRebalanceListener?.close()
@@ -185,7 +278,7 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         nullableStateAndEventConsumer = null
     }
 
-    private fun processBatchOfEvents() {
+    private fun CoroutineScope.processBatchOfEvents() {
         var attempts = 0
         var keepProcessing = true
         while (keepProcessing && !threadLooper.loopStopped) {
@@ -194,10 +287,13 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                 var rebalanceOccurred = false
                 val records = stateAndEventConsumer.pollEvents()
                 batchSizeHistogram.record(records.size.toDouble())
-                val batches = getEventsByBatch(records).iterator()
-                while (!rebalanceOccurred && batches.hasNext()) {
-                    val batch = batches.next()
-                    rebalanceOccurred = tryProcessBatchOfEvents(batch)
+//                val batches = getEventsByBatch(records).iterator()
+//                while (!rebalanceOccurred && batches.hasNext()) {
+//                    val batch = batches.next()
+//                    rebalanceOccurred = tryProcessBatchOfEvents(batch)
+//                }
+                while(!rebalanceOccurred) {
+                        messageFanOut(records)
                 }
                 keepProcessing = false // We only want to do one batch at a time
             } catch (ex: Exception) {
