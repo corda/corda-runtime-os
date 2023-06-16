@@ -1,6 +1,7 @@
-package net.corda.interop.aliasinfo.write
+package net.corda.interop.aliasinfo.write.impl
 
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.interop.aliasinfo.write.InteropAliasInfoWriteService
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import org.osgi.service.component.annotations.Activate
@@ -33,12 +34,12 @@ class InteropAliasInfoWriteServiceImpl @Activate constructor(
         get() = coordinator.isRunning
 
     override fun start() {
-        log.info("Interop alias info writer service component starting")
+        log.info("Component starting")
         coordinator.start()
     }
 
     override fun stop() {
-        log.info("Interop alias info writer service component stopping")
+        log.info("Component stopping")
         coordinator.stop()
     }
 }
