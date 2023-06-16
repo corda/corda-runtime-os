@@ -69,6 +69,7 @@ class CordaKafkaProducerImpl(
             ctx.markInScope().use {
                 ctx.traceTag("send.offset", m.offset().toString())
                 ctx.traceTag("send.partition", m.partition().toString())
+                ctx.traceTag("send.topic", m.topic())
                 callback.onCompletion(ex)
                 if (ex != null) {
                     ctx.errorAndFinish(ex)
