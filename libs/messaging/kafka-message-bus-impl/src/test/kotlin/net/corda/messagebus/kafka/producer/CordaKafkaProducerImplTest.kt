@@ -110,7 +110,7 @@ class CordaKafkaProducerImplTest {
             records.map { ProducerRecord(transactionalConfig.topicPrefix + it.topic, null, it.key, it.value) }
         cordaKafkaProducer.sendRecords(listOf(record, record, record))
         verify(producer, times(3)).send(any(), anyOrNull())
-        expectedPublishedRecords.forEach { verify(producer, atLeastOnce()).send(it, null) }
+        expectedPublishedRecords.forEach { verify(producer, atLeastOnce()).send(eq(it), any()) }
     }
 
     @Test
@@ -137,7 +137,7 @@ class CordaKafkaProducerImplTest {
 
         cordaKafkaProducer.sendRecordsToPartitions(recordsWithPartitions)
         verify(producer, times(3)).send(any(), anyOrNull())
-        expectedPublishedRecords.forEach { verify(producer, atLeastOnce()).send(it, null) }
+        expectedPublishedRecords.forEach { verify(producer, atLeastOnce()).send(eq(it), any()) }
     }
 
     @Test
