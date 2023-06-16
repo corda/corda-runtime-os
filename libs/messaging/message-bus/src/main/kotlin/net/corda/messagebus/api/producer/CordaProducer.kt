@@ -63,6 +63,9 @@ interface CordaProducer : AutoCloseable {
      */
     fun sendRecordOffsetsToTransaction(consumer: CordaConsumer<*, *>, records: List<CordaConsumerRecord<*, *>>)
 
+    // HACK:
+    fun sendRecordOffsetsToTransaction(records: List<CordaConsumerRecord<*, *>>, meta: Any?)
+
     /**
      * Should be called before the start of each new transaction.
      *

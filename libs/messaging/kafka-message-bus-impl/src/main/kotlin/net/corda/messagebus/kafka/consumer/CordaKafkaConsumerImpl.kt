@@ -724,6 +724,8 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
         }
     }
 
+    override fun kafkaGroupMetadata() = groupMetadata()
+
     override fun setDefaultRebalanceListener(defaultListener: CordaConsumerRebalanceListener) {
         this.defaultListener = defaultListener
     }

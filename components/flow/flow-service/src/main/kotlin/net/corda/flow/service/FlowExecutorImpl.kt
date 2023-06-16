@@ -1,5 +1,6 @@
 package net.corda.flow.service
 
+//import net.corda.schema.configuration.BootConfig.BOOT_FLOW_PROCESSOR_COUNT
 import com.typesafe.config.ConfigValueFactory
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.state.checkpoint.Checkpoint
@@ -17,8 +18,6 @@ import net.corda.messaging.api.subscription.StateAndEventSubscription
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas.Flow.FLOW_EVENT_TOPIC
-import net.corda.schema.configuration.BootConfig.BOOT_FLOW_PROCESSOR_COUNT
-import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.FLOW_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.schema.configuration.MessagingConfig.MAX_ALLOWED_MSG_SIZE
@@ -80,16 +79,16 @@ class FlowExecutorImpl constructor(
             subscriptions.forEach { subscription -> subscription.close() }
             subscriptions.clear()
 
-            val processorCount = getFlowProcessorCount(config)
+//            val processorCount = getFlowProcessorCount(config)
 
-            repeat(4) {
+//            repeat(4) {
                 subscriptions += subscriptionFactory.createStateAndEventSubscription(
                     SubscriptionConfig(CONSUMER_GROUP, FLOW_EVENT_TOPIC),
                     flowEventProcessorFactory.create(flowConfig),
                     messagingConfig,
                     flowExecutorRebalanceListener
                 )
-            }
+//            }
 
             subscriptionRegistrationHandle = coordinator.followStatusChangesByName(
                 subscriptions.map { subscription -> subscription.subscriptionName }.toSet()
@@ -128,13 +127,13 @@ class FlowExecutorImpl constructor(
         }
     }
 
-    private fun getFlowProcessorCount(config: Map<String, SmartConfig>): Int {
-        val bootConfig = config.getConfig(BOOT_CONFIG)
-        return if (bootConfig.hasPath(BOOT_FLOW_PROCESSOR_COUNT)) {
-            val count = bootConfig.getInt(BOOT_FLOW_PROCESSOR_COUNT)
-            if (count > 1) count else MINIMUM_PROCESSOR_COUNT
-        } else {
-            DEFAULT_PROCESSOR_COUNT
-        }
-    }
+//    private fun getFlowProcessorCount(config: Map<String, SmartConfig>): Int {
+//        val bootConfig = config.getConfig(BOOT_CONFIG)
+//        return if (bootConfig.hasPath(BOOT_FLOW_PROCESSOR_COUNT)) {
+//            val count = bootConfig.getInt(BOOT_FLOW_PROCESSOR_COUNT)
+//            if (count > 1) count else MINIMUM_PROCESSOR_COUNT
+//        } else {
+//            DEFAULT_PROCESSOR_COUNT
+//        }
+//    }
 }

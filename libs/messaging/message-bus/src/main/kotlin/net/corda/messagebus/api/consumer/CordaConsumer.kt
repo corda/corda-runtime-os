@@ -159,4 +159,7 @@ interface CordaConsumer<K : Any, V : Any> : AutoCloseable {
      * When the default listener isn't set one can still be supplied via [subscribe].
      */
     fun setDefaultRebalanceListener(defaultListener: CordaConsumerRebalanceListener)
+
+    // hack!
+    fun kafkaGroupMetadata(): Any
 }
