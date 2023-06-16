@@ -4,6 +4,8 @@ import net.corda.crypto.core.DigitalSignatureWithKeyId
 import net.corda.crypto.cipher.suite.SignatureSpecImpl
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.core.fullIdHash
+import net.corda.flow.state.ContextPlatformProperties
+import net.corda.flow.state.FlowContext
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.flow.flows.Payload
 import net.corda.ledger.common.flow.transaction.TransactionMissingSignaturesException
@@ -75,7 +77,15 @@ class UtxoFinalityFlowV1Test {
     private val transactionSignatureService = mock<TransactionSignatureService>()
     private val persistenceService = mock<UtxoLedgerPersistenceService>()
     private val transactionVerificationService = mock<UtxoLedgerTransactionVerificationService>()
-    private val flowEngine = mock<FlowEngine>()
+    private val platformProperties = mock<ContextPlatformProperties>().also { properties ->
+        whenever(properties.set(any(), any())).thenAnswer {}
+    }
+    private val flowContextProperties = mock<FlowContext>().also {
+        whenever(it.platformProperties).thenReturn(platformProperties)
+    }
+    private val flowEngine = mock<FlowEngine>().also {
+        whenever(it.flowContextProperties).thenReturn(flowContextProperties)
+    }
     private val flowMessaging = mock<FlowMessaging>()
     private val virtualNodeSelectorService = mock<NotaryVirtualNodeSelectorService>()
     private val visibilityChecker = mock<VisibilityChecker>()
