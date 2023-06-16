@@ -1,0 +1,23 @@
+plugins {
+    id 'corda.common-library'
+    id 'application'
+}
+
+description 'Fake Kafka'
+
+dependencies {
+    implementation platform('org.jetbrains.kotlin:kotlin-bom')
+    implementation "io.github.embeddedkafka:embedded-kafka_3:$embeddedKafkaVersion"
+    implementation project(':tools:plugins:topic-config')
+    implementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk8'
+    implementation "info.picocli:picocli:$picocliVersion"
+
+    runtimeOnly "org.pf4j:pf4j:$pf4jVersion"
+    runtimeOnly "net.corda.cli.host:api:$pluginHostVersion"
+    runtimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
+    runtimeOnly "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:$jacksonVersion"
+    runtimeOnly "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
+}
+application {
+    mainClass = 'net.corda.testing.fake.kafka.runner.RunnerKt'
+}

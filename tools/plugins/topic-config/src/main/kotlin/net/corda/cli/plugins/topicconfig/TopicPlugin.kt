@@ -15,6 +15,12 @@ class TopicPlugin : Plugin() {
     companion object {
         val classLoader: ClassLoader = this::class.java.classLoader
         private val logger: Logger = LoggerFactory.getLogger(this::class.java)
+
+        fun createTopic(bootstrapServer: String) : Topic {
+            return Topic().also {
+                it.bootstrapServer = bootstrapServer
+            }
+        }
     }
 
     override fun start() {
