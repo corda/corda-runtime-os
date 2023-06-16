@@ -5,7 +5,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ReceiveChannel
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import net.corda.avro.serialization.CordaAvroSerializer
@@ -101,7 +100,7 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         .build()
 
     // Pipeline POC
-    data class StateAndEventData<K: Any, S: Any, E: Any>(val outputRecords: List<CordaProducerRecord<*, *>>, val event: CordaConsumerRecord<K, E>)
+    data class StateAndEventData<K: Any, S: Any, E: Any>(val response: StateAndEventProcessor.Response<S>, val event: CordaConsumerRecord<K, E>)
     // channels used for messages to process
     // capacity of the channel buffer TBD - producing function will suspend when buffer full
     // number of channels should be configurable and indicate level of parallelism
@@ -110,18 +109,18 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
     // channel used for messages that need sending - buffer TBD
     val sendingChannel = Channel<StateAndEventData<K, S, E>>(1000)
 
-    private fun CoroutineScope.messagePoller(stateAndEventConsumerTmp: StateAndEventConsumer<K, S, E>) = launch {
-        while (!threadLooper.loopStopped) {
-            stateAndEventConsumerTmp.pollAndUpdateStates(true)
-            val records = stateAndEventConsumer.pollEvents()
-            if(records.isNotEmpty()) {
-                for(event in records) {
-                    val channelId = event.key.hashCode().mod(processingChannels.size)
-                    processingChannels[channelId].send(event)
-                }
-            }
-        }
-    }
+//    private fun CoroutineScope.messagePoller(stateAndEventConsumerTmp: StateAndEventConsumer<K, S, E>) = launch {
+//        while (!threadLooper.loopStopped) {
+//            stateAndEventConsumerTmp.pollAndUpdateStates(true)
+//            val records = stateAndEventConsumer.pollEvents()
+//            if(records.isNotEmpty()) {
+//                for(event in records) {
+//                    val channelId = event.key.hashCode().mod(processingChannels.size)
+//                    processingChannels[channelId].send(event)
+//                }
+//            }
+//        }
+//    }
 
     private fun CoroutineScope.messageProcessor(id: Int, events: ReceiveChannel<CordaConsumerRecord<K, E>>) = launch {
         for (event in events) {
@@ -130,25 +129,16 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
             // simplistic interpretation
             val key = event.key
             val state = stateAndEventConsumer.getInMemoryStateValue(key)
-            val thisEventUpdates = getUpdatesForEvent(state, event)
-            if(thisEventUpdates == null) {
-                log.warn("TODO: handling null event updates")
-                continue
-            }
+            val thisEventUpdates = processor.onNext(state, event.toRecord())
             if(thisEventUpdates.markForDLQ) {
                 log.warn("TODO: handling DLQ")
                 continue
             }
-            val updatedState = thisEventUpdates.updatedState
-            val outputRecords = mutableListOf<Record<*, *>>()
-            outputRecords.addAll(thisEventUpdates.responseEvents)
-            outputRecords.add(Record(stateTopic, key, updatedState))
-
-            sendingChannel.send(StateAndEventData(outputRecords.toCordaProducerRecords(), event))
+            sendingChannel.send(StateAndEventData(thisEventUpdates, event))
         }
     }
 
-    private fun CoroutineScope.messageSender(msgs: Channel<StateAndEventData<K, S, E>>) = launch {
+    private fun CoroutineScope.messageSender(msgs: Channel<StateAndEventData<K,S,E>>) = launch {
         var beginTx = 0L
         var txStarted = false
         var msgsInCommit = 0
@@ -174,13 +164,15 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         for (msg in msgs) {
             if(!txStarted) beginTx()
 
-            msgsInCommit += msg.outputRecords.size
-            log.info("Sending ${msg.outputRecords}")
-            producer.sendRecords(msg.outputRecords)
+            val updatedState = msg.response.updatedState
+            val outputRecords = mutableListOf<Record<*, *>>()
+            outputRecords.addAll(msg.response.responseEvents)
+            outputRecords.add(Record(stateTopic, msg.event.key, updatedState))
+
+            msgsInCommit += outputRecords.size
+            log.info("Sending ${outputRecords}")
+            producer.sendRecords(outputRecords.toCordaProducerRecords())
             eventsSinceCommit.add(msg.event)
-            val state = updatedStates[msg.event.partition]?.get(msg.event.key)
-            val thisEventUpdates = getUpdatesForEvent(state, msg.event)
-            val updatedState = thisEventUpdates?.updatedState
             updatedStates.computeIfAbsent(msg.event.partition) { mutableMapOf() }[msg.event.key] = updatedState
 
             // TODO: must introduce a ticker here to ensure we commit also when no events are flowing through.
@@ -247,16 +239,27 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                     eventConsumerTmp.subscribe(eventTopic, rebalanceListener)
                     threadLooper.updateLifecycleStatus(LifecycleStatus.UP)
 
-                    messagePoller(stateAndEventConsumerTmp)
+//                    messagePoller(stateAndEventConsumerTmp)
                     messageSender(sendingChannel)
                     for(x in processingChannels.indices) {
                         messageProcessor(x, processingChannels[x])
                     }
 
                     while (!threadLooper.loopStopped) {
-                        log.debug("Waiting for stop signal")
-                        delay(1000)
+                        stateAndEventConsumerTmp.pollAndUpdateStates(true)
+                        val records = stateAndEventConsumer.pollEvents()
+                        if(records.isNotEmpty()) {
+                            for(event in records) {
+                                val channelId = event.key.hashCode().mod(processingChannels.size)
+                                processingChannels[channelId].send(event)
+                            }
+                        }
                     }
+
+//                    while (!threadLooper.loopStopped) {
+//                        log.debug("Waiting for stop signal")
+//                        delay(1000)
+//                    }
 //                    while (!threadLooper.loopStopped) {
 //                        stateAndEventConsumerTmp.pollAndUpdateStates(true)
 //                        processBatchOfEvents()
