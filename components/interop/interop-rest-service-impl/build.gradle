@@ -6,7 +6,7 @@ plugins {
 description "Virtual Node REST Resource Implementation"
 
 dependencies {
-    implementation project(path: ':libs:interop:interop-endpoints')
+    implementation project(path: ':libs:interop:interop-rest')
     implementation project(path: ':components:virtual-node:virtual-node-rest-service-impl')
     compileOnly 'org.osgi:osgi.annotation'
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
