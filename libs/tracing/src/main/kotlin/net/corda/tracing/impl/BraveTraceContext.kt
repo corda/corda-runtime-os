@@ -33,7 +33,7 @@ internal class BraveTraceContext(
     }
 
     override fun error(e: Exception) {
-        span.error(e).finish()
+        span.error(e)
     }
 
     override fun finish() {
