@@ -1,9 +1,11 @@
 package net.corda.messaging.subscription
 
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ReceiveChannel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import net.corda.avro.serialization.CordaAvroSerializer
@@ -108,11 +110,16 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
     // channel used for messages that need sending - buffer TBD
     val sendingChannel = Channel<StateAndEventData<K, S, E>>(1000)
 
-    private fun CoroutineScope.messageFanOut(events: List<CordaConsumerRecord<K, E>>) = launch {
-        // use hash of msg key to define which channel this goes into to avoid messages with the same ID going out-of-order
-        for(event in events) {
-            val channelId = event.key.hashCode().mod(processingChannels.size)
-            processingChannels[channelId].send(event)
+    private fun CoroutineScope.messagePoller(stateAndEventConsumerTmp: StateAndEventConsumer<K, S, E>) = launch {
+        while (!threadLooper.loopStopped) {
+            stateAndEventConsumerTmp.pollAndUpdateStates(true)
+            val records = stateAndEventConsumer.pollEvents()
+            if(records.isNotEmpty()) {
+                for(event in records) {
+                    val channelId = event.key.hashCode().mod(processingChannels.size)
+                    processingChannels[channelId].send(event)
+                }
+            }
         }
     }
 
@@ -204,8 +211,8 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
 
         while (!threadLooper.loopStopped) {
             attempts++
-            // TODO - not sure runblocking here is correct.
-            runBlocking {
+            // TODO - not sure runBlocking launch and the above OptIn is correct
+            runBlocking(Dispatchers.IO) {
                 try {
                     deadLetterRecords = mutableListOf()
                     nullableProducer = builder.createProducer(config) { data ->
@@ -234,15 +241,20 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                     eventConsumerTmp.subscribe(eventTopic, rebalanceListener)
                     threadLooper.updateLifecycleStatus(LifecycleStatus.UP)
 
+                    messagePoller(stateAndEventConsumerTmp)
                     messageSender(sendingChannel)
                     for(x in processingChannels.indices) {
                         messageProcessor(x, processingChannels[x])
                     }
 
                     while (!threadLooper.loopStopped) {
-                        stateAndEventConsumerTmp.pollAndUpdateStates(true)
-                        processBatchOfEvents()
+                        log.debug("Waiting for stop signal")
+                        delay(1000)
                     }
+//                    while (!threadLooper.loopStopped) {
+//                        stateAndEventConsumerTmp.pollAndUpdateStates(true)
+//                        processBatchOfEvents()
+//                    }
 
                 } catch (ex: Exception) {
                     when (ex) {
@@ -278,13 +290,13 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         nullableStateAndEventConsumer = null
     }
 
-    private fun CoroutineScope.processBatchOfEvents() = launch {
+    private fun processBatchOfEvents() {
         var attempts = 0
         var keepProcessing = true
         while (keepProcessing && !threadLooper.loopStopped) {
             try {
                 log.debug { "Polling and processing events" }
-                var rebalanceOccurred = false
+//                var rebalanceOccurred = false
                 val records = stateAndEventConsumer.pollEvents()
                 batchSizeHistogram.record(records.size.toDouble())
 //                val batches = getEventsByBatch(records).iterator()
@@ -292,9 +304,6 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
 //                    val batch = batches.next()
 //                    rebalanceOccurred = tryProcessBatchOfEvents(batch)
 //                }
-                if(!rebalanceOccurred && records.isNotEmpty()) {
-                        messageFanOut(records)
-                }
                 keepProcessing = false // We only want to do one batch at a time
             } catch (ex: Exception) {
                 when (ex) {
