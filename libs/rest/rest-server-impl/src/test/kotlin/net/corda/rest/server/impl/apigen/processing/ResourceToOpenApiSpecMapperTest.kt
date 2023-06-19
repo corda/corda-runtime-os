@@ -30,6 +30,7 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import kotlin.reflect.jvm.javaMethod
 import net.corda.rest.JsonObject
+import net.corda.rest.annotations.RestApiVersion
 import net.corda.rest.test.TestFileUploadAPI
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -173,7 +174,7 @@ class ResourceToOpenApiSpecMapperTest {
     @Test
     fun `Can convert resource list to OpenApi object`() {
         val resource = getHealthCheckApiTestResource()
-        val openAPI = listOf(resource).toOpenAPI(SchemaModelContextHolder())
+        val openAPI = listOf(resource).toOpenAPI(SchemaModelContextHolder(), RestApiVersion.C5_0)
         with(openAPI) {
 
             val tag = tags.single()
@@ -228,7 +229,8 @@ class ResourceToOpenApiSpecMapperTest {
                     GenericParameterizedType(Double::class.java)
                 )
             ),
-            invocationMethod = InvocationMethod(method = TestHealthCheckAPI::plusOne.javaMethod!!, instance = TestHealthCheckAPIImpl())
+            invocationMethod = InvocationMethod(method = TestHealthCheckAPI::plusOne.javaMethod!!, instance = TestHealthCheckAPIImpl()),
+            apiVersions = setOf(RestApiVersion.C5_0)
         )
         val schemaModelProvider = DefaultSchemaModelProvider(SchemaModelContextHolder())
         val openApi = endpoint.toOperation("path", schemaModelProvider)
@@ -250,7 +252,8 @@ class ResourceToOpenApiSpecMapperTest {
             path = "plusOne",
             parameters = emptyList(),
             responseBody = ResponseBody(description = "", type = Void.TYPE, parameterizedTypes = emptyList()),
-            invocationMethod = InvocationMethod(method = TestHealthCheckAPI::voidResponse.javaMethod!!, instance = TestHealthCheckAPIImpl())
+            invocationMethod = InvocationMethod(method = TestHealthCheckAPI::voidResponse.javaMethod!!, instance = TestHealthCheckAPIImpl()),
+            apiVersions = setOf(RestApiVersion.C5_0)
         )
 
         val schemaModelProvider = DefaultSchemaModelProvider(SchemaModelContextHolder())
@@ -270,7 +273,8 @@ class ResourceToOpenApiSpecMapperTest {
             path = "plusOne",
             parameters = emptyList(),
             responseBody = ResponseBody(description = "", type = Void::class.java, parameterizedTypes = emptyList()),
-            invocationMethod = InvocationMethod(method = TestHealthCheckAPI::voidResponse.javaMethod!!, instance = TestHealthCheckAPIImpl())
+            invocationMethod = InvocationMethod(method = TestHealthCheckAPI::voidResponse.javaMethod!!, instance = TestHealthCheckAPIImpl()),
+            apiVersions = setOf(RestApiVersion.C5_0)
         )
 
         val schemaModelProvider = DefaultSchemaModelProvider(SchemaModelContextHolder())
@@ -290,7 +294,8 @@ class ResourceToOpenApiSpecMapperTest {
             path = "plusOne",
             parameters = emptyList(),
             responseBody = ResponseBody(description = "", type = Void::class.java, parameterizedTypes = emptyList()),
-            invocationMethod = InvocationMethod(method = TestHealthCheckAPI::voidResponse.javaMethod!!, instance = TestHealthCheckAPIImpl())
+            invocationMethod = InvocationMethod(method = TestHealthCheckAPI::voidResponse.javaMethod!!, instance = TestHealthCheckAPIImpl()),
+            apiVersions = setOf(RestApiVersion.C5_0)
         )
 
         val schemaModelProvider = DefaultSchemaModelProvider(SchemaModelContextHolder())
@@ -328,7 +333,8 @@ class ResourceToOpenApiSpecMapperTest {
             responseBody = ResponseBody(
                 description = "", type = String::class.java, parameterizedTypes = emptyList()
             ),
-            invocationMethod = InvocationMethod(method = TestFileUploadAPI::upload.javaMethod!!, instance = TestHealthCheckAPIImpl())
+            invocationMethod = InvocationMethod(method = TestFileUploadAPI::upload.javaMethod!!, instance = TestHealthCheckAPIImpl()),
+            apiVersions = setOf(RestApiVersion.C5_0)
         )
         val schemaModelProvider = DefaultSchemaModelProvider(SchemaModelContextHolder())
         val openApi = endpoint.toOperation("path", schemaModelProvider)
@@ -386,7 +392,8 @@ class ResourceToOpenApiSpecMapperTest {
             invocationMethod = InvocationMethod(
                 method = TestFileUploadAPI::uploadWithName.javaMethod!!,
                 instance = TestHealthCheckAPIImpl()
-            )
+            ),
+            apiVersions = setOf(RestApiVersion.C5_0)
         )
         val schemaModelProvider = DefaultSchemaModelProvider(SchemaModelContextHolder())
         val openApi = endpoint.toOperation("fileupload", schemaModelProvider)
