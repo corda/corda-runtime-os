@@ -1230,25 +1230,30 @@
         }
       }
     },
-    "/interop/groups" : {
-      "get" : {
+    "/interop/interopidentity" : {
+      "put" : {
         "tags" : [ "Interop API" ],
-        "description" : "This method returns a list of interop group ids.",
-        "operationId" : "get_interop_groups",
+        "description" : "This method creates interop identity from x500name.",
+        "operationId" : "put_interop_interopidentity",
         "parameters" : [ ],
+        "requestBody" : {
+          "description" : "requestBody",
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CreateInteropIdentityType"
+              }
+            }
+          },
+          "required" : true
+        },
         "responses" : {
           "200" : {
-            "description" : "List of interop groups",
+            "description" : "Identifier for the request.",
             "content" : {
               "application/json" : {
                 "schema" : {
-                  "uniqueItems" : false,
-                  "type" : "array",
-                  "nullable" : false,
-                  "items" : {
-                    "type" : "string",
-                    "format" : "uuid"
-                  }
+                  "$ref" : "#/components/schemas/InteropIdentityResponseType"
                 }
               }
             }
@@ -1262,41 +1267,36 @@
         }
       }
     },
-    "/interop/{x500name}/{groupid}" : {
-      "put" : {
+    "/interop/{holdingidentityid}/groups" : {
+      "get" : {
         "tags" : [ "Interop API" ],
-        "description" : "This method creates interop identity from x500name.",
-        "operationId" : "put_interop__x500name___groupid_",
+        "description" : "This method returns a list of interop group ids.",
+        "operationId" : "get_interop__holdingidentityid__groups",
         "parameters" : [ {
-          "name" : "x500name",
+          "name" : "holdingidentityid",
           "in" : "path",
-          "description" : "The X500 name of the identity to create",
+          "description" : "ID of the holding identity which groups are to be returned.",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description" : "The X500 name of the identity to create",
-            "nullable" : false,
-            "example" : "string"
-          }
-        }, {
-          "name" : "groupid",
-          "in" : "path",
-          "description" : "The groupId of the group the identity belongs to.",
-          "required" : true,
-          "schema" : {
-            "type" : "string",
-            "description" : "The groupId of the group the identity belongs to.",
-            "nullable" : false,
+            "description" : "ID of the holding identity which groups are to be returned.",
+            "nullable" : true,
             "example" : "string"
           }
         } ],
         "responses" : {
           "200" : {
-            "description" : "Identifier for the request.",
+            "description" : "List of interop groups",
             "content" : {
               "application/json" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/AsyncResponse"
+                  "uniqueItems" : false,
+                  "type" : "array",
+                  "nullable" : false,
+                  "items" : {
+                    "type" : "string",
+                    "format" : "uuid"
+                  }
                 }
               }
             }
@@ -4360,6 +4360,22 @@
           }
         }
       },
+      "CreateInteropIdentityType" : {
+        "required" : [ "groupId", "x500Name" ],
+        "type" : "object",
+        "properties" : {
+          "groupId" : {
+            "type" : "string",
+            "format" : "uuid",
+            "nullable" : false
+          },
+          "x500Name" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          }
+        }
+      },
       "CreatePermissionType" : {
         "required" : [ "permissionString", "permissionType" ],
         "type" : "object",
@@ -4790,6 +4806,22 @@
           "masterKeyAlias" : {
             "type" : "string",
             "nullable" : true,
+            "example" : "string"
+          }
+        }
+      },
+      "InteropIdentityResponseType" : {
+        "required" : [ "groupId", "x500Name" ],
+        "type" : "object",
+        "properties" : {
+          "groupId" : {
+            "type" : "string",
+            "format" : "uuid",
+            "nullable" : false
+          },
+          "x500Name" : {
+            "type" : "string",
+            "nullable" : false,
             "example" : "string"
           }
         }

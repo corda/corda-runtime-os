@@ -2,6 +2,8 @@ package net.corda.interop.rest.impl.v1
 
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.libs.interop.endpoints.v1.InteropRestResource
+import net.corda.libs.interop.endpoints.v1.types.CreateInteropIdentityType
+import net.corda.libs.interop.endpoints.v1.types.InteropIdentityResponseType
 import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
@@ -13,7 +15,6 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.rest.PluggableRestResource
-import net.corda.rest.asynchronous.v1.AsyncResponse
 import net.corda.rest.response.ResponseEntity
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.utilities.debug
@@ -41,28 +42,22 @@ internal class InteropRestResourceImpl @Activate constructor (
 
     // RestResource values
     override val targetInterface: Class<InteropRestResource> = InteropRestResource::class.java
-    override fun getInterOpGroups(): List<UUID> {
+    override fun getInterOpGroups(holdingidentityid: String?): List<UUID> {
         return listOf(UUID.randomUUID())
     }
 
-    override fun createInterOpIdentity(x500Name: String, groupId: String): ResponseEntity<AsyncResponse> {
-        TODO("Not yet implemented")
-    }
-
-//    override fun createInterOpIdentity(x500Name: String, groupId: UUID): ResponseEntity<AsyncResponse> {
-//        TODO("Not yet implemented")
-//        val requestId = MessageBusUtils.tryWithExceptionHandling(logger, "Create interop identity") {
-//            sendAsynchronousRequest(
-//                Instant.now(),
-//                x500Name,
-//                currentCpi.fileChecksum.toHexString(),
-//                targetCpi.fileChecksum.toHexString(),
-//                restContextProvider.principal
-//            )
-//        }
+    override fun createInterOpIdentity(createInteropIdentityType: CreateInteropIdentityType): ResponseEntity<InteropIdentityResponseType> {
+//        val restContext = CURRENT_REST_CONTEXT.get()
+//        val principal = restContext.principal
 //
-//        return ResponseEntity.accepted(AsyncResponse(requestId))
-//    }
+//        val createInteropIdentityResult = //createInteropIdentity(createInteropIdentityType.convertToDto(principal))
+//            withPermissionManager(InteropManager, logger) {
+//                createRole(createRoleType.convertToDto(principal))
+//            }
+//
+//        return ResponseEntity.created(createInteropIdentityResult.convertToEndpointType())
+        TODO("implement")
+    }
 
     override val protocolVersion = 1
 
