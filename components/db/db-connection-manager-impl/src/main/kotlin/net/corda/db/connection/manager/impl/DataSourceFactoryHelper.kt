@@ -1,25 +1,25 @@
-package net.corda.db.connection.manager
+package net.corda.db.connection.manager.impl
 
 import com.typesafe.config.ConfigRenderOptions
-import com.typesafe.config.ConfigValueFactory
+import net.corda.db.connection.manager.DBConfigurationException
 import net.corda.db.core.CloseableDataSource
 import net.corda.db.core.DataSourceFactory
 import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.validation.ConfigurationDefaults.DB_SCHEMA_VER
 import net.corda.libs.configuration.validation.getConfigurationDefaults
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.DatabaseConfig
+import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.time.Duration
 import javax.sql.DataSource
 
-internal object DbConfig {
-    val log = LoggerFactory.getLogger(DbConfig::class.java)
+private object DataSourceFactoryHelper {
+    val log: Logger = LoggerFactory.getLogger(DataSourceFactoryHelper::class.java)
 }
 
 /** Default values from configuration schema */
-val dbFallbackConfig = getConfigurationDefaults(ConfigKeys.DB_CONFIG, DB_SCHEMA_VER)
+private val dbFallbackConfig = getConfigurationDefaults(ConfigKeys.DB_CONFIG, DB_SCHEMA_VER)
 
 /**
  * Creates a [DataSource] using the [config].
@@ -30,8 +30,8 @@ fun DataSourceFactory.createFromConfig(config: SmartConfig): CloseableDataSource
     // We are falling back to the (same) defaults from the schema for both cluster and VNode datasource configurations
     val configWithFallback = config.withFallback(dbFallbackConfig)
 
-    DbConfig.log.debug("Given configuration: ${config.toSafeConfig().root().render(ConfigRenderOptions.concise())}")
-    DbConfig.log.debug("Fallback configuration: ${dbFallbackConfig.root().render(ConfigRenderOptions.concise())}")
+    DataSourceFactoryHelper.log.debug("Given configuration: ${config.toSafeConfig().root().render(ConfigRenderOptions.concise())}")
+    DataSourceFactoryHelper.log.debug("Fallback configuration: ${dbFallbackConfig.root().render(ConfigRenderOptions.concise())}")
 
     val driver = configWithFallback.getString(DatabaseConfig.JDBC_DRIVER)
     val jdbcUrl = configWithFallback.getString(DatabaseConfig.JDBC_URL)
@@ -63,7 +63,7 @@ fun DataSourceFactory.createFromConfig(config: SmartConfig): CloseableDataSource
                     "Provided config: ${configWithFallback.root().render()}"
         )
 
-    DbConfig.log.debug("Creating DB connection for: $driver, $jdbcUrl, $username, $maxPoolSize")
+    DataSourceFactoryHelper.log.debug("Creating DB connection for: $driver, $jdbcUrl, $username, $maxPoolSize")
     return this.create(
         driverClass = driver,
         jdbcUrl = jdbcUrl,
@@ -76,37 +76,4 @@ fun DataSourceFactory.createFromConfig(config: SmartConfig): CloseableDataSource
         keepaliveTime = keepaliveTime,
         validationTimeout = validationTimeout
     )
-}
-
-@Suppress("LongParameterList")
-fun createDbConfig(
-    smartConfigFactory: SmartConfigFactory,
-    username: String,
-    password: String,
-    jdbcDriver: String? = null,
-    jdbcUrl: String,
-    maxPoolSize: Int,
-    minPoolSize: Int?,
-    idleTimeout: Int,
-    maxLifetime: Int,
-    keepaliveTime: Int,
-    validationTimeout: Int,
-    key: String
-): SmartConfig {
-    var config =
-        smartConfigFactory.makeSecret(password, key).atPath(DatabaseConfig.DB_PASS)
-            .withValue(DatabaseConfig.DB_USER, ConfigValueFactory.fromAnyRef(username))
-    if(null != jdbcDriver)
-        config = config.withValue(DatabaseConfig.JDBC_DRIVER, ConfigValueFactory.fromAnyRef(jdbcDriver))
-    config = config.withValue(DatabaseConfig.JDBC_URL, ConfigValueFactory.fromAnyRef(jdbcUrl))
-    config = config.withValue(DatabaseConfig.DB_POOL_MAX_SIZE, ConfigValueFactory.fromAnyRef(maxPoolSize))
-    if(null != minPoolSize)
-        config = config.withValue(DatabaseConfig.DB_POOL_MIN_SIZE, ConfigValueFactory.fromAnyRef(minPoolSize))
-
-    config = config.withValue(DatabaseConfig.DB_POOL_IDLE_TIMEOUT_SECONDS, ConfigValueFactory.fromAnyRef(idleTimeout))
-    config = config.withValue(DatabaseConfig.DB_POOL_MAX_LIFETIME_SECONDS, ConfigValueFactory.fromAnyRef(maxLifetime))
-    config = config.withValue(DatabaseConfig.DB_POOL_KEEPALIVE_TIME_SECONDS, ConfigValueFactory.fromAnyRef(keepaliveTime))
-    config = config.withValue(DatabaseConfig.DB_POOL_VALIDATION_TIMEOUT_SECONDS, ConfigValueFactory.fromAnyRef(validationTimeout))
-    return config
-
 }

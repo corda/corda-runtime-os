@@ -1,14 +1,14 @@
+package net.corda.db.connection.manager.impl.tests
+
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.db.connection.manager.DBConfigurationException
-import net.corda.db.connection.manager.createDbConfig
-import net.corda.db.connection.manager.createFromConfig
+import net.corda.db.connection.manager.impl.createFromConfig
 import net.corda.db.core.DataSourceFactory
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.libs.configuration.secret.SecretsLookupService
 import net.corda.schema.configuration.DatabaseConfig
-import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
@@ -17,12 +17,13 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import java.time.Duration
 
-class DbConfigTest {
+class DataSourceFactoryHelperTest {
     companion object {
         private const val DEFAULT_JDBC_URL = "jdbc:postgresql://cluster-db:5432/cordacluster"
         private const val JDBC_DRIVER = "org.postgresql.Driver"
         private const val DB_POOL_MAX_SIZE = 10
     }
+
     private val dataSourceFactory =  mock<DataSourceFactory>()
     private val secretConfig = SmartConfigImpl(ConfigFactory.parseMap(mapOf(
         "secret" to "secret value"
@@ -136,83 +137,26 @@ class DbConfigTest {
     @Test
     fun `when username missing throw`() {
         assertThrows<DBConfigurationException> {
-            dataSourceFactory.createFromConfig(SmartConfigImpl(
+            dataSourceFactory.createFromConfig(
+                SmartConfigImpl(
                 ConfigFactory.parseString("${DatabaseConfig.DB_PASS}=pass"),
                 mock(),
-                mock()))
+                mock()
+                )
+            )
         }
     }
 
     @Test
     fun `when pass missing throw`() {
         assertThrows<DBConfigurationException> {
-            dataSourceFactory.createFromConfig(SmartConfigImpl(
+            dataSourceFactory.createFromConfig(
+                SmartConfigImpl(
                 ConfigFactory.parseString("${DatabaseConfig.DB_PASS}=user"),
                 mock(),
-                mock()))
+                mock()
+                )
+            )
         }
-    }
-
-    @Test
-    fun `when createDbConfig can be read`() {
-        val createdConfig = createDbConfig(
-            smartConfigFactory,
-            user,
-            pass,
-            driver,
-            url,
-            poolsize,
-            minPoolSize,
-            idleTimeout = 0,
-            maxLifetime = 0,
-            keepaliveTime = 0,
-            validationTimeout = 0,
-            key = "database-password")
-
-        assertThat(createdConfig.getString(DatabaseConfig.DB_USER)).isEqualTo(user)
-        assertThat(createdConfig.getConfig(DatabaseConfig.DB_PASS)).isEqualTo(secretConfig)
-        assertThat(createdConfig.getString(DatabaseConfig.DB_PASS + ".secret")).isEqualTo("secret value")
-        assertThat(createdConfig.getString(DatabaseConfig.JDBC_DRIVER)).isEqualTo(driver)
-        assertThat(createdConfig.getString(DatabaseConfig.JDBC_URL)).isEqualTo(url)
-        assertThat(createdConfig.getInt(DatabaseConfig.DB_POOL_MAX_SIZE)).isEqualTo(poolsize)
-        assertThat(createdConfig.getInt(DatabaseConfig.DB_POOL_MIN_SIZE)).isEqualTo(minPoolSize)
-    }
-
-    @Test
-    fun `when createDbConfig leave default driver empty`() {
-        val createdConfig = createDbConfig(
-            smartConfigFactory,
-            user,
-            pass,
-            jdbcUrl = url,
-            maxPoolSize = poolsize,
-            minPoolSize = null,
-            idleTimeout = 0,
-            maxLifetime = 0,
-            keepaliveTime = 0,
-            validationTimeout = 0,
-            key = "database-password"
-        )
-
-        assertThat(createdConfig.hasPath(DatabaseConfig.JDBC_DRIVER)).isFalse
-    }
-
-    @Test
-    fun `when createDbConfig leave default min pool size empty`() {
-        val createdConfig = createDbConfig(
-            smartConfigFactory,
-            user,
-            pass,
-            jdbcUrl = url,
-            maxPoolSize = poolsize,
-            minPoolSize = null,
-            jdbcDriver = driver,
-            idleTimeout = 0,
-            maxLifetime = 0,
-            keepaliveTime = 0,
-            validationTimeout = 0,
-            key = "database-password")
-
-        assertThat(createdConfig.hasPath(DatabaseConfig.DB_POOL_MIN_SIZE)).isFalse
     }
 }
