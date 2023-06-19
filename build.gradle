@@ -82,8 +82,7 @@ allprojects {
         cyclonedxBom {
             includeConfigs = ["runtimeClasspath"]
             skipProjects = [rootProject.name]
-            skipConfigs = ["integrationTestCompileOnlyDependenciesMetadata", "testCompileOnlyDependenciesMetadata", "compileOnlyDependenciesMetadata", "apiDependenciesMetadata"]
-            destination = file("build/reports/SBOM")
+            destination = file("${buildDir}/reports/SBOM")
             outputName = "${project.name}-corda-runtime-os-sbom"   
         }
     }
@@ -284,18 +283,18 @@ allprojects {
 tasks.register('createSBOMZip', Zip) {
     description = 'Create SBOM zip file for release'
     group = 'documentation'
-    String srcDestination = buildDir.toString() + "/archive/SBOM/"
+    String sourceDestFolder = buildDir.toString() + "/archive/SBOM/"
     archiveFileName = "${project.name}-SBOM-${project.version}.zip"
     subprojects.each {
         if (it.toString().contains(":applications:workers:release:")) {
             String srcPath = it.buildDir.toString() + "/reports/SBOM/"
             it.copy{
                 from srcPath
-                into srcDestination
+                into sourceDestFolder
             }
         }
     }
-    from srcDestination
+    from sourceDestFolder
     destinationDirectory = (file(buildDir.toString() + "/archive/corda-runtime-os-SBOM/"))
 }
 
