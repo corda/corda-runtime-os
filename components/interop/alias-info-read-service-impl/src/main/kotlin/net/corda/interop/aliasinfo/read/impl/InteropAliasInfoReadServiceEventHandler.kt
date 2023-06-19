@@ -1,7 +1,8 @@
-package net.corda.interop.aliasinfo.read
+package net.corda.interop.aliasinfo.read.impl
 
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.interop.aliasinfo.read.InteropAliasInfoReadService
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleEvent
@@ -34,6 +35,9 @@ class InteropAliasInfoReadServiceEventHandler(
             is StopEvent -> onStopEvent()
             is ConfigChangedEvent -> onConfigChangeEvent(event, coordinator)
             is RegistrationStatusChangeEvent -> onRegistrationStatusChangeEvent(event, coordinator)
+            else -> {
+                log.error("Unexpected event: '$event'")
+            }
         }
     }
 
@@ -41,7 +45,7 @@ class InteropAliasInfoReadServiceEventHandler(
         configurationReadService.start()
         registration?.close()
         registration = coordinator.followStatusChangesByName(setOf(
-            LifecycleCoordinatorName.forComponent<InteropAliasInfoReadService>()
+            LifecycleCoordinatorName.forComponent<ConfigurationReadService>()
         ))
     }
 
