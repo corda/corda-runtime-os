@@ -21,6 +21,7 @@ import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandle
 import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
 import net.corda.membership.lib.MemberInfoExtension.Companion.notaryDetails
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
+import net.corda.membership.lib.retrieveRegistrationStatusMessage
 import net.corda.membership.p2p.helpers.P2pRecordsFactory
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
@@ -128,9 +129,10 @@ internal class ApproveRegistrationHandler(
             val persistApproveMessage = p2pRecordsFactory.createAuthenticatedMessageRecord(
                 source = approvedBy,
                 destination = approvedMember,
-                content = SetOwnRegistrationStatus(
+                content = retrieveRegistrationStatusMessage(
+                    memberInfo.platformVersion,
                     registrationId,
-                    RegistrationStatus.APPROVED
+                    RegistrationStatus.APPROVED.name
                 ),
                 filter = MembershipStatusFilter.ACTIVE_OR_SUSPENDED
             )

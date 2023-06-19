@@ -7,8 +7,7 @@ import net.corda.data.membership.command.registration.mgm.DeclineRegistration
 import net.corda.data.membership.command.registration.mgm.StartRegistration
 import net.corda.data.membership.command.registration.mgm.VerifyMember
 import net.corda.data.membership.common.RegistrationRequestDetails
-import net.corda.data.membership.common.RegistrationStatus
-import net.corda.data.membership.p2p.SetOwnRegistrationStatus
+import net.corda.data.membership.common.v2.RegistrationStatus
 import net.corda.data.membership.state.RegistrationState
 import net.corda.data.p2p.app.MembershipStatusFilter.PENDING
 import net.corda.layeredpropertymap.toAvro
@@ -34,6 +33,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.SignedMemberInfo
 import net.corda.membership.lib.registration.RegistrationRequestHelpers.getPreAuthToken
+import net.corda.membership.lib.retrieveRegistrationStatusMessage
 import net.corda.membership.lib.toMap
 import net.corda.membership.p2p.helpers.P2pRecordsFactory
 import net.corda.membership.persistence.client.MembershipPersistenceClient
@@ -101,7 +101,9 @@ internal class StartRegistrationHandler(
 
             logger.info("Updating the status of the registration request.")
             membershipPersistenceClient.setRegistrationRequestStatus(
-                mgmHoldingId, registrationId, RegistrationStatus.STARTED_PROCESSING_BY_MGM
+                mgmHoldingId,
+                registrationId,
+                RegistrationStatus.STARTED_PROCESSING_BY_MGM
             ).execute().also {
                 require(it as? MembershipPersistenceResult.Failure == null) {
                     "Failed to update the status of the registration request. Reason: " +
@@ -193,9 +195,10 @@ internal class StartRegistrationHandler(
             val persistMemberStatusMessage = p2pRecordsFactory.createAuthenticatedMessageRecord(
                 source = mgmHoldingId.toAvro(),
                 destination = pendingMemberHoldingId.toAvro(),
-                content = SetOwnRegistrationStatus(
+                content = retrieveRegistrationStatusMessage(
+                    pendingMemberInfo.platformVersion,
                     registrationRequest.registrationId,
-                    RegistrationStatus.RECEIVED_BY_MGM,
+                    RegistrationStatus.RECEIVED_BY_MGM.name,
                 ),
                 minutesToWait = 5,
                 filter = PENDING

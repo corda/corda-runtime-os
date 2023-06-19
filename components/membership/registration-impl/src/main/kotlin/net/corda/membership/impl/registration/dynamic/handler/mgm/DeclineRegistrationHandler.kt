@@ -4,8 +4,7 @@ import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.data.membership.command.registration.RegistrationCommand
 import net.corda.data.membership.command.registration.mgm.CheckForPendingRegistration
 import net.corda.data.membership.command.registration.mgm.DeclineRegistration
-import net.corda.data.membership.common.RegistrationStatus
-import net.corda.data.membership.p2p.SetOwnRegistrationStatus
+import net.corda.data.membership.common.v2.RegistrationStatus
 import net.corda.data.membership.state.RegistrationState
 import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.libs.configuration.SmartConfig
@@ -13,9 +12,11 @@ import net.corda.membership.impl.registration.dynamic.handler.MemberTypeChecker
 import net.corda.membership.impl.registration.dynamic.handler.MissingRegistrationStateException
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandler
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandlerResult
+import net.corda.membership.lib.retrieveRegistrationStatusMessage
 import net.corda.membership.p2p.helpers.P2pRecordsFactory
 import net.corda.membership.p2p.helpers.P2pRecordsFactory.Companion.getTtlMinutes
 import net.corda.membership.persistence.client.MembershipPersistenceClient
+import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.Membership.REGISTRATION_COMMAND_TOPIC
 import net.corda.schema.configuration.MembershipConfig.TtlsConfig.DECLINE_REGISTRATION
@@ -30,6 +31,7 @@ internal class DeclineRegistrationHandler(
     cordaAvroSerializationFactory: CordaAvroSerializationFactory,
     private val memberTypeChecker: MemberTypeChecker,
     private val membershipConfig: SmartConfig,
+    private val groupReaderProvider: MembershipGroupReaderProvider,
     private val p2pRecordsFactory: P2pRecordsFactory = P2pRecordsFactory(
         cordaAvroSerializationFactory,
         clock,
@@ -54,6 +56,8 @@ internal class DeclineRegistrationHandler(
         if (!memberTypeChecker.isMgm(declinedBy)) {
             logger.warn("Trying to decline registration request: '$registrationId' by ${declinedBy.x500Name} which is not an MGM")
         }
+        val memberInfo = groupReaderProvider.getGroupReader(declinedBy.toCorda())
+            .lookup(declinedMember.toCorda().x500Name, MembershipStatusFilter.PENDING)
         logger.info("Declining registration request: '$registrationId' for ${declinedMember.x500Name} - ${command.reason}")
         val registrationRequestDeclinedCommand = membershipPersistenceClient.setRegistrationRequestStatus(
             viewOwningIdentity = declinedBy.toCorda(),
@@ -67,9 +71,10 @@ internal class DeclineRegistrationHandler(
             // Setting TTL to avoid resending the message in case the decline reason is that the
             // P2P channel could not be established.
             minutesToWait = membershipConfig.getTtlMinutes(DECLINE_REGISTRATION),
-            content = SetOwnRegistrationStatus(
+            content = retrieveRegistrationStatusMessage(
+                memberInfo!!.platformVersion,
                 registrationId,
-                RegistrationStatus.DECLINED
+                RegistrationStatus.DECLINED.name,
             ),
             filter = MembershipStatusFilter.PENDING,
         )
