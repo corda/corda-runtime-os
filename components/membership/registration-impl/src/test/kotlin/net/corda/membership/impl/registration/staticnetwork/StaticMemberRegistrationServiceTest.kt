@@ -306,10 +306,10 @@ class StaticMemberRegistrationServiceTest {
     }
     private val serializedGroupParameters = "group-params".toByteArray()
     private val mockSignedGroupParameters: SignedGroupParameters = mock {
-        on { bytes } doReturn serializedGroupParameters
+        on { groupParameters } doReturn serializedGroupParameters
     }
     private val mockUnsignedGroupParameters: UnsignedGroupParameters = mock {
-        on { bytes } doReturn serializedGroupParameters
+        on { groupParameters } doReturn serializedGroupParameters
     }
     private val groupParametersFactory: GroupParametersFactory = mock {
         on { create(any<AvroGroupParameters>()) } doReturn mockSignedGroupParameters
