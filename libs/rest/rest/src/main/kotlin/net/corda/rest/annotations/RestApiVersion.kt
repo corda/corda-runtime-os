@@ -9,6 +9,6 @@ enum class RestApiVersion(val versionPath: String, val parentVersion: RestApiVer
     C5_0("v1", null),
     C5_1("v5_1", C5_0),
 
-    MIN_SUPPORTED(C5_0.versionPath, C5_0.parentVersion),
-    CURRENT(C5_1.versionPath, C5_1.parentVersion)
+    // Whenever new version is added, please re-visit `HttpResource.kt` and `RestEndpoint.kt` to change default
+    // version aliases.
 }

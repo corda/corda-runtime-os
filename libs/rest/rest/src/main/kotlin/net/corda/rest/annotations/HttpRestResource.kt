@@ -1,5 +1,8 @@
 package net.corda.rest.annotations
 
+import net.corda.rest.annotations.RestApiVersion.C5_0 as MIN_SUPPORTED
+import net.corda.rest.annotations.RestApiVersion.C5_1 as CURRENT
+
 /**
  * Marks an interface extending `RestResource` to be exposed as an HTTP resource.
  *
@@ -16,6 +19,6 @@ annotation class HttpRestResource(
     val name: String = "",
     val description: String = "",
     val path: String = "",
-    val minVersion: RestApiVersion = RestApiVersion.MIN_SUPPORTED,
-    val maxVersion: RestApiVersion = RestApiVersion.CURRENT
+    val minVersion: RestApiVersion = MIN_SUPPORTED,
+    val maxVersion: RestApiVersion = CURRENT
 )

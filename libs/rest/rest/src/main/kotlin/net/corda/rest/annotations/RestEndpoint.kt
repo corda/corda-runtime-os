@@ -4,6 +4,9 @@ import net.corda.rest.ResponseCode
 import net.corda.rest.exception.ResourceNotFoundException
 import net.corda.rest.response.ResponseEntity
 
+import net.corda.rest.annotations.RestApiVersion.C5_0 as MIN_SUPPORTED
+import net.corda.rest.annotations.RestApiVersion.C5_1 as CURRENT
+
 /**
  * Annotation that is meant to be applied on annotations to flag the fact that they are meant for exposing
  * an HTTP Endpoint.
@@ -39,8 +42,8 @@ annotation class HttpPOST(
     val title: String = "",
     val description: String = "",
     val responseDescription: String = "",
-    val minVersion: RestApiVersion = RestApiVersion.MIN_SUPPORTED,
-    val maxVersion: RestApiVersion = RestApiVersion.CURRENT
+    val minVersion: RestApiVersion = MIN_SUPPORTED,
+    val maxVersion: RestApiVersion = CURRENT
 )
 
 /**
@@ -71,8 +74,8 @@ annotation class HttpPUT(
     val title: String = "",
     val description: String = "",
     val responseDescription: String = "",
-    val minVersion: RestApiVersion = RestApiVersion.MIN_SUPPORTED,
-    val maxVersion: RestApiVersion = RestApiVersion.CURRENT
+    val minVersion: RestApiVersion = MIN_SUPPORTED,
+    val maxVersion: RestApiVersion = CURRENT
 )
 
 /**
@@ -100,8 +103,8 @@ annotation class HttpGET(
     val title: String = "",
     val description: String = "",
     val responseDescription: String = "",
-    val minVersion: RestApiVersion = RestApiVersion.MIN_SUPPORTED,
-    val maxVersion: RestApiVersion = RestApiVersion.CURRENT
+    val minVersion: RestApiVersion = MIN_SUPPORTED,
+    val maxVersion: RestApiVersion = CURRENT
 )
 
 /**
@@ -130,8 +133,8 @@ annotation class HttpDELETE(
     val title: String = "",
     val description: String = "",
     val responseDescription: String = "",
-    val minVersion: RestApiVersion = RestApiVersion.MIN_SUPPORTED,
-    val maxVersion: RestApiVersion = RestApiVersion.CURRENT
+    val minVersion: RestApiVersion = MIN_SUPPORTED,
+    val maxVersion: RestApiVersion = CURRENT
 )
 
 /**
@@ -154,8 +157,8 @@ annotation class HttpWS(
     val title: String = "",
     val description: String = "",
     val responseDescription: String = "",
-    val minVersion: RestApiVersion = RestApiVersion.MIN_SUPPORTED,
-    val maxVersion: RestApiVersion = RestApiVersion.CURRENT
+    val minVersion: RestApiVersion = MIN_SUPPORTED,
+    val maxVersion: RestApiVersion = CURRENT
 )
 
 fun Annotation.isRestEndpointAnnotation(): Boolean {
