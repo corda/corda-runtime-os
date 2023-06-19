@@ -4,6 +4,7 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.interop.aliasinfo.write.InteropAliasInfoWriteService
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
+import net.corda.v5.base.types.MemberX500Name
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -27,11 +28,18 @@ class InteropAliasInfoWriteServiceImpl @Activate constructor(
     )
 
     private val coordinatorName = LifecycleCoordinatorName.forComponent<InteropAliasInfoWriteService>()
-
     private val coordinator = coordinatorFactory.createCoordinator(coordinatorName, lifecycleEventHandler)
 
     override val isRunning: Boolean
         get() = coordinator.isRunning
+
+    override fun addInteropIdentity(
+        holdingIdentityShortHash: String,
+        interopGroupId: String,
+        newIdentityName: MemberX500Name
+    ) {
+        TODO("Not yet implemented")
+    }
 
     override fun start() {
         // TODO: Use debug rather than info
