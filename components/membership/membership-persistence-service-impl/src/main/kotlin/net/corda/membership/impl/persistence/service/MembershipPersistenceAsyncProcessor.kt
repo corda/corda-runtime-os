@@ -21,6 +21,11 @@ internal class MembershipPersistenceAsyncProcessor(
         state: MembershipPersistenceAsyncRequestState?,
         event: Record<String, MembershipPersistenceAsyncRequest>,
     ): StateAndEventProcessor.Response<MembershipPersistenceAsyncRequestState> {
+        logger.info(
+            "Received membership persistence request: " +
+                "${event.value?.request?.request?.javaClass?.simpleName}" +
+                " id: ${event.value?.request?.context?.requestId}"
+        )
         val numberOfRetriesSoFar = state?.numberOfRetriesSoFar ?: 0
         val request = event.value
         if (request == null) {
@@ -60,6 +65,7 @@ internal class MembershipPersistenceAsyncProcessor(
                 request,
             )
         } catch (e: Exception) {
+            logger.info("Request id ${request.request?.context?.requestId} failed 4", e)
             error(event.key, e)
         }
     }
@@ -70,6 +76,7 @@ internal class MembershipPersistenceAsyncProcessor(
         numberOfRetriesSoFar: Int,
         request: MembershipPersistenceAsyncRequest
     ): StateAndEventProcessor.Response<MembershipPersistenceAsyncRequestState> {
+        logger.info("Request id ${request.request?.context?.requestId} failed, numberOfRetriesSoFar = $numberOfRetriesSoFar", e)
         return if (numberOfRetriesSoFar < MAX_RETRIES) {
             logger.warn("Got error while trying to execute $key. Will retry again.", e)
             StateAndEventProcessor.Response(

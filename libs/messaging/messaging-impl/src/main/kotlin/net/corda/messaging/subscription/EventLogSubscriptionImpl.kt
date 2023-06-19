@@ -234,7 +234,14 @@ internal class EventLogSubscriptionImpl<K : Any, V : Any>(
             producer.beginTransaction()
             val outputs = processorMeter.recordCallable { processor.onNext(cordaConsumerRecords.map { it.toEventLogRecord() })
                 .toCordaProducerRecords() }!!
+            val logMe = outputs.any { it.topic == "membership.db.async.ops" }
+            if (logMe) {
+                log.info("Sending ${outputs.map { it.topic to it.key }}")
+            }
             producer.sendRecords(outputs)
+            if (logMe) {
+                log.info("Sent ${outputs.map { it.topic to it.key }}")
+            }
             if(deadLetterRecords.isNotEmpty()) {
                 producer.sendRecords(deadLetterRecords.map {
                     CordaProducerRecord(

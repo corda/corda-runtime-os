@@ -55,6 +55,8 @@ internal class MemberOpsAsyncProcessor(
         }
             .flatMap {
                 handleRequest(it)
+            }.also { ret ->
+                logger.info("For onNext of ${events.map { it.key }} returning ${ret.map { it.topic to it.key }}")
             }
     }
 
