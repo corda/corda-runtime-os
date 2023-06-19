@@ -252,7 +252,8 @@ class ResourceToOpenApiSpecMapperTest {
             path = "plusOne",
             parameters = emptyList(),
             responseBody = ResponseBody(description = "", type = Void.TYPE, parameterizedTypes = emptyList()),
-            invocationMethod = InvocationMethod(method = TestHealthCheckAPI::voidResponse.javaMethod!!, instance = TestHealthCheckAPIImpl()),
+            invocationMethod = InvocationMethod(method = TestHealthCheckAPI::voidResponse.javaMethod!!,
+                instance = TestHealthCheckAPIImpl()),
             apiVersions = setOf(RestApiVersion.C5_0)
         )
 
@@ -273,7 +274,8 @@ class ResourceToOpenApiSpecMapperTest {
             path = "plusOne",
             parameters = emptyList(),
             responseBody = ResponseBody(description = "", type = Void::class.java, parameterizedTypes = emptyList()),
-            invocationMethod = InvocationMethod(method = TestHealthCheckAPI::voidResponse.javaMethod!!, instance = TestHealthCheckAPIImpl()),
+            invocationMethod = InvocationMethod(method = TestHealthCheckAPI::voidResponse.javaMethod!!,
+                instance = TestHealthCheckAPIImpl()),
             apiVersions = setOf(RestApiVersion.C5_0)
         )
 
@@ -294,7 +296,8 @@ class ResourceToOpenApiSpecMapperTest {
             path = "plusOne",
             parameters = emptyList(),
             responseBody = ResponseBody(description = "", type = Void::class.java, parameterizedTypes = emptyList()),
-            invocationMethod = InvocationMethod(method = TestHealthCheckAPI::voidResponse.javaMethod!!, instance = TestHealthCheckAPIImpl()),
+            invocationMethod = InvocationMethod(method = TestHealthCheckAPI::voidResponse.javaMethod!!,
+                instance = TestHealthCheckAPIImpl()),
             apiVersions = setOf(RestApiVersion.C5_0)
         )
 
