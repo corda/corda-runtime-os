@@ -3,7 +3,7 @@ plugins {
     id 'corda.common-library'
 }
 
-description 'Interop alias info read service implementation'
+description 'Alias info cache service implementation'
 
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
@@ -23,10 +23,8 @@ dependencies {
 
     implementation "com.typesafe:config:$typeSafeConfigVersion"
 
-    implementation project(":components:interop:alias-info-read-service")
-    runtimeOnly project(":components:interop:alias-info-read-service-impl")
-
     implementation project(":components:interop:alias-info-cache-service")
+
     runtimeOnly project(":components:interop:alias-info-cache-service-impl")
 
     implementation project(":libs:configuration:configuration-core")

@@ -1,9 +1,8 @@
-package net.corda.interop.aliasinfo.read.impl
+package net.corda.interop.aliasinfo.cache.impl
 
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.data.interop.InteropAliasIdentity
 import net.corda.interop.aliasinfo.cache.AliasInfoCacheService
-import net.corda.interop.aliasinfo.read.InteropAliasInfoReadService
-import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import org.osgi.service.component.annotations.Activate
@@ -13,42 +12,41 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 
-@Component(service = [InteropAliasInfoReadService::class])
-class InteropAliasInfoReadServiceImpl @Activate constructor(
+@Component(service = [AliasInfoCacheService::class])
+class AliasInfoCacheServiceImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = ConfigurationReadService::class)
     private val configurationReadService: ConfigurationReadService,
-    @Reference(service = AliasInfoCacheService::class)
-    private val aliasInfoCacheService: AliasInfoCacheService
-) : InteropAliasInfoReadService {
+) : AliasInfoCacheService {
     companion object {
         val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
-    private val lifecycleEventHandler = InteropAliasInfoReadServiceEventHandler(
-        configurationReadService
+    private val lifecycleEventHandler = AliasInfoCacheServiceEventHandler(
+        configurationReadService,
     )
 
-    private val dependentComponents = DependentComponents.of(
-        ::configurationReadService,
-        ::aliasInfoCacheService
-    )
+    private val coordinatorName = LifecycleCoordinatorName.forComponent<AliasInfoCacheService>()
+    private val coordinator = coordinatorFactory.createCoordinator(coordinatorName, lifecycleEventHandler)
 
-    private val coordinatorName = LifecycleCoordinatorName.forComponent<InteropAliasInfoReadService>()
-    private val coordinator = coordinatorFactory.createCoordinator(coordinatorName, dependentComponents, lifecycleEventHandler)
+    override fun getAliasIdentities(key: String): List<InteropAliasIdentity> {
+        TODO("Not yet implemented")
+    }
+
+    override fun putAliasIdentity(key: String, value: InteropAliasIdentity) {
+        TODO("Not yet implemented")
+    }
 
     override val isRunning: Boolean
         get() = coordinator.isRunning
 
     override fun start() {
-        // TODO: Use debug rather than info
         log.info("Component starting")
         coordinator.start()
     }
 
     override fun stop() {
-        // TODO: Use debug rather than info
         log.info("Component stopping")
         coordinator.stop()
     }

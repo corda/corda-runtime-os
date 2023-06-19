@@ -461,6 +461,8 @@ include 'components:interop:alias-info-read-service'
 include 'components:interop:alias-info-read-service-impl'
 include 'components:interop:alias-info-write-service'
 include 'components:interop:alias-info-write-service-impl'
+include 'components:interop:alias-info-cache-service'
+include 'components:interop:alias-info-cache-service-impl'
 
 // The following logic dictates if we use the composite build gradle functionality,
 // If this evaluates to true local source code will be used in place of binary dependencies.
