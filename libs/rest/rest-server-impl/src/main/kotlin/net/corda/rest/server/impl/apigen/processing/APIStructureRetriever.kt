@@ -31,6 +31,7 @@ import net.corda.rest.tools.responseDescription
 import net.corda.utilities.debug
 import net.corda.utilities.trace
 import java.lang.reflect.Method
+import java.util.EnumSet
 import kotlin.reflect.KParameter
 import kotlin.reflect.full.createInstance
 import kotlin.reflect.jvm.kotlinFunction
@@ -88,7 +89,7 @@ internal class APIStructureRetriever(private val opsImplList: List<PluggableRest
     }
 
     private fun retrieveApiVersionsSet(minVersion: RestApiVersion, maxVersion: RestApiVersion): Set<RestApiVersion> {
-        val result = mutableSetOf<RestApiVersion>()
+        val result = EnumSet.noneOf(RestApiVersion::class.java)
 
         var current: RestApiVersion? = maxVersion
         while (current != null) {
