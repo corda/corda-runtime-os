@@ -13,7 +13,7 @@ To use the fake CA Tool:
 
 ```bash
 cd $RUNTIME_OS
-java -jar ./applications/tools/p2p-test/fake-ca/build/bin/corda-fake-ca-5.0.0.0-SNAPSHOT.jar -m /tmp/ca csr $WORK_DIR/request.csr
+java -jar ./applications/tools/p2p-test/fake-ca/build/bin/corda-fake-ca-*.jar -m /tmp/ca csr $WORK_DIR/request.csr
 cd $WORK_DIR
 ````
 This should output the location of the signed certificate. For example, `Wrote certificate to /tmp/ca/request/certificate.pem`

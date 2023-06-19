@@ -97,7 +97,7 @@ To create a fake CA under `/tmp/ca` (note that this will create the CA in a temp
 ```bash
 cd "$RUNTIME_OS"
 ./gradlew :applications:tools:p2p-test:fake-ca:clean :applications:tools:p2p-test:fake-ca:appJar
-java -jar ./applications/tools/p2p-test/fake-ca/build/bin/corda-fake-ca-5.0.0.0-SNAPSHOT.jar -m /tmp/ca -a RSA -s 3072 ca
+java -jar ./applications/tools/p2p-test/fake-ca/build/bin/corda-fake-ca-*.jar -m /tmp/ca -a RSA -s 3072 ca
 ```
 </details>
 <details>
@@ -106,7 +106,7 @@ java -jar ./applications/tools/p2p-test/fake-ca/build/bin/corda-fake-ca-5.0.0.0-
 ```PowerShell
 cd $RUNTIME_OS
 ./gradlew :applications:tools:p2p-test:fake-ca:clean :applications:tools:p2p-test:fake-ca:appJar
-java -jar ./applications/tools/p2p-test/fake-ca/build/bin/corda-fake-ca-5.0.0.0-SNAPSHOT.jar -m $env:TEMP\tmp\ca -a RSA -s 3072 ca
+java -jar ./applications/tools/p2p-test/fake-ca/build/bin/corda-fake-ca-*.jar -m $env:TEMP\tmp\ca -a RSA -s 3072 ca
 ```
 </details>
 
@@ -350,7 +350,7 @@ At this point, if you are using a real CA, you should take this CSR to the CA in
 
 ```bash
 cd "$RUNTIME_OS"
-java -jar ./applications/tools/p2p-test/fake-ca/build/bin/corda-fake-ca-5.0.0.0-SNAPSHOT.jar -m /tmp/ca csr "$WORK_DIR"/request1.csr
+java -jar ./applications/tools/p2p-test/fake-ca/build/bin/corda-fake-ca-*.jar -m /tmp/ca csr "$WORK_DIR"/request1.csr
 cd "$WORK_DIR"
 ````
 </details>
@@ -359,7 +359,7 @@ cd "$WORK_DIR"
 
 ```PowerShell
 cd $RUNTIME_OS
-java -jar ./applications/tools/p2p-test/fake-ca/build/bin/corda-fake-ca-5.0.0.0-SNAPSHOT.jar -m $env:TEMP\tmp\ca csr $WORK_DIR/request1.csr
+java -jar ./applications/tools/p2p-test/fake-ca/build/bin/corda-fake-ca-*.jar -m $env:TEMP\tmp\ca csr $WORK_DIR/request1.csr
 cd $WORK_DIR
 ````
 </details>

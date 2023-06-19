@@ -381,7 +381,7 @@ If using the fake CA tool, use that tool to sign the CSR and create a certificat
 
 ```bash
 cd $RUNTIME_OS
-java -jar ./applications/tools/p2p-test/fake-ca/build/bin/corda-fake-ca-5.0.0.0-SNAPSHOT.jar -m /tmp/ca csr $WORK_DIR/request2.csr
+java -jar ./applications/tools/p2p-test/fake-ca/build/bin/corda-fake-ca-*.jar -m /tmp/ca csr $WORK_DIR/request2.csr
 cd $WORK_DIR
 ````
 </details>
@@ -390,7 +390,7 @@ cd $WORK_DIR
 
 ```PowerShell
 cd $RUNTIME_OS
-java -jar ./applications/tools/p2p-test/fake-ca/build/bin/corda-fake-ca-5.0.0.0-SNAPSHOT.jar -m $env:TEMP\tmp\ca csr $WORK_DIR/request2.csr
+java -jar ./applications/tools/p2p-test/fake-ca/build/bin/corda-fake-ca-*.jar -m $env:TEMP\tmp\ca csr $WORK_DIR/request2.csr
 cd $WORK_DIR
 ````
 </details>
