@@ -49,12 +49,12 @@ object CordaMetrics {
         object MessageProcessorTime : Metric<Timer>("messaging.processor.time", CordaMetrics::timer)
 
         /**
-         * Time it took to execute a message pattern processor
+         * Count of output messages sent.
          */
         object MessageProcessorSendCount: Metric<Counter>("messaging.processor.send.count", Metrics::counter)
 
         /**
-         * Time it took to execute a message pattern processor
+         * Time it took to send a batch of output events.
          */
         object MessageProcessorBatchSendTime : Metric<Timer>("messaging.processor.batch.send.time", CordaMetrics::timer)
 
