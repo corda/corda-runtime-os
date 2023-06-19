@@ -50,23 +50,20 @@ internal class MemberOpsAsyncProcessor(
     override fun onNext(
         events: List<Record<String, MembershipAsyncRequest>>,
     ): List<Record<*, *>> {
-        logger.info("Looking at ${events.map { it.topic to it.key }}")
-        try {
-            return events.mapNotNull {
-                it.value
-            }
-                .flatMap {
-                    handleRequest(it)
-                }.also { ret ->
-                    logger.info("For onNext of ${events.map { it.key }} returning ${ret.map { it.topic to it.key }}")
-                }.also {
-                    logger.info("Finish to look at ${events.map { it.topic to it.key }}")
-                }
-        } catch (e: Throwable) {
-            logger.info("Failed to look at ${events.map { it.topic to it.key }}")
-            logger.info("Failed to handle requests", e)
-            return emptyList()
+        val firstEvents = events.take(5)
+        val lastEvents = if (events.size != firstEvents.size) {
+            events.takeLast(events.size - 5)
+        } else {
+            emptyList()
         }
+        return firstEvents.mapNotNull {
+            it.value
+        }
+            .flatMap {
+                handleRequest(it)
+            }.also { ret ->
+                logger.info("For onNext of ${events.map { it.key }} returning ${ret.map { it.topic to it.key }}")
+            } + lastEvents
     }
 
     private fun handleRequest(request: MembershipAsyncRequest): Collection<Record<*, *>> {
