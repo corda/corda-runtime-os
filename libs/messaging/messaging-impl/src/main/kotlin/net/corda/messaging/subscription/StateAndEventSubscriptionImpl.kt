@@ -6,9 +6,7 @@ import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import net.corda.avro.serialization.CordaAvroSerializer
@@ -128,20 +126,15 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
 //    }
 
     private fun CoroutineScope.messageHeartbeat() = launch {
-        fun processHeartbeat(heartBeat: Flow<Unit>) {
-            val emptyResponse = StateAndEventProcessor.Response<S>(null, emptyList(), false)
-            heartBeat.onEach {
-                sendingChannel.send(StateAndEventData(emptyResponse, null))
-            }
-        }
-
-        val heartBeat = flow {
+        val emptyResponse = StateAndEventProcessor.Response<S>(null, emptyList(), false)
+        flow {
             while (true) {
-                delay(50)
+                delay(500)
                 emit(Unit)
             }
+        }.collect {
+            sendingChannel.send(StateAndEventData(emptyResponse, null))
         }
-        processHeartbeat(heartBeat)
     }
 
     private fun CoroutineScope.messageProcessor(id: Int, events: ReceiveChannel<CordaConsumerRecord<K, E>>) = launch {
@@ -193,15 +186,16 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                 outputRecords.add(Record(stateTopic, msg.event.key, updatedState))
 
                 msgsInCommit += outputRecords.size
-                log.info("Sending ${outputRecords}")
+                log.info("Sending $outputRecords")
                 producer.sendRecords(outputRecords.toCordaProducerRecords())
                 eventsSinceCommit.add(msg.event)
                 updatedStates.computeIfAbsent(msg.event.partition) { mutableMapOf() }[msg.event.key] = updatedState
             }
 
-            // TODO: must introduce a ticker here to ensure we commit also when no events are flowing through.
-            if(System.nanoTime() - beginTx > 1_000_000 * 50) commitTx()
+            if(txStarted && System.nanoTime() - beginTx > 1_000_000 * 50) commitTx()
         }
+
+        // commit before exit.
         if(txStarted) commitTx()
     }
     // ...
