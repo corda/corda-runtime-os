@@ -5,6 +5,7 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.messaging.config.ResolvedSubscriptionConfig
 import org.slf4j.Logger
 import java.lang.IllegalStateException
+import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.thread
 import kotlin.concurrent.withLock
@@ -42,6 +43,9 @@ class ThreadLooper(
         )
     },
 ) : LifecycleStatusUpdater {
+    private companion object {
+        val index = AtomicInteger(0)
+    }
     @Volatile
     private var _isRunning = true
 
@@ -102,7 +106,7 @@ class ThreadLooper(
                 _loopStopped = false
                 lifecycleCoordinator.start()
                 thread = threadFactory(
-                    "$threadNamePrefix ${config.group}-${config.topic}",
+                    "$threadNamePrefix ${config.group}-${config.topic}-${index.incrementAndGet()}",
                     ::runConsumeLoop,
                 )
             }
