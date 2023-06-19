@@ -22,7 +22,7 @@ import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.crypto.wire.CryptoSigningKey
-import net.corda.data.membership.common.RegistrationStatus
+import net.corda.data.membership.common.v2.RegistrationStatus
 import net.corda.data.membership.p2p.MembershipRegistrationRequest
 import net.corda.data.p2p.app.AppMessage
 import net.corda.data.p2p.app.OutboundUnauthenticatedMessage

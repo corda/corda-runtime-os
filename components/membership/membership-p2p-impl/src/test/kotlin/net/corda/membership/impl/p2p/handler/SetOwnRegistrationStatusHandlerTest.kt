@@ -3,8 +3,8 @@ package net.corda.membership.impl.p2p.handler
 import net.corda.data.identity.HoldingIdentity
 import net.corda.data.membership.command.registration.RegistrationCommand
 import net.corda.data.membership.command.registration.member.PersistMemberRegistrationState
-import net.corda.data.membership.common.RegistrationStatus
-import net.corda.data.membership.p2p.SetOwnRegistrationStatus
+import net.corda.data.membership.common.v2.RegistrationStatus
+import net.corda.data.membership.p2p.v2.SetOwnRegistrationStatus
 import net.corda.data.p2p.app.AuthenticatedMessageHeader
 import net.corda.schema.Schemas.Membership.REGISTRATION_COMMAND_TOPIC
 import net.corda.schema.registry.AvroSchemaRegistry

@@ -1,6 +1,6 @@
 package net.corda.membership.lib.registration
 
-import net.corda.data.membership.common.RegistrationStatus
+import net.corda.data.membership.common.v2.RegistrationStatus
 import net.corda.membership.lib.registration.RegistrationStatusExt.canMoveToStatus
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test

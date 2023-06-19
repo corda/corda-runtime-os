@@ -13,7 +13,7 @@ import net.corda.data.membership.command.registration.mgm.DeclineRegistration
 import net.corda.data.membership.command.registration.mgm.StartRegistration
 import net.corda.data.membership.command.registration.mgm.VerifyMember
 import net.corda.data.membership.common.RegistrationRequestDetails
-import net.corda.data.membership.common.RegistrationStatus
+import net.corda.data.membership.common.v2.RegistrationStatus
 import net.corda.data.membership.preauth.PreAuthToken
 import net.corda.data.membership.state.RegistrationState
 import net.corda.data.p2p.app.AppMessage
@@ -142,6 +142,7 @@ class StartRegistrationHandlerTest {
         on { mgmProvidedContext } doReturn memberMgmContext
         on { status } doReturn MEMBER_STATUS_PENDING
         on { serial } doReturn 1L
+        on { platformVersion } doReturn 50100
     }
     private val activeMemberInfo: MemberInfo = mock {
         on { name } doReturn aliceX500Name

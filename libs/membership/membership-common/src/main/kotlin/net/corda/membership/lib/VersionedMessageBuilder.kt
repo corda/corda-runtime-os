@@ -2,18 +2,17 @@ package net.corda.membership.lib
 
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.p2p.SetOwnRegistrationStatus
-import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.apache.avro.specific.SpecificRecordBase
 
-private val regexForV50000 = "5+0*".toRegex()
-private val regexForV50100 = "5+1*".toRegex()
+private val regexForV50000 = "500[0-9][0-9]$".toRegex()
+private val regexForV50100 = "501[0-9][0-9]$".toRegex()
 
 fun retrieveRegistrationStatusMessage(platformVersion: Int, registrationId: String, status: String): SpecificRecordBase {
     val platformVersionString = platformVersion.toString()
     return when {
         regexForV50000.matches(platformVersionString) -> SetOwnRegistrationStatus(registrationId, retrieveV1Status(status))
         regexForV50100.matches(platformVersionString) -> SetOwnRegistrationStatusV2(registrationId, retrieveV2Status(status))
-        else -> throw CordaRuntimeException("Unknown platform version: $platformVersion")
+        else -> throw IllegalArgumentException("Unknown platform version: $platformVersion")
     }
 }
 

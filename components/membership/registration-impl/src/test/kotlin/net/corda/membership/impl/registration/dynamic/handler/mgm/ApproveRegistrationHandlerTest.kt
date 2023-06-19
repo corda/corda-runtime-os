@@ -9,8 +9,8 @@ import net.corda.data.membership.command.registration.RegistrationCommand
 import net.corda.data.membership.command.registration.mgm.ApproveRegistration
 import net.corda.data.membership.command.registration.mgm.CheckForPendingRegistration
 import net.corda.data.membership.command.registration.mgm.DeclineRegistration
-import net.corda.data.membership.common.RegistrationStatus
-import net.corda.data.membership.p2p.SetOwnRegistrationStatus
+import net.corda.data.membership.common.v2.RegistrationStatus
+import net.corda.data.membership.p2p.v2.SetOwnRegistrationStatus
 import net.corda.data.membership.state.RegistrationState
 import net.corda.data.p2p.app.AppMessage
 import net.corda.data.p2p.app.MembershipStatusFilter

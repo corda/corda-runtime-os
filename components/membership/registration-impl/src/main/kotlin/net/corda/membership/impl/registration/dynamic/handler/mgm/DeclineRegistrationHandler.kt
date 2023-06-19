@@ -21,6 +21,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.Membership.REGISTRATION_COMMAND_TOPIC
 import net.corda.schema.configuration.MembershipConfig.TtlsConfig.DECLINE_REGISTRATION
 import net.corda.utilities.time.Clock
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.virtualnode.toCorda
 import org.slf4j.LoggerFactory
 
@@ -58,6 +59,8 @@ internal class DeclineRegistrationHandler(
         }
         val memberInfo = groupReaderProvider.getGroupReader(declinedBy.toCorda())
             .lookup(declinedMember.toCorda().x500Name, MembershipStatusFilter.PENDING)
+            ?: throw CordaRuntimeException("Failed to retrieve pending member's info " +
+                    "for member with holding ID'${declinedMember.toCorda().shortHash}'.")
         logger.info("Declining registration request: '$registrationId' for ${declinedMember.x500Name} - ${command.reason}")
         val registrationRequestDeclinedCommand = membershipPersistenceClient.setRegistrationRequestStatus(
             viewOwningIdentity = declinedBy.toCorda(),
@@ -72,7 +75,7 @@ internal class DeclineRegistrationHandler(
             // P2P channel could not be established.
             minutesToWait = membershipConfig.getTtlMinutes(DECLINE_REGISTRATION),
             content = retrieveRegistrationStatusMessage(
-                memberInfo!!.platformVersion,
+                memberInfo.platformVersion,
                 registrationId,
                 RegistrationStatus.DECLINED.name,
             ),

@@ -4,7 +4,7 @@ import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePairList
 import net.corda.data.identity.HoldingIdentity
-import net.corda.data.membership.common.RegistrationStatus
+import net.corda.data.membership.common.v2.RegistrationStatus
 import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.data.membership.db.request.query.QueryRegistrationRequests
 import net.corda.db.connection.manager.DbConnectionManager

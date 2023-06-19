@@ -5,7 +5,7 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.membership.command.registration.RegistrationCommand
 import net.corda.data.membership.command.registration.mgm.DeclineRegistration
 import net.corda.data.membership.common.RegistrationRequestDetails
-import net.corda.data.membership.common.RegistrationStatus.PENDING_MEMBER_VERIFICATION
+import net.corda.data.membership.common.v2.RegistrationStatus.PENDING_MEMBER_VERIFICATION
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory

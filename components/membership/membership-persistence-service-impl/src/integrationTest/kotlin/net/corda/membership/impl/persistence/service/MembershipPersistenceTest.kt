@@ -19,7 +19,7 @@ import net.corda.data.membership.SignedData
 import net.corda.data.membership.StaticNetworkInfo
 import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.ApprovalRuleType
-import net.corda.data.membership.common.RegistrationStatus
+import net.corda.data.membership.common.v2.RegistrationStatus
 import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.connection.manager.VirtualNodeDbType

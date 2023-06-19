@@ -16,7 +16,7 @@ import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.data.membership.PersistentMemberInfo
-import net.corda.data.membership.common.RegistrationStatus
+import net.corda.data.membership.common.v2.RegistrationStatus
 import net.corda.data.membership.event.MembershipEvent
 import net.corda.data.membership.event.registration.MgmOnboarded
 import net.corda.layeredpropertymap.testkit.LayeredPropertyMapMocks

@@ -1,11 +1,10 @@
-// need to adjust it after approach is working
-/*package net.corda.membership.impl.registration.dynamic.handler.mgm
+package net.corda.membership.impl.registration.dynamic.handler.mgm
 
 import net.corda.data.membership.command.registration.RegistrationCommand
 import net.corda.data.membership.command.registration.mgm.CheckForPendingRegistration
 import net.corda.data.membership.command.registration.mgm.DeclineRegistration
-import net.corda.data.membership.common.RegistrationStatus
-import net.corda.data.membership.p2p.SetOwnRegistrationStatus
+import net.corda.data.membership.common.v2.RegistrationStatus
+import net.corda.data.membership.p2p.v2.SetOwnRegistrationStatus
 import net.corda.data.membership.state.RegistrationState
 import net.corda.libs.configuration.SmartConfig
 import net.corda.membership.impl.registration.dynamic.handler.MissingRegistrationStateException
@@ -15,7 +14,9 @@ import net.corda.messaging.api.records.Record
 import net.corda.data.p2p.app.AppMessage
 import net.corda.membership.persistence.client.MembershipPersistenceOperation
 import net.corda.data.p2p.app.MembershipStatusFilter
-import net.corda.schema.Schemas
+import net.corda.membership.impl.registration.dynamic.handler.TestUtils.mockMemberInfo
+import net.corda.membership.read.MembershipGroupReader
+import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.schema.Schemas.Membership.REGISTRATION_COMMAND_TOPIC
 import net.corda.schema.configuration.MembershipConfig.TtlsConfig.DECLINE_REGISTRATION
 import net.corda.schema.configuration.MembershipConfig.TtlsConfig.TTLS
@@ -31,6 +32,7 @@ import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
+import org.mockito.kotlin.whenever
 
 class DeclineRegistrationHandlerTest {
     private companion object {
@@ -41,6 +43,7 @@ class DeclineRegistrationHandlerTest {
 
     private val mgm = createTestHoldingIdentity("C=GB, L=London, O=MGM", GROUP_ID).toAvro()
     private val member = createTestHoldingIdentity("C=GB, L=London, O=Alice", GROUP_ID).toAvro()
+    private val memberInfo = mockMemberInfo(member.toCorda())
     private val command = DeclineRegistration()
     private val state = RegistrationState(
         REGISTRATION_ID,
@@ -87,8 +90,16 @@ class DeclineRegistrationHandlerTest {
             )
         } doReturn record
     }
+    private val groupReader = mock<MembershipGroupReader> {
+        on { lookup(member.toCorda().x500Name, MembershipStatusFilter.PENDING) } doReturn memberInfo
+    }
+    private val groupReaderProvider = mock<MembershipGroupReaderProvider> {
+        on { getGroupReader(mgm.toCorda()) } doReturn groupReader
+    }
 
-    private val handler = DeclineRegistrationHandler(membershipPersistenceClient, mock(), mock(), mock(), config, p2pRecordsFactory)
+    private val handler = DeclineRegistrationHandler(
+        membershipPersistenceClient, mock(), mock(), mock(), config, groupReaderProvider, p2pRecordsFactory
+    )
 
     @Test
     fun `handler calls persistence client and returns output states`() {
@@ -112,7 +123,7 @@ class DeclineRegistrationHandlerTest {
         assertThat(result.updatedState).isNull()
         assertThat(result.outputStates).containsExactlyInAnyOrderElementsOf(expectedOutputStates)
 
-        val registrationCommand = result.outputStates.single { it.topic == Schemas.Membership.REGISTRATION_COMMAND_TOPIC }
+        val registrationCommand = result.outputStates.single { it.topic == REGISTRATION_COMMAND_TOPIC }
         val checkForPendingRegistration = (registrationCommand.value as? RegistrationCommand)?.command as? CheckForPendingRegistration
         assertThat(checkForPendingRegistration?.mgm).isEqualTo(mgm)
         assertThat(checkForPendingRegistration?.member).isEqualTo(member)
@@ -132,5 +143,12 @@ class DeclineRegistrationHandlerTest {
             handler.invoke(null, Record(TOPIC, member.toString(), RegistrationCommand(command)))
         }
     }
+
+    @Test
+    fun `exception is thrown when member's information cannot be found`() {
+        whenever(groupReader.lookup(member.toCorda().x500Name, MembershipStatusFilter.PENDING)) doReturn null
+        assertThrows<MissingRegistrationStateException> {
+            handler.invoke(null, Record(TOPIC, member.toString(), RegistrationCommand(command)))
+        }
+    }
 }
-*/

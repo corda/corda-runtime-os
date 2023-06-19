@@ -12,7 +12,7 @@ class PlatformInfoProviderTest {
     lateinit var platformInfoProvider: PlatformInfoProvider
 
     private companion object {
-        const val EXPECTED_STUB_PLATFORM_VERSION = 50000
+        const val EXPECTED_STUB_PLATFORM_VERSION = 50100
     }
 
     @Test

@@ -27,6 +27,7 @@ import net.corda.membership.p2p.helpers.P2pRecordsFactory
 import net.corda.membership.p2p.helpers.P2pRecordsFactory.Companion.getTtlMinutes
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipQueryClient
+import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.Membership.REGISTRATION_COMMAND_TOPIC
@@ -90,7 +91,7 @@ internal class ProcessMemberVerificationResponseHandler(
             }
 
             val groupReader = membershipGroupReaderProvider.getGroupReader(mgm.toCorda())
-            val status = getNextRegistrationStatus(mgm.toCorda(), member.toCorda(), registrationId)
+            val status = getNextRegistrationStatus(mgm.toCorda(), member.toCorda(), registrationId, groupReader)
             val pendingInfo = groupReader.lookup(member.toCorda().x500Name, MembershipStatusFilter.PENDING)
                 ?: throw CordaRuntimeException("Could not find pending information " +
                         "for member with holding ID '${member.toCorda().shortHash}'.")
@@ -139,7 +140,8 @@ internal class ProcessMemberVerificationResponseHandler(
     private fun getNextRegistrationStatus(
         mgm: HoldingIdentity,
         member: HoldingIdentity,
-        registrationId: String
+        registrationId: String,
+        groupReader: MembershipGroupReader,
     ): RegistrationStatus {
         val registrationRequest = membershipQueryClient
             .queryRegistrationRequest(mgm, registrationId)
@@ -153,8 +155,7 @@ internal class ProcessMemberVerificationResponseHandler(
             )
         val registrationContext = registrationRequest.registrationContext.toMap()
 
-        val activeMemberInfo = membershipGroupReaderProvider
-            .getGroupReader(mgm)
+        val activeMemberInfo = groupReader
             .lookup(member.x500Name)
             ?.takeIf { it.status != MEMBER_STATUS_PENDING }
             ?.memberProvidedContext

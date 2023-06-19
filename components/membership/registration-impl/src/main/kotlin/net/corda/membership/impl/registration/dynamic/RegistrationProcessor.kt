@@ -88,6 +88,7 @@ class RegistrationProcessor(
             cordaAvroSerializationFactory,
             memberTypeChecker,
             membershipConfig,
+            membershipGroupReaderProvider,
         ),
 
         ProcessMemberVerificationRequest::class.java to ProcessMemberVerificationRequestHandler(

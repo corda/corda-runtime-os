@@ -4,7 +4,7 @@ import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.hes.StableKeyPairDecryptor
 import net.corda.data.membership.p2p.MembershipPackage
 import net.corda.data.membership.p2p.MembershipSyncRequest
-import net.corda.data.membership.p2p.SetOwnRegistrationStatus
+import net.corda.data.membership.p2p.v2.SetOwnRegistrationStatus
 import net.corda.data.membership.p2p.UnauthenticatedRegistrationRequest
 import net.corda.data.membership.p2p.VerificationRequest
 import net.corda.data.membership.p2p.VerificationResponse
