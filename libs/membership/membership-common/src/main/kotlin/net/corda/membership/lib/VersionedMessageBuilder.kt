@@ -23,7 +23,7 @@ private fun retrieveV1Status(status: String): RegistrationStatus {
         StatusesBeingSent.PENDING_AUTO_APPROVAL.name -> RegistrationStatus.PENDING_AUTO_APPROVAL
         StatusesBeingSent.APPROVED.name -> RegistrationStatus.APPROVED
         StatusesBeingSent.DECLINED.name -> RegistrationStatus.DECLINED
-        else -> { throw IllegalArgumentException("This status '$status' should not be distributed.") }
+        else -> throw IllegalArgumentException(exceptionMessageForInvalidStatus(status))
     }
 }
 
@@ -34,9 +34,11 @@ private fun retrieveV2Status(status: String): RegistrationStatusV2 {
         StatusesBeingSent.PENDING_AUTO_APPROVAL.name -> RegistrationStatusV2.PENDING_AUTO_APPROVAL
         StatusesBeingSent.APPROVED.name -> RegistrationStatusV2.APPROVED
         StatusesBeingSent.DECLINED.name -> RegistrationStatusV2.DECLINED
-        else -> { throw IllegalArgumentException("This status '$status' should not be distributed.") }
+        else -> throw IllegalArgumentException(exceptionMessageForInvalidStatus(status))
     }
 }
+
+private fun exceptionMessageForInvalidStatus(status: String) = "This status '$status' should not be distributed."
 
 typealias SetOwnRegistrationStatusV2 = net.corda.data.membership.p2p.v2.SetOwnRegistrationStatus
 typealias RegistrationStatusV2 = net.corda.data.membership.common.v2.RegistrationStatus
