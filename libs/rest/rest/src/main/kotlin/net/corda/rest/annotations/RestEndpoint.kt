@@ -28,6 +28,8 @@ annotation class RestEndpoint
  * @property title The title of the endpoint, used for documentation. Defaults to the function name.
  * @property description The description of the endpoint, used for documentation. Defaults to empty string.
  * @property responseDescription The description of the response, used for documentation. Defaults to empty string.
+ * @property minVersion version when API has been introduced.
+ * @property maxVersion version till which API is still supported.
  */
 @Target(AnnotationTarget.FUNCTION)
 @Retention(AnnotationRetention.RUNTIME)
@@ -36,7 +38,9 @@ annotation class HttpPOST(
     val path: String = "",
     val title: String = "",
     val description: String = "",
-    val responseDescription: String = ""
+    val responseDescription: String = "",
+    val minVersion: RestApiVersion = RestApiVersion.MIN_SUPPORTED,
+    val maxVersion: RestApiVersion = RestApiVersion.CURRENT
 )
 
 /**
@@ -56,6 +60,8 @@ annotation class HttpPOST(
  * @property title The title of the endpoint, used for documentation. Defaults to the function name.
  * @property description The description of the endpoint, used for documentation. Defaults to empty string.
  * @property responseDescription The description of the response, used for documentation. Defaults to empty string.
+ * @property minVersion version when API has been introduced.
+ * @property maxVersion version till which API is still supported.
  */
 @Target(AnnotationTarget.FUNCTION)
 @Retention(AnnotationRetention.RUNTIME)
@@ -64,7 +70,9 @@ annotation class HttpPUT(
     val path: String = "",
     val title: String = "",
     val description: String = "",
-    val responseDescription: String = ""
+    val responseDescription: String = "",
+    val minVersion: RestApiVersion = RestApiVersion.MIN_SUPPORTED,
+    val maxVersion: RestApiVersion = RestApiVersion.CURRENT
 )
 
 /**
@@ -81,6 +89,8 @@ annotation class HttpPUT(
  * @property title The title of the endpoint, used for documentation. Defaults to the function name.
  * @property description The description of the endpoint, used for documentation. Defaults to empty string.
  * @property responseDescription The description of the response, used for documentation. Defaults to empty string.
+ * @property minVersion version when API has been introduced.
+ * @property maxVersion version till which API is still supported.
  */
 @Target(AnnotationTarget.FUNCTION, AnnotationTarget.PROPERTY_GETTER)
 @Retention(AnnotationRetention.RUNTIME)
@@ -89,7 +99,9 @@ annotation class HttpGET(
     val path: String = "",
     val title: String = "",
     val description: String = "",
-    val responseDescription: String = ""
+    val responseDescription: String = "",
+    val minVersion: RestApiVersion = RestApiVersion.MIN_SUPPORTED,
+    val maxVersion: RestApiVersion = RestApiVersion.CURRENT
 )
 
 /**
@@ -107,6 +119,8 @@ annotation class HttpGET(
  * @property title The title of the endpoint, used for documentation. Defaults to the function name.
  * @property description The description of the endpoint, used for documentation. Defaults to empty string.
  * @property responseDescription The description of the response, used for documentation. Defaults to empty string.
+ * @property minVersion version when API has been introduced.
+ * @property maxVersion version till which API is still supported.
  */
 @Target(AnnotationTarget.FUNCTION)
 @Retention(AnnotationRetention.RUNTIME)
@@ -115,7 +129,9 @@ annotation class HttpDELETE(
     val path: String = "",
     val title: String = "",
     val description: String = "",
-    val responseDescription: String = ""
+    val responseDescription: String = "",
+    val minVersion: RestApiVersion = RestApiVersion.MIN_SUPPORTED,
+    val maxVersion: RestApiVersion = RestApiVersion.CURRENT
 )
 
 /**
@@ -127,6 +143,8 @@ annotation class HttpDELETE(
  * @property title The title of the endpoint, used for documentation. Defaults to the function name.
  * @property description The description of the endpoint, used for documentation. Defaults to empty string.
  * @property responseDescription The description of the response, used for documentation. Defaults to empty string.
+ * @property minVersion version when API has been introduced.
+ * @property maxVersion version till which API is still supported.
  */
 @Target(AnnotationTarget.FUNCTION)
 @Retention(AnnotationRetention.RUNTIME)
@@ -135,7 +153,9 @@ annotation class HttpWS(
     val path: String = "",
     val title: String = "",
     val description: String = "",
-    val responseDescription: String = ""
+    val responseDescription: String = "",
+    val minVersion: RestApiVersion = RestApiVersion.MIN_SUPPORTED,
+    val maxVersion: RestApiVersion = RestApiVersion.CURRENT
 )
 
 fun Annotation.isRestEndpointAnnotation(): Boolean {
