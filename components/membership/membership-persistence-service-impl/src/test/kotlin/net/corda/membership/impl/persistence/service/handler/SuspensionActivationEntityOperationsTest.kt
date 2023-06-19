@@ -136,7 +136,7 @@ class SuspensionActivationEntityOperationsTest {
     }
 
     @Test
-    fun `findMember throws an IllegalArgumentException if status is different from expected`() {
+    fun `findMember throws an InvalidEntityUpdateException if status is different from expected`() {
         val currentStatus = "Status"
         val expectedStatus = "expected"
         val mockEntity = mock<MemberInfoEntity> {
@@ -147,7 +147,7 @@ class SuspensionActivationEntityOperationsTest {
             em.find(eq(MemberInfoEntity::class.java), eq(primaryKey), eq(LockModeType.PESSIMISTIC_WRITE))
         ).doReturn(mockEntity)
 
-        assertThrows<IllegalArgumentException> {
+        assertThrows<InvalidEntityUpdateException> {
             handler.findMember(em, knownX500Name.toString(), knownGroupId, null, expectedStatus)
         }.apply {
             assertThat(this.message).contains("cannot be performed")
