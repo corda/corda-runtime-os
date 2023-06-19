@@ -15,6 +15,7 @@ class RemoteToLocalContextMapperTest {
     }
     private val platformContext = KeyValueStore().apply {
         this["platform"] = "platform"
+        this["platform_local"] = "platform_local"
         this["corda.platform"] = "platform2"
         this["corda.initiator.platform"] = "platform3"
     }
@@ -23,12 +24,13 @@ class RemoteToLocalContextMapperTest {
     fun `mapping test`() {
         val localContextProperties = remoteToLocalContextMapper(
             remoteUserContextProperties = userContext.avro,
-            remotePlatformContextProperties = platformContext.avro
+            remotePlatformContextProperties = platformContext.avro,
+            mapOf("local" to "local", "platform_local" to "platform_local2")
         )
 
-        assertThat(localContextProperties.platformProperties.items.size).isEqualTo(2)
+        assertThat(localContextProperties.platformProperties.items.size).isEqualTo(4)
         assertThat(localContextProperties.userProperties.items.size).isEqualTo(2)
-        assertThat(localContextProperties.counterpartySessionProperties.size).isEqualTo(2)
+        assertThat(localContextProperties.counterpartySessionProperties.size).isEqualTo(4)
 
         assertThat(localContextProperties.platformProperties.toMap())
             .isEqualTo(localContextProperties.counterpartySessionProperties)
@@ -37,5 +39,7 @@ class RemoteToLocalContextMapperTest {
         assertThat(localContextProperties.platformProperties.toMap()["corda.initiator.platform"]).isEqualTo("platform2")
         assertThat(localContextProperties.userProperties.toMap()["user"]).isEqualTo("user")
         assertThat(localContextProperties.platformProperties.toMap()["platform"]).isEqualTo("platform")
+        assertThat(localContextProperties.platformProperties.toMap()["local"]).isEqualTo("local")
+        assertThat(localContextProperties.platformProperties.toMap()["platform_local"]).isEqualTo("platform_local2")
     }
 }
