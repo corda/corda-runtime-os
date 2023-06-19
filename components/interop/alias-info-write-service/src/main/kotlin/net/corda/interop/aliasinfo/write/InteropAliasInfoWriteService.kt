@@ -4,5 +4,5 @@ import net.corda.lifecycle.Lifecycle
 
 
 interface InteropAliasInfoWriteService : Lifecycle {
-    // TODO: Implement interface methods
+    // Implement interface methods
 }

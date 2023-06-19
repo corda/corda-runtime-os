@@ -115,7 +115,7 @@ class DBProcessorImpl @Activate constructor(
     private val membershipGroupPolicyValidator: MembershipGroupPolicyValidator,
     @Reference(service = AllowedCertificatesReaderWriterService::class)
     private val allowedCertificatesReaderWriterService: AllowedCertificatesReaderWriterService,
-    // TODO: Temporarily added here, reevaluate this before merge
+    // Temporarily added here, reevaluate this before merge
     @Reference(service = InteropAliasInfoReadService::class)
     private val interopAliasInfoReadService: InteropAliasInfoReadService,
     @Reference(service = InteropAliasInfoWriteService::class)
