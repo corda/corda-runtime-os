@@ -6,6 +6,7 @@ plugins {
 description 'Endpoint API for management of interop.'
 
 dependencies {
+    implementation project(path: ':libs:lifecycle:lifecycle')
     compileOnly 'org.osgi:osgi.annotation'
 
     api project(':libs:rest:rest')
