@@ -1,5 +1,6 @@
 package net.corda.rest.client
 
+import net.corda.rest.annotations.RestApiVersion
 import net.corda.rest.server.RestServer
 import net.corda.rest.server.config.models.RestContext
 import net.corda.rest.test.utils.FakeSecurityManager
@@ -10,6 +11,7 @@ abstract class RestIntegrationTestBase {
         fun isServerInitialized() = ::server.isInitialized
         val userAlice = User(FakeSecurityManager.USERNAME, FakeSecurityManager.PASSWORD, setOf())
         val securityManager = FakeSecurityManager()
-        val context = RestContext("1", "api", "RestContext test title ", "RestContext test description")
+        val context = RestContext("api", "RestContext test title ", "RestContext test description")
+        val apiVersion = RestApiVersion.C5_0
     }
 }

@@ -24,6 +24,7 @@ import net.corda.membership.rest.v1.MemberLookupRestResource
 import net.corda.membership.rest.v1.MemberRegistrationRestResource
 import net.corda.membership.rest.v1.NetworkRestResource
 import net.corda.processors.rest.diff.diff
+import net.corda.rest.annotations.RestApiVersion
 import net.corda.utilities.NetworkHostAndPort
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -107,7 +108,6 @@ class OpenApiCompatibilityTest {
 
     private fun computeExistingSwagger(): Pair<String, OpenAPI> {
         val context = RestContext(
-            "1",
             "api",
             "Corda REST API",
             "All the endpoints for publicly visible Open API calls"
@@ -127,7 +127,9 @@ class OpenApiCompatibilityTest {
             { FakeSecurityManager() }, restServerSettings, multipartDir, devMode = true
         ).apply { start() }
 
-        val url = "http://${serverAddress.host}:${server.port}/${context.basePath}/v${context.version}/swagger.json"
+        val apiVersion = RestApiVersion.C5_0 // Include more versions to perform verification
+
+        val url = "http://${serverAddress.host}:${server.port}/${context.basePath}/${apiVersion.versionPath}/swagger.json"
         logger.info("Swagger should be accessible on: $url")
 
         return server.use {
