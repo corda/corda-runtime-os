@@ -5,6 +5,10 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ReceiveChannel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import net.corda.avro.serialization.CordaAvroSerializer
@@ -100,7 +104,8 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         .build()
 
     // Pipeline POC
-    data class StateAndEventData<K: Any, S: Any, E: Any>(val response: StateAndEventProcessor.Response<S>, val event: CordaConsumerRecord<K, E>)
+    // HACK setting event as nullable so that we can send "empty" events to ensure we commit at least once every x ms.
+    data class StateAndEventData<K: Any, S: Any, E: Any>(val response: StateAndEventProcessor.Response<S>, val event: CordaConsumerRecord<K, E>?)
     // channels used for messages to process
     // capacity of the channel buffer TBD - producing function will suspend when buffer full
     // number of channels should be configurable and indicate level of parallelism
@@ -121,6 +126,23 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
 //            }
 //        }
 //    }
+
+    private fun CoroutineScope.messageHeartbeat() = launch {
+        fun processHeartbeat(heartBeat: Flow<Unit>) {
+            val emptyResponse = StateAndEventProcessor.Response<S>(null, emptyList(), false)
+            heartBeat.onEach {
+                sendingChannel.send(StateAndEventData(emptyResponse, null))
+            }
+        }
+
+        val heartBeat = flow {
+            while (true) {
+                delay(50)
+                emit(Unit)
+            }
+        }
+        processHeartbeat(heartBeat)
+    }
 
     private fun CoroutineScope.messageProcessor(id: Int, events: ReceiveChannel<CordaConsumerRecord<K, E>>) = launch {
         for (event in events) {
@@ -162,18 +184,20 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         }
 
         for (msg in msgs) {
-            if(!txStarted) beginTx()
+            if(null != msg.event) {
+                if(!txStarted) beginTx()
 
-            val updatedState = msg.response.updatedState
-            val outputRecords = mutableListOf<Record<*, *>>()
-            outputRecords.addAll(msg.response.responseEvents)
-            outputRecords.add(Record(stateTopic, msg.event.key, updatedState))
+                val updatedState = msg.response.updatedState
+                val outputRecords = mutableListOf<Record<*, *>>()
+                outputRecords.addAll(msg.response.responseEvents)
+                outputRecords.add(Record(stateTopic, msg.event.key, updatedState))
 
-            msgsInCommit += outputRecords.size
-            log.info("Sending ${outputRecords}")
-            producer.sendRecords(outputRecords.toCordaProducerRecords())
-            eventsSinceCommit.add(msg.event)
-            updatedStates.computeIfAbsent(msg.event.partition) { mutableMapOf() }[msg.event.key] = updatedState
+                msgsInCommit += outputRecords.size
+                log.info("Sending ${outputRecords}")
+                producer.sendRecords(outputRecords.toCordaProducerRecords())
+                eventsSinceCommit.add(msg.event)
+                updatedStates.computeIfAbsent(msg.event.partition) { mutableMapOf() }[msg.event.key] = updatedState
+            }
 
             // TODO: must introduce a ticker here to ensure we commit also when no events are flowing through.
             if(System.nanoTime() - beginTx > 1_000_000 * 50) commitTx()
@@ -240,6 +264,10 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                     threadLooper.updateLifecycleStatus(LifecycleStatus.UP)
 
 //                    messagePoller(stateAndEventConsumerTmp)
+
+                    // hacky of ensuring we have a commit at least once every 50 ms
+
+                    messageHeartbeat()
                     messageSender(sendingChannel)
                     for(x in processingChannels.indices) {
                         messageProcessor(x, processingChannels[x])
