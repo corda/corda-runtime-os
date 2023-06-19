@@ -1,6 +1,7 @@
 package net.corda.messaging.subscription
 
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.channels.Channel
@@ -8,7 +9,9 @@ import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.newSingleThreadContext
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.deadletter.StateAndEventDeadLetterRecord
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -107,7 +110,7 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
     // channels used for messages to process
     // capacity of the channel buffer TBD - producing function will suspend when buffer full
     // number of channels should be configurable and indicate level of parallelism
-    val processingChannels = (1..5).map { Channel<CordaConsumerRecord<K, E>>(100) }
+    val processingChannels = (1..1).map { Channel<CordaConsumerRecord<K, E>>(100) }
 
     // channel used for messages that need sending - buffer TBD
     val sendingChannel = Channel<StateAndEventData<K, S, E>>(1000)
@@ -153,7 +156,9 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         }
     }
 
-    private fun CoroutineScope.messageSender(msgs: Channel<StateAndEventData<K,S,E>>) = launch {
+    private fun CoroutineScope.messageSender(
+        msgs: Channel<StateAndEventData<K, S, E>>,
+    ) = launch(kafkaContext) {
         var beginTx = 0L
         var txStarted = false
         var msgsInCommit = 0
@@ -169,11 +174,18 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
 
         fun commitTx() {
             log.info("Commit tx - $msgsInCommit messages, ${eventsSinceCommit.size} events,  since last commit")
-            producer.sendRecordOffsetsToTransaction(eventConsumer, eventsSinceCommit)
-            producer.commitTransaction()
-            stateAndEventConsumer.updateInMemoryStatePostCommit(updatedStates, clock)
-            msgsInCommit = 0
-            txStarted = false
+            try {
+                producer.sendRecordOffsetsToTransaction(eventConsumer, eventsSinceCommit)
+                producer.commitTransaction()
+                stateAndEventConsumer.updateInMemoryStatePostCommit(updatedStates, clock)
+                msgsInCommit = 0
+                txStarted = false
+                eventsSinceCommit.clear()
+                updatedStates.clear()
+            }
+            catch (e: Exception) {
+                log.error(e.toString())
+            }
         }
 
         for (msg in msgs) {
@@ -221,6 +233,11 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         threadLooper.close()
     }
 
+    // TODO: is this right?
+    //  the sendRecordOffsetsToTransaction needs execute on the same thread as the polling loop as it accesses the consumer.
+    @OptIn(DelicateCoroutinesApi::class)
+    val kafkaContext = newSingleThreadContext("KafkaContext")
+
     private fun runConsumeLoop() {
         var attempts = 0
         var nullableRebalanceListener: StateAndEventConsumerRebalanceListener? = null
@@ -260,20 +277,22 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
 //                    messagePoller(stateAndEventConsumerTmp)
 
                     // hacky of ensuring we have a commit at least once every 50 ms
-
                     messageHeartbeat()
                     messageSender(sendingChannel)
+
                     for(x in processingChannels.indices) {
                         messageProcessor(x, processingChannels[x])
                     }
 
                     while (!threadLooper.loopStopped) {
                         stateAndEventConsumerTmp.pollAndUpdateStates(true)
-                        val records = stateAndEventConsumer.pollEvents()
-                        if(records.isNotEmpty()) {
-                            for(event in records) {
-                                val channelId = event.key.hashCode().mod(processingChannels.size)
-                                processingChannels[channelId].send(event)
+                        withContext(kafkaContext) {
+                            val records = stateAndEventConsumer.pollEvents()
+                            if (records.isNotEmpty()) {
+                                for (event in records) {
+                                    val channelId = event.key.hashCode().mod(processingChannels.size)
+                                    processingChannels[channelId].send(event)
+                                }
                             }
                         }
                     }
