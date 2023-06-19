@@ -150,6 +150,9 @@ class CordaKafkaProducerImpl(
                 } else {
                     log.warn(msg, ex)
                 }
+            } catch (ex: Exception) {
+                traceContext.errorAndFinish(ex)
+                throw ex
             }
         }
     }
