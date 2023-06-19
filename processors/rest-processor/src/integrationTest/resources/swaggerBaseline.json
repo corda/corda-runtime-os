@@ -2235,7 +2235,7 @@
           "401" : {
             "description" : "Unauthorized"
           },
-K          "403" : {
+          "403" : {
             "description" : "Forbidden"
           }
         }
