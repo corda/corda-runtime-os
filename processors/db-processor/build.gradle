@@ -79,6 +79,12 @@ dependencies {
     runtimeOnly project(':components:membership:certificates-service-impl')
     runtimeOnly project(':components:membership:group-policy-configuration-validation-impl')
 
+    // TODO: re-evaluate this before merge. Does this belong in the DB processor?
+    implementation project(":components:interop:alias-info-read-service")
+    implementation project(":components:interop:alias-info-write-service")
+    runtimeOnly project(":components:interop:alias-info-read-service-impl")
+    runtimeOnly project(":components:interop:alias-info-write-service-impl")
+
     runtimeOnly project(":libs:application:application-impl")
     runtimeOnly project(':libs:crypto:cipher-suite-impl')
     runtimeOnly project(':libs:db:db-orm-impl')
