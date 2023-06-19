@@ -37,6 +37,7 @@ annotation class RestEndpoint
 @Target(AnnotationTarget.FUNCTION)
 @Retention(AnnotationRetention.RUNTIME)
 @RestEndpoint
+@SuppressWarnings("LongParameterList")
 annotation class HttpPOST(
     val path: String = "",
     val title: String = "",
@@ -69,6 +70,7 @@ annotation class HttpPOST(
 @Target(AnnotationTarget.FUNCTION)
 @Retention(AnnotationRetention.RUNTIME)
 @RestEndpoint
+@SuppressWarnings("LongParameterList")
 annotation class HttpPUT(
     val path: String = "",
     val title: String = "",
@@ -98,6 +100,7 @@ annotation class HttpPUT(
 @Target(AnnotationTarget.FUNCTION, AnnotationTarget.PROPERTY_GETTER)
 @Retention(AnnotationRetention.RUNTIME)
 @RestEndpoint
+@SuppressWarnings("LongParameterList")
 annotation class HttpGET(
     val path: String = "",
     val title: String = "",
@@ -128,6 +131,7 @@ annotation class HttpGET(
 @Target(AnnotationTarget.FUNCTION)
 @Retention(AnnotationRetention.RUNTIME)
 @RestEndpoint
+@SuppressWarnings("LongParameterList")
 annotation class HttpDELETE(
     val path: String = "",
     val title: String = "",
@@ -152,6 +156,7 @@ annotation class HttpDELETE(
 @Target(AnnotationTarget.FUNCTION)
 @Retention(AnnotationRetention.RUNTIME)
 @RestEndpoint
+@SuppressWarnings("LongParameterList")
 annotation class HttpWS(
     val path: String = "",
     val title: String = "",

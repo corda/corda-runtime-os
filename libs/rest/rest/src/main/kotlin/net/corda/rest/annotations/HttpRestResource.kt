@@ -15,6 +15,7 @@ import net.corda.rest.annotations.RestApiVersion.C5_1 as CURRENT
  */
 @Target(AnnotationTarget.CLASS)
 @Retention(AnnotationRetention.RUNTIME)
+@SuppressWarnings("LongParameterList")
 annotation class HttpRestResource(
     val name: String = "",
     val description: String = "",
