@@ -9,11 +9,6 @@ import java.nio.file.Path
 interface RestServerSettingsProvider {
 
     /**
-     * @return the API version
-     */
-    fun getApiVersion(): String
-
-    /**
      * @return the host and port of the address
      */
     fun getHostAndPort(): NetworkHostAndPort
