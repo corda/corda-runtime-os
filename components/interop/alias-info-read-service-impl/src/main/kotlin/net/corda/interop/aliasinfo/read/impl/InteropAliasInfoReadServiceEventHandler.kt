@@ -2,7 +2,6 @@ package net.corda.interop.aliasinfo.read.impl
 
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.interop.aliasinfo.read.InteropAliasInfoReadService
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleEvent

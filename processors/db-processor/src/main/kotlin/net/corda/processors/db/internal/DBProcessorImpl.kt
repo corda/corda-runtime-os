@@ -171,7 +171,7 @@ class DBProcessorImpl @Activate constructor(
         ::groupParametersReaderService,
         ::membershipGroupPolicyValidator,
         ::allowedCertificatesReaderWriterService,
-        // TODO: Reevaluate this later, does this need to be in the db worker?
+        // Reevaluate this later, does this need to be in the db worker?
         ::interopAliasInfoReadService,
         ::interopAliasInfoWriteService
     )
