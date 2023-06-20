@@ -16,6 +16,7 @@ import net.corda.persistence.common.EntitySandboxService
 import net.corda.persistence.common.ResponseFactory
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.schema.Schemas.Flow.FLOW_EVENT_TOPIC
+import net.corda.schema.configuration.BootConfig
 import net.corda.tracing.traceEventProcessing
 import net.corda.utilities.MDC_CLIENT_ID
 import net.corda.utilities.MDC_EXTERNAL_EVENT_ID
@@ -105,7 +106,7 @@ class PersistenceRequestProcessor(
                         }
                     }
                 }.map {
-                    val topic = config.getOutputTopic("ledger", FLOW_EVENT_TOPIC)
+                    val topic = config.getOutputTopic(BootConfig.LEDGER_OUTPUT, FLOW_EVENT_TOPIC)
                     Record(topic, it.key, it.value, it.timestamp, it.headers)
                 }
             }
