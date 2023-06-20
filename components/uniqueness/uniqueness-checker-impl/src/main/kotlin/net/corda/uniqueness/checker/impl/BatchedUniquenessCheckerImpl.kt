@@ -23,6 +23,7 @@ import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.metrics.CordaMetrics
 import net.corda.schema.Schemas
+import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.uniqueness.backingstore.BackingStore
 import net.corda.uniqueness.checker.UniquenessChecker
@@ -512,7 +513,7 @@ class BatchedUniquenessCheckerImpl(
                     coordinator.createManagedResource(CONFIG_HANDLE) {
                         configurationReadService.registerComponentForUpdates(
                             coordinator,
-                            setOf(MESSAGING_CONFIG)
+                            setOf(MESSAGING_CONFIG, BOOT_CONFIG)
                         )
                     }
                 } else {
@@ -523,7 +524,9 @@ class BatchedUniquenessCheckerImpl(
             }
             is ConfigChangedEvent -> {
                 log.info("Received configuration change event, (re)initialising subscription")
-                initialiseSubscription(event.config.getConfig(MESSAGING_CONFIG))
+                initialiseSubscription(
+                    event.config.getConfig(MESSAGING_CONFIG).withFallback(event.config.getConfig(BOOT_CONFIG))
+                )
             }
             else -> {
                 log.warn("Unexpected event ${event}, ignoring")
@@ -537,7 +540,8 @@ class BatchedUniquenessCheckerImpl(
                 SubscriptionConfig(GROUP_NAME, Schemas.UniquenessChecker.UNIQUENESS_CHECK_TOPIC),
                 UniquenessCheckMessageProcessor(
                     this,
-                    externalEventResponseFactory
+                    externalEventResponseFactory,
+                    config
                 ),
                 config,
                 null

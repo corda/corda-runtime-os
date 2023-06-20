@@ -3,8 +3,12 @@ package net.corda.uniqueness.checker.impl
 import net.corda.data.uniqueness.UniquenessCheckRequestAvro
 import net.corda.data.uniqueness.UniquenessCheckResultUnhandledExceptionAvro
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
+import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.configuration.helper.getOutputTopic
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
+import net.corda.schema.Schemas.Flow.FLOW_EVENT_TOPIC
+import net.corda.schema.configuration.BootConfig
 import net.corda.tracing.BatchRecordTracer
 import net.corda.tracing.traceBatch
 import net.corda.uniqueness.checker.UniquenessChecker
@@ -15,7 +19,8 @@ import net.corda.uniqueness.checker.UniquenessChecker
  */
 class UniquenessCheckMessageProcessor(
     private val uniquenessChecker: UniquenessChecker,
-    private val externalEventResponseFactory: ExternalEventResponseFactory
+    private val externalEventResponseFactory: ExternalEventResponseFactory,
+    private val config: SmartConfig
 ) : DurableProcessor<String, UniquenessCheckRequestAvro> {
 
     override val keyClass = String::class.java
@@ -26,6 +31,7 @@ class UniquenessCheckMessageProcessor(
         val batchTracer = createBatchTracer(events)
 
         val requests = events.mapNotNull { it.value }
+        val topic = config.getOutputTopic(BootConfig.LEDGER_OUTPUT, FLOW_EVENT_TOPIC)
 
         return uniquenessChecker.processRequests(requests).map { (request, response) ->
             if (response.result is UniquenessCheckResultUnhandledExceptionAvro) {
@@ -42,6 +48,8 @@ class UniquenessCheckMessageProcessor(
                     externalEventResponseFactory.success(request.flowExternalEventContext, response)
                 )
             }
+        }.map {
+            Record(topic, it.key, it.value, it.timestamp, it.headers)
         }
     }
 }
