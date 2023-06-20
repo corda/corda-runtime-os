@@ -1,4 +1,4 @@
-package net.corda.membership.impl.synchronisation.dummy
+package net.corda.membership.grouppolicy.test.common
 
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -41,10 +41,10 @@ class TestGroupPolicyProviderImpl @Activate constructor(
     private val policies = mutableMapOf<HoldingIdentity, GroupPolicy>()
 
     override fun putGroupPolicy(holdingIdentity: HoldingIdentity, groupPolicy: GroupPolicy) {
-        policies.put(holdingIdentity, groupPolicy)
+        policies[holdingIdentity] = groupPolicy
     }
 
-    override fun getGroupPolicy(holdingIdentity: HoldingIdentity) = policies.get(holdingIdentity)
+    override fun getGroupPolicy(holdingIdentity: HoldingIdentity) = policies[holdingIdentity]
 
     override fun registerListener(name: String, callback: (HoldingIdentity, GroupPolicy) -> Unit) {
         with(UNIMPLEMENTED_FUNCTION) {
@@ -65,6 +65,29 @@ class TestGroupPolicyProviderImpl @Activate constructor(
         logger.info("${this::class.java.simpleName} stopping.")
         coordinator.stop()
     }
+
+}
+
+class TestGroupPolicy : GroupPolicy {
+    companion object {
+        private const val UNIMPLEMENTED_FUNCTION = "Called unimplemented function for test service."
+    }
+    override val fileFormatVersion: Int
+        get() = throw UnsupportedOperationException(UNIMPLEMENTED_FUNCTION)
+    override val groupId: String
+        get() = throw UnsupportedOperationException(UNIMPLEMENTED_FUNCTION)
+    override val registrationProtocol: String
+        get() = "net.corda.membership.impl.registration.dynamic.member.DynamicMemberRegistrationService"
+    override val synchronisationProtocol: String
+        get() = throw UnsupportedOperationException(UNIMPLEMENTED_FUNCTION)
+    override val protocolParameters: GroupPolicy.ProtocolParameters
+        get() = throw UnsupportedOperationException(UNIMPLEMENTED_FUNCTION)
+    override val p2pParameters: GroupPolicy.P2PParameters
+        get() = throw UnsupportedOperationException(UNIMPLEMENTED_FUNCTION)
+    override val mgmInfo: GroupPolicy.MGMInfo
+        get() = throw UnsupportedOperationException(UNIMPLEMENTED_FUNCTION)
+    override val cipherSuite: GroupPolicy.CipherSuite
+        get() = throw UnsupportedOperationException(UNIMPLEMENTED_FUNCTION)
 
 }
 

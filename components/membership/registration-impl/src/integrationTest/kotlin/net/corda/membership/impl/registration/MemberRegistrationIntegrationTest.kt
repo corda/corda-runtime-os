@@ -29,8 +29,8 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.impl.registration.dummy.TestCryptoOpsClient
-import net.corda.membership.impl.registration.dummy.TestGroupPolicy
-import net.corda.membership.impl.registration.dummy.TestGroupPolicyProvider
+import net.corda.membership.grouppolicy.test.common.TestGroupPolicy
+import net.corda.membership.grouppolicy.test.common.TestGroupPolicyProvider
 import net.corda.membership.impl.registration.dummy.TestGroupReaderProvider
 import net.corda.membership.impl.registration.dummy.TestPlatformInfoProvider.Companion.TEST_ACTIVE_PLATFORM_VERSION
 import net.corda.membership.impl.registration.dummy.TestPlatformInfoProvider.Companion.TEST_SOFTWARE_VERSION
@@ -294,10 +294,10 @@ class MemberRegistrationIntegrationTest {
 
     @Test
     fun `dynamic member registration service publishes unauthenticated message to be sent to the MGM`() {
-        groupPolicyProvider.putGroupPolicy(TestGroupPolicy())
-
+        val groupPolicy = TestGroupPolicy()
         val member = HoldingIdentity(memberName, groupId)
         val context = buildTestContext(member)
+        groupPolicyProvider.putGroupPolicy(member, groupPolicy)
         membershipGroupReaderProvider.loadMembers(member, createMemberList())
         val completableResult = CompletableFuture<Pair<String, AppMessage>>()
         // Set up subscription to gather results of processing p2p message

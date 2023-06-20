@@ -47,10 +47,10 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.membership.groupparams.writer.service.GroupParametersWriterService
 import net.corda.membership.grouppolicy.GroupPolicyProvider
-import net.corda.membership.impl.synchronisation.dummy.MemberTestGroupPolicy
-import net.corda.membership.impl.synchronisation.dummy.MgmTestGroupPolicy
+import net.corda.membership.grouppolicy.test.common.MemberTestGroupPolicy
+import net.corda.membership.grouppolicy.test.common.MgmTestGroupPolicy
 import net.corda.membership.impl.synchronisation.dummy.TestCryptoOpsClient
-import net.corda.membership.impl.synchronisation.dummy.TestGroupPolicyProvider
+import net.corda.membership.grouppolicy.test.common.TestGroupPolicyProvider
 import net.corda.membership.impl.synchronisation.dummy.TestGroupReaderProvider
 import net.corda.membership.impl.synchronisation.dummy.TestLocallyHostedIdentitiesService
 import net.corda.membership.impl.synchronisation.dummy.TestMembershipPersistenceClient
