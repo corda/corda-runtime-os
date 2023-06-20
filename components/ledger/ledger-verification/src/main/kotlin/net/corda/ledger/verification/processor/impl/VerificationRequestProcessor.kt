@@ -8,10 +8,14 @@ import net.corda.flow.utils.toMap
 import net.corda.ledger.utxo.verification.TransactionVerificationRequest
 import net.corda.ledger.verification.processor.VerificationRequestHandler
 import net.corda.ledger.verification.sandbox.VerificationSandboxService
+import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.configuration.helper.getOutputTopic
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.metrics.CordaMetrics
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
+import net.corda.schema.Schemas.Flow.FLOW_EVENT_TOPIC
+import net.corda.schema.configuration.BootConfig
 import net.corda.tracing.traceEventProcessingSingle
 import net.corda.utilities.MDC_CLIENT_ID
 import net.corda.utilities.MDC_EXTERNAL_EVENT_ID
@@ -30,7 +34,8 @@ class VerificationRequestProcessor(
     private val currentSandboxGroupContext: CurrentSandboxGroupContext,
     private val verificationSandboxService: VerificationSandboxService,
     private val requestHandler: VerificationRequestHandler,
-    private val responseFactory: ExternalEventResponseFactory
+    private val responseFactory: ExternalEventResponseFactory,
+    private val config: SmartConfig
 ) : DurableProcessor<String, TransactionVerificationRequest> {
 
     private companion object {
@@ -44,6 +49,7 @@ class VerificationRequestProcessor(
     override fun onNext(events: List<Record<String, TransactionVerificationRequest>>): List<Record<*, *>> {
         log.trace { "onNext processing messages ${events.joinToString(",") { it.key }}" }
 
+        val topic = config.getOutputTopic(BootConfig.LEDGER_OUTPUT, FLOW_EVENT_TOPIC)
         return events
             .filterNot { it.value == null }
             .map { event ->
@@ -78,6 +84,8 @@ class VerificationRequestProcessor(
                         }
                     }
                 }
+            }.map {
+                Record(topic, it.key, it.value, it.timestamp, it.headers)
             }
     }
 
