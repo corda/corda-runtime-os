@@ -12,6 +12,6 @@ abstract class RestIntegrationTestBase {
         val userAlice = User(FakeSecurityManager.USERNAME, FakeSecurityManager.PASSWORD, setOf())
         val securityManager = FakeSecurityManager()
         val context = RestContext("api", "RestContext test title ", "RestContext test description")
-        val apiVersion = RestApiVersion.C5_0
+        val apiVersion = RestApiVersion.C5_1
     }
 }
