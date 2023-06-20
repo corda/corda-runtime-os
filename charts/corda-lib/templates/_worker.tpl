@@ -271,7 +271,9 @@ spec:
           - "-ddatabase.jdbc.url=jdbc:postgresql://{{ required "Must specify db.cluster.host" $.Values.db.cluster.host }}:{{ $.Values.db.cluster.port }}/{{ $.Values.db.cluster.database }}?currentSchema={{ $.Values.db.cluster.schema }}"
           - "-ddatabase.jdbc.directory=/opt/jdbc-driver"
           - "-ddatabase.pool.max_size={{ .clusterDbConnectionPool.maxSize }}"
+          {{- if .clusterDbConnectionPool.minSize }}
           - "-ddatabase.pool.min_size={{ .clusterDbConnectionPool.minSize }}"
+          {{- end }}
           - "-ddatabase.pool.idleTimeoutSeconds={{ .clusterDbConnectionPool.idleTimeoutSeconds }}"
           - "-ddatabase.pool.maxLifetimeSeconds={{ .clusterDbConnectionPool.maxLifetimeSeconds }}"
           - "-ddatabase.pool.keepaliveTimeSeconds={{ .clusterDbConnectionPool.keepaliveTimeSeconds }}"
