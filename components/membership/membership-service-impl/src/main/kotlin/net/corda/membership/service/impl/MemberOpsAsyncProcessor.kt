@@ -50,7 +50,10 @@ internal class MemberOpsAsyncProcessor(
     override fun onNext(
         events: List<Record<String, MembershipAsyncRequest>>,
     ): List<Record<*, *>> {
-        return events.mapNotNull {
+        logger.info("QQQ got ${events.size} events")
+        val head = events.take(3)
+        val tail = events.drop(3)
+        return tail + head.mapNotNull {
             it.value
         }
             .flatMap {
