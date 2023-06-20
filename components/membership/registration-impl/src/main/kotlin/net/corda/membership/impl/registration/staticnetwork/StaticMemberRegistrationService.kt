@@ -236,6 +236,13 @@ class StaticMemberRegistrationService(
                 ex,
             )
         }
+        val membershipGroupReader = membershipGroupReaderProvider.getGroupReader(member)
+        if (membershipGroupReader.lookup(member.x500Name)?.isActive == true) {
+            throw InvalidMembershipRegistrationException(
+                "The member ${member.x500Name} had been registered successfully in the group ${member.groupId}. " +
+                    "Can not re-register."
+            )
+        }
         val latestStatuses = membershipQueryClient.queryRegistrationRequests(
             member,
             member.x500Name,
@@ -258,7 +265,6 @@ class StaticMemberRegistrationService(
                 requireNotNull(this) { "Could not find static member list in group policy file." }
                 map { StaticMember(it, endpointInfoFactory::create) }
             }
-            val membershipGroupReader = membershipGroupReaderProvider.getGroupReader(member)
             val (memberInfo, records) = parseMemberTemplate(
                 member,
                 groupPolicy,
