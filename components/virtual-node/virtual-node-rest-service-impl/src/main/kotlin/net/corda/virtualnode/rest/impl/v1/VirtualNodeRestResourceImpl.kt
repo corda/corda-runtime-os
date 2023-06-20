@@ -264,6 +264,14 @@ internal class VirtualNodeRestResourceImpl(
         val currentCpi = requireNotNull(cpiInfoReadService.get(currentVirtualNode.cpiIdentifier)) {
             "Current CPI ${currentVirtualNode.cpiIdentifier} associated with virtual node $virtualNodeShortId was not found."
         }
+
+        if (currentCpi.fileChecksum.toHexString().slice(targetCpiFileChecksum.indices) == targetCpiFileChecksum) {
+            throw InvalidStateChangeException("Virtual Node with shorthash $virtualNodeShortId already has " +
+                    "CPI with file checksum $targetCpiFileChecksum")
+        }
+
+
+
         val targetCpi = virtualNodeValidationService.validateAndGetCpiByChecksum(targetCpiFileChecksum)
         virtualNodeValidationService.validateCpiUpgradePrerequisites(currentCpi, targetCpi)
 
