@@ -2,7 +2,6 @@ package net.corda.interop.aliasinfo.read.impl
 
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.interop.aliasinfo.cache.AliasInfoCacheService
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleEvent
@@ -60,10 +59,10 @@ class InteropAliasInfoReadServiceEventHandler(
     private fun onConfigChangeEvent(event: ConfigChangedEvent, coordinator: LifecycleCoordinator) {
         val config = event.config[ConfigKeys.MESSAGING_CONFIG] ?: return
 
-        // TODO: Use debug rather than info
+        // Use debug rather than info
         log.info("Processing config update")
 
-        // TODO re-register with saurabhs kafka topic
+        // re-register with saurabhs kafka topic
 
         coordinator.updateStatus(LifecycleStatus.UP)
     }

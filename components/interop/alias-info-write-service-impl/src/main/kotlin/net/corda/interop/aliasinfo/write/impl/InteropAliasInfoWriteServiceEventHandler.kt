@@ -59,10 +59,10 @@ class InteropAliasInfoWriteServiceEventHandler(
     private fun onConfigChangeEvent(event: ConfigChangedEvent, coordinator: LifecycleCoordinator) {
         val config = event.config[ConfigKeys.MESSAGING_CONFIG] ?: return
 
-        // TODO: Use debug rather than info
+        // Use debug rather than info
         log.info("Processing config update")
 
-        // TODO re-register with saurabhs kafka topic
+        // re-register with saurabhs kafka topic
 
         coordinator.updateStatus(LifecycleStatus.UP)
     }
