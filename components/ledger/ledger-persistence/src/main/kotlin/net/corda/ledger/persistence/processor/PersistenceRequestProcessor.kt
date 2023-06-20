@@ -6,12 +6,16 @@ import net.corda.flow.utils.toMap
 import net.corda.ledger.persistence.common.InconsistentLedgerStateException
 import net.corda.ledger.persistence.common.UnsupportedLedgerTypeException
 import net.corda.ledger.persistence.common.UnsupportedRequestTypeException
+import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.configuration.helper.getInputTopic
+import net.corda.libs.configuration.helper.getOutputTopic
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.metrics.CordaMetrics
 import net.corda.persistence.common.EntitySandboxService
 import net.corda.persistence.common.ResponseFactory
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
+import net.corda.schema.Schemas.Flow.FLOW_EVENT_TOPIC
 import net.corda.tracing.traceEventProcessing
 import net.corda.utilities.MDC_CLIENT_ID
 import net.corda.utilities.MDC_EXTERNAL_EVENT_ID
@@ -30,7 +34,8 @@ class PersistenceRequestProcessor(
     private val currentSandboxGroupContext: CurrentSandboxGroupContext,
     private val entitySandboxService: EntitySandboxService,
     private val delegatedRequestHandlerSelector: DelegatedRequestHandlerSelector,
-    private val responseFactory: ResponseFactory
+    private val responseFactory: ResponseFactory,
+    private val config: SmartConfig
 ) : DurableProcessor<String, LedgerPersistenceRequest> {
 
     private companion object {
@@ -99,6 +104,9 @@ class PersistenceRequestProcessor(
                                 .record(Duration.ofNanos(System.nanoTime() - startTime))
                         }
                     }
+                }.map {
+                    val topic = config.getOutputTopic("ledger", FLOW_EVENT_TOPIC)
+                    Record(topic, it.key, it.value, it.timestamp, it.headers)
                 }
             }
     }

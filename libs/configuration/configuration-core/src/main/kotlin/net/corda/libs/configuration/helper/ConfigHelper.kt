@@ -25,3 +25,11 @@ fun SmartConfig.getInputTopic(consumerGroup: String, default: String) : String {
         default
     }
 }
+
+fun SmartConfig.getOutputTopic(process: String, default: String) : String {
+    return if (this.hasPath(BootConfig.BOOT_OUTPUT_TOPICS)) {
+        this.getConfig(BootConfig.BOOT_OUTPUT_TOPICS).getStringOrDefault(process, default)
+    } else {
+        default
+    }
+}
