@@ -449,15 +449,15 @@ workers:
     clusterDbConnectionPool:
       # -- crypto worker maximum JDBC connection pool size for cluster DB
       maxSize: 5
-      # -- DB worker minimum JDBC connection pool size for cluster DB
+      # -- crypto worker minimum JDBC connection pool size for cluster DB
       minSize: null
-      # -- TODO
+      # -- maximum time (in seconds) a connection can stay idle in the pool; A value of 0 means that idle connections are never removed from the pool
       idleTimeoutSeconds: 120
-      # -- TODO
+      # -- maximum time (in seconds) a connection can stay in the pool, regardless if it has been idle or has been recently used; If a connection is in-use and has reached "maxLifetime" timeout, it will be removed from the pool only when it becomes idle
       maxLifetimeSeconds: 1800
-      # -- TODO
+      # -- interval time (in seconds) in which connections will be tested for aliveness; Connections which are no longer alive are removed from the pool; A value of 0 means this check is disabled
       keepaliveTimeSeconds: 0
-      # -- TODO
+      # -- maximum time (in seconds) that the pool will wait for a connection to be validated as alive
       validationTimeoutSeconds: 5
     # crypto worker Kafka configuration
     kafka:
@@ -532,13 +532,13 @@ workers:
       maxSize: 5
       # -- DB worker minimum JDBC connection pool size for cluster DB
       minSize: null
-      # -- TODO
+      # -- maximum time (in seconds) a connection can stay idle in the pool; A value of 0 means that idle connections are never removed from the pool
       idleTimeoutSeconds: 120
-      # -- TODO
+      # -- maximum time (in seconds) a connection can stay in the pool, regardless if it has been idle or has been recently used; If a connection is in-use and has reached "maxLifetime" timeout, it will be removed from the pool only when it becomes idle
       maxLifetimeSeconds: 1800
-      # -- TODO
+      # -- interval time (in seconds) in which connections will be tested for aliveness; Connections which are no longer alive are removed from the pool; A value of 0 means this check is disabled
       keepaliveTimeSeconds: 0
-      # -- TODO
+      # -- maximum time (in seconds) that the pool will wait for a connection to be validated as alive
       validationTimeoutSeconds: 5
     # DB worker Kafka configuration
     kafka:
