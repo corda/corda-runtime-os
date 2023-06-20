@@ -1183,6 +1183,7 @@
                                     "required": [
                                         "maxSize"
                                     ],
+                                    "additionalProperties": false,
                                     "properties": {
                                         "maxSize": {
                                             "type": "integer",
@@ -1259,6 +1260,7 @@
                                     "required": [
                                         "maxSize"
                                     ],
+                                    "additionalProperties": false,
                                     "properties": {
                                         "maxSize": {
                                             "type": "integer",
