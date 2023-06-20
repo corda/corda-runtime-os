@@ -85,8 +85,7 @@ class WorkerHelpers {
                 Triple(ConfigKeys.TEMP_DIR,defaultParams.tempDir, ConfigDefaults.TEMP_DIR),
                 Triple(BootConfig.INSTANCE_ID,defaultParams.instanceId, Random.nextInt().absoluteValue),
                 Triple(BootConfig.TOPIC_PREFIX,defaultParams.topicPrefix, ""),
-                Triple(MAX_ALLOWED_MSG_SIZE,defaultParams.maxAllowedMessageSize, 972800),
-                Triple(BootConfig.BOOT_FLOW_TOPIC,defaultParams.flowEventTopic,"flow.event")
+                Triple(MAX_ALLOWED_MSG_SIZE,defaultParams.maxAllowedMessageSize, 972800)
             )
             val defaultParamsMap = defaultParamsAndValues
                 .mapNotNull { t -> t.second?.let { t.first to t.second } }
@@ -107,8 +106,12 @@ class WorkerHelpers {
             val secretsConfig =
                 defaultParams.secrets.mapKeys { (key, _) -> "${BootConfig.BOOT_SECRETS}.${key.trim()}" }
 
+            val inputTopics = defaultParams.inputTopics.mapKeys { (key, _) ->
+                "${BootConfig.BOOT_INPUT_TOPICS}.${key.trim()}"
+            }
+
             val config = ConfigFactory
-                .parseMap(messagingParams + defaultParamsMap + extraParamsMap + secretsConfig)
+                .parseMap(messagingParams + defaultParamsMap + extraParamsMap + secretsConfig + inputTopics)
 
             // merge with all files
             val configWithFiles = defaultParams.configFiles.reversed().fold(config) { acc, next ->

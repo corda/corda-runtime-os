@@ -24,15 +24,10 @@
         }
       }
     },
-    "flow": {
-      "description": "Configuration options for flow.",
-      "properties": {
-        "eventTopic": {
-          "description": "The event topic this flow worker is listening to.",
-          "type": "string",
-          "default": "flow.event"
-        }
-      }
+    "inputTopics": {
+      "description": "Configuration of input topics to Corda processors",
+      "type": "object",
+      "default": {}
     },
     "crypto": {
       "description": "Configuration options specific to crypto worker.",

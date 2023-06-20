@@ -6,6 +6,7 @@ import net.corda.data.flow.state.checkpoint.Checkpoint
 import net.corda.flow.pipeline.factory.FlowEventProcessorFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.helper.getConfig
+import net.corda.libs.configuration.helper.getInputTopic
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleStatus
@@ -68,7 +69,7 @@ class FlowExecutorImpl constructor(
 
     override fun onConfigChange(config: Map<String, SmartConfig>) {
         try {
-            val topic = config.getConfig(BOOT_CONFIG).getString(BootConfig.BOOT_FLOW_TOPIC)
+            val topic = config.getConfig(BOOT_CONFIG).getInputTopic(CONSUMER_GROUP, FLOW_EVENT_TOPIC)
             val consumerGroup = "$CONSUMER_GROUP-$topic"
             val messagingConfig = toMessagingConfig(config)
             val flowConfig = config.getConfig(FLOW_CONFIG)

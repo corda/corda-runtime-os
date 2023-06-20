@@ -71,6 +71,6 @@ class DefaultWorkerParams(healthPortOverride: Int = WORKER_MONITOR_PORT) {
             "defaults to 1 sample per second. Set to \"unlimited\" to record all samples"])
     var traceSamplesPerSecond: String? = null
 
-    @Option(names = ["--flow-topic"], description = ["Topic to read flow events from. Defaults to flow.event"])
-    var flowEventTopic: String? = null
+    @Option(names = ["-I", "--input-topic"], description = ["Topic to read events from, keyed by consumer group"])
+    var inputTopics = emptyMap<String, String>()
 }
