@@ -116,5 +116,8 @@ internal class MembershipPersistenceOperationImpl<T>(
             key = request.context.requestId,
             value = MembershipPersistenceAsyncRequest(request),
         ),
-    )
+    ).also {
+        val requestId = request.context.requestId
+        logger.info("Sending async membership persistence RPC request ID: $requestId.")
+    }
 }
