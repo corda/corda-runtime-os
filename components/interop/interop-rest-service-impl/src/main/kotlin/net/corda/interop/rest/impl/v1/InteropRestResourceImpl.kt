@@ -4,9 +4,7 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.libs.interop.endpoints.v1.InteropRestResource
 import net.corda.libs.interop.endpoints.v1.common.withInteropManager
 import net.corda.libs.interop.endpoints.v1.converter.convertToDto
-import net.corda.libs.interop.endpoints.v1.converter.convertToEndpointType
-import net.corda.libs.interop.endpoints.v1.types.CreateInteropIdentityType
-import net.corda.libs.interop.endpoints.v1.types.InteropIdentityResponseType
+import net.corda.libs.interop.endpoints.v1.types.CreateInteropIdentityRequest
 import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
@@ -54,18 +52,18 @@ internal class InteropRestResourceImpl @Activate constructor(
     }
 
     override fun createInterOpIdentity(
-        createInteropIdentityType: CreateInteropIdentityType,
+        createInteropIdentityRequest: CreateInteropIdentityRequest,
         holdingidentityid: String?
-    ): ResponseEntity<InteropIdentityResponseType> {
+    ): ResponseEntity<CreateInteropIdentityRequest> {
         val restContext = CURRENT_REST_CONTEXT.get()
         val principal = restContext.principal
 
-        val createInteropIdentityResult = //createInteropIdentity(createInteropIdentityType.convertToDto(principal))
+        val createInteropIdentityResult =
             withInteropManager(interopManagementService.interopManager, logger) {
-                createInteropIdentity(createInteropIdentityType.convertToDto(principal))
+                createInteropIdentity(createInteropIdentityRequest.convertToDto(principal))
             }
 
-        return ResponseEntity.ok(createInteropIdentityResult.convertToEndpointType())
+        return ResponseEntity.ok(createInteropIdentityResult)
     }
 
     override val protocolVersion = 1

@@ -1,7 +1,6 @@
 package net.corda.libs.interop.endpoints.v1
 
-import net.corda.libs.interop.endpoints.v1.types.CreateInteropIdentityType
-import net.corda.libs.interop.endpoints.v1.types.InteropIdentityResponseType
+import net.corda.libs.interop.endpoints.v1.types.CreateInteropIdentityRequest
 import net.corda.rest.RestResource
 import net.corda.rest.annotations.HttpGET
 import net.corda.rest.annotations.HttpPUT
@@ -39,8 +38,8 @@ interface InteropRestResource : RestResource {
         responseDescription = "Identifier for the request."
     )
     fun createInterOpIdentity(
-        createInteropIdentityType: CreateInteropIdentityType,
+        createInteropIdentityRequest: CreateInteropIdentityRequest,
         @RestPathParameter(description = "ID of the holding identity which groups are to be returned.")
     holdingidentityid: String?
-    ): ResponseEntity<InteropIdentityResponseType>
+    ): ResponseEntity<CreateInteropIdentityRequest>
 }
