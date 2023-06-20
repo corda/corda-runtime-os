@@ -110,8 +110,12 @@ class WorkerHelpers {
                 "${BootConfig.BOOT_INPUT_TOPICS}.${key.trim()}"
             }
 
+            val outputTopics = defaultParams.outputTopics.mapKeys { (key, _) ->
+                "${BootConfig.BOOT_OUTPUT_TOPICS}.${key.trim()}"
+            }
+
             val config = ConfigFactory
-                .parseMap(messagingParams + defaultParamsMap + extraParamsMap + secretsConfig + inputTopics)
+                .parseMap(messagingParams + defaultParamsMap + extraParamsMap + secretsConfig + inputTopics + outputTopics)
 
             // merge with all files
             val configWithFiles = defaultParams.configFiles.reversed().fold(config) { acc, next ->

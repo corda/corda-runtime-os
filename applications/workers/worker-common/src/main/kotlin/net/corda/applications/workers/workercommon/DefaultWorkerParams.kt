@@ -73,4 +73,7 @@ class DefaultWorkerParams(healthPortOverride: Int = WORKER_MONITOR_PORT) {
 
     @Option(names = ["-I", "--input-topic"], description = ["Topic to read events from, keyed by consumer group"])
     var inputTopics = emptyMap<String, String>()
+
+    @Option(names = ["-O", "--output-topics"], description = ["Topic to write events to, keyed by process"])
+    var outputTopics = emptyMap<String, String>()
 }

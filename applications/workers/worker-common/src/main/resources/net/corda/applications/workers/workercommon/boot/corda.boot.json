@@ -29,6 +29,11 @@
       "type": "object",
       "default": {}
     },
+    "outputTopics": {
+      "description": "Configuration of output topics for particular processes",
+      "type": "object",
+      "default": {}
+    },
     "crypto": {
       "description": "Configuration options specific to crypto worker.",
       "type": "object",
