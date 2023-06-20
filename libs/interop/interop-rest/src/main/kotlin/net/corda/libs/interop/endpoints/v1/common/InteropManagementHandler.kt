@@ -3,7 +3,7 @@ package net.corda.libs.interop.endpoints.v1.common
 import net.corda.libs.interop.endpoints.v1.InteropManager
 import org.slf4j.Logger
 
-@Suppress("ComplexMethod", "ThrowsCount")
+@Suppress("ComplexMethod", "ThrowsCount", "UNUSED_PARAMETER")
 fun <T : Any?> withInteropManager(
     interopManager: InteropManager,
     logger: Logger,
