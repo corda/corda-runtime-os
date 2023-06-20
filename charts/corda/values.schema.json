@@ -1182,7 +1182,6 @@
                                     "title": "crypto worker JDBC connection pool configuration for cluster DB",
                                     "required": [
                                         "maxSize",
-                                        "minSize",
                                         "idleTimeoutSeconds",
                                         "maxLifetimeSeconds",
                                         "keepaliveTimeSeconds",
@@ -1264,7 +1263,6 @@
                                     "title": "DB worker JDBC connection pool configuration for cluster DB",
                                     "required": [
                                         "maxSize",
-                                        "minSize",
                                         "idleTimeoutSeconds",
                                         "maxLifetimeSeconds",
                                         "keepaliveTimeSeconds",
