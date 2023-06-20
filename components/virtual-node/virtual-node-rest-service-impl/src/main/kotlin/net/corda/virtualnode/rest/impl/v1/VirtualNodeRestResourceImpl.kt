@@ -269,9 +269,7 @@ internal class VirtualNodeRestResourceImpl(
             throw InvalidStateChangeException("Virtual Node with shorthash $virtualNodeShortId already has " +
                     "CPI with file checksum $targetCpiFileChecksum")
         }
-
-
-
+        
         val targetCpi = virtualNodeValidationService.validateAndGetCpiByChecksum(targetCpiFileChecksum)
         virtualNodeValidationService.validateCpiUpgradePrerequisites(currentCpi, targetCpi)
 
