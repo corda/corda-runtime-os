@@ -88,7 +88,7 @@ internal class FlowRestResourceServiceImpl @Activate constructor(
                 )
             }
             is ConfigChangedEvent -> {
-                event.config.getConfig(MESSAGING_CONFIG).apply {
+                event.config.getConfig(MESSAGING_CONFIG).withFallback(event.config.getConfig(BOOT_CONFIG)).apply {
                     flowRestResource.initialise(this, ::signalErrorStatus)
                     flowStatusCacheService.initialise(this)
                 }
