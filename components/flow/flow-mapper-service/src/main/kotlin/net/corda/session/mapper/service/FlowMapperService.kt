@@ -19,6 +19,7 @@ import net.corda.messaging.api.subscription.StateAndEventSubscription
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC
+import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.FLOW_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.session.mapper.service.executor.FlowMapperListener
@@ -76,7 +77,7 @@ class FlowMapperService @Activate constructor(
                     coordinator.createManagedResource(CONFIG_HANDLE) {
                         configurationReadService.registerComponentForUpdates(
                             coordinator,
-                            setOf(FLOW_CONFIG, MESSAGING_CONFIG)
+                            setOf(FLOW_CONFIG, MESSAGING_CONFIG, BOOT_CONFIG)
                         )
                     }
                 } else {
@@ -97,7 +98,7 @@ class FlowMapperService @Activate constructor(
     private fun restartFlowMapperService(event: ConfigChangedEvent) {
         try {
             val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
-            val flowConfig = event.config.getConfig(FLOW_CONFIG)
+            val flowConfig = event.config.getConfig(FLOW_CONFIG).withFallback(event.config.getConfig(BOOT_CONFIG))
 
             coordinator.createManagedResource(CLEANUP_TASK) {
                 ScheduledTaskState(
