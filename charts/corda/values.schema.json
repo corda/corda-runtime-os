@@ -1181,7 +1181,12 @@
                                     "default": {},
                                     "title": "crypto worker JDBC connection pool configuration for cluster DB",
                                     "required": [
-                                        "maxSize"
+                                        "maxSize",
+                                        "minSize",
+                                        "idleTimeoutSeconds",
+                                        "maxLifetimeSeconds",
+                                        "keepaliveTimeSeconds",
+                                        "validationTimeoutSeconds"
                                     ],
                                     "additionalProperties": false,
                                     "properties": {
@@ -1258,7 +1263,12 @@
                                     "default": {},
                                     "title": "DB worker JDBC connection pool configuration for cluster DB",
                                     "required": [
-                                        "maxSize"
+                                        "maxSize",
+                                        "minSize",
+                                        "idleTimeoutSeconds",
+                                        "maxLifetimeSeconds",
+                                        "keepaliveTimeSeconds",
+                                        "validationTimeoutSeconds"
                                     ],
                                     "additionalProperties": false,
                                     "properties": {
