@@ -48,6 +48,7 @@ import net.corda.processors.crypto.CryptoProcessor
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.BootConfig.BOOT_CRYPTO
 import net.corda.schema.configuration.BootConfig.BOOT_DB
+import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.v5.base.annotations.VisibleForTesting
@@ -97,7 +98,8 @@ class CryptoProcessorImpl @Activate constructor(
         val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         val configKeys = setOf(
             MESSAGING_CONFIG,
-            CRYPTO_CONFIG
+            CRYPTO_CONFIG,
+            BOOT_CONFIG
         )
         const val FLOW_OPS_SUBSCRIPTION = "FLOW_OPS_SUBSCRIPTION"
         const val RPC_OPS_SUBSCRIPTION = "RPC_OPS_SUBSCRIPTION"
@@ -240,7 +242,8 @@ class CryptoProcessorImpl @Activate constructor(
 
         // make the processors
         val retryingConfig = cryptoConfig.retrying()
-        val flowOpsProcessor = CryptoFlowOpsBusProcessor(signingService, externalEventResponseFactory, retryingConfig)
+        val bootConfig = event.config.getConfig(BOOT_CONFIG)
+        val flowOpsProcessor = CryptoFlowOpsBusProcessor(signingService, externalEventResponseFactory, retryingConfig, bootConfig)
         val rpcOpsProcessor = CryptoOpsBusProcessor(signingService, retryingConfig)
         val hsmRegistrationProcessor = HSMRegistrationBusProcessor(hsmService, retryingConfig)
 

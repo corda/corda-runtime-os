@@ -22,9 +22,13 @@ import net.corda.data.crypto.wire.ops.flow.commands.SignFlowCommand
 import net.corda.data.crypto.wire.ops.flow.queries.ByIdsFlowQuery
 import net.corda.data.crypto.wire.ops.flow.queries.FilterMyKeysFlowQuery
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
+import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.configuration.helper.getOutputTopic
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.metrics.CordaMetrics
+import net.corda.schema.Schemas.Flow.FLOW_EVENT_TOPIC
+import net.corda.schema.configuration.BootConfig
 import net.corda.tracing.traceEventProcessingNullableSingle
 import net.corda.utilities.MDC_CLIENT_ID
 import net.corda.utilities.MDC_EXTERNAL_EVENT_ID
@@ -40,6 +44,7 @@ class CryptoFlowOpsBusProcessor(
     private val signingService: SigningService,
     private val externalEventResponseFactory: ExternalEventResponseFactory,
     config: RetryingConfig,
+    private val bootConfig: SmartConfig
 ) : DurableProcessor<String, FlowOpsRequest> {
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -54,8 +59,11 @@ class CryptoFlowOpsBusProcessor(
     )
 
     override fun onNext(events: List<Record<String, FlowOpsRequest>>): List<Record<*, *>> {
+        val topic = bootConfig.getOutputTopic(BootConfig.CRYPTO_OUTPUT, FLOW_EVENT_TOPIC)
         logger.trace { "onNext processing messages ${events.joinToString(",") { it.key }}" }
-        return events.mapNotNull { onNext(it) }
+        return events.mapNotNull { onNext(it) }.map {
+            Record(topic, it.key, it.value, it.timestamp, it.headers)
+        }
     }
 
     private fun onNext(event: Record<String, FlowOpsRequest>): Record<*, *>? {
