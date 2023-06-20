@@ -50,6 +50,7 @@ internal class MemberOpsAsyncProcessor(
     override fun onNext(
         events: List<Record<String, MembershipAsyncRequest>>,
     ): List<Record<*, *>> {
+        logger.info("QQQ got ${events.size} events")
         return events.mapNotNull {
             it.value
         }
