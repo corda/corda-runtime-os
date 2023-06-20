@@ -1191,6 +1191,43 @@
                                             "examples": [
                                                 5
                                             ]
+                                        },
+                                        "minSize": {
+                                            "anyOf": [
+                                                {
+                                                    "type": "integer",
+                                                    "minimum": 0
+                                                },
+                                                {
+                                                    "type": "null"
+                                                }
+                                            ],
+                                            "default": null,
+                                            "title": "crypto worker minimum JDBC connection pool size for cluster DB"
+                                        },
+                                        "idleTimeoutSeconds": {
+                                            "type": "integer",
+                                            "default": 120,
+                                            "minimum": 0,
+                                            "title": "TODO"
+                                        },
+                                        "maxLifetimeSeconds": {
+                                            "type": "integer",
+                                            "default": 1800,
+                                            "minimum": 1,
+                                            "title": "TODO"
+                                        },
+                                        "keepaliveTimeSeconds": {
+                                            "type": "integer",
+                                            "default": 0,
+                                            "minimum": 0,
+                                            "title": "TODO"
+                                        },
+                                        "validationTimeoutSeconds": {
+                                            "type": "integer",
+                                            "minimum": 1,
+                                            "default": 5,
+                                            "title": "TODO"
                                         }
                                     }
                                 }
@@ -1230,6 +1267,43 @@
                                             "examples": [
                                                 5
                                             ]
+                                        },
+                                        "minSize": {
+                                            "anyOf": [
+                                                {
+                                                    "type": "integer",
+                                                    "minimum": 0
+                                                },
+                                                {
+                                                    "type": "null"
+                                                }
+                                            ],
+                                            "default": null,
+                                            "title": "DB worker minimum JDBC connection pool size for cluster DB"
+                                        },
+                                        "idleTimeoutSeconds": {
+                                            "type": "integer",
+                                            "default": 120,
+                                            "minimum": 0,
+                                            "title": "TODO"
+                                        },
+                                        "maxLifetimeSeconds": {
+                                            "type": "integer",
+                                            "default": 1800,
+                                            "minimum": 1,
+                                            "title": "TODO"
+                                        },
+                                        "keepaliveTimeSeconds": {
+                                            "type": "integer",
+                                            "default": 0,
+                                            "minimum": 0,
+                                            "title": "TODO"
+                                        },
+                                        "validationTimeoutSeconds": {
+                                            "type": "integer",
+                                            "minimum": 1,
+                                            "default": 5,
+                                            "title": "TODO"
                                         }
                                     }
                                 }
