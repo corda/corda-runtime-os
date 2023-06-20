@@ -115,7 +115,7 @@ internal class SandboxGroupImpl(
         getClassTag(klass, isStaticTag = false)
     }
 
-    @Suppress("ComplexMethod", "NestedBlockDepth")
+    @Suppress("ComplexMethod", "NestedBlockDepth", "MaxLineLength")
     override fun getClass(className: String, serialisedClassTag: String): Class<*> {
         return reverseTagCache.computeIfAbsent((className to serialisedClassTag)){
             val classTag = classTagFactory.deserialise(serialisedClassTag)
