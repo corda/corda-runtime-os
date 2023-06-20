@@ -449,6 +449,16 @@ workers:
     clusterDbConnectionPool:
       # -- crypto worker maximum JDBC connection pool size for cluster DB
       maxSize: 5
+      # -- DB worker minimum JDBC connection pool size for cluster DB
+      minSize: null
+      # -- TODO
+      idleTimeoutSeconds: 120
+      # -- TODO
+      maxLifetimeSeconds: 1800
+      # -- TODO
+      keepaliveTimeSeconds: 0
+      # -- TODO
+      validationTimeoutSeconds: 5
     # crypto worker Kafka configuration
     kafka:
       # if kafka.sasl.enabled, the credentials to connect to Kafka with for the crypto worker
@@ -520,6 +530,16 @@ workers:
     clusterDbConnectionPool:
       # -- DB worker maximum JDBC connection pool size for cluster DB
       maxSize: 5
+      # -- DB worker minimum JDBC connection pool size for cluster DB
+      minSize: null
+      # -- TODO
+      idleTimeoutSeconds: 120
+      # -- TODO
+      maxLifetimeSeconds: 1800
+      # -- TODO
+      keepaliveTimeSeconds: 0
+      # -- TODO
+      validationTimeoutSeconds: 5
     # DB worker Kafka configuration
     kafka:
       # if kafka.sasl.enabled, the credentials to connect to Kafka with for the DB worker
