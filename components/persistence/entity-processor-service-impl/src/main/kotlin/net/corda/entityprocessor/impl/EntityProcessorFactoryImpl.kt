@@ -38,7 +38,8 @@ class EntityProcessorFactoryImpl @Activate constructor(
             currentSandboxGroupContext,
             entitySandboxService,
             responseFactory,
-            PayloadChecker(config)::checkSize
+            PayloadChecker(config)::checkSize,
+            config
         )
 
         val subscription = subscriptionFactory.createDurableSubscription(

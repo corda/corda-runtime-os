@@ -77,7 +77,7 @@ class FlowPersistenceServiceImpl  @Activate constructor(
             is ConfigChangedEvent -> {
                 entityProcessor?.stop()
                 val newEntityProcessor = entityProcessorFactory.create(
-                    event.config.getConfig(MESSAGING_CONFIG)
+                    event.config.getConfig(MESSAGING_CONFIG).withFallback(event.config.getConfig(BOOT_CONFIG))
                 )
                 logger.debug("Starting EntityProcessor.")
                 newEntityProcessor.start()
