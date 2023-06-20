@@ -30,20 +30,17 @@ interface InteropRestResource : RestResource {
                          holdingidentityid: String?): List<UUID>
 
     /**
-     * Asynchronous endpoint to create interop identity
+     * Endpoint to create interop identity
      */
     @HttpPUT(
-//        path = "{x500Name}/{groupId}",
-        path = "interopidentity",
+        path = "{holdingidentityid}/interopidentity",
         title = "Create interop identity.",
         description = "This method creates interop identity from x500name.",
         responseDescription = "Identifier for the request."
     )
     fun createInterOpIdentity(
-//        @RestPathParameter(description = "The X500 name of the identity to create")
-//        x500Name: String,
-//        @RestPathParameter(description = "The groupId of the group the identity belongs to.")
-//        groupId: String
-        createInteropIdentityType: CreateInteropIdentityType
+        createInteropIdentityType: CreateInteropIdentityType,
+        @RestPathParameter(description = "ID of the holding identity which groups are to be returned.")
+    holdingidentityid: String?
     ): ResponseEntity<InteropIdentityResponseType>
 }

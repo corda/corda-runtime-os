@@ -2,7 +2,6 @@ package net.corda.interop.aliasinfo.cache.impl
 
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.interop.aliasinfo.cache.AliasInfoCacheService
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleEvent
@@ -59,7 +58,7 @@ class AliasInfoCacheServiceEventHandler(
 
         log.info("Processing config update")
 
-        // TODO: Why does this need to be here? Which config keys should we listen to?
+        // Why does this need to be here? Which config keys should we listen to?
 
         coordinator.updateStatus(LifecycleStatus.UP)
     }

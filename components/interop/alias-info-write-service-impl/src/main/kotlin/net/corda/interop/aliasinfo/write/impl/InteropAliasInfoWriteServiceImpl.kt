@@ -69,13 +69,13 @@ class InteropAliasInfoWriteServiceImpl @Activate constructor(
     }
 
     override fun start() {
-        // TODO: Use debug rather than info
+        // Use debug rather than info
         log.info("Component starting")
         coordinator.start()
     }
 
     override fun stop() {
-        // TODO: Use debug rather than info
+        // Use debug rather than info
         log.info("Component stopping")
         coordinator.stop()
     }

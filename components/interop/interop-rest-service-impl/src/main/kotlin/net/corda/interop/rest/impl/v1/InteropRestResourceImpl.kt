@@ -2,6 +2,9 @@ package net.corda.interop.rest.impl.v1
 
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.libs.interop.endpoints.v1.InteropRestResource
+import net.corda.libs.interop.endpoints.v1.common.withInteropManager
+import net.corda.libs.interop.endpoints.v1.converter.convertToDto
+import net.corda.libs.interop.endpoints.v1.converter.convertToEndpointType
 import net.corda.libs.interop.endpoints.v1.types.CreateInteropIdentityType
 import net.corda.libs.interop.endpoints.v1.types.InteropIdentityResponseType
 import net.corda.lifecycle.DependentComponents
@@ -14,8 +17,10 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
+import net.corda.permissions.management.InteropManagementService
 import net.corda.rest.PluggableRestResource
 import net.corda.rest.response.ResponseEntity
+import net.corda.rest.security.CURRENT_REST_CONTEXT
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.utilities.debug
 import org.osgi.service.component.annotations.Activate
@@ -27,11 +32,13 @@ import java.util.*
 
 @Suppress("LongParameterList", "TooManyFunctions")
 @Component(service = [PluggableRestResource::class])
-internal class InteropRestResourceImpl @Activate constructor (
+internal class InteropRestResourceImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = ConfigurationReadService::class)
     private val configurationReadService: ConfigurationReadService,
+    @Reference(service = InteropManagementService::class)
+    private val interopManagementService: InteropManagementService,
 ) : InteropRestResource, PluggableRestResource<InteropRestResource>, Lifecycle {
 
     private companion object {
@@ -46,17 +53,19 @@ internal class InteropRestResourceImpl @Activate constructor (
         return listOf(UUID.randomUUID())
     }
 
-    override fun createInterOpIdentity(createInteropIdentityType: CreateInteropIdentityType): ResponseEntity<InteropIdentityResponseType> {
-//        val restContext = CURRENT_REST_CONTEXT.get()
-//        val principal = restContext.principal
-//
-//        val createInteropIdentityResult = //createInteropIdentity(createInteropIdentityType.convertToDto(principal))
-//            withPermissionManager(InteropManager, logger) {
-//                createRole(createRoleType.convertToDto(principal))
-//            }
-//
-//        return ResponseEntity.created(createInteropIdentityResult.convertToEndpointType())
-        TODO("implement")
+    override fun createInterOpIdentity(
+        createInteropIdentityType: CreateInteropIdentityType,
+        holdingidentityid: String?
+    ): ResponseEntity<InteropIdentityResponseType> {
+        val restContext = CURRENT_REST_CONTEXT.get()
+        val principal = restContext.principal
+
+        val createInteropIdentityResult = //createInteropIdentity(createInteropIdentityType.convertToDto(principal))
+            withInteropManager(interopManagementService.interopManager, logger) {
+                createInteropIdentity(createInteropIdentityType.convertToDto(principal))
+            }
+
+        return ResponseEntity.ok(createInteropIdentityResult.convertToEndpointType())
     }
 
     override val protocolVersion = 1
