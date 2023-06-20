@@ -33,6 +33,7 @@ import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
 import org.slf4j.LoggerFactory
 import java.io.File
+import java.io.InputStream
 import java.net.URI
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
@@ -80,33 +81,46 @@ class OpenApiCompatibilityTest {
 
         logger.info("REST resources discovered: ${allOps.map { it.simpleName }}")
 
-        val existingSwaggerJson = computeExistingSwagger()
-        val baselineSwagger = fetchBaseline()
+        RestApiVersion.values().forEach { apiVersion ->
 
-        val diffReport = existingSwaggerJson.second.diff(baselineSwagger)
+            val existingSwaggerJson = computeExistingSwagger(apiVersion)
+            val baselineSwagger = fetchBaseline(apiVersion)
 
-        val tmpBaselineFile = kotlin.io.path.createTempFile(
-            prefix = "open-api-baseline", suffix = ".json")
-        File(tmpBaselineFile.toUri()).printWriter().use {
-            it.println(existingSwaggerJson.second.toJson())
+            val diffReport = existingSwaggerJson.second.diff(baselineSwagger)
+
+            val tmpBaselineFile = kotlin.io.path.createTempFile(
+                prefix = "open-api-baseline-${apiVersion.versionPath}", suffix = ".json"
+            )
+            File(tmpBaselineFile.toUri()).printWriter().use {
+                it.println(existingSwaggerJson.second.toJson())
+            }
+
+            assertThat(diffReport).withFailMessage(
+                "Version: '${apiVersion.versionPath}': Produced Open API content:\n" + existingSwaggerJson.first +
+                        "\nis different to the baseline. Differences noted: ${diffReport.joinToString(" ## ")}\n\n" +
+                        "New baseline written to: $tmpBaselineFile"
+            ).isEmpty()
         }
-
-        assertThat(diffReport).withFailMessage(
-            "Produced Open API content:\n" + existingSwaggerJson.first +
-                    "\nis different to the baseline. Differences noted: ${diffReport.joinToString(" ## ")}\n\n" +
-                    "New baseline written to: $tmpBaselineFile"
-        ).isEmpty()
     }
 
-    private fun fetchBaseline(): OpenAPI {
-        val stream = requireNotNull(javaClass.classLoader.getResourceAsStream("/swaggerBaseline.json"))
+    private fun fetchBaseline(apiVersion: RestApiVersion): OpenAPI {
+
+        val stream = with("/swaggerBaseline-${apiVersion.versionPath}.json") {
+            val classLoader = OpenApiCompatibilityTest::class.java.classLoader
+            val resource = classLoader.getResource(this)
+            val errMsg =  { "File '$this' cannot be found on the classpath. Please check 'resources' folder." }
+            requireNotNull(resource, errMsg)
+            val resourceAsStream: InputStream? = resource.openStream()
+            requireNotNull(resourceAsStream, errMsg)
+        }
+
         return stream.use {
             val jsonString = String(it.readAllBytes())
             Json.mapper().readValue(jsonString, OpenAPI::class.java)
         }
     }
 
-    private fun computeExistingSwagger(): Pair<String, OpenAPI> {
+    private fun computeExistingSwagger(apiVersion: RestApiVersion): Pair<String, OpenAPI> {
         val context = RestContext(
             "api",
             "Corda REST API",
@@ -126,8 +140,6 @@ class OpenApiCompatibilityTest {
             dynamicRestResources.map { it as PluggableRestResource<out RestResource> }.sortedBy { it.targetInterface.name },
             { FakeSecurityManager() }, restServerSettings, multipartDir, devMode = true
         ).apply { start() }
-
-        val apiVersion = RestApiVersion.C5_0 // Include more versions to perform verification
 
         val url = "http://${serverAddress.host}:${server.port}/${context.basePath}/${apiVersion.versionPath}/swagger.json"
         logger.info("Swagger should be accessible on: $url")
