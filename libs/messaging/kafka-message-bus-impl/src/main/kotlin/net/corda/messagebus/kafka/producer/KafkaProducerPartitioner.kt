@@ -45,50 +45,49 @@ class KafkaProducerPartitioner : Partitioner {
             return (Utils.toPositive(hex.toUInt(16).toInt()) % partitionCount).also { logPartition(it) }
         }
 
-        // TODO: Does not cope with chunks properly because does not look at whether the real key is a String
-        val keyBytesToPartition = if (key is ChunkKey) {
+        fun deserializeString(bytes: ByteArray): String? {
+            return try {
+                String(bytes, StandardCharsets.UTF_8)
+            } catch (e: Exception) {
+                null
+            }
+        }
+
+        val (keyBytesToPartition: ByteArray, keyToPartition: String?) = if (key is ChunkKey) {
             logger.trace { "Found ChunkKey. Using real bytes $keyBytes for partitioning" }
-            key.realKey.array().clone()
-        } else if (key is String) {
-            if (key.startsWith("#") && key.indexOf('/') == 17) {
+            val originalKeyBytes = key.realKey.array().clone()
+            originalKeyBytes to deserializeString(originalKeyBytes)
+        } else {
+            keyBytes to ((key as? String) ?: deserializeString(keyBytes))
+        }
+
+        if (keyToPartition is String) {
+            if (keyToPartition.startsWith("#") && keyToPartition.indexOf('/') == 17) {
                 return if (topic.endsWith("p2p.in")) {
                     // Invert for p2p.in
-                    if (key.contains("-INITIATED")) {
+                    if (keyToPartition.contains("-INITIATED")) {
                         // Just immediately mod the hash of the flow ID
-                        partitionFor(key.substring(1, 9))
+                        partitionFor(keyToPartition.substring(1, 9))
                     } else {
                         // Just immediately mod the hash of the receiver flow ID
-                        partitionFor(key.substring(9, 17))
+                        partitionFor(keyToPartition.substring(9, 17))
                     }
                 } else {
-                    if (key.contains("-INITIATED")) {
+                    if (keyToPartition.contains("-INITIATED")) {
                         // Just immediately mod the hash of the receiver flow ID
-                        partitionFor(key.substring(9, 17))
+                        partitionFor(keyToPartition.substring(9, 17))
                     } else {
                         // Just immediately mod the hash of the flow ID
-                        partitionFor(key.substring(1, 9))
+                        partitionFor(keyToPartition.substring(1, 9))
                     }
                 }
-            } else if (key.length == 36) {
+            } else if (keyToPartition.length == 36) {
                 try {
-                    UUID.fromString(key)
-                    return partitionFor(key.substring(0, 8))
+                    UUID.fromString(keyToPartition)
+                    return partitionFor(keyToPartition.substring(0, 8))
                 } catch (e: Exception) {
-                    keyBytes
                 }
-            } else {
-                keyBytes
             }
-        } else if (key is ByteArray && key.size == 36) {
-            try {
-                val stringKey = String(keyBytes, StandardCharsets.UTF_8)
-                UUID.fromString(stringKey)
-                return partitionFor(stringKey.substring(0, 8))
-            } catch (e: Exception) {
-                keyBytes
-            }
-        } else {
-            keyBytes
         }
         val partition = BuiltInPartitioner.partitionForKey(keyBytesToPartition, partitionCount)
         logger.trace { "Sending record with key $key to partition $partition" }
