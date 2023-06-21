@@ -86,6 +86,7 @@ dependencies {
     integrationTestImplementation project(":libs:lifecycle:registry")
     integrationTestImplementation project(":processors:crypto-processor")
     integrationTestImplementation project(":testing:db-testkit")
+    integrationTestImplementation project(":testing:group-policy-test-common")
     integrationTestImplementation project(":testing:test-utilities")
 
     integrationTestImplementation("org.hibernate:hibernate-osgi:$hibernateVersion") {
