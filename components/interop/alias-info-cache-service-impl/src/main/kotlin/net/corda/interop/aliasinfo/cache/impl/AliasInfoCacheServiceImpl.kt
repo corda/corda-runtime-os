@@ -30,12 +30,27 @@ class AliasInfoCacheServiceImpl @Activate constructor(
     private val coordinatorName = LifecycleCoordinatorName.forComponent<AliasInfoCacheService>()
     private val coordinator = coordinatorFactory.createCoordinator(coordinatorName, lifecycleEventHandler)
 
-    override fun getAliasIdentities(key: String): List<InteropAliasIdentity> {
-        TODO("Not yet implemented")
+    /**
+     * Outer key is the holding identity short hash.
+     * Inner key is the interop group UUID.
+     */
+    private val cacheData = HashMap<String, HashMap<String, InteropAliasIdentity>>()
+
+    private fun getAliasIdentityMapFor(holdingIdentityShortHash: String): HashMap<String, InteropAliasIdentity> {
+        if (!cacheData.containsKey(holdingIdentityShortHash)) {
+            cacheData[holdingIdentityShortHash] = HashMap()
+        }
+
+        return cacheData[holdingIdentityShortHash]!!
     }
 
-    override fun putAliasIdentity(key: String, value: InteropAliasIdentity) {
-        TODO("Not yet implemented")
+    override fun getAliasIdentities(shortHash: String): Map<String, InteropAliasIdentity> {
+        return getAliasIdentityMapFor(shortHash)
+    }
+
+    override fun putAliasIdentity(shortHash: String, aliasIdentity: InteropAliasIdentity) {
+        val identities = getAliasIdentityMapFor(shortHash)
+        identities[aliasIdentity.groupId] = aliasIdentity
     }
 
     override val isRunning: Boolean
