@@ -35,7 +35,7 @@ class KafkaProducerPartitioner : Partitioner {
         val keyBytesToPartition = if (key is ChunkKey) {
             logger.trace { "Found ChunkKey. Using real bytes $keyBytes for partitioning" }
             key.realKey.array().clone()
-        } else if (key is String && topic.endsWith("flow.mapper.event")) {
+        } else if (key is String && topic.contains("flow.mapper.event") && key.indexOf('/') == 8) {
             // Just immediately mod the hash of the flow ID
             return key.substring(0, 8).toInt(16) % cluster.partitionsForTopic(topic).size
         } else {

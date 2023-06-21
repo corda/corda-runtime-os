@@ -4,9 +4,13 @@ import net.corda.data.chunking.ChunkKey
 import net.corda.messagebus.kafka.producer.KafkaProducerPartitioner
 import org.apache.kafka.common.Cluster
 import org.apache.kafka.common.PartitionInfo
+import org.apache.kafka.common.serialization.StringSerializer
+import org.apache.kafka.common.utils.Utils
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import java.nio.ByteBuffer
+import java.nio.charset.StandardCharsets
+import java.util.*
 
 class KafkaProducerPartitionerTest {
 
@@ -50,6 +54,35 @@ class KafkaProducerPartitionerTest {
         assertEquals(partition1, partition2)
     }
 
+    @Test
+    fun `flow mapper session event maps to same partition as flow`() {
+        val flowId = UUID.randomUUID()
+
+        val flowIdHash: Int =
+            Utils.toPositive(Utils.murmur2(flowId.toString().toByteArray(StandardCharsets.UTF_8)))
+        val sessionId = flowIdHash.toString(16).padStart(8, '0') + "/" + UUID.randomUUID().toString()
+
+        val cluster = buildCluster(setOf("flow.event", "flow.mapper.event"))
+        val partitioner = KafkaProducerPartitioner()
+        val flowIdPartition = partitioner.partition(
+            "flow.event",
+            flowId.toString(),
+            StringSerializer().serialize("flow.event", flowId.toString()),
+            TEST_VALUE,
+            TEST_VALUE.toByteArray(),
+            cluster
+        )
+        val sessionIdPartition = partitioner.partition(
+            "flow.mapper.event",
+            sessionId,
+            StringSerializer().serialize("flow.mapper.event", sessionId),
+            TEST_VALUE,
+            TEST_VALUE.toByteArray(),
+            cluster
+        )
+        assertEquals(flowIdPartition, sessionIdPartition)
+    }
+
     private fun buildChunkKey(chunk: Int): ChunkKey {
         return ChunkKey.newBuilder()
             .setRealKey(ByteBuffer.wrap(TEST_KEY.toByteArray()))
@@ -57,7 +90,12 @@ class KafkaProducerPartitionerTest {
             .build()
     }
 
-    private fun getPartition(partitioner: KafkaProducerPartitioner, key: Any, keyBytes: ByteArray, cluster: Cluster): Int {
+    private fun getPartition(
+        partitioner: KafkaProducerPartitioner,
+        key: Any,
+        keyBytes: ByteArray,
+        cluster: Cluster
+    ): Int {
         return partitioner.partition(
             TEST_TOPIC,
             key,
@@ -68,9 +106,11 @@ class KafkaProducerPartitionerTest {
         )
     }
 
-    private fun buildCluster(): Cluster {
-        val partitions = (1..100).map {
-            PartitionInfo(TEST_TOPIC, it, null, null, null)
+    private fun buildCluster(topics: Set<String> = setOf(TEST_TOPIC)): Cluster {
+        val partitions = topics.flatMap { topic ->
+            (1..100).map {
+                PartitionInfo(topic, it, null, null, null)
+            }
         }
         return Cluster("test", setOf(), partitions, setOf(), setOf())
     }
