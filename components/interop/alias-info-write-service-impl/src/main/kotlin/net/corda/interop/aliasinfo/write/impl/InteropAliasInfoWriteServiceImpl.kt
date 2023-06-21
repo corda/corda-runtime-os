@@ -27,6 +27,7 @@ import org.slf4j.LoggerFactory
 import java.util.concurrent.atomic.AtomicReference
 
 
+@Suppress("ForbiddenComment")
 @Component(service = [InteropAliasInfoWriteService::class])
 class InteropAliasInfoWriteServiceImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
