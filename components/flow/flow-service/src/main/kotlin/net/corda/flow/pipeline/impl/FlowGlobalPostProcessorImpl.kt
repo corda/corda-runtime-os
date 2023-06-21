@@ -5,6 +5,7 @@ import net.corda.data.flow.FlowKey
 import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.event.mapper.ScheduleCleanup
 import net.corda.data.flow.event.session.SessionData
+import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.output.FlowStatus
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
@@ -89,9 +90,13 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
                 log.info("**** event is type: ${event.payload::class.java.name}")
                 when (event.payload) {
                     is SessionData -> {
-                        log.info("**** Encountered Session Data, creating p2p record")
+                        when (event.payload) {
+                            is SessionInit -> { log.info("**** Session Init event discovered for key ${event.sessionId}")}
+                        }
+                        log.info("**** Encountered Session Data, creating p2p record with key: ${event.sessionId}")
                         flowRecordFactory.createP2PEventRecord(event, cordaAvroSerializationFactory, context.config)
                     } else -> {
+                        log.info("---- ${event.sessionId}")
                         flowRecordFactory.createFlowMapperEventRecord(event.sessionId, event)
                     }
                 }
