@@ -57,7 +57,7 @@ interface HsmRestResource : RestResource {
         @RestPathParameter(description = "The category of the HSM; can be the value 'ACCOUNTS', 'CI', 'LEDGER'," +
                 " 'NOTARY', 'SESSION_INIT', 'TLS', or 'JWT_KEY'")
         category: String
-    ): HsmAssociationInfo?
+    ): HsmAssociationInfo
 
     /**
      * The [assignSoftHsm] method enables you to assign a soft HSM to the tenant for the specified category. Unlike a
