@@ -77,6 +77,7 @@ internal class StartRegistrationHandler(
 
     override val commandType = StartRegistration::class.java
 
+    @Suppress("LongMethod")
     override fun invoke(state: RegistrationState?, key: String, command: StartRegistration): RegistrationHandlerResult {
         if (state == null) throw MissingRegistrationStateException
         val (registrationId, mgmHoldingId, pendingMemberHoldingId) = Triple(
@@ -192,18 +193,20 @@ internal class StartRegistrationHandler(
                 }
             }
 
-            val persistMemberStatusMessage = p2pRecordsFactory.createAuthenticatedMessageRecord(
-                source = mgmHoldingId.toAvro(),
-                destination = pendingMemberHoldingId.toAvro(),
-                content = retrieveRegistrationStatusMessage(
-                    pendingMemberInfo.platformVersion,
-                    registrationRequest.registrationId,
-                    RegistrationStatus.RECEIVED_BY_MGM.name,
-                ),
-                minutesToWait = 5,
-                filter = PENDING
+            val statusUpdateMessage = retrieveRegistrationStatusMessage(
+                pendingMemberInfo.platformVersion,
+                registrationRequest.registrationId,
+                RegistrationStatus.RECEIVED_BY_MGM.name,
             )
-            outputRecords.add(persistMemberStatusMessage)
+            if (statusUpdateMessage != null) {
+                p2pRecordsFactory.createAuthenticatedMessageRecord(
+                    source = mgmHoldingId.toAvro(),
+                    destination = pendingMemberHoldingId.toAvro(),
+                    content = statusUpdateMessage,
+                    minutesToWait = 5,
+                    filter = PENDING
+                )
+            } else { null }?.let { outputRecords.add(it) }
 
             logger.info("Successful initial validation of registration request with ID ${registrationRequest.registrationId}")
             VerifyMember()

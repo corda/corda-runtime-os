@@ -263,6 +263,17 @@ class ApproveRegistrationHandlerTest {
     }
 
     @Test
+    fun `invoke does not send registration status update message when status cannot be retrieved`() {
+        whenever(p2pRecordsFactory.createAuthenticatedMessageRecord(any(), any(), any(), anyOrNull(), any(), any()))
+            .thenReturn(null)
+
+        val results = handler.invoke(state, key, command)
+        assertThat(results.outputStates)
+            .hasSize(3)
+        results.outputStates.forEach { assertThat(it.value).isNotInstanceOf(AppMessage::class.java) }
+    }
+
+    @Test
     fun `Error is thrown when there is no MGM`() {
         whenever(
             memberTypeChecker.getMgmMemberInfo(owner)

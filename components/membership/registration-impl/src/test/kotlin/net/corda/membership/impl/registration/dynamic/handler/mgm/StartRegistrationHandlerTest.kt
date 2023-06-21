@@ -292,6 +292,17 @@ class StartRegistrationHandlerTest {
     }
 
     @Test
+    fun `invoke does not send registration status update message when status cannot be retrieved`() {
+        whenever(p2pRecordsFactory.createAuthenticatedMessageRecord(any(), any(), any(), anyOrNull(), any(), any()))
+            .thenReturn(null)
+
+        val results = handler.invoke(registrationState, Record(testTopic, testTopicKey, startRegistrationCommand))
+        assertThat(results.outputStates)
+            .hasSize(2)
+        results.outputStates.forEach { assertThat(it.value).isNotInstanceOf(AppMessage::class.java) }
+    }
+
+    @Test
     fun `serial is increased when building pending member info`() {
         whenever(membershipQueryClient.queryRegistrationRequest(eq(mgmHoldingIdentity.toCorda()), eq(registrationId)))
             .thenReturn(MembershipQueryResult.Success(createRegistrationRequest(serial = 10L)))

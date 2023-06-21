@@ -318,7 +318,7 @@ class ProcessMemberVerificationResponseHandlerTest {
         ) {
             val context = registrationContextKeyValues +
                     KeyValuePair(PRE_AUTH_TOKEN, token)
-            whenever(registrationContext.items).doReturn(context.filterNotNull())
+            whenever(registrationContext.items).doReturn(context)
         }
 
         @Suppress("MaxLineLength")
@@ -457,6 +457,23 @@ class ProcessMemberVerificationResponseHandlerTest {
             verifyGetApprovalRules(ApprovalRuleType.PREAUTH)
             verifySetRegistrationStatus(RegistrationStatus.PENDING_MANUAL_APPROVAL)
             verifySetOwnRegistrationStatus(RegistrationStatus.PENDING_MANUAL_APPROVAL)
+        }
+
+        @Test
+        fun `handler does not send registration status update message when status cannot be retrieved`() {
+            whenever(p2pRecordsFactory.createAuthenticatedMessageRecord(any(), any(), any(), anyOrNull(), any(), any()))
+                .thenReturn(null)
+
+            mockConsumeToken()
+            mockQueryToken(MembershipQueryResult.Success(listOf(mockToken)))
+            mockPreAuthTokenInRegistrationContext()
+            mockApprovalRules(ApprovalRuleType.PREAUTH, manuallyApproveNoneRule)
+            mockMemberLookup(memberContextKeyValues, MEMBER_STATUS_PENDING)
+
+            val results = invokeTestFunction()
+            assertThat(results.outputStates)
+                .hasSize(2)
+            results.outputStates.forEach { assertThat(it.value).isNotInstanceOf(AppMessage::class.java) }
         }
 
         @Test

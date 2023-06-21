@@ -27,6 +27,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
@@ -135,6 +136,17 @@ class DeclineRegistrationHandlerTest {
         handler.invoke(state, Record(TOPIC, member.toString(), RegistrationCommand(command)))
 
         verify(config).getIsNull("$TTLS.$DECLINE_REGISTRATION")
+    }
+
+    @Test
+    fun `handler does not send registration status update message when status cannot be retrieved`() {
+        whenever(p2pRecordsFactory.createAuthenticatedMessageRecord(any(), any(), any(), anyOrNull(), any(), any()))
+            .thenReturn(null)
+
+        val results = handler.invoke(state, Record(TOPIC, member.toString(), RegistrationCommand(command)))
+        assertThat(results.outputStates)
+            .hasSize(2)
+        results.outputStates.forEach { assertThat(it.value).isNotInstanceOf(AppMessage::class.java) }
     }
 
     @Test

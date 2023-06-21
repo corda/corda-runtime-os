@@ -100,13 +100,18 @@ internal class ProcessMemberVerificationResponseHandler(
                 registrationId,
                 status
             ).createAsyncCommands()
-            val persistStatusMessage = p2pRecordsFactory.createAuthenticatedMessageRecord(
-                source = mgm,
-                destination = member,
-                content = retrieveRegistrationStatusMessage(pendingInfo.platformVersion, registrationId, status.name),
-                minutesToWait = membershipConfig.getTtlMinutes(UPDATE_TO_PENDING_AUTO_APPROVAL),
-                filter = MembershipStatusFilter.PENDING,
+            val statusUpdateMessage = retrieveRegistrationStatusMessage(
+                pendingInfo.platformVersion, registrationId, status.name
             )
+            val persistStatusMessage = if (statusUpdateMessage != null) {
+                p2pRecordsFactory.createAuthenticatedMessageRecord(
+                    source = mgm,
+                    destination = member,
+                    content = statusUpdateMessage,
+                    minutesToWait = membershipConfig.getTtlMinutes(UPDATE_TO_PENDING_AUTO_APPROVAL),
+                    filter = MembershipStatusFilter.PENDING,
+                )
+            } else { null }
             val approveRecord = if (status == RegistrationStatus.PENDING_AUTO_APPROVAL) {
                 Record(
                     REGISTRATION_COMMAND_TOPIC,

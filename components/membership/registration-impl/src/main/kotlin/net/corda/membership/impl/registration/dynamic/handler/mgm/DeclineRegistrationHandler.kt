@@ -68,19 +68,22 @@ internal class DeclineRegistrationHandler(
             registrationRequestStatus = RegistrationStatus.DECLINED,
             reason = command.reason
         ).createAsyncCommands()
-        val memberDeclinedMessage = p2pRecordsFactory.createAuthenticatedMessageRecord(
-            source = declinedBy,
-            destination = declinedMember,
-            // Setting TTL to avoid resending the message in case the decline reason is that the
-            // P2P channel could not be established.
-            minutesToWait = membershipConfig.getTtlMinutes(DECLINE_REGISTRATION),
-            content = retrieveRegistrationStatusMessage(
-                memberInfo.platformVersion,
-                registrationId,
-                RegistrationStatus.DECLINED.name,
-            ),
-            filter = MembershipStatusFilter.PENDING,
+        val statusUpdateMessage = retrieveRegistrationStatusMessage(
+            memberInfo.platformVersion,
+            registrationId,
+            RegistrationStatus.DECLINED.name,
         )
+        val memberDeclinedMessage = if (statusUpdateMessage != null) {
+            p2pRecordsFactory.createAuthenticatedMessageRecord(
+                source = declinedBy,
+                destination = declinedMember,
+                // Setting TTL to avoid resending the message in case the decline reason is that the
+                // P2P channel could not be established.
+                minutesToWait = membershipConfig.getTtlMinutes(DECLINE_REGISTRATION),
+                content = statusUpdateMessage,
+                filter = MembershipStatusFilter.PENDING,
+            )
+        } else { null }
         val commandToStartProcessingTheNextRequest = Record(
             topic = REGISTRATION_COMMAND_TOPIC,
             key = key,
@@ -88,7 +91,7 @@ internal class DeclineRegistrationHandler(
         )
         return RegistrationHandlerResult(
             null,
-            listOf(memberDeclinedMessage, commandToStartProcessingTheNextRequest) + registrationRequestDeclinedCommand
+            listOfNotNull(memberDeclinedMessage, commandToStartProcessingTheNextRequest) + registrationRequestDeclinedCommand
         )
     }
 

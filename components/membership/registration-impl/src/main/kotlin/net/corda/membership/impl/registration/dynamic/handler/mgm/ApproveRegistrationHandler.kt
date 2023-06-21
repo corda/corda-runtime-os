@@ -125,16 +125,19 @@ internal class ApproveRegistrationHandler(
                 value = persistentMemberInfo,
             )
 
-            val persistApproveMessage = p2pRecordsFactory.createAuthenticatedMessageRecord(
-                source = approvedBy,
-                destination = approvedMember,
-                content = retrieveRegistrationStatusMessage(
-                    memberInfo.platformVersion,
-                    registrationId,
-                    RegistrationStatus.APPROVED.name
-                ),
-                filter = MembershipStatusFilter.ACTIVE_OR_SUSPENDED
+            val statusUpdateMessage = retrieveRegistrationStatusMessage(
+                memberInfo.platformVersion,
+                registrationId,
+                RegistrationStatus.APPROVED.name
             )
+            val persistApproveMessage = if (statusUpdateMessage != null) {
+                p2pRecordsFactory.createAuthenticatedMessageRecord(
+                    source = approvedBy,
+                    destination = approvedMember,
+                    content = statusUpdateMessage,
+                    filter = MembershipStatusFilter.ACTIVE_OR_SUSPENDED
+                )
+            } else { null }
 
             val commandToStartProcessingTheNextRequest = Record(
                 topic = REGISTRATION_COMMAND_TOPIC,
@@ -142,7 +145,7 @@ internal class ApproveRegistrationHandler(
                 value = RegistrationCommand(CheckForPendingRegistration(approvedBy, approvedMember, 0))
             )
 
-            listOf(memberRecord, persistApproveMessage, distributionAction, commandToStartProcessingTheNextRequest)
+            listOfNotNull(memberRecord, persistApproveMessage, distributionAction, commandToStartProcessingTheNextRequest)
         } catch (e: Exception) {
             logger.warn("Could not approve registration request: '$registrationId'", e)
             return RegistrationHandlerResult(

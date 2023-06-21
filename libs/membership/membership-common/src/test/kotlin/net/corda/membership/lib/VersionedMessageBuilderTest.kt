@@ -4,7 +4,6 @@ import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.p2p.SetOwnRegistrationStatus
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
 import java.util.UUID
 
 class VersionedMessageBuilderTest {
@@ -37,9 +36,7 @@ class VersionedMessageBuilderTest {
     }
 
     @Test
-    fun `exception is being thrown when not expected status needs to be distributed`() {
-        assertThrows<IllegalArgumentException> {
-            retrieveRegistrationStatusMessage(50101, registrationId, "dummyStatus")
-        }
+    fun `null is returned when not expected status needs to be distributed`() {
+        assertThat(retrieveRegistrationStatusMessage(50101, registrationId, "dummyStatus")).isNull()
     }
 }
