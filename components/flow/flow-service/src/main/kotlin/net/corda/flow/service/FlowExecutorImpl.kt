@@ -82,8 +82,8 @@ class FlowExecutorImpl constructor(
 
             val processorCount = getFlowProcessorCount(config)
 
-            repeat(4) {
-                subscriptions += subscriptionFactory.createStateAndEventSubscription(
+            repeat(1) {
+                subscriptions += subscriptionFactory.createFlowStateAndEventSubscription(
                     SubscriptionConfig(CONSUMER_GROUP, FLOW_EVENT_TOPIC),
                     flowEventProcessorFactory.create(flowConfig),
                     messagingConfig,
