@@ -11,12 +11,10 @@ import net.corda.membership.lib.SetOwnRegistrationStatusV2
 import net.corda.schema.Schemas.Membership.REGISTRATION_COMMAND_TOPIC
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.schema.registry.deserialize
-import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.virtualnode.toCorda
 import org.assertj.core.api.SoftAssertions.assertSoftly
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.doReturn
-import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.mock
 import java.nio.ByteBuffer
 
@@ -32,8 +30,9 @@ class SetOwnRegistrationStatusHandlerTest {
         RegistrationStatusV2.DECLINED
     )
     private val avroSchemaRegistry: AvroSchemaRegistry = mock {
+        on { getClassType(payloadV1) } doReturn SetOwnRegistrationStatus::class.java
+        on { getClassType(payloadV2) } doReturn SetOwnRegistrationStatusV2::class.java
         on { deserialize<SetOwnRegistrationStatus>(payloadV1) } doReturn statusV1
-        on { deserialize<SetOwnRegistrationStatusV2>(payloadV1) } doThrow  CordaRuntimeException("")
         on { deserialize<SetOwnRegistrationStatusV2>(payloadV2) } doReturn statusV2
     }
     private val identity = HoldingIdentity("O=Alice, L=London, C=GB", "GroupId")

@@ -11,7 +11,6 @@ import net.corda.membership.lib.SetOwnRegistrationStatusV2
 import net.corda.schema.Schemas.Membership.REGISTRATION_COMMAND_TOPIC
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.schema.registry.deserialize
-import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.virtualnode.toCorda
 import java.nio.ByteBuffer
 
@@ -22,10 +21,10 @@ internal class SetOwnRegistrationStatusHandler(
         header: AuthenticatedMessageHeader,
         payload: ByteBuffer
     ): Record<String, RegistrationCommand> {
-        val response = try {
-            avroSchemaRegistry.deserialize(payload)
-        } catch (e: CordaRuntimeException) {
+        val response = if (avroSchemaRegistry.getClassType(payload) == SetOwnRegistrationStatus::class.java) {
             avroSchemaRegistry.deserialize<SetOwnRegistrationStatus>(payload).convertToNewVersion()
+        } else {
+            avroSchemaRegistry.deserialize(payload)
         }
         return Record(
             REGISTRATION_COMMAND_TOPIC,
@@ -41,11 +40,16 @@ internal class SetOwnRegistrationStatusHandler(
 
     private fun SetOwnRegistrationStatus.convertToNewVersion() : SetOwnRegistrationStatusV2 {
         val status = when(newStatus) {
+            RegistrationStatus.NEW -> RegistrationStatusV2.NEW
+            RegistrationStatus.SENT_TO_MGM -> RegistrationStatusV2.SENT_TO_MGM
             RegistrationStatus.RECEIVED_BY_MGM -> RegistrationStatusV2.RECEIVED_BY_MGM
+            RegistrationStatus.PENDING_MEMBER_VERIFICATION -> RegistrationStatusV2.PENDING_MEMBER_VERIFICATION
             RegistrationStatus.PENDING_MANUAL_APPROVAL -> RegistrationStatusV2.PENDING_MANUAL_APPROVAL
             RegistrationStatus.PENDING_AUTO_APPROVAL -> RegistrationStatusV2.PENDING_AUTO_APPROVAL
             RegistrationStatus.APPROVED -> RegistrationStatusV2.APPROVED
             RegistrationStatus.DECLINED -> RegistrationStatusV2.DECLINED
+            RegistrationStatus.INVALID -> RegistrationStatusV2.INVALID
+            RegistrationStatus.FAILED -> RegistrationStatusV2.FAILED
             else -> throw IllegalArgumentException("Unknown status '${newStatus.name}' received.")
         }
         return SetOwnRegistrationStatusV2(registrationId, status)
