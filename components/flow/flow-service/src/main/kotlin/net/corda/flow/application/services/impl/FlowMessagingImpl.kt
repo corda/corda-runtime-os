@@ -21,12 +21,10 @@ import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.serialization.SingletonSerializeAsToken
-import org.apache.kafka.common.utils.Utils
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
-import java.nio.charset.StandardCharsets
 import java.util.*
 
 @Suppress("TooManyFunctions")
@@ -173,9 +171,12 @@ class FlowMessagingImpl @Activate constructor(
         x500Name: MemberX500Name,
         flowContextPropertiesBuilder: FlowContextPropertiesBuilder?
     ): FlowSession {
-        val flowIdHash: Int =
-            Utils.toPositive(Utils.murmur2(fiber.flowId.toString().toByteArray(StandardCharsets.UTF_8)))
-        val sessionId = flowIdHash.toString(16).padStart(8, '0') + "/" + UUID.randomUUID().toString()
+        val sessionUUID = UUID.randomUUID()
+        //val flowIdHash: Int =
+        //    Utils.toPositive(Utils.murmur2(fiber.flowId.toString().toByteArray(StandardCharsets.UTF_8)))
+        val flowIdHash: String = fiber.flowId.toString().substring(0, 8)
+        val receiverFlowIdHash: String = sessionUUID.toString().substring(0, 8)
+        val sessionId = "#" + flowIdHash + receiverFlowIdHash + "/" + sessionUUID.toString()
         checkFlowCanBeInitiated()
         addSessionIdToFlowStackItem(sessionId)
         return flowSessionFactory.createInitiatingFlowSession(sessionId, x500Name, flowContextPropertiesBuilder)

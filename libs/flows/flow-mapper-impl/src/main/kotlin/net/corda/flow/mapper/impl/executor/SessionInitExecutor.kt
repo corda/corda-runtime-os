@@ -14,6 +14,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.metrics.CordaMetrics
 import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
+import java.util.*
 
 @Suppress("LongParameterList")
 class SessionInitExecutor(
@@ -88,7 +89,9 @@ class SessionInitExecutor(
         sessionInit: SessionInit,
     ): SessionInitOutputs {
         return if (messageDirection == MessageDirection.INBOUND) {
-            val flowId = generateFlowId()
+            val sessionId = sessionEvent.sessionId
+            val uuid = UUID.randomUUID()
+            val flowId = sessionId.substring(9, 17) + uuid.toString().substring(8)
             sessionInit.flowId = flowId
             SessionInitOutputs(flowId, flowId, FlowEvent(flowId, sessionEvent))
         } else {
