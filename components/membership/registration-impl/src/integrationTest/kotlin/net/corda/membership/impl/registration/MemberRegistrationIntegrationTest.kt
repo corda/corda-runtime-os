@@ -294,10 +294,9 @@ class MemberRegistrationIntegrationTest {
 
     @Test
     fun `dynamic member registration service publishes unauthenticated message to be sent to the MGM`() {
-        val groupPolicy = TestGroupPolicy()
         val member = HoldingIdentity(memberName, groupId)
         val context = buildTestContext(member)
-        groupPolicyProvider.putGroupPolicy(member, groupPolicy)
+        groupPolicyProvider.putGroupPolicy(member, TestGroupPolicy())
         membershipGroupReaderProvider.loadMembers(member, createMemberList())
         val completableResult = CompletableFuture<Pair<String, AppMessage>>()
         // Set up subscription to gather results of processing p2p message
