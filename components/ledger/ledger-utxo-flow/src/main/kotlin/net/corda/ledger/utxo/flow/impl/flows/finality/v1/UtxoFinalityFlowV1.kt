@@ -6,6 +6,7 @@ import net.corda.ledger.common.flow.transaction.TransactionMissingSignaturesExce
 import net.corda.ledger.notary.worker.selection.NotaryVirtualNodeSelectorService
 import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackchainSenderFlow
 import net.corda.ledger.utxo.flow.impl.flows.backchain.dependencies
+import net.corda.ledger.utxo.flow.impl.flows.finality.addTransactionIdToFlowContext
 import net.corda.ledger.utxo.flow.impl.flows.finality.getVisibleStateIndexes
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.sandbox.CordaSystemFlow
@@ -50,6 +51,7 @@ class UtxoFinalityFlowV1(
 
     @Suspendable
     override fun call(): UtxoSignedTransaction {
+        addTransactionIdToFlowContext(flowEngine, transactionId)
         log.trace("Starting finality flow for transaction: $transactionId")
         verifyExistingSignatures(initialTransaction)
         verifyTransaction(initialTransaction)
