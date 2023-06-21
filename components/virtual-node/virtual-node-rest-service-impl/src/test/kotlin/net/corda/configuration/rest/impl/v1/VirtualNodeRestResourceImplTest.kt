@@ -1,5 +1,6 @@
 package net.corda.configuration.rest.impl.v1
 
+import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.crypto.core.parseSecureHash
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.virtualnode.VirtualNodeAsynchronousRequest
@@ -7,12 +8,14 @@ import net.corda.data.virtualnode.VirtualNodeManagementResponse
 import net.corda.data.virtualnode.VirtualNodeManagementResponseFailure
 import net.corda.data.virtualnode.VirtualNodeOperationStatusResponse
 import net.corda.libs.packaging.core.CpiIdentifier
+import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.libs.virtualnode.common.exception.VirtualNodeOperationNotFoundException
 import net.corda.libs.virtualnode.endpoints.v1.types.CreateVirtualNodeRequest
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.rest.asynchronous.v1.AsyncOperationStatus
 import net.corda.rest.exception.InvalidInputDataException
+import net.corda.rest.exception.InvalidStateChangeException
 import net.corda.rest.exception.ResourceNotFoundException
 import net.corda.rest.security.RestContextProvider
 import net.corda.utilities.time.UTCClock
@@ -66,6 +69,8 @@ class VirtualNodeRestResourceImplTest {
     private val virtualNodeInfoReadService = mock<VirtualNodeInfoReadService>().apply {
         whenever(getByHoldingIdentityShortHash(any())) doReturn mockVnode()
     }
+
+    private val cpiInfoReadService = mock<CpiInfoReadService>()
 
     @Test
     fun `verify coordinator is started on start`() {
@@ -128,6 +133,23 @@ class VirtualNodeRestResourceImplTest {
 
         assertThrows<InvalidInputDataException> {
             vnodeResource.updateVirtualNodeState("ABCABC123123", "BLAHBLAHBLAH")
+        }
+    }
+
+    @Test
+    fun `upgradeVirtualNode throws error when trying to upgrade to same CPI as current one`() {
+        val currentVNode = mockVnode()
+        val currentCpi = mock<CpiMetadata>().apply {
+            whenever(fileChecksum).thenReturn(parseSecureHash("SHA-256:1234567890"))
+        }
+        whenever(virtualNodeValidationService.validateAndGetVirtualNode(any())).thenReturn(currentVNode)
+        whenever(cpiInfoReadService.get(currentVNode!!.cpiIdentifier)).thenReturn(currentCpi)
+
+        val vnodeResource = createVirtualNodeRestResourceImpl(mockCoordinatorFactory)
+        vnodeResource.start()
+
+        assertThrows<InvalidStateChangeException> {
+            vnodeResource.upgradeVirtualNode(currentVNode.holdingIdentity.toString(), "1234567890")
         }
     }
 
@@ -195,7 +217,7 @@ class VirtualNodeRestResourceImplTest {
             mock(),
             mock(),
             mock(),
-            mock(),
+            cpiInfoReadService,
             virtualNodeStatusCacheService,
             requestFactory,
             UTCClock(),
