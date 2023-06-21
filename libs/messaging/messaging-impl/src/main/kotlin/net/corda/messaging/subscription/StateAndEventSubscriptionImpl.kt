@@ -105,7 +105,7 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
     // processing variables that need to be tuned and taken from config:
     private val processorChannelBufferSize = 100
     private val sendingChannelBufferSize = 100
-    private val commitApproxEveryMs = 25L
+    private val commitApproxEveryMs = 10L
 
 
     // HACK setting event as nullable so that we can send "empty" events to ensure we commit at least once every x ms.
@@ -118,10 +118,11 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
 //    private val processingChannels = (1..numberOfProcessorChannels).map { Channel<CordaConsumerRecord<K, E>>(processorChannelBufferSize) }
 
     // channel used for messages that need sending - buffer TBD
-    private val sendingChannel = Channel<StateAndEventData<K, S, E>>(sendingChannelBufferSize)
+//    private val sendingChannel = Channel<StateAndEventData<K, S, E>>(sendingChannelBufferSize)
 
     private val processingChannels = ConcurrentHashMap<Int, Channel<CordaConsumerRecordAndMetadata<K, E>>>()
     private val sendingChannels = ConcurrentHashMap<Int, Channel<StateAndEventData<K, S, E>>>()
+    private val producers = ConcurrentHashMap<Int, CordaProducer>()
 
     private fun CoroutineScope.messageHeartbeat() = launch {
         val emptyResponse = StateAndEventProcessor.Response<S>(null, emptyList(), false)
@@ -132,19 +133,19 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                 emit(Unit)
             }
         }.collect {
-//            sendingChannels.values.forEach {
-//                it.send(StateAndEventData(emptyResponse, null, null))
-//            }
-            sendingChannel.send(StateAndEventData(emptyResponse, null, null))
+            sendingChannels.values.forEach {
+                it.send(StateAndEventData(emptyResponse, null, null))
+            }
+//            sendingChannel.send(StateAndEventData(emptyResponse, null, null))
         }
     }
 
     private fun CoroutineScope.messageProcessor(partitionId: Int, messages: ReceiveChannel<CordaConsumerRecordAndMetadata<K, E>>) = launch {
-//        val sendingChannel = sendingChannels.computeIfAbsent(partitionId) {
-//            Channel<StateAndEventData<K, S, E>>(sendingChannelBufferSize).also {
-//                messageSender(partitionId, it)
-//            }
-//        }
+        val sendingChannel = sendingChannels.computeIfAbsent(partitionId) {
+            Channel<StateAndEventData<K, S, E>>(sendingChannelBufferSize).also {
+                messageSender(partitionId, it)
+            }
+        }
         for (msg in messages) {
             log.info("Processor for#$partitionId is processing ${msg.event.key} on ${Thread.currentThread().name}")
 
@@ -164,6 +165,12 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         partitionId: Int,
         messages: Channel<StateAndEventData<K, S, E>>,
     ) = launch {
+        val producer = producers.computeIfAbsent(partitionId) {
+            builder.createProducer(config) { data ->
+                log.warn("Failed to serialize record from ${config.topic}")
+                deadLetterRecords.add(data)
+            }
+        }
         var beginTx = 0L
         var txStarted = false
         var msgsInCommit = 0
@@ -285,7 +292,7 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                     messageHeartbeat()
 
                     // fan into single sending channel, otherwise we need multiple producers,
-                    messageSender(0, sendingChannel)
+//                    messageSender(0, sendingChannel)
 
                     while (!threadLooper.loopStopped) {
                         stateAndEventConsumerTmp.pollAndUpdateStates(true)

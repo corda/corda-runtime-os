@@ -1,7 +1,6 @@
 package net.corda.messagebus.kafka.config
 
 import com.typesafe.config.ConfigFactory
-import java.util.Properties
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.messagebus.api.configuration.AdminConfig
@@ -16,6 +15,8 @@ import net.corda.utilities.debug
 import org.apache.kafka.clients.producer.ProducerConfig.PARTITIONER_CLASS_CONFIG
 import org.osgi.framework.FrameworkUtil
 import org.slf4j.LoggerFactory
+import java.util.Properties
+import java.util.UUID
 
 /**
  * Resolve a Kafka bus configuration against the enforced and default configurations provided by the library.
@@ -168,7 +169,7 @@ internal class MessageBusConfigResolver(private val smartConfigFactory: SmartCon
 
     private fun ProducerConfig.toSmartConfig(): SmartConfig {
         val transactionalId = if (transactional) {
-            "$clientId-$instanceId"
+            "$clientId-$instanceId-${UUID.randomUUID()}"
         } else {
             null
         }
