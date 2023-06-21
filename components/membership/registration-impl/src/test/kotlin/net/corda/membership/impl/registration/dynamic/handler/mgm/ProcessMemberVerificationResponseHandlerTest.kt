@@ -24,6 +24,7 @@ import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandle
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_PENDING
 import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
+import net.corda.membership.lib.VersionedMessageBuilder
 import net.corda.membership.lib.registration.PRE_AUTH_TOKEN
 import net.corda.membership.p2p.helpers.P2pRecordsFactory
 import net.corda.membership.persistence.client.MembershipPersistenceClient
@@ -47,6 +48,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.mockito.Mockito
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argThat
@@ -461,19 +463,25 @@ class ProcessMemberVerificationResponseHandlerTest {
 
         @Test
         fun `handler does not send registration status update message when status cannot be retrieved`() {
-            whenever(p2pRecordsFactory.createAuthenticatedMessageRecord(any(), any(), any(), anyOrNull(), any(), any()))
-                .thenReturn(null)
-
             mockConsumeToken()
             mockQueryToken(MembershipQueryResult.Success(listOf(mockToken)))
             mockPreAuthTokenInRegistrationContext()
             mockApprovalRules(ApprovalRuleType.PREAUTH, manuallyApproveNoneRule)
             mockMemberLookup(memberContextKeyValues, MEMBER_STATUS_PENDING)
 
+            val mockedBuilder = Mockito.mockStatic(VersionedMessageBuilder::class.java).also {
+                it.`when`<VersionedMessageBuilder> {
+                    VersionedMessageBuilder.retrieveRegistrationStatusMessage(any(), any(), any())
+                } doReturn null
+            }
+
             val results = invokeTestFunction()
+            verify(p2pRecordsFactory, never()).createAuthenticatedMessageRecord(any(), any(), any(), anyOrNull(), any(), any())
             assertThat(results.outputStates)
                 .hasSize(2)
             results.outputStates.forEach { assertThat(it.value).isNotInstanceOf(AppMessage::class.java) }
+
+            mockedBuilder.close()
         }
 
         @Test

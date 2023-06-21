@@ -4,19 +4,22 @@ import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.p2p.SetOwnRegistrationStatus
 import org.slf4j.LoggerFactory
 
-private val logger = LoggerFactory.getLogger("net.corda.membership.lib.VersionedMessageBuilder.kt")
+object VersionedMessageBuilder {
+    private val logger = LoggerFactory.getLogger("net.corda.membership.lib.VersionedMessageBuilder.kt")
 
-fun retrieveRegistrationStatusMessage(platformVersion: Int, registrationId: String, status: String) =
-    try {
-        if (platformVersion < 50100) {
-            SetOwnRegistrationStatus(registrationId, RegistrationStatus.valueOf(status))
-        } else {
-            SetOwnRegistrationStatusV2(registrationId, RegistrationStatusV2.valueOf(status))
+    @JvmStatic
+    fun retrieveRegistrationStatusMessage(platformVersion: Int, registrationId: String, status: String) =
+        try {
+            if (platformVersion < 50100) {
+                SetOwnRegistrationStatus(registrationId, RegistrationStatus.valueOf(status))
+            } else {
+                SetOwnRegistrationStatusV2(registrationId, RegistrationStatusV2.valueOf(status))
+            }
+        } catch (e: IllegalArgumentException) {
+            logger.warn("Could not retrieve status '$status', returning null.")
+            null
         }
-    } catch (e: IllegalArgumentException) {
-        logger.warn("Could not retrieve status '$status', returning null.")
-        null
-    }
+}
 
 typealias SetOwnRegistrationStatusV2 = net.corda.data.membership.p2p.v2.SetOwnRegistrationStatus
 typealias RegistrationStatusV2 = net.corda.data.membership.common.v2.RegistrationStatus

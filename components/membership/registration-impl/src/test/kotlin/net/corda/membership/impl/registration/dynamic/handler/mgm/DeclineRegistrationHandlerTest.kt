@@ -15,6 +15,7 @@ import net.corda.data.p2p.app.AppMessage
 import net.corda.membership.persistence.client.MembershipPersistenceOperation
 import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.membership.impl.registration.dynamic.handler.TestUtils.mockMemberInfo
+import net.corda.membership.lib.VersionedMessageBuilder
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.schema.Schemas.Membership.REGISTRATION_COMMAND_TOPIC
@@ -26,11 +27,13 @@ import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.mockito.Mockito
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
@@ -140,13 +143,19 @@ class DeclineRegistrationHandlerTest {
 
     @Test
     fun `handler does not send registration status update message when status cannot be retrieved`() {
-        whenever(p2pRecordsFactory.createAuthenticatedMessageRecord(any(), any(), any(), anyOrNull(), any(), any()))
-            .thenReturn(null)
+        val mockedBuilder = Mockito.mockStatic(VersionedMessageBuilder::class.java).also {
+            it.`when`<VersionedMessageBuilder> {
+                VersionedMessageBuilder.retrieveRegistrationStatusMessage(any(), any(), any())
+            } doReturn null
+        }
 
         val results = handler.invoke(state, Record(TOPIC, member.toString(), RegistrationCommand(command)))
+        verify(p2pRecordsFactory, never()).createAuthenticatedMessageRecord(any(), any(), any(), anyOrNull(), any(), any())
         assertThat(results.outputStates)
             .hasSize(2)
         results.outputStates.forEach { assertThat(it.value).isNotInstanceOf(AppMessage::class.java) }
+
+        mockedBuilder.close()
     }
 
     @Test

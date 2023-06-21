@@ -33,7 +33,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.SignedMemberInfo
 import net.corda.membership.lib.registration.RegistrationRequestHelpers.getPreAuthToken
-import net.corda.membership.lib.retrieveRegistrationStatusMessage
+import net.corda.membership.lib.VersionedMessageBuilder.retrieveRegistrationStatusMessage
 import net.corda.membership.lib.toMap
 import net.corda.membership.p2p.helpers.P2pRecordsFactory
 import net.corda.membership.persistence.client.MembershipPersistenceClient
@@ -199,14 +199,15 @@ internal class StartRegistrationHandler(
                 RegistrationStatus.RECEIVED_BY_MGM.name,
             )
             if (statusUpdateMessage != null) {
-                p2pRecordsFactory.createAuthenticatedMessageRecord(
+                val record = p2pRecordsFactory.createAuthenticatedMessageRecord(
                     source = mgmHoldingId.toAvro(),
                     destination = pendingMemberHoldingId.toAvro(),
                     content = statusUpdateMessage,
                     minutesToWait = 5,
                     filter = PENDING
                 )
-            } else { null }?.let { outputRecords.add(it) }
+                outputRecords.add(record)
+            }
 
             logger.info("Successful initial validation of registration request with ID ${registrationRequest.registrationId}")
             VerifyMember()

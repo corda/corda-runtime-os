@@ -21,6 +21,7 @@ import net.corda.membership.impl.registration.dynamic.handler.TestUtils.createHo
 import net.corda.membership.impl.registration.dynamic.handler.TestUtils.mockMemberInfo
 import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
 import net.corda.membership.lib.SignedGroupParameters
+import net.corda.membership.lib.VersionedMessageBuilder
 import net.corda.membership.p2p.helpers.P2pRecordsFactory
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
@@ -38,6 +39,7 @@ import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.mockito.Mockito
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argumentCaptor
@@ -264,13 +266,19 @@ class ApproveRegistrationHandlerTest {
 
     @Test
     fun `invoke does not send registration status update message when status cannot be retrieved`() {
-        whenever(p2pRecordsFactory.createAuthenticatedMessageRecord(any(), any(), any(), anyOrNull(), any(), any()))
-            .thenReturn(null)
+        val mockedBuilder = Mockito.mockStatic(VersionedMessageBuilder::class.java).also {
+            it.`when`<VersionedMessageBuilder> {
+                VersionedMessageBuilder.retrieveRegistrationStatusMessage(any(), any(), any())
+            } doReturn null
+        }
 
         val results = handler.invoke(state, key, command)
+        verify(p2pRecordsFactory, never()).createAuthenticatedMessageRecord(any(), any(), any(), anyOrNull(), any(), any())
         assertThat(results.outputStates)
             .hasSize(3)
         results.outputStates.forEach { assertThat(it.value).isNotInstanceOf(AppMessage::class.java) }
+
+        mockedBuilder.close()
     }
 
     @Test

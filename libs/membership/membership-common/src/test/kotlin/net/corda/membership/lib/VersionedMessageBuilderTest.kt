@@ -2,6 +2,7 @@ package net.corda.membership.lib
 
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.p2p.SetOwnRegistrationStatus
+import net.corda.membership.lib.VersionedMessageBuilder.retrieveRegistrationStatusMessage
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import java.util.UUID
