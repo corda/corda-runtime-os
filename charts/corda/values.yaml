@@ -613,6 +613,79 @@ workers:
               # -- the flow worker SASL password secret key for client connection to Kafka
               key: ""
 
+  # flow worker configuration
+  flowtest:
+    # flow worker image configuration
+    image:
+      # -- flow worker image registry, defaults to image.registry
+      registry: ""
+      # -- flow worker image repository
+      repository: "corda-os-flow-worker"
+      # -- flow worker image tag, defaults to image.tag
+      tag: ""
+    extraArgs:
+      - "asdgadsgasg"
+    envs:
+      - name: "foo"
+        value: "bar"
+    # -- flow worker replica count
+    replicaCount: 1
+    # -- flow worker extra annotations
+    annotations: {}
+    # -- additional Java options for the flow worker
+    javaOptions: "-XX:MaxRAMPercentage=75"
+    # flow worker debug configuration
+    debug:
+      # -- run flow worker with debug enabled
+      enabled: false
+      # -- if debug is enabled, suspend the flow worker until the debugger is attached
+      suspend: false
+    # logging configuration
+    logging:
+      # -- log level: one of "all", "trace", "debug", "info", "warn", "error", "fatal", or "off"; defaults to logging.level if not specified
+      level: null
+      # -- additional Log4j 2 XML configuration
+      override: ""
+    profiling:
+      # -- run flow worker with profiling enabled
+      enabled: false
+    # resource limits and requests configuration for the flow worker containers.
+    resources:
+      # -- the CPU/memory resource requests for the flow worker containers
+      requests: {}
+      # -- the CPU/memory resource limits for the flow worker containers
+      limits: {}
+    # -- run flow worker with Quasar's verifyInstrumentation enabled
+    verifyInstrumentation: false
+    # flow worker Kafka configuration
+    kafka:
+      # if kafka.sasl.enabled, the credentials to connect to Kafka with for the flow worker
+      sasl:
+        # flow worker SASL username configuration for client connection to Kafka; defaults to kafka.sasl.username
+        username:
+          # -- the flow worker SASL username for client connection to Kafka
+          value: ""
+          # the boostrap SASL username secret configuration for client connection to Kafka; used in preference to value if name is set
+          valueFrom:
+            # the flow worker SASL username secret key reference for client connection to Kafka
+            secretKeyRef:
+              # -- the flow worker SASL username secret name for client connection to Kafka
+              name: ""
+              # -- the flow worker SASL username secret key for client connection to Kafka
+              key: ""
+        # flow worker SASL password configuration for client connection to Kafka; defaults to kafka.sasl.password
+        password:
+          # -- the flow worker SASL password for client connection to Kafka
+          value: ""
+          # the flow worker SASL password secret configuration for client connection to Kafka; used in preference to value if name is set
+          valueFrom:
+            # the flow worker SASL password secret key reference for client connection to Kafka
+            secretKeyRef:
+              # -- the flow worker SASL password secret name for client connection to Kafka
+              name: ""
+              # -- the flow worker SASL password secret key for client connection to Kafka
+              key: ""
+
   # membership worker configuration
   membership:
     # membership worker image configuration
