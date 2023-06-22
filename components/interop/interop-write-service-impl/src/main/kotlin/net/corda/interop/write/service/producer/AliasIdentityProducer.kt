@@ -7,7 +7,7 @@ import net.corda.schema.Schemas.Flow.INTEROP_ALIAS_IDENTITY_TOPIC
 import org.slf4j.LoggerFactory
 import java.util.concurrent.atomic.AtomicReference
 
-class InteropAliasIdentityProducer(
+class AliasIdentityProducer(
     private val publisher: AtomicReference<Publisher?>
 ) {
     companion object {

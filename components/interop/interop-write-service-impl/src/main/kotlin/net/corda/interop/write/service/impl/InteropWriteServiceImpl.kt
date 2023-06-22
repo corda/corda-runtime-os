@@ -4,7 +4,9 @@ import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.interop.InteropAliasIdentity
 import net.corda.interop.write.service.InteropWriteService
-import net.corda.interop.write.service.producer.InteropAliasIdentityProducer
+import net.corda.interop.write.service.data.AliasIdentity
+import net.corda.interop.write.service.producer.AliasIdentityProducer
+import net.corda.interop.write.service.producer.HostedIdentityProducer
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -52,7 +54,8 @@ class InteropWriteServiceImpl @Activate constructor(
     private val publisher: AtomicReference<Publisher?> = AtomicReference()
     private var registration: RegistrationHandle? = null
     private var configSubscription: AutoCloseable? = null
-    private val aliasProducer = InteropAliasIdentityProducer(publisher)
+    private val aliasProducer = AliasIdentityProducer(publisher)
+    private val hostedIdentityProducer = HostedIdentityProducer(publisher)
 
     override fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         when (event) {
@@ -119,8 +122,19 @@ class InteropWriteServiceImpl @Activate constructor(
         coordinator.stop()
     }
 
-    override fun put(key: String, value: InteropAliasIdentity) {
-        aliasProducer.publishAliasIdentity(key, value)
+    override fun publishAliasIdentity(aliasIdentity: AliasIdentity) {
+        aliasProducer.publishAliasIdentity(
+            aliasIdentity.realHoldingIdentityShortHash.value + ":" + aliasIdentity.aliasShortHash.value,
+            InteropAliasIdentity(
+                aliasIdentity.groupId.toString(),
+                aliasIdentity.x500Name.toString(),
+                aliasIdentity.hostingVnode
+            )
+        )
+    }
+
+    override fun publishHostedAliasIdentity(aliasIdentity: AliasIdentity) {
+        hostedIdentityProducer.publishHostedAliasIdentity(aliasIdentity)
     }
 
     override val isRunning: Boolean
