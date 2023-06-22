@@ -1,6 +1,7 @@
 package net.corda.messaging.subscription.consumer.builder
 
-import java.util.concurrent.ConcurrentHashMap
+import net.corda.avro.serialization.CordaAvroDeserializer
+import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.messagebus.api.configuration.ConsumerConfig
 import net.corda.messagebus.api.configuration.ProducerConfig
 import net.corda.messagebus.api.constants.ConsumerRoles
@@ -23,6 +24,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
+import java.util.concurrent.ConcurrentHashMap
 
 @Component(service = [StateAndEventBuilder::class])
 class StateAndEventBuilderImpl @Activate constructor(
@@ -54,6 +56,8 @@ class StateAndEventBuilderImpl @Activate constructor(
         stateAndEventListener: StateAndEventListener<K, S>?,
         onStateError: (ByteArray) -> Unit,
         onEventError: (ByteArray) -> Unit,
+        serializer: CordaAvroSerializer<Any>,
+        deserializer: CordaAvroDeserializer<Any>
     ): Pair<StateAndEventConsumer<K, S, E>, StateAndEventConsumerRebalanceListener> {
         val stateConsumerConfig =
             ConsumerConfig(config.group, "${config.clientId}-stateConsumer", ConsumerRoles.SAE_STATE)
@@ -86,7 +90,7 @@ class StateAndEventBuilderImpl @Activate constructor(
         }
 
         val stateAndEventConsumer =
-            StateAndEventConsumerImpl(config, eventConsumer, stateConsumer, partitionState, stateAndEventListener)
+            StateAndEventConsumerImpl(config, eventConsumer, stateConsumer, partitionState, stateAndEventListener, serializer, deserializer)
         val rebalanceListener = StateAndEventConsumerRebalanceListenerImpl(
             config,
             mapFactory,
