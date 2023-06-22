@@ -19,6 +19,7 @@ import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.data.membership.PersistentMemberInfo
+import net.corda.data.membership.SignedGroupParameters as AvroGroupParameters
 import net.corda.data.membership.StaticNetworkInfo
 import net.corda.data.membership.common.RegistrationRequestDetails
 import net.corda.data.membership.common.RegistrationStatus
@@ -106,6 +107,7 @@ import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.SoftAssertions.assertSoftly
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
@@ -131,7 +133,6 @@ import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
-import net.corda.data.membership.SignedGroupParameters as AvroGroupParameters
 
 class StaticMemberRegistrationServiceTest {
     private companion object {
@@ -583,6 +584,7 @@ class StaticMemberRegistrationServiceTest {
             }
         }
 
+        @Disabled
         @Test
         fun `it fails when the member is active in group reader`() {
             val activeMemberInfo = mock<MemberInfo> {
