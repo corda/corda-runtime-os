@@ -1,13 +1,13 @@
 package net.corda.flow.fiber.cache
 
 import net.corda.data.flow.FlowKey
-import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.fiber.FlowFiberImpl
+import net.corda.sandboxgroupcontext.SandboxedCache
 
 /**
  * Cache for flow fibers.
  */
-interface FlowFiberCache {
+interface FlowFiberCache: SandboxedCache {
     /**
      * Put a flow fiber into the cache keyed by the given [FlowKey].
      */
@@ -27,9 +27,4 @@ interface FlowFiberCache {
      * Invalidate and remove flow fiber from the cache with the given [FlowKey]s.
      */
     fun remove(keys: Collection<FlowKey>)
-
-    /**
-     * Invalidate and remove all flow fibers from the cache for the given [HoldingIdentity].
-     */
-    fun remove(holdingIdentity: HoldingIdentity)
 }

@@ -17,8 +17,15 @@ interface FlowEventPipelineFactory {
      * @param event The [FlowEvent] passed through the pipeline.
      * @param config The [SmartConfig] containing the settings used in the pipeline factory.
      * @param mdcProperties properties to set the flow fibers MDC with.
+     * @param eventRecordTimestamp The produced timestamp of the flow event record.
      *
      * @return A new [FlowEventPipeline] instance.
      */
-    fun create(checkpoint: Checkpoint?, event: FlowEvent, config: SmartConfig, mdcProperties: Map<String, String>): FlowEventPipeline
+    fun create(
+        checkpoint: Checkpoint?,
+        event: FlowEvent,
+        config: SmartConfig,
+        mdcProperties: Map<String, String>,
+        eventRecordTimestamp: Long
+    ): FlowEventPipeline
 }

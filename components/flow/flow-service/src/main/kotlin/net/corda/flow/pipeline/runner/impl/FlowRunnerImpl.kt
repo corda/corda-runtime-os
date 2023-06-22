@@ -97,7 +97,8 @@ class FlowRunnerImpl @Activate constructor(
 
         val localContext = remoteToLocalContextMapper(
             remoteUserContextProperties = sessionInitEvent.contextUserProperties,
-            remotePlatformContextProperties = sessionInitEvent.contextPlatformProperties
+            remotePlatformContextProperties = sessionInitEvent.contextPlatformProperties,
+            mapOf("corda.account" to "account-zero")
         )
 
         val isInteropSessionInit = sessionInitEvent.contextSessionProperties?.let { sessionProperties ->
@@ -141,6 +142,7 @@ class FlowRunnerImpl @Activate constructor(
             flow = flow.logic,
             contextUserProperties = contextUserProperties,
             contextPlatformProperties = contextPlatformProperties,
+            flowMetrics = context.flowMetrics
         )
         updateFlowStackItem(stackItem)
         fiberContext.sandboxGroupContext.dependencyInjector.injectServices(flow.logic)
@@ -162,7 +164,7 @@ class FlowRunnerImpl @Activate constructor(
     ) = virtualNodeInfoReadService.get(holdingIdentity)?.let {
         KeyValueStore().apply {
 
-            // Copy other properties first so that they wont override current values
+            // Copy other properties first so that they won't override current values
             contextProperties.items.forEach { prop ->
                 this[prop.key] = prop.value
             }

@@ -272,6 +272,12 @@ spec:
           - "-ddatabase.jdbc.directory=/opt/jdbc-driver"
           - "-ddatabase.pool.max_size={{ .clusterDbConnectionPool.maxSize }}"
           {{- end }}
+          {{- if $.Values.tracing.endpoint }}
+          - "--send-trace-to={{ $.Values.tracing.endpoint }}"
+          {{- end }}
+          {{- if $.Values.tracing.samplesPerSecond }}
+          - "--trace-samples-per-second={{ $.Values.tracing.samplesPerSecond }}"
+          {{- end }}
           {{- range $i, $arg := $optionalArgs.additionalWorkerArgs }}
           - {{ $arg | quote }}
           {{- end }}

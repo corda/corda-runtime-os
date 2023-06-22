@@ -15,6 +15,7 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.schema.configuration.MessagingConfig.Subscription.PROCESSOR_TIMEOUT
+import net.corda.tracing.traceStateAndEventExecution
 import net.corda.utilities.withMDC
 import net.corda.utilities.debug
 import net.corda.utilities.trace
@@ -25,7 +26,7 @@ class FlowEventProcessorImpl(
     private val flowEventExceptionProcessor: FlowEventExceptionProcessor,
     private val flowEventContextConverter: FlowEventContextConverter,
     private val config: SmartConfig,
-    private val flowMDCService: FlowMDCService,
+    private val flowMDCService: FlowMDCService
 ) : StateAndEventProcessor<String, Checkpoint, FlowEvent> {
 
     private companion object {
@@ -48,8 +49,11 @@ class FlowEventProcessorImpl(
     ): StateAndEventProcessor.Response<Checkpoint> {
         val flowEvent = event.value
         val mdcProperties = flowMDCService.getMDCLogging(state, flowEvent, event.key)
+        val eventType = event.value?.payload?.javaClass?.simpleName ?: "Unknown"
         return withMDC(mdcProperties) {
-            getFlowPipelineResponse(flowEvent, event, state, mdcProperties)
+            traceStateAndEventExecution(event, "Flow Event - $eventType") {
+                getFlowPipelineResponse(flowEvent, event, state, mdcProperties)
+            }
         }
     }
 
@@ -66,7 +70,7 @@ class FlowEventProcessorImpl(
 
         val pipeline = try {
             log.trace { "Flow [${event.key}] Received event: ${flowEvent.payload::class.java} / ${flowEvent.payload}" }
-            flowEventPipelineFactory.create(state, flowEvent, config, mdcProperties)
+            flowEventPipelineFactory.create(state, flowEvent, config, mdcProperties, event.timestamp)
         } catch (t: Throwable) {
             // Without a pipeline there's a limit to what can be processed.
             return flowEventExceptionProcessor.process(t)

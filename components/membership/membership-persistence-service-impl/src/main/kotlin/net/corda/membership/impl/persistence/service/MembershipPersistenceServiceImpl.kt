@@ -21,7 +21,9 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
+import net.corda.membership.groupparams.writer.service.GroupParametersWriterService
 import net.corda.membership.impl.persistence.service.handler.HandlerFactories
+import net.corda.membership.lib.GroupParametersFactory
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.mtls.allowed.list.service.AllowedCertificatesReaderWriterService
 import net.corda.membership.persistence.service.MembershipPersistenceService
@@ -38,7 +40,6 @@ import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
-import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -63,18 +64,20 @@ class MembershipPersistenceServiceImpl @Activate constructor(
     memberInfoFactory: MemberInfoFactory,
     @Reference(service = CordaAvroSerializationFactory::class)
     cordaAvroSerializationFactory: CordaAvroSerializationFactory,
-    @Reference(service = VirtualNodeInfoReadService::class)
-    virtualNodeInfoReadService: VirtualNodeInfoReadService,
     @Reference(service = KeyEncodingService::class)
     keyEncodingService: KeyEncodingService,
     @Reference(service = PlatformInfoProvider::class)
     platformInfoProvider: PlatformInfoProvider,
     @Reference(service = AllowedCertificatesReaderWriterService::class)
     allowedCertificatesReaderWriterService: AllowedCertificatesReaderWriterService,
+    @Reference(service = GroupParametersWriterService::class)
+    groupParametersWriterService: GroupParametersWriterService,
+    @Reference(service = GroupParametersFactory::class)
+    groupParametersFactory: GroupParametersFactory,
 ) : MembershipPersistenceService {
 
     private companion object {
-        val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
         const val GROUP_NAME = "membership.db.persistence"
         const val CLIENT_NAME = "membership.db.persistence"
@@ -123,7 +126,6 @@ class MembershipPersistenceServiceImpl @Activate constructor(
             setOf(
                 LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
                 LifecycleCoordinatorName.forComponent<DbConnectionManager>(),
-                LifecycleCoordinatorName.forComponent<VirtualNodeInfoReadService>(),
                 LifecycleCoordinatorName.forComponent<AllowedCertificatesReaderWriterService>(),
             )
         )
@@ -179,9 +181,10 @@ class MembershipPersistenceServiceImpl @Activate constructor(
             jpaEntitiesRegistry,
             memberInfoFactory,
             cordaAvroSerializationFactory,
-            virtualNodeInfoReadService,
             keyEncodingService,
             platformInfoProvider,
+            groupParametersWriterService,
+            groupParametersFactory,
             allowedCertificatesReaderWriterService,
         )
     }

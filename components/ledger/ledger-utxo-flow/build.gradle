@@ -33,6 +33,7 @@ dependencies {
     implementation project(':libs:ledger:ledger-common-data')
     implementation project(':libs:ledger:ledger-utxo-data')
     implementation project(':libs:ledger:ledger-utxo-transaction-verifier')
+    implementation project(':libs:metrics')
     implementation project(':libs:sandbox')
     implementation project(':libs:serialization:json-validator')
     implementation project(':libs:serialization:serialization-checkpoint-api')

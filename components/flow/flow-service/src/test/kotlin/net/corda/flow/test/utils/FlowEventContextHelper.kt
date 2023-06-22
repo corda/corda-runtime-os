@@ -39,7 +39,8 @@ fun <T> buildFlowEventContext(
         isRetryEvent,
         outputRecords,
         sendToDlq,
-        emptyMap()
+        emptyMap(),
+        mock()
     )
 }
 
@@ -60,6 +61,7 @@ fun <T> buildFlowEventContext(
         isRetryEvent,
         outputRecords,
         sendToDlq,
-        emptyMap()
+        emptyMap(),
+        mock()
     )
 }
