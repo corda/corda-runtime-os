@@ -66,6 +66,10 @@ internal class InteropRestResourceImpl @Activate constructor(
         return ResponseEntity.ok(createInteropIdentityResult)
     }
 
+//    override fun getInterOpIdentities(holdingidentityid: String?): List<CreateInteropIdentityRequest> {
+//        TODO("Not yet implemented")
+//    }
+
     override val protocolVersion = 1
 
     // Lifecycle

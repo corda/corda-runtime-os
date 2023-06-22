@@ -42,4 +42,16 @@ interface InteropRestResource : RestResource {
         @RestPathParameter(description = "ID of the holding identity which groups are to be returned.")
     holdingidentityid: String?
     ): ResponseEntity<CreateInteropIdentityRequest>
+
+//    /**
+//     * Get a list of interop identities.
+//     */
+//    @HttpGET(
+//        path = "{holdingidentityid}/identities",
+//        title = "Lists all interop identities",
+//        description = "This method returns a list of interop identities belonging to the given holding identity.",
+//        responseDescription = "List of interop identities"
+//    )
+//    fun getInterOpIdentities(@RestPathParameter(description = "ID of the holding identity which identities are to be returned.")
+//                         holdingidentityid: String?): List<CreateInteropIdentityRequest>
 }
