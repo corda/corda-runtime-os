@@ -33,6 +33,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.util.UUID
 
 @Suppress("MaxLineLength")
 class FlowMessagingImplTest {
@@ -90,6 +91,7 @@ class FlowMessagingImplTest {
 
     @BeforeEach
     fun beforeEach() {
+        whenever(mockFlowFiberService.flowFiber.flowId).thenReturn(UUID.randomUUID())
         whenever(serializationService.deserializeAndCheckType(SERIALIZED_PAYLOAD_ONE, Any::class.java)).thenReturn(
             PAYLOAD_ONE
         )

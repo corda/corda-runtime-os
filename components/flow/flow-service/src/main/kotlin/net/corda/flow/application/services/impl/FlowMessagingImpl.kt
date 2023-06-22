@@ -25,7 +25,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
-import java.util.*
+import java.util.UUID
 
 @Suppress("TooManyFunctions")
 @Component(service = [FlowMessaging::class, UsedByFlow::class], scope = PROTOTYPE)
@@ -172,11 +172,9 @@ class FlowMessagingImpl @Activate constructor(
         flowContextPropertiesBuilder: FlowContextPropertiesBuilder?
     ): FlowSession {
         val sessionUUID = UUID.randomUUID()
-        //val flowIdHash: Int =
-        //    Utils.toPositive(Utils.murmur2(fiber.flowId.toString().toByteArray(StandardCharsets.UTF_8)))
         val flowIdHash: String = fiber.flowId.toString().substring(0, 8)
         val receiverFlowIdHash: String = sessionUUID.toString().substring(0, 8)
-        val sessionId = "#" + flowIdHash + receiverFlowIdHash + "/" + sessionUUID.toString()
+        val sessionId = "#$flowIdHash$receiverFlowIdHash/$sessionUUID"
         checkFlowCanBeInitiated()
         addSessionIdToFlowStackItem(sessionId)
         return flowSessionFactory.createInitiatingFlowSession(sessionId, x500Name, flowContextPropertiesBuilder)

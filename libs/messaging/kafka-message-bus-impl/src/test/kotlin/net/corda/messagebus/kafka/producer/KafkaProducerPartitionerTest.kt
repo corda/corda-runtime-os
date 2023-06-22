@@ -5,12 +5,10 @@ import net.corda.messagebus.kafka.producer.KafkaProducerPartitioner
 import org.apache.kafka.common.Cluster
 import org.apache.kafka.common.PartitionInfo
 import org.apache.kafka.common.serialization.StringSerializer
-import org.apache.kafka.common.utils.Utils
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import java.nio.ByteBuffer
-import java.nio.charset.StandardCharsets
-import java.util.*
+import java.util.UUID
 
 class KafkaProducerPartitionerTest {
 
@@ -57,10 +55,7 @@ class KafkaProducerPartitionerTest {
     @Test
     fun `flow mapper session event maps to same partition as flow`() {
         val flowId = UUID.randomUUID()
-
-        val flowIdHash: Int =
-            Utils.toPositive(Utils.murmur2(flowId.toString().toByteArray(StandardCharsets.UTF_8)))
-        val sessionId = flowIdHash.toString(16).padStart(8, '0') + "/" + UUID.randomUUID().toString()
+        val sessionId = "#" + flowId.toString().substring(0, 8) + "XXXXXXXX/" + UUID.randomUUID().toString()
 
         val cluster = buildCluster(setOf("flow.event", "flow.mapper.event"))
         val partitioner = KafkaProducerPartitioner()
