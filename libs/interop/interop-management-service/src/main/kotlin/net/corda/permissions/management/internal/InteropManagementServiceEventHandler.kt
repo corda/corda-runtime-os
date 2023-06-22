@@ -1,5 +1,6 @@
-package net.corda.libs.interop.endpoints.v1
+package net.corda.permissions.management.internal
 
+import net.corda.libs.interop.endpoints.v1.InteropManager
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleEventHandler
