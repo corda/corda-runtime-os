@@ -57,6 +57,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
 import net.corda.membership.lib.MemberInfoExtension.Companion.isNotary
 import net.corda.membership.lib.MemberInfoExtension.Companion.notaryDetails
 import net.corda.membership.lib.MemberInfoFactory
+import net.corda.membership.lib.exceptions.InvalidGroupParametersUpdateException
 import net.corda.membership.lib.grouppolicy.GroupPolicy
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.ProtocolParameters.SessionKeyPolicy
 import net.corda.membership.lib.registration.RegistrationRequest
@@ -285,6 +286,9 @@ class StaticMemberRegistrationService(
         } catch (e: MembershipPersistenceResult.PersistenceRequestException) {
             logger.warn("Registration failed. Reason:", e)
             throw NotReadyMembershipRegistrationException("Registration failed. Reason: ${e.message}", e)
+        } catch(e: InvalidGroupParametersUpdateException) {
+            logger.warn("Registration failed. Reason:", e)
+            throw InvalidMembershipRegistrationException("Registration failed. Reason: ${e.message}", e)
         } catch (e: Exception) {
             logger.warn("Registration failed. Reason:", e)
             throw NotReadyMembershipRegistrationException("Registration failed. Reason: ${e.message}", e)
