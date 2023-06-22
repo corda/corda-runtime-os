@@ -61,10 +61,10 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
     private var threadLooper =
         ThreadLooper(log, config, lifecycleCoordinatorFactory, "state/event processing thread", ::runConsumeLoop)
 
-    private val producer: CordaProducer
-        get() {
-            return nullableProducer ?: throw IllegalStateException("Unexpected access to null producer.")
-        }
+//    private val producer: CordaProducer
+//        get() {
+//            return nullableProducer ?: throw IllegalStateException("Unexpected access to null producer.")
+//        }
 
     private val stateAndEventConsumer: StateAndEventConsumer<K, S, E>
         get() {
@@ -103,9 +103,9 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
     // Pipeline POC
 
     // processing variables that need to be tuned and taken from config:
-    private val processorChannelBufferSize = 100
-    private val sendingChannelBufferSize = 100
-    private val commitApproxEveryMs = 10L
+    private val processorChannelBufferSize = 500
+    private val sendingChannelBufferSize = 500
+    private val commitApproxEveryMs = 50L
 
 
     // HACK setting event as nullable so that we can send "empty" events to ensure we commit at least once every x ms.
@@ -124,6 +124,7 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
     private val sendingChannels = ConcurrentHashMap<Int, Channel<StateAndEventData<K, S, E>>>()
     private val producers = ConcurrentHashMap<Int, CordaProducer>()
 
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class) // isEmpty is experimental
     private fun CoroutineScope.messageHeartbeat() = launch {
         val emptyResponse = StateAndEventProcessor.Response<S>(null, emptyList(), false)
         flow {
@@ -134,7 +135,11 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
             }
         }.collect {
             sendingChannels.values.forEach {
-                it.send(StateAndEventData(emptyResponse, null, null))
+                // only send heartbeat if the channel is empty
+                if (it.isEmpty) {
+                    log.info("Sending channel $it is empty, so sending a heartbeat message")
+                    it.send(StateAndEventData(emptyResponse, null, null))
+                }
             }
 //            sendingChannel.send(StateAndEventData(emptyResponse, null, null))
         }
@@ -142,12 +147,13 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
 
     private fun CoroutineScope.messageProcessor(partitionId: Int, messages: ReceiveChannel<CordaConsumerRecordAndMetadata<K, E>>) = launch {
         val sendingChannel = sendingChannels.computeIfAbsent(partitionId) {
-            Channel<StateAndEventData<K, S, E>>(sendingChannelBufferSize).also {
-                messageSender(partitionId, it)
-            }
+            log.info("Creating processing channel for partition $partitionId")
+            val channel = Channel<StateAndEventData<K, S, E>>(sendingChannelBufferSize)
+            messageSender(partitionId, channel)
+            channel
         }
         for (msg in messages) {
-            log.info("Processor for#$partitionId is processing ${msg.event.key} on ${Thread.currentThread().name}")
+            log.info("Processor for #$partitionId is processing ${msg.event.key} on ${Thread.currentThread().name}")
 
             // simplistic interpretation of existing code
             val key = msg.event.key
@@ -165,8 +171,10 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         partitionId: Int,
         messages: Channel<StateAndEventData<K, S, E>>,
     ) = launch {
-        val producer = producers.computeIfAbsent(partitionId) {
-            builder.createProducer(config) { data ->
+        val channelProducer = producers.computeIfAbsent(partitionId) {
+            log.info("Creating producer for partition $partitionId")
+            val newConfig = config.copy(uniqueId = "${config.uniqueId}-$partitionId" )
+            builder.createProducer(newConfig) { data ->
                 log.warn("Failed to serialize record from ${config.topic}")
                 deadLetterRecords.add(data)
             }
@@ -181,15 +189,15 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         fun beginTx() {
             log.info("[Sending Channel $partitionId] Begin tx")
             beginTx = System.nanoTime()
-            producer.beginTransaction()
+            channelProducer.beginTransaction()
             txStarted = true
         }
 
         fun commitTx() {
             log.info("[Sending Channel $partitionId] Commit tx - $msgsInCommit messages, ${eventsSinceCommit.size} events,  since last commit")
             try {
-                producer.sendRecordOffsetsToTransaction(eventsSinceCommit, meta)
-                producer.commitTransaction()
+                channelProducer.sendRecordOffsetsToTransaction(eventsSinceCommit, meta)
+                channelProducer.commitTransaction()
                 stateAndEventConsumer.updateInMemoryStatePostCommit(updatedStates, clock)
                 msgsInCommit = 0
                 txStarted = false
@@ -213,7 +221,7 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
 
                     msgsInCommit += outputRecords.size
                     log.trace("[Sending Channel $partitionId] Sending $outputRecords")
-                    producer.sendRecords(outputRecords.toCordaProducerRecords())
+                    channelProducer.sendRecords(outputRecords.toCordaProducerRecords())
                     eventsSinceCommit.add(msg.event)
                     updatedStates.computeIfAbsent(msg.event.partition) { mutableMapOf() }[msg.event.key] = updatedState
                     meta = msg.metadata
@@ -299,6 +307,7 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
 
                         val records = stateAndEventConsumer.pollEvents()
                         if (records.isNotEmpty()) {
+                            log.info("${records.size} records returned from Kafka poll. Using partitions ${records.map { it.partition }}")
                             for (event in records) {
                                 val processingChannel = processingChannels.computeIfAbsent(event.partition) {
                                     // lazily create processing channel and wire up processor
