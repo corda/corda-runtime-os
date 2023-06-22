@@ -21,7 +21,7 @@ import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.StaticNetworkInfo
 import net.corda.data.membership.common.RegistrationRequestDetails
-import net.corda.data.membership.common.RegistrationStatus
+import net.corda.data.membership.common.v2.RegistrationStatus
 import net.corda.data.p2p.HostedIdentityEntry
 import net.corda.layeredpropertymap.testkit.LayeredPropertyMapMocks
 import net.corda.lifecycle.LifecycleCoordinator
