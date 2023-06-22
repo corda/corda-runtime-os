@@ -1,40 +1,52 @@
 package net.corda.messaging.subscription.consumer
 
+import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.publisher.Publisher
+import net.corda.messaging.api.subscription.StateAndEventSubscription
+import net.corda.messaging.config.ResolvedSubscriptionConfig
+import net.corda.messaging.subscription.ThreadLooper
+import org.slf4j.LoggerFactory
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.TimeUnit
 
-class StateAndEventConsumerImpl2<K : Any, E : Any, S : Any>(
+class LetItRipStateAndEventSubscription<K : Any, E : Any, S : Any>(
+    private val config: ResolvedSubscriptionConfig,
     private val processor: StateAndEventProcessor<K, S, E>,
     private val eventSource: EventSource<K, E>,
     private val stateCache: StateCache<K, S>,
     private val pollingLoopExecutor: ExecutorService,
-    private val cordaPublisher: Publisher
-) : AutoCloseable {
+    private val cordaPublisher: Publisher,
+    lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
+) : StateAndEventSubscription<K, S, E> {
 
-    private var poller: CompletableFuture<Unit>? = null
-    private var isRunning = false
+    private val log = LoggerFactory.getLogger("${this.javaClass.name}-${config.clientId}")
 
-    fun start() {
+    private var threadLooper = ThreadLooper(
+        log,
+        config,
+        lifecycleCoordinatorFactory,
+        "state/event processing thread",
+        ::pollingLoop
+    )
+
+    override fun start() {
         stateCache.subscribe(::onCacheReady)
     }
 
     override fun close() {
-        isRunning = false
-        poller?.get(60, TimeUnit.SECONDS)
+        threadLooper.close()
         eventSource.close()
     }
 
     private fun onCacheReady() {
-        eventSource.start(stateCache::getMaxOffsetsByPartition, stateCache::isOffsetGreaterThanMaxSeen)
-        poller = CompletableFuture.supplyAsync(::pollingLoop, pollingLoopExecutor)
+        eventSource.start(stateCache::getMinOffsetsByPartition, stateCache::isOffsetGreaterThanMaxSeen)
+        threadLooper.start()
     }
 
     private fun pollingLoop() {
-        isRunning = true
-        while (isRunning) {
+        while ( threadLooper.isRunning ) {
             val block = eventSource.nextBlock(500)
             if (block.isNotEmpty()) {
                 // divide block by key to prevent event per key re-ordering, then process, update the state and publish
@@ -49,14 +61,20 @@ class StateAndEventConsumerImpl2<K : Any, E : Any, S : Any>(
 
     private fun processEventAsync(sourceRecord: EventSourceRecord<K, E>)
             : CompletableFuture<Unit> {
-        val state = stateCache.get(sourceRecord.key)
+        val record = sourceRecord.record
+        val state = stateCache.get(record.key)
         return CompletableFuture.supplyAsync {
             val result = processor.onNext(state, sourceRecord.record)
 
             stateCache.write(
-                sourceRecord.key,
+                record.key,
                 result.updatedState,
-                StateCache.LastEvent(sourceRecord.topic, sourceRecord.partition, sourceRecord.offset)
+                StateCache.LastEvent(
+                    record.topic,
+                    sourceRecord.partition,
+                    sourceRecord.offset,
+                    sourceRecord.safeMinOffset
+                )
             ).thenApply {
                 cordaPublisher.publish(result.responseEvents).awaitAll(60, TimeUnit.SECONDS)
             }
@@ -73,13 +91,13 @@ class StateAndEventConsumerImpl2<K : Any, E : Any, S : Any>(
         var currentBatch = mutableListOf<EventSourceRecord<K, E>>()
         var seenKeys = HashSet<K>()
         for (event in this) {
-            if (seenKeys.contains(event.key)) {
+            if (seenKeys.contains(event.record.key)) {
                 seenKeys.clear()
                 output.add(currentBatch)
                 currentBatch = mutableListOf()
             }
             currentBatch.add(event)
-            seenKeys.add(event.key)
+            seenKeys.add(event.record.key)
         }
 
         if (currentBatch.isNotEmpty()) {

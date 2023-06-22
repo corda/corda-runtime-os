@@ -1,9 +1,9 @@
 package net.corda.messaging.subscription.factory
 
-import java.util.concurrent.ConcurrentHashMap
 import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.Resource
 import net.corda.messagebus.api.consumer.builder.CordaConsumerBuilder
 import net.corda.messagebus.api.producer.builder.CordaProducerBuilder
 import net.corda.messaging.api.chunking.MessagingChunkFactory
@@ -39,6 +39,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
 
 /**
  * Kafka implementation of the Subscription Factory.
@@ -125,6 +126,25 @@ class CordaSubscriptionFactory @Activate constructor(
         messagingConfig: SmartConfig,
         stateAndEventListener: StateAndEventListener<K, S>?
     ): StateAndEventSubscription<K, S, E> {
+        val config = getConfig(SubscriptionType.STATE_AND_EVENT, subscriptionConfig, messagingConfig)
+        val serializer = cordaAvroSerializationFactory.createAvroSerializer<Any> { }
+        return StateAndEventSubscriptionImpl(
+            config,
+            stateAndEventBuilder,
+            processor,
+            serializer,
+            lifecycleCoordinatorFactory,
+            messagingChunkFactory.createChunkSerializerService(messagingConfig.getLong(MAX_ALLOWED_MSG_SIZE)),
+            stateAndEventListener,
+        )
+    }
+
+    override fun <K : Any, S : Any, E : Any> createLetItRipStateAndEventSubscription(
+        subscriptionConfig: SubscriptionConfig,
+        processor: StateAndEventProcessor<K, S, E>,
+        messagingConfig: SmartConfig,
+        stateAndEventListener: StateAndEventListener<K, S>?
+    ): Resource {
         val config = getConfig(SubscriptionType.STATE_AND_EVENT, subscriptionConfig, messagingConfig)
         val serializer = cordaAvroSerializationFactory.createAvroSerializer<Any> { }
         return StateAndEventSubscriptionImpl(

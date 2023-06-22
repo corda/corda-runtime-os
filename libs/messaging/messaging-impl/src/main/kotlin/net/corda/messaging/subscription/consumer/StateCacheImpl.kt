@@ -17,9 +17,11 @@ class StateCacheImpl<K : Any, S : Any>(
     private var isRunning = false
     private val cachedData = mutableMapOf<K, CachedRecord<K, S>>()
     private val partitionMaxOffsets = mutableMapOf<Int, Long>()
+    private val partitionSafeMinOffset = mutableMapOf<Int, Long>()
 
     override fun subscribe(cacheReadyCallback: () -> Unit) {
         if (!isRunning) {
+            consumer.subscribe(config.topic)
             val partitions = consumer.getPartitions(config.topic)
             consumer.assign(partitions)
             val endOffsets = consumer.endOffsets(partitions)
@@ -56,8 +58,14 @@ class StateCacheImpl<K : Any, S : Any>(
         return partitionMaxOffsets
     }
 
+    override fun getMinOffsetsByPartition(partitions: List<Int>): Map<Int, Long> {
+        return partitions.associateWith { partition ->
+            partitionSafeMinOffset.getOrDefault(partition, 0)
+        }
+    }
+
     override fun isOffsetGreaterThanMaxSeen(partition: Int, offset: Long): Boolean {
-        return offset> partitionMaxOffsets.getOrDefault(partition, 0L)
+        return offset > partitionMaxOffsets.getOrDefault(partition, 0L)
     }
 
     override fun write(key: K, value: S?, lastEvent: StateCache.LastEvent): CompletableFuture<Unit> {
@@ -90,9 +98,14 @@ class StateCacheImpl<K : Any, S : Any>(
         cachedData[key] = entry
 
         val partition = entry.lastEvent.partition
-        val existing = partitionMaxOffsets.getOrDefault(partition, 0)
-        if (existing < entry.lastEvent.offset) {
+        val existingMax = partitionMaxOffsets.getOrDefault(partition, 0)
+        if (existingMax < entry.lastEvent.offset) {
             partitionMaxOffsets[partition] = entry.lastEvent.offset
+        }
+
+        val existingSafeMin = partitionSafeMinOffset.getOrDefault(partition, 0)
+        if (existingSafeMin < entry.lastEvent.safeMinOffset) {
+            partitionSafeMinOffset[partition] = entry.lastEvent.safeMinOffset + 1
         }
     }
 
@@ -101,11 +114,11 @@ class StateCacheImpl<K : Any, S : Any>(
     }
 
     private fun writeHeader(lastEvent: StateCache.LastEvent): String {
-        return "${lastEvent.topic}:${lastEvent.partition}:${lastEvent.offset}"
+        return "${lastEvent.topic}:${lastEvent.partition}:${lastEvent.offset}:${lastEvent.safeMinOffset}"
     }
 
     private fun readHeader(lastEventHeader: String): StateCache.LastEvent {
         val parts = lastEventHeader.split(":")
-        return StateCache.LastEvent(parts[0], parts[1].toInt(), parts[2].toLong())
+        return StateCache.LastEvent(parts[0], parts[1].toInt(), parts[2].toLong(), parts[3].toLong())
     }
 }
