@@ -12,8 +12,6 @@ import net.corda.tracing.impl.SampleRate
 import net.corda.tracing.impl.TracingState
 import net.corda.tracing.impl.Unlimited
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import org.apache.kafka.clients.consumer.Consumer
-import org.apache.kafka.clients.producer.Producer
 import org.eclipse.jetty.servlet.FilterHolder
 import java.util.EnumSet
 import java.util.concurrent.ExecutorService
@@ -53,14 +51,6 @@ fun wrapWithTracingExecutor(executor: ExecutorService): ExecutorService {
     return TracingState.currentTraceService.wrapWithTracingExecutor(executor)
 }
 
-fun <K, V> wrapWithTracingConsumer(kafkaConsumer: Consumer<K, V>): Consumer<K, V> {
-    return TracingState.currentTraceService.wrapWithTracingConsumer(kafkaConsumer)
-}
-
-fun <K, V> wrapWithTracingProducer(kafkaProducer: Producer<K, V>): Producer<K, V> {
-    return TracingState.currentTraceService.wrapWithTracingProducer(kafkaProducer)
-}
-
 fun traceBatch(operationName: String): BatchRecordTracer {
     return TracingState.currentTraceService.traceBatch(operationName)
 }
@@ -69,10 +59,21 @@ fun <R> trace(operationName: String, processingBlock: TraceContext.() -> R): R {
     return TracingState.currentTraceService.nextSpan(operationName, processingBlock)
 }
 
+fun getOrCreateBatchPublishTracing(clientId: String): BatchPublishTracing {
+    return TracingState.currentTraceService.getOrCreateBatchPublishTracing(clientId)
+}
+
 fun addTraceContextToRecords(records: List<Record<*, *>>): List<Record<*, *>> = records.map(::addTraceContextToRecord)
 
 fun addTraceContextToRecord(it: Record<*, *>): Record<out Any, out Any> {
     return it.copy(headers = TracingState.currentTraceService.addTraceHeaders(it.headers))
+}
+
+fun traceSend(
+    headers: List<Pair<String,String>>,
+    operationName: String
+): TraceContext {
+    return TracingState.currentTraceService.nextSpan(operationName, headers)
 }
 
 fun traceEventProcessing(
@@ -118,10 +119,10 @@ fun traceEventProcessingSingle(
 fun <K : Any, S : Any, V : Any> traceStateAndEventExecution(
     event: Record<K, V>,
     operationName: String,
-    processingBlock: () -> StateAndEventProcessor.Response<S>
+    processingBlock: TraceContext.() -> StateAndEventProcessor.Response<S>
 ): StateAndEventProcessor.Response<S> {
     return TracingState.currentTraceService.nextSpan(operationName, event) {
-        val result = processingBlock()
+        val result = processingBlock(this)
         result.copy(responseEvents = addTraceContextToRecords(result.responseEvents))
     }
 }
