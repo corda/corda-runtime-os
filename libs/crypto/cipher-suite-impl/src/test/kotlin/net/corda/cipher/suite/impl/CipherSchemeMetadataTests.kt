@@ -552,21 +552,9 @@ class CipherSchemeMetadataTests {
     
     @Test
     fun `Should fail gracefully with a correupted PEM file`() {
-        // note deliberate typo "BENIGN" rather than "BEGIN"
-        val bad = """-----BENIGN PUBLIC KEY-----
-                MIIBojANBgkqhkiG9w0BAQEFAAOCAY8AMIIBigKCAYEAtkTc9q3S7hVqHzlMY7gl
-        KaJyfWhajLBvWO56VGci4udvnZuAZnLJDPjDgESPFQpm7NMXceZ6czXyf2t5FQ98
-        chtJbCX9/vHUK2lKueL+mK8seOuseSwCnDkU0qxRYFX1Im0p3oKefzrkDgCiQKYt
-        XU7tKUekaJF5J/nrVZYNVPpvaM9uLjOK2Ajwt/qlS3lIoeD1prDNUAe1mKxk+Pol
-        mmTz12mjXgzXm2HUhfxGk8FdRV+1eCVyZoZ8CGjJ4TJSYDrsDBp49Yp9cgxlMEpL
-                SSRcYhr9FaZ2uW29tCrvjOqcsGaoC5WqJJWkIOOW7svIjEbfxpQUNqF7Ply4d91D
-        lRGCaxZWSqvfgym8lCEsZWDto3zwBoUtMKiRyWbJXRpcnXp5klpsrfErzSp+ea0E
-        kuJBtvnNWJNXCwWxLi1J670Dg5y334m8E97guiYInfLzKMWRdMeBTr7y2ttgGwhG
-        zi+wP4qg/xBhaNKBlcHjwTBF9caR+ZNvAl4JA3UH3z1tAgMBAAE=
-            -----END PUBLIC KEY-----
-        """
-        
-        schemeMetadata.decodePublicKey(bad)
+        assertThrows<IllegalArgumentException> {
+            schemeMetadata.decodePublicKey("junk")
+        }
     }
     
     @ParameterizedTest
