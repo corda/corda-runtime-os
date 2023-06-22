@@ -31,11 +31,11 @@ class GroupParametersCacheImpl @Activate constructor(
     // TODO Access configuration to setup the cache
     private companion object {
         private val log: Logger = LoggerFactory.getLogger(GroupParametersCacheImpl::class.java)
-        private const val MY_SIGNING_KEYS_CACHE_MAX_SIZE_PROPERTY_NAME =
+        private const val GROUP_PARAMETERS_CACHE_MAX_SIZE_PROPERTY_NAME =
             "net.corda.ledger.utxo.flow.impl.persistence.group.parameters.cache.maximumSize"
     }
 
-    private val maximumSize = java.lang.Long.getLong(MY_SIGNING_KEYS_CACHE_MAX_SIZE_PROPERTY_NAME, 10000)
+    private val maximumSize = java.lang.Long.getLong(GROUP_PARAMETERS_CACHE_MAX_SIZE_PROPERTY_NAME, 1000)
 
     private val cache: Cache<CacheKey<SecureHash>, SignedGroupParameters> = CacheFactoryImpl().build(
         "Group-parameters-cache",
