@@ -12,4 +12,5 @@ dependencies {
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation "net.corda:corda-avro-schema"
     implementation project(':libs:lifecycle:lifecycle')
+    implementation project(':libs:interop:interop-core')
 }

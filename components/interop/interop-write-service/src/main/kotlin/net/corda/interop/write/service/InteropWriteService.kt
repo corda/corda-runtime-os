@@ -1,9 +1,11 @@
 package net.corda.interop.write.service
 
+import net.corda.interop.write.service.data.AliasIdentity
 import net.corda.lifecycle.Lifecycle
-import net.corda.data.interop.InteropAliasIdentity
 
 
 interface InteropWriteService : Lifecycle {
-    fun put(key: String, value: InteropAliasIdentity)
+    fun publishAliasIdentity(aliasIdentity: AliasIdentity)
+
+    fun publishHostedAliasIdentity(aliasIdentity: AliasIdentity)
 }
