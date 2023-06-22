@@ -1,6 +1,6 @@
 package net.corda.membership.lib.registration
 
-import net.corda.data.membership.common.RegistrationStatus
+import net.corda.data.membership.common.v2.RegistrationStatus
 
 object RegistrationStatusExt {
 
