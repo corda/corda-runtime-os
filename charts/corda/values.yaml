@@ -555,6 +555,10 @@ workers:
       repository: "corda-os-flow-worker"
       # -- flow worker image tag, defaults to image.tag
       tag: ""
+
+    envs:
+      - name: "foo"
+        value: "bar"
     # -- flow worker replica count
     replicaCount: 1
     # -- flow worker extra annotations
