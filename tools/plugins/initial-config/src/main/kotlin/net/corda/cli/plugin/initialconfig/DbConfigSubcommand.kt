@@ -44,6 +44,20 @@ class DbConfigSubcommand : Runnable {
     var jdbcPoolMaxSize: Int = 10
 
     @Option(
+        names = ["--jdbc-pool-min-size"],
+        description = ["TODO"]
+    )
+    var jdbcPoolMinSize: Int? = null
+
+    var idleTimeout: Int = 120
+
+    var maxLifetime: Int = 1800
+
+    var keepaliveTime: Int = 0
+
+    var validationTimeout: Int = 5
+
+    @Option(
         names = ["-u", "--user"],
         required = true,
         description = ["User name for the database connection. Required."]
@@ -136,7 +150,19 @@ class DbConfigSubcommand : Runnable {
             updateTimestamp = Instant.now(),
             updateActor = "Setup Script",
             description = description,
-            config = createConfigDbConfig(jdbcUrl!!, username!!, value, vaultKey, jdbcPoolMaxSize, secretsService)
+            config = createConfigDbConfig(
+                jdbcUrl!!,
+                username!!,
+                value,
+                vaultKey,
+                jdbcPoolMaxSize,
+                jdbcPoolMinSize,
+                idleTimeout,
+                maxLifetime,
+                keepaliveTime,
+                validationTimeout,
+                secretsService
+            )
         ).also { it.version = 0 }
 
 
@@ -178,6 +204,11 @@ private fun createConfigDbConfig(
     value: String,
     key: String,
     jdbcPoolMaxSize: Int,
+    jdbcPoolMinSize: Int?,
+    idleTimeout: Int,
+    maxLifetime: Int,
+    keepaliveTime: Int,
+    validationTimeout: Int,
     secretsService: SecretsCreateService,
 ): String {
     return "{\"database\":{" +
@@ -186,7 +217,12 @@ private fun createConfigDbConfig(
             "\"pass\":${createSecureConfig(secretsService, value, key)}," +
             "\"user\":\"$username\"," +
             "\"pool\":" +
-            "{\"max_size\":$jdbcPoolMaxSize}}}"
+            "{\"max_size\":$jdbcPoolMaxSize," +
+            (jdbcPoolMinSize?.let { "\"min_size\":$it," } ?: "") +
+            "\"idleTimeoutSeconds\":$idleTimeout," +
+            "\"maxLifetimeSeconds\":$maxLifetime," +
+            "\"keepaliveTimeSeconds\":$keepaliveTime," +
+            "\"validationTimeoutSeconds\":$validationTimeout}}}"
 }
 
 fun createSecureConfig(secretsService: SecretsCreateService, value: String, key: String): String {
