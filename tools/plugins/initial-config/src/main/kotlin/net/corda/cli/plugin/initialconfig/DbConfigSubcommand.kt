@@ -49,12 +49,28 @@ class DbConfigSubcommand : Runnable {
     )
     var jdbcPoolMinSize: Int? = null
 
+    @Option(
+        names = ["--idle-timeout"],
+        description = ["TODO"]
+    )
     var idleTimeout: Int = 120
 
+    @Option(
+        names = ["--max-lifetime"],
+        description = ["TODO"]
+    )
     var maxLifetime: Int = 1800
 
+    @Option(
+        names = ["--keepalive-time"],
+        description = ["TODO"]
+    )
     var keepaliveTime: Int = 0
 
+    @Option(
+        names = ["--validation-timeout"],
+        description = ["TODO"]
+    )
     var validationTimeout: Int = 5
 
     @Option(
