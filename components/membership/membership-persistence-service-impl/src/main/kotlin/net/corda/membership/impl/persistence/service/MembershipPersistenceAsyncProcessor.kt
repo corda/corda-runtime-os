@@ -31,6 +31,10 @@ internal class MembershipPersistenceAsyncProcessor(
                 markForDLQ = true,
             )
         }
+        logger.info(
+            "Received membership async persistence request: " +
+                "${request.request.request::class.java} ID: ${request.request.context.requestId}"
+        )
         return try {
             handlers.handle(request.request)
             StateAndEventProcessor.Response(

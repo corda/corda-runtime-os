@@ -549,7 +549,7 @@ class StaticMemberRegistrationServiceTest {
     @Nested
     inner class FailedRegistrationTests {
         @Test
-        fun `it fails when the member is active`() {
+        fun `it fails when the member is active in DB`() {
             val status = mock<RegistrationRequestDetails> {
                 on { registrationId } doReturn "ID"
             }
@@ -560,6 +560,20 @@ class StaticMemberRegistrationServiceTest {
                     listOf(RegistrationStatus.APPROVED),
                 )
             ).doReturn(MembershipQueryResult.Success(listOf(status)))
+            setUpPublisher()
+            registrationService.start()
+
+            assertThrows<InvalidMembershipRegistrationException> {
+                registrationService.register(registrationId, alice, mockContext)
+            }
+        }
+
+        @Test
+        fun `it fails when the member is active in group reader`() {
+            val activeMemberInfo = mock<MemberInfo> {
+                on { isActive } doReturn true
+            }
+            whenever(groupReader.lookup(aliceName)).doReturn(activeMemberInfo)
             setUpPublisher()
             registrationService.start()
 
