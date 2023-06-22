@@ -45,31 +45,31 @@ class DbConfigSubcommand : Runnable {
 
     @Option(
         names = ["--jdbc-pool-min-size"],
-        description = ["TODO"]
+        description = ["The minimum size for the JDBC connection pool. Defaults to null"]
     )
     var jdbcPoolMinSize: Int? = null
 
     @Option(
         names = ["--idle-timeout"],
-        description = ["TODO"]
+        description = ["The maximum time (in seconds) a connection can stay idle in the pool. Defaults to 120"]
     )
     var idleTimeout: Int = 120
 
     @Option(
         names = ["--max-lifetime"],
-        description = ["TODO"]
+        description = ["The maximum time (in seconds) a connection can stay in the pool. Defaults to 1800"]
     )
     var maxLifetime: Int = 1800
 
     @Option(
         names = ["--keepalive-time"],
-        description = ["TODO"]
+        description = ["The interval time (in seconds) in which connections will be tested for aliveness. Defaults to 0"]
     )
     var keepaliveTime: Int = 0
 
     @Option(
         names = ["--validation-timeout"],
-        description = ["TODO"]
+        description = ["The maximum time (in seconds) that the pool will wait for a connection to be validated as alive. Defaults to 5"]
     )
     var validationTimeout: Int = 5
 
