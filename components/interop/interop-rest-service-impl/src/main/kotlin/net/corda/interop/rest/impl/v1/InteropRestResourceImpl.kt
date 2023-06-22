@@ -15,7 +15,7 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
-import net.corda.permissions.management.InteropManagementService
+import net.corda.permissions.management.service.InteropManagementService
 import net.corda.rest.PluggableRestResource
 import net.corda.rest.response.ResponseEntity
 import net.corda.rest.security.CURRENT_REST_CONTEXT
@@ -28,7 +28,6 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.util.*
 
-@Suppress("LongParameterList", "TooManyFunctions")
 @Component(service = [PluggableRestResource::class])
 internal class InteropRestResourceImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
@@ -74,7 +73,7 @@ internal class InteropRestResourceImpl @Activate constructor(
 
     // Lifecycle
     private val dependentComponents = DependentComponents.of(
-        ::configurationReadService
+        ::configurationReadService, ::interopManagementService
     )
 
     private val lifecycleCoordinator = coordinatorFactory.createCoordinator(

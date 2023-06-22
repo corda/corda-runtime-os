@@ -1,10 +1,9 @@
-package net.corda.permissions.management.internal
+package net.corda.permissions.management.service.impl
 
 import net.corda.libs.interop.endpoints.v1.InteropManager
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleEventHandler
-
 import org.slf4j.LoggerFactory
 
 @Suppress("LongParameterList")

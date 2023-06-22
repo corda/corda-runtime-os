@@ -1,4 +1,4 @@
 @Export
-package net.corda.permissions.management;
+package net.corda.permissions.management.service;
 
 import org.osgi.annotation.bundle.Export;
