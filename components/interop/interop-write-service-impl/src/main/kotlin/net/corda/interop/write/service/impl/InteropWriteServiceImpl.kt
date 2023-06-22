@@ -4,6 +4,7 @@ import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.interop.InteropAliasIdentity
 import net.corda.interop.write.service.InteropWriteService
+import net.corda.interop.write.service.producer.InteropAliasIdentityProducer
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -11,10 +12,12 @@ import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleEventHandler
 import net.corda.lifecycle.LifecycleStatus
+import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
+import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
@@ -25,6 +28,7 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.util.concurrent.atomic.AtomicReference
 
 @Suppress("TooManyFunctions")
 @Component(service = [InteropWriteService::class])
@@ -45,6 +49,10 @@ class InteropWriteServiceImpl @Activate constructor(
     }
 
     private val coordinator = coordinatorFactory.createCoordinator<InteropWriteService>(this)
+    private val publisher: AtomicReference<Publisher?> = AtomicReference()
+    private var registration: RegistrationHandle? = null
+    private var configSubscription: AutoCloseable? = null
+    private val aliasProducer = InteropAliasIdentityProducer(publisher)
 
     override fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         when (event) {
@@ -91,6 +99,7 @@ class InteropWriteServiceImpl @Activate constructor(
             coordinator.updateStatus(LifecycleStatus.UP)
         } else {
             coordinator.updateStatus(LifecycleStatus.DOWN)
+            closeResources()
         }
     }
 
@@ -106,11 +115,12 @@ class InteropWriteServiceImpl @Activate constructor(
      * Close the registration.
      */
     private fun onStopEvent() {
-        TODO("Not yet implemented")
+        logger.info("Component stopping")
+        coordinator.stop()
     }
 
     override fun put(key: String, value: InteropAliasIdentity) {
-        TODO("Not yet implemented")
+        aliasProducer.publishAliasIdentity(key, value)
     }
 
     override val isRunning: Boolean
@@ -124,5 +134,15 @@ class InteropWriteServiceImpl @Activate constructor(
     override fun stop() {
         logger.debug("Interop Write Service stopping")
         coordinator.stop()
+        closeResources()
+    }
+
+    private fun closeResources() {
+        configSubscription?.close()
+        configSubscription = null
+        registration?.close()
+        registration = null
+        publisher.get()?.close()
+        publisher.set(null)
     }
 }
