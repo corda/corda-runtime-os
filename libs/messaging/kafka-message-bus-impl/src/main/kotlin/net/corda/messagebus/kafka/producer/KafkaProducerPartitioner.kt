@@ -12,7 +12,7 @@ import org.apache.kafka.common.utils.Utils
 import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets
-import java.util.*
+import java.util.UUID
 
 /**
  * Custom partitioner to be used with Kafka Producers.
@@ -109,7 +109,8 @@ class KafkaProducerPartitioner : Partitioner {
                 } catch (e: Exception) {
                 }
             } else if (topic.contains("flow.mapper.event") && keyToPartition.startsWith("{\"id\": \"")) {
-                val keyId = keyToPartition.substring(8, 44)
+                // {"id": "3c45da84-0c9a-469b-b495-ff2b78269253", "identity": {"x500Name": "CN=Alice-506d57d0-6512-48b2-a49e-c292faa38656, OU=Application, O=R3, L=London, C=GB", "groupId": "b1f0b906-60c2-442f-b23b-c5eb47e923ff"}}
+                val keyId = keyToPartition.substring(8).substringBeforeLast("\", \"identity\": {")
                 val clientIDSecureHash = SecureHash("SHA256", ByteBuffer.wrap(keyId.encodeToByteArray()))
                 return partitionFromHash("#" + toHexString(clientIDSecureHash.bytes.array()).substring(0, 8))
             }
