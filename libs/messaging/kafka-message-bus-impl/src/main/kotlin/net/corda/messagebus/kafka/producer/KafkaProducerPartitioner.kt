@@ -41,6 +41,7 @@ class KafkaProducerPartitioner : Partitioner {
      * @param cluster cluster object provided by kafka client with cluster information
      * @return partition to send record to
      */
+    @Suppress("EmptyCatchBlock")
     override fun partition(topic: String, key: Any, keyBytes: ByteArray, value: Any?, valueBytes: ByteArray?, cluster: Cluster): Int {
         val partitionCount = cluster.partitionsForTopic(topic).size
 
@@ -109,6 +110,7 @@ class KafkaProducerPartitioner : Partitioner {
                 } catch (e: Exception) {
                 }
             } else if (topic.contains("flow.mapper.event") && keyToPartition.startsWith("{\"id\": \"")) {
+                @Suppress("MaxLineLength")
                 // {"id": "3c45da84-0c9a-469b-b495-ff2b78269253", "identity": {"x500Name": "CN=Alice-506d57d0-6512-48b2-a49e-c292faa38656, OU=Application, O=R3, L=London, C=GB", "groupId": "b1f0b906-60c2-442f-b23b-c5eb47e923ff"}}
                 val keyId = keyToPartition.substring(8).substringBeforeLast("\", \"identity\": {")
                 val clientIDSecureHash = SecureHash("SHA256", ByteBuffer.wrap(keyId.encodeToByteArray()))
