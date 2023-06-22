@@ -1,17 +1,17 @@
 package net.corda.messagebus.kafka.producer
 
 import net.corda.data.chunking.ChunkKey
-import net.corda.data.crypto.SecureHash
 import net.corda.data.flow.FlowKey
 import net.corda.utilities.trace
 import net.corda.v5.base.util.ByteArrays.toHexString
+import net.corda.v5.crypto.DigestAlgorithmName
 import org.apache.kafka.clients.producer.Partitioner
 import org.apache.kafka.clients.producer.internals.BuiltInPartitioner
 import org.apache.kafka.common.Cluster
 import org.apache.kafka.common.utils.Utils
 import org.slf4j.LoggerFactory
-import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets
+import java.security.MessageDigest
 import java.util.UUID
 
 /**
@@ -97,8 +97,9 @@ class KafkaProducerPartitioner : Partitioner {
         if (key is FlowKey && topic.endsWith("flow.status")) {
             val keyId = key.id
             if (keyId.startsWith("#") && keyId.indexOf('/') == 17) return partitionFromHash(keyId)
-            val clientIDSecureHash = SecureHash("SHA256", ByteBuffer.wrap(keyId.encodeToByteArray()))
-            return partitionFromHash("#" + toHexString(clientIDSecureHash.bytes.array()).substring(0, 8))
+            val clientIDSecureHash =
+                MessageDigest.getInstance(DigestAlgorithmName.SHA2_256.name).digest(keyId.encodeToByteArray())
+            return partitionFromHash("#" + toHexString(clientIDSecureHash).substring(0, 8))
         }
         if (keyToPartition is String) {
             if (keyToPartition.startsWith("#") && keyToPartition.indexOf('/') == 17) {
@@ -113,8 +114,9 @@ class KafkaProducerPartitioner : Partitioner {
                 @Suppress("MaxLineLength")
                 // {"id": "3c45da84-0c9a-469b-b495-ff2b78269253", "identity": {"x500Name": "CN=Alice-506d57d0-6512-48b2-a49e-c292faa38656, OU=Application, O=R3, L=London, C=GB", "groupId": "b1f0b906-60c2-442f-b23b-c5eb47e923ff"}}
                 val keyId = keyToPartition.substring(8).substringBeforeLast("\", \"identity\": {")
-                val clientIDSecureHash = SecureHash("SHA256", ByteBuffer.wrap(keyId.encodeToByteArray()))
-                return partitionFromHash("#" + toHexString(clientIDSecureHash.bytes.array()).substring(0, 8))
+                val clientIDSecureHash =
+                    MessageDigest.getInstance(DigestAlgorithmName.SHA2_256.name).digest(keyId.encodeToByteArray())
+                return partitionFromHash("#" + toHexString(clientIDSecureHash).substring(0, 8))
             }
         }
         val partition = BuiltInPartitioner.partitionForKey(keyBytesToPartition, partitionCount)
