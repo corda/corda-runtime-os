@@ -551,7 +551,7 @@ class CipherSchemeMetadataTests {
 
     
     @Test
-    fun `Should fail gracefully with a correupted PEM file`() {
+    fun `Should fail gracefully with a corrupted PEM file`() {
         assertThrows<IllegalArgumentException> {
             schemeMetadata.decodePublicKey("junk")
         }
