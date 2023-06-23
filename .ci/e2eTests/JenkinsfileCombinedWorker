@@ -51,6 +51,11 @@ pipeline {
         GRADLE_PERFORMANCE_TUNING = "--max-workers=4 --parallel -Dscan.tag.combined-worker --build-cache -Si"
     }
 
+    triggers {
+        cron('H * /2 * * *')
+    }
+
+
     parameters {
         string(name: 'COMMIT_TO_CHECKOUT', defaultValue: '', description: 'Commit ID to check out of SCM - leave blank to take head of current branch')
     }
