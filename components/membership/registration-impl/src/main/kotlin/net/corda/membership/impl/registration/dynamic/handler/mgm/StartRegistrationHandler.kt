@@ -137,14 +137,23 @@ internal class StartRegistrationHandler(
                 mgmHoldingId,
                 listOf(pendingMemberHoldingId)
             ).getOrThrow()
-            // The MemberX500Name is not a duplicate
-            validateRegistrationRequest(
-                existingMemberInfos.isEmpty() || registrationRequest.serial != 0L
-            ) { "Member already exists with the same X500 name." }
-            // Serial number on the request should be smaller than the current version of the requestor's MemberInfo
             val activeOrSuspendedInfo = existingMemberInfos.lastOrNull {
                 it.status == MEMBER_STATUS_ACTIVE || it.status == MEMBER_STATUS_SUSPENDED
             }
+            /**
+             * We can only register with the member name if:
+             * * It's the first registration i.e. nobody has registered this name before
+             * * It's a re-registration i.e. the serial number has increased to indicate a re-registration
+             * * It's a registration after a failed first registration i.e. a pending member info exists, but it's
+             *      still a first registration since the previous failed.
+             */
+            validateRegistrationRequest(
+                existingMemberInfos.isEmpty()
+                        || registrationRequest.serial != 0L
+                        || activeOrSuspendedInfo == null
+            ) { "Member already exists with the same X500 name." }
+
+            // Serial number on the request should be smaller than the current version of the requestor's MemberInfo
             validateRegistrationRequest(
                 activeOrSuspendedInfo == null || activeOrSuspendedInfo.serial <= registrationRequest.serial!!
             ) {
@@ -354,5 +363,9 @@ internal class StartRegistrationHandler(
                 throw InvalidRegistrationRequestException(this)
             }
         }
+    }
+
+    private fun Collection<MemberInfo>.containsSingleMemberInfoFromFailedRegistration(): Boolean {
+        return size == 1 && first().let { it.serial == 0L && it.status == MEMBER_STATUS_PENDING }
     }
 }
