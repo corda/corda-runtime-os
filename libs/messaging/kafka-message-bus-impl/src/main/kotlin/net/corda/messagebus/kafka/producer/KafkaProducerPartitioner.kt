@@ -46,7 +46,7 @@ class KafkaProducerPartitioner : Partitioner {
         val partitionCount = cluster.partitionsForTopic(topic).size
 
         fun logPartition(partition: Int) {
-            logger.info("Sending record on topic $topic to partition $partition (of $partitionCount) with key $key")
+            logger.trace { "Sending record on topic $topic to partition $partition (of $partitionCount) with key $key" }
         }
 
         fun partitionFor(hex: String, partitionCountToUse: Int = partitionCount): Int {
@@ -120,7 +120,6 @@ class KafkaProducerPartitioner : Partitioner {
             }
         }
         val partition = BuiltInPartitioner.partitionForKey(keyBytesToPartition, partitionCount)
-        logger.trace { "Sending record with key $key to partition $partition" }
         return partition.also { logPartition(it) }
     }
 
