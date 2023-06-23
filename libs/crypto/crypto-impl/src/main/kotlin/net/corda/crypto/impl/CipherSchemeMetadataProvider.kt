@@ -1,9 +1,16 @@
 package net.corda.crypto.impl
 
+import java.io.StringReader
+import java.io.StringWriter
+import java.security.Provider
+import java.security.PublicKey
+import java.security.SecureRandom
+import java.security.spec.X509EncodedKeySpec
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.cipher.suite.schemes.KeyScheme
 import net.corda.crypto.cipher.suite.schemes.KeySchemeCapability
 import net.corda.crypto.cipher.suite.schemes.KeySchemeTemplate
+import net.corda.metrics.CordaMetrics
 import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.crypto.CordaOID.OID_COMPOSITE_KEY
 import net.corda.v5.crypto.KeySchemeCodes.COMPOSITE_KEY_CODE_NAME
@@ -17,12 +24,10 @@ import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter
 import org.bouncycastle.openssl.jcajce.JcaPEMWriter
 import org.bouncycastle.pqc.jcajce.provider.BouncyCastlePQCProvider
 import org.bouncycastle.util.io.pem.PemReader
-import java.io.StringReader
-import java.io.StringWriter
-import java.security.Provider
-import java.security.PublicKey
-import java.security.SecureRandom
-import java.security.spec.X509EncodedKeySpec
+
+private const val DECODE_PUBLIC_KEY_FROM_BYTE_ARRAY_OPERATION_NAME = "decodePublicKeyFromByteArray"
+private const val DECODE_PUBLIC_KEY_FROM_STRING_OPERATION_NAME = "decodePublicKeyFromString"
+private const val ENCODE_PUBLIC_KEY_TO_STRING_OPERATION_NAME = "encodePublicKeyToString"
 
 class CipherSchemeMetadataProvider : KeyEncodingService {
 
@@ -140,23 +145,38 @@ class CipherSchemeMetadataProvider : KeyEncodingService {
         algorithmMap[normaliseAlgorithmIdentifier(algorithm)]
             ?: throw IllegalArgumentException("Unrecognised algorithm: ${algorithm.algorithm.id}, with parameters=${algorithm.parameters}")
 
-    override fun decodePublicKey(encodedKey: ByteArray): PublicKey = try {
-        val subjectPublicKeyInfo = SubjectPublicKeyInfo.getInstance(encodedKey)
-        val scheme = findKeyScheme(subjectPublicKeyInfo.algorithm)
-        val keyFactory = keyFactories[scheme]
-        keyFactory.generatePublic(X509EncodedKeySpec(encodedKey))
-    } catch (e: RuntimeException) {
-        throw e
-    } catch (e: Throwable) {
-        throw CryptoException("Failed to decode public key", e)
+    private fun <T : Any> recordPublicKeyOperation(operationName: String, op: () -> T): T {
+        return CordaMetrics.Metric.Crypto.CipherSchemeTimer.builder()
+            .withTag(CordaMetrics.Tag.OperationName, operationName)
+            .build()
+            .recordCallable {
+                op.invoke()
+            }!!
+    }
+
+    override fun decodePublicKey(encodedKey: ByteArray): PublicKey {
+        return try {
+            recordPublicKeyOperation(DECODE_PUBLIC_KEY_FROM_BYTE_ARRAY_OPERATION_NAME) {
+                val subjectPublicKeyInfo = SubjectPublicKeyInfo.getInstance(encodedKey)
+                val scheme = findKeyScheme(subjectPublicKeyInfo.algorithm)
+                val keyFactory = keyFactories[scheme]
+                keyFactory.generatePublic(X509EncodedKeySpec(encodedKey))
+            }
+        } catch (e: RuntimeException) {
+            throw e
+        } catch (e: Throwable) {
+            throw CryptoException("Failed to decode public key", e)
+        }
     }
 
     override fun decodePublicKey(encodedKey: String): PublicKey = try {
-        val pemContent = parsePemContent(encodedKey)
-        val publicKeyInfo = SubjectPublicKeyInfo.getInstance(pemContent)
-        val converter = getJcaPEMKeyConverter(publicKeyInfo)
-        val publicKey = converter.getPublicKey(publicKeyInfo)
-        toSupportedPublicKey(publicKey)
+        recordPublicKeyOperation(DECODE_PUBLIC_KEY_FROM_STRING_OPERATION_NAME) {
+            val pemContent = parsePemContent(encodedKey)
+            val publicKeyInfo = SubjectPublicKeyInfo.getInstance(pemContent)
+            val converter = getJcaPEMKeyConverter(publicKeyInfo)
+            val publicKey = converter.getPublicKey(publicKeyInfo)
+            toSupportedPublicKey(publicKey)
+        }
     } catch (e: RuntimeException) {
         throw e
     } catch (e: Throwable) {
@@ -164,7 +184,9 @@ class CipherSchemeMetadataProvider : KeyEncodingService {
     }
 
     override fun encodeAsString(publicKey: PublicKey): String = try {
-        objectToPem(publicKey)
+        recordPublicKeyOperation(ENCODE_PUBLIC_KEY_TO_STRING_OPERATION_NAME) {
+            objectToPem(publicKey)
+        }
     } catch (e: RuntimeException) {
         throw e
     } catch (e: Throwable) {

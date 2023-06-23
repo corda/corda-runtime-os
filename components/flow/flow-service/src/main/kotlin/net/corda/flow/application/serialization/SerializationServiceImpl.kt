@@ -18,8 +18,8 @@ import org.slf4j.LoggerFactory
 import java.io.NotSerializableException
 
 @Component(
-    service = [ SerializationService::class, SerializationServiceInternal::class, UsedByFlow::class ],
-    property = [ CORDA_SYSTEM_SERVICE ],
+    service = [SerializationService::class, SerializationServiceInternal::class, UsedByFlow::class],
+    property = [CORDA_SYSTEM_SERVICE],
     scope = PROTOTYPE
 )
 class SerializationServiceImpl @Activate constructor(

@@ -9,14 +9,21 @@ import net.corda.flow.fiber.FiberFuture
 import net.corda.flow.fiber.FlowContinuation
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.fiber.Interruptable
+import net.corda.flow.fiber.cache.FlowFiberCache
 import net.corda.flow.pipeline.FlowGlobalPostProcessor
+import net.corda.flow.pipeline.events.FlowEventContext
 import net.corda.flow.pipeline.exceptions.FlowFatalException
+import net.corda.flow.pipeline.exceptions.FlowMarkedForKillException
 import net.corda.flow.pipeline.handlers.events.FlowEventHandler
 import net.corda.flow.pipeline.handlers.requests.FlowRequestHandler
 import net.corda.flow.pipeline.handlers.waiting.FlowWaitingForHandler
 import net.corda.flow.pipeline.runner.FlowRunner
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.flow.test.utils.buildFlowEventContext
+import net.corda.virtualnode.HoldingIdentity
+import net.corda.virtualnode.OperationalStatus
+import net.corda.virtualnode.VirtualNodeInfo
+import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -35,13 +42,6 @@ import java.util.concurrent.Future
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
 import java.util.stream.Stream
-import net.corda.flow.fiber.cache.FlowFiberCache
-import net.corda.flow.pipeline.events.FlowEventContext
-import net.corda.flow.pipeline.exceptions.FlowMarkedForKillException
-import net.corda.virtualnode.HoldingIdentity
-import net.corda.virtualnode.OperationalStatus
-import net.corda.virtualnode.VirtualNodeInfo
-import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.data.flow.state.waiting.Wakeup as WakeUpWaitingFor
 
 class FlowEventPipelineImplTest {
@@ -116,6 +116,7 @@ class FlowEventPipelineImplTest {
             inputContext,
             virtualNodeInfoReadService,
             flowFiberCache,
+            mock(),
             output
         )
     }
@@ -159,7 +160,17 @@ class FlowEventPipelineImplTest {
             whenever(it.checkpoint).thenReturn(mockCheckpoint)
         }
         val pipeline =
-            FlowEventPipelineImpl(mapOf(), mapOf(), mapOf(), mock(), mock(), mockContext, virtualNodeInfoReadService, flowFiberCache)
+            FlowEventPipelineImpl(
+                mapOf(),
+                mapOf(),
+                mapOf(),
+                mock(),
+                mock(),
+                mockContext,
+                virtualNodeInfoReadService,
+                flowFiberCache,
+                mock()
+            )
 
         val mockVirtualNode = mock<VirtualNodeInfo> {
             whenever(it.flowOperationalStatus).thenReturn(OperationalStatus.INACTIVE)

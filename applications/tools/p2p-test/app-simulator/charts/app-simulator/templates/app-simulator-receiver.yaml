@@ -39,8 +39,8 @@ spec:
           securityContext:
             allowPrivilegeEscalation: false
           args:
-            - "--mode RECEIVER"
-            - "--clients {{ .Values.appSimulators.receiver.parallelClientsPerReplica }}"
+            - "--mode=RECEIVER"
+            - "--clients={{ .Values.appSimulators.receiver.parallelClientsPerReplica }}"
             - "-tnumPartitions={{ .Values.appSimulators.receiver.topicCreation.numPartitions }}"
             - "-treplicationFactor={{ .Values.appSimulators.receiver.topicCreation.replicationFactor }}"
             {{- include "appSimulator.kafkaArgs" . | nindent 12 }}
