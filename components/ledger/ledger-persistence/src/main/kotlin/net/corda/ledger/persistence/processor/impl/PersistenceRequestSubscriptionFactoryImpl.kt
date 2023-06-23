@@ -35,10 +35,14 @@ class PersistenceRequestSubscriptionFactoryImpl @Activate constructor(
     }
 
     override fun create(config: SmartConfig): Subscription<String, LedgerPersistenceRequest> {
-        val subscriptionConfig = SubscriptionConfig(GROUP_NAME, Schemas.Persistence.PERSISTENCE_LEDGER_PROCESSOR_TOPIC)
+        val subscriptionConfig = SubscriptionConfig(
+            GROUP_NAME,
+            Schemas.Persistence.PERSISTENCE_LEDGER_PROCESSOR_TOPIC,
+            transactionalProducer = false
+        )
 
         val processor = PersistenceRequestProcessor(
-            currentSandboxGroupContext ,
+            currentSandboxGroupContext,
             entitySandboxService,
             delegatedRequestHandlerSelector,
             responseFactory
