@@ -268,14 +268,14 @@ class ExpirationProcessorTest {
                 it.assertThat(capturedTimeframes.firstValue).isLessThanOrEqualTo(TimeUnit.MINUTES.toMillis(180))
                 it.assertThat(capturedTimeframes.secondValue).isLessThanOrEqualTo(TimeUnit.MINUTES.toMillis(dummyTime))
 
-                val lambda = capturedEvents.firstValue.invoke("")
-                it.assertThat(lambda).isInstanceOf(ExpirationProcessorImpl.DeclineExpiredRegistrationRequests::class.java)
-                val firstEvent = lambda as ExpirationProcessorImpl.DeclineExpiredRegistrationRequests
+                val declineEvent = capturedEvents.firstValue.invoke("")
+                it.assertThat(declineEvent).isInstanceOf(ExpirationProcessorImpl.DeclineExpiredRegistrationRequests::class.java)
+                val firstEvent = declineEvent as ExpirationProcessorImpl.DeclineExpiredRegistrationRequests
                 it.assertThat(firstEvent.expirationDate).isEqualTo(TimeUnit.MINUTES.toMillis(300))
 
-                val lambdaAfterUpdate = capturedEvents.secondValue.invoke("")
-                it.assertThat(lambdaAfterUpdate).isInstanceOf(ExpirationProcessorImpl.DeclineExpiredRegistrationRequests::class.java)
-                val secondEvent = lambdaAfterUpdate as ExpirationProcessorImpl.DeclineExpiredRegistrationRequests
+                val declineEventAfterUpdate = capturedEvents.secondValue.invoke("")
+                it.assertThat(declineEventAfterUpdate).isInstanceOf(ExpirationProcessorImpl.DeclineExpiredRegistrationRequests::class.java)
+                val secondEvent = declineEventAfterUpdate as ExpirationProcessorImpl.DeclineExpiredRegistrationRequests
                 it.assertThat(secondEvent.expirationDate).isEqualTo(TimeUnit.MINUTES.toMillis(dummyTime))
             }
         }
