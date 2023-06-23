@@ -77,6 +77,7 @@ class FlowMapperEventExecutorFactoryImpl @Activate constructor(
                     }
                 }
             }
+            //NOTE: To publish to flow event topic (start events)
             is StartFlow -> StartFlowExecutor(eventKey, FLOW_EVENT_TOPIC, flowMapperEventPayload, state)
             is ExecuteCleanup -> ExecuteCleanupEventExecutor(eventKey)
             is ScheduleCleanup -> ScheduleCleanupEventExecutor(eventKey, flowMapperEventPayload, state)

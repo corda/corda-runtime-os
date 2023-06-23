@@ -128,6 +128,7 @@ class ExternalEventResponseFactoryImpl(
         response: ExternalEventResponse
     ): Record<String, FlowEvent> {
         return Record(
+            //NOTE: To publish to flow event topic
             Schemas.Flow.FLOW_EVENT_TOPIC,
             flowId,
             FlowEvent(flowId, response)

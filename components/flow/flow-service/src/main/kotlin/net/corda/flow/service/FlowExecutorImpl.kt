@@ -76,6 +76,7 @@ class FlowExecutorImpl constructor(
             subscription?.close()
 
             subscription = subscriptionFactory.createStateAndEventSubscription(
+                //NOTE: To consume from flow event topic
                 SubscriptionConfig(CONSUMER_GROUP, FLOW_EVENT_TOPIC),
                 flowEventProcessorFactory.create(flowConfig),
                 messagingConfig,
