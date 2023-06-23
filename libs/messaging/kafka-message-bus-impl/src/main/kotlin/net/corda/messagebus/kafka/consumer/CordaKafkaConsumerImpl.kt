@@ -72,56 +72,61 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
         }
     }
 
+    private fun <T : Any> recordConsumerPollTime(poll: () -> T): T {
+        return CordaMetrics.Metric.Messaging.ConsumerPollTime.builder()
+            .withTag(CordaMetrics.Tag.MessagePatternClientId, config.clientId)
+            .build()
+            .recordCallable {
+                poll.invoke()
+            }!!
+    }
+
     @Suppress("TooGenericExceptionCaught")
     override fun poll(timeout: Duration): List<CordaConsumerRecord<K, V>> {
-        val startTime = System.nanoTime()
-        val polledRecords = try {
-            consumer.poll(timeout)
-        } catch (ex: Exception) {
-            when (ex) {
-                is AuthorizationException,
-                is AuthenticationException,
-                is IllegalArgumentException,
-                is IllegalStateException,
-                is ArithmeticException,
-                is FencedInstanceIdException,
-                is InconsistentGroupProtocolException,
-                is InvalidOffsetException,
-                -> {
-                    logErrorAndThrowFatalException("Error attempting to poll.", ex)
-                }
+        return recordConsumerPollTime {
+            val polledRecords = try {
+                consumer.poll(timeout)
+            } catch (ex: Exception) {
+                when (ex) {
+                    is AuthorizationException,
+                    is AuthenticationException,
+                    is IllegalArgumentException,
+                    is IllegalStateException,
+                    is ArithmeticException,
+                    is FencedInstanceIdException,
+                    is InconsistentGroupProtocolException,
+                    is InvalidOffsetException,
+                    -> {
+                        logErrorAndThrowFatalException("Error attempting to poll.", ex)
+                    }
 
-                is WakeupException,
-                is InterruptException,
-                is KafkaException,
-                -> {
-                    logWarningAndThrowIntermittentException("Error attempting to poll.", ex)
-                }
+                    is WakeupException,
+                    is InterruptException,
+                    is KafkaException,
+                    -> {
+                        logWarningAndThrowIntermittentException("Error attempting to poll.", ex)
+                    }
 
-                else -> logErrorAndThrowFatalException("Unexpected error attempting to poll.", ex)
-            }
-        }
-
-        clearBuffersForUnassignedPartitions()
-
-        val recordsToReturn = mutableListOf<CordaConsumerRecord<K, V>>()
-        polledRecords.groupBy { it.partition() }.forEach { (partition, records) ->
-            recordPolledRecordsPerPartition(partition, records)
-            val bufferedRecords = bufferedRecords[partition] ?: emptyList()
-            if (bufferedRecords.isNotEmpty()) {
-                log.trace {
-                    "Taking  ${bufferedRecords.size} buffered records from partition $partition and adding them to the polled records" +
-                            " of size ${records.size}"
+                    else -> logErrorAndThrowFatalException("Unexpected error attempting to poll.", ex)
                 }
             }
-            recordsToReturn.addAll(parseRecords(partition, bufferedRecords.plus(records)))
-        }
 
-        return recordsToReturn.sortedBy { it.timestamp }.also {
-            CordaMetrics.Metric.Messaging.ConsumerPollTime.builder()
-                .withTag(CordaMetrics.Tag.MessagePatternClientId, config.clientId)
-                .build()
-                .record(Duration.ofMillis(System.nanoTime() - startTime))
+            clearBuffersForUnassignedPartitions()
+
+            val recordsToReturn = mutableListOf<CordaConsumerRecord<K, V>>()
+            polledRecords.groupBy { it.partition() }.forEach { (partition, records) ->
+                recordPolledRecordsPerPartition(partition, records)
+                val bufferedRecords = bufferedRecords[partition] ?: emptyList()
+                if (bufferedRecords.isNotEmpty()) {
+                    log.trace {
+                        "Taking  ${bufferedRecords.size} buffered records from partition $partition and adding them to the polled records" +
+                                " of size ${records.size}"
+                    }
+                }
+                recordsToReturn.addAll(parseRecords(partition, bufferedRecords.plus(records)))
+            }
+
+            recordsToReturn.sortedBy { it.timestamp }
         }
     }
 
