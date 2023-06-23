@@ -45,7 +45,7 @@ class CordaKafkaProducerImpl(
     private val config: ResolvedProducerConfig,
     private val producer: Producer<Any, Any>,
     private val chunkSerializerService: ChunkSerializerService,
-    private val producerMetricsBinder : MeterBinder,
+    private val producerMetricsBinder: MeterBinder,
 ) : CordaProducer {
     private val topicPrefix = config.topicPrefix
     private val transactional = config.transactional
@@ -179,10 +179,26 @@ class CordaKafkaProducerImpl(
             callback?.onCompletion(exceptionThrown)
             throw exceptionThrown
         }
+
+        recordChunksCountPerTopic(cordaProducerRecords)
+
         cordaProducerRecords.forEach {
             //note callback is only applicable to async calls which are not allowed
-            producer.send(it.toKafkaRecord(topicPrefix,partition))
+            producer.send(it.toKafkaRecord(topicPrefix, partition))
         }
+    }
+
+    private fun recordChunksCountPerTopic(cordaProducerRecords: List<CordaProducerRecord<*, *>>) {
+        cordaProducerRecords.groupBy { it.topic }
+            .mapValues { (_, records) -> records.size }
+            .forEach { (topic, count) ->
+                CordaMetrics.Metric.Messaging.ProducerChunksGenerated.builder()
+                    .withTag(CordaMetrics.Tag.MessagePatternClientId, config.clientId)
+                    .withTag(CordaMetrics.Tag.Topic, topic)
+                    .build()
+                    .record(count.toDouble())
+            }
+
     }
 
     override fun beginTransaction() {
