@@ -1,4 +1,4 @@
-package net.corda.interop.write.service.data
+package net.corda.interop.core
 
 import net.corda.crypto.core.ShortHash
 import net.corda.v5.base.types.MemberX500Name

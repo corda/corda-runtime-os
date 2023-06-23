@@ -2,6 +2,8 @@ package net.corda.interop.aliasinfo.cache.impl
 
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.interop.aliasinfo.processor.InteropIdentityProcessor
+import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleEvent
@@ -11,15 +13,20 @@ import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
+import net.corda.messaging.api.subscription.config.SubscriptionConfig
+import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.configuration.ConfigKeys
 import org.slf4j.LoggerFactory
 
 
 class AliasInfoCacheServiceEventHandler(
-    private val configurationReadService: ConfigurationReadService
+    private val configurationReadService: ConfigurationReadService,
+    private val subscriptionFactory: SubscriptionFactory,
 ) : LifecycleEventHandler {
     companion object {
         private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        private const val GROUP_NAME = "interop_alias_identity"
+        private const val INTEROP_ALIAS_IDENTITY_TOPIC = "interop.alias.identity"
     }
 
     private var registration: RegistrationHandle? = null
@@ -54,11 +61,16 @@ class AliasInfoCacheServiceEventHandler(
 
     @Suppress("UNUSED_VARIABLE", "UNUSED_PARAMETER")
     private fun onConfigChangeEvent(event: ConfigChangedEvent, coordinator: LifecycleCoordinator) {
-        val config = event.config[ConfigKeys.MESSAGING_CONFIG] ?: return
+        val messagingConfig = event.config.getConfig(ConfigKeys.MESSAGING_CONFIG)
 
-        log.info("Processing config update")
-
-        // Why does this need to be here? Which config keys should we listen to?
+        coordinator.createManagedResource("InteropAliasIdentityProcessor.subscription") {
+            subscriptionFactory.createCompactedSubscription(
+                SubscriptionConfig(GROUP_NAME, INTEROP_ALIAS_IDENTITY_TOPIC),
+                InteropIdentityProcessor(),
+                messagingConfig).also {
+                it.start()
+            }
+        }
 
         coordinator.updateStatus(LifecycleStatus.UP)
     }

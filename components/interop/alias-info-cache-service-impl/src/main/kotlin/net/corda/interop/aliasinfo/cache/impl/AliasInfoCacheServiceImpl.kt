@@ -5,6 +5,7 @@ import net.corda.data.interop.InteropAliasIdentity
 import net.corda.interop.aliasinfo.cache.AliasInfoCacheService
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
+import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -18,13 +19,15 @@ class AliasInfoCacheServiceImpl @Activate constructor(
     private val coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = ConfigurationReadService::class)
     private val configurationReadService: ConfigurationReadService,
+    @Reference(service = SubscriptionFactory::class)
+    private val subscriptionFactory: SubscriptionFactory
 ) : AliasInfoCacheService {
     companion object {
         val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     private val lifecycleEventHandler = AliasInfoCacheServiceEventHandler(
-        configurationReadService,
+        configurationReadService, subscriptionFactory
     )
 
     private val coordinatorName = LifecycleCoordinatorName.forComponent<AliasInfoCacheService>()

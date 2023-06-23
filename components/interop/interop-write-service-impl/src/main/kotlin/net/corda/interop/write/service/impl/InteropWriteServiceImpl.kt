@@ -4,7 +4,7 @@ import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.interop.InteropAliasIdentity
 import net.corda.interop.write.service.InteropWriteService
-import net.corda.interop.write.service.data.AliasIdentity
+import net.corda.interop.core.AliasIdentity
 import net.corda.interop.write.service.producer.AliasIdentityProducer
 import net.corda.interop.write.service.producer.HostedIdentityProducer
 import net.corda.libs.configuration.helper.getConfig

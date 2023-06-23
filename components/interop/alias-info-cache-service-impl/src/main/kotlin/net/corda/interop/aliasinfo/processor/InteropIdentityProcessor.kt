@@ -1,4 +1,4 @@
-package net.corda.interop
+package net.corda.interop.aliasinfo.processor
 
 import net.corda.data.interop.InteropAliasIdentity
 import net.corda.messaging.api.processor.CompactedProcessor

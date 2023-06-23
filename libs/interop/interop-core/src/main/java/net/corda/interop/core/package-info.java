@@ -1,4 +1,4 @@
 @Export
-package net.corda.interop.core.data;
+package net.corda.interop.core;
 
 import org.osgi.annotation.bundle.Export;

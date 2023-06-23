@@ -1,6 +1,6 @@
 package net.corda.interop.write.service
 
-import net.corda.interop.write.service.data.AliasIdentity
+import net.corda.interop.core.AliasIdentity
 import net.corda.lifecycle.Lifecycle
 
 

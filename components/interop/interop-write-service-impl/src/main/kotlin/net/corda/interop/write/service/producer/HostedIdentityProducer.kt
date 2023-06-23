@@ -3,7 +3,7 @@ package net.corda.interop.write.service.producer
 import net.corda.data.identity.HoldingIdentity
 import net.corda.data.p2p.HostedIdentityEntry
 import net.corda.data.p2p.HostedIdentitySessionKeyAndCert
-import net.corda.interop.write.service.data.AliasIdentity
+import net.corda.interop.core.AliasIdentity
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
