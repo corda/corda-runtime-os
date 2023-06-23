@@ -77,7 +77,6 @@ class StateAndEventBuilderImpl @Activate constructor(
             eClazz,
             onEventError
         )
-        validateConsumers(config, stateConsumer, eventConsumer)
 
         val partitionState =
             StateAndEventPartitionState(
@@ -99,24 +98,5 @@ class StateAndEventBuilderImpl @Activate constructor(
             stateAndEventListener
         )
         return Pair(stateAndEventConsumer, rebalanceListener)
-    }
-
-    private fun <K : Any, S : Any, E : Any> validateConsumers(
-        config: ResolvedSubscriptionConfig,
-        stateConsumer: CordaConsumer<K, S>,
-        eventConsumer: CordaConsumer<K, E>
-    ) {
-        val statePartitions =
-            stateConsumer.getPartitions(getStateAndEventStateTopic(config.topic))
-        val eventPartitions =
-            eventConsumer.getPartitions(config.topic)
-        if (statePartitions.size != eventPartitions.size) {
-            val errorMsg = "Mismatch between state and event partitions."
-            log.warn(
-                errorMsg + " state : ${statePartitions.joinToString()}" +
-                        ", event: ${eventPartitions.joinToString()}"
-            )
-            throw CordaRuntimeException(errorMsg)
-        }
     }
 }
