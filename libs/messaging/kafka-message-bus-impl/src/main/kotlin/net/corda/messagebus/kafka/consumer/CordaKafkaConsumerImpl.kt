@@ -72,15 +72,6 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
         }
     }
 
-    private fun <T : Any> recordConsumerPollTime(poll: () -> T): T {
-        return CordaMetrics.Metric.Messaging.ConsumerPollTime.builder()
-            .withTag(CordaMetrics.Tag.MessagePatternClientId, config.clientId)
-            .build()
-            .recordCallable {
-                poll.invoke()
-            }!!
-    }
-
     @Suppress("TooGenericExceptionCaught")
     override fun poll(timeout: Duration): List<CordaConsumerRecord<K, V>> {
         return recordConsumerPollTime {
@@ -128,6 +119,15 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
 
             recordsToReturn.sortedBy { it.timestamp }
         }
+    }
+
+    private fun <T : Any> recordConsumerPollTime(poll: () -> T): T {
+        return CordaMetrics.Metric.Messaging.ConsumerPollTime.builder()
+            .withTag(CordaMetrics.Tag.MessagePatternClientId, config.clientId)
+            .build()
+            .recordCallable {
+                poll.invoke()
+            }!!
     }
 
     private fun recordPolledRecordsPerPartition(partition: Int, records: List<ConsumerRecord<*, *>>) {
