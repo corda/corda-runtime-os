@@ -13,6 +13,8 @@ import net.corda.libs.packaging.core.exception.CordappManifestException
 import net.corda.libs.packaging.hash
 import net.corda.libs.packaging.internal.CpkImpl
 import net.corda.libs.packaging.internal.CpkLoader
+import net.corda.libs.packaging.internal.ExternalChannelsConfigLoader
+import net.corda.libs.packaging.internal.ExternalChannelsConfigLoaderImpl
 import net.corda.libs.packaging.internal.FormatVersionReader
 import net.corda.libs.packaging.signerSummaryHashForRequiredSigners
 import net.corda.utilities.time.Clock
@@ -24,8 +26,6 @@ import java.security.cert.Certificate
 import java.util.Collections
 import java.util.jar.JarInputStream
 import java.util.jar.Manifest
-import net.corda.libs.packaging.internal.ExternalChannelsConfigLoader
-import net.corda.libs.packaging.internal.ExternalChannelsConfigLoaderImpl
 
 internal const val CPK_TYPE = "Corda-CPK-Type"
 
