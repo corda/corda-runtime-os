@@ -6,7 +6,7 @@ import java.time.Instant
 
 /**
  * The main data transfer object type
- * to and from the [WrappingRepository].
+ * to and from the [SigningRepository].
  */
 @Suppress("LongParameterList")
 data class SigningKeyInfo(

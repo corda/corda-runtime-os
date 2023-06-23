@@ -16,6 +16,7 @@ import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.sandboxgroupcontext.SandboxGroupContextInitializer
 import net.corda.sandboxgroupcontext.SandboxGroupType
 import net.corda.sandboxgroupcontext.VirtualNodeContext
+import net.corda.sandboxgroupcontext.service.CacheEviction
 import net.corda.sandboxgroupcontext.service.EvictionListener
 import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
 import net.corda.serialization.checkpoint.CheckpointSerializer
@@ -29,7 +30,7 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.propertytypes.ServiceRanking
 
 @ServiceRanking(Int.MAX_VALUE)
-@Component(service = [SandboxGroupContextComponent::class, FakeSandboxGroupContextComponent::class])
+@Component(service = [SandboxGroupContextComponent::class, FakeSandboxGroupContextComponent::class, CacheEviction::class])
 class FakeSandboxGroupContextComponent : SandboxGroupContextComponent {
 
     private val availableCpk = mutableSetOf<SecureHash>()

@@ -9,6 +9,7 @@ import net.corda.flow.fiber.FlowFiberExecutionContext;
 import net.corda.flow.fiber.FlowFiberService;
 import net.corda.flow.fiber.FlowIORequest;
 import net.corda.flow.fiber.FlowLogicAndArgs;
+import net.corda.flow.pipeline.metrics.FlowMetrics;
 import net.corda.flow.pipeline.sandbox.FlowSandboxGroupContext;
 import net.corda.flow.pipeline.sandbox.SandboxDependencyInjector;
 import net.corda.flow.state.FlowCheckpoint;
@@ -46,7 +47,8 @@ public class FlowSessionImplJavaTest {
             createTestHoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", "group1"),
             mock(MembershipGroupReader.class),
             mock(CurrentSandboxGroupContext.class),
-            Map.of()
+            Map.of(),
+            mock(FlowMetrics.class)
     );
     private final FlowFiber flowFiber = new FakeFiber(flowFiberExecutionContext);
     private final FlowFiberService flowFiberService = mock(FlowFiberService.class);

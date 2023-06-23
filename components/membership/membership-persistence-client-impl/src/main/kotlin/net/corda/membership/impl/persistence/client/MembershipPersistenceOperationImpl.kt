@@ -116,5 +116,7 @@ internal class MembershipPersistenceOperationImpl<T>(
             key = request.context.requestId,
             value = MembershipPersistenceAsyncRequest(request),
         ),
-    )
+    ).also {
+        logger.info("Sending async membership persistence RPC request ID: ${request.context.requestId}.")
+    }
 }

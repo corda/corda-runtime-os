@@ -1,13 +1,12 @@
 package net.corda.flow.pipeline.impl
 
-import java.time.Instant
-import java.util.stream.Stream
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.FlowInitiatorType
 import net.corda.data.flow.FlowStartContext
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.event.mapper.ScheduleCleanup
+import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.state.external.ExternalEventState
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
@@ -44,6 +43,8 @@ import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.time.Instant
+import java.util.stream.Stream
 
 class FlowGlobalPostProcessorImplTest {
 
@@ -80,18 +81,22 @@ class FlowGlobalPostProcessorImplTest {
     private val sessionEvent1 = SessionEvent().apply {
         this.sessionId = SESSION_ID_1
         this.sequenceNum = 1
+        this.payload = SessionData()
     }
     private val sessionEvent2 = SessionEvent().apply {
         this.sessionId = SESSION_ID_1
         this.sequenceNum = 2
+        this.payload = SessionData()
     }
     private val sessionEvent3 = SessionEvent().apply {
         this.sessionId = SESSION_ID_2
         this.sequenceNum = 1
+        this.payload = SessionData()
     }
     private val sessionEvent4 = SessionEvent().apply {
         this.sessionId = SESSION_ID_3
         this.sequenceNum = 1
+        this.payload = SessionData()
     }
     private val sessionRecord1 = Record("t", SESSION_ID_1, FlowMapperEvent(sessionEvent1))
     private val sessionRecord2 = Record("t", SESSION_ID_1, FlowMapperEvent(sessionEvent2))

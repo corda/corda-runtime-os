@@ -64,7 +64,6 @@ import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.Assertions.assertThrows
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.MethodSource
@@ -79,6 +78,30 @@ import kotlin.test.assertFalse
 import kotlin.test.assertNotSame
 import kotlin.test.assertTrue
 
+class TestExecutionContext(val schemeMetadata: CipherSchemeMetadata) {
+    val coordinatorFactory = TestLifecycleCoordinatorFactoryImpl()
+    val configurationReadService: TestConfigurationReadService = TestConfigurationReadService(
+        coordinatorFactory
+    ).also {
+        it.start()
+        eventually {
+            assertTrue(it.isRunning)
+        }
+    }
+    val sender = TestRPCSender<RpcOpsRequest, RpcOpsResponse>(coordinatorFactory)
+    val publisherFactory = mock<PublisherFactory> {
+        on { createRPCSender<RpcOpsRequest, RpcOpsResponse>(any(), any()) } doReturn sender
+    }
+    val component = CryptoOpsClientComponent(
+        coordinatorFactory = coordinatorFactory,
+        publisherFactory = publisherFactory,
+        schemeMetadata = schemeMetadata,
+        configurationReadService = configurationReadService,
+        digestService = mock(),
+        0
+    )
+}
+
 class CryptoOpsClientComponentTests {
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -86,52 +109,24 @@ class CryptoOpsClientComponentTests {
         @JvmStatic
         fun knownCordaRPCAPIResponderExceptions(): List<Class<*>> =
             exceptionFactories.keys.map { Class.forName(it) }
-    }
 
-    private lateinit var knownTenantId: String
-    private lateinit var knownAlias: String
-    private lateinit var knownOperationContext: Map<String, String>
-    private lateinit var knownRawOperationContext: KeyValuePairList
-    private lateinit var schemeMetadata: CipherSchemeMetadata
-    private lateinit var sender: TestRPCSender<RpcOpsRequest, RpcOpsResponse>
-    private lateinit var coordinatorFactory: TestLifecycleCoordinatorFactoryImpl
-    private lateinit var configurationReadService: TestConfigurationReadService
-    private lateinit var publisherFactory: PublisherFactory
-    private lateinit var component: CryptoOpsClientComponent
-
-    @BeforeEach
-    fun setup() {
-        knownTenantId = toHex(UUID.randomUUID().toString().toByteArray().sha256Bytes()).take(12)
-        knownAlias = UUID.randomUUID().toString()
-        knownOperationContext = mapOf(
+        val schemeMetadata = CipherSchemeMetadataImpl()
+        val knownTenantId = toHex(UUID.randomUUID().toString().toByteArray().sha256Bytes()).take(12)
+        val knownAlias = UUID.randomUUID().toString()
+        val knownOperationContext = mapOf(
             UUID.randomUUID().toString() to UUID.randomUUID().toString()
         )
-        knownRawOperationContext = KeyValuePairList(
+        val knownRawOperationContext = KeyValuePairList(
             knownOperationContext.map {
                 KeyValuePair(it.key, it.value)
             }
         )
-        schemeMetadata = CipherSchemeMetadataImpl()
-        coordinatorFactory = TestLifecycleCoordinatorFactoryImpl()
-        sender = TestRPCSender(coordinatorFactory)
-        publisherFactory = mock {
-            on { createRPCSender<RpcOpsRequest, RpcOpsResponse>(any(), any()) } doReturn sender
-        }
-        configurationReadService = TestConfigurationReadService(
-            coordinatorFactory
-        ).also {
-            it.start()
-            eventually {
-                assertTrue(it.isRunning)
-            }
-        }
-        component = CryptoOpsClientComponent(
-            coordinatorFactory = coordinatorFactory,
-            publisherFactory = publisherFactory,
-            schemeMetadata = schemeMetadata,
-            configurationReadService = configurationReadService,
-            digestService = mock()
-        )
+
+        // most tests can share an execution context, so make one at file level to use in most cases
+        val context = TestExecutionContext(schemeMetadata)
+        val coordinatorFactory = context.coordinatorFactory
+        val sender = context.sender
+        val component = context.component
     }
 
     private fun setupCompletedResponse(respFactory: (RpcOpsRequest) -> Any) {
@@ -1018,98 +1013,102 @@ class CryptoOpsClientComponentTests {
 
     @Test
     fun `Should cleanup created resources when component is stopped`() {
-        assertFalse(component.isRunning)
+        val my = TestExecutionContext(schemeMetadata)
+        assertFalse(my.component.isRunning)
         assertThrows(IllegalStateException::class.java) {
-            component.impl.ops
+            my.component.impl.ops
         }
-        component.start()
+        my.component.start()
         eventually {
-            assertTrue(component.isRunning)
-            assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
+            assertTrue(my.component.isRunning)
+            assertEquals(LifecycleStatus.UP, my.component.lifecycleCoordinator.status)
         }
-        kotlin.test.assertNotNull(component.impl.ops)
-        component.stop()
+        kotlin.test.assertNotNull(my.component.impl.ops)
+        my.component.stop()
         eventually {
-            assertFalse(component.isRunning)
-            assertEquals(LifecycleStatus.DOWN, component.lifecycleCoordinator.status)
+            assertFalse(my.component.isRunning)
+            assertEquals(LifecycleStatus.DOWN, my.component.lifecycleCoordinator.status)
         }
-        assertEquals(1, sender.stopped.get())
+        assertEquals(1, my.sender.stopped.get())
     }
 
     @Test
     fun `Should go UP and DOWN as its config reader goes UP and DOWN`() {
-        assertFalse(component.isRunning)
+        val my = TestExecutionContext(schemeMetadata)
+        assertFalse(my.component.isRunning)
         assertThrows(IllegalStateException::class.java) {
-            component.impl.ops
+            my.component.impl.ops
         }
-        component.start()
+        my.component.start()
         eventually {
-            assertTrue(component.isRunning)
-            assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
+            assertTrue(my.component.isRunning)
+            assertEquals(LifecycleStatus.UP, my.component.lifecycleCoordinator.status)
         }
-        assertNotNull(component.impl.ops)
-        configurationReadService.lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
+        assertNotNull(my.component.impl.ops)
+        my.configurationReadService.lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
         eventually {
-            assertEquals(LifecycleStatus.DOWN, component.lifecycleCoordinator.status)
+            assertEquals(LifecycleStatus.DOWN, my.component.lifecycleCoordinator.status)
         }
-        configurationReadService.lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
+        my.configurationReadService.lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
         eventually {
-            assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
+            assertEquals(LifecycleStatus.UP, my.component.lifecycleCoordinator.status)
         }
-        assertNotNull(component.impl.ops)
-        assertThat(sender.stopped.get()).isGreaterThanOrEqualTo(1)
+        assertNotNull(my.component.impl.ops)
+        assertThat(my.sender.stopped.get()).isGreaterThanOrEqualTo(1)
     }
 
     @Test
     fun `Should go UP and DOWN as its downstream dependencies go UP and DOWN`() {
-        assertFalse(component.isRunning)
+        val my = TestExecutionContext(schemeMetadata)
+        assertFalse(my.component.isRunning)
         assertThrows(IllegalStateException::class.java) {
-            component.impl.ops
+            my.component.impl.ops
         }
-        component.start()
+        my.component.start()
         eventually {
-            assertTrue(component.isRunning)
-            assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
+            assertTrue(my.component.isRunning)
+            assertEquals(LifecycleStatus.UP, my.component.lifecycleCoordinator.status)
         }
-        assertNotNull(component.impl.ops)
-        sender.lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
+        assertNotNull(my.component.impl.ops)
+        my.sender.lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
         eventually {
-            assertEquals(LifecycleStatus.DOWN, component.lifecycleCoordinator.status)
+            assertEquals(LifecycleStatus.DOWN, my.component.lifecycleCoordinator.status)
         }
-        sender.lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
+        my.sender.lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
         eventually {
-            assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
+            assertEquals(LifecycleStatus.UP, my.component.lifecycleCoordinator.status)
         }
-        assertNotNull(component.impl.ops)
-        assertEquals(0, sender.stopped.get())
+        assertNotNull(my.component.impl.ops)
+        assertEquals(0, my.sender.stopped.get())
     }
 
     @Test
     fun `Should recreate active implementation on config change`() {
-        assertFalse(component.isRunning)
+        val my = TestExecutionContext(schemeMetadata)
+        assertFalse(my.component.isRunning)
         assertThrows(IllegalStateException::class.java) {
-            component.impl.ops
+            my.component.impl.ops
         }
-        component.start()
+        my.component.start()
         eventually {
-            assertTrue(component.isRunning)
-            assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
+            assertTrue(my.component.isRunning)
+            assertEquals(LifecycleStatus.UP, my.component.lifecycleCoordinator.status)
         }
-        val originalImpl = component.impl
-        assertNotNull(component.impl.ops)
-        configurationReadService.lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
+        val originalImpl = my.component.impl
+        assertNotNull(my.component.impl.ops)
+        my.configurationReadService.lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
         eventually {
-            assertEquals(LifecycleStatus.DOWN, component.lifecycleCoordinator.status)
+            assertEquals(LifecycleStatus.DOWN, my.component.lifecycleCoordinator.status)
         }
-        configurationReadService.lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
+        my.configurationReadService.lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
         eventually {
-            assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
+            assertEquals(LifecycleStatus.UP, my.component.lifecycleCoordinator.status)
         }
         logger.info("REISSUING ConfigChangedEvent")
-        configurationReadService.reissueConfigChangedEvent(component.lifecycleCoordinator)
+        my.configurationReadService.reissueConfigChangedEvent(my.component.lifecycleCoordinator)
         eventually {
-            assertNotSame(originalImpl, component.impl)
+            assertNotSame(originalImpl, my.component.impl)
         }
-        assertThat(sender.stopped.get()).isGreaterThanOrEqualTo(1)
+        assertThat(my.sender.stopped.get()).isGreaterThanOrEqualTo(1)
     }
 }
