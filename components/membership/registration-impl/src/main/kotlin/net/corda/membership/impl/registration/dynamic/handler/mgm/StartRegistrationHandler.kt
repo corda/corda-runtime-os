@@ -365,7 +365,4 @@ internal class StartRegistrationHandler(
         }
     }
 
-    private fun Collection<MemberInfo>.containsSingleMemberInfoFromFailedRegistration(): Boolean {
-        return size == 1 && first().let { it.serial == 0L && it.status == MEMBER_STATUS_PENDING }
-    }
 }
