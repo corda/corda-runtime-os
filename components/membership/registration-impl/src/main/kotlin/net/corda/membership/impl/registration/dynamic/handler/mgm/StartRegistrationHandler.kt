@@ -16,13 +16,13 @@ import net.corda.membership.impl.registration.dynamic.handler.MissingRegistratio
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandler
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandlerResult
 import net.corda.membership.impl.registration.dynamic.verifiers.RegistrationContextCustomFieldsVerifier
+import net.corda.membership.lib.MemberInfoExtension
 import net.corda.membership.lib.MemberInfoExtension.Companion.CREATION_TIME
 import net.corda.membership.lib.MemberInfoExtension.Companion.CUSTOM_KEY_PREFIX
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_PENDING
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_SUSPENDED
 import net.corda.membership.lib.MemberInfoExtension.Companion.MODIFIED_TIME
-import net.corda.membership.lib.MemberInfoExtension.Companion.REGISTRATION_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.SERIAL
 import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.lib.MemberInfoExtension.Companion.endpoints
@@ -159,7 +159,11 @@ internal class StartRegistrationHandler(
                 val previousContext = previous.memberProvidedContext.toMap()
                 val pendingContext = pendingMemberInfo.memberProvidedContext.toMap()
                 val diff = ((pendingContext.entries - previousContext.entries) + (previousContext.entries - pendingContext.entries))
-                    .filterNot { it.key.startsWith(CUSTOM_KEY_PREFIX) || it.key == REGISTRATION_ID }
+                    .filter {
+                        it.key.startsWith(MemberInfoExtension.ENDPOINTS) ||
+                                it.key.startsWith(MemberInfoExtension.SESSION_KEYS) ||
+                                it.key.startsWith(MemberInfoExtension.LEDGER_KEYS)
+                    }
                 validateRegistrationRequest(
                     diff.isEmpty()
                 ) { "Only custom fields with the '$CUSTOM_KEY_PREFIX' prefix may be updated during re-registration." }

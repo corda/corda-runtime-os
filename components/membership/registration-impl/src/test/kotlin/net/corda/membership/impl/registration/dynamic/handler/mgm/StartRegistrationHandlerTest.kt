@@ -765,7 +765,7 @@ class StartRegistrationHandlerTest {
     }
 
     @Test
-    fun `declined if non-custom properties are updated during re-registration`() {
+    fun `declined if when non-custom, non-platform or non-cpi related properties are updated during re-registration`() {
         val newContextEntries = memberContextEntries.toMutableMap().apply {
             put("${ROLES_PREFIX}0", "changed")
         }.entries
