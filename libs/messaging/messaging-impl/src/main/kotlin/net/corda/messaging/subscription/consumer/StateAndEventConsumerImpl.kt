@@ -89,31 +89,37 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
     private var pollIntervalCutoff = 0L
 
     override fun onPartitionsAssigned(partitions: Set<CordaTopicPartition>) {
-        log.info("Assigning partitions: $partitions. Current in sync: $inSyncPartitions, current to be synced: $partitionsToSync")
-        // Split these partitions into those that need synchronizing (i.e. those with states on) and those that do not
-        val statePartitions = partitions.map { it.toStatePartition() }
-        updateStateConsumerAssignment(partitions, StatePartitionOperation.ADD)
-        val beginningOffsets = stateConsumer.beginningOffsets(statePartitions)
-        val endOffsets = stateConsumer.endOffsets(statePartitions)
-        val (needsSync, inSync) = partitions.partition {
-            val statePartition = it.toStatePartition()
-            val beginning = beginningOffsets[statePartition] ?: 0L
-            val end = endOffsets[statePartition] ?: 0L
-            beginning < end
-        }
-
-        log.debug { "The following partitions need to sync: $needsSync. The following partitions are in sync: $inSync" }
-
-        // Out of sync partitions need assigning to the state consumer to bring us into sync.
-        partitionsToSync.addAll(needsSync)
-        eventConsumer.pause(needsSync)
-        stateConsumer.seekToBeginning(needsSync.map { it.toStatePartition() })
-
-        // Mark all those already in sync as such.
-        inSyncPartitions.addAll(inSync)
-        updateStateConsumerAssignment(inSync, StatePartitionOperation.REMOVE)
+//        log.info("Assigning partitions: $partitions. Current in sync: $inSyncPartitions, current to be synced: $partitionsToSync")
+//        // Split these partitions into those that need synchronizing (i.e. those with states on) and those that do not
+//        val statePartitions = partitions.map { it.toStatePartition() }
+//        updateStateConsumerAssignment(partitions, StatePartitionOperation.ADD)
+//        val beginningOffsets = stateConsumer.beginningOffsets(statePartitions)
+//        val endOffsets = stateConsumer.endOffsets(statePartitions)
+//        val (needsSync, inSync) = partitions.partition {
+//            val statePartition = it.toStatePartition()
+//            val beginning = beginningOffsets[statePartition] ?: 0L
+//            val end = endOffsets[statePartition] ?: 0L
+//            beginning < end
+//        }
+//
+//        log.debug { "The following partitions need to sync: $needsSync. The following partitions are in sync: $inSync" }
+//
+//        // Out of sync partitions need assigning to the state consumer to bring us into sync.
+//        partitionsToSync.addAll(needsSync)
+//        eventConsumer.pause(needsSync)
+//        stateConsumer.seekToBeginning(needsSync.map { it.toStatePartition() })
+//
+//        // Mark all those already in sync as such.
+//        inSyncPartitions.addAll(inSync)
+//        updateStateConsumerAssignment(inSync, StatePartitionOperation.REMOVE)
+//        stateAndEventListener?.let { listener ->
+//            for (partition in inSync) {
+//                listener.onPartitionSynced(getStatesForPartition(partition.partition))
+//            }
+//        }
+        inSyncPartitions.addAll(partitions)
         stateAndEventListener?.let { listener ->
-            for (partition in inSync) {
+            for (partition in partitions) {
                 listener.onPartitionSynced(getStatesForPartition(partition.partition))
             }
         }
@@ -145,8 +151,8 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
                     "Current in sync: $inSyncPartitions, current to be synced: $partitionsToSync"
         )
         // Remove any assignments and clear state from tracked partitions.
-        updateStateConsumerAssignment(partitions, StatePartitionOperation.REMOVE)
-        partitionsToSync.removeAll(partitions)
+//        updateStateConsumerAssignment(partitions, StatePartitionOperation.REMOVE)
+//        partitionsToSync.removeAll(partitions)
         inSyncPartitions.removeAll(partitions)
     }
 
