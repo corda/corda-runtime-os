@@ -80,7 +80,7 @@ class LedgerPersistenceService @Activate constructor(
             is ConfigChangedEvent -> {
                 ledgerProcessorSubscription?.close()
                 val newLedgerProcessorSubscription = persistenceRequestSubscriptionFactory.create(
-                    event.config.getConfig(MESSAGING_CONFIG)
+                    event.config.getConfig(MESSAGING_CONFIG).withFallback(event.config.getConfig(BOOT_CONFIG))
                 )
                 logger.debug("Starting LedgerPersistenceService.")
                 newLedgerProcessorSubscription.start()

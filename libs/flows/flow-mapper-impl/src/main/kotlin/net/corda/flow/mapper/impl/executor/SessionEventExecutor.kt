@@ -14,7 +14,10 @@ import net.corda.data.p2p.app.AppMessage
 import net.corda.flow.mapper.FlowMapperResult
 import net.corda.flow.mapper.executor.FlowMapperEventExecutor
 import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.configuration.helper.getOutputTopic
 import net.corda.messaging.api.records.Record
+import net.corda.schema.Schemas.Flow.FLOW_EVENT_TOPIC
+import net.corda.schema.configuration.BootConfig
 import org.slf4j.LoggerFactory
 import java.time.Instant
 
@@ -34,7 +37,10 @@ class SessionEventExecutor(
     }
 
     private val messageDirection = sessionEvent.messageDirection
-    private val outputTopic = getSessionEventOutputTopic(messageDirection)
+    private val outputTopic = getSessionEventOutputTopic(
+        messageDirection,
+        flowConfig.getOutputTopic(BootConfig.SESSION_OUTPUT, FLOW_EVENT_TOPIC)
+    )
 
     override fun execute(): FlowMapperResult {
         return if (flowMapperState == null) {

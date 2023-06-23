@@ -13,6 +13,8 @@ import net.corda.data.persistence.FindWithNamedQuery
 import net.corda.data.persistence.MergeEntities
 import net.corda.data.persistence.PersistEntities
 import net.corda.flow.utils.toMap
+import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.configuration.helper.getOutputTopic
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.metrics.CordaMetrics
@@ -23,6 +25,8 @@ import net.corda.persistence.common.getEntityManagerFactory
 import net.corda.persistence.common.getSerializationService
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.sandboxgroupcontext.SandboxGroupContext
+import net.corda.schema.Schemas.Flow.FLOW_EVENT_TOPIC
+import net.corda.schema.configuration.BootConfig
 import net.corda.tracing.traceEventProcessingNullableSingle
 import net.corda.utilities.MDC_CLIENT_ID
 import net.corda.utilities.MDC_EXTERNAL_EVENT_ID
@@ -54,6 +58,7 @@ class EntityMessageProcessor(
     private val entitySandboxService: EntitySandboxService,
     private val responseFactory: ResponseFactory,
     private val payloadCheck: (bytes: ByteBuffer) -> ByteBuffer,
+    private val config: SmartConfig
 ) : DurableProcessor<String, EntityRequest> {
     private companion object {
         val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -65,6 +70,8 @@ class EntityMessageProcessor(
 
     override fun onNext(events: List<Record<String, EntityRequest>>): List<Record<*, *>> {
         logger.debug { "onNext processing messages ${events.joinToString(",") { it.key }}" }
+
+        val topic = config.getOutputTopic(BootConfig.DB_OUTPUT, FLOW_EVENT_TOPIC)
 
         return events.mapNotNull { event ->
             val request = event.value
@@ -83,6 +90,8 @@ class EntityMessageProcessor(
                     processEvent(request)
                 }
             }
+        }.map {
+            Record(topic, it.key, it.value, it.timestamp, it.headers)
         }
     }
 

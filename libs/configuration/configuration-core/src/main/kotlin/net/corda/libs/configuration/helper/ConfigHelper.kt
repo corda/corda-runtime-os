@@ -2,6 +2,8 @@ package net.corda.libs.configuration.helper
 
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.exception.CordaAPIConfigException
+import net.corda.libs.configuration.getStringOrDefault
+import net.corda.schema.configuration.BootConfig
 
 /**
  * Utility for getting a  configuration from a given configuration map from the configuration read service.
@@ -14,4 +16,20 @@ fun Map<String, SmartConfig>.getConfig(configKey: String): SmartConfig {
         ?: throw CordaAPIConfigException(
             "Could not get config. missing key: $configKey"
         )
+}
+
+fun SmartConfig.getInputTopic(consumerGroup: String, default: String) : String {
+    return if (this.hasPath(BootConfig.BOOT_INPUT_TOPICS)) {
+        this.getConfig(BootConfig.BOOT_INPUT_TOPICS).getStringOrDefault(consumerGroup, default)
+    } else {
+        default
+    }
+}
+
+fun SmartConfig.getOutputTopic(process: String, default: String) : String {
+    return if (this.hasPath(BootConfig.BOOT_OUTPUT_TOPICS)) {
+        this.getConfig(BootConfig.BOOT_OUTPUT_TOPICS).getStringOrDefault(process, default)
+    } else {
+        default
+    }
 }

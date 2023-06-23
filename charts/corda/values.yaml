@@ -773,7 +773,7 @@ workers:
               key: ""
 
   # flow db worker configuration
-  flow_db:
+  flow_ledger:
     # flow worker image configuration
     image:
       # -- flow worker image registry, defaults to image.registry
@@ -783,6 +783,8 @@ workers:
       # -- flow worker image tag, defaults to image.tag
       tag: ""
     extraArgs:
+      - "IFlowEventConsumer=flow.ledger"
+      - "OUniqueness=flow.event"
       - "flow_db_topic=flow.db"
     envs:
       - name: "FLOW_DB_TOPIC"

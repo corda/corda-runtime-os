@@ -41,7 +41,8 @@ class PersistenceRequestSubscriptionFactoryImpl @Activate constructor(
             currentSandboxGroupContext ,
             entitySandboxService,
             delegatedRequestHandlerSelector,
-            responseFactory
+            responseFactory,
+            config
         )
 
         return subscriptionFactory.createDurableSubscription(

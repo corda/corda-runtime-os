@@ -1,5 +1,7 @@
 package net.corda.messaging.subscription.consumer.builder
 
+import net.corda.avro.serialization.CordaAvroDeserializer
+import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.messagebus.api.producer.CordaProducer
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
 import net.corda.messaging.config.ResolvedSubscriptionConfig
@@ -28,5 +30,7 @@ interface StateAndEventBuilder {
         stateAndEventListener: StateAndEventListener<K, S>? = null,
         onStateError: (ByteArray) -> Unit,
         onEventError: (ByteArray) -> Unit,
+        serializer: CordaAvroSerializer<Any>,
+        deserializer: CordaAvroDeserializer<Any>
     ): Pair<StateAndEventConsumer<K, S, E>, StateAndEventConsumerRebalanceListener>
 }

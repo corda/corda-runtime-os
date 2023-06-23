@@ -36,7 +36,8 @@ class VerificationSubscriptionFactoryImpl @Activate constructor(
             currentSandboxGroupContext,
             verificationSandboxService,
             VerificationRequestHandlerImpl(responseFactory),
-            responseFactory
+            responseFactory,
+            config
         )
 
         return subscriptionFactory.createDurableSubscription(

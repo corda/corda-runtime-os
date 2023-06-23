@@ -12,6 +12,7 @@ import net.corda.flow.rest.v1.types.request.StartFlowParameters
 import net.corda.flow.rest.v1.types.response.FlowStatusResponse
 import net.corda.flow.rest.v1.types.response.FlowStatusResponses
 import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.configuration.helper.getOutputTopic
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.lifecycle.Lifecycle
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
@@ -40,6 +41,7 @@ import net.corda.rest.ws.DuplexChannel
 import net.corda.rest.ws.WebSocketValidationException
 import net.corda.schema.Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC
 import net.corda.schema.Schemas.Flow.FLOW_STATUS_TOPIC
+import net.corda.schema.configuration.BootConfig
 import net.corda.tracing.TraceTag
 import net.corda.tracing.addTraceContextToRecord
 import net.corda.tracing.trace
@@ -84,11 +86,13 @@ class FlowRestResourceImpl @Activate constructor(
     private var publisher: Publisher? = null
     private var fatalErrorOccurred = false
     private lateinit var onFatalError: () -> Unit
+    private var startFlowTopic: String = FLOW_MAPPER_EVENT_TOPIC
 
     override fun initialise(config: SmartConfig, onFatalError: () -> Unit) {
         this.onFatalError = onFatalError
         publisher?.close()
         publisher = publisherFactory.createPublisher(PublisherConfig("FlowRestResource"), config)
+        startFlowTopic = config.getOutputTopic(BootConfig.START_OUTPUT, FLOW_MAPPER_EVENT_TOPIC)
     }
 
     private fun regexMatch(input: String, regex: String): Boolean {
@@ -198,7 +202,7 @@ class FlowRestResourceImpl @Activate constructor(
             val status = messageFactory.createStartFlowStatus(clientRequestId, vNode, flowClassName)
 
             val records = listOf(
-                addTraceContextToRecord(Record(FLOW_MAPPER_EVENT_TOPIC, status.key.toString(), startEvent)),
+                addTraceContextToRecord(Record(startFlowTopic, status.key.toString(), startEvent)),
                 Record(FLOW_STATUS_TOPIC, status.key, status),
             )
 
