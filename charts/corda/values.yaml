@@ -575,8 +575,10 @@ workers:
       - "-Overification=flow.verification"
       - "-IFlowEventConsumer=flow.start"
     envs:
-      - name: "FLOW_START_TOPIC"
-        value: "flow.start"
+      - name: "ENABLE_VERIFICATION_PROCESS"
+        value: "FALSE"
+      - name: "ENABLE_MAPPER_PROCESS"
+        value: "TRUE"
     # -- flow worker replica count
     replicaCount: 1
     # -- flow worker extra annotations
@@ -651,8 +653,10 @@ workers:
       - "-Overification=flow.verification"
       - "-IFlowEventConsumer=flow.session"
     envs:
-      - name: "FLOW_SESSION_TOPIC"
-        value: "flow.session"
+      - name: "ENABLE_VERIFICATION_PROCESS"
+        value: "FALSE"
+      - name: "ENABLE_MAPPER_PROCESS"
+        value: "FALSE"
     # -- flow worker replica count
     replicaCount: 1
     # -- flow worker extra annotations
@@ -787,7 +791,7 @@ workers:
               # -- the flow worker SASL password secret key for client connection to Kafka
               key: ""
 
-  # flow db worker configuration
+  # flow ledger worker configuration
   flow_ledger:
     # flow worker image configuration
     image:
@@ -803,8 +807,10 @@ workers:
       - "-Overification=flow.verification"
       - "-IFlowEventConsumer=flow.ledger"
     envs:
-      - name: "FLOW_DB_TOPIC"
-        value: "flow.db"
+      - name: "ENABLE_VERIFICATION_PROCESS"
+        value: "FALSE"
+      - name: "ENABLE_MAPPER_PROCESS"
+        value: "FALSE"
     # -- flow worker replica count
     replicaCount: 1
     # -- flow worker extra annotations
@@ -863,6 +869,7 @@ workers:
               # -- the flow worker SASL password secret key for client connection to Kafka
               key: ""
 
+  # flow db worker configuration
   flow_db:
     # flow worker image configuration
     image:
@@ -878,8 +885,10 @@ workers:
       - "-Overification=flow.verification"
       - "-IFlowEventConsumer=flow.db"
     envs:
-      - name: "FLOW_DB_TOPIC"
-        value: "flow.db"
+      - name: "ENABLE_VERIFICATION_PROCESS"
+        value: "FALSE"
+      - name: "ENABLE_MAPPER_PROCESS"
+        value: "FALSE"
     # -- flow worker replica count
     replicaCount: 1
     # -- flow worker extra annotations
@@ -954,8 +963,10 @@ workers:
       - "-Overification=flow.verification"
       - "-IFlowEventConsumer=flow.uniqueness"
     envs:
-      - name: "FLOW_UNIQUENESS_TOPIC"
-        value: "flow.uniqueness"
+      - name: "ENABLE_VERIFICATION_PROCESS"
+        value: "FALSE"
+      - name: "ENABLE_MAPPER_PROCESS"
+        value: "FALSE"
     # -- flow worker replica count
     replicaCount: 1
     # -- flow worker extra annotations
@@ -1030,8 +1041,10 @@ workers:
       - "-Overification=flow.verification"
       - "-IFlowEventConsumer=flow.verification"
     envs:
-      - name: "FLOW_VERIFICATION_TOPIC"
-        value: "flow.verification"
+      - name: "ENABLE_VERIFICATION_PROCESS"
+        value: "TRUE"
+      - name: "ENABLE_MAPPER_PROCESS"
+        value: "FALSE"
     # -- flow worker replica count
     replicaCount: 1
     # -- flow worker extra annotations

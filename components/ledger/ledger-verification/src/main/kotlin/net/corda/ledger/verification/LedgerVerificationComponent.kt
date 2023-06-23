@@ -71,12 +71,14 @@ class LedgerVerificationComponent @Activate constructor(
             }
             is ConfigChangedEvent -> {
                 verificationProcessorSubscription?.close()
-                val newVerificationProcessorSubscription = verificationRequestSubscriptionFactory.create(
-                    event.config.getConfig(MESSAGING_CONFIG).withFallback(event.config.getConfig(BOOT_CONFIG))
-                )
-                logger.debug("Starting LedgerVerificationComponent.")
-                newVerificationProcessorSubscription.start()
-                verificationProcessorSubscription = newVerificationProcessorSubscription
+                if (System.getenv("ENABLE_VERIFICATION_PROCESS") == "TRUE") {
+                    val newVerificationProcessorSubscription = verificationRequestSubscriptionFactory.create(
+                        event.config.getConfig(MESSAGING_CONFIG).withFallback(event.config.getConfig(BOOT_CONFIG))
+                    )
+                    logger.debug("Starting LedgerVerificationComponent.")
+                    newVerificationProcessorSubscription.start()
+                    verificationProcessorSubscription = newVerificationProcessorSubscription
+                }
                 coordinator.updateStatus(LifecycleStatus.UP)
             }
             is StopEvent -> {
