@@ -1,6 +1,9 @@
 package net.corda.interop.rest.impl.v1
 
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.crypto.core.ShortHash
+import net.corda.interop.write.service.InteropWriteService
+import net.corda.interop.core.AliasIdentity
 import net.corda.libs.interop.endpoints.v1.InteropRestResource
 import net.corda.libs.interop.endpoints.v1.common.withInteropManager
 import net.corda.libs.interop.endpoints.v1.converter.convertToDto
@@ -21,6 +24,7 @@ import net.corda.rest.response.ResponseEntity
 import net.corda.rest.security.CURRENT_REST_CONTEXT
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.utilities.debug
+import net.corda.v5.base.types.MemberX500Name
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -36,6 +40,8 @@ internal class InteropRestResourceImpl @Activate constructor(
     private val configurationReadService: ConfigurationReadService,
     @Reference(service = InteropManagementService::class)
     private val interopManagementService: InteropManagementService,
+    @Reference(service = InteropWriteService::class)
+    private val interopWriteService: InteropWriteService
 ) : InteropRestResource, PluggableRestResource<InteropRestResource>, Lifecycle {
 
     private companion object {
@@ -47,22 +53,35 @@ internal class InteropRestResourceImpl @Activate constructor(
     // RestResource values
     override val targetInterface: Class<InteropRestResource> = InteropRestResource::class.java
     override fun getInterOpGroups(holdingidentityid: String?): List<UUID> {
+
         return listOf(UUID.randomUUID())
     }
 
     override fun createInterOpIdentity(
         createInteropIdentityRequest: CreateInteropIdentityRequest,
         holdingidentityid: String?
-    ): ResponseEntity<CreateInteropIdentityRequest> {
-        val restContext = CURRENT_REST_CONTEXT.get()
-        val principal = restContext.principal
+    ): ResponseEntity<String> {
 
-        val createInteropIdentityResult =
-            withInteropManager(interopManagementService.interopManager, logger) {
-                createInteropIdentity(createInteropIdentityRequest.convertToDto(principal))
-            }
+        interopWriteService.publishAliasIdentity(
+            AliasIdentity(
+            ShortHash.of("1234567890ab"),
+            ShortHash.of("1234567890ab"),
+            MemberX500Name.parse("O=Alice Alias, L=London, C=GB"),
+            UUID.randomUUID(),
+            "hostingVnode"
+        )
+        )
+        logger.info("AliasIdentity published.")
 
-        return ResponseEntity.ok(createInteropIdentityResult)
+//        val restContext = CURRENT_REST_CONTEXT.get()
+//        val principal = restContext.principal
+//
+//        val createInteropIdentityResult =
+//            withInteropManager(interopManagementService.interopManager, logger) {
+//                createInteropIdentity(createInteropIdentityRequest.convertToDto(principal))
+//            }
+
+        return ResponseEntity.ok("OK")
     }
 
     override fun getInterOpIdentities(holdingidentityid: String?): List<CreateInteropIdentityRequest> {
