@@ -59,7 +59,7 @@ class AliasInfoCacheServiceEventHandler(
         registration = null
     }
 
-    @Suppress("UNUSED_VARIABLE", "UNUSED_PARAMETER")
+
     private fun onConfigChangeEvent(event: ConfigChangedEvent, coordinator: LifecycleCoordinator) {
         val messagingConfig = event.config.getConfig(ConfigKeys.MESSAGING_CONFIG)
 
