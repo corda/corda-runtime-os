@@ -414,6 +414,8 @@ workers:
       repository: "corda-os-crypto-worker"
       # -- crypto worker image tag, defaults to image.tag
       tag: ""
+    extraArgs:
+      - "-Ocrypto=flow.crypto"
     envs:
       - name: "FLOW_PROCESSOR_TOPIC"
         value: "flow.crypto"
@@ -487,6 +489,10 @@ workers:
       repository: "corda-os-db-worker"
       # -- DB worker image tag, defaults to image.tag
       tag: ""
+    extraArgs:
+      - "-Odb=flow.ledger"
+      - "-Oledger=flow.ledger"
+      - "-Ouniqueness=flow.uniqueness"
     envs:
       - name: "FLOW_PROCESSOR_TOPIC"
         value: "flow.db"
@@ -564,7 +570,10 @@ workers:
       # -- flow worker image tag, defaults to image.tag
       tag: ""
     extraArgs:
-      - "flow_start_topic=flow.start"
+      - "-Ostart=flow.start"
+      - "-Osession=flow.session"
+      - "-Overification=flow.verification"
+      - "-IFlowEventConsumer=flow.start"
     envs:
       - name: "FLOW_START_TOPIC"
         value: "flow.start"
@@ -637,7 +646,10 @@ workers:
       # -- flow worker image tag, defaults to image.tag
       tag: ""
     extraArgs:
-      - "flow_session_topic=flow.session"
+      - "-Ostart=flow.start"
+      - "-Osession=flow.session"
+      - "-Overification=flow.verification"
+      - "-IFlowEventConsumer=flow.session"
     envs:
       - name: "FLOW_SESSION_TOPIC"
         value: "flow.session"
@@ -710,7 +722,10 @@ workers:
       # -- flow worker image tag, defaults to image.tag
       tag: ""
     extraArgs:
-      - "flow_crypto_topic=flow.crypto"
+      - "-Ostart=flow.start"
+      - "-Osession=flow.session"
+      - "-Overification=flow.verification"
+      - "-IFlowEventConsumer=flow.crypto"
     envs:
       - name: "FLOW_CRYPTO_TOPIC"
         value: "flow.crypto"
@@ -783,9 +798,10 @@ workers:
       # -- flow worker image tag, defaults to image.tag
       tag: ""
     extraArgs:
-      - "IFlowEventConsumer=flow.ledger"
-      - "OUniqueness=flow.event"
-      - "flow_db_topic=flow.db"
+      - "-Ostart=flow.start"
+      - "-Osession=flow.session"
+      - "-Overification=flow.verification"
+      - "-IFlowEventConsumer=flow.ledger"
     envs:
       - name: "FLOW_DB_TOPIC"
         value: "flow.db"
@@ -858,7 +874,10 @@ workers:
       # -- flow worker image tag, defaults to image.tag
       tag: ""
     extraArgs:
-      - "flow_uniqueness_topic=flow.uniqueness"
+      - "-Ostart=flow.start"
+      - "-Osession=flow.session"
+      - "-Overification=flow.verification"
+      - "-IFlowEventConsumer=flow.uniqueness"
     envs:
       - name: "FLOW_UNIQUENESS_TOPIC"
         value: "flow.uniqueness"
@@ -931,7 +950,10 @@ workers:
       # -- flow worker image tag, defaults to image.tag
       tag: ""
     extraArgs:
-      - "flow_verification_topic=flow.verification"
+      - "-Ostart=flow.start"
+      - "-Osession=flow.session"
+      - "-Overification=flow.verification"
+      - "-IFlowEventConsumer=flow.verification"
     envs:
       - name: "FLOW_VERIFICATION_TOPIC"
         value: "flow.verification"
