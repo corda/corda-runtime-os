@@ -15,6 +15,7 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
+import net.corda.schema.Schemas.Flow.INTEROP_ALIAS_IDENTITY_TOPIC
 import net.corda.schema.configuration.ConfigKeys
 import org.slf4j.LoggerFactory
 
@@ -26,7 +27,6 @@ class AliasInfoCacheServiceEventHandler(
     companion object {
         private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
         private const val GROUP_NAME = "interop_alias_identity"
-        private const val INTEROP_ALIAS_IDENTITY_TOPIC = "interop.alias.identity"
     }
 
     private var registration: RegistrationHandle? = null
