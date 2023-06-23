@@ -234,7 +234,7 @@ private fun createConfigDbConfig(
             "\"user\":\"$username\"," +
             "\"pool\":" +
             "{\"max_size\":$jdbcPoolMaxSize," +
-            (jdbcPoolMinSize?.let { "\"min_size\":$it," } ?: "") +
+            if (jdbcPoolMinSize != null) { "\"min_size\":$jdbcPoolMinSize," } else { "" } +
             "\"idleTimeoutSeconds\":$idleTimeout," +
             "\"maxLifetimeSeconds\":$maxLifetime," +
             "\"keepaliveTimeSeconds\":$keepaliveTime," +
