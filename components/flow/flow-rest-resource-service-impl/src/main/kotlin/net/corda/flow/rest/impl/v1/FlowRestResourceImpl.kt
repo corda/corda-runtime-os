@@ -39,6 +39,7 @@ import net.corda.rest.response.ResponseEntity
 import net.corda.rest.security.CURRENT_REST_CONTEXT
 import net.corda.rest.ws.DuplexChannel
 import net.corda.rest.ws.WebSocketValidationException
+import net.corda.schema.Schemas.Flow.FLOW_EVENT_TOPIC
 import net.corda.schema.Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC
 import net.corda.schema.Schemas.Flow.FLOW_STATUS_TOPIC
 import net.corda.schema.configuration.BootConfig
@@ -86,13 +87,11 @@ class FlowRestResourceImpl @Activate constructor(
     private var publisher: Publisher? = null
     private var fatalErrorOccurred = false
     private lateinit var onFatalError: () -> Unit
-    private var startFlowTopic: String = FLOW_MAPPER_EVENT_TOPIC
 
     override fun initialise(config: SmartConfig, onFatalError: () -> Unit) {
         this.onFatalError = onFatalError
         publisher?.close()
         publisher = publisherFactory.createPublisher(PublisherConfig("FlowRestResource"), config)
-        startFlowTopic = config.getOutputTopic(BootConfig.START_OUTPUT, FLOW_MAPPER_EVENT_TOPIC)
     }
 
     private fun regexMatch(input: String, regex: String): Boolean {
@@ -202,7 +201,7 @@ class FlowRestResourceImpl @Activate constructor(
             val status = messageFactory.createStartFlowStatus(clientRequestId, vNode, flowClassName)
 
             val records = listOf(
-                addTraceContextToRecord(Record(startFlowTopic, status.key.toString(), startEvent)),
+                addTraceContextToRecord(Record(FLOW_MAPPER_EVENT_TOPIC, status.key.toString(), startEvent)),
                 Record(FLOW_STATUS_TOPIC, status.key, status),
             )
 

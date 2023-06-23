@@ -19,7 +19,9 @@ import net.corda.flow.mapper.impl.executor.SessionInitExecutor
 import net.corda.flow.mapper.impl.executor.StartFlowExecutor
 import net.corda.flow.mapper.impl.executor.generateAppMessage
 import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.configuration.helper.getOutputTopic
 import net.corda.schema.Schemas.Flow.FLOW_EVENT_TOPIC
+import net.corda.schema.configuration.BootConfig
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -40,6 +42,7 @@ class FlowMapperEventExecutorFactoryImpl @Activate constructor(
         flowConfig: SmartConfig,
         instant: Instant
     ): FlowMapperEventExecutor {
+        val startTopic = flowConfig.getOutputTopic(BootConfig.START_OUTPUT, FLOW_EVENT_TOPIC)
         return when (val flowMapperEventPayload = flowMapperEvent.payload) {
             is SessionEvent -> {
                 when (val sessionPayload = flowMapperEventPayload.payload) {
@@ -77,8 +80,7 @@ class FlowMapperEventExecutorFactoryImpl @Activate constructor(
                     }
                 }
             }
-            //NOTE: To publish to flow event topic (start events)
-            is StartFlow -> StartFlowExecutor(eventKey, FLOW_EVENT_TOPIC, flowMapperEventPayload, state)
+            is StartFlow -> StartFlowExecutor(eventKey, startTopic, flowMapperEventPayload, state)
             is ExecuteCleanup -> ExecuteCleanupEventExecutor(eventKey)
             is ScheduleCleanup -> ScheduleCleanupEventExecutor(eventKey, flowMapperEventPayload, state)
 

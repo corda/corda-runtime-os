@@ -39,6 +39,7 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
 ) : StateAndEventConsumer<K, S, E>, Resource {
 
     companion object {
+        private val logger = LoggerFactory.getLogger(this::class.java.name)
         //short timeout for poll of paused partitions when waiting for processor to finish
         private val PAUSED_POLL_TIMEOUT = Duration.ofMillis(100)
 
@@ -49,7 +50,9 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
         private val EVENT_POLL_TIMEOUT = Duration.ofMillis(100)
 
         private const val STATE_TOPIC_SUFFIX = ".state"
-        private val hostAndPort = HostAndPort(System.getenv("memoryDBURL"), 6379)
+        private val hostAndPort = HostAndPort("orr-memory-db.8b332u.clustercfg.memorydb.eu-west-2.amazonaws.com", 6379).also {
+            logger.warn("Connecting to host ${it.host}, port ${it.port}")
+        }
         private val jedisCluster = JedisCluster(Collections.singleton(hostAndPort), 5000, 5000, 2, null, null, GenericObjectPoolConfig(), false)
 //        private val jedisCluster = JedisPool(GenericObjectPoolConfig(), hostAndPort.host, hostAndPort.port)
     }

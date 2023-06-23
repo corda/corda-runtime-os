@@ -31,7 +31,7 @@ class UniquenessCheckMessageProcessor(
         val batchTracer = createBatchTracer(events)
 
         val requests = events.mapNotNull { it.value }
-        val topic = config.getOutputTopic(BootConfig.LEDGER_OUTPUT, FLOW_EVENT_TOPIC)
+        val topic = config.getOutputTopic(BootConfig.UNIQUENESS_OUTPUT, FLOW_EVENT_TOPIC)
 
         return uniquenessChecker.processRequests(requests).map { (request, response) ->
             if (response.result is UniquenessCheckResultUnhandledExceptionAvro) {

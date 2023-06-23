@@ -50,7 +50,7 @@ class VerificationRequestProcessor(
     override fun onNext(events: List<Record<String, TransactionVerificationRequest>>): List<Record<*, *>> {
         log.trace { "onNext processing messages ${events.joinToString(",") { it.key }}" }
 
-        val topic = config.getOutputTopic(BootConfig.LEDGER_OUTPUT, FLOW_EVENT_TOPIC)
+        val topic = config.getOutputTopic(BootConfig.VERIFICATION_OUTPUT, FLOW_EVENT_TOPIC)
         return events
             .filterNot { it.value == null }
             .map { event ->
