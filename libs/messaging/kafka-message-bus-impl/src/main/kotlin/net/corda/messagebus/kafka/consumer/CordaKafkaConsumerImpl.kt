@@ -1,6 +1,5 @@
 package net.corda.messagebus.kafka.consumer
 
-import io.micrometer.core.instrument.DistributionSummary
 import io.micrometer.core.instrument.binder.MeterBinder
 import net.corda.data.chunking.Chunk
 import net.corda.data.chunking.ChunkKey
@@ -39,7 +38,6 @@ import org.apache.kafka.common.errors.TimeoutException
 import org.apache.kafka.common.errors.WakeupException
 import org.slf4j.LoggerFactory
 import java.time.Duration
-import java.util.concurrent.ConcurrentHashMap
 
 
 /**
@@ -55,8 +53,6 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
 ) : CordaConsumer<K, V> {
     private var currentAssignment = mutableSetOf<Int>()
     private val bufferedRecords = mutableMapOf<Int, List<ConsumerRecord<Any, Any>>>()
-
-    private val recordsConsumedMetricCache = ConcurrentHashMap<Int, DistributionSummary>()
 
     init {
         consumerMetricsBinder.bindTo(CordaMetrics.registry)
@@ -130,12 +126,10 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
     }
 
     private fun recordPolledRecordsPerPartition(partition: Int, records: List<ConsumerRecord<*, *>>) {
-        recordsConsumedMetricCache.computeIfAbsent(partition) {
-            CordaMetrics.Metric.Messaging.ConsumerRecordsConsumedCount.builder()
-                .withTag(CordaMetrics.Tag.MessagePatternClientId, config.clientId)
-                .withTag(CordaMetrics.Tag.Partition, "$partition")
-                .build()
-        }
+        CordaMetrics.Metric.Messaging.ConsumerBatchSize.builder()
+            .withTag(CordaMetrics.Tag.MessagePatternClientId, config.clientId)
+            .withTag(CordaMetrics.Tag.Partition, "$partition")
+            .build()
             .record(records.size.toDouble())
     }
 

@@ -636,9 +636,9 @@ object CordaMetrics {
             )
 
             /**
-             * Counter for the number of records a consumer has consumed.
+             * The size of batches of messages received in polls from the message bus by consumer.
              */
-            object ConsumerRecordsConsumedCount : Metric<DistributionSummary>("consumer.records.consumed", Metrics::summary)
+            object ConsumerBatchSize : Metric<DistributionSummary>("consumer.batch.size", Metrics::summary)
 
             /**
              * Generic consumer poll time, time taken by kafka to respond to consumer polls for each client ID.
