@@ -414,6 +414,9 @@ workers:
       repository: "corda-os-crypto-worker"
       # -- crypto worker image tag, defaults to image.tag
       tag: ""
+    envs:
+      - name: "FLOW_PROCESSOR_TOPIC"
+        value: "flow.crypto"
     # -- crypto worker replica count
     replicaCount: 1
     # -- crypto worker extra annotations
@@ -484,6 +487,11 @@ workers:
       repository: "corda-os-db-worker"
       # -- DB worker image tag, defaults to image.tag
       tag: ""
+    envs:
+      - name: "FLOW_PROCESSOR_TOPIC"
+        value: "flow.db"
+      - name: "FLOW_UNIQUENESS_TOPIC"
+        value: "flow.uniqueness"
     # -- DB worker replica count
     replicaCount: 1
     # -- DB worker extra annotations
@@ -545,8 +553,8 @@ workers:
               # -- the DB worker SASL password secret key for client connection to Kafka
               key: ""
 
-  # flow worker configuration
-  flow:
+  # flow start worker configuration
+  flow_start:
     # flow worker image configuration
     image:
       # -- flow worker image registry, defaults to image.registry
@@ -555,6 +563,11 @@ workers:
       repository: "corda-os-flow-worker"
       # -- flow worker image tag, defaults to image.tag
       tag: ""
+    extraArgs:
+      - "flow_start_topic=flow.start"
+    envs:
+      - name: "FLOW_START_TOPIC"
+        value: "flow.start"
     # -- flow worker replica count
     replicaCount: 1
     # -- flow worker extra annotations
@@ -613,8 +626,8 @@ workers:
               # -- the flow worker SASL password secret key for client connection to Kafka
               key: ""
 
-  # flow worker configuration
-  flowtest:
+  # flow session worker configuration
+  flow_session:
     # flow worker image configuration
     image:
       # -- flow worker image registry, defaults to image.registry
@@ -624,10 +637,302 @@ workers:
       # -- flow worker image tag, defaults to image.tag
       tag: ""
     extraArgs:
-      - "asdgadsgasg"
+      - "flow_session_topic=flow.session"
     envs:
-      - name: "foo"
-        value: "bar"
+      - name: "FLOW_SESSION_TOPIC"
+        value: "flow.session"
+    # -- flow worker replica count
+    replicaCount: 1
+    # -- flow worker extra annotations
+    annotations: {}
+    # -- additional Java options for the flow worker
+    javaOptions: "-XX:MaxRAMPercentage=75"
+    # flow worker debug configuration
+    debug:
+      # -- run flow worker with debug enabled
+      enabled: false
+      # -- if debug is enabled, suspend the flow worker until the debugger is attached
+      suspend: false
+    # logging configuration
+    logging:
+      # -- log level: one of "all", "trace", "debug", "info", "warn", "error", "fatal", or "off"; defaults to logging.level if not specified
+      level: null
+      # -- additional Log4j 2 XML configuration
+      override: ""
+    profiling:
+      # -- run flow worker with profiling enabled
+      enabled: false
+    # resource limits and requests configuration for the flow worker containers.
+    resources:
+      # -- the CPU/memory resource requests for the flow worker containers
+      requests: {}
+      # -- the CPU/memory resource limits for the flow worker containers
+      limits: {}
+    # -- run flow worker with Quasar's verifyInstrumentation enabled
+    verifyInstrumentation: false
+    # flow worker Kafka configuration
+    kafka:
+      # if kafka.sasl.enabled, the credentials to connect to Kafka with for the flow worker
+      sasl:
+        # flow worker SASL username configuration for client connection to Kafka; defaults to kafka.sasl.username
+        username:
+          # -- the flow worker SASL username for client connection to Kafka
+          value: ""
+          # the boostrap SASL username secret configuration for client connection to Kafka; used in preference to value if name is set
+          valueFrom:
+            # the flow worker SASL username secret key reference for client connection to Kafka
+            secretKeyRef:
+              # -- the flow worker SASL username secret name for client connection to Kafka
+              name: ""
+              # -- the flow worker SASL username secret key for client connection to Kafka
+              key: ""
+        # flow worker SASL password configuration for client connection to Kafka; defaults to kafka.sasl.password
+        password:
+          # -- the flow worker SASL password for client connection to Kafka
+          value: ""
+          # the flow worker SASL password secret configuration for client connection to Kafka; used in preference to value if name is set
+          valueFrom:
+            # the flow worker SASL password secret key reference for client connection to Kafka
+            secretKeyRef:
+              # -- the flow worker SASL password secret name for client connection to Kafka
+              name: ""
+              # -- the flow worker SASL password secret key for client connection to Kafka
+              key: ""
+
+  # flow crypto worker configuration
+  flow_crypto:
+    # flow worker image configuration
+    image:
+      # -- flow worker image registry, defaults to image.registry
+      registry: ""
+      # -- flow worker image repository
+      repository: "corda-os-flow-worker"
+      # -- flow worker image tag, defaults to image.tag
+      tag: ""
+    extraArgs:
+      - "flow_crypto_topic=flow.crypto"
+    envs:
+      - name: "FLOW_CRYPTO_TOPIC"
+        value: "flow.crypto"
+    # -- flow worker replica count
+    replicaCount: 1
+    # -- flow worker extra annotations
+    annotations: {}
+    # -- additional Java options for the flow worker
+    javaOptions: "-XX:MaxRAMPercentage=75"
+    # flow worker debug configuration
+    debug:
+      # -- run flow worker with debug enabled
+      enabled: false
+      # -- if debug is enabled, suspend the flow worker until the debugger is attached
+      suspend: false
+    # logging configuration
+    logging:
+      # -- log level: one of "all", "trace", "debug", "info", "warn", "error", "fatal", or "off"; defaults to logging.level if not specified
+      level: null
+      # -- additional Log4j 2 XML configuration
+      override: ""
+    profiling:
+      # -- run flow worker with profiling enabled
+      enabled: false
+    # resource limits and requests configuration for the flow worker containers.
+    resources:
+      # -- the CPU/memory resource requests for the flow worker containers
+      requests: {}
+      # -- the CPU/memory resource limits for the flow worker containers
+      limits: {}
+    # -- run flow worker with Quasar's verifyInstrumentation enabled
+    verifyInstrumentation: false
+    # flow worker Kafka configuration
+    kafka:
+      # if kafka.sasl.enabled, the credentials to connect to Kafka with for the flow worker
+      sasl:
+        # flow worker SASL username configuration for client connection to Kafka; defaults to kafka.sasl.username
+        username:
+          # -- the flow worker SASL username for client connection to Kafka
+          value: ""
+          # the boostrap SASL username secret configuration for client connection to Kafka; used in preference to value if name is set
+          valueFrom:
+            # the flow worker SASL username secret key reference for client connection to Kafka
+            secretKeyRef:
+              # -- the flow worker SASL username secret name for client connection to Kafka
+              name: ""
+              # -- the flow worker SASL username secret key for client connection to Kafka
+              key: ""
+        # flow worker SASL password configuration for client connection to Kafka; defaults to kafka.sasl.password
+        password:
+          # -- the flow worker SASL password for client connection to Kafka
+          value: ""
+          # the flow worker SASL password secret configuration for client connection to Kafka; used in preference to value if name is set
+          valueFrom:
+            # the flow worker SASL password secret key reference for client connection to Kafka
+            secretKeyRef:
+              # -- the flow worker SASL password secret name for client connection to Kafka
+              name: ""
+              # -- the flow worker SASL password secret key for client connection to Kafka
+              key: ""
+
+  # flow db worker configuration
+  flow_db:
+    # flow worker image configuration
+    image:
+      # -- flow worker image registry, defaults to image.registry
+      registry: ""
+      # -- flow worker image repository
+      repository: "corda-os-flow-worker"
+      # -- flow worker image tag, defaults to image.tag
+      tag: ""
+    extraArgs:
+      - "flow_db_topic=flow.db"
+    envs:
+      - name: "FLOW_DB_TOPIC"
+        value: "flow.db"
+    # -- flow worker replica count
+    replicaCount: 1
+    # -- flow worker extra annotations
+    annotations: {}
+    # -- additional Java options for the flow worker
+    javaOptions: "-XX:MaxRAMPercentage=75"
+    # flow worker debug configuration
+    debug:
+      # -- run flow worker with debug enabled
+      enabled: false
+      # -- if debug is enabled, suspend the flow worker until the debugger is attached
+      suspend: false
+    # logging configuration
+    logging:
+      # -- log level: one of "all", "trace", "debug", "info", "warn", "error", "fatal", or "off"; defaults to logging.level if not specified
+      level: null
+      # -- additional Log4j 2 XML configuration
+      override: ""
+    profiling:
+      # -- run flow worker with profiling enabled
+      enabled: false
+    # resource limits and requests configuration for the flow worker containers.
+    resources:
+      # -- the CPU/memory resource requests for the flow worker containers
+      requests: {}
+      # -- the CPU/memory resource limits for the flow worker containers
+      limits: {}
+    # -- run flow worker with Quasar's verifyInstrumentation enabled
+    verifyInstrumentation: false
+    # flow worker Kafka configuration
+    kafka:
+      # if kafka.sasl.enabled, the credentials to connect to Kafka with for the flow worker
+      sasl:
+        # flow worker SASL username configuration for client connection to Kafka; defaults to kafka.sasl.username
+        username:
+          # -- the flow worker SASL username for client connection to Kafka
+          value: ""
+          # the boostrap SASL username secret configuration for client connection to Kafka; used in preference to value if name is set
+          valueFrom:
+            # the flow worker SASL username secret key reference for client connection to Kafka
+            secretKeyRef:
+              # -- the flow worker SASL username secret name for client connection to Kafka
+              name: ""
+              # -- the flow worker SASL username secret key for client connection to Kafka
+              key: ""
+        # flow worker SASL password configuration for client connection to Kafka; defaults to kafka.sasl.password
+        password:
+          # -- the flow worker SASL password for client connection to Kafka
+          value: ""
+          # the flow worker SASL password secret configuration for client connection to Kafka; used in preference to value if name is set
+          valueFrom:
+            # the flow worker SASL password secret key reference for client connection to Kafka
+            secretKeyRef:
+              # -- the flow worker SASL password secret name for client connection to Kafka
+              name: ""
+              # -- the flow worker SASL password secret key for client connection to Kafka
+              key: ""
+
+  # flow uniqueness worker configuration
+  flow_uniqueness:
+    # flow worker image configuration
+    image:
+      # -- flow worker image registry, defaults to image.registry
+      registry: ""
+      # -- flow worker image repository
+      repository: "corda-os-flow-worker"
+      # -- flow worker image tag, defaults to image.tag
+      tag: ""
+    extraArgs:
+      - "flow_uniqueness_topic=flow.uniqueness"
+    envs:
+      - name: "FLOW_UNIQUENESS_TOPIC"
+        value: "flow.uniqueness"
+    # -- flow worker replica count
+    replicaCount: 1
+    # -- flow worker extra annotations
+    annotations: {}
+    # -- additional Java options for the flow worker
+    javaOptions: "-XX:MaxRAMPercentage=75"
+    # flow worker debug configuration
+    debug:
+      # -- run flow worker with debug enabled
+      enabled: false
+      # -- if debug is enabled, suspend the flow worker until the debugger is attached
+      suspend: false
+    # logging configuration
+    logging:
+      # -- log level: one of "all", "trace", "debug", "info", "warn", "error", "fatal", or "off"; defaults to logging.level if not specified
+      level: null
+      # -- additional Log4j 2 XML configuration
+      override: ""
+    profiling:
+      # -- run flow worker with profiling enabled
+      enabled: false
+    # resource limits and requests configuration for the flow worker containers.
+    resources:
+      # -- the CPU/memory resource requests for the flow worker containers
+      requests: {}
+      # -- the CPU/memory resource limits for the flow worker containers
+      limits: {}
+    # -- run flow worker with Quasar's verifyInstrumentation enabled
+    verifyInstrumentation: false
+    # flow worker Kafka configuration
+    kafka:
+      # if kafka.sasl.enabled, the credentials to connect to Kafka with for the flow worker
+      sasl:
+        # flow worker SASL username configuration for client connection to Kafka; defaults to kafka.sasl.username
+        username:
+          # -- the flow worker SASL username for client connection to Kafka
+          value: ""
+          # the boostrap SASL username secret configuration for client connection to Kafka; used in preference to value if name is set
+          valueFrom:
+            # the flow worker SASL username secret key reference for client connection to Kafka
+            secretKeyRef:
+              # -- the flow worker SASL username secret name for client connection to Kafka
+              name: ""
+              # -- the flow worker SASL username secret key for client connection to Kafka
+              key: ""
+        # flow worker SASL password configuration for client connection to Kafka; defaults to kafka.sasl.password
+        password:
+          # -- the flow worker SASL password for client connection to Kafka
+          value: ""
+          # the flow worker SASL password secret configuration for client connection to Kafka; used in preference to value if name is set
+          valueFrom:
+            # the flow worker SASL password secret key reference for client connection to Kafka
+            secretKeyRef:
+              # -- the flow worker SASL password secret name for client connection to Kafka
+              name: ""
+              # -- the flow worker SASL password secret key for client connection to Kafka
+              key: ""
+
+  # flow verification worker configuration
+  flow_verification:
+    # flow worker image configuration
+    image:
+      # -- flow worker image registry, defaults to image.registry
+      registry: ""
+      # -- flow worker image repository
+      repository: "corda-os-flow-worker"
+      # -- flow worker image tag, defaults to image.tag
+      tag: ""
+    extraArgs:
+      - "flow_verification_topic=flow.verification"
+    envs:
+      - name: "FLOW_VERIFICATION_TOPIC"
+        value: "flow.verification"
     # -- flow worker replica count
     replicaCount: 1
     # -- flow worker extra annotations
