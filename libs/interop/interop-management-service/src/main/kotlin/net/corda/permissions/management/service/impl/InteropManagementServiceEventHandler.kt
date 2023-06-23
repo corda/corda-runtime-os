@@ -4,6 +4,7 @@ import net.corda.libs.interop.endpoints.v1.InteropManager
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleEventHandler
+import net.corda.lifecycle.LifecycleStatus
 import org.slf4j.LoggerFactory
 
 @Suppress("LongParameterList")
@@ -19,7 +20,7 @@ internal class InteropManagementServiceEventHandler : LifecycleEventHandler {
     internal var interopManager: InteropManager? = null
 
     override fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
-        TODO("implement")
+        // TODO: Implement lifecycle handling
+        coordinator.updateStatus(LifecycleStatus.UP)
     }
-
 }
