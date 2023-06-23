@@ -5,6 +5,7 @@ import net.corda.ledger.verification.processor.VerificationSubscriptionFactory
 import net.corda.ledger.utxo.verification.TransactionVerificationRequest
 import net.corda.ledger.verification.sandbox.VerificationSandboxService
 import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.configuration.helper.getInputTopic
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
@@ -30,7 +31,8 @@ class VerificationSubscriptionFactoryImpl @Activate constructor(
     }
 
     override fun create(config: SmartConfig): Subscription<String, TransactionVerificationRequest> {
-        val subscriptionConfig = SubscriptionConfig(GROUP_NAME, Schemas.Verification.VERIFICATION_LEDGER_PROCESSOR_TOPIC)
+        val inputTopic = config.getInputTopic(GROUP_NAME, Schemas.Verification.VERIFICATION_LEDGER_PROCESSOR_TOPIC)
+        val subscriptionConfig = SubscriptionConfig("$GROUP_NAME-$inputTopic", inputTopic)
 
         val processor = VerificationRequestProcessor(
             currentSandboxGroupContext,
