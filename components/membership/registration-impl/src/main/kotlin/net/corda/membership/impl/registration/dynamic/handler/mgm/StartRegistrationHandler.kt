@@ -364,5 +364,4 @@ internal class StartRegistrationHandler(
             }
         }
     }
-
 }
