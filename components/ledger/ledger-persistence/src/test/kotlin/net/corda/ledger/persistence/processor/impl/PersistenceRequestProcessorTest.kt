@@ -41,7 +41,8 @@ class PersistenceRequestProcessorTest {
         currentSandboxGroupContext,
         entitySandboxService,
         delegatedRequestHandlerSelector,
-        responseFactory
+        responseFactory,
+        mock()
     )
 
     @BeforeEach

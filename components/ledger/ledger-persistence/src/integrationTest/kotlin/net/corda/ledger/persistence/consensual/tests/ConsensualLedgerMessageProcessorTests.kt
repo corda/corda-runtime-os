@@ -56,6 +56,7 @@ import org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.RegisterExtension
 import org.junit.jupiter.api.io.TempDir
+import org.mockito.Mockito.mock
 import org.osgi.framework.BundleContext
 import org.osgi.test.common.annotation.InjectBundleContext
 import org.osgi.test.common.annotation.InjectService
@@ -151,7 +152,8 @@ class ConsensualLedgerMessageProcessorTests {
             currentSandboxGroupContext,
             virtualNode.entitySandboxService,
             delegatedRequestHandlerSelector,
-            responseFactory
+            responseFactory,
+            mock()
         )
 
         val requestId = UUID.randomUUID().toString()

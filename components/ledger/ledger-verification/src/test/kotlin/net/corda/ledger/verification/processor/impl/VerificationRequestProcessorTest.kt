@@ -44,7 +44,8 @@ class VerificationRequestProcessorTest {
         currentSandboxGroupContext,
         verificationSandboxService,
         verificationRequestHandler,
-        responseFactory
+        responseFactory,
+        mock()
     )
 
     @BeforeEach

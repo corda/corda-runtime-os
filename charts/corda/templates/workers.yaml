@@ -10,6 +10,7 @@
   {{- include "corda.worker" ( list $ .Values.workers.flow_db "flow_db" ) }}
   {{- include "corda.worker" ( list $ .Values.workers.flow_uniqueness "flow_uniqueness" ) }}
   {{- include "corda.worker" ( list $ .Values.workers.flow_verification "flow_verification" ) }}
+  {{- include "corda.worker" ( list $ .Values.workers.flow_ledger "flow_ledger" ) }}
 {{- include "corda.worker" ( list $ .Values.workers.membership "membership" ) }}
 {{- include "corda.worker" ( list $ .Values.workers.p2pGateway "p2pGateway"
   ( dict "httpPort" 8080 )
