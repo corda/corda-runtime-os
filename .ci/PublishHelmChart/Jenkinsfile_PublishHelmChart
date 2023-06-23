@@ -14,15 +14,11 @@ pipeline {
         kubernetes {
             cloud "eks-e2e"
             yaml kubernetesBuildAgentYaml('build', buildEnvironment, cpus)
+            yamlMergeStrategy merge() // important to keep tolerations from the inherited template
             idleMinutes 15
             podRetention always()
-            nodeSelector ([
-                    "kubernetes.io/arch=${buildEnvironment.buildArchitecture.toString().toLowerCase()}",
-                    "kubernetes.io/os=${buildEnvironment.buildOperatingSystem.toString().toLowerCase()}",
-                    "role=jenkins-agent"
-            ].join(','))
             label ([
-                    "kubernetes-build-agent",
+                    "gradle-build",
                     "${cpus}cpus",
                     "${buildEnvironment.buildArchitecture.toString().toLowerCase()}",
                     "${buildEnvironment.buildOperatingSystem.toString().toLowerCase()}"
