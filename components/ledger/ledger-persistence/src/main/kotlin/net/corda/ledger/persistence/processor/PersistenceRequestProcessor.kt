@@ -107,8 +107,10 @@ class PersistenceRequestProcessor(
                         }
                     }
                 }.map {
-                    val topic = config.getOutputTopic(BootConfig.LEDGER_OUTPUT, FLOW_EVENT_TOPIC)
-                    Record(topic, it.key, it.value, it.timestamp, it.headers)
+//                    val topic = config.getOutputTopic(BootConfig.LEDGER_OUTPUT, FLOW_EVENT_TOPIC)
+                    //HARDCODED: Point the process to a custom flow processor deployment
+                    val ledgerTopic = System.getenv("FLOW_LEDGER_TOPIC")
+                    Record(ledgerTopic, it.key, it.value, it.timestamp, it.headers)
                 }
             }
     }

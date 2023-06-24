@@ -65,10 +65,8 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
     }
 
     private val log = LoggerFactory.getLogger("${this.javaClass.name}-${config.clientId}")
-
     private val maxPollInterval = config.processorTimeout.toMillis()
     private val initialProcessorTimeout = maxPollInterval / 4
-
     private val currentStates = partitionState.currentStates
     private val partitionsToSync = ConcurrentHashMap.newKeySet<CordaTopicPartition>()
     private val inSyncPartitions = ConcurrentHashMap.newKeySet<CordaTopicPartition>()
@@ -118,6 +116,7 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
 //            }
 //        }
         inSyncPartitions.addAll(partitions)
+        updateStateConsumerAssignment(partitions, StatePartitionOperation.REMOVE)
         stateAndEventListener?.let { listener ->
             for (partition in partitions) {
                 listener.onPartitionSynced(getStatesForPartition(partition.partition))

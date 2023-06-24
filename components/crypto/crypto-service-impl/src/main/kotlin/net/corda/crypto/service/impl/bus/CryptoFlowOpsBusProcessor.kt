@@ -60,10 +60,12 @@ class CryptoFlowOpsBusProcessor(
     )
 
     override fun onNext(events: List<Record<String, FlowOpsRequest>>): List<Record<*, *>> {
-        val topic = bootConfig.getOutputTopic(BootConfig.CRYPTO_OUTPUT, FLOW_EVENT_TOPIC)
+//        val topic = bootConfig.getOutputTopic(BootConfig.CRYPTO_OUTPUT, FLOW_EVENT_TOPIC)
+        //HARDCODED: Point the process to a custom flow processor deployment
+        val flowProcessorTopic = System.getenv("FLOW_PROCESSOR_TOPIC")
         logger.trace { "onNext processing messages ${events.joinToString(",") { it.key }}" }
         return events.mapNotNull { onNext(it) }.map {
-            Record(topic, it.key, it.value, it.timestamp, it.headers)
+            Record(flowProcessorTopic, it.key, it.value, it.timestamp, it.headers)
         }
     }
 

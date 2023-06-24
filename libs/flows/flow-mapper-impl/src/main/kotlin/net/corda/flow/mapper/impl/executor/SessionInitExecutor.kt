@@ -35,7 +35,9 @@ class SessionInitExecutor(
     private val messageDirection = sessionEvent.messageDirection
     private val outputTopic = getSessionEventOutputTopic(
         messageDirection,
-        flowConfig.getOutputTopic(BootConfig.SESSION_OUTPUT, FLOW_EVENT_TOPIC)
+//        flowConfig.getOutputTopic(BootConfig.SESSION_OUTPUT, FLOW_EVENT_TOPIC)
+        //HARDCODED: Point the process to a custom flow processor deployment
+        System.getenv("FLOW_SESSION_TOPIC")
     )
 
     override fun execute(): FlowMapperResult {

@@ -7,19 +7,18 @@ import net.corda.messagebus.api.configuration.ProducerConfig
 import net.corda.messagebus.api.constants.ConsumerRoles
 import net.corda.messagebus.api.constants.ProducerRoles
 import net.corda.messagebus.api.consumer.CordaConsumer
+import net.corda.messagebus.api.consumer.NoOpCordaConsumer
 import net.corda.messagebus.api.consumer.builder.CordaConsumerBuilder
 import net.corda.messagebus.api.producer.CordaProducer
 import net.corda.messagebus.api.producer.builder.CordaProducerBuilder
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
 import net.corda.messaging.config.ResolvedSubscriptionConfig
+import net.corda.messaging.subscription.consumer.RedisStateAndEventConsumer
 import net.corda.messaging.subscription.consumer.StateAndEventConsumer
-import net.corda.messaging.subscription.consumer.StateAndEventConsumerImpl
 import net.corda.messaging.subscription.consumer.StateAndEventPartitionState
 import net.corda.messaging.subscription.consumer.listener.StateAndEventConsumerRebalanceListener
 import net.corda.messaging.subscription.consumer.listener.StateAndEventConsumerRebalanceListenerImpl
 import net.corda.messaging.subscription.factory.MapFactory
-import net.corda.schema.Schemas.getStateAndEventStateTopic
-import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -59,15 +58,6 @@ class StateAndEventBuilderImpl @Activate constructor(
         serializer: CordaAvroSerializer<Any>,
         deserializer: CordaAvroDeserializer<Any>
     ): Pair<StateAndEventConsumer<K, S, E>, StateAndEventConsumerRebalanceListener> {
-        val stateConsumerConfig =
-            ConsumerConfig(config.group, "${config.clientId}-stateConsumer", ConsumerRoles.SAE_STATE)
-        val stateConsumer = cordaConsumerBuilder.createConsumer(
-            stateConsumerConfig,
-            config.messageBusConfig,
-            kClazz,
-            sClazz,
-            onStateError
-        )
         val eventConsumerConfig =
             ConsumerConfig(config.group, "${config.clientId}-eventConsumer", ConsumerRoles.SAE_EVENT)
         val eventConsumer = cordaConsumerBuilder.createConsumer(
@@ -89,7 +79,7 @@ class StateAndEventBuilderImpl @Activate constructor(
         }
 
         val stateAndEventConsumer =
-            StateAndEventConsumerImpl(config, eventConsumer, stateConsumer, partitionState, stateAndEventListener, serializer, deserializer)
+            RedisStateAndEventConsumer(config, eventConsumer, NoOpCordaConsumer(), partitionState, stateAndEventListener, serializer, deserializer)
         val rebalanceListener = StateAndEventConsumerRebalanceListenerImpl(
             config,
             mapFactory,

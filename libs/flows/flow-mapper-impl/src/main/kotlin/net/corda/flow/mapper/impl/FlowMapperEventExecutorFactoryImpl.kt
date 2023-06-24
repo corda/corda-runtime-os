@@ -42,7 +42,9 @@ class FlowMapperEventExecutorFactoryImpl @Activate constructor(
         flowConfig: SmartConfig,
         instant: Instant
     ): FlowMapperEventExecutor {
-        val startTopic = flowConfig.getOutputTopic(BootConfig.START_OUTPUT, FLOW_EVENT_TOPIC)
+//        val startTopic = flowConfig.getOutputTopic(BootConfig.START_OUTPUT, FLOW_EVENT_TOPIC)
+        //HARDCODED: Point the process to a custom flow processor deployment
+        val flowProcessorTopic = System.getenv("FLOW_START_TOPIC")
         return when (val flowMapperEventPayload = flowMapperEvent.payload) {
             is SessionEvent -> {
                 when (val sessionPayload = flowMapperEventPayload.payload) {
@@ -80,7 +82,7 @@ class FlowMapperEventExecutorFactoryImpl @Activate constructor(
                     }
                 }
             }
-            is StartFlow -> StartFlowExecutor(eventKey, startTopic, flowMapperEventPayload, state)
+            is StartFlow -> StartFlowExecutor(eventKey, flowProcessorTopic, flowMapperEventPayload, state)
             is ExecuteCleanup -> ExecuteCleanupEventExecutor(eventKey)
             is ScheduleCleanup -> ScheduleCleanupEventExecutor(eventKey, flowMapperEventPayload, state)
 

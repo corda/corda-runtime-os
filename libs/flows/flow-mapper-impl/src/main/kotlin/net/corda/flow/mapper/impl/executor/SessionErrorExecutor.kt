@@ -37,7 +37,9 @@ class SessionErrorExecutor(
     private val messageDirection = sessionEvent.messageDirection
     private val outputTopic = getSessionEventOutputTopic(
         messageDirection,
-        flowConfig.getOutputTopic(BootConfig.SESSION_OUTPUT, FLOW_EVENT_TOPIC)
+//        flowConfig.getOutputTopic(BootConfig.SESSION_OUTPUT, FLOW_EVENT_TOPIC)
+        //HARDCODED: Point the process to a custom flow processor deployment
+        System.getenv("FLOW_SESSION_TOPIC")
     )
 
     private val errorMsg = "Flow mapper received error event from counterparty for session which does not exist. " +
