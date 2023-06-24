@@ -1,55 +1,19 @@
-import static org.gradle.api.attributes.LibraryElements.LIBRARY_ELEMENTS_ATTRIBUTE
-
 plugins {
     id 'org.jetbrains.kotlin.jvm'
     id 'corda.common-library'
-}
-
-configurations {
-    testCpks {
-        canBeConsumed = false
-        visible = false
-    }
-
-    testCpbs {
-        attributes {
-            attribute(LIBRARY_ELEMENTS_ATTRIBUTE, objects.named(LibraryElements, 'cpb'))
-        }
-        canBeConsumed = false
-        extendsFrom testCpks
-        visible = false
-    }
-
-    integrationTestCpks {
-        canBeConsumed = false
-        extendsFrom testCpks
-        visible = false
-    }
-
-    integrationTestCpbs {
-        attributes {
-            attribute(LIBRARY_ELEMENTS_ATTRIBUTE, objects.named(LibraryElements, 'cpb'))
-        }
-        canBeConsumed = false
-        extendsFrom integrationTestCpks
-        visible = false
-    }
+    id 'corda.driver-tests'
 }
 
 dependencies {
-    testImplementation project(':testing:driver')
     testImplementation "org.assertj:assertj-core:$assertjVersion"
     testRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
 
     testCpks project(':testing:cpbs:extendable-cpb')
     testCpks project(':testing:cpbs:mandelbrot')
-    testRuntimeOnly files(configurations.testCpbs)
 
     integrationTestImplementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
     integrationTestCpks project(':testing:cpbs:ledger-consensual-demo-app')
     integrationTestCpks project(':testing:cpbs:test-cordapp')
-    integrationTestImplementation files(configurations.integrationTestCpks)
-    integrationTestRuntimeOnly files(configurations.integrationTestCpbs)
 }
 
 tasks.named('jar', Jar) {
@@ -58,13 +22,6 @@ tasks.named('jar', Jar) {
 
 tasks.withType(Test).configureEach {
     doFirst {
-        jvmArgs '--add-opens', 'java.base/java.lang=ALL-UNNAMED',
-                '--add-opens', 'java.base/java.lang.invoke=ALL-UNNAMED',
-                '--add-opens', 'java.base/java.nio=ALL-UNNAMED',
-                '--add-opens', 'java.base/java.time=ALL-UNNAMED',
-                '--add-opens', 'java.base/java.util=ALL-UNNAMED'
-
-        systemProperty 'co.paralleluniverse.fibers.verifyInstrumentation', true
         systemProperty 'org.slf4j.simpleLogger.defaultLogLevel', 'info'
         systemProperty 'org.slf4j.simpleLogger.dateTimeFormat', 'yyyy-MM-dd HH:mm:ss:SSS Z'
         systemProperty 'org.slf4j.simpleLogger.showDateTime', true
