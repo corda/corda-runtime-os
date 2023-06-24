@@ -1,8 +1,6 @@
-@Library('corda-shared-build-pipeline-steps@5.0.1') _
 
 import groovy.transform.Field
-import com.r3.build.utils.PipelineUtils
-import com.r3.build.utils.GitUtils
+
 
 @Field
 String postgresHost = 'localhost'
@@ -13,11 +11,6 @@ String postgresCredentialsId = 'e2e-postgresql-credentials'
 @Field
 String postgresDb = "test_${UUID.randomUUID().toString().replace("-", "")}"
 
-@Field
-PipelineUtils pipelineUtils = new PipelineUtils(this)
-
-@Field
-GitUtils gitUtils = new GitUtils(this)
 
 pipeline {
     agent {
@@ -60,11 +53,15 @@ pipeline {
         timestamps()
     }
 
+    triggers {
+        cron('H * /2 * * *')
+    }
+
     stages {
         stage('check out') {
             steps {
                 script {
-                    gitUtils.checkoutGitRevisionOfTriggeringJob(params.COMMIT_TO_CHECKOUT)
+                    checkoutGitRevisionOfTriggeringJob(params.COMMIT_TO_CHECKOUT)
                 }
             }
         }
@@ -74,7 +71,7 @@ pipeline {
             }
             steps {
                 script {
-                    pipelineUtils.createPostgresDatabase(postgresPort, postgresHost, postgresDb, postgresCredentialsId)
+                    createPostgresDatabase(postgresPort, postgresHost, postgresDb, postgresCredentialsId)
                 }
             }
         }
@@ -103,7 +100,7 @@ pipeline {
         stage('connect to combined worker') {
             steps {
                 script {
-                    pipelineUtils.waitForServiceToBeUp('http://localhost:7004/status', 20, 3)
+                    waitForServiceToBeUp('http://localhost:7004/status', 20, 3)
                 }
             }
         }
@@ -126,8 +123,8 @@ pipeline {
             script {      
                     findBuildScans()
                     splunkLogGenerator()
-                    pipelineUtils.getPodLogs("postgres")
-                    pipelineUtils.dropPostgresDB(postgresCredentialsId, env.CORDA_DEV_CLUSTER_DB_NAME)
+                    getPodLogs("postgres")
+                    dropPostgresDB(postgresCredentialsId, env.CORDA_DEV_CLUSTER_DB_NAME)
             }
             archiveArtifacts artifacts: 'forward.txt, workerLogs.txt, podLogs.txt', allowEmptyArchive: true
             sh 'rm -f forward.txt workerLogs.txt podLogs.txt'
@@ -145,5 +142,157 @@ def gradleCmd() {
 
 def gradlew(String... args) {
     def allArgs = args.join(' ')
-    sh "${gradleCmd()} ${allArgs} ${GRADLE_PERFORMANCE_TUNING}"
+    sh "${gradleCmd()} ${allArgs
+    
+    } ${GRADLE_PERFORMANCE_TUNING}"
+}
+
+
+//* ********************************************************************
+// Everything uder here pulled out of shared library for testing purposes
+//* ********************************************************************
+
+
+/**
+* Drop the Postgres database which matches the provided name  
+*
+* @param postgresDb              The name of the new database to be created
+* @param postgresCredentialsId   ID of the credentials used for authentication
+*/
+void dropPostgresDB(String postgresCredentialsId , String postgresDb) {
+    withEnv([
+        "DATABASE=${postgresDb}"
+    ]) {
+        withCredentials([usernamePassword(credentialsId: postgresCredentialsId,
+                passwordVariable: 'PGPASSWORD',
+                usernameVariable: 'PGUSER')]) {
+                    sh 'dropdb -w "${DATABASE}" || true' 
+        }
+    }
+}
+
+
+/**
+* Retrieves the logs of all pods running in the specified k8s namespace and writes them to a file which is then archived
+*
+* @param namespace      The name of the Kubernetes namespace where the pods are running
+*/
+void getPodLogs(String namespace) {
+    withEnv([
+            "NAMESPACE=${namespace}"
+    ]) {
+        sh '''\
+                for pod in $(kubectl -n "${NAMESPACE}" get pods -o name)
+                do
+                    kubectl -n "${NAMESPACE}" logs --all-containers --prefix $pod 2>&1 >> podLogs.txt
+                done
+            '''.stripIndent()
+        archiveArtifacts artifacts: "podLogs.txt", allowEmptyArchive: true
+    }
+}
+
+/**
+* Ensures that the same commit ID is used in the triggered job as it's caller, 
+* in the case where it is triggered from the release branch's CI. This is necessary to prevent an edge case where
+* the HEAD revision changes between the start of the calling CI and the downstream job it triggers
+*
+* @param commitToCheckout       The commit ID to check out which is provided from the calling pipeline
+*/
+void checkoutGitRevisionOfTriggeringJob(String commitToCheckout) {
+    if (commitToCheckout && !env.CHANGE_ID && !env.TAG_NAME) {
+        echo "Checking out commit ID from upstream job ${commitToCheckout}"
+        withEnv([
+            "COMMIT_ID=${commitToCheckout}"
+        ]) {
+            sh 'git checkout "${COMMIT_ID}"'
+        }
+    } else {
+        if (env.CHANGE_ID) {
+            echo "Checking out head revision of ${env.BRANCH_NAME} and merging into ${env.CHANGE_TARGET}"
+        } else {
+            echo "Checking out head revision of ${env.BRANCH_NAME}"
+        }
+    }
+}
+
+/**
+* Connect to the postgres service running in kubuerneties and create a new database insatnce
+*
+* @param postgresPort            The port used for connecting to Postgres
+* @param postgresHost            The host where Postgres is running
+* @param postgresDb              The name of the new database to be created
+* @param postgresCredentialsId   ID of the credentials used for authentication
+*/
+void createPostgresDatabase(String postgresPort, String postgresHost, String postgresDb, String postgresCredentialsId) {
+    // port forwarding from K8s
+    portForwarding('svc/postgres-postgresql', postgresPort, postgresPort, 'postgres')
+    // create new DB
+    withEnv([
+            "PGHOST=${postgresHost}",
+            "PGPORT=${postgresPort}",
+            "DATABASE=${postgresDb}"
+    ]) {
+        withCredentials([usernamePassword(credentialsId: postgresCredentialsId,
+                passwordVariable: 'PGPASSWORD',
+                usernameVariable: 'PGUSER')]) {
+                try {
+                    sh 'psql --quiet --tuples-only -c \'select \''
+                } catch (error) {
+                    echo "${error.getMessage()}\nPort forwarding Postgres has not been set up yet, retrying"
+                    retry(5) {
+                        sleep(time: 5, unit: "SECONDS")
+                        sh 'psql --quiet --tuples-only -c \'select \''
+                    }
+                }
+                sh 'createdb -w "${DATABASE}"'
+        }
+    }
+}
+
+void portForwarding(String name, String port, String portMapping, String namespace) {
+    withEnv([
+            "NAME=$name",
+            "PORT=$port",
+            "PORT_MAPPING=$portMapping",
+            "NAMESPACE=$namespace"
+    ]) {
+        sh 'nohup kubectl-port-forward-with-reconnect.sh "${NAMESPACE}" "${NAME}" "${PORT}" "${PORT_MAPPING}" >> forward.txt 2>&1 &'
+    }
+}
+
+
+/**
+* Waits for a service to become available by sending HTTP requests to its endpoint
+* and checking the response code.
+*
+* @param serviceUrl     	    the URL of the service to check
+* @param retryIntervalSeconds   the number of seconds to wait between each retry
+* @param maxRetries             the maximum number of times to retry before giving up
+* @throws error                 if the service does not become available within the specifed number of retries
+*/
+void waitForServiceToBeUp(String serviceUrl, int maxRetries, int retryIntervalSeconds) {
+    int retries = 0
+    String status = null
+    
+    sleep(time: 30, unit: "SECONDS") // wait for 30 seconds before starting to give the service adequate time to start up
+    
+    while (status != "200" && retries < maxRetries) {
+        sleep(time: retryIntervalSeconds, unit: "SECONDS")
+        try {
+            withEnv([
+                "URL=${serviceUrl}"
+            ]) {
+                status = sh(script: 'curl -s -o /dev/null -w "%{http_code}" "${URL}"', returnStdout: true)
+            }
+        } catch (error) {
+            echo "Failed to connect to ${serviceUrl}, retrying..."
+        }
+        retries++
+    }
+    
+    if (status != "200") {
+        error("Service at ${serviceUrl} failed to start up after ${maxRetries} retries, status code: ${status}")
+    } else {
+        echo "Service at ${serviceUrl} is up and running."
+    }
 }
