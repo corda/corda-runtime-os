@@ -38,12 +38,7 @@ class CreateConnect : Runnable {
     var delete: Boolean = false
 
     var topicPartitions: Map<String, Int> = mapOf(
-        "flow.start" to 3,
-        "flow.session" to 3,
-        "flow.crypto" to 3,
-        "flow.db" to 3,
-        "flow.uniqueness" to 3,
-        "flow.verification" to 3
+        "flow.test" to 3
     )
 
     override fun run() {
