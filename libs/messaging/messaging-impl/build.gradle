@@ -29,6 +29,7 @@ dependencies {
     implementation 'net.corda:corda-topic-schema'
     implementation 'net.corda:corda-config-schema'
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
+    implementation 'io.lettuce:lettuce-core:6.2.4.RELEASE'
 
     implementation "com.typesafe:config:$typeSafeConfigVersion"
 

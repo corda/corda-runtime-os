@@ -1,5 +1,8 @@
 package net.corda.messaging.subscription.consumer
 
+import io.lettuce.core.RedisClient
+import io.lettuce.core.RedisURI
+import io.lettuce.core.resource.ClientResources
 import net.corda.lifecycle.Resource
 import net.corda.messagebus.api.CordaTopicPartition
 import net.corda.messagebus.api.consumer.CordaConsumer
@@ -22,6 +25,7 @@ import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
 
+
 @Suppress("LongParameterList", "TooManyFunctions")
 internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
     private val config: ResolvedSubscriptionConfig,
@@ -43,6 +47,16 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
 
         private const val STATE_TOPIC_SUFFIX = ".state"
     }
+
+    var redisUri: RedisURI = RedisURI.builder()
+        .withHost("orr-memory-db.8b332u.clustercfg.memorydb.eu-west-2.amazonaws.com")
+        .withPort(6379)
+        .withDatabase(0)
+        .build()
+    var redisClient: RedisClient? = RedisClient.create(redisUri)
+    var connection = redisClient!!.connect()
+    var syncCommands = connection.sync()
+
 
     //single threaded executor per state and event consumer
     private val executor = Executors.newSingleThreadScheduledExecutor { runnable ->
@@ -201,6 +215,8 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
         eventConsumer.close()
         stateConsumer.close()
         executor.shutdown()
+        connection.close()
+        redisClient?.shutdown()
     }
 
     private fun removeAndReturnSyncedPartitions(): Set<CordaTopicPartition> {
