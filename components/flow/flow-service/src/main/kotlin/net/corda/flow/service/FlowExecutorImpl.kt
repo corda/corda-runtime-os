@@ -69,8 +69,10 @@ class FlowExecutorImpl constructor(
 
     override fun onConfigChange(config: Map<String, SmartConfig>) {
         try {
-            val topic = config.getConfig(BOOT_CONFIG).getInputTopic(CONSUMER_GROUP, FLOW_EVENT_TOPIC)
-            val consumerGroup = "$CONSUMER_GROUP-$topic"
+//            val topic = config.getConfig(BOOT_CONFIG).getInputTopic(CONSUMER_GROUP, FLOW_EVENT_TOPIC)
+            //HARDCODED: Point the process to a custom flow processor deployment
+            val flowProcessorTopic = System.getenv("FLOW_PROCESSOR_TOPIC")
+            val consumerGroup = "$CONSUMER_GROUP-$flowProcessorTopic"
             val messagingConfig = toMessagingConfig(config)
             val flowConfig = config.getConfig(FLOW_CONFIG)
                 .withValue(PROCESSOR_TIMEOUT, ConfigValueFactory.fromAnyRef(messagingConfig.getLong(PROCESSOR_TIMEOUT)))
@@ -82,7 +84,7 @@ class FlowExecutorImpl constructor(
 
             subscription = subscriptionFactory.createStateAndEventSubscription(
                 //NOTE: To consume from flow event topic
-                SubscriptionConfig(consumerGroup, topic),
+                SubscriptionConfig(consumerGroup, flowProcessorTopic),
                 flowEventProcessorFactory.create(flowConfig),
                 messagingConfig,
                 flowExecutorRebalanceListener

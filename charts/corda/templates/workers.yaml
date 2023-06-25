@@ -4,13 +4,14 @@
 {{- include "corda.worker" ( list $ .Values.workers.db "db"
   ( dict "clusterDbAccess" true )
 ) }}
+{{- include "corda.worker" ( list $ .Values.workers.flow "flow" ) }}
 {{- include "corda.worker" ( list $ .Values.workers.flow_start "flow_start" ) }}
-  {{- include "corda.worker" ( list $ .Values.workers.flow_session "flow_session" ) }}
-  {{- include "corda.worker" ( list $ .Values.workers.flow_crypto "flow_crypto" ) }}
-  {{- include "corda.worker" ( list $ .Values.workers.flow_db "flow_db" ) }}
-  {{- include "corda.worker" ( list $ .Values.workers.flow_uniqueness "flow_uniqueness" ) }}
-  {{- include "corda.worker" ( list $ .Values.workers.flow_verification "flow_verification" ) }}
-  {{- include "corda.worker" ( list $ .Values.workers.flow_ledger "flow_ledger" ) }}
+{{- include "corda.worker" ( list $ .Values.workers.flow_session "flow_session" ) }}
+{{- include "corda.worker" ( list $ .Values.workers.flow_crypto "flow_crypto" ) }}
+{{- include "corda.worker" ( list $ .Values.workers.flow_db "flow_db" ) }}
+{{- include "corda.worker" ( list $ .Values.workers.flow_uniqueness "flow_uniqueness" ) }}
+{{- include "corda.worker" ( list $ .Values.workers.flow_verification "flow_verification" ) }}
+{{- include "corda.worker" ( list $ .Values.workers.flow_ledger "flow_ledger" ) }}
 {{- include "corda.worker" ( list $ .Values.workers.membership "membership" ) }}
 {{- include "corda.worker" ( list $ .Values.workers.p2pGateway "p2pGateway"
   ( dict "httpPort" 8080 )
