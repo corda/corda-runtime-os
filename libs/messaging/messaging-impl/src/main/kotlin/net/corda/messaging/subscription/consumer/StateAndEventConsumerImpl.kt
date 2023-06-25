@@ -1,8 +1,5 @@
 package net.corda.messaging.subscription.consumer
 
-import io.lettuce.core.RedisClient
-import io.lettuce.core.RedisURI
-import io.lettuce.core.codec.ByteArrayCodec
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.lifecycle.Resource
@@ -20,13 +17,16 @@ import net.corda.schema.Schemas.getStateAndEventStateTopic
 import net.corda.tracing.wrapWithTracingExecutor
 import net.corda.utilities.debug
 import net.corda.utilities.trace
+import org.apache.commons.pool2.impl.GenericObjectPoolConfig
 import org.slf4j.LoggerFactory
+import redis.clients.jedis.HostAndPort
+import redis.clients.jedis.JedisCluster
 import java.time.Clock
 import java.time.Duration
+import java.util.*
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
-
 
 @Suppress("LongParameterList", "TooManyFunctions")
 internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
@@ -52,14 +52,14 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
         private const val STATE_TOPIC_SUFFIX = ".state"
     }
 
-    var redisUri: RedisURI = RedisURI.builder()
-        .withHost("orr-memory-db.8b332u.clustercfg.memorydb.eu-west-2.amazonaws.com")
-        .withPort(6379)
-        .withDatabase(0)
-        .build()
-    var redisClient: RedisClient? = RedisClient.create(redisUri)
-    var connection = redisClient!!.connect(ByteArrayCodec())
-    var syncCommands = connection.sync()
+//    var redisUri: RedisURI = RedisURI.builder()
+//        .withHost("orr-memory-db.8b332u.clustercfg.memorydb.eu-west-2.amazonaws.com")
+//        .withPort(6379)
+//        .withDatabase(0)
+//        .build()
+//    var redisClient: RedisClient? = RedisClient.create(redisUri)
+//    var connection = redisClient!!.connect(ByteArrayCodec())
+//    var syncCommands = connection.sync()
 
 
     //single threaded executor per state and event consumer
@@ -77,6 +77,11 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
     private val currentStates = partitionState.currentStates
     private val partitionsToSync = ConcurrentHashMap.newKeySet<CordaTopicPartition>()
     private val inSyncPartitions = ConcurrentHashMap.newKeySet<CordaTopicPartition>()
+
+    private val hostAndPort = HostAndPort("orr-memory-db.8b332u.clustercfg.memorydb.eu-west-2.amazonaws.com", 6379).also {
+        log.warn("Connecting to host ${it.host}, port ${it.port}")
+    }
+    private val jedisCluster = JedisCluster(Collections.singleton(hostAndPort), 5000, 5000, 2, null, null, GenericObjectPoolConfig(), false)
 
     private val statePollTimer = CordaMetrics.Metric.MessagePollTime.builder()
         .withTag(CordaMetrics.Tag.MessagePatternType, MetricsConstants.STATE_AND_EVENT_PATTERN_TYPE)
@@ -185,9 +190,10 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
 //                return state.second
 //            }
 //        }
+//        return null
 
         val keyBytes = avroSerializer.serialize(key)
-        val stateBytes = syncCommands.get(keyBytes)
+        val stateBytes = jedisCluster.get(keyBytes)
         return if (stateBytes != null) {
             avroDeserializer.deserialize(stateBytes) as? S
         } else {
@@ -226,8 +232,9 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
         eventConsumer.close()
         stateConsumer.close()
         executor.shutdown()
-        connection.close()
-        redisClient?.shutdown()
+        jedisCluster.close()
+//        connection.close()
+//        redisClient?.shutdown()
     }
 
     private fun removeAndReturnSyncedPartitions(): Set<CordaTopicPartition> {
@@ -461,7 +468,7 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
         } else {
             byteArrayOf()
         }
-        syncCommands.set(keyBytes, stateBytes)
+        jedisCluster.set(keyBytes, stateBytes)
     }
 
     /**

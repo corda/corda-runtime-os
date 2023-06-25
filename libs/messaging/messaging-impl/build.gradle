@@ -29,9 +29,10 @@ dependencies {
     implementation 'net.corda:corda-topic-schema'
     implementation 'net.corda:corda-config-schema'
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
-    implementation 'io.lettuce:lettuce-core:6.2.4.RELEASE'
 
     implementation "com.typesafe:config:$typeSafeConfigVersion"
+    implementation "redis.clients:jedis:$jedisVersion"
+//    implementation "io.lettuce:lettuce-core:$lettuceVersion"
 
     testImplementation "org.assertj:assertj-core:$assertjVersion"
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
