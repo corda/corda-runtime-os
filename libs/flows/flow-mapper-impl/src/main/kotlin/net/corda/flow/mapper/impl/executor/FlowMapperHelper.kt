@@ -32,8 +32,11 @@ fun generateFlowId(): String {
  * @return the output topic based on [messageDirection].
  */
 fun getSessionEventOutputTopic(messageDirection: MessageDirection): String {
+    //        flowConfig.getOutputTopic(BootConfig.SESSION_OUTPUT, FLOW_EVENT_TOPIC)
+    //HARDCODED: Point the process to a custom flow processor deployment
+    val flowSessionTopic = System.getenv("FLOW_SESSION_TOPIC")
     return if (messageDirection == MessageDirection.INBOUND) {
-        Schemas.Flow.FLOW_EVENT_TOPIC
+        flowSessionTopic
     } else {
         Schemas.P2P.P2P_OUT_TOPIC
     }

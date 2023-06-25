@@ -6,17 +6,10 @@ import net.corda.data.flow.state.checkpoint.Checkpoint
 import net.corda.flow.pipeline.factory.FlowEventProcessorFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.helper.getConfig
-import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.lifecycle.LifecycleEvent
-import net.corda.lifecycle.LifecycleStatus
-import net.corda.lifecycle.RegistrationHandle
-import net.corda.lifecycle.StartEvent
-import net.corda.lifecycle.StopEvent
-import net.corda.lifecycle.createCoordinator
+import net.corda.lifecycle.*
 import net.corda.messaging.api.subscription.StateAndEventSubscription
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.schema.Schemas.Flow.FLOW_EVENT_TOPIC
 import net.corda.schema.configuration.ConfigKeys.FLOW_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.schema.configuration.MessagingConfig.MAX_ALLOWED_MSG_SIZE
@@ -66,6 +59,10 @@ class FlowExecutorImpl constructor(
 
     override fun onConfigChange(config: Map<String, SmartConfig>) {
         try {
+//            val topic = config.getConfig(BOOT_CONFIG).getInputTopic(CONSUMER_GROUP, FLOW_EVENT_TOPIC)
+            //HARDCODED: Point the process to a custom flow processor deployment
+            val flowProcessorTopic = System.getenv("FLOW_PROCESSOR_TOPIC")
+            val consumerGroup = "$CONSUMER_GROUP-$flowProcessorTopic"
             val messagingConfig = toMessagingConfig(config)
             val flowConfig = config.getConfig(FLOW_CONFIG)
                 .withValue(PROCESSOR_TIMEOUT, ConfigValueFactory.fromAnyRef(messagingConfig.getLong(PROCESSOR_TIMEOUT)))
@@ -76,7 +73,8 @@ class FlowExecutorImpl constructor(
             subscription?.close()
 
             subscription = subscriptionFactory.createStateAndEventSubscription(
-                SubscriptionConfig(CONSUMER_GROUP, FLOW_EVENT_TOPIC),
+                //NOTE: To consume from flow event topic
+                SubscriptionConfig(consumerGroup, flowProcessorTopic),
                 flowEventProcessorFactory.create(flowConfig),
                 messagingConfig,
                 flowExecutorRebalanceListener

@@ -42,6 +42,11 @@ class UniquenessCheckMessageProcessor(
                     externalEventResponseFactory.success(request.flowExternalEventContext, response)
                 )
             }
+        }.map {
+            //        val topic = config.getOutputTopic(BootConfig.UNIQUENESS_OUTPUT, FLOW_EVENT_TOPIC)
+            //HARDCODED: Point the process to a custom flow processor deployment
+            val uniquenessTopic = System.getenv("FLOW_UNIQUENESS_TOPIC")
+            Record(uniquenessTopic, it.key, it.value, it.timestamp, it.headers)
         }
     }
 }

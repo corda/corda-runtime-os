@@ -1,5 +1,6 @@
 package net.corda.messaging.subscription
 
+import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.deadletter.StateAndEventDeadLetterRecord
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -40,6 +41,7 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
     private val builder: StateAndEventBuilder,
     private val processor: StateAndEventProcessor<K, S, E>,
     private val cordaAvroSerializer: CordaAvroSerializer<Any>,
+    private val cordaAvroDeserializer: CordaAvroDeserializer<Any>,
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     private val chunkSerializerService: ChunkSerializerService,
     private val stateAndEventListener: StateAndEventListener<K, S>? = null,
@@ -139,7 +141,9 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                     { data ->
                         log.error("Failed to deserialize event record from $eventTopic")
                         deadLetterRecords.add(data)
-                    }
+                    },
+                    cordaAvroSerializer,
+                    cordaAvroDeserializer
                 )
                 nullableRebalanceListener = rebalanceListener
                 val eventConsumerTmp = stateAndEventConsumerTmp.eventConsumer

@@ -2,7 +2,9 @@ package net.corda.messaging.subscription.consumer
 
 import io.lettuce.core.RedisClient
 import io.lettuce.core.RedisURI
-import io.lettuce.core.resource.ClientResources
+import io.lettuce.core.codec.ByteArrayCodec
+import net.corda.avro.serialization.CordaAvroDeserializer
+import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.lifecycle.Resource
 import net.corda.messagebus.api.CordaTopicPartition
 import net.corda.messagebus.api.consumer.CordaConsumer
@@ -32,7 +34,9 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
     override val eventConsumer: CordaConsumer<K, E>,
     override val stateConsumer: CordaConsumer<K, S>,
     private val partitionState: StateAndEventPartitionState<K, S>,
-    private val stateAndEventListener: StateAndEventListener<K, S>?
+    private val stateAndEventListener: StateAndEventListener<K, S>?,
+    private val avroSerializer: CordaAvroSerializer<Any>,
+    private val avroDeserializer: CordaAvroDeserializer<Any>
 ) : StateAndEventConsumer<K, S, E>, Resource {
 
     companion object {
@@ -54,7 +58,7 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
         .withDatabase(0)
         .build()
     var redisClient: RedisClient? = RedisClient.create(redisUri)
-    var connection = redisClient!!.connect()
+    var connection = redisClient!!.connect(ByteArrayCodec())
     var syncCommands = connection.sync()
 
 
@@ -173,15 +177,22 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
     }
 
 
+    @Suppress("UNCHECKED_CAST")
     override fun getInMemoryStateValue(key: K): S? {
-        currentStates.forEach {
-            val state = it.value[key]
-            if (state != null) {
-                return state.second
-            }
-        }
+//        currentStates.forEach {
+//            val state = it.value[key]
+//            if (state != null) {
+//                return state.second
+//            }
+//        }
 
-        return null
+        val keyBytes = avroSerializer.serialize(key)
+        val stateBytes = syncCommands.get(keyBytes)
+        return if (stateBytes != null) {
+            avroDeserializer.deserialize(stateBytes) as? S
+        } else {
+            null
+        }
     }
 
     override fun pollAndUpdateStates(syncPartitions: Boolean) {
@@ -377,6 +388,7 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
                 currentState
             }
         }
+        updateStateInRedis(state.key, state.value)
     }
 
     override fun updateInMemoryStatePostCommit(updatedStates: MutableMap<Int, MutableMap<K, S?>>, clock: Clock) {
@@ -390,6 +402,10 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
                 val currentStatesByPartition = currentStates[partitionId]
                     ?: throw CordaMessageAPIFatalException("Current State map for " +
                             "group ${config.group} on topic $stateTopic[$partitionId] is null.")
+
+                // Publish state to Redis
+                updateStateInRedis(key, value)
+
                 updatedStatesByKey[key] = value
                 if (value != null) {
                     currentStatesByPartition[key] = Pair(clock.instant().toEpochMilli(), value)
@@ -436,6 +452,16 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
 
             pollIntervalCutoff = getNextPollIntervalCutoff()
         }
+    }
+
+    private fun updateStateInRedis(key: K, value: S?) {
+        val keyBytes = avroSerializer.serialize(key)
+        val stateBytes = if (value != null) {
+            avroSerializer.serialize(value)
+        } else {
+            byteArrayOf()
+        }
+        syncCommands.set(keyBytes, stateBytes)
     }
 
     /**

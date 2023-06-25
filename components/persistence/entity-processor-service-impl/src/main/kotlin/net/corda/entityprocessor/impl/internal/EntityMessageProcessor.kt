@@ -83,6 +83,11 @@ class EntityMessageProcessor(
                     processEvent(request)
                 }
             }
+        }.map {
+            //        val topic = config.getOutputTopic(BootConfig.DB_OUTPUT, FLOW_EVENT_TOPIC)
+            //HARDCODED: Point the process to a custom flow processor deployment
+            val flowProcessorTopic = System.getenv("FLOW_PROCESSOR_TOPIC")
+            Record(flowProcessorTopic, it.key, it.value, it.timestamp, it.headers)
         }
     }
 

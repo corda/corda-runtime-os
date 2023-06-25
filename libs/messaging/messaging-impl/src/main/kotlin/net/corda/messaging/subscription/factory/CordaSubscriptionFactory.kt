@@ -127,11 +127,13 @@ class CordaSubscriptionFactory @Activate constructor(
     ): StateAndEventSubscription<K, S, E> {
         val config = getConfig(SubscriptionType.STATE_AND_EVENT, subscriptionConfig, messagingConfig)
         val serializer = cordaAvroSerializationFactory.createAvroSerializer<Any> { }
+        val deserializer = cordaAvroSerializationFactory.createAvroDeserializer({}, Any::class.java)
         return StateAndEventSubscriptionImpl(
             config,
             stateAndEventBuilder,
             processor,
             serializer,
+            deserializer,
             lifecycleCoordinatorFactory,
             messagingChunkFactory.createChunkSerializerService(messagingConfig.getLong(MAX_ALLOWED_MSG_SIZE)),
             stateAndEventListener,

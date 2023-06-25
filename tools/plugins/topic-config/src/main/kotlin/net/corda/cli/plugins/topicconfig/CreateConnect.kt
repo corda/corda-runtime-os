@@ -37,6 +37,10 @@ class CreateConnect : Runnable {
     )
     var delete: Boolean = false
 
+    var topicPartitions: Map<String, Int> = mapOf(
+        "flow.test" to 3
+    )
+
     override fun run() {
         // Switch ClassLoader so LoginModules can be found
         val contextCL = Thread.currentThread().contextClassLoader
@@ -136,7 +140,9 @@ class CreateConnect : Runnable {
 
     fun getTopics(topicConfigs: List<Create.TopicConfig>) =
         topicConfigs.map { topicConfig: Create.TopicConfig ->
-            topicConfig.name to NewTopic(topicConfig.name, create!!.partitionOverride, create!!.replicaOverride)
+            topicConfig.name to NewTopic(topicConfig.name,
+                if (topicPartitions.containsKey(topicConfig.name)) topicPartitions[topicConfig.name]!! else create!!.partitionOverride,
+                create!!.replicaOverride)
                 .configs(topicConfig.config)
         }.toMap()
 

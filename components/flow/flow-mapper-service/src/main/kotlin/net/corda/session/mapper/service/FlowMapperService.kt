@@ -132,11 +132,15 @@ class FlowMapperService @Activate constructor(
         get() = coordinator.isRunning
 
     override fun start() {
-        coordinator.start()
+        if (System.getenv("ENABLE_MAPPER_PROCESS")!!.equals("TRUE", true)) {
+            coordinator.start()
+        }
     }
 
     override fun stop() {
-        coordinator.stop()
+        if (System.getenv("ENABLE_MAPPER_PROCESS")!!.equals("TRUE", true)) {
+            coordinator.stop()
+        }
     }
 
     @Deactivate

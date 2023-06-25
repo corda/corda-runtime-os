@@ -90,10 +90,14 @@ class LedgerVerificationComponent @Activate constructor(
         get() = coordinator.isRunning
 
     override fun start() {
-        coordinator.start()
+        if (System.getenv("ENABLE_VERIFICATION_PROCESS").equals("TRUE", true)) {
+            coordinator.start()
+        }
     }
 
     override fun stop() {
-        coordinator.stop()
+        if (System.getenv("ENABLE_VERIFICATION_PROCESS").equals("TRUE", true)) {
+            coordinator.stop()
+        }
     }
 }
