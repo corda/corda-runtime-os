@@ -7,6 +7,7 @@ import net.corda.messagebus.api.CordaTopicPartition
 import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messagebus.api.consumer.CordaOffsetResetStrategy
+import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
 import net.corda.messaging.config.ResolvedSubscriptionConfig
 import net.corda.messaging.constants.MetricsConstants
@@ -39,7 +40,6 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
 ) : StateAndEventConsumer<K, S, E>, Resource {
 
     companion object {
-        private val logger = LoggerFactory.getLogger(this::class.java.name)
         //short timeout for poll of paused partitions when waiting for processor to finish
         private val PAUSED_POLL_TIMEOUT = Duration.ofMillis(100)
 
@@ -50,11 +50,6 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
         private val EVENT_POLL_TIMEOUT = Duration.ofMillis(100)
 
         private const val STATE_TOPIC_SUFFIX = ".state"
-        private val hostAndPort = HostAndPort("orr-memory-db.8b332u.clustercfg.memorydb.eu-west-2.amazonaws.com", 6379).also {
-            logger.warn("Connecting to host ${it.host}, port ${it.port}")
-        }
-        private val jedisCluster = JedisCluster(Collections.singleton(hostAndPort), 5000, 5000, 2, null, null, GenericObjectPoolConfig(), false)
-//        private val jedisCluster = JedisPool(GenericObjectPoolConfig(), hostAndPort.host, hostAndPort.port)
     }
 
     //single threaded executor per state and event consumer
@@ -65,11 +60,18 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
     }
 
     private val log = LoggerFactory.getLogger("${this.javaClass.name}-${config.clientId}")
+
     private val maxPollInterval = config.processorTimeout.toMillis()
     private val initialProcessorTimeout = maxPollInterval / 4
+
     private val currentStates = partitionState.currentStates
     private val partitionsToSync = ConcurrentHashMap.newKeySet<CordaTopicPartition>()
     private val inSyncPartitions = ConcurrentHashMap.newKeySet<CordaTopicPartition>()
+
+    private val hostAndPort = HostAndPort("orr-memory-db.8b332u.clustercfg.memorydb.eu-west-2.amazonaws.com", 6379).also {
+        log.warn("Connecting to host ${it.host}, port ${it.port}")
+    }
+    private val jedisCluster = JedisCluster(Collections.singleton(hostAndPort), 5000, 5000, 2, null, null, GenericObjectPoolConfig(), false)
 
     private val statePollTimer = CordaMetrics.Metric.MessagePollTime.builder()
         .withTag(CordaMetrics.Tag.MessagePatternType, MetricsConstants.STATE_AND_EVENT_PATTERN_TYPE)
@@ -87,38 +89,31 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
     private var pollIntervalCutoff = 0L
 
     override fun onPartitionsAssigned(partitions: Set<CordaTopicPartition>) {
-//        log.info("Assigning partitions: $partitions. Current in sync: $inSyncPartitions, current to be synced: $partitionsToSync")
-//        // Split these partitions into those that need synchronizing (i.e. those with states on) and those that do not
-//        val statePartitions = partitions.map { it.toStatePartition() }
-//        updateStateConsumerAssignment(partitions, StatePartitionOperation.ADD)
-//        val beginningOffsets = stateConsumer.beginningOffsets(statePartitions)
-//        val endOffsets = stateConsumer.endOffsets(statePartitions)
-//        val (needsSync, inSync) = partitions.partition {
-//            val statePartition = it.toStatePartition()
-//            val beginning = beginningOffsets[statePartition] ?: 0L
-//            val end = endOffsets[statePartition] ?: 0L
-//            beginning < end
-//        }
-//
-//        log.debug { "The following partitions need to sync: $needsSync. The following partitions are in sync: $inSync" }
-//
-//        // Out of sync partitions need assigning to the state consumer to bring us into sync.
-//        partitionsToSync.addAll(needsSync)
-//        eventConsumer.pause(needsSync)
-//        stateConsumer.seekToBeginning(needsSync.map { it.toStatePartition() })
-//
-//        // Mark all those already in sync as such.
-//        inSyncPartitions.addAll(inSync)
-//        updateStateConsumerAssignment(inSync, StatePartitionOperation.REMOVE)
-//        stateAndEventListener?.let { listener ->
-//            for (partition in inSync) {
-//                listener.onPartitionSynced(getStatesForPartition(partition.partition))
-//            }
-//        }
-        inSyncPartitions.addAll(partitions)
-        updateStateConsumerAssignment(partitions, StatePartitionOperation.REMOVE)
+        log.info("Assigning partitions: $partitions. Current in sync: $inSyncPartitions, current to be synced: $partitionsToSync")
+        // Split these partitions into those that need synchronizing (i.e. those with states on) and those that do not
+        val statePartitions = partitions.map { it.toStatePartition() }
+        updateStateConsumerAssignment(partitions, StatePartitionOperation.ADD)
+        val beginningOffsets = stateConsumer.beginningOffsets(statePartitions)
+        val endOffsets = stateConsumer.endOffsets(statePartitions)
+        val (needsSync, inSync) = partitions.partition {
+            val statePartition = it.toStatePartition()
+            val beginning = beginningOffsets[statePartition] ?: 0L
+            val end = endOffsets[statePartition] ?: 0L
+            beginning < end
+        }
+
+        log.debug { "The following partitions need to sync: $needsSync. The following partitions are in sync: $inSync" }
+
+        // Out of sync partitions need assigning to the state consumer to bring us into sync.
+        partitionsToSync.addAll(needsSync)
+        eventConsumer.pause(needsSync)
+        stateConsumer.seekToBeginning(needsSync.map { it.toStatePartition() })
+
+        // Mark all those already in sync as such.
+        inSyncPartitions.addAll(inSync)
+        updateStateConsumerAssignment(inSync, StatePartitionOperation.REMOVE)
         stateAndEventListener?.let { listener ->
-            for (partition in partitions) {
+            for (partition in inSync) {
                 listener.onPartitionSynced(getStatesForPartition(partition.partition))
             }
         }
@@ -150,8 +145,8 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
                     "Current in sync: $inSyncPartitions, current to be synced: $partitionsToSync"
         )
         // Remove any assignments and clear state from tracked partitions.
-//        updateStateConsumerAssignment(partitions, StatePartitionOperation.REMOVE)
-//        partitionsToSync.removeAll(partitions)
+        updateStateConsumerAssignment(partitions, StatePartitionOperation.REMOVE)
+        partitionsToSync.removeAll(partitions)
         inSyncPartitions.removeAll(partitions)
     }
 
@@ -179,16 +174,6 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
 
     @Suppress("UNCHECKED_CAST")
     override fun getInMemoryStateValue(key: K): S? {
-        val keyBytes = avroSerializer.serialize(key)
-        val stateBytes = jedisCluster.get(keyBytes)
-//        val stateBytes = jedisCluster.resource.use {
-//            it.get(keyBytes)
-//        }
-        return if (stateBytes != null) {
-            avroDeserializer.deserialize(stateBytes) as? S
-        } else {
-            null
-        }
 //        currentStates.forEach {
 //            val state = it.value[key]
 //            if (state != null) {
@@ -197,6 +182,14 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
 //        }
 //
 //        return null
+
+        val keyBytes = avroSerializer.serialize(key)
+        val stateBytes = jedisCluster.get(keyBytes)
+        return if (stateBytes != null) {
+            avroDeserializer.deserialize(stateBytes) as? S
+        } else {
+            null
+        }
     }
 
     override fun pollAndUpdateStates(syncPartitions: Boolean) {
@@ -375,60 +368,45 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
     }
 
     private fun updateInMemoryState(state: CordaConsumerRecord<K, S>) {
-        val keyBytes = avroSerializer.serialize(state.key)
-        val stateBytes = if (state.value != null) {
-            avroSerializer.serialize(state.value!!)
-        } else {
-            byteArrayOf()
+        currentStates[state.partition]?.compute(state.key) { _, currentState ->
+            if (currentState == null || currentState.first <= state.timestamp) {
+                val value = state.value
+                if (value == null) {
+                    // Removes this state from the map
+                    null
+                } else {
+                    // Replaces/adds the new state
+                    Pair(state.timestamp, value)
+                }
+            } else {
+                // Keeps the old state
+                currentState
+            }
         }
-        jedisCluster.set(keyBytes, stateBytes)
-//        jedisCluster.resource.use {
-//            it.set(keyBytes, stateBytes)
-//        }
-//        currentStates[state.partition]?.compute(state.key) { _, currentState ->
-//            if (currentState == null || currentState.first <= state.timestamp) {
-//                val value = state.value
-//                if (value == null) {
-//                     Removes this state from the map
-//                    null
-//                } else {
-//                     Replaces/adds the new state
-//                    Pair(state.timestamp, value)
-//                }
-//            } else {
-//                 Keeps the old state
-//                currentState
-//            }
-//        }
+        updateStateInRedis(state.key, state.value)
     }
 
     override fun updateInMemoryStatePostCommit(updatedStates: MutableMap<Int, MutableMap<K, S?>>, clock: Clock) {
         val updatedStatesByKey = mutableMapOf<K, S?>()
-        updatedStates.forEach { (_, states) ->
+        updatedStates.forEach { (partitionId, states) ->
             for (entry in states) {
                 val key = entry.key
                 val value = entry.value
-                val keyBytes = avroSerializer.serialize(key)
-                val stateBytes = if (value != null) {
-                    avroSerializer.serialize(value)
-                } else {
-                    byteArrayOf()
-                }
-                jedisCluster.set(keyBytes, stateBytes)
-//                jedisCluster.resource.use {
-//                    it.set(keyBytes, stateBytes)
-//                }
-//                val stateTopic = getStateAndEventStateTopic(config.topic)
-//                will never be null, created on assignment in rebalance listener
-//                val currentStatesByPartition = currentStates[partitionId]
-//                    ?: throw CordaMessageAPIFatalException("Current State map for " +
-//                            "group ${config.group} on topic $stateTopic[$partitionId] is null.")
+                val stateTopic = getStateAndEventStateTopic(config.topic)
+                //will never be null, created on assignment in rebalance listener
+                val currentStatesByPartition = currentStates[partitionId]
+                    ?: throw CordaMessageAPIFatalException("Current State map for " +
+                            "group ${config.group} on topic $stateTopic[$partitionId] is null.")
+
+                // Publish state to Redis
+                updateStateInRedis(key, value)
+
                 updatedStatesByKey[key] = value
-//                if (value != null) {
-//                    currentStatesByPartition[key] = Pair(clock.instant().toEpochMilli(), value)
-//                } else {
-//                    currentStatesByPartition.remove(key)
-//                }
+                if (value != null) {
+                    currentStatesByPartition[key] = Pair(clock.instant().toEpochMilli(), value)
+                } else {
+                    currentStatesByPartition.remove(key)
+                }
             }
         }
 
@@ -469,6 +447,16 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
 
             pollIntervalCutoff = getNextPollIntervalCutoff()
         }
+    }
+
+    private fun updateStateInRedis(key: K, value: S?) {
+        val keyBytes = avroSerializer.serialize(key)
+        val stateBytes = if (value != null) {
+            avroSerializer.serialize(value)
+        } else {
+            byteArrayOf()
+        }
+        jedisCluster.set(keyBytes, stateBytes)
     }
 
     /**
