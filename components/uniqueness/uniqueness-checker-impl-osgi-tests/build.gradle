@@ -47,7 +47,7 @@ dependencies {
     integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
     integrationTestRuntimeOnly "org.ops4j.pax.jdbc:pax-jdbc-hsqldb:$paxJdbcVersion"
     integrationTestRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
-    integrationTestRuntimeOnly "com.sun.activation:javax.activation:$activationVersion"
+    integrationTestRuntimeOnly libs.javax.activation
 
     integrationTestRuntimeOnly project(':components:configuration:configuration-read-service-impl')
     integrationTestRuntimeOnly project(':libs:crypto:cipher-suite-impl')

@@ -26,7 +26,7 @@ dependencies {
     implementation 'net.corda:corda-db-schema'
 
     integrationTestRuntimeOnly project(":libs:db:db-orm-impl")
-    integrationTestRuntimeOnly "com.sun.activation:javax.activation:$activationVersion"
+    integrationTestRuntimeOnly libs.javax.activation
     integrationTestRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
 
     integrationTestRuntimeOnly "org.ops4j.pax.jdbc:pax-jdbc-hsqldb:$paxJdbcVersion"

@@ -21,7 +21,7 @@ dependencies {
     integrationTestImplementation project(":testing:test-utilities")
     integrationTestImplementation project(":testing:db-testkit")
 
-    integrationTestRuntimeOnly "com.sun.activation:javax.activation:$activationVersion"
+    integrationTestRuntimeOnly libs.javax.activation
 
     integrationTestRuntimeOnly "org.ops4j.pax.jdbc:pax-jdbc-hsqldb:$paxJdbcVersion"
     integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"

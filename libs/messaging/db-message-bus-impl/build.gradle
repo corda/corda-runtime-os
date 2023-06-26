@@ -32,7 +32,7 @@ dependencies {
 
     runtimeOnly project(':libs:db:db-orm-impl')
     runtimeOnly project(':libs:schema-registry:schema-registry-impl')
-    runtimeOnly "com.sun.activation:javax.activation:$activationVersion"
+    runtimeOnly libs.javax.activation
 
     testImplementation project(":testing:test-utilities")
     testImplementation "org.assertj:assertj-core:$assertjVersion"
@@ -46,7 +46,7 @@ dependencies {
     integrationTestImplementation project(":libs:utilities")
     integrationTestImplementation project(":testing:db-testkit")
 
-    integrationTestRuntimeOnly "com.sun.activation:javax.activation:$activationVersion"
+    integrationTestRuntimeOnly libs.javax.activation
     integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
     integrationTestRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
     integrationTestRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"

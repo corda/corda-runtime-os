@@ -39,7 +39,7 @@ dependencies {
 
     implementation project(':libs:configuration:configuration-core')
 
-    runtimeOnly "com.sun.activation:javax.activation:$activationVersion"
+    runtimeOnly libs.javax.activation
 
     runtimeOnly project(':components:crypto:crypto-hes-impl')
     runtimeOnly project(':components:membership:group-params-writer-service-impl')

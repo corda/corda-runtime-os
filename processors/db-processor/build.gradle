@@ -94,7 +94,7 @@ dependencies {
     runtimeOnly project(":libs:sandbox-internal")
     runtimeOnly project(':libs:schema-registry:schema-registry-impl')
 
-    runtimeOnly "com.sun.activation:javax.activation:$activationVersion"
+    runtimeOnly libs.javax.activation
     runtimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
     runtimeOnly "org.liquibase:liquibase-core:$liquibaseVersion"
     // NOTE: this is needed by Liquibase but for some reason not picked up automatically.
