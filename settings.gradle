@@ -58,6 +58,43 @@ plugins {
     id 'com.gradle.enterprise'
 }
 
+dependencyResolutionManagement {
+    repositories {
+        mavenLocal()
+        mavenCentral()
+        def cordaUseCache = System.getenv("CORDA_USE_CACHE")
+        if (cordaUseCache != null) {
+            maven {
+                url = "$artifactoryContextUrl/$cordaUseCache"
+                name = "R3 Maven remote repositories"
+                authentication {
+                    basic(BasicAuthentication)
+                }
+                credentials {
+                    username = settings.ext.find('cordaArtifactoryUsername') ?: System.getenv('CORDA_ARTIFACTORY_USERNAME')
+                    password = settings.ext.find('cordaArtifactoryPassword') ?: System.getenv('CORDA_ARTIFACTORY_PASSWORD')
+                }
+            }
+        } else {
+            maven {
+                url = "$artifactoryContextUrl/corda-os-maven"
+                authentication {
+                    basic(BasicAuthentication)
+                }
+                credentials {
+                    username = settings.ext.find('cordaArtifactoryUsername') ?: System.getenv('CORDA_ARTIFACTORY_USERNAME')
+                    password = settings.ext.find('cordaArtifactoryPassword') ?: System.getenv('CORDA_ARTIFACTORY_PASSWORD')
+                }
+            }
+        }
+    }
+    versionCatalogs {
+        libs {
+            from("net.corda:corda-version-catalog:$cordaVersionCatalog")
+        }
+    }
+}
+
 rootProject.name = 'corda-runtime-os'
 include 'applications:examples:sandbox-app'
 include 'applications:examples:sandbox-app:example-cpi'
