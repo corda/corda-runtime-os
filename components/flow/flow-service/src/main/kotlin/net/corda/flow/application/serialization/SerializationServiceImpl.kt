@@ -1,6 +1,8 @@
 package net.corda.flow.application.serialization
 
 import net.corda.flow.pipeline.exceptions.FlowFatalException
+import net.corda.internal.serialization.StorageSerializationService
+import net.corda.sandbox.type.SandboxConstants.AMQP_STORAGE
 import net.corda.sandbox.type.SandboxConstants.CORDA_SYSTEM_SERVICE
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
@@ -18,14 +20,19 @@ import org.slf4j.LoggerFactory
 import java.io.NotSerializableException
 
 @Component(
-    service = [SerializationService::class, SerializationServiceInternal::class, UsedByFlow::class],
-    property = [CORDA_SYSTEM_SERVICE],
+    service = [
+        SerializationService::class,
+        SerializationServiceInternal::class,
+        StorageSerializationService::class,
+        UsedByFlow::class
+    ],
+    property = [AMQP_STORAGE, CORDA_SYSTEM_SERVICE],
     scope = PROTOTYPE
 )
 class SerializationServiceImpl @Activate constructor(
     @Reference(service = CurrentSandboxGroupContext::class)
     private val currentSandboxGroupContext: CurrentSandboxGroupContext
-) : SerializationServiceInternal, UsedByFlow, SingletonSerializeAsToken {
+) : SerializationServiceInternal, StorageSerializationService, UsedByFlow, SingletonSerializeAsToken {
 
     private companion object {
         private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)

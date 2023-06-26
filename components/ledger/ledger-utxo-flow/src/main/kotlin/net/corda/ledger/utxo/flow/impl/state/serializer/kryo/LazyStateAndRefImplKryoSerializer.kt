@@ -2,6 +2,7 @@ package net.corda.ledger.utxo.flow.impl.state.serializer.kryo
 
 import net.corda.ledger.utxo.data.state.LazyStateAndRefImpl
 import net.corda.ledger.utxo.data.transaction.UtxoTransactionOutputDto
+import net.corda.sandbox.type.SandboxConstants.AMQP_STORAGE_FILTER
 import net.corda.sandbox.type.SandboxConstants.CORDA_UNINJECTABLE_SERVICE
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.serialization.checkpoint.CheckpointInput
@@ -21,7 +22,7 @@ import kotlin.reflect.jvm.isAccessible
     scope = PROTOTYPE
 )
 class LazyStateAndRefImplKryoSerializer @Activate constructor(
-    @Reference(service = SerializationService::class)
+    @Reference(service = SerializationService::class, target = AMQP_STORAGE_FILTER)
     private val serialisationService: SerializationService,
 ) : CheckpointInternalCustomSerializer<LazyStateAndRefImpl<*>>, UsedByFlow {
 

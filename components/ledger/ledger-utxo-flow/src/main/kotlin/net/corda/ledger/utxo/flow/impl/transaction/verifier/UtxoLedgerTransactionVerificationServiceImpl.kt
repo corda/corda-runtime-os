@@ -15,6 +15,7 @@ import net.corda.ledger.utxo.flow.impl.transaction.verifier.external.events.Tran
 import net.corda.ledger.utxo.transaction.verifier.SignedGroupParametersVerifier
 import net.corda.membership.lib.SignedGroupParameters
 import net.corda.metrics.CordaMetrics
+import net.corda.sandbox.type.SandboxConstants.AMQP_STORAGE_FILTER
 import net.corda.sandbox.type.SandboxConstants.CORDA_SYSTEM_SERVICE
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
@@ -37,7 +38,7 @@ import java.nio.ByteBuffer
 class UtxoLedgerTransactionVerificationServiceImpl @Activate constructor(
     @Reference(service = ExternalEventExecutor::class)
     private val externalEventExecutor: ExternalEventExecutor,
-    @Reference(service = SerializationService::class)
+    @Reference(service = SerializationService::class, target = AMQP_STORAGE_FILTER)
     private val serializationService: SerializationService,
     @Reference(service = UtxoLedgerGroupParametersPersistenceService::class)
     private val utxoLedgerGroupParametersPersistenceService: UtxoLedgerGroupParametersPersistenceService,

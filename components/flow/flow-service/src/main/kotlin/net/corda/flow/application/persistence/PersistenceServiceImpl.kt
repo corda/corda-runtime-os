@@ -11,6 +11,7 @@ import net.corda.flow.application.persistence.external.events.RemoveExternalEven
 import net.corda.flow.application.persistence.external.events.RemoveParameters
 import net.corda.flow.application.persistence.query.PagedQueryFactory
 import net.corda.flow.external.events.executor.ExternalEventExecutor
+import net.corda.internal.serialization.StorageSerializationService
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.v5.application.persistence.PagedQuery
 import net.corda.v5.application.persistence.ParameterizedQuery
@@ -30,7 +31,7 @@ class PersistenceServiceImpl @Activate constructor(
     private val externalEventExecutor: ExternalEventExecutor,
     @Reference(service = PagedQueryFactory::class)
     private val pagedQueryFactory: PagedQueryFactory,
-    @Reference(service = SerializationService::class)
+    @Reference(service = StorageSerializationService::class)
     private val serializationService: SerializationService
 ) : PersistenceService, UsedByFlow, SingletonSerializeAsToken {
 

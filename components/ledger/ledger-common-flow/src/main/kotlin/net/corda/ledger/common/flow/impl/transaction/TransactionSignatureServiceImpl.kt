@@ -23,6 +23,7 @@ import net.corda.ledger.common.data.transaction.rootMerkleTreeDigestOptionsNodeP
 import net.corda.ledger.common.data.transaction.rootMerkleTreeDigestOptionsNodePrefixB64
 import net.corda.ledger.common.flow.transaction.TransactionSignatureServiceInternal
 import net.corda.libs.platform.PlatformInfoProvider
+import net.corda.sandbox.type.SandboxConstants.AMQP_STORAGE_FILTER
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
@@ -62,7 +63,7 @@ const val SIGNATURE_BATCH_MERKLE_TREE_DIGEST_OPTIONS_NODE_PREFIX_B64_KEY = "batc
     scope = ServiceScope.PROTOTYPE
 )
 class TransactionSignatureServiceImpl @Activate constructor(
-    @Reference(service = SerializationService::class)
+    @Reference(service = SerializationService::class, target = AMQP_STORAGE_FILTER)
     private val serializationService: SerializationService,
     @Reference(service = SigningService::class)
     private val signingService: SigningService,

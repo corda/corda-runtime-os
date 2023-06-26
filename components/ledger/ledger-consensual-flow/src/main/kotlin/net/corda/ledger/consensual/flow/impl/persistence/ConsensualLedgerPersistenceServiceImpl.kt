@@ -10,6 +10,7 @@ import net.corda.ledger.consensual.flow.impl.persistence.external.events.Persist
 import net.corda.ledger.consensual.flow.impl.persistence.external.events.PersistTransactionParameters
 import net.corda.ledger.consensual.flow.impl.transaction.ConsensualSignedTransactionImpl
 import net.corda.ledger.consensual.flow.impl.transaction.ConsensualSignedTransactionInternal
+import net.corda.sandbox.type.SandboxConstants.AMQP_STORAGE_FILTER
 import net.corda.sandbox.type.SandboxConstants.CORDA_SYSTEM_SERVICE
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.utilities.serialization.deserialize
@@ -33,7 +34,7 @@ import java.nio.ByteBuffer
 class ConsensualLedgerPersistenceServiceImpl @Activate constructor(
     @Reference(service = ExternalEventExecutor::class)
     private val externalEventExecutor: ExternalEventExecutor,
-    @Reference(service = SerializationService::class)
+    @Reference(service = SerializationService::class, target = AMQP_STORAGE_FILTER)
     private val serializationService: SerializationService,
     @Reference(service = TransactionSignatureServiceInternal::class)
     private val transactionSignatureService: TransactionSignatureServiceInternal

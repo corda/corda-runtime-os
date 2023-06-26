@@ -11,6 +11,7 @@ import net.corda.ledger.utxo.flow.impl.persistence.external.events.PersistSigned
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.PersistSignedGroupParametersIfDoNotExistParameters
 import net.corda.membership.lib.SignedGroupParameters
 import net.corda.metrics.CordaMetrics
+import net.corda.sandbox.type.SandboxConstants.AMQP_STORAGE_FILTER
 import net.corda.sandbox.type.SandboxConstants.CORDA_SYSTEM_SERVICE
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
@@ -34,7 +35,7 @@ class UtxoLedgerGroupParametersPersistenceServiceImpl @Activate constructor(
     private val currentSandboxGroupContext: CurrentSandboxGroupContext,
     @Reference(service = ExternalEventExecutor::class)
     private val externalEventExecutor: ExternalEventExecutor,
-    @Reference(service = SerializationService::class)
+    @Reference(service = SerializationService::class, target = AMQP_STORAGE_FILTER)
     private val serializationService: SerializationService
 ) : UtxoLedgerGroupParametersPersistenceService, UsedByFlow, SingletonSerializeAsToken {
 

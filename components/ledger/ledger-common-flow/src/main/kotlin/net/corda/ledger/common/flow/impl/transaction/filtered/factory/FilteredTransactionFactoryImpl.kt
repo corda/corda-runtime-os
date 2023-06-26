@@ -7,6 +7,7 @@ import net.corda.ledger.common.flow.transaction.filtered.FilteredComponentGroup
 import net.corda.ledger.common.flow.transaction.filtered.FilteredTransaction
 import net.corda.ledger.common.flow.transaction.filtered.factory.ComponentGroupFilterParameters
 import net.corda.ledger.common.flow.transaction.filtered.factory.FilteredTransactionFactory
+import net.corda.sandbox.type.SandboxConstants.AMQP_STORAGE_FILTER
 import net.corda.sandbox.type.SandboxConstants.CORDA_SYSTEM_SERVICE
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.v5.application.marshalling.JsonMarshallingService
@@ -31,7 +32,7 @@ class FilteredTransactionFactoryImpl @Activate constructor(
     private val jsonMarshallingService: JsonMarshallingService,
     @Reference(service = MerkleTreeProvider::class)
     private val merkleTreeProvider: MerkleTreeProvider,
-    @Reference(service = SerializationService::class)
+    @Reference(service = SerializationService::class, target = AMQP_STORAGE_FILTER)
     private val serializationService: SerializationService
 ) : FilteredTransactionFactory, SingletonSerializeAsToken, UsedByFlow {
 

@@ -6,11 +6,11 @@ import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
 import net.corda.ledger.persistence.common.mapToComponentGroups
 import net.corda.ledger.persistence.consensual.ConsensualRepository
+import net.corda.sandbox.type.SandboxConstants.AMQP_STORAGE_FILTER
 import net.corda.sandbox.type.SandboxConstants.CORDA_MARKER_ONLY_SERVICE
 import net.corda.sandbox.type.UsedByPersistence
 import net.corda.utilities.debug
 import net.corda.utilities.serialization.deserialize
-import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.ledger.common.transaction.CordaPackageSummary
@@ -36,9 +36,7 @@ import javax.persistence.Tuple
     scope = PROTOTYPE
 )
 class ConsensualRepositoryImpl @Activate constructor(
-    @Reference
-    private val digestService: DigestService,
-    @Reference
+    @Reference(target = AMQP_STORAGE_FILTER)
     private val serializationService: SerializationService,
     @Reference
     private val wireTransactionFactory: WireTransactionFactory

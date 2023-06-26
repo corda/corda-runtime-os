@@ -21,6 +21,7 @@ import net.corda.ledger.utxo.flow.impl.persistence.external.events.UpdateTransac
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoSignedTransactionFactory
 import net.corda.metrics.CordaMetrics
+import net.corda.sandbox.type.SandboxConstants.AMQP_STORAGE_FILTER
 import net.corda.sandbox.type.SandboxConstants.CORDA_SYSTEM_SERVICE
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
@@ -47,7 +48,7 @@ class UtxoLedgerPersistenceServiceImpl @Activate constructor(
     private val currentSandboxGroupContext: CurrentSandboxGroupContext,
     @Reference(service = ExternalEventExecutor::class)
     private val externalEventExecutor: ExternalEventExecutor,
-    @Reference(service = SerializationService::class)
+    @Reference(service = SerializationService::class, target = AMQP_STORAGE_FILTER)
     private val serializationService: SerializationService,
     @Reference(service = UtxoSignedTransactionFactory::class)
     private val utxoSignedTransactionFactory: UtxoSignedTransactionFactory

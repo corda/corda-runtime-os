@@ -10,6 +10,7 @@ import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindUnconsume
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.ResolveStateRefsExternalEventFactory
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.ResolveStateRefsParameters
 import net.corda.metrics.CordaMetrics
+import net.corda.sandbox.type.SandboxConstants.AMQP_STORAGE_FILTER
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.v5.application.serialization.SerializationService
@@ -32,7 +33,7 @@ class UtxoLedgerStateQueryServiceImpl @Activate constructor(
     private val currentSandboxGroupContext: CurrentSandboxGroupContext,
     @Reference(service = ExternalEventExecutor::class)
     private val externalEventExecutor: ExternalEventExecutor,
-    @Reference(service = SerializationService::class)
+    @Reference(service = SerializationService::class, target = AMQP_STORAGE_FILTER)
     private val serializationService: SerializationService
 ) : UtxoLedgerStateQueryService, UsedByFlow, SingletonSerializeAsToken {
 

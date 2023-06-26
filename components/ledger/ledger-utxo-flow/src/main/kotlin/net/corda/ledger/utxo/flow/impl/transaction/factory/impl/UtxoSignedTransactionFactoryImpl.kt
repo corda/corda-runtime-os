@@ -21,6 +21,7 @@ import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoSignedTransaction
 import net.corda.ledger.utxo.flow.impl.transaction.verifier.UtxoLedgerTransactionVerificationService
 import net.corda.ledger.utxo.transaction.verifier.SignedGroupParametersVerifier
 import net.corda.membership.lib.SignedGroupParameters
+import net.corda.sandbox.type.SandboxConstants.AMQP_STORAGE_FILTER
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
@@ -48,7 +49,7 @@ class UtxoSignedTransactionFactoryImpl @Activate constructor(
     private val jsonMarshallingService: JsonMarshallingService,
     @Reference(service = JsonValidator::class, scope = PROTOTYPE_REQUIRED)
     private val jsonValidator: JsonValidator,
-    @Reference(service = SerializationService::class)
+    @Reference(service = SerializationService::class, target = AMQP_STORAGE_FILTER)
     private val serializationService: SerializationService,
     @Reference(service = TransactionSignatureServiceInternal::class)
     private val transactionSignatureService: TransactionSignatureServiceInternal,

@@ -11,6 +11,7 @@ import net.corda.ledger.persistence.common.ComponentLeafDto
 import net.corda.ledger.persistence.common.mapToComponentGroups
 import net.corda.ledger.persistence.utxo.CustomRepresentation
 import net.corda.ledger.persistence.utxo.UtxoRepository
+import net.corda.sandbox.type.SandboxConstants.AMQP_STORAGE_FILTER
 import net.corda.sandbox.type.SandboxConstants.CORDA_MARKER_ONLY_SERVICE
 import net.corda.sandbox.type.UsedByPersistence
 import net.corda.utilities.debug
@@ -43,7 +44,7 @@ import javax.persistence.Tuple
     scope = PROTOTYPE
 )
 class UtxoRepositoryImpl @Activate constructor(
-    @Reference
+    @Reference(target = AMQP_STORAGE_FILTER)
     private val serializationService: SerializationService,
     @Reference
     private val wireTransactionFactory: WireTransactionFactory

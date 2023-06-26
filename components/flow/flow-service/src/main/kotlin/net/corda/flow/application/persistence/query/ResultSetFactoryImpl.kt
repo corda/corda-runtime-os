@@ -2,6 +2,7 @@ package net.corda.flow.application.persistence.query
 
 import net.corda.flow.persistence.query.ResultSetExecutor
 import net.corda.flow.persistence.query.ResultSetFactory
+import net.corda.internal.serialization.StorageSerializationService
 import net.corda.sandbox.type.SandboxConstants.CORDA_UNINJECTABLE_SERVICE
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.v5.application.persistence.PagedQuery
@@ -18,7 +19,7 @@ import java.nio.ByteBuffer
     scope = PROTOTYPE
 )
 class ResultSetFactoryImpl @Activate constructor(
-    @Reference(service = SerializationService::class)
+    @Reference(service = StorageSerializationService::class)
     private val serializationService: SerializationService
 ) : ResultSetFactory, UsedByFlow {
 

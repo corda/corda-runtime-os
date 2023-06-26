@@ -2,6 +2,7 @@ package net.corda.ledger.utxo.flow.impl.transaction.serializer.kryo
 
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.utxo.data.transaction.WrappedUtxoWireTransaction
+import net.corda.sandbox.type.SandboxConstants.AMQP_STORAGE_FILTER
 import net.corda.sandbox.type.SandboxConstants.CORDA_UNINJECTABLE_SERVICE
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.serialization.checkpoint.CheckpointInput
@@ -19,7 +20,7 @@ import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
     scope = PROTOTYPE
 )
 class WrappedUtxoWireTransactionKryoSerializer @Activate constructor(
-    @Reference(service = SerializationService::class)
+    @Reference(service = SerializationService::class, target = AMQP_STORAGE_FILTER)
     private val serialisationService: SerializationService
 ) : CheckpointInternalCustomSerializer<WrappedUtxoWireTransaction>, UsedByFlow {
     override val type: Class<WrappedUtxoWireTransaction> get() = WrappedUtxoWireTransaction::class.java

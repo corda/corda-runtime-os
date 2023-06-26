@@ -1,6 +1,7 @@
 package net.corda.sandbox.serialization.amqp
 
 import net.corda.internal.serialization.AMQP_STORAGE_CONTEXT
+import net.corda.internal.serialization.AMQP_P2P_CONTEXT
 import net.corda.internal.serialization.SerializationServiceImpl
 import net.corda.internal.serialization.amqp.DeserializationInput
 import net.corda.internal.serialization.amqp.SerializationOutput
@@ -42,8 +43,10 @@ import java.util.function.Supplier
 class AMQPSerializationProvider @Activate constructor(
     @Reference(service = InternalCustomSerializer::class, scope = PROTOTYPE)
     private val internalSerializers: List<InternalCustomSerializer<out Any>>,
-    @Reference(service = SerializationServiceProxy::class, scope = PROTOTYPE_REQUIRED, cardinality = OPTIONAL)
-    private val serializationServiceProxy: SerializationServiceProxy?
+    @Reference(service = P2pSerializationServiceProxy::class, scope = PROTOTYPE_REQUIRED, cardinality = OPTIONAL)
+    private val p2pSerializationServiceProxy: P2pSerializationServiceProxy?,
+    @Reference(service = StorageSerializationServiceProxy::class, scope = PROTOTYPE_REQUIRED, cardinality = OPTIONAL)
+    private val storageSerializationServiceProxy: StorageSerializationServiceProxy?
 ) : UsedByFlow, UsedByPersistence, UsedByVerification, CustomMetadataConsumer {
     private companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -71,20 +74,28 @@ class AMQPSerializationProvider @Activate constructor(
     override fun accept(context: MutableSandboxGroupContext) {
         val factory = createSerializerFactory(context)
 
-        val serializationOutput = SerializationOutput(factory)
-        val deserializationInput = DeserializationInput(factory)
-
-        val serializationService = SerializationMetricsWrapper(
+        val storageSerializationService = SerializationMetricsWrapper(
             serializationService = SerializationServiceImpl(
-                serializationOutput,
-                deserializationInput,
-                AMQP_STORAGE_CONTEXT.withSandboxGroup(context.sandboxGroup) //todo double check in CORE-12472
+                SerializationOutput(factory),
+                DeserializationInput(factory),
+                AMQP_STORAGE_CONTEXT.withSandboxGroup(context.sandboxGroup)
             ),
             context
         )
 
-        context.putObjectByKey(AMQP_SERIALIZATION_SERVICE, serializationService)
-        serializationServiceProxy?.wrap(serializationService)
+        context.putObjectByKey(AMQP_SERIALIZATION_SERVICE, storageSerializationService)
+        storageSerializationServiceProxy?.wrap(storageSerializationService)
+
+        p2pSerializationServiceProxy?.wrap(
+            SerializationMetricsWrapper(
+                serializationService = SerializationServiceImpl(
+                    SerializationOutput(factory),
+                    DeserializationInput(factory),
+                    AMQP_P2P_CONTEXT.withSandboxGroup(context.sandboxGroup)
+                ),
+                context
+            )
+        )
 
         // Support creating other serializer factories for this sandbox (e.g. for testing)
         context.putObjectByKey(AMQP_SERIALIZER_FACTORY, Supplier { createSerializerFactory(context) })

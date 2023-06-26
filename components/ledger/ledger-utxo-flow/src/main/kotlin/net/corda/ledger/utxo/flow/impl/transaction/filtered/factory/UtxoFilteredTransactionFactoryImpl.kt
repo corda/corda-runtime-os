@@ -9,7 +9,8 @@ import net.corda.ledger.utxo.data.transaction.UtxoOutputInfoComponent
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.ledger.utxo.flow.impl.transaction.filtered.UtxoFilteredTransactionBuilderInternal
 import net.corda.ledger.utxo.flow.impl.transaction.filtered.UtxoFilteredTransactionImpl
-import net.corda.sandbox.type.SandboxConstants
+import net.corda.sandbox.type.SandboxConstants.AMQP_STORAGE_FILTER
+import net.corda.sandbox.type.SandboxConstants.CORDA_UNINJECTABLE_SERVICE
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
@@ -25,13 +26,13 @@ import java.security.PublicKey
 
 @Component(
     service = [UtxoFilteredTransactionFactory::class, UsedByFlow::class],
-    property = [SandboxConstants.CORDA_UNINJECTABLE_SERVICE],
+    property = [CORDA_UNINJECTABLE_SERVICE],
     scope = ServiceScope.PROTOTYPE
 )
 class UtxoFilteredTransactionFactoryImpl @Activate constructor(
     @Reference(service = FilteredTransactionFactory::class)
     private val filteredTransactionFactory: FilteredTransactionFactory,
-    @Reference(service = SerializationService::class)
+    @Reference(service = SerializationService::class, target = AMQP_STORAGE_FILTER)
     private val serializationService: SerializationService
 ) : UtxoFilteredTransactionFactory, UsedByFlow {
 

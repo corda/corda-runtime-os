@@ -2,6 +2,7 @@ package net.corda.ledger.utxo.data.state.serializer.amqp
 
 import net.corda.ledger.utxo.data.state.LazyStateAndRefImpl
 import net.corda.ledger.utxo.data.transaction.UtxoTransactionOutputDto
+import net.corda.sandbox.type.SandboxConstants.AMQP_STORAGE_FILTER
 import net.corda.sandbox.type.SandboxConstants.CORDA_UNINJECTABLE_SERVICE
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.sandbox.type.UsedByPersistence
@@ -22,7 +23,7 @@ import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
     scope = PROTOTYPE
 )
 class LazyStateAndRefSerializer @Activate constructor(
-    @Reference(service = SerializationService::class)
+    @Reference(service = SerializationService::class, target = AMQP_STORAGE_FILTER)
     private val serializationService: SerializationService
 ): BaseProxySerializer<LazyStateAndRefImpl<ContractState>, LazyStateAndRefImplProxy>(), UsedByFlow, UsedByPersistence, UsedByVerification {
     private companion object {
