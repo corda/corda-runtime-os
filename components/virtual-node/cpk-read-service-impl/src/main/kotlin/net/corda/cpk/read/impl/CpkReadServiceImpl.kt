@@ -159,7 +159,7 @@ class CpkReadServiceImpl (
         removeMetrics()
 
         // Monitor the amount of available disk space in these two directories.
-        arrayOf(DiskSpace.Cpks(cpkCacheDir), DiskSpace.CpkChunks(cpkPartsDir))
+        arrayOf(DiskSpace.Cpks(cpkCacheDir), DiskSpace.UnpackedCpks(cpkPartsDir))
             .flatMap(DiskSpace::metrics)
             .map { metric ->
                 metric.builder().build()

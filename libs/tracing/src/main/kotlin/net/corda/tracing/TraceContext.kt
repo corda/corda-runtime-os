@@ -6,4 +6,12 @@ interface TraceContext {
     fun traceRequestId(requestId: String)
 
     fun traceVirtualNodeId(vNodeId: String)
+
+    fun markInScope(): AutoCloseable
+
+    fun error(e:Exception)
+
+    fun errorAndFinish(e: Exception)
+
+    fun finish()
 }
