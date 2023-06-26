@@ -172,7 +172,7 @@ class UtxoReceiveFinalityFlowV1Test {
 
     @Test
     fun `receiving an invalid transaction initially throws and persists as invalid`() {
-        whenever(transactionVerificationService.verify(any())).thenThrow(
+        whenever(transactionVerificationService.initialVerify(any())).thenThrow(
             TransactionVerificationException(
                 ID,
                 TransactionVerificationStatus.INVALID,
@@ -428,7 +428,7 @@ class UtxoReceiveFinalityFlowV1Test {
         whenever(ledgerTransaction.outputStateAndRefs).thenReturn(listOf(getExampleInvalidStateAndRefImpl()))
         whenever(signedTransaction.inputStateRefs).thenReturn(listOf(mock()))
         whenever(signedTransaction.referenceStateRefs).thenReturn(listOf(mock()))
-        whenever(transactionVerificationService.verify(any())).thenThrow(
+        whenever(transactionVerificationService.initialVerify(any())).thenThrow(
             TransactionVerificationException(
                 ID,
                 TransactionVerificationStatus.INVALID,
