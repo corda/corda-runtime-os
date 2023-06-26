@@ -101,7 +101,7 @@ private class FacadeClientProxy(
         }.toTypedArray()
 
         val request = methodBinding.facadeMethod.request(*parameterValues)
-        return InteropAction.ClientAction(request, requestProcessor) { interpretResponse(it, methodBinding) }
+        return interpretResponse(requestProcessor.invoke(request), methodBinding) as Any
     }
 
     @Suppress("UNCHECKED_CAST")
