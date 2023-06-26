@@ -10,17 +10,8 @@ import net.corda.v5.ledger.utxo.VisibilityChecker
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 
 class TestContract : Contract {
-//    @CordaInject
-//    lateinit var serializationService: SerializationService
-//
-//    @CordaInject
-//    lateinit var digestService: DigestService
-//
-//    @CordaInject
-//    lateinit var digitalSignatureVerificationService: DigitalSignatureVerificationService
 
     override fun verify(transaction: UtxoLedgerTransaction) {
-//        serializationService.serialize('s')
     }
 
     override fun isVisible(state: ContractState, checker: VisibilityChecker): Boolean {
