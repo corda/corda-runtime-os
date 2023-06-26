@@ -2,7 +2,6 @@ package net.corda.ledger.verification.sandbox
 
 import net.corda.serialization.checkpoint.NonSerializable
 import net.corda.v5.application.flows.CordaInject
-import net.corda.v5.application.flows.Flow
 import net.corda.v5.ledger.utxo.Contract
 import net.corda.v5.serialization.SingletonSerializeAsToken
 
