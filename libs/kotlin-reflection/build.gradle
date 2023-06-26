@@ -22,7 +22,7 @@ dependencies {
     api 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     compileOnly 'org.osgi:osgi.annotation'
     compileOnly libs.kotlinx.metadata
-    compileOnly "org.ow2.asm:asm:$asmVersion"
+    compileOnly libs.ow2.asm
     compileOnly "co.paralleluniverse:quasar-osgi-annotations:$quasarVersion"
     implementation platform("net.corda:corda-api:$cordaApiVersion")
 
@@ -30,7 +30,7 @@ dependencies {
     testImplementation "org.assertj:assertj-core:$assertjVersion"
     testImplementation "org.junit.jupiter:junit-jupiter-params:$junit5Version"
     testRuntimeOnly libs.kotlinx.metadata
-    testRuntimeOnly "org.ow2.asm:asm:$asmVersion"
+    testRuntimeOnly libs.ow2.asm
 
     integrationTestImplementation project(':libs:kotlin-reflection:kotlin-reflection-test-example')
     integrationTestImplementation 'org.slf4j:slf4j-api'

@@ -34,7 +34,7 @@ dependencies {
     implementation "net.corda:corda-membership"
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
 
-    implementation "commons-validator:commons-validator:$commonsVersion"
+    implementation libs.commons.validator
 
     testImplementation project(":libs:crypto:crypto-impl")
     testImplementation project(":testing:layered-property-map-testkit")

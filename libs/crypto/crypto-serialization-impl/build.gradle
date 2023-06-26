@@ -14,7 +14,7 @@ dependencies {
 
     api project(':libs:crypto:cipher-suite')
     api 'net.corda:corda-serialization'
-    implementation "org.apache.commons:commons-lang3:$commonsLangVersion"
+    implementation libs.commons.lang3
 
     implementation project(":libs:crypto:crypto-core")
     implementation project(':libs:serialization:serialization-internal')

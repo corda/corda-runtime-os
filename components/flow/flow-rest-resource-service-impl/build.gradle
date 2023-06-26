@@ -36,7 +36,7 @@ dependencies {
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation "org.slf4j:slf4j-api:$slf4jVersion"
     implementation "com.google.guava:guava:$guavaVersion"
-    implementation "org.apache.commons:commons-lang3:$commonsLangVersion"
+    implementation libs.commons.lang3
 
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"

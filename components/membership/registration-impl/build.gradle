@@ -69,7 +69,7 @@ dependencies {
     testImplementation project(":testing:layered-property-map-testkit")
     testImplementation project(":testing:test-utilities")
 
-    testImplementation "org.apache.commons:commons-text:$commonsTextVersion"
+    testImplementation libs.commons.text
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"

@@ -14,7 +14,7 @@ dependencies {
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
 
     implementation project(":libs:crypto:crypto-core")
-    implementation "org.apache.commons:commons-text:$commonsTextVersion"
+    implementation libs.commons.text
 
     testImplementation "org.assertj:assertj-core:$assertjVersion"
     testImplementation project(":libs:crypto:cipher-suite-impl")

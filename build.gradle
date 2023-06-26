@@ -452,7 +452,7 @@ subprojects {
             cacheChangingModulesFor 0, 'seconds'
 
             dependencySubstitution {
-                substitute module("antlr:antlr") using module("antlr:antlr.osgi:$antlrVersion")
+                substitute module("antlr:antlr") using module("antlr:antlr.osgi:${libs.versions.antlrVersion.get()}")
                 substitute module("org.dom4j:dom4j") using module("org.apache.servicemix.bundles:org.apache.servicemix.bundles.dom4j:$dom4jOsgiVersion")
             }
         }

@@ -15,8 +15,8 @@ dependencies {
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation project(":libs:crypto:crypto-utils")
 
-    api "org.bouncycastle:bcprov-jdk18on:$bouncycastleVersion"
-    api "org.bouncycastle:bcpkix-jdk18on:$bouncycastleVersion"
+    api libs.bouncycastle.bcprov
+    api libs.bouncycastle.bcpkix
 
     testImplementation project(':libs:crypto:cipher-suite')
     testImplementation "org.mockito:mockito-core:$mockitoVersion"

@@ -34,7 +34,7 @@ dependencies {
     implementation project(':libs:utilities')
     implementation project(':libs:serialization:serialization-avro')
 
-    testImplementation "org.apache.commons:commons-text:$commonsTextVersion"
+    testImplementation libs.commons.text
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"

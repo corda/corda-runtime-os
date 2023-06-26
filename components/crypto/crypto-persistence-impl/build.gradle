@@ -13,7 +13,7 @@ dependencies {
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation platform("net.corda:corda-api:$cordaApiVersion")
 
-    implementation "com.github.ben-manes.caffeine:caffeine:$caffeineVersion"
+    implementation libs.caffeine
     implementation "net.corda:corda-avro-schema"
     implementation "net.corda:corda-config-schema"
     implementation 'net.corda:corda-db-schema'
