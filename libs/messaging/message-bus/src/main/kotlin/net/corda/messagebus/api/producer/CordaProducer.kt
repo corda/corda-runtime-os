@@ -8,6 +8,8 @@ import net.corda.messagebus.api.consumer.CordaConsumerRecord
  */
 interface CordaProducer : AutoCloseable {
 
+    interface OffsetsAndMetadata
+
     /**
      * Defines the callback for post-send events.  If there was an exception it will be provided on this callback.
      */
@@ -113,4 +115,9 @@ interface CordaProducer : AutoCloseable {
      * This call may throw an exception immediately if any prior [send] calls failed.
      */
     fun abortTransaction()
+
+    fun getOffsetsAndMetadata(consumer: CordaConsumer<*, *>,
+                              records: List<CordaConsumerRecord<*, *>>): OffsetsAndMetadata
+
+    fun sendRecordOffsetsToTransaction(offsetsAndMetadata: OffsetsAndMetadata)
 }

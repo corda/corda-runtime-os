@@ -1,5 +1,10 @@
 package net.corda.messaging.subscription
 
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.asCoroutineDispatcher
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.deadletter.StateAndEventDeadLetterRecord
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -32,7 +37,7 @@ import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
 import java.time.Clock
-import java.util.UUID
+import java.util.concurrent.Executors
 
 @Suppress("LongParameterList")
 internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
@@ -148,9 +153,18 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                 eventConsumerTmp.subscribe(eventTopic, rebalanceListener)
                 threadLooper.updateLifecycleStatus(LifecycleStatus.UP)
 
-                while (!threadLooper.loopStopped) {
-                    stateAndEventConsumerTmp.pollAndUpdateStates(true)
-                    processBatchOfEvents()
+                log.info("@@@ pattern thread ${Thread.currentThread().id}")
+                runBlocking {
+                    log.info("@@@ run blocking thread ${Thread.currentThread().id}")
+                    launchProducer().also { job ->
+                        log.info("@@@ launched producer")
+                        while (!threadLooper.loopStopped) {
+                            stateAndEventConsumerTmp.pollAndUpdateStates(true)
+                            processBatchOfEvents()
+                        }
+                        log.info("@@@ cancelling job")
+                        job.cancel()
+                    }
                 }
 
             } catch (ex: Exception) {
@@ -185,7 +199,7 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         nullableStateAndEventConsumer = null
     }
 
-    private fun processBatchOfEvents() {
+    private suspend fun processBatchOfEvents() {
         var attempts = 0
         var keepProcessing = true
         while (keepProcessing && !threadLooper.loopStopped) {
@@ -219,12 +233,23 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         }
     }
 
+    private data class ProducerData<K, S>(
+        val offsetsAndMetadata: CordaProducer.OffsetsAndMetadata,
+        val records: List<CordaProducerRecord<*, *>>,
+        val updatedStates: MutableMap<Int, MutableMap<K, S?>>
+    )
+
+    private val producerChannel = Channel<ProducerData>(1)
+    private val updatedStatesChannel = Channel<ProducerData>(1000)
+
     /**
      * Process a batch of events from the last poll and publish the outputs (including DLQd events)
      *
      * @return false if the batch had to be abandoned due to a rebalance
      */
-    private fun tryProcessBatchOfEvents(events: List<CordaConsumerRecord<K, E>>): Boolean {
+    private suspend fun tryProcessBatchOfEvents(events: List<CordaConsumerRecord<K, E>>): Boolean {
+        updateAnyPendingInterla
+        
         val outputRecords = mutableListOf<Record<*, *>>()
         val updatedStates: MutableMap<Int, MutableMap<K, S?>> = mutableMapOf()
         // Pre-populate the updated states with the current in-memory state.
@@ -244,31 +269,52 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                 }
             }
         } catch (ex: StateAndEventConsumer.RebalanceInProgressException) {
-            log.warn ("Abandoning processing of events(keys: ${events.joinToString { it.key.toString() }}, " +
-                    "size: ${events.size}) due to rebalance", ex)
+            log.warn(
+                "Abandoning processing of events(keys: ${events.joinToString { it.key.toString() }}, " +
+                        "size: ${events.size}) due to rebalance", ex
+            )
             return true
         }
 
-        commitTimer.recordCallable {
-            producer.beginTransaction()
-            producer.sendRecords(outputRecords.toCordaProducerRecords())
-            if (deadLetterRecords.isNotEmpty()) {
-                producer.sendRecords(deadLetterRecords.map {
-                    CordaProducerRecord(
-                        getDLQTopic(eventTopic),
-                        UUID.randomUUID().toString(),
-                        it
-                    )
-                })
-                deadLetterRecords.clear()
-            }
-            producer.sendRecordOffsetsToTransaction(eventConsumer, events)
-            producer.commitTransaction()
-        }
+        val producerData = ProducerData(
+            producer.getOffsetsAndMetadata(eventConsumer, events),
+            outputRecords.toCordaProducerRecords(),
+            updatedStates
+        )
+        //log.info("@@@ pushing to producer channel")
+        producerChannel.send(producerData)
+
         log.debug { "Processing events(keys: ${events.joinToString { it.key.toString() }}, size: ${events.size}) complete." }
 
         stateAndEventConsumer.updateInMemoryStatePostCommit(updatedStates, clock)
         return false
+    }
+
+    val publisherDispatcher = Executors.newSingleThreadExecutor().asCoroutineDispatcher()
+
+    private fun CoroutineScope.launchProducer() = launch(publisherDispatcher) {
+        //log.info("@@@ producer thread ${Thread.currentThread().id}")
+        for (producerData in producerChannel) {
+            doPublish(producerData)
+        }
+    }
+
+    private fun doPublish(producerData: ProducerData) {
+        //log.info("@@@ pulling from producer channel")
+        producer.beginTransaction()
+        producer.sendRecords(producerData.records)
+        //            if (deadLetterRecords.isNotEmpty()) {
+        //                producer.sendRecords(deadLetterRecords.map {
+        //                    CordaProducerRecord(
+        //                        getDLQTopic(eventTopic),
+        //                        UUID.randomUUID().toString(),
+        //                        it
+        //                    )
+        //                })
+        //                deadLetterRecords.clear()
+        //            }
+        producer.sendRecordOffsetsToTransaction(producerData.offsetsAndMetadata)
+        producer.commitTransaction()
     }
 
     private fun processEvent(
@@ -324,7 +370,12 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
     /**
      * If the new state requires old chunk keys to be cleared then generate cleanup records to set those ChunkKeys to null
      */
-    private fun generateChunkKeyCleanupRecords(key: K, state: S?, updatedState: S?, outputRecords: MutableList<Record<*, *>>) {
+    private fun generateChunkKeyCleanupRecords(
+        key: K,
+        state: S?,
+        updatedState: S?,
+        outputRecords: MutableList<Record<*, *>>
+    ) {
         chunkSerializerService.getChunkKeysToClear(key, state, updatedState)?.let { chunkKeys ->
             chunkKeys.map { chunkKey ->
                 outputRecords.add(Record(stateTopic, chunkKey, null))

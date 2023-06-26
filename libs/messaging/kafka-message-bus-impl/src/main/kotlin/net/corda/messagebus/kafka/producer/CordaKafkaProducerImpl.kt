@@ -18,6 +18,7 @@ import net.corda.tracing.TraceContext
 import net.corda.tracing.getOrCreateBatchPublishTracing
 import net.corda.tracing.traceSend
 import net.corda.v5.base.exceptions.CordaRuntimeException
+import org.apache.kafka.clients.consumer.ConsumerGroupMetadata
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.clients.consumer.OffsetAndMetadata
 import org.apache.kafka.clients.producer.Callback
@@ -45,7 +46,7 @@ class CordaKafkaProducerImpl(
     private val config: ResolvedProducerConfig,
     private val producer: Producer<Any, Any>,
     private val chunkSerializerService: ChunkSerializerService,
-    private val producerMetricsBinder : MeterBinder,
+    private val producerMetricsBinder: MeterBinder,
 ) : CordaProducer {
     private val topicPrefix = config.topicPrefix
     private val transactional = config.transactional
@@ -120,7 +121,11 @@ class CordaKafkaProducerImpl(
      * @param callback for error handling in async producers
      * @param partition partition to send to. defaults to null.
      */
-    private fun sendRecord(record: CordaProducerRecord<*, *>, callback: CordaProducer.Callback? = null, partition: Int? = null) {
+    private fun sendRecord(
+        record: CordaProducerRecord<*, *>,
+        callback: CordaProducer.Callback? = null,
+        partition: Int? = null
+    ) {
         val chunkedRecords = chunkSerializerService.generateChunkedRecords(record)
         if (chunkedRecords.isNotEmpty()) {
             sendChunks(chunkedRecords, callback, partition)
@@ -181,7 +186,7 @@ class CordaKafkaProducerImpl(
         }
         cordaProducerRecords.forEach {
             //note callback is only applicable to async calls which are not allowed
-            producer.send(it.toKafkaRecord(topicPrefix,partition))
+            producer.send(it.toKafkaRecord(topicPrefix, partition))
         }
     }
 
@@ -250,6 +255,29 @@ class CordaKafkaProducerImpl(
         records: List<CordaConsumerRecord<*, *>>
     ) {
         trySendOffsetsToTransaction(consumer, records.toKafkaRecords())
+    }
+
+    private data class OffsetsAndMetadataImpl(
+        val offsets: Map<TopicPartition, OffsetAndMetadata>,
+        val metaData: ConsumerGroupMetadata
+    ) : CordaProducer.OffsetsAndMetadata
+
+    override fun getOffsetsAndMetadata(
+        consumer: CordaConsumer<*, *>,
+        records: List<CordaConsumerRecord<*, *>>
+    ): CordaProducer.OffsetsAndMetadata = OffsetsAndMetadataImpl(
+        consumerOffsets(consumer, records.toKafkaRecords()),
+        (consumer as CordaKafkaConsumerImpl).groupMetadata()
+    )
+
+    override fun sendRecordOffsetsToTransaction(offsetsAndMetadata: CordaProducer.OffsetsAndMetadata) {
+        val offsetsAndMetadataImpl = (offsetsAndMetadata as OffsetsAndMetadataImpl)
+        tryWithCleanupOnFailure("sending offset for transaction") {
+            producer.sendOffsetsToTransaction(
+                offsetsAndMetadataImpl.offsets,
+                offsetsAndMetadataImpl.metaData
+            )
+        }
     }
 
     private fun trySendOffsetsToTransaction(
@@ -369,8 +397,11 @@ class CordaKafkaProducerImpl(
                 }
                 throw CordaMessageAPIIntermittentException("Error occurred $errorString", ex)
             }
+
             is CordaMessageAPIFatalException,
-            is CordaMessageAPIIntermittentException -> { throw ex }
+            is CordaMessageAPIIntermittentException -> {
+                throw ex
+            }
 
             else -> {
                 // Here we do not know what the exact cause of the exception is, but we do know Kafka has not told us we

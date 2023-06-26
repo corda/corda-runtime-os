@@ -126,4 +126,14 @@ class CordaAtomicDBProducerImpl(
         return abs(key.hashCode() % numberOfPartitions)
     }
 
+    override fun getOffsetsAndMetadata(
+        consumer: CordaConsumer<*, *>,
+        records: List<CordaConsumerRecord<*, *>>
+    ): CordaProducer.OffsetsAndMetadata {
+        TODO("Not yet implemented")
+    }
+
+    override fun sendRecordOffsetsToTransaction(offsetsAndMetadata: CordaProducer.OffsetsAndMetadata) {
+        TODO("Not yet implemented")
+    }
 }
