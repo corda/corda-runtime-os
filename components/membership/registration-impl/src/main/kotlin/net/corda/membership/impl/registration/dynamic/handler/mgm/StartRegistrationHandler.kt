@@ -168,11 +168,12 @@ internal class StartRegistrationHandler(
                                 it.key.startsWith(SESSION_KEYS) ||
                                 it.key.startsWith(LEDGER_KEYS) ||
                                 it.key.startsWith(ROLES_PREFIX) ||
-                                it.key.startsWith(NOTARY_KEYS)
+                                it.key.startsWith("corda.notary")
                     }
                 validateRegistrationRequest(
                     diff.isEmpty()
-                ) { "Only custom fields with the '$CUSTOM_KEY_PREFIX' prefix may be updated during re-registration." }
+                ) { "Only custom fields with the '$CUSTOM_KEY_PREFIX' prefix and cpi/platform information " +
+                        "may be updated during re-registration." }
             }
 
             // The group ID matches the group ID of the MGM

@@ -454,7 +454,7 @@ class DynamicMemberRegistrationService @Activate constructor(
                             it.key.startsWith(SESSION_KEYS) ||
                             it.key.startsWith(LEDGER_KEYS) ||
                             it.key.startsWith(ROLES_PREFIX) ||
-                            it.key.startsWith(NOTARY_KEYS)
+                            it.key.startsWith("corda.notary")
                 }.apply {
                     require(isEmpty()) {
                         throw InvalidMembershipRegistrationException(
