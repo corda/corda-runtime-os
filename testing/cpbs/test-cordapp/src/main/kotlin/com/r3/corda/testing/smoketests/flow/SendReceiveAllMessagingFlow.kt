@@ -47,15 +47,6 @@ class SendReceiveAllMessagingFlow(
         log.info("Received FlowInfo from sessionOne: ${sessionOne.counterpartyFlowInfo}")
         log.info("Received FlowInfo from sessionTwo: ${sessionTwo.counterpartyFlowInfo}")
 
-        val sendMap: Map<FlowSession, Any> = mapOf(sessionOne to MyClass("Serialize me please", 1), sessionTwo to MyClass("Serialize me " +
-                "please", 2)
-        )
-        flowMessaging.sendAllMap(sendMap)
-        log.info("Sent Map")
-
-        flowMessaging.sendAll(MyClass("Serialize me please", 3), setOf(sessionOne, sessionTwo))
-        log.info("Sent All")
-
         //additional send via session to help verify init isn't sent again
         val largeString = getLargeString(1100)
         sessionOne.send(MyClass(largeString, 4))
@@ -64,26 +55,7 @@ class SendReceiveAllMessagingFlow(
         sessionTwo.send(MyClass("Serialize me please", 5))
         log.info("Session 2 single send")
 
-        val receivedMap = flowMessaging.receiveAllMap(mapOf(sessionOne to MyClass::class.java, sessionTwo to MyOtherClass::class.java))
-        log.info("Received Map")
-
         var receivedNumSum = 0
-        receivedMap.forEach { (_, received) ->
-            if (received is MyClass) {
-                receivedNumSum+=received.int
-                log.info("Session received map data (type: MyClass): ${received.int} ")
-            } else if (received is MyOtherClass) {
-                receivedNumSum+=received.int
-                log.info("Session received map data (type: MyOtherClass): ${received.int} ")
-            }
-        }
-
-        val receivedAll = flowMessaging.receiveAll(MyClass::class.java, setOf(sessionOne, sessionTwo))
-        log.info("Received All")
-        receivedAll.forEach {
-            receivedNumSum+=it.int
-            log.info("Session received all data: ${it.int} ")
-        }
 
         sessionOne.receive(MyClass::class.java).let {
             receivedNumSum+=it.int
@@ -135,26 +107,7 @@ class SendReceiveAllInitiatedFlow : ResponderFlow {
         val received = session.receive(MyClass::class.java)
         log.info("Receive from send map from peer: $received")
 
-        if (received.int == 2) {
-            session.send(MyOtherClass( 1, "this is a new object 1", received.int))
-            log.info("Responding with MyOtherClass")
-        } else {
-            session.send(received.copy(string = "this is a new object 1"))
-            log.info("Responding with copy of received")
-        }
-
-        val received2 = session.receive(MyClass::class.java)
-        log.info("Receive from send all from peer: $received2")
-
-        session.send(received2.copy(string = "this is a new object 2"))
-        log.info("Responding to send all from peer")
-
-
-        val received3 = session.receive(MyClass::class.java)
-        //this string is so large it activates chunking so do not log it
-        log.info("Receive from single send from peer. Message size: ${received3.string.length}")
-
-        session.send(received3.copy(string = "this is a new object 3"))
+        session.send(received.copy(string = "this is a new object 3"))
         log.info("Sending final message to initiator flow")
 
         log.info("Closing session")
