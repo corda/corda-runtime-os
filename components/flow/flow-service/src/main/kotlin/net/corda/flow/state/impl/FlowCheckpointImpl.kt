@@ -92,13 +92,9 @@ class FlowCheckpointImpl(
         get() = flowStateManager?.sessions
             ?: throw IllegalStateException("Attempted to access sessions before the flow has been initialised.")
 
-    override var externalEventState: ExternalEventState?
-        get() = flowStateManager?.externalEventState
-        set(value) {
-            checkNotNull(flowStateManager) {
-                "Attempt to set the flow state before it has been created"
-            }.externalEventState = value
-        }
+    override val externalEventState: List<ExternalEventState>
+        get() = flowStateManager?.externalStates
+            ?: throw IllegalStateException("Attempted to access external events before the flow has been initialized")
 
     override val doesExist: Boolean
         get() = flowStateManager != null && !deleted
@@ -176,6 +172,25 @@ class FlowCheckpointImpl(
         sessionStates.forEach {
             manager.putSessionState(it)
         }
+    }
+
+    override fun getExternalState(requestId: String): ExternalEventState? {
+        val manager = flowStateManager
+            ?: throw IllegalStateException("Attempted to get a session state before the flow has been initialised.")
+        return manager.getExternalState(requestId)
+    }
+
+    override fun setExternalState(externalState: ExternalEventState) {
+        checkFlowNotDeleted()
+        val manager = flowStateManager
+            ?: throw IllegalStateException("Attempted to set a session state before the flow has been initialised.")
+        manager.setExternalState(externalState)
+    }
+
+    override fun removeExternalState(requestId: String) {
+        val manager = flowStateManager
+            ?: throw IllegalStateException("Attempted to set a session state before the flow has been initialised.")
+        manager.removeExternalState(requestId)
     }
 
     override fun markDeleted() {

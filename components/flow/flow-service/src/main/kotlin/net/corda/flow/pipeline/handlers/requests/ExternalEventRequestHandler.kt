@@ -50,13 +50,16 @@ class ExternalEventRequestHandler @Activate constructor(
         val eventRecord = externalEventFactoryMap.get(request.factoryClass.name)
             .createExternalEvent(context.checkpoint, flowExternalEventContext, request.parameters)
 
-        context.checkpoint.externalEventState = externalEventManager.processEventToSend(
+        val externalState = externalEventManager.processEventToSend(
             context.checkpoint.flowId,
             request.requestId,
             request.factoryClass.name,
             eventRecord,
             Instant.now()
         )
+
+        context.checkpoint.setExternalState(externalState)
+
         return context
     }
 }

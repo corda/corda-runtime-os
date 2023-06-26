@@ -3,6 +3,7 @@ package net.corda.flow.pipeline.impl
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.StartFlow
+import net.corda.data.flow.event.external.ExternalEventResponse
 import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.checkpoint.Checkpoint
 import net.corda.data.flow.state.checkpoint.FlowState
@@ -89,32 +90,22 @@ class FlowMDCServiceImpl : FlowMDCService {
         // Extract properties starting with `corda.logged`
         val loggedContextProperties = translateFlowContextToMDC(platformProperties)
 
-        setExternalEventIdIfNotComplete(flowState, mdcLogging)
+        setExternalEventMDCFromEvent(event, mdcLogging)
         setSessionMDCFromEvent(event, mdcLogging)
         return mdcLogging + loggedContextProperties
+    }
+
+    private fun setExternalEventMDCFromEvent(event: FlowEvent?, mdcLogging: MutableMap<String, String>) {
+        val payload = event?.payload ?: return
+        if (payload is ExternalEventResponse) {
+            mdcLogging[MDC_EXTERNAL_EVENT_ID] = payload.requestId
+        }
     }
 
     private fun setSessionMDCFromEvent(event: FlowEvent?, mdcLogging: MutableMap<String, String>) {
         val payload = event?.payload ?: return
         if (payload is SessionEvent) {
             mdcLogging[MDC_SESSION_EVENT_ID] = payload.sessionId
-        }
-    }
-
-    /**
-     * If a response has not been received from the external event or if it is still retrying a request then set the external event id
-     * into the MDC.
-     */
-    private fun setExternalEventIdIfNotComplete(
-        flowState: FlowState,
-        mdcLogging: MutableMap<String, String>
-    ) {
-        val extState = flowState.externalEventState
-        if (extState != null) {
-            val status = extState.status
-            if (extState.response == null || status.type == ExternalEventStateType.RETRY) {
-                mdcLogging[MDC_EXTERNAL_EVENT_ID] = extState.requestId
-            }
         }
     }
 }

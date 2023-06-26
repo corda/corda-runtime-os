@@ -37,7 +37,7 @@ interface FlowCheckpoint : NonSerializable {
 
     val sessions: List<SessionState>
 
-    var externalEventState: ExternalEventState?
+    val externalEventState: List<ExternalEventState>
 
     val doesExist: Boolean
 
@@ -64,6 +64,12 @@ interface FlowCheckpoint : NonSerializable {
     fun putSessionState(sessionState: SessionState)
 
     fun putSessionStates(sessionStates: List<SessionState>)
+
+    fun getExternalState(requestId: String): ExternalEventState?
+
+    fun setExternalState(externalState: ExternalEventState)
+
+    fun removeExternalState(requestId: String)
 
     fun markDeleted()
 

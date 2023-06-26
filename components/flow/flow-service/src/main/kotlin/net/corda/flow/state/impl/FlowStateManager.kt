@@ -22,6 +22,8 @@ class FlowStateManager(private val initialState: FlowState) {
 
     private var sessionMap = validateAndCreateSessionMap(state.sessions)
 
+    private val externalEventMap = createExternalEventMap(state.externalEventState)
+
     var stack = FlowStackImpl(state.flowStackItems)
 
     val flowKey: FlowKey = state.flowStartContext.statusKey
@@ -35,6 +37,9 @@ class FlowStateManager(private val initialState: FlowState) {
 
     val sessions: List<SessionState>
         get() = sessionMap.values.toList()
+
+    val externalStates: List<ExternalEventState>
+        get() = externalEventMap.values.toList()
 
     var flowContext = FlowStackBasedContext(stack)
 
@@ -51,11 +56,17 @@ class FlowStateManager(private val initialState: FlowState) {
         sessionMap[sessionState.sessionId] = sessionState
     }
 
-    var externalEventState: ExternalEventState?
-        get() = state.externalEventState
-        set(value) {
-            state.externalEventState = value
-        }
+    fun getExternalState(externalRequestID: String) : ExternalEventState? {
+        return externalEventMap[externalRequestID]
+    }
+
+    fun setExternalState(externalState: ExternalEventState) {
+        externalEventMap[externalState.requestId] = externalState
+    }
+
+    fun removeExternalState(requestId: String) {
+        externalEventMap.remove(requestId)
+    }
 
     var waitingFor: WaitingFor?
         get() = state.waitingFor
@@ -80,6 +91,8 @@ class FlowStateManager(private val initialState: FlowState) {
         val sessions = sessionMap.values.sortedBy { it.sessionId }.toList()
         state.sessions = sessions
         state.flowStackItems = stack.flowStackItems
+        val externalEvents = externalEventMap.values.sortedBy { it.requestId }.toList()
+        state.externalEventState = externalEvents
         return state
     }
 
@@ -102,5 +115,9 @@ class FlowStateManager(private val initialState: FlowState) {
             )
         }
         return map
+    }
+
+    private fun createExternalEventMap(externalEventState: List<ExternalEventState>?) : MutableMap<String, ExternalEventState> {
+        return externalEventState?.associateBy { it.requestId }?.toMutableMap() ?: mutableMapOf()
     }
 }

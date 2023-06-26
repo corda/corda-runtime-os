@@ -164,18 +164,11 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
     private fun getExternalEvent(context: FlowEventContext<Any>, now: Instant): List<Record<*, *>> {
         val config = context.config
         val externalEventState = context.checkpoint.externalEventState
-        return if (externalEventState == null) {
-            listOf()
-        } else {
-            externalEventManager.getEventToSend(externalEventState, now, config)
-                .let { (updatedExternalEventState, record) ->
-                    context.checkpoint.externalEventState = updatedExternalEventState
-                    if (record != null) {
-                        listOf(record)
-                    } else {
-                        listOf()
-                    }
-                }
+        return externalEventState.mapNotNull {
+            externalEventManager.getEventToSend(it, now, config).let { (updatedExternalEventState, record) ->
+                context.checkpoint.setExternalState(updatedExternalEventState)
+                record
+            }
         }
     }
 

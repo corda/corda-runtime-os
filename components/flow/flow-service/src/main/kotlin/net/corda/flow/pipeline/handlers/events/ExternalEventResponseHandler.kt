@@ -38,7 +38,7 @@ class ExternalEventResponseHandler @Activate constructor(
             )
         }
 
-        val externalEventState = checkpoint.externalEventState
+        val externalEventState = checkpoint.getExternalState(externalEventResponse.requestId)
 
         if (externalEventState == null) {
             log.debug {
@@ -54,10 +54,12 @@ class ExternalEventResponseHandler @Activate constructor(
             )
         }
 
-        checkpoint.externalEventState = externalEventManager.processResponse(
+        val newExternalState = externalEventManager.processResponse(
             externalEventState,
             externalEventResponse
         )
+
+        checkpoint.setExternalState(newExternalState)
 
         return context
     }
