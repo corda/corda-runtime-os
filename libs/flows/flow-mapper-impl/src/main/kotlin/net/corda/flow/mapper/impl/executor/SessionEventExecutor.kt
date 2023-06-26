@@ -87,6 +87,8 @@ class SessionEventExecutor(
         val errorMsg = "Flow mapper received error event from counterparty for session which does not exist. " +
                 "Session may have expired. Key: $eventKey, Event: $sessionEvent. "
 
+        log.info("AAA Received SessionEvent: ${sessionEvent.sessionId} with payload type ${sessionEvent.payload::class.simpleName} in SessionEventExecutor for flow ${flowMapperState.flowId} while mapper is in state $flowMapperState.")
+
         return when (flowMapperState.status) {
             null -> {
                 log.warn("FlowMapperState with null status. Key: $eventKey, Event: $sessionEvent.")
