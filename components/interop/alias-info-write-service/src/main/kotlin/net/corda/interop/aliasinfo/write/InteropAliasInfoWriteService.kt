@@ -1,7 +1,6 @@
 package net.corda.interop.aliasinfo.write
 
 import net.corda.lifecycle.Lifecycle
-import net.corda.v5.base.types.MemberX500Name
 
 
 interface InteropAliasInfoWriteService : Lifecycle {
@@ -15,5 +14,6 @@ interface InteropAliasInfoWriteService : Lifecycle {
     fun addInteropIdentity(
         holdingIdentityShortHash: String,
         interopGroupId: String,
-        newIdentityName: MemberX500Name)
+        newIdentityName: String
+    )
 }

@@ -18,7 +18,6 @@ import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.schema.configuration.ConfigKeys
-import net.corda.v5.base.types.MemberX500Name
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -57,10 +56,10 @@ class InteropAliasInfoWriteServiceImpl @Activate constructor(
     override fun addInteropIdentity(
         holdingIdentityShortHash: String,
         interopGroupId: String,
-        newIdentityName: MemberX500Name
+        newIdentityName: String
     ) {
         val interopAliasIdentity = InteropAliasIdentity().apply {
-            aliasX500Name = newIdentityName.toString()
+            aliasX500Name = newIdentityName
             groupId = interopGroupId
             // TODO: Figure out what value goes here!
             hostingVnode = "?"

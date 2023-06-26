@@ -41,7 +41,7 @@ interface InteropRestResource : RestResource {
         createInteropIdentityRequest: CreateInteropIdentityRequest,
         @RestPathParameter(description = "ID of the holding identity which groups are to be returned.")
     holdingidentityid: String?
-    ): ResponseEntity<CreateInteropIdentityRequest>
+    ): ResponseEntity<String>
 
     /**
      * Get a list of interop identities belonging to the given holding identity.
