@@ -53,10 +53,6 @@ pipeline {
         timestamps()
     }
 
-    triggers {
-        cron('H */2 * * *')
-    }
-
     stages {
         stage('check out') {
             steps {
