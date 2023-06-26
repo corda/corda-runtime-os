@@ -16,14 +16,18 @@ import net.corda.membership.impl.registration.dynamic.handler.MissingRegistratio
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandler
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandlerResult
 import net.corda.membership.impl.registration.dynamic.verifiers.RegistrationContextCustomFieldsVerifier
-import net.corda.membership.lib.MemberInfoExtension
 import net.corda.membership.lib.MemberInfoExtension.Companion.CREATION_TIME
 import net.corda.membership.lib.MemberInfoExtension.Companion.CUSTOM_KEY_PREFIX
+import net.corda.membership.lib.MemberInfoExtension.Companion.ENDPOINTS
+import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEYS
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_PENDING
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_SUSPENDED
 import net.corda.membership.lib.MemberInfoExtension.Companion.MODIFIED_TIME
+import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_KEYS
+import net.corda.membership.lib.MemberInfoExtension.Companion.ROLES_PREFIX
 import net.corda.membership.lib.MemberInfoExtension.Companion.SERIAL
+import net.corda.membership.lib.MemberInfoExtension.Companion.SESSION_KEYS
 import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.lib.MemberInfoExtension.Companion.endpoints
 import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
@@ -160,9 +164,11 @@ internal class StartRegistrationHandler(
                 val pendingContext = pendingMemberInfo.memberProvidedContext.toMap()
                 val diff = ((pendingContext.entries - previousContext.entries) + (previousContext.entries - pendingContext.entries))
                     .filter {
-                        it.key.startsWith(MemberInfoExtension.ENDPOINTS) ||
-                                it.key.startsWith(MemberInfoExtension.SESSION_KEYS) ||
-                                it.key.startsWith(MemberInfoExtension.LEDGER_KEYS)
+                        it.key.startsWith(ENDPOINTS) ||
+                                it.key.startsWith(SESSION_KEYS) ||
+                                it.key.startsWith(LEDGER_KEYS) ||
+                                it.key.startsWith(ROLES_PREFIX) ||
+                                it.key.startsWith(NOTARY_KEYS)
                     }
                 validateRegistrationRequest(
                     diff.isEmpty()

@@ -963,6 +963,30 @@ class DynamicMemberRegistrationServiceTest {
         }
 
         @Test
+        fun `registration fails when non-custom, non-platform or non-cpi properties are removed`() {
+            val previous = mock<MemberContext> {
+                on { entries } doReturn previousRegistrationContext.entries + mapOf(
+                    String.format(ROLES_PREFIX, 0) to "notary",
+                    NOTARY_SERVICE_NAME to "O=MyNotaryService, L=London, C=GB",
+                    "corda.notary.keys.0.id" to NOTARY_KEY_ID,
+                ).entries
+            }
+            val newContext = mock<MemberContext> {
+                on { entries } doReturn context.entries
+            }
+            whenever(memberInfo.memberProvidedContext).doReturn(previous)
+            whenever(groupReader.lookup(eq(memberName), any())).doReturn(memberInfo)
+
+            postConfigChangedEvent()
+            registrationService.start()
+
+            val exception = assertThrows<InvalidMembershipRegistrationException> {
+                registrationService.register(registrationResultId, member, newContext.toMap())
+            }
+            assertThat(exception).hasMessageContaining("Only custom fields")
+        }
+
+        @Test
         fun `registration fails when non-custom, non-platform or non-cpi related properties are updated`() {
             val previous = mock<MemberContext> {
                 on { entries } doReturn previousRegistrationContext.entries

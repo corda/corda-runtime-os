@@ -60,6 +60,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEY_HASHES_
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_CPI_NAME
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_CPI_SIGNER_HASH
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_CPI_VERSION
+import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_KEYS
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_KEY_SPEC
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_ROLE
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_PROTOCOL_VERSIONS
@@ -449,7 +450,11 @@ class DynamicMemberRegistrationService @Activate constructor(
 
             previousRegistrationContext?.let { previous ->
                 ((newRegistrationContext.entries - previous.entries) + (previous.entries - newRegistrationContext.entries)).filter {
-                    it.key.startsWith(ENDPOINTS) || it.key.startsWith(SESSION_KEYS) || it.key.startsWith(LEDGER_KEYS)
+                    it.key.startsWith(ENDPOINTS) ||
+                            it.key.startsWith(SESSION_KEYS) ||
+                            it.key.startsWith(LEDGER_KEYS) ||
+                            it.key.startsWith(ROLES_PREFIX) ||
+                            it.key.startsWith(NOTARY_KEYS)
                 }.apply {
                     require(isEmpty()) {
                         throw InvalidMembershipRegistrationException(
