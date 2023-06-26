@@ -5,14 +5,10 @@ import net.corda.crypto.core.parseSecureHash
 import net.corda.flow.external.events.responses.exceptions.CpkNotAvailableException
 import net.corda.flow.external.events.responses.exceptions.NotAllowedCpkException
 import net.corda.ledger.utxo.verification.CordaPackageSummary
+import net.corda.ledger.verification.sandbox.SandboxVerificationDependencyInjector
 import net.corda.ledger.verification.sandbox.VerificationSandboxService
-import net.corda.sandboxgroupcontext.MutableSandboxGroupContext
-import net.corda.sandboxgroupcontext.RequireSandboxAMQP
-import net.corda.sandboxgroupcontext.RequireSandboxJSON
-import net.corda.sandboxgroupcontext.SandboxGroupContext
-import net.corda.sandboxgroupcontext.SandboxGroupType
-import net.corda.sandboxgroupcontext.VirtualNodeContext
-import net.corda.sandboxgroupcontext.getObjectByKey
+import net.corda.ledger.verification.sandbox.factory.SandboxVerificationDependencyInjectorFactory
+import net.corda.sandboxgroupcontext.*
 import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
 import net.corda.sandboxgroupcontext.service.registerCordappCustomSerializers
 import net.corda.sandboxgroupcontext.service.registerCustomCryptography
@@ -20,7 +16,10 @@ import net.corda.sandboxgroupcontext.service.registerCustomJsonDeserializers
 import net.corda.sandboxgroupcontext.service.registerCustomJsonSerializers
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.exceptions.CordaRuntimeException
+import net.corda.v5.serialization.SingletonSerializeAsToken
 import net.corda.virtualnode.HoldingIdentity
+import org.osgi.framework.BundleContext
+import org.osgi.framework.Constants
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -38,17 +37,21 @@ import org.slf4j.LoggerFactory
 class VerificationSandboxServiceImpl @Activate constructor(
     @Reference
     private val sandboxService: SandboxGroupContextComponent,
+    @Reference(service = SandboxVerificationDependencyInjectorFactory::class)
+    private val dependencyInjectionFactory: SandboxVerificationDependencyInjectorFactory,
     @Reference
-    private val cpkReadService: CpkReadService
+    private val cpkReadService: CpkReadService,
+    private val bundleContext: BundleContext
 ) : VerificationSandboxService {
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        private const val DEPENDENCY_INJECTOR = "DEPENDENCY_INJECTOR"
     }
 
     override fun get(holdingIdentity: HoldingIdentity, cpks: List<CordaPackageSummary>): SandboxGroupContext {
         checkCpks(holdingIdentity, cpks)
         return sandboxService.getOrCreate(getVirtualNodeContext(holdingIdentity, cpks)) { _, ctx ->
-            initializeSandbox(holdingIdentity, ctx)
+            initializeSandbox(dependencyInjectionFactory, holdingIdentity, ctx)
         }
     }
 
@@ -66,6 +69,7 @@ class VerificationSandboxServiceImpl @Activate constructor(
     }
 
     private fun initializeSandbox(
+        dependencyInjectionFactory: SandboxVerificationDependencyInjectorFactory,
         holdingIdentity: HoldingIdentity,
         ctx: MutableSandboxGroupContext
     ): AutoCloseable {
@@ -73,6 +77,9 @@ class VerificationSandboxServiceImpl @Activate constructor(
         val customSerializers = sandboxService.registerCordappCustomSerializers(ctx)
         val jsonDeserializers = sandboxService.registerCustomJsonDeserializers(ctx)
         val jsonSerializers = sandboxService.registerCustomJsonSerializers(ctx)
+
+        val injectorService = dependencyInjectionFactory.create(ctx)
+        ctx.putObjectByKey(DEPENDENCY_INJECTOR, injectorService)
 
         // Instruct all CustomMetadataConsumers to accept their metadata.
         sandboxService.acceptCustomMetadata(ctx)
@@ -84,6 +91,7 @@ class VerificationSandboxServiceImpl @Activate constructor(
             jsonSerializers.close()
             jsonDeserializers.close()
             customSerializers.close()
+            injectorService.close()
             customCrypto.close()
         }
     }
