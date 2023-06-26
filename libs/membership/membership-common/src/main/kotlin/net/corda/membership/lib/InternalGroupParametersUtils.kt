@@ -17,15 +17,15 @@ fun InternalGroupParameters.toPersistentGroupParameters(
     return PersistentGroupParameters(
         owner.toAvro(),
         AvroSignedGroupParameters(
-            ByteBuffer.wrap(bytes),
+            ByteBuffer.wrap(groupParameters),
             signed?.let {
                 CryptoSignatureWithKey(
-                    ByteBuffer.wrap(keyEncodingService.encodeAsByteArray(it.signature.by)),
-                    ByteBuffer.wrap(it.signature.bytes)
+                    ByteBuffer.wrap(keyEncodingService.encodeAsByteArray(it.mgmSignature.by)),
+                    ByteBuffer.wrap(it.mgmSignature.bytes)
                 )
             },
             signed?.let {
-                CryptoSignatureSpec(it.signatureSpec.signatureName, null, null)
+                CryptoSignatureSpec(it.mgmSignatureSpec.signatureName, null, null)
             }
         )
     )

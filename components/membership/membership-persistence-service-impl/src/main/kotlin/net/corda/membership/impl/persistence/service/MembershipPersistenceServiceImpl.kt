@@ -21,7 +21,9 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
+import net.corda.membership.groupparams.writer.service.GroupParametersWriterService
 import net.corda.membership.impl.persistence.service.handler.HandlerFactories
+import net.corda.membership.lib.GroupParametersFactory
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.mtls.allowed.list.service.AllowedCertificatesReaderWriterService
 import net.corda.membership.persistence.service.MembershipPersistenceService
@@ -68,6 +70,10 @@ class MembershipPersistenceServiceImpl @Activate constructor(
     platformInfoProvider: PlatformInfoProvider,
     @Reference(service = AllowedCertificatesReaderWriterService::class)
     allowedCertificatesReaderWriterService: AllowedCertificatesReaderWriterService,
+    @Reference(service = GroupParametersWriterService::class)
+    groupParametersWriterService: GroupParametersWriterService,
+    @Reference(service = GroupParametersFactory::class)
+    groupParametersFactory: GroupParametersFactory,
 ) : MembershipPersistenceService {
 
     private companion object {
@@ -177,6 +183,8 @@ class MembershipPersistenceServiceImpl @Activate constructor(
             cordaAvroSerializationFactory,
             keyEncodingService,
             platformInfoProvider,
+            groupParametersWriterService,
+            groupParametersFactory,
             allowedCertificatesReaderWriterService,
         )
     }

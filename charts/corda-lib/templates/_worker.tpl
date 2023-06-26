@@ -275,6 +275,9 @@ spec:
           {{- if $.Values.tracing.endpoint }}
           - "--send-trace-to={{ $.Values.tracing.endpoint }}"
           {{- end }}
+          {{- if $.Values.tracing.samplesPerSecond }}
+          - "--trace-samples-per-second={{ $.Values.tracing.samplesPerSecond }}"
+          {{- end }}
           {{- range $i, $arg := $optionalArgs.additionalWorkerArgs }}
           - {{ $arg | quote }}
           {{- end }}

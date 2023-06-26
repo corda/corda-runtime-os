@@ -1,10 +1,10 @@
 package net.corda.tracing.impl
 
+import brave.Tracer
 import brave.Tracing
 import brave.baggage.BaggagePropagation
 import brave.baggage.BaggagePropagationConfig
 import brave.context.slf4j.MDCScopeDecorator
-import brave.kafka.clients.KafkaTracing
 import brave.propagation.B3Propagation
 import brave.propagation.ThreadLocalCurrentTraceContext
 import brave.sampler.RateLimitingSampler
@@ -12,11 +12,10 @@ import brave.sampler.Sampler
 import brave.servlet.TracingFilter
 import net.corda.messaging.api.records.EventLogRecord
 import net.corda.messaging.api.records.Record
+import net.corda.tracing.BatchPublishTracing
 import net.corda.tracing.BatchRecordTracer
 import net.corda.tracing.TraceContext
 import net.corda.tracing.TracingService
-import org.apache.kafka.clients.consumer.Consumer
-import org.apache.kafka.clients.producer.Producer
 import org.slf4j.LoggerFactory
 import zipkin2.Span
 import zipkin2.reporter.AsyncReporter
@@ -35,6 +34,9 @@ internal data class PerSecond(val samplesPerSecond: Int) : SampleRate
 internal class BraveTracingService(serviceName: String, zipkinHost: String, samplesPerSecond: SampleRate) : TracingService {
 
     private val logger = LoggerFactory.getLogger(this::class.java)
+
+    private val currentBatchPublishingTracers =
+        ThreadLocal.withInitial { mutableMapOf<String, BraveBatchPublishTracing>() }
 
     private val resourcesToClose = Stack<AutoCloseable>()
 
@@ -85,18 +87,16 @@ internal class BraveTracingService(serviceName: String, zipkinHost: String, samp
         tracingBuilder.build().also(resourcesToClose::push)
     }
 
+    private val tracer: Tracer by lazy {
+        tracing.tracer()
+    }
+
     private val recordInjector by lazy {
         tracing.propagation()
             .injector { param: MutableList<Pair<String, String>>, key: String, value: String ->
                 param.removeAll { it.first == key }
                 param.add(key to value)
             }
-    }
-
-    private val kafkaTracing: KafkaTracing by lazy {
-        KafkaTracing.newBuilder(tracing)
-            .singleRootSpanOnReceiveBatch(false)
-            .build()
     }
 
     private val recordTracing: BraveRecordTracing by lazy { BraveRecordTracing(tracing) }
@@ -112,15 +112,15 @@ internal class BraveTracingService(serviceName: String, zipkinHost: String, samp
     }
 
     override fun <R> nextSpan(operationName: String, processingBlock: TraceContext.() -> R): R {
-        return tracing.tracer().nextSpan().doTrace(operationName) {
-            val ctx = BraveTraceContext(this)
+        return tracer.nextSpan().doTrace(operationName) {
+            val ctx = BraveTraceContext(tracer, this)
             processingBlock(ctx)
         }
     }
 
     override fun <R> nextSpan(operationName: String, record: Record<*, *>, processingBlock: TraceContext.() -> R): R {
         return recordTracing.nextSpan(record).doTrace(operationName) {
-            val ctx = BraveTraceContext(this)
+            val ctx = BraveTraceContext(tracer, this)
             processingBlock(ctx)
         }
     }
@@ -131,21 +131,26 @@ internal class BraveTracingService(serviceName: String, zipkinHost: String, samp
         processingBlock: TraceContext.() -> R
     ): R {
         return recordTracing.nextSpan(record).doTrace(operationName) {
-            val ctx = BraveTraceContext(this)
+            val ctx = BraveTraceContext(tracer, this)
             processingBlock(ctx)
         }
     }
 
+    override fun nextSpan(
+        operationName: String,
+        headers: List<Pair<String, String>>
+    ): TraceContext {
+        val span = recordTracing.nextSpan(headers).name(operationName).start()
+        return BraveTraceContext(tracer, span)
+    }
+
+    override fun getOrCreateBatchPublishTracing(clientId: String): BatchPublishTracing {
+        return currentBatchPublishingTracers.get()
+            .getOrPut(clientId) { recordTracing.createBatchPublishTracing(clientId) }
+    }
+
     override fun wrapWithTracingExecutor(executor: ExecutorService): ExecutorService {
         return tracing.currentTraceContext().executorService(executor)
-    }
-
-    override fun <K, V> wrapWithTracingConsumer(kafkaConsumer: Consumer<K, V>): Consumer<K, V> {
-        return kafkaTracing.consumer(kafkaConsumer)
-    }
-
-    override fun <K, V> wrapWithTracingProducer(kafkaProducer: Producer<K, V>): Producer<K, V> {
-        return kafkaTracing.producer(kafkaProducer)
     }
 
     override fun getTracedServletFilter(): Filter {

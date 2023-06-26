@@ -15,33 +15,43 @@ class HikariDataSourceFactoryTest {
     }
 
     @Test
-    fun `create will not set the minimumIdle if not set`() {
+    fun `create will set minimumIdle to maximumPoolSize if minimumPoolSize is set to null`() {
         factory.create(
             driverClass = HikariDataSourceFactoryTest::class.java.name,
             jdbcUrl = "url",
             username = "user",
             password = "password",
             maximumPoolSize = 44,
+            minimumPoolSize = null,
+            idleTimeout = Duration.ofMinutes(2),
+            maxLifetime = Duration.ofMinutes(30),
+            keepaliveTime = Duration.ZERO,
+            validationTimeout = Duration.ofSeconds(5),
         )
 
         assertThat(hikariConfig?.minimumIdle).isEqualTo(44)
     }
 
     @Test
-    fun `create will set the minimumIdle if set`() {
+    fun `create will set the minimumIdle if minimumPoolSize is set`() {
         factory.create(
             driverClass = HikariDataSourceFactoryTest::class.java.name,
             jdbcUrl = "url",
             username = "user",
             password = "password",
             minimumPoolSize = 3,
+            maximumPoolSize = 10,
+            idleTimeout = Duration.ofMinutes(2),
+            maxLifetime = Duration.ofMinutes(30),
+            keepaliveTime = Duration.ZERO,
+            validationTimeout = Duration.ofSeconds(5),
         )
 
         assertThat(hikariConfig?.minimumIdle).isEqualTo(3)
     }
 
     @Test
-    fun `create will not set the idleTimeout if minimumPoolSize is not defined`() {
+    fun `create will not set the idleTimeout if minimumPoolSize is not set`() {
         factory.create(
             driverClass = HikariDataSourceFactoryTest::class.java.name,
             jdbcUrl = "url",
@@ -49,13 +59,17 @@ class HikariDataSourceFactoryTest {
             password = "password",
             maximumPoolSize = 21,
             idleTimeout = Duration.ofDays(2),
+            minimumPoolSize = null,
+            maxLifetime = Duration.ofMinutes(30),
+            keepaliveTime = Duration.ZERO,
+            validationTimeout = Duration.ofSeconds(5),
         )
 
         assertThat(hikariConfig?.idleTimeout).isEqualTo(0)
     }
 
     @Test
-    fun `create will not set the idleTimeout if minimumPoolSize the same as maximumPoolSize`() {
+    fun `create will not set the idleTimeout if minimumPoolSize is set to be the same as maximumPoolSize`() {
         factory.create(
             driverClass = HikariDataSourceFactoryTest::class.java.name,
             jdbcUrl = "url",
@@ -64,6 +78,9 @@ class HikariDataSourceFactoryTest {
             maximumPoolSize = 21,
             minimumPoolSize = 21,
             idleTimeout = Duration.ofDays(2),
+            maxLifetime = Duration.ofMinutes(30),
+            keepaliveTime = Duration.ZERO,
+            validationTimeout = Duration.ofSeconds(5),
         )
 
         assertThat(hikariConfig?.idleTimeout).isEqualTo(0)
@@ -79,6 +96,9 @@ class HikariDataSourceFactoryTest {
             maximumPoolSize = 21,
             minimumPoolSize = 1,
             idleTimeout = Duration.ofDays(2),
+            maxLifetime = Duration.ofMinutes(30),
+            keepaliveTime = Duration.ZERO,
+            validationTimeout = Duration.ofSeconds(5),
         )
 
         assertThat(hikariConfig?.idleTimeout).isEqualTo(Duration.ofDays(2).toMillis())

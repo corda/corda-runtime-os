@@ -14,7 +14,6 @@ import net.corda.messaging.api.chunking.MessagingChunkFactory
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.schema.configuration.MessagingConfig
 import net.corda.schema.registry.AvroSchemaRegistry
-import net.corda.tracing.wrapWithTracingProducer
 import org.apache.kafka.clients.producer.KafkaProducer
 import org.osgi.framework.FrameworkUtil
 import org.osgi.framework.wiring.BundleWiring
@@ -60,7 +59,7 @@ class KafkaCordaProducerBuilderImpl @Activate constructor(
                 val producerChunkService = messagingChunkFactory.createChunkSerializerService(maxAllowedMessageSize)
                 CordaKafkaProducerImpl(
                     resolvedConfig,
-                    wrapWithTracingProducer(producer),
+                    producer,
                     producerChunkService,
                     KafkaClientMetrics(producer)
                 )
