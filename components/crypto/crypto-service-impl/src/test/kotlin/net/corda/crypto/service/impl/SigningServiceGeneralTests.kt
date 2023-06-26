@@ -53,7 +53,7 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import java.security.PublicKey
 import java.time.Instant
-import java.util.*
+import java.util.UUID
 import java.util.concurrent.TimeUnit
 
 // TODO - move content into SigningServiceImplTest
