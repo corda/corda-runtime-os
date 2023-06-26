@@ -8,7 +8,6 @@ import net.corda.flow.application.services.impl.interop.binding.FacadeOutParamet
 import net.corda.flow.application.services.impl.interop.binding.creation.FacadeInterfaceBindings
 import net.corda.flow.application.services.impl.interop.parameters.TypeConverter
 import net.corda.flow.application.services.impl.interop.parameters.TypedParameterValueImpl
-import net.corda.v5.application.interop.binding.InteropAction
 import net.corda.v5.application.interop.facade.Facade
 import net.corda.v5.application.interop.facade.FacadeRequest
 import net.corda.v5.application.interop.facade.FacadeResponse

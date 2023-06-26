@@ -187,16 +187,14 @@ private class MethodBindingContext(
     }
 
     private fun createOutParameterBindings(): FacadeOutParameterBindings {
-        // The method must return an InteropAction<T>, rather than the return type itself directly.
-        test(boundMethod.returnType == InteropAction::class.java) {
-            "Method return type must be InteropAction<T>"
-        }
-
         // Obtain the wrapped return type by reflecting over the InteropAction<T> type and obtaining its first type
         // argument, e.g. InteropAction<String> wraps String.
-        val wrappedReturnType = (boundMethod.genericReturnType as ParameterizedType).actualTypeArguments[0]
-                as Class<*>
-
+        val wrappedReturnType = try { //TODO only login in catch should remain
+            (boundMethod.genericReturnType as ParameterizedType).actualTypeArguments[0]
+                    as Class<*>
+        } catch(ex: Exception) {
+            boundMethod.returnType as Class<*>
+        }
         /*
         Depending on the number of out parameters, we are either binding:
 
@@ -307,7 +305,8 @@ private class NoOutParametersBindingContext(
 
     override fun createBinding(): FacadeOutParameterBindings {
         // If the caller is expecting anything other than Void/Unit, something is wrong.
-        test(wrappedReturnType == Unit::class.java || wrappedReturnType == Void::class.java) {
+        test(wrappedReturnType == Unit::class.java || wrappedReturnType == Void::class.java
+                || wrappedReturnType == Void.TYPE) {
             "Return type $wrappedReturnType is not Void/Unit"
         }
 

@@ -109,7 +109,7 @@ class SimpleSwapFlow : ClientStartableFlow {
 
             val responseObject = tokens.reserveTokensV3("USD", payment.toReserve, 1000L)
             log.info("Interop remedy call finished")
-            val response : SimpleTokenReservation = responseObject.result
+            val response : SimpleTokenReservation = responseObject
             log.info("Interop call get $response")
 
             return jsonMarshallingService.format(IssueFlowResult(userResult, outputState.linearId.toString()))

@@ -32,5 +32,5 @@ interface SampleTokensFacade {
         @Denomination denomination: String,
         amount: BigDecimal,
         @BindsFacadeParameter("ttl-ms") timeToLiveMs: Long
-    ): InteropAction<TokenReservation>
+    ): TokenReservation
 }

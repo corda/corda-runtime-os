@@ -26,8 +26,7 @@ class ReserveTokensSubFlowV2(private val alias: MemberX500Name, private val inte
         val client: TokensFacade =
             facadeService.getFacade(facadeId, TokensFacade::class.java, alias, interopGroupId)
 
-        val responseObject: InteropAction<TokenReservation> = client.reserveTokensV2(denomination, amount, timeToLiveMs)
-        val response = responseObject.result
+        val response: TokenReservation = client.reserveTokensV2(denomination, amount, timeToLiveMs)
 
         log.info("Facade responded with '$response'")
         log.info("${this::class.java.simpleName}.call() ending")

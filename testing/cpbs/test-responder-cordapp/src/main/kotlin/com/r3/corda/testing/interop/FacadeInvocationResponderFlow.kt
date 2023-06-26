@@ -23,7 +23,7 @@ class FacadeInvocationResponderFlow : FacadeDispatcherFlow(), SampleTokensFacade
 
     override fun reserveTokensV2(denomination: String,
                                  amount: BigDecimal,
-                                 timeToLiveMs: Long): InteropAction<TokenReservation> {
-        return InteropAction.ServerResponse(TokenReservation(UUID.randomUUID(), ZonedDateTime.now()))
+                                 timeToLiveMs: Long): TokenReservation {
+        return InteropAction.ServerResponse(TokenReservation(UUID.randomUUID(), ZonedDateTime.now())).result
     }
 }
