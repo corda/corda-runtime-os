@@ -52,16 +52,6 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
         private const val STATE_TOPIC_SUFFIX = ".state"
     }
 
-//    var redisUri: RedisURI = RedisURI.builder()
-//        .withHost("orr-memory-db.8b332u.clustercfg.memorydb.eu-west-2.amazonaws.com")
-//        .withPort(6379)
-//        .withDatabase(0)
-//        .build()
-//    var redisClient: RedisClient? = RedisClient.create(redisUri)
-//    var connection = redisClient!!.connect(ByteArrayCodec())
-//    var syncCommands = connection.sync()
-
-
     //single threaded executor per state and event consumer
     private val executor = Executors.newSingleThreadScheduledExecutor { runnable ->
         val thread = Thread(runnable)

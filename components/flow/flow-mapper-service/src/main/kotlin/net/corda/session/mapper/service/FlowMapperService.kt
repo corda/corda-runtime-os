@@ -96,30 +96,32 @@ class FlowMapperService @Activate constructor(
      */
     private fun restartFlowMapperService(event: ConfigChangedEvent) {
         try {
-            val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
-            val flowConfig = event.config.getConfig(FLOW_CONFIG)
+            if (System.getenv("ENABLE_MAPPER_PROCESS")!!.equals("TRUE", true)) {
+                val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
+                val flowConfig = event.config.getConfig(FLOW_CONFIG)
 
-            coordinator.createManagedResource(CLEANUP_TASK) {
-                ScheduledTaskState(
-                    Executors.newSingleThreadScheduledExecutor(),
-                    publisherFactory.createPublisher(
-                        PublisherConfig("$CONSUMER_GROUP-cleanup-publisher"),
-                        messagingConfig
-                    ),
-                    mutableMapOf()
-                )
-            }
-            val newScheduledTaskState = coordinator.getManagedResource<ScheduledTaskState>(CLEANUP_TASK)!!
+                coordinator.createManagedResource(CLEANUP_TASK) {
+                    ScheduledTaskState(
+                        Executors.newSingleThreadScheduledExecutor(),
+                        publisherFactory.createPublisher(
+                            PublisherConfig("$CONSUMER_GROUP-cleanup-publisher"),
+                            messagingConfig
+                        ),
+                        mutableMapOf()
+                    )
+                }
+                val newScheduledTaskState = coordinator.getManagedResource<ScheduledTaskState>(CLEANUP_TASK)!!
 
-            coordinator.createManagedResource(SUBSCRIPTION) {
-                subscriptionFactory.createStateAndEventSubscription(
-                    SubscriptionConfig(CONSUMER_GROUP, FLOW_MAPPER_EVENT_TOPIC),
-                    FlowMapperMessageProcessor(flowMapperEventExecutorFactory, flowConfig),
-                    messagingConfig,
-                    FlowMapperListener(newScheduledTaskState)
-                )
+                coordinator.createManagedResource(SUBSCRIPTION) {
+                    subscriptionFactory.createStateAndEventSubscription(
+                        SubscriptionConfig(CONSUMER_GROUP, FLOW_MAPPER_EVENT_TOPIC),
+                        FlowMapperMessageProcessor(flowMapperEventExecutorFactory, flowConfig),
+                        messagingConfig,
+                        FlowMapperListener(newScheduledTaskState)
+                    )
+                }
+                coordinator.getManagedResource<StateAndEventSubscription<*, *, *>>(SUBSCRIPTION)!!.start()
             }
-            coordinator.getManagedResource<StateAndEventSubscription<*, *, *>>(SUBSCRIPTION)!!.start()
             coordinator.updateStatus(LifecycleStatus.UP)
         } catch (e: CordaRuntimeException) {
             val errorMsg = "Error restarting flow mapper from config change"
@@ -132,15 +134,11 @@ class FlowMapperService @Activate constructor(
         get() = coordinator.isRunning
 
     override fun start() {
-        if (System.getenv("ENABLE_MAPPER_PROCESS")!!.equals("TRUE", true)) {
-            coordinator.start()
-        }
+        coordinator.start()
     }
 
     override fun stop() {
-        if (System.getenv("ENABLE_MAPPER_PROCESS")!!.equals("TRUE", true)) {
-            coordinator.stop()
-        }
+        coordinator.stop()
     }
 
     @Deactivate

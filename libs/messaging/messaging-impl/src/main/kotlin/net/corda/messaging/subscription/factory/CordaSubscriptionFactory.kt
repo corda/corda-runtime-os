@@ -32,6 +32,7 @@ import net.corda.messaging.subscription.EventLogSubscriptionImpl
 import net.corda.messaging.subscription.PubSubSubscriptionImpl
 import net.corda.messaging.subscription.RPCSubscriptionImpl
 import net.corda.messaging.subscription.StateAndEventSubscriptionImpl
+import net.corda.messaging.subscription.consumer.builder.RedisStateAndEventBuilder
 import net.corda.messaging.subscription.consumer.builder.StateAndEventBuilder
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.MessagingConfig.MAX_ALLOWED_MSG_SIZE
@@ -55,11 +56,13 @@ class CordaSubscriptionFactory @Activate constructor(
     private val cordaProducerBuilder: CordaProducerBuilder,
     @Reference(service = CordaConsumerBuilder::class)
     private val cordaConsumerBuilder: CordaConsumerBuilder,
-    @Reference(service = StateAndEventBuilder::class)
-    private val stateAndEventBuilder: StateAndEventBuilder,
+//    @Reference(service = StateAndEventBuilder::class)
+//    private val stateAndEventBuilder: StateAndEventBuilder,
     @Reference(service = MessagingChunkFactory::class)
     private val messagingChunkFactory: MessagingChunkFactory,
 ) : SubscriptionFactory {
+
+    private val stateAndEventBuilder: StateAndEventBuilder = RedisStateAndEventBuilder(cordaConsumerBuilder, cordaProducerBuilder)
 
     override fun <K : Any, V : Any> createPubSubSubscription(
         subscriptionConfig: SubscriptionConfig,
