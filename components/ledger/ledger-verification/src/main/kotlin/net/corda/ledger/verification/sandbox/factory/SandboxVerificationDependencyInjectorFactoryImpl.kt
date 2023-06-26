@@ -2,12 +2,11 @@ package net.corda.ledger.verification.sandbox.factory
 
 import net.corda.ledger.verification.sandbox.SandboxVerificationDependencyInjector
 import net.corda.ledger.verification.sandbox.impl.SandboxVerificationDependencyInjectorImpl
-import net.corda.sandbox.type.UsedByFlow
 import net.corda.sandbox.type.UsedByVerification
 import net.corda.sandboxgroupcontext.CORDA_SANDBOX
 import net.corda.sandboxgroupcontext.CORDA_SANDBOX_FILTER
 import net.corda.sandboxgroupcontext.SandboxGroupContext
-import net.corda.sandboxgroupcontext.SandboxGroupType
+import net.corda.sandboxgroupcontext.SandboxGroupType.VERIFICATION
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.framework.Bundle
 import org.osgi.framework.Constants
@@ -30,8 +29,8 @@ class SandboxVerificationDependencyInjectorFactoryImpl : SandboxVerificationDepe
     }
 
     override fun create(sandboxGroupContext: SandboxGroupContext): SandboxVerificationDependencyInjector {
-        check(sandboxGroupContext.virtualNodeContext.sandboxGroupType === SandboxGroupType.FLOW) {
-            "Expected serviceGroupType=${SandboxGroupType.FLOW} but found ${sandboxGroupContext.virtualNodeContext.sandboxGroupType}"
+        check(sandboxGroupContext.virtualNodeContext.sandboxGroupType === VERIFICATION) {
+            "Expected serviceGroupType=${VERIFICATION} but found ${sandboxGroupContext.virtualNodeContext.sandboxGroupType}"
         }
         val references = LinkedList<ServiceReference<*>>()
         val sandboxGroup = sandboxGroupContext.sandboxGroup
