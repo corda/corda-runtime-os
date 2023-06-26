@@ -21,7 +21,7 @@ configurations {
 dependencies {
     api 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     compileOnly 'org.osgi:osgi.annotation'
-    compileOnly "org.jetbrains.kotlinx:kotlinx-metadata-jvm:$kotlinMetadataVersion"
+    compileOnly libs.kotlinx.metadata
     compileOnly "org.ow2.asm:asm:$asmVersion"
     compileOnly "co.paralleluniverse:quasar-osgi-annotations:$quasarVersion"
     implementation platform("net.corda:corda-api:$cordaApiVersion")
@@ -29,7 +29,7 @@ dependencies {
     testCompileOnly 'org.jetbrains:annotations'
     testImplementation "org.assertj:assertj-core:$assertjVersion"
     testImplementation "org.junit.jupiter:junit-jupiter-params:$junit5Version"
-    testRuntimeOnly "org.jetbrains.kotlinx:kotlinx-metadata-jvm:$kotlinMetadataVersion"
+    testRuntimeOnly libs.kotlinx.metadata
     testRuntimeOnly "org.ow2.asm:asm:$asmVersion"
 
     integrationTestImplementation project(':libs:kotlin-reflection:kotlin-reflection-test-example')
@@ -48,7 +48,7 @@ def jar = tasks.named('jar', Jar) {
 Bundle-Name: Corda Kotlin Reflection
 Bundle-SymbolicName: \${project.group}.kotlin-reflection
 Sealed: true
--includeresource: @kotlinx-metadata-jvm-${kotlinMetadataVersion}.jar
+-includeresource: @kotlinx-metadata-jvm-${libs.versions.kotlinMetadataVersion.get()}.jar
 -conditionalpackage: org.objectweb.asm
 """
     }
