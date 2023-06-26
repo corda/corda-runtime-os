@@ -24,7 +24,6 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTI
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_PENDING
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_SUSPENDED
 import net.corda.membership.lib.MemberInfoExtension.Companion.MODIFIED_TIME
-import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_KEYS
 import net.corda.membership.lib.MemberInfoExtension.Companion.ROLES_PREFIX
 import net.corda.membership.lib.MemberInfoExtension.Companion.SERIAL
 import net.corda.membership.lib.MemberInfoExtension.Companion.SESSION_KEYS

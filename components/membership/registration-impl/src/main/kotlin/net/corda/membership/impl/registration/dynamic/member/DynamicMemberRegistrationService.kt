@@ -60,7 +60,6 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEY_HASHES_
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_CPI_NAME
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_CPI_SIGNER_HASH
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_CPI_VERSION
-import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_KEYS
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_KEY_SPEC
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_ROLE
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_PROTOCOL_VERSIONS
