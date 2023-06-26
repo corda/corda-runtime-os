@@ -135,6 +135,7 @@ class FlowRunnerImpl @Activate constructor(
             flow = flow.logic,
             contextUserProperties = contextUserProperties,
             contextPlatformProperties = contextPlatformProperties,
+            flowMetrics = context.flowMetrics
         )
         updateFlowStackItem(stackItem)
         fiberContext.sandboxGroupContext.dependencyInjector.injectServices(flow.logic)

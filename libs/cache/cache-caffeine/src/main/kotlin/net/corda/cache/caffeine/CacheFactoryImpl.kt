@@ -17,8 +17,7 @@ class CacheFactoryImpl: CacheFactory {
             .executor(SecManagerForkJoinPool.pool)
             .recordStats()
             .build()
-        CaffeineCacheMetrics.monitor(CordaMetrics.registry, cache, name)
-        return cache
+        return CaffeineCacheMetrics.monitor(CordaMetrics.registry, cache, name)
     }
 
     override fun <K, V> build(name: String, caffeine: Caffeine<in K, in V>, loader: CacheLoader<K, V>): LoadingCache<K, V> {
@@ -26,7 +25,6 @@ class CacheFactoryImpl: CacheFactory {
             .executor(SecManagerForkJoinPool.pool)
             .recordStats()
             .build(loader)
-        CaffeineCacheMetrics.monitor(CordaMetrics.registry, cache, name)
-        return cache
+        return CaffeineCacheMetrics.monitor(CordaMetrics.registry, cache, name)
     }
 }
