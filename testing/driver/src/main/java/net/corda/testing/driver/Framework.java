@@ -14,10 +14,4 @@ public interface Framework {
         @Nullable String filter,
         @NotNull Duration timeout
     ) throws InterruptedException, TimeoutException;
-
-    @NotNull
-    <T> Service<T> getService(
-        @NotNull Class<T> serviceType,
-        @NotNull Duration timeout
-    ) throws InterruptedException, TimeoutException;
 }

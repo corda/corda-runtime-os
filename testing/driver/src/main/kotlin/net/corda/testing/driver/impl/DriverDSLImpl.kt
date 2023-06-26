@@ -284,13 +284,8 @@ class DriverDSLImpl(private val network: Map<MemberX500Name, KeyPair>) : DriverI
             throw TimeoutException("Service $serviceDescription did not arrive in ${timeout.toMillis()} milliseconds")
         }
 
-        @Throws(InterruptedException::class, TimeoutException::class)
-        override fun <T> getService(serviceType: Class<T>, timeout: Duration): Service<T> {
-            return getService(serviceType, null, timeout)
-        }
-
         private fun loadCordapps(memberNames: Set<MemberX500Name>): List<VirtualNodeInfo> {
-            val vnodes = mutableListOf<VirtualNodeInfo>()
+            val vNodes = mutableListOf<VirtualNodeInfo>()
 
             getService(EmbeddedNodeService::class.java, null, Duration.ZERO).andAlso { ens ->
                 ens.setMembershipGroup(network.mapValues { it.value.public })
@@ -307,14 +302,14 @@ class DriverDSLImpl(private val network: Map<MemberX500Name, KeyPair>) : DriverI
 
                 for (testCPB in testCPBs) {
                     logger.info("Uploading CPB: {}", Path.of(testCPB.toURI()).fileName)
-                    vnodes += ens.loadVirtualNodes(testCPB).map(net.corda.data.virtualnode.VirtualNodeInfo::toCorda)
+                    vNodes += ens.loadVirtualNodes(testCPB).map(net.corda.data.virtualnode.VirtualNodeInfo::toCorda)
                 }
 
                 // Broadcast our (tenantId, MemberX500Name) associations to anyone listening.
                 ens.configureLocalTenants(TIMEOUT)
             }
 
-            return vnodes
+            return vNodes
         }
     }
 

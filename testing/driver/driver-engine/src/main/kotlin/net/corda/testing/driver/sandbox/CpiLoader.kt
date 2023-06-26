@@ -18,6 +18,4 @@ interface CpiLoader {
     fun getAllCpiMetadata(): CompletableFuture<List<CpiMetadata>>
     fun getCpiMetadata(id: CpiIdentifier): CompletableFuture<CpiMetadata?>
     fun removeCpiMetadata(id: CpiIdentifier)
-
-    fun stop()
 }
