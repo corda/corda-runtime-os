@@ -99,6 +99,8 @@ class FlowSessionImpl(
 
     @Suspendable
     override fun <R : Any> sendAndReceive(receiveType: Class<R>, payload: Any): R {
+        log.info("FlowSessionImpl:sendAndReceive() called with payload type: ${payload::class.simpleName}, " +
+                "and receive type: ${receiveType::class.simpleName}")
         verifySessionStatusNotErrorOrClose(sourceSessionId, flowFiberService)
         requireBoxedType(receiveType)
         val request = FlowIORequest.SendAndReceive(mapOf(getSessionInfo() to serialize(payload)))
@@ -109,6 +111,7 @@ class FlowSessionImpl(
 
     @Suspendable
     override fun <R : Any> receive(receiveType: Class<R>): R {
+        log.info("FlowSessionImpl:Receive() called with receive type: ${receiveType::class.simpleName}")
         verifySessionStatusNotErrorOrClose(sourceSessionId, flowFiberService)
         requireBoxedType(receiveType)
         val request = FlowIORequest.Receive(setOf(getSessionInfo()))
@@ -118,6 +121,7 @@ class FlowSessionImpl(
     }
     @Suspendable
     override fun send(payload: Any) {
+        log.info("FlowSessionImpl:Send() called with payload type: ${payload::class.simpleName}")
         verifySessionStatusNotErrorOrClose(sourceSessionId, flowFiberService)
         val request =
             FlowIORequest.Send(mapOf(getSessionInfo() to serialize(payload)))
@@ -127,7 +131,9 @@ class FlowSessionImpl(
 
     @Suspendable
     override fun close() {
+        log.info("FlowSessionImpl:close() called")
         if (isSessionConfirmed) {
+            log.info("And the session is confirmed!")
             fiber.suspend(FlowIORequest.CloseSessions(setOf(sourceSessionId)))
             log.trace { "Closed session: $sourceSessionId" }
         } else {

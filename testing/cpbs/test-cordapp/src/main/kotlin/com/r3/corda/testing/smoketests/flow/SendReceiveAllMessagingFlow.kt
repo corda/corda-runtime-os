@@ -1,5 +1,6 @@
 package com.r3.corda.testing.smoketests.flow
 
+import com.r3.corda.testing.testflows.MyClass
 import java.util.concurrent.ThreadLocalRandom
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.FlowEngine
@@ -13,7 +14,6 @@ import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.types.MemberX500Name
-import com.r3.corda.testing.testflows.MyClass
 import org.slf4j.LoggerFactory
 
 @InitiatingFlow(protocol = "SendReceiveAllProtocol")
@@ -44,24 +44,28 @@ class SendReceiveAllMessagingFlow(
         val sessionTwo = flowMessaging.initiateFlow(x500Name)
         log.info("Called initiate sessions")
 
-        val flowInfo = sessionOne.counterpartyFlowInfo
-        log.info("Received FlowInfo from sessionOne: $flowInfo")
+        log.info("Received FlowInfo from sessionOne: ${sessionOne.counterpartyFlowInfo}")
+        log.info("Received FlowInfo from sessionTwo: ${sessionTwo.counterpartyFlowInfo}")
 
         val sendMap: Map<FlowSession, Any> = mapOf(sessionOne to MyClass("Serialize me please", 1), sessionTwo to MyClass("Serialize me " +
                 "please", 2)
         )
         flowMessaging.sendAllMap(sendMap)
-        log.info("Sent Map, sending all")
+        log.info("Sent Map")
+
         flowMessaging.sendAll(MyClass("Serialize me please", 3), setOf(sessionOne, sessionTwo))
+        log.info("Sent All")
 
         //additional send via session to help verify init isn't sent again
         val largeString = getLargeString(1100)
         sessionOne.send(MyClass(largeString, 4))
-        sessionTwo.send(MyClass("Serialize me please", 5))
+        log.info("Session 1 single send")
 
-        log.info("Sent data to two sessions")
+        sessionTwo.send(MyClass("Serialize me please", 5))
+        log.info("Session 2 single send")
+
         val receivedMap = flowMessaging.receiveAllMap(mapOf(sessionOne to MyClass::class.java, sessionTwo to MyOtherClass::class.java))
-        log.info("received Map")
+        log.info("Received Map")
 
         var receivedNumSum = 0
         receivedMap.forEach { (_, received) ->
@@ -75,7 +79,7 @@ class SendReceiveAllMessagingFlow(
         }
 
         val receivedAll = flowMessaging.receiveAll(MyClass::class.java, setOf(sessionOne, sessionTwo))
-        log.info("received all")
+        log.info("Received All")
         receivedAll.forEach {
             receivedNumSum+=it.int
             log.info("Session received all data: ${it.int} ")
@@ -84,14 +88,16 @@ class SendReceiveAllMessagingFlow(
         sessionOne.receive(MyClass::class.java).let {
             receivedNumSum+=it.int
         }
+        log.info("Received single value from session 1")
 
         sessionTwo.receive(MyClass::class.java).let {
             receivedNumSum+=it.int
         }
+        log.info("Received single value from session 2")
 
-        log.info("Closing session1")
+        log.info("Closing session 1")
         sessionOne.close()
-        log.info("Closing session2")
+        log.info("Closing session 2")
         sessionTwo.close()
 
         log.info("Closed session")
@@ -128,21 +134,29 @@ class SendReceiveAllInitiatedFlow : ResponderFlow {
 
         val received = session.receive(MyClass::class.java)
         log.info("Receive from send map from peer: $received")
+
         if (received.int == 2) {
             session.send(MyOtherClass( 1, "this is a new object 1", received.int))
+            log.info("Responding with MyOtherClass")
         } else {
             session.send(received.copy(string = "this is a new object 1"))
+            log.info("Responding with copy of received")
         }
 
         val received2 = session.receive(MyClass::class.java)
         log.info("Receive from send all from peer: $received2")
+
         session.send(received2.copy(string = "this is a new object 2"))
+        log.info("Responding to send all from peer")
 
 
         val received3 = session.receive(MyClass::class.java)
         //this string is so large it activates chunking so do not log it
-        log.info("Receive from send from peer. Message size: ${received3.string.length}")
+        log.info("Receive from single send from peer. Message size: ${received3.string.length}")
+
         session.send(received3.copy(string = "this is a new object 3"))
+        log.info("Sending final message to initiator flow")
+
         log.info("Closing session")
 
         session.close()
