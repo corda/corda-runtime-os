@@ -83,7 +83,8 @@ class CryptoProcessorImplTest {
             })
             val hsmConfig = mock<SmartConfig>().also {
                 whenever(it.getConfigList(eq(WRAPPING_KEYS))).thenReturn(wrappingKeysList)
-                whenever(it.getString(DEFAULT_WRAPPING_KEY)).thenReturn("alpha") // this must match the ALIAS of the one wrapping key we set up in wrappingKeysList
+                // this must match the ALIAS of the one wrapping key we set up in wrappingKeysList
+                whenever(it.getString(DEFAULT_WRAPPING_KEY)).thenReturn("alpha")
             }
             whenever(it.getConfig(eq(CACHING))).thenReturn(cachingConfig)
             whenever(it.getConfig(eq(RETRYING))).thenReturn(retryingConfig)
