@@ -40,7 +40,7 @@ interface InteropRestResource : RestResource {
     fun createInterOpIdentity(
         createInteropIdentityRequest: CreateInteropIdentityRequest,
         @RestPathParameter(description = "ID of the holding identity which groups are to be returned.")
-    holdingidentityid: String?
+        holdingidentityid: String?
     ): ResponseEntity<String>
 
     /**
