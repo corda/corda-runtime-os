@@ -66,6 +66,13 @@ internal class RedisStateAndEventConsumer<K : Any, S : Any, E : Any>(
         .withTag(CordaMetrics.Tag.OperationName, MetricsConstants.EVENT_POLL_OPERATION)
         .build()
 
+    private val attemptStateLockCounter = CordaMetrics.Metric.StateLockAttempts.builder()
+        .withTag(CordaMetrics.Tag.MessagePatternType, MetricsConstants.STATE_AND_EVENT_PATTERN_TYPE)
+        .withTag(CordaMetrics.Tag.MessagePatternClientId, config.clientId)
+        .withTag(CordaMetrics.Tag.OperationName, MetricsConstants.EVENT_POLL_OPERATION)
+        .withTag(CordaMetrics.Tag.Topic, config.topic)
+        .build()
+
     private val acquiredStateLocksCounter = CordaMetrics.Metric.StateAcquiredLocksCount.builder()
         .withTag(CordaMetrics.Tag.MessagePatternType, MetricsConstants.STATE_AND_EVENT_PATTERN_TYPE)
         .withTag(CordaMetrics.Tag.MessagePatternClientId, config.clientId)
@@ -181,6 +188,7 @@ internal class RedisStateAndEventConsumer<K : Any, S : Any, E : Any>(
         val lockKey = key + 0.toByte()
         var isLocked = jedisCluster.get(lockKey)
         while (isLocked != null && isLocked[0].toInt() == 1) {
+            attemptStateLockCounter.increment()
             Thread.sleep(100)
             isLocked = jedisCluster.get(lockKey)
         }
