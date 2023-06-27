@@ -349,7 +349,20 @@ class StartRegistrationHandlerTest {
             assertThat(updatedState).isNotNull
             assertThat(updatedState!!.registrationId).isEqualTo(registrationId)
             assertThat(updatedState!!.registeringMember).isEqualTo(aliceHoldingIdentity)
-            assertThat(outputStates).isNotEmpty.hasSize(1)
+            assertThat(outputStates).isNotEmpty.hasSize(2)
+
+            assertDeclinedRegistration()
+        }
+    }
+
+    @Test
+    fun `declined if serial in the registration request is negative`() {
+        val startRegistrationCommand = getStartRegistrationCommand(serial = -1)
+        with(handler.invoke(null, Record(testTopic, testTopicKey, startRegistrationCommand))) {
+            assertThat(updatedState).isNotNull
+            assertThat(updatedState!!.registrationId).isEqualTo(registrationId)
+            assertThat(updatedState!!.registeringMember).isEqualTo(aliceHoldingIdentity)
+            assertThat(outputStates).isNotEmpty.hasSize(2)
 
             assertDeclinedRegistration()
         }

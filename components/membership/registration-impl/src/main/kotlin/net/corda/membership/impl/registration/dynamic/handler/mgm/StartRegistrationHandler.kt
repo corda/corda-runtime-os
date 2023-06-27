@@ -123,9 +123,11 @@ internal class StartRegistrationHandler(
             outputRecords.add(pendingMemberRecord)
 
             validateRegistrationRequest(registrationRequest.serial != null) {
-                "Serial on the registration request should not be null."
+                "Serial on the registration request cannot be null."
             }
-
+            validateRegistrationRequest(registrationRequest.serial!! >= 0) {
+                "Serial cannot be negative on the registration request."
+            }
             validatePreAuthTokenUsage(mgmHoldingId, pendingMemberInfo, registrationRequest)
             // Parse the registration request and verify contents
             // The MemberX500Name matches the source MemberX500Name from the P2P messaging
@@ -133,32 +135,24 @@ internal class StartRegistrationHandler(
                 pendingMemberInfo.name == pendingMemberHoldingId.x500Name
             ) { "MemberX500Name in registration request does not match member sending request over P2P." }
 
-            val existingMemberInfos = membershipQueryClient.queryMemberInfo(
+            val activeOrSuspendedInfo = membershipQueryClient.queryMemberInfo(
                 mgmHoldingId,
                 listOf(pendingMemberHoldingId)
-            ).getOrThrow()
-            val activeOrSuspendedInfo = existingMemberInfos.lastOrNull {
+            ).getOrThrow().lastOrNull {
                 it.status == MEMBER_STATUS_ACTIVE || it.status == MEMBER_STATUS_SUSPENDED
             }
-            /**
-             * We can only register with the member name if:
-             * * It's the first registration i.e. nobody has registered this name before
-             * * It's a re-registration i.e. the serial number has increased to indicate a re-registration
-             * * It's a registration after a failed first registration i.e. a pending member info exists, but it's
-             *      still a first registration since the previous failed.
-             */
-            validateRegistrationRequest(
-                existingMemberInfos.isEmpty()
-                        || registrationRequest.serial != 0L
-                        || activeOrSuspendedInfo == null
-            ) { "Member already exists with the same X500 name." }
-
-            // Serial number on the request should be smaller than the current version of the requestor's MemberInfo
-            validateRegistrationRequest(
-                activeOrSuspendedInfo == null || activeOrSuspendedInfo.serial <= registrationRequest.serial!!
-            ) {
-                "Registration request was submitted for an older version of member info. " +
-                        "Please submit a new request."
+            if (registrationRequest.serial!! > 0) { //re-registration
+                validateRegistrationRequest(activeOrSuspendedInfo != null) {
+                    "Member has not registered previously so serial number should be 0."
+                }
+                validateRegistrationRequest(activeOrSuspendedInfo!!.serial <= registrationRequest.serial!!) {
+                    "Registration request was submitted for an older version of member info. " +
+                            "Please submit a new request."
+                }
+            } else if (registrationRequest.serial!! == 0L) { // initial registration
+                validateRegistrationRequest(activeOrSuspendedInfo == null) {
+                    "Member already exists with the same X500 name."
+                }
             }
 
             // The group ID matches the group ID of the MGM
@@ -259,7 +253,7 @@ internal class StartRegistrationHandler(
                 CREATION_TIME to now,
                 MODIFIED_TIME to now,
                 STATUS to MEMBER_STATUS_PENDING,
-                SERIAL to (registrationRequest.serial!! + 1).toString(),
+                SERIAL to ((registrationRequest.serial ?: 0) + 1).toString(),
             )
         )
     }
