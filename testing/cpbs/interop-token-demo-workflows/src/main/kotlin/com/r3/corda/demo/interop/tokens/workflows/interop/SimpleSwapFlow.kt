@@ -99,7 +99,6 @@ class SimpleSwapFlow : ClientStartableFlow {
                 log.info("Success! Response: $it")
             }
 
-
             val payment = Payment(toReserve = BigDecimal(100))
             val myAlias = MemberX500Name.parse("C=GB, L=London, O=Bob2 Alias")
             val facadeId = "org.corda.interop/platform/tokens/v3.0"
