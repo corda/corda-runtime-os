@@ -1,18 +1,17 @@
 package net.corda.ledger.verification.sandbox
 
-import net.corda.serialization.checkpoint.NonSerializable
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.ledger.utxo.Contract
 import net.corda.v5.serialization.SingletonSerializeAsToken
 
 /**
- * The Sandbox dependency injector is responsible for injecting services into CordApp flows.
+ * The Sandbox dependency injector is responsible for injecting services into CorDapp verification.
  */
-interface SandboxVerificationDependencyInjector : AutoCloseable, NonSerializable {
+interface SandboxVerificationDependencyInjector : AutoCloseable {
 
     /**
-     * Set any property on the flow marked with @[CordaInject] with an instance of the type specified.
-     * @param contract The flow to receive the injected services.
+     * Set any property on the contract marked with @[CordaInject] with an instance of the type specified.
+     * @param contract The contract to receive the injected services.
      */
     fun injectServices(contract: Contract)
 
