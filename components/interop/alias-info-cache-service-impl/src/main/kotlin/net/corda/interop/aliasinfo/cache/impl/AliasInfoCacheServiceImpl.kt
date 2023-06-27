@@ -52,13 +52,16 @@ class AliasInfoCacheServiceImpl @Activate constructor(
     }
 
     override fun putAliasIdentity(shortHash: String, aliasIdentity: InteropAliasIdentity) {
+        log.info("Adding alias identity, shortHash: $shortHash, identity=$aliasIdentity")
         val identities = getAliasIdentityMapFor(shortHash)
         identities[aliasIdentity.groupId] = aliasIdentity
     }
 
     override fun removeAliasIdentity(shortHash: String, aliasIdentity: InteropAliasIdentity) {
         val identities = getAliasIdentityMapFor(shortHash)
-        identities.remove(aliasIdentity.groupId)
+        identities.remove(aliasIdentity.groupId)?.let {
+            log.info("Removing alias identity, shortHash: $shortHash, identity=$it")
+        }
     }
 
     override val isRunning: Boolean
