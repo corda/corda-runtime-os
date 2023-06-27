@@ -18,6 +18,7 @@ import org.slf4j.LoggerFactory
 import java.time.Instant
 import java.util.concurrent.CompletableFuture
 
+// This is separate to HSMService so that we can unit test HSMServiceImpl without dealing with RPCResponseProcess
 class HSMRegistrationBusProcessor(
     private val hsmService: HSMService,
     config: RetryingConfig

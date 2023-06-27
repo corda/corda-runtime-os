@@ -3,25 +3,37 @@ package net.corda.crypto.service.impl
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.cipher.suite.schemes.KeyScheme
 import net.corda.crypto.core.KeyAlreadyExistsException
+import net.corda.crypto.persistence.HSMStore
 import net.corda.crypto.persistence.SigningKeyInfo
-import net.corda.crypto.service.CryptoServiceFactory
 import net.corda.crypto.softhsm.SigningRepository
+import net.corda.data.crypto.wire.hsm.HSMAssociationInfo
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 
 class SigningServiceImplTest {
     private val repo = mock<SigningRepository>()
-    private val cryptoServiceFactory = mock<CryptoServiceFactory>()
     private val schemeMetadata = mock<CipherSchemeMetadata>()
+
+    private val masterKeyAlias = "IAMGROOT"
+
+    private val association =  mock<HSMAssociationInfo> {
+        on { masterKeyAlias }.thenReturn(masterKeyAlias)
+    }
+    private val mockHsmStore = mock<HSMStore> {
+        on { findTenantAssociation(any(), any()) } doReturn association
+    }
+
     private val service = SigningServiceImpl(
-        cryptoServiceFactory = cryptoServiceFactory,
+        cryptoService = mock(),
         signingRepositoryFactory = { repo },
         schemeMetadata = schemeMetadata,
         digestService = mock(),
-        cache = mock()
+        cache = mock(),
+        hsmStore = mockHsmStore
     )
 
     @Test

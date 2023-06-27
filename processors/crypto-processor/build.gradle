@@ -30,6 +30,7 @@ dependencies {
     implementation project(':libs:configuration:configuration-core')
     implementation project(":libs:configuration:configuration-datamodel")
     implementation project(':libs:configuration:configuration-merger')
+    implementation project(":libs:cache:cache-caffeine")
     implementation project(':libs:crypto:cipher-suite')
     implementation project(':libs:crypto:cipher-suite-impl')
     implementation project(':libs:crypto:crypto-config-impl')
@@ -43,6 +44,8 @@ dependencies {
     implementation project(":libs:virtual-node:virtual-node-info")
     implementation project(':libs:flows:external-event-responses')
     implementation project(":libs:serialization:serialization-avro")
+
+    implementation "com.github.ben-manes.caffeine:caffeine:$caffeineVersion"
 
     integrationTestImplementation project(':components:crypto:crypto-client')
     integrationTestImplementation project(":components:crypto:crypto-client-hsm")
