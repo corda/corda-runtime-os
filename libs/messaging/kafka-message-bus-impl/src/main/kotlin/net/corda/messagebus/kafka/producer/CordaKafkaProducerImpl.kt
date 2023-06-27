@@ -15,6 +15,7 @@ import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.exception.CordaMessageAPIProducerRequiresReset
 import net.corda.metrics.CordaMetrics
 import net.corda.tracing.TraceContext
+import net.corda.tracing.addTraceContextToRecord
 import net.corda.tracing.getOrCreateBatchPublishTracing
 import net.corda.tracing.traceSend
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -138,7 +139,7 @@ class CordaKafkaProducerImpl(
         traceContext.markInScope().use {
             try {
                 producer.send(
-                    record.toKafkaRecord(topicPrefix, partition),
+                    addTraceContextToRecord(record).toKafkaRecord(topicPrefix, partition),
                     toTraceKafkaCallback({ exception -> callback?.onCompletion(exception) }, traceContext)
                 )
             } catch (ex: CordaRuntimeException) {
