@@ -1,0 +1,5 @@
+@Library('corda-shared-build-pipeline-steps@seanb/ES-579/combined-worker-windows') _
+
+combinedWorkerPipeline(
+    agentOs : 'linux'
+)
