@@ -1,5 +1,6 @@
 package net.corda.flow.mapper.impl.executor
 
+import java.time.Instant
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.flow.event.FlowEvent
@@ -14,7 +15,6 @@ import net.corda.flow.mapper.executor.FlowMapperEventExecutor
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.records.Record
 import org.slf4j.LoggerFactory
-import java.time.Instant
 
 @Suppress("LongParameterList")
 class SessionErrorExecutor(
@@ -47,6 +47,10 @@ class SessionErrorExecutor(
     }
 
     private fun processSessionErrorEvents(flowMapperState: FlowMapperState): FlowMapperResult {
+
+        log.info("AAA SessionErrorExecutor triggered! SessionEvent: ${sessionEvent.sessionId} with payload type ${sessionEvent.payload::class.simpleName} in " +
+                "SessionEventExecutor for flow ${flowMapperState.flowId} while mapper is in state ${flowMapperState.status}")
+
         val sessionId = sessionEvent.sessionId
         return when (flowMapperState.status) {
             null -> {

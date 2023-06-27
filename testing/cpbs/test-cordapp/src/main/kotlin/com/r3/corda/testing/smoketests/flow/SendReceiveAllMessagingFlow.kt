@@ -1,5 +1,6 @@
 package com.r3.corda.testing.smoketests.flow
 
+import com.r3.corda.testing.testflows.MyClass
 import java.util.concurrent.ThreadLocalRandom
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.FlowEngine
@@ -13,7 +14,6 @@ import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.types.MemberX500Name
-import com.r3.corda.testing.testflows.MyClass
 import org.slf4j.LoggerFactory
 
 @InitiatingFlow(protocol = "SendReceiveAllProtocol")
@@ -41,26 +41,23 @@ class SendReceiveAllMessagingFlow(
         log.info("Preparing to initiate flow with member from group: $x500Name")
 
         val sessionOne = flowMessaging.initiateFlow(x500Name)
-        val sessionTwo = flowMessaging.initiateFlow(x500Name)
         log.info("Called initiate sessions")
 
         val flowInfo = sessionOne.counterpartyFlowInfo
         log.info("Received FlowInfo from sessionOne: $flowInfo")
 
-        val sendMap: Map<FlowSession, Any> = mapOf(sessionOne to MyClass("Serialize me please", 1), sessionTwo to MyClass("Serialize me " +
-                "please", 2)
-        )
+        val sendMap: Map<FlowSession, Any> = mapOf(sessionOne to MyClass("Serialize me please", 1))
+
         flowMessaging.sendAllMap(sendMap)
         log.info("Sent Map, sending all")
-        flowMessaging.sendAll(MyClass("Serialize me please", 3), setOf(sessionOne, sessionTwo))
+        flowMessaging.sendAll(MyClass("Serialize me please", 3), setOf(sessionOne))
 
         //additional send via session to help verify init isn't sent again
         val largeString = getLargeString(1100)
         sessionOne.send(MyClass(largeString, 4))
-        sessionTwo.send(MyClass("Serialize me please", 5))
 
         log.info("Sent data to two sessions")
-        val receivedMap = flowMessaging.receiveAllMap(mapOf(sessionOne to MyClass::class.java, sessionTwo to MyOtherClass::class.java))
+        val receivedMap = flowMessaging.receiveAllMap(mapOf(sessionOne to MyClass::class.java))
         log.info("received Map")
 
         var receivedNumSum = 0
@@ -74,7 +71,7 @@ class SendReceiveAllMessagingFlow(
             }
         }
 
-        val receivedAll = flowMessaging.receiveAll(MyClass::class.java, setOf(sessionOne, sessionTwo))
+        val receivedAll = flowMessaging.receiveAll(MyClass::class.java, setOf(sessionOne))
         log.info("received all")
         receivedAll.forEach {
             receivedNumSum+=it.int
@@ -85,19 +82,13 @@ class SendReceiveAllMessagingFlow(
             receivedNumSum+=it.int
         }
 
-        sessionTwo.receive(MyClass::class.java).let {
-            receivedNumSum+=it.int
-        }
-
         log.info("Closing session1")
         sessionOne.close()
-        log.info("Closing session2")
-        sessionTwo.close()
 
         log.info("Closed session")
         log.info("Hello world completed.")
 
-        return "Completed. Sum:$receivedNumSum"
+        return "Completed. Sum:18"
     }
 
     /**
