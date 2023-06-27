@@ -23,7 +23,7 @@ class SwapResponderSubFlow(private val session: FlowSession, private val alias: 
         val facadeId = "org.corda.interop/platform/tokens/v1.0"
         log.info("Interop call: $facadeId, $alias, ${message.interopGroupId}")
         val tokens: TokensFacade =
-            facadeService.getFacade(facadeId, TokensFacade::class.java, alias, message.interopGroupId)
+            facadeService.getProxy(facadeId, TokensFacade::class.java, alias, message.interopGroupId)
         val response = tokens.reserveTokensV1("USD", message.toReserve)
         log.info("Interop call returned: $response")
         session.send(response)
