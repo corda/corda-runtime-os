@@ -118,7 +118,7 @@ class FlowSessionImpl(
     }
     @Suspendable
     override fun send(payload: Any) {
-        log.info("~~FlowSessionImpl called with payload type: ${payload::javaClass.name}")
+        log.info("~~FlowSessionImpl called with payload type: ${payload::class.java.name}")
         verifySessionStatusNotErrorOrClose(sourceSessionId, flowFiberService)
         val request =
             FlowIORequest.Send(mapOf(getSessionInfo() to serialize(payload)))

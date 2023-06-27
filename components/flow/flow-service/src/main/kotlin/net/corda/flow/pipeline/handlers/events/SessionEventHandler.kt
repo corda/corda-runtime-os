@@ -82,6 +82,7 @@ class SessionEventHandler @Activate constructor(
         //do this last because the Holding Identity won't be available until after the checkpoint has been initiated
         context.flowMetrics.flowSessionMessageReceived(sessionEvent.payload::class.java.name)
 
+        log.info("**** event is type: ${sessionEvent.payload::class.java.simpleName} and has session Id ${sessionEvent.sessionId}")
         return context
     }
 

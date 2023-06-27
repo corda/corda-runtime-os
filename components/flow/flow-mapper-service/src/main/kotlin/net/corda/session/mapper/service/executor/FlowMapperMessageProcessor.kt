@@ -53,7 +53,7 @@ class FlowMapperMessageProcessor(
             else -> ""
         }
 
-        logger.info("FlowId ${state?.flowId}: Received event type: ${eventPayload.javaClass}")
+        logger.info("FlowId ${state?.flowId}: Received event type: ${eventPayload::class.java.simpleName}")
 
         CordaMetrics.Metric.FlowMapperEventLag.builder()
             .withTag(CordaMetrics.Tag.FlowEvent, value.payload::class.java.name)
