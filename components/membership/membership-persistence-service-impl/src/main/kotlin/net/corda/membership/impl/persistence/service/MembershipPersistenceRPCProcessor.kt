@@ -24,7 +24,10 @@ internal class MembershipPersistenceRPCProcessor(
         request: MembershipPersistenceRequest,
         respFuture: CompletableFuture<MembershipPersistenceResponse>
     ) {
-        logger.info("Received membership persistence request: ${request.request::class.java}")
+        logger.info(
+            "Received membership persistence request: ${request.request::class.java} " +
+                "ID: ${request.context.requestId}"
+        )
         val result = try {
             val result = handlerFactories.handle(
                 request,
