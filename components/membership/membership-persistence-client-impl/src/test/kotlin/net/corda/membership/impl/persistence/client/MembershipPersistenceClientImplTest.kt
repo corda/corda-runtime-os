@@ -634,9 +634,9 @@ class MembershipPersistenceClientImplTest {
         fun `persistGroupParameters returns the correct epoch`() {
             val avroGroupParameters = mock<AvroGroupParameters>()
             val signedGroupParameters = mock<SignedGroupParameters> {
-                on { bytes } doReturn serialisedParams
-                on { signature } doReturn mockSignatureWithKey
-                on { signatureSpec } doReturn mockSignatureSpec
+                on { groupParameters } doReturn serialisedParams
+                on { mgmSignature } doReturn mockSignatureWithKey
+                on { mgmSignatureSpec } doReturn mockSignatureSpec
             }
             postConfigChangedEvent()
             whenever(groupParametersFactory.create(avroGroupParameters)).doReturn(signedGroupParameters)
@@ -653,9 +653,9 @@ class MembershipPersistenceClientImplTest {
         @Test
         fun `persistGroupParameters returns error in case of failure`() {
             val groupParameters = mock<SignedGroupParameters> {
-                on { bytes } doReturn serialisedParams
-                on { signature } doReturn mockSignatureWithKey
-                on { signatureSpec } doReturn mockSignatureSpec
+                on { groupParameters } doReturn serialisedParams
+                on { mgmSignature } doReturn mockSignatureWithKey
+                on { mgmSignatureSpec } doReturn mockSignatureSpec
             }
             postConfigChangedEvent()
             mockPersistenceResponse(
@@ -671,9 +671,9 @@ class MembershipPersistenceClientImplTest {
         @Test
         fun `persistGroupParameters sends the correct data`() {
             val groupParameters = mock<SignedGroupParameters> {
-                on { bytes } doReturn serialisedParams
-                on { signature } doReturn mockSignatureWithKey
-                on { signatureSpec } doReturn mockSignatureSpec
+                on { groupParameters } doReturn serialisedParams
+                on { mgmSignature } doReturn mockSignatureWithKey
+                on { mgmSignatureSpec } doReturn mockSignatureSpec
             }
             postConfigChangedEvent()
             val argument = argumentCaptor<MembershipPersistenceRequest>()

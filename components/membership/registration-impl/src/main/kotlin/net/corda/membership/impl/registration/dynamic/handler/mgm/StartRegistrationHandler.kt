@@ -213,6 +213,11 @@ internal class StartRegistrationHandler(
         )
     }
 
+    override fun getOwnerHoldingId(
+        state: RegistrationState?,
+        command: StartRegistration
+    ): net.corda.data.identity.HoldingIdentity = command.destination
+
     private class InvalidRegistrationRequestException(reason: String) : CordaRuntimeException(reason)
 
     private fun validateRegistrationRequest(condition: Boolean, errorMsg: () -> String) {

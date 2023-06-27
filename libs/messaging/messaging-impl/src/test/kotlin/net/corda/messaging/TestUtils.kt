@@ -20,7 +20,7 @@ internal fun createResolvedSubscriptionConfig(type: SubscriptionType): ResolvedS
         type,
         TOPIC,
         GROUP,
-        1L,
+        "1L",
         1,
         Duration.ofMillis(100L),
         Duration.ofMillis(100L),

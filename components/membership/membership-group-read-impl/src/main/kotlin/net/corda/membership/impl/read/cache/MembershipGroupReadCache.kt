@@ -28,12 +28,12 @@ interface MembershipGroupReadCache {
      * Default implementation of [MembershipGroupReadCache].
      */
     class Impl : MembershipGroupReadCache {
-        companion object {
+        private companion object {
             private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         }
 
-        override var memberListCache: MemberListCache = MemberListCache.Impl()
-        override var groupReaderCache: MemberDataCache<MembershipGroupReader> = MemberDataCache.Impl()
+        override val memberListCache: MemberListCache = MemberListCache.Impl()
+        override val groupReaderCache: MemberDataCache<MembershipGroupReader> = MemberDataCache.Impl()
 
         private val caches = listOf(
             memberListCache,

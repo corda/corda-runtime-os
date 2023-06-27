@@ -28,7 +28,7 @@ internal class CompactedSubscriptionImpl<K : Any, V : Any>(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
 ) : CompactedSubscription<K, V> {
 
-    private val log = LoggerFactory.getLogger(config.loggerName)
+    private val log = LoggerFactory.getLogger("${this.javaClass.name}-${config.clientId}")
 
     private val errorMsg = "Failed to read records from group ${config.group}, topic ${config.topic}"
 

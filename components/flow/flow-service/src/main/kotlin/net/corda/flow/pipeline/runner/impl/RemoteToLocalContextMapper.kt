@@ -17,14 +17,15 @@ import net.corda.flow.utils.toMap
  */
 fun remoteToLocalContextMapper(
     remoteUserContextProperties: KeyValuePairList,
-    remotePlatformContextProperties: KeyValuePairList
+    remotePlatformContextProperties: KeyValuePairList,
+    localCounterpartyContext: Map<String, String>
 ): LocalContext {
 
     // replace 'corda.' with 'corda.initiator.'
-    val initiatorPlatformContextProperties = renameInitiatorProps(remotePlatformContextProperties)
+    val initiatorPlatformContextProperties = renameInitiatorProps(remotePlatformContextProperties, localCounterpartyContext)
 
     return LocalContext(
-        userProperties = renameInitiatorProps(remoteUserContextProperties),
+        userProperties = renameInitiatorProps(remoteUserContextProperties, emptyMap()),
         platformProperties = initiatorPlatformContextProperties,
         counterpartySessionProperties = initiatorPlatformContextProperties.toMap()
     )
@@ -39,7 +40,8 @@ fun remoteToLocalContextMapper(
  * @return The newly re-keyed KVP List
  */
 @Suppress("NestedBlockDepth")
-fun renameInitiatorProps(keyValuePairList: KeyValuePairList) = KeyValueStore().apply {
+fun renameInitiatorProps(keyValuePairList: KeyValuePairList, localCounterpartyContext: Map<String, String>)
+= KeyValueStore().apply {
     keyValuePairList.items.forEach { kvp ->
         if (!kvp.key.startsWith("corda.initiator")) {
             if (kvp.key.startsWith("corda.")) {
@@ -48,7 +50,10 @@ fun renameInitiatorProps(keyValuePairList: KeyValuePairList) = KeyValueStore().a
                 this[kvp.key] = kvp.value
             }
         }
+
     }
+    // local values should override conflicting things coming over the wire
+    localCounterpartyContext.forEach{ (k, v) -> this[k] = v}
 }.avro
 
 
