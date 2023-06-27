@@ -7,6 +7,10 @@
 -runvm: \
     --illegal-access=deny
 
+-runsystempackages: \
+    javax.annotation;version=3.0.0,\
+    javax.annotation.meta;version=3.0.0
+
 -runrequires: \
     bnd.identity;id='net.corda.merkle-impl',\
     bnd.identity;id='${project.archivesBaseName}-tests',\

@@ -1,9 +1,9 @@
 package net.corda.interop.rest.impl.v1
 
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.interop.aliasinfo.cache.AliasInfoCacheService
+import net.corda.interop.aliasinfo.write.InteropAliasInfoWriteService
 import net.corda.libs.interop.endpoints.v1.InteropRestResource
-import net.corda.libs.interop.endpoints.v1.common.withInteropManager
-import net.corda.libs.interop.endpoints.v1.converter.convertToDto
 import net.corda.libs.interop.endpoints.v1.types.CreateInteropIdentityRequest
 import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.Lifecycle
@@ -15,10 +15,8 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
-import net.corda.permissions.management.service.InteropManagementService
 import net.corda.rest.PluggableRestResource
 import net.corda.rest.response.ResponseEntity
-import net.corda.rest.security.CURRENT_REST_CONTEXT
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.utilities.debug
 import org.osgi.service.component.annotations.Activate
@@ -34,8 +32,10 @@ internal class InteropRestResourceImpl @Activate constructor(
     coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = ConfigurationReadService::class)
     private val configurationReadService: ConfigurationReadService,
-    @Reference(service = InteropManagementService::class)
-    private val interopManagementService: InteropManagementService,
+    @Reference(service = AliasInfoCacheService::class)
+    private val aliasInfoCacheService: AliasInfoCacheService,
+    @Reference(service = InteropAliasInfoWriteService::class)
+    private val interopAliasInfoWriteService: InteropAliasInfoWriteService
 ) : InteropRestResource, PluggableRestResource<InteropRestResource>, Lifecycle {
 
     private companion object {
@@ -53,27 +53,40 @@ internal class InteropRestResourceImpl @Activate constructor(
     override fun createInterOpIdentity(
         createInteropIdentityRequest: CreateInteropIdentityRequest,
         holdingidentityid: String?
-    ): ResponseEntity<CreateInteropIdentityRequest> {
-        val restContext = CURRENT_REST_CONTEXT.get()
-        val principal = restContext.principal
+    ): ResponseEntity<String> {
+        interopAliasInfoWriteService.addInteropIdentity(
+            holdingidentityid!!,
+            createInteropIdentityRequest.groupId.toString(),
+            createInteropIdentityRequest.x500Name
+        )
 
-        val createInteropIdentityResult =
-            withInteropManager(interopManagementService.interopManager, logger) {
-                createInteropIdentity(createInteropIdentityRequest.convertToDto(principal))
-            }
+        logger.info("AliasIdentity created.")
 
-        return ResponseEntity.ok(createInteropIdentityResult)
+        return ResponseEntity.ok("OK")
     }
 
     override fun getInterOpIdentities(holdingidentityid: String?): List<CreateInteropIdentityRequest> {
-        return listOf(CreateInteropIdentityRequest("CN=Alice Alter Ego, O=Alice Alter Ego Corp, L=LDN, C=GB", UUID.randomUUID()))
+        val groupToAliasMappings = aliasInfoCacheService.getAliasIdentities(holdingidentityid!!)
+        val listOfIdentities: MutableList<CreateInteropIdentityRequest> = mutableListOf()
+        for (groupToAliasMapping in groupToAliasMappings) {
+            listOfIdentities.add(
+                CreateInteropIdentityRequest(
+                    groupToAliasMapping.value.aliasX500Name,
+                    UUID.fromString(groupToAliasMapping.value.groupId)
+                )
+            )
+        }
+        return listOfIdentities
     }
 
     override val protocolVersion = 1
 
     // Lifecycle
     private val dependentComponents = DependentComponents.of(
-        ::configurationReadService, ::interopManagementService
+        ::configurationReadService,
+        ::aliasInfoCacheService,
+        ::interopAliasInfoWriteService
+//        ::interopManagementService
     )
 
     private val lifecycleCoordinator = coordinatorFactory.createCoordinator(

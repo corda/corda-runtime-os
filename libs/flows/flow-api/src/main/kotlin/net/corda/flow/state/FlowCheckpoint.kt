@@ -55,6 +55,8 @@ interface FlowCheckpoint : NonSerializable {
 
     val initialPlatformVersion: Int
 
+    val flowMetricsState: String
+
     fun initFlowState(flowStartContext: FlowStartContext, cpkFileHashes: Set<SecureHash>)
 
     fun getSessionState(sessionId: String): SessionState?
@@ -76,6 +78,8 @@ interface FlowCheckpoint : NonSerializable {
     fun setFlowSleepDuration(sleepTimeMs: Int)
 
     fun setPendingPlatformError(type: String, message: String)
+
+    fun setMetricsState(stateJson :String)
 
     fun toAvro(): Checkpoint?
 }

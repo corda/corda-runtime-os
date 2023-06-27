@@ -264,6 +264,12 @@ internal class VirtualNodeRestResourceImpl(
         val currentCpi = requireNotNull(cpiInfoReadService.get(currentVirtualNode.cpiIdentifier)) {
             "Current CPI ${currentVirtualNode.cpiIdentifier} associated with virtual node $virtualNodeShortId was not found."
         }
+
+        if (currentCpi.fileChecksum.toHexString().slice(targetCpiFileChecksum.indices) == targetCpiFileChecksum) {
+            throw InvalidStateChangeException("Virtual Node with shorthash $virtualNodeShortId already has " +
+                    "CPI with file checksum $targetCpiFileChecksum")
+        }
+        
         val targetCpi = virtualNodeValidationService.validateAndGetCpiByChecksum(targetCpiFileChecksum)
         virtualNodeValidationService.validateCpiUpgradePrerequisites(currentCpi, targetCpi)
 
@@ -400,7 +406,7 @@ internal class VirtualNodeRestResourceImpl(
         val instant = clock.instant()
         // Lookup actor to keep track of which REST user triggered an update
         val actor = restContextProvider.principal
-        logger.debug { "Received request to update state for $virtualNodeShortId to $newState by $actor at $instant" }
+        logger.info("Received request to update state for $virtualNodeShortId to $newState by $actor at $instant")
 
         val virtualNodeState = when (validateStateChange(virtualNodeShortId, newState)
         ) {
@@ -420,10 +426,14 @@ internal class VirtualNodeRestResourceImpl(
         val resp = tryWithExceptionHandling(logger, "Update vNode state") {
             sendAndReceive(rpcRequest)
         }
-        logger.debug { "Received response to update for $virtualNodeShortId to $newState by $actor" }
+        logger.info("Received response to update for $virtualNodeShortId to $newState by $actor")
 
         return when (val resolvedResponse = resp.responseType) {
             is VirtualNodeStateChangeResponse -> {
+                logger.info("Updated states in response for $virtualNodeShortId: ${resolvedResponse.flowOperationalStatus}, " +
+                        "${resolvedResponse.flowP2pOperationalStatus}, ${resolvedResponse.flowStartOperationalStatus}, " +
+                        "${resolvedResponse.vaultDbOperationalStatus}")
+
                 resolvedResponse.run {
                     ChangeVirtualNodeStateResponse(holdingIdentityShortHash, newState)
                 }
@@ -441,7 +451,13 @@ internal class VirtualNodeRestResourceImpl(
         } catch (e: IllegalArgumentException) {
             throw InvalidInputDataException(details = mapOf("newState" to "must be one of ACTIVE, MAINTENANCE"))
         }
-        getVirtualNode(virtualNodeShortId)
+        val virtualNode = getVirtualNode(virtualNodeShortId)
+
+        if (state == VirtualNodeStateTransitions.ACTIVE && virtualNode.operationInProgress != null) {
+            throw BadRequestException("The Virtual Node with shortHash ${virtualNode.holdingIdentity.shortHash} " +
+                    "has an operation in progress and cannot be set to Active")
+        }
+
         return state
     }
 

@@ -20,8 +20,6 @@ import net.corda.utilities.time.Clock
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
-import net.corda.virtualnode.VirtualNodeInfo
-import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -71,9 +69,6 @@ class SuspendMemberHandlerTest {
     private val knownGroupId = UUID(0, 1).toString()
     private val knownX500Name = MemberX500Name.parse("O=Alice,L=London,C=GB")
     private val holdingIdentity = HoldingIdentity(knownX500Name, knownGroupId)
-    private val ourVirtualNodeInfo: VirtualNodeInfo = mock {
-        on { vaultDmlConnectionId } doReturn UUID(0, 1)
-    }
     private val clock: Clock = TestClock(Instant.ofEpochSecond(1))
 
     private val transaction: EntityTransaction = mock()
@@ -137,10 +132,7 @@ class SuspendMemberHandlerTest {
         on { createEntityManager() } doReturn em
     }
     private val dbConnectionManager: DbConnectionManager = mock {
-        on { createEntityManagerFactory(any(), any()) } doReturn emf
-    }
-    private val virtualNodeInfoReadService: VirtualNodeInfoReadService = mock {
-        on { getByHoldingIdentityShortHash(holdingIdentity.shortHash) } doReturn ourVirtualNodeInfo
+        on { getOrCreateEntityManagerFactory(any(), any(), any()) } doReturn emf
     }
     private val jpaEntitiesRegistry: JpaEntitiesRegistry = mock {
         on { get(any()) } doReturn mock()
@@ -206,7 +198,6 @@ class SuspendMemberHandlerTest {
     }
     private val persistenceHandlerServices: PersistenceHandlerServices = mock {
         on { clock } doReturn clock
-        on { virtualNodeInfoReadService } doReturn virtualNodeInfoReadService
         on { dbConnectionManager } doReturn dbConnectionManager
         on { jpaEntitiesRegistry } doReturn jpaEntitiesRegistry
         on { cordaAvroSerializationFactory } doReturn cordaAvroSerializationFactory

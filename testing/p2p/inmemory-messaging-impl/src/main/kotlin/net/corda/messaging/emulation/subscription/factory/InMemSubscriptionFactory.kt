@@ -29,7 +29,7 @@ import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import java.util.concurrent.atomic.AtomicInteger
+import java.util.UUID
 
 /**
  * In memory implementation of the Subscription Factory.
@@ -44,9 +44,6 @@ class InMemSubscriptionFactory @Activate constructor(
     private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
 ) : SubscriptionFactory {
 
-    // Used to ensure that each subscription has a unique client.id
-    private val clientIdCounter = AtomicInteger()
-
     override fun <K : Any, V : Any> createPubSubSubscription(
         subscriptionConfig: SubscriptionConfig,
         processor: PubSubProcessor<K, V>,
@@ -57,7 +54,7 @@ class InMemSubscriptionFactory @Activate constructor(
             processor,
             topicService,
             lifecycleCoordinatorFactory,
-            clientIdCounter.getAndIncrement().toString()
+            UUID.randomUUID().toString()
         )
     }
 
@@ -87,7 +84,7 @@ class InMemSubscriptionFactory @Activate constructor(
             processor,
             topicService,
             lifecycleCoordinatorFactory,
-            clientIdCounter.getAndIncrement().toString()
+            UUID.randomUUID().toString()
         )
     }
 
@@ -133,7 +130,7 @@ class InMemSubscriptionFactory @Activate constructor(
             rpcTopicService,
             responderProcessor,
             lifecycleCoordinatorFactory,
-            clientIdCounter.getAndIncrement().toString()
+            UUID.randomUUID().toString()
         )
     }
 }

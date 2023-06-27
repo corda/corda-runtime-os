@@ -34,8 +34,11 @@ import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.transaction.CordaPackageSummary
 import net.corda.ledger.common.data.transaction.PrivacySalt
+import net.corda.ledger.persistence.utxo.tests.UtxoPersistenceServiceImplTest
+import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.test.util.dsl.entities.cpx.getCpkFileHashes
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assumptions
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
@@ -74,6 +77,7 @@ class ConsensualLedgerRepositoryTest {
     private lateinit var repository: ConsensualRepository
     private lateinit var persistenceService: ConsensualPersistenceService
     private lateinit var cpiInfoReadService: CpiInfoReadService
+    private lateinit var currentSandboxGroupContext: CurrentSandboxGroupContext
 
     companion object {
         private const val TESTING_DATAMODEL_CPB = "/META-INF/testing-datamodel.cpb"
@@ -100,6 +104,10 @@ class ConsensualLedgerRepositoryTest {
             val virtualNodeInfo = virtualNode.load(TESTING_DATAMODEL_CPB)
             val cpkFileHashes = cpiInfoReadService.getCpkFileHashes(virtualNodeInfo)
             val ctx = virtualNode.entitySandboxService.get(virtualNodeInfo.holdingIdentity, cpkFileHashes)
+
+            currentSandboxGroupContext = setup.fetchService(timeout = TIMEOUT_MILLIS)
+            currentSandboxGroupContext.set(ctx)
+
             wireTransactionFactory = ctx.getSandboxSingletonService()
             digestService = ctx.getSandboxSingletonService()
             jsonMarshallingService = ctx.getSandboxSingletonService()
@@ -114,6 +122,11 @@ class ConsensualLedgerRepositoryTest {
                 TEST_CLOCK
             )
         }
+    }
+
+    @AfterAll
+    fun afterAll() {
+        currentSandboxGroupContext.remove()
     }
 
     @Test
