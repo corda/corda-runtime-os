@@ -49,7 +49,6 @@ import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.Executor
 import java.util.concurrent.Executors
 
 /**
@@ -231,13 +230,18 @@ class CordaSubscriptionFactory @Activate constructor(
         processor: EventLogProcessor<K, V>,
         messagingConfig: SmartConfig,
         partitionAssignmentListener: PartitionAssignmentListener?
+
     ): Subscription<K, V> {
         if (!messagingConfig.hasPath(INSTANCE_ID)) {
             throw CordaMessageAPIFatalException(
                 "Cannot create durable subscription producer for $subscriptionConfig. No instanceId configured"
             )
         }
-        val config = getConfig(SubscriptionType.EVENT_LOG, subscriptionConfig, messagingConfig)
+        val config = getConfig(
+            SubscriptionType.EVENT_LOG,
+            subscriptionConfig,
+            messagingConfig
+        )
         return EventLogSubscriptionImpl(
             config,
             cordaConsumerBuilder,
@@ -278,7 +282,8 @@ class CordaSubscriptionFactory @Activate constructor(
             subscriptionType,
             subscriptionConfig,
             messagingConfig,
-            UUID.randomUUID().toString()
+            UUID.randomUUID().toString(),
+            subscriptionConfig.transactionalProducer
         )
     }
 

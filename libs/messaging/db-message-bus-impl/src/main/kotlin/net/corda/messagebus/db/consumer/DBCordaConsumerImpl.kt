@@ -216,6 +216,21 @@ internal class DBCordaConsumerImpl<K : Any, V : Any> constructor(
         )
     }
 
+    override fun commitSyncAsync() {
+        val topicPartitions = assignment()
+        val offsetsPerPartition = topicPartitions.associateWith { position(it) }
+        val offsets = offsetsPerPartition.map { (topicPartition, offset) ->
+            CommittedPositionEntry(
+                topicPartition.topic,
+                this.getConsumerGroup(),
+                topicPartition.partition,
+                offset,
+                ATOMIC_TRANSACTION
+            )
+        }
+        dbAccess.writeOffsets(offsets)
+    }
+
     override fun getPartitions(topic: String): List<CordaTopicPartition> {
         return dbAccess.getTopicPartitionMapFor(topic).toList()
     }

@@ -1,6 +1,5 @@
 package net.corda.messaging.config
 
-import java.time.Duration
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
@@ -12,6 +11,7 @@ import net.corda.schema.configuration.MessagingConfig.Subscription.PROCESSOR_RET
 import net.corda.schema.configuration.MessagingConfig.Subscription.PROCESSOR_TIMEOUT
 import net.corda.schema.configuration.MessagingConfig.Subscription.SUBSCRIBE_RETRIES
 import net.corda.schema.configuration.MessagingConfig.Subscription.THREAD_STOP_TIMEOUT
+import java.time.Duration
 
 /**
  * Class to resolve subscription configuration for the messaging layer.
@@ -28,7 +28,8 @@ data class ResolvedSubscriptionConfig(
     val subscribeRetries: Int,
     val commitRetries: Int,
     val processorTimeout: Duration,
-    val messageBusConfig: SmartConfig
+    val messageBusConfig: SmartConfig,
+    val transactionalProducer:Boolean = true
 ) {
     companion object {
 
@@ -39,13 +40,15 @@ data class ResolvedSubscriptionConfig(
          * @param subscriptionConfig User configurable values for a subscription.
          * @param messagingConfig Messaging smart config.
          * @param uniqueId Unique id, used to uniquely identify the subscription.
+         * @param transactionalProducer Controls the transaction support for output producers.
          * @return concrete class containing all config values used by a subscription.
          */
         fun merge(
             subscriptionType: SubscriptionType,
             subscriptionConfig: SubscriptionConfig,
             messagingConfig: SmartConfig,
-            uniqueId: String
+            uniqueId: String,
+            transactionalProducer: Boolean
         ): ResolvedSubscriptionConfig {
             return ResolvedSubscriptionConfig(
                 subscriptionType,
@@ -59,7 +62,8 @@ data class ResolvedSubscriptionConfig(
                 messagingConfig.getInt(SUBSCRIBE_RETRIES),
                 messagingConfig.getInt(COMMIT_RETRIES),
                 Duration.ofMillis(messagingConfig.getLong(PROCESSOR_TIMEOUT)),
-                messagingConfig
+                messagingConfig,
+                transactionalProducer
             )
         }
     }

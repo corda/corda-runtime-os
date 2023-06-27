@@ -318,6 +318,10 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
         }
     }
 
+    override fun commitSyncAsync() {
+        consumer.commitAsync()
+    }
+
     override fun subscribe(topic: String, listener: CordaConsumerRebalanceListener?) =
         subscribe(listOf(topic), listener)
 
