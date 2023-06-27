@@ -1,10 +1,12 @@
 package net.corda.ledger.utxo.transaction.verifier
 
+import net.corda.ledger.injector.sandbox.SandboxVerificationDependencyInjector
 import net.corda.ledger.utxo.data.transaction.ContractVerificationFailureImpl
 import net.corda.metrics.CordaMetrics
+import net.corda.sandboxgroupcontext.SandboxGroupContext
+import net.corda.sandboxgroupcontext.getObjectByKey
 import net.corda.v5.ledger.utxo.ContractVerificationException
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
-import net.corda.virtualnode.HoldingIdentity
 
 /**
  * Verifies contracts of ledger transaction. For security reasons, some verifications need to be run with a new instance
@@ -16,8 +18,9 @@ import net.corda.virtualnode.HoldingIdentity
 fun verifyContracts(
     transactionFactory: () -> UtxoLedgerTransaction,
     transaction: UtxoLedgerTransaction = transactionFactory.invoke(),
-    holdingIdentity: HoldingIdentity
+    sandboxGroupContext: SandboxGroupContext
 ) {
+    val holdingIdentity = sandboxGroupContext.virtualNodeContext.holdingIdentity
 
     CordaMetrics.Metric.Ledger.ContractVerificationTime
         .builder()
@@ -47,6 +50,8 @@ fun verifyContracts(
 
                         try {
                             val contract = contractClass.getConstructor().newInstance()
+                            sandboxGroupContext.getObjectByKey<SandboxVerificationDependencyInjector>("DEPENDENCY_INJECTOR")
+                                ?.injectServices(contract)
                             contract.verify(transactionFactory.invoke())
                         } catch (ex: Exception) {
                             failureReasons.add(
@@ -54,7 +59,8 @@ fun verifyContracts(
                                     contractClassName = contractClass.canonicalName,
                                     contractStateClassNames = contractStates.map { it.state.contractState.javaClass.canonicalName },
                                     exceptionClassName = ex.javaClass.canonicalName,
-                                    exceptionMessage = ex.message ?: "The thrown exception did not provide a failure message."
+                                    exceptionMessage = ex.message
+                                        ?: "The thrown exception did not provide a failure message."
                                 )
                             )
                         }

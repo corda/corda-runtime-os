@@ -6,7 +6,7 @@ import net.corda.flow.external.events.responses.exceptions.CpkNotAvailableExcept
 import net.corda.flow.external.events.responses.exceptions.NotAllowedCpkException
 import net.corda.ledger.utxo.verification.CordaPackageSummary
 import net.corda.ledger.verification.sandbox.VerificationSandboxService
-import net.corda.ledger.verification.sandbox.factory.SandboxVerificationDependencyInjectorFactory
+import net.corda.ledger.injector.sandbox.factory.SandboxVerificationDependencyInjectorFactory
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.sandboxgroupcontext.getObjectByKey
 import net.corda.sandboxgroupcontext.putObjectByKey

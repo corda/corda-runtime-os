@@ -1,0 +1,30 @@
+import aQute.bnd.gradle.Bundle
+
+plugins {
+    id 'corda.common-publishing'
+    id 'corda.osgi-test-conventions'
+    id 'corda.common-library'
+}
+
+description 'Corda ledger verification sandbox injector'
+
+configurations {
+    cpis {
+        canBeConsumed = false
+        transitive = false
+    }
+}
+
+dependencies {
+    compileOnly 'org.osgi:org.osgi.service.component.annotations'
+    compileOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
+
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+
+    implementation 'net.corda:corda-ledger-common'
+    implementation 'net.corda:corda-ledger-utxo'
+    implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
+    implementation 'org.slf4j:slf4j-api'
+
+    implementation project(':libs:virtual-node:sandbox-group-context')
+}

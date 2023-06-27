@@ -1,6 +1,6 @@
-package net.corda.ledger.verification.sandbox.factory
+package net.corda.ledger.injector.sandbox.factory
 
-import net.corda.ledger.verification.sandbox.SandboxVerificationDependencyInjector
+import net.corda.ledger.injector.sandbox.SandboxVerificationDependencyInjector
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 
 /**

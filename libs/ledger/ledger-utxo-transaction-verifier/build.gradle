@@ -13,11 +13,13 @@ dependencies {
 
     implementation 'net.corda:corda-ledger-utxo'
 
+    implementation project(':components:ledger:ledger-verification-sandbox-injector')
     implementation project(':libs:ledger:ledger-common-data')
     implementation project(':libs:ledger:ledger-utxo-data')
     implementation project(':libs:metrics')
     implementation project(':libs:utilities')
     implementation project(':libs:membership:membership-common')
+    implementation project(':libs:virtual-node:sandbox-group-context')
     implementation project(':libs:sandbox-types')
 
     testImplementation project(':testing:ledger:ledger-utxo-testkit')

@@ -18,7 +18,6 @@ import net.corda.ledger.utxo.flow.impl.transaction.UtxoTransactionBuilderInterna
 import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoSignedTransactionFactory
 import net.corda.ledger.utxo.flow.impl.transaction.filtered.UtxoFilteredTransactionBuilderImpl
 import net.corda.ledger.utxo.flow.impl.transaction.filtered.factory.UtxoFilteredTransactionFactory
-import net.corda.ledger.verification.sandbox.SandboxVerificationDependencyInjector
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.sandboxgroupcontext.getObjectByKey
@@ -64,12 +63,10 @@ class UtxoLedgerServiceImpl @Activate constructor(
     @Reference(service = NotaryLookup::class) private val notaryLookup: NotaryLookup,
     @Reference(service = ExternalEventExecutor::class) private val externalEventExecutor: ExternalEventExecutor,
     @Reference(service = ResultSetFactory::class) private val resultSetFactory: ResultSetFactory,
-
     ) : UtxoLedgerService, UsedByFlow, SingletonSerializeAsToken {
 
     private companion object {
         val clock = UTCClock()
-        private const val DEPENDENCY_INJECTOR = "DEPENDENCY_INJECTOR"
     }
 
     @Suspendable
@@ -120,11 +117,6 @@ class UtxoLedgerServiceImpl @Activate constructor(
         */
         val utxoFinalityFlow = try {
             AccessController.doPrivileged(PrivilegedExceptionAction {
-                signedTransaction.outputStateAndRefs.forEach { stateAndRef ->
-                    currentSandboxGroupContext.get()
-                        .getObjectByKey<SandboxVerificationDependencyInjector>(DEPENDENCY_INJECTOR)
-                        ?.injectServices(stateAndRef.state.contractType.getConstructor().newInstance())
-                }
                 UtxoFinalityFlow(
                     signedTransaction as UtxoSignedTransactionInternal,
                     sessions,

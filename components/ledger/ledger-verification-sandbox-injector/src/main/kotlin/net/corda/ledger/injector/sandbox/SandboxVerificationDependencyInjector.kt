@@ -1,4 +1,4 @@
-package net.corda.ledger.verification.sandbox
+package net.corda.ledger.injector.sandbox
 
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.ledger.utxo.Contract

@@ -1,7 +1,7 @@
-package net.corda.ledger.verification.sandbox.factory
+package net.corda.ledger.injector.sandbox.factory
 
-import net.corda.ledger.verification.sandbox.SandboxVerificationDependencyInjector
-import net.corda.ledger.verification.sandbox.impl.SandboxVerificationDependencyInjectorImpl
+import net.corda.ledger.injector.sandbox.SandboxVerificationDependencyInjector
+import net.corda.ledger.injector.sandbox.impl.SandboxVerificationDependencyInjectorImpl
 import net.corda.sandbox.type.UsedByVerification
 import net.corda.sandboxgroupcontext.CORDA_SANDBOX
 import net.corda.sandboxgroupcontext.CORDA_SANDBOX_FILTER
@@ -13,7 +13,8 @@ import org.osgi.framework.Constants
 import org.osgi.framework.ServiceReference
 import org.osgi.service.component.annotations.Component
 import org.slf4j.LoggerFactory
-import java.util.*
+import java.util.Collections
+import java.util.LinkedList
 
 @Component(service = [SandboxVerificationDependencyInjectorFactory::class])
 class SandboxVerificationDependencyInjectorFactoryImpl : SandboxVerificationDependencyInjectorFactory {

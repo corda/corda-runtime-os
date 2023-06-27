@@ -1,6 +1,6 @@
-package net.corda.ledger.verification.sandbox.impl
+package net.corda.ledger.injector.sandbox.impl
 
-import net.corda.ledger.verification.sandbox.SandboxVerificationDependencyInjector
+import net.corda.ledger.injector.sandbox.SandboxVerificationDependencyInjector
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.ledger.utxo.Contract
 import net.corda.v5.serialization.SingletonSerializeAsToken
