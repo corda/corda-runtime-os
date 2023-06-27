@@ -13,6 +13,7 @@ import net.corda.crypto.core.aes.WrappingKeyImpl
 import net.corda.crypto.persistence.WrappingKeyInfo
 import net.corda.crypto.softhsm.WrappingRepository
 import net.corda.crypto.softhsm.impl.infra.CountingWrappingKey
+import net.corda.crypto.softhsm.impl.infra.TestSigningRepository
 import net.corda.crypto.softhsm.impl.infra.TestWrappingRepository
 import net.corda.crypto.softhsm.impl.infra.makePrivateKeyCache
 import net.corda.crypto.softhsm.impl.infra.makeSoftCryptoService
@@ -76,7 +77,8 @@ class SoftCryptoServiceCachingTests {
                     CryptoTenants.CRYPTO -> clusterWrappingRepository
                     else -> vnodeWrappingRepository
                 }
-            }
+            },
+            signingRepositoryFactory = { TestSigningRepository() }
         )
         val rsaScheme =
             myCryptoService.supportedSchemes.filter { it.key.codeName == RSA_CODE_NAME }.toList().first().first

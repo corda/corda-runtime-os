@@ -5,7 +5,7 @@ import net.corda.crypto.cipher.suite.schemes.KeyScheme
 interface SigningKeySaveContext {
     val alias: String?
     val category: String
-    val hsmId: String
+    val hsmId: String // TODO remove
     val keyScheme: KeyScheme
     val externalId: String?
 }

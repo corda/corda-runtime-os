@@ -17,6 +17,7 @@ import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.core.aes.WrappingKeyImpl
 import net.corda.crypto.impl.CipherSchemeMetadataProvider
 import net.corda.crypto.persistence.WrappingKeyInfo
+import net.corda.crypto.softhsm.SigningRepository
 import net.corda.crypto.softhsm.deriveSupportedSchemes
 import net.corda.crypto.softhsm.impl.infra.TestWrappingRepository
 import net.corda.crypto.softhsm.impl.infra.makeWrappingKeyCache
@@ -38,6 +39,7 @@ import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
+import org.mockito.kotlin.mock
 import java.security.InvalidParameterException
 import java.security.KeyPairGenerator
 import java.security.Provider
@@ -86,6 +88,7 @@ class SoftCryptoServiceOperationsTests {
             )
         )
         private val wrappingKeyCache = makeWrappingKeyCache()
+        private val signingRepository: SigningRepository = mock()
         private val cryptoService = SoftCryptoService(
             wrappingRepositoryFactory = {
                 when (it) {
@@ -102,6 +105,7 @@ class SoftCryptoServiceOperationsTests {
                 KeyPairGenerator.getInstance(algorithm, provider)
             },
             wrappingKeyCache = wrappingKeyCache,
+            signingRepositoryFactory = { signingRepository },
             privateKeyCache = null
         )
         private val category = CryptoConsts.Categories.LEDGER
