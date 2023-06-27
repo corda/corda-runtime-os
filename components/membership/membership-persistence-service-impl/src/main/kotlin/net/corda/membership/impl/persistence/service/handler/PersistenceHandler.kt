@@ -11,6 +11,8 @@ import net.corda.db.connection.manager.VirtualNodeDbType
 import net.corda.db.core.DbPrivilege
 import net.corda.db.schema.CordaDb
 import net.corda.libs.platform.PlatformInfoProvider
+import net.corda.membership.groupparams.writer.service.GroupParametersWriterService
+import net.corda.membership.lib.GroupParametersFactory
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.mtls.allowed.list.service.AllowedCertificatesReaderWriterService
 import net.corda.orm.JpaEntitiesRegistry
@@ -46,6 +48,9 @@ internal abstract class BasePersistenceHandler<REQUEST, RESPONSE>(
     val keyEncodingService get() = persistenceHandlerServices.keyEncodingService
     val platformInfoProvider get() = persistenceHandlerServices.platformInfoProvider
     val allowedCertificatesReaderWriterService get() = persistenceHandlerServices.allowedCertificatesReaderWriterService
+
+    val groupParametersWriterService get() = persistenceHandlerServices.groupParametersWriterService
+    val groupParametersFactory get() = persistenceHandlerServices.groupParametersFactory
 
     fun <R> transaction(holdingIdentityShortHash: ShortHash, block: (EntityManager) -> R): R {
         val factory = getEntityManagerFactory(holdingIdentityShortHash)
@@ -86,5 +91,7 @@ internal data class PersistenceHandlerServices(
     val keyEncodingService: KeyEncodingService,
     val platformInfoProvider: PlatformInfoProvider,
     val allowedCertificatesReaderWriterService: AllowedCertificatesReaderWriterService,
+    val groupParametersWriterService: GroupParametersWriterService,
+    val groupParametersFactory: GroupParametersFactory,
     val transactionTimerFactory: (String) -> Timer
 )

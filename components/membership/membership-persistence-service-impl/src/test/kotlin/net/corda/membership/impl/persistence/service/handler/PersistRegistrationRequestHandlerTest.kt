@@ -98,7 +98,9 @@ class PersistRegistrationRequestHandlerTest {
         keyEncodingService,
         platformInfoProvider,
         mock(),
-        transactionTimerFactory
+        mock(),
+        mock(),
+        transactionTimerFactory,
     )
     private lateinit var persistRegistrationRequestHandler: PersistRegistrationRequestHandler
 

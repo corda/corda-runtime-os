@@ -86,6 +86,8 @@ class QueryGroupPolicyHandlerTest {
         keyEncodingService,
         platformInfoProvider,
         mock(),
+        mock(),
+        mock(),
         transactionTimerFactory
     )
 

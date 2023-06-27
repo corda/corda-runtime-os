@@ -3,6 +3,9 @@ package net.corda.ledger.persistence.utxo.tests
 import net.corda.common.json.validation.JsonValidator
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.crypto.core.SecureHashImpl
+import net.corda.data.crypto.wire.CryptoSignatureSpec
+import net.corda.data.crypto.wire.CryptoSignatureWithKey
+import net.corda.data.membership.SignedGroupParameters
 import net.corda.db.persistence.testkit.components.VirtualNodeService
 import net.corda.db.testkit.DbUtils
 import net.corda.ledger.common.data.transaction.PrivacySalt
@@ -27,6 +30,7 @@ import net.corda.ledger.persistence.utxo.tests.datamodel.UtxoEntityFactory
 import net.corda.ledger.utxo.data.state.StateAndRefImpl
 import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
 import net.corda.ledger.utxo.data.transaction.UtxoOutputInfoComponent
+import net.corda.libs.packaging.hash
 import net.corda.orm.utils.transaction
 import net.corda.persistence.common.getEntityManagerFactory
 import net.corda.persistence.common.getSerializationService
@@ -42,6 +46,7 @@ import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.transaction.CordaPackageSummary
 import net.corda.v5.ledger.utxo.Contract
@@ -68,6 +73,7 @@ import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.context.BundleContextExtension
 import org.osgi.test.junit5.service.ServiceExtension
 import java.math.BigDecimal
+import java.nio.ByteBuffer
 import java.nio.file.Path
 import java.security.KeyPairGenerator
 import java.security.MessageDigest
@@ -454,6 +460,28 @@ class UtxoPersistenceServiceImplTest {
             assertThat(dbStatus.field<String>("status")).isEqualTo(transactionStatus.value)
             assertThat(dbStatus.field<Instant>("updated")).isEqualTo(txCreatedTs)
         }
+    }
+
+    @Test
+    fun `persist and find signed group parameter`() {
+        Assumptions.assumeFalse(DbUtils.isInMemory, "Skipping this test when run against in-memory DB.")
+        val signedGroupParameters = SignedGroupParameters(
+            ByteBuffer.wrap(ByteArray(1)),
+            CryptoSignatureWithKey(
+                ByteBuffer.wrap(ByteArray(1)),
+                ByteBuffer.wrap(ByteArray(1))
+            ),
+            CryptoSignatureSpec("", null, null)
+        )
+
+        val hash = signedGroupParameters.groupParameters.array().hash(DigestAlgorithmName.SHA2_256).toString()
+
+        persistenceService.persistSignedGroupParametersIfDoNotExist(signedGroupParameters)
+
+        val persistedSignedGroupParameters = persistenceService.findSignedGroupParameters(hash)
+
+        assertThat(persistedSignedGroupParameters?.mgmSignature?.publicKey.toString()).isEqualTo(signedGroupParameters.mgmSignature?.publicKey.toString())
+        assertThat(persistedSignedGroupParameters?.mgmSignatureSpec.toString()).isEqualTo(signedGroupParameters.mgmSignatureSpec.toString())
     }
 
     private fun persistTransactionViaEntity(

@@ -291,6 +291,8 @@ class MembershipPersistenceRPCProcessorTest {
                 keyEncodingService,
                 platformInfoProvider,
                 mock(),
+                mock(),
+                mock(),
             )
         )
         responseFuture = CompletableFuture()

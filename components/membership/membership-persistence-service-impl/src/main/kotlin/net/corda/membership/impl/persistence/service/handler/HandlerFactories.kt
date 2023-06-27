@@ -32,6 +32,8 @@ import net.corda.data.membership.db.request.query.QueryRegistrationRequests
 import net.corda.data.membership.db.request.query.QueryStaticNetworkInfo
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.libs.platform.PlatformInfoProvider
+import net.corda.membership.groupparams.writer.service.GroupParametersWriterService
+import net.corda.membership.lib.GroupParametersFactory
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.membership.lib.metrics.TimerMetricTypes
@@ -49,6 +51,8 @@ internal class HandlerFactories(
     cordaAvroSerializationFactory: CordaAvroSerializationFactory,
     keyEncodingService: KeyEncodingService,
     platformInfoProvider: PlatformInfoProvider,
+    groupParametersWriterService: GroupParametersWriterService,
+    groupParametersFactory: GroupParametersFactory,
     allowedCertificatesReaderWriterService: AllowedCertificatesReaderWriterService,
 ) {
     val persistenceHandlerServices = PersistenceHandlerServices(
@@ -60,6 +64,8 @@ internal class HandlerFactories(
         keyEncodingService,
         platformInfoProvider,
         allowedCertificatesReaderWriterService,
+        groupParametersWriterService,
+        groupParametersFactory,
         ::getTransactionTimer
     )
     private val handlerFactories: Map<Class<*>, () -> PersistenceHandler<out Any, out Any>> = mapOf(

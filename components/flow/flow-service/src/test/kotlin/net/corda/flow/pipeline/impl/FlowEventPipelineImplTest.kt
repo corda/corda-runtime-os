@@ -1,9 +1,12 @@
 package net.corda.flow.pipeline.impl
 
+import net.corda.crypto.core.ShortHash
+import net.corda.data.flow.FlowStartContext
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.StartFlow
 import net.corda.data.flow.event.Wakeup
 import net.corda.data.flow.state.waiting.WaitingFor
+import net.corda.flow.BOB_X500
 import net.corda.flow.FLOW_ID_1
 import net.corda.flow.fiber.FiberFuture
 import net.corda.flow.fiber.FlowContinuation
@@ -57,13 +60,20 @@ class FlowEventPipelineImplTest {
         payload = retryStartFlow
     }
 
-    private val mockHoldingIdentity = mock<HoldingIdentity>()
+    private val mockHoldingIdentity = mock<HoldingIdentity>().apply {
+        whenever(shortHash).thenReturn(ShortHash.Companion.of("0123456789abc"))
+    }
     private val mockFlowId = "flow_id_111"
     private val checkpoint = mock<FlowCheckpoint>().apply {
         whenever(waitingFor).thenReturn(waitingForWakeup)
         whenever(inRetryState).thenReturn(false)
         whenever(holdingIdentity).thenReturn(mockHoldingIdentity)
         whenever(flowId).thenReturn(mockFlowId)
+        whenever(flowStartContext).thenReturn(FlowStartContext().apply {
+            this.flowClassName="f1"
+            this.requestId="r1"
+            this.initiatedBy = net.corda.data.identity.HoldingIdentity(BOB_X500,"group1")
+        })
     }
 
     private val inputContext = buildFlowEventContext<Any>(checkpoint, wakeUpEvent)

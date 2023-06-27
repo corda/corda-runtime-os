@@ -16,6 +16,7 @@ import net.corda.tracing.traceEventProcessingSingle
 import net.corda.utilities.MDC_CLIENT_ID
 import net.corda.utilities.MDC_EXTERNAL_EVENT_ID
 import net.corda.utilities.trace
+import net.corda.utilities.translateFlowContextToMDC
 import net.corda.utilities.withMDC
 import net.corda.virtualnode.toCorda
 import org.slf4j.LoggerFactory
@@ -57,7 +58,7 @@ class VerificationRequestProcessor(
                         mapOf(
                             MDC_CLIENT_ID to clientRequestId,
                             MDC_EXTERNAL_EVENT_ID to request.flowExternalEventContext.requestId
-                        )
+                        ) + translateFlowContextToMDC(request.flowExternalEventContext.contextProperties.toMap())
                     ) {
                         try {
                             val sandbox = verificationSandboxService.get(holdingIdentity, request.cpkMetadata)

@@ -93,6 +93,8 @@ class UpdateMemberAndRegistrationRequestToApprovedHandlerTest {
         keyEncodingService,
         platformInfoProvider,
         mock(),
+        mock(),
+        mock(),
         transactionTimeFactory
     )
     private val handler = UpdateMemberAndRegistrationRequestToApprovedHandler(service)
