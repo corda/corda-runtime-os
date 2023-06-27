@@ -7,10 +7,14 @@ import net.corda.sandbox.type.UsedByVerification
 /**
  * Enumeration of various sandbox group types.
  */
-enum class SandboxGroupType(private val typeName: String, val serviceMarkerType: Class<*>) {
-    FLOW("flow", UsedByFlow::class.java),
-    VERIFICATION("verification", UsedByVerification::class.java),
-    PERSISTENCE("persistence", UsedByPersistence::class.java);
+enum class SandboxGroupType(
+    private val typeName: String,
+    val serviceMarkerType: Class<*>,
+    val hasInjection: Boolean
+) {
+    FLOW("flow", UsedByFlow::class.java, hasInjection = true),
+    VERIFICATION("verification", UsedByVerification::class.java, hasInjection = false),
+    PERSISTENCE("persistence", UsedByPersistence::class.java, hasInjection = false);
 
     override fun toString(): String = typeName
 
