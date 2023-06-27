@@ -1,12 +1,13 @@
 package net.corda.kryoserialization
 
 import com.esotericsoftware.kryo.Kryo
+import com.esotericsoftware.kryo.util.Pool
 import net.corda.serialization.checkpoint.CheckpointSerializer
 import org.slf4j.LoggerFactory
 import java.io.ByteArrayInputStream
 
 class KryoCheckpointSerializer(
-    private val kryo: Kryo,
+    private val kryoPool: Pool<Kryo>,
 ) : CheckpointSerializer {
 
     private companion object {
@@ -20,7 +21,13 @@ class KryoCheckpointSerializer(
         return try {
             kryoInput(ByteArrayInputStream(bytes)) {
                 @Suppress("unchecked_cast")
-                kryo.readClassAndObject(this) as T
+                kryoPool.obtain().let { kryo ->
+                    try {
+                        kryo.readClassAndObject(this) as T
+                    } finally {
+                        kryoPool.free(kryo)
+                    }
+                }
             }
         } catch (ex: Exception) {
             log.error("Failed to deserialize bytes", ex)
@@ -31,7 +38,13 @@ class KryoCheckpointSerializer(
     override fun <T : Any> serialize(obj: T): ByteArray {
         return try {
             kryoOutput {
-                kryo.writeClassAndObject(this, obj)
+                kryoPool.obtain().let { kryo ->
+                    try {
+                        kryo.writeClassAndObject(this, obj)
+                    } finally {
+                        kryoPool.free(kryo)
+                    }
+                }
             }
         } catch (ex: Exception) {
             log.error("Failed to serialize", ex)

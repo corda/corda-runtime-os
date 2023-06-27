@@ -71,8 +71,8 @@ class AMQPSerializationProvider @Activate constructor(
     override fun accept(context: MutableSandboxGroupContext) {
         val factory = createSerializerFactory(context)
 
-        val serializationOutput = SerializationOutput(factory)
-        val deserializationInput = DeserializationInput(factory)
+        val serializationOutput = { SerializationOutput(factory) }
+        val deserializationInput = { DeserializationInput(factory) }
 
         val serializationService = SerializationMetricsWrapper(
             serializationService = SerializationServiceImpl(

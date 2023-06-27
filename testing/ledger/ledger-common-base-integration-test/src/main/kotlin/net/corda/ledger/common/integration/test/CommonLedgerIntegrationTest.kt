@@ -100,8 +100,8 @@ abstract class CommonLedgerIntegrationTest {
         serializationService = SerializationServiceImpl(
             // Use different SerializerFactories for serializationOutput and deserializationInput to not let them share
             // anything unintentionally
-            serializationOutput = SerializationOutput(sandboxGroupContext.createSerializerFactory()),
-            deserializationInput = DeserializationInput(sandboxGroupContext.createSerializerFactory()),
+            serializationOutput = { SerializationOutput(sandboxGroupContext.createSerializerFactory()) },
+            deserializationInput = { DeserializationInput(sandboxGroupContext.createSerializerFactory()) },
             context = AMQP_STORAGE_CONTEXT.withSandboxGroup(sandboxGroupContext.sandboxGroup)
         )
 
