@@ -10,9 +10,6 @@ import net.corda.membership.datamodel.PreAuthTokenEntity
 import net.corda.membership.mtls.allowed.list.service.AllowedCertificatesReaderWriterService
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.JpaEntitiesSet
-import net.corda.virtualnode.VirtualNodeInfo
-import net.corda.virtualnode.read.VirtualNodeInfoReadService
-import net.corda.virtualnode.toCorda
 import org.assertj.core.api.SoftAssertions
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
@@ -22,7 +19,6 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.time.Instant
-import java.util.UUID
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.persistence.EntityTransaction
@@ -32,12 +28,6 @@ class AddPreAuthTokenHandlerTest {
         "CN=Mgm, O=Member ,L=London ,C=GB",
         "Group ID",
     )
-    private val nodeInfo = mock<VirtualNodeInfo> {
-        on { vaultDmlConnectionId } doReturn UUID(0, 90)
-    }
-    private val virtualNodeInfoReadService = mock<VirtualNodeInfoReadService> {
-        on { getByHoldingIdentityShortHash(holdingIdentity.toCorda().shortHash) } doReturn nodeInfo
-    }
     private val entityTransaction = mock<EntityTransaction>()
     private val entityManager = mock<EntityManager> {
         on { transaction } doReturn entityTransaction
@@ -46,7 +36,7 @@ class AddPreAuthTokenHandlerTest {
         on { createEntityManager() } doReturn entityManager
     }
     private val dbConnectionManager = mock<DbConnectionManager> {
-        on { createEntityManagerFactory(any(), any()) } doReturn entityManagerFactory
+        on { getOrCreateEntityManagerFactory(any(), any(), any()) } doReturn entityManagerFactory
     }
     private val entitySet = mock<JpaEntitiesSet>()
     private val jpaEntitiesRegistry = mock<JpaEntitiesRegistry> {
@@ -54,7 +44,6 @@ class AddPreAuthTokenHandlerTest {
     }
     private val writerToKafka = mock<AllowedCertificatesReaderWriterService>()
     private val persistenceHandlerServices = mock<PersistenceHandlerServices> {
-        on { virtualNodeInfoReadService } doReturn virtualNodeInfoReadService
         on { dbConnectionManager } doReturn dbConnectionManager
         on { jpaEntitiesRegistry } doReturn jpaEntitiesRegistry
         on { allowedCertificatesReaderWriterService } doReturn writerToKafka

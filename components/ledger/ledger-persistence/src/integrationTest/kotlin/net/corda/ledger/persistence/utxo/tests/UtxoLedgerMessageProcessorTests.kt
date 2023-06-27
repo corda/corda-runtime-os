@@ -32,6 +32,7 @@ import net.corda.ledger.utxo.data.transaction.UtxoOutputInfoComponent
 import net.corda.messaging.api.records.Record
 import net.corda.persistence.common.ResponseFactory
 import net.corda.persistence.common.getSerializationService
+import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.sandboxgroupcontext.getSandboxSingletonService
 import net.corda.test.util.dsl.entities.cpx.getCpkFileHashes
@@ -101,6 +102,7 @@ class UtxoLedgerMessageProcessorTests {
     private lateinit var deserializer: CordaAvroDeserializer<EntityResponse>
     private lateinit var delegatedRequestHandlerSelector: DelegatedRequestHandlerSelector
     private lateinit var cpiInfoReadService: CpiInfoReadService
+    private lateinit var currentSandboxGroupContext: CurrentSandboxGroupContext
 
     @BeforeAll
     fun setup(
@@ -120,6 +122,7 @@ class UtxoLedgerMessageProcessorTests {
                 .createAvroDeserializer({}, EntityResponse::class.java)
             delegatedRequestHandlerSelector = setup.fetchService(TIMEOUT_MILLIS)
             cpiInfoReadService = setup.fetchService(TIMEOUT_MILLIS)
+            currentSandboxGroupContext = setup.fetchService(TIMEOUT_MILLIS)
         }
     }
 
@@ -149,6 +152,7 @@ class UtxoLedgerMessageProcessorTests {
 
         // Send request to message processor
         val processor = PersistenceRequestProcessor(
+            currentSandboxGroupContext,
             virtualNode.entitySandboxService,
             delegatedRequestHandlerSelector,
             responseFactory

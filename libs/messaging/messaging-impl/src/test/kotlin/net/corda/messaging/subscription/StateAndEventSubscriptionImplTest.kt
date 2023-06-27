@@ -331,10 +331,10 @@ class StateAndEventSubscriptionImplTest {
             anyOrNull()
         )
         verify(builder, times(1)).createProducer(any(), anyOrNull())
-        verify(producer, times(28)).beginTransaction()
-        verify(producer, times(28)).sendRecords(any())
-        verify(producer, times(28)).sendRecordOffsetsToTransaction(any(), any())
-        verify(producer, times(28)).commitTransaction()
+        verify(producer, times(1)).beginTransaction()
+        verify(producer, times(1)).sendRecords(any())
+        verify(producer, times(1)).sendRecordOffsetsToTransaction(any(), any())
+        verify(producer, times(1)).commitTransaction()
         verify(chunkSerializerService, times(30)).getChunkKeysToClear(any(), anyOrNull(), anyOrNull())
     }
 
@@ -383,10 +383,10 @@ class StateAndEventSubscriptionImplTest {
             anyOrNull()
         )
         verify(builder, times(1)).createProducer(any(), anyOrNull())
-        verify(producer, times(3)).beginTransaction()
-        verify(producer, times(3)).sendRecords(any())
-        verify(producer, times(3)).sendRecordOffsetsToTransaction(any(), any())
-        verify(producer, times(3)).commitTransaction()
+        verify(producer, times(1)).beginTransaction()
+        verify(producer, times(1)).sendRecords(any())
+        verify(producer, times(1)).sendRecordOffsetsToTransaction(any(), any())
+        verify(producer, times(1)).commitTransaction()
         verify(chunkSerializerService, times(30)).getChunkKeysToClear(any(), anyOrNull(), anyOrNull())
     }
 

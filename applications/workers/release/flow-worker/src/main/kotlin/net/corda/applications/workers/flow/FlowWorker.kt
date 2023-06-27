@@ -17,6 +17,8 @@ import net.corda.osgi.api.Shutdown
 import net.corda.processors.flow.FlowProcessor
 import net.corda.processors.interop.InteropProcessor
 import net.corda.processors.verification.VerificationProcessor
+import net.corda.tracing.configureTracing
+import net.corda.tracing.shutdownTracing
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -68,6 +70,8 @@ class FlowWorker @Activate constructor(
         if (printHelpOrVersion(params.defaultParams, FlowWorker::class.java, shutDownService)) return
         setupMonitor(workerMonitor, params.defaultParams, this.javaClass.simpleName)
 
+        configureTracing("Flow Worker", params.defaultParams.zipkinTraceUrl, params.defaultParams.traceSamplesPerSecond)
+
         val config = getBootstrapConfig(
             secretsServiceFactoryResolver,
             params.defaultParams,
@@ -84,6 +88,7 @@ class FlowWorker @Activate constructor(
         verificationProcessor.stop()
         interopProcessor.stop()
         workerMonitor.stop()
+        shutdownTracing()
     }
 }
 

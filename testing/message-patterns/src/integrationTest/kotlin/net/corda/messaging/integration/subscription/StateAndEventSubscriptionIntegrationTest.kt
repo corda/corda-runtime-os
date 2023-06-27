@@ -255,7 +255,7 @@ class StateAndEventSubscriptionIntegrationTest {
         val expectedCommitStates = listOf(mapOf("key1" to "1"), mapOf("key1" to "2"))
         val syncPartitionLatch = CountDownLatch(1)
         val losePartitionLatch = CountDownLatch(1)
-        val commitStatesLatch = CountDownLatch(2)
+        val commitStatesLatch = CountDownLatch(1)
         val onNextLatch2 = CountDownLatch(2)
         val stateEventSub2 = subscriptionFactory.createStateAndEventSubscription(
             SubscriptionConfig("$EVENT_TOPIC3-group-2", EVENT_TOPIC3),

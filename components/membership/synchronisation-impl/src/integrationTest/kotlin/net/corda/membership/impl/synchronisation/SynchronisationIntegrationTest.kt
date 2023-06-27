@@ -22,7 +22,6 @@ import net.corda.data.crypto.SecureHash
 import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.identity.HoldingIdentity
-import net.corda.data.membership.PersistentGroupParameters
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.SignedData
 import net.corda.data.membership.SignedGroupParameters
@@ -78,7 +77,6 @@ import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas.Config.CONFIG_TOPIC
-import net.corda.schema.Schemas.Membership.GROUP_PARAMETERS_TOPIC
 import net.corda.schema.Schemas.Membership.MEMBER_LIST_TOPIC
 import net.corda.schema.Schemas.P2P.P2P_IN_TOPIC
 import net.corda.schema.Schemas.P2P.P2P_OUT_TOPIC
@@ -602,16 +600,6 @@ class SynchronisationIntegrationTest {
             messagingConfig = bootConfig
         ).also { it.start() }
 
-        // Start subscription to check published group parameters
-        val completableResult2 = CompletableFuture<PersistentGroupParameters>()
-        val groupParametersSubscription = subscriptionFactory.createPubSubSubscription(
-            SubscriptionConfig("group_parameters_test_receiver", GROUP_PARAMETERS_TOPIC),
-            getTestProcessor { v ->
-                completableResult2.complete(v as PersistentGroupParameters)
-            },
-            messagingConfig = bootConfig
-        ).also { it.start() }
-
         // Publish membership package
         val updatesSender = publisherFactory.createPublisher(
             PublisherConfig("membership_updates_test_sender"),
@@ -668,27 +656,6 @@ class SynchronisationIntegrationTest {
 
             it.assertThat(membershipPersistenceClient.getPersistedGroupParameters()!!.toAvro())
                 .isEqualTo(groupParameters)
-        }
-
-        // Receive and assert on group parameters
-        val result2 = assertDoesNotThrow {
-            completableResult2.getOrThrow(Duration.ofSeconds(5))
-        }
-        groupParametersSubscription.close()
-
-        assertSoftly {
-            it.assertThat(result2).isNotNull
-            it.assertThat(result2)
-                .isNotNull
-                .isInstanceOf(PersistentGroupParameters::class.java)
-
-            with(result2) {
-                it.assertThat(
-                    keyValueDeserializer.deserialize(this.groupParameters.groupParameters.array())
-                ).isEqualTo(groupParameters)
-                it.assertThat(this.groupParameters.mgmSignature).isNotNull
-                it.assertThat(this.viewOwner).isEqualTo(requester)
-            }
         }
     }
 

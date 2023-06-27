@@ -24,6 +24,7 @@ import net.corda.rest.server.impl.context.ContextUtils.contentTypeApplicationJso
 import net.corda.rest.server.impl.context.ContextUtils.invokeHttpMethod
 import net.corda.rest.server.impl.websocket.WebSocketCloserService
 import net.corda.rest.server.impl.websocket.mapToWsStatusCode
+import net.corda.tracing.configureJavalinForTracing
 import net.corda.utilities.classload.executeWithThreadContextClassLoader
 import net.corda.utilities.classload.OsgiClassLoader
 import net.corda.utilities.executeWithStdErrSuppressed
@@ -75,6 +76,8 @@ internal class RestServerInternal(
     private val server = Javalin.create {
         it.jsonMapper(JavalinJackson(serverJacksonObjectMapper))
         it.registerPlugin(RedirectToLowercasePathPlugin())
+        configureJavalinForTracing(it)
+
 
         val swaggerUiBundle = getSwaggerUiBundle()
         // In an OSGi context, webjars cannot be loaded automatically using `JavalinConfig.enableWebJars`.
