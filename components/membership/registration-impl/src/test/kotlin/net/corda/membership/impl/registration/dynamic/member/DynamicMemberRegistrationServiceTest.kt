@@ -983,7 +983,7 @@ class DynamicMemberRegistrationServiceTest {
             val exception = assertThrows<InvalidMembershipRegistrationException> {
                 registrationService.register(registrationResultId, member, newContext.toMap())
             }
-            assertThat(exception).hasMessageContaining("Only custom fields")
+            assertThat(exception).hasMessageContaining("cannot be added, removed or updated")
         }
 
         @Test
@@ -1009,7 +1009,7 @@ class DynamicMemberRegistrationServiceTest {
             val exception = assertThrows<InvalidMembershipRegistrationException> {
                 registrationService.register(registrationResultId, member, newContext.toMap())
             }
-            assertThat(exception).hasMessageContaining("Only custom fields")
+            assertThat(exception).hasMessageContaining("cannot be added, removed or updated")
         }
 
         @Test
@@ -1018,8 +1018,9 @@ class DynamicMemberRegistrationServiceTest {
                 on { entries } doReturn previousRegistrationContext.entries
             }
             val newContextEntries = context.toMutableMap().apply {
-                put(URL_KEY.format(1), "https://localhost:1080")
-                put(PROTOCOL_VERSION.format(1), "1")
+                put(String.format(ROLES_PREFIX, 0), "notary")
+                put(NOTARY_SERVICE_NAME, "O=MyNotaryService, L=London, C=GB")
+                put("corda.notary.keys.0.id",  NOTARY_KEY_ID)
             }.entries
             val newContext = mock<MemberContext> {
                 on { entries } doReturn newContextEntries
@@ -1033,7 +1034,7 @@ class DynamicMemberRegistrationServiceTest {
             val exception = assertThrows<InvalidMembershipRegistrationException> {
                 registrationService.register(registrationResultId, member, newContext.toMap())
             }
-            assertThat(exception).hasMessageContaining("Only custom fields")
+            assertThat(exception).hasMessageContaining("cannot be added, removed or updated")
         }
     }
 

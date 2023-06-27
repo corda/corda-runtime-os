@@ -17,7 +17,6 @@ import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandle
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandlerResult
 import net.corda.membership.impl.registration.dynamic.verifiers.RegistrationContextCustomFieldsVerifier
 import net.corda.membership.lib.MemberInfoExtension.Companion.CREATION_TIME
-import net.corda.membership.lib.MemberInfoExtension.Companion.CUSTOM_KEY_PREFIX
 import net.corda.membership.lib.MemberInfoExtension.Companion.ENDPOINTS
 import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEYS
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
@@ -171,8 +170,7 @@ internal class StartRegistrationHandler(
                     }
                 validateRegistrationRequest(
                     diff.isEmpty()
-                ) { "Only custom fields with the '$CUSTOM_KEY_PREFIX' prefix and cpi/platform information " +
-                        "may be updated during re-registration." }
+                ) { "Fields ${diff.map { it.key }} cannot be added, removed or updated during re-registration." }
             }
 
             // The group ID matches the group ID of the MGM

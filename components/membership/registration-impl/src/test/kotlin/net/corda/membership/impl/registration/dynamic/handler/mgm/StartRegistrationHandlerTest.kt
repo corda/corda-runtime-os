@@ -767,7 +767,7 @@ class StartRegistrationHandlerTest {
     @Test
     fun `declined if non-custom, non-platform or non-cpi related properties are updated during re-registration`() {
         val newContextEntries = memberContextEntries.toMutableMap().apply {
-            put("${ROLES_PREFIX}0", "changed")
+            put("${ROLES_PREFIX}.0", "changed")
         }.entries
         val contextWithUpdates = mock<MemberContext> {
             on { parse(eq(GROUP_ID), eq(String::class.java)) } doReturn groupId
