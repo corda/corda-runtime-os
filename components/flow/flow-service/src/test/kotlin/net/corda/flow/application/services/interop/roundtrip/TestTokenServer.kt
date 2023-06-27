@@ -2,7 +2,6 @@ package net.corda.flow.application.services.interop.roundtrip
 
 import net.corda.flow.application.services.interop.example.TokenReservation
 import net.corda.flow.application.services.interop.example.TokensFacade
-import net.corda.v5.application.interop.binding.InteropAction
 import java.math.BigDecimal
 import java.time.ZonedDateTime
 import java.time.temporal.ChronoUnit
