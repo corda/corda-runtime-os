@@ -71,7 +71,7 @@ class SessionInitExecutor(
             )
 
         log.info("AAA Received SessionEvent: ${sessionEvent.sessionId} with payload type ${sessionEvent.payload::class.simpleName} in " +
-                "SessionInitExecutor for flow $flowKey while mapper is in state ${flowMapperState.status}.")
+                "SessionInitExecutor for flow $flowKey while mapper is in state ${flowMapperState?.status}.")
 
         return FlowMapperResult(
             FlowMapperState(flowKey, null, FlowMapperStateType.OPEN),
