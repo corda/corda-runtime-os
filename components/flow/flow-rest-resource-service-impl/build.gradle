@@ -35,7 +35,7 @@ dependencies {
     implementation 'net.corda:corda-rbac-schema'
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation "org.slf4j:slf4j-api:$slf4jVersion"
-    implementation "com.google.guava:guava:$guavaVersion"
+    implementation libs.guava
     implementation libs.commons.lang3
 
     testImplementation "org.mockito:mockito-core:$mockitoVersion"

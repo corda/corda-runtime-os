@@ -31,7 +31,7 @@ dependencies {
     implementation 'net.corda:corda-config-schema'
 
     runtimeOnly "com.typesafe:config:$typeSafeConfigVersion"
-    runtimeOnly "org.apache.felix:org.apache.felix.scr:$felixScrVersion"
+    runtimeOnly libs.felix.scr
     runtimeOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
     runtimeOnly "org.osgi:org.osgi.util.function:$osgiUtilFunctionVersion"
     runtimeOnly "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"
@@ -44,7 +44,7 @@ dependencies {
     testImplementation project(':libs:application:addon')
     testImplementation project(':libs:application:banner')
 
-    runtimeOnly("org.apache.felix:org.apache.felix.framework.security:$felixSecurityVersion") {
+    runtimeOnly(libs.felix.security) {
         exclude group: 'org.apache.felix'
         exclude group: 'org.osgi'
     }

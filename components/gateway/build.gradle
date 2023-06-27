@@ -43,7 +43,7 @@ dependencies {
     integrationTestImplementation "net.corda:corda-avro-schema"
 
     // For async logging
-    integrationTestRuntimeOnly "com.lmax:disruptor:$disruptorVersion"
+    integrationTestRuntimeOnly libs.lmax.disruptor
     integrationTestRuntimeOnly 'org.osgi:osgi.core'
 
     integrationTestImplementation project(':libs:crypto:certificate-generation')

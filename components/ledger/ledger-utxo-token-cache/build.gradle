@@ -34,7 +34,7 @@ dependencies {
     testImplementation "org.assertj:assertj-core:$assertjVersion"
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
-    testImplementation "org.apache.felix:org.apache.felix.framework:$felixVersion"
+    testImplementation libs.felix.framework
     testImplementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
 
     testImplementation project(":libs:lifecycle:lifecycle-test-impl")

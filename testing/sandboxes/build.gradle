@@ -28,7 +28,7 @@ dependencies {
         exclude group: 'org.mockito'
     }
 
-    runtimeOnly "org.apache.felix:org.apache.felix.configadmin:$felixConfigAdminVersion"
+    runtimeOnly libs.felix.configadmin
     runtimeOnly project(':libs:sandbox-internal')
 }
 
