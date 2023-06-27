@@ -20,4 +20,12 @@ interface AliasInfoCacheService : Lifecycle {
      * @param aliasIdentity New alias identity to add to the cache.
      */
     fun putAliasIdentity(shortHash: String, aliasIdentity: InteropAliasIdentity)
+
+    /**
+     * Remove an alias identity from the cache.
+     *
+     * @param shortHash Short hash of the real holding identity to remove from the cache.
+     * @param aliasIdentity Alias identity to remove from the cache.
+     */
+    fun removeAliasIdentity(shortHash: String, aliasIdentity: InteropAliasIdentity)
 }

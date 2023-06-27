@@ -21,10 +21,14 @@ class InteropAliasIdentityProducer(
             return
         }
 
-        val futures = publisher.get()!!.publish(listOf(Record(INTEROP_ALIAS_IDENTITY_TOPIC, shortHash, interopAliasIdentity)))
+        // Key is a combination of holding identity short hash and interop group ID.
+        // TODO: Review
+        val key = "$shortHash:${interopAliasIdentity.groupId}"
+
+        val futures = publisher.get()!!.publish(listOf(Record(INTEROP_ALIAS_IDENTITY_TOPIC, key, interopAliasIdentity)))
 
         futures.forEach { it.get() }
 
-        logger.info("Interop alias identity published with key : $shortHash and value : $interopAliasIdentity")
+        logger.info("Interop alias identity published with key : $key and value : $interopAliasIdentity")
     }
 }

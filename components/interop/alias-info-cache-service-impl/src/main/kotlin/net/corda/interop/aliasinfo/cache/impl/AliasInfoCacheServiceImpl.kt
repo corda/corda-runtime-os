@@ -27,7 +27,7 @@ class AliasInfoCacheServiceImpl @Activate constructor(
     }
 
     private val lifecycleEventHandler = AliasInfoCacheServiceEventHandler(
-        configurationReadService, subscriptionFactory
+        configurationReadService, subscriptionFactory, this
     )
 
     private val coordinatorName = LifecycleCoordinatorName.forComponent<AliasInfoCacheService>()
@@ -54,6 +54,11 @@ class AliasInfoCacheServiceImpl @Activate constructor(
     override fun putAliasIdentity(shortHash: String, aliasIdentity: InteropAliasIdentity) {
         val identities = getAliasIdentityMapFor(shortHash)
         identities[aliasIdentity.groupId] = aliasIdentity
+    }
+
+    override fun removeAliasIdentity(shortHash: String, aliasIdentity: InteropAliasIdentity) {
+        val identities = getAliasIdentityMapFor(shortHash)
+        identities.remove(aliasIdentity.groupId)
     }
 
     override val isRunning: Boolean
