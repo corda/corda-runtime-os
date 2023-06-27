@@ -25,9 +25,9 @@ class SwapResponderSubFlow(private val session: FlowSession, private val alias: 
         val tokens: TokensFacade =
             facadeService.getFacade(facadeId, TokensFacade::class.java, alias, message.interopGroupId)
         val responseObject = tokens.reserveTokensV1("USD", message.toReserve)
-        log.info("Interop call finished}")
+        log.info("Interop call finished")
         val response = responseObject.result
-        log.info("Interop call get $response}")
+        log.info("Interop call get $response")
         session.send(response)
 
         return response

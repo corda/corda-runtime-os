@@ -22,7 +22,7 @@ import org.slf4j.LoggerFactory
 import java.math.BigDecimal
 import java.time.Duration
 import java.time.Instant
-import java.util.*
+import java.util.UUID
 
 
 @InitiatingFlow(protocol = "interop-sample-swap-protocol")
@@ -40,9 +40,6 @@ class SwapFlow : ClientStartableFlow {
 
     @CordaInject
     lateinit var ledgerService: UtxoLedgerService
-
-    @CordaInject
-    lateinit var flowEngine: FlowEngine
 
     @CordaInject
     lateinit var flowMessaging: FlowMessaging
@@ -92,7 +89,7 @@ class SwapFlow : ClientStartableFlow {
             val session1 = flowMessaging.initiateFlow(newOwnerInfo.name)
             val reservation : UUID = session1.sendAndReceive(UUID::class.java, Payment(toReserve = BigDecimal(100)))
 
-            log.info("Tesla Reserved $reservation")
+            log.info("Reserved $reservation")
 
             val finalizationResult = ledgerService.finalize(
                 signedTransaction,
@@ -131,8 +128,7 @@ class SwapResponderFlow : ResponderFlow {
         val myAlias = MemberX500Name.parse("C=GB, L=London, O=Bob2 Alias")//TODO replace with alias lookup
 
         val result = flowEngine.subFlow(SwapResponderSubFlow(session, myAlias, msg))
-        log.info("interop subFlow returned $result")
-        log.info("calling responder finality")
+        log.info("Interop SubFlow finished with result '$result', calling FinalityFlow")
 
         try {
             val finalizationResult = utxoLedgerService.receiveFinality(session) { ledgerTransaction ->
