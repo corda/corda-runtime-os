@@ -48,8 +48,9 @@ class SessionErrorExecutor(
 
     private fun processSessionErrorEvents(flowMapperState: FlowMapperState): FlowMapperResult {
 
-        log.info("AAA SessionErrorExecutor triggered! SessionEvent: ${sessionEvent.sessionId} with payload type ${sessionEvent.payload::class.simpleName} in " +
-                "SessionEventExecutor for flow ${flowMapperState.flowId} while mapper is in state ${flowMapperState.status}")
+        log.info("AAA SessionErrorExecutor triggered! SessionEvent: ${sessionEvent.sessionId} with payload type " +
+                "${sessionEvent.payload::class.simpleName} in SessionEventExecutor for flow ${flowMapperState.flowId} " +
+                "while mapper is in state ${flowMapperState.status}")
 
         val sessionId = sessionEvent.sessionId
         return when (flowMapperState.status) {
