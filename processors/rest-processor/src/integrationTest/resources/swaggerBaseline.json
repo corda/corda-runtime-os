@@ -1349,7 +1349,9 @@
             "content" : {
               "application/json" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/CreateInteropIdentityRequest"
+                  "type" : "string",
+                  "nullable" : false,
+                  "example" : "No example available for this type"
                 }
               }
             }
