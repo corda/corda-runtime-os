@@ -233,14 +233,12 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         }
     }
 
-    private data class ProducerData<K, S>(
+    private data class ProducerData(
         val offsetsAndMetadata: CordaProducer.OffsetsAndMetadata,
-        val records: List<CordaProducerRecord<*, *>>,
-        val updatedStates: MutableMap<Int, MutableMap<K, S?>>
+        val records: List<CordaProducerRecord<*, *>>
     )
 
     private val producerChannel = Channel<ProducerData>(1)
-    private val updatedStatesChannel = Channel<ProducerData>(1000)
 
     /**
      * Process a batch of events from the last poll and publish the outputs (including DLQd events)
@@ -248,8 +246,6 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
      * @return false if the batch had to be abandoned due to a rebalance
      */
     private suspend fun tryProcessBatchOfEvents(events: List<CordaConsumerRecord<K, E>>): Boolean {
-        updateAnyPendingInterla
-        
         val outputRecords = mutableListOf<Record<*, *>>()
         val updatedStates: MutableMap<Int, MutableMap<K, S?>> = mutableMapOf()
         // Pre-populate the updated states with the current in-memory state.
@@ -278,8 +274,7 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
 
         val producerData = ProducerData(
             producer.getOffsetsAndMetadata(eventConsumer, events),
-            outputRecords.toCordaProducerRecords(),
-            updatedStates
+            outputRecords.toCordaProducerRecords()
         )
         //log.info("@@@ pushing to producer channel")
         producerChannel.send(producerData)
