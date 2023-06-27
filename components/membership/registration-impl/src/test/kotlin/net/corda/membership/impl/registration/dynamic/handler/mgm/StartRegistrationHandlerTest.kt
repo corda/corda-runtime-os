@@ -349,7 +349,7 @@ class StartRegistrationHandlerTest {
             assertThat(updatedState).isNotNull
             assertThat(updatedState!!.registrationId).isEqualTo(registrationId)
             assertThat(updatedState!!.registeringMember).isEqualTo(aliceHoldingIdentity)
-            assertThat(outputStates).isNotEmpty.hasSize(2)
+            assertThat(outputStates).isNotEmpty.hasSize(1)
 
             assertDeclinedRegistration()
         }
@@ -362,7 +362,7 @@ class StartRegistrationHandlerTest {
             assertThat(updatedState).isNotNull
             assertThat(updatedState!!.registrationId).isEqualTo(registrationId)
             assertThat(updatedState!!.registeringMember).isEqualTo(aliceHoldingIdentity)
-            assertThat(outputStates).isNotEmpty.hasSize(2)
+            assertThat(outputStates).isNotEmpty.hasSize(1)
 
             assertDeclinedRegistration()
         }

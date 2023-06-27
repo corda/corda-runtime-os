@@ -106,6 +106,13 @@ internal class StartRegistrationHandler(
                 .getOrThrow()
 
             logger.info("Registering $pendingMemberHoldingId with MGM for holding identity: $mgmHoldingId")
+            validateRegistrationRequest(registrationRequest.serial != null) {
+                "Serial on the registration request cannot be null."
+            }
+            validateRegistrationRequest(registrationRequest.serial!! >= 0) {
+                "Serial cannot be negative on the registration request."
+            }
+
             val pendingMemberInfo = buildPendingMemberInfo(registrationRequest)
             val persistentMemberInfo = PersistentMemberInfo.newBuilder()
                 .setMemberContext(pendingMemberInfo.memberProvidedContext.toAvro())
@@ -122,12 +129,6 @@ internal class StartRegistrationHandler(
             // after this point
             outputRecords.add(pendingMemberRecord)
 
-            validateRegistrationRequest(registrationRequest.serial != null) {
-                "Serial on the registration request cannot be null."
-            }
-            validateRegistrationRequest(registrationRequest.serial!! >= 0) {
-                "Serial cannot be negative on the registration request."
-            }
             validatePreAuthTokenUsage(mgmHoldingId, pendingMemberInfo, registrationRequest)
             // Parse the registration request and verify contents
             // The MemberX500Name matches the source MemberX500Name from the P2P messaging
@@ -253,7 +254,7 @@ internal class StartRegistrationHandler(
                 CREATION_TIME to now,
                 MODIFIED_TIME to now,
                 STATUS to MEMBER_STATUS_PENDING,
-                SERIAL to ((registrationRequest.serial ?: 0) + 1).toString(),
+                SERIAL to (registrationRequest.serial!! + 1).toString(),
             )
         )
     }
