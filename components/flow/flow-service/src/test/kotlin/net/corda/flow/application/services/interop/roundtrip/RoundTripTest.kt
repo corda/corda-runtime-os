@@ -27,14 +27,14 @@ class RoundTripTest {
 
     @Test
     fun roundtripClientProxyToServerDispatcher() {
-        assertEquals(1000000.0, v1Client.getBalance("USD").result)
+        assertEquals(1000000.0, v1Client.getBalance("USD"))
 
-        val reservationRef = v1Client.reserveTokensV1("USD", BigDecimal(1)).result
-        assertEquals(999999.0, v1Client.getBalance("USD").result)
+        val reservationRef = v1Client.reserveTokensV1("USD", BigDecimal(1))
+        assertEquals(999999.0, v1Client.getBalance("USD"))
 
         val txRef = UUID.randomUUID()
-        v1Client.spendReservedTokens(reservationRef, txRef, "Peter").result
-        assertEquals(999999.0, v1Client.getBalance("USD").result)
+        v1Client.spendReservedTokens(reservationRef, txRef, "Peter")
+        assertEquals(999999.0, v1Client.getBalance("USD"))
 
         assertTrue(
             server.spendHistory.contains(

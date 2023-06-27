@@ -21,7 +21,7 @@ class TestTokenServer(initialBalances: Map<String, BigDecimal>, private val time
     private val reservations = mutableMapOf<UUID, Reservation>()
     val spendHistory = mutableListOf<Spend>()
 
-    override fun getBalance(denomination: String): InteropAction<Double> {
+    override fun getBalance(denomination: String): Double {
         val totalBalance = balances[denomination] ?: BigDecimal(0)
         var now = timeserver()
 
@@ -29,38 +29,38 @@ class TestTokenServer(initialBalances: Map<String, BigDecimal>, private val time
             it.denomination == denomination && it.expires.isAfter(now)
         }.sumOf { it.amount }
 
-        return InteropAction.ServerResponse(totalBalance.toDouble() - reserved)
+        return totalBalance.toDouble() - reserved
     }
 
-    override fun reserveTokensV1(denomination: String, amount: BigDecimal): InteropAction<UUID> {
-        return InteropAction.ServerResponse(reserveTokensV2(denomination, amount, 24 * 60 * 1000)
-            .result.reservationRef)
+    override fun reserveTokensV1(denomination: String, amount: BigDecimal): UUID {
+        return reserveTokensV2(denomination, amount, 24 * 60 * 1000)
+            .reservationRef
     }
 
     override fun reserveTokensV2(
         denomination: String,
         amount: BigDecimal,
         timeToLiveMs: Long
-    ): InteropAction<TokenReservation> {
+    ): TokenReservation {
         val ref = UUID.randomUUID()
         val expirationTimestamp = timeserver().plus(timeToLiveMs, ChronoUnit.MILLIS)
 
         reservations[ref] = Reservation(ref, denomination, amount.toDouble(), expirationTimestamp)
 
-        return InteropAction.ServerResponse(TokenReservation(ref, expirationTimestamp))
+        return TokenReservation(ref, expirationTimestamp)
     }
 
-    override fun releaseReservedTokens(reservationRef: UUID): InteropAction<Unit> {
+    override fun releaseReservedTokens(reservationRef: UUID): Unit {
         reservations.remove(reservationRef)
 
-        return InteropAction.ServerResponse(Unit)
+        return Unit
     }
 
     override fun spendReservedTokens(
         reservationRef: UUID,
         transactionRef: UUID,
         recipient: String
-    ): InteropAction<Unit> {
+    ): Unit {
         val reservation = reservations[reservationRef] ?:
         throw IllegalArgumentException("Reservation $reservationRef does not exist")
 
@@ -73,7 +73,7 @@ class TestTokenServer(initialBalances: Map<String, BigDecimal>, private val time
         }
         spendHistory.add(Spend(reservation, transactionRef, recipient))
 
-        return InteropAction.ServerResponse(Unit)
+        return Unit
     }
 
 }

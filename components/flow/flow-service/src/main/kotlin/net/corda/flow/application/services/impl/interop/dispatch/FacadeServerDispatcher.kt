@@ -79,21 +79,23 @@ class FacadeServerDispatcher(
     @Suppress("UNCHECKED_CAST")
     @Suspendable
     private fun getOutParameterValues(
-        result: Any,
+        result: Any?,
         outParameterBindings: FacadeOutParameterBindings
     ): List<TypedParameterValue<*>> = when (outParameterBindings) {
-        FacadeOutParameterBindings.NoOutParameters -> emptyList()
+        FacadeOutParameterBindings.NoOutParameters ->  {
+            emptyList()
+        }
 
         is FacadeOutParameterBindings.SingletonOutParameterBinding -> {
             val parameter = outParameterBindings.outParameter as TypedParameter<Any>
-            val value = typeConverter.convertJvmToFacade(result, parameter.type.typeLabel)
+            val value = typeConverter.convertJvmToFacade(result!!, parameter.type.typeLabel)
 
             listOf(parameter.of(value))
         }
 
         is FacadeOutParameterBindings.DataClassOutParameterBindings -> {
             outParameterBindings.bindings.map { binding ->
-                val propertyValue = binding.readMethod.invoke(result)
+                val propertyValue = binding.readMethod.invoke(result!!)
                 (binding.facadeOutParameter as TypedParameter<Any>).of(propertyValue)
             }
         }

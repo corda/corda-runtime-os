@@ -4,7 +4,6 @@ import net.corda.flow.application.services.impl.interop.dispatch.buildDispatcher
 import net.corda.flow.application.services.impl.interop.facade.FacadeReaders
 import net.corda.flow.application.services.interop.example.TokenReservation
 import net.corda.flow.application.services.interop.example.TokensFacade
-import net.corda.v5.application.interop.binding.InteropAction
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
@@ -24,9 +23,9 @@ class FacadeServerDispatcherSpec {
     val expirationTimestamp = ZonedDateTime.now()
 
     val mockServer = mock<TokensFacade> {
-        on { releaseReservedTokens(any()) } doReturn InteropAction.ServerResponse(Unit)
+       // on { releaseReservedTokens(any()) } doReturn Unit
         on { reserveTokensV2(any(), any(), any()) } doReturn
-                InteropAction.ServerResponse(TokenReservation(reservationRef, expirationTimestamp))
+                TokenReservation(reservationRef, expirationTimestamp)
     }
 
     val v1Dispatcher = mockServer.buildDispatcher(facadeV1)
