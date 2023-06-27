@@ -52,16 +52,6 @@ internal class RedisStateAndEventConsumer<K : Any, S : Any, E : Any>(
     }
 
     private val log = LoggerFactory.getLogger("${this.javaClass.name}-${config.clientId}")
-
-//    var redisUri: RedisURI = RedisURI.builder()
-//        .withHost("orr-memory-db.8b332u.clustercfg.memorydb.eu-west-2.amazonaws.com")
-//        .withPort(6379)
-//        .withDatabase(0)
-//        .build()
-//    var redisClient: RedisClient? = RedisClient.create(redisUri)
-//    var connection = redisClient!!.connect(ByteArrayCodec())
-//    var syncRedisCommands = connection.sync()
-
     private val hostAndPort = HostAndPort("orr-memory-db.8b332u.clustercfg.memorydb.eu-west-2.amazonaws.com", 6379).also {
         log.warn("Connecting to host ${it.host}, port ${it.port}")
     }

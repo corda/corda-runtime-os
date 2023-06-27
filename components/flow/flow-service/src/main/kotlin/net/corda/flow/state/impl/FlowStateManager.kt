@@ -117,7 +117,7 @@ class FlowStateManager(private val initialState: FlowState) {
         return map
     }
 
-    private fun createExternalEventMap(externalEventState: List<ExternalEventState>?) : MutableMap<String, ExternalEventState> {
-        return externalEventState?.associateBy { it.requestId }?.toMutableMap() ?: mutableMapOf()
+    private fun createExternalEventMap(externalEventState: List<ExternalEventState>) : MutableMap<String, ExternalEventState> {
+        return externalEventState.associateBy { it.requestId }.toMutableMap()
     }
 }

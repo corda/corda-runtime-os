@@ -32,7 +32,6 @@ dependencies {
 
     implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation "redis.clients:jedis:$jedisVersion"
-//    implementation "io.lettuce:lettuce-core:$lettuceVersion"
 
     testImplementation "org.assertj:assertj-core:$assertjVersion"
     testImplementation "org.mockito:mockito-core:$mockitoVersion"

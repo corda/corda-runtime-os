@@ -27,6 +27,9 @@ class UniquenessCheckMessageProcessor(
 
         val requests = events.mapNotNull { it.value }
 
+//        val topic = config.getOutputTopic(BootConfig.UNIQUENESS_OUTPUT, FLOW_EVENT_TOPIC)
+        //HARDCODED: Point the process to a custom flow processor deployment
+        val uniquenessTopic = System.getenv("FLOW_UNIQUENESS_TOPIC")
         return uniquenessChecker.processRequests(requests).map { (request, response) ->
             if (response.result is UniquenessCheckResultUnhandledExceptionAvro) {
                 batchTracer.error(
@@ -43,9 +46,6 @@ class UniquenessCheckMessageProcessor(
                 )
             }
         }.map {
-            //        val topic = config.getOutputTopic(BootConfig.UNIQUENESS_OUTPUT, FLOW_EVENT_TOPIC)
-            //HARDCODED: Point the process to a custom flow processor deployment
-            val uniquenessTopic = System.getenv("FLOW_UNIQUENESS_TOPIC")
             Record(uniquenessTopic, it.key, it.value, it.timestamp, it.headers)
         }
     }

@@ -43,7 +43,7 @@ class ExternalEventResponseHandler @Activate constructor(
         if (externalEventState == null) {
             log.debug {
                 "Received an ${ExternalEventResponse::class.simpleName} with request id: " +
-                        "${externalEventResponse.requestId} while flow [${context.inputEvent.flowId} is not waiting " +
+                        "${externalEventResponse.requestId} while flow [${context.inputEvent.flowId}] is not waiting " +
                         "for an ${ExternalEventResponse::class.simpleName}. " +
                         "${ExternalEventResponse::class.simpleName}: $externalEventResponse"
             }

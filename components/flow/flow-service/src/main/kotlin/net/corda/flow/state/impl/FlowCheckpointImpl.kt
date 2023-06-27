@@ -139,7 +139,7 @@ class FlowCheckpointImpl(
         val flowState = FlowState.newBuilder().apply {
             fiber = ByteBuffer.wrap(byteArrayOf())
             setFlowStartContext(flowStartContext)
-            externalEventState = null
+            externalEventState = mutableListOf()
             sessions = mutableListOf()
             flowStackItems = mutableListOf()
             waitingFor = null

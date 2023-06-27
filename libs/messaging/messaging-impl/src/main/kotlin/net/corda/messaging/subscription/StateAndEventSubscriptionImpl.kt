@@ -312,15 +312,15 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
             it.topic == event.topic && processor.eventValueClass.isInstance(it.value) && it.key == key
         } ?: Pair(emptyList(), emptyList())
 
-        log.info("**** events to process contains: ${eventsToProcess.size} events:")
-        eventsToProcess.forEach {
-            log.info("****\t- key:${it.key} :: class:${it.value?.javaClass?.name ?: "null"} :: topic: ${it.topic}")
-        }
+//        log.info("**** events to process contains: ${eventsToProcess.size} events:")
+//        eventsToProcess.forEach {
+//            log.info("****\t- key:${it.key} :: class:${it.value?.javaClass?.name ?: "null"} :: topic: ${it.topic}")
+//        }
 
-        log.info("**** output events contains: ${outputEvents.size} events:")
-        outputEvents.forEach {
-            log.info("****\t- key:${it.key} :: class:${it.value?.javaClass?.name ?: "null"} :: topic: ${it.topic}")
-        }
+//        log.info("**** output events contains: ${outputEvents.size} events:")
+//        outputEvents.forEach {
+//            log.info("****\t- key:${it.key} :: class:${it.value?.javaClass?.name ?: "null"} :: topic: ${it.topic}")
+//        }
 
         when {
             thisEventUpdates == null -> {
@@ -330,7 +330,7 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                 )
                 generateChunkKeyCleanupRecords(key, state, null, outputRecords)
                 outputRecords.add(generateDeadLetterRecord(event, state))
-                outputRecords.add(Record(stateTopic, key, null))
+//                outputRecords.add(Record(stateTopic, key, null))
                 updatedStates.computeIfAbsent(partitionId) { mutableMapOf() }[key] = null
             }
 
@@ -341,7 +341,7 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                 )
                 generateChunkKeyCleanupRecords(key, state, null, outputRecords)
                 outputRecords.add(generateDeadLetterRecord(event, state))
-                outputRecords.add(Record(stateTopic, key, null))
+//                outputRecords.add(Record(stateTopic, key, null))
                 updatedStates.computeIfAbsent(partitionId) { mutableMapOf() }[key] = null
 
                 // In this case the processor may ask us to publish some output records regardless, so make sure these
@@ -353,7 +353,7 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
             else -> {
                 generateChunkKeyCleanupRecords(key, state, updatedState, outputRecords)
                 outputRecords.addAll(outputEvents)
-                outputRecords.add(Record(stateTopic, key, updatedState))
+          //      outputRecords.add(Record(stateTopic, key, updatedState))
                 updatedStates.computeIfAbsent(partitionId) { mutableMapOf() }[key] = updatedState
                 recordsToProcess.addAll(eventsToProcess as List<Record<K, E>>)
                 log.debug { "Completed event: $event" }
