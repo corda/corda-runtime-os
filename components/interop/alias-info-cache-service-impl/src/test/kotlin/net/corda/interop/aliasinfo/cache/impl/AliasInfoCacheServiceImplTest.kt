@@ -1,10 +1,15 @@
 package net.corda.interop.aliasinfo.cache.impl
 
+import net.corda.data.chunking.UploadStatus
+import net.corda.data.chunking.UploadStatusKey
 import net.corda.data.interop.InteropAliasIdentity
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.messaging.api.subscription.CompactedSubscription
+import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import org.mockito.Mockito
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
@@ -21,7 +26,14 @@ class AliasInfoCacheServiceImplTest {
             whenever(it.createCoordinator(any(), any())).doReturn(coordinator)
         }
 
-        val cache = AliasInfoCacheServiceImpl(coordinatorFactory, mock())
+        val subscription: CompactedSubscription<UploadStatusKey, UploadStatus> = mock()
+        val subscriptionFactory = mock<SubscriptionFactory>().apply {
+            Mockito.`when`(createCompactedSubscription<UploadStatusKey, UploadStatus>(any(), any(), any())).thenReturn(
+                subscription
+            )
+        }
+
+        val cache = AliasInfoCacheServiceImpl(coordinatorFactory, mock(), subscriptionFactory)
 
         val shortHash = "1234567890"
         val response = cache.getAliasIdentities(shortHash)
@@ -37,7 +49,14 @@ class AliasInfoCacheServiceImplTest {
             whenever(it.createCoordinator(any(), any())).doReturn(coordinator)
         }
 
-        val cache = AliasInfoCacheServiceImpl(coordinatorFactory, mock())
+        val subscription: CompactedSubscription<UploadStatusKey, UploadStatus> = mock()
+        val subscriptionFactory = mock<SubscriptionFactory>().apply {
+            Mockito.`when`(createCompactedSubscription<UploadStatusKey, UploadStatus>(any(), any(), any())).thenReturn(
+                subscription
+            )
+        }
+
+        val cache = AliasInfoCacheServiceImpl(coordinatorFactory, mock(), subscriptionFactory)
 
         val shortHash = "1234567890"
         val aliasIdentity = InteropAliasIdentity().apply {
@@ -69,7 +88,14 @@ class AliasInfoCacheServiceImplTest {
             whenever(it.createCoordinator(any(), any())).doReturn(coordinator)
         }
 
-        val cache = AliasInfoCacheServiceImpl(coordinatorFactory, mock())
+        val subscription: CompactedSubscription<UploadStatusKey, UploadStatus> = mock()
+        val subscriptionFactory = mock<SubscriptionFactory>().apply {
+            Mockito.`when`(createCompactedSubscription<UploadStatusKey, UploadStatus>(any(), any(), any())).thenReturn(
+                subscription
+            )
+        }
+
+        val cache = AliasInfoCacheServiceImpl(coordinatorFactory, mock(), subscriptionFactory)
 
         val shortHash = "1234567890"
 
