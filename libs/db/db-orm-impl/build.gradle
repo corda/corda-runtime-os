@@ -13,15 +13,15 @@ dependencies {
     implementation "org.slf4j:slf4j-api"
     api "javax.persistence:javax.persistence-api"
 
-    runtimeOnly("org.hibernate:hibernate-core:$hibernateVersion")
+    runtimeOnly(libs.hibernate.core)
     // TODO - statistics integration isn't working in OSGi.
     // https://r3-cev.atlassian.net/browse/CORE-7168
     //
-    // runtimeOnly("org.hibernate:hibernate-micrometer:$hibernateVersion") {
+    // runtimeOnly(libs.hibernate.micrometer) {
     //  // TODO - this can probably be removed once we have a table version of micrometer with OSGi support.
     //  exclude group: 'io.micrometer', module: 'micrometer-core'
     // }
-    implementation("org.hibernate:hibernate-osgi:$hibernateVersion") {
+    implementation(libs.hibernate.osgi) {
         // Need to exclude the org.osgi package as will use the BND ones at runtime
         //  org.osgi ones are added above as compileOnly
         exclude group: 'org.osgi'

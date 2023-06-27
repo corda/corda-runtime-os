@@ -18,7 +18,7 @@ dependencies {
     implementation project(":tools:plugins:plugins-rest")
     implementation project(":components:membership:membership-rest")
 
-    implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
+    implementation libs.jackson.module
     implementation libs.snakeyaml
     implementation "org.pf4j:pf4j:${pf4jVersion}"
     kapt "org.pf4j:pf4j:${pf4jVersion}"

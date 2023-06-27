@@ -22,9 +22,9 @@ dependencies {
     testImplementation "info.picocli:picocli:$picocliVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 
-    implementation "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:$jacksonVersion"
-    implementation "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
-    implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
+    implementation libs.jackson.dataformat
+    implementation libs.jackson.databind
+    implementation libs.jackson.module
     implementation "io.fabric8:kubernetes-client:6.5.1"
 
     implementation "org.postgresql:postgresql:$postgresDriverVersion"

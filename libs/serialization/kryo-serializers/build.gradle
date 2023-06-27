@@ -27,13 +27,13 @@ configurations {
 
 dependencies {
     // This information has been read from kryo-serializers' original POM.
-    compileOnly "de.javakaffee:kryo-serializers:$kryoSerializersVersion"
+    compileOnly libs.kryo.serializers
     compileOnly "com.github.andrewoma.dexx:collection:$kryoDexxCollectionVersion"
     compileOnly "com.google.protobuf:protobuf-java:$kryoProtobufVersion"
     compileOnly "org.apache.wicket:wicket:$kryoWicketVersion"
     compileOnly "joda-time:joda-time:$kryoJodaTimeVersion"
     compileOnly "cglib:cglib:$kryoCglibVersion"
-    api "com.esotericsoftware:kryo:$kryoVersion"
+    api libs.kryo
 }
 
 def jar = tasks.named('jar', Jar) {
@@ -44,7 +44,7 @@ def jar = tasks.named('jar', Jar) {
 Automatic-Module-Name: de.javakaffee.kryoserializers
 Bundle-Name: \${project.description}
 Bundle-SymbolicName: \${project.group}.kryo-serializers
-Bundle-Version: ${kryoSerializersVersion}
+Bundle-Version: ${libs.versions.kryoSerializersVersion.get()}
 Export-Package: \
     de.javakaffee.kryoserializers.*
 Import-Package: \
@@ -56,7 +56,7 @@ Import-Package: \
     net.sf.cglib.*;resolution:=optional,\
     sun.reflect;resolution:=optional,\
     *
--includeresource: @kryo-serializers-${kryoSerializersVersion}.jar
+-includeresource: @kryo-serializers-${libs.versions.kryoSerializersVersion.get()}.jar
 """
     }
 }

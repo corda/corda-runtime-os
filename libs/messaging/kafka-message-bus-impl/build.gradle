@@ -24,7 +24,7 @@ dependencies {
     implementation "net.corda:corda-base"
     implementation "net.corda:corda-config-schema"
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
-    implementation "org.apache.servicemix.bundles:org.apache.servicemix.bundles.kafka-clients:$kafkaClientVersion"
+    implementation libs.kafka.clients
 
     implementation "com.typesafe:config:$typeSafeConfigVersion"
 

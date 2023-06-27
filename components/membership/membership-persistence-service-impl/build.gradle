@@ -54,11 +54,11 @@ dependencies {
     integrationTestImplementation project(':libs:layered-property-map')
     integrationTestImplementation project(':libs:messaging:topic-admin')
     integrationTestImplementation project(':testing:message-patterns')
-    integrationTestImplementation "org.apache.servicemix.bundles:org.apache.servicemix.bundles.kafka-clients:$kafkaClientVersion"
+    integrationTestImplementation libs.kafka.clients
 
     integrationTestRuntimeOnly libs.javax.activation
     integrationTestRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
-    integrationTestRuntimeOnly("org.hibernate:hibernate-core:$hibernateVersion")
+    integrationTestRuntimeOnly(libs.hibernate.core)
 
     integrationTestRuntimeOnly "org.ops4j.pax.jdbc:pax-jdbc-hsqldb:$paxJdbcVersion"
     integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"

@@ -9,8 +9,8 @@ dependencies {
     implementation "net.corda:corda-config-schema:$cordaApiVersion"
 
     implementation "com.konghq:unirest-java:$unirestVersion"
-    implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
-    implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion"
+    implementation libs.jackson.module
+    implementation libs.jackson.datatype
     implementation project(':testing:test-utilities')
 
     implementation libs.commons.text

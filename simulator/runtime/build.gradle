@@ -4,11 +4,11 @@ plugins {
 }
 
 dependencies {
-    implementation "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
-    implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
-    implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion"
+    implementation libs.jackson.databind
+    implementation libs.jackson.module
+    implementation libs.jackson.datatype
     implementation "org.slf4j:slf4j-api:$slf4jVersion"
-    implementation "org.hibernate:hibernate-core:$hibernateVersion"
+    implementation libs.hibernate.core
     implementation "org.hsqldb:hsqldb:$hsqldbVersion"
 
     api libs.bouncycastle.bcprov

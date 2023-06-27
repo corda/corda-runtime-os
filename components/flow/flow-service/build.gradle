@@ -59,13 +59,13 @@ dependencies {
     implementation "org.slf4j:slf4j-api:$slf4jVersion"
 
     implementation "co.paralleluniverse:quasar-core-osgi:$quasarVersion"
-    implementation "com.esotericsoftware:kryo:$kryoVersion"
+    implementation libs.kryo
 
     testImplementation "org.assertj:assertj-core:$assertjVersion"
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation libs.felix.framework
-    testImplementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
+    testImplementation libs.jackson.module
 
     testImplementation project(":libs:flows:session-manager-impl")
     testImplementation project(":libs:lifecycle:lifecycle-test-impl")

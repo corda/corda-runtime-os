@@ -26,7 +26,7 @@ dependencies {
     implementation("io.zipkin.reporter2:zipkin-sender-urlconnection:$zipkinVersion")
     implementation("io.zipkin.brave:brave-context-slf4j:$braveVersion")
     implementation("io.zipkin.brave:brave-instrumentation-servlet:$braveVersion")
-    implementation ("org.apache.servicemix.bundles:org.apache.servicemix.bundles.kafka-clients:$kafkaClientVersion") {
+    implementation (libs.kafka.clients) {
         // Need to explicitly exclude this dependency (which seems non-essential), however it will prevent running
         // Combined Worker on Mac M1. Please see README of Combined worker for more details.
         // We should not need this dependency as long as we are not using `snappy` compression type in Kafka

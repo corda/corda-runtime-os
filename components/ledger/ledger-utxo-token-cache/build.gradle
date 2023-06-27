@@ -35,7 +35,7 @@ dependencies {
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation libs.felix.framework
-    testImplementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
+    testImplementation libs.jackson.module
 
     testImplementation project(":libs:lifecycle:lifecycle-test-impl")
     testImplementation project(":libs:lifecycle:lifecycle-impl")

@@ -112,7 +112,7 @@ Or if you want to connect to "real" Kafka:
 by the `snappy-java` library (pulled as a transitive dependency by `org.apache.servicemix.bundles.kafka-clients`). As a 
 temporal fix, the library must be excluded [here](../../../../libs/messaging/kafka-message-bus-impl/build.gradle): 
 ```groovy
-implementation ("org.apache.servicemix.bundles:org.apache.servicemix.bundles.kafka-clients:$kafkaClientVersion") {
+implementation (libs.kafka.clients) {
     exclude group: 'org.xerial.snappy'
 }
 ```
