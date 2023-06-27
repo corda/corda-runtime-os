@@ -7,7 +7,7 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.toAvro
 
-class FlowRunner(private val dsl: DriverInternalDSL) {
+internal class FlowRunner(private val dsl: DriverInternalDSL) {
     fun runFlow(
         virtualNodeInfo: VirtualNodeInfo,
         flowClass: Class<*>,

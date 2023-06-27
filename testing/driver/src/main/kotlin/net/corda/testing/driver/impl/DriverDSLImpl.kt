@@ -50,7 +50,7 @@ import org.osgi.framework.wiring.FrameworkWiring
 import org.slf4j.LoggerFactory
 import org.slf4j.bridge.SLF4JBridgeHandler
 
-class DriverDSLImpl(private val network: Map<MemberX500Name, KeyPair>) : DriverInternalDSL, AutoCloseable {
+internal class DriverDSLImpl(private val network: Map<MemberX500Name, KeyPair>) : DriverInternalDSL, AutoCloseable {
     private companion object {
         private const val CORDA_API_ATTRIBUTE = "Corda-Api"
         private const val JAR_PROTOCOL = "jar"
