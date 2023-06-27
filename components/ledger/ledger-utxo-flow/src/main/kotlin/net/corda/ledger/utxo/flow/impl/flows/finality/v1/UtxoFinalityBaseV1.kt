@@ -111,7 +111,7 @@ abstract class UtxoFinalityBaseV1 : SubFlow<UtxoSignedTransaction> {
     @Suspendable
     protected fun verifyTransaction(signedTransaction: UtxoSignedTransaction) {
         try {
-            transactionVerificationService.verify(signedTransaction.toLedgerTransaction())
+            transactionVerificationService.initialVerify(signedTransaction.toLedgerTransaction())
         } catch(e: Exception){
             persistInvalidTransaction(signedTransaction)
             throw e
