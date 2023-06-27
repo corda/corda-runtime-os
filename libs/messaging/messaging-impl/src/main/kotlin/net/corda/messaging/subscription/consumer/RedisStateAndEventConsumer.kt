@@ -66,6 +66,20 @@ internal class RedisStateAndEventConsumer<K : Any, S : Any, E : Any>(
         .withTag(CordaMetrics.Tag.OperationName, MetricsConstants.EVENT_POLL_OPERATION)
         .build()
 
+    private val acquiredStateLocksCounter = CordaMetrics.Metric.StateAcquiredLocksCount.builder()
+        .withTag(CordaMetrics.Tag.MessagePatternType, MetricsConstants.STATE_AND_EVENT_PATTERN_TYPE)
+        .withTag(CordaMetrics.Tag.MessagePatternClientId, config.clientId)
+        .withTag(CordaMetrics.Tag.OperationName, MetricsConstants.EVENT_POLL_OPERATION)
+        .withTag(CordaMetrics.Tag.Topic, config.topic)
+        .build()
+
+    private val releasedStateLocksCounter = CordaMetrics.Metric.StateReleasedLocksCount.builder()
+        .withTag(CordaMetrics.Tag.MessagePatternType, MetricsConstants.STATE_AND_EVENT_PATTERN_TYPE)
+        .withTag(CordaMetrics.Tag.MessagePatternClientId, config.clientId)
+        .withTag(CordaMetrics.Tag.OperationName, MetricsConstants.EVENT_POLL_OPERATION)
+        .withTag(CordaMetrics.Tag.Topic, config.topic)
+        .build()
+
     override fun onPartitionsAssigned(partitions: Set<CordaTopicPartition>) {
         // Let's do nothing
     }
@@ -171,11 +185,13 @@ internal class RedisStateAndEventConsumer<K : Any, S : Any, E : Any>(
             isLocked = jedisCluster.get(lockKey)
         }
         jedisCluster.set(lockKey, byteArrayOf((1).toByte()))
+        acquiredStateLocksCounter.increment()
     }
 
     private fun releaseLock(key: ByteArray) {
         val lockKey = key + 0.toByte()
         jedisCluster.set(lockKey, byteArrayOf((0).toByte()))
+        releasedStateLocksCounter.increment()
     }
 
     /**

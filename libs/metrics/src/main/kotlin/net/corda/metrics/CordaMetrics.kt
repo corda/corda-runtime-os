@@ -34,6 +34,16 @@ object CordaMetrics {
         // NOTE: please ensure the metric names adhere to the conventions described on https://micrometer.io/docs/concepts#_naming_meters
 
         /**
+         * Count the active state lock acquired
+         */
+        object StateAcquiredLocksCount : Metric<Counter>("corda_flow_processor_state_locks_acquired", Metrics::counter)
+
+        /**
+         * Count the active state lock acquired
+         */
+        object StateReleasedLocksCount : Metric<Counter>("corda_flow_processor_state_locks_released", Metrics::counter)
+
+        /**
          * HTTP Requests time.
          */
         object HttpRequestTime : Metric<Timer>("http.server.request.time", CordaMetrics::timer)
@@ -664,6 +674,11 @@ object CordaMetrics {
          * The name of the operation performed
          */
         OperationName("operation.name"),
+
+        /**
+         * The name of the operation performed
+         */
+        Topic("topic"),
 
         /**
          * Message pattern clientId for which the metric is applicable.
