@@ -3,6 +3,7 @@ package net.corda.cpk.read.impl.services.persistence
 import net.corda.crypto.core.toCorda
 import net.corda.data.chunking.Chunk
 import net.corda.data.chunking.CpkChunkId
+import net.corda.libs.packaging.setReadOnly
 import net.corda.libs.packaging.writeFile
 import net.corda.utilities.debug
 import net.corda.utilities.posixOptional
@@ -15,13 +16,10 @@ import java.nio.file.Path
 import java.nio.file.StandardCopyOption.ATOMIC_MOVE
 import java.nio.file.StandardOpenOption.READ
 import java.nio.file.StandardOpenOption.WRITE
-import java.nio.file.attribute.DosFileAttributeView
-import java.nio.file.attribute.PosixFileAttributeView
 import java.nio.file.attribute.PosixFilePermission.OWNER_EXECUTE
 import java.nio.file.attribute.PosixFilePermission.OWNER_READ
 import java.nio.file.attribute.PosixFilePermission.OWNER_WRITE
 import java.nio.file.attribute.PosixFilePermissions.asFileAttribute
-import java.util.Collections.singleton
 import java.util.SortedSet
 import java.util.function.Consumer
 
@@ -36,7 +34,6 @@ class CpkChunksFileManagerImpl(private val cpkCacheDir: Path) : CpkChunksFileMan
 
         private val CPK_DIRECTORY_PERMISSIONS = asFileAttribute(setOf(OWNER_READ, OWNER_WRITE, OWNER_EXECUTE))
         private val CPK_FILE_PERMISSIONS = asFileAttribute(setOf(OWNER_READ, OWNER_WRITE))
-        private val READ_ONLY = singleton(OWNER_READ)
 
         internal fun SecureHash.toCpkDirName() = toHexString()
 
@@ -113,16 +110,6 @@ class CpkChunksFileManagerImpl(private val cpkCacheDir: Path) : CpkChunksFileMan
             } catch (e: Exception) {
                 Files.delete(tempFile)
                 throw e
-            }
-        }
-    }
-
-    private fun setReadOnly(file: Path) {
-        Files.getFileAttributeView(file, PosixFileAttributeView::class.java)?.also { view ->
-            view.setPermissions(READ_ONLY)
-        } ?: run {
-            Files.getFileAttributeView(file, DosFileAttributeView::class.java)?.also { view ->
-                view.setReadOnly(true)
             }
         }
     }

@@ -27,6 +27,7 @@ import net.corda.tracing.traceEventProcessingNullableSingle
 import net.corda.utilities.MDC_CLIENT_ID
 import net.corda.utilities.MDC_EXTERNAL_EVENT_ID
 import net.corda.utilities.debug
+import net.corda.utilities.translateFlowContextToMDC
 import net.corda.utilities.withMDC
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.virtualnode.toCorda
@@ -93,7 +94,7 @@ class EntityMessageProcessor(
             mapOf(
                 MDC_CLIENT_ID to clientRequestId,
                 MDC_EXTERNAL_EVENT_ID to request.flowExternalEventContext.requestId
-            )
+            ) + translateFlowContextToMDC(request.flowExternalEventContext.contextProperties.toMap())
         ) {
             val startTime = System.nanoTime()
             var requestOutcome = "FAILED"
