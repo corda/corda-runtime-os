@@ -152,8 +152,6 @@ class CheckKafka : Callable<Int>, PluginContext() {
             return
         }
 
-        logger.info(props.entries.joinToString(separator = ",\n"))
-
         try {
             checkConnectionAndBrokers(component, KafkaAdmin(props, report), replicas)
         } catch (e: KafkaException) {
