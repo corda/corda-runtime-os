@@ -733,7 +733,7 @@ class StartRegistrationHandlerTest {
     }
 
     @Test
-    fun `declined if non-custom properties are added during re-registration`() {
+    fun `declined if non-custom, non-platform or non-cpi related properties are added during re-registration`() {
         val contextWithUpdates = mock<MemberContext> {
             on { parse(eq(GROUP_ID), eq(String::class.java)) } doReturn groupId
             on { parseList(eq(ENDPOINTS), eq(EndpointInfo::class.java)) } doReturn listOf(mock())
@@ -749,7 +749,7 @@ class StartRegistrationHandlerTest {
     }
 
     @Test
-    fun `declined if non-custom properties are removed during re-registration`() {
+    fun `declined if non-custom, non-platform or non-cpi related properties are removed during re-registration`() {
         val contextWithUpdates = mock<MemberContext> {
             on { parse(eq(GROUP_ID), eq(String::class.java)) } doReturn groupId
             on { parseList(eq(ENDPOINTS), eq(EndpointInfo::class.java)) } doReturn listOf(mock())
@@ -765,9 +765,9 @@ class StartRegistrationHandlerTest {
     }
 
     @Test
-    fun `declined if non-custom properties are updated during re-registration`() {
+    fun `declined if non-custom, non-platform or non-cpi related properties are updated during re-registration`() {
         val newContextEntries = memberContextEntries.toMutableMap().apply {
-            put("${ROLES_PREFIX}0", "changed")
+            put("${ROLES_PREFIX}.0", "changed")
         }.entries
         val contextWithUpdates = mock<MemberContext> {
             on { parse(eq(GROUP_ID), eq(String::class.java)) } doReturn groupId

@@ -17,13 +17,15 @@ import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandle
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandlerResult
 import net.corda.membership.impl.registration.dynamic.verifiers.RegistrationContextCustomFieldsVerifier
 import net.corda.membership.lib.MemberInfoExtension.Companion.CREATION_TIME
-import net.corda.membership.lib.MemberInfoExtension.Companion.CUSTOM_KEY_PREFIX
+import net.corda.membership.lib.MemberInfoExtension.Companion.ENDPOINTS
+import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEYS
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_PENDING
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_SUSPENDED
 import net.corda.membership.lib.MemberInfoExtension.Companion.MODIFIED_TIME
-import net.corda.membership.lib.MemberInfoExtension.Companion.REGISTRATION_ID
+import net.corda.membership.lib.MemberInfoExtension.Companion.ROLES_PREFIX
 import net.corda.membership.lib.MemberInfoExtension.Companion.SERIAL
+import net.corda.membership.lib.MemberInfoExtension.Companion.SESSION_KEYS
 import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.lib.MemberInfoExtension.Companion.endpoints
 import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
@@ -159,10 +161,16 @@ internal class StartRegistrationHandler(
                 val previousContext = previous.memberProvidedContext.toMap()
                 val pendingContext = pendingMemberInfo.memberProvidedContext.toMap()
                 val diff = ((pendingContext.entries - previousContext.entries) + (previousContext.entries - pendingContext.entries))
-                    .filterNot { it.key.startsWith(CUSTOM_KEY_PREFIX) || it.key == REGISTRATION_ID }
+                    .filter {
+                        it.key.startsWith(ENDPOINTS) ||
+                                it.key.startsWith(SESSION_KEYS) ||
+                                it.key.startsWith(LEDGER_KEYS) ||
+                                it.key.startsWith(ROLES_PREFIX) ||
+                                it.key.startsWith("corda.notary")
+                    }
                 validateRegistrationRequest(
                     diff.isEmpty()
-                ) { "Only custom fields with the '$CUSTOM_KEY_PREFIX' prefix may be updated during re-registration." }
+                ) { "Fields ${diff.map { it.key }} cannot be added, removed or updated during re-registration." }
             }
 
             // The group ID matches the group ID of the MGM

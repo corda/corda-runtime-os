@@ -48,6 +48,7 @@ import net.corda.membership.impl.registration.dynamic.verifiers.RegistrationCont
 import net.corda.membership.impl.registration.testCpiSignerSummaryHash
 import net.corda.membership.lib.MemberInfoExtension.Companion.CUSTOM_KEY_PREFIX
 import net.corda.membership.lib.MemberInfoExtension.Companion.ECDH_KEY
+import net.corda.membership.lib.MemberInfoExtension.Companion.ENDPOINTS
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEYS_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEY_HASHES_KEY
@@ -962,12 +963,16 @@ class DynamicMemberRegistrationServiceTest {
         }
 
         @Test
-        fun `registration fails when non-custom properties are added`() {
+        fun `registration fails when non-custom, non-platform or non-cpi properties are removed`() {
             val previous = mock<MemberContext> {
-                on { entries } doReturn previousRegistrationContext.entries
+                on { entries } doReturn previousRegistrationContext.entries + mapOf(
+                    String.format(ROLES_PREFIX, 0) to "notary",
+                    NOTARY_SERVICE_NAME to "O=MyNotaryService, L=London, C=GB",
+                    "corda.notary.keys.0.id" to NOTARY_KEY_ID,
+                ).entries
             }
             val newContext = mock<MemberContext> {
-                on { entries } doReturn (context + mapOf("corda.test.0" to "new")).entries
+                on { entries } doReturn context.entries
             }
             whenever(memberInfo.memberProvidedContext).doReturn(previous)
             whenever(groupReader.lookup(eq(memberName), any())).doReturn(memberInfo)
@@ -978,16 +983,22 @@ class DynamicMemberRegistrationServiceTest {
             val exception = assertThrows<InvalidMembershipRegistrationException> {
                 registrationService.register(registrationResultId, member, newContext.toMap())
             }
-            assertThat(exception).hasMessageContaining("Only custom fields")
+            assertThat(exception).hasMessageContaining("cannot be added, removed or updated")
         }
 
         @Test
-        fun `registration fails when non-custom properties are removed`() {
+        fun `registration fails when non-custom, non-platform or non-cpi related properties are updated`() {
             val previous = mock<MemberContext> {
                 on { entries } doReturn previousRegistrationContext.entries
             }
             val newContext = mock<MemberContext> {
-                on { entries } doReturn (context.filterNot { it.key.startsWith("corda.test") }).entries
+                on { entries } doReturn (
+                        context.filterNot { it.key.startsWith(ENDPOINTS) }
+                                + mapOf(
+                                    URL_KEY.format(0) to "https://localhost:8888",
+                                    PROTOCOL_VERSION.format(0) to "1"
+                                )
+                        ).entries
             }
             whenever(memberInfo.memberProvidedContext).doReturn(previous)
             whenever(groupReader.lookup(eq(memberName), any())).doReturn(memberInfo)
@@ -998,16 +1009,18 @@ class DynamicMemberRegistrationServiceTest {
             val exception = assertThrows<InvalidMembershipRegistrationException> {
                 registrationService.register(registrationResultId, member, newContext.toMap())
             }
-            assertThat(exception).hasMessageContaining("Only custom fields")
+            assertThat(exception).hasMessageContaining("cannot be added, removed or updated")
         }
 
         @Test
-        fun `registration fails when non-custom properties are updated`() {
+        fun `registration fails when non-custom, non-platform or non-cpi related properties are added`() {
             val previous = mock<MemberContext> {
                 on { entries } doReturn previousRegistrationContext.entries
             }
             val newContextEntries = context.toMutableMap().apply {
-                put("corda.test", "changed")
+                put(String.format(ROLES_PREFIX, 0), "notary")
+                put(NOTARY_SERVICE_NAME, "O=MyNotaryService, L=London, C=GB")
+                put("corda.notary.keys.0.id",  NOTARY_KEY_ID)
             }.entries
             val newContext = mock<MemberContext> {
                 on { entries } doReturn newContextEntries
@@ -1021,7 +1034,7 @@ class DynamicMemberRegistrationServiceTest {
             val exception = assertThrows<InvalidMembershipRegistrationException> {
                 registrationService.register(registrationResultId, member, newContext.toMap())
             }
-            assertThat(exception).hasMessageContaining("Only custom fields")
+            assertThat(exception).hasMessageContaining("cannot be added, removed or updated")
         }
     }
 
