@@ -7,6 +7,8 @@ import net.corda.crypto.cipher.suite.SignatureSpecs
 import net.corda.crypto.cipher.suite.sha256Bytes
 import net.corda.crypto.client.CryptoOpsProxyClient
 import net.corda.crypto.config.impl.createDefaultCryptoConfig
+import net.corda.crypto.config.impl.retrying
+import net.corda.crypto.config.impl.toCryptoConfig
 import net.corda.crypto.core.DigitalSignatureWithKey
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.core.fullId
@@ -36,6 +38,7 @@ import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys
+import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
 import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
@@ -174,7 +177,7 @@ import kotlin.test.assertTrue
             on { sign(any(), any(), any(), any(), any()) } doReturn signatureMock
             on { schemeMetadata } doReturn schemeMetadataMock
         }
-        processor = CryptoFlowOpsBusProcessor(signingService, externalEventResponseFactory, configEvent)
+        processor = CryptoFlowOpsBusProcessor(signingService, externalEventResponseFactory, configEvent.config.toCryptoConfig().retrying())
         digestService = mock<DigestService>().also {
             fun capture() {
                 val bytesCaptor = argumentCaptor<ByteArray>()

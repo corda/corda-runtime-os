@@ -1,7 +1,6 @@
 package net.corda.flow
 
 import com.typesafe.config.ConfigValueFactory
-import java.time.Instant
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.FlowStartContext
 import net.corda.data.flow.event.FlowEvent
@@ -22,6 +21,7 @@ import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.toCorda
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
+import java.time.Instant
 
 class RequestHandlerTestContext<PAYLOAD>(val payload: PAYLOAD) {
     val flowId = "flow id"
@@ -59,6 +59,13 @@ class RequestHandlerTestContext<PAYLOAD>(val payload: PAYLOAD) {
     }
 
     val flowEventContext = FlowEventContext(
-        flowCheckpoint,flowEvent, payload, flowConfig, isRetryEvent, recordList, mdcProperties = emptyMap()
+        flowCheckpoint,
+        flowEvent,
+        payload,
+        flowConfig,
+        isRetryEvent,
+        recordList,
+        mdcProperties = emptyMap(),
+        flowMetrics =  mock()
     )
 }

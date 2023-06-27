@@ -15,11 +15,11 @@ interface InternalGroupParameters: GroupParameters {
      * The serialized form of the group parameters is always the source of truth over deserialized params to support
      * signing.
      */
-    val bytes: ByteArray
+    val groupParameters: ByteArray
 
     /**
      * Returns the [SecureHash] of the group parameters. The group parameters hash is a hash over the group parameters
-     * serialised byte array available as [bytes].
+     * serialised byte array available as [groupParameters].
      */
     val hash: SecureHash
 }

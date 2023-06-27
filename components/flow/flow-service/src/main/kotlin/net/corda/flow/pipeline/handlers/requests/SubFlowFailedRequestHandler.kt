@@ -58,5 +58,4 @@ class SubFlowFailedRequestHandler @Activate constructor(
         val record = flowRecordFactory.createFlowEventRecord(checkpoint.flowId, net.corda.data.flow.event.Wakeup())
         return context.copy(outputRecords = context.outputRecords + record)
     }
-
 }

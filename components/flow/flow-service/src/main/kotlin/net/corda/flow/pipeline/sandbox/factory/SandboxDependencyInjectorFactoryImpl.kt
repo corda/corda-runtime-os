@@ -47,7 +47,7 @@ class SandboxDependencyInjectorFactoryImpl : SandboxDependencyInjectorFactory {
                             return@mapNotNull null
                         }
 
-                        @Suppress("unchecked_cast", "RemoveExplicitTypeArguments")
+                        @Suppress("unchecked_cast")
                         (ref.getProperty(OBJECTCLASS) as? Array<String> ?: emptyArray<String>())
                             .filterNot(FORBIDDEN_INTERFACES::contains)
                             .takeIf(List<*>::isNotEmpty)

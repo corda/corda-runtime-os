@@ -13,26 +13,26 @@ import java.time.Instant
 
 /**
  *
- * @param bytes the serialized group parameters which is the source of group parameters data.
+ * @param groupParameters the serialized group parameters which is the source of group parameters data.
  * @param deserializer a deserialization function for extracting the group parameters map from the serialized form.
  */
 class UnsignedGroupParametersImpl(
-    override val bytes: ByteArray,
+    override val groupParameters: ByteArray,
     deserializer: (serialisedParams: ByteArray) -> LayeredPropertyMap
-) : UnsignedGroupParameters, LayeredPropertyMap by deserializer(bytes) {
+) : UnsignedGroupParameters, LayeredPropertyMap by deserializer(groupParameters) {
 
     override fun getModifiedTime(): Instant = parse(MODIFIED_TIME_KEY, Instant::class.java)
     override fun getEpoch(): Int = parse(EPOCH_KEY, Int::class.java)
     override fun getNotaries(): Collection<NotaryInfo> = parseList(NOTARIES_KEY, NotaryInfo::class.java)
 
     override val hash: SecureHash
-        get() = bytes.hash(DigestAlgorithmName.SHA2_256)
+        get() = groupParameters.hash(DigestAlgorithmName.SHA2_256)
 
     override fun equals(other: Any?): Boolean {
         if (other == null || other !is UnsignedGroupParametersImpl) return false
         if (this === other) return true
-        return bytes.contentEquals(other.bytes)
+        return groupParameters.contentEquals(other.groupParameters)
     }
 
-    override fun hashCode(): Int = bytes.hashCode()
+    override fun hashCode(): Int = groupParameters.hashCode()
 }

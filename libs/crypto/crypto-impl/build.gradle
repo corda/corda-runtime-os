@@ -14,8 +14,9 @@ dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
 
     implementation project(":libs:configuration:configuration-core")
-    implementation project(":libs:utilities")
     implementation project(':libs:layered-property-map')
+    implementation project(":libs:metrics")
+    implementation project(":libs:utilities")
 
     implementation 'net.corda:corda-application'
     implementation "net.corda:corda-avro-schema"

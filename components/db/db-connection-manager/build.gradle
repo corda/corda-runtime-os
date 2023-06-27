@@ -14,16 +14,12 @@ dependencies {
     implementation 'net.corda:corda-config-schema'
     implementation 'net.corda:corda-db-schema'
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
-    implementation project(':libs:configuration:configuration-validation')
     implementation project(':libs:crypto:crypto-core')
 
     api project(":libs:configuration:configuration-core")
     api project(':libs:db:db-core')
     api project(':libs:db:db-orm')
     api project(':libs:lifecycle:lifecycle')
-
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 
     testRuntimeOnly "org.osgi:osgi.core"
 }
