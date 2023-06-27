@@ -158,14 +158,14 @@ class MemberInfoExtensionTest {
     @Nested
     inner class HistoricSessionKeyTest {
         @Test
-        fun `empty list returned if no historic key information is not available`() {
+        fun `empty list returned if historic key information is not available`() {
             whenever(memberContext.entries).doReturn(emptyMap<String, String>().entries)
 
             assertThat(memberInfo.historicSessionInitiationKeys).isEmpty()
         }
 
         @Test
-        fun `empty list returned for key hashes if no historic key information is not available`() {
+        fun `empty list returned for key hashes if historic key information is not available`() {
             whenever(memberContext.entries).doReturn(emptyMap<String, String>().entries)
 
             assertThat(memberInfo.historicSessionKeyHashes).isEmpty()
