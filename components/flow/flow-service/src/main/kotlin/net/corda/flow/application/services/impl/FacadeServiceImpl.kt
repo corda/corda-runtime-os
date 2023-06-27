@@ -38,8 +38,8 @@ class FacadeServiceImpl @Activate constructor(
     }
 
     @Suspendable
-    override fun <T : Any?> getFacade(facadeId: String?, expectedType: Class<T>?, alias: MemberX500Name?, interopGroup: String?): T {
-        logger.info("Creating Proxy for: $facadeId, $expectedType, $alias, $interopGroup")
+    override fun <T : Any?> getProxy(facadeId: String?, expectedType: Class<T>?, alias: MemberX500Name?, interopGroup: String?): T {
+        logger.info("Creating Proxy for: $facadeId, $expectedType, $alias, $interopGroup") //TODO lower level to debug
         require(facadeId != null)
         val facade = facadeLookup(facadeId)
         val marshaller = JacksonJsonMarshallerAdaptor(jsonMarshallingService)
@@ -49,11 +49,11 @@ class FacadeServiceImpl @Activate constructor(
 
     @Suspendable
     override fun dispatchFacadeRequest(target: Any?, request: String?): String {
-        logger.info("Dispatching: ${target!!::class.java}, $request")
+        logger.info("Dispatching: ${target!!::class.java}, $request") //TODO eliminate !!, lower level to debug
         val facadeRequest = jsonMarshallingService.parse(request!!, FacadeRequestImpl::class.java)
         val facade = facadeLookup(facadeRequest.facadeId.toString())
         val marshaller = JacksonJsonMarshallerAdaptor(jsonMarshallingService)
-        val dispatcher = target.buildDispatcher(facade, marshaller)
+        val dispatcher = target.buildDispatcher(facade, marshaller) //TODO return dispatcher which can be reused
         val facadeResponse = dispatcher.invoke(facadeRequest)
         return jsonMarshallingService.format(facadeResponse)
     }
