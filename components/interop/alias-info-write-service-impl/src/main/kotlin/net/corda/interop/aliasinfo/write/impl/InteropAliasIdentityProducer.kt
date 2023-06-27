@@ -22,7 +22,6 @@ class InteropAliasIdentityProducer(
         }
 
         // Key is a combination of holding identity short hash and interop group ID.
-        // TODO: Review
         val key = "$shortHash:${interopAliasIdentity.groupId}"
 
         val futures = publisher.get()!!.publish(listOf(Record(INTEROP_ALIAS_IDENTITY_TOPIC, key, interopAliasIdentity)))

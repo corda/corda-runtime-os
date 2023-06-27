@@ -19,7 +19,7 @@ class InteropIdentityProcessor(
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
-    // TODO: Review this!
+
     private data class RecordKey(
         val keyText: String
     ) {
