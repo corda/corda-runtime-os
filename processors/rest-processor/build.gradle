@@ -30,6 +30,8 @@ dependencies {
     implementation project(":components:crypto:crypto-client-hsm")
     implementation project(':components:membership:group-policy')
     implementation project(":libs:utilities")
+    implementation project(":components:interop:alias-info-write-service")
+    implementation project(":components:interop:alias-info-cache-service")
 
     implementation project(':libs:configuration:configuration-core')
     implementation project(':libs:configuration:configuration-merger')
@@ -52,6 +54,8 @@ dependencies {
     runtimeOnly project(':components:interop:interop-rest-service-impl')
     runtimeOnly project(":components:permissions:permission-rest-resource-impl")
     runtimeOnly project(":components:membership:group-policy-impl")
+    runtimeOnly project(":components:interop:alias-info-write-service-impl")
+    runtimeOnly project(":components:interop:alias-info-cache-service-impl")
 
     runtimeOnly project(':libs:configuration:configuration-endpoints')
     runtimeOnly project(':libs:crypto:cipher-suite-impl')
