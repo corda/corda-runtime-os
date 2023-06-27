@@ -177,7 +177,8 @@ import kotlin.test.assertTrue
             on { sign(any(), any(), any(), any(), any()) } doReturn signatureMock
             on { schemeMetadata } doReturn schemeMetadataMock
         }
-        processor = CryptoFlowOpsBusProcessor(signingService, externalEventResponseFactory, configEvent.config.toCryptoConfig().retrying())
+        val retryingConfig = configEvent.config.toCryptoConfig().retrying()
+        processor = CryptoFlowOpsBusProcessor(mock(), signingService, externalEventResponseFactory, retryingConfig)
         digestService = mock<DigestService>().also {
             fun capture() {
                 val bytesCaptor = argumentCaptor<ByteArray>()
