@@ -4,6 +4,10 @@ import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.Resource
+import net.corda.messagebus.api.configuration.ConsumerConfig
+import net.corda.messagebus.api.configuration.ProducerConfig
+import net.corda.messagebus.api.constants.ConsumerRoles
+import net.corda.messagebus.api.constants.ProducerRoles
 import net.corda.messagebus.api.consumer.builder.CordaConsumerBuilder
 import net.corda.messagebus.api.producer.builder.CordaProducerBuilder
 import net.corda.messaging.api.chunking.MessagingChunkFactory
@@ -29,17 +33,24 @@ import net.corda.messaging.constants.SubscriptionType
 import net.corda.messaging.subscription.CompactedSubscriptionImpl
 import net.corda.messaging.subscription.DurableSubscriptionImpl
 import net.corda.messaging.subscription.EventLogSubscriptionImpl
+import net.corda.messaging.subscription.LetItRipStateAndEventSubscription
 import net.corda.messaging.subscription.PubSubSubscriptionImpl
 import net.corda.messaging.subscription.RPCSubscriptionImpl
 import net.corda.messaging.subscription.StateAndEventSubscriptionImpl
+import net.corda.messaging.subscription.consumer.OrderedQueueEventSource
+import net.corda.messaging.subscription.consumer.SimpleTopicEventSource
+import net.corda.messaging.subscription.consumer.StateCacheImpl
 import net.corda.messaging.subscription.consumer.builder.StateAndEventBuilder
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.MessagingConfig.MAX_ALLOWED_MSG_SIZE
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.slf4j.LoggerFactory
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.Executor
+import java.util.concurrent.Executors
 
 /**
  * Kafka implementation of the Subscription Factory.
@@ -139,23 +150,80 @@ class CordaSubscriptionFactory @Activate constructor(
         )
     }
 
+    @Suppress("Unused")
     override fun <K : Any, S : Any, E : Any> createLetItRipStateAndEventSubscription(
         subscriptionConfig: SubscriptionConfig,
         processor: StateAndEventProcessor<K, S, E>,
         messagingConfig: SmartConfig,
         stateAndEventListener: StateAndEventListener<K, S>?
-    ): Resource {
+    ): StateAndEventSubscription<K, S, E> {
+
         val config = getConfig(SubscriptionType.STATE_AND_EVENT, subscriptionConfig, messagingConfig)
-        val serializer = cordaAvroSerializationFactory.createAvroSerializer<Any> { }
-        return StateAndEventSubscriptionImpl(
-            config,
-            stateAndEventBuilder,
-            processor,
-            serializer,
-            lifecycleCoordinatorFactory,
-            messagingChunkFactory.createChunkSerializerService(messagingConfig.getLong(MAX_ALLOWED_MSG_SIZE)),
-            stateAndEventListener,
+
+        val log = LoggerFactory.getLogger("LetItRip-${config.clientId}")
+
+        // Create cache consumer
+        val stateConsumerConfig =
+            ConsumerConfig(config.group, "${config.clientId}-stateConsumer", ConsumerRoles.SAE_STATE)
+        val stateConsumer = cordaConsumerBuilder.createConsumer(
+            stateConsumerConfig,
+            config.messageBusConfig,
+            processor.keyClass,
+            processor.stateValueClass,
+            { _ -> log.error("Failed to deserialize record from ${config.topic}") },
         )
+
+        // Create the state producer
+        val stateProducerConfig = ProducerConfig(
+            "StateCache-${config.clientId}",
+            config.instanceId,
+            true,
+            ProducerRoles.SAE_PRODUCER,
+            false
+        )
+
+        val stateProducer = cordaProducerBuilder.createProducer(
+            stateProducerConfig,
+            config.messageBusConfig
+        )
+        { _ -> log.error("Failed to deserialize record from ${config.topic}") }
+
+        val stateCache = StateCacheImpl<K, S>(
+            config,
+            stateConsumer,
+            stateProducer
+            )
+
+        val eventConsumerConfig =
+            ConsumerConfig(config.group, "${config.clientId}-eventConsumer", ConsumerRoles.SAE_STATE)
+        val eventConsumer = cordaConsumerBuilder.createConsumer(
+            eventConsumerConfig,
+            config.messageBusConfig,
+            processor.keyClass,
+            processor.eventValueClass,
+            { _ -> log.error("Failed to deserialize record from ${config.topic}") },
+        )
+
+        val eventSource = SimpleTopicEventSource(
+            config,
+            consumer = eventConsumer,
+            Executors.newSingleThreadExecutor()
+        )
+
+        val eventProducerConfig = ProducerConfig(
+            "StateAndEvent-${config.clientId}",
+            config.instanceId,
+            true,
+            ProducerRoles.SAE_PRODUCER,
+            false
+        )
+
+        val eventProducer = cordaProducerBuilder.createProducer(
+            eventProducerConfig,
+            config.messageBusConfig
+        )
+        { _ -> log.error("Failed to deserialize record from ${config.topic}") }
+        val priorityEventSource = OrderedQueueEventSource(eventSource, Executors.newSingleThreadExecutor())
     }
 
     override fun <K : Any, V : Any> createEventLogSubscription(

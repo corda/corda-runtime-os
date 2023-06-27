@@ -1,11 +1,21 @@
-package net.corda.messaging.subscription.consumer
+package net.corda.messaging.subscription
 
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleCoordinatorName
+import net.corda.messagebus.api.producer.CordaProducer
+import net.corda.messaging.api.exception.CordaMessageAPIFatalException
+import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.subscription.StateAndEventSubscription
 import net.corda.messaging.config.ResolvedSubscriptionConfig
-import net.corda.messaging.subscription.ThreadLooper
+import net.corda.messaging.publisher.CordaPublisherImpl
+import net.corda.messaging.subscription.consumer.EventSource
+import net.corda.messaging.subscription.consumer.EventSourceRecord
+import net.corda.messaging.subscription.consumer.StateCache
+import net.corda.messaging.utils.toCordaProducerRecord
+import net.corda.messaging.utils.toCordaProducerRecords
+import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutorService
@@ -16,8 +26,7 @@ class LetItRipStateAndEventSubscription<K : Any, E : Any, S : Any>(
     private val processor: StateAndEventProcessor<K, S, E>,
     private val eventSource: EventSource<K, E>,
     private val stateCache: StateCache<K, S>,
-    private val pollingLoopExecutor: ExecutorService,
-    private val cordaPublisher: Publisher,
+    private val cordaPublisher: CordaProducer,
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
 ) : StateAndEventSubscription<K, S, E> {
 
@@ -31,8 +40,12 @@ class LetItRipStateAndEventSubscription<K : Any, E : Any, S : Any>(
         ::pollingLoop
     )
 
+    override val subscriptionName: LifecycleCoordinatorName
+        get() = threadLooper.lifecycleCoordinatorName
+
     override fun start() {
         stateCache.subscribe(::onCacheReady)
+        threadLooper.start()
     }
 
     override fun close() {
@@ -46,7 +59,7 @@ class LetItRipStateAndEventSubscription<K : Any, E : Any, S : Any>(
     }
 
     private fun pollingLoop() {
-        while ( threadLooper.isRunning ) {
+        while (threadLooper.isRunning) {
             val block = eventSource.nextBlock(500)
             if (block.isNotEmpty()) {
                 // divide block by key to prevent event per key re-ordering, then process, update the state and publish
@@ -59,8 +72,7 @@ class LetItRipStateAndEventSubscription<K : Any, E : Any, S : Any>(
         }
     }
 
-    private fun processEventAsync(sourceRecord: EventSourceRecord<K, E>)
-            : CompletableFuture<Unit> {
+    private fun processEventAsync(sourceRecord: EventSourceRecord<K, E>): CompletableFuture<Unit> {
         val record = sourceRecord.record
         val state = stateCache.get(record.key)
         return CompletableFuture.supplyAsync {
@@ -76,7 +88,13 @@ class LetItRipStateAndEventSubscription<K : Any, E : Any, S : Any>(
                     sourceRecord.safeMinOffset
                 )
             ).thenApply {
-                cordaPublisher.publish(result.responseEvents).awaitAll(60, TimeUnit.SECONDS)
+                result.responseEvents.map {
+                    val fut = CompletableFuture<Unit>()
+                    cordaPublisher.send(it.toCordaProducerRecord()) { ex ->
+                        setFutureFromResponse(ex, fut)
+                    }
+                    fut
+                }.awaitAll(60, TimeUnit.SECONDS)
             }
         }
     }
@@ -105,5 +123,17 @@ class LetItRipStateAndEventSubscription<K : Any, E : Any, S : Any>(
         }
 
         return output
+    }
+
+    private fun setFutureFromResponse(exception: Exception?, future: CompletableFuture<Unit>) {
+        when (exception) {
+            null -> {
+                future.complete(Unit)
+            }
+
+            else -> {
+                log.warn("Failed to publish message", exception)
+            }
+        }
     }
 }

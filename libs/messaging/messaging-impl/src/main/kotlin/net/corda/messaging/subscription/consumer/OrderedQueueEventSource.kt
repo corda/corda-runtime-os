@@ -8,7 +8,6 @@ import java.util.concurrent.PriorityBlockingQueue
 import java.util.concurrent.TimeUnit
 
 class OrderedQueueEventSource<K : Any, E : Any>(
-    private val config: ResolvedSubscriptionConfig,
     private val source: EventSource<K, E>,
     private val pollingLoopExecutor: ExecutorService,
 ) : EventSource<K, E> {

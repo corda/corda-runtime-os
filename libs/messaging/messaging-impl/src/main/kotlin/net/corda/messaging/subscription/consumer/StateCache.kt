@@ -10,7 +10,7 @@ interface StateCache<K : Any, S : Any> {
 
     fun get(key: K): S?
 
-    fun write(key: K, value: S?, sourceEventOffset: LastEvent): CompletableFuture<Unit>
+    fun write(key: K, value: S?, lastEvent: LastEvent): CompletableFuture<Unit>
 
     fun getMaxOffsetsByPartition(partitions: List<Int>): Map<Int, Long>
 
