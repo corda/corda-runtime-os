@@ -18,7 +18,7 @@ dependencies {
     // Processor list must be kept in sync with workersForProcessor in net.corda.cli.plugins.topicconfig.Create
     implementation project(':processors:member-processor')
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
-    implementation "info.picocli:picocli:$picocliVersion"
+    implementation libs.picocli
     implementation 'net.corda:corda-base'
 
     runtimeOnly "com.typesafe:config:$typeSafeConfigVersion"

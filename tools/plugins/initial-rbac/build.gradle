@@ -17,7 +17,7 @@ dependencies {
     compileOnly "net.corda.cli.host:api:$pluginHostVersion"
     compileOnly "org.pf4j:pf4j:$pf4jVersion"
     kapt "org.pf4j:pf4j:$pf4jVersion"
-    kapt "info.picocli:picocli:$picocliVersion"
+    kapt libs.picocli
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation 'net.corda:corda-rbac-schema'

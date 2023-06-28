@@ -18,7 +18,7 @@ dependencies {
 
     compileOnly "org.pf4j:pf4j:$pf4jVersion"
     kapt "org.pf4j:pf4j:$pf4jVersion"
-    kapt "info.picocli:picocli:$picocliVersion"
+    kapt libs.picocli
 
     implementation 'net.corda:corda-config-schema'
 

@@ -38,7 +38,7 @@ dependencies {
     implementation project(':libs:configuration:configuration-validation')
     implementation project(':processors:rest-processor')
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
-    implementation "info.picocli:picocli:$picocliVersion"
+    implementation libs.picocli
     implementation 'net.corda:corda-base'
     implementation 'net.corda:corda-config-schema'
 
@@ -46,7 +46,7 @@ dependencies {
     runtimeOnly libs.felix.scr
     runtimeOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
     runtimeOnly "org.osgi:org.osgi.util.function:$osgiUtilFunctionVersion"
-    runtimeOnly "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"
+    runtimeOnly libs.osgi.util.promise
 
     runtimeOnly project(':libs:messaging:kafka-message-bus-impl')
     runtimeOnly project(":libs:messaging:messaging-impl")

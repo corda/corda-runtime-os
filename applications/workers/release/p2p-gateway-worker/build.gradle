@@ -24,7 +24,7 @@ dependencies {
     implementation 'net.corda:corda-base'
     implementation 'net.corda:corda-config-schema'
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
-    implementation "info.picocli:picocli:$picocliVersion"
+    implementation libs.picocli
 
     runtimeOnly project(":components:crypto:crypto-client-impl")
     runtimeOnly project(":libs:schema-registry:schema-registry-impl")

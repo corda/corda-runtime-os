@@ -18,7 +18,7 @@ dependencies {
     implementation project(':libs:crypto:crypto-core')
     implementation project(':libs:packaging:packaging')
     implementation project(':libs:packaging:packaging-core')
-    implementation "com.networknt:json-schema-validator:$networkntJsonSchemaVersion"
+    implementation libs.networknt.json.schema.validator
 
     testImplementation project(':testing:test-utilities')
     testImplementation project(':testing:packaging-test-utilities')

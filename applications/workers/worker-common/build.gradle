@@ -29,7 +29,7 @@ dependencies {
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
 
     implementation "com.typesafe:config:$typeSafeConfigVersion"
-    implementation "info.picocli:picocli:$picocliVersion"
+    implementation libs.picocli
     implementation "io.javalin:javalin-osgi:$javalinVersion"
     constraints {
         implementation("org.eclipse.jetty:jetty-server:$jettyVersion") {

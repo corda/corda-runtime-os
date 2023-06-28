@@ -19,5 +19,5 @@ dependencies {
     cordaProvided 'net.corda:corda-application'
     cordaProvided 'net.corda:corda-base'
     cordaProvided 'org.jetbrains.kotlin:kotlin-osgi-bundle'
-    implementation "com.esotericsoftware:reflectasm:$reflectAsmVersion"
+    implementation libs.reflectasm
 }

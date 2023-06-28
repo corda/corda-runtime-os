@@ -21,7 +21,7 @@ dependencies {
 
     implementation libs.jackson.databind
     implementation "com.typesafe:config:$typeSafeConfigVersion"
-    implementation "com.networknt:json-schema-validator:$networkntJsonSchemaVersion"
+    implementation libs.networknt.json.schema.validator
 
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"

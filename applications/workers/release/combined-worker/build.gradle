@@ -81,7 +81,7 @@ dependencies {
     implementation project(':processors:link-manager-processor')
     implementation project(':processors:gateway-processor')
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
-    implementation "info.picocli:picocli:$picocliVersion"
+    implementation libs.picocli
     implementation 'net.corda:corda-base'
 
     implementation "org.slf4j:slf4j-api:$slf4jVersion"
@@ -94,7 +94,7 @@ dependencies {
     runtimeOnly libs.felix.scr
     runtimeOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
     runtimeOnly "org.osgi:org.osgi.util.function:$osgiUtilFunctionVersion"
-    runtimeOnly "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"
+    runtimeOnly libs.osgi.util.promise
     runtimeOnly libs.felix.configadmin
 
     runtimeOnly project(":libs:messaging:${busImplementation}")

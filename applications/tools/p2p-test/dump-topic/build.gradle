@@ -12,7 +12,7 @@ dependencies {
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
-    implementation "info.picocli:picocli:$picocliVersion"
+    implementation libs.picocli
     implementation libs.apache.avro
     implementation project(":libs:configuration:configuration-core")
     implementation project(":libs:configuration:configuration-merger")
@@ -23,7 +23,7 @@ dependencies {
     runtimeOnly libs.felix.scr
     runtimeOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
     runtimeOnly "org.osgi:org.osgi.util.function:$osgiUtilFunctionVersion"
-    runtimeOnly "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"
+    runtimeOnly libs.osgi.util.promise
 
     runtimeOnly project(':libs:crypto:cipher-suite-impl')
     runtimeOnly project(":libs:messaging:kafka-message-bus-impl")

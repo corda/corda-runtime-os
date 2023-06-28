@@ -54,7 +54,7 @@ dependencies {
     runtimeOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
     runtimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
     runtimeOnly "org.osgi:org.osgi.util.function:$osgiUtilFunctionVersion"
-    runtimeOnly "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"
+    runtimeOnly libs.osgi.util.promise
 
     runtimeOnly project(':components:membership:membership-group-read-impl')
     runtimeOnly project(':libs:application:application-impl')

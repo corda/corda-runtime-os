@@ -20,7 +20,7 @@ dependencies {
     // Processor list must be kept in sync with workersForProcessor in net.corda.cli.plugins.topicconfig.Create
     implementation project(':processors:crypto-processor')
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
-    implementation "info.picocli:picocli:$picocliVersion"
+    implementation libs.picocli
     implementation 'net.corda:corda-base'
     implementation 'net.corda:corda-config-schema'
 
@@ -30,7 +30,7 @@ dependencies {
     runtimeOnly libs.felix.scr
     runtimeOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
     runtimeOnly "org.osgi:org.osgi.util.function:$osgiUtilFunctionVersion"
-    runtimeOnly "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"
+    runtimeOnly libs.osgi.util.promise
 
 
     testRuntimeOnly libs.felix.framework

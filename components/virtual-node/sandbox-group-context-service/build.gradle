@@ -60,7 +60,7 @@ dependencies {
     testRuntimeOnly libs.felix.framework
     testRuntimeOnly libs.felix.scr
     testRuntimeOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
-    testRuntimeOnly "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"
+    testRuntimeOnly libs.osgi.util.promise
     testRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
 
     integrationTestImplementation project('test-impl-one')

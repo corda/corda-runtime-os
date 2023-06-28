@@ -17,7 +17,7 @@ dependencies {
     implementation "net.corda:corda-config-schema:$cordaApiVersion"
     implementation "net.corda:corda-topic-schema:$cordaApiVersion"
     implementation "com.typesafe:config:$typeSafeConfigVersion"
-    implementation "info.picocli:picocli:$picocliVersion"
+    implementation libs.picocli
     implementation "org.slf4j:slf4j-api"
     implementation "net.corda:corda-base"
     implementation project(":components:kafka-topic-admin")
@@ -37,7 +37,7 @@ dependencies {
     runtimeOnly libs.felix.scr
     runtimeOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
     runtimeOnly "org.osgi:org.osgi.util.function:$osgiUtilFunctionVersion"
-    runtimeOnly "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"
+    runtimeOnly libs.osgi.util.promise
 
     runtimeOnly project(':libs:crypto:cipher-suite-impl')
     runtimeOnly project(":libs:messaging:kafka-message-bus-impl")
