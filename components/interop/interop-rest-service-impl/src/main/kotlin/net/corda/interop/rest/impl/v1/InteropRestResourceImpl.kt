@@ -4,7 +4,7 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.interop.aliasinfo.cache.AliasInfoCacheService
 import net.corda.interop.aliasinfo.write.InteropAliasInfoWriteService
 import net.corda.libs.interop.endpoints.v1.InteropRestResource
-import net.corda.libs.interop.endpoints.v1.types.CreateInteropIdentityRequest
+import net.corda.libs.interop.endpoints.v1.types.RestInteropIdentity
 import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
@@ -46,18 +46,30 @@ internal class InteropRestResourceImpl @Activate constructor(
 
     // RestResource values
     override val targetInterface: Class<InteropRestResource> = InteropRestResource::class.java
-    override fun getInterOpGroups(holdingidentityid: String?): List<UUID> {
-        return listOf(UUID.randomUUID())
+    override fun getInterOpGroups(holdingidentityshorthash: String): Map<UUID, String> {
+        return mapOf(
+            Pair(
+                UUID.randomUUID(),
+                """
+                    {
+                       "fileFormatVersion":1,
+                       "groupId":"3dfc0aae-be7c-44c2-aa4f-4d0d7145cf08",
+                       "registrationProtocol":".....
+                     … //all content from our hardcoded group policy file"
+                    }
+                """.trimIndent()
+            )
+        )
     }
 
     override fun createInterOpIdentity(
-        createInteropIdentityRequest: CreateInteropIdentityRequest,
-        holdingidentityid: String?
+        restInteropIdentity: RestInteropIdentity,
+        holdingidentityshorthash: String
     ): ResponseEntity<String> {
         interopAliasInfoWriteService.addInteropIdentity(
-            holdingidentityid!!,
-            createInteropIdentityRequest.groupId.toString(),
-            createInteropIdentityRequest.x500Name
+            holdingidentityshorthash,
+            restInteropIdentity.groupId.toString(),
+            restInteropIdentity.x500Name
         )
 
         logger.info("AliasIdentity created.")
@@ -65,18 +77,14 @@ internal class InteropRestResourceImpl @Activate constructor(
         return ResponseEntity.ok("OK")
     }
 
-    override fun getInterOpIdentities(holdingidentityid: String?): List<CreateInteropIdentityRequest> {
-        val groupToAliasMappings = aliasInfoCacheService.getAliasIdentities(holdingidentityid!!)
-        val listOfIdentities: MutableList<CreateInteropIdentityRequest> = mutableListOf()
-        for (groupToAliasMapping in groupToAliasMappings) {
-            listOfIdentities.add(
-                CreateInteropIdentityRequest(
-                    groupToAliasMapping.value.aliasX500Name,
-                    UUID.fromString(groupToAliasMapping.value.groupId)
-                )
+    override fun getInterOpIdentities(holdingidentityshorthash: String): List<RestInteropIdentity> {
+        val groupToAliasMappings = aliasInfoCacheService.getAliasIdentities(holdingidentityshorthash)
+        return groupToAliasMappings.map {
+            RestInteropIdentity(
+                it.value.aliasX500Name,
+                UUID.fromString(it.value.groupId)
             )
-        }
-        return listOfIdentities
+        }.toList()
     }
 
     override val protocolVersion = 1
@@ -86,7 +94,6 @@ internal class InteropRestResourceImpl @Activate constructor(
         ::configurationReadService,
         ::aliasInfoCacheService,
         ::interopAliasInfoWriteService
-//        ::interopManagementService
     )
 
     private val lifecycleCoordinator = coordinatorFactory.createCoordinator(

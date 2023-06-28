@@ -1,6 +1,6 @@
 package net.corda.libs.interop.endpoints.v1
 
-import net.corda.libs.interop.endpoints.v1.types.CreateInteropIdentityRequest
+import net.corda.libs.interop.endpoints.v1.types.RestInteropIdentity
 import net.corda.rest.RestResource
 import net.corda.rest.annotations.HttpGET
 import net.corda.rest.annotations.HttpPUT
@@ -20,42 +20,42 @@ interface InteropRestResource : RestResource {
      * Get a list of interop groups.
      */
     @HttpGET(
-        path = "{holdingidentityid}/groups",
+        path = "{holdingidentityshorthash}/groups",
         title = "Lists all interop",
         description = "This method returns a list of interop group ids.",
-        responseDescription = "List of interop groups"
+        responseDescription = "Map of interop group ids to group policy"
     )
     fun getInterOpGroups(
         @RestPathParameter(description = "ID of the holding identity which groups are to be returned.")
-        holdingidentityid: String?
-    ): List<UUID>
+        holdingidentityshorthash: String
+    ): Map<UUID,String>
 
     /**
      * Endpoint to create interop identity
      */
     @HttpPUT(
-        path = "{holdingidentityid}/interopidentity",
+        path = "{holdingidentityshorthash}/interopidentity",
         title = "Create interop identity.",
-        description = "This method creates interop identity from x500name.",
-        responseDescription = "Identifier for the request."
+        description = "This method creates interop identity from holding identity id, group id and x500name.",
+        responseDescription = "Response entity with the status of the request."
     )
     fun createInterOpIdentity(
-        createInteropIdentityRequest: CreateInteropIdentityRequest,
-        @RestPathParameter(description = "ID of the holding identity which groups are to be returned.")
-        holdingidentityid: String?
+        restInteropIdentity: RestInteropIdentity,
+        @RestPathParameter(description = "ID of the holding identity.")
+        holdingidentityshorthash: String
     ): ResponseEntity<String>
 
     /**
      * Get a list of interop identities belonging to the given holding identity.
      */
     @HttpGET(
-        path = "{holdingidentityid}/interopidentities",
+        path = "{holdingidentityshorthash}/interopidentities",
         title = "Lists all interop identities belonging to a given holding identity",
         description = "This method returns a list of interop identities belonging to the given holding identity.",
         responseDescription = "List of interop identities"
     )
     fun getInterOpIdentities(
         @RestPathParameter(description = "ID of the holding identity which identities are to be returned.")
-        holdingidentityid: String?
-    ): List<CreateInteropIdentityRequest>
+        holdingidentityshorthash: String
+    ): List<RestInteropIdentity>
 }

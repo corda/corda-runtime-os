@@ -1230,36 +1230,36 @@
         }
       }
     },
-    "/interop/{holdingidentityid}/groups" : {
+    "/interop/{holdingidentityshorthash}/groups" : {
       "get" : {
         "tags" : [ "Interop API" ],
         "description" : "This method returns a list of interop group ids.",
-        "operationId" : "get_interop__holdingidentityid__groups",
+        "operationId" : "get_interop__holdingidentityshorthash__groups",
         "parameters" : [ {
-          "name" : "holdingidentityid",
+          "name" : "holdingidentityshorthash",
           "in" : "path",
           "description" : "ID of the holding identity which groups are to be returned.",
           "required" : true,
           "schema" : {
             "type" : "string",
             "description" : "ID of the holding identity which groups are to be returned.",
-            "nullable" : true,
+            "nullable" : false,
             "example" : "string"
           }
         } ],
         "responses" : {
           "200" : {
-            "description" : "List of interop groups",
+            "description" : "Map of interop group ids to group policy",
             "content" : {
               "application/json" : {
                 "schema" : {
-                  "uniqueItems" : false,
-                  "type" : "array",
-                  "nullable" : false,
-                  "items" : {
+                  "type" : "object",
+                  "additionalProperties" : {
                     "type" : "string",
-                    "format" : "uuid"
-                  }
+                    "example" : "string"
+                  },
+                  "nullable" : false,
+                  "example" : "No example available for this type"
                 }
               }
             }
@@ -1273,20 +1273,20 @@
         }
       }
     },
-    "/interop/{holdingidentityid}/interopidentities" : {
+    "/interop/{holdingidentityshorthash}/interopidentities" : {
       "get" : {
         "tags" : [ "Interop API" ],
         "description" : "This method returns a list of interop identities belonging to the given holding identity.",
-        "operationId" : "get_interop__holdingidentityid__interopidentities",
+        "operationId" : "get_interop__holdingidentityshorthash__interopidentities",
         "parameters" : [ {
-          "name" : "holdingidentityid",
+          "name" : "holdingidentityshorthash",
           "in" : "path",
           "description" : "ID of the holding identity which identities are to be returned.",
           "required" : true,
           "schema" : {
             "type" : "string",
             "description" : "ID of the holding identity which identities are to be returned.",
-            "nullable" : true,
+            "nullable" : false,
             "example" : "string"
           }
         } ],
@@ -1300,7 +1300,7 @@
                   "type" : "array",
                   "nullable" : false,
                   "items" : {
-                    "$ref" : "#/components/schemas/CreateInteropIdentityRequest"
+                    "$ref" : "#/components/schemas/RestInteropIdentity"
                   }
                 }
               }
@@ -1315,20 +1315,20 @@
         }
       }
     },
-    "/interop/{holdingidentityid}/interopidentity" : {
+    "/interop/{holdingidentityshorthash}/interopidentity" : {
       "put" : {
         "tags" : [ "Interop API" ],
-        "description" : "This method creates interop identity from x500name.",
-        "operationId" : "put_interop__holdingidentityid__interopidentity",
+        "description" : "This method creates interop identity from holding identity id, group id and x500name.",
+        "operationId" : "put_interop__holdingidentityshorthash__interopidentity",
         "parameters" : [ {
-          "name" : "holdingidentityid",
+          "name" : "holdingidentityshorthash",
           "in" : "path",
-          "description" : "ID of the holding identity which groups are to be returned.",
+          "description" : "ID of the holding identity.",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description" : "ID of the holding identity which groups are to be returned.",
-            "nullable" : true,
+            "description" : "ID of the holding identity.",
+            "nullable" : false,
             "example" : "string"
           }
         } ],
@@ -1337,7 +1337,7 @@
           "content" : {
             "application/json" : {
               "schema" : {
-                "$ref" : "#/components/schemas/CreateInteropIdentityRequest"
+                "$ref" : "#/components/schemas/RestInteropIdentity"
               }
             }
           },
@@ -1345,7 +1345,7 @@
         },
         "responses" : {
           "200" : {
-            "description" : "Identifier for the request.",
+            "description" : "Response entity with the status of the request.",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -4415,22 +4415,6 @@
           }
         }
       },
-      "CreateInteropIdentityRequest" : {
-        "required" : [ "groupId", "x500Name" ],
-        "type" : "object",
-        "properties" : {
-          "groupId" : {
-            "type" : "string",
-            "format" : "uuid",
-            "nullable" : false
-          },
-          "x500Name" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
-          }
-        }
-      },
       "CreatePermissionType" : {
         "required" : [ "permissionString", "permissionType" ],
         "type" : "object",
@@ -5148,6 +5132,22 @@
             "example" : "2022-06-24T10:15:30Z"
           },
           "registrationStatus" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          }
+        }
+      },
+      "RestInteropIdentity" : {
+        "required" : [ "groupId", "x500Name" ],
+        "type" : "object",
+        "properties" : {
+          "groupId" : {
+            "type" : "string",
+            "format" : "uuid",
+            "nullable" : false
+          },
+          "x500Name" : {
             "type" : "string",
             "nullable" : false,
             "example" : "string"
