@@ -34,7 +34,7 @@ dependencies {
 
     integrationTestImplementation project(':libs:kotlin-reflection:kotlin-reflection-test-example')
     integrationTestImplementation 'org.slf4j:slf4j-api'
-    integrationTestImplementation libs.felix.framework
+    integrationTestImplementation "org.apache.felix:org.apache.felix.framework:$felixVersion"
     integrationTestImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
     integrationTestRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junit5Version"
     integrationTestRuntimeOnly "org.junit.platform:junit-platform-launcher:$junitPlatformVersion"

@@ -79,7 +79,7 @@ dependencies {
     integrationTestRuntimeOnly libs.hsqldb
     integrationTestRuntimeOnly libs.postgresql
 
-    backingStoreBenchmarkRuntimeOnly libs.log4j.slf4j.impl
+    backingStoreBenchmarkRuntimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
 
     // For JSON serialization to DB
     implementation libs.jackson.module

@@ -46,7 +46,7 @@ dependencies {
     implementation project(":libs:metrics")
     implementation project(":libs:tracing")
 
-    runtimeOnly libs.felix.scr
+    runtimeOnly "org.apache.felix:org.apache.felix.scr:$felixScrVersion"
     runtimeOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
     runtimeOnly "org.osgi:org.osgi.util.function:$osgiUtilFunctionVersion"
     runtimeOnly "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"
@@ -69,8 +69,8 @@ dependencies {
     testImplementation project(":testing:p2p:certificates")
     testImplementation libs.mockito.core
     testImplementation libs.mockito.kotlin
-    testImplementation libs.log4j.core
-    testRuntimeOnly libs.log4j.slf4j.impl
+    testImplementation "org.apache.logging.log4j:log4j-core:$log4jVersion"
+    testRuntimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
 
     integrationTestImplementation project(":components:gateway")
     integrationTestImplementation project(":testing:db-message-bus-testkit")

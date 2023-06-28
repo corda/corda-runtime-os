@@ -50,7 +50,7 @@ dependencies {
     implementation project(':components:membership:membership-group-read')
     implementation project(':components:virtual-node:sandbox-group-context-service')
 
-    runtimeOnly libs.felix.scr
+    runtimeOnly "org.apache.felix:org.apache.felix.scr:$felixScrVersion"
     runtimeOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
     runtimeOnly libs.aries.dynamic.framework
     runtimeOnly "org.osgi:org.osgi.util.function:$osgiUtilFunctionVersion"

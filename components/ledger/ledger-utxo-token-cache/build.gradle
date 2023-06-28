@@ -34,7 +34,7 @@ dependencies {
     testImplementation libs.assertj.core
     testImplementation libs.mockito.core
     testImplementation libs.mockito.kotlin
-    testImplementation libs.felix.framework
+    testImplementation "org.apache.felix:org.apache.felix.framework:$felixVersion"
     testImplementation libs.jackson.module
 
     testImplementation project(":libs:lifecycle:lifecycle-test-impl")

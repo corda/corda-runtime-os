@@ -19,6 +19,6 @@ dependencies {
 
     testImplementation libs.mockito.core
     testImplementation libs.mockito.kotlin 
-    testImplementation libs.log4j.core
-    testRuntimeOnly libs.log4j.slf4j.impl
+    testImplementation "org.apache.logging.log4j:log4j-core:$log4jVersion"
+    testRuntimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
 }

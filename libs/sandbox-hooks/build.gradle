@@ -21,6 +21,6 @@ dependencies {
 
     testImplementation libs.mockito.core
     testImplementation libs.mockito.kotlin 
-    testRuntimeOnly libs.felix.framework
-    testRuntimeOnly libs.felix.scr
+    testRuntimeOnly "org.apache.felix:org.apache.felix.framework:$felixVersion"
+    testRuntimeOnly "org.apache.felix:org.apache.felix.scr:$felixScrVersion"
 }
