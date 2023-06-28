@@ -8,9 +8,9 @@ dependencies {
     compileOnly 'org.osgi:osgi.annotation'
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
 
+    implementation project(":components:flow:flow-mapper")
     implementation project(":libs:configuration:configuration-core")
     implementation project(":libs:messaging:messaging")
-    implementation project(":libs:flows:flow-mapper")
     implementation project(":libs:flows:session-manager")
     implementation project(":libs:metrics")
     implementation project(':libs:utilities')
