@@ -4,7 +4,7 @@ import java.time.Duration
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
 import net.corda.flow.pipeline.events.FlowEventContext
-import net.corda.flow.pipeline.sandbox.SandboxDependencyInjector
+import net.corda.flow.pipeline.sandbox.SandboxFlowDependencyInjector
 import net.corda.flow.pipeline.sandbox.impl.FlowSandboxGroupContextImpl
 import net.corda.flow.pipeline.sessions.protocol.FlowAndProtocolVersion
 import net.corda.flow.pipeline.sessions.protocol.FlowProtocolStore
@@ -147,7 +147,7 @@ class FakeSandboxGroupContextComponent : SandboxGroupContextComponent {
         }
     }
 
-    class FakeSandboxDependencyInjector : SandboxDependencyInjector {
+    class FakeSandboxDependencyInjector : SandboxFlowDependencyInjector {
         override fun injectServices(flow: Flow) {
         }
 

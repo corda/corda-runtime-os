@@ -28,7 +28,7 @@ import net.corda.flow.pipeline.factory.FlowFiberExecutionContextFactory
 import net.corda.flow.pipeline.runner.impl.FlowRunnerImpl
 import net.corda.flow.pipeline.runner.impl.remoteToLocalContextMapper
 import net.corda.flow.pipeline.sandbox.FlowSandboxGroupContext
-import net.corda.flow.pipeline.sandbox.SandboxDependencyInjector
+import net.corda.flow.pipeline.sandbox.SandboxFlowDependencyInjector
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.flow.state.FlowStack
 import net.corda.flow.test.utils.buildFlowEventContext
@@ -66,7 +66,7 @@ class FlowRunnerImplTest {
     private val flowFiberExecutionContextFactory = mock<FlowFiberExecutionContextFactory>()
     private val cpiInfoReadService = mock<CpiInfoReadService>()
     private val virtualNodeInfoReadService = mock<VirtualNodeInfoReadService>()
-    private val sandboxDependencyInjector = mock<SandboxDependencyInjector>()
+    private val sandboxDependencyInjector = mock<SandboxFlowDependencyInjector>()
     private val fiberFuture = mock<FiberFuture>()
     private val platformInfoProvider = mock<PlatformInfoProvider> { on { localWorkerPlatformVersion} doReturn 50000 }
     private var flowFiberExecutionContext: FlowFiberExecutionContext

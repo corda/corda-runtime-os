@@ -1,7 +1,7 @@
 package net.corda.flow.pipeline.sandbox.factory
 
-import net.corda.flow.pipeline.sandbox.SandboxDependencyInjector
-import net.corda.flow.pipeline.sandbox.impl.SandboxDependencyInjectorImpl
+import net.corda.flow.pipeline.sandbox.SandboxFlowDependencyInjector
+import net.corda.flow.pipeline.sandbox.impl.SandboxFlowDependencyInjectorImpl
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.sandboxgroupcontext.CORDA_SANDBOX
 import net.corda.sandboxgroupcontext.CORDA_SANDBOX_FILTER
@@ -18,8 +18,8 @@ import org.slf4j.LoggerFactory
 import java.util.Collections.unmodifiableSet
 import java.util.LinkedList
 
-@Component(service = [SandboxDependencyInjectorFactory::class])
-class SandboxDependencyInjectorFactoryImpl : SandboxDependencyInjectorFactory {
+@Component(service = [SandboxFlowDependencyInjectorFactory::class])
+class SandboxFlowDependencyInjectorFactoryImpl : SandboxFlowDependencyInjectorFactory {
     private companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         private const val INJECTOR_FILTER = "(&$CORDA_SANDBOX_FILTER($SERVICE_SCOPE=$SCOPE_SINGLETON))"
@@ -29,7 +29,7 @@ class SandboxDependencyInjectorFactoryImpl : SandboxDependencyInjectorFactory {
         ))
     }
 
-    override fun create(sandboxGroupContext: SandboxGroupContext): SandboxDependencyInjector {
+    override fun create(sandboxGroupContext: SandboxGroupContext): SandboxFlowDependencyInjector {
         check(sandboxGroupContext.virtualNodeContext.sandboxGroupType === FLOW) {
             "Expected serviceGroupType=$FLOW but found ${sandboxGroupContext.virtualNodeContext.sandboxGroupType}"
         }
@@ -64,7 +64,7 @@ class SandboxDependencyInjectorFactoryImpl : SandboxDependencyInjectorFactory {
                                 }
                             }
                     }.toMap().let { singletons ->
-                        SandboxDependencyInjectorImpl(singletons) {
+                        SandboxFlowDependencyInjectorImpl(singletons) {
                             try {
                                 references.forEach(bundleContext::ungetService)
                             } catch (e: IllegalStateException) {
@@ -72,6 +72,6 @@ class SandboxDependencyInjectorFactoryImpl : SandboxDependencyInjectorFactory {
                             }
                         }
                     }
-            } ?: SandboxDependencyInjectorImpl(emptyMap()) {}
+            } ?: SandboxFlowDependencyInjectorImpl(emptyMap()) {}
     }
 }

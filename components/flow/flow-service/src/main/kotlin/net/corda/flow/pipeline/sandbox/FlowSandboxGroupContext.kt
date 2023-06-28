@@ -9,7 +9,7 @@ import net.corda.serialization.checkpoint.CheckpointSerializer
  */
 interface FlowSandboxGroupContext: SandboxGroupContext {
 
-    val dependencyInjector: SandboxDependencyInjector
+    val dependencyInjector: SandboxFlowDependencyInjector
 
     val checkpointSerializer: CheckpointSerializer
 

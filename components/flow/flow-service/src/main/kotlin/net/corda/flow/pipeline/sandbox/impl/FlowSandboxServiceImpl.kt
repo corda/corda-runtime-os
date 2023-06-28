@@ -2,7 +2,7 @@ package net.corda.flow.pipeline.sandbox.impl
 
 import net.corda.flow.pipeline.sandbox.FlowSandboxGroupContext
 import net.corda.flow.pipeline.sandbox.FlowSandboxService
-import net.corda.flow.pipeline.sandbox.factory.SandboxDependencyInjectorFactory
+import net.corda.flow.pipeline.sandbox.factory.SandboxFlowDependencyInjectorFactory
 import net.corda.flow.pipeline.sandbox.impl.FlowSandboxGroupContextImpl.Companion.DEPENDENCY_INJECTOR
 import net.corda.flow.pipeline.sandbox.impl.FlowSandboxGroupContextImpl.Companion.FLOW_PROTOCOL_STORE
 import net.corda.flow.pipeline.sandbox.impl.FlowSandboxGroupContextImpl.Companion.NON_INJECTABLE_SINGLETONS
@@ -35,8 +35,8 @@ import org.osgi.service.component.annotations.Reference
 class FlowSandboxServiceImpl @Activate constructor(
     @Reference(service = SandboxGroupContextComponent::class)
     private val sandboxGroupContextComponent: SandboxGroupContextComponent,
-    @Reference(service = SandboxDependencyInjectorFactory::class)
-    private val dependencyInjectionFactory: SandboxDependencyInjectorFactory,
+    @Reference(service = SandboxFlowDependencyInjectorFactory::class)
+    private val dependencyInjectionFactory: SandboxFlowDependencyInjectorFactory,
     @Reference(service = FlowProtocolStoreFactory::class)
     private val flowProtocolStoreFactory: FlowProtocolStoreFactory,
     private val bundleContext: BundleContext
@@ -66,7 +66,7 @@ class FlowSandboxServiceImpl @Activate constructor(
     }
 
     private fun initialiseSandbox(
-        dependencyInjectionFactory: SandboxDependencyInjectorFactory,
+        dependencyInjectionFactory: SandboxFlowDependencyInjectorFactory,
         sandboxGroupContext: MutableSandboxGroupContext,
     ): AutoCloseable {
         val sandboxGroup = sandboxGroupContext.sandboxGroup

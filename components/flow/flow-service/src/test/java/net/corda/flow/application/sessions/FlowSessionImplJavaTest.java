@@ -11,7 +11,7 @@ import net.corda.flow.fiber.FlowIORequest;
 import net.corda.flow.fiber.FlowLogicAndArgs;
 import net.corda.flow.pipeline.metrics.FlowMetrics;
 import net.corda.flow.pipeline.sandbox.FlowSandboxGroupContext;
-import net.corda.flow.pipeline.sandbox.SandboxDependencyInjector;
+import net.corda.flow.pipeline.sandbox.SandboxFlowDependencyInjector;
 import net.corda.flow.state.FlowCheckpoint;
 import net.corda.flow.state.FlowContext;
 import net.corda.internal.serialization.SerializedBytesImpl;
@@ -39,7 +39,7 @@ public class FlowSessionImplJavaTest {
 
     private final FlowSandboxGroupContext flowSandboxGroupContext = mock(FlowSandboxGroupContext.class);
     private final SerializationServiceInternal serializationService = mock(SerializationServiceInternal.class);
-    private final SandboxDependencyInjector sandboxDependencyInjector = mock(SandboxDependencyInjector.class);
+    private final SandboxFlowDependencyInjector sandboxDependencyInjector = mock(SandboxFlowDependencyInjector.class);
     private final CheckpointSerializer checkpointSerializer = mock(CheckpointSerializer.class);
     private final FlowFiberExecutionContext flowFiberExecutionContext = new FlowFiberExecutionContext(
             mock(FlowCheckpoint.class),

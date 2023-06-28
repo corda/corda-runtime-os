@@ -1,6 +1,6 @@
 package net.corda.flow.pipeline.sandbox
 
-import net.corda.flow.pipeline.sandbox.impl.SandboxDependencyInjectorImpl
+import net.corda.flow.pipeline.sandbox.impl.SandboxFlowDependencyInjectorImpl
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.ClientRequestBody
@@ -27,7 +27,7 @@ class SandboxDependencyInjectorImplTest {
         SharedService::class.java.name
     )
     private val flowDependencyInjector =
-        SandboxDependencyInjectorImpl(mapOf(s1 to serviceTypes1, s2 to serviceTypes2, s3 to serviceTypes3), mock())
+        SandboxFlowDependencyInjectorImpl(mapOf(s1 to serviceTypes1, s2 to serviceTypes2, s3 to serviceTypes3), mock())
 
     @Test
     fun `get services returns all services`() {
@@ -59,7 +59,7 @@ class SandboxDependencyInjectorImplTest {
     fun `an exception is thrown if the same interface is implemented by more than once service`() {
         assertThatIllegalArgumentException()
             .isThrownBy {
-                SandboxDependencyInjectorImpl(
+                SandboxFlowDependencyInjectorImpl(
                     mapOf(
                         s2 to serviceTypes2,
                         DuplicateService2Impl() to serviceTypes2

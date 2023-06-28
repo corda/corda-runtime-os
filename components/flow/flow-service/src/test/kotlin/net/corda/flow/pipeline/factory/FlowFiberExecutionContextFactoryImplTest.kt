@@ -7,7 +7,7 @@ import net.corda.flow.BOB_X500_NAME
 import net.corda.flow.pipeline.factory.impl.FlowFiberExecutionContextFactoryImpl
 import net.corda.flow.pipeline.sandbox.FlowSandboxGroupContext
 import net.corda.flow.pipeline.sandbox.FlowSandboxService
-import net.corda.flow.pipeline.sandbox.SandboxDependencyInjector
+import net.corda.flow.pipeline.sandbox.SandboxFlowDependencyInjector
 import net.corda.flow.test.utils.buildFlowEventContext
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
@@ -27,7 +27,7 @@ class FlowFiberExecutionContextFactoryImplTest {
     private val flowSandboxService = mock<FlowSandboxService>()
     private val sandboxGroupContext = mock<FlowSandboxGroupContext>()
     private val checkpointSerializer = mock<CheckpointSerializer>()
-    private val sandboxDependencyInjector = mock<SandboxDependencyInjector>()
+    private val sandboxDependencyInjector = mock<SandboxFlowDependencyInjector>()
     private val currentSandboxGroupContext = mock<CurrentSandboxGroupContext>()
     private val membershipGroupReaderProvider = mock<MembershipGroupReaderProvider>()
     private val membershipGroupReader = mock<MembershipGroupReader>()

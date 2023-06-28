@@ -5,7 +5,7 @@ import net.corda.flow.fiber.FlowFiber
 import net.corda.flow.fiber.FlowFiberExecutionContext
 import net.corda.flow.fiber.FlowFiberService
 import net.corda.flow.pipeline.sandbox.FlowSandboxGroupContext
-import net.corda.flow.pipeline.sandbox.SandboxDependencyInjector
+import net.corda.flow.pipeline.sandbox.SandboxFlowDependencyInjector
 import net.corda.flow.state.ContextPlatformProperties
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.flow.state.FlowContext
@@ -19,7 +19,7 @@ import org.mockito.kotlin.whenever
 
 class MockFlowFiberService : FlowFiberService {
     val flowFiber = mock<FlowFiber>()
-    private val sandboxDependencyInjector = mock<SandboxDependencyInjector>()
+    private val sandboxDependencyInjector = mock<SandboxFlowDependencyInjector>()
     val flowCheckpoint = mock<FlowCheckpoint>()
     val flowStack = mock<FlowStack>()
     private val checkpointSerializer = mock<CheckpointSerializer>()

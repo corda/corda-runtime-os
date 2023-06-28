@@ -1,6 +1,6 @@
 package net.corda.flow.pipeline.sandbox.impl
 
-import net.corda.flow.pipeline.sandbox.SandboxDependencyInjector
+import net.corda.flow.pipeline.sandbox.SandboxFlowDependencyInjector
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.Flow
 import net.corda.v5.serialization.SingletonSerializeAsToken
@@ -8,10 +8,10 @@ import org.osgi.framework.FrameworkUtil
 import java.lang.reflect.Field
 import java.util.Collections.unmodifiableMap
 
-class SandboxDependencyInjectorImpl(
+class SandboxFlowDependencyInjectorImpl(
     singletons: Map<SingletonSerializeAsToken, List<String>>,
     private val closeable: AutoCloseable
-) : SandboxDependencyInjector {
+) : SandboxFlowDependencyInjector {
     private val serviceTypeMap: Map<Class<*>, SingletonSerializeAsToken>
 
     init {
