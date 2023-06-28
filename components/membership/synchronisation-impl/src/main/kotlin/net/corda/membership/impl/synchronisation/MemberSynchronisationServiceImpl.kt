@@ -10,10 +10,12 @@ import net.corda.crypto.core.toAvro
 import net.corda.crypto.core.toCorda
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializationFactory
+import net.corda.crypto.cipher.suite.sha256Bytes
 import net.corda.data.KeyValuePairList
+import net.corda.data.crypto.wire.CryptoSignatureParameterSpec
 import net.corda.data.crypto.wire.CryptoSignatureSpec
-import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.PersistentMemberInfo
+import net.corda.data.membership.SignedData
 import net.corda.data.membership.command.synchronisation.member.ProcessMembershipUpdates
 import net.corda.data.membership.p2p.DistributionMetaData
 import net.corda.data.membership.p2p.MembershipPackage
@@ -32,15 +34,11 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.TimerEvent
-import net.corda.membership.lib.GroupParametersFactory
+import net.corda.membership.lib.*
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_SUSPENDED
 import net.corda.membership.lib.MemberInfoExtension.Companion.id
 import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
-import net.corda.membership.lib.MemberInfoExtension.Companion.sessionInitiationKeys
 import net.corda.membership.lib.MemberInfoExtension.Companion.status
-import net.corda.membership.lib.MemberInfoFactory
-import net.corda.membership.lib.toSortedMap
-import net.corda.membership.lib.toWire
 import net.corda.membership.p2p.helpers.MerkleTreeGenerator
 import net.corda.membership.p2p.helpers.P2pRecordsFactory
 import net.corda.membership.p2p.helpers.Verifier
@@ -71,6 +69,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
+import java.security.PublicKey
 import java.util.Random
 import java.util.UUID
 import java.util.concurrent.TimeUnit
@@ -91,6 +90,7 @@ class MemberSynchronisationServiceImpl internal constructor(
     private val clock: Clock,
     private val membershipPersistenceClient: MembershipPersistenceClient,
     private val groupParametersFactory: GroupParametersFactory,
+    private val keyEncodingService: KeyEncodingService,
 ) : MemberSynchronisationService {
     @Suppress("LongParameterList")
     @Activate
@@ -145,6 +145,7 @@ class MemberSynchronisationServiceImpl internal constructor(
         UTCClock(),
         membershipPersistenceClient,
         groupParametersFactory,
+        keyEncodingService,
     )
 
     /**
@@ -258,14 +259,16 @@ class MemberSynchronisationServiceImpl internal constructor(
         private fun parseGroupParameters(
             mgm: MemberInfo,
             membershipPackage: MembershipPackage
-        ) = with(membershipPackage.groupParameters) {
-            verifier.verify(
-                mgm.sessionInitiationKeys,
-                mgmSignature,
-                mgmSignatureSpec,
-                groupParameters.array()
-            )
-            groupParametersFactory.create(this)
+        ): InternalGroupParameters {
+            val mgmPublicKey = mgm.ledgerKeys.firstOrNull()
+                ?: throw IllegalArgumentException("MGM does not have a ledger key.")
+            val mgmSignature = membershipPackage.groupParameters.mgmSignature.bytes.array()
+            val mgmSignatureSpec = membershipPackage.groupParameters.mgmSignatureSpec
+            val groupParametersData = membershipPackage.groupParameters.groupParameters.array()
+
+            verifier.verify(mgmPublicKey, mgmSignature, mgmSignatureSpec, groupParametersData)
+
+            return groupParametersFactory.create(membershipPackage.groupParameters)
         }
 
         override fun cancelCurrentRequestAndScheduleNewOne(
@@ -281,6 +284,18 @@ class MemberSynchronisationServiceImpl internal constructor(
             return true
         }
 
+        private fun getMemberKeyFromMemberInfo(memberInfo: SignedData): PublicKey {
+            val memberSignature = memberInfo.signature
+            val publicKeyBytes = memberSignature.publicKey.array().sha256Bytes()
+            return keyEncodingService.decodePublicKey(publicKeyBytes)
+        }
+
+        private fun getMGMKeyFromMemberInfo(mgmContext: SignedData): PublicKey {
+            val mgmSignature = mgmContext.signature
+            val publicKeyBytes = mgmSignature.publicKey.array().sha256Bytes()
+            return keyEncodingService.decodePublicKey(publicKeyBytes)
+        }
+
         override fun processMembershipUpdates(updates: ProcessMembershipUpdates): List<Record<*, *>> {
             val viewOwningMember = updates.synchronisationMetaData.member.toCorda()
             val mgm = updates.synchronisationMetaData.mgm.toCorda()
@@ -288,18 +303,28 @@ class MemberSynchronisationServiceImpl internal constructor(
 
             return try {
                 cancelCurrentRequestAndScheduleNewOne(viewOwningMember, mgm)
+
                 val updateMembersInfo = updates.membershipPackage.memberships.memberships.map { update ->
+
+                    val memberKey = getMemberKeyFromMemberInfo(update.memberContext)
+
                     verifier.verify(
-                        update.memberContext.signature,
+                        memberKey,
+                        update.memberContext.signature.bytes.array(),
                         update.memberContext.signatureSpec,
-                        update.memberContext.data.array()
-                    )
-                    verifyMgmSignature(
-                        update.mgmContext.signature,
-                        update.mgmContext.signatureSpec,
                         update.memberContext.data.array(),
-                        update.mgmContext.data.array(),
                     )
+
+                    val mgmKey = getMGMKeyFromMemberInfo(update.mgmContext)
+
+                    verifyMgmSignature(
+                        mgmKey,
+                        update.mgmContext.signature.bytes.array(),
+                        update.mgmContext.signatureSpec.signatureName,
+                        update.memberContext.data.array(),
+                        update.mgmContext.data.array()
+                    )
+
                     val memberContext = deserializer.deserialize(update.memberContext.data.array())
                         ?: throw CordaRuntimeException("Invalid member context")
                     val mgmContext = deserializer.deserialize(update.mgmContext.data.array())
@@ -385,13 +410,28 @@ class MemberSynchronisationServiceImpl internal constructor(
     }
 
     private fun verifyMgmSignature(
-        mgmSignature: CryptoSignatureWithKey,
-        mgmSignatureSpec: CryptoSignatureSpec,
+        publicKey: PublicKey?,
+        signature: ByteArray?,
+        signatureName: String?,
         vararg leaves: ByteArray,
     ) {
-        val data = merkleTreeGenerator.createTree(leaves.toList())
-            .root.bytes
-        verifier.verify(mgmSignature, mgmSignatureSpec, data)
+        val data = merkleTreeGenerator.createTree(leaves.toList()).root.bytes
+
+        val customDigestName: String? = null // Set the custom digest name if applicable, otherwise use null
+        val params: CryptoSignatureParameterSpec? = null // Set the signature parameters if applicable, otherwise use null
+
+        val signatureSpec = CryptoSignatureSpec(signatureName, customDigestName, params)
+
+        publicKey?.let { key ->
+            signature?.let { sig ->
+                verifier.verify(
+                    key,
+                    sig,
+                    signatureSpec,
+                    data
+                )
+            } ?: throw IllegalArgumentException("Member does not have a valid signature for verification.")
+        } ?: throw IllegalArgumentException("Member does not have a valid public key for verification.")
     }
 
     private fun createSynchronisationRequestMessage(
