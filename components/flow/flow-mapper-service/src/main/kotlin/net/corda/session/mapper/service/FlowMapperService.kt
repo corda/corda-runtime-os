@@ -18,7 +18,6 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.StateAndEventSubscription
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.schema.Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC
 import net.corda.schema.configuration.ConfigKeys.FLOW_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.session.mapper.service.executor.FlowMapperListener
@@ -112,9 +111,11 @@ class FlowMapperService @Activate constructor(
                 }
                 val newScheduledTaskState = coordinator.getManagedResource<ScheduledTaskState>(CLEANUP_TASK)!!
 
+                //HARDCODED: Point the process to a custom flow mapper processor deployment
+                val flowMapperTopic = System.getenv("FLOW_MAPPER_TOPIC")
                 coordinator.createManagedResource(SUBSCRIPTION) {
                     subscriptionFactory.createStateAndEventSubscription(
-                        SubscriptionConfig(CONSUMER_GROUP, FLOW_MAPPER_EVENT_TOPIC),
+                        SubscriptionConfig("$CONSUMER_GROUP-$flowMapperTopic", flowMapperTopic),
                         FlowMapperMessageProcessor(flowMapperEventExecutorFactory, flowConfig),
                         messagingConfig,
                         FlowMapperListener(newScheduledTaskState)

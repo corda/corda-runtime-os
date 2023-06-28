@@ -566,6 +566,8 @@ workers:
       # -- flow worker image tag, defaults to image.tag
       tag: ""
     envs:
+      - name: "FLOW_MAPPER_TOPIC"
+        value: "flow.mapper.event"
       - name: "FLOW_START_TOPIC"
         value: "flow.start"
       - name: "FLOW_SESSION_TOPIC"
@@ -647,6 +649,8 @@ workers:
       # -- flow worker image tag, defaults to image.tag
       tag: ""
     envs:
+      - name: "FLOW_MAPPER_TOPIC"
+        value: "flow.mapper.start.event"
       - name: "FLOW_START_TOPIC"
         value: "flow.start"
       - name: "FLOW_SESSION_TOPIC"
@@ -728,6 +732,8 @@ workers:
       # -- flow worker image tag, defaults to image.tag
       tag: ""
     envs:
+      - name: "FLOW_MAPPER_TOPIC"
+        value: "flow.mapper.event"
       - name: "FLOW_START_TOPIC"
         value: "flow.start"
       - name: "FLOW_SESSION_TOPIC"
@@ -739,7 +745,7 @@ workers:
       - name: "ENABLE_VERIFICATION_PROCESS"
         value: "FALSE"
       - name: "ENABLE_MAPPER_PROCESS"
-        value: "FALSE"
+        value: "TRUE"
     # -- flow worker replica count
     replicaCount: 1
     # -- flow worker extra annotations
@@ -809,6 +815,8 @@ workers:
       # -- flow worker image tag, defaults to image.tag
       tag: ""
     envs:
+      - name: "FLOW_MAPPER_TOPIC"
+        value: "flow.mapper.event"
       - name: "FLOW_START_TOPIC"
         value: "flow.start"
       - name: "FLOW_SESSION_TOPIC"
@@ -890,6 +898,8 @@ workers:
       # -- flow worker image tag, defaults to image.tag
       tag: ""
     envs:
+      - name: "FLOW_MAPPER_TOPIC"
+        value: "flow.mapper.event"
       - name: "FLOW_START_TOPIC"
         value: "flow.start"
       - name: "FLOW_SESSION_TOPIC"
@@ -971,6 +981,8 @@ workers:
       # -- flow worker image tag, defaults to image.tag
       tag: ""
     envs:
+      - name: "FLOW_MAPPER_TOPIC"
+        value: "flow.mapper.event"
       - name: "FLOW_START_TOPIC"
         value: "flow.start"
       - name: "FLOW_SESSION_TOPIC"
@@ -1052,6 +1064,8 @@ workers:
       # -- flow worker image tag, defaults to image.tag
       tag: ""
     envs:
+      - name: "FLOW_MAPPER_TOPIC"
+        value: "flow.mapper.event"
       - name: "FLOW_START_TOPIC"
         value: "flow.start"
       - name: "FLOW_SESSION_TOPIC"
@@ -1133,6 +1147,8 @@ workers:
       # -- flow worker image tag, defaults to image.tag
       tag: ""
     envs:
+      - name: "FLOW_MAPPER_TOPIC"
+        value: "flow.mapper.event"
       - name: "FLOW_START_TOPIC"
         value: "flow.start"
       - name: "FLOW_SESSION_TOPIC"
@@ -1214,6 +1230,8 @@ workers:
       # -- membership worker image tag, defaults to image.tag
       tag: ""
     envs:
+      - name: "FLOW_MAPPER_TOPIC"
+        value: "flow.mapper.event"
       - name: "FLOW_START_TOPIC"
         value: "flow.start"
       - name: "FLOW_SESSION_TOPIC"
@@ -1293,6 +1311,8 @@ workers:
       # -- REST worker image tag, defaults to image.tag
       tag: ""
     envs:
+      - name: "FLOW_MAPPER_TOPIC"
+        value: "flow.mapper.start.event"
       - name: "FLOW_START_TOPIC"
         value: "flow.start"
       - name: "FLOW_SESSION_TOPIC"
@@ -1412,6 +1432,8 @@ workers:
       # -- P2P link manager worker image tag, defaults to image.tag
       tag: ""
     envs:
+      - name: "FLOW_MAPPER_TOPIC"
+        value: "flow.mapper.event"
       - name: "FLOW_START_TOPIC"
         value: "flow.start"
       - name: "FLOW_SESSION_TOPIC"
@@ -1491,6 +1513,8 @@ workers:
       # -- p2p-gateway worker image tag, defaults to image.tag
       tag: ""
     envs:
+      - name: "FLOW_MAPPER_TOPIC"
+        value: "flow.mapper.event"
       - name: "FLOW_START_TOPIC"
         value: "flow.start"
       - name: "FLOW_SESSION_TOPIC"
