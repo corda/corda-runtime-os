@@ -16,9 +16,9 @@ dependencies {
     compileOnly libs.jackson.module
     compileOnly libs.jackson.dataformat
 
-    compileOnly "org.pf4j:pf4j:$pf4jVersion"
+    compileOnly libs.pf4j
     compileOnly "net.corda.cli.host:api:$pluginHostVersion"
-    kapt "org.pf4j:pf4j:$pf4jVersion"
+    kapt libs.pf4j
     kapt libs.picocli
 
     compileOnly platform("net.corda:corda-api:$cordaApiVersion")
@@ -28,7 +28,7 @@ dependencies {
     testImplementation 'org.jetbrains.kotlin:kotlin-stdlib'
     testImplementation libs.mockito.core
     testImplementation libs.mockito.kotlin
-    testImplementation "org.pf4j:pf4j:$pf4jVersion"
+    testImplementation libs.pf4j
     testImplementation "net.corda.cli.host:api:$pluginHostVersion"
     testImplementation libs.jackson.module
     testImplementation libs.jackson.dataformat

@@ -8,7 +8,7 @@ description 'E2E test utilities'
 dependencies {
     implementation "net.corda:corda-config-schema:$cordaApiVersion"
 
-    implementation "com.konghq:unirest-java:$unirestVersion"
+    implementation libs.unirest.java
     implementation libs.jackson.module
     implementation libs.jackson.datatype
     implementation project(':testing:test-utilities')

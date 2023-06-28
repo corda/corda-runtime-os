@@ -56,7 +56,7 @@ dependencies {
 
     integrationTestImplementation project(':testing:sandboxes')
     integrationTestImplementation project('cpks:serializable-cpk-one')
-    integrationTestImplementation libs.osgi.util.promise
+    integrationTestImplementation "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"
     integrationTestRuntimeOnly libs.felix.framework
     integrationTestRuntimeOnly "co.paralleluniverse:quasar-core-osgi:$quasarVersion:framework-extension"
 

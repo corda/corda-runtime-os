@@ -30,7 +30,7 @@ dependencies {
     runtimeOnly libs.felix.scr
     runtimeOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
     runtimeOnly "org.osgi:org.osgi.util.function:$osgiUtilFunctionVersion"
-    runtimeOnly libs.osgi.util.promise
+    runtimeOnly "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"
 
 
     testRuntimeOnly libs.felix.framework

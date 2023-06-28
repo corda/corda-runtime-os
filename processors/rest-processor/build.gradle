@@ -69,7 +69,7 @@ dependencies {
 
     integrationTestImplementation libs.assertj.core
     integrationTestImplementation "org.osgi:org.osgi.test.junit5:$osgiTestJunit5Version"
-    integrationTestImplementation "io.swagger.core.v3:swagger-core:$swaggerVersion"
+    integrationTestImplementation libs.swagger.core
 
     integrationTestImplementation project(':libs:rest:rest')
     integrationTestImplementation project(':libs:rest:rest-server')

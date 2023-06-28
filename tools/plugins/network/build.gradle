@@ -20,11 +20,11 @@ dependencies {
 
     implementation libs.jackson.module
     implementation libs.snakeyaml
-    implementation "org.pf4j:pf4j:${pf4jVersion}"
-    kapt "org.pf4j:pf4j:${pf4jVersion}"
+    implementation libs.pf4j
+    kapt libs.pf4j
 
     testImplementation "net.corda.cli.host:api:$pluginHostVersion"
-    testImplementation "org.pf4j:pf4j:${pf4jVersion}"
+    testImplementation libs.pf4j
     testImplementation "org.junit.jupiter:junit-jupiter:${junit5Version}"
     testImplementation libs.mockito.core
     testImplementation libs.mockito.kotlin 

@@ -15,8 +15,8 @@ dependencies {
     compileOnly 'org.jetbrains.kotlin:kotlin-stdlib'
 
     compileOnly "net.corda.cli.host:api:$pluginHostVersion"
-    compileOnly "org.pf4j:pf4j:$pf4jVersion"
-    kapt "org.pf4j:pf4j:$pf4jVersion"
+    compileOnly libs.pf4j
+    kapt libs.pf4j
     kapt libs.picocli
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
