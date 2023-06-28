@@ -284,7 +284,7 @@ internal class StreamingStateAndEventSubscription<K : Any, S : Any, E : Any>(
         )
 
     private fun isWakeup(record: Record<*, *>) : Boolean {
-        return if ((record.value != null) && record.value!!::class.java.isInstance(FlowEvent::class.java)) {
+        return if ((record.value != null) && record.value is FlowEvent) {
             val flowEvent = record.value!! as FlowEvent
             flowEvent.payload is Wakeup
         } else {
