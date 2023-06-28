@@ -8,26 +8,26 @@ import org.slf4j.LoggerFactory
 import java.util.concurrent.atomic.AtomicReference
 
 
-class InteropAliasIdentityProducer(
+class InteropIdentityProducer(
     private val publisher: AtomicReference<Publisher?>
 ) {
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
-    fun publishAliasIdentity(shortHash: String, interopAliasIdentity: InteropAliasIdentity) {
+    fun publishInteropIdentity(shortHash: String, identity: InteropAliasIdentity) {
         if (publisher.get() == null) {
-            logger.error("Interop alias identity publisher is null, not publishing.")
+            logger.error("Interop identity publisher is null, not publishing.")
             return
         }
 
         // Key is a combination of holding identity short hash and interop group ID.
-        val key = "$shortHash:${interopAliasIdentity.groupId}"
+        val key = "$shortHash:${identity.groupId}"
 
-        val futures = publisher.get()!!.publish(listOf(Record(INTEROP_ALIAS_IDENTITY_TOPIC, key, interopAliasIdentity)))
+        val futures = publisher.get()!!.publish(listOf(Record(INTEROP_ALIAS_IDENTITY_TOPIC, key, identity)))
 
         futures.forEach { it.get() }
 
-        logger.info("Interop alias identity published with key : $key and value : $interopAliasIdentity")
+        logger.info("Interop identity published with key : $key and value : $identity")
     }
 }

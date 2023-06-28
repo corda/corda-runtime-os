@@ -48,7 +48,7 @@ class InteropAliasInfoWriteServiceImpl @Activate constructor(
     private var configSubscription: AutoCloseable? = null
 
     private val publisher: AtomicReference<Publisher?> = AtomicReference()
-    private val producer = InteropAliasIdentityProducer(publisher)
+    private val producer = InteropIdentityProducer(publisher)
 
     override val isRunning: Boolean
         get() = coordinator.isRunning
@@ -65,7 +65,7 @@ class InteropAliasInfoWriteServiceImpl @Activate constructor(
             hostingVnode = "?"
         }
 
-        producer.publishAliasIdentity(holdingIdentityShortHash, interopAliasIdentity)
+        producer.publishInteropIdentity(holdingIdentityShortHash, interopAliasIdentity)
     }
 
     override fun start() {
