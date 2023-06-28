@@ -33,8 +33,8 @@ class FlowEventPipelineFactoryImplTest {
     private val flowRunner = mock<FlowRunner>()
     private val flowEventContext = buildFlowEventContext(flowCheckpoint, flowEvent.payload)
     private val flowMetrics = flowEventContext.flowMetrics
-    private val flowMetricsFactory= mock<FlowMetricsFactory>().apply {
-        whenever(create(any(),any())).thenReturn(flowMetrics)
+    private val flowMetricsFactory = mock<FlowMetricsFactory>().apply {
+        whenever(create(any(), any())).thenReturn(flowMetrics)
     }
     private val flowIORequestTypeConverter = mock<FlowIORequestTypeConverter>()
     private val config = flowEventContext.config
@@ -85,7 +85,7 @@ class FlowEventPipelineFactoryImplTest {
             flowFiberCache,
             flowIORequestTypeConverter
         )
-        val result = factory.create(checkpoint, flowEvent, config, emptyMap(),0)
+        val result = factory.create(checkpoint, flowEvent, config, emptyMap(), flowEventContext.flowTraceContext, 0)
         assertEquals(expected.context, result.context)
     }
 }
