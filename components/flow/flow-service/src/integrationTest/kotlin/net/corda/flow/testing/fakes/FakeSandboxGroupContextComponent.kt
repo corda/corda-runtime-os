@@ -151,7 +151,7 @@ class FakeSandboxGroupContextComponent : SandboxGroupContextComponent {
         override fun injectServices(flow: Flow) {
         }
 
-        override fun getRegisteredServices(): Set<SingletonSerializeAsToken> {
+        fun getRegisteredServices(): Set<SingletonSerializeAsToken> {
             return emptySet()
         }
 

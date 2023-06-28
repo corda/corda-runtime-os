@@ -25,6 +25,7 @@ dependencies {
     implementation "org.slf4j:slf4j-api:$slf4jVersion"
 
     implementation project(':libs:virtual-node:sandbox-group-context')
+    implementation project(':components:virtual-node:sandbox-group-context-service')
 
     testRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
 }

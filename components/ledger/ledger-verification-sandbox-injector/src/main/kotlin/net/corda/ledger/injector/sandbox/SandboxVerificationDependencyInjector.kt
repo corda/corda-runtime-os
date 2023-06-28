@@ -14,9 +14,4 @@ interface SandboxVerificationDependencyInjector : AutoCloseable {
      * @param contract The contract to receive the injected services.
      */
     fun injectServices(contract: Contract)
-
-    /**
-     * @return A collection of services registered with the injector.
-     */
-    fun getRegisteredServices(): Collection<SingletonSerializeAsToken>
 }
