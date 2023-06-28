@@ -18,7 +18,7 @@ import java.util.UUID
 import kotlin.collections.HashMap
 
 
-class AliasInfoCacheServiceImplTest {
+class InteropIdentityCacheServiceImplTest {
     @Test
     fun `get before put returns empty map`() {
         val coordinator = mock<LifecycleCoordinator>()
@@ -33,7 +33,7 @@ class AliasInfoCacheServiceImplTest {
             )
         }
 
-        val cache = AliasInfoCacheServiceImpl(coordinatorFactory, mock(), subscriptionFactory)
+        val cache = InteropIdentityCacheServiceImpl(coordinatorFactory, mock(), subscriptionFactory)
 
         val shortHash = "1234567890"
         val response = cache.getAliasIdentities(shortHash)
@@ -56,7 +56,7 @@ class AliasInfoCacheServiceImplTest {
             )
         }
 
-        val cache = AliasInfoCacheServiceImpl(coordinatorFactory, mock(), subscriptionFactory)
+        val cache = InteropIdentityCacheServiceImpl(coordinatorFactory, mock(), subscriptionFactory)
 
         val shortHash = "1234567890"
         val aliasIdentity = InteropAliasIdentity().apply {
@@ -95,7 +95,7 @@ class AliasInfoCacheServiceImplTest {
             )
         }
 
-        val cache = AliasInfoCacheServiceImpl(coordinatorFactory, mock(), subscriptionFactory)
+        val cache = InteropIdentityCacheServiceImpl(coordinatorFactory, mock(), subscriptionFactory)
 
         val shortHash = "1234567890"
 

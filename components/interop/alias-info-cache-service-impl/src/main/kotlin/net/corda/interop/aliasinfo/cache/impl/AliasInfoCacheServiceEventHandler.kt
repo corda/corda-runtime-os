@@ -2,7 +2,7 @@ package net.corda.interop.aliasinfo.cache.impl
 
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.interop.aliasinfo.cache.AliasInfoCacheService
+import net.corda.interop.aliasinfo.cache.InteropIdentityCacheService
 import net.corda.interop.aliasinfo.processor.InteropIdentityProcessor
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.LifecycleCoordinator
@@ -24,7 +24,7 @@ import org.slf4j.LoggerFactory
 class AliasInfoCacheServiceEventHandler(
     private val configurationReadService: ConfigurationReadService,
     private val subscriptionFactory: SubscriptionFactory,
-    private val cacheService: AliasInfoCacheService
+    private val cacheService: InteropIdentityCacheService
 ) : LifecycleEventHandler {
     companion object {
         private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)

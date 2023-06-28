@@ -1,7 +1,7 @@
 package net.corda.interop.aliasinfo.read.impl
 
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.interop.aliasinfo.cache.AliasInfoCacheService
+import net.corda.interop.aliasinfo.cache.InteropIdentityCacheService
 import net.corda.interop.aliasinfo.read.InteropAliasInfoReadService
 import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -19,8 +19,8 @@ class InteropAliasInfoReadServiceImpl @Activate constructor(
     private val coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = ConfigurationReadService::class)
     private val configurationReadService: ConfigurationReadService,
-    @Reference(service = AliasInfoCacheService::class)
-    private val aliasInfoCacheService: AliasInfoCacheService
+    @Reference(service = InteropIdentityCacheService::class)
+    private val interopIdentityCacheService: InteropIdentityCacheService
 ) : InteropAliasInfoReadService {
     companion object {
         val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -32,7 +32,7 @@ class InteropAliasInfoReadServiceImpl @Activate constructor(
 
     private val dependentComponents = DependentComponents.of(
         ::configurationReadService,
-        ::aliasInfoCacheService
+        ::interopIdentityCacheService
     )
 
     private val coordinatorName = LifecycleCoordinatorName.forComponent<InteropAliasInfoReadService>()

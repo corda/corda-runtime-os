@@ -1,7 +1,7 @@
 package net.corda.interop.aliasinfo.processor
 
 import net.corda.data.interop.InteropAliasIdentity
-import net.corda.interop.aliasinfo.cache.AliasInfoCacheService
+import net.corda.interop.aliasinfo.cache.InteropIdentityCacheService
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -9,7 +9,7 @@ import org.slf4j.LoggerFactory
 import java.util.*
 
 class InteropIdentityProcessor(
-    private val cacheService: AliasInfoCacheService
+    private val cacheService: InteropIdentityCacheService
 ) : CompactedProcessor<String, InteropAliasIdentity> {
 
     override val keyClass = String::class.java

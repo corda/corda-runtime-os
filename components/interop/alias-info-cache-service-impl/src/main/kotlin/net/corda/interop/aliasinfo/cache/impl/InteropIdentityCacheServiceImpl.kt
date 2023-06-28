@@ -2,7 +2,7 @@ package net.corda.interop.aliasinfo.cache.impl
 
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.interop.InteropAliasIdentity
-import net.corda.interop.aliasinfo.cache.AliasInfoCacheService
+import net.corda.interop.aliasinfo.cache.InteropIdentityCacheService
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
@@ -13,15 +13,15 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 
-@Component(service = [AliasInfoCacheService::class])
-class AliasInfoCacheServiceImpl @Activate constructor(
+@Component(service = [InteropIdentityCacheService::class])
+class InteropIdentityCacheServiceImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = ConfigurationReadService::class)
     private val configurationReadService: ConfigurationReadService,
     @Reference(service = SubscriptionFactory::class)
     private val subscriptionFactory: SubscriptionFactory
-) : AliasInfoCacheService {
+) : InteropIdentityCacheService {
     companion object {
         val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
@@ -30,7 +30,7 @@ class AliasInfoCacheServiceImpl @Activate constructor(
         configurationReadService, subscriptionFactory, this
     )
 
-    private val coordinatorName = LifecycleCoordinatorName.forComponent<AliasInfoCacheService>()
+    private val coordinatorName = LifecycleCoordinatorName.forComponent<InteropIdentityCacheService>()
     private val coordinator = coordinatorFactory.createCoordinator(coordinatorName, lifecycleEventHandler)
 
     /**

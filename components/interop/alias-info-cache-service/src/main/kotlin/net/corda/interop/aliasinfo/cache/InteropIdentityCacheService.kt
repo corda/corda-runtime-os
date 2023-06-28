@@ -4,7 +4,7 @@ import net.corda.lifecycle.Lifecycle
 import net.corda.data.interop.InteropAliasIdentity
 
 
-interface AliasInfoCacheService : Lifecycle {
+interface InteropIdentityCacheService : Lifecycle {
     /**
      * Gets all interop alias identities for a given holding identity.
      *
