@@ -39,7 +39,7 @@ fun getSessionEventOutputTopic(messageDirection: MessageDirection): String {
     return if (messageDirection == MessageDirection.INBOUND) {
         flowSessionTopic
     } else {
-        System.getenv("FLOW_MAPPER_TOPIC")
+        "flow.mapper.session.event"
     }
 }
 
