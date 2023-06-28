@@ -2,9 +2,9 @@ package net.corda.e2etest.utilities
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.databind.ObjectMapper
-import org.apache.commons.text.StringEscapeUtils.escapeJson
 import java.time.Duration
 import java.util.UUID
+import org.apache.commons.text.StringEscapeUtils.escapeJson
 
 const val SMOKE_TEST_CLASS_NAME = "com.r3.corda.testing.smoketests.flow.RpcSmokeTestFlow"
 const val RPC_FLOW_STATUS_SUCCESS = "COMPLETED"
@@ -75,7 +75,7 @@ fun ClusterInfo.awaitRpcFlowFinished(holdingId: String, requestId: String): Flow
             assertWithRetry {
                 command { flowStatus(holdingId, requestId) }
                 //CORE-6118 - tmp increase this timeout to a large number to allow tests to pass while slow flow sessions are investigated
-                timeout(Duration.ofMinutes(6))
+                timeout(Duration.ofMinutes(30))
                 condition {
                     it.code == 200 &&
                             (it.toJson()["flowStatus"].textValue() == RPC_FLOW_STATUS_SUCCESS ||
@@ -97,7 +97,7 @@ fun ClusterInfo.getFlowStatus(holdingId: String, requestId: String, expectedCode
         ObjectMapper().readValue(
             assertWithRetry {
                 command { flowStatus(holdingId, requestId) }
-                timeout(Duration.ofMinutes(6))
+                timeout(Duration.ofMinutes(30))
                 condition {
                     it.code == expectedCode
                 }

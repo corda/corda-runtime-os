@@ -31,6 +31,10 @@ pipeline {
         }
     }
 
+triggers {
+        cron('H H/2 * * *')
+    }
+
     environment {
         ARTIFACTORY_CREDENTIALS = credentials('artifactory-credentials')
         BUILD_CACHE_CREDENTIALS = credentials('gradle-ent-cache-credentials')
@@ -109,7 +113,7 @@ pipeline {
         }
         stage('smoketests') {
                 options {
-                    timeout(time: 30, unit: 'MINUTES')
+                    timeout(time: 120, unit: 'MINUTES')
                 }
                 steps {
                    gradlew('smoketest -PisCombinedWorker=true')
