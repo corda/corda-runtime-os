@@ -61,10 +61,9 @@ internal class PersistMemberInfoHandler(
                         ),
                         LockModeType.PESSIMISTIC_WRITE
                     )
-                    val updatingPendingInfo = oldMemberInfo?.status == MEMBER_STATUS_PENDING
-                            && newMemberInfo.status == MEMBER_STATUS_PENDING
-                    val updatingSerialNumber = oldMemberInfo?.serialNumber != newMemberInfo.serial
-                    if (!updatingSerialNumber && !updatingPendingInfo) {
+                    val newPendingVersion = newMemberInfo.status == MEMBER_STATUS_PENDING
+                            && oldMemberInfo?.status == MEMBER_STATUS_PENDING
+                    if (!newPendingVersion && oldMemberInfo?.serialNumber == newMemberInfo.serial) {
                         val currentMemberContext = deserialize(oldMemberInfo.memberContext)
                         val currentMgmContext = deserialize(oldMemberInfo.mgmContext)
                         if (currentMemberContext.items != it.persistentMemberInfo.memberContext.items) {
@@ -77,17 +76,7 @@ internal class PersistMemberInfoHandler(
                         }
                         return@forEach
                     }
-                    else if (!updatingSerialNumber && updatingPendingInfo) {
-                        /**
-                         * If persisting a pending member info and the existing member info is pending with the same
-                         * serial number, delete the existing one and add the new pending info instead. This is because
-                         * the member info entity contains non-updatable fields such as the signature info, and we
-                         * cannot store new signature information as a result with removing the existing member info.
-                         * This can occur for example if a registration is declined by the mgm and submitted again by
-                         * the client.
-                         */
-                        em.remove(oldMemberInfo)
-                    }
+
                     val entity = MemberInfoEntity(
                         newMemberInfo.groupId,
                         newMemberInfo.name.toString(),

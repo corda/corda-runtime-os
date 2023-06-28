@@ -221,7 +221,6 @@ class PersistMemberInfoHandlerTest {
             assertThat(entity.memberSignatureContent).isEqualTo(signature.bytes.array())
             assertThat(entity.memberSignatureSpec).isEqualTo(signatureSpec.signatureName)
         }
-        verify(entityManager, never()).remove(any<MemberInfoEntity>())
     }
 
     @Test
@@ -239,7 +238,6 @@ class PersistMemberInfoHandlerTest {
         )
 
         verify(entityManager, never()).merge(any<MemberInfoEntity>())
-        verify(entityManager, never()).remove(any<MemberInfoEntity>())
     }
 
     @Test
@@ -256,7 +254,6 @@ class PersistMemberInfoHandlerTest {
         }
 
         verify(entityManager, never()).merge(any<MemberInfoEntity>())
-        verify(entityManager, never()).remove(any<MemberInfoEntity>())
     }
 
     @Test
@@ -273,7 +270,6 @@ class PersistMemberInfoHandlerTest {
         }
 
         verify(entityManager, never()).merge(any<MemberInfoEntity>())
-        verify(entityManager, never()).remove(any<MemberInfoEntity>())
     }
 
     @Test
@@ -308,11 +304,10 @@ class PersistMemberInfoHandlerTest {
         persistMemberInfoHandler.invoke(requestContext, PersistMemberInfo(listOf(memberInfo)))
 
         verify(entityManager, never()).merge(any<MemberInfoEntity>())
-        verify(entityManager, never()).remove(any<MemberInfoEntity>())
     }
 
     @Test
-    fun `invoke deletes and persists if updating pending member info with same serial number`() {
+    fun `invoke does not throw error if updating pending member info with another pending member info with the same serial number`() {
         val serialNumber = 1L
         val memberContext = mock<MemberContext> {
             on { parse(eq(GROUP_ID), eq(String::class.java)) } doReturn ourGroupId
@@ -350,7 +345,6 @@ class PersistMemberInfoHandlerTest {
             PersistMemberInfo(listOf(memberInfo))
         )
 
-        verify(entityManager).remove(eq(existingMemberInfo))
         verify(entityManager).merge(any<MemberInfoEntity>())
     }
 
