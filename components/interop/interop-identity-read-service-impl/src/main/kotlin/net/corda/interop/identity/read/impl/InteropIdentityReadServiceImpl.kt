@@ -2,7 +2,7 @@ package net.corda.interop.identity.read.impl
 
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.interop.identity.cache.InteropIdentityCacheService
-import net.corda.interop.identity.read.InteropAliasInfoReadService
+import net.corda.interop.identity.read.InteropIdentityReadService
 import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -13,20 +13,20 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 
-@Component(service = [InteropAliasInfoReadService::class])
-class InteropAliasInfoReadServiceImpl @Activate constructor(
+@Component(service = [InteropIdentityReadService::class])
+class InteropIdentityReadServiceImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = ConfigurationReadService::class)
     private val configurationReadService: ConfigurationReadService,
     @Reference(service = InteropIdentityCacheService::class)
     private val interopIdentityCacheService: InteropIdentityCacheService
-) : InteropAliasInfoReadService {
+) : InteropIdentityReadService {
     companion object {
         val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
-    private val lifecycleEventHandler = InteropAliasInfoReadServiceEventHandler(
+    private val lifecycleEventHandler = InteropIdentityReadServiceEventHandler(
         configurationReadService
     )
 
@@ -35,7 +35,7 @@ class InteropAliasInfoReadServiceImpl @Activate constructor(
         ::interopIdentityCacheService
     )
 
-    private val coordinatorName = LifecycleCoordinatorName.forComponent<InteropAliasInfoReadService>()
+    private val coordinatorName = LifecycleCoordinatorName.forComponent<InteropIdentityReadService>()
     private val coordinator = coordinatorFactory.createCoordinator(coordinatorName, dependentComponents, lifecycleEventHandler)
 
     override val isRunning: Boolean

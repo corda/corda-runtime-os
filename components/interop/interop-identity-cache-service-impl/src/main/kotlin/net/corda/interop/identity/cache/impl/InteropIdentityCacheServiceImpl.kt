@@ -26,7 +26,7 @@ class InteropIdentityCacheServiceImpl @Activate constructor(
         val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
-    private val lifecycleEventHandler = AliasInfoCacheServiceEventHandler(
+    private val lifecycleEventHandler = InteropIdentityCacheServiceEventHandler(
         configurationReadService, subscriptionFactory, this
     )
 

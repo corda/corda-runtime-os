@@ -2,7 +2,7 @@ package net.corda.interop.rest.impl.v1
 
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.interop.identity.cache.InteropIdentityCacheService
-import net.corda.interop.identity.write.InteropAliasInfoWriteService
+import net.corda.interop.identity.write.InteropIdentityWriteService
 import net.corda.libs.interop.endpoints.v1.InteropRestResource
 import net.corda.libs.interop.endpoints.v1.types.RestInteropIdentity
 import net.corda.lifecycle.DependentComponents
@@ -34,8 +34,8 @@ internal class InteropRestResourceImpl @Activate constructor(
     private val configurationReadService: ConfigurationReadService,
     @Reference(service = InteropIdentityCacheService::class)
     private val interopIdentityCacheService: InteropIdentityCacheService,
-    @Reference(service = InteropAliasInfoWriteService::class)
-    private val interopAliasInfoWriteService: InteropAliasInfoWriteService
+    @Reference(service = InteropIdentityWriteService::class)
+    private val interopIdentityWriteService: InteropIdentityWriteService
 ) : InteropRestResource, PluggableRestResource<InteropRestResource>, Lifecycle {
 
     private companion object {
@@ -66,7 +66,7 @@ internal class InteropRestResourceImpl @Activate constructor(
         restInteropIdentity: RestInteropIdentity,
         holdingidentityshorthash: String
     ): ResponseEntity<String> {
-        interopAliasInfoWriteService.addInteropIdentity(
+        interopIdentityWriteService.addInteropIdentity(
             holdingidentityshorthash,
             restInteropIdentity.groupId.toString(),
             restInteropIdentity.x500Name
@@ -78,7 +78,7 @@ internal class InteropRestResourceImpl @Activate constructor(
     }
 
     override fun getInterOpIdentities(holdingidentityshorthash: String): List<RestInteropIdentity> {
-        val groupToAliasMappings = aliasInfoCacheService.getAliasIdentities(holdingidentityshorthash)
+        val groupToAliasMappings = interopIdentityCacheService.getAliasIdentities(holdingidentityshorthash)
         return groupToAliasMappings.map {
             RestInteropIdentity(
                 it.value.aliasX500Name,
@@ -93,7 +93,7 @@ internal class InteropRestResourceImpl @Activate constructor(
     private val dependentComponents = DependentComponents.of(
         ::configurationReadService,
         ::interopIdentityCacheService,
-        ::interopAliasInfoWriteService
+        ::interopIdentityWriteService
     )
 
     private val lifecycleCoordinator = coordinatorFactory.createCoordinator(

@@ -3,7 +3,7 @@ package net.corda.interop.identity.write
 import net.corda.lifecycle.Lifecycle
 
 
-interface InteropAliasInfoWriteService : Lifecycle {
+interface InteropIdentityWriteService : Lifecycle {
     /**
      * Add a new interop identity for a given holding identity within a given interop group.
      *

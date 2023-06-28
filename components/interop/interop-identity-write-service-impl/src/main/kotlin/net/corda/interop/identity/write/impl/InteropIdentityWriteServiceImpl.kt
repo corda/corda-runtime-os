@@ -3,7 +3,7 @@ package net.corda.interop.identity.write.impl
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.interop.InteropAliasIdentity
-import net.corda.interop.identity.write.InteropAliasInfoWriteService
+import net.corda.interop.identity.write.InteropIdentityWriteService
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -27,21 +27,21 @@ import java.util.concurrent.atomic.AtomicReference
 
 
 @Suppress("ForbiddenComment")
-@Component(service = [InteropAliasInfoWriteService::class])
-class InteropAliasInfoWriteServiceImpl @Activate constructor(
+@Component(service = [InteropIdentityWriteService::class])
+class InteropIdentityWriteServiceImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = ConfigurationReadService::class)
     private val configurationReadService: ConfigurationReadService,
     @Reference(service = PublisherFactory::class)
     private val publisherFactory: PublisherFactory
-) : InteropAliasInfoWriteService, LifecycleEventHandler {
+) : InteropIdentityWriteService, LifecycleEventHandler {
     companion object {
         val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         const val CLIENT_ID = "INTEROP_IDENTITY_WRITER"
     }
 
-    private val coordinatorName = LifecycleCoordinatorName.forComponent<InteropAliasInfoWriteService>()
+    private val coordinatorName = LifecycleCoordinatorName.forComponent<InteropIdentityWriteService>()
     private val coordinator = coordinatorFactory.createCoordinator(coordinatorName, this)
 
     private var registration: RegistrationHandle? = null

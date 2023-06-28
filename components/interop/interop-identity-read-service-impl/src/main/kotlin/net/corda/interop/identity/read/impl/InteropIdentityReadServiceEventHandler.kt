@@ -1,10 +1,7 @@
-package net.corda.interop.identity.cache.impl
+package net.corda.interop.identity.read.impl
 
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.interop.identity.cache.InteropIdentityCacheService
-import net.corda.interop.identity.processor.InteropIdentityProcessor
-import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleEvent
@@ -14,21 +11,18 @@ import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
-import net.corda.messaging.api.subscription.config.SubscriptionConfig
-import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.schema.Schemas.Flow.INTEROP_ALIAS_IDENTITY_TOPIC
 import net.corda.schema.configuration.ConfigKeys
 import org.slf4j.LoggerFactory
 
 
-class AliasInfoCacheServiceEventHandler(
-    private val configurationReadService: ConfigurationReadService,
-    private val subscriptionFactory: SubscriptionFactory,
-    private val cacheService: InteropIdentityCacheService
+/**
+ * Handler for interop alias info read service lifecycle events.
+ */
+class InteropIdentityReadServiceEventHandler(
+    private val configurationReadService: ConfigurationReadService
 ) : LifecycleEventHandler {
     companion object {
         private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
-        private const val GROUP_NAME = "interop_alias_identity"
     }
 
     private var registration: RegistrationHandle? = null
@@ -61,19 +55,14 @@ class AliasInfoCacheServiceEventHandler(
         registration = null
     }
 
-
+    @Suppress("UNUSED_VARIABLE")
     private fun onConfigChangeEvent(event: ConfigChangedEvent, coordinator: LifecycleCoordinator) {
-        val messagingConfig = event.config.getConfig(ConfigKeys.MESSAGING_CONFIG)
+        val config = event.config[ConfigKeys.MESSAGING_CONFIG] ?: return
 
-        coordinator.createManagedResource("InteropAliasIdentityProcessor.subscription") {
-            subscriptionFactory.createCompactedSubscription(
-                SubscriptionConfig(GROUP_NAME, INTEROP_ALIAS_IDENTITY_TOPIC),
-                InteropIdentityProcessor(cacheService),
-                messagingConfig
-            ).also {
-                it.start()
-            }
-        }
+        // Use debug rather than info
+        log.info("Processing config update")
+
+        // re-register with saurabhs kafka topic
 
         coordinator.updateStatus(LifecycleStatus.UP)
     }
