@@ -18,7 +18,7 @@ dependencies {
     implementation "net.corda:corda-topic-schema"
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
 
-    implementation "com.typesafe:config:$typeSafeConfigVersion"
+    implementation libs.typesafe
     implementation "org.slf4j:slf4j-api:$slf4jVersion"
 }
 

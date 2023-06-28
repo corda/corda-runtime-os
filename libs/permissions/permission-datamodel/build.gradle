@@ -27,11 +27,11 @@ dependencies {
 
     integrationTestRuntimeOnly project(":libs:db:db-orm-impl")
     integrationTestRuntimeOnly libs.javax.activation
-    integrationTestRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
+    integrationTestRuntimeOnly libs.aries.dynamic.framework
 
-    integrationTestRuntimeOnly "org.ops4j.pax.jdbc:pax-jdbc-hsqldb:$paxJdbcVersion"
-    integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
-    integrationTestRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
+    integrationTestRuntimeOnly libs.pax.jdbc
+    integrationTestRuntimeOnly libs.hsqldb
+    integrationTestRuntimeOnly libs.postgresql
 
     integrationTestRuntimeOnly(libs.hibernate.core)
     integrationTestImplementation(libs.hibernate.osgi) {

@@ -18,8 +18,8 @@ dependencies {
     implementation project(":libs:utilities")
     implementation project(":libs:serialization:serialization-avro")
 
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    testImplementation libs.mockito.core
+    testImplementation libs.mockito.kotlin
 }
 
 description 'Flow External Events Library Implementation'

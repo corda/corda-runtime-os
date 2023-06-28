@@ -74,9 +74,9 @@ dependencies {
     runtimeOnly project(":libs:schema-registry:schema-registry-impl")
 
     runtimeOnly libs.javax.activation
-    runtimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
+    runtimeOnly libs.aries.dynamic.framework
 
-    integrationTestRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
+    integrationTestRuntimeOnly libs.postgresql
 
     integrationTestImplementation project(":testing:db-message-bus-testkit")
     integrationTestRuntimeOnly project(':libs:messaging:db-message-bus-impl')
@@ -88,12 +88,12 @@ dependencies {
     integrationTestRuntimeOnly libs.javax.activation
 
     integrationTestRuntimeOnly libs.hibernate.core
-    integrationTestRuntimeOnly "org.ops4j.pax.jdbc:pax-jdbc-hsqldb:$paxJdbcVersion"
-    integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
+    integrationTestRuntimeOnly libs.pax.jdbc
+    integrationTestRuntimeOnly libs.hsqldb
 
-    testImplementation "org.assertj:assertj-core:$assertjVersion"
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    testImplementation libs.assertj.core
+    testImplementation libs.mockito.core
+    testImplementation libs.mockito.kotlin 
     testImplementation project(':libs:lifecycle:lifecycle-test-impl')
     testRuntimeOnly project(':libs:lifecycle:lifecycle-impl')
 }

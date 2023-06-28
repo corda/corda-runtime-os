@@ -22,7 +22,7 @@ dependencies {
     implementation project(":libs:configuration:configuration-core")
     implementation project(":libs:messaging:messaging")
 
-    implementation "com.typesafe:config:$typeSafeConfigVersion"
+    implementation libs.typesafe
 
     implementation project(':libs:crypto:crypto-core')
     implementation project(':libs:utilities')
@@ -36,8 +36,8 @@ dependencies {
     testImplementation project(":libs:lifecycle:lifecycle-impl")
     testImplementation project(":libs:lifecycle:registry")
 
-    testImplementation "org.assertj:assertj-core:$assertjVersion"
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    testImplementation libs.assertj.core
+    testImplementation libs.mockito.core
+    testImplementation libs.mockito.kotlin 
     testImplementation project(':testing:test-utilities')
 }

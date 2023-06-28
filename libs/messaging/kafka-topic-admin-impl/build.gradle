@@ -9,14 +9,14 @@ dependencies {
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
-    implementation "com.typesafe:config:$typeSafeConfigVersion"
+    implementation libs.typesafe
     implementation libs.kafka.clients
     implementation "net.corda:corda-base"
     implementation project(":libs:messaging:topic-admin")
     implementation project(":libs:utilities")
 
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    testImplementation libs.mockito.core
+    testImplementation libs.mockito.kotlin
 
     testRuntimeOnly 'org.osgi:osgi.core'
 }

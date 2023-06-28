@@ -16,7 +16,7 @@ dependencies {
     implementation "net.corda:corda-avro-schema:$cordaApiVersion"
     implementation "net.corda:corda-config-schema:$cordaApiVersion"
     implementation "net.corda:corda-topic-schema:$cordaApiVersion"
-    implementation "com.typesafe:config:$typeSafeConfigVersion"
+    implementation libs.typesafe
     implementation libs.picocli
     implementation "org.slf4j:slf4j-api"
     implementation "net.corda:corda-base"
@@ -29,7 +29,7 @@ dependencies {
     implementation libs.jackson.datatype
     implementation libs.jackson.dataformat
     implementation libs.jackson.module
-    implementation "org.postgresql:postgresql:$postgresDriverVersion"
+    implementation libs.postgresql
 
     implementation project(":osgi-framework-api")
 

@@ -27,15 +27,15 @@ dependencies {
     implementation project(":libs:crypto:crypto-utils")
     implementation project(":libs:utilities")
 
-    implementation "com.typesafe:config:$typeSafeConfigVersion"
+    implementation libs.typesafe
     implementation libs.netty
     implementation libs.commons.validator
     implementation libs.caffeine
     implementation project(':libs:schema-registry:schema-registry')
     implementation project(":libs:metrics")
 
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    testImplementation libs.mockito.core
+    testImplementation libs.mockito.kotlin
     testImplementation project(":testing:test-utilities")
     integrationTestRuntimeOnly libs.log4j.slf4j.impl
     integrationTestImplementation libs.log4j.core

@@ -73,7 +73,7 @@ This can be useful for testing.
 The `hsqldb` driver needs to be a runtime dependency, for example:
 
 ```groovy
-integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
+integrationTestRuntimeOnly libs.hsqldb
 ```
 
 `EntityManagerFactoryFactoryIntegrationTest` shows an example of an integration test using the in memory DB.

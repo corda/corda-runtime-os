@@ -49,7 +49,7 @@ dependencies {
     compileOnly "org.osgi:osgi.core"
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
 
-    drivers "org.postgresql:postgresql:$postgresDriverVersion"
+    drivers libs.postgresql
 
     // Oracle isn't OSGi wrapped, but if it were, it is sufficient to just do this:
     // OSGi bundle that registers a `DataSourceFactory` on behalf of Oracle,
@@ -88,9 +88,9 @@ dependencies {
 
     implementation 'net.corda:corda-config-schema'
 
-    runtimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
+    runtimeOnly libs.aries.dynamic.framework
     runtimeOnly "net.corda:corda-application"
-    runtimeOnly "com.typesafe:config:$typeSafeConfigVersion"
+    runtimeOnly libs.typesafe
     runtimeOnly libs.felix.scr
     runtimeOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
     runtimeOnly "org.osgi:org.osgi.util.function:$osgiUtilFunctionVersion"

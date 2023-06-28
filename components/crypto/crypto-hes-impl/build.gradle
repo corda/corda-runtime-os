@@ -20,10 +20,10 @@ dependencies {
     implementation project(":components:crypto:crypto-component-core-impl")
     implementation project(":libs:crypto:crypto-core")
 
-    testImplementation "org.assertj:assertj-core:$assertjVersion"
+    testImplementation libs.assertj.core
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    testImplementation libs.mockito.core
+    testImplementation libs.mockito.kotlin 
 
     testImplementation project(":components:crypto:crypto-component-test-utils")
     testImplementation project(":libs:crypto:cipher-suite-impl")

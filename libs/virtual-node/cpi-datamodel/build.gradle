@@ -24,8 +24,8 @@ dependencies {
     integrationTestImplementation project(":libs:packaging:packaging-core")
     integrationTestImplementation project(':testing:test-utilities')
 
-    integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
-    integrationTestRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
+    integrationTestRuntimeOnly libs.hsqldb
+    integrationTestRuntimeOnly libs.postgresql
 }
 
 tasks.named('jar', Jar) {

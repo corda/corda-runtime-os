@@ -20,9 +20,9 @@ dependencies {
     cordaProvided 'org.slf4j:slf4j-api'
 
     testImplementation "org.junit.jupiter:junit-jupiter:$junit5Version"
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
-    testImplementation "org.hamcrest:hamcrest-library:$hamcrestVersion"
+    testImplementation libs.mockito.core
+    testImplementation libs.mockito.kotlin 
+    testImplementation libs.hamcrest.library
 
     testImplementation project(':libs:crypto:crypto-core')
     testImplementation project(':simulator:api')

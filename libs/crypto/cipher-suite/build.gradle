@@ -20,10 +20,10 @@ dependencies {
     api libs.bouncycastle.bcprov
     api libs.bouncycastle.bcpkix
 
-    testImplementation "org.assertj:assertj-core:$assertjVersion"
+    testImplementation libs.assertj.core
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
     testImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    testImplementation libs.mockito.core
+    testImplementation libs.mockito.kotlin
 }
 

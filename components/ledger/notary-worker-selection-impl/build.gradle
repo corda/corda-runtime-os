@@ -16,6 +16,6 @@ dependencies {
     implementation project(':components:membership:membership-group-read')
     implementation project(':libs:sandbox-types')
 
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    testImplementation libs.mockito.core
+    testImplementation libs.mockito.kotlin
 }

@@ -29,8 +29,8 @@ dependencies {
     runtimeOnly libs.jackson.databind
     runtimeOnly libs.jackson.annotations
 
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.apache.sling:org.apache.sling.testing.osgi-mock.junit5:$slingVersion"
+    testImplementation libs.mockito.core
+    testImplementation libs.sling
     testImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
     testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junit5Version"
 

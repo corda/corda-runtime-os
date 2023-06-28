@@ -13,15 +13,15 @@ dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation project(":libs:serialization:serialization-avro")
 
-    integrationTestImplementation "com.typesafe:config:$typeSafeConfigVersion"
+    integrationTestImplementation libs.typesafe
     integrationTestImplementation 'net.corda:corda-application'
     integrationTestImplementation 'net.corda:corda-avro-schema'
     integrationTestImplementation 'net.corda:corda-base'
     integrationTestImplementation 'net.corda:corda-config-schema'
     integrationTestImplementation 'net.corda:corda-topic-schema'
     integrationTestImplementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
-    integrationTestImplementation "org.assertj:assertj-core:$assertjVersion"
-    integrationTestImplementation "org.mockito:mockito-core:$mockitoVersion"
+    integrationTestImplementation libs.assertj.core
+    integrationTestImplementation libs.mockito.core
     integrationTestImplementation 'org.slf4j:slf4j-api'
 
     integrationTestImplementation project(':components:configuration:configuration-read-service')
@@ -42,11 +42,11 @@ dependencies {
     integrationTestImplementation project(':testing:uniqueness:uniqueness-utilities')
 
     // Needed to import serialization libs
-    integrationTestRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
+    integrationTestRuntimeOnly libs.aries.dynamic.framework
 
-    integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
-    integrationTestRuntimeOnly "org.ops4j.pax.jdbc:pax-jdbc-hsqldb:$paxJdbcVersion"
-    integrationTestRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
+    integrationTestRuntimeOnly libs.hsqldb
+    integrationTestRuntimeOnly libs.pax.jdbc
+    integrationTestRuntimeOnly libs.postgresql
     integrationTestRuntimeOnly libs.javax.activation
 
     integrationTestRuntimeOnly project(':components:configuration:configuration-read-service-impl')

@@ -22,7 +22,7 @@ dependencies {
     implementation 'net.corda:corda-base'
     implementation 'net.corda:corda-serialization'
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
-    implementation "io.github.erdtman:java-json-canonicalization:$jsonCanonicalizerVersion"
+    implementation libs.json.canonicalizer
     implementation(libs.networknt.json.schema.validator){
         // Exclude transitive dependency on vulnerable version of jackson
         exclude group: 'com.fasterxml.jackson.core', module: 'jackson-databind'
@@ -43,7 +43,7 @@ Import-Package:\
     !org.apache.hadoop.io.compress,\
     sun.misc;resolution:=optional,\
     *
--includeresource: @java-json-canonicalization-${jsonCanonicalizerVersion}.jar
+-includeresource: @java-json-canonicalization-${libs.versions.jsonCanonicalizerVersion.get()}.jar
 """
     }
 }

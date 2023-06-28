@@ -41,9 +41,9 @@ dependencies {
     integrationTestImplementation 'net.corda:corda-config-schema'
     integrationTestImplementation 'net.corda:corda-topic-schema'
 
-    integrationTestImplementation "com.typesafe:config:$typeSafeConfigVersion"
-    integrationTestImplementation "org.assertj:assertj-core:$assertjVersion"
-    integrationTestImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    integrationTestImplementation libs.typesafe
+    integrationTestImplementation libs.assertj.core
+    integrationTestImplementation libs.mockito.kotlin
     integrationTestImplementation "org.osgi:org.osgi.test.junit5:$osgiTestJunit5Version"
     integrationTestImplementation "javax.persistence:javax.persistence-api"
     integrationTestImplementation libs.kafka.clients
@@ -69,7 +69,7 @@ dependencies {
     integrationTestRuntimeOnly "org.osgi:org.osgi.util.function:$osgiUtilFunctionVersion"
     integrationTestRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
     integrationTestRuntimeOnly libs.javax.activation
-    integrationTestRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
+    integrationTestRuntimeOnly libs.aries.dynamic.framework
     integrationTestRuntimeOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
 
     kafkaIntegrationTestRuntimeOnly project(":libs:messaging:kafka-topic-admin-impl")
@@ -77,9 +77,9 @@ dependencies {
 
     dbIntegrationTestRuntimeOnly project(":libs:messaging:db-topic-admin-impl")
     dbIntegrationTestRuntimeOnly project(":libs:messaging:db-message-bus-impl")
-    dbIntegrationTestRuntimeOnly "org.ops4j.pax.jdbc:pax-jdbc-hsqldb:$paxJdbcVersion"
-    dbIntegrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
-    dbIntegrationTestRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
+    dbIntegrationTestRuntimeOnly libs.pax.jdbc
+    dbIntegrationTestRuntimeOnly libs.hsqldb
+    dbIntegrationTestRuntimeOnly libs.postgresql
 }
 
 def testingBundle = tasks.register('testingBundle', Bundle) {

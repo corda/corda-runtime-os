@@ -58,8 +58,8 @@ dependencies {
 
     testImplementation libs.hibernate.core
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    testImplementation libs.mockito.core
+    testImplementation libs.mockito.kotlin
     testImplementation project(":testing:crypto-testkit")
     testImplementation project(":testing:test-utilities")
     testImplementation project(":testing:uniqueness:backing-store-fake")
@@ -76,8 +76,8 @@ dependencies {
     integrationTestImplementation project(':libs:lifecycle:lifecycle')
     integrationTestImplementation project(':testing:db-testkit')
 
-    integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
-    integrationTestRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
+    integrationTestRuntimeOnly libs.hsqldb
+    integrationTestRuntimeOnly libs.postgresql
 
     backingStoreBenchmarkRuntimeOnly libs.log4j.slf4j.impl
 

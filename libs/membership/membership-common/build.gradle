@@ -23,7 +23,7 @@ dependencies {
     implementation project(':libs:configuration:configuration-core')
     implementation project(':libs:serialization:serialization-avro')
 
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    testImplementation libs.mockito.core
+    testImplementation libs.mockito.kotlin 
     testImplementation project(":testing:test-utilities")
 }

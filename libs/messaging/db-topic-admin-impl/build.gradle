@@ -10,7 +10,7 @@ dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation libs.kafka.clients
-    implementation "com.typesafe:config:$typeSafeConfigVersion"
+    implementation libs.typesafe
     implementation "net.corda:corda-base"
     implementation 'net.corda:corda-db-schema'
     implementation project(":libs:db:db-orm")
@@ -20,8 +20,8 @@ dependencies {
     implementation project(":libs:messaging:db-message-bus-datamodel")
     implementation project(":libs:messaging:db-message-bus-impl")
 
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    testImplementation libs.mockito.core
+    testImplementation libs.mockito.kotlin 
 
     integrationTestImplementation project(":libs:db:db-admin")
     integrationTestImplementation project(":libs:db:db-admin-impl")
@@ -29,8 +29,8 @@ dependencies {
     integrationTestImplementation project(":testing:db-testkit")
 
     integrationTestRuntimeOnly libs.javax.activation
-    integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
-    integrationTestRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
+    integrationTestRuntimeOnly libs.hsqldb
+    integrationTestRuntimeOnly libs.postgresql
     integrationTestRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
 }
 

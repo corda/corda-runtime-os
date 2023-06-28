@@ -26,11 +26,11 @@ dependencies {
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation libs.kafka.clients
 
-    implementation "com.typesafe:config:$typeSafeConfigVersion"
+    implementation libs.typesafe
 
-    testImplementation "org.assertj:assertj-core:$assertjVersion"
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    testImplementation libs.assertj.core
+    testImplementation libs.mockito.core
+    testImplementation libs.mockito.kotlin
     testImplementation project(":testing:test-utilities")
 
     testRuntimeOnly 'org.osgi:osgi.core'

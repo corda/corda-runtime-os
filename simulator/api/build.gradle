@@ -11,9 +11,9 @@ dependencies {
     runtimeOnly project(':simulator:runtime')
 
     testImplementation "org.junit.jupiter:junit-jupiter:$junit5Version"
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
-    testImplementation "org.hamcrest:hamcrest-library:$hamcrestVersion"
+    testImplementation libs.mockito.core
+    testImplementation libs.mockito.kotlin 
+    testImplementation libs.hamcrest.library
 
     testRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
 

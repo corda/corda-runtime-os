@@ -17,7 +17,7 @@ dependencies {
     implementation project(":libs:db:db-core")
     implementation project(":libs:db:db-orm")
 
-    implementation "com.typesafe:config:$typeSafeConfigVersion"
+    implementation libs.typesafe
 }
 
 description 'Database Internal Testkit'

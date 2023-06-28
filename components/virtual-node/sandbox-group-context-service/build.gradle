@@ -51,9 +51,9 @@ dependencies {
     testImplementation project(":libs:lifecycle:registry")
     testImplementation 'net.corda:corda-serialization'
 
-    testImplementation "org.assertj:assertj-core:$assertjVersion"
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    testImplementation libs.assertj.core
+    testImplementation libs.mockito.core
+    testImplementation libs.mockito.kotlin 
     testImplementation project(':testing:test-utilities')
 
     testCompileOnly 'org.osgi:osgi.core'
@@ -83,7 +83,7 @@ dependencies {
     integrationTestRuntimeOnly project(':libs:lifecycle:lifecycle-impl')
     integrationTestRuntimeOnly project(':libs:messaging:db-message-bus-impl')
     integrationTestRuntimeOnly project(':libs:messaging:messaging-impl')
-    integrationTestRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
+    integrationTestRuntimeOnly libs.aries.dynamic.framework
     integrationTestRuntimeOnly(libs.felix.security) {
         exclude group: 'org.osgi'
     }

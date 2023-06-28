@@ -31,8 +31,8 @@ dependencies {
     runtimeOnly project(':libs:sandbox-hooks')
 
     testCompileOnly 'org.osgi:osgi.core'
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    testImplementation libs.mockito.core
+    testImplementation libs.mockito.kotlin
     testImplementation project(":testing:crypto-testkit")
     testRuntimeOnly libs.felix.framework
     testRuntimeOnly libs.felix.scr

@@ -13,18 +13,18 @@ dependencies {
     compileOnly "org.osgi:osgi.annotation"
 
     // OSGi interface definition for DataSourceFactory, and needed as a bundle
-    implementation "org.osgi:org.osgi.service.jdbc:$osgiJdbcServiceVersion"
+    implementation libs.osgi.service.jdbc
     implementation project(':libs:metrics')
 
     api libs.hikaricp
 
-    testImplementation "org.assertj:assertj-core:$assertjVersion"
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    testImplementation libs.assertj.core
+    testImplementation libs.mockito.core
+    testImplementation libs.mockito.kotlin
 
     integrationTestRuntimeOnly 'org.osgi:osgi.core'
-    integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
-    integrationTestRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
+    integrationTestRuntimeOnly libs.hsqldb
+    integrationTestRuntimeOnly libs.postgresql
     integrationTestRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
 }
 

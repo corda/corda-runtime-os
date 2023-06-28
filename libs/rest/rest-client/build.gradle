@@ -27,8 +27,8 @@ dependencies {
     implementation "com.konghq:unirest-objectmapper-jackson:$unirestVersion"
     implementation libs.jackson.module
 
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    testImplementation libs.mockito.core
+    testImplementation libs.mockito.kotlin
 
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
     testImplementation project(":testing:test-utilities")

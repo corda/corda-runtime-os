@@ -23,9 +23,9 @@ dependencies {
     implementation project(":libs:configuration:configuration-core")
     implementation project(":libs:messaging:messaging")
 
-    implementation("io.zipkin.reporter2:zipkin-sender-urlconnection:$zipkinVersion")
-    implementation("io.zipkin.brave:brave-context-slf4j:$braveVersion")
-    implementation("io.zipkin.brave:brave-instrumentation-servlet:$braveVersion")
+    implementation(libs.zipkin)
+    implementation(libs.brave.context.slf4j)
+    implementation(libs.brave.instrumentation.servlet)
     implementation (libs.kafka.clients) {
         // Need to explicitly exclude this dependency (which seems non-essential), however it will prevent running
         // Combined Worker on Mac M1. Please see README of Combined worker for more details.
@@ -42,9 +42,9 @@ dependencies {
         }
     }
 
-    testImplementation "org.assertj:assertj-core:$assertjVersion"
-    testImplementation "com.google.jimfs:jimfs:$jimfsVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    testImplementation libs.assertj.core
+    testImplementation libs.jimfs
+    testImplementation libs.mockito.kotlin
 
     testRuntimeOnly 'org.osgi:osgi.core'
 }

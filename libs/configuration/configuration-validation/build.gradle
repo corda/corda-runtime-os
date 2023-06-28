@@ -20,9 +20,9 @@ dependencies {
     implementation project(':libs:utilities')
 
     implementation libs.jackson.databind
-    implementation "com.typesafe:config:$typeSafeConfigVersion"
+    implementation libs.typesafe
     implementation libs.networknt.json.schema.validator
 
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    testImplementation libs.mockito.core
+    testImplementation libs.mockito.kotlin 
 }

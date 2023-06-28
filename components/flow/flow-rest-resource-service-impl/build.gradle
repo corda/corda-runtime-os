@@ -38,8 +38,8 @@ dependencies {
     implementation libs.guava
     implementation libs.commons.lang3
 
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    testImplementation libs.mockito.core
+    testImplementation libs.mockito.kotlin
     testImplementation project(":libs:lifecycle:lifecycle-test-impl")
     testImplementation project(':testing:test-utilities')
 }

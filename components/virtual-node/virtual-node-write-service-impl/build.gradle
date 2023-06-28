@@ -33,7 +33,7 @@ dependencies {
     implementation project(':libs:external-messaging')
     implementation project(':libs:tracing')
 
-    implementation "com.typesafe:config:$typeSafeConfigVersion"
+    implementation libs.typesafe
     implementation 'javax.persistence:javax.persistence-api'
     implementation 'net.corda:corda-avro-schema'
     implementation 'net.corda:corda-base'
@@ -50,10 +50,10 @@ dependencies {
     testImplementation project(':testing:db-testkit')
     testImplementation project(':testing:test-utilities')
 
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    testImplementation libs.mockito.core
+    testImplementation libs.mockito.kotlin
 
-    testRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
-    testRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
+    testRuntimeOnly libs.hsqldb
+    testRuntimeOnly libs.postgresql
     testRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
 }

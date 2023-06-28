@@ -66,12 +66,12 @@ dependencies {
 
     integrationTestImplementation project(':libs:platform-info')
 
-    testImplementation "com.google.jimfs:jimfs:$jimfsVersion"
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    testImplementation libs.jimfs
+    testImplementation libs.mockito.core
+    testImplementation libs.mockito.kotlin 
 
-    testRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
-    testRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
+    testRuntimeOnly libs.hsqldb
+    testRuntimeOnly libs.postgresql
 
     cpis project(path: ':testing:cpbs:extendable-cpb', configuration: 'cordaCPB')
 }

@@ -39,7 +39,7 @@ dependencies {
     implementation project(":libs:utilities")
     implementation project(":libs:virtual-node:virtual-node-info")
 
-    implementation "com.typesafe:config:$typeSafeConfigVersion"
+    implementation libs.typesafe
     implementation "net.corda:corda-base"
     implementation "net.corda:corda-config-schema"
     implementation "net.corda:corda-membership"
@@ -60,9 +60,9 @@ dependencies {
     integrationTestRuntimeOnly project(':libs:messaging:db-message-bus-impl')
     integrationTestRuntimeOnly project(':libs:messaging:messaging-impl')
 
-    integrationTestRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
-    integrationTestRuntimeOnly "org.ops4j.pax.jdbc:pax-jdbc-hsqldb:$paxJdbcVersion"
-    integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
+    integrationTestRuntimeOnly libs.aries.dynamic.framework
+    integrationTestRuntimeOnly libs.pax.jdbc
+    integrationTestRuntimeOnly libs.hsqldb
 
     testImplementation project(":libs:crypto:cipher-suite-impl")
     testImplementation project(":libs:crypto:crypto-impl")
@@ -71,6 +71,6 @@ dependencies {
 
     testImplementation libs.commons.text
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    testImplementation libs.mockito.core
+    testImplementation libs.mockito.kotlin 
 }

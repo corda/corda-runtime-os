@@ -17,7 +17,7 @@ dependencies {
     compileOnly 'org.osgi:osgi.annotation'
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
     compileOnly "biz.aQute.bnd:biz.aQute.bnd.annotation:$bndlibVersion"
-    compileOnly "org.iq80.snappy:snappy:$snappyVersion"
+    compileOnly libs.snappy
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
@@ -35,7 +35,7 @@ Import-Package:\
     !org.apache.hadoop.io.compress,\
     sun.misc;resolution:=optional,\
     *
--includeresource: @snappy-${snappyVersion}.jar
+-includeresource: @snappy-${libs.versions.snappyVersion.get()}.jar
 """
     }
 }

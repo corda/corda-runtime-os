@@ -20,14 +20,14 @@ dependencies {
     testCompileOnly "net.corda.cli.host:api:$pluginHostVersion"
     testImplementation "com.github.stefanbirkner:system-lambda:$systemLambdaVersion"
     testImplementation libs.picocli
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    testImplementation libs.mockito.kotlin 
 
     implementation libs.jackson.dataformat
     implementation libs.jackson.databind
     implementation libs.jackson.module
     implementation "io.fabric8:kubernetes-client:6.5.1"
 
-    implementation "org.postgresql:postgresql:$postgresDriverVersion"
+    implementation libs.postgresql
     implementation "org.apache.kafka:kafka-clients:3.3.1"
 }
 

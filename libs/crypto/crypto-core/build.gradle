@@ -20,11 +20,11 @@ dependencies {
     api "net.corda:corda-crypto-extensions"
 
     testImplementation "javax.persistence:javax.persistence-api"
-    testImplementation "org.assertj:assertj-core:$assertjVersion"
+    testImplementation libs.assertj.core
     testImplementation libs.hibernate.core
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    testImplementation libs.mockito.core
+    testImplementation libs.mockito.kotlin 
 
     testImplementation project(":testing:test-utilities")
 }

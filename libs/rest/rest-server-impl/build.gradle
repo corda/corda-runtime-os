@@ -45,8 +45,8 @@ dependencies {
     implementation libs.jackson.datatype
 
     testImplementation project(":libs:rest:rest-test-common")
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    testImplementation libs.mockito.core
+    testImplementation libs.mockito.kotlin
 
     testRuntimeOnly 'org.osgi:osgi.core'
     testRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
@@ -58,8 +58,8 @@ dependencies {
 
     integrationTestImplementation "com.konghq:unirest-java:$unirestVersion"
 
-    integrationTestImplementation "org.mockito:mockito-core:$mockitoVersion"
-    integrationTestImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    integrationTestImplementation libs.mockito.core
+    integrationTestImplementation libs.mockito.kotlin
 
     integrationTestImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
 

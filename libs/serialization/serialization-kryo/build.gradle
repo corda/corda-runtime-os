@@ -45,10 +45,10 @@ dependencies {
     cpbs project(path: 'cpks:serializable-cpk-two', configuration: 'cordaCPB')
 
     testCompileOnly 'org.osgi:osgi.core'
-    testImplementation "org.assertj:assertj-core:$assertjVersion"
+    testImplementation libs.assertj.core
     testImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    testImplementation libs.mockito.core
+    testImplementation libs.mockito.kotlin 
     testRuntimeOnly libs.felix.framework
     testRuntimeOnly "co.paralleluniverse:quasar-core-osgi:$quasarVersion:framework-extension"
     testImplementation project(":testing:kryo-serialization-testkit")

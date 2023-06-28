@@ -29,7 +29,7 @@ dependencies {
     implementation 'net.corda:corda-topic-schema'
     implementation project(":libs:packaging:packaging")
     implementation project(":libs:utilities")
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    testImplementation libs.mockito.core
+    testImplementation libs.mockito.kotlin
     testImplementation project(':libs:virtual-node:cpi-upload-manager-impl')
 }

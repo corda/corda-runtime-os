@@ -13,7 +13,7 @@ dependencies {
     implementation 'net.corda:corda-base'
     implementation project(":libs:messaging:messaging")
 
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    testImplementation libs.mockito.core
+    testImplementation libs.mockito.kotlin
     testImplementation "net.corda:corda-avro-schema"
 }

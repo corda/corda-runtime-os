@@ -19,8 +19,8 @@ dependencies {
     implementation project(':libs:kotlin-heap-fix')
     implementation project(':libs:sandbox')
 
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    testImplementation libs.mockito.core
+    testImplementation libs.mockito.kotlin 
     testRuntimeOnly libs.felix.framework
     testRuntimeOnly libs.felix.scr
 }

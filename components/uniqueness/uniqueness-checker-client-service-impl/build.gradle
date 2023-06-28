@@ -31,9 +31,9 @@ dependencies {
     implementation project(':libs:utilities')
     implementation project(':libs:virtual-node:virtual-node-info')
 
-    testImplementation "org.assertj:assertj-core:$assertjVersion"
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    testImplementation libs.assertj.core
+    testImplementation libs.mockito.core
+    testImplementation libs.mockito.kotlin 
 
     testImplementation project(":testing:crypto-testkit")
 }

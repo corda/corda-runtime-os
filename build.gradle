@@ -274,7 +274,7 @@ allprojects {
 
     dependencies {
         // Test utilities
-        testImplementation "org.assertj:assertj-core:$assertjVersion"
+        testImplementation libs.assertj.core
         testImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
         testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junit5Version"
     }
@@ -453,7 +453,7 @@ subprojects {
 
             dependencySubstitution {
                 substitute module("antlr:antlr") using module("antlr:antlr.osgi:${libs.versions.antlrVersion.get()}")
-                substitute module("org.dom4j:dom4j") using module("org.apache.servicemix.bundles:org.apache.servicemix.bundles.dom4j:$dom4jOsgiVersion")
+                substitute module("org.dom4j:dom4j") using module("org.apache.servicemix.bundles:org.apache.servicemix.bundles.dom4j:${libs.versions.dom4jOsgiVersion.get()}")
             }
         }
     }

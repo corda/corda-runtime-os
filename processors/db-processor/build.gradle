@@ -95,15 +95,15 @@ dependencies {
     runtimeOnly project(':libs:schema-registry:schema-registry-impl')
 
     runtimeOnly libs.javax.activation
-    runtimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
+    runtimeOnly libs.aries.dynamic.framework
     runtimeOnly libs.liquidbase.core
     // NOTE: this is needed by Liquibase but for some reason not picked up automatically.
     runtimeOnly libs.commons.beanutils
 
-    testRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
+    testRuntimeOnly libs.postgresql
 
-    testImplementation "org.assertj:assertj-core:$assertjVersion"
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    testImplementation libs.assertj.core
+    testImplementation libs.mockito.core
+    testImplementation libs.mockito.kotlin 
     testImplementation project(':testing:test-utilities')
 }

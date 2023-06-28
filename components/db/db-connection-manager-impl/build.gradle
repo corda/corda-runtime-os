@@ -23,11 +23,11 @@ dependencies {
     implementation 'net.corda:corda-db-schema'
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
 
-    implementation "com.typesafe:config:$typeSafeConfigVersion"
+    implementation libs.typesafe
     implementation "org.slf4j:slf4j-api:$slf4jVersion"
 
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    testImplementation libs.mockito.core
+    testImplementation libs.mockito.kotlin
     testRuntimeOnly "org.osgi:osgi.core"
 
     integrationTestImplementation project(':libs:db:db-admin')
@@ -37,6 +37,6 @@ dependencies {
     integrationTestImplementation project(":testing:bundles:testing-cats")
     integrationTestImplementation project(':testing:db-testkit')
 
-    integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
-    integrationTestRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
+    integrationTestRuntimeOnly libs.hsqldb
+    integrationTestRuntimeOnly libs.postgresql
 }

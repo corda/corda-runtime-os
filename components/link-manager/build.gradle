@@ -57,7 +57,7 @@ dependencies {
     implementation "net.corda:corda-avro-schema"
     implementation "net.corda:corda-config-schema"
     implementation "net.corda:corda-topic-schema"
-    implementation "com.typesafe:config:$typeSafeConfigVersion"
+    implementation libs.typesafe
     implementation project(":components:membership:group-policy")
     implementation project(":libs:virtual-node:virtual-node-info")
     implementation project(':components:virtual-node:virtual-node-info-read-service')
@@ -67,8 +67,8 @@ dependencies {
 
     testImplementation project(":testing:test-utilities")
     testImplementation project(":testing:p2p:certificates")
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    testImplementation libs.mockito.core
+    testImplementation libs.mockito.kotlin
     testImplementation libs.log4j.core
     testRuntimeOnly libs.log4j.slf4j.impl
 
@@ -103,10 +103,10 @@ dependencies {
 
     testRuntimeOnly libs.lmax.disruptor
     testRuntimeOnly libs.javax.activation
-    testRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
-    testRuntimeOnly "org.ops4j.pax.jdbc:pax-jdbc-hsqldb:$paxJdbcVersion"
-    testRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
-    testRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
+    testRuntimeOnly libs.aries.dynamic.framework
+    testRuntimeOnly libs.pax.jdbc
+    testRuntimeOnly libs.hsqldb
+    testRuntimeOnly libs.postgresql
 }
 
 var nonOsgiIntegrationTest = tasks.register('nonOsgiIntegrationTest', Test) {

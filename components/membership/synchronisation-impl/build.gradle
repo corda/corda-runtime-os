@@ -35,8 +35,8 @@ dependencies {
     implementation project(':libs:serialization:serialization-avro')
 
     testImplementation libs.commons.text
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    testImplementation libs.mockito.core
+    testImplementation libs.mockito.kotlin
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
     testImplementation project(':components:crypto:crypto-hes')
     testImplementation project(":libs:membership:membership-impl")
@@ -60,7 +60,7 @@ dependencies {
     integrationTestRuntimeOnly project(':libs:messaging:messaging-impl')
     integrationTestRuntimeOnly project(':libs:crypto:merkle-impl')
     integrationTestRuntimeOnly project(':libs:crypto:cipher-suite-impl')
-    integrationTestRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
-    integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
-    integrationTestRuntimeOnly "org.ops4j.pax.jdbc:pax-jdbc-hsqldb:$paxJdbcVersion"
+    integrationTestRuntimeOnly libs.aries.dynamic.framework
+    integrationTestRuntimeOnly libs.hsqldb
+    integrationTestRuntimeOnly libs.pax.jdbc
 }

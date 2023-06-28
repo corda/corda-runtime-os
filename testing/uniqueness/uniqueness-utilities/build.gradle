@@ -16,7 +16,7 @@ dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
 
     implementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
-    implementation "org.assertj:assertj-core:$assertjVersion"
+    implementation libs.assertj.core
 
     implementation project(":libs:uniqueness:common")
     implementation project(":libs:utilities")

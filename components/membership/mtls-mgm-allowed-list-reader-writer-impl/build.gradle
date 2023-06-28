@@ -17,7 +17,7 @@ dependencies {
     implementation project(':libs:messaging:messaging')
     implementation project(':libs:virtual-node:virtual-node-info')
 
-    implementation "com.typesafe:config:$typeSafeConfigVersion"
+    implementation libs.typesafe
     implementation 'net.corda:corda-config-schema'
     implementation 'net.corda:corda-avro-schema'
     implementation 'net.corda:corda-base'
@@ -25,6 +25,6 @@ dependencies {
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation 'org.slf4j:slf4j-api'
 
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    testImplementation libs.mockito.core
+    testImplementation libs.mockito.kotlin
 }

@@ -38,15 +38,15 @@ dependencies {
     testImplementation project(':testing:layered-property-map-testkit')
     testImplementation project(':testing:ledger:ledger-common-base-test')
     testImplementation project(':testing:test-serialization')
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    testImplementation libs.mockito.core
+    testImplementation libs.mockito.kotlin 
 
     integrationTestImplementation project(':testing:ledger:ledger-common-base-integration-test')
     integrationTestRuntimeOnly project(':libs:lifecycle:lifecycle-impl')
     integrationTestRuntimeOnly project(':libs:messaging:db-message-bus-impl')
     integrationTestRuntimeOnly project(':libs:messaging:messaging-impl')
     integrationTestRuntimeOnly project(':libs:flows:session-manager-impl')
-    integrationTestRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
+    integrationTestRuntimeOnly libs.aries.dynamic.framework
 
     cpis project(path: ':testing:ledger:ledger-common-empty-app', configuration: 'cordaCPB')
 }

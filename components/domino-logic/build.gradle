@@ -15,10 +15,10 @@ dependencies {
     implementation project(":libs:messaging:messaging")
     implementation project(":libs:utilities")
 
-    implementation "com.typesafe:config:$typeSafeConfigVersion"
+    implementation libs.typesafe
 
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    testImplementation libs.mockito.core
+    testImplementation libs.mockito.kotlin 
     testImplementation libs.log4j.core
     testRuntimeOnly libs.log4j.slf4j.impl
 }

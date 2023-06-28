@@ -23,7 +23,7 @@ dependencies {
     api project(":libs:lifecycle:registry")
     api project(":testing:test-utilities")
 
-    api "org.assertj:assertj-core:$assertjVersion"
-    api "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    api libs.assertj.core
+    api libs.mockito.kotlin
 }
 
