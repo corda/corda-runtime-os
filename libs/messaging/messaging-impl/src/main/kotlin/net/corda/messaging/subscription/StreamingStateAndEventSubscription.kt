@@ -3,6 +3,8 @@ package net.corda.messaging.subscription
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.deadletter.StateAndEventDeadLetterRecord
+import net.corda.data.flow.event.FlowEvent
+import net.corda.data.flow.event.Wakeup
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
@@ -245,7 +247,6 @@ internal class StreamingStateAndEventSubscription<K : Any, S : Any, E : Any>(
                         producer.commitTransaction()
                         eventsToProcess.addAll(newEventsToProcess.map {
                             val ret = toCordaConsumerRecord(event, it)
-                            log.info("~~~~ $ret")
                             ret
                         })
                         newEventsToProcess.clear()
@@ -276,6 +277,15 @@ internal class StreamingStateAndEventSubscription<K : Any, S : Any, E : Any>(
             sourceRecord.headers
         )
 
+    private fun isWakeup(record: Record<*, *>) : Boolean {
+        return if ((record.value != null) && record.value!!::class.java.isInstance(FlowEvent::class.java)) {
+            val flowEvent = record.value!! as FlowEvent
+            flowEvent.payload is Wakeup
+        } else {
+            false
+        }
+    }
+
     @Suppress("UNCHECKED_CAST")
     private fun processEvent(
         event: CordaConsumerRecord<K, E>,
@@ -290,7 +300,8 @@ internal class StreamingStateAndEventSubscription<K : Any, S : Any, E : Any>(
         val thisEventUpdates = getUpdatesForEvent(state, event)
         val updatedState = thisEventUpdates?.updatedState
         val (eventsToProcess, outputEvents) = thisEventUpdates?.responseEvents?.partition {
-            it.topic == event.topic && processor.eventValueClass.isInstance(it.value) && it.key == key
+//            it.topic == event.topic && processor.eventValueClass.isInstance(it.value) && it.key == key
+            isWakeup(it)
         } ?: Pair(emptyList(), emptyList()) // What is this?
 
 

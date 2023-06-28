@@ -4,6 +4,7 @@ import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
+import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.mapper.FlowMapperState
 import net.corda.data.flow.state.mapper.FlowMapperStateType
@@ -44,14 +45,16 @@ class SessionInitExecutor(
             //duplicate
             log.debug { "Duplicate SessionInit event received. Key: $eventKey, Event: $sessionEvent" }
             if (messageDirection == MessageDirection.OUTBOUND) {
+                sessionEvent.messageDirection = MessageDirection.INBOUND
+                sessionEvent.sessionId = toggleSessionId(sessionEvent.sessionId)
                 sessionInit.flowId = null
                 FlowMapperResult(
                     flowMapperState,
                     listOf(
                         Record(
                             outputTopic,
-                            eventKey,
-                            generateAppMessage(sessionEvent, sessionEventSerializer, flowConfig)
+                            sessionEvent.sessionId,
+                            FlowMapperEvent(sessionEvent)
                         )
                     )
                 )
@@ -99,11 +102,13 @@ class SessionInitExecutor(
             val tmpFLowEventKey = sessionInit.flowId
             sessionInit.flowId = null
             sessionEvent.payload = sessionInit
+            sessionEvent.messageDirection = MessageDirection.INBOUND
+            sessionEvent.sessionId = toggleSessionId(sessionEvent.sessionId)
 
             SessionInitOutputs(
                 tmpFLowEventKey,
                 sessionEvent.sessionId,
-                generateAppMessage(sessionEvent, sessionEventSerializer, flowConfig)
+                FlowMapperEvent(sessionEvent)
             )
         }
     }

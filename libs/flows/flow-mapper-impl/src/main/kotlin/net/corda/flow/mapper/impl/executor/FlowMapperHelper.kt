@@ -12,6 +12,7 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.FlowConfig.SESSION_P2P_TTL
+import net.corda.session.manager.Constants
 import net.corda.session.manager.Constants.Companion.FLOW_SESSION_SUBSYSTEM
 import net.corda.session.manager.Constants.Companion.INITIATED_SESSION_ID_SUFFIX
 import java.nio.ByteBuffer
@@ -38,7 +39,7 @@ fun getSessionEventOutputTopic(messageDirection: MessageDirection): String {
     return if (messageDirection == MessageDirection.INBOUND) {
         flowSessionTopic
     } else {
-        Schemas.P2P.P2P_OUT_TOPIC
+        System.getenv("FLOW_MAPPER_TOPIC")
     }
 }
 
@@ -118,4 +119,12 @@ fun createP2PRecord(
             flowConfig
         )
     )
+}
+
+internal fun toggleSessionId(sessionId: String): String {
+    return if (sessionId.endsWith(INITIATED_SESSION_ID_SUFFIX)) {
+        sessionId.removeSuffix(INITIATED_SESSION_ID_SUFFIX)
+    } else {
+        "$sessionId${INITIATED_SESSION_ID_SUFFIX}"
+    }
 }
