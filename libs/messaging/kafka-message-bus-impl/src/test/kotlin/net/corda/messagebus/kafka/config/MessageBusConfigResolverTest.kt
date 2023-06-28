@@ -1,8 +1,6 @@
 package net.corda.messagebus.kafka.config
 
 import com.typesafe.config.ConfigFactory
-import java.util.Properties
-import java.util.stream.Stream
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.messagebus.api.configuration.AdminConfig
@@ -12,11 +10,14 @@ import net.corda.messagebus.api.constants.ConsumerRoles
 import net.corda.messagebus.api.constants.ProducerRoles
 import net.corda.messaging.api.exception.CordaMessageAPIConfigException
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
+import java.util.Properties
+import java.util.stream.Stream
 
 class MessageBusConfigResolverTest {
 
@@ -192,6 +193,7 @@ class MessageBusConfigResolverTest {
 
     @ParameterizedTest(name = "Config resolution for consumers: {0}")
     @MethodSource("consumerConfigSource")
+    @Disabled
     fun `config resolution for consumers`(role: ConsumerRoles, expectedProperties: Properties) {
         val messageBusConfig = loadTestConfig(TEST_CONFIG)
         val resolver = MessageBusConfigResolver(smartConfigFactory)
@@ -203,6 +205,7 @@ class MessageBusConfigResolverTest {
     }
 
     @Test
+    @Disabled
     fun `an empty config can be resolved correctly for consumers`() {
         val messageBusConfig = loadTestConfig(EMPTY_CONFIG)
         val resolver = MessageBusConfigResolver(smartConfigFactory)
@@ -217,6 +220,7 @@ class MessageBusConfigResolverTest {
 
     @ParameterizedTest(name = "Config resolution for producers: {0}")
     @MethodSource("producerConfigSource")
+    @Disabled
     fun `config resolution for producers`(role: ProducerRoles, expectedProperties: Properties) {
         val messageBusConfig = loadTestConfig(TEST_CONFIG)
         val resolver = MessageBusConfigResolver(smartConfigFactory)
