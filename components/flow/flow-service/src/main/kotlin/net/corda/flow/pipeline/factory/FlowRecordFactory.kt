@@ -40,4 +40,6 @@ interface FlowRecordFactory {
      * @return A new instance of a [FlowMapperEvent] record.
      */
     fun createFlowMapperEventRecord(key: String, payload: Any): Record<*, FlowMapperEvent>
+
+    fun createFlowMapperCleanupRecord(key: String, payload: Any): Record<*, FlowMapperEvent>
 }

@@ -31,7 +31,16 @@ class FlowRecordFactoryImpl : FlowRecordFactory {
 
     override fun createFlowMapperEventRecord(key: String, payload: Any): Record<*, FlowMapperEvent> {
         //HARDCODED: Point the process to a custom flow mapper processor deployment
-        val flowMapperTopic = System.getenv("FLOW_MAPPER_TOPIC")
+        val flowMapperTopic = System.getenv("FLOW_MAPPER_PUBLISH_TOPIC")
+        return Record(
+            topic = flowMapperTopic,
+            key = key,
+            value = FlowMapperEvent(payload)
+        )
+    }
+
+    override fun createFlowMapperCleanupRecord(key: String, payload: Any): Record<*, FlowMapperEvent> {
+        val flowMapperTopic = System.getenv("FLOW_MAPPER_CLEANUP_TOPIC")
         return Record(
             topic = flowMapperTopic,
             key = key,

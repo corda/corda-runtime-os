@@ -143,7 +143,7 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
             .filter { sessionState -> sessionState.status == SessionStateType.CLOSED || sessionState.status == SessionStateType.ERROR }
             .onEach { sessionState -> sessionState.hasScheduledCleanup = true }
             .map { sessionState ->
-                flowRecordFactory.createFlowMapperEventRecord(
+                flowRecordFactory.createFlowMapperCleanupRecord(
                     sessionState.sessionId,
                     ScheduleCleanup(expiryTime)
                 )
