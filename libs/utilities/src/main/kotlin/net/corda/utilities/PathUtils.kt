@@ -20,6 +20,7 @@ import java.nio.file.SimpleFileVisitor
 import java.nio.file.attribute.BasicFileAttributes
 import java.nio.file.attribute.FileAttribute
 import java.nio.file.attribute.FileTime
+import java.nio.file.attribute.PosixFileAttributeView
 import java.util.stream.Stream
 import kotlin.streams.toList
 
@@ -172,10 +173,19 @@ fun Path.writeLines(lines: Iterable<CharSequence>, charset: Charset = UTF_8, var
 
 /* Check if the Path is symbolic link */
 fun Path.safeSymbolicRead(): Path {
-    if (Files.isSymbolicLink(this)) {
-        return (Files.readSymbolicLink(this))
+    return if (Files.isSymbolicLink(this)) {
+        Files.readSymbolicLink(this)
     } else {
-        return (this)
+        this
+    }
+}
+
+fun Path.posixOptional(vararg attributes: FileAttribute<*>): Array<out FileAttribute<*>> {
+    return if (Files.getFileAttributeView(this, PosixFileAttributeView::class.java) == null) {
+        // This filesystem does not support POSIX attributes - remove them.
+        attributes.filterNotTo(arrayListOf()) { it.name().startsWith("posix:") }.toTypedArray()
+    } else {
+        attributes
     }
 }
 

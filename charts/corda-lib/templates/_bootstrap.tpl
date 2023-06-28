@@ -1,4 +1,105 @@
 {{/*
+Preinstall Checks
+*/}}
+{{- define "corda.bootstrapPreinstallJob" -}}
+{{- if .Values.bootstrap.preinstallCheck.enabled }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  annotations:
+    "helm.sh/hook": pre-install
+    "helm.sh/hook-weight": "-3"
+  name: {{ include "corda.fullname" . }}-preinstall-role
+rules:
+- apiGroups: [""]
+  resources: ["secrets"]
+  verbs: ["get", "watch", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  annotations:
+    "helm.sh/hook": pre-install
+    "helm.sh/hook-weight": "-2"
+  name: {{ include "corda.fullname" . }}-preinstall-role-binding
+subjects:
+- kind: ServiceAccount
+  name: {{ include "corda.fullname" . }}-preinstall-service-account
+roleRef:
+  kind: Role
+  name: {{ include "corda.fullname" . }}-preinstall-role
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  annotations:
+    "helm.sh/hook": pre-install
+    "helm.sh/hook-weight": "-4"
+  name: {{ include "corda.fullname" . }}-preinstall-service-account
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "corda.fullname" . }}-preinstall-checks
+  labels:
+    {{- include "corda.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": pre-install
+    "helm.sh/hook-weight": "-1"
+spec:
+  template:
+    metadata:
+      labels:
+        {{- include "corda.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- include "corda.imagePullSecrets" . | nindent 6 }}
+      {{- include "corda.tolerations" . | nindent 6 }}
+      serviceAccountName: {{ include "corda.fullname" . }}-preinstall-service-account
+      securityContext:
+        runAsUser: 10001
+        runAsGroup: 10002
+        fsGroup: 1000
+      containers:
+        - name: preinstall-checks
+          image: {{ include "corda.bootstrapCliImage" . }}
+          imagePullPolicy: {{ .Values.imagePullPolicy }}
+          {{- include "corda.containerSecurityContext" . | nindent 10 }}
+          {{- include "corda.bootstrapResources" . | nindent 10 }}
+          args: ['preinstall', 'run-all', '/tmp/values.yaml']
+          volumeMounts:
+            - mountPath: /tmp
+              name: temp
+            {{ include "corda.log4jVolumeMount" . | nindent 12 }}
+          env:
+            {{ include "corda.bootstrapCliEnv" . | nindent 12 }}
+      initContainers:
+        - name: create-preinstall-values
+          image: {{ include "corda.bootstrapCliImage" . }}
+          imagePullPolicy: {{ .Values.imagePullPolicy }}
+          {{- include "corda.bootstrapResources" . | nindent 10 }}
+          {{- include "corda.containerSecurityContext" . | nindent 10 }}
+          command:
+            - /bin/bash
+            - -c
+          args:
+            - |
+                echo -e {{ toYaml .Values | quote }} > /tmp/values.yaml
+          volumeMounts:
+            - mountPath: /tmp
+              name: temp
+      volumes:
+        - name: temp
+          emptyDir: {}
+        {{ include "corda.log4jVolume" . | nindent 8 }}
+      restartPolicy: Never
+      {{- include "corda.bootstrapNodeSelector" . | nindent 6 }}
+  backoffLimit: 0
+{{- end }}
+{{- end }}
+
+{{/*
 DB bootstrap job
 */}}
 {{- define "corda.bootstrapDbJob" -}}
@@ -44,7 +145,7 @@ spec:
         {{- include "corda.generateAndExecuteSql" ( dict "name" "db" "Values" .Values "Chart" .Chart "Release" .Release "schema" "RBAC" "namePostfix" "schemas" "sequenceNumber" 1) | nindent 8 }}
         {{- include "corda.generateAndExecuteSql" ( dict "name" "rbac" "Values" .Values "Chart" .Chart "Release" .Release "environmentVariablePrefix" "RBAC_DB_USER" "schema" "RBAC" "sequenceNumber" 3) | nindent 8 }}
         {{- include "corda.generateAndExecuteSql" ( dict "name" "vnodes" "longName" "virtual-nodes" "dbName" "rbac" "admin" "true" "Values" .Values "Chart" .Chart "Release" .Release "environmentVariablePrefix" "DB_CLUSTER" "sequenceNumber" 5) | nindent 8 }}
-        {{- include "corda.generateAndExecuteSql" ( dict "name" "crypto" "Values" .Values "Chart" .Chart "Release" .Release "environmentVariablePrefix" "CRYPTO_DB_USER"  "schema" "CRYPTO" "sequenceNumber" 7) | nindent 8 }}                
+        {{- include "corda.generateAndExecuteSql" ( dict "name" "crypto" "Values" .Values "Chart" .Chart "Release" .Release "environmentVariablePrefix" "CRYPTO_DB_USER"  "schema" "CRYPTO" "sequenceNumber" 7) | nindent 8 }}
         {{- include "corda.generateAndExecuteSql" ( dict "name" "rest"  "Values" .Values "Chart" .Chart "Release" .Release "environmentVariablePrefix" "REST_API_ADMIN"  "schema" "RBAC"  "searchPath" "RBAC" "subCommand" "create-user-config" "namePostfix" "admin" "sqlFile" "rbac-config.sql" "sequenceNumber" 9) | nindent 8 }}
         - name: 11-create-db-users-and-grant
           image: {{ include "corda.bootstrapDbClientImage" . }}
@@ -183,7 +284,6 @@ spec:
             - -c
           args:
             - |
-                mkdir /tmp
                 touch /tmp/config.properties
                 {{- if .Values.kafka.tls.enabled }}
                 {{- if .Values.kafka.sasl.enabled }}
@@ -390,48 +490,48 @@ a second init container to execute the output SQL to the relevant database
 */}}
 
 {{- define "corda.generateAndExecuteSql" -}}
-{{- /* define 2 init containers, which run in sequence. First run corda-cli initial-config to generate some SQL, storing in a persistent volume called working-volume. Second is a postgres image which mounts the same persistent volume and executes the SQL. */ -}}  
+{{- /* define 2 init containers, which run in sequence. First run corda-cli initial-config to generate some SQL, storing in a persistent volume called working-volume. Second is a postgres image which mounts the same persistent volume and executes the SQL. */ -}}
 - name: {{ printf "%02d-create-%s" .sequenceNumber .name }}
   image: {{ include "corda.bootstrapCliImage" . }}
   imagePullPolicy: {{ .Values.imagePullPolicy }}
   {{- include "corda.bootstrapResources" . | nindent 2 }}
   {{- include "corda.containerSecurityContext" . | nindent 2 }}
   {{- if eq .name "db" }}
-  args: [ 'database', 'spec', '-g', 'config:{{ .Values.db.cluster.schema }},rbac:{{ .Values.bootstrap.db.rbac.schema }},crypto:{{ .Values.bootstrap.db.crypto.schema }}', '-c', '-l', '/tmp', '--jdbc-url', 'jdbc:{{ include "corda.clusterDbType" . }}://{{ required "A db host is required" .Values.db.cluster.host }}:{{ include "corda.clusterDbPort" . }}/{{ include "corda.clusterDbName" . }}', '-u', $(PGUSER), '-p', $(PGPASSWORD) ]  
+  args: [ 'database', 'spec', '-g', 'config:{{ .Values.db.cluster.schema }},rbac:{{ .Values.bootstrap.db.rbac.schema }},crypto:{{ .Values.bootstrap.db.crypto.schema }}', '-c', '-l', '/tmp', '--jdbc-url', 'jdbc:{{ include "corda.clusterDbType" . }}://{{ required "A db host is required" .Values.db.cluster.host }}:{{ include "corda.clusterDbPort" . }}/{{ include "corda.clusterDbName" . }}', '-u', $(PGUSER), '-p', $(PGPASSWORD) ]
   {{- else }}
   args: [ 'initial-config', '{{ .subCommand | default "create-db-config" }}',{{ " " -}}
-  
+
          {{- /* request admin access in some cases, only when the optional admin argument to this function (named template) is specified as true */ -}}
          {{- if eq .name "vnodes" -}} '-a',{{- end -}}
-         
+
          {{- if and (not (eq .name "db")) (not (eq .name "crypto-config")) -}}
            {{- /* specify DB user */ -}}
            {{- "'-u'" -}}, '$({{ .environmentVariablePrefix -}}_USERNAME)',
-         
-           {{- /* specify DB password */ -}}   
+
+           {{- /* specify DB password */ -}}
            {{- " '-p'" -}}, '$({{ .environmentVariablePrefix -}}_PASSWORD)',
-         {{- end -}}           
-         
+         {{- end -}}
+
          {{- if and (not (eq .name "rest")) (not (eq .subCommand "create-crypto-config")) -}}
-             {{- " '--name'" -}}, 'corda-{{ .longName | default .name }}', 
-             {{- " '--jdbc-url'" -}}, 'jdbc:{{ include "corda.clusterDbType" . }}://{{ required "A db host is required" .Values.db.cluster.host }}:{{ include "corda.clusterDbPort" . }}/{{ include "corda.clusterDbName" . }}{{- if .schema }}?currentSchema={{.schema }}{{- end -}}', 
+             {{- " '--name'" -}}, 'corda-{{ .longName | default .name }}',
+             {{- " '--jdbc-url'" -}}, 'jdbc:{{ include "corda.clusterDbType" . }}://{{ required "A db host is required" .Values.db.cluster.host }}:{{ include "corda.clusterDbPort" . }}/{{ include "corda.clusterDbName" . }}{{- if .schema }}?currentSchema={{.schema }}{{- end -}}',
              {{- " '--jdbc-pool-max-size'" -}}, {{ (index .Values.bootstrap.db (.dbName | default .name)).dbConnectionPool.maxSize | quote }}, {{- " " -}}
-         {{- end -}}         
-         
+         {{- end -}}
+
          {{- if not (eq .name "rest") -}}
-           {{- if and (((.Values).config).vault).url  (not (eq .name "crypto-config")) -}} 
+           {{- if and (((.Values).config).vault).url  (not (eq .name "crypto-config")) -}}
              '-t', 'VAULT', '--vault-path', 'dbsecrets', '--key', {{ (printf "%s-db-password" .name)| quote }},
            {{- else -}}
-             {{- /* using encryption secrets service, so provide its salt and passphrase */ -}} 
+             {{- /* using encryption secrets service, so provide its salt and passphrase */ -}}
              '--salt', "$(SALT)", '--passphrase', "$(PASSPHRASE)",
-           {{- end -}} 
+           {{- end -}}
          {{- end -}}
-         
+
          {{- if and (eq .name "crypto-config") (((.Values).config).vault).url  -}}
             {{- /* when configuring the crypto service and using Vault then specify where to find the wrapping key salt and passphrase in Vault */ -}}
             '-t', 'VAULT', '--vault-path', 'cryptosecrets', '-ks', 'salt', '-kp', 'passphrase',
          {{- end -}}
-         
+
          {{- " '-l'" -}}, '/tmp']
    {{- end }}
   workingDir: /tmp
@@ -451,14 +551,14 @@ a second init container to execute the output SQL to the relevant database
     {{- end -}}
     {{- if or (eq .name "rbac") (eq .name "crypto") (eq .name "vnodes") (eq .name "db") -}}
        {{- "\n    " -}} {{- /* legacy whitespace compliance */ -}}
-    {{- end -}}    
+    {{- end -}}
 
     {{- include "corda.bootstrapCliEnv" . | nindent 4 -}}{{- /* set JAVA_TOOL_OPTIONS, CONSOLE_LOG*, CORDA_CLI_HOME_DIR */ -}}
 
     {{- if or (eq .name "rbac") (eq .name "vnodes") }}
     {{ include "corda.rbacDbUserEnv" . | nindent 4 }}
     {{- end -}}
-    
+
     {{- if eq .name "vnodes" -}}
       {{ include "corda.clusterDbEnv" . | nindent 4 -}}
     {{- end -}}

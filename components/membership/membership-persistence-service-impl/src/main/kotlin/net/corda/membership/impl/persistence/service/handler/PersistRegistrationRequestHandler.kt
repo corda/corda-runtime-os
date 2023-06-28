@@ -11,7 +11,7 @@ import javax.persistence.LockModeType
 internal class PersistRegistrationRequestHandler(
     persistenceHandlerServices: PersistenceHandlerServices
 ) : BasePersistenceHandler<PersistRegistrationRequest, Unit>(persistenceHandlerServices) {
-
+    override val operation = PersistRegistrationRequest::class.java
     override fun invoke(context: MembershipRequestContext, request: PersistRegistrationRequest) {
         val registrationId = request.registrationRequest.registrationId
         logger.info("Persisting registration request with ID [$registrationId] to status ${request.status}.")

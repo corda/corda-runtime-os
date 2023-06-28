@@ -17,6 +17,7 @@ dependencies {
     implementation project(':libs:rest:rest-security-read')
     implementation project(':libs:rest:json-serialization')
     implementation project(':libs:metrics')
+    implementation project(':libs:tracing')
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation "net.corda:corda-base"

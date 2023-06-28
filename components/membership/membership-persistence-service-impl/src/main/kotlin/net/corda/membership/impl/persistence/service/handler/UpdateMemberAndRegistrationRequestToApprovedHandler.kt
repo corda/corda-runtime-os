@@ -25,9 +25,10 @@ import net.corda.virtualnode.toCorda
 internal class UpdateMemberAndRegistrationRequestToApprovedHandler(
     persistenceHandlerServices: PersistenceHandlerServices
 ) : BasePersistenceHandler<
-        UpdateMemberAndRegistrationRequestToApproved,
-        UpdateMemberAndRegistrationRequestResponse
-        >(persistenceHandlerServices) {
+    UpdateMemberAndRegistrationRequestToApproved,
+    UpdateMemberAndRegistrationRequestResponse
+    >(persistenceHandlerServices) {
+    override val operation = UpdateMemberAndRegistrationRequestToApproved::class.java
 
     private val keyValuePairListDeserializer: CordaAvroDeserializer<KeyValuePairList> by lazy {
         cordaAvroSerializationFactory.createAvroDeserializer(

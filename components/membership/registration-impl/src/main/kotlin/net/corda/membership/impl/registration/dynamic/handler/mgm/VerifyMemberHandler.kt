@@ -94,4 +94,9 @@ internal class VerifyMemberHandler(
             messages
         )
     }
+
+    override fun getOwnerHoldingId(
+        state: RegistrationState?,
+        command: VerifyMember
+    ) = state?.mgm
 }

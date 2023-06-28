@@ -169,9 +169,9 @@ class MembershipPersistenceClientImpl(
             buildMembershipRequestContext(viewOwningIdentity.toAvro()),
             PersistGroupParameters(
                 AvroGroupParameters(
-                    ByteBuffer.wrap(groupParameters.bytes),
-                    (groupParameters as? SignedGroupParameters)?.signature?.toAvro(),
-                    (groupParameters as? SignedGroupParameters)?.signatureSpec?.toAvro()
+                    ByteBuffer.wrap(groupParameters.groupParameters),
+                    (groupParameters as? SignedGroupParameters)?.mgmSignature?.toAvro(),
+                    (groupParameters as? SignedGroupParameters)?.mgmSignatureSpec?.toAvro()
                 )
             )
         )

@@ -266,11 +266,11 @@
         }, {
           "name" : "holdingidentityid",
           "in" : "path",
-          "description" : "The certificate holding identity ID",
+          "description" : "Holding identity ID of the virtual node that owns the certificate.",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description" : "The certificate holding identity ID",
+            "description" : "Holding identity ID of the virtual node that owns the certificate.",
             "nullable" : true,
             "example" : "string"
           }
@@ -1184,10 +1184,7 @@
             "content" : {
               "application/json" : {
                 "schema" : {
-                  "nullable" : true,
-                  "allOf" : [ {
-                    "$ref" : "#/components/schemas/HsmAssociationInfo"
-                  } ]
+                  "$ref" : "#/components/schemas/HsmAssociationInfo"
                 }
               }
             }
@@ -2855,76 +2852,6 @@
         }
       }
     },
-    "/mgmadmin/getprotocolversion" : {
-      "get" : {
-        "tags" : [ "MGM Admin API" ],
-        "description" : "",
-        "operationId" : "get_mgmadmin_getprotocolversion",
-        "parameters" : [ ],
-        "responses" : {
-          "200" : {
-            "description" : "An integer value specifying the version of the endpoint",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "type" : "integer",
-                  "format" : "int32",
-                  "nullable" : false,
-                  "example" : 0
-                }
-              }
-            }
-          },
-          "401" : {
-            "description" : "Unauthorized"
-          },
-          "403" : {
-            "description" : "Forbidden"
-          }
-        }
-      }
-    },
-    "/mgmadmin/{holdingidentityshorthash}/force-decline/{requestid}" : {
-      "post" : {
-        "tags" : [ "MGM Admin API" ],
-        "description" : "This method enables you to force decline an in-progress registration request that may be stuck or displaying some other unexpected behaviour.",
-        "operationId" : "post_mgmadmin__holdingidentityshorthash__force_decline__requestid_",
-        "parameters" : [ {
-          "name" : "holdingidentityshorthash",
-          "in" : "path",
-          "description" : "The holding identity ID of the MGM of the membership group",
-          "required" : true,
-          "schema" : {
-            "type" : "string",
-            "description" : "The holding identity ID of the MGM of the membership group",
-            "nullable" : false,
-            "example" : "string"
-          }
-        }, {
-          "name" : "requestid",
-          "in" : "path",
-          "description" : "ID of the registration request",
-          "required" : true,
-          "schema" : {
-            "type" : "string",
-            "description" : "ID of the registration request",
-            "nullable" : false,
-            "example" : "string"
-          }
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "Success"
-          },
-          "401" : {
-            "description" : "Unauthorized"
-          },
-          "403" : {
-            "description" : "Forbidden"
-          }
-        }
-      }
-    },
     "/mgm/{holdingidentityshorthash}/suspend" : {
       "post" : {
         "tags" : [ "MGM API" ],
@@ -4056,6 +3983,7 @@
             "example" : "string"
           },
           "status" : {
+            "type" : "object",
             "nullable" : false,
             "example" : "IN_PROGRESS",
             "enum" : [ "ACCEPTED", "IN_PROGRESS", "SUCCEEDED", "FAILED", "ABORTED" ]
@@ -4335,6 +4263,7 @@
             "example" : "string"
           },
           "permissionType" : {
+            "type" : "object",
             "nullable" : false,
             "example" : "DENY",
             "enum" : [ "ALLOW", "DENY" ]
@@ -4574,6 +4503,7 @@
       },
       "GenerateCsrWrapperRequest" : {
         "required" : [ "x500Name" ],
+        "type" : "object",
         "properties" : {
           "contextMap" : {
             "type" : "object",
@@ -4868,6 +4798,7 @@
             "example" : "string"
           },
           "permissionType" : {
+            "type" : "object",
             "nullable" : false,
             "example" : "DENY",
             "enum" : [ "ALLOW", "DENY" ]
@@ -4911,6 +4842,7 @@
             "example" : "string"
           },
           "permissionType" : {
+            "type" : "object",
             "nullable" : false,
             "example" : "DENY",
             "enum" : [ "ALLOW", "DENY" ]
@@ -4947,6 +4879,7 @@
             "example" : "string"
           },
           "status" : {
+            "type" : "object",
             "nullable" : false,
             "example" : "REVOKED",
             "enum" : [ "AVAILABLE", "REVOKED", "CONSUMED", "AUTO_INVALIDATED" ]
@@ -5100,6 +5033,7 @@
             "example" : "2022-06-24T10:15:30Z"
           },
           "registrationStatus" : {
+            "type" : "object",
             "nullable" : false,
             "example" : "SENT_TO_MGM",
             "enum" : [ "NEW", "SENT_TO_MGM", "RECEIVED_BY_MGM", "STARTED_PROCESSING_BY_MGM", "PENDING_MEMBER_VERIFICATION", "PENDING_MANUAL_APPROVAL", "PENDING_AUTO_APPROVAL", "DECLINED", "INVALID", "FAILED", "APPROVED" ]
@@ -5501,16 +5435,19 @@
             "$ref" : "#/components/schemas/RouteConfiguration"
           },
           "flowOperationalStatus" : {
+            "type" : "object",
             "nullable" : false,
             "example" : "INACTIVE",
             "enum" : [ "ACTIVE", "INACTIVE" ]
           },
           "flowP2pOperationalStatus" : {
+            "type" : "object",
             "nullable" : false,
             "example" : "INACTIVE",
             "enum" : [ "ACTIVE", "INACTIVE" ]
           },
           "flowStartOperationalStatus" : {
+            "type" : "object",
             "nullable" : false,
             "example" : "INACTIVE",
             "enum" : [ "ACTIVE", "INACTIVE" ]
@@ -5539,6 +5476,7 @@
             "example" : "string"
           },
           "vaultDbOperationalStatus" : {
+            "type" : "object",
             "nullable" : false,
             "example" : "INACTIVE",
             "enum" : [ "ACTIVE", "INACTIVE" ]

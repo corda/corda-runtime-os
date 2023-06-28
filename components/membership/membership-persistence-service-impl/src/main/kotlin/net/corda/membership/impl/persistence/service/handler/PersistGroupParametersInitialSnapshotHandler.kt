@@ -21,6 +21,7 @@ internal class PersistGroupParametersInitialSnapshotHandler(
 ) : BasePersistenceHandler<PersistGroupParametersInitialSnapshot, PersistGroupParametersResponse>(
     persistenceHandlerServices
 ) {
+    override val operation = PersistGroupParametersInitialSnapshot::class.java
     private val serializer: CordaAvroSerializer<KeyValuePairList> =
         cordaAvroSerializationFactory.createAvroSerializer {
             logger.error("Failed to serialize key value pair list.")

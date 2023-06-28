@@ -97,4 +97,9 @@ internal class DeclineRegistrationHandler(
 
     override val commandType: Class<DeclineRegistration>
         get() = DeclineRegistration::class.java
+
+    override fun getOwnerHoldingId(
+        state: RegistrationState?,
+        command: DeclineRegistration
+    ) = state?.mgm
 }

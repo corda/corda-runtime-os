@@ -9,12 +9,16 @@ import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.core.toCorda
 import net.corda.data.KeyValuePairList
 import net.corda.data.chunking.Chunk
+import net.corda.utilities.posixOptional
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.crypto.SecureHash
-import org.slf4j.LoggerFactory
 import java.nio.file.Files
 import java.nio.file.Path
-import java.nio.file.StandardOpenOption
+import java.nio.file.StandardOpenOption.CREATE
+import java.nio.file.StandardOpenOption.WRITE
+import java.nio.file.attribute.PosixFilePermission.OWNER_READ
+import java.nio.file.attribute.PosixFilePermission.OWNER_WRITE
+import java.nio.file.attribute.PosixFilePermissions.asFileAttribute
 
 /**
  * Receives binary chunks and reassembles full binary under [destDir] and executes completed
@@ -22,7 +26,8 @@ import java.nio.file.StandardOpenOption
  */
 internal class ChunkReaderImpl(private val destDir: Path) : ChunkReader {
     companion object {
-        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        private val CPI_FILE_PERMISSIONS = asFileAttribute(setOf(OWNER_READ, OWNER_WRITE))
+        private val CREATE_OR_UPDATE = setOf(CREATE, WRITE)
 
         private fun KeyValuePairList.fromAvro(): Map<String, String?> {
             return items.associate { it.key to it.value }
@@ -60,11 +65,12 @@ internal class ChunkReaderImpl(private val destDir: Path) : ChunkReader {
             chunksReceived.expectedChecksum = chunk.checksum.toCorda()
         } else {
             // We have a chunk, move to the correct offset, and write the data.
-            // We expect the data to be correct sized.  There is a unit test to
+            // We expect the data to be correctly sized. There is a unit test to
             // ensure the writer does this.
-            Files.newByteChannel(path, StandardOpenOption.WRITE, StandardOpenOption.CREATE).apply {
-                position(chunk.offset)
-                write(chunk.data)
+            @Suppress("SpreadOperator")
+            Files.newByteChannel(path, CREATE_OR_UPDATE, *path.posixOptional(CPI_FILE_PERMISSIONS)).use { channel ->
+                channel.position(chunk.offset)
+                channel.write(chunk.data)
             }
 
             chunksReceived.chunks.add(chunk.partNumber)

@@ -11,6 +11,7 @@ import net.corda.flow.mapper.FlowMapperResult
 import net.corda.flow.mapper.executor.FlowMapperEventExecutor
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.records.Record
+import net.corda.metrics.CordaMetrics
 import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
 
@@ -33,15 +34,31 @@ class SessionInitExecutor(
 
     override fun execute(): FlowMapperResult {
         return if (flowMapperState == null) {
+            CordaMetrics.Metric.FlowMapperCreationCount.builder()
+                .withTag(CordaMetrics.Tag.FlowEvent, sessionInit::class.java.name)
+                .build().increment()
             processSessionInit(sessionEvent, sessionInit)
         } else {
             //duplicate
             log.debug { "Duplicate SessionInit event received. Key: $eventKey, Event: $sessionEvent" }
-            if(messageDirection == MessageDirection.OUTBOUND){
+            if (messageDirection == MessageDirection.OUTBOUND) {
                 sessionInit.flowId = null
-                FlowMapperResult(flowMapperState, listOf(Record(outputTopic, eventKey, sessionEvent)))
+                FlowMapperResult(
+                    flowMapperState,
+                    listOf(
+                        Record(
+                            outputTopic,
+                            eventKey,
+                            generateAppMessage(sessionEvent, sessionEventSerializer, flowConfig)
+                        )
+                    )
+                )
+            } else {
+                CordaMetrics.Metric.FlowMapperDeduplicationCount.builder()
+                    .withTag(CordaMetrics.Tag.FlowEvent, sessionInit::class.java.name)
+                    .build().increment()
+                FlowMapperResult(flowMapperState, emptyList())
             }
-            else FlowMapperResult(flowMapperState, emptyList())
         }
     }
 

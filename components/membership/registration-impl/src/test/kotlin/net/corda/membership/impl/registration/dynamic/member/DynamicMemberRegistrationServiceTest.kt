@@ -479,7 +479,6 @@ class DynamicMemberRegistrationServiceTest {
             }
         }
 
-        @Disabled
         @Test
         fun `registration request contains current serial for re-registration`() {
             val memberInfo = mock<MemberInfo> {

@@ -1,5 +1,6 @@
 package net.corda.p2p.gateway.messaging.internal
 
+import io.micrometer.core.instrument.Timer
 import io.netty.handler.codec.http.HttpResponseStatus
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.p2p.LinkInMessage
@@ -21,6 +22,8 @@ import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
+import net.corda.metrics.CordaMetrics
+import net.corda.metrics.CordaMetrics.NOT_APPLICABLE_TAG_VALUE
 import net.corda.p2p.gateway.messaging.http.HttpRequest
 import net.corda.p2p.gateway.messaging.http.HttpWriter
 import net.corda.p2p.gateway.messaging.http.ReconfigurableHttpServer
@@ -30,7 +33,10 @@ import net.corda.schema.Schemas.P2P.LINK_IN_TOPIC
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.schema.registry.deserialize
 import org.slf4j.LoggerFactory
+import java.net.InetSocketAddress
+import java.net.SocketAddress
 import java.nio.ByteBuffer
+import java.time.Duration
 import java.util.UUID
 
 /**
@@ -105,14 +111,19 @@ internal class InboundMessageHandler(
      * A session init request has additional handling as the Gateway needs to generate a secret and share it
      */
     override fun onRequest(httpWriter: HttpWriter, request: HttpRequest) {
-        dominoTile.withLifecycleLock { handleRequest(httpWriter, request) }
+        dominoTile.withLifecycleLock {
+            val startTime = System.nanoTime()
+            val statusCode = handleRequest(httpWriter, request)
+            val duration = Duration.ofNanos(System.nanoTime() - startTime)
+            getRequestTimer(request.source, statusCode).record(duration)
+        }
     }
 
-    private fun handleRequest(httpWriter: HttpWriter, request: HttpRequest) {
+    private fun handleRequest(httpWriter: HttpWriter, request: HttpRequest): HttpResponseStatus {
         if (!isRunning) {
             logger.error("Received message from ${request.source}, while handler is stopped. Discarding it and returning error code.")
             httpWriter.write(HttpResponseStatus.SERVICE_UNAVAILABLE, request.source)
-            return
+            return HttpResponseStatus.SERVICE_UNAVAILABLE
         }
 
         val (gatewayMessage, p2pMessage) = try {
@@ -121,19 +132,22 @@ internal class InboundMessageHandler(
         } catch (e: Throwable) {
             logger.warn("Received invalid message, which could not be deserialized", e)
             httpWriter.write(HttpResponseStatus.BAD_REQUEST, request.source)
-            return
+            return HttpResponseStatus.BAD_REQUEST
         }
 
-        logger.debug("Received and processing message ${gatewayMessage.id} of type ${p2pMessage.payload.javaClass} from ${request.source}")
+        logger.debug("Received and processing message {} of type {} from {}",
+            gatewayMessage.id, p2pMessage.payload::class.java, request.source)
         val response = GatewayResponse(gatewayMessage.id)
-        when (p2pMessage.payload) {
+        return when (p2pMessage.payload) {
             is InboundUnauthenticatedMessage -> {
                 p2pInPublisher.publish(listOf(Record(LINK_IN_TOPIC, generateKey(), p2pMessage)))
                 httpWriter.write(HttpResponseStatus.OK, request.source, avroSchemaRegistry.serialize(response).array())
+                HttpResponseStatus.OK
             }
             else -> {
                 val statusCode = processSessionMessage(p2pMessage)
                 httpWriter.write(statusCode, request.source, avroSchemaRegistry.serialize(response).array())
+                statusCode
             }
         }
     }
@@ -179,5 +193,19 @@ internal class InboundMessageHandler(
 
     private fun generateKey(): String {
         return UUID.randomUUID().toString()
+    }
+
+    private fun getRequestTimer(sourceAddress: SocketAddress, statusCode: HttpResponseStatus): Timer {
+        val metricsBuilder = CordaMetrics.Metric.InboundGatewayRequestLatency.builder()
+        metricsBuilder.withTag(CordaMetrics.Tag.HttpResponseType, statusCode.code().toString())
+        // The address is always expected to be an InetSocketAddress, but populating the tag in any other case because prometheus
+        // requires the same set of tags to be populated for a specific metric name.
+        val sourceEndpoint = if (sourceAddress is InetSocketAddress) {
+            sourceAddress.hostString
+        } else {
+            NOT_APPLICABLE_TAG_VALUE
+        }
+        metricsBuilder.withTag(CordaMetrics.Tag.SourceEndpoint, sourceEndpoint)
+        return metricsBuilder.build()
     }
 }

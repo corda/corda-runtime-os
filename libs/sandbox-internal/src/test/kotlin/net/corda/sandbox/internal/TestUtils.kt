@@ -8,6 +8,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import org.osgi.framework.Bundle
 import org.osgi.framework.Constants.SYSTEM_BUNDLE_ID
+import org.osgi.framework.Constants.SYSTEM_BUNDLE_SYMBOLICNAME
 import org.osgi.framework.Version
 import kotlin.math.abs
 import kotlin.random.Random
@@ -29,7 +30,7 @@ fun mockBundle(
     bundleLocation: String = random.nextInt().toString()
 ) = mock<Bundle>().apply {
     val bundleVersion = Version.parseVersion("${abs(random.nextInt())}.${abs(random.nextInt())}")
-    val id = if ("org.apache.felix.framework" == bundleSymbolicName) {
+    val id = if ("org.apache.felix.framework" == bundleSymbolicName || SYSTEM_BUNDLE_SYMBOLICNAME == bundleSymbolicName) {
         SYSTEM_BUNDLE_ID
     } else {
         nextLong()

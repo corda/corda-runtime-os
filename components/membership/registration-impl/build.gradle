@@ -50,12 +50,12 @@ dependencies {
     testRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
 
     integrationTestImplementation project(':testing:db-message-bus-testkit')
+    integrationTestImplementation project(":testing:group-policy-test-common")
 
     integrationTestRuntimeOnly project(':components:configuration:configuration-read-service-impl')
     integrationTestRuntimeOnly project(':components:crypto:crypto-client-hsm-impl')
     integrationTestRuntimeOnly project(':components:db:db-connection-manager-impl')
     integrationTestRuntimeOnly project(':components:membership:membership-group-read-impl')
-    integrationTestRuntimeOnly project(':components:membership:membership-persistence-client-impl')
     integrationTestRuntimeOnly project(':libs:lifecycle:lifecycle-impl')
     integrationTestRuntimeOnly project(':libs:messaging:db-message-bus-impl')
     integrationTestRuntimeOnly project(':libs:messaging:messaging-impl')

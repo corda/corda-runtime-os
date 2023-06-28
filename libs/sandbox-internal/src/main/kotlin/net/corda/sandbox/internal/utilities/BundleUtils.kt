@@ -23,7 +23,11 @@ internal class BundleUtils @Activate constructor(
     /** Returns the bundle from which [klass] is loaded, or null if there is no such bundle. */
     fun getBundle(klass: Class<*>): Bundle? = FrameworkUtil.getBundle(klass) ?: try {
         // The lookup approach above does not work for the system bundle.
-        if (loadClassFromSystemBundle(klass.name) === klass) systemBundle else null
+        if (!klass.isPrimitive && loadClassFromSystemBundle(klass.name) === klass) {
+            systemBundle
+        } else {
+            null
+        }
     } catch (e: ClassNotFoundException) {
         null
     }

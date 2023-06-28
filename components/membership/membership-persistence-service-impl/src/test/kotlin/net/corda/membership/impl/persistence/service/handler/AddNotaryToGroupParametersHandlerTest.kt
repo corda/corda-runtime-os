@@ -38,9 +38,6 @@ import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.membership.MGMContext
 import net.corda.v5.membership.MemberContext
 import net.corda.v5.membership.MemberInfo
-import net.corda.virtualnode.VirtualNodeInfo
-import net.corda.virtualnode.read.VirtualNodeInfoReadService
-import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
@@ -55,7 +52,6 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.time.Instant
 import java.util.SortedMap
-import java.util.UUID
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.persistence.EntityTransaction
@@ -90,15 +86,6 @@ class AddNotaryToGroupParametersHandlerTest {
         on { createAvroSerializer<KeyValuePairList>(any()) } doReturn keyValuePairListSerializer
         on { createAvroDeserializer(any(), eq(KeyValuePairList::class.java)) } doReturn keyValuePairListDeserializer
     }
-    private val identity = HoldingIdentity("CN=Alice, O=Alice Corp, L=LDN, C=GB", "group").toCorda()
-    private val vaultDmlConnectionId = UUID(1, 2)
-    private val nodeInfo = mock<VirtualNodeInfo> {
-        on { holdingIdentity } doReturn identity
-        on { vaultDmlConnectionId } doReturn vaultDmlConnectionId
-    }
-    private val nodeInfoReadService = mock<VirtualNodeInfoReadService> {
-        on { getByHoldingIdentityShortHash(any()) } doReturn nodeInfo
-    }
     private val entitySet = mock<JpaEntitiesSet>()
     private val registry = mock<JpaEntitiesRegistry> {
         on { get(CordaDb.Vault.persistenceUnitName) } doReturn entitySet
@@ -129,11 +116,11 @@ class AddNotaryToGroupParametersHandlerTest {
     private val root = mock<Root<GroupParametersEntity>> {
         on { get<String>("epoch") } doReturn mock<Path<String>>()
     }
-    private val statusPath = mock<Path<String>>()
-    private val memberX500NamePath = mock<Path<String>>()
+    private val status = mock<Path<String>>()
+    private val memberX500Name = mock<Path<String>>()
     private val memberRoot = mock<Root<MemberInfoEntity>> {
-        on { get<String>("status") } doReturn statusPath
-        on { get<String>("memberX500Name") } doReturn memberX500NamePath
+        on { get<String>("status") } doReturn status
+        on { get<String>("memberX500Name") } doReturn memberX500Name
     }
     private val order = mock<Order>()
     private val query = mock<CriteriaQuery<GroupParametersEntity>> {
@@ -153,8 +140,8 @@ class AddNotaryToGroupParametersHandlerTest {
         on { createQuery(GroupParametersEntity::class.java) } doReturn query
         on { createQuery(MemberInfoEntity::class.java) } doReturn memberCriteriaQuery
         on { desc(any()) } doReturn order
-        on { equal(statusPath, MEMBER_STATUS_ACTIVE) } doReturn equalPredicate
-        on { notEqual(eq(memberX500NamePath), any<String>()) } doReturn notEqualPredicate
+        on { equal(status, MEMBER_STATUS_ACTIVE) } doReturn equalPredicate
+        on { notEqual(memberX500Name, knownIdentity.x500Name.toString())} doReturn notEqualPredicate
     }
     private val entityManager = mock<EntityManager> {
         on { persist(any<GroupParametersEntity>()) } doAnswer {}
@@ -168,9 +155,10 @@ class AddNotaryToGroupParametersHandlerTest {
     }
     private val connectionManager = mock<DbConnectionManager> {
         on {
-            createEntityManagerFactory(
-                vaultDmlConnectionId,
-                entitySet
+            getOrCreateEntityManagerFactory(
+                any(),
+                any(),
+                eq(entitySet),
             )
         } doReturn entityManagerFactory
     }
@@ -200,7 +188,6 @@ class AddNotaryToGroupParametersHandlerTest {
         on { name } doReturn MemberX500Name.parse(knownIdentity.x500Name)
         on { memberProvidedContext } doReturn notaryMemberContext
         on { mgmProvidedContext } doReturn notaryMgmContext
-        on { name } doReturn MemberX500Name.parse(knownIdentity.x500Name)
         on { serial } doReturn 2L
     }
     private val memberInfoFactory = mock<MemberInfoFactory> {
@@ -223,12 +210,12 @@ class AddNotaryToGroupParametersHandlerTest {
     private lateinit var otherNotary: MemberInfo
     private val persistenceHandlerServices = mock<PersistenceHandlerServices> {
         on { cordaAvroSerializationFactory } doReturn serializationFactory
-        on { virtualNodeInfoReadService } doReturn nodeInfoReadService
         on { jpaEntitiesRegistry } doReturn registry
         on { dbConnectionManager } doReturn connectionManager
         on { clock } doReturn clock
         on { keyEncodingService } doReturn keyEncodingService
         on { memberInfoFactory } doReturn memberInfoFactory
+        on { transactionTimerFactory } doReturn { transactionTimer }
     }
     private val handler = AddNotaryToGroupParametersHandler(persistenceHandlerServices)
 
@@ -254,7 +241,7 @@ class AddNotaryToGroupParametersHandlerTest {
             on { serial } doReturn 1L
         }
         whenever(memberInfoFactory.create(any(), any<SortedMap<String, String?>>())).doReturn(otherNotary)
-        whenever(membersQuery.resultList).doReturn(listOf(otherNotaryEntity))
+        whenever(membersQuery.resultStream).doReturn(listOf(otherNotaryEntity).stream())
         whenever(keyValuePairListDeserializer.deserialize(any())).doReturn(
             KeyValuePairList(listOf(
                 KeyValuePair(EPOCH_KEY, EPOCH.toString()),
@@ -271,7 +258,6 @@ class AddNotaryToGroupParametersHandlerTest {
         handler.invoke(requestContext, request)
 
         verify(entityManagerFactory).createEntityManager()
-        verify(entityManagerFactory).close()
         verify(entityManager).transaction
         verify(registry).get(eq(CordaDb.Vault.persistenceUnitName))
         verify(keyValuePairListSerializer).serialize(
@@ -305,7 +291,6 @@ class AddNotaryToGroupParametersHandlerTest {
         handler.invoke(requestContext, request)
 
         verify(entityManagerFactory).createEntityManager()
-        verify(entityManagerFactory).close()
         verify(entityManager).transaction
         verify(registry).get(eq(CordaDb.Vault.persistenceUnitName))
         verify(keyValuePairListSerializer).serialize(
@@ -382,7 +367,6 @@ class AddNotaryToGroupParametersHandlerTest {
         handler.invoke(requestContext, request)
 
         verify(entityManagerFactory).createEntityManager()
-        verify(entityManagerFactory).close()
         verify(entityManager).transaction
         verify(registry).get(eq(CordaDb.Vault.persistenceUnitName))
         verify(entityManager, times(0)).persist(any())

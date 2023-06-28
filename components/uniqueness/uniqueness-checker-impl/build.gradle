@@ -26,6 +26,7 @@ dependencies {
     implementation project(':libs:flows:external-event-responses')
     implementation project(":libs:messaging:messaging")
     implementation project(":libs:metrics")
+    implementation project(':libs:tracing')
     implementation project(":libs:uniqueness:common")
     implementation project(":libs:utilities")
 

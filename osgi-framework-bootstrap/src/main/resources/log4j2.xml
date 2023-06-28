@@ -7,7 +7,7 @@
 
         <RollingFile name="App"
                      fileName="logs/corda.log"
-                     filePattern="logs/corda.%d{MM-dd-yyyy}.%i.log"
+                     filePattern="logs/corda.%d{yyyy-MM-dd}.%i.log"
                      ignoreExceptions="false">
             <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %-5level %logger{36} %X - %msg%n"/>
             <Policies>
