@@ -1,6 +1,7 @@
 package net.corda.messaging.subscription
 
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
@@ -153,19 +154,7 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                 eventConsumerTmp.subscribe(eventTopic, rebalanceListener)
                 threadLooper.updateLifecycleStatus(LifecycleStatus.UP)
 
-                log.info("@@@ pattern thread ${Thread.currentThread().id}")
-                runBlocking {
-                    log.info("@@@ run blocking thread ${Thread.currentThread().id}")
-                    launchProducer().also { job ->
-                        log.info("@@@ launched producer")
-                        while (!threadLooper.loopStopped) {
-                            stateAndEventConsumerTmp.pollAndUpdateStates(true)
-                            processBatchOfEvents()
-                        }
-                        log.info("@@@ cancelling job")
-                        job.cancel()
-                    }
-                }
+                pollAndProcess(stateAndEventConsumerTmp)
 
             } catch (ex: Exception) {
                 when (ex) {
@@ -192,6 +181,63 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         closeStateAndEventProducerConsumer()
     }
 
+    private fun pollAndProcess(stateAndEventConsumer: StateAndEventConsumer<K, S, E>) {
+        runBlocking {
+            val jobs = mutableListOf<Job>()
+
+            while (!threadLooper.loopStopped) {
+                stateAndEventConsumer.pollAndUpdateStates(true)
+                var attempts = 0
+                var keepProcessing = true
+                while (keepProcessing && !threadLooper.loopStopped) {
+                    try {
+                        log.debug { "Polling and processing events" }
+                        var rebalanceOccurred = false
+                        val records = stateAndEventConsumer.pollEvents()
+                        batchSizeHistogram.record(records.size.toDouble())
+                        val batches = getEventsByBatch(records).iterator()
+                        while (!rebalanceOccurred && batches.hasNext()) {
+                            val batch = batches.next()
+
+                            for (event in batch) {
+                                producerChannels.computeIfAbsent(event.partition) {
+                                    val newConfig = config.copy(uniqueId = "${config.uniqueId}-${event.partition}" )
+                                    Channel<ProducerData>(1).also { channel ->
+                                        launchProducer(channel, newConfig).also { job ->
+                                            jobs.add(job)
+                                        }
+                                    }
+                                }
+                            }
+
+                            rebalanceOccurred = tryProcessBatchOfEvents(batch)
+                        }
+                        keepProcessing = false // We only want to do one batch at a time
+                    } catch (ex: Exception) {
+                        when (ex) {
+                            is CordaMessageAPIIntermittentException -> {
+                                attempts++
+                                handleProcessEventRetries(attempts, ex)
+                            }
+
+                            else -> {
+                                throw CordaMessageAPIFatalException(
+                                    "Failed to process records from topic $eventTopic, group ${config.group}, " +
+                                            "producerClientId ${config.clientId}. " +
+                                            "Fatal error occurred.", ex
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+            log.info("@@@ cancelling job")
+            jobs.forEach {
+                it.cancel()
+            }
+        }
+    }
+
     private fun closeStateAndEventProducerConsumer() {
         nullableProducer?.close()
         nullableStateAndEventConsumer?.close()
@@ -199,46 +245,12 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         nullableStateAndEventConsumer = null
     }
 
-    private suspend fun processBatchOfEvents() {
-        var attempts = 0
-        var keepProcessing = true
-        while (keepProcessing && !threadLooper.loopStopped) {
-            try {
-                log.debug { "Polling and processing events" }
-                var rebalanceOccurred = false
-                val records = stateAndEventConsumer.pollEvents()
-                batchSizeHistogram.record(records.size.toDouble())
-                val batches = getEventsByBatch(records).iterator()
-                while (!rebalanceOccurred && batches.hasNext()) {
-                    val batch = batches.next()
-                    rebalanceOccurred = tryProcessBatchOfEvents(batch)
-                }
-                keepProcessing = false // We only want to do one batch at a time
-            } catch (ex: Exception) {
-                when (ex) {
-                    is CordaMessageAPIIntermittentException -> {
-                        attempts++
-                        handleProcessEventRetries(attempts, ex)
-                    }
-
-                    else -> {
-                        throw CordaMessageAPIFatalException(
-                            "Failed to process records from topic $eventTopic, group ${config.group}, " +
-                                    "producerClientId ${config.clientId}. " +
-                                    "Fatal error occurred.", ex
-                        )
-                    }
-                }
-            }
-        }
-    }
-
     private data class ProducerData(
         val offsetsAndMetadata: CordaProducer.OffsetsAndMetadata,
         val records: List<CordaProducerRecord<*, *>>
     )
 
-    private val producerChannel = Channel<ProducerData>(1)
+    private val producerChannels = mutableMapOf<Int, Channel<ProducerData>>()
 
     /**
      * Process a batch of events from the last poll and publish the outputs (including DLQd events)
@@ -246,7 +258,9 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
      * @return false if the batch had to be abandoned due to a rebalance
      */
     private suspend fun tryProcessBatchOfEvents(events: List<CordaConsumerRecord<K, E>>): Boolean {
-        val outputRecords = mutableListOf<Record<*, *>>()
+        val outputMap = mutableMapOf<Int, MutableList<Record<*, *>>>()
+        val lastEventMap = mutableMapOf<Int, CordaConsumerRecord<K, E>>()
+
         val updatedStates: MutableMap<Int, MutableMap<K, S?>> = mutableMapOf()
         // Pre-populate the updated states with the current in-memory state.
         events.forEach {
@@ -261,7 +275,16 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
             processorMeter.recordCallable {
                 for (event in events) {
                     stateAndEventConsumer.resetPollInterval()
+                    val outputRecords = mutableListOf<Record<*, *>>()
                     processEvent(event, outputRecords, updatedStates)
+                    // Keep a running list of output records
+                    outputMap.computeIfAbsent(event.partition) {
+                        mutableListOf()
+                    }.also{
+                        it += outputRecords
+                    }
+                    // And the last event
+                    lastEventMap[event.partition] = event
                 }
             }
         } catch (ex: StateAndEventConsumer.RebalanceInProgressException) {
@@ -272,44 +295,43 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
             return true
         }
 
-        val producerData = ProducerData(
-            producer.getOffsetsAndMetadata(eventConsumer, events),
-            outputRecords.toCordaProducerRecords()
-        )
-        //log.info("@@@ pushing to producer channel")
-        producerChannel.send(producerData)
+        outputMap.keys.forEach { partition ->
+            val producerData = ProducerData(
+                producer.getOffsetsAndMetadata(eventConsumer, listOf(checkNotNull(lastEventMap[partition]))),
+                checkNotNull(outputMap[partition]).toCordaProducerRecords()
+            )
+
+            checkNotNull(producerChannels[partition]).send(producerData)
+        }
 
         log.debug { "Processing events(keys: ${events.joinToString { it.key.toString() }}, size: ${events.size}) complete." }
 
-        stateAndEventConsumer.updateInMemoryStatePostCommit(updatedStates, clock)
+        /// @@@
+        //stateAndEventConsumer.updateInMemoryStatePostCommit(updatedStates, clock)
         return false
     }
 
-    val publisherDispatcher = Executors.newSingleThreadExecutor().asCoroutineDispatcher()
-
-    private fun CoroutineScope.launchProducer() = launch(publisherDispatcher) {
-        //log.info("@@@ producer thread ${Thread.currentThread().id}")
+    private fun CoroutineScope.launchProducer(
+        producerChannel: Channel<ProducerData>,
+        config: ResolvedSubscriptionConfig
+    ) = launch(Executors.newSingleThreadExecutor().asCoroutineDispatcher()) {
+        val producer = builder.createProducer(config)
         for (producerData in producerChannel) {
-            doPublish(producerData)
+            producer.beginTransaction()
+            producer.sendRecords(producerData.records)
+            //            if (deadLetterRecords.isNotEmpty()) {
+            //                producer.sendRecords(deadLetterRecords.map {
+            //                    CordaProducerRecord(
+            //                        getDLQTopic(eventTopic),
+            //                        UUID.randomUUID().toString(),
+            //                        it
+            //                    )
+            //                })
+            //                deadLetterRecords.clear()
+            //            }
+            producer.sendRecordOffsetsToTransaction(producerData.offsetsAndMetadata)
+            producer.commitTransaction()
         }
-    }
-
-    private fun doPublish(producerData: ProducerData) {
-        //log.info("@@@ pulling from producer channel")
-        producer.beginTransaction()
-        producer.sendRecords(producerData.records)
-        //            if (deadLetterRecords.isNotEmpty()) {
-        //                producer.sendRecords(deadLetterRecords.map {
-        //                    CordaProducerRecord(
-        //                        getDLQTopic(eventTopic),
-        //                        UUID.randomUUID().toString(),
-        //                        it
-        //                    )
-        //                })
-        //                deadLetterRecords.clear()
-        //            }
-        producer.sendRecordOffsetsToTransaction(producerData.offsetsAndMetadata)
-        producer.commitTransaction()
     }
 
     private fun processEvent(
