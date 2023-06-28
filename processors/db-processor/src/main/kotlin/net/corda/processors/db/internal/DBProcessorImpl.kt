@@ -14,8 +14,6 @@ import net.corda.cpk.write.CpkWriteService
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.schema.CordaDb
 import net.corda.entityprocessor.FlowPersistenceService
-import net.corda.interop.aliasinfo.read.InteropAliasInfoReadService
-import net.corda.interop.aliasinfo.write.InteropAliasInfoWriteService
 import net.corda.ledger.persistence.LedgerPersistenceService
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.datamodel.ConfigurationEntities
@@ -114,12 +112,7 @@ class DBProcessorImpl @Activate constructor(
     @Reference(service = MembershipGroupPolicyValidator::class)
     private val membershipGroupPolicyValidator: MembershipGroupPolicyValidator,
     @Reference(service = AllowedCertificatesReaderWriterService::class)
-    private val allowedCertificatesReaderWriterService: AllowedCertificatesReaderWriterService,
-    // Temporarily added here, reevaluate this before merge
-    @Reference(service = InteropAliasInfoReadService::class)
-    private val interopAliasInfoReadService: InteropAliasInfoReadService,
-    @Reference(service = InteropAliasInfoWriteService::class)
-    private val interopAliasInfoWriteService: InteropAliasInfoWriteService
+    private val allowedCertificatesReaderWriterService: AllowedCertificatesReaderWriterService
 ) : DBProcessor {
     init {
         // define the different DB Entity Sets
@@ -170,10 +163,7 @@ class DBProcessorImpl @Activate constructor(
         ::groupParametersWriterService,
         ::groupParametersReaderService,
         ::membershipGroupPolicyValidator,
-        ::allowedCertificatesReaderWriterService,
-        // Reevaluate this later, does this need to be in the db worker?
-        ::interopAliasInfoReadService,
-        ::interopAliasInfoWriteService
+        ::allowedCertificatesReaderWriterService
     )
     private val lifecycleCoordinator = coordinatorFactory.createCoordinator<DBProcessorImpl>(dependentComponents, ::eventHandler)
 
