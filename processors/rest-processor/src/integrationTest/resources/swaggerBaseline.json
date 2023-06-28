@@ -1181,10 +1181,7 @@
             "content" : {
               "application/json" : {
                 "schema" : {
-                  "nullable" : true,
-                  "allOf" : [ {
-                    "$ref" : "#/components/schemas/HsmAssociationInfo"
-                  } ]
+                  "$ref" : "#/components/schemas/HsmAssociationInfo"
                 }
               }
             }

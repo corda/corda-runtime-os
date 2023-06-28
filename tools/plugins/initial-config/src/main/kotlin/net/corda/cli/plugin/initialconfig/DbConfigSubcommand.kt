@@ -44,6 +44,36 @@ class DbConfigSubcommand : Runnable {
     var jdbcPoolMaxSize: Int = 10
 
     @Option(
+        names = ["--jdbc-pool-min-size"],
+        description = ["The minimum size for the JDBC connection pool. Defaults to null"]
+    )
+    var jdbcPoolMinSize: Int? = null
+
+    @Option(
+        names = ["--idle-timeout"],
+        description = ["The maximum time (in seconds) a connection can stay idle in the pool. Defaults to 120"]
+    )
+    var idleTimeout: Int = 120
+
+    @Option(
+        names = ["--max-lifetime"],
+        description = ["The maximum time (in seconds) a connection can stay in the pool. Defaults to 1800"]
+    )
+    var maxLifetime: Int = 1800
+
+    @Option(
+        names = ["--keepalive-time"],
+        description = ["The interval time (in seconds) in which connections will be tested for aliveness. Defaults to 0"]
+    )
+    var keepaliveTime: Int = 0
+
+    @Option(
+        names = ["--validation-timeout"],
+        description = ["The maximum time (in seconds) that the pool will wait for a connection to be validated as alive. Defaults to 5"]
+    )
+    var validationTimeout: Int = 5
+
+    @Option(
         names = ["-u", "--user"],
         required = true,
         description = ["User name for the database connection. Required."]
@@ -136,7 +166,19 @@ class DbConfigSubcommand : Runnable {
             updateTimestamp = Instant.now(),
             updateActor = "Setup Script",
             description = description,
-            config = createConfigDbConfig(jdbcUrl!!, username!!, value, vaultKey, jdbcPoolMaxSize, secretsService)
+            config = createConfigDbConfig(
+                jdbcUrl!!,
+                username!!,
+                value,
+                vaultKey,
+                jdbcPoolMaxSize,
+                jdbcPoolMinSize,
+                idleTimeout,
+                maxLifetime,
+                keepaliveTime,
+                validationTimeout,
+                secretsService
+            )
         ).also { it.version = 0 }
 
 
@@ -178,6 +220,11 @@ private fun createConfigDbConfig(
     value: String,
     key: String,
     jdbcPoolMaxSize: Int,
+    jdbcPoolMinSize: Int?,
+    idleTimeout: Int,
+    maxLifetime: Int,
+    keepaliveTime: Int,
+    validationTimeout: Int,
     secretsService: SecretsCreateService,
 ): String {
     return "{\"database\":{" +
@@ -186,7 +233,12 @@ private fun createConfigDbConfig(
             "\"pass\":${createSecureConfig(secretsService, value, key)}," +
             "\"user\":\"$username\"," +
             "\"pool\":" +
-            "{\"max_size\":$jdbcPoolMaxSize}}}"
+            "{\"max_size\":$jdbcPoolMaxSize," +
+            if (jdbcPoolMinSize != null) { "\"min_size\":$jdbcPoolMinSize," } else { "" } +
+            "\"idleTimeoutSeconds\":$idleTimeout," +
+            "\"maxLifetimeSeconds\":$maxLifetime," +
+            "\"keepaliveTimeSeconds\":$keepaliveTime," +
+            "\"validationTimeoutSeconds\":$validationTimeout}}}"
 }
 
 fun createSecureConfig(secretsService: SecretsCreateService, value: String, key: String): String {
