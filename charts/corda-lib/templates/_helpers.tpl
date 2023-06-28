@@ -571,10 +571,21 @@ TLS Secret creation
 {{- $annotationValue := get $existingSecret.metadata.annotations $altNameAnnotationKey }}
 {{- $create = not ( eq $annotationValue $altNamesAsString ) }}
 {{- end }}
+{{- $crtSecretValue := "to be defined" }}
+{{- $keySecretValue := "to be defined" }}
+{{- $caSecretValue := "to be defined" }}
 {{- if $create }}
-{{- $caName := printf "%s Self-Signed Certification Authority" $purpose }}
-{{- $ca := genCA $caName 1000 }}
-{{- $cert := genSignedCert $serviceName nil $altNames 365 $ca }}
+{{-   $caName := printf "%s Self-Signed Certification Authority" $purpose }}
+{{-   $ca := genCA $caName 1000 }}
+{{-   $cert := genSignedCert $serviceName nil $altNames 365 $ca }}
+{{-   $crtSecretValue = $cert.Cert | b64enc | quote }}
+{{-   $keySecretValue = $cert.Key | b64enc | quote }}
+{{-   $caSecretValue = $ca.Cert | b64enc | quote }}
+{{- else }}
+{{-   $crtSecretValue = get $existingSecret.data $crtSecretKey }}
+{{-   $keySecretValue = get $existingSecret.data $keySecretKey }}
+{{-   $caSecretValue = get $existingSecret.data $caSecretKey }}
+{{- end }}
 ---
 apiVersion: v1
 kind: Secret
@@ -586,8 +597,7 @@ metadata:
     {{- include "corda.labels" $ | nindent 4 }}
 type: Opaque
 data:
-  {{ $crtSecretKey }}: {{ $cert.Cert | b64enc | quote }}
-  {{ $keySecretKey }}: {{ $cert.Key | b64enc | quote }}
-  {{ $caSecretKey }}: {{ $ca.Cert | b64enc | quote }}
-{{- end }}
+  {{ $crtSecretKey }}: {{ $crtSecretValue }}
+  {{ $keySecretKey }}: {{ $keySecretValue }}
+  {{ $caSecretKey }}: {{ $caSecretValue }}
 {{- end }}

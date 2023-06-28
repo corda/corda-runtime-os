@@ -1,8 +1,8 @@
 package net.corda.interop.rest.impl.v1
 
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.interop.aliasinfo.cache.AliasInfoCacheService
-import net.corda.interop.aliasinfo.write.InteropAliasInfoWriteService
+import net.corda.interop.identity.cache.InteropIdentityCacheService
+import net.corda.interop.identity.write.InteropAliasInfoWriteService
 import net.corda.libs.interop.endpoints.v1.InteropRestResource
 import net.corda.libs.interop.endpoints.v1.types.RestInteropIdentity
 import net.corda.lifecycle.DependentComponents
@@ -32,8 +32,8 @@ internal class InteropRestResourceImpl @Activate constructor(
     coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = ConfigurationReadService::class)
     private val configurationReadService: ConfigurationReadService,
-    @Reference(service = AliasInfoCacheService::class)
-    private val aliasInfoCacheService: AliasInfoCacheService,
+    @Reference(service = InteropIdentityCacheService::class)
+    private val interopIdentityCacheService: InteropIdentityCacheService,
     @Reference(service = InteropAliasInfoWriteService::class)
     private val interopAliasInfoWriteService: InteropAliasInfoWriteService
 ) : InteropRestResource, PluggableRestResource<InteropRestResource>, Lifecycle {
@@ -92,7 +92,7 @@ internal class InteropRestResourceImpl @Activate constructor(
     // Lifecycle
     private val dependentComponents = DependentComponents.of(
         ::configurationReadService,
-        ::aliasInfoCacheService,
+        ::interopIdentityCacheService,
         ::interopAliasInfoWriteService
     )
 

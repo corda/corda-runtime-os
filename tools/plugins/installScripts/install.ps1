@@ -19,10 +19,21 @@ $cliCommand = "`"$ENV:JAVA_HOME\bin\java`" -Dpf4j.pluginsDir=`"$cliHomeDir\plugi
 New-Item "$cliHomeDir\corda-cli.cmd" -ItemType File -Value $cliCommand
 
 if($addToPath) {
-    Write-Output "Adding corda-cli to path"
 
-    Get-ItemProperty -Path 'Registry::HKEY_LOCAL_MACHINE\System\CurrentControlSet\Control\Session Manager\Environment' -Name path
-    $old = (Get-ItemProperty -Path 'Registry::HKEY_LOCAL_MACHINE\System\CurrentControlSet\Control\Session Manager\Environment' -Name path).path
-    $new = "$old;$cliHomeDir"
-    Set-ItemProperty -Path 'Registry::HKEY_LOCAL_MACHINE\System\CurrentControlSet\Control\Session Manager\Environment' -Name path -Value $new
+    # Set permanently for the User
+    $old = [Environment]::GetEnvironmentVariable('PATH', 'User')
+    if (-Not $old.ToLower().Contains($cliHomeDir.ToLower())) {
+        Write-Output "Adding '$cliHomeDir' to path of User profile"
+        $new = "$old;$cliHomeDir"
+        [Environment]::SetEnvironmentVariable('PATH', $new, 'User')
+    }
+
+    # Set in the current terminal
+    $old = [Environment]::GetEnvironmentVariable('PATH')
+    if (-Not $old.ToLower().Contains($cliHomeDir.ToLower())) {
+        Write-Output "Adding '$cliHomeDir' to path of current session"
+        $new = "$old;$cliHomeDir"
+        [Environment]::SetEnvironmentVariable('PATH', $new)
+    }
+
 }

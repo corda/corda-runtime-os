@@ -51,14 +51,16 @@ class HsmRestResourceImpl @Activate constructor(
         }
     }
 
-    override fun assignedHsm(tenantId: String, category: String): HsmAssociationInfo? {
+    override fun assignedHsm(tenantId: String, category: String): HsmAssociationInfo {
         verifyTenantId(tenantId)
         return tryWithExceptionHandling(
             logger,
             "Find HSM",
             untranslatedExceptions = setOf(ResourceNotFoundException::class.java)
         ) {
-            hsmRegistrationClient.findHSM(tenantId, category.toCategory())?.expose()
+            hsmRegistrationClient.findHSM(tenantId, category.toCategory())?.expose() ?: throw ResourceNotFoundException(
+                "No association found for tenant ${tenantId} category ${category}"
+            )
         }
     }
 
