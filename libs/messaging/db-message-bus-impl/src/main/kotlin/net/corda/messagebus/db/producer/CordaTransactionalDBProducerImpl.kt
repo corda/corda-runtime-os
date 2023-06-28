@@ -191,14 +191,15 @@ class CordaTransactionalDBProducerImpl(
         return abs(key.hashCode() % numberOfPartitions)
     }
 
-    override fun getOffsetsAndMetadata(
-        consumer: CordaConsumer<*, *>,
-        records: List<CordaConsumerRecord<*, *>>
-    ): CordaProducer.OffsetsAndMetadata {
+    override fun getOffsets(records: List<CordaConsumerRecord<*, *>>): CordaProducer.Offsets {
         TODO("Not yet implemented")
     }
 
-    override fun sendRecordOffsetsToTransaction(offsetsAndMetadata: CordaProducer.OffsetsAndMetadata) {
+    override fun getMetadata(consumer: CordaConsumer<*, *>): CordaProducer.Metadata {
+        TODO("Not yet implemented")
+    }
+
+    override fun sendRecordOffsetsToTransaction(offsets: CordaProducer.Offsets, metadata: CordaProducer.Metadata) {
         TODO("Not yet implemented")
     }
 }

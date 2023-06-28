@@ -321,12 +321,6 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         }
     }
 
-    /*
-    @@@ where do we put this, if anywhere?
-    if should ony be called in the
-    stateAndEventConsumer.updateInMemoryStatePostCommit(updatedStates, clock)
-     */
-
     private fun closeStateAndEventProducerConsumer() {
         nullableProducer?.close()
         nullableStateAndEventConsumer?.close()
@@ -351,7 +345,7 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
             events.forEach {
                 val partitionMap = updatedStates.computeIfAbsent(it.partition) { mutableMapOf() }
                 partitionMap.computeIfAbsent(it.key) { key ->
-                    // @@@ this is probably unsafe
+                    // @@@ this is probably not thread safe
                     stateAndEventConsumer.getInMemoryStateValue(key)
                 }
             }
@@ -375,6 +369,9 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                 )
                 producerChannel.send(producerData)
             }
+
+            // @@@ this is probably not thread safe
+            stateAndEventConsumer.updateInMemoryStatePostCommit(updatedStates, clock)
 
             log.debug { "Processing events(keys: ${events.joinToString { it.key.toString() }}, size: ${events.size}) complete." }
         }
