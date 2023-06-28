@@ -7,6 +7,7 @@ import net.corda.sandboxgroupcontext.getObjectByKey
 import net.corda.utilities.reflection.castIfPossible
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.serialization.SerializedBytes
+import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -14,17 +15,14 @@ import org.slf4j.LoggerFactory
 import java.io.NotSerializableException
 
 /**
- * This is a platform service that uses the current sandbox's [SerializationService].
+ * This is a platform singleton service that uses the current sandbox's [SerializationService].
  */
-@Component(service = [SerializationServiceInternal::class])
+@Component(service = [SerializationServiceInternal::class, SingletonSerializeAsToken::class])
 class SerializationServiceInternalImpl @Activate constructor(
     @Reference(service = CurrentSandboxGroupContext::class)
     private val currentSandboxGroupContext: CurrentSandboxGroupContext
-) : SerializationServiceInternal {
-
-    private companion object {
-        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
-    }
+) : SerializationServiceInternal, SingletonSerializeAsToken {
+    private val log = LoggerFactory.getLogger(this::class.java)
 
     private val serializationService
         get(): SerializationService {

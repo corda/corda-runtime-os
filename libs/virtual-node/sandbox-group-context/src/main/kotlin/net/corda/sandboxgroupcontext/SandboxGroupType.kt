@@ -9,7 +9,16 @@ import net.corda.sandbox.type.UsedByVerification
  */
 enum class SandboxGroupType(
     private val typeName: String,
+
+    /**
+     * Marker interface for all OSGi `PROTOTYPE` services
+     * that Corda must create for this sandbox type.
+     */
     val serviceMarkerType: Class<*>,
+
+    /**
+     * Does this sandbox type support `@CordaInject`?
+     */
     val hasInjection: Boolean
 ) {
     FLOW("flow", UsedByFlow::class.java, hasInjection = true),
