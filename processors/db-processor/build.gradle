@@ -96,9 +96,9 @@ dependencies {
 
     runtimeOnly libs.javax.activation
     runtimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
-    runtimeOnly "org.liquibase:liquibase-core:$liquibaseVersion"
+    runtimeOnly libs.liquidbase.core
     // NOTE: this is needed by Liquibase but for some reason not picked up automatically.
-    runtimeOnly "commons-beanutils:commons-beanutils:$beanutilsVersion"
+    runtimeOnly libs.commons.beanutils
 
     testRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
 
