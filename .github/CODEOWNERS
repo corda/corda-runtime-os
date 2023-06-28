@@ -74,3 +74,13 @@ CODEOWNERS         @corda/blt @corda/corda5-team-leads
 /processors/db/                                                 @corda/db
 /testing/persistence-testkit/                                   @corda/db
 /tools/plugins/db-config                                        @corda/db
+
+# Modules to be audited by Flow Worker team
+/components/flow/                                               @corda/flow-worker
+/libs/flows/                                                    @corda/flow-worker
+/libs/lifecycle/                                                @corda/flow-worker
+/libs/messaging/                                                @corda/flow-worker
+/libs/application/application-impl/                             @corda/flow-worker
+/processors/flow-processor/                                     @corda/flow-worker
+/testing/flow/                                                  @corda/flow-worker
+/testing/message-patterns/                                      @corda/flow-worker
