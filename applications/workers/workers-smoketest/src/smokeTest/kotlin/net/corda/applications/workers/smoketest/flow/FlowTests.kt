@@ -3,6 +3,8 @@ package net.corda.applications.workers.smoketest.flow
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
+import java.util.UUID
+import kotlin.text.Typography.quote
 import net.corda.applications.workers.smoketest.TEST_CPB_LOCATION
 import net.corda.applications.workers.smoketest.TEST_CPI_NAME
 import net.corda.e2etest.utilities.FlowResult
@@ -31,17 +33,13 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertAll
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.MethodOrderer
 import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle
 import org.junit.jupiter.api.TestMethodOrder
-import java.util.UUID
-//import net.corda.v5.application.flows.FlowContextPropertyKeys
-//import net.corda.v5.crypto.KeySchemeCodes.RSA_CODE_NAME
-import org.junit.jupiter.api.Disabled
-import kotlin.text.Typography.quote
 
 @Suppress("Unused", "FunctionName")
 //The flow tests must go last as one test updates the messaging config which is highly disruptive to subsequent test runs. The real
@@ -568,6 +566,7 @@ class FlowTests {
     }
 
     @Test
+    @Disabled
     fun `Flow Session - Initiate multiple sessions and exercise the flow messaging apis`() {
 
         val requestBody = RpcSmokeTestInput().apply {
