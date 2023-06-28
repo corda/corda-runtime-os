@@ -79,6 +79,11 @@ object CordaMetrics {
         object MessagePollTime : Metric<Timer>("messaging.poll.time", CordaMetrics::timer)
 
         /**
+         * Number of records where the publish has been avoided
+         */
+        object RecordPublishAvoidedCount : Metric<Counter>("messaging.avoided.records.count", Metrics::counter)
+
+        /**
          * FLOW METRICS
          *
          * Time it took for a flow or subFlow to complete successfully or to error.

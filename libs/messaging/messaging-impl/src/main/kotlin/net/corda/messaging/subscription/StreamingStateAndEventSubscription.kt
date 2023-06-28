@@ -88,6 +88,12 @@ internal class StreamingStateAndEventSubscription<K : Any, S : Any, E : Any>(
         .withTag(CordaMetrics.Tag.MessagePatternClientId, config.clientId)
         .build()
 
+    private val recordsAvoidedCount = CordaMetrics.Metric.RecordPublishAvoidedCount.builder()
+        .withTag(CordaMetrics.Tag.MessagePatternType, MetricsConstants.STATE_AND_EVENT_PATTERN_TYPE)
+        .withTag(CordaMetrics.Tag.MessagePatternClientId, config.clientId)
+        .withTag(CordaMetrics.Tag.Topic, config.topic)
+        .build()
+
     /**
      * Is the subscription running.
      */
@@ -304,6 +310,7 @@ internal class StreamingStateAndEventSubscription<K : Any, S : Any, E : Any>(
             isWakeup(it)
         } ?: Pair(emptyList(), emptyList()) // What is this?
 
+        recordsAvoidedCount.increment(eventsToProcess.size.toDouble())
 
         when {
             thisEventUpdates == null -> {
