@@ -47,7 +47,7 @@ class VerificationRequestProcessor(
 
         //        val topic = config.getOutputTopic(BootConfig.VERIFICATION_OUTPUT, FLOW_EVENT_TOPIC)
         //HARDCODED: Point the process to a custom flow processor deployment
-        val flowProcessorTopic = System.getenv("FLOW_VERIFICATION_TOPIC")
+        val flowProcessorTopic = System.getenv("FLOW_PROCESSOR_TOPIC")
         return events
             .filterNot { it.value == null }
             .map { event ->

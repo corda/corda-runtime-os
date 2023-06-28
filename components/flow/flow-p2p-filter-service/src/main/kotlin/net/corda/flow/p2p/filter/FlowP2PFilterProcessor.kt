@@ -67,11 +67,13 @@ class FlowP2PFilterProcessor(cordaAvroSerializationFactory: CordaAvroSerializati
         val sessionEvent = cordaAvroDeserializer.deserialize(payload.array())
         logger.debug { "Processing message from p2p.in with subsystem $FLOW_SESSION_SUBSYSTEM. Key: $key, Event: $sessionEvent" }
 
+        //HARDCODED: Point the process to a custom flow mapper processor deployment
+        val flowMapperTopic = System.getenv("FLOW_MAPPER_TOPIC")
         return if (sessionEvent != null) {
             sessionEvent.messageDirection = MessageDirection.INBOUND
             val sessionId = toggleSessionId(key)
             sessionEvent.sessionId = sessionId
-            Record(FLOW_MAPPER_EVENT_TOPIC, sessionId, FlowMapperEvent(sessionEvent))
+            Record(flowMapperTopic, sessionId, FlowMapperEvent(sessionEvent))
         } else {
             null
         }

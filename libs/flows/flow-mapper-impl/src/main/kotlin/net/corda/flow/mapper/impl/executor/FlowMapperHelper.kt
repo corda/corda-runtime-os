@@ -34,7 +34,7 @@ fun generateFlowId(): String {
 fun getSessionEventOutputTopic(messageDirection: MessageDirection): String {
     //        flowConfig.getOutputTopic(BootConfig.SESSION_OUTPUT, FLOW_EVENT_TOPIC)
     //HARDCODED: Point the process to a custom flow processor deployment
-    val flowSessionTopic = System.getenv("FLOW_SESSION_TOPIC")
+    val flowSessionTopic = System.getenv("FLOW_PROCESSOR_TOPIC")
     return if (messageDirection == MessageDirection.INBOUND) {
         flowSessionTopic
     } else {

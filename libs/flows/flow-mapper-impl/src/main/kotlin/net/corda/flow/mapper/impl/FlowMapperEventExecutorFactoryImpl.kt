@@ -35,7 +35,7 @@ class FlowMapperEventExecutorFactoryImpl @Activate constructor(
     ): FlowMapperEventExecutor {
 //        val startTopic = flowConfig.getOutputTopic(BootConfig.START_OUTPUT, FLOW_EVENT_TOPIC)
         //HARDCODED: Point the process to a custom flow processor deployment
-        val flowProcessorTopic = System.getenv("FLOW_START_TOPIC")
+        val flowProcessorTopic = System.getenv("FLOW_PROCESSOR_TOPIC")
         return when (val flowMapperEventPayload = flowMapperEvent.payload) {
             is SessionEvent -> {
                 when (val sessionPayload = flowMapperEventPayload.payload) {
