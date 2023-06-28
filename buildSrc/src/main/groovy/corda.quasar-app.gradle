@@ -23,7 +23,9 @@ quasar {
         'org.apache.**',
         'org.objectweb.asm',
         'org.objenesis**',
-        'org.osgi.**'
+        'org.osgi.**',
+        'io.zipkin.**',
+        'io.micrometer.**',
     ]
 }
 

@@ -219,7 +219,7 @@ class UtxoFinalityFlowV1Test {
 
     @Test
     fun `called with an invalid transaction initially throws and persists as invalid`() {
-        whenever(transactionVerificationService.verify(any())).thenThrow(
+        whenever(transactionVerificationService.initialVerify(any())).thenThrow(
             TransactionVerificationException(
                 TX_ID, TransactionVerificationStatus.INVALID, null, "Verification error"
             )
