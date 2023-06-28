@@ -141,26 +141,22 @@ internal class RedisStateAndEventConsumer<K : Any, S : Any, E : Any>(
     }
 
     override fun updateInMemoryStatePostCommit(updatedStates: MutableMap<Int, MutableMap<K, S?>>, clock: Clock) {
-        // You are stepping on a gold mine here!
-        val updatedStatesByKey = mutableMapOf<K, S?>()
         updatedStates.forEach { (_, states) ->
             for (entry in states) {
                 val key = entry.key
                 val value = entry.value
                 val keyBytes = avroSerializer.serialize(key)
-                val stateBytes = if (value != null) {
-                    avroSerializer.serialize(value)
-                } else {
-                    byteArrayOf()
+                if (value != null) {
+                    val stateBytes = avroSerializer.serialize(value)
+                    jedisCluster.set(keyBytes, stateBytes)
+                    releaseLock(keyBytes!!)
                 }
-                jedisCluster.set(keyBytes, stateBytes)
-                releaseLock(keyBytes!!)
-                updatedStatesByKey[key] = value
+                else {
+                    jedisCluster.del(keyBytes)
+                    deleteLock(keyBytes!!)
+                }
             }
         }
-
-        // No clue why this has to be here -_-
-        stateAndEventListener?.onPostCommit(updatedStatesByKey)
     }
 
     @Suppress("UNCHECKED_CAST")
@@ -184,6 +180,11 @@ internal class RedisStateAndEventConsumer<K : Any, S : Any, E : Any>(
         jedisCluster.close()
     }
 
+    override fun releaseStateKey(key: K) {
+        val keyBytes = avroSerializer.serialize(key)
+        releaseLock(keyBytes!!)
+    }
+
     private fun acquireLock(key: ByteArray) {
         val lockKey = key + 0.toByte()
         var isLocked = jedisCluster.get(lockKey)
@@ -200,6 +201,11 @@ internal class RedisStateAndEventConsumer<K : Any, S : Any, E : Any>(
         val lockKey = key + 0.toByte()
         jedisCluster.set(lockKey, byteArrayOf((0).toByte()))
         releasedStateLocksCounter.increment()
+    }
+
+    private fun deleteLock(key: ByteArray) {
+        val lockKey = key + 0.toByte()
+        jedisCluster.del(lockKey)
     }
 
     /**

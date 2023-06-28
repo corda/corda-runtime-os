@@ -1,6 +1,5 @@
 package net.corda.messaging.subscription.factory
 
-import java.util.concurrent.ConcurrentHashMap
 import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -8,12 +7,7 @@ import net.corda.messagebus.api.consumer.builder.CordaConsumerBuilder
 import net.corda.messagebus.api.producer.builder.CordaProducerBuilder
 import net.corda.messaging.api.chunking.MessagingChunkFactory
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
-import net.corda.messaging.api.processor.CompactedProcessor
-import net.corda.messaging.api.processor.DurableProcessor
-import net.corda.messaging.api.processor.EventLogProcessor
-import net.corda.messaging.api.processor.PubSubProcessor
-import net.corda.messaging.api.processor.RPCResponderProcessor
-import net.corda.messaging.api.processor.StateAndEventProcessor
+import net.corda.messaging.api.processor.*
 import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.RPCSubscription
 import net.corda.messaging.api.subscription.StateAndEventSubscription
@@ -26,12 +20,7 @@ import net.corda.messaging.api.subscription.listener.StateAndEventListener
 import net.corda.messaging.config.MessagingConfigResolver
 import net.corda.messaging.config.ResolvedSubscriptionConfig
 import net.corda.messaging.constants.SubscriptionType
-import net.corda.messaging.subscription.CompactedSubscriptionImpl
-import net.corda.messaging.subscription.DurableSubscriptionImpl
-import net.corda.messaging.subscription.EventLogSubscriptionImpl
-import net.corda.messaging.subscription.PubSubSubscriptionImpl
-import net.corda.messaging.subscription.RPCSubscriptionImpl
-import net.corda.messaging.subscription.StateAndEventSubscriptionImpl
+import net.corda.messaging.subscription.*
 import net.corda.messaging.subscription.consumer.builder.RedisStateAndEventBuilder
 import net.corda.messaging.subscription.consumer.builder.StateAndEventBuilder
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
@@ -39,7 +28,8 @@ import net.corda.schema.configuration.MessagingConfig.MAX_ALLOWED_MSG_SIZE
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import java.util.UUID
+import java.util.*
+import java.util.concurrent.ConcurrentHashMap
 
 /**
  * Kafka implementation of the Subscription Factory.
@@ -131,14 +121,13 @@ class CordaSubscriptionFactory @Activate constructor(
         val config = getConfig(SubscriptionType.STATE_AND_EVENT, subscriptionConfig, messagingConfig)
         val serializer = cordaAvroSerializationFactory.createAvroSerializer<Any> { }
         val deserializer = cordaAvroSerializationFactory.createAvroDeserializer({}, Any::class.java)
-        return StateAndEventSubscriptionImpl(
+        return StreamingStateAndEventSubscription(
             config,
             stateAndEventBuilder,
             processor,
             serializer,
             deserializer,
             lifecycleCoordinatorFactory,
-            messagingChunkFactory.createChunkSerializerService(messagingConfig.getLong(MAX_ALLOWED_MSG_SIZE)),
             stateAndEventListener,
         )
     }

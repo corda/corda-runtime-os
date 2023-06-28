@@ -303,6 +303,10 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
         return future
     }
 
+    override fun releaseStateKey(key: K) {
+        // Let's do nothing
+    }
+
     /**
      * Helper method to poll events from a paused [eventConsumer], should only be used to prevent it from being kicked
      * out of the consumer group and only when all partitions are paused as to not lose any events.

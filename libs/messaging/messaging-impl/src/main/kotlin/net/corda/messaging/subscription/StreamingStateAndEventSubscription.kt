@@ -9,8 +9,6 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messagebus.api.producer.CordaProducer
-import net.corda.messagebus.api.producer.CordaProducerRecord
-import net.corda.messaging.api.chunking.ChunkSerializerService
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.processor.StateAndEventProcessor
@@ -33,17 +31,15 @@ import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
 import java.time.Clock
-import java.util.UUID
 
 @Suppress("LongParameterList")
-internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
+internal class StreamingStateAndEventSubscription<K : Any, S : Any, E : Any>(
     private val config: ResolvedSubscriptionConfig,
     private val builder: StateAndEventBuilder,
     private val processor: StateAndEventProcessor<K, S, E>,
     private val cordaAvroSerializer: CordaAvroSerializer<Any>,
     private val cordaAvroDeserializer: CordaAvroDeserializer<Any>,
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
-    private val chunkSerializerService: ChunkSerializerService,
     private val stateAndEventListener: StateAndEventListener<K, S>? = null,
     private val clock: Clock = Clock.systemUTC(),
 ) : StateAndEventSubscription<K, S, E> {
@@ -86,11 +82,6 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         .build()
 
     private val batchSizeHistogram = CordaMetrics.Metric.MessageBatchSize.builder()
-        .withTag(CordaMetrics.Tag.MessagePatternType, MetricsConstants.STATE_AND_EVENT_PATTERN_TYPE)
-        .withTag(CordaMetrics.Tag.MessagePatternClientId, config.clientId)
-        .build()
-
-    private val commitTimer = CordaMetrics.Metric.MessageCommitTime.builder()
         .withTag(CordaMetrics.Tag.MessagePatternType, MetricsConstants.STATE_AND_EVENT_PATTERN_TYPE)
         .withTag(CordaMetrics.Tag.MessagePatternClientId, config.clientId)
         .build()
@@ -229,16 +220,8 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
      * @return false if the batch had to be abandoned due to a rebalance
      */
     private fun tryProcessBatchOfEvents(events: List<CordaConsumerRecord<K, E>>): Boolean {
-        val outputRecords = mutableListOf<Record<*, *>>()
+
         val newEventsToProcess = mutableListOf<Record<K, E>>()
-        val updatedStates: MutableMap<Int, MutableMap<K, S?>> = mutableMapOf()
-        // Pre-populate the updated states with the current in-memory state.
-        events.forEach {
-            val partitionMap = updatedStates.computeIfAbsent(it.partition) { mutableMapOf() }
-            partitionMap.computeIfAbsent(it.key) { key ->
-                stateAndEventConsumer.getInMemoryStateValue(key)
-            }
-        }
 
         log.debug { "Processing events(keys: ${events.joinToString { it.key.toString() }}, size: ${events.size})" }
         val eventsToProcess = ArrayDeque(events)
@@ -246,14 +229,32 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
             processorMeter.recordCallable {
                 while (eventsToProcess.isNotEmpty()) {
                     val event = eventsToProcess.removeFirst()
-                    stateAndEventConsumer.resetPollInterval()
-                    processEvent(event, outputRecords, newEventsToProcess, updatedStates)
-                    eventsToProcess.addAll(newEventsToProcess.map {
-                        val ret = toCordaConsumerRecord(event, it)
-                        log.info("~~~~ $ret")
-                        ret
-                    })
-                    newEventsToProcess.clear()
+                    try {
+                        val outputRecords = mutableListOf<Record<*, *>>()
+                        // Get the state
+                        val updatedStates: MutableMap<Int, MutableMap<K, S?>> = mutableMapOf()
+                        val state = stateAndEventConsumer.getInMemoryStateValue(event.key)
+                        val partitionMap = updatedStates.computeIfAbsent(event.partition) { mutableMapOf() }
+                        partitionMap.computeIfAbsent(event.key) { state }
+
+                        stateAndEventConsumer.resetPollInterval()
+                        processEvent(event, outputRecords, newEventsToProcess, updatedStates)
+                        producer.beginTransaction()
+                        producer.sendRecords(outputRecords.toCordaProducerRecords())
+                        producer.sendRecordOffsetsToTransaction(eventConsumer, listOf(event))
+                        producer.commitTransaction()
+                        eventsToProcess.addAll(newEventsToProcess.map {
+                            val ret = toCordaConsumerRecord(event, it)
+                            log.info("~~~~ $ret")
+                            ret
+                        })
+                        newEventsToProcess.clear()
+                        stateAndEventConsumer.updateInMemoryStatePostCommit(updatedStates, clock)
+                        log.debug { "Processed event of key '${event.key}' successfully." }
+                    }
+                    finally {
+                        stateAndEventConsumer.releaseStateKey(event.key)
+                    }
                 }
             }
         } catch (ex: StateAndEventConsumer.RebalanceInProgressException) {
@@ -261,26 +262,6 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                     "size: ${events.size}) due to rebalance", ex)
             return true
         }
-
-        commitTimer.recordCallable {
-            producer.beginTransaction()
-            producer.sendRecords(outputRecords.toCordaProducerRecords())
-            if (deadLetterRecords.isNotEmpty()) {
-                producer.sendRecords(deadLetterRecords.map {
-                    CordaProducerRecord(
-                        getDLQTopic(eventTopic),
-                        UUID.randomUUID().toString(),
-                        it
-                    )
-                })
-                deadLetterRecords.clear()
-            }
-            producer.sendRecordOffsetsToTransaction(eventConsumer, events)
-            producer.commitTransaction()
-        }
-        log.debug { "Processing events(keys: ${events.joinToString { it.key.toString() }}, size: ${events.size}) complete." }
-
-        stateAndEventConsumer.updateInMemoryStatePostCommit(updatedStates, clock)
         return false
     }
 
@@ -310,17 +291,8 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         val updatedState = thisEventUpdates?.updatedState
         val (eventsToProcess, outputEvents) = thisEventUpdates?.responseEvents?.partition {
             it.topic == event.topic && processor.eventValueClass.isInstance(it.value) && it.key == key
-        } ?: Pair(emptyList(), emptyList())
+        } ?: Pair(emptyList(), emptyList()) // What is this?
 
-        log.info("**** events to process contains: ${eventsToProcess.size} events:")
-        eventsToProcess.forEach {
-            log.info("****\t- key:${it.key} :: class:${it.value?.javaClass?.name ?: "null"} :: topic: ${it.topic}")
-        }
-
-        log.info("**** output events contains: ${outputEvents.size} events:")
-        outputEvents.forEach {
-            log.info("****\t- key:${it.key} :: class:${it.value?.javaClass?.name ?: "null"} :: topic: ${it.topic}")
-        }
 
         when {
             thisEventUpdates == null -> {
@@ -328,9 +300,7 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                     "Sending state and event on key ${event.key} for topic ${event.topic} to dead letter queue. " +
                             "Processor failed to complete."
                 )
-                generateChunkKeyCleanupRecords(key, state, null, outputRecords)
                 outputRecords.add(generateDeadLetterRecord(event, state))
-                outputRecords.add(Record(stateTopic, key, null))
                 updatedStates.computeIfAbsent(partitionId) { mutableMapOf() }[key] = null
             }
 
@@ -339,9 +309,7 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                     "Sending state and event on key ${event.key} for topic ${event.topic} to dead letter queue. " +
                             "Processor marked event for the dead letter queue"
                 )
-                generateChunkKeyCleanupRecords(key, state, null, outputRecords)
                 outputRecords.add(generateDeadLetterRecord(event, state))
-                outputRecords.add(Record(stateTopic, key, null))
                 updatedStates.computeIfAbsent(partitionId) { mutableMapOf() }[key] = null
 
                 // In this case the processor may ask us to publish some output records regardless, so make sure these
@@ -351,23 +319,10 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
             }
 
             else -> {
-                generateChunkKeyCleanupRecords(key, state, updatedState, outputRecords)
                 outputRecords.addAll(outputEvents)
-                outputRecords.add(Record(stateTopic, key, updatedState))
                 updatedStates.computeIfAbsent(partitionId) { mutableMapOf() }[key] = updatedState
                 recordsToProcess.addAll(eventsToProcess as List<Record<K, E>>)
                 log.debug { "Completed event: $event" }
-            }
-        }
-    }
-
-    /**
-     * If the new state requires old chunk keys to be cleared then generate cleanup records to set those ChunkKeys to null
-     */
-    private fun generateChunkKeyCleanupRecords(key: K, state: S?, updatedState: S?, outputRecords: MutableList<Record<*, *>>) {
-        chunkSerializerService.getChunkKeysToClear(key, state, updatedState)?.let { chunkKeys ->
-            chunkKeys.map { chunkKey ->
-                outputRecords.add(Record(stateTopic, chunkKey, null))
             }
         }
     }

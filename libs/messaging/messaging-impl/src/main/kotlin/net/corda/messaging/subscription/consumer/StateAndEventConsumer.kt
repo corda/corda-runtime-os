@@ -97,4 +97,9 @@ interface StateAndEventConsumer<K : Any, S : Any, E : Any> : AutoCloseable {
      */
     val eventConsumer: CordaConsumer<K, E>
     val stateConsumer: CordaConsumer<K, S>
+
+    /**
+     * Release the locked state key [key]
+     */
+    fun releaseStateKey(key: K)
 }

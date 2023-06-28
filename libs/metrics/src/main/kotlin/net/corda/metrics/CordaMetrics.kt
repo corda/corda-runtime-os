@@ -36,17 +36,17 @@ object CordaMetrics {
         /**
          * Count the active state lock acquired
          */
-        object StateLockAttempts : Metric<Counter>("corda_flow_processor_state_locks_attempts", Metrics::counter)
+        object StateLockAttempts : Metric<Counter>("messaging.state.locks.attempts", Metrics::counter)
 
         /**
          * Count the active state lock acquired
          */
-        object StateAcquiredLocksCount : Metric<Counter>("corda_flow_processor_state_locks_acquired", Metrics::counter)
+        object StateAcquiredLocksCount : Metric<Counter>("messaging.state.locks.acquired", Metrics::counter)
 
         /**
          * Count the active state lock acquired
          */
-        object StateReleasedLocksCount : Metric<Counter>("corda_flow_processor_state_locks_released", Metrics::counter)
+        object StateReleasedLocksCount : Metric<Counter>("messaging.state.locks.released", Metrics::counter)
 
         /**
          * HTTP Requests time.
