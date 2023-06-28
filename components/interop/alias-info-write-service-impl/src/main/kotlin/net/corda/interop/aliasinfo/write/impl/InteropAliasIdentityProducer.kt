@@ -17,7 +17,7 @@ class InteropAliasIdentityProducer(
 
     fun publishAliasIdentity(shortHash: String, interopAliasIdentity: InteropAliasIdentity) {
         if (publisher.get() == null) {
-            InteropAliasInfoWriteServiceImpl.log.error("Interop alias identity publisher is null, not publishing.")
+            logger.error("Interop alias identity publisher is null, not publishing.")
             return
         }
 
