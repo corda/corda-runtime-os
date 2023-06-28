@@ -25,8 +25,10 @@ interface InteropRestResource : RestResource {
         description = "This method returns a list of interop group ids.",
         responseDescription = "List of interop groups"
     )
-    fun getInterOpGroups(@RestPathParameter(description = "ID of the holding identity which groups are to be returned.")
-                         holdingidentityid: String?): List<UUID>
+    fun getInterOpGroups(
+        @RestPathParameter(description = "ID of the holding identity which groups are to be returned.")
+        holdingidentityid: String?
+    ): List<UUID>
 
     /**
      * Endpoint to create interop identity
@@ -52,6 +54,8 @@ interface InteropRestResource : RestResource {
         description = "This method returns a list of interop identities belonging to the given holding identity.",
         responseDescription = "List of interop identities"
     )
-    fun getInterOpIdentities(@RestPathParameter(description = "ID of the holding identity which identities are to be returned.")
-                         holdingidentityid: String?): List<CreateInteropIdentityRequest>
+    fun getInterOpIdentities(
+        @RestPathParameter(description = "ID of the holding identity which identities are to be returned.")
+        holdingidentityid: String?
+    ): List<CreateInteropIdentityRequest>
 }
