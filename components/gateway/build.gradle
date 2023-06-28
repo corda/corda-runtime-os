@@ -37,8 +37,8 @@ dependencies {
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation project(":testing:test-utilities")
-    integrationTestRuntimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
-    integrationTestImplementation "org.apache.logging.log4j:log4j-core:$log4jVersion"
+    integrationTestRuntimeOnly libs.log4j.slf4j.impl
+    integrationTestImplementation libs.log4j.core
     integrationTestImplementation project(":libs:schema-registry:schema-registry-impl")
     integrationTestImplementation "net.corda:corda-avro-schema"
 
