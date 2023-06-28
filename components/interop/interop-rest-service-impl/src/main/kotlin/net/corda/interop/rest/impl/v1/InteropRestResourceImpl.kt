@@ -1,8 +1,8 @@
 package net.corda.interop.rest.impl.v1
 
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.interop.aliasinfo.cache.InteropIdentityCacheService
-import net.corda.interop.aliasinfo.write.InteropAliasInfoWriteService
+import net.corda.interop.identity.cache.InteropIdentityCacheService
+import net.corda.interop.identity.write.InteropAliasInfoWriteService
 import net.corda.libs.interop.endpoints.v1.InteropRestResource
 import net.corda.libs.interop.endpoints.v1.types.CreateInteropIdentityRequest
 import net.corda.lifecycle.DependentComponents
