@@ -84,3 +84,4 @@ CODEOWNERS         @corda/blt @corda/corda5-team-leads
 /processors/flow-processor/                                     @corda/flow-worker
 /testing/flow/                                                  @corda/flow-worker
 /testing/message-patterns/                                      @corda/flow-worker
+/applications/workers/release/flow-worker                       @corda/flow-worker
