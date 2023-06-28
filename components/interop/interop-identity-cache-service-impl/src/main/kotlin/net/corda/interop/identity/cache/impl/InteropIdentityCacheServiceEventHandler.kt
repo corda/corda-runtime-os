@@ -28,7 +28,7 @@ class InteropIdentityCacheServiceEventHandler(
 ) : LifecycleEventHandler {
     companion object {
         private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
-        private const val GROUP_NAME = "interop_alias_identity"
+        private const val GROUP_NAME = "interop_identity"
     }
 
     private var registration: RegistrationHandle? = null
