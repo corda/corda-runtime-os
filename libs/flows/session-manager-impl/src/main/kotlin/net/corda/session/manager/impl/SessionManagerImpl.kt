@@ -46,6 +46,7 @@ class SessionManagerImpl @Activate constructor(
 
     override fun processMessageReceived(key: Any, sessionState: SessionState?, event: SessionEvent, instant: Instant):
             SessionState {
+        logger.info("processMessageReceived [$key] [$event]")
         val updatedSessionState = sessionState?.let {
             it.lastReceivedMessageTime = instant
             processAcks(event, it)
@@ -61,6 +62,7 @@ class SessionManagerImpl @Activate constructor(
         instant: Instant,
         maxMsgSize: Long,
     ): SessionState {
+        logger.info("processMessageToSend [$key] [$event]")
         return sessionEventProcessorFactory.createEventToSendProcessor(key, event, sessionState, instant, maxMsgSize).execute()
     }
 
