@@ -4,6 +4,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import net.corda.avro.serialization.CordaAvroSerializer
@@ -30,7 +31,6 @@ import net.corda.messaging.subscription.consumer.listener.StateAndEventConsumerR
 import net.corda.messaging.utils.getEventsByBatch
 import net.corda.messaging.utils.toCordaProducerRecords
 import net.corda.messaging.utils.toRecord
-import net.corda.messaging.utils.tryGetResult
 import net.corda.metrics.CordaMetrics
 import net.corda.schema.Schemas.getDLQTopic
 import net.corda.schema.Schemas.getStateAndEventStateTopic
@@ -60,7 +60,8 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
     private var threadLooper =
         ThreadLooper(log, config, lifecycleCoordinatorFactory, "state/event processing thread", ::runConsumeLoop)
 
-    private val producer: CordaProducer
+    // @@@ This producer is only used to get stuff, not for producing
+    private val utilityProducer: CordaProducer
         get() {
             return nullableProducer ?: throw IllegalStateException("Unexpected access to null producer.")
         }
@@ -80,24 +81,36 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
     private val stateTopic = getStateAndEventStateTopic(config.topic)
     private lateinit var deadLetterRecords: MutableList<ByteArray>
 
-    private val errorMsg = "Failed to read and process records from topic $eventTopic, group ${config.group}, " +
-            "producerClientId ${config.clientId}."
+    private val errorMsg =
+        "Failed to read and process records from topic $eventTopic, group ${config.group}, " + "producerClientId ${config.clientId}."
 
     private val processorMeter = CordaMetrics.Metric.MessageProcessorTime.builder()
         .withTag(CordaMetrics.Tag.MessagePatternType, MetricsConstants.STATE_AND_EVENT_PATTERN_TYPE)
         .withTag(CordaMetrics.Tag.MessagePatternClientId, config.clientId)
-        .withTag(CordaMetrics.Tag.OperationName, MetricsConstants.BATCH_PROCESS_OPERATION)
-        .build()
+        .withTag(CordaMetrics.Tag.OperationName, MetricsConstants.BATCH_PROCESS_OPERATION).build()
 
     private val batchSizeHistogram = CordaMetrics.Metric.MessageBatchSize.builder()
         .withTag(CordaMetrics.Tag.MessagePatternType, MetricsConstants.STATE_AND_EVENT_PATTERN_TYPE)
-        .withTag(CordaMetrics.Tag.MessagePatternClientId, config.clientId)
-        .build()
+        .withTag(CordaMetrics.Tag.MessagePatternClientId, config.clientId).build()
 
     private val commitTimer = CordaMetrics.Metric.MessageCommitTime.builder()
         .withTag(CordaMetrics.Tag.MessagePatternType, MetricsConstants.STATE_AND_EVENT_PATTERN_TYPE)
-        .withTag(CordaMetrics.Tag.MessagePatternClientId, config.clientId)
-        .build()
+        .withTag(CordaMetrics.Tag.MessagePatternClientId, config.clientId).build()
+
+    private data class ProducerData(
+        val offsets: CordaProducer.Offsets,
+        val metaData: CordaProducer.Metadata,
+        val outgoingRecords: List<CordaProducerRecord<*, *>>
+    )
+
+    private data class ProcessorData<K, E>(
+        val metaData: CordaProducer.Metadata,
+        val incomingRecords: List<CordaConsumerRecord<K, E>>
+    )
+
+
+    private val producerChannels = mutableMapOf<Int, Channel<ProducerData>>()
+    private val processorChannels = mutableMapOf<Int, Channel<ProcessorData<K, E>>>()
 
     /**
      * Is the subscription running.
@@ -124,6 +137,13 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         var attempts = 0
         var nullableRebalanceListener: StateAndEventConsumerRebalanceListener? = null
 
+        /*
+         * This is a retry loop. Its purpose is to keep the subscription going if the polling/processing/producing part
+         * throws an intermittent exception, that is an exception which indicates there is nothing fundamentally wrong
+         * just that a problem occurred this time and perhaps would be fine on a retry. Corda regards most runtime errors
+         * as intermittent, even ones which render the consumer instance unusable, and as such this loop handles recreating
+         * the consumer to try again. Non-intermittent errors tends to be related to e.g. detecting a bad Kafka deployment.
+         */
         while (!threadLooper.loopStopped) {
             attempts++
             try {
@@ -145,8 +165,7 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                     { data ->
                         log.error("Failed to deserialize event record from $eventTopic")
                         deadLetterRecords.add(data)
-                    }
-                )
+                    })
                 nullableRebalanceListener = rebalanceListener
                 val eventConsumerTmp = stateAndEventConsumerTmp.eventConsumer
                 nullableStateAndEventConsumer = stateAndEventConsumerTmp
@@ -154,14 +173,14 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                 eventConsumerTmp.subscribe(eventTopic, rebalanceListener)
                 threadLooper.updateLifecycleStatus(LifecycleStatus.UP)
 
+                // Run the main poll loop continuously whilst there are no errors
                 pollAndProcess(stateAndEventConsumerTmp)
 
             } catch (ex: Exception) {
                 when (ex) {
                     is CordaMessageAPIIntermittentException -> {
                         log.warn(
-                            "$errorMsg Attempts: $attempts. Recreating " +
-                                    "consumer/producer and Retrying.", ex
+                            "$errorMsg Attempts: $attempts. Recreating " + "consumer/producer and Retrying.", ex
                         )
                     }
 
@@ -185,6 +204,10 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         runBlocking {
             val jobs = mutableListOf<Job>()
 
+            /*
+             * This is the main polling loop. The subscription's thread will sit in here forever (unless some Kafka error
+             * is generated), polling, firing off requests to process events to an async processor.
+             */
             while (!threadLooper.loopStopped) {
                 stateAndEventConsumer.pollAndUpdateStates(true)
                 var attempts = 0
@@ -197,20 +220,81 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                         batchSizeHistogram.record(records.size.toDouble())
                         val batches = getEventsByBatch(records).iterator()
                         while (!rebalanceOccurred && batches.hasNext()) {
-                            val batch = batches.next()
+                            try {
+                                /*
+                                 * Batches of events are processed and the output published in buckets of the same partition.
+                                 * This is because the producer writes the consumer offsets as well as any output records
+                                 * from the processing. If we didn't batch by partition, a processor on a particular
+                                 * partition processing a later event could beat another processor on the same partition
+                                 * processing an older event, and the offsets would then be written in the wrong order.
+                                 * This is a means to keep consumer offset processing order the same whilst fanning out
+                                 * event processing in parallel in other words.
+                                 */
+                                val bucketedEventsByPartition = batches.next().groupBy({ it.partition }, { it })
 
-                            for (event in batch) {
-                                producerChannels.computeIfAbsent(event.partition) {
-                                    val newConfig = config.copy(uniqueId = "${config.uniqueId}-${event.partition}" )
-                                    Channel<ProducerData>(1).also { channel ->
-                                        launchProducer(channel, newConfig).also { job ->
-                                            jobs.add(job)
+                                for (partition in bucketedEventsByPartition.keys) {
+                                    // Create the producer coroutines for any partition we've not yet encountered
+                                    producerChannels.computeIfAbsent(partition) {
+                                        val newConfig = config.copy(uniqueId = "${config.uniqueId}-${partition}")
+                                        Channel<ProducerData>(1).also { channel ->
+                                            launchProducer(channel, newConfig).also { job ->
+                                                jobs.add(job)
+                                            }
                                         }
                                     }
-                                }
-                            }
 
-                            rebalanceOccurred = tryProcessBatchOfEvents(batch)
+                                    // Create the processor coroutines for any partition we've not yet encountered
+                                    val processorChannelForCurrentPartition = processorChannels.computeIfAbsent(partition) {
+                                        Channel<ProcessorData<K, E>>(1).also { channel ->
+                                            // A producer channel should always already exist at this point
+                                            val producerChannel = checkNotNull(producerChannels[partition])
+                                            // Launch processor, effectively binding the processor and producer channels
+                                            // to create a pipeline of streamed event processing and output publishing.
+                                            launchProcessor(
+                                                processorChannel = channel, producerChannel = producerChannel
+                                            ).also { job ->
+                                                jobs.add(job)
+                                            }
+                                        }
+                                    }
+
+                                    val eventsForThisPartition = checkNotNull(bucketedEventsByPartition[partition])
+                                    // Get the metadata from the consumer in the only thread it's safe to do so
+                                    val metaData = utilityProducer.getMetadata(eventConsumer)
+                                    /*
+                                     * Send current bucket of events to the appropriate processor channel to kick of processing
+                                     * asynchronously. Whilst processing is async, the attempt we make to add to the channel is
+                                     * synchronous, such that we can reset the poll interval whilst we are waiting to add it.
+                                     * If we blocked here, Kafka could eventually consider us a candidate for fencing as we'd
+                                     * appear to be unresponsive to it.
+                                     */
+                                    var logged: Boolean = false
+                                    while (processorChannelForCurrentPartition.trySend(ProcessorData(metaData, eventsForThisPartition)).isFailure) {
+                                        if (!logged) {
+                                            log.info("@@@ Processor queue full, suspending briefly before retry")
+                                            logged = true
+                                        }
+                                        delay(10) // ms
+                                        // resetPollInterval is cheap if we haven't exceeded the poll interval time
+                                        stateAndEventConsumer.resetPollInterval()
+                                    }
+                                }
+                            } catch (ex: StateAndEventConsumer.RebalanceInProgressException) {
+//                                log.info(
+//                                    "Abandoning processing of events(keys: ${eventsForThisPartition.joinToString { it.key.toString() }}, " +
+//                                            "size: ${eventsForThisPartition.size}) due to rebalance", ex
+//                                )
+                                log.info("@@@ REBALANCE")
+                                // @@@ need to check the rebalance logic here, this will drop up out of the current polling loop
+                                // for another go at pollAndUpdateStates, is that enough or do we need to reset the consumer some
+                                // other way (e.g. stateAndEventConsumer.resetEventOffsetPosition())?
+
+                                // @@@ - possible bug here
+                                // Some processing and producing events will already be in the channels and in some time
+                                // in the future end up writing records and consumer offsets. When we restart as a
+                                // result of this rebalance, those events could be processed again
+                                rebalanceOccurred = true
+                            }
                         }
                         keepProcessing = false // We only want to do one batch at a time
                     } catch (ex: Exception) {
@@ -222,9 +306,8 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
 
                             else -> {
                                 throw CordaMessageAPIFatalException(
-                                    "Failed to process records from topic $eventTopic, group ${config.group}, " +
-                                            "producerClientId ${config.clientId}. " +
-                                            "Fatal error occurred.", ex
+                                    "Failed to process records from topic $eventTopic, group ${config.group}, " + "producerClientId ${config.clientId}. " + "Fatal error occurred.",
+                                    ex
                                 )
                             }
                         }
@@ -238,6 +321,12 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         }
     }
 
+    /*
+    @@@ where do we put this, if anywhere?
+    if should ony be called in the
+    stateAndEventConsumer.updateInMemoryStatePostCommit(updatedStates, clock)
+     */
+
     private fun closeStateAndEventProducerConsumer() {
         nullableProducer?.close()
         nullableStateAndEventConsumer?.close()
@@ -245,80 +334,62 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         nullableStateAndEventConsumer = null
     }
 
-    private data class ProducerData(
-        val offsetsAndMetadata: CordaProducer.OffsetsAndMetadata,
-        val records: List<CordaProducerRecord<*, *>>
-    )
+    // @@@ exception handling in the coroutines to consider
 
-    private val producerChannels = mutableMapOf<Int, Channel<ProducerData>>()
+    private fun CoroutineScope.launchProcessor(
+        producerChannel: Channel<ProducerData>, processorChannel: Channel<ProcessorData<K, E>>
+    ) = launch(Executors.newSingleThreadExecutor().asCoroutineDispatcher()) {
+        log.info("@@@ creating processor")
+        for (processorData in processorChannel) {
+            log.info("@@@ processing")
+            val outputRecords = mutableListOf<Record<*, *>>()
+            var lastEvent: CordaConsumerRecord<K, E>? = null
+            val events = processorData.incomingRecords
 
-    /**
-     * Process a batch of events from the last poll and publish the outputs (including DLQd events)
-     *
-     * @return false if the batch had to be abandoned due to a rebalance
-     */
-    private suspend fun tryProcessBatchOfEvents(events: List<CordaConsumerRecord<K, E>>): Boolean {
-        val outputMap = mutableMapOf<Int, MutableList<Record<*, *>>>()
-        val lastEventMap = mutableMapOf<Int, CordaConsumerRecord<K, E>>()
-
-        val updatedStates: MutableMap<Int, MutableMap<K, S?>> = mutableMapOf()
-        // Pre-populate the updated states with the current in-memory state.
-        events.forEach {
-            val partitionMap = updatedStates.computeIfAbsent(it.partition) { mutableMapOf() }
-            partitionMap.computeIfAbsent(it.key) { key ->
-                stateAndEventConsumer.getInMemoryStateValue(key)
-            }
-        }
-
-        log.debug { "Processing events(keys: ${events.joinToString { it.key.toString() }}, size: ${events.size})" }
-        try {
-            processorMeter.recordCallable {
-                for (event in events) {
-                    stateAndEventConsumer.resetPollInterval()
-                    val outputRecords = mutableListOf<Record<*, *>>()
-                    processEvent(event, outputRecords, updatedStates)
-                    // Keep a running list of output records
-                    outputMap.computeIfAbsent(event.partition) {
-                        mutableListOf()
-                    }.also{
-                        it += outputRecords
-                    }
-                    // And the last event
-                    lastEventMap[event.partition] = event
+            val updatedStates: MutableMap<Int, MutableMap<K, S?>> = mutableMapOf()
+            // Pre-populate the updated states with the current in-memory state.
+            events.forEach {
+                val partitionMap = updatedStates.computeIfAbsent(it.partition) { mutableMapOf() }
+                partitionMap.computeIfAbsent(it.key) { key ->
+                    // @@@ this is probably unsafe
+                    stateAndEventConsumer.getInMemoryStateValue(key)
                 }
             }
-        } catch (ex: StateAndEventConsumer.RebalanceInProgressException) {
-            log.warn(
-                "Abandoning processing of events(keys: ${events.joinToString { it.key.toString() }}, " +
-                        "size: ${events.size}) due to rebalance", ex
-            )
-            return true
+
+            log.debug { "Processing events(keys: ${events.joinToString { it.key.toString() }}, size: ${events.size})" }
+
+            processorMeter.recordCallable {
+                for (event in events) {
+                    processEvent(event, outputRecords, updatedStates)
+                    // And the last event
+                    lastEvent = event
+                }
+            }
+
+            // If we processed something, send the output records and offsets to the producer channel
+            lastEvent?.let {
+                val producerData = ProducerData(
+                    utilityProducer.getOffsets(listOf(it)),
+                    processorData.metaData,
+                    outputRecords.toCordaProducerRecords()
+                )
+                producerChannel.send(producerData)
+            }
+
+            log.debug { "Processing events(keys: ${events.joinToString { it.key.toString() }}, size: ${events.size}) complete." }
         }
-
-        outputMap.keys.forEach { partition ->
-            val producerData = ProducerData(
-                producer.getOffsetsAndMetadata(eventConsumer, listOf(checkNotNull(lastEventMap[partition]))),
-                checkNotNull(outputMap[partition]).toCordaProducerRecords()
-            )
-
-            checkNotNull(producerChannels[partition]).send(producerData)
-        }
-
-        log.debug { "Processing events(keys: ${events.joinToString { it.key.toString() }}, size: ${events.size}) complete." }
-
-        /// @@@
-        //stateAndEventConsumer.updateInMemoryStatePostCommit(updatedStates, clock)
-        return false
     }
 
     private fun CoroutineScope.launchProducer(
-        producerChannel: Channel<ProducerData>,
-        config: ResolvedSubscriptionConfig
+        producerChannel: Channel<ProducerData>, config: ResolvedSubscriptionConfig
     ) = launch(Executors.newSingleThreadExecutor().asCoroutineDispatcher()) {
+        log.info("@@@ creating producer")
         val producer = builder.createProducer(config)
         for (producerData in producerChannel) {
+            log.info("@@@ producing")
             producer.beginTransaction()
-            producer.sendRecords(producerData.records)
+            producer.sendRecords(producerData.outgoingRecords)
+            // @@@ no DLQ support at present
             //            if (deadLetterRecords.isNotEmpty()) {
             //                producer.sendRecords(deadLetterRecords.map {
             //                    CordaProducerRecord(
@@ -329,7 +400,7 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
             //                })
             //                deadLetterRecords.clear()
             //            }
-            producer.sendRecordOffsetsToTransaction(producerData.offsetsAndMetadata)
+            producer.sendRecordOffsetsToTransaction(producerData.offsets, producerData.metaData)
             producer.commitTransaction()
         }
     }
@@ -350,8 +421,7 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         when {
             thisEventUpdates == null -> {
                 log.warn(
-                    "Sending state and event on key ${event.key} for topic ${event.topic} to dead letter queue. " +
-                            "Processor failed to complete."
+                    "Sending state and event on key ${event.key} for topic ${event.topic} to dead letter queue. " + "Processor failed to complete."
                 )
                 generateChunkKeyCleanupRecords(key, state, null, outputRecords)
                 outputRecords.add(generateDeadLetterRecord(event, state))
@@ -361,8 +431,7 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
 
             thisEventUpdates.markForDLQ -> {
                 log.warn(
-                    "Sending state and event on key ${event.key} for topic ${event.topic} to dead letter queue. " +
-                            "Processor marked event for the dead letter queue"
+                    "Sending state and event on key ${event.key} for topic ${event.topic} to dead letter queue. " + "Processor marked event for the dead letter queue"
                 )
                 generateChunkKeyCleanupRecords(key, state, null, outputRecords)
                 outputRecords.add(generateDeadLetterRecord(event, state))
@@ -388,10 +457,7 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
      * If the new state requires old chunk keys to be cleared then generate cleanup records to set those ChunkKeys to null
      */
     private fun generateChunkKeyCleanupRecords(
-        key: K,
-        state: S?,
-        updatedState: S?,
-        outputRecords: MutableList<Record<*, *>>
+        key: K, state: S?, updatedState: S?, outputRecords: MutableList<Record<*, *>>
     ) {
         chunkSerializerService.getChunkKeysToClear(key, state, updatedState)?.let { chunkKeys ->
             chunkKeys.map { chunkKey ->
@@ -400,24 +466,28 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         }
     }
 
-    private fun getUpdatesForEvent(state: S?, event: CordaConsumerRecord<K, E>): StateAndEventProcessor.Response<S>? {
-        val future = stateAndEventConsumer.waitForFunctionToFinish(
-            { processor.onNext(state, event.toRecord()) }, config.processorTimeout.toMillis(),
-            "Failed to finish within the time limit for state: $state and event: $event"
-        )
-        @Suppress("unchecked_cast")
-        return future.tryGetResult() as? StateAndEventProcessor.Response<S>
+    private fun getUpdatesForEvent(
+        state: S?, event: CordaConsumerRecord<K, E>
+    ): StateAndEventProcessor.Response<S>? {
+        return processor.onNext(state, event.toRecord())
+
+    // @@@ get rid of all the poll interval anti-fencing stuff
+//        val future = stateAndEventConsumer.waitForFunctionToFinish(
+//            { processor.onNext(state, event.toRecord()) },
+//            config.processorTimeout.toMillis(),
+//            "Failed to finish within the time limit for state: $state and event: $event"
+//        )
+//        @Suppress("unchecked_cast") return future.tryGetResult() as? StateAndEventProcessor.Response<S>
     }
 
     private fun generateDeadLetterRecord(event: CordaConsumerRecord<K, E>, state: S?): Record<*, *> {
         val keyBytes = ByteBuffer.wrap(cordaAvroSerializer.serialize(event.key))
-        val stateBytes =
-            if (state != null) ByteBuffer.wrap(cordaAvroSerializer.serialize(state)) else null
+        val stateBytes = if (state != null) ByteBuffer.wrap(cordaAvroSerializer.serialize(state)) else null
         val eventValue = event.value
-        val eventBytes =
-            if (eventValue != null) ByteBuffer.wrap(cordaAvroSerializer.serialize(eventValue)) else null
+        val eventBytes = if (eventValue != null) ByteBuffer.wrap(cordaAvroSerializer.serialize(eventValue)) else null
         return Record(
-            getDLQTopic(eventTopic), event.key,
+            getDLQTopic(eventTopic),
+            event.key,
             StateAndEventDeadLetterRecord(clock.instant(), keyBytes, stateBytes, eventBytes)
         )
     }
@@ -429,20 +499,16 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
      * If [ResolvedSubscriptionConfig.processorRetries] is exceeded then throw a [CordaMessageAPIIntermittentException]
      */
     private fun handleProcessEventRetries(
-        attempts: Int,
-        ex: Exception
+        attempts: Int, ex: Exception
     ) {
         if (attempts <= config.processorRetries) {
             log.warn(
-                "Failed to process record from topic $eventTopic, group ${config.group}, " +
-                        "producerClientId ${config.clientId}. " +
-                        "Retrying poll and process. Attempts: $attempts."
+                "Failed to process record from topic $eventTopic, group ${config.group}, " + "producerClientId ${config.clientId}. " + "Retrying poll and process. Attempts: $attempts."
             )
             stateAndEventConsumer.resetEventOffsetPosition()
         } else {
-            val message = "Failed to process records from topic $eventTopic, group ${config.group}, " +
-                    "producerClientId ${config.clientId}. " +
-                    "Attempts: $attempts. Max reties exceeded."
+            val message =
+                "Failed to process records from topic $eventTopic, group ${config.group}, " + "producerClientId ${config.clientId}. " + "Attempts: $attempts. Max reties exceeded."
             log.warn(message, ex)
             throw CordaMessageAPIIntermittentException(message, ex)
         }

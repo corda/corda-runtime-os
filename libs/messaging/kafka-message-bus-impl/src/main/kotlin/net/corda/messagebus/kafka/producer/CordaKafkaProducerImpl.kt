@@ -257,25 +257,31 @@ class CordaKafkaProducerImpl(
         trySendOffsetsToTransaction(consumer, records.toKafkaRecords())
     }
 
-    private data class OffsetsAndMetadataImpl(
+    private data class OffsetsImpl(
         val offsets: Map<TopicPartition, OffsetAndMetadata>,
-        val metaData: ConsumerGroupMetadata
-    ) : CordaProducer.OffsetsAndMetadata
+    ) : CordaProducer.Offsets
 
-    override fun getOffsetsAndMetadata(
-        consumer: CordaConsumer<*, *>,
+    private data class MetadataImpl(
+        val metaData: ConsumerGroupMetadata
+    ) : CordaProducer.Metadata
+
+    override fun getOffsets(
         records: List<CordaConsumerRecord<*, *>>
-    ): CordaProducer.OffsetsAndMetadata = OffsetsAndMetadataImpl(
-        consumerOffsets(consumer, records.toKafkaRecords()),
+    ): CordaProducer.Offsets = OffsetsImpl(
+        getRecordListOffsets(records.toKafkaRecords(), topicPrefix)
+    )
+
+    override fun getMetadata(
+        consumer: CordaConsumer<*, *>
+    ): CordaProducer.Metadata = MetadataImpl(
         (consumer as CordaKafkaConsumerImpl).groupMetadata()
     )
 
-    override fun sendRecordOffsetsToTransaction(offsetsAndMetadata: CordaProducer.OffsetsAndMetadata) {
-        val offsetsAndMetadataImpl = (offsetsAndMetadata as OffsetsAndMetadataImpl)
+    override fun sendRecordOffsetsToTransaction(offsets: CordaProducer.Offsets, metadata: CordaProducer.Metadata) {
         tryWithCleanupOnFailure("sending offset for transaction") {
             producer.sendOffsetsToTransaction(
-                offsetsAndMetadataImpl.offsets,
-                offsetsAndMetadataImpl.metaData
+                (offsets as OffsetsImpl).offsets,
+                (metadata as MetadataImpl).metaData
             )
         }
     }
