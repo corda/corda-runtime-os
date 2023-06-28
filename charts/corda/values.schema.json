@@ -768,7 +768,7 @@
                                                 }
                                             ],
                                             "default": null,
-                                            "title": "minimum JDBC connection pool size for crypto DB"
+                                            "title": "minimum JDBC connection pool size for crypto DB; null value means pool's min size will default to pool's max size value"
                                         },
                                         "idleTimeoutSeconds": {
                                             "type": "integer",
@@ -868,7 +868,7 @@
                                                 }
                                             ],
                                             "default": null,
-                                            "title": "minimum JDBC connection pool size for RBAC DB"
+                                            "title": "minimum JDBC connection pool size for RBAC DB; null value means pool's min size will default to pool's max size value"
                                         },
                                         "idleTimeoutSeconds": {
                                             "type": "integer",
@@ -1290,7 +1290,7 @@
                                                 }
                                             ],
                                             "default": null,
-                                            "title": "crypto worker minimum JDBC connection pool size for cluster DB"
+                                            "title": "crypto worker minimum JDBC connection pool size for cluster DB; null value means pool's min size will default to pool's max size value"
                                         },
                                         "idleTimeoutSeconds": {
                                             "type": "integer",
@@ -1371,7 +1371,7 @@
                                                 }
                                             ],
                                             "default": null,
-                                            "title": "DB worker minimum JDBC connection pool size for cluster DB"
+                                            "title": "DB worker minimum JDBC connection pool size for cluster DB; null value means pool's min size will default to pool's max size value"
                                         },
                                         "idleTimeoutSeconds": {
                                             "type": "integer",

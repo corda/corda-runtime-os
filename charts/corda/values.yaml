@@ -246,7 +246,7 @@ bootstrap:
       dbConnectionPool:
         # -- maximum JDBC connection pool size for crypto DB
         maxSize: 5
-        # -- minimum JDBC connection pool size for crypto DB
+        # -- minimum JDBC connection pool size for crypto DB; null value means pool's min size will default to pool's max size value
         minSize: null
         # -- maximum time (in seconds) a connection can stay idle in the pool; A value of 0 means that idle connections are never removed from the pool
         idleTimeoutSeconds: 120
@@ -289,7 +289,7 @@ bootstrap:
       dbConnectionPool:
         # -- maximum JDBC connection pool size for RBAC DB
         maxSize: 5
-        # -- minimum JDBC connection pool size for RBAC DB
+        # -- minimum JDBC connection pool size for RBAC DB; null value means pool's min size will default to pool's max size value
         minSize: null
         # -- maximum time (in seconds) a connection can stay idle in the pool; A value of 0 means that idle connections are never removed from the pool
         idleTimeoutSeconds: 120
@@ -469,7 +469,7 @@ workers:
     clusterDbConnectionPool:
       # -- crypto worker maximum JDBC connection pool size for cluster DB
       maxSize: 5
-      # -- crypto worker minimum JDBC connection pool size for cluster DB
+      # -- crypto worker minimum JDBC connection pool size for cluster DB; null value means pool's min size will default to pool's max size value
       minSize: null
       # -- maximum time (in seconds) a connection can stay idle in the pool; A value of 0 means that idle connections are never removed from the pool
       idleTimeoutSeconds: 120
@@ -550,7 +550,7 @@ workers:
     clusterDbConnectionPool:
       # -- DB worker maximum JDBC connection pool size for cluster DB
       maxSize: 5
-      # -- DB worker minimum JDBC connection pool size for cluster DB
+      # -- DB worker minimum JDBC connection pool size for cluster DB; null value means pool's min size will default to pool's max size value
       minSize: null
       # -- maximum time (in seconds) a connection can stay idle in the pool; A value of 0 means that idle connections are never removed from the pool
       idleTimeoutSeconds: 120
