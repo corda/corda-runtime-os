@@ -116,11 +116,11 @@ class AddNotaryToGroupParametersHandlerTest {
     private val root = mock<Root<GroupParametersEntity>> {
         on { get<String>("epoch") } doReturn mock<Path<String>>()
     }
-    private val status = mock<Path<String>>()
-    private val memberX500Name = mock<Path<String>>()
+    private val statusPath = mock<Path<String>>()
+    private val memberX500NamePath = mock<Path<String>>()
     private val memberRoot = mock<Root<MemberInfoEntity>> {
-        on { get<String>("status") } doReturn status
-        on { get<String>("memberX500Name") } doReturn memberX500Name
+        on { get<String>("status") } doReturn statusPath
+        on { get<String>("memberX500Name") } doReturn memberX500NamePath
     }
     private val order = mock<Order>()
     private val query = mock<CriteriaQuery<GroupParametersEntity>> {
@@ -140,8 +140,8 @@ class AddNotaryToGroupParametersHandlerTest {
         on { createQuery(GroupParametersEntity::class.java) } doReturn query
         on { createQuery(MemberInfoEntity::class.java) } doReturn memberCriteriaQuery
         on { desc(any()) } doReturn order
-        on { equal(status, MEMBER_STATUS_ACTIVE) } doReturn equalPredicate
-        on { notEqual(memberX500Name, knownIdentity.x500Name.toString())} doReturn notEqualPredicate
+        on { equal(statusPath, MEMBER_STATUS_ACTIVE) } doReturn equalPredicate
+        on { notEqual(eq(memberX500NamePath), any<String>()) } doReturn notEqualPredicate
     }
     private val entityManager = mock<EntityManager> {
         on { persist(any<GroupParametersEntity>()) } doAnswer {}
@@ -188,6 +188,7 @@ class AddNotaryToGroupParametersHandlerTest {
         on { name } doReturn MemberX500Name.parse(knownIdentity.x500Name)
         on { memberProvidedContext } doReturn notaryMemberContext
         on { mgmProvidedContext } doReturn notaryMgmContext
+        on { name } doReturn MemberX500Name.parse(knownIdentity.x500Name)
         on { serial } doReturn 2L
     }
     private val memberInfoFactory = mock<MemberInfoFactory> {
@@ -241,7 +242,7 @@ class AddNotaryToGroupParametersHandlerTest {
             on { serial } doReturn 1L
         }
         whenever(memberInfoFactory.create(any(), any<SortedMap<String, String?>>())).doReturn(otherNotary)
-        whenever(membersQuery.resultStream).doReturn(listOf(otherNotaryEntity).stream())
+        whenever(membersQuery.resultList).doReturn(listOf(otherNotaryEntity))
         whenever(keyValuePairListDeserializer.deserialize(any())).doReturn(
             KeyValuePairList(listOf(
                 KeyValuePair(EPOCH_KEY, EPOCH.toString()),

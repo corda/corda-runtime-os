@@ -131,10 +131,6 @@ internal class StartRegistrationHandler(
             // after this point
             outputRecords.add(pendingMemberRecord)
 
-            validateRegistrationRequest(registrationRequest.serial != null) {
-                "Serial on the registration request should not be null."
-            }
-
             validatePreAuthTokenUsage(mgmHoldingId, pendingMemberInfo, registrationRequest)
             // Parse the registration request and verify contents
             // The MemberX500Name matches the source MemberX500Name from the P2P messaging
@@ -241,7 +237,7 @@ internal class StartRegistrationHandler(
     override fun getOwnerHoldingId(
         state: RegistrationState?,
         command: StartRegistration
-    ): net.corda.data.identity.HoldingIdentity = command.destination
+    ): net.corda.data.identity.HoldingIdentity? = state?.registeringMember
 
     private class InvalidRegistrationRequestException(reason: String) : CordaRuntimeException(reason)
 
