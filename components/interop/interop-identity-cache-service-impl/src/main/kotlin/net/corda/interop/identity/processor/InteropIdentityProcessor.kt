@@ -106,7 +106,7 @@ class InteropIdentityProcessor(
         oldValue: InteropAliasIdentity?,
         currentData: Map<String, InteropAliasIdentity>
     ) {
-        logger.info("Message Received onNext : newRecord : $newRecord oldValue : $oldValue currentData : $currentData")
+        logger.info("Message Received onNext; key: ${newRecord.key}, newValue: ${newRecord.value}, oldValue: $oldValue")
 
         val key = RecordKey(newRecord.key)
         val newValue = newRecord.value
@@ -126,11 +126,14 @@ class InteropIdentityProcessor(
         if (newValue == null && oldValue == null) {
             logger.warn("Old and new record values are both null. Nothing to be done.")
         }
-
-        logger.info("$currentData")
     }
 
     override fun onSnapshot(currentData: Map<String, InteropAliasIdentity>) {
-        logger.info("Message Received onSnapshot : currentData : $currentData")
+        logger.info("Message Received onSnapshot; loading ${currentData.size} entries.")
+
+        currentData.entries.forEach { topicEntry ->
+            val keyInfo = RecordKey(topicEntry.key)
+            cacheService.putAliasIdentity(keyInfo.shortHash, topicEntry.value)
+        }
     }
 }
