@@ -1,7 +1,7 @@
 package net.corda.flow.fiber
 
 import net.corda.flow.ALICE_X500_HOLDING_IDENTITY
-import net.corda.flow.application.serialization.SerializationServiceImpl
+import net.corda.flow.application.serialization.SerializationServiceInternalImpl
 import net.corda.flow.pipeline.sandbox.FlowSandboxGroupContext
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.sandboxgroupcontext.RequireSandboxAMQP.AMQP_SERIALIZATION_SERVICE
@@ -19,7 +19,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
-class SerializationServiceImplTest {
+class SerializationServiceInternalImplTest {
 
     private class TestObject
     private val currentSandboxGroupContext : CurrentSandboxGroupContext = mock()
@@ -32,7 +32,7 @@ class SerializationServiceImplTest {
     private val byteArray = "bytes".toByteArray()
 
 
-    private val flowFiberSerializationService = SerializationServiceImpl(currentSandboxGroupContext)
+    private val flowFiberSerializationService = SerializationServiceInternalImpl(currentSandboxGroupContext)
 
     @BeforeEach
     fun setup() {

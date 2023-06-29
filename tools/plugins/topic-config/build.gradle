@@ -23,7 +23,7 @@ dependencies {
 
     compileOnly platform("net.corda:corda-api:$cordaApiVersion")
     implementation "net.corda:corda-topic-schema:$cordaApiVersion"
-    compileOnly "org.apache.servicemix.bundles:org.apache.servicemix.bundles.kafka-clients:$kafkaClientVersion"
+    implementation "org.apache.servicemix.bundles:org.apache.servicemix.bundles.kafka-clients:$kafkaClientVersion"
 
     testImplementation 'org.jetbrains.kotlin:kotlin-stdlib'
     testImplementation "org.mockito:mockito-core:$mockitoVersion"

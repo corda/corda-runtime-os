@@ -3,6 +3,7 @@
 package net.corda.tracing
 
 import io.javalin.core.JavalinConfig
+import net.corda.messagebus.api.producer.CordaProducerRecord
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.EventLogRecord
 import net.corda.messaging.api.records.Record
@@ -66,6 +67,10 @@ fun getOrCreateBatchPublishTracing(clientId: String): BatchPublishTracing {
 fun addTraceContextToRecords(records: List<Record<*, *>>): List<Record<*, *>> = records.map(::addTraceContextToRecord)
 
 fun addTraceContextToRecord(it: Record<*, *>): Record<out Any, out Any> {
+    return it.copy(headers = TracingState.currentTraceService.addTraceHeaders(it.headers))
+}
+
+fun addTraceContextToRecord(it: CordaProducerRecord<*, *>): CordaProducerRecord<out Any, out Any> {
     return it.copy(headers = TracingState.currentTraceService.addTraceHeaders(it.headers))
 }
 
