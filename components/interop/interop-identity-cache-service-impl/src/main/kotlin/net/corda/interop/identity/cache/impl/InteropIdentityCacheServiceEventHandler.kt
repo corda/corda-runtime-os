@@ -65,7 +65,7 @@ class InteropIdentityCacheServiceEventHandler(
     private fun onConfigChangeEvent(event: ConfigChangedEvent, coordinator: LifecycleCoordinator) {
         val messagingConfig = event.config.getConfig(ConfigKeys.MESSAGING_CONFIG)
 
-        coordinator.createManagedResource("InteropAliasIdentityProcessor.subscription") {
+        coordinator.createManagedResource("InteropIdentityProcessor.subscription") {
             subscriptionFactory.createCompactedSubscription(
                 SubscriptionConfig(GROUP_NAME, INTEROP_ALIAS_IDENTITY_TOPIC),
                 InteropIdentityProcessor(cacheService),
