@@ -159,7 +159,7 @@ private class MultipartParameterRetriever(private val parameter: Parameter) : Pa
     }
 
     @Suppress("ComplexMethod")
-    override fun apply(ctx: ParametersRetrieverContext): Any {
+    override fun apply(ctx: ParametersRetrieverContext): Any? {
         try {
             log.trace { "Cast \"${parameter.name}\" to body parameter." }
 
@@ -179,9 +179,9 @@ private class MultipartParameterRetriever(private val parameter: Parameter) : Pa
                 return uploadedFiles.first()
             }
 
-            val formParameterAsList = ctx.formParams(parameter.name)
+            val formParameterAsList = ctx.formParamMap()[parameter.name]
 
-            if (!parameter.nullable && formParameterAsList.isEmpty()) {
+            if (!parameter.nullable && formParameterAsList.isNullOrEmpty()) {
                 throw BadRequestException("Missing form parameter \"${parameter.name}\".")
             }
 
@@ -190,7 +190,7 @@ private class MultipartParameterRetriever(private val parameter: Parameter) : Pa
             if (Collection::class.java.isAssignableFrom(parameter.classType)) {
                 return formParameterAsList
             }
-            return formParameterAsList.first()
+            return formParameterAsList?.first()
         } catch (e: Exception) {
             "Error during Cast \"${parameter.name}\" to multipart form parameter".let {
                 log.warn("$it: ${e.message}")

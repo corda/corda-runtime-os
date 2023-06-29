@@ -1,5 +1,6 @@
 package net.corda.rest.server.impl.internal
 
+import com.fasterxml.jackson.databind.node.ObjectNode
 import io.javalin.http.util.ContextUtil
 import net.corda.rest.HttpFileUpload
 import net.corda.rest.server.impl.context.ClientRequestContext
@@ -19,7 +20,6 @@ internal class ParametersRetrieverContext(private val ctx: ClientRequestContext)
 
     private val pathParamsMap: Map<String, String?>
     private val queryParamsMap: Map<String, List<String>>
-    private val formParamsMap: Map<String, List<String>>
 
     init {
         // Moving all the parameters' keys to the lowercase.
@@ -36,17 +36,13 @@ internal class ParametersRetrieverContext(private val ctx: ClientRequestContext)
             logger.warn("Some query parameters keys were dropped. " +
                     "Original map: $ctxQueryParamMap, transformed map: $queryParamsMap")
         }
-        val ctxFormParamMap = ctx.formParams
-        formParamsMap = ctxFormParamMap.mapKeys { it.key.lowercase() }
-        if (formParamsMap.size != ctxFormParamMap.size) {
-            logger.warn("Some form parameter keys were dropped. " +
-                    "Original map: $ctxFormParamMap, transformed map: $formParamsMap")
-        }
     }
 
     fun body(): String = ctx.body
 
     fun <T> bodyAsClass(clazz: Class<T>): T = ctx.bodyAsClass(clazz)
+
+    fun formParamMap(): Map<String, List<String>> = ctx.formParamMap()
 
     fun pathParam(key: String): String {
         return ContextUtil.pathParamOrThrow(pathParamsMap, key.lowercase(), ctx.matchedPath)
@@ -56,8 +52,6 @@ internal class ParametersRetrieverContext(private val ctx: ClientRequestContext)
 
     fun queryParam(key: String, default: String? = null): String? =
         queryParamsMap[key.lowercase()]?.firstOrNull() ?: default
-
-    fun formParams(key: String): List<String> = formParamsMap[key.lowercase()] ?: emptyList()
 
     fun uploadedFiles(paramName: String): List<HttpFileUpload> {
         val files = ctx.uploadedFiles(paramName)
