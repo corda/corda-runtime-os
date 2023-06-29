@@ -17,7 +17,7 @@ import java.time.Duration
 import java.time.Instant
 
 @Component(service = [FlowEventHandler::class])
-class ExternalEventResponseHandler @Activate constructor(
+class ExternalEventResponseHandler(
     private val clock: Clock,
     @Reference(service = ExternalEventManager::class)
     private val externalEventManager: ExternalEventManager
@@ -27,7 +27,9 @@ class ExternalEventResponseHandler @Activate constructor(
         val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
-    @Activate constructor(
+    @Suppress("Unused")
+    @Activate
+    constructor(
         @Reference(service = ExternalEventManager::class)
         externalEventManager: ExternalEventManager
     ) : this(UTCClock(), externalEventManager)
