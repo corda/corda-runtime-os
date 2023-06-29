@@ -2,7 +2,7 @@ package net.corda.interop.identity.cache.impl
 
 import net.corda.data.chunking.UploadStatus
 import net.corda.data.chunking.UploadStatusKey
-import net.corda.data.interop.InteropAliasIdentity
+import net.corda.data.interop.InteropIdentity
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.messaging.api.subscription.CompactedSubscription
@@ -59,9 +59,9 @@ class InteropIdentityCacheServiceImplTest {
         val cache = InteropIdentityCacheServiceImpl(coordinatorFactory, mock(), subscriptionFactory)
 
         val shortHash = "1234567890"
-        val aliasIdentity = InteropAliasIdentity().apply {
+        val aliasIdentity = InteropIdentity().apply {
             groupId = UUID.randomUUID().toString()
-            aliasX500Name = "X500 name #1"
+            x500Name = "X500 name #1"
             hostingVnode = "Hosting VNode"
         }
 
@@ -99,15 +99,15 @@ class InteropIdentityCacheServiceImplTest {
 
         val shortHash = "1234567890"
 
-        val aliasIdentity1 = InteropAliasIdentity().apply {
+        val aliasIdentity1 = InteropIdentity().apply {
             groupId = UUID.randomUUID().toString()
-            aliasX500Name = "X500 name #1"
+            x500Name = "X500 name #1"
             hostingVnode = "Hosting VNode"
         }
 
-        val aliasIdentity2 = InteropAliasIdentity().apply {
+        val aliasIdentity2 = InteropIdentity().apply {
             groupId = UUID.randomUUID().toString()
-            aliasX500Name = "X500 name #2"
+            x500Name = "X500 name #2"
             hostingVnode = "Hosting VNode"
         }
 

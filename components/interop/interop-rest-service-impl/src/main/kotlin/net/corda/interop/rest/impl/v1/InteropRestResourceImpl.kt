@@ -81,7 +81,7 @@ internal class InteropRestResourceImpl @Activate constructor(
         val groupToAliasMappings = interopIdentityCacheService.getInteropIdentities(holdingidentityshorthash)
         return groupToAliasMappings.map {
             RestInteropIdentity(
-                it.value.aliasX500Name,
+                it.value.x500Name,
                 UUID.fromString(it.value.groupId)
             )
         }.toList()

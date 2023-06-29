@@ -2,7 +2,7 @@ package net.corda.interop.identity.write.impl
 
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.data.interop.InteropAliasIdentity
+import net.corda.data.interop.InteropIdentity
 import net.corda.interop.identity.write.InteropIdentityWriteService
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -59,8 +59,8 @@ class InteropIdentityWriteServiceImpl @Activate constructor(
         interopGroupId: String,
         newIdentityName: String
     ) {
-        val interopIdentity = InteropAliasIdentity().apply {
-            aliasX500Name = newIdentityName
+        val interopIdentity = InteropIdentity().apply {
+            x500Name = newIdentityName
             groupId = interopGroupId
             // TODO: Figure out what value goes here!
             hostingVnode = "?"

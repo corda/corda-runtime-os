@@ -16,7 +16,7 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.schema.Schemas.Flow.INTEROP_ALIAS_IDENTITY_TOPIC
+import net.corda.schema.Schemas.Flow.INTEROP_IDENTITY_TOPIC
 import net.corda.schema.configuration.ConfigKeys
 import org.slf4j.LoggerFactory
 
@@ -67,7 +67,7 @@ class InteropIdentityCacheServiceEventHandler(
 
         coordinator.createManagedResource("InteropIdentityProcessor.subscription") {
             subscriptionFactory.createCompactedSubscription(
-                SubscriptionConfig(GROUP_NAME, INTEROP_ALIAS_IDENTITY_TOPIC),
+                SubscriptionConfig(GROUP_NAME, INTEROP_IDENTITY_TOPIC),
                 InteropIdentityProcessor(cacheService),
                 messagingConfig
             ).also {

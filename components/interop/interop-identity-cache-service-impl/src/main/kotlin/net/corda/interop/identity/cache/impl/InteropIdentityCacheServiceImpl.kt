@@ -1,7 +1,7 @@
 package net.corda.interop.identity.cache.impl
 
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.data.interop.InteropAliasIdentity
+import net.corda.data.interop.InteropIdentity
 import net.corda.interop.identity.cache.InteropIdentityCacheService
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -37,9 +37,9 @@ class InteropIdentityCacheServiceImpl @Activate constructor(
      * Outer key is the holding identity short hash.
      * Inner key is the interop group UUID.
      */
-    private val cacheData = HashMap<String, HashMap<String, InteropAliasIdentity>>()
+    private val cacheData = HashMap<String, HashMap<String, InteropIdentity>>()
 
-    private fun getInteropIdentityMapFor(holdingIdentityShortHash: String): HashMap<String, InteropAliasIdentity> {
+    private fun getInteropIdentityMapFor(holdingIdentityShortHash: String): HashMap<String, InteropIdentity> {
         if (!cacheData.containsKey(holdingIdentityShortHash)) {
             cacheData[holdingIdentityShortHash] = HashMap()
         }
@@ -47,17 +47,17 @@ class InteropIdentityCacheServiceImpl @Activate constructor(
         return cacheData[holdingIdentityShortHash]!!
     }
 
-    override fun getInteropIdentities(shortHash: String): Map<String, InteropAliasIdentity> {
+    override fun getInteropIdentities(shortHash: String): Map<String, InteropIdentity> {
         return getInteropIdentityMapFor(shortHash)
     }
 
-    override fun putInteropIdentities(shortHash: String, identity: InteropAliasIdentity) {
+    override fun putInteropIdentities(shortHash: String, identity: InteropIdentity) {
         log.info("Adding interop identity, shortHash: $shortHash, identity=$identity")
         val identities = getInteropIdentityMapFor(shortHash)
         identities[identity.groupId] = identity
     }
 
-    override fun removeInteropIdentity(shortHash: String, identity: InteropAliasIdentity) {
+    override fun removeInteropIdentity(shortHash: String, identity: InteropIdentity) {
         val identities = getInteropIdentityMapFor(shortHash)
         identities.remove(identity.groupId)?.let {
             log.info("Removing interop identity, shortHash: $shortHash, identity=$it")

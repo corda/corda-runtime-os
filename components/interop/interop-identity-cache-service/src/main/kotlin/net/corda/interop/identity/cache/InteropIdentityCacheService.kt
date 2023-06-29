@@ -1,7 +1,7 @@
 package net.corda.interop.identity.cache
 
 import net.corda.lifecycle.Lifecycle
-import net.corda.data.interop.InteropAliasIdentity
+import net.corda.data.interop.InteropIdentity
 
 
 interface InteropIdentityCacheService : Lifecycle {
@@ -11,7 +11,7 @@ interface InteropIdentityCacheService : Lifecycle {
      * @param shortHash Short hash of the real holding identity to get alias identities for.
      * @return Map of interop group UUID strings to interop alias identity objects.
      */
-    fun getInteropIdentities(shortHash: String): Map<String, InteropAliasIdentity>
+    fun getInteropIdentities(shortHash: String): Map<String, InteropIdentity>
 
     /**
      * Add an interop identity to the cache.
@@ -19,7 +19,7 @@ interface InteropIdentityCacheService : Lifecycle {
      * @param shortHash Short hash of the real holding identity to add alias identity to.
      * @param identity New alias identity to add to the cache.
      */
-    fun putInteropIdentities(shortHash: String, identity: InteropAliasIdentity)
+    fun putInteropIdentities(shortHash: String, identity: InteropIdentity)
 
     /**
      * Remove an interop identity from the cache.
@@ -27,5 +27,5 @@ interface InteropIdentityCacheService : Lifecycle {
      * @param shortHash Short hash of the real holding identity to remove from the cache.
      * @param identity Alias identity to remove from the cache.
      */
-    fun removeInteropIdentity(shortHash: String, identity: InteropAliasIdentity)
+    fun removeInteropIdentity(shortHash: String, identity: InteropIdentity)
 }

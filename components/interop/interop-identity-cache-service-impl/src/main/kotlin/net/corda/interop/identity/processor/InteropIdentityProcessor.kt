@@ -1,19 +1,19 @@
 package net.corda.interop.identity.processor
 
-import net.corda.data.interop.InteropAliasIdentity
+import net.corda.data.interop.InteropIdentity
 import net.corda.interop.identity.cache.InteropIdentityCacheService
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.slf4j.LoggerFactory
-import java.util.*
+import java.util.UUID
 
 class InteropIdentityProcessor(
     private val cacheService: InteropIdentityCacheService
-) : CompactedProcessor<String, InteropAliasIdentity> {
+) : CompactedProcessor<String, InteropIdentity> {
 
     override val keyClass = String::class.java
-    override val valueClass = InteropAliasIdentity::class.java
+    override val valueClass = InteropIdentity::class.java
 
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -47,7 +47,7 @@ class InteropIdentityProcessor(
         }
     }
 
-    private fun updateCacheEntry(key: RecordKey, oldValue: InteropAliasIdentity, newValue: InteropAliasIdentity) {
+    private fun updateCacheEntry(key: RecordKey, oldValue: InteropIdentity, newValue: InteropIdentity) {
         val aliasIdentities = cacheService.getInteropIdentities(key.shortHash)
 
         // Both the record key and values contain the interop group ID. Might as well perform a sanity check.
@@ -67,7 +67,7 @@ class InteropIdentityProcessor(
         cacheService.putInteropIdentities(key.shortHash, newValue)
     }
 
-    private fun insertCacheEntry(key: RecordKey, newValue: InteropAliasIdentity) {
+    private fun insertCacheEntry(key: RecordKey, newValue: InteropIdentity) {
         val aliasIdentities = cacheService.getInteropIdentities(key.shortHash)
 
         // Sanity check.
@@ -84,7 +84,7 @@ class InteropIdentityProcessor(
         cacheService.putInteropIdentities(key.shortHash, newValue)
     }
 
-    private fun removeCacheEntry(key: RecordKey, oldValue: InteropAliasIdentity) {
+    private fun removeCacheEntry(key: RecordKey, oldValue: InteropIdentity) {
         val aliasIdentities = cacheService.getInteropIdentities(key.shortHash)
 
         // Sanity check.
@@ -102,9 +102,9 @@ class InteropIdentityProcessor(
     }
 
     override fun onNext(
-        newRecord: Record<String, InteropAliasIdentity>,
-        oldValue: InteropAliasIdentity?,
-        currentData: Map<String, InteropAliasIdentity>
+        newRecord: Record<String, InteropIdentity>,
+        oldValue: InteropIdentity?,
+        currentData: Map<String, InteropIdentity>
     ) {
         logger.info("Message Received onNext; key: ${newRecord.key}, newValue: ${newRecord.value}, oldValue: $oldValue")
 
@@ -128,7 +128,7 @@ class InteropIdentityProcessor(
         }
     }
 
-    override fun onSnapshot(currentData: Map<String, InteropAliasIdentity>) {
+    override fun onSnapshot(currentData: Map<String, InteropIdentity>) {
         logger.info("Message Received onSnapshot; loading ${currentData.size} entries.")
 
         currentData.entries.forEach { topicEntry ->

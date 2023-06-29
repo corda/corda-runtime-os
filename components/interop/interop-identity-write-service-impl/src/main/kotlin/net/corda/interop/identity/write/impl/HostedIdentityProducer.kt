@@ -1,7 +1,7 @@
 package net.corda.interop.identity.write.impl
 
 import net.corda.virtualnode.HoldingIdentity
-import net.corda.data.interop.InteropAliasIdentity
+import net.corda.data.interop.InteropIdentity
 import net.corda.data.p2p.HostedIdentityEntry
 import net.corda.data.p2p.HostedIdentitySessionKeyAndCert
 import net.corda.messaging.api.publisher.Publisher
@@ -19,7 +19,7 @@ class HostedIdentityProducer(private val publisher: AtomicReference<Publisher?>)
         private val DUMMY_PUBLIC_SESSION_KEY = this::class.java.getResource("/dummy_session_key.pem")?.readText()
     }
 
-    fun publishHostedInteropIdentity(identity: InteropAliasIdentity) {
+    fun publishHostedInteropIdentity(identity: InteropIdentity) {
         if (publisher.get() == null) {
             logger.error("Interop hosted identity publisher is null, not publishing.")
             return
@@ -31,13 +31,13 @@ class HostedIdentityProducer(private val publisher: AtomicReference<Publisher?>)
         logger.info("Interop hosted identity published with key : ${record.key} and value : ${record.value}")
     }
 
-    private fun createHostedIdentityRecord(identity: InteropAliasIdentity): Record<String, HostedIdentityEntry> {
+    private fun createHostedIdentityRecord(identity: InteropIdentity): Record<String, HostedIdentityEntry> {
 
-        val interopHoldingIdentity = HoldingIdentity(MemberX500Name.parse(identity.aliasX500Name), identity.groupId)
+        val interopHoldingIdentity = HoldingIdentity(MemberX500Name.parse(identity.x500Name), identity.groupId)
         val shortHash = interopHoldingIdentity.shortHash.value
 
         val hostedIdentity = HostedIdentityEntry(
-            net.corda.data.identity.HoldingIdentity(identity.aliasX500Name, identity.groupId),
+            net.corda.data.identity.HoldingIdentity(identity.x500Name, identity.groupId),
             shortHash,
             listOf(DUMMY_CERTIFICATE),
             HostedIdentitySessionKeyAndCert(DUMMY_PUBLIC_SESSION_KEY, null),
