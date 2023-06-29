@@ -11,12 +11,12 @@ interface RecordFactory {
      * Create [Record] after checking if the cluster is local.
      * @return A record for p2p.out or local
      */
-    fun makeRecord(
+
+    fun createAndSendRecord(
         eventKey: String,
         sessionEvent: SessionEvent,
         flowMapperState: FlowMapperState?,
         instant: Instant = Instant.now(),
         flowConfig: SmartConfig,
-        event: SessionEvent
     ): Record<*, *>
 }
