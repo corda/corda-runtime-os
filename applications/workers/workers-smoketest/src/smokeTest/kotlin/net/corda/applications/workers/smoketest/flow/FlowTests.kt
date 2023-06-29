@@ -32,7 +32,6 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertAll
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeAll
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.MethodOrderer
 import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
@@ -567,7 +566,6 @@ class FlowTests {
     }
 
     @Test
-    @Disabled
     fun `Flow Session - Initiate multiple sessions and exercise the flow messaging apis`() {
 
         val requestBody = RpcSmokeTestInput().apply {
