@@ -48,7 +48,8 @@ class InteropIdentityWriteServiceImpl @Activate constructor(
     private var configSubscription: AutoCloseable? = null
 
     private val publisher: AtomicReference<Publisher?> = AtomicReference()
-    private val producer = InteropIdentityProducer(publisher)
+    private val interopIdentityProducer = InteropIdentityProducer(publisher)
+    private val hostedIdentityProducer = HostedIdentityProducer(publisher)
 
     override val isRunning: Boolean
         get() = coordinator.isRunning
@@ -58,14 +59,15 @@ class InteropIdentityWriteServiceImpl @Activate constructor(
         interopGroupId: String,
         newIdentityName: String
     ) {
-        val interopAliasIdentity = InteropAliasIdentity().apply {
+        val interopIdentity = InteropAliasIdentity().apply {
             aliasX500Name = newIdentityName
             groupId = interopGroupId
             // TODO: Figure out what value goes here!
             hostingVnode = "?"
         }
 
-        producer.publishInteropIdentity(holdingIdentityShortHash, interopAliasIdentity)
+        interopIdentityProducer.publishInteropIdentity(holdingIdentityShortHash, interopIdentity)
+        hostedIdentityProducer.publishHostedInteropIdentity(interopIdentity)
     }
 
     override fun start() {
