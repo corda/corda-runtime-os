@@ -36,7 +36,7 @@ class InteropIdentityCacheServiceImplTest {
         val cache = InteropIdentityCacheServiceImpl(coordinatorFactory, mock(), subscriptionFactory)
 
         val shortHash = "1234567890"
-        val response = cache.getAliasIdentities(shortHash)
+        val response = cache.getInteropIdentities(shortHash)
 
         assertThat(response).isInstanceOf(HashMap::class.java)
         assertThat(response.isEmpty()).isTrue
@@ -65,9 +65,9 @@ class InteropIdentityCacheServiceImplTest {
             hostingVnode = "Hosting VNode"
         }
 
-        cache.putAliasIdentity(shortHash, aliasIdentity)
+        cache.putInteropIdentities(shortHash, aliasIdentity)
 
-        val aliasIdentities = cache.getAliasIdentities(shortHash)
+        val aliasIdentities = cache.getInteropIdentities(shortHash)
 
         assertThat(aliasIdentities).isInstanceOf(HashMap::class.java)
         assertThat(aliasIdentities.size).isEqualTo(1)
@@ -111,10 +111,10 @@ class InteropIdentityCacheServiceImplTest {
             hostingVnode = "Hosting VNode"
         }
 
-        cache.putAliasIdentity(shortHash, aliasIdentity1)
-        cache.putAliasIdentity(shortHash, aliasIdentity2)
+        cache.putInteropIdentities(shortHash, aliasIdentity1)
+        cache.putInteropIdentities(shortHash, aliasIdentity2)
 
-        val aliasIdentities = cache.getAliasIdentities(shortHash)
+        val aliasIdentities = cache.getInteropIdentities(shortHash)
 
         assertThat(aliasIdentities).isInstanceOf(HashMap::class.java)
         assertThat(aliasIdentities.size).isEqualTo(2)

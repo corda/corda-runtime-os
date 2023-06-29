@@ -39,7 +39,7 @@ class InteropIdentityCacheServiceImpl @Activate constructor(
      */
     private val cacheData = HashMap<String, HashMap<String, InteropAliasIdentity>>()
 
-    private fun getAliasIdentityMapFor(holdingIdentityShortHash: String): HashMap<String, InteropAliasIdentity> {
+    private fun getInteropIdentityMapFor(holdingIdentityShortHash: String): HashMap<String, InteropAliasIdentity> {
         if (!cacheData.containsKey(holdingIdentityShortHash)) {
             cacheData[holdingIdentityShortHash] = HashMap()
         }
@@ -47,20 +47,20 @@ class InteropIdentityCacheServiceImpl @Activate constructor(
         return cacheData[holdingIdentityShortHash]!!
     }
 
-    override fun getAliasIdentities(shortHash: String): Map<String, InteropAliasIdentity> {
-        return getAliasIdentityMapFor(shortHash)
+    override fun getInteropIdentities(shortHash: String): Map<String, InteropAliasIdentity> {
+        return getInteropIdentityMapFor(shortHash)
     }
 
-    override fun putAliasIdentity(shortHash: String, aliasIdentity: InteropAliasIdentity) {
-        log.info("Adding alias identity, shortHash: $shortHash, identity=$aliasIdentity")
-        val identities = getAliasIdentityMapFor(shortHash)
-        identities[aliasIdentity.groupId] = aliasIdentity
+    override fun putInteropIdentities(shortHash: String, identity: InteropAliasIdentity) {
+        log.info("Adding interop identity, shortHash: $shortHash, identity=$identity")
+        val identities = getInteropIdentityMapFor(shortHash)
+        identities[identity.groupId] = identity
     }
 
-    override fun removeAliasIdentity(shortHash: String, aliasIdentity: InteropAliasIdentity) {
-        val identities = getAliasIdentityMapFor(shortHash)
-        identities.remove(aliasIdentity.groupId)?.let {
-            log.info("Removing alias identity, shortHash: $shortHash, identity=$it")
+    override fun removeInteropIdentity(shortHash: String, identity: InteropAliasIdentity) {
+        val identities = getInteropIdentityMapFor(shortHash)
+        identities.remove(identity.groupId)?.let {
+            log.info("Removing interop identity, shortHash: $shortHash, identity=$it")
         }
     }
 
