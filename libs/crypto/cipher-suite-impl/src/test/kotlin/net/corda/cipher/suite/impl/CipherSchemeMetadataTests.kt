@@ -549,6 +549,14 @@ class CipherSchemeMetadataTests {
         )
     }
 
+    
+    @Test
+    fun `Should fail gracefully with a corrupted PEM file`() {
+        assertThrows<IllegalArgumentException> {
+            schemeMetadata.decodePublicKey("junk")
+        }
+    }
+    
     @ParameterizedTest
     @MethodSource("signingKeyPairs")
     @Suppress("MaxLineLength")

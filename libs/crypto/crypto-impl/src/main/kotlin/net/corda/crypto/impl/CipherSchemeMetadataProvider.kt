@@ -218,7 +218,7 @@ class CipherSchemeMetadataProvider : KeyEncodingService {
     private fun parsePemContent(pem: String): ByteArray =
         StringReader(pem).use { strReader ->
             return PemReader(strReader).use { pemReader ->
-                pemReader.readPemObject().content
+                pemReader.readPemObject()?.content?: throw IllegalArgumentException("Key not found in PEM format")
             }
         }
 
