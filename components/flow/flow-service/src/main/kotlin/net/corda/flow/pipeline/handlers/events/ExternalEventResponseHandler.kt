@@ -74,8 +74,12 @@ class ExternalEventResponseHandler(
         checkpoint.externalEventState = updatedExternalEventState
 
         if (updatedExternalEventState.status.type == ExternalEventStateType.RETRY) {
-            val sleepDuration = Duration.between(clock.instant(), updatedExternalEventState.sendTimestamp).toMillis().toInt()
-            checkpoint.setFlowSleepDuration(if (sleepDuration > 0) sleepDuration else 0)
+            checkpoint.setFlowSleepDuration(
+                Duration.between(
+                    clock.instant(),
+                    updatedExternalEventState.sendTimestamp
+                ).toMillis().toInt().coerceAtLeast(0)
+            )
         }
 
         return context
