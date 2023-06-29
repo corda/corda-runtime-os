@@ -28,7 +28,7 @@ dependencies {
     implementation "io.fabric8:kubernetes-client:6.5.1"
 
     implementation "org.postgresql:postgresql:$postgresDriverVersion"
-    implementation "org.apache.servicemix.bundles:org.apache.servicemix.bundles.kafka-clients:$kafkaClientVersion"
+    implementation "org.apache.kafka:kafka-clients:$kafkaClientVersion"
 }
 
 cliPlugin {
