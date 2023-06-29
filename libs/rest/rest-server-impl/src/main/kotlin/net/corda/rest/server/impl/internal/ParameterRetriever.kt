@@ -179,7 +179,8 @@ private class MultipartParameterRetriever(private val parameter: Parameter) : Pa
                 return uploadedFiles.first()
             }
 
-            val formParameterAsList = ctx.formParamMap()[parameter.name]
+            val formParamMap = ctx.formParamMap().mapKeys { it.key.lowercase() }
+            val formParameterAsList = formParamMap[parameter.name.lowercase()]
 
             if (!parameter.nullable && formParameterAsList.isNullOrEmpty()) {
                 throw BadRequestException("Missing form parameter \"${parameter.name}\".")
