@@ -64,6 +64,7 @@ class SandboxGroupImplTests {
         whenever(getBundle(publicClass)).thenReturn(mockPublicBundle)
         whenever(getBundle(publicLibraryClass)).thenReturn(mockPublicLibraryBundle)
         whenever(getBundle(nonSandboxClass)).thenReturn(mockNonSandboxBundle)
+        whenever(loadClassFromSystemBundle(DoesNotExist::class.java.name)).thenThrow(ClassNotFoundException())
     }
 
 
@@ -92,10 +93,12 @@ class SandboxGroupImplTests {
         val nonExistentName = DoesNotExist::class.java.name
         assertNull(sandboxGroupImpl.loadClassFromPublicBundles(nonExistentName))
         verify(mockPublicBundle).loadClass(nonExistentName)
+        verify(mockBundleUtils).loadClassFromSystemBundle(nonExistentName)
 
         // Trying to reload the same class should not invoke Bundle.loadClass again.
         assertNull(sandboxGroupImpl.loadClassFromPublicBundles(nonExistentName))
         verify(mockPublicBundle).loadClass(nonExistentName)
+        verify(mockBundleUtils).loadClassFromSystemBundle(nonExistentName)
     }
 
     @Test

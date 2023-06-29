@@ -1,6 +1,5 @@
 package net.corda.sandbox.internal
 
-import java.util.Collections.unmodifiableMap
 import java.util.Collections.unmodifiableSortedMap
 import java.util.SortedMap
 import java.util.TreeMap
@@ -40,17 +39,6 @@ internal class SandboxGroupImpl(
     private companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
-        private val primitiveTypes = unmodifiableMap(setOf(
-            Long::class.java,
-            Int::class.java,
-            Short::class.java,
-            Byte::class.java,
-            Char::class.java,
-            Boolean::class.java,
-            Double::class.java,
-            Float::class.java
-        ).associateBy(Class<*>::getName))
-
         private fun Throwable.withSuppressed(exceptions: Iterable<Throwable>): Throwable {
             exceptions.forEach(::addSuppressed)
             return this
@@ -84,7 +72,13 @@ internal class SandboxGroupImpl(
                     logger.debug("Could not load class {} from bundle {}: {}", className, bundle, e.message)
                     null
                 }
-            }.singleOrNull() ?: NotFound::class.java
+            }.singleOrNull() ?: run {
+                try {
+                    bundleUtils.loadClassFromSystemBundle(className)
+                } catch (e: ClassNotFoundException) {
+                    NotFound::class.java
+                }
+            }
             publicClassCache.putIfAbsent(className, publicClass) ?: publicClass
         }
         return if (clazz === NotFound::class.java) {
@@ -139,7 +133,7 @@ internal class SandboxGroupImpl(
         return when (classTag.classType) {
             ClassType.NonBundleClass -> {
                 try {
-                    primitiveTypes[className] ?: bundleUtils.loadClassFromSystemBundle(className)
+                    bundleUtils.loadClassFromSystemBundle(className)
                 } catch (e: ClassNotFoundException) {
                     throw SandboxException(
                         "Class $className was not from a bundle, and could not be found in the system classloader."
