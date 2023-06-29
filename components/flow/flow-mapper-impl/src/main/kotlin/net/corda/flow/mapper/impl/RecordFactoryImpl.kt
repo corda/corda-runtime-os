@@ -34,7 +34,16 @@ class RecordFactoryImpl @Activate constructor(
     private val appMessageFactory: (SessionEvent, CordaAvroSerializer<SessionEvent>, SmartConfig) -> AppMessage
 ): RecordFactory {
 
-    fun createAndSendRecord(sessionEvent: SessionEvent, messageDirection: MessageDirection):Record<*,*> {
+    private val sessionEventSerializer = cordaAvroSerializationFactory.createAvroSerializer<SessionEvent> { }
+
+    override fun createAndSendRecord(
+        eventKey: String,
+        sessionEvent: SessionEvent,
+        flowMapperState: FlowMapperState?,
+        instant: Instant,
+        flowConfig: SmartConfig,
+        messageDirection: MessageDirection
+    ): Record<*, *> {
         val outputTopic = getSessionEventOutputTopic(sessionEvent, messageDirection)
         return when (messageDirection) {
             MessageDirection.INBOUND -> {
@@ -61,10 +70,6 @@ class RecordFactoryImpl @Activate constructor(
                 }
             }
         }
-    }
-
-    fun checkDirection() {
-
     }
 
     val errEvent = SessionEvent(
@@ -109,37 +114,6 @@ class RecordFactoryImpl @Activate constructor(
                 } else {
                     Schemas.P2P.P2P_OUT_TOPIC
                 }
-            }
-        }
-    }
-
-    private val sessionEventSerializer = cordaAvroSerializationFactory.createAvroSerializer<SessionEvent> { }
-
-    fun makeRecord(
-        eventKey: String,
-        sessionEvent: SessionEvent,
-        flowMapperState: FlowMapperState?,
-        instant: Instant,
-        flowConfig: SmartConfig,
-        event: SessionEvent
-    ): Record<*, *> {
-        val messageDirection = sessionEvent.messageDirection
-        val outputTopic = getSessionEventOutputTopic(sessionEvent, messageDirection)
-
-        return when (isLocalCluster(sessionEvent)) {
-            false -> {
-                createP2PRecord(
-                    sessionEvent,
-                    sessionEvent.payload,
-                    instant,
-                    sessionEventSerializer,
-                    appMessageFactory,
-                    flowConfig,
-                    0
-                )
-            }
-            true -> {
-                Record(outputTopic, sessionEvent.sessionId, FlowMapperEvent(event))
             }
         }
     }

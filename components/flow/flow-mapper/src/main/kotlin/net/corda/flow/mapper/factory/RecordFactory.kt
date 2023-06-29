@@ -1,5 +1,6 @@
 package net.corda.flow.mapper.factory
 
+import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.state.mapper.FlowMapperState
 import net.corda.libs.configuration.SmartConfig
@@ -18,5 +19,6 @@ interface RecordFactory {
         flowMapperState: FlowMapperState?,
         instant: Instant = Instant.now(),
         flowConfig: SmartConfig,
+        messageDirection: MessageDirection
     ): Record<*, *>
 }

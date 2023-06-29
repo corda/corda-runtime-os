@@ -5,7 +5,6 @@ import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.state.mapper.FlowMapperState
 import net.corda.data.flow.state.mapper.FlowMapperStateType
-import net.corda.data.p2p.app.AppMessage
 import net.corda.flow.mapper.FlowMapperResult
 import net.corda.flow.mapper.executor.FlowMapperEventExecutor
 import net.corda.flow.mapper.factory.RecordFactory
@@ -18,8 +17,6 @@ class SessionErrorExecutor(
     private val sessionEvent: SessionEvent,
     private val flowMapperState: FlowMapperState?,
     private val instant: Instant,
-    private val sessionEventSerializer: CordaAvroSerializer<SessionEvent>,
-    private val appMessageFactory: (SessionEvent, CordaAvroSerializer<SessionEvent>, SmartConfig) -> AppMessage,
     private val flowConfig: SmartConfig,
     private val recordFactory: RecordFactory
 ) : FlowMapperEventExecutor {
@@ -83,7 +80,14 @@ class SessionErrorExecutor(
                         )
                     )
                 } else {*/
-                val outputRecord = recordFactory.createAndSendRecord(eventKey, sessionEvent, flowMapperState, instant, flowConfig)
+                val outputRecord = recordFactory.createAndSendRecord(
+                    eventKey,
+                    sessionEvent,
+                    flowMapperState,
+                    instant,
+                    flowConfig,
+                    sessionEvent.messageDirection
+                )
                 //Record(outputTopic, flowMapperState.flowId, FlowEvent(flowMapperState.flowId, sessionEvent))
                 FlowMapperResult(flowMapperState, listOf(outputRecord))
                 //}
