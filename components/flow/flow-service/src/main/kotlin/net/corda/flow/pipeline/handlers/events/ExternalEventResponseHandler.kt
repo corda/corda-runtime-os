@@ -19,7 +19,6 @@ import java.time.Instant
 @Component(service = [FlowEventHandler::class])
 class ExternalEventResponseHandler(
     private val clock: Clock,
-    @Reference(service = ExternalEventManager::class)
     private val externalEventManager: ExternalEventManager
 ) : FlowEventHandler<ExternalEventResponse> {
 
