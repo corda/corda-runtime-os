@@ -27,24 +27,11 @@ fun generateFlowId(): String {
 }
 
 /**
- * Inbound records should be directed to the flow event topic.
- * Outbound records should be directed to the p2p out topic.
- * @return the output topic based on [messageDirection].
- */
-fun getSessionEventOutputTopic(messageDirection: MessageDirection): String {
-    return if (messageDirection == MessageDirection.INBOUND) {
-        Schemas.Flow.FLOW_EVENT_TOPIC
-    } else {
-        Schemas.P2P.P2P_OUT_TOPIC
-    }
-}
-
-/**
  * Get the source and destination holding identity from the [sessionEvent].
  * @param sessionEvent Session event to extract identities from
  * @return Source and destination identities for a SessionEvent message.
  */
-private fun getSourceAndDestinationIdentity(sessionEvent: SessionEvent): Pair<HoldingIdentity, HoldingIdentity> {
+fun getSourceAndDestinationIdentity(sessionEvent: SessionEvent): Pair<HoldingIdentity, HoldingIdentity> {
     return if (sessionEvent.sessionId.contains(INITIATED_SESSION_ID_SUFFIX)) {
         Pair(sessionEvent.initiatedIdentity, sessionEvent.initiatingIdentity)
     } else {

@@ -35,6 +35,36 @@ class SessionEventExecutor(
 
     private val messageDirection = sessionEvent.messageDirection
     private val outputTopic = getSessionEventOutputTopic(messageDirection)
+    val sessionId = sessionEvent.sessionId
+
+    val ackEvent = SessionEvent(
+        MessageDirection.INBOUND,
+        instant,
+        toggleSessionId(sessionEvent.sessionId),
+        null,
+        sessionEvent.initiatingIdentity,
+        sessionEvent.initiatedIdentity,
+        sessionEvent.sequenceNum,
+        emptyList(),
+        SessionAck()
+    )
+
+    val errEvent = SessionEvent(
+        MessageDirection.INBOUND,
+        instant,
+        toggleSessionId(sessionEvent.sessionId),
+        null,
+        sessionEvent.initiatingIdentity,
+        sessionEvent.initiatedIdentity,
+        0,
+        emptyList(),
+        SessionError(
+            ExceptionEnvelope(
+                "FlowMapper-SessionExpired",
+                "Tried to process session event for expired session with sessionId $sessionId"
+            )
+        )
+    )
 
     override fun execute(): FlowMapperResult {
         return if (flowMapperState == null) {
@@ -52,7 +82,6 @@ class SessionEventExecutor(
                 "Flow mapper received session event for session which does not exist. Session may have expired. Returning error to " +
                         "counterparty. Key: $eventKey, Event: class ${sessionEvent.payload::class.java}, $sessionEvent"
             )
-            val sessionId = sessionEvent.sessionId
             FlowMapperResult(
                 null, listOf(
                     createP2PRecord(
