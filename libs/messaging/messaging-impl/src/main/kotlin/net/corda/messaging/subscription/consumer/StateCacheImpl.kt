@@ -3,11 +3,10 @@ package net.corda.messaging.subscription.consumer
 import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.api.producer.CordaProducer
 import net.corda.messagebus.api.producer.CordaProducerRecord
-import net.corda.messaging.config.ResolvedSubscriptionConfig
 import java.util.concurrent.CompletableFuture
 
 class StateCacheImpl<K : Any, S : Any>(
-    private val config: ResolvedSubscriptionConfig,
+    private val config: SimpleConsumerConfig,
     private val consumer: CordaConsumer<K, S>,
     private val producer: CordaProducer
 ) : StateCache<K, S> {
@@ -20,29 +19,30 @@ class StateCacheImpl<K : Any, S : Any>(
     private val partitionSafeMinOffset = mutableMapOf<Int, Long>()
 
     override fun subscribe(cacheReadyCallback: () -> Unit) {
-        if (!isRunning) {
-            consumer.subscribe(config.topic)
-            val partitions = consumer.getPartitions(config.topic)
-            consumer.assign(partitions)
-            val endOffsets = consumer.endOffsets(partitions)
-            val snapshotEnds = endOffsets.toMutableMap()
-            consumer.seekToBeginning(partitions)
+        if (isRunning) {
+            return
+        }
+        consumer.subscribe(config.topic)
+        val partitions = consumer.getPartitions(config.topic)
+        consumer.assign(partitions)
+        val endOffsets = consumer.endOffsets(partitions)
+        val snapshotEnds = endOffsets.toMutableMap()
+        consumer.seekToBeginning(partitions)
 
-            while (snapshotEnds.isNotEmpty()) {
-                val consumerRecords = consumer.poll(config.pollTimeout)
+        while (snapshotEnds.isNotEmpty()) {
+            val consumerRecords = consumer.poll(config.pollTimeout)
 
-                consumerRecords.forEach { record ->
-                    val key = record.key
-                    record.value?.let {
-                        cachedData[key] = CachedRecord(readHeader(record.headers[0].second), key, it)
-                    } ?: cachedData.remove(key)
-                }
+            consumerRecords.forEach { record ->
+                val key = record.key
+                record.value?.let {
+                    cachedData[key] = CachedRecord(readHeader(record.headers[0].second), key, it)
+                } ?: cachedData.remove(key)
+            }
 
-                for (offsets in endOffsets) {
-                    val partition = offsets.key
-                    if (consumer.position(partition) >= offsets.value) {
-                        snapshotEnds.remove(partition)
-                    }
+            for (offsets in endOffsets) {
+                val partition = offsets.key
+                if (consumer.position(partition) >= offsets.value) {
+                    snapshotEnds.remove(partition)
                 }
             }
         }

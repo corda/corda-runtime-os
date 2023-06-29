@@ -2,64 +2,63 @@ package net.corda.messaging.subscription
 
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
+import net.corda.lifecycle.LifecycleEvent
+import net.corda.lifecycle.LifecycleStatus
 import net.corda.messagebus.api.producer.CordaProducer
-import net.corda.messaging.api.exception.CordaMessageAPIFatalException
-import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.processor.StateAndEventProcessor
-import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.subscription.StateAndEventSubscription
-import net.corda.messaging.config.ResolvedSubscriptionConfig
-import net.corda.messaging.publisher.CordaPublisherImpl
 import net.corda.messaging.subscription.consumer.EventSource
 import net.corda.messaging.subscription.consumer.EventSourceRecord
 import net.corda.messaging.subscription.consumer.StateCache
 import net.corda.messaging.utils.toCordaProducerRecord
-import net.corda.messaging.utils.toCordaProducerRecords
-import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.TimeUnit
 
+@Suppress("LongParameterList")
 class LetItRipStateAndEventSubscription<K : Any, E : Any, S : Any>(
-    private val config: ResolvedSubscriptionConfig,
+    subscriptionId: String,
     private val processor: StateAndEventProcessor<K, S, E>,
     private val eventSource: EventSource<K, E>,
     private val stateCache: StateCache<K, S>,
     private val cordaPublisher: CordaProducer,
+    private val pollingLoopExecutor: ExecutorService,
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
 ) : StateAndEventSubscription<K, S, E> {
 
-    private val log = LoggerFactory.getLogger("${this.javaClass.name}-${config.clientId}")
-
-    private var threadLooper = ThreadLooper(
-        log,
-        config,
-        lifecycleCoordinatorFactory,
-        "state/event processing thread",
-        ::pollingLoop
-    )
+    private val log = LoggerFactory.getLogger("${this.javaClass.name}-${subscriptionId}")
+    private var poller: CompletableFuture<Unit>? = null
+    private var isRunning = false
+    private val lifecycleCoordinator =
+        lifecycleCoordinatorFactory.createCoordinator(
+            LifecycleCoordinatorName(
+                "LetItRipStateAndEventSubscription",
+                subscriptionId
+            )
+        ) { _, _ -> }
 
     override val subscriptionName: LifecycleCoordinatorName
-        get() = threadLooper.lifecycleCoordinatorName
+        get() = lifecycleCoordinator.name
 
     override fun start() {
         stateCache.subscribe(::onCacheReady)
-        threadLooper.start()
     }
 
     override fun close() {
-        threadLooper.close()
         eventSource.close()
+        poller?.get(60, TimeUnit.SECONDS)
     }
 
     private fun onCacheReady() {
         eventSource.start(stateCache::getMinOffsetsByPartition, stateCache::isOffsetGreaterThanMaxSeen)
-        threadLooper.start()
+        lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
+        poller = CompletableFuture.supplyAsync(::pollingLoop, pollingLoopExecutor)
     }
 
     private fun pollingLoop() {
-        while (threadLooper.isRunning) {
+        isRunning = true
+        while (isRunning) {
             val block = eventSource.nextBlock(500)
             if (block.isNotEmpty()) {
                 // divide block by key to prevent event per key re-ordering, then process, update the state and publish
@@ -99,6 +98,7 @@ class LetItRipStateAndEventSubscription<K : Any, E : Any, S : Any>(
         }
     }
 
+    @Suppress("SpreadOperator")
     fun <V> Collection<CompletableFuture<out V>>.awaitAll(timeout: Long, timeUnit: TimeUnit) {
         if (isEmpty()) return
         CompletableFuture.allOf(*toTypedArray()).get(timeout, timeUnit)

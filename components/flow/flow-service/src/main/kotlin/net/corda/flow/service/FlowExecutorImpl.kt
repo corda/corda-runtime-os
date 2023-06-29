@@ -75,7 +75,7 @@ class FlowExecutorImpl constructor(
             subscriptionRegistrationHandle?.close()
             subscription?.close()
 
-            subscription = subscriptionFactory.createStateAndEventSubscription(
+            subscription = subscriptionFactory.createLetItRipStateAndEventSubscription(
                 SubscriptionConfig(CONSUMER_GROUP, FLOW_EVENT_TOPIC),
                 flowEventProcessorFactory.create(flowConfig),
                 messagingConfig,

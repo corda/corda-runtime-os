@@ -1,12 +1,11 @@
 package net.corda.messaging.subscription.consumer
 
 import net.corda.messagebus.api.consumer.CordaConsumer
-import net.corda.messaging.config.ResolvedSubscriptionConfig
 import net.corda.messaging.utils.toRecord
 import java.util.concurrent.ExecutorService
 
 class SimpleTopicEventSource<K : Any, E : Any>(
-    private val config: ResolvedSubscriptionConfig,
+    private val config: SimpleConsumerConfig,
     private val consumer: CordaConsumer<K, E>,
     private val pollingLoopExecutor: ExecutorService,
 ) : EventSource<K, E> {

@@ -1,6 +1,5 @@
 package net.corda.messaging.subscription.consumer
 
-import net.corda.messaging.config.ResolvedSubscriptionConfig
 import java.util.TreeSet
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutorService
