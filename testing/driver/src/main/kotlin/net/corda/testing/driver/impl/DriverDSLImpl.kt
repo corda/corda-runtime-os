@@ -36,8 +36,6 @@ import org.osgi.framework.Bundle.STARTING
 import org.osgi.framework.BundleException
 import org.osgi.framework.Constants.BUNDLE_SYMBOLICNAME
 import org.osgi.framework.Constants.EXPORT_PACKAGE
-import org.osgi.framework.Constants.FRAMEWORK_BUNDLE_PARENT
-import org.osgi.framework.Constants.FRAMEWORK_BUNDLE_PARENT_FRAMEWORK
 import org.osgi.framework.Constants.FRAMEWORK_STORAGE
 import org.osgi.framework.Constants.FRAMEWORK_STORAGE_CLEAN
 import org.osgi.framework.Constants.FRAMEWORK_STORAGE_CLEAN_ONFIRSTINIT
@@ -333,7 +331,6 @@ internal class DriverDSLImpl(private val network: Map<MemberX500Name, KeyPair>) 
                 "co.paralleluniverse.quasar.excludeLocations" to quasarExcludeLocations,
                 "co.paralleluniverse.quasar.excludePackages" to quasarExcludePackages,
                 "co.paralleluniverse.quasar.verbose" to false.toString(),
-                FRAMEWORK_BUNDLE_PARENT to FRAMEWORK_BUNDLE_PARENT_FRAMEWORK,
                 FRAMEWORK_STORAGE to frameworkStorageDir.toString(),
                 FRAMEWORK_STORAGE_CLEAN to FRAMEWORK_STORAGE_CLEAN_ONFIRSTINIT,
                 FRAMEWORK_SYSTEMPACKAGES_EXTRA to systemPackagesExtra
