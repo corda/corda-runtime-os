@@ -14,7 +14,6 @@ import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.time.Duration
-import java.time.Instant
 
 @Component(service = [FlowEventHandler::class])
 class ExternalEventResponseHandler(
