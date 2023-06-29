@@ -2,18 +2,14 @@ package net.corda.flow.mapper.impl.executor
 
 import java.time.Instant
 import net.corda.avro.serialization.CordaAvroSerializer
-import net.corda.data.ExceptionEnvelope
-import net.corda.data.flow.event.FlowEvent
-import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
-import net.corda.data.flow.event.session.SessionError
 import net.corda.data.flow.state.mapper.FlowMapperState
 import net.corda.data.flow.state.mapper.FlowMapperStateType
 import net.corda.data.p2p.app.AppMessage
 import net.corda.flow.mapper.FlowMapperResult
 import net.corda.flow.mapper.executor.FlowMapperEventExecutor
+import net.corda.flow.mapper.factory.RecordFactory
 import net.corda.libs.configuration.SmartConfig
-import net.corda.messaging.api.records.Record
 import org.slf4j.LoggerFactory
 
 @Suppress("LongParameterList")
@@ -24,7 +20,8 @@ class SessionErrorExecutor(
     private val instant: Instant,
     private val sessionEventSerializer: CordaAvroSerializer<SessionEvent>,
     private val appMessageFactory: (SessionEvent, CordaAvroSerializer<SessionEvent>, SmartConfig) -> AppMessage,
-    private val flowConfig: SmartConfig
+    private val flowConfig: SmartConfig,
+    private val recordFactory: RecordFactory
 ) : FlowMapperEventExecutor {
 
     private companion object {
@@ -43,23 +40,6 @@ class SessionErrorExecutor(
             "which does not exist. Session may have expired. Key: $eventKey, Event: $sessionEvent. "
 
     val sessionId = sessionEvent.sessionId
-
-    val errEvent = SessionEvent(
-        MessageDirection.INBOUND,
-        instant,
-        toggleSessionId(sessionEvent.sessionId),
-        null,
-        sessionEvent.initiatingIdentity,
-        sessionEvent.initiatedIdentity,
-        sessionEvent.receivedSequenceNum,
-        emptyList(),
-        SessionError(
-            ExceptionEnvelope(
-                "FlowMapper-SessionError",
-                "Received SessionError with sessionId $sessionId"
-            )
-        )
-    )
 
     override fun execute(): FlowMapperResult {
         return if (flowMapperState == null) {
@@ -83,7 +63,7 @@ class SessionErrorExecutor(
             FlowMapperStateType.OPEN -> {
                 log.debug(defaultMsg.format(FORWARDING))
                 flowMapperState.status = FlowMapperStateType.ERROR
-                if (messageDirection == MessageDirection.OUTBOUND) {
+                /*if (messageDirection == MessageDirection.OUTBOUND) {
                     FlowMapperResult(
                         flowMapperState, listOf(
                             createP2PRecord(
@@ -102,10 +82,11 @@ class SessionErrorExecutor(
                             )
                         )
                     )
-                } else {
-                    val outputRecord = Record(outputTopic, flowMapperState.flowId, FlowEvent(flowMapperState.flowId, sessionEvent))
-                    FlowMapperResult(flowMapperState, listOf(outputRecord))
-                }
+                } else {*/
+                val outputRecord = recordFactory.createAndSendRecord(eventKey, sessionEvent, flowMapperState, instant, flowConfig)
+                //Record(outputTopic, flowMapperState.flowId, FlowEvent(flowMapperState.flowId, sessionEvent))
+                FlowMapperResult(flowMapperState, listOf(outputRecord))
+                //}
             }
             FlowMapperStateType.CLOSING -> {
                 log.debug(defaultMsg.format(IGNORING))

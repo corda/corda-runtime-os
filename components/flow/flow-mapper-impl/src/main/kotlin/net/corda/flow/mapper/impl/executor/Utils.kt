@@ -15,3 +15,4 @@ internal fun toggleSessionId(sessionId: String): String {
         "$sessionId${Constants.INITIATED_SESSION_ID_SUFFIX}"
     }
 }
+
