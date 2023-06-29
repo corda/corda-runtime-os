@@ -1,6 +1,5 @@
 package net.corda.rest.server.impl.internal
 
-import com.fasterxml.jackson.databind.node.ObjectNode
 import io.javalin.http.util.ContextUtil
 import net.corda.rest.HttpFileUpload
 import net.corda.rest.server.impl.context.ClientRequestContext
