@@ -3,7 +3,6 @@ package net.corda.flow.mapper.factory
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
-import net.corda.data.flow.state.mapper.FlowMapperState
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.records.Record
 import java.time.Instant
@@ -14,13 +13,23 @@ interface RecordFactory {
      * @return A record for p2p.out or local
      */
 
-    fun createAndSendRecord(
-        eventKey: String,
+    fun forwardError(
         sessionEvent: SessionEvent,
-        flowMapperState: FlowMapperState?,
-        instant: Instant = Instant.now(),
+        exceptionEnvelope: ExceptionEnvelope,
+        instant: Instant,
         flowConfig: SmartConfig,
-        messageDirection: MessageDirection,
-        exceptionEnvelope: ExceptionEnvelope
+        messageDirection: MessageDirection
     ): Record<*, *>
+
+    fun forwardAck(
+        sessionEvent: SessionEvent,
+        instant: Instant,
+        flowConfig: SmartConfig,
+        messageDirection: MessageDirection
+    ): Record<*, *>
+
+    fun getSessionEventOutputTopic(
+        sessionEvent: SessionEvent,
+        messageDirection: MessageDirection
+    ): String
 }

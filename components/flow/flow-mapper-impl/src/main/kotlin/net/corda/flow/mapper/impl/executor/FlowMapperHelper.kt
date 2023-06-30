@@ -10,7 +10,6 @@ import net.corda.data.p2p.app.AuthenticatedMessageHeader
 import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.records.Record
-import net.corda.schema.Schemas
 import net.corda.schema.configuration.FlowConfig.SESSION_P2P_TTL
 import net.corda.session.manager.Constants.Companion.FLOW_SESSION_SUBSYSTEM
 import net.corda.session.manager.Constants.Companion.INITIATED_SESSION_ID_SUFFIX
@@ -83,18 +82,19 @@ fun generateAppMessage(
  * @param receivedSequenceNumber Received sequence number of the session event
  */
 @Suppress("LongParameterList")
-fun createP2PRecord(
+fun createOutboundRecord(
     sessionEvent: SessionEvent,
     payload: Any,
     instant: Instant,
     sessionEventSerializer: CordaAvroSerializer<SessionEvent>,
     appMessageFactory: (SessionEvent, CordaAvroSerializer<SessionEvent>, SmartConfig) -> AppMessage,
     flowConfig: SmartConfig,
-    receivedSequenceNumber: Int = sessionEvent.sequenceNum
+    receivedSequenceNumber: Int = sessionEvent.sequenceNum,
+    outputTopic: String
 ): Record<*, *> {
     val sessionId = sessionEvent.sessionId
     return Record(
-        Schemas.P2P.P2P_OUT_TOPIC, sessionId, appMessageFactory(
+        outputTopic, sessionId, appMessageFactory(
             SessionEvent(
                 MessageDirection.OUTBOUND,
                 instant,
