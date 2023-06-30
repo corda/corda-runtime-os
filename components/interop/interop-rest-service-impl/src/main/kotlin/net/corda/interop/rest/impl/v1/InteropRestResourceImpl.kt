@@ -16,9 +16,11 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.rest.PluggableRestResource
+import net.corda.rest.exception.InvalidInputDataException
 import net.corda.rest.response.ResponseEntity
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.utilities.debug
+import net.corda.v5.base.types.MemberX500Name
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -68,6 +70,13 @@ internal class InteropRestResourceImpl @Activate constructor(
         restInteropIdentity: RestInteropIdentity,
         holdingidentityshorthash: String
     ): ResponseEntity<String> {
+        try {
+            MemberX500Name.parse(restInteropIdentity.x500Name)
+        } catch (e: Exception) {
+            throw InvalidInputDataException(
+                "X500 name \"${restInteropIdentity.x500Name}\" could not be parsed. Cause: ${e.message}"
+            )
+        }
         interopIdentityWriteService.addInteropIdentity(
             holdingidentityshorthash,
             restInteropIdentity.groupId.toString(),
