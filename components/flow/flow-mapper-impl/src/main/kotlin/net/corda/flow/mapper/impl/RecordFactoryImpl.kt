@@ -95,6 +95,36 @@ class RecordFactoryImpl @Activate constructor(
         }
     }
 
+    override fun forwardEvent(
+        sessionEvent: SessionEvent,
+        instant: Instant,
+        flowConfig: SmartConfig,
+        messageDirection: MessageDirection
+    ): Record<*, *> {
+        val outputTopic = getSessionEventOutputTopic(sessionEvent, messageDirection)
+
+        return if (isLocalCluster(sessionEvent)) {
+            sessionEvent.messageDirection = MessageDirection.INBOUND
+            sessionEvent.sessionId = toggleSessionId(sessionEvent.sessionId)
+            Record(
+                outputTopic,
+                sessionEvent.sessionId,
+                FlowMapperEvent(sessionEvent)
+            )
+        } else {
+            createOutboundRecord(
+                sessionEvent,
+                sessionEvent.payload,
+                instant,
+                sessionEventSerializer,
+                appMessageFactory,
+                flowConfig,
+                sessionEvent.sequenceNum,
+                outputTopic
+            )
+        }
+    }
+
     override fun forwardAck(
         sessionEvent: SessionEvent,
         instant: Instant,
