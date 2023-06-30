@@ -80,6 +80,7 @@ fun generateAppMessage(
  * @param appMessageFactory AppMessage factory
  * @param flowConfig config
  * @param receivedSequenceNumber Received sequence number of the session event
+ * @param outputTopic topic where the record should be sent
  */
 @Suppress("LongParameterList")
 fun createOutboundRecord(

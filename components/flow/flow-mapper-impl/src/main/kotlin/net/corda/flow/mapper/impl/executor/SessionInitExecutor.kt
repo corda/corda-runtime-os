@@ -9,11 +9,13 @@ import net.corda.data.flow.state.mapper.FlowMapperState
 import net.corda.data.flow.state.mapper.FlowMapperStateType
 import net.corda.flow.mapper.FlowMapperResult
 import net.corda.flow.mapper.executor.FlowMapperEventExecutor
+import net.corda.flow.mapper.factory.RecordFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.records.Record
 import net.corda.metrics.CordaMetrics
 import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
+import java.time.Instant
 
 @Suppress("LongParameterList")
 class SessionInitExecutor(
@@ -23,6 +25,8 @@ class SessionInitExecutor(
     private val flowMapperState: FlowMapperState?,
     private val sessionEventSerializer: CordaAvroSerializer<SessionEvent>,
     private val flowConfig: SmartConfig,
+    private val recordFactory: RecordFactory,
+    private val instant: Instant
 ) : FlowMapperEventExecutor {
 
     private companion object {
@@ -30,7 +34,7 @@ class SessionInitExecutor(
     }
 
     private val messageDirection = sessionEvent.messageDirection
-    private val outputTopic = getSessionEventOutputTopic(messageDirection)
+    private val outputTopic = recordFactory.getSessionEventOutputTopic(sessionEvent, messageDirection)
 
     override fun execute(): FlowMapperResult {
         return if (flowMapperState == null) {
@@ -43,16 +47,8 @@ class SessionInitExecutor(
             log.debug { "Duplicate SessionInit event received. Key: $eventKey, Event: $sessionEvent" }
             if (messageDirection == MessageDirection.OUTBOUND) {
                 sessionInit.flowId = null
-                FlowMapperResult(
-                    flowMapperState,
-                    listOf(
-                        Record(
-                            outputTopic,
-                            eventKey,
-                            generateAppMessage(sessionEvent, sessionEventSerializer, flowConfig)
-                        )
-                    )
-                )
+                val outputRecord = recordFactory.forwardEvent(sessionEvent, instant, flowConfig, messageDirection)
+                FlowMapperResult(flowMapperState, listOf(outputRecord))
             } else {
                 CordaMetrics.Metric.FlowMapperDeduplicationCount.builder()
                     .withTag(CordaMetrics.Tag.FlowEvent, sessionInit::class.java.name)

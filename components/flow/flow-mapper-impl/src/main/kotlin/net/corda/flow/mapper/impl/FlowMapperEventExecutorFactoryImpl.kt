@@ -30,7 +30,6 @@ class FlowMapperEventExecutorFactoryImpl @Activate constructor(
     @Reference(service = CordaAvroSerializationFactory::class)
     private val cordaAvroSerializationFactory: CordaAvroSerializationFactory
 ) : FlowMapperEventExecutorFactory {
-
     private val sessionEventSerializer = cordaAvroSerializationFactory.createAvroSerializer<SessionEvent> { }
 
     override fun create(
@@ -51,7 +50,9 @@ class FlowMapperEventExecutorFactoryImpl @Activate constructor(
                             sessionPayload,
                             state,
                             sessionEventSerializer,
-                            flowConfig
+                            flowConfig,
+                            recordFactory,
+                            instant
                         )
                     }
                     is SessionError -> {

@@ -56,24 +56,6 @@ class SessionEventExecutor(
                 flowConfig,
                 sessionEvent.messageDirection,
             )
-            /*FlowMapperResult(
-                null, listOf(
-                    createP2PRecord(
-                        sessionEvent,
-                        SessionError(
-                            ExceptionEnvelope(
-                                "FlowMapper-SessionExpired",
-                                "Tried to process session event for expired session with sessionId $sessionId"
-                            )
-                        ),
-                        instant,
-                        sessionEventSerializer,
-                        appMessageFactory,
-                        flowConfig,
-                        0
-                    )
-                )
-            )*/
             FlowMapperResult(null, listOf(outputRecord))
         } else {
             log.warn(
@@ -110,14 +92,6 @@ class SessionEventExecutor(
                             flowConfig,
                             messageDirection
                         )
-/*                            createP2PRecord(
-                                sessionEvent,
-                                SessionAck(),
-                                instant,
-                                sessionEventSerializer,
-                                appMessageFactory,
-                                flowConfig
-                            )*/
                         FlowMapperResult(flowMapperState, listOf(outputRecord))
                     } else {
                         FlowMapperResult(flowMapperState, listOf())
@@ -127,11 +101,6 @@ class SessionEventExecutor(
             FlowMapperStateType.OPEN -> {
                 val outputTopic = recordFactory.getSessionEventOutputTopic(sessionEvent, messageDirection)
                 val outputRecord = if (messageDirection == MessageDirection.OUTBOUND) {
-/*                    Record(
-                        outputTopic,
-                        sessionEvent.sessionId,
-                        appMessageFactory(sessionEvent, sessionEventSerializer, flowConfig)
-                    )*/
                     recordFactory.forwardEvent(sessionEvent, instant, flowConfig, messageDirection)
                 } else {
                     Record(outputTopic, flowMapperState.flowId, FlowEvent(flowMapperState.flowId, sessionEvent))

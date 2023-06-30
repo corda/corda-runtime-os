@@ -33,28 +33,6 @@ class RecordFactoryImpl @Activate constructor(
 ): RecordFactory {
     private val sessionEventSerializer = cordaAvroSerializationFactory.createAvroSerializer<SessionEvent> { }
 
-    /*override fun createAndSendRecord(
-        eventKey: String,
-        sessionEvent: SessionEvent,
-        flowMapperState: FlowMapperState?,
-        instant: Instant,
-        flowConfig: SmartConfig,
-        messageDirection: MessageDirection,
-        exceptionEnvelope: ExceptionEnvelope
-    ): Record<*, *> {
-        val outputTopic = getSessionEventOutputTopic(sessionEvent, messageDirection)
-        return when (messageDirection) {
-            MessageDirection.INBOUND -> {
-                Record(outputTopic, flowMapperState.flowId, FlowEvent(flowMapperState.flowId, sessionEvent))
-            }
-            MessageDirection.OUTBOUND -> {
-                forwardError(sessionEvent, exceptionEnvelope, instant, flowConfig, messageDirection)
-            }
-        }
-    }
-*/
-
-
     override fun forwardError(
         sessionEvent: SessionEvent,
         exceptionEnvelope: ExceptionEnvelope,
@@ -172,7 +150,8 @@ class RecordFactoryImpl @Activate constructor(
 
     /**
      * Inbound records should be directed to the flow event topic.
-     * Outbound records should be directed to the p2p out topic.
+     * Outbound records that are not local should be directed to the p2p out topic.
+     * Outbound records that are local should be directed to the flow mapper event topic.
      * @return the output topic based on [messageDirection].
      */
 
