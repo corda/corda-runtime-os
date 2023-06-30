@@ -240,7 +240,6 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                     processEvent(event, outputRecords, newEventsToProcess, updatedStates)
                     eventsToProcess.addAll(newEventsToProcess.map {
                         val ret = toCordaConsumerRecord(event, it)
-                        log.info("~~~~ $ret")
                         ret
                     })
                     newEventsToProcess.clear()
@@ -301,16 +300,6 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         val (eventsToProcess, outputEvents) = thisEventUpdates?.responseEvents?.partition {
             it.topic == event.topic && processor.eventValueClass.isInstance(it.value) && it.key == key
         } ?: Pair(emptyList(), emptyList())
-
-        log.info("**** events to process contains: ${eventsToProcess.size} events:")
-        eventsToProcess.forEach {
-            log.info("****\t- key:${it.key} :: class:${it.value?.javaClass?.name ?: "null"} :: topic: ${it.topic}")
-        }
-
-        log.info("**** output events contains: ${outputEvents.size} events:")
-        outputEvents.forEach {
-            log.info("****\t- key:${it.key} :: class:${it.value?.javaClass?.name ?: "null"} :: topic: ${it.topic}")
-        }
 
         when {
             thisEventUpdates == null -> {
