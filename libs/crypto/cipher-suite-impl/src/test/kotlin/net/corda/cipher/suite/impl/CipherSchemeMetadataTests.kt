@@ -556,7 +556,40 @@ class CipherSchemeMetadataTests {
             schemeMetadata.decodePublicKey("junk")
         }
     }
-    
+
+
+    @Test
+    fun `Should read a PEM public key`() {
+        val x= schemeMetadata.decodePublicKey("""-----BEGIN PUBLIC KEY-----
+MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAn1JXg82dS8G6C3CjH/J7
+MzC/JzVcNDkWNLEaV1uiDK0/lRl5xBvXcjrZDcvwD8ogm42elf6659T8DgbWlz4z
+In+lgfkdqqukSKXLVm9ul74wuwiV2HkAvk5nZf7LGsciQhXHqUy9dVqaQwhL2Vau
+R35MJjJdAeMim9RuCBMrJnZwtWBOKswzCyqeW7nVjI56vBe1/I6VbahgLdnkj5+K
+8r6ObnBZijIMTW67TDO2g0XSzcN3lI0uwwpr1l/O8Jt0crGvQ08vFzbDbCqjagM9
+XwIJUrEWKnle7VcnXiiwcksymIvFVXsZQdnAatDmVpNoJDwuCkDRBQB5/9JascFa
+3wIDAQAB
+-----END PUBLIC KEY-----
+        """.trimIndent())
+        assertThat(x).isNotNull()
+    }
+
+
+    @Test
+    fun `Should read a PEM public key 2`() {
+        val x= schemeMetadata.decodePublicKey("""-----BEGIN PUBLIC KEY-----
+MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAwfiSJUPr9jnIXMoumo1M
+LlZ5l8OwuNmsrmyL8rcze2TtJyWQS9z7IV5dQ7CNrTyh4u2tzsa8BK01yaq9dSLF
+hf2M9Mig85LdCEvOQcOS/QcVbj7O+SGQ6E3CI8QFzRwg0UeYOVXIIbrSD3k0kShO
+SSUB1LQ0n9D4MNw/CdfDtn79JrNNAIoJfDQxeRHZ36UvfPwdyup37IYahLxFkth3
+cffKo/AEFGpi5+jk9zofS61CMKvibV1LeCH9wozOdLBJGJHPIXbmIewnctf6tYNj
+yCD9izrhQM0yq0s0sWEe08khQE6oRdVA0N8gMA85O+A2LRMt8frwMmXrSjADiqHL
+KwIDAQAB
+-----END PUBLIC KEY-----
+        """.trimIndent())
+        assertThat(x).isNotNull()
+    }
+
+
     @ParameterizedTest
     @MethodSource("signingKeyPairs")
     @Suppress("MaxLineLength")
