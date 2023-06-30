@@ -17,6 +17,12 @@ interface SandboxGroup: SingletonSerializeAsToken {
     val metadata: Map<Bundle, CpkMetadata>
 
     /**
+     * @return the [Class] identified by [className] from the public bundles within this
+     * [SandboxGroup]'s public sandboxes, or `null` if it cannot be found.
+     */
+    fun loadClassFromPublicBundles(className: String): Class<*>?
+
+    /**
      * Attempts to load the [Class] with [className] from the main bundle of each sandbox in the
      * sandbox group in turn. Can only find classes belonging to exported packages.
      *
@@ -59,5 +65,4 @@ interface SandboxGroup: SingletonSerializeAsToken {
      * [net.corda.sandbox.internal.classtag.EvolvableTag] from a CPK private bundle.
      */
     fun getClass(className: String, serialisedClassTag: String): Class<*>
-    fun loadClassFromPublicBundles(className: String): Class<*>?
 }

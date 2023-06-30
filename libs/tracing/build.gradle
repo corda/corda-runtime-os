@@ -22,6 +22,7 @@ dependencies {
 
     implementation project(":libs:configuration:configuration-core")
     implementation project(":libs:messaging:messaging")
+    implementation project(":libs:messaging:message-bus")
 
     implementation(libs.zipkin)
     implementation(libs.brave.context.slf4j)
