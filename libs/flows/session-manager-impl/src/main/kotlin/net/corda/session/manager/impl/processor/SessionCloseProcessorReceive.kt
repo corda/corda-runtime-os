@@ -1,6 +1,5 @@
 package net.corda.session.manager.impl.processor
 
-import java.time.Instant
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.session.SessionClose
 import net.corda.data.flow.state.session.SessionState
@@ -10,8 +9,8 @@ import net.corda.session.manager.impl.processor.helper.generateErrorEvent
 import net.corda.session.manager.impl.processor.helper.generateErrorSessionStateFromSessionEvent
 import net.corda.session.manager.impl.processor.helper.recalcHighWatermark
 import net.corda.utilities.debug
-import net.corda.utilities.trace
 import org.slf4j.LoggerFactory
+import java.time.Instant
 
 
 /**
@@ -61,8 +60,8 @@ class SessionCloseProcessorReceive(
                     lastProcessedSequenceNum = recalcHighWatermark(undeliveredMessages, lastProcessedSeqNum)
                 }
 
-                logger.trace { "receivedEventsState lastProcessedSequenceNum after update: ${sessionState.receivedEventsState
-                    .lastProcessedSequenceNum}, ${sessionState.receivedEventsState}" }
+                logger.info ("receivedEventsState lastProcessedSequenceNum after update: ${sessionState.receivedEventsState
+                    .lastProcessedSequenceNum}, ${sessionState.receivedEventsState}")
                 processCloseReceivedAndGetState(sessionState)
             }
         }
@@ -73,7 +72,7 @@ class SessionCloseProcessorReceive(
     ) = when (sessionState.status) {
         SessionStateType.CONFIRMED, SessionStateType.CREATED -> {
             sessionState.apply {
-                logger.trace { "Updating session state to ${SessionStateType.CLOSING} for session state $sessionState" }
+                logger.info("Updating session state to ${SessionStateType.CLOSING} for session state $sessionState")
                 status = SessionStateType.CLOSING
                 sendAck = true
             }
@@ -81,10 +80,10 @@ class SessionCloseProcessorReceive(
         SessionStateType.CLOSING -> {
             sessionState.apply {
                 status = if (sendEventsState.undeliveredMessages.isNullOrEmpty()) {
-                    logger.trace { "Updating session state to ${SessionStateType.CLOSED} for session state $sessionState" }
+                    logger.info("Updating session state to ${SessionStateType.CLOSED} for session state $sessionState")
                     SessionStateType.CLOSED
                 } else {
-                    logger.trace { "Updating session state to ${SessionStateType.WAIT_FOR_FINAL_ACK} for session state $sessionState" }
+                    logger.info("Updating session state to ${SessionStateType.WAIT_FOR_FINAL_ACK} for session state $sessionState")
                     SessionStateType.WAIT_FOR_FINAL_ACK
                 }
                 sendAck = true

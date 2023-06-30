@@ -15,6 +15,7 @@ import net.corda.virtualnode.toCorda
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.slf4j.LoggerFactory
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
@@ -39,6 +40,10 @@ class FlowWakeUpSchedulerImpl constructor(
     private val scheduledWakeUps = ConcurrentHashMap<String, ScheduledFuture<*>>()
     private var publisher: Publisher? = null
 
+    private companion object {
+        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
+    }
+
     override fun onConfigChange(config: Map<String, SmartConfig>) {
         publisher?.close()
         publisher = publisherFactory.createPublisher(PublisherConfig("FlowWakeUpRestResource"), config.getConfig(MESSAGING_CONFIG))
@@ -62,6 +67,7 @@ class FlowWakeUpSchedulerImpl constructor(
 
     private fun scheduleTasks(checkpoints: Collection<Checkpoint>) {
         checkpoints.forEach {
+            log.info("Scheduling wakeup for [${it.flowId}] delay=[${it.pipelineState.maxFlowSleepDuration.toLong()}]")
             val id = it.flowId
             val holdingIdShortHash = it.flowState?.flowStartContext?.identity?.toCorda()?.shortHash?.toString()
             val scheduledWakeUp = scheduledExecutorService.schedule(

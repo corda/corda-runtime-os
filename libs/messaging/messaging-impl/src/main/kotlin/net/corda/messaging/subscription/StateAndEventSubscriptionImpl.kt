@@ -2,6 +2,8 @@ package net.corda.messaging.subscription
 
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.deadletter.StateAndEventDeadLetterRecord
+import net.corda.data.flow.event.FlowEvent
+import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
@@ -276,7 +278,20 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         outputRecords: MutableList<Record<*, *>>,
         updatedStates: MutableMap<Int, MutableMap<K, S?>>
     ) {
+
+        fun eventToString(eventPayload: Any?): String {
+            val eventType = eventPayload?.javaClass?.simpleName
+            val eventSubtype = when (eventPayload) {
+                is FlowEvent -> "." + eventPayload.payload?.javaClass?.simpleName
+                is FlowMapperEvent -> "." + eventPayload.payload?.javaClass?.simpleName
+                else -> ""
+            }
+            return "$eventType$eventSubtype"
+        }
+
         log.debug { "Processing event: $event" }
+        log.info("Processing event [${event.key}] [${eventToString(event.value)}]")
+
         val key = event.key
         val state = updatedStates[event.partition]?.get(event.key)
         val partitionId = event.partition
@@ -317,6 +332,13 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                 outputRecords.add(Record(stateTopic, key, updatedState))
                 updatedStates.computeIfAbsent(partitionId) { mutableMapOf() }[key] = updatedState
                 log.debug { "Completed event: $event" }
+                val payload = event.value
+                if (payload is FlowEvent || payload is FlowMapperEvent) {
+                    val outEvents = thisEventUpdates.responseEvents.map { record ->
+                        eventToString(record.value)
+                    }
+                    log.info("Output events for [${event.key}] [$outEvents]")
+                }
             }
         }
     }

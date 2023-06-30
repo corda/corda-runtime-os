@@ -1,6 +1,5 @@
 package net.corda.session.manager.impl.processor
 
-import java.time.Instant
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.session.SessionClose
 import net.corda.data.flow.state.session.SessionState
@@ -9,8 +8,8 @@ import net.corda.session.manager.impl.SessionEventProcessor
 import net.corda.session.manager.impl.processor.helper.generateErrorEvent
 import net.corda.session.manager.impl.processor.helper.generateErrorSessionStateFromSessionEvent
 import net.corda.utilities.debug
-import net.corda.utilities.trace
 import org.slf4j.LoggerFactory
+import java.time.Instant
 
 /**
  * Handle send of a [SessionClose] event.
@@ -106,16 +105,16 @@ class SessionCloseProcessorSend(
     ) = when (val currentState = sessionState.status) {
         SessionStateType.CONFIRMED -> {
             sessionState.apply {
-                logger.trace { "Currently in CONFIRMED. Changing to CLOSING. nextSeqNum: $nextSeqNum, adding this event to send " +
-                        "${sessionEvent.sequenceNum}, $sessionId" }
+                logger.info("Currently in CONFIRMED. Changing to CLOSING. nextSeqNum: $nextSeqNum, adding this event to send " +
+                        "${sessionEvent.sequenceNum}, $sessionId")
                 status = SessionStateType.CLOSING
                 sendEventsState.lastProcessedSequenceNum = nextSeqNum
                 sendEventsState.undeliveredMessages = sessionState.sendEventsState.undeliveredMessages.plus(sessionEvent)
             }
         }
         SessionStateType.CLOSING -> {
-            logger.trace { "Currently in CLOSING. Changing to WAIT_FOR_FINAL_ACK. nextSeqNum: $nextSeqNum, adding this event to send " +
-                    "${sessionEvent.sequenceNum}, $sessionId" }
+            logger.info("Currently in CLOSING. Changing to WAIT_FOR_FINAL_ACK. nextSeqNum: $nextSeqNum, adding this event to send " +
+                    "${sessionEvent.sequenceNum}, $sessionId")
             // Doesn't go to closed until ack received
             sessionState.apply {
                 status = SessionStateType.WAIT_FOR_FINAL_ACK
