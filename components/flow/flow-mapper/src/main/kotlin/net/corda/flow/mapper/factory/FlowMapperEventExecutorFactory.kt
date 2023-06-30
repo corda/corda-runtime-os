@@ -1,10 +1,10 @@
 package net.corda.flow.mapper.factory
 
-import java.time.Instant
 import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.state.mapper.FlowMapperState
 import net.corda.flow.mapper.executor.FlowMapperEventExecutor
 import net.corda.libs.configuration.SmartConfig
+import java.time.Instant
 
 interface FlowMapperEventExecutorFactory {
 
@@ -22,6 +22,7 @@ interface FlowMapperEventExecutorFactory {
         flowMapperEvent: FlowMapperEvent,
         state: FlowMapperState?,
         flowConfig: SmartConfig,
-        instant: Instant = Instant.now(),
+        instant: Instant,
+        recordFactory: RecordFactory
     ): FlowMapperEventExecutor
 }

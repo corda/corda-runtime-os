@@ -11,13 +11,13 @@ import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.mapper.FlowMapperState
 import net.corda.flow.mapper.executor.FlowMapperEventExecutor
 import net.corda.flow.mapper.factory.FlowMapperEventExecutorFactory
+import net.corda.flow.mapper.factory.RecordFactory
 import net.corda.flow.mapper.impl.executor.ExecuteCleanupEventExecutor
 import net.corda.flow.mapper.impl.executor.ScheduleCleanupEventExecutor
 import net.corda.flow.mapper.impl.executor.SessionErrorExecutor
 import net.corda.flow.mapper.impl.executor.SessionEventExecutor
 import net.corda.flow.mapper.impl.executor.SessionInitExecutor
 import net.corda.flow.mapper.impl.executor.StartFlowExecutor
-import net.corda.flow.mapper.impl.executor.generateAppMessage
 import net.corda.libs.configuration.SmartConfig
 import net.corda.schema.Schemas.Flow.FLOW_EVENT_TOPIC
 import org.osgi.service.component.annotations.Activate
@@ -38,7 +38,8 @@ class FlowMapperEventExecutorFactoryImpl @Activate constructor(
         flowMapperEvent: FlowMapperEvent,
         state: FlowMapperState?,
         flowConfig: SmartConfig,
-        instant: Instant
+        instant: Instant,
+        recordFactory: RecordFactory
     ): FlowMapperEventExecutor {
         return when (val flowMapperEventPayload = flowMapperEvent.payload) {
             is SessionEvent -> {
@@ -59,9 +60,8 @@ class FlowMapperEventExecutorFactoryImpl @Activate constructor(
                             flowMapperEventPayload,
                             state,
                             instant,
-                            sessionEventSerializer,
-                            ::generateAppMessage,
-                            flowConfig
+                            flowConfig,
+                            recordFactory
                         )
                     }
                     else -> {
@@ -70,9 +70,8 @@ class FlowMapperEventExecutorFactoryImpl @Activate constructor(
                             flowMapperEventPayload,
                             state,
                             instant,
-                            sessionEventSerializer,
-                            ::generateAppMessage,
-                            flowConfig
+                            flowConfig,
+                            recordFactory
                         )
                     }
                 }
