@@ -281,7 +281,13 @@ class CordaKafkaProducerImpl(
         tryWithCleanupOnFailure("sending offset for transaction") {
             producer.sendOffsetsToTransaction(
                 (offsets as OffsetsImpl).offsets,
-                (metadata as MetadataImpl).metaData
+                //@@@ use group Id only which means we can be flexible on which offsets we pass here
+                //if we use the entire metadata extracted when offsets were extracted and then skip writing some offsets
+                //we end up with
+                //  Caused by: org.apache.kafka.clients.consumer.CommitFailedException:
+                //  Transaction offset Commit failed due to consumer group metadata mismatch: Specified group generation id is not valid.
+                //according to Kafka header docs this affects fencing in some way, to be investigated
+                ConsumerGroupMetadata((metadata as MetadataImpl).metaData.groupId())
             )
         }
     }

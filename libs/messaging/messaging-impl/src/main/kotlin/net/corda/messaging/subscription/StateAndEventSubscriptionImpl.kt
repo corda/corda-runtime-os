@@ -97,10 +97,11 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         .withTag(CordaMetrics.Tag.MessagePatternType, MetricsConstants.STATE_AND_EVENT_PATTERN_TYPE)
         .withTag(CordaMetrics.Tag.MessagePatternClientId, config.clientId).build()
 
-    private data class ProducerData(
+    private data class ProducerData<K, S>(
         val offsets: CordaProducer.Offsets,
         val metaData: CordaProducer.Metadata,
-        val outgoingRecords: List<CordaProducerRecord<*, *>>
+        val outgoingRecords: List<CordaProducerRecord<*, *>>,
+        val updatedStates: Map<Int, MutableMap<K, S?>>
     )
 
     private data class ProcessorData<K, E>(
@@ -109,7 +110,7 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
     )
 
 
-    private val producerChannels = mutableMapOf<Int, Channel<ProducerData>>()
+    private val producerChannels = mutableMapOf<Int, Channel<ProducerData<K, S>>>()
     private val processorChannels = mutableMapOf<Int, Channel<ProcessorData<K, E>>>()
 
     /**
@@ -236,7 +237,7 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                                     // Create the producer coroutines for any partition we've not yet encountered
                                     producerChannels.computeIfAbsent(partition) {
                                         val newConfig = config.copy(uniqueId = "${config.uniqueId}-${partition}")
-                                        Channel<ProducerData>(1).also { channel ->
+                                        Channel<ProducerData<K, S>>(1).also { channel ->
                                             launchProducer(channel, newConfig).also { job ->
                                                 jobs.add(job)
                                             }
@@ -278,6 +279,7 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                                         // resetPollInterval is cheap if we haven't exceeded the poll interval time
                                         stateAndEventConsumer.resetPollInterval()
                                     }
+                                    stateAndEventConsumer.postUpdates()
                                 }
                             } catch (ex: StateAndEventConsumer.RebalanceInProgressException) {
 //                                log.info(
@@ -295,7 +297,10 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                                 // result of this rebalance, those events could be processed again
                                 rebalanceOccurred = true
                             }
+                            // @@@ find a better way to do this
+                            stateAndEventConsumer.postUpdates()
                         }
+                        stateAndEventConsumer.postUpdates()
                         keepProcessing = false // We only want to do one batch at a time
                     } catch (ex: Exception) {
                         when (ex) {
@@ -312,7 +317,9 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                             }
                         }
                     }
+                    stateAndEventConsumer.postUpdates()
                 }
+                stateAndEventConsumer.postUpdates()
             }
             log.info("@@@ cancelling job")
             jobs.forEach {
@@ -331,7 +338,7 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
     // @@@ exception handling in the coroutines to consider
 
     private fun CoroutineScope.launchProcessor(
-        producerChannel: Channel<ProducerData>, processorChannel: Channel<ProcessorData<K, E>>
+        producerChannel: Channel<ProducerData<K, S>>, processorChannel: Channel<ProcessorData<K, E>>
     ) = launch(Executors.newSingleThreadExecutor().asCoroutineDispatcher()) {
         log.info("@@@ creating processor")
         for (processorData in processorChannel) {
@@ -362,43 +369,70 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
 
             // If we processed something, send the output records and offsets to the producer channel
             lastEvent?.let {
-                val producerData = ProducerData(
+                val producerData = ProducerData<K, S>(
                     utilityProducer.getOffsets(listOf(it)),
                     processorData.metaData,
-                    outputRecords.toCordaProducerRecords()
+                    outputRecords.toCordaProducerRecords(),
+                    updatedStates
                 )
                 producerChannel.send(producerData)
             }
-
-            // @@@ this is probably not thread safe
-            stateAndEventConsumer.updateInMemoryStatePostCommit(updatedStates, clock)
 
             log.debug { "Processing events(keys: ${events.joinToString { it.key.toString() }}, size: ${events.size}) complete." }
         }
     }
 
     private fun CoroutineScope.launchProducer(
-        producerChannel: Channel<ProducerData>, config: ResolvedSubscriptionConfig
+        producerChannel: Channel<ProducerData<K, S>>, config: ResolvedSubscriptionConfig
     ) = launch(Executors.newSingleThreadExecutor().asCoroutineDispatcher()) {
         log.info("@@@ creating producer")
         val producer = builder.createProducer(config)
-        for (producerData in producerChannel) {
-            log.info("@@@ producing")
+
+        while(true) {
+            val sendBuffer = mutableListOf<ProducerData<K, S>>()
+            // Always suspend whilst waiting for an event to produce
+            producerChannel.receive().also {
+                sendBuffer.add(it)
+            }
+            // If we're processing an event, check to see if we can buffer some more
+            var attemptCount = 0
+            // 5 x 10 = 50ms which is the order of the time of 1 observed commit
+            while (++attemptCount <= 5) {
+                val next = producerChannel.tryReceive()
+                if (next.isSuccess) {
+                    delay(10)
+                    sendBuffer.add(next.getOrThrow())
+                } else {
+                    break
+                }
+            }
+
+            if (sendBuffer.size > 1) {
+                log.info("@@@ buffered: ${sendBuffer.size}")
+            }
+
             producer.beginTransaction()
-            producer.sendRecords(producerData.outgoingRecords)
-            // @@@ no DLQ support at present
-            //            if (deadLetterRecords.isNotEmpty()) {
-            //                producer.sendRecords(deadLetterRecords.map {
-            //                    CordaProducerRecord(
-            //                        getDLQTopic(eventTopic),
-            //                        UUID.randomUUID().toString(),
-            //                        it
-            //                    )
-            //                })
-            //                deadLetterRecords.clear()
-            //            }
-            producer.sendRecordOffsetsToTransaction(producerData.offsets, producerData.metaData)
+            sendBuffer.forEach { producerData ->
+                producer.sendRecords(producerData.outgoingRecords)
+                // @@@ no DLQ support at present
+                //            if (deadLetterRecords.isNotEmpty()) {
+                //                producer.sendRecords(deadLetterRecords.map {
+                //                    CordaProducerRecord(
+                //                        getDLQTopic(eventTopic),
+                //                        UUID.randomUUID().toString(),
+                //                        it
+                //                    )
+                //                })
+                //                deadLetterRecords.clear()
+                //            }
+            }
+            producer.sendRecordOffsetsToTransaction(sendBuffer.last().offsets, sendBuffer.last().metaData)
             producer.commitTransaction()
+
+            sendBuffer.forEach {
+                // @@@ this is probably not thread safe
+                stateAndEventConsumer.updateInMemoryStatePostCommit(it.updatedStates, clock)
+            }
         }
     }
 
