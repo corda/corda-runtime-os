@@ -169,13 +169,13 @@ abstract class DeployableContainerBuilder extends DefaultTask {
 
     @Input
     final Property<Boolean> multiArch =
-            getObjects().property(Boolean).convention(true)
+            getObjects().property(Boolean).convention(false)
 
     @Input
     @Optional
     // Force Target Platform, using format "operatingSystem/architecture"
     final Property<String> targetPlatform =
-            getObjects().property(String).convention('')
+            getObjects().property(String).convention('linux/amd64')
 
     DeployableContainerBuilder() {
         description = 'Creates a new "corda-dev" image with the file specified in "overrideFilePath".'
