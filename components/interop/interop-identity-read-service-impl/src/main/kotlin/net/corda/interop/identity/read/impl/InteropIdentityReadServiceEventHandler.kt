@@ -16,7 +16,7 @@ import org.slf4j.LoggerFactory
 
 
 /**
- * Handler for interop alias info read service lifecycle events.
+ * Handler for interop identity read service lifecycle events.
  */
 class InteropIdentityReadServiceEventHandler(
     private val configurationReadService: ConfigurationReadService
@@ -61,8 +61,6 @@ class InteropIdentityReadServiceEventHandler(
 
         // Use debug rather than info
         log.info("Processing config update")
-
-        // re-register with saurabhs kafka topic
 
         coordinator.updateStatus(LifecycleStatus.UP)
     }

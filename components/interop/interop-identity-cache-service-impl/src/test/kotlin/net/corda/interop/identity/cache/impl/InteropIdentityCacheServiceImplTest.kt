@@ -59,26 +59,26 @@ class InteropIdentityCacheServiceImplTest {
         val cache = InteropIdentityCacheServiceImpl(coordinatorFactory, mock(), subscriptionFactory)
 
         val shortHash = "1234567890"
-        val aliasIdentity = InteropIdentity().apply {
+        val interopIdentity = InteropIdentity().apply {
             groupId = UUID.randomUUID().toString()
             x500Name = "X500 name #1"
             hostingVnode = "Hosting VNode"
         }
 
-        cache.putInteropIdentities(shortHash, aliasIdentity)
+        cache.putInteropIdentities(shortHash, interopIdentity)
 
-        val aliasIdentities = cache.getInteropIdentities(shortHash)
+        val interopIdentities = cache.getInteropIdentities(shortHash)
 
-        assertThat(aliasIdentities).isInstanceOf(HashMap::class.java)
-        assertThat(aliasIdentities.size).isEqualTo(1)
+        assertThat(interopIdentities).isInstanceOf(HashMap::class.java)
+        assertThat(interopIdentities.size).isEqualTo(1)
 
-        val key = aliasIdentities.keys.single()
+        val key = interopIdentities.keys.single()
 
-        assertThat(key).isEqualTo(aliasIdentity.groupId)
+        assertThat(key).isEqualTo(interopIdentity.groupId)
 
-        val value = aliasIdentities[key]
+        val value = interopIdentities[key]
 
-        assertThat(value).isEqualTo(aliasIdentity)
+        assertThat(value).isEqualTo(interopIdentity)
     }
 
     @Test
@@ -99,34 +99,34 @@ class InteropIdentityCacheServiceImplTest {
 
         val shortHash = "1234567890"
 
-        val aliasIdentity1 = InteropIdentity().apply {
+        val interopIdentity1 = InteropIdentity().apply {
             groupId = UUID.randomUUID().toString()
             x500Name = "X500 name #1"
             hostingVnode = "Hosting VNode"
         }
 
-        val aliasIdentity2 = InteropIdentity().apply {
+        val interopIdentity2 = InteropIdentity().apply {
             groupId = UUID.randomUUID().toString()
             x500Name = "X500 name #2"
             hostingVnode = "Hosting VNode"
         }
 
-        cache.putInteropIdentities(shortHash, aliasIdentity1)
-        cache.putInteropIdentities(shortHash, aliasIdentity2)
+        cache.putInteropIdentities(shortHash, interopIdentity1)
+        cache.putInteropIdentities(shortHash, interopIdentity2)
 
-        val aliasIdentities = cache.getInteropIdentities(shortHash)
+        val interopIdentities = cache.getInteropIdentities(shortHash)
 
-        assertThat(aliasIdentities).isInstanceOf(HashMap::class.java)
-        assertThat(aliasIdentities.size).isEqualTo(2)
+        assertThat(interopIdentities).isInstanceOf(HashMap::class.java)
+        assertThat(interopIdentities.size).isEqualTo(2)
 
-        val keys = aliasIdentities.keys
+        val keys = interopIdentities.keys
 
-        assertThat(keys).contains(aliasIdentity1.groupId, aliasIdentity2.groupId)
+        assertThat(keys).contains(interopIdentity1.groupId, interopIdentity2.groupId)
 
-        val value1 = aliasIdentities[aliasIdentity1.groupId]
-        val value2 = aliasIdentities[aliasIdentity2.groupId]
+        val value1 = interopIdentities[interopIdentity1.groupId]
+        val value2 = interopIdentities[interopIdentity2.groupId]
 
-        assertThat(value1).isEqualTo(aliasIdentity1)
-        assertThat(value2).isEqualTo(aliasIdentity2)
+        assertThat(value1).isEqualTo(interopIdentity1)
+        assertThat(value2).isEqualTo(interopIdentity2)
     }
 }

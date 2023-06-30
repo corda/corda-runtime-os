@@ -48,7 +48,7 @@ class InteropIdentityProcessor(
     }
 
     private fun updateCacheEntry(key: RecordKey, oldValue: InteropIdentity, newValue: InteropIdentity) {
-        val aliasIdentities = cacheService.getInteropIdentities(key.shortHash)
+        val interopIdentities = cacheService.getInteropIdentities(key.shortHash)
 
         // Both the record key and values contain the interop group ID. Might as well perform a sanity check.
         if (key.groupId.toString() != oldValue.groupId || key.groupId.toString() != newValue.groupId) {
@@ -58,9 +58,9 @@ class InteropIdentityProcessor(
         val groupId = key.groupId.toString()
 
         // If the old record isn't in the cache or doesn't match the cache content, log the error and the over-write.
-        if (groupId !in aliasIdentities.keys) {
+        if (groupId !in interopIdentities.keys) {
             logger.warn("Update: Old record is not present in the cache. Ignoring old entry.")
-        } else if (aliasIdentities[groupId] != oldValue) {
+        } else if (interopIdentities[groupId] != oldValue) {
             logger.warn("Update: Old record value does not match current cache content. Overwriting.")
         }
 
@@ -68,7 +68,7 @@ class InteropIdentityProcessor(
     }
 
     private fun insertCacheEntry(key: RecordKey, newValue: InteropIdentity) {
-        val aliasIdentities = cacheService.getInteropIdentities(key.shortHash)
+        val interopIdentities = cacheService.getInteropIdentities(key.shortHash)
 
         // Sanity check.
         if (key.groupId.toString() != newValue.groupId) {
@@ -77,7 +77,7 @@ class InteropIdentityProcessor(
 
         val groupId = key.groupId.toString()
 
-        if (groupId in aliasIdentities.keys) {
+        if (groupId in interopIdentities.keys) {
             logger.warn("Insert: Cache entry already exists. Overwriting.")
         }
 
@@ -85,7 +85,7 @@ class InteropIdentityProcessor(
     }
 
     private fun removeCacheEntry(key: RecordKey, oldValue: InteropIdentity) {
-        val aliasIdentities = cacheService.getInteropIdentities(key.shortHash)
+        val interopIdentities = cacheService.getInteropIdentities(key.shortHash)
 
         // Sanity check.
         if (key.groupId.toString() != oldValue.groupId) {
@@ -94,7 +94,7 @@ class InteropIdentityProcessor(
 
         val groupId = key.groupId.toString()
 
-        if (groupId in aliasIdentities.keys) {
+        if (groupId in interopIdentities.keys) {
             cacheService.removeInteropIdentity(key.shortHash, oldValue)
         } else {
             logger.warn("Remove: No cache entry exists for the provided group ID. Ignoring.")
