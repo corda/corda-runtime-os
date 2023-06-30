@@ -28,7 +28,6 @@ import net.corda.flow.pipeline.factory.FlowFiberExecutionContextFactory
 import net.corda.flow.pipeline.runner.impl.FlowRunnerImpl
 import net.corda.flow.pipeline.runner.impl.remoteToLocalContextMapper
 import net.corda.flow.pipeline.sandbox.FlowSandboxGroupContext
-import net.corda.flow.pipeline.sandbox.SandboxDependencyInjector
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.flow.state.FlowStack
 import net.corda.flow.test.utils.buildFlowEventContext
@@ -37,6 +36,7 @@ import net.corda.flow.utils.emptyKeyValuePairList
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.libs.platform.PlatformInfoProvider
+import net.corda.sandboxgroupcontext.service.SandboxDependencyInjector
 import net.corda.v5.application.flows.ClientRequestBody
 import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.ResponderFlow

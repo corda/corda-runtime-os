@@ -5,13 +5,13 @@ import net.corda.flow.fiber.FlowFiber
 import net.corda.flow.fiber.FlowFiberExecutionContext
 import net.corda.flow.fiber.FlowFiberService
 import net.corda.flow.pipeline.sandbox.FlowSandboxGroupContext
-import net.corda.flow.pipeline.sandbox.SandboxDependencyInjector
 import net.corda.flow.state.ContextPlatformProperties
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.flow.state.FlowContext
 import net.corda.flow.state.FlowStack
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
+import net.corda.sandboxgroupcontext.service.SandboxDependencyInjector
 import net.corda.serialization.checkpoint.CheckpointSerializer
 import net.corda.virtualnode.HoldingIdentity
 import org.mockito.kotlin.mock

@@ -2,10 +2,10 @@ package net.corda.flow.pipeline.sandbox.impl
 
 import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.flow.pipeline.sandbox.FlowSandboxGroupContext
-import net.corda.flow.pipeline.sandbox.SandboxDependencyInjector
 import net.corda.flow.pipeline.sessions.protocol.FlowProtocolStore
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.sandboxgroupcontext.getObjectByKey
+import net.corda.sandboxgroupcontext.service.SandboxDependencyInjector
 import net.corda.serialization.checkpoint.CheckpointSerializer
 
 class FlowSandboxGroupContextImpl(

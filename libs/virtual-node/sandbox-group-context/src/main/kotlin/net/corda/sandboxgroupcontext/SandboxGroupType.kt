@@ -22,7 +22,7 @@ enum class SandboxGroupType(
     val hasInjection: Boolean
 ) {
     FLOW("flow", UsedByFlow::class.java, hasInjection = true),
-    VERIFICATION("verification", UsedByVerification::class.java, hasInjection = false),
+    VERIFICATION("verification", UsedByVerification::class.java, hasInjection = true),
     PERSISTENCE("persistence", UsedByPersistence::class.java, hasInjection = false);
 
     override fun toString(): String = typeName

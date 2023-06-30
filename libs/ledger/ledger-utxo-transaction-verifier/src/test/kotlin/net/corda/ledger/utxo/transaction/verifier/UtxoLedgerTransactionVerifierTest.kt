@@ -7,6 +7,9 @@ import net.corda.ledger.utxo.data.state.StateAndRefImpl
 import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionImpl
 import net.corda.ledger.utxo.testkit.anotherNotaryX500Name
 import net.corda.ledger.utxo.testkit.notaryX500Name
+import net.corda.sandboxgroupcontext.SandboxGroupType
+import net.corda.sandboxgroupcontext.VirtualNodeContext
+import net.corda.sandboxgroupcontext.service.impl.SandboxGroupContextImpl
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
@@ -38,9 +41,15 @@ class UtxoLedgerTransactionVerifierTest {
     private val inputTransactionState = mock<TransactionState<ContractState>>()
     private val referenceTransactionState = mock<TransactionState<ContractState>>()
     private val metadata = mock<TransactionMetadata>()
-    val holdingIdentity = HoldingIdentity(MemberX500Name("ALICE", "LDN", "GB"), "group")
-
-    private val verifier = UtxoLedgerTransactionVerifier( { transaction }, holdingIdentity = holdingIdentity)
+    private val holdingIdentity = HoldingIdentity(MemberX500Name("ALICE", "LDN", "GB"), "group")
+    private val virtualNodeContext = VirtualNodeContext(
+        holdingIdentity,
+        mock(),
+        SandboxGroupType.VERIFICATION,
+        null
+    )
+    private val sandboxGroupContext = SandboxGroupContextImpl(virtualNodeContext, mock())
+    private val verifier = UtxoLedgerTransactionVerifier( { transaction }, transaction, sandboxGroupContext)
 
     @BeforeEach
     fun beforeEach() {

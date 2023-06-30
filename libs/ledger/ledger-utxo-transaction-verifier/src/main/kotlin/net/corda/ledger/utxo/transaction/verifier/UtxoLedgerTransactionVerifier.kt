@@ -1,8 +1,9 @@
 package net.corda.ledger.utxo.transaction.verifier
 
 import net.corda.ledger.utxo.data.transaction.verifier.verifyMetadata
+import net.corda.sandboxgroupcontext.SandboxGroupContext
+import net.corda.sandboxgroupcontext.service.SandboxDependencyInjectorKey
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
-import net.corda.virtualnode.HoldingIdentity
 
 /**
  * Verifies ledger transaction. For security reasons, some verifications (e.g. contracts) need to be run with a new
@@ -11,10 +12,11 @@ import net.corda.virtualnode.HoldingIdentity
  * @param transactionFactory factory used for checks that require a new instance of [UtxoLedgerTransaction]
  * @param transaction transaction used for checks that can reuse the same instance of [UtxoLedgerTransaction]
  */
+@SandboxDependencyInjectorKey
 class UtxoLedgerTransactionVerifier(
     private val transactionFactory: () -> UtxoLedgerTransaction,
     private val transaction: UtxoLedgerTransaction = transactionFactory.invoke(),
-    private val holdingIdentity: HoldingIdentity
+    private val sandboxGroupContext: SandboxGroupContext
 ) : UtxoTransactionVerifier() {
 
     override val subjectClass: String = UtxoLedgerTransaction::class.simpleName!!
@@ -22,7 +24,7 @@ class UtxoLedgerTransactionVerifier(
     fun verify() {
         verifyMetadata(transaction.metadata)
         verifyPlatformChecks()
-        verifyContracts(transactionFactory, transaction, holdingIdentity)
+        verifyContracts(transactionFactory, transaction, sandboxGroupContext)
     }
 
     private fun verifyPlatformChecks() {

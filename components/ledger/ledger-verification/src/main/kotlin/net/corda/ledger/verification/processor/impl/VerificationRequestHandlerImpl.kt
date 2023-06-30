@@ -33,7 +33,7 @@ class VerificationRequestHandlerImpl(private val responseFactory: ExternalEventR
             UtxoLedgerTransactionVerifier(
                 transactionFactory,
                 transaction,
-                sandbox.virtualNodeContext.holdingIdentity,
+                sandbox,
             ).verify()
 
             responseFactory.success(

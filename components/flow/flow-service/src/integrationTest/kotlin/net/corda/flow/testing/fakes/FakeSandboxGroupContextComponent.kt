@@ -4,7 +4,6 @@ import java.time.Duration
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
 import net.corda.flow.pipeline.events.FlowEventContext
-import net.corda.flow.pipeline.sandbox.SandboxDependencyInjector
 import net.corda.flow.pipeline.sandbox.impl.FlowSandboxGroupContextImpl
 import net.corda.flow.pipeline.sessions.protocol.FlowAndProtocolVersion
 import net.corda.flow.pipeline.sessions.protocol.FlowProtocolStore
@@ -18,9 +17,9 @@ import net.corda.sandboxgroupcontext.SandboxGroupType
 import net.corda.sandboxgroupcontext.VirtualNodeContext
 import net.corda.sandboxgroupcontext.service.CacheEviction
 import net.corda.sandboxgroupcontext.service.EvictionListener
+import net.corda.sandboxgroupcontext.service.SandboxDependencyInjector
 import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
 import net.corda.serialization.checkpoint.CheckpointSerializer
-import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.serialization.SerializedBytes
@@ -148,7 +147,7 @@ class FakeSandboxGroupContextComponent : SandboxGroupContextComponent {
     }
 
     class FakeSandboxDependencyInjector : SandboxDependencyInjector {
-        override fun injectServices(flow: Flow) {
+        override fun injectServices(obj: Any) {
         }
 
         override fun getRegisteredServices(): Set<SingletonSerializeAsToken> {

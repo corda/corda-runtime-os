@@ -4,6 +4,9 @@ import net.corda.crypto.core.SecureHashImpl
 import net.corda.ledger.common.testkit.publicKeyExample
 import net.corda.ledger.utxo.data.state.StateAndRefImpl
 import net.corda.ledger.utxo.testkit.notaryX500Name
+import net.corda.sandboxgroupcontext.SandboxGroupContext
+import net.corda.sandboxgroupcontext.SandboxGroupType
+import net.corda.sandboxgroupcontext.VirtualNodeContext
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.utxo.Contract
@@ -32,8 +35,15 @@ class UtxoLedgerTransactionContractVerifierTest {
         val TX_ID_2 = SecureHashImpl("SHA", byteArrayOf(1, 1, 1, 1))
         val TX_ID_3 = SecureHashImpl("SHA", byteArrayOf(1, 1, 1, 1))
         val holdingIdentity = HoldingIdentity(MemberX500Name("ALICE", "LDN", "GB"), "group")
+        val virtualNodeContext = VirtualNodeContext(
+            holdingIdentity,
+            mock(),
+            SandboxGroupType.VERIFICATION,
+            null
+        )
     }
 
+    private val sandboxGroupContext = mock<SandboxGroupContext>()
     private val transaction = mock<UtxoLedgerTransaction>()
     private val transactionFactory = mock<() -> UtxoLedgerTransaction>()
 
@@ -44,6 +54,7 @@ class UtxoLedgerTransactionContractVerifierTest {
         MyValidContractC.EXECUTION_COUNT = 0
         whenever(transactionFactory.invoke()).thenReturn(transaction)
         whenever(transaction.id).thenReturn(TX_ID_1)
+        whenever(sandboxGroupContext.virtualNodeContext).thenReturn(virtualNodeContext)
     }
 
     @Test
@@ -60,7 +71,7 @@ class UtxoLedgerTransactionContractVerifierTest {
             )
         )
         whenever(transaction.outputStateAndRefs).thenReturn(listOf(validContractCState2))
-        verifyContracts(transactionFactory, transaction, holdingIdentity)
+        verifyContracts(transactionFactory, transaction, sandboxGroupContext)
         // Called once for each of 3 contracts
         verify(transactionFactory, times(3)).invoke()
         assertThat(MyValidContractA.EXECUTION_COUNT).isEqualTo(1)
@@ -82,7 +93,7 @@ class UtxoLedgerTransactionContractVerifierTest {
             )
         )
         whenever(transaction.outputStateAndRefs).thenReturn(listOf(invalidContractBState))
-        assertThatThrownBy { verifyContracts(transactionFactory, transaction, holdingIdentity) }
+        assertThatThrownBy { verifyContracts(transactionFactory, transaction, sandboxGroupContext) }
             .isExactlyInstanceOf(ContractVerificationException::class.java)
             .hasMessageContainingAll("I have failed", "Something is wrong here")
         // Called once for each of 4 contracts

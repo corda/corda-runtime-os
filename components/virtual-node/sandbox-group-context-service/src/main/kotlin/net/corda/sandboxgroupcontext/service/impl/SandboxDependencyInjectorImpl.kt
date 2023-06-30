@@ -1,8 +1,8 @@
-package net.corda.flow.pipeline.sandbox.impl
+package net.corda.sandboxgroupcontext.service.impl
 
-import net.corda.flow.pipeline.sandbox.SandboxDependencyInjector
+import net.corda.sandboxgroupcontext.service.SandboxDependencyInjector
+import net.corda.serialization.checkpoint.NonSerializable
 import net.corda.v5.application.flows.CordaInject
-import net.corda.v5.application.flows.Flow
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.framework.FrameworkUtil
 import java.lang.reflect.Field
@@ -11,7 +11,7 @@ import java.util.Collections.unmodifiableMap
 class SandboxDependencyInjectorImpl(
     singletons: Map<SingletonSerializeAsToken, List<String>>,
     private val closeable: AutoCloseable
-) : SandboxDependencyInjector {
+) : SandboxDependencyInjector, NonSerializable {
     private val serviceTypeMap: Map<Class<*>, SingletonSerializeAsToken>
 
     init {
@@ -26,8 +26,8 @@ class SandboxDependencyInjectorImpl(
         closeable.close()
     }
 
-    override fun injectServices(flow: Flow) {
-        val requiredFields = flow::class.java.getFieldsForInjection()
+    override fun injectServices(obj: Any) {
+        val requiredFields = obj::class.java.getFieldsForInjection()
         val mismatchedFields = requiredFields.filterNot { serviceTypeMap.containsKey(it.type) }
         if (mismatchedFields.any()) {
             val fields = mismatchedFields.joinToString(separator = ", ", transform = Field::getName)
@@ -38,9 +38,9 @@ class SandboxDependencyInjectorImpl(
 
         requiredFields.forEach { field ->
             field.isAccessible = true
-            if (field.get(flow) == null) {
+            if (field.get(obj) == null) {
                 field.set(
-                    flow,
+                    obj,
                     serviceTypeMap[field.type]
                 )
             }
@@ -81,23 +81,23 @@ class SandboxDependencyInjectorImpl(
         val serviceClass = serviceObj::class.java
         val serviceClassLoader = serviceClass.classLoader
         serviceTypeNames.mapNotNull { serviceTypeName ->
-                try {
-                    FrameworkUtil.getBundle(serviceClass)?.loadClass(serviceTypeName)
-                        ?: Class.forName(serviceTypeName, false, serviceClassLoader)
-                } catch (_: ClassNotFoundException) {
-                    null
-                }
-            }.filter { serviceType ->
-                // Check that serviceObj is assignable to serviceType.
-                // Technically speaking, the OSGi framework should
-                // already guarantee this for an OSGi service.
-                serviceType.isInstance(serviceObj)
-            }.ifEmpty {
-                // Fall back to using the object's own class.
-                listOf(serviceClass)
-            }.forEach { implementedServiceType ->
-                registerServiceImplementation(serviceObj, implementedServiceType, serviceTypes)
+            try {
+                FrameworkUtil.getBundle(serviceClass)?.loadClass(serviceTypeName)
+                    ?: Class.forName(serviceTypeName, false, serviceClassLoader)
+            } catch (_: ClassNotFoundException) {
+                null
             }
+        }.filter { serviceType ->
+            // Check that serviceObj is assignable to serviceType.
+            // Technically speaking, the OSGi framework should
+            // already guarantee this for an OSGi service.
+            serviceType.isInstance(serviceObj)
+        }.ifEmpty {
+            // Fall back to using the object's own class.
+            listOf(serviceClass)
+        }.forEach { implementedServiceType ->
+            registerServiceImplementation(serviceObj, implementedServiceType, serviceTypes)
+        }
     }
 
     private fun registerServiceImplementation(

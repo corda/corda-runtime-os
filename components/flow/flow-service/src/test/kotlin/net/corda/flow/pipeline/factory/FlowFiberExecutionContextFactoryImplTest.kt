@@ -7,11 +7,11 @@ import net.corda.flow.BOB_X500_NAME
 import net.corda.flow.pipeline.factory.impl.FlowFiberExecutionContextFactoryImpl
 import net.corda.flow.pipeline.sandbox.FlowSandboxGroupContext
 import net.corda.flow.pipeline.sandbox.FlowSandboxService
-import net.corda.flow.pipeline.sandbox.SandboxDependencyInjector
 import net.corda.flow.test.utils.buildFlowEventContext
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
+import net.corda.sandboxgroupcontext.service.SandboxDependencyInjector
 import net.corda.serialization.checkpoint.CheckpointSerializer
 import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat

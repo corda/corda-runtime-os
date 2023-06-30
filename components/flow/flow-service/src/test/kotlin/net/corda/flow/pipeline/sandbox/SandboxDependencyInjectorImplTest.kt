@@ -1,7 +1,7 @@
 package net.corda.flow.pipeline.sandbox
 
-import net.corda.flow.pipeline.sandbox.impl.SandboxDependencyInjectorImpl
 import net.corda.sandbox.type.UsedByFlow
+import net.corda.sandboxgroupcontext.service.impl.SandboxDependencyInjectorImpl
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.ClientRequestBody
 import net.corda.v5.application.flows.ClientStartableFlow
