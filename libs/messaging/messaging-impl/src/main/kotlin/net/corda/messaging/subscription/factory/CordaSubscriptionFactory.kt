@@ -30,6 +30,7 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
+import net.corda.messaging.subscription.RestSubscriptionImpl as RestSubscriptionImpl1
 
 /**
  * Kafka implementation of the Subscription Factory.
@@ -170,6 +171,25 @@ class CordaSubscriptionFactory @Activate constructor(
             responderProcessor,
             cordaAvroSerializer,
             cordaAvroDeserializer,
+            lifecycleCoordinatorFactory
+        )
+    }
+
+    override fun <K : Any, V : Any> createRestSubscription(
+        subscriptionConfig: SubscriptionConfig,
+        processor: DurableProcessor<K, V>,
+        messagingConfig: SmartConfig,
+        partitionAssignmentListener: PartitionAssignmentListener?
+    ): Subscription<K, V> {
+        val config = getConfig(SubscriptionType.DURABLE, subscriptionConfig, messagingConfig)
+        val cordaAvroSerializer = cordaAvroSerializationFactory.createAvroSerializer<Any>()
+        val cordaAvroDeserializer = cordaAvroSerializationFactory.createAvroDeserializer({}, Any::class.java)
+
+        return RestSubscriptionImpl1(
+            processor,
+            cordaAvroSerializer,
+            cordaAvroDeserializer,
+            config,
             lifecycleCoordinatorFactory
         )
     }

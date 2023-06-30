@@ -150,4 +150,11 @@ interface SubscriptionFactory {
         messagingConfig: SmartConfig,
         responderProcessor: RPCResponderProcessor<REQUEST, RESPONSE>
     ): RPCSubscription<REQUEST, RESPONSE>
+
+    fun <K: Any, V: Any> createRestSubscription(
+        subscriptionConfig: SubscriptionConfig,
+        processor: DurableProcessor<K, V>,
+        messagingConfig: SmartConfig,
+        partitionAssignmentListener: PartitionAssignmentListener?
+    ) : Subscription<K, V>
 }

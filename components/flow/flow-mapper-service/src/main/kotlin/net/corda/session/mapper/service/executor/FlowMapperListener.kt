@@ -26,66 +26,66 @@ class FlowMapperListener(
     }
 
     override fun onPartitionSynced(states: Map<String, FlowMapperState>) {
-        log.trace { "Synced states $states" }
-        val currentTime = clock.millis()
-        for (stateEntry in states) {
-            val key = stateEntry.key
-            val state = stateEntry.value
-            val expiryTime = state.expiryTime
-            if (expiryTime != null && state.status == FlowMapperStateType.CLOSING) {
-                if (currentTime > expiryTime) {
-                    log.debug { "Clearing up expired state for synced key $key" }
-                    publisher?.publish(
-                        listOf(
-                            Record(
-                                FLOW_MAPPER_EVENT_TOPIC, key, FlowMapperEvent(
-                                    ExecuteCleanup()
-                                )
-                            )
-                        )
-                    )
-                } else {
-                    setupCleanupTimer(key, expiryTime)
-                }
-            }
-        }
+//        log.trace { "Synced states $states" }
+//        val currentTime = clock.millis()
+//        for (stateEntry in states) {
+//            val key = stateEntry.key
+//            val state = stateEntry.value
+//            val expiryTime = state.expiryTime
+//            if (expiryTime != null && state.status == FlowMapperStateType.CLOSING) {
+//                if (currentTime > expiryTime) {
+//                    log.debug { "Clearing up expired state for synced key $key" }
+//                    publisher?.publish(
+//                        listOf(
+//                            Record(
+//                                FLOW_MAPPER_EVENT_TOPIC, key, FlowMapperEvent(
+//                                    ExecuteCleanup()
+//                                )
+//                            )
+//                        )
+//                    )
+//                } else {
+//                    setupCleanupTimer(key, expiryTime)
+//                }
+//            }
+//        }
     }
 
     override fun onPartitionLost(states: Map<String, FlowMapperState>) {
-        log.trace { "Lost partition states $states" }
-        for (stateEntry in states) {
-            scheduledTasks.remove(stateEntry.key)?.cancel(true)
-        }
+//        log.trace { "Lost partition states $states" }
+//        for (stateEntry in states) {
+//            scheduledTasks.remove(stateEntry.key)?.cancel(true)
+//        }
     }
 
     override fun onPostCommit(updatedStates: Map<String, FlowMapperState?>) {
-        log.trace { "Committed states $updatedStates" }
-        updatedStates.forEach { state ->
-            val status = state.value?.status
-            val expiryTime = state.value?.expiryTime
-            if (status == FlowMapperStateType.CLOSING) {
-                if (expiryTime == null) {
-                    log.error("Expiry time not set for FlowMapperState with status of CLOSING on key ${state.key}")
-                } else {
-                    setupCleanupTimer(state.key, expiryTime)
-                }
-            }
-        }
+//        log.trace { "Committed states $updatedStates" }
+//        updatedStates.forEach { state ->
+//            val status = state.value?.status
+//            val expiryTime = state.value?.expiryTime
+//            if (status == FlowMapperStateType.CLOSING) {
+//                if (expiryTime == null) {
+//                    log.error("Expiry time not set for FlowMapperState with status of CLOSING on key ${state.key}")
+//                } else {
+//                    setupCleanupTimer(state.key, expiryTime)
+//                }
+//            }
+//        }
     }
 
     /**
      * Set up a cleanup timer for this key
      */
-    private fun setupCleanupTimer(eventKey: String, expiryTime: Long) {
-        scheduledTasks.computeIfAbsent(eventKey) {
-            executorService.schedule(
-                {
-                    log.debug { "Clearing up mapper state for key $eventKey" }
-                    publisher?.publish(listOf(Record(FLOW_MAPPER_EVENT_TOPIC, eventKey, FlowMapperEvent(ExecuteCleanup()))))
-                },
-                expiryTime - clock.millis(),
-                TimeUnit.MILLISECONDS
-            )
-        }
-    }
+//    private fun setupCleanupTimer(eventKey: String, expiryTime: Long) {
+//        scheduledTasks.computeIfAbsent(eventKey) {
+//            executorService.schedule(
+//                {
+//                    log.debug { "Clearing up mapper state for key $eventKey" }
+//                    publisher?.publish(listOf(Record(FLOW_MAPPER_EVENT_TOPIC, eventKey, FlowMapperEvent(ExecuteCleanup()))))
+//                },
+//                expiryTime - clock.millis(),
+//                TimeUnit.MILLISECONDS
+//            )
+//        }
+//    }
 }

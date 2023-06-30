@@ -32,6 +32,7 @@ dependencies {
 
     implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation "redis.clients:jedis:$jedisVersion"
+    implementation "io.javalin:javalin:$javalinVersion"
 
     testImplementation "org.assertj:assertj-core:$assertjVersion"
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
