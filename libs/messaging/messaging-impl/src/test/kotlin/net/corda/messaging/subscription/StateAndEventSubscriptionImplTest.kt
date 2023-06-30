@@ -82,8 +82,8 @@ class StateAndEventSubscriptionImplTest {
             )
         }.whenever(
             stateAndEventConsumer
-        ).wa
-        itForFunctionToFinish(any(), any(), any())
+        ).
+        waitForFunctionToFinish(any(), any(), any())
         doAnswer { eventConsumer }.whenever(stateAndEventConsumer).eventConsumer
         doAnswer { stateConsumer }.whenever(stateAndEventConsumer).stateConsumer
         doAnswer { false }.whenever(stateAndEventConsumer).resetPollInterval()

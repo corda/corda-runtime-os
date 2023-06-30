@@ -249,7 +249,7 @@ class CryptoProcessorImpl @Activate constructor(
         val flowGroupName = "crypto.ops.flow"
         coordinator.createManagedResource(FLOW_OPS_SUBSCRIPTION) {
             subscriptionFactory.createRestSubscription(
-                subscriptionConfig = SubscriptionConfig(flowGroupName, Schemas.Crypto.FLOW_OPS_MESSAGE_TOPIC),
+                subscriptionConfig = SubscriptionConfig(flowGroupName, "/"),
                 processor = flowOpsProcessor,
                 messagingConfig = messagingConfig,
                 partitionAssignmentListener = null

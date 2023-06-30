@@ -4,11 +4,10 @@ import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.engine.jetty.*
 import io.ktor.client.request.*
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.async
 import kotlinx.coroutines.runBlocking
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializer
-import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.records.Record
 
 class RestClient(
@@ -20,15 +19,17 @@ class RestClient(
     private val client = HttpClient(Jetty)
 
     fun publish(records: List<Record<*, *>>): List<Record<*, *>> {
-        runBlocking {
+        return runBlocking {
             records.map { record ->
-                launch {
+                async {
                     val body = avroSerializer.serialize(record)
-                    val response = client.get("/url") {
+                    val response = client.get(endpoint) {
                         setBody(body)
                     }
                     avroDeserializer.deserialize(response.body<ByteArray>()) as? Record<*, *>
                 }
+            }.mapNotNull {
+                it.await()
             }
         }
     }
