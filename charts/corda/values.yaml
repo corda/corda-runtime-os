@@ -451,7 +451,7 @@ workers:
       # -- the type for the REST service
       type: ClusterIP
       # -- the HTTP port for the REST service
-      port: 80
+      port: 443
       # -- the traffic policy for the REST service
       externalTrafficPolicy: ""
       # -- the LoadBalancer source ranges to limit access to the REST service
@@ -466,6 +466,26 @@ workers:
       className: ""
       # -- the hosts for the REST ingress
       hosts: [ ]
+    # REST TLS configuration
+    tls:
+      # -- the name of the Kubernetes secret containing the certificate, private key and CA certificate; if not specified, a new secret will be created and certificates/keys generated
+      secretName: ""
+      # Optional parameters to be used during TLS certificate generation.
+      generation:
+        # -- Alternative names to be included in a certificate when generated.
+        altNames: [ ]
+      # TLS Certificate configuration
+      crt:
+        # -- the TLS Certificate secret key
+        secretKey: "tls.crt"
+      # TLS Certificate private key configuration
+      key:
+        # -- the TLS Certificate private key secret key
+        secretKey: "tls.key"
+      # Certification Authority(CA) certificates chain configuration
+      ca:
+        # -- the CA certificates chain secret key
+        secretKey: "ca.crt"
     # crypto worker JDBC connection pool configuration for cluster DB
     clusterDbConnectionPool:
       # -- crypto worker maximum JDBC connection pool size for cluster DB
