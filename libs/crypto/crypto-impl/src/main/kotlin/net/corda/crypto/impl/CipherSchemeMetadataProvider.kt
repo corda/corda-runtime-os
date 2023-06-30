@@ -178,22 +178,26 @@ class CipherSchemeMetadataProvider : KeyEncodingService {
 
     override fun decodePublicKey(encodedKey: String): PublicKey {
         logger.info("decode public key string start disabled timing [${encodedKey}]")
+
         val res = try {
-            logger.info("doing parse on ${encodedKey}")
-            val pemContent = parsePemContent(encodedKey)
-            logger.info("got pem content ${pemContent.size}")
-            val publicKeyInfo = SubjectPublicKeyInfo.getInstance(pemContent)
-            logger.info("got public key info")
-            val converter = getJcaPEMKeyConverter(publicKeyInfo)
-            logger.info("converted down")
-            val publicKey = converter.getPublicKey(publicKeyInfo)
-            logger.info("got public key")
-            toSupportedPublicKey(publicKey)
+            recordPublicKeyOperation(DECODE_PUBLIC_KEY_FROM_STRING_OPERATION_NAME) {
+                logger.info("doing parse on ${encodedKey}")
+                val pemContent = parsePemContent(encodedKey)
+                logger.info("got pem content ${pemContent.size}")
+                val publicKeyInfo = SubjectPublicKeyInfo.getInstance(pemContent)
+                logger.info("got public key info")
+                val converter = getJcaPEMKeyConverter(publicKeyInfo)
+                logger.info("converted down")
+                val publicKey = converter.getPublicKey(publicKeyInfo)
+                logger.info("got public key")
+                toSupportedPublicKey(publicKey)
+            }
         } catch (e: RuntimeException) {
             throw e
-        } catch (e: Throwable) {
+        } catch (e: Exception) {
             throw CryptoException("Failed to decode public key", e)
         }
+    
         logger.info("decode public key string finished [${encodedKey}]")
         return res
     }
@@ -230,12 +234,30 @@ class CipherSchemeMetadataProvider : KeyEncodingService {
             return strWriter.toString()
         }
 
-    private fun parsePemContent(pem: String): ByteArray =
-        StringReader(pem).use { strReader ->
-            return PemReader(strReader).use { pemReader ->
-                pemReader.readPemObject()?.content?: throw IllegalArgumentException("Key not found in PEM format")
+    private fun parsePemContent(pem: String): ByteArray {
+        logger.info("parse pem content starting")
+        logger.info("parse pem content on ${pem}")
+        val r = StringReader(pem).use { strReader ->
+            logger.info("made string reader ${strReader}")
+            PemReader(strReader).use { pemReader ->
+                logger.info("made Pem reader ${pemReader}")
+                val pemObject = pemReader.readPemObject()
+                logger.info("pem object is ${pemObject}")
+                if (pemObject == null) throw IllegalArgumentException("Key object not found")
+                logger.info("content is ${pemObject.content}")
+                if (pemObject.content == null) {
+                    logger.info("content is null")
+                    throw IllegalArgumentException("Key content was null")
+                } 
+                logger.info("content not null")
+                val c = pemObject.content
+                logger.info("content  is ${c}")
+                c
             }
         }
+        logger.info("parse pem content done; $r")
+        return r
+    }
 
     private fun normaliseAlgorithmIdentifier(id: AlgorithmIdentifier): AlgorithmIdentifier =
         if (id.parameters is DERNull) {
