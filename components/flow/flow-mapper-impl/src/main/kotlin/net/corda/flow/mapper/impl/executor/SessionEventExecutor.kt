@@ -95,6 +95,8 @@ class SessionEventExecutor(
      * Output the session event to the correct topic and key
      */
     private fun processOtherSessionEvents(flowMapperState: FlowMapperState, instant: Instant): FlowMapperResult {
+        val messageDirection = sessionEvent.messageDirection
+
         val errorMsg = "Flow mapper received error event from counterparty for session which does not exist. " +
                 "Session may have expired. Key: $eventKey, Event: $sessionEvent. "
 
@@ -109,15 +111,20 @@ class SessionEventExecutor(
                     FlowMapperResult(flowMapperState, listOf())
                 } else {
                     if (sessionEvent.payload is SessionClose) {
-                        val outputRecord =
-                            createP2PRecord(
+                        val outputRecord = recordFactory.forwardAck(
+                            sessionEvent,
+                            instant,
+                            flowConfig,
+                            messageDirection
+                        )
+/*                            createP2PRecord(
                                 sessionEvent,
                                 SessionAck(),
                                 instant,
                                 sessionEventSerializer,
                                 appMessageFactory,
                                 flowConfig
-                            )
+                            )*/
                         FlowMapperResult(flowMapperState, listOf(outputRecord))
                     } else {
                         FlowMapperResult(flowMapperState, listOf())
@@ -125,6 +132,7 @@ class SessionEventExecutor(
                 }
             }
             FlowMapperStateType.OPEN -> {
+                val outputTopic = recordFactory.getSessionEventOutputTopic(sessionEvent, messageDirection)
                 val outputRecord = if (messageDirection == MessageDirection.OUTBOUND) {
                     Record(
                         outputTopic,

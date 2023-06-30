@@ -59,8 +59,8 @@ class SessionErrorExecutor(
             FlowMapperStateType.OPEN -> {
                 log.debug(defaultMsg.format(FORWARDING))
                 flowMapperState.status = FlowMapperStateType.ERROR
-                /*if (messageDirection == MessageDirection.OUTBOUND) {
-                    FlowMapperResult(
+                if (messageDirection == MessageDirection.OUTBOUND) {
+                    /*FlowMapperResult(
                         flowMapperState, listOf(
                             createP2PRecord(
                                 sessionEvent,
@@ -77,8 +77,10 @@ class SessionErrorExecutor(
                                 sessionEvent.receivedSequenceNum
                             )
                         )
+                    )*/
+                    val outputRecord = recordFactory.forwardError(sessionEvent,
                     )
-                } else {*/
+                } else {
                 val outputRecord = recordFactory.createAndSendRecord(
                     eventKey,
                     sessionEvent,

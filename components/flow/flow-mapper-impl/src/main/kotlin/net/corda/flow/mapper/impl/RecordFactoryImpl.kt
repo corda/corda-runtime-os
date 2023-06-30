@@ -3,18 +3,14 @@ package net.corda.flow.mapper.impl
 import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.ExceptionEnvelope
-import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.event.session.SessionAck
 import net.corda.data.flow.event.session.SessionError
-import net.corda.data.flow.event.session.SessionInit
-import net.corda.data.flow.state.mapper.FlowMapperState
 import net.corda.data.p2p.app.AppMessage
-import net.corda.flow.mapper.FlowMapperResult
 import net.corda.flow.mapper.factory.RecordFactory
-import net.corda.flow.mapper.impl.executor.createP2PRecord
+import net.corda.flow.mapper.impl.executor.createOutboundRecord
 import net.corda.flow.mapper.impl.executor.getDestinationIdentity
 import net.corda.flow.mapper.impl.executor.toggleSessionId
 import net.corda.libs.configuration.SmartConfig
@@ -37,7 +33,7 @@ class RecordFactoryImpl @Activate constructor(
 ): RecordFactory {
     private val sessionEventSerializer = cordaAvroSerializationFactory.createAvroSerializer<SessionEvent> { }
 
-    override fun createAndSendRecord(
+    /*override fun createAndSendRecord(
         eventKey: String,
         sessionEvent: SessionEvent,
         flowMapperState: FlowMapperState?,
@@ -46,22 +42,20 @@ class RecordFactoryImpl @Activate constructor(
         messageDirection: MessageDirection,
         exceptionEnvelope: ExceptionEnvelope
     ): Record<*, *> {
-
+        val outputTopic = getSessionEventOutputTopic(sessionEvent, messageDirection)
         return when (messageDirection) {
             MessageDirection.INBOUND -> {
                 Record(outputTopic, flowMapperState.flowId, FlowEvent(flowMapperState.flowId, sessionEvent))
             }
             MessageDirection.OUTBOUND -> {
-                if (isLocalCluster(sessionEvent)) {
-                    Record(outputTopic, errEvent.sessionId, FlowMapperEvent(errEvent))
-                } else {
-                    forwardError(sessionEvent, exceptionEnvelope, instant, flowConfig)
-                }
+                forwardError(sessionEvent, exceptionEnvelope, instant, flowConfig, messageDirection)
             }
         }
     }
+*/
 
-    private fun forwardError(
+
+    override fun forwardError(
         sessionEvent: SessionEvent,
         exceptionEnvelope: ExceptionEnvelope,
         instant: Instant,
@@ -86,7 +80,7 @@ class RecordFactoryImpl @Activate constructor(
         return if (isLocalCluster(sessionEvent)) {
             Record(outputTopic, errEvent.sessionId, FlowMapperEvent(errEvent))
         } else {
-            createP2PRecord(
+            createOutboundRecord(
                 sessionEvent,
                 SessionError(
                     exceptionEnvelope
@@ -95,12 +89,13 @@ class RecordFactoryImpl @Activate constructor(
                 sessionEventSerializer,
                 appMessageFactory,
                 flowConfig,
-                sessionEvent.receivedSequenceNum
+                sessionEvent.receivedSequenceNum,
+                outputTopic
             )
         }
     }
 
-    private fun forwardAck(
+    override fun forwardAck(
         sessionEvent: SessionEvent,
         instant: Instant,
         flowConfig: SmartConfig,
@@ -122,13 +117,15 @@ class RecordFactoryImpl @Activate constructor(
         return if (isLocalCluster(sessionEvent)) {
             Record(outputTopic, ackEvent.sessionId, FlowMapperEvent(ackEvent))
         } else {
-            createP2PRecord(
+            createOutboundRecord(
                 sessionEvent,
                 SessionAck(),
                 instant,
                 sessionEventSerializer,
                 appMessageFactory,
-                flowConfig
+                flowConfig,
+                sessionEvent.sequenceNum,
+                outputTopic
             )
         }
     }
@@ -149,7 +146,7 @@ class RecordFactoryImpl @Activate constructor(
      * @return the output topic based on [messageDirection].
      */
 
-    private fun getSessionEventOutputTopic(sessionEvent: SessionEvent, messageDirection: MessageDirection): String {
+    override fun getSessionEventOutputTopic(sessionEvent: SessionEvent, messageDirection: MessageDirection): String {
         return when (messageDirection) {
             MessageDirection.INBOUND -> Schemas.Flow.FLOW_EVENT_TOPIC
             MessageDirection.OUTBOUND -> {
