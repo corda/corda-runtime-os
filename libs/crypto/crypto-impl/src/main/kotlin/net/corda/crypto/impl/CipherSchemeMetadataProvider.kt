@@ -24,12 +24,16 @@ import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter
 import org.bouncycastle.openssl.jcajce.JcaPEMWriter
 import org.bouncycastle.pqc.jcajce.provider.BouncyCastlePQCProvider
 import org.bouncycastle.util.io.pem.PemReader
+import org.slf4j.LoggerFactory
 
 private const val DECODE_PUBLIC_KEY_FROM_BYTE_ARRAY_OPERATION_NAME = "decodePublicKeyFromByteArray"
 private const val DECODE_PUBLIC_KEY_FROM_STRING_OPERATION_NAME = "decodePublicKeyFromString"
 private const val ENCODE_PUBLIC_KEY_TO_STRING_OPERATION_NAME = "encodePublicKeyToString"
 
 class CipherSchemeMetadataProvider : KeyEncodingService {
+    companion object {
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+    }
 
     private val cordaSecurityProvider = CordaSecurityProvider(this)
 
@@ -155,7 +159,8 @@ class CipherSchemeMetadataProvider : KeyEncodingService {
     }
 
     override fun decodePublicKey(encodedKey: ByteArray): PublicKey {
-        return try {
+        logger.info("decode public key byte array start")
+        val res = try {
             recordPublicKeyOperation(DECODE_PUBLIC_KEY_FROM_BYTE_ARRAY_OPERATION_NAME) {
                 val subjectPublicKeyInfo = SubjectPublicKeyInfo.getInstance(encodedKey)
                 val scheme = findKeyScheme(subjectPublicKeyInfo.algorithm)
@@ -167,20 +172,32 @@ class CipherSchemeMetadataProvider : KeyEncodingService {
         } catch (e: Throwable) {
             throw CryptoException("Failed to decode public key", e)
         }
+        logger.info("decode public key byte array complete")
+        return res
     }
 
-    override fun decodePublicKey(encodedKey: String): PublicKey = try {
-        recordPublicKeyOperation(DECODE_PUBLIC_KEY_FROM_STRING_OPERATION_NAME) {
-            val pemContent = parsePemContent(encodedKey)
-            val publicKeyInfo = SubjectPublicKeyInfo.getInstance(pemContent)
-            val converter = getJcaPEMKeyConverter(publicKeyInfo)
-            val publicKey = converter.getPublicKey(publicKeyInfo)
-            toSupportedPublicKey(publicKey)
+    override fun decodePublicKey(encodedKey: String): PublicKey {
+        logger.info("decode public key string start")
+        val res = try {
+            recordPublicKeyOperation(DECODE_PUBLIC_KEY_FROM_STRING_OPERATION_NAME) {
+                logger.info("doing parse on ${encodeKey}")
+                val pemContent = parsePemContent(encodedKey)
+                logger.info("got pem content ${pemContent.size}")
+                val publicKeyInfo = SubjectPublicKeyInfo.getInstance(pemContent)
+                logger.info("got public key info")
+                val converter = getJcaPEMKeyConverter(publicKeyInfo)
+                logger.info("converted down")
+                val publicKey = converter.getPublicKey(publicKeyInfo)
+                logger.info("got public key")
+                toSupportedPublicKey(publicKey)
+            }
+        } catch (e: RuntimeException) {
+            throw e
+        } catch (e: Throwable) {
+            throw CryptoException("Failed to decode public key", e)
         }
-    } catch (e: RuntimeException) {
-        throw e
-    } catch (e: Throwable) {
-        throw CryptoException("Failed to decode public key", e)
+        logger.info("decode public key string finished")
+        return res
     }
 
     override fun encodeAsString(publicKey: PublicKey): String = try {
