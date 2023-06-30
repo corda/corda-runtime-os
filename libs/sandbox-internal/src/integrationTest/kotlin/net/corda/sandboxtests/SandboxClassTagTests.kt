@@ -120,6 +120,18 @@ class SandboxClassTagTests {
         assertEquals(systemBundleClass, sandboxFactory.group1.getClass(systemBundleClass.name, evolvableTag))
     }
 
+    @Test
+    fun `cannot create class tags for private system bundle classes and use them to retrieve the class`() {
+        val systemBundle = FrameworkUtil.getBundle(this::class.java).bundleContext.getBundle(SYSTEM_BUNDLE_ID)
+        val forbiddenSystemClass = systemBundle.loadClass(FORBIDDEN_SYSTEM_BUNDLE_CLASS)
+
+        val staticTag = sandboxFactory.group1.getStaticTag(forbiddenSystemClass)
+        val evolvableTag = sandboxFactory.group1.getEvolvableTag(forbiddenSystemClass)
+
+        assertThrows<SandboxException> { sandboxFactory.group1.getClass(forbiddenSystemClass.name, staticTag) }
+        assertThrows<SandboxException> { sandboxFactory.group1.getClass(forbiddenSystemClass.name, evolvableTag) }
+    }
+
     @ParameterizedTest
     @ValueSource(classes = [ Long::class, Int::class, Short::class, Byte::class, Char::class, Boolean::class, Double::class, Float::class ])
     fun `can handle primitive types`(primitiveType: Class<*>) {
