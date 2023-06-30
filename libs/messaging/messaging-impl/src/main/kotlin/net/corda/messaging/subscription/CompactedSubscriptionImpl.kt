@@ -37,19 +37,28 @@ internal class CompactedSubscriptionImpl<K : Any, V : Any>(
 
     private var latestValues: MutableMap<K, V>? = null
 
-    private val processorMeter = CordaMetrics.Metric.MessageProcessorTime.builder()
+    private val inMemoryStoreMetric =
+        CordaMetrics.Metric.Messaging.CompactedConsumerInMemoryStore { getLatestValues().size }.builder()
+            .withTag(CordaMetrics.Tag.MessagePatternType, MetricsConstants.COMPACTED_PATTERN_TYPE)
+            .withTag(CordaMetrics.Tag.MessagePatternClientId, config.clientId)
+            .build()
+
+    private val processorMeter = CordaMetrics.Metric.Messaging.MessageProcessorTime.builder()
         .withTag(CordaMetrics.Tag.MessagePatternType, MetricsConstants.COMPACTED_PATTERN_TYPE)
         .withTag(CordaMetrics.Tag.MessagePatternClientId, config.clientId)
         .withTag(CordaMetrics.Tag.OperationName, MetricsConstants.ON_NEXT_OPERATION)
         .build()
 
-    private val snapshotMeter = CordaMetrics.Metric.MessageProcessorTime.builder()
+    private val snapshotMeter = CordaMetrics.Metric.Messaging.MessageProcessorTime.builder()
         .withTag(CordaMetrics.Tag.MessagePatternType, MetricsConstants.COMPACTED_PATTERN_TYPE)
         .withTag(CordaMetrics.Tag.MessagePatternClientId, config.clientId)
         .withTag(CordaMetrics.Tag.OperationName, MetricsConstants.ON_SNAPSHOT_OPERATION)
         .build()
 
-    override fun close() = threadLooper.close()
+    override fun close() {
+        threadLooper.close()
+        CordaMetrics.registry.remove(inMemoryStoreMetric)
+    }
 
     override fun start() {
         log.debug { "Starting subscription with config:\n${config}" }
