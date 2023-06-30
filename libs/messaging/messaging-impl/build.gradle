@@ -1,6 +1,7 @@
 plugins {
     id 'corda.common-library'
     id 'corda.common-publishing'
+    id "io.ktor.plugin" version "$ktorVersion"
 }
 
 description 'Message Patterns Impl'
@@ -32,6 +33,9 @@ dependencies {
 
     implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation "redis.clients:jedis:$jedisVersion"
+    implementation("com.github.kittinunf.fuel:fuel:$fuelVersion")
+    implementation "io.ktor:ktor-server-core"
+    implementation "io.ktor:ktor-server-netty"
     implementation "io.javalin:javalin:$javalinVersion"
 
     testImplementation "org.assertj:assertj-core:$assertjVersion"

@@ -446,6 +446,9 @@ workers:
       requests: {}
       # -- the CPU/memory resource limits for the crypto worker containers
       limits: {}
+    service:
+      # -- The HTTP port
+      port: 8080
     # crypto worker JDBC connection pool configuration for cluster DB
     clusterDbConnectionPool:
       # -- crypto worker maximum JDBC connection pool size for cluster DB
