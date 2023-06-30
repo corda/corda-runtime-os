@@ -6,8 +6,7 @@ import net.corda.data.membership.command.registration.mgm.ApproveRegistration
 import net.corda.data.membership.command.registration.mgm.DeclineRegistration
 import net.corda.data.membership.command.registration.mgm.ProcessMemberVerificationResponse
 import net.corda.data.membership.common.ApprovalRuleType
-import net.corda.data.membership.common.RegistrationStatus
-import net.corda.data.membership.p2p.SetOwnRegistrationStatus
+import net.corda.data.membership.common.v2.RegistrationStatus
 import net.corda.data.membership.state.RegistrationState
 import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.libs.configuration.SmartConfig
@@ -22,11 +21,13 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.lib.approval.RegistrationRule
 import net.corda.membership.lib.approval.RegistrationRulesEngine
 import net.corda.membership.lib.registration.PRE_AUTH_TOKEN
+import net.corda.membership.lib.VersionedMessageBuilder.retrieveRegistrationStatusMessage
 import net.corda.membership.lib.toMap
 import net.corda.membership.p2p.helpers.P2pRecordsFactory
 import net.corda.membership.p2p.helpers.P2pRecordsFactory.Companion.getTtlMinutes
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipQueryClient
+import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.Membership.REGISTRATION_COMMAND_TOPIC
@@ -89,22 +90,28 @@ internal class ProcessMemberVerificationResponseHandler(
                 )
             }
 
-            val status = getNextRegistrationStatus(mgm.toCorda(), member.toCorda(), registrationId)
+            val groupReader = membershipGroupReaderProvider.getGroupReader(mgm.toCorda())
+            val status = getNextRegistrationStatus(mgm.toCorda(), member.toCorda(), registrationId, groupReader)
+            val pendingInfo = groupReader.lookup(member.toCorda().x500Name, MembershipStatusFilter.PENDING)
+                ?: throw CordaRuntimeException("Could not find pending information " +
+                        "for member with holding ID '${member.toCorda().shortHash}'.")
             val setRegistrationRequestStatusCommands = membershipPersistenceClient.setRegistrationRequestStatus(
                 mgm.toCorda(),
                 registrationId,
                 status
             ).createAsyncCommands()
-            val persistStatusMessage = p2pRecordsFactory.createAuthenticatedMessageRecord(
-                source = mgm,
-                destination = member,
-                content = SetOwnRegistrationStatus(
-                    registrationId,
-                    status
-                ),
-                minutesToWait = membershipConfig.getTtlMinutes(UPDATE_TO_PENDING_AUTO_APPROVAL),
-                filter = MembershipStatusFilter.PENDING,
+            val statusUpdateMessage = retrieveRegistrationStatusMessage(
+                pendingInfo.platformVersion, registrationId, status.name
             )
+            val persistStatusMessage = if (statusUpdateMessage != null) {
+                p2pRecordsFactory.createAuthenticatedMessageRecord(
+                    source = mgm,
+                    destination = member,
+                    content = statusUpdateMessage,
+                    minutesToWait = membershipConfig.getTtlMinutes(UPDATE_TO_PENDING_AUTO_APPROVAL),
+                    filter = MembershipStatusFilter.PENDING,
+                )
+            } else { null }
             val approveRecord = if (status == RegistrationStatus.PENDING_AUTO_APPROVAL) {
                 Record(
                     REGISTRATION_COMMAND_TOPIC,
@@ -138,7 +145,8 @@ internal class ProcessMemberVerificationResponseHandler(
     private fun getNextRegistrationStatus(
         mgm: HoldingIdentity,
         member: HoldingIdentity,
-        registrationId: String
+        registrationId: String,
+        groupReader: MembershipGroupReader,
     ): RegistrationStatus {
         val registrationRequest = membershipQueryClient
             .queryRegistrationRequest(mgm, registrationId)
@@ -152,8 +160,7 @@ internal class ProcessMemberVerificationResponseHandler(
             )
         val registrationContext = registrationRequest.registrationContext.toMap()
 
-        val activeMemberInfo = membershipGroupReaderProvider
-            .getGroupReader(mgm)
+        val activeMemberInfo = groupReader
             .lookup(member.x500Name)
             ?.takeIf { it.status != MEMBER_STATUS_PENDING }
             ?.memberProvidedContext
@@ -196,6 +203,11 @@ internal class ProcessMemberVerificationResponseHandler(
             RegistrationStatus.PENDING_AUTO_APPROVAL
         }
     }
+
+    override fun getOwnerHoldingId(
+        state: RegistrationState?,
+        command: ProcessMemberVerificationResponse
+    ) = state?.mgm
 
     private fun parsePreAuthToken(input: String): UUID {
         return try {

@@ -36,14 +36,9 @@ import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.membership.synchronisation.MgmSynchronisationService
 import net.corda.membership.synchronisation.SynchronisationService
-import net.corda.messaging.api.publisher.Publisher
-import net.corda.messaging.api.publisher.config.PublisherConfig
-import net.corda.messaging.api.publisher.factory.PublisherFactory
-import net.corda.schema.configuration.ConfigKeys
+import net.corda.messaging.api.records.Record
 import net.corda.schema.configuration.ConfigKeys.MEMBERSHIP_CONFIG
-import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.schema.configuration.MembershipConfig.TtlsConfig.MEMBERS_PACKAGE_UPDATE
-import net.corda.utilities.concurrent.getOrThrow
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -63,7 +58,6 @@ class MgmSynchronisationServiceImpl internal constructor(
 ) : MgmSynchronisationService {
     @Suppress("LongParameterList")
     internal class InjectedServices(
-        val publisherFactory: PublisherFactory,
         val coordinatorFactory: LifecycleCoordinatorFactory,
         val configurationReadService: ConfigurationReadService,
         val membershipGroupReaderProvider: MembershipGroupReaderProvider,
@@ -104,8 +98,6 @@ class MgmSynchronisationServiceImpl internal constructor(
 
     @Suppress("LongParameterList")
     @Activate constructor(
-        @Reference(service = PublisherFactory::class)
-        publisherFactory: PublisherFactory,
         @Reference(service = LifecycleCoordinatorFactory::class)
         coordinatorFactory: LifecycleCoordinatorFactory,
         @Reference(service = ConfigurationReadService::class)
@@ -127,7 +119,6 @@ class MgmSynchronisationServiceImpl internal constructor(
     ) :
         this(
             InjectedServices(
-                publisherFactory,
                 coordinatorFactory,
                 configurationReadService,
                 membershipGroupReaderProvider,
@@ -155,22 +146,14 @@ class MgmSynchronisationServiceImpl internal constructor(
     // for checking the components' health
     private var componentHandle: RegistrationHandle? = null
 
-    private var _publisher: Publisher? = null
-
-    /**
-     * Publisher for Kafka messaging. Recreated after every [MESSAGING_CONFIG] change.
-     */
-    private val publisher: Publisher
-        get() = _publisher ?: throw IllegalArgumentException("Publisher is not initialized.")
-
     override val isRunning: Boolean
         get() = coordinator.isRunning
 
     /**
      * Private interface used for implementation swapping in response to lifecycle events.
      */
-    private interface InnerSynchronisationService : AutoCloseable {
-        fun processSyncRequest(request: ProcessSyncRequest)
+    private interface InnerSynchronisationService {
+        fun processSyncRequest(request: ProcessSyncRequest): List<Record<*, *>>
     }
 
     private var impl: InnerSynchronisationService = InactiveImpl
@@ -190,7 +173,6 @@ class MgmSynchronisationServiceImpl internal constructor(
 
     private fun deactivate(coordinator: LifecycleCoordinator) {
         coordinator.updateStatus(LifecycleStatus.DOWN)
-        impl.close()
         impl = InactiveImpl
     }
 
@@ -200,14 +182,12 @@ class MgmSynchronisationServiceImpl internal constructor(
     private object InactiveImpl : InnerSynchronisationService {
         override fun processSyncRequest(request: ProcessSyncRequest) =
             throw IllegalStateException("$SERVICE is currently inactive.")
-
-        override fun close() = Unit
     }
 
     private inner class ActiveImpl(
         private val config: SmartConfig
     ) : InnerSynchronisationService {
-        override fun processSyncRequest(request: ProcessSyncRequest) {
+        override fun processSyncRequest(request: ProcessSyncRequest): List<Record<*, *>> {
             val memberHashFromTheReq = request.syncRequest.membersHash
             val mgm = request.synchronisationMetaData.mgm
             val requester = request.synchronisationMetaData.member
@@ -222,43 +202,35 @@ class MgmSynchronisationServiceImpl internal constructor(
             val allNonPendingMembersExcludingMgm = groupReader.lookup(ACTIVE_OR_SUSPENDED).filterNot { it.holdingIdentity == mgm.toCorda() }
             val groupParameters = groupReader.groupParameters
                 ?: throw CordaRuntimeException("Failed to retrieve group parameters for building membership packages.")
-            if (compareHashes(memberHashFromTheReq.toCorda(), requesterInfo)) {
+            val record = if (compareHashes(memberHashFromTheReq.toCorda(), requesterInfo)) {
                 // member has the latest updates regarding its own membership
                 // will send all membership data from MGM
                 if (requesterInfo.status == MEMBER_STATUS_SUSPENDED) {
-                    sendPackage(mgm, requester, createMembershipPackage(mgmInfo, listOf(requesterInfo), groupParameters))
+                    createPackageRecord(mgm, requester, createMembershipPackage(mgmInfo, listOf(requesterInfo), groupParameters))
                 } else {
-                    sendPackage(mgm, requester, createMembershipPackage(mgmInfo, allNonPendingMembersExcludingMgm, groupParameters))
+                    createPackageRecord(mgm, requester, createMembershipPackage(mgmInfo, allNonPendingMembersExcludingMgm, groupParameters))
                 }
             } else {
                 // member has not received the latest updates regarding its own membership
                 // will send its missing updates about themselves only
-                sendPackage(mgm, requester, createMembershipPackage(mgmInfo, listOf(requesterInfo), groupParameters))
+                createPackageRecord(mgm, requester, createMembershipPackage(mgmInfo, listOf(requesterInfo), groupParameters))
             }
             logger.info("Sync package is sent to ${requester.x500Name}.")
+            return listOf(record)
         }
 
-        override fun close() {
-            publisher.close()
-        }
-
-        private fun sendPackage(
+        private fun createPackageRecord(
             source: net.corda.data.identity.HoldingIdentity,
             dest: net.corda.data.identity.HoldingIdentity,
             data: MembershipPackage
-        ) {
-            val syncPackage = publisher.publish(
-                listOf(
-                    services.p2pRecordsFactory.createAuthenticatedMessageRecord(
-                        source = source,
-                        destination = dest,
-                        content = data,
-                        minutesToWait = config.getTtlMinutes(MEMBERS_PACKAGE_UPDATE),
-                        filter = ACTIVE_OR_SUSPENDED
-                    )
-                )
+        ): Record<*, *> {
+            return services.p2pRecordsFactory.createAuthenticatedMessageRecord(
+                source = source,
+                destination = dest,
+                content = data,
+                minutesToWait = config.getTtlMinutes(MEMBERS_PACKAGE_UPDATE),
+                filter = ACTIVE_OR_SUSPENDED
             )
-            syncPackage.forEach { it.getOrThrow() }
         }
 
         private fun compareHashes(memberHashSeenByMember: SecureHash, requester: MemberInfo):  Boolean {
@@ -325,8 +297,6 @@ class MgmSynchronisationServiceImpl internal constructor(
         componentHandle = null
         configHandle?.close()
         configHandle = null
-        _publisher?.close()
-        _publisher = null
     }
 
     private fun handleRegistrationChangeEvent(
@@ -338,7 +308,7 @@ class MgmSynchronisationServiceImpl internal constructor(
                 configHandle?.close()
                 configHandle = services.configurationReadService.registerComponentForUpdates(
                     coordinator,
-                    setOf(ConfigKeys.BOOT_CONFIG, MESSAGING_CONFIG, MEMBERSHIP_CONFIG)
+                    setOf(MEMBERSHIP_CONFIG)
                 )
             }
             else -> {
@@ -348,14 +318,7 @@ class MgmSynchronisationServiceImpl internal constructor(
         }
     }
 
-    // re-creates the publisher with the new config, sets the lifecycle status to UP when the publisher is ready for the first time
     private fun handleConfigChange(event: ConfigChangedEvent, coordinator: LifecycleCoordinator) {
-        _publisher?.close()
-        _publisher = services.publisherFactory.createPublisher(
-            PublisherConfig("mgm-synchronisation-service"),
-            event.config.getConfig(MESSAGING_CONFIG)
-        )
-        _publisher?.start()
         val config = event.config.getConfig(MEMBERSHIP_CONFIG)
         activate(coordinator, config)
     }

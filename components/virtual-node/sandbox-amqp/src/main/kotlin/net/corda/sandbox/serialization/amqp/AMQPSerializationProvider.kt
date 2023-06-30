@@ -71,13 +71,13 @@ class AMQPSerializationProvider @Activate constructor(
     override fun accept(context: MutableSandboxGroupContext) {
         val factory = createSerializerFactory(context)
 
-        val serializationOutput = SerializationOutput(factory)
-        val deserializationInput = DeserializationInput(factory)
-
-        val serializationService = SerializationServiceImpl(
-            serializationOutput,
-            deserializationInput,
-            AMQP_STORAGE_CONTEXT.withSandboxGroup(context.sandboxGroup) //todo double check in CORE-12472
+        val serializationService = SerializationMetricsWrapper(
+            serializationService = SerializationServiceImpl(
+                SerializationOutput(factory),
+                DeserializationInput(factory),
+                AMQP_STORAGE_CONTEXT.withSandboxGroup(context.sandboxGroup) //todo double check in CORE-12472
+            ),
+            context
         )
 
         context.putObjectByKey(AMQP_SERIALIZATION_SERVICE, serializationService)

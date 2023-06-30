@@ -4,7 +4,7 @@ import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.StaticNetworkInfo
 import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.ApprovalRuleType
-import net.corda.data.membership.common.RegistrationStatus
+import net.corda.data.membership.common.v2.RegistrationStatus
 import net.corda.data.membership.preauth.PreAuthToken
 import net.corda.lifecycle.Lifecycle
 import net.corda.membership.lib.InternalGroupParameters
@@ -77,6 +77,8 @@ interface MembershipPersistenceClient : Lifecycle {
      *
      * The epoch of the new [groupParameters] to be persisted must be higher than that of previous group parameter
      * versions.
+     *
+     * If successful, the operation will put the latest group parameters on to the bus.
      *
      * This operation is idempotent.
      *

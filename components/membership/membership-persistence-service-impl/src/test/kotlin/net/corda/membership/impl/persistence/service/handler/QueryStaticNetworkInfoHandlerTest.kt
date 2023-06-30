@@ -46,6 +46,7 @@ class QueryStaticNetworkInfoHandlerTest {
     private val services = mock<PersistenceHandlerServices> {
         on { dbConnectionManager } doReturn dbConnectionManager
         on { cordaAvroSerializationFactory } doReturn serializationFactory
+        on { transactionTimerFactory } doReturn { transactionTimer }
     }
     private val handler = QueryStaticNetworkInfoHandler(services)
 

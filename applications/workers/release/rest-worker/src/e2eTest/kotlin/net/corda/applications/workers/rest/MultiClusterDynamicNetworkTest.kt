@@ -26,6 +26,7 @@ import java.nio.file.Path
 /**
  * Three clusters are required for running this test. See `resources/RunNetworkTests.md` for more details.
  */
+@Tag("MultiCluster")
 class MultiClusterDynamicNetworkTest {
     @TempDir
     lateinit var tempDir: Path

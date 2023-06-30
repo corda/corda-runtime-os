@@ -29,7 +29,7 @@ class LedgerUniquenessCheckerClientServiceImpl @Activate constructor(
 ): LedgerUniquenessCheckerClientService, UsedByFlow, SingletonSerializeAsToken {
 
     private companion object {
-        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     @Suspendable
@@ -44,7 +44,7 @@ class LedgerUniquenessCheckerClientServiceImpl @Activate constructor(
     ): UniquenessCheckResult {
         log.debug { "Received request with id: $txId, sending it to Uniqueness Checker" }
 
-        val startTime = Instant.now().toEpochMilli()
+        val startTime = System.nanoTime()
 
         return externalEventExecutor.execute(
             UniquenessCheckExternalEventFactory::class.java,
@@ -58,7 +58,7 @@ class LedgerUniquenessCheckerClientServiceImpl @Activate constructor(
                 timeWindowUpperBound
             )
         ).also {
-            CordaMetrics.Metric.LedgerUniquenessClientRunTime
+            CordaMetrics.Metric.Ledger.UniquenessClientRunTime
                 .builder()
                 .withTag(
                     CordaMetrics.Tag.ResultType,
@@ -68,7 +68,7 @@ class LedgerUniquenessCheckerClientServiceImpl @Activate constructor(
                         it.javaClass.simpleName
                     })
                 .build()
-                .record(Duration.ofMillis(Instant.now().toEpochMilli() - startTime))
+                .record(Duration.ofNanos(System.nanoTime() - startTime))
         }
     }
 }

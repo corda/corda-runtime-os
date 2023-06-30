@@ -3,7 +3,7 @@ package net.corda.membership.impl.registration.dynamic.handler.mgm
 import net.corda.data.membership.command.registration.RegistrationCommand
 import net.corda.data.membership.command.registration.mgm.CheckForPendingRegistration
 import net.corda.data.membership.command.registration.mgm.StartRegistration
-import net.corda.data.membership.common.RegistrationStatus
+import net.corda.data.membership.common.v2.RegistrationStatus
 import net.corda.data.membership.state.RegistrationState
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandler
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandlerResult
@@ -23,6 +23,8 @@ class CheckForPendingRegistrationHandler(
     }
 
     override val commandType = CheckForPendingRegistration::class.java
+
+    override fun getOwnerHoldingId(state: RegistrationState?, command: CheckForPendingRegistration) = state?.mgm
 
     override fun invoke(state: RegistrationState?, key: String, command: CheckForPendingRegistration): RegistrationHandlerResult {
         val (outputState, outputCommand) = try {

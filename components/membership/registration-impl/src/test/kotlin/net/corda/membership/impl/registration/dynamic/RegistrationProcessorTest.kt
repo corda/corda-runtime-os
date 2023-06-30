@@ -16,9 +16,9 @@ import net.corda.data.membership.command.registration.mgm.QueueRegistration
 import net.corda.data.membership.command.registration.mgm.StartRegistration
 import net.corda.data.membership.command.registration.mgm.VerifyMember
 import net.corda.data.membership.common.RegistrationRequestDetails
-import net.corda.data.membership.common.RegistrationStatus
+import net.corda.data.membership.common.v2.RegistrationStatus
 import net.corda.data.membership.p2p.MembershipRegistrationRequest
-import net.corda.data.membership.p2p.SetOwnRegistrationStatus
+import net.corda.data.membership.p2p.v2.SetOwnRegistrationStatus
 import net.corda.data.membership.p2p.VerificationRequest
 import net.corda.data.membership.p2p.VerificationResponse
 import net.corda.data.membership.state.RegistrationState
@@ -177,6 +177,7 @@ class  RegistrationProcessorTest {
         on { name } doReturn x500Name
         on { memberProvidedContext } doReturn memberMemberContext
         on { mgmProvidedContext } doReturn memberMgmContext
+        on { platformVersion } doReturn 50100
     }
 
     private val mgmMemberContext: MemberContext = mock {

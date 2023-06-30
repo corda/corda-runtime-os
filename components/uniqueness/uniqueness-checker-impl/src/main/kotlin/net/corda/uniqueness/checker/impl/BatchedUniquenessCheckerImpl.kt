@@ -156,7 +156,7 @@ class BatchedUniquenessCheckerImpl(
         requests: List<UniquenessCheckRequestAvro>
     ): Map<UniquenessCheckRequestAvro, UniquenessCheckResponseAvro> {
 
-        val batchStartTime = Instant.now().toEpochMilli()
+        val batchStartTime = System.nanoTime()
         val results = HashMap<UniquenessCheckRequestAvro, UniquenessCheckResponseAvro>()
         val requestsToProcess = ArrayList<
                 Pair<UniquenessCheckRequestInternal, UniquenessCheckRequestAvro>>(requests.size)
@@ -203,7 +203,7 @@ class BatchedUniquenessCheckerImpl(
             .toList()
             .shuffled()
             .forEach { (holdingIdentity, partitionedRequests) ->
-                val subBatchStartTime = Instant.now().toEpochMilli()
+                val subBatchStartTime = System.nanoTime()
                 val cordaHoldingIdentity = holdingIdentity.toCorda()
 
                 try {
@@ -260,7 +260,7 @@ class BatchedUniquenessCheckerImpl(
                     .builder()
                     .withTag(CordaMetrics.Tag.SourceVirtualNode, cordaHoldingIdentity.shortHash.toString())
                     .build()
-                    .record(Duration.ofMillis(Instant.now().toEpochMilli() - subBatchStartTime))
+                    .record(Duration.ofNanos(System.nanoTime() - subBatchStartTime))
 
                 CordaMetrics.Metric.UniquenessCheckerSubBatchSize
                     .builder()
@@ -272,7 +272,7 @@ class BatchedUniquenessCheckerImpl(
         CordaMetrics.Metric.UniquenessCheckerBatchExecutionTime
             .builder()
             .build()
-            .record(Duration.ofMillis(Instant.now().toEpochMilli() - batchStartTime))
+            .record(Duration.ofNanos(System.nanoTime() - batchStartTime))
 
         CordaMetrics.Metric.UniquenessCheckerBatchSize
             .builder()

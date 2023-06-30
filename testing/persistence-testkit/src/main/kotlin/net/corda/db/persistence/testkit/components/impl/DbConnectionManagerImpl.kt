@@ -156,7 +156,7 @@ class DbConnectionManagerImpl @Activate constructor(
         isAutoCommit: Boolean,
         isReadOnly: Boolean,
         maximumPoolSize: Int,
-        minimumPoolSize: Int,
+        minimumPoolSize: Int?,
         idleTimeout: Duration,
         maxLifetime: Duration,
         keepaliveTime: Duration,

@@ -9,6 +9,7 @@ import net.corda.virtualnode.toCorda
 internal class MutualTlsRemoveFromAllowedCertificatesHandler(
     persistenceHandlerServices: PersistenceHandlerServices
 ) : BasePersistenceHandler<MutualTlsRemoveFromAllowedCertificates, Unit>(persistenceHandlerServices) {
+    override val operation = MutualTlsRemoveFromAllowedCertificates::class.java
     override fun invoke(
         context: MembershipRequestContext,
         request: MutualTlsRemoveFromAllowedCertificates

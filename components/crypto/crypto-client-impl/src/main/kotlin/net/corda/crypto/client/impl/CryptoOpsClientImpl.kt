@@ -54,7 +54,8 @@ import java.util.UUID
 class CryptoOpsClientImpl(
     private val schemeMetadata: CipherSchemeMetadata,
     private val sender: RPCSender<RpcOpsRequest, RpcOpsResponse>,
-    private val digestService: PlatformDigestService
+    private val digestService: PlatformDigestService,
+    private val rpcRetries: Int = 3,
 ) {
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -414,9 +415,8 @@ class CryptoOpsClientImpl(
         timeout: Duration,
         respClazz: Class<RESPONSE>,
         allowNoContentValue: Boolean = false,
-        retries: Int = 3
     ): RESPONSE? = try {
-        val response = retry(retries, logger) {
+        val response = retry(rpcRetries, logger) {
             sender.sendRequest(this).getOrThrow(timeout)
         }
         check(

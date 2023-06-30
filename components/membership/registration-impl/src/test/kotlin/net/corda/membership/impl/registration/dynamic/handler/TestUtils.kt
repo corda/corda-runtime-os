@@ -52,6 +52,7 @@ object TestUtils {
             on { memberProvidedContext } doReturn memberContext
             on { name } doReturn holdingIdentity.x500Name
             on { groupId } doReturn holdingIdentity.groupId
+            on { platformVersion } doReturn 50100
         }
     }
 

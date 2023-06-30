@@ -13,19 +13,30 @@ import net.corda.libs.packaging.core.exception.CordappManifestException
 import net.corda.libs.packaging.hash
 import net.corda.libs.packaging.internal.CpkImpl
 import net.corda.libs.packaging.internal.CpkLoader
+import net.corda.libs.packaging.internal.ExternalChannelsConfigLoader
+import net.corda.libs.packaging.internal.ExternalChannelsConfigLoaderImpl
 import net.corda.libs.packaging.internal.FormatVersionReader
+import net.corda.libs.packaging.setReadOnly
 import net.corda.libs.packaging.signerSummaryHashForRequiredSigners
+import net.corda.utilities.posixOptional
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.crypto.DigestAlgorithmName
+import java.nio.ByteBuffer
+import java.nio.channels.SeekableByteChannel
 import java.nio.file.Files
 import java.nio.file.Path
+import java.nio.file.StandardCopyOption.ATOMIC_MOVE
+import java.nio.file.StandardOpenOption.WRITE
+import java.nio.file.attribute.PosixFilePermission.OWNER_EXECUTE
+import java.nio.file.attribute.PosixFilePermission.OWNER_READ
+import java.nio.file.attribute.PosixFilePermission.OWNER_WRITE
+import java.nio.file.attribute.PosixFilePermissions.asFileAttribute
 import java.security.cert.Certificate
 import java.util.Collections
+import java.util.function.Consumer
 import java.util.jar.JarInputStream
 import java.util.jar.Manifest
-import net.corda.libs.packaging.internal.ExternalChannelsConfigLoader
-import net.corda.libs.packaging.internal.ExternalChannelsConfigLoaderImpl
 
 internal const val CPK_TYPE = "Corda-CPK-Type"
 
@@ -33,30 +44,62 @@ class CpkLoaderV2(
     private val clock: Clock = UTCClock(),
     private val externalChannelsConfigLoader: ExternalChannelsConfigLoader = ExternalChannelsConfigLoaderImpl()
 ) : CpkLoader {
+    private companion object {
+        private val CPK_DIRECTORY_PERMISSIONS = asFileAttribute(setOf(OWNER_READ, OWNER_WRITE, OWNER_EXECUTE))
+        private val CPK_FILE_PERMISSIONS = asFileAttribute(setOf(OWNER_READ, OWNER_WRITE))
+    }
+
+    private fun writeAtomically(target: Path, writer: Consumer<SeekableByteChannel>): Path {
+        val directory = target.parent
+        @Suppress("SpreadOperator")
+        Files.createTempFile(directory, ".cpk-", "", *directory.posixOptional(CPK_FILE_PERMISSIONS)).also { tempFile ->
+            try {
+                Files.newByteChannel(tempFile, WRITE).use(writer::accept)
+                setReadOnly(tempFile)
+
+                // Rename our temporary file as the final step.
+                return Files.move(tempFile, target, ATOMIC_MOVE)
+            } catch (e: Exception) {
+                Files.delete(tempFile)
+                throw e
+            }
+        }
+    }
+
+    private fun createCpkFile(source: ByteArray, cacheDir: Path?): Path {
+        if (cacheDir == null) {
+            throw IllegalStateException("cacheDir is null")
+        }
+
+        // Calculate file hash
+        val hash = calculateFileHash(source)
+
+        // Create cache dir
+        @Suppress("SpreadOperator")
+        Files.createDirectories(cacheDir, *cacheDir.posixOptional(CPK_DIRECTORY_PERMISSIONS))
+        val cpkFile = cacheDir.resolve(hash.toHexString())
+        return if (Files.isRegularFile(cpkFile)) {
+            cpkFile
+        } else {
+            writeAtomically(cpkFile) { output ->
+                output.write(ByteBuffer.wrap(source))
+            }
+        }
+    }
 
     override fun loadCPK(
         source: ByteArray,
         cacheDir: Path?,
         cpkLocation: String?,
         verifySignature: Boolean,
-        cpkFileName: String?,
+        cpkFileName: String?
     ): Cpk {
-
-        if (cacheDir == null) throw IllegalStateException("cacheDir is null")
-
-        // Calculate file hash
-        val hash = calculateFileHash(source)
-
-        // Create cache dir
-        Files.createDirectories(cacheDir)
-        val finalCpkFile = cacheDir.parent.resolve(hash.toHexString()).toFile()
-        finalCpkFile.writeBytes(source)
-
+        val finalCpkFile = createCpkFile(source, cacheDir)
         return CpkImpl(
             metadata = readCpkMetadata(source),
-            jarFile = finalCpkFile,
+            jarFile = finalCpkFile.toFile(),
             verifySignature = false,
-            path = finalCpkFile.toPath(),
+            path = finalCpkFile,
             originalFileName = cpkFileName
         )
     }

@@ -17,7 +17,7 @@ class ExternalMessagingRecordFactoryImplTest {
 
     @Test
     fun `create external event message`() {
-        val now = LocalDateTime.of(2023,3,10,11,12,13,123_000_000).toInstant(ZoneOffset.UTC)
+        val now = LocalDateTime.of(2023, 3, 10, 11, 12, 13, 123_000_000).toInstant(ZoneOffset.UTC)
         val clock = mock<Clock>().apply {
             whenever(instant()).thenReturn(now)
         }
@@ -26,13 +26,13 @@ class ExternalMessagingRecordFactoryImplTest {
 
         val target = ExternalMessagingRecordFactoryImpl(clock, randomIdFn)
 
-        val result = target.createSendRecord("000000000001",route, "m_id","m_text")
+        val result = target.createSendRecord("000000000001", route, "m_id", "m_text")
 
         val expected = Record(
-            "t1",
-            "m_id",
-            "m_text",
-            listOf(
+            topic = "t1",
+            key = "m_id",
+            value = "m_text",
+            headers = listOf(
                 MessageHeaders.HOLDING_ID to "000000000001",
                 MessageHeaders.CHANNEL_NAME to "c1",
                 MessageHeaders.CORRELATION_ID to "random_id1",

@@ -10,7 +10,9 @@ import net.corda.ledger.utxo.verification.TransactionVerificationRequest
 import net.corda.ledger.verification.processor.VerificationRequestHandler
 import net.corda.ledger.verification.sandbox.VerificationSandboxService
 import net.corda.messaging.api.records.Record
+import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.sandboxgroupcontext.SandboxGroupContext
+import net.corda.sandboxgroupcontext.VirtualNodeContext
 import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -35,8 +37,11 @@ class VerificationRequestProcessorTest {
     private val cordaHoldingIdentity = ALICE_X500_HOLDING_ID.toCorda()
     private val cpkSummaries = listOf(CordaPackageSummary(CPK_NAME, CPK_VERSION, SIGNER_SUMMARY_HASH, CPK_CHECKSUM))
     private val sandbox = mock<SandboxGroupContext>()
+    private val virtualNodeContext = mock<VirtualNodeContext>()
+    private val currentSandboxGroupContext = mock<CurrentSandboxGroupContext>()
 
     private val verificationRequestProcessor = VerificationRequestProcessor(
+        currentSandboxGroupContext,
         verificationSandboxService,
         verificationRequestHandler,
         responseFactory
@@ -45,6 +50,9 @@ class VerificationRequestProcessorTest {
     @BeforeEach
     fun setup() {
         whenever(verificationSandboxService.get(cordaHoldingIdentity, cpkSummaries)).thenReturn(sandbox)
+        whenever(sandbox.virtualNodeContext).thenReturn(virtualNodeContext)
+        whenever(virtualNodeContext.holdingIdentity).thenReturn(cordaHoldingIdentity)
+        whenever(currentSandboxGroupContext.get()).thenReturn(sandbox)
     }
 
     @Test
