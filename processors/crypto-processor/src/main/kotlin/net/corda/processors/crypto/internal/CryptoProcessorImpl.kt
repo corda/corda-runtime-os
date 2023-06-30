@@ -248,7 +248,7 @@ class CryptoProcessorImpl @Activate constructor(
         val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
         val flowGroupName = "crypto.ops.flow"
         coordinator.createManagedResource(FLOW_OPS_SUBSCRIPTION) {
-            subscriptionFactory.createDurableSubscription(
+            subscriptionFactory.createRestSubscription(
                 subscriptionConfig = SubscriptionConfig(flowGroupName, Schemas.Crypto.FLOW_OPS_MESSAGE_TOPIC),
                 processor = flowOpsProcessor,
                 messagingConfig = messagingConfig,

@@ -39,7 +39,7 @@ class VerificationSubscriptionFactoryImpl @Activate constructor(
             responseFactory
         )
 
-        return subscriptionFactory.createDurableSubscription(
+        return subscriptionFactory.createRestSubscription(
             subscriptionConfig,
             processor,
             config,

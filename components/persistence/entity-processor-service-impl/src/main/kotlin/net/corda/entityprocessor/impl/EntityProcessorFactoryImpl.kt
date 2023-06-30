@@ -41,7 +41,7 @@ class EntityProcessorFactoryImpl @Activate constructor(
             PayloadChecker(config)::checkSize
         )
 
-        val subscription = subscriptionFactory.createDurableSubscription(
+        val subscription = subscriptionFactory.createRestSubscription(
             subscriptionConfig,
             processor,
             config,

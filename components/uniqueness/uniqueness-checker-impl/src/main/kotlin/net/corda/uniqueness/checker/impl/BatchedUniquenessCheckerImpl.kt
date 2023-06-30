@@ -533,7 +533,7 @@ class BatchedUniquenessCheckerImpl(
 
     private fun initialiseSubscription(config: SmartConfig) {
         lifecycleCoordinator.createManagedResource(SUBSCRIPTION) {
-            subscriptionFactory.createDurableSubscription(
+            subscriptionFactory.createRestSubscription(
                 SubscriptionConfig(GROUP_NAME, Schemas.UniquenessChecker.UNIQUENESS_CHECK_TOPIC),
                 UniquenessCheckMessageProcessor(
                     this,
