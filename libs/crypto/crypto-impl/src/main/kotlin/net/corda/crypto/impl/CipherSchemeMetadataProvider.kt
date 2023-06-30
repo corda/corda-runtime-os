@@ -151,12 +151,22 @@ class CipherSchemeMetadataProvider : KeyEncodingService {
 
     @Synchronized 
     private fun <T : Any> recordPublicKeyOperation(operationName: String, op: () -> T): T {
-        return CordaMetrics.Metric.Crypto.CipherSchemeTimer.builder()
-            .withTag(CordaMetrics.Tag.OperationName, operationName)
-            .build()
-            .recordCallable {
-                op.invoke()
-            }!!
+        logger.info("recordPublicKeyOperation start")
+        logger.info("cipher scheme timer {}", CordaMetrics.Metric.Crypto.CipherSchemeTimer)
+        val b = CordaMetrics.Metric.Crypto.CipherSchemeTimer.builder()
+        logger.info("made builder {}", b)
+        b.withTag(CordaMetrics.Tag.OperationName, operationName)
+        logger.info("tag seat")
+        val built = b.build()
+        logger.info("do build returned {}", built)
+        val r = built.recordCallable {
+            logger.info("in recordCallabck callback")
+            val r = op.invoke()
+            logger.info("invoke callback result {}", r)
+            r
+        }   
+        logger.info("record done {}", r)
+        return r!! 
     }
 
     override fun decodePublicKey(encodedKey: ByteArray): PublicKey {
@@ -184,7 +194,7 @@ class CipherSchemeMetadataProvider : KeyEncodingService {
             recordPublicKeyOperation(DECODE_PUBLIC_KEY_FROM_STRING_OPERATION_NAME) {
                 logger.info("doing parse on ${encodedKey}")
                 val pemContent = parsePemContent(encodedKey)
-                logger.info("got pem content ${pemContent.size}")
+                logger.info("got pem content ${pemContent}")
                 val publicKeyInfo = SubjectPublicKeyInfo.getInstance(pemContent)
                 logger.info("got public key info")
                 val converter = getJcaPEMKeyConverter(publicKeyInfo)
