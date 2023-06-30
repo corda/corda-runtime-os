@@ -19,7 +19,7 @@ interface InteropIdentityCacheService : Lifecycle {
      * @param shortHash Short hash of the real holding identity to add interop identity to.
      * @param identity New interop identity to add to the cache.
      */
-    fun putInteropIdentities(shortHash: String, identity: InteropIdentity)
+    fun putInteropIdentity(shortHash: String, identity: InteropIdentity)
 
     /**
      * Remove an interop identity from the cache.

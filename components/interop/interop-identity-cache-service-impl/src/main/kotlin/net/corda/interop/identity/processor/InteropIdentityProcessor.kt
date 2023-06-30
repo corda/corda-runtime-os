@@ -64,7 +64,7 @@ class InteropIdentityProcessor(
             logger.warn("Update: Old record value does not match current cache content. Overwriting.")
         }
 
-        cacheService.putInteropIdentities(key.shortHash, newValue)
+        cacheService.putInteropIdentity(key.shortHash, newValue)
     }
 
     private fun insertCacheEntry(key: RecordKey, newValue: InteropIdentity) {
@@ -81,7 +81,7 @@ class InteropIdentityProcessor(
             logger.warn("Insert: Cache entry already exists. Overwriting.")
         }
 
-        cacheService.putInteropIdentities(key.shortHash, newValue)
+        cacheService.putInteropIdentity(key.shortHash, newValue)
     }
 
     private fun removeCacheEntry(key: RecordKey, oldValue: InteropIdentity) {
@@ -133,7 +133,7 @@ class InteropIdentityProcessor(
 
         currentData.entries.forEach { topicEntry ->
             val keyInfo = RecordKey(topicEntry.key)
-            cacheService.putInteropIdentities(keyInfo.shortHash, topicEntry.value)
+            cacheService.putInteropIdentity(keyInfo.shortHash, topicEntry.value)
         }
     }
 }

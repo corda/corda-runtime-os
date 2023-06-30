@@ -65,7 +65,7 @@ class InteropIdentityCacheServiceImplTest {
             hostingVnode = "Hosting VNode"
         }
 
-        cache.putInteropIdentities(shortHash, interopIdentity)
+        cache.putInteropIdentity(shortHash, interopIdentity)
 
         val interopIdentities = cache.getInteropIdentities(shortHash)
 
@@ -111,8 +111,8 @@ class InteropIdentityCacheServiceImplTest {
             hostingVnode = "Hosting VNode"
         }
 
-        cache.putInteropIdentities(shortHash, interopIdentity1)
-        cache.putInteropIdentities(shortHash, interopIdentity2)
+        cache.putInteropIdentity(shortHash, interopIdentity1)
+        cache.putInteropIdentity(shortHash, interopIdentity2)
 
         val interopIdentities = cache.getInteropIdentities(shortHash)
 

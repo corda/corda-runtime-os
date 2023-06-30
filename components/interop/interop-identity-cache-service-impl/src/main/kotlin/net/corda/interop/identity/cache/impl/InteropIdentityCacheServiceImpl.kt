@@ -51,7 +51,7 @@ class InteropIdentityCacheServiceImpl @Activate constructor(
         return getInteropIdentityMapFor(shortHash)
     }
 
-    override fun putInteropIdentities(shortHash: String, identity: InteropIdentity) {
+    override fun putInteropIdentity(shortHash: String, identity: InteropIdentity) {
         log.info("Adding interop identity, shortHash: $shortHash, identity=$identity")
         val identities = getInteropIdentityMapFor(shortHash)
         identities[identity.groupId] = identity
