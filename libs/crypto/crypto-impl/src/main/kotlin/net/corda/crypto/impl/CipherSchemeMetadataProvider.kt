@@ -149,6 +149,7 @@ class CipherSchemeMetadataProvider : KeyEncodingService {
         algorithmMap[normaliseAlgorithmIdentifier(algorithm)]
             ?: throw IllegalArgumentException("Unrecognised algorithm: ${algorithm.algorithm.id}, with parameters=${algorithm.parameters}")
 
+    @Synchronized 
     private fun <T : Any> recordPublicKeyOperation(operationName: String, op: () -> T): T {
         return CordaMetrics.Metric.Crypto.CipherSchemeTimer.builder()
             .withTag(CordaMetrics.Tag.OperationName, operationName)
