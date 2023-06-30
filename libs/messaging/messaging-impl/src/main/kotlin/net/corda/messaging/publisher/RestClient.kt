@@ -2,7 +2,7 @@ package net.corda.messaging.publisher
 
 import io.ktor.client.*
 import io.ktor.client.call.*
-import io.ktor.client.engine.jetty.*
+import io.ktor.client.engine.cio.*
 import io.ktor.client.request.*
 import kotlinx.coroutines.async
 import kotlinx.coroutines.runBlocking
@@ -16,7 +16,7 @@ class RestClient(
     private val avroDeserializer: CordaAvroDeserializer<Any>
 ) {
 
-    private val client = HttpClient(Jetty)
+    private val client = HttpClient(CIO)
 
     fun publish(records: List<Record<*, *>>): List<Record<*, *>> {
         return runBlocking {

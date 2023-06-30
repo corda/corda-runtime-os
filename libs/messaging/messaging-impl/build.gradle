@@ -34,8 +34,9 @@ dependencies {
     implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation "redis.clients:jedis:$jedisVersion"
     implementation "io.ktor:ktor-client-core:$ktorVersion"
-    implementation "io.ktor:ktor-client-jetty:$ktorVersion"
-    implementation "io.javalin:javalin:$javalinVersion"
+    implementation "io.ktor:ktor-client-cio:$ktorVersion"
+    implementation "io.javalin:javalin-osgi:$javalinVersion"
+    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:$kotlinCoroutinesVersion"
 
     testImplementation "org.assertj:assertj-core:$assertjVersion"
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
@@ -44,4 +45,13 @@ dependencies {
 
     testRuntimeOnly 'org.osgi:osgi.core'
     testRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
+}
+
+tasks.named('jar', Jar) {
+    bundle {
+        bnd '''\
+-conditionalpackage: io.ktor*, kotlinx.coroutines*
+Import-Package: !android*, *
+'''
+    }
 }
