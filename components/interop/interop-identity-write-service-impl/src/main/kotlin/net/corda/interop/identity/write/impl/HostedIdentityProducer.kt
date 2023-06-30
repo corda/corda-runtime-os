@@ -12,6 +12,9 @@ import org.slf4j.LoggerFactory
 import java.util.concurrent.atomic.AtomicReference
 
 
+/**
+ * Producer for publishing interop identities onto the hosted identities topic
+ */
 class HostedIdentityProducer(private val publisher: AtomicReference<Publisher?>) {
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
