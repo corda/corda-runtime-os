@@ -77,18 +77,13 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
     private val errorMsg = "Failed to read and process records from topic $eventTopic, group ${config.group}, " +
             "producerClientId ${config.clientId}."
 
-    private val processorMeter = CordaMetrics.Metric.MessageProcessorTime.builder()
+    private val processorMeter = CordaMetrics.Metric.Messaging.MessageProcessorTime.builder()
         .withTag(CordaMetrics.Tag.MessagePatternType, MetricsConstants.STATE_AND_EVENT_PATTERN_TYPE)
         .withTag(CordaMetrics.Tag.MessagePatternClientId, config.clientId)
         .withTag(CordaMetrics.Tag.OperationName, MetricsConstants.BATCH_PROCESS_OPERATION)
         .build()
 
-    private val batchSizeHistogram = CordaMetrics.Metric.MessageBatchSize.builder()
-        .withTag(CordaMetrics.Tag.MessagePatternType, MetricsConstants.STATE_AND_EVENT_PATTERN_TYPE)
-        .withTag(CordaMetrics.Tag.MessagePatternClientId, config.clientId)
-        .build()
-
-    private val commitTimer = CordaMetrics.Metric.MessageCommitTime.builder()
+    private val commitTimer = CordaMetrics.Metric.Messaging.MessageCommitTime.builder()
         .withTag(CordaMetrics.Tag.MessagePatternType, MetricsConstants.STATE_AND_EVENT_PATTERN_TYPE)
         .withTag(CordaMetrics.Tag.MessagePatternClientId, config.clientId)
         .build()
@@ -193,7 +188,6 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                 log.debug { "Polling and processing events" }
                 var rebalanceOccurred = false
                 val records = stateAndEventConsumer.pollEvents()
-                batchSizeHistogram.record(records.size.toDouble())
                 val batches = getEventsByBatch(records).iterator()
                 while (!rebalanceOccurred && batches.hasNext()) {
                     val batch = batches.next()
