@@ -1,16 +1,13 @@
 package net.corda.flow.mapper.impl.executor
 
-import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
-import net.corda.data.flow.event.session.SessionAck
 import net.corda.data.flow.event.session.SessionClose
 import net.corda.data.flow.event.session.SessionError
 import net.corda.data.flow.state.mapper.FlowMapperState
 import net.corda.data.flow.state.mapper.FlowMapperStateType
-import net.corda.data.p2p.app.AppMessage
 import net.corda.flow.mapper.FlowMapperResult
 import net.corda.flow.mapper.executor.FlowMapperEventExecutor
 import net.corda.flow.mapper.factory.RecordFactory
@@ -25,8 +22,6 @@ class SessionEventExecutor(
     private val sessionEvent: SessionEvent,
     private val flowMapperState: FlowMapperState?,
     private val instant: Instant,
-    private val sessionEventSerializer: CordaAvroSerializer<SessionEvent>,
-    private val appMessageFactory: (SessionEvent, CordaAvroSerializer<SessionEvent>, SmartConfig) -> AppMessage,
     private val flowConfig: SmartConfig,
     private val recordFactory: RecordFactory
 ) : FlowMapperEventExecutor {
@@ -51,17 +46,15 @@ class SessionEventExecutor(
                 "Flow mapper received session event for session which does not exist. Session may have expired. Returning error to " +
                         "counterparty. Key: $eventKey, Event: class ${sessionEvent.payload::class.java}, $sessionEvent"
             )
-            val outputRecord = recordFactory.createAndSendRecord(
-                eventKey,
+            val outputRecord = recordFactory.forwardError(
                 sessionEvent,
-                flowMapperState,
-                instant,
-                flowConfig,
-                sessionEvent.messageDirection,
                 ExceptionEnvelope(
                     "FlowMapper-SessionExpired",
                     "Tried to process session event for expired session with sessionId ${sessionEvent.sessionId}"
-                )
+                ),
+                instant,
+                flowConfig,
+                sessionEvent.messageDirection,
             )
             /*FlowMapperResult(
                 null, listOf(
@@ -134,11 +127,12 @@ class SessionEventExecutor(
             FlowMapperStateType.OPEN -> {
                 val outputTopic = recordFactory.getSessionEventOutputTopic(sessionEvent, messageDirection)
                 val outputRecord = if (messageDirection == MessageDirection.OUTBOUND) {
-                    Record(
+/*                    Record(
                         outputTopic,
                         sessionEvent.sessionId,
                         appMessageFactory(sessionEvent, sessionEventSerializer, flowConfig)
-                    )
+                    )*/
+                    recordFactory.forwardEvent(sessionEvent, instant, flowConfig, messageDirection)
                 } else {
                     Record(outputTopic, flowMapperState.flowId, FlowEvent(flowMapperState.flowId, sessionEvent))
                 }
