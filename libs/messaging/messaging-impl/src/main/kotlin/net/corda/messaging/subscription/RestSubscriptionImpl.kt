@@ -27,7 +27,7 @@ class RestSubscriptionImpl<K: Any, V: Any>(
 ) : Subscription<K, V> {
 
     companion object {
-        private val javalin = Javalin.create().start(System.getenv("MESSAGING_PORT").toInt())
+        private val javalin = Javalin.create().start(8080)
     }
 
     private val logger = LoggerFactory.getLogger(config.clientId)
