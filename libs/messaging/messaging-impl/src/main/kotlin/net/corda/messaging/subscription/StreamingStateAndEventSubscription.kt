@@ -247,10 +247,7 @@ internal class StreamingStateAndEventSubscription<K : Any, S : Any, E : Any>(
 
                         stateAndEventConsumer.resetPollInterval()
                         processEvent(event, outputRecords, newEventsToProcess, updatedStates)
-                        producer.beginTransaction()
                         producer.sendRecords(outputRecords.toCordaProducerRecords())
-                        producer.sendRecordOffsetsToTransaction(eventConsumer, listOf(event))
-                        producer.commitTransaction()
                         eventsToProcess.addAll(newEventsToProcess.map {
                             val ret = toCordaConsumerRecord(event, it)
                             ret
