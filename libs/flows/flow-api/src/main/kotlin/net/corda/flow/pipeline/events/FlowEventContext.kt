@@ -34,5 +34,6 @@ data class FlowEventContext<T>(
     val sendToDlq: Boolean = false,
     val mdcProperties: Map<String, String>,
     val flowMetrics: FlowMetrics,
-    val flowTraceContext: TraceContext
+    val flowTraceContext: TraceContext,
+    val restOutputs: List<Record<*, *>> = listOf()
 )

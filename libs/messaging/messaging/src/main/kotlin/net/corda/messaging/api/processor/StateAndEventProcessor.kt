@@ -38,7 +38,9 @@ interface StateAndEventProcessor<K : Any, S : Any, E : Any> {
         /**
          * Flag to indicate processing failed and the State and Event should be moved to the Dead Letter Queue
          */
-        val markForDLQ: Boolean = false
+        val markForDLQ: Boolean = false,
+
+        val restRequests: List<Record<*, *>> = listOf()
     )
 
     /**

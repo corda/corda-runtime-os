@@ -305,6 +305,9 @@ internal class StreamingStateAndEventSubscription<K : Any, S : Any, E : Any>(
 //            it.topic == event.topic && processor.eventValueClass.isInstance(it.value) && it.key == key
             isWakeup(it)
         } ?: Pair(emptyList(), emptyList())
+        val restResponses = thisEventUpdates?.restRequests?.map {
+
+        } ?: listOf()
 
         recordsAvoidedCount.increment(eventsToProcess.size.toDouble())
 
