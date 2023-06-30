@@ -12,6 +12,7 @@ def jibCoreVersion = constants.getProperty('jibCoreVersion')
 def internalPublishVersion = constants.getProperty('internalPublishVersion')
 def gradleEnterpriseVersion = constants.getProperty('gradleEnterpriseVersion')
 def log4jVersion = constants.getProperty('log4jVersion')
+def ktorVersion = constants.getProperty('ktorVersion')
 
 dependencies {
     implementation "biz.aQute.bnd:biz.aQute.bnd.gradle:$bndVersion"
