@@ -1,5 +1,6 @@
 package net.corda.flow.mapper.impl.executor
 
+import net.corda.data.ExceptionEnvelope
 import java.time.Instant
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.flow.event.SessionEvent
@@ -35,8 +36,6 @@ class SessionErrorExecutor(
             "Key: $eventKey, Event: $sessionEvent"
     private val missingSessionMsg = "$messageDirection flow mapper received error event from counterparty for session " +
             "which does not exist. Session may have expired. Key: $eventKey, Event: $sessionEvent. "
-
-    val sessionId = sessionEvent.sessionId
 
     override fun execute(): FlowMapperResult {
         return if (flowMapperState == null) {
@@ -86,7 +85,11 @@ class SessionErrorExecutor(
                     flowMapperState,
                     instant,
                     flowConfig,
-                    sessionEvent.messageDirection
+                    sessionEvent.messageDirection,
+                    ExceptionEnvelope(
+                        "FlowMapper-SessionError",
+                        "Received SessionError with sessionId ${sessionEvent.sessionId}"
+                    )
                 )
                 //Record(outputTopic, flowMapperState.flowId, FlowEvent(flowMapperState.flowId, sessionEvent))
                 FlowMapperResult(flowMapperState, listOf(outputRecord))
