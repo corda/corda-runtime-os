@@ -46,6 +46,8 @@ internal class InteropRestResourceImpl @Activate constructor(
 
     // RestResource values
     override val targetInterface: Class<InteropRestResource> = InteropRestResource::class.java
+    override val protocolVersion = 1
+
     override fun getInterOpGroups(holdingidentityshorthash: String): Map<UUID, String> {
         return mapOf(
             Pair(
@@ -71,23 +73,20 @@ internal class InteropRestResourceImpl @Activate constructor(
             restInteropIdentity.groupId.toString(),
             restInteropIdentity.x500Name
         )
-
-        logger.info("AliasIdentity created.")
+        logger.info("InteropIdentity created.")
 
         return ResponseEntity.ok("OK")
     }
 
     override fun getInterOpIdentities(holdingidentityshorthash: String): List<RestInteropIdentity> {
-        val groupToAliasMappings = interopIdentityCacheService.getInteropIdentities(holdingidentityshorthash)
-        return groupToAliasMappings.map {
+        val groupToInteropIdentityMappings = interopIdentityCacheService.getInteropIdentities(holdingidentityshorthash)
+        return groupToInteropIdentityMappings.map {
             RestInteropIdentity(
                 it.value.x500Name,
                 UUID.fromString(it.value.groupId)
             )
         }.toList()
     }
-
-    override val protocolVersion = 1
 
     // Lifecycle
     private val dependentComponents = DependentComponents.of(
