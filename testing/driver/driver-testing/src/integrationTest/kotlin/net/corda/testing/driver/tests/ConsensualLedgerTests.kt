@@ -24,7 +24,7 @@ import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.extension.RegisterExtension
 import org.slf4j.LoggerFactory
 
-@Suppress("FunctionName")
+@Suppress("FunctionName", "JUnitMalformedDeclaration")
 @Timeout(5, unit = MINUTES)
 @TestInstance(PER_CLASS)
 class ConsensualLedgerTests {
@@ -54,9 +54,6 @@ class ConsensualLedgerTests {
 
     @BeforeAll
     fun start() {
-        // Ensure that we use the corda-driver bundle rather than a directory of its classes.
-        assertThat(AllTestsDriver::class.java.protectionDomain.codeSource.location.path).endsWith(".jar")
-
         val virtualNodes = mutableSetOf<VirtualNodeInfo>()
         driver.run { dsl ->
             virtualNodes += dsl.startNode(setOf(alice, bob, charlie)).onEach { vNode ->

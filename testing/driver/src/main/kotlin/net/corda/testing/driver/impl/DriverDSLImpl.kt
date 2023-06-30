@@ -184,7 +184,7 @@ internal class DriverDSLImpl(private val network: Map<MemberX500Name, KeyPair>) 
 
     @Suppress("NestedBlockDepth")
     private inner class DriverFrameworkImpl(
-        private val baseDirectory: Path,
+        private val frameworkDirectory: Path,
         properties: Map<String, String>
     ): Framework, AutoCloseable {
         private val framework = frameworkFactory.newFramework(properties)
@@ -288,7 +288,7 @@ internal class DriverDSLImpl(private val network: Map<MemberX500Name, KeyPair>) 
             getService(EmbeddedNodeService::class.java, null, Duration.ZERO).andAlso { ens ->
                 ens.setMembershipGroup(network.mapValues { it.value.public })
                 ens.setLocalIdentities(memberNames, network.filterKeys(memberNames::contains))
-                ens.configure(baseDirectory, TIMEOUT)
+                ens.configure(frameworkDirectory, TIMEOUT)
 
                 // Show every service registered inside this framework.
                 // This can help diagnose any OSGi resolving errors.
@@ -323,15 +323,16 @@ internal class DriverDSLImpl(private val network: Map<MemberX500Name, KeyPair>) 
             "Each node needs at least one member."
         }
         try {
-            val baseDirectory = Files.createTempDirectory("corda-driver-")
-            val frameworkStorageDir = baseDirectory.resolve("bundles")
-            val framework = DriverFrameworkImpl(baseDirectory, linkedMapOf(
+            val frameworkDirectory = Files.createTempDirectory("corda-driver-")
+            val quasarCacheDirectory = Files.createDirectories(frameworkDirectory.parent.resolve("quasar-cache"))
+            val framework = DriverFrameworkImpl(frameworkDirectory, linkedMapOf(
                 "co.paralleluniverse.quasar.suspendableAnnotation" to Suspendable::class.java.name,
+                "co.paralleluniverse.quasar.cacheDirectory" to quasarCacheDirectory.toString(),
                 "co.paralleluniverse.quasar.cacheLocations" to quasarCacheLocations,
                 "co.paralleluniverse.quasar.excludeLocations" to quasarExcludeLocations,
                 "co.paralleluniverse.quasar.excludePackages" to quasarExcludePackages,
                 "co.paralleluniverse.quasar.verbose" to false.toString(),
-                FRAMEWORK_STORAGE to frameworkStorageDir.toString(),
+                FRAMEWORK_STORAGE to frameworkDirectory.toString(),
                 FRAMEWORK_STORAGE_CLEAN to FRAMEWORK_STORAGE_CLEAN_ONFIRSTINIT,
                 FRAMEWORK_SYSTEMPACKAGES_EXTRA to systemPackagesExtra
             ))

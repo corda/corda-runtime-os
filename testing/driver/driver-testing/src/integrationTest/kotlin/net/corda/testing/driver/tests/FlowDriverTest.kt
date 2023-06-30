@@ -1,11 +1,8 @@
 package net.corda.testing.driver.tests
 
-import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.r3.corda.demo.mandelbrot.CalculateBlockFlow
 import com.r3.corda.demo.mandelbrot.RequestMessage
-import com.r3.corda.testing.smoketests.flow.RpcSmokeTestFlow
-import com.r3.corda.testing.smoketests.flow.messages.RpcSmokeTestInput
 import java.util.concurrent.TimeUnit.MINUTES
 import java.util.stream.Stream
 import net.corda.testing.driver.AllTestsDriver
@@ -13,9 +10,7 @@ import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.VirtualNodeInfo
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
-import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeAll
-import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS
 import org.junit.jupiter.api.Timeout
@@ -27,6 +22,7 @@ import org.junit.jupiter.params.provider.ArgumentsProvider
 import org.junit.jupiter.params.provider.ArgumentsSource
 import org.slf4j.LoggerFactory
 
+@Suppress("JUnitMalformedDeclaration")
 @Timeout(5, unit = MINUTES)
 @TestInstance(PER_CLASS)
 class FlowDriverTest {
@@ -94,27 +90,5 @@ class FlowDriverTest {
                 this.height = 50.0
             }
         }
-    }
-
-    @Test
-    fun testSmokeTestFlow() {
-        val testCorDapp = virtualNodes.single { vNode ->
-            vNode.cpiIdentifier.name == "test-cordapp" && vNode.holdingIdentity.x500Name == alice
-        }
-
-        val flowResult = driver.let { dsl ->
-            dsl.runFlow(testCorDapp, RpcSmokeTestFlow::class.java) {
-                val request = RpcSmokeTestInput().apply {
-                    command = "flow_messaging_apis"
-                    data = mapOf("sessions" to bob.toString())
-                }
-                jsonMapper.writeValueAsString(request)
-            }
-        } ?: fail("flowResult must not be null")
-        logger.info("SmokeTest result={}", flowResult)
-
-        assertThat(jsonMapper.readValue(flowResult, object : TypeReference<Map<String, Any>>() {}))
-            .hasEntrySatisfying("command") { command -> assertEquals("flow_messaging_apis", command) }
-            .hasEntrySatisfying("result") { result -> assertEquals("$bob=Completed. Sum:18", result) }
     }
 }

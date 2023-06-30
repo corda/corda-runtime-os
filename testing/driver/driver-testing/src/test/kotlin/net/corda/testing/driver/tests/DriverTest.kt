@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.extension.RegisterExtension
 import org.slf4j.LoggerFactory
 
+@Suppress("JUnitMalformedDeclaration")
 @Timeout(5, unit = MINUTES)
 @TestInstance(PER_CLASS)
 class DriverTest {
