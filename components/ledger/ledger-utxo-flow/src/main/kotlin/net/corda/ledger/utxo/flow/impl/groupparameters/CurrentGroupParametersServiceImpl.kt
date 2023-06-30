@@ -54,7 +54,7 @@ class CurrentGroupParametersServiceImpl @Activate constructor(
         val currentMGMKey = try {
             keyEncodingService.decodePublicKey(currentMGMKeyEncoded)
         } catch (e: Exception) {
-            logger.info("Failed to decode public key {}", currentMGMKeyEncoded)
+            logger.info("Failed to decode public key {} with exception {}", currentMGMKeyEncoded, e)
             throw e
         }
         return listOf(currentMGMKey)
