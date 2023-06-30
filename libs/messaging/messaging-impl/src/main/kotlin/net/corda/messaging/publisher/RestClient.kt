@@ -12,7 +12,7 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.records.Record
 
 class RestClient(
-    private val config: SmartConfig,
+    private val endpoint: String,
     private val avroSerializer: CordaAvroSerializer<Any>,
     private val avroDeserializer: CordaAvroDeserializer<Any>
 ) {

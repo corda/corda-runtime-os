@@ -19,6 +19,7 @@ import net.corda.messaging.api.subscription.StateAndEventSubscription
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
 import net.corda.messaging.config.ResolvedSubscriptionConfig
 import net.corda.messaging.constants.MetricsConstants
+import net.corda.messaging.publisher.RestClient
 import net.corda.messaging.subscription.consumer.StateAndEventConsumer
 import net.corda.messaging.subscription.consumer.builder.StateAndEventBuilder
 import net.corda.messaging.subscription.consumer.listener.StateAndEventConsumerRebalanceListener
@@ -27,6 +28,7 @@ import net.corda.messaging.utils.toCordaProducerRecords
 import net.corda.messaging.utils.toRecord
 import net.corda.messaging.utils.tryGetResult
 import net.corda.metrics.CordaMetrics
+import net.corda.schema.Schemas
 import net.corda.schema.Schemas.getDLQTopic
 import net.corda.schema.Schemas.getStateAndEventStateTopic
 import net.corda.utilities.debug
@@ -93,6 +95,14 @@ internal class StreamingStateAndEventSubscription<K : Any, S : Any, E : Any>(
         .withTag(CordaMetrics.Tag.MessagePatternClientId, config.clientId)
         .withTag(CordaMetrics.Tag.Topic, config.topic)
         .build()
+
+    private val topicToRestClient = mapOf(
+        Schemas.Crypto.FLOW_OPS_MESSAGE_TOPIC to RestClient("crypto.process", cordaAvroSerializer, cordaAvroDeserializer),
+        Schemas.Persistence.PERSISTENCE_LEDGER_PROCESSOR_TOPIC to RestClient("ledger.process", cordaAvroSerializer, cordaAvroDeserializer),
+        Schemas.Persistence.PERSISTENCE_ENTITY_PROCESSOR_TOPIC to RestClient("db.process", cordaAvroSerializer, cordaAvroDeserializer),
+        Schemas.UniquenessChecker.UNIQUENESS_CHECK_TOPIC to RestClient("uniqueness.process", cordaAvroSerializer, cordaAvroDeserializer),
+        Schemas.Verification.VERIFICATION_LEDGER_PROCESSOR_TOPIC to RestClient("verification.process", cordaAvroSerializer, cordaAvroDeserializer)
+    )
 
     /**
      * Is the subscription running.
@@ -301,14 +311,14 @@ internal class StreamingStateAndEventSubscription<K : Any, S : Any, E : Any>(
         val partitionId = event.partition
         val thisEventUpdates = getUpdatesForEvent(state, event)
         val updatedState = thisEventUpdates?.updatedState
-        val (eventsToProcess, outputEvents) = thisEventUpdates?.responseEvents?.partition {
+        val (wakeups, outputEvents) = thisEventUpdates?.responseEvents?.partition {
 //            it.topic == event.topic && processor.eventValueClass.isInstance(it.value) && it.key == key
             isWakeup(it)
         } ?: Pair(emptyList(), emptyList())
-        val restResponses = thisEventUpdates?.restRequests?.map {
-
-        } ?: listOf()
-
+        val restResponses: List<Record<*, *>> = thisEventUpdates?.restRequests?.mapNotNull {
+            topicToRestClient[it.topic]?.publish(listOf(it))
+        }?.flatten() ?: listOf()
+        val eventsToProcess = wakeups + restResponses
         recordsAvoidedCount.increment(eventsToProcess.size.toDouble())
 
         when {
