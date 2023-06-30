@@ -234,8 +234,8 @@ internal class StreamingStateAndEventSubscription<K : Any, S : Any, E : Any>(
         log.debug { "Processing events(keys: ${events.joinToString { it.key.toString() }}, size: ${events.size})" }
         val eventsToProcess = ArrayDeque(events)
         try {
-            processorMeter.recordCallable {
-                while (eventsToProcess.isNotEmpty()) {
+            while (eventsToProcess.isNotEmpty()) {
+                processorMeter.recordCallable {
                     val event = eventsToProcess.removeFirst()
                     try {
                         val outputRecords = mutableListOf<Record<*, *>>()
@@ -258,8 +258,7 @@ internal class StreamingStateAndEventSubscription<K : Any, S : Any, E : Any>(
                         newEventsToProcess.clear()
                         stateAndEventConsumer.updateInMemoryStatePostCommit(updatedStates, clock)
                         log.debug { "Processed event of key '${event.key}' successfully." }
-                    }
-                    finally {
+                    } finally {
                         stateAndEventConsumer.releaseStateKey(event.key)
                     }
                 }
@@ -308,7 +307,7 @@ internal class StreamingStateAndEventSubscription<K : Any, S : Any, E : Any>(
         val (eventsToProcess, outputEvents) = thisEventUpdates?.responseEvents?.partition {
 //            it.topic == event.topic && processor.eventValueClass.isInstance(it.value) && it.key == key
             isWakeup(it)
-        } ?: Pair(emptyList(), emptyList()) // What is this?
+        } ?: Pair(emptyList(), emptyList())
 
         recordsAvoidedCount.increment(eventsToProcess.size.toDouble())
 

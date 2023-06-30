@@ -446,6 +446,26 @@ workers:
       requests: {}
       # -- the CPU/memory resource limits for the crypto worker containers
       limits: {}
+    # REST Configuration
+    service:
+      # -- the type for the REST service
+      type: ClusterIP
+      # -- the HTTP port for the REST service
+      port: 80
+      # -- the traffic policy for the REST service
+      externalTrafficPolicy: ""
+      # -- the LoadBalancer source ranges to limit access to the REST service
+      loadBalancerSourceRanges: [ ]
+      # -- the annotations for REST worker service
+      annotations: { }
+    # REST ingress configuration
+    ingress:
+      # -- the annotations for the REST ingress
+      annotations: { }
+      # -- the className for the REST ingress
+      className: ""
+      # -- the hosts for the REST ingress
+      hosts: [ ]
     # crypto worker JDBC connection pool configuration for cluster DB
     clusterDbConnectionPool:
       # -- crypto worker maximum JDBC connection pool size for cluster DB
