@@ -1,0 +1,45 @@
+plugins {
+    id 'org.jetbrains.kotlin.jvm'
+    id 'corda.common-publishing'
+    id 'corda.common-library'
+}
+
+description 'An embedded Corda Virtual Node for testing CPBs.'
+
+dependencies {
+    compileOnly 'org.osgi:osgi.core'
+    compileOnly 'org.osgi:osgi.annotation'
+    compileOnly "biz.aQute.bnd:biz.aQute.bndlib:$bndlibVersion"
+
+    api platform("net.corda:corda-api:$cordaApiVersion")
+    api 'net.corda:corda-base'
+    api project(':libs:virtual-node:virtual-node-info')
+    api "org.junit.jupiter:junit-jupiter-api:$junit5Version"
+    implementation 'net.corda:corda-avro-schema'
+    implementation project(':libs:crypto:cipher-suite')
+    implementation project(':libs:crypto:cipher-suite-impl')
+    implementation project(':libs:packaging:packaging')
+    implementation project(':libs:packaging:packaging-core')
+    implementation "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
+    implementation "org.slf4j:jul-to-slf4j:$slf4jVersion"
+
+    runtimeOnly project('driver-engine')
+
+    runtimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
+    runtimeOnly "org.apache.felix:org.apache.felix.configadmin:$felixConfigAdminVersion"
+    runtimeOnly "org.apache.felix:org.apache.felix.framework:$felixVersion"
+    runtimeOnly "org.apache.felix:org.apache.felix.scr:$felixScrVersion"
+    runtimeOnly "org.osgi:org.osgi.util.function:$osgiUtilFunctionVersion"
+    runtimeOnly "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"
+    runtimeOnly "org.slf4j:jcl-over-slf4j:$slf4jVersion"
+    runtimeOnly "com.google.code.findbugs:jsr305:3.0.2"
+}
+
+tasks.named('jar', Jar) {
+    bundle {
+        bnd '''\
+-conditionalpackage: aQute.*
+Import-Package:
+'''
+    }
+}

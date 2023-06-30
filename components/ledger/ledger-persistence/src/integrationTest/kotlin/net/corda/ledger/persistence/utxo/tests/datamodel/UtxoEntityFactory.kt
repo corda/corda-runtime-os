@@ -6,7 +6,6 @@ import javax.persistence.EntityManagerFactory
 class UtxoEntityFactory(entityManagerFactory: EntityManagerFactory) {
     private val entityMap = entityManagerFactory.metamodel.entities.associate { it.name to it.bindableJavaType }
 
-    val utxoCpk: Class<*> get() = classFor("UtxoCpkEntity")
     val utxoTransaction: Class<*> get() = classFor("UtxoTransactionEntity")
     val utxoTransactionComponent: Class<*> get() = classFor("UtxoTransactionComponentEntity")
     val utxoTransactionOutput: Class<*> get() = classFor("UtxoTransactionOutputEntity")
@@ -14,19 +13,6 @@ class UtxoEntityFactory(entityManagerFactory: EntityManagerFactory) {
     val utxoTransactionSource: Class<*> get() = classFor("UtxoTransactionSourceEntity")
     val utxoTransactionStatus: Class<*> get() = classFor("UtxoTransactionStatusEntity")
     val utxoTransactionSignature: Class<*> get() = classFor("UtxoTransactionSignatureEntity")
-
-    fun createUtxoCpkEntity(
-        fileChecksum: String,
-        name: String,
-        signerSummaryHash: String,
-        version: String,
-        data: ByteArray,
-        created: Instant
-    ): Any {
-        return utxoCpk.constructors.single { it.parameterCount == 6 }.newInstance(
-            fileChecksum, name, signerSummaryHash, version, data, created
-        )
-    }
 
     fun createUtxoTransactionEntity(
         transactionId: String,

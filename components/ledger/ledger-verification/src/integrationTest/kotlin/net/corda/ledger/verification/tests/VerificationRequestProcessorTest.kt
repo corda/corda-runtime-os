@@ -103,7 +103,9 @@ class VerificationRequestProcessorTest {
     private lateinit var wireTransactionFactory: WireTransactionFactory
     private lateinit var jsonMarshallingService: JsonMarshallingService
     private lateinit var jsonValidator: JsonValidator
-    private lateinit var currentSandboxGroupContext: CurrentSandboxGroupContext
+
+    @InjectService(timeout = TIMEOUT_MILLIS)
+    lateinit var currentSandboxGroupContext: CurrentSandboxGroupContext
 
     @BeforeAll
     fun setup(
@@ -124,7 +126,6 @@ class VerificationRequestProcessorTest {
             wireTransactionFactory = setup.fetchService(TIMEOUT_MILLIS)
             jsonMarshallingService = setup.fetchService(TIMEOUT_MILLIS)
             jsonValidator = setup.fetchService(TIMEOUT_MILLIS)
-            currentSandboxGroupContext = setup.fetchService(TIMEOUT_MILLIS)
         }
     }
 

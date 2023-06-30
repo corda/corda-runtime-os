@@ -26,7 +26,7 @@ class ConsensualDemoFlow : ClientStartableFlow {
     data class InputMessage(val input: String, val members: List<String>)
 
     private companion object {
-        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     @CordaInject
@@ -91,7 +91,7 @@ class ConsensualDemoFlow : ClientStartableFlow {
 class ConsensualResponderFlow : ResponderFlow {
 
     private companion object {
-        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     @CordaInject

@@ -19,79 +19,79 @@ import net.corda.flow.state.impl.FlowCheckpointFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.tracing.TraceContext
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
+import org.osgi.service.component.ComponentContext
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ReferenceCardinality.MULTIPLE
 import org.osgi.service.component.annotations.ReferencePolicy.DYNAMIC
 
-@Suppress("CanBePrimaryConstructorProperty", "LongParameterList")
-@Component(service = [FlowEventPipelineFactory::class])
-class FlowEventPipelineFactoryImpl(
+@Suppress("LongParameterList")
+@Component(
+    service = [FlowEventPipelineFactory::class],
+    reference = [
+        Reference(
+            name = FlowEventPipelineFactoryImpl.FLOW_EVENT_HANDLER_NAME,
+            service = FlowEventHandler::class,
+            cardinality = MULTIPLE,
+            policy = DYNAMIC
+        ),
+        Reference(
+            name = FlowEventPipelineFactoryImpl.FLOW_WAITING_FOR_HANDLER_NAME,
+            service = FlowWaitingForHandler::class,
+            cardinality = MULTIPLE,
+            policy = DYNAMIC
+        ),
+        Reference(
+            name = FlowEventPipelineFactoryImpl.FLOW_REQUEST_HANDLER_NAME,
+            service = FlowRequestHandler::class,
+            cardinality = MULTIPLE,
+            policy = DYNAMIC
+        )
+    ]
+)
+class FlowEventPipelineFactoryImpl @Activate constructor(
+    @Reference(service = FlowRunner::class)
     private val flowRunner: FlowRunner,
+    @Reference(service = FlowGlobalPostProcessor::class)
     private val flowGlobalPostProcessor: FlowGlobalPostProcessor,
+    @Reference(service = FlowCheckpointFactory::class)
     private val flowCheckpointFactory: FlowCheckpointFactory,
+    @Reference(service = VirtualNodeInfoReadService::class)
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
+    @Reference(service = FlowFiberCache::class)
     private val flowFiberCache: FlowFiberCache,
+    @Reference(service = FlowMetricsFactory::class)
     private val flowMetricsFactory: FlowMetricsFactory,
+    @Reference(service = FlowIORequestTypeConverter::class)
     private val flowIORequestTypeConverter: FlowIORequestTypeConverter,
-    flowEventHandlers: List<FlowEventHandler<out Any>>,
-    flowWaitingForHandlers: List<FlowWaitingForHandler<out Any>>,
-    flowRequestHandlers: List<FlowRequestHandler<out FlowIORequest<*>>>
+    private val componentContext: ComponentContext
 ) : FlowEventPipelineFactory {
-
-    // We cannot use constructor injection with DYNAMIC policy.
-    @Reference(service = FlowEventHandler::class, cardinality = MULTIPLE, policy = DYNAMIC)
-    private val flowEventHandlers: List<FlowEventHandler<out Any>> = flowEventHandlers
-
-    // We cannot use constructor injection with DYNAMIC policy.
-    @Reference(service = FlowWaitingForHandler::class, cardinality = MULTIPLE, policy = DYNAMIC)
-    private val flowWaitingForHandlers: List<FlowWaitingForHandler<out Any>> = flowWaitingForHandlers
-
-    // We cannot use constructor injection with DYNAMIC policy.
-    @Reference(service = FlowRequestHandler::class, cardinality = MULTIPLE, policy = DYNAMIC)
-    private val flowRequestHandlers: List<FlowRequestHandler<out FlowIORequest<*>>> = flowRequestHandlers
-
-    private val flowEventHandlerMap: Map<Class<*>, FlowEventHandler<out Any>> by lazy {
-        flowEventHandlers.associateBy(FlowEventHandler<*>::type)
+    companion object {
+        const val FLOW_EVENT_HANDLER_NAME = "FlowEventHandler"
+        const val FLOW_WAITING_FOR_HANDLER_NAME = "FlowWaitingForHandler"
+        const val FLOW_REQUEST_HANDLER_NAME = "FlowRequestHandler"
     }
 
-    private val flowWaitingForHandlerMap: Map<Class<*>, FlowWaitingForHandler<out Any>> by lazy {
-        flowWaitingForHandlers.associateBy(FlowWaitingForHandler<*>::type)
+    private fun <T> getServices(name: String): List<T> {
+        @Suppress("unchecked_cast")
+        return (componentContext.locateServices(name) as? Array<T>)?.toList() ?: emptyList()
     }
 
-    private val flowRequestHandlerMap: Map<Class<out FlowIORequest<*>>, FlowRequestHandler<out FlowIORequest<*>>> by lazy {
-        flowRequestHandlers.associateBy(FlowRequestHandler<*>::type)
+    private fun getFlowEventHandlerMap(): Map<Class<*>, FlowEventHandler<out Any>> {
+        return getServices<FlowEventHandler<out Any>>(FLOW_EVENT_HANDLER_NAME)
+            .associateBy(FlowEventHandler<*>::type)
     }
 
-    @Activate
-    constructor(
-        @Reference(service = FlowRunner::class)
-        flowRunner: FlowRunner,
-        @Reference(service = FlowGlobalPostProcessor::class)
-        flowGlobalPostProcessor: FlowGlobalPostProcessor,
-        @Reference(service = FlowCheckpointFactory::class)
-        flowCheckpointFactory: FlowCheckpointFactory,
-        @Reference(service = VirtualNodeInfoReadService::class)
-        virtualNodeInfoReadService: VirtualNodeInfoReadService,
-        @Reference(service = FlowFiberCache::class)
-        flowFiberCache: FlowFiberCache,
-        @Reference(service = FlowMetricsFactory::class)
-        flowMetricsFactory: FlowMetricsFactory,
-        @Reference(service = FlowIORequestTypeConverter::class)
-        flowIORequestTypeConverter: FlowIORequestTypeConverter
-    ) : this(
-        flowRunner,
-        flowGlobalPostProcessor,
-        flowCheckpointFactory,
-        virtualNodeInfoReadService,
-        flowFiberCache,
-        flowMetricsFactory,
-        flowIORequestTypeConverter,
-        mutableListOf(),
-        mutableListOf(),
-        mutableListOf()
-    )
+    private fun getFlowWaitingForHandlerMap(): Map<Class<*>, FlowWaitingForHandler<out Any>> {
+        return getServices<FlowWaitingForHandler<out Any>>(FLOW_WAITING_FOR_HANDLER_NAME)
+            .associateBy(FlowWaitingForHandler<*>::type)
+    }
+
+    private fun getFlowRequestHandlerMap(): Map<Class<out FlowIORequest<*>>, FlowRequestHandler<out FlowIORequest<*>>> {
+        return getServices<FlowRequestHandler<out FlowIORequest<*>>>(FLOW_REQUEST_HANDLER_NAME)
+            .associateBy(FlowRequestHandler<*>::type)
+    }
 
     override fun create(
         checkpoint: Checkpoint?,
@@ -117,9 +117,9 @@ class FlowEventPipelineFactoryImpl(
         )
 
         return FlowEventPipelineImpl(
-            flowEventHandlerMap,
-            flowWaitingForHandlerMap,
-            flowRequestHandlerMap,
+            getFlowEventHandlerMap(),
+            getFlowWaitingForHandlerMap(),
+            getFlowRequestHandlerMap(),
             flowRunner,
             flowGlobalPostProcessor,
             context,

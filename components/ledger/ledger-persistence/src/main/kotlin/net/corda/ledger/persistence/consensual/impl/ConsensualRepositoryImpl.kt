@@ -10,7 +10,6 @@ import net.corda.sandbox.type.SandboxConstants.CORDA_MARKER_ONLY_SERVICE
 import net.corda.sandbox.type.UsedByPersistence
 import net.corda.utilities.debug
 import net.corda.utilities.serialization.deserialize
-import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.ledger.common.transaction.CordaPackageSummary
@@ -37,14 +36,13 @@ import javax.persistence.Tuple
 )
 class ConsensualRepositoryImpl @Activate constructor(
     @Reference
-    private val digestService: DigestService,
-    @Reference
     private val serializationService: SerializationService,
     @Reference
-    private val wireTransactionFactory: WireTransactionFactory
+    private val wireTransactionFactory: WireTransactionFactory,
+    @Reference
+    private val queryProvider: ConsensualQueryProvider
 ) : ConsensualRepository, UsedByPersistence {
     companion object {
-        private val UNVERIFIED = TransactionStatus.UNVERIFIED.value
         private val consensualComponentGroupMapper = ConsensualComponentGroupMapper()
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
@@ -116,12 +114,7 @@ class ConsensualRepositoryImpl @Activate constructor(
         account: String,
         timestamp: Instant
     ) {
-        entityManager.createNativeQuery(
-            """
-            INSERT INTO {h-schema}consensual_transaction(id, privacy_salt, account_id, created)
-            VALUES (:id, :privacySalt, :accountId, :createdAt)
-            ON CONFLICT DO NOTHING"""
-        )
+        entityManager.createNativeQuery(queryProvider.persistTransaction)
             .setParameter("id", id)
             .setParameter("privacySalt", privacySalt)
             .setParameter("accountId", account)
@@ -140,12 +133,7 @@ class ConsensualRepositoryImpl @Activate constructor(
         hash: String,
         timestamp: Instant
     ): Int {
-        return entityManager.createNativeQuery(
-            """
-            INSERT INTO {h-schema}consensual_transaction_component(transaction_id, group_idx, leaf_idx, data, hash, created)
-            VALUES(:transactionId, :groupIndex, :leafIndex, :data, :hash, :createdAt)
-            ON CONFLICT DO NOTHING"""
-        )
+        return entityManager.createNativeQuery(queryProvider.persistTransactionComponentLeaf)
             .setParameter("transactionId", transactionId)
             .setParameter("groupIndex", groupIndex)
             .setParameter("leafIndex", leafIndex)
@@ -163,14 +151,7 @@ class ConsensualRepositoryImpl @Activate constructor(
         timestamp: Instant
     ): Int {
         // Insert/update status. Update ignored unless: UNVERIFIED -> * | VERIFIED -> VERIFIED | INVALID -> INVALID
-        val rowsUpdated = entityManager.createNativeQuery(
-            """
-            INSERT INTO {h-schema}consensual_transaction_status(transaction_id, status, updated)
-            VALUES (:id, :status, :updatedAt)
-            ON CONFLICT(transaction_id) DO
-                UPDATE SET status = EXCLUDED.status, updated = EXCLUDED.updated
-                WHERE consensual_transaction_status.status = EXCLUDED.status OR consensual_transaction_status.status = '$UNVERIFIED'"""
-        )
+        val rowsUpdated = entityManager.createNativeQuery(queryProvider.persistTransactionStatus)
             .setParameter("id", transactionId)
             .setParameter("status", status.value)
             .setParameter("updatedAt", timestamp)
@@ -192,12 +173,7 @@ class ConsensualRepositoryImpl @Activate constructor(
         signature: DigitalSignatureAndMetadata,
         timestamp: Instant
     ): Int {
-        return entityManager.createNativeQuery(
-            """
-            INSERT INTO {h-schema}consensual_transaction_signature(transaction_id, signature_idx, signature, pub_key_hash, created)
-            VALUES (:transactionId, :signatureIdx, :signature, :publicKeyHash, :createdAt)
-            ON CONFLICT DO NOTHING"""
-        )
+        return entityManager.createNativeQuery(queryProvider.persistTransactionSignature)
             .setParameter("transactionId", transactionId)
             .setParameter("signatureIdx", index)
             .setParameter("signature", serializationService.serialize(signature).bytes)
@@ -212,15 +188,8 @@ class ConsensualRepositoryImpl @Activate constructor(
         transactionId: String,
         cpkMetadata: List<CordaPackageSummary>
     ): Int {
-        val fileChecksums = cpkMetadata.map { it.fileChecksum }
-        return entityManager.createNativeQuery(
-            """
-            INSERT INTO {h-schema}consensual_transaction_cpk
-            SELECT :transactionId, file_checksum
-            FROM {h-schema}consensual_cpk
-            WHERE file_checksum in (:fileChecksums)
-            ON CONFLICT DO NOTHING"""
-        )
+        val fileChecksums = cpkMetadata.map(CordaPackageSummary::getFileChecksum)
+        return entityManager.createNativeQuery(queryProvider.persistTransactionCpk)
             .setParameter("transactionId", transactionId)
             .setParameter("fileChecksums", fileChecksums)
             .executeUpdate()

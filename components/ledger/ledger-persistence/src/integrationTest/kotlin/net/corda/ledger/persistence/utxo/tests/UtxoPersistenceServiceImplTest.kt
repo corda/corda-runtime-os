@@ -58,7 +58,6 @@ import net.corda.v5.ledger.utxo.TransactionState
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
-import org.junit.jupiter.api.Assumptions
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
@@ -102,8 +101,10 @@ class UtxoPersistenceServiceImplTest {
     private lateinit var repository: UtxoRepository
     private lateinit var cpiInfoReadService: CpiInfoReadService
     private lateinit var factoryRegistry: ContractStateVaultJsonFactoryRegistry
-    private lateinit var currentSandboxGroupContext: CurrentSandboxGroupContext
     private val emConfig = DbUtils.getEntityManagerConfiguration("ledger_db_for_test")
+
+    @InjectService(timeout = TIMEOUT_MILLIS)
+    lateinit var currentSandboxGroupContext: CurrentSandboxGroupContext
 
     companion object {
         // Truncating to millis as on Windows builds the micros are lost after fetching the data from Postgres
@@ -141,7 +142,6 @@ class UtxoPersistenceServiceImplTest {
             val cpkFileHashes = cpiInfoReadService.getCpkFileHashes(virtualNodeInfo)
             val ctx = virtualNode.entitySandboxService.get(virtualNodeInfo.holdingIdentity, cpkFileHashes)
 
-            currentSandboxGroupContext = setup.fetchService(timeout = TIMEOUT_MILLIS)
             currentSandboxGroupContext.set(ctx)
 
             wireTransactionFactory = ctx.getSandboxSingletonService()
@@ -170,9 +170,7 @@ class UtxoPersistenceServiceImplTest {
     @AfterAll
     fun cleanup() {
         emConfig.close()
-        if (this::currentSandboxGroupContext.isInitialized) {
-            currentSandboxGroupContext.remove()
-        }
+        currentSandboxGroupContext.remove()
     }
 
     @Test
@@ -197,7 +195,6 @@ class UtxoPersistenceServiceImplTest {
 
     @Test
     fun `find unconsumed visible transaction states`() {
-        Assumptions.assumeFalse(DbUtils.isInMemory, "Skipping this test when run against in-memory DB.")
         val createdTs = testClock.instant()
         val entityFactory = UtxoEntityFactory(entityManagerFactory)
         val transaction1 = createSignedTransaction(createdTs)
@@ -279,7 +276,6 @@ class UtxoPersistenceServiceImplTest {
 
     @Test
     fun `update transaction status`() {
-        Assumptions.assumeFalse(DbUtils.isInMemory, "Skipping this test when run against in-memory DB.")
         var floorDateTime = nextTime()
 
         val entityFactory = UtxoEntityFactory(entityManagerFactory)
@@ -292,12 +288,10 @@ class UtxoPersistenceServiceImplTest {
         persistenceService.updateStatus(transaction.id.toString(), VERIFIED)
 
         assertTransactionStatus(transaction.id.toString(), VERIFIED, entityFactory, floorDateTime)
-
     }
 
     @Test
     fun `update transaction status does not affect other transactions`() {
-        Assumptions.assumeFalse(DbUtils.isInMemory, "Skipping this test when run against in-memory DB.")
         var floorDateTime = nextTime()
 
         val entityFactory = UtxoEntityFactory(entityManagerFactory)
@@ -317,7 +311,6 @@ class UtxoPersistenceServiceImplTest {
 
     @Test
     fun `persist signed transaction`() {
-        Assumptions.assumeFalse(DbUtils.isInMemory, "Skipping this test when run against in-memory DB.")
         val account = "Account"
         val transactionStatus = VERIFIED
         val signedTransaction = createSignedTransaction(Instant.now())
@@ -395,7 +388,7 @@ class UtxoPersistenceServiceImplTest {
                 .setParameter("transactionId", signedTransaction.id.toString())
                 .resultList
             assertThat(dbTransactionOutputs).isNotNull
-                .hasSameSizeAs(componentGroupLists.get(UtxoComponentGroup.OUTPUTS.ordinal))
+                .hasSameSizeAs(componentGroupLists[UtxoComponentGroup.OUTPUTS.ordinal])
             dbTransactionOutputs
                 .sortedWith(compareBy<Any> { it.field<Int>("groupIndex") }.thenBy { it.field<Int>("leafIndex") })
                 .zip(transactionOutputs)
@@ -426,8 +419,8 @@ class UtxoPersistenceServiceImplTest {
                 .forEach { (dbRelevancy, visibleStateIndex) ->
                     assertThat(dbRelevancy.field<Int>("groupIndex")).isEqualTo(UtxoComponentGroup.OUTPUTS.ordinal)
                     assertThat(dbRelevancy.field<Int>("leafIndex")).isEqualTo(visibleStateIndex)
-                    assertThat(dbRelevancy.field<String>("customRepresentation"))
-                        .isEqualTo("{\"net.corda.v5.ledger.utxo.ContractState\": {\"stateRef\": \"${signedTransaction.id}:0\"}}")
+                    assertThat(dbRelevancy.field<String>("customRepresentation").replace("\\s".toRegex(), ""))
+                        .isEqualTo("{\"net.corda.v5.ledger.utxo.ContractState\":{\"stateRef\":\"${signedTransaction.id}:0\"}}")
                     assertThat(dbRelevancy.field<Instant>("consumed")).isNull()
                 }
 
@@ -464,7 +457,6 @@ class UtxoPersistenceServiceImplTest {
 
     @Test
     fun `persist and find signed group parameter`() {
-        Assumptions.assumeFalse(DbUtils.isInMemory, "Skipping this test when run against in-memory DB.")
         val signedGroupParameters = SignedGroupParameters(
             ByteBuffer.wrap(ByteArray(1)),
             CryptoSignatureWithKey(

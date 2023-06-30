@@ -27,7 +27,7 @@ class ExternalEventResponseWaitingForHandler @Activate constructor(
 ) : FlowWaitingForHandler<net.corda.data.flow.state.waiting.external.ExternalEventResponse> {
 
     private companion object {
-        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     override val type = net.corda.data.flow.state.waiting.external.ExternalEventResponse::class.java

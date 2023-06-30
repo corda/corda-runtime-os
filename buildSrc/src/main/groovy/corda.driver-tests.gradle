@@ -1,0 +1,61 @@
+import static org.gradle.api.attributes.LibraryElements.LIBRARY_ELEMENTS_ATTRIBUTE
+
+pluginManager.withPlugin('java') {
+    configurations {
+        testCpks {
+            canBeConsumed = false
+            visible = false
+        }
+
+        testCpbs {
+            attributes {
+                attribute(LIBRARY_ELEMENTS_ATTRIBUTE, objects.named(LibraryElements, 'cpb'))
+            }
+            canBeConsumed = false
+            extendsFrom testCpks
+            visible = false
+        }
+    }
+
+    dependencies {
+        testImplementation project(':testing:driver')
+        testImplementation files(configurations.testCpks)
+        testRuntimeOnly files(configurations.testCpbs)
+    }
+
+    sourceSets.matching { it.name == 'integrationTest' }.configureEach {
+        project.configurations {
+            integrationTestCpks {
+                canBeConsumed = false
+                extendsFrom testCpks
+                visible = false
+            }
+
+            integrationTestCpbs {
+                attributes {
+                    attribute(LIBRARY_ELEMENTS_ATTRIBUTE, objects.named(LibraryElements, 'cpb'))
+                }
+                canBeConsumed = false
+                extendsFrom integrationTestCpks
+                visible = false
+            }
+        }
+
+        project.dependencies {
+            integrationTestImplementation files(configurations.integrationTestCpks)
+            integrationTestRuntimeOnly files(configurations.integrationTestCpbs)
+        }
+    }
+
+    tasks.withType(Test).configureEach {
+        doFirst {
+            jvmArgs '--add-opens', 'java.base/java.lang=ALL-UNNAMED',
+                    '--add-opens', 'java.base/java.lang.invoke=ALL-UNNAMED',
+                    '--add-opens', 'java.base/java.nio=ALL-UNNAMED',
+                    '--add-opens', 'java.base/java.time=ALL-UNNAMED',
+                    '--add-opens', 'java.base/java.util=ALL-UNNAMED'
+
+            systemProperty 'co.paralleluniverse.fibers.verifyInstrumentation', true
+        }
+    }
+}

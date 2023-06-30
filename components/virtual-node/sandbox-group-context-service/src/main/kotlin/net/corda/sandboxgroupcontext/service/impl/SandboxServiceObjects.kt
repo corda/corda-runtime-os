@@ -23,7 +23,7 @@ class SandboxServiceObjects(
 
     override fun getService(): Any? {
         return try {
-            return definition.createInstance(serviceReference.bundle, sandboxServices).let { svc ->
+            return definition.createInstance(reference.bundle, sandboxServices).let { svc ->
                 closeables.addAll(svc.second)
                 svc.first
             }

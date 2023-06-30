@@ -1,0 +1,33 @@
+plugins {
+    id 'org.jetbrains.kotlin.jvm'
+    id 'corda.common-library'
+    id 'corda.driver-tests'
+}
+
+dependencies {
+    testImplementation "org.assertj:assertj-core:$assertjVersion"
+    testRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
+
+    testCpks project(':testing:cpbs:extendable-cpb')
+    testCpks project(':testing:cpbs:mandelbrot')
+
+    integrationTestImplementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
+    integrationTestCpks project(':testing:cpbs:ledger-consensual-demo-app')
+    integrationTestCpks project(':testing:cpbs:test-cordapp')
+}
+
+tasks.named('jar', Jar) {
+    enabled = false
+}
+
+tasks.withType(Test).configureEach {
+    doFirst {
+        systemProperty 'org.slf4j.simpleLogger.defaultLogLevel', 'info'
+        systemProperty 'org.slf4j.simpleLogger.dateTimeFormat', 'yyyy-MM-dd HH:mm:ss:SSS Z'
+        systemProperty 'org.slf4j.simpleLogger.showDateTime', true
+        systemProperty 'org.slf4j.simpleLogger.showShortLogName', true
+        systemProperty 'org.slf4j.simpleLogger.showThreadName', false
+        systemProperty 'org.slf4j.simpleLogger.logFile', 'System.out'
+        systemProperty 'org.slf4j.simpleLogger.log.org.apache.aries.spifly.BaseActivator', 'OFF'
+    }
+}
