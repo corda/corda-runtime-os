@@ -7,7 +7,9 @@ import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.mapper.FlowMapperEvent
+import net.corda.data.flow.event.session.SessionAck
 import net.corda.data.flow.event.session.SessionError
+import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.mapper.FlowMapperState
 import net.corda.data.p2p.app.AppMessage
 import net.corda.flow.mapper.FlowMapperResult
@@ -33,7 +35,6 @@ class RecordFactoryImpl @Activate constructor(
     private val locallyHostedIdentitiesService: LocallyHostedIdentitiesService,
     private val appMessageFactory: (SessionEvent, CordaAvroSerializer<SessionEvent>, SmartConfig) -> AppMessage
 ): RecordFactory {
-
     private val sessionEventSerializer = cordaAvroSerializationFactory.createAvroSerializer<SessionEvent> { }
 
     override fun createAndSendRecord(
@@ -42,9 +43,10 @@ class RecordFactoryImpl @Activate constructor(
         flowMapperState: FlowMapperState?,
         instant: Instant,
         flowConfig: SmartConfig,
-        messageDirection: MessageDirection
+        messageDirection: MessageDirection,
+        exceptionEnvelope: ExceptionEnvelope
     ): Record<*, *> {
-        val outputTopic = getSessionEventOutputTopic(sessionEvent, messageDirection)
+
         return when (messageDirection) {
             MessageDirection.INBOUND -> {
                 Record(outputTopic, flowMapperState.flowId, FlowEvent(flowMapperState.flowId, sessionEvent))
@@ -53,41 +55,83 @@ class RecordFactoryImpl @Activate constructor(
                 if (isLocalCluster(sessionEvent)) {
                     Record(outputTopic, errEvent.sessionId, FlowMapperEvent(errEvent))
                 } else {
-                    createP2PRecord(
-                        sessionEvent,
-                        SessionError(
-                            ExceptionEnvelope(
-                                "FlowMapper-SessionError",
-                                "Received SessionError with sessionId $sessionId"
-                            )
-                        ),
-                        instant,
-                        sessionEventSerializer,
-                        appMessageFactory,
-                        flowConfig,
-                        sessionEvent.receivedSequenceNum
-                    )
+                    forwardError(sessionEvent, exceptionEnvelope, instant, flowConfig)
                 }
             }
         }
     }
 
-    val errEvent = SessionEvent(
-        MessageDirection.INBOUND,
-        instant,
-        toggleSessionId(sessionEvent.sessionId),
-        null,
-        sessionEvent.initiatingIdentity,
-        sessionEvent.initiatedIdentity,
-        sessionEvent.receivedSequenceNum,
-        emptyList(),
-        SessionError(
-            ExceptionEnvelope(
-                "FlowMapper-SessionError",
-                "Received SessionError with sessionId $sessionId"
+    private fun forwardError(
+        sessionEvent: SessionEvent,
+        exceptionEnvelope: ExceptionEnvelope,
+        instant: Instant,
+        flowConfig: SmartConfig,
+        messageDirection: MessageDirection
+    ): Record<*, *> {
+        val outputTopic = getSessionEventOutputTopic(sessionEvent, messageDirection)
+        val errEvent = SessionEvent(
+            MessageDirection.INBOUND,
+            instant,
+            toggleSessionId(sessionEvent.sessionId),
+            null,
+            sessionEvent.initiatingIdentity,
+            sessionEvent.initiatedIdentity,
+            sessionEvent.receivedSequenceNum,
+            emptyList(),
+            SessionError(
+                exceptionEnvelope
             )
         )
-    )
+
+        return if (isLocalCluster(sessionEvent)) {
+            Record(outputTopic, errEvent.sessionId, FlowMapperEvent(errEvent))
+        } else {
+            createP2PRecord(
+                sessionEvent,
+                SessionError(
+                    exceptionEnvelope
+                ),
+                instant,
+                sessionEventSerializer,
+                appMessageFactory,
+                flowConfig,
+                sessionEvent.receivedSequenceNum
+            )
+        }
+    }
+
+    private fun forwardAck(
+        sessionEvent: SessionEvent,
+        instant: Instant,
+        flowConfig: SmartConfig,
+        messageDirection: MessageDirection
+    ): Record<*, *> {
+        val outputTopic = getSessionEventOutputTopic(sessionEvent, messageDirection)
+        val ackEvent = SessionEvent(
+            MessageDirection.INBOUND,
+            instant,
+            toggleSessionId(sessionEvent.sessionId),
+            null,
+            sessionEvent.initiatingIdentity,
+            sessionEvent.initiatedIdentity,
+            sessionEvent.sequenceNum,
+            emptyList(),
+            SessionAck()
+        )
+
+        return if (isLocalCluster(sessionEvent)) {
+            Record(outputTopic, ackEvent.sessionId, FlowMapperEvent(ackEvent))
+        } else {
+            createP2PRecord(
+                sessionEvent,
+                SessionAck(),
+                instant,
+                sessionEventSerializer,
+                appMessageFactory,
+                flowConfig
+            )
+        }
+    }
 
     private fun isLocalCluster(
         sessionEvent: SessionEvent
