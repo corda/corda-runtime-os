@@ -196,7 +196,7 @@ class CipherSchemeMetadataProvider : KeyEncodingService {
                 val pemContent = parsePemContent(encodedKey)
                 logger.info("got pem content ${pemContent}")
                 val publicKeyInfo = SubjectPublicKeyInfo.getInstance(pemContent)
-                logger.info("got public key info")
+                logger.info("got public key info {}", publicKeyInfo)
                 val converter = getJcaPEMKeyConverter(publicKeyInfo)
                 logger.info("converted down")
                 val publicKey = converter.getPublicKey(publicKeyInfo)
@@ -231,9 +231,13 @@ class CipherSchemeMetadataProvider : KeyEncodingService {
     }
 
     private fun getJcaPEMKeyConverter(publicKeyInfo: SubjectPublicKeyInfo): JcaPEMKeyConverter {
+        logger.info("algorithm {}", publicKeyInfo.algorithm)
         val scheme = findKeyScheme(publicKeyInfo.algorithm)
+        logger.info("scheme {}", scheme)
         val converter = JcaPEMKeyConverter()
+        logger.info("converter {}", converter)
         converter.setProvider(providers[scheme.providerName])
+        logger.info("set provider done")
         return converter
     }
 
