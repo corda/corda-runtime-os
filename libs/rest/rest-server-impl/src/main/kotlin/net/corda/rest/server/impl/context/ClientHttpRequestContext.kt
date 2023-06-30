@@ -32,9 +32,6 @@ internal class ClientHttpRequestContext(private val ctx: Context) : ClientReques
     override val path: String
         get() = ctx.path()
 
-    override val formParams: Map<String, List<String>>
-        get() = ctx.formParamMap()
-
     override val body: String
         get() = ctx.body()
 
@@ -42,6 +39,8 @@ internal class ClientHttpRequestContext(private val ctx: Context) : ClientReques
         get() = ctx.jsonMapper()
 
     override fun <T> bodyAsClass(clazz: Class<T>): T = ctx.bodyAsClass(clazz)
+
+    override fun formParamMap(): Map<String, List<String>> = ctx.formParamMap()
 
     override fun uploadedFiles(fileName: String): List<UploadedFile> = ctx.uploadedFiles(fileName)
 
