@@ -447,8 +447,11 @@ workers:
       # -- the CPU/memory resource limits for the crypto worker containers
       limits: {}
     service:
-      # -- The HTTP port
+      type: ClusterIP
       port: 8080
+      externalTrafficPolicy: ""
+      loadBalancerSourceRanges: [ ]
+      annotations: { }
     # crypto worker JDBC connection pool configuration for cluster DB
     clusterDbConnectionPool:
       # -- crypto worker maximum JDBC connection pool size for cluster DB
