@@ -13,6 +13,13 @@ interface RecordFactory {
      * @return A record for p2p.out or local
      */
 
+    fun forwardEvent(
+        sessionEvent: SessionEvent,
+        instant: Instant,
+        flowConfig: SmartConfig,
+        messageDirection: MessageDirection
+        ): Record<*, *>
+
     fun forwardError(
         sessionEvent: SessionEvent,
         exceptionEnvelope: ExceptionEnvelope,
