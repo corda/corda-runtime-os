@@ -53,7 +53,7 @@ class OpenApiCompatibilityTest {
             FlowClassRestResource::class.java, // Flow
             CpiUploadRestResource::class.java, // Packaging
             VirtualNodeRestResource::class.java, // Packaging
-            InteropRestResource::class.java, //Interop
+            InteropRestResource::class.java, // Interop
             MemberLookupRestResource::class.java, // MGM
             MemberRegistrationRestResource::class.java, // MGM
             MGMRestResource::class.java, // MGM

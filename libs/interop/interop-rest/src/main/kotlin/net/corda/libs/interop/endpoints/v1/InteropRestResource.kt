@@ -21,7 +21,7 @@ interface InteropRestResource : RestResource {
      */
     @HttpGET(
         path = "{holdingidentityshorthash}/groups",
-        title = "Lists all interop",
+        title = "Lists all interop groups for a given holding identity.",
         description = "This method returns a list of interop group ids.",
         responseDescription = "Map of interop group ids to group policy"
     )
