@@ -177,26 +177,24 @@ class CipherSchemeMetadataProvider : KeyEncodingService {
     }
 
     override fun decodePublicKey(encodedKey: String): PublicKey {
-        logger.info("decode public key string start")
+        logger.info("decode public key string start disabled timing [${encodedKey}]")
         val res = try {
-            recordPublicKeyOperation(DECODE_PUBLIC_KEY_FROM_STRING_OPERATION_NAME) {
-                logger.info("doing parse on ${encodeKey}")
-                val pemContent = parsePemContent(encodedKey)
-                logger.info("got pem content ${pemContent.size}")
-                val publicKeyInfo = SubjectPublicKeyInfo.getInstance(pemContent)
-                logger.info("got public key info")
-                val converter = getJcaPEMKeyConverter(publicKeyInfo)
-                logger.info("converted down")
-                val publicKey = converter.getPublicKey(publicKeyInfo)
-                logger.info("got public key")
-                toSupportedPublicKey(publicKey)
-            }
+            logger.info("doing parse on ${encodedKey}")
+            val pemContent = parsePemContent(encodedKey)
+            logger.info("got pem content ${pemContent.size}")
+            val publicKeyInfo = SubjectPublicKeyInfo.getInstance(pemContent)
+            logger.info("got public key info")
+            val converter = getJcaPEMKeyConverter(publicKeyInfo)
+            logger.info("converted down")
+            val publicKey = converter.getPublicKey(publicKeyInfo)
+            logger.info("got public key")
+            toSupportedPublicKey(publicKey)
         } catch (e: RuntimeException) {
             throw e
         } catch (e: Throwable) {
             throw CryptoException("Failed to decode public key", e)
         }
-        logger.info("decode public key string finished")
+        logger.info("decode public key string finished [${encodedKey}]")
         return res
     }
 
