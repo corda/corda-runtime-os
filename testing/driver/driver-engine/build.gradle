@@ -29,6 +29,7 @@ dependencies {
     implementation project(':components:ledger:ledger-persistence')
     implementation project(':components:membership:group-policy')
     implementation project(':components:membership:membership-group-read')
+    implementation project(':components:persistence:entity-processor-service-impl')
     implementation project(':components:persistence:persistence-service-common')
     implementation project(':components:virtual-node:cpi-info-read-service')
     implementation project(':components:virtual-node:cpk-read-service')

@@ -33,13 +33,13 @@ import net.corda.schema.Schemas.Flow.FLOW_EVENT_TOPIC
 import net.corda.schema.Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC
 import net.corda.schema.Schemas.Flow.FLOW_STATUS_TOPIC
 import net.corda.schema.Schemas.P2P.P2P_OUT_TOPIC
+import net.corda.schema.Schemas.Persistence.PERSISTENCE_ENTITY_PROCESSOR_TOPIC
 import net.corda.schema.Schemas.Persistence.PERSISTENCE_LEDGER_PROCESSOR_TOPIC
 import net.corda.session.mapper.service.executor.FlowMapperMessageProcessor
 import net.corda.testing.driver.node.RunFlow
 import net.corda.testing.driver.config.SmartConfigProvider
 import net.corda.testing.driver.crypto.CryptoProcessor
-import net.corda.testing.driver.flow.RunFlowImpl.Companion.CRYPTO_PROCESSOR
-import net.corda.testing.driver.flow.RunFlowImpl.Companion.LEDGER_PROCESSOR
+import net.corda.testing.driver.entity.EntityProcessor
 import net.corda.testing.driver.ledger.LedgerProcessor
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.osgi.service.component.ComponentContext
@@ -52,8 +52,9 @@ import org.slf4j.LoggerFactory
 @Component(
     service = [ RunFlow::class ],
     reference = [
-        Reference(name = CRYPTO_PROCESSOR, service = CryptoProcessor::class),
-        Reference(name = LEDGER_PROCESSOR, service = LedgerProcessor::class)
+        Reference(name = RunFlowImpl.CRYPTO_PROCESSOR, service = CryptoProcessor::class),
+        Reference(name = RunFlowImpl.ENTITY_PROCESSOR, service = EntityProcessor::class),
+        Reference(name = RunFlowImpl.LEDGER_PROCESSOR, service = LedgerProcessor::class)
     ]
 )
 class RunFlowImpl @Activate constructor(
@@ -71,6 +72,7 @@ class RunFlowImpl @Activate constructor(
 ): RunFlow {
     companion object {
         const val CRYPTO_PROCESSOR = "CryptoProcessor"
+        const val ENTITY_PROCESSOR = "EntityProcessor"
         const val LEDGER_PROCESSOR = "LedgerProcessor"
 
         private val flowContextProperties = keyValuePairListOf(mapOf("corda.account" to "account-zero"))
@@ -98,6 +100,10 @@ class RunFlowImpl @Activate constructor(
 
     private val cryptoProcessor by lazy {
         componentContext.locateService<CryptoProcessor>(CRYPTO_PROCESSOR)
+    }
+
+    private val entityProcessor by lazy {
+        componentContext.locateService<EntityProcessor>(ENTITY_PROCESSOR)
     }
 
     private val ledgerProcessor by lazy {
@@ -199,6 +205,9 @@ class RunFlowImpl @Activate constructor(
 
                             FLOW_OPS_MESSAGE_TOPIC ->
                                 pending += cryptoProcessor.processEvent(responseEvent)
+
+                            PERSISTENCE_ENTITY_PROCESSOR_TOPIC ->
+                                pending += entityProcessor.processEvent(responseEvent)
 
                             PERSISTENCE_LEDGER_PROCESSOR_TOPIC ->
                                 pending += ledgerProcessor.processEvent(responseEvent)
