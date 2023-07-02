@@ -34,8 +34,8 @@ dependencies {
 }
 
 cliPlugin {
-    cliPluginClass = 'net.corda.cli.plugins.network.MgmPluginWrapper'
-    cliPluginDescription = 'Plugin for membership operations.'
+    cliPluginClass = 'net.corda.cli.plugins.network.NetworkPluginWrapper'
+    cliPluginDescription = 'Plugin for network operations.'
 }
 
 tasks.named("installDist") {
