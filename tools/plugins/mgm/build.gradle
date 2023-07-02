@@ -13,6 +13,7 @@ ext {
 group 'net.corda.cli.deployment'
 
 dependencies {
+    implementation project(path: ':tools:plugins:network')
     compileOnly "net.corda.cli.host:api:$pluginHostVersion"
 
     implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"

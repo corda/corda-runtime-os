@@ -1,4 +1,4 @@
-package net.corda.cli.plugins.mgm
+package net.corda.cli.plugins.network
 
 import com.fasterxml.jackson.core.util.DefaultIndenter
 import com.fasterxml.jackson.core.util.DefaultPrettyPrinter
