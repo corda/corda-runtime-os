@@ -18,6 +18,7 @@ dependencies {
     implementation project(':libs:lifecycle:lifecycle')
     implementation project(':libs:messaging:messaging')
     implementation project(':libs:virtual-node:cpi-upload-endpoints')
+    implementation project(':libs:configuration:configuration-validation')
     api project(':libs:virtual-node:cpi-upload-manager')
     implementation project(':libs:virtual-node:virtual-node-endpoints')
     implementation project(':libs:packaging:packaging-core')

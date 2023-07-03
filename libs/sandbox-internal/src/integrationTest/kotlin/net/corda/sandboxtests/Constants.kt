@@ -27,6 +27,7 @@ internal const val LIB_SINGLETON_SERVICE_FLOW_CPK_2 = "com.example.sandbox.cpk2.
 
 internal const val LIBRARY_QUERY_CLASS = "com.example.sandbox.library.SandboxQuery"
 internal const val LIBRARY_QUERY_IMPL_CLASS = "com.example.sandbox.library.impl.SandboxQueryImpl"
-internal const val SYSTEM_BUNDLE_CLASS = "org.apache.felix.framework.BundleImpl"
+internal const val FORBIDDEN_SYSTEM_BUNDLE_CLASS = "org.apache.felix.framework.BundleImpl"
+internal const val SYSTEM_BUNDLE_CLASS = "org.osgi.framework.Bundle"
 
 internal const val PRIVATE_WRAPPER_RETURN_VALUE = "String returned by WrapperImpl."
