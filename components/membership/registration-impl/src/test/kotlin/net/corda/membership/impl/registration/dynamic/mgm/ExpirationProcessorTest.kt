@@ -1,11 +1,12 @@
 package net.corda.membership.impl.registration.dynamic.mgm
 
+import com.typesafe.config.ConfigException
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.membership.command.registration.RegistrationCommand
 import net.corda.data.membership.command.registration.mgm.DeclineRegistration
 import net.corda.data.membership.common.RegistrationRequestDetails
-import net.corda.data.membership.common.RegistrationStatus.PENDING_MEMBER_VERIFICATION
+import net.corda.data.membership.common.v2.RegistrationStatus.PENDING_MEMBER_VERIFICATION
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -61,6 +62,7 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.time.Instant
 import java.util.UUID
+import java.util.concurrent.TimeUnit
 import kotlin.test.assertTrue
 
 class ExpirationProcessorTest {
@@ -242,6 +244,40 @@ class ExpirationProcessorTest {
 
             verify(publisherFactory).createPublisher(any(), eq(messagingConfig))
             verify(publisher).start()
+        }
+
+        // test required for 5.0 to 5.1 platform upgrade
+        @Test
+        fun `use hard-coded defaults until newest version of config is received via reconciliation`() {
+            val dummyTime = 100L
+            whenever(membershipConfig.getLong(MAX_DURATION_BETWEEN_EXPIRED_REGISTRATION_REQUESTS_POLLS))
+                .thenThrow(ConfigException.Missing("")).thenReturn(dummyTime)
+            whenever(membershipConfig.getLong(EXPIRATION_DATE_FOR_REGISTRATION_REQUESTS))
+                .thenThrow(ConfigException.Missing("")).thenReturn(dummyTime)
+
+            val capturedTimeframes = argumentCaptor<Long>()
+            val capturedEvents = argumentCaptor<(String) -> TimerEvent>()
+
+            handler.firstValue.processEvent(configChangedEvent, coordinator)
+            // new config received
+            handler.firstValue.processEvent(configChangedEvent, coordinator)
+
+            verify(coordinator, times(2)).setTimer(any(), capturedTimeframes.capture(), capturedEvents.capture())
+
+            SoftAssertions.assertSoftly {
+                it.assertThat(capturedTimeframes.firstValue).isLessThanOrEqualTo(TimeUnit.MINUTES.toMillis(180))
+                it.assertThat(capturedTimeframes.secondValue).isLessThanOrEqualTo(TimeUnit.MINUTES.toMillis(dummyTime))
+
+                val firstEvent = capturedEvents.firstValue.invoke("")
+                it.assertThat(firstEvent).isInstanceOf(ExpirationProcessorImpl.DeclineExpiredRegistrationRequests::class.java)
+                val declineEvent = firstEvent as ExpirationProcessorImpl.DeclineExpiredRegistrationRequests
+                it.assertThat(declineEvent.expirationDate).isEqualTo(TimeUnit.MINUTES.toMillis(300))
+
+                val secondEvent = capturedEvents.secondValue.invoke("")
+                it.assertThat(secondEvent).isInstanceOf(ExpirationProcessorImpl.DeclineExpiredRegistrationRequests::class.java)
+                val declineEventAfterUpdate = secondEvent as ExpirationProcessorImpl.DeclineExpiredRegistrationRequests
+                it.assertThat(declineEventAfterUpdate.expirationDate).isEqualTo(TimeUnit.MINUTES.toMillis(dummyTime))
+            }
         }
 
         @Test

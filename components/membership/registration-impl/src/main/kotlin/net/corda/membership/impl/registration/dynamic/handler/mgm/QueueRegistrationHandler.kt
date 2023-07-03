@@ -3,7 +3,7 @@ package net.corda.membership.impl.registration.dynamic.handler.mgm
 import net.corda.data.membership.command.registration.RegistrationCommand
 import net.corda.data.membership.command.registration.mgm.CheckForPendingRegistration
 import net.corda.data.membership.command.registration.mgm.QueueRegistration
-import net.corda.data.membership.common.RegistrationStatus
+import net.corda.data.membership.common.v2.RegistrationStatus
 import net.corda.data.membership.state.RegistrationState
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandler
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandlerResult
@@ -24,6 +24,8 @@ internal class QueueRegistrationHandler(
     }
 
     override val commandType = QueueRegistration::class.java
+
+    override fun getOwnerHoldingId(state: RegistrationState?, command: QueueRegistration) = state?.mgm
 
     override fun invoke(state: RegistrationState?, key: String, command: QueueRegistration): RegistrationHandlerResult {
         val registrationId = command.memberRegistrationRequest.registrationId

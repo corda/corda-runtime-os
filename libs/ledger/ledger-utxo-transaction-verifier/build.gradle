@@ -15,6 +15,7 @@ dependencies {
 
     implementation project(':libs:ledger:ledger-common-data')
     implementation project(':libs:ledger:ledger-utxo-data')
+    implementation project(':libs:metrics')
     implementation project(':libs:utilities')
     implementation project(':libs:membership:membership-common')
     implementation project(':libs:sandbox-types')

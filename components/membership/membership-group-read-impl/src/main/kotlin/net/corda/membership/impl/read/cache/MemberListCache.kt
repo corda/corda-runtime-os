@@ -2,10 +2,12 @@ package net.corda.membership.impl.read.cache
 
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_PENDING
 import net.corda.membership.lib.MemberInfoExtension.Companion.status
+import net.corda.metrics.CordaMetrics
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import org.slf4j.LoggerFactory
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicReference
 
 /**
  * Interface for storing the member lists in-memory including implementation class.
@@ -25,8 +27,8 @@ interface MemberListCache : MemberDataListCache<MemberInfo> {
      */
     class Impl : MemberListCache {
 
-        companion object {
-            val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        private companion object {
+            private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         }
 
         private val cache = ConcurrentHashMap<HoldingIdentity, ReplaceableList<MemberInfo>>()
@@ -35,20 +37,33 @@ interface MemberListCache : MemberDataListCache<MemberInfo> {
         override fun getAll(): Map<HoldingIdentity, List<MemberInfo>> = cache
 
         override fun put(holdingIdentity: HoldingIdentity, data: List<MemberInfo>) {
-            cache.compute(holdingIdentity) { _, value ->
-                (value ?: ReplaceableList())
-                    .addOrReplace(data) { old, new ->
-                        if (new.status == MEMBER_STATUS_PENDING) {
-                            old.status == MEMBER_STATUS_PENDING && old.name == new.name
-                        } else {
-                            old.status != MEMBER_STATUS_PENDING && old.name == new.name
-                        }
-                    }
+            cache.computeIfAbsent(holdingIdentity) { holdingId ->
+                ReplaceableList<MemberInfo>(emptyList()).also { list ->
+                    CordaMetrics.Metric.Membership.MemberListCacheSize(list).builder()
+                        .forVirtualNode(holdingId.shortHash.value)
+                        .withTag(CordaMetrics.Tag.MembershipGroup, holdingId.groupId)
+                        .build()
+                }
+            }.addOrReplace(data) { old, new ->
+                if (new.status == MEMBER_STATUS_PENDING) {
+                    old.status == MEMBER_STATUS_PENDING && old.name == new.name
+                } else {
+                    old.status != MEMBER_STATUS_PENDING && old.name == new.name
+                }
             }
         }
 
         override fun clear() {
             logger.info("Clearing member list cache.")
+            val lookup = CordaMetrics.Metric.Membership.MemberListCacheSize(null).builder()
+            cache.keys.forEach { hid ->
+                // Delete the cache's metrics from the registry.
+                val id = lookup.resetTags()
+                    .forVirtualNode(hid.shortHash.value)
+                    .withTag(CordaMetrics.Tag.MembershipGroup, hid.groupId)
+                    .buildPreFilterId()
+                CordaMetrics.registry.removeByPreFilterId(id)
+            }
             cache.clear()
         }
 
@@ -56,8 +71,11 @@ interface MemberListCache : MemberDataListCache<MemberInfo> {
          * An implementation of [List] which has additional method [addOrReplace]. Calling [addOrReplace] will result in the
          * underlying list being overwritten rather than mutated.
          */
-        private class ReplaceableList<T>(seed: List<T> = emptyList()) : List<T> {
-            private var data: List<T> = seed
+        private class ReplaceableList<T>(seed: List<T>) : List<T> {
+            private val dataRef = AtomicReference(seed)
+            private var data: List<T>
+                set(value) = dataRef.set(value)
+                get() = dataRef.get()
 
             /**
              * Update the underlying list to include the given list of candidates. All candidates in the given list will
@@ -71,14 +89,12 @@ interface MemberListCache : MemberDataListCache<MemberInfo> {
              */
             fun addOrReplace(candidates: List<T>, predicate: (oldEntry: T, newEntry: T) -> Boolean): ReplaceableList<T> {
                 // Add all items which do not match one of the new candidates from the old list to the new list
-                ArrayList(
-                    data.filter { o ->
-                        candidates.all { n -> !predicate(o, n) }
-                    }
-                ).apply {
+                data.filterTo(arrayListOf()) { o ->
+                    candidates.none { n -> predicate(o, n) }
+                }.also { newData ->
                     // Add all new candidates
-                    addAll(candidates)
-                    data = this
+                    newData.addAll(candidates)
+                    data = newData
                 }
                 return this
             }

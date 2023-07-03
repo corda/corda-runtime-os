@@ -26,7 +26,7 @@ import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.data.membership.SignedData
-import net.corda.data.membership.common.RegistrationStatus
+import net.corda.data.membership.common.v2.RegistrationStatus
 import net.corda.data.membership.p2p.MembershipRegistrationRequest
 import net.corda.data.membership.p2p.UnauthenticatedRegistrationRequest
 import net.corda.data.membership.p2p.UnauthenticatedRegistrationRequestHeader
@@ -51,7 +51,7 @@ import net.corda.membership.impl.registration.MemberRole.Companion.toMemberInfo
 import net.corda.membership.impl.registration.dynamic.verifiers.OrderVerifier
 import net.corda.membership.impl.registration.dynamic.verifiers.P2pEndpointVerifier
 import net.corda.membership.impl.registration.dynamic.verifiers.RegistrationContextCustomFieldsVerifier
-import net.corda.membership.lib.MemberInfoExtension.Companion.CUSTOM_KEY_PREFIX
+import net.corda.membership.lib.MemberInfoExtension.Companion.ENDPOINTS
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEYS
 import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEYS_KEY
@@ -447,13 +447,16 @@ class DynamicMemberRegistrationService @Activate constructor(
                     tlsSubject
 
             previousRegistrationContext?.let { previous ->
-                ((newRegistrationContext.entries - previous.entries) + (previous.entries - newRegistrationContext.entries)).filterNot {
-                    it.key.startsWith(CUSTOM_KEY_PREFIX) || it.key == REGISTRATION_ID
+                ((newRegistrationContext.entries - previous.entries) + (previous.entries - newRegistrationContext.entries)).filter {
+                    it.key.startsWith(ENDPOINTS) ||
+                            it.key.startsWith(SESSION_KEYS) ||
+                            it.key.startsWith(LEDGER_KEYS) ||
+                            it.key.startsWith(ROLES_PREFIX) ||
+                            it.key.startsWith("corda.notary")
                 }.apply {
                     require(isEmpty()) {
                         throw InvalidMembershipRegistrationException(
-                            "Registration failed. The registration context is invalid: Only custom fields with the " +
-                                    "'$CUSTOM_KEY_PREFIX' prefix may be updated during re-registration."
+                            "Fields ${this.map { it.key }} cannot be added, removed or updated during re-registration."
                         )
                     }
                 }

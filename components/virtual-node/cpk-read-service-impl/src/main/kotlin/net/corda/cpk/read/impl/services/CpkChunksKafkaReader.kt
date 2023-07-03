@@ -22,8 +22,8 @@ class CpkChunksKafkaReader(
     private val cpkChunksFileManager: CpkChunksFileManager,
     private val onCpkAssembled: (SecureHash, Cpk) -> Unit
 ) : CompactedProcessor<CpkChunkId, Chunk> {
-    companion object {
-        val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+    private companion object {
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     // Assuming [CompactedProcessor.onSnapshot] and [CompactedProcessor.onNext] are not called concurrently.
@@ -80,9 +80,8 @@ class CpkChunksKafkaReader(
     }
 
     private fun onAllChunksReceived(cpkChecksum: SecureHash, chunks: SortedSet<CpkChunkId>) {
-        val cpkPath = cpkChunksFileManager.assembleCpk(cpkChecksum, chunks)
-        cpkPath?.let {
-            val cpk = Files.newInputStream(it).use { inStream ->
+        cpkChunksFileManager.assembleCpk(cpkChecksum, chunks)?.let { cpkPath ->
+            val cpk = Files.newInputStream(cpkPath).use { inStream ->
                 CpkReader.readCpk(inStream, cpkPartsDir)
             }
             onCpkAssembled(cpk.metadata.fileChecksum, cpk)

@@ -26,13 +26,13 @@ import net.corda.messaging.utils.toCordaProducerRecords
 import net.corda.messaging.utils.toRecord
 import net.corda.messaging.utils.tryGetResult
 import net.corda.metrics.CordaMetrics
-import net.corda.schema.Schemas.getStateAndEventDLQTopic
+import net.corda.schema.Schemas.getDLQTopic
 import net.corda.schema.Schemas.getStateAndEventStateTopic
 import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
 import java.time.Clock
-import java.util.*
+import java.util.UUID
 
 @Suppress("LongParameterList")
 internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
@@ -46,7 +46,7 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
     private val clock: Clock = Clock.systemUTC(),
 ) : StateAndEventSubscription<K, S, E> {
 
-    private val log = LoggerFactory.getLogger(config.loggerName)
+    private val log = LoggerFactory.getLogger("${this.javaClass.name}-${config.clientId}")
 
     private var nullableProducer: CordaProducer? = null
     private var nullableStateAndEventConsumer: StateAndEventConsumer<K, S, E>? = null
@@ -80,7 +80,7 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
     private val processorMeter = CordaMetrics.Metric.MessageProcessorTime.builder()
         .withTag(CordaMetrics.Tag.MessagePatternType, MetricsConstants.STATE_AND_EVENT_PATTERN_TYPE)
         .withTag(CordaMetrics.Tag.MessagePatternClientId, config.clientId)
-        .withTag(CordaMetrics.Tag.OperationName, MetricsConstants.ON_NEXT_OPERATION)
+        .withTag(CordaMetrics.Tag.OperationName, MetricsConstants.BATCH_PROCESS_OPERATION)
         .build()
 
     private val batchSizeHistogram = CordaMetrics.Metric.MessageBatchSize.builder()
@@ -227,6 +227,13 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
     private fun tryProcessBatchOfEvents(events: List<CordaConsumerRecord<K, E>>): Boolean {
         val outputRecords = mutableListOf<Record<*, *>>()
         val updatedStates: MutableMap<Int, MutableMap<K, S?>> = mutableMapOf()
+        // Pre-populate the updated states with the current in-memory state.
+        events.forEach {
+            val partitionMap = updatedStates.computeIfAbsent(it.partition) { mutableMapOf() }
+            partitionMap.computeIfAbsent(it.key) { key ->
+                stateAndEventConsumer.getInMemoryStateValue(key)
+            }
+        }
 
         log.debug { "Processing events(keys: ${events.joinToString { it.key.toString() }}, size: ${events.size})" }
         try {
@@ -248,14 +255,14 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
             if (deadLetterRecords.isNotEmpty()) {
                 producer.sendRecords(deadLetterRecords.map {
                     CordaProducerRecord(
-                        getStateAndEventDLQTopic(eventTopic),
+                        getDLQTopic(eventTopic),
                         UUID.randomUUID().toString(),
                         it
                     )
                 })
                 deadLetterRecords.clear()
             }
-            producer.sendRecordOffsetsToTransaction(eventConsumer, events.map { it })
+            producer.sendRecordOffsetsToTransaction(eventConsumer, events)
             producer.commitTransaction()
         }
         log.debug { "Processing events(keys: ${events.joinToString { it.key.toString() }}, size: ${events.size}) complete." }
@@ -271,7 +278,7 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
     ) {
         log.debug { "Processing event: $event" }
         val key = event.key
-        val state = stateAndEventConsumer.getInMemoryStateValue(key)
+        val state = updatedStates[event.partition]?.get(event.key)
         val partitionId = event.partition
         val thisEventUpdates = getUpdatesForEvent(state, event)
         val updatedState = thisEventUpdates?.updatedState
@@ -342,7 +349,7 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         val eventBytes =
             if (eventValue != null) ByteBuffer.wrap(cordaAvroSerializer.serialize(eventValue)) else null
         return Record(
-            getStateAndEventDLQTopic(eventTopic), event.key,
+            getDLQTopic(eventTopic), event.key,
             StateAndEventDeadLetterRecord(clock.instant(), keyBytes, stateBytes, eventBytes)
         )
     }

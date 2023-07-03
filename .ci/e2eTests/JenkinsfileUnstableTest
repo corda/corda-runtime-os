@@ -2,9 +2,9 @@
 
 endToEndPipeline(
     assembleAndCompile: true,
-    dailyBuildCron: 'H 03 * * *',
+    dailyBuildCron: '0 */3 * * *',
     multiCluster: true,
     gradleTestTargetsToExecute: ['smokeTest', 'e2eTest'],
     usePackagedCordaHelmChart: false,
-    gradleAdditionalArgs : '-PrunUnstableTests'
+    gradleAdditionalArgs : '-PrunUnstableTests -Dscan.tag.UnstableTests'
 )

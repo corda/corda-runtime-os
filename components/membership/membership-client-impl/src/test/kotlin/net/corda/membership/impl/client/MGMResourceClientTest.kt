@@ -18,7 +18,7 @@ import net.corda.data.membership.command.registration.mgm.DeclineRegistration
 import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.ApprovalRuleType
 import net.corda.data.membership.common.RegistrationRequestDetails
-import net.corda.data.membership.common.RegistrationStatus
+import net.corda.data.membership.common.v2.RegistrationStatus
 import net.corda.data.membership.preauth.PreAuthToken
 import net.corda.data.membership.preauth.PreAuthTokenStatus
 import net.corda.data.membership.rpc.request.MGMGroupPolicyRequest
@@ -1618,7 +1618,7 @@ class MGMResourceClientTest {
             val mockMemberInfo = mock<PersistentMemberInfo>()
             val serializedGroupParameters = "group-params".toByteArray()
             val groupParameters = mock<InternalGroupParameters> {
-                on { bytes } doReturn serializedGroupParameters
+                on { groupParameters } doReturn serializedGroupParameters
                 on { epoch } doReturn groupParametersEpoch
             }
             whenever(membershipPersistenceClient.suspendMember(eq(holdingIdentity), eq(memberName), any(), any()))
@@ -1820,7 +1820,7 @@ class MGMResourceClientTest {
             val mockMemberInfo = mock<PersistentMemberInfo>()
             val serializedGroupParameters = "group-params".toByteArray()
             val groupParameters = mock<InternalGroupParameters> {
-                on { bytes } doReturn serializedGroupParameters
+                on { groupParameters } doReturn serializedGroupParameters
                 on { epoch } doReturn groupParametersEpoch
             }
             whenever(membershipPersistenceClient.activateMember(eq(holdingIdentity), eq(memberName), any(), any()))

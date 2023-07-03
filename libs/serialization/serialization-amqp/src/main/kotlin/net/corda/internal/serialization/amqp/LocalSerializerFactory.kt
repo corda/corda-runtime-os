@@ -33,7 +33,7 @@ import javax.annotation.concurrent.ThreadSafe
  *
  * Unlike the [RemoteSerializerFactory], which deals with types for which we have [Schema] information and serialised data,
  * the [LocalSerializerFactory] deals with types for which we have a Java [Type] (and perhaps some in-memory data, from which
- * we can discover the actual [Class] we are working with.
+ * we can discover the actual [Class] we are working with).
  */
 interface LocalSerializerFactory {
 
@@ -137,6 +137,14 @@ class DefaultLocalSerializerFactory(
         }
     }
 
+    /**
+     * Registers [serializer] to use when actual type in the data differs
+     * to the declared type, and we must transform it manually.
+     */
+    fun registerForCasting(serializer: CastingSerializer<Any, Any>) {
+        serializersByActualAndDeclaredType.putIfAbsent(ActualAndDeclaredType(serializer.actualType, serializer.type), serializer)
+    }
+
     override fun createDescriptor(typeInformation: LocalTypeInformation): Symbol =
             Symbol.valueOf("$DESCRIPTOR_DOMAIN:${fingerPrinter.fingerprint(typeInformation)}")
 
@@ -202,7 +210,7 @@ class DefaultLocalSerializerFactory(
 
             // can be useful to enable but will be *extremely* chatty if you do
             logger.trace { "Get Serializer for $declaredClass ${declaredGenericType.typeName}" }
-            customSerializerRegistry.findCustomSerializer(declaredClass, declaredGenericType)?.apply { return@get this }
+            customSerializerRegistry.findCustomSerializer(declaredClass, declaredGenericType)?.apply { return@getOrElse this }
 
             when (localTypeInformation) {
                 is LocalTypeInformation.ACollection -> makeDeclaredCollection(localTypeInformation)
@@ -260,14 +268,13 @@ class DefaultLocalSerializerFactory(
         return serializersByActualAndDeclaredType.getOrPut(actualAndDeclaredType) {
             // can be useful to enable but will be *extremely* chatty if you do
             logger.trace { "Get Serializer for $actualClass ${declaredType.typeName}" }
-            customSerializerRegistry.findCustomSerializer(actualClass, declaredType)?.apply { return@get this }
+            customSerializerRegistry.findCustomSerializer(actualClass, declaredType)?.apply { return@getOrPut this }
 
             val declaredClass = declaredType.asClass()
             val actualType: Type = inferTypeVariables(actualClass, declaredClass, declaredType, sandboxGroup) ?: declaredType
             val declaredTypeInformation = typeModel.inspect(declaredType)
-            val actualTypeInformation = typeModel.inspect(actualType)
 
-            when (actualTypeInformation) {
+            when (val actualTypeInformation = typeModel.inspect(actualType)) {
                 is LocalTypeInformation.ACollection -> makeActualCollection(actualClass, declaredTypeInformation as? LocalTypeInformation.ACollection
                         ?: actualTypeInformation)
                 is LocalTypeInformation.AMap -> makeActualMap(declaredType, actualClass, declaredTypeInformation as? LocalTypeInformation.AMap

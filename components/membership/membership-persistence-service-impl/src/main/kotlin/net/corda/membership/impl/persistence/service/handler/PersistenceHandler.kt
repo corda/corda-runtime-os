@@ -1,26 +1,33 @@
 package net.corda.membership.impl.persistence.service.handler
 
+import io.micrometer.core.instrument.Timer
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.core.ShortHash
 import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.db.connection.manager.DbConnectionManager
+import net.corda.db.connection.manager.VirtualNodeDbType
+import net.corda.db.core.DbPrivilege
 import net.corda.db.schema.CordaDb
 import net.corda.libs.platform.PlatformInfoProvider
+import net.corda.membership.groupparams.writer.service.GroupParametersWriterService
+import net.corda.membership.lib.GroupParametersFactory
 import net.corda.membership.lib.MemberInfoFactory
-import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.membership.mtls.allowed.list.service.AllowedCertificatesReaderWriterService
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.utils.transaction
 import net.corda.utilities.time.Clock
-import net.corda.virtualnode.VirtualNodeInfo
-import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.slf4j.LoggerFactory
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 
 internal interface PersistenceHandler<REQUEST, RESPONSE> {
+    /**
+     * Persistence operation identifier for logging and metrics purposes.
+     */
+    val operation: Class<REQUEST>
+
     fun invoke(context: MembershipRequestContext, request: REQUEST): RESPONSE?
 }
 
@@ -29,12 +36,12 @@ internal abstract class BasePersistenceHandler<REQUEST, RESPONSE>(
 ) : PersistenceHandler<REQUEST, RESPONSE> {
 
     companion object {
-        val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        internal val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     private val dbConnectionManager get() = persistenceHandlerServices.dbConnectionManager
     private val jpaEntitiesRegistry get() = persistenceHandlerServices.jpaEntitiesRegistry
-    private val virtualNodeInfoReadService get() = persistenceHandlerServices.virtualNodeInfoReadService
+    private val transactionTimer get() = persistenceHandlerServices.transactionTimerFactory(operation.simpleName)
     val clock get() = persistenceHandlerServices.clock
     val cordaAvroSerializationFactory get() = persistenceHandlerServices.cordaAvroSerializationFactory
     val memberInfoFactory get() = persistenceHandlerServices.memberInfoFactory
@@ -42,22 +49,19 @@ internal abstract class BasePersistenceHandler<REQUEST, RESPONSE>(
     val platformInfoProvider get() = persistenceHandlerServices.platformInfoProvider
     val allowedCertificatesReaderWriterService get() = persistenceHandlerServices.allowedCertificatesReaderWriterService
 
-    fun <R> transaction(holdingIdentityShortHash: ShortHash, block: (EntityManager) -> R): R {
-        val virtualNodeInfo = virtualNodeInfoReadService.getByHoldingIdentityShortHash(holdingIdentityShortHash)
-            ?: throw MembershipPersistenceException(
-                "Virtual node info can't be retrieved for " +
-                        "holding identity ID $holdingIdentityShortHash"
-            )
-        val factory = getEntityManagerFactory(virtualNodeInfo)
-        return try {
-            factory.transaction(block)
-        } finally {
-            factory.close()
-        }
-    }
+    val groupParametersWriterService get() = persistenceHandlerServices.groupParametersWriterService
+    val groupParametersFactory get() = persistenceHandlerServices.groupParametersFactory
 
+    fun <R> transaction(holdingIdentityShortHash: ShortHash, block: (EntityManager) -> R): R {
+        val factory = getEntityManagerFactory(holdingIdentityShortHash)
+        return transactionTimer.recordCallable {
+            factory.transaction(block)
+        }!!
+    }
     fun <R> transaction(block: (EntityManager) -> R): R {
-        return dbConnectionManager.getClusterEntityManagerFactory().transaction(block)
+        return dbConnectionManager.getClusterEntityManagerFactory().let {
+            transactionTimer.recordCallable { it.transaction(block) }!!
+        }
     }
 
     fun retrieveSignatureSpec(signatureSpec: String) = if (signatureSpec.isEmpty()) {
@@ -66,9 +70,10 @@ internal abstract class BasePersistenceHandler<REQUEST, RESPONSE>(
         CryptoSignatureSpec(signatureSpec, null, null)
     }
 
-    private fun getEntityManagerFactory(info: VirtualNodeInfo): EntityManagerFactory {
-        return dbConnectionManager.createEntityManagerFactory(
-            connectionId = info.vaultDmlConnectionId,
+    private fun getEntityManagerFactory(holdingIdentityShortHash: ShortHash): EntityManagerFactory {
+        return dbConnectionManager.getOrCreateEntityManagerFactory(
+            name = VirtualNodeDbType.VAULT.getConnectionName(holdingIdentityShortHash),
+            privilege = DbPrivilege.DML,
             entitiesSet = jpaEntitiesRegistry.get(CordaDb.Vault.persistenceUnitName)
                 ?: throw java.lang.IllegalStateException(
                     "persistenceUnitName ${CordaDb.Vault.persistenceUnitName} is not registered."
@@ -83,8 +88,10 @@ internal data class PersistenceHandlerServices(
     val jpaEntitiesRegistry: JpaEntitiesRegistry,
     val memberInfoFactory: MemberInfoFactory,
     val cordaAvroSerializationFactory: CordaAvroSerializationFactory,
-    val virtualNodeInfoReadService: VirtualNodeInfoReadService,
     val keyEncodingService: KeyEncodingService,
     val platformInfoProvider: PlatformInfoProvider,
     val allowedCertificatesReaderWriterService: AllowedCertificatesReaderWriterService,
+    val groupParametersWriterService: GroupParametersWriterService,
+    val groupParametersFactory: GroupParametersFactory,
+    val transactionTimerFactory: (String) -> Timer
 )

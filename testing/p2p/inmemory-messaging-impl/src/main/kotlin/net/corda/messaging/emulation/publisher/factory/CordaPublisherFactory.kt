@@ -14,7 +14,7 @@ import net.corda.messaging.emulation.topic.service.TopicService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import java.util.concurrent.atomic.AtomicInteger
+import java.util.UUID
 
 /**
  * In-memory implementation for Publisher Factory.
@@ -29,13 +29,6 @@ class CordaPublisherFactory @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
 ) : PublisherFactory {
-
-    // Used to ensure that each rpc sender has a unique client.id
-    private val clientIdCounter = AtomicInteger()
-
-    companion object {
-        const val PUBLISHER_CLIENT_ID = "clientId"
-    }
 
     override fun createPublisher(
         publisherConfig: PublisherConfig,
@@ -52,7 +45,7 @@ class CordaPublisherFactory @Activate constructor(
             rpcConfig,
             rpcTopicService,
             lifecycleCoordinatorFactory,
-            clientIdCounter.getAndIncrement().toString()
+            UUID.randomUUID().toString()
         )
     }
 }

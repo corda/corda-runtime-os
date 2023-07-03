@@ -4,6 +4,8 @@ import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.state.checkpoint.Checkpoint
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.fiber.cache.FlowFiberCache
+import net.corda.flow.metrics.FlowIORequestTypeConverter
+import net.corda.flow.metrics.FlowMetricsFactory
 import net.corda.flow.pipeline.FlowEventPipeline
 import net.corda.flow.pipeline.FlowGlobalPostProcessor
 import net.corda.flow.pipeline.events.FlowEventContext
@@ -15,6 +17,7 @@ import net.corda.flow.pipeline.impl.FlowEventPipelineImpl
 import net.corda.flow.pipeline.runner.FlowRunner
 import net.corda.flow.state.impl.FlowCheckpointFactory
 import net.corda.libs.configuration.SmartConfig
+import net.corda.tracing.TraceContext
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -30,6 +33,8 @@ class FlowEventPipelineFactoryImpl(
     private val flowCheckpointFactory: FlowCheckpointFactory,
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
     private val flowFiberCache: FlowFiberCache,
+    private val flowMetricsFactory: FlowMetricsFactory,
+    private val flowIORequestTypeConverter: FlowIORequestTypeConverter,
     flowEventHandlers: List<FlowEventHandler<out Any>>,
     flowWaitingForHandlers: List<FlowWaitingForHandler<out Any>>,
     flowRequestHandlers: List<FlowRequestHandler<out FlowIORequest<*>>>
@@ -71,12 +76,18 @@ class FlowEventPipelineFactoryImpl(
         virtualNodeInfoReadService: VirtualNodeInfoReadService,
         @Reference(service = FlowFiberCache::class)
         flowFiberCache: FlowFiberCache,
+        @Reference(service = FlowMetricsFactory::class)
+        flowMetricsFactory: FlowMetricsFactory,
+        @Reference(service = FlowIORequestTypeConverter::class)
+        flowIORequestTypeConverter: FlowIORequestTypeConverter
     ) : this(
         flowRunner,
         flowGlobalPostProcessor,
         flowCheckpointFactory,
         virtualNodeInfoReadService,
         flowFiberCache,
+        flowMetricsFactory,
+        flowIORequestTypeConverter,
         mutableListOf(),
         mutableListOf(),
         mutableListOf()
@@ -86,16 +97,25 @@ class FlowEventPipelineFactoryImpl(
         checkpoint: Checkpoint?,
         event: FlowEvent,
         config: SmartConfig,
-        mdcProperties: Map<String, String>)
-    : FlowEventPipeline {
+        mdcProperties: Map<String, String>,
+        traceContext:TraceContext,
+        eventRecordTimestamp: Long
+    ): FlowEventPipeline {
+        val flowCheckpoint = flowCheckpointFactory.create(event.flowId, checkpoint, config)
+
+        val metrics = flowMetricsFactory.create(eventRecordTimestamp, flowCheckpoint)
+
         val context = FlowEventContext<Any>(
-            checkpoint = flowCheckpointFactory.create(event.flowId, checkpoint, config),
+            checkpoint = flowCheckpoint,
             inputEvent = event,
             inputEventPayload = event.payload,
             config = config,
             outputRecords = emptyList(),
-            mdcProperties = mdcProperties
+            mdcProperties = mdcProperties,
+            flowMetrics = metrics,
+            flowTraceContext = traceContext
         )
+
         return FlowEventPipelineImpl(
             flowEventHandlerMap,
             flowWaitingForHandlerMap,
@@ -104,7 +124,8 @@ class FlowEventPipelineFactoryImpl(
             flowGlobalPostProcessor,
             context,
             virtualNodeInfoReadService,
-            flowFiberCache
+            flowFiberCache,
+            flowIORequestTypeConverter
         )
     }
 }

@@ -17,7 +17,7 @@ import net.corda.data.membership.StaticNetworkInfo
 import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.ApprovalRuleType
 import net.corda.data.membership.common.ApprovalRuleType.PREAUTH
-import net.corda.data.membership.common.RegistrationStatus
+import net.corda.data.membership.common.v2.RegistrationStatus
 import net.corda.data.membership.db.request.MembershipPersistenceRequest
 import net.corda.data.membership.db.request.command.ActivateMember
 import net.corda.data.membership.db.request.command.AddNotaryToGroupParameters
@@ -634,9 +634,9 @@ class MembershipPersistenceClientImplTest {
         fun `persistGroupParameters returns the correct epoch`() {
             val avroGroupParameters = mock<AvroGroupParameters>()
             val signedGroupParameters = mock<SignedGroupParameters> {
-                on { bytes } doReturn serialisedParams
-                on { signature } doReturn mockSignatureWithKey
-                on { signatureSpec } doReturn mockSignatureSpec
+                on { groupParameters } doReturn serialisedParams
+                on { mgmSignature } doReturn mockSignatureWithKey
+                on { mgmSignatureSpec } doReturn mockSignatureSpec
             }
             postConfigChangedEvent()
             whenever(groupParametersFactory.create(avroGroupParameters)).doReturn(signedGroupParameters)
@@ -653,9 +653,9 @@ class MembershipPersistenceClientImplTest {
         @Test
         fun `persistGroupParameters returns error in case of failure`() {
             val groupParameters = mock<SignedGroupParameters> {
-                on { bytes } doReturn serialisedParams
-                on { signature } doReturn mockSignatureWithKey
-                on { signatureSpec } doReturn mockSignatureSpec
+                on { groupParameters } doReturn serialisedParams
+                on { mgmSignature } doReturn mockSignatureWithKey
+                on { mgmSignatureSpec } doReturn mockSignatureSpec
             }
             postConfigChangedEvent()
             mockPersistenceResponse(
@@ -671,9 +671,9 @@ class MembershipPersistenceClientImplTest {
         @Test
         fun `persistGroupParameters sends the correct data`() {
             val groupParameters = mock<SignedGroupParameters> {
-                on { bytes } doReturn serialisedParams
-                on { signature } doReturn mockSignatureWithKey
-                on { signatureSpec } doReturn mockSignatureSpec
+                on { groupParameters } doReturn serialisedParams
+                on { mgmSignature } doReturn mockSignatureWithKey
+                on { mgmSignatureSpec } doReturn mockSignatureSpec
             }
             postConfigChangedEvent()
             val argument = argumentCaptor<MembershipPersistenceRequest>()

@@ -7,8 +7,7 @@ import net.corda.data.membership.command.registration.mgm.DeclineRegistration
 import net.corda.data.membership.command.registration.mgm.StartRegistration
 import net.corda.data.membership.command.registration.mgm.VerifyMember
 import net.corda.data.membership.common.RegistrationRequestDetails
-import net.corda.data.membership.common.RegistrationStatus
-import net.corda.data.membership.p2p.SetOwnRegistrationStatus
+import net.corda.data.membership.common.v2.RegistrationStatus
 import net.corda.data.membership.state.RegistrationState
 import net.corda.data.p2p.app.MembershipStatusFilter.PENDING
 import net.corda.layeredpropertymap.toAvro
@@ -18,13 +17,15 @@ import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandle
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandlerResult
 import net.corda.membership.impl.registration.dynamic.verifiers.RegistrationContextCustomFieldsVerifier
 import net.corda.membership.lib.MemberInfoExtension.Companion.CREATION_TIME
-import net.corda.membership.lib.MemberInfoExtension.Companion.CUSTOM_KEY_PREFIX
+import net.corda.membership.lib.MemberInfoExtension.Companion.ENDPOINTS
+import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEYS
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_PENDING
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_SUSPENDED
 import net.corda.membership.lib.MemberInfoExtension.Companion.MODIFIED_TIME
-import net.corda.membership.lib.MemberInfoExtension.Companion.REGISTRATION_ID
+import net.corda.membership.lib.MemberInfoExtension.Companion.ROLES_PREFIX
 import net.corda.membership.lib.MemberInfoExtension.Companion.SERIAL
+import net.corda.membership.lib.MemberInfoExtension.Companion.SESSION_KEYS
 import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.lib.MemberInfoExtension.Companion.endpoints
 import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
@@ -34,6 +35,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.SignedMemberInfo
 import net.corda.membership.lib.registration.RegistrationRequestHelpers.getPreAuthToken
+import net.corda.membership.lib.VersionedMessageBuilder.retrieveRegistrationStatusMessage
 import net.corda.membership.lib.toMap
 import net.corda.membership.p2p.helpers.P2pRecordsFactory
 import net.corda.membership.persistence.client.MembershipPersistenceClient
@@ -77,6 +79,7 @@ internal class StartRegistrationHandler(
 
     override val commandType = StartRegistration::class.java
 
+    @Suppress("LongMethod")
     override fun invoke(state: RegistrationState?, key: String, command: StartRegistration): RegistrationHandlerResult {
         if (state == null) throw MissingRegistrationStateException
         val (registrationId, mgmHoldingId, pendingMemberHoldingId) = Triple(
@@ -101,7 +104,9 @@ internal class StartRegistrationHandler(
 
             logger.info("Updating the status of the registration request.")
             membershipPersistenceClient.setRegistrationRequestStatus(
-                mgmHoldingId, registrationId, RegistrationStatus.STARTED_PROCESSING_BY_MGM
+                mgmHoldingId,
+                registrationId,
+                RegistrationStatus.STARTED_PROCESSING_BY_MGM
             ).execute().also {
                 require(it as? MembershipPersistenceResult.Failure == null) {
                     "Failed to update the status of the registration request. Reason: " +
@@ -156,10 +161,16 @@ internal class StartRegistrationHandler(
                 val previousContext = previous.memberProvidedContext.toMap()
                 val pendingContext = pendingMemberInfo.memberProvidedContext.toMap()
                 val diff = ((pendingContext.entries - previousContext.entries) + (previousContext.entries - pendingContext.entries))
-                    .filterNot { it.key.startsWith(CUSTOM_KEY_PREFIX) || it.key == REGISTRATION_ID }
+                    .filter {
+                        it.key.startsWith(ENDPOINTS) ||
+                                it.key.startsWith(SESSION_KEYS) ||
+                                it.key.startsWith(LEDGER_KEYS) ||
+                                it.key.startsWith(ROLES_PREFIX) ||
+                                it.key.startsWith("corda.notary")
+                    }
                 validateRegistrationRequest(
                     diff.isEmpty()
-                ) { "Only custom fields with the '$CUSTOM_KEY_PREFIX' prefix may be updated during re-registration." }
+                ) { "Fields ${diff.map { it.key }} cannot be added, removed or updated during re-registration." }
             }
 
             // The group ID matches the group ID of the MGM
@@ -190,17 +201,21 @@ internal class StartRegistrationHandler(
                 }
             }
 
-            val persistMemberStatusMessage = p2pRecordsFactory.createAuthenticatedMessageRecord(
-                source = mgmHoldingId.toAvro(),
-                destination = pendingMemberHoldingId.toAvro(),
-                content = SetOwnRegistrationStatus(
-                    registrationRequest.registrationId,
-                    RegistrationStatus.RECEIVED_BY_MGM,
-                ),
-                minutesToWait = 5,
-                filter = PENDING
+            val statusUpdateMessage = retrieveRegistrationStatusMessage(
+                pendingMemberInfo.platformVersion,
+                registrationRequest.registrationId,
+                RegistrationStatus.RECEIVED_BY_MGM.name,
             )
-            outputRecords.add(persistMemberStatusMessage)
+            if (statusUpdateMessage != null) {
+                val record = p2pRecordsFactory.createAuthenticatedMessageRecord(
+                    source = mgmHoldingId.toAvro(),
+                    destination = pendingMemberHoldingId.toAvro(),
+                    content = statusUpdateMessage,
+                    minutesToWait = 5,
+                    filter = PENDING
+                )
+                outputRecords.add(record)
+            }
 
             logger.info("Successful initial validation of registration request with ID ${registrationRequest.registrationId}")
             VerifyMember()
@@ -218,6 +233,11 @@ internal class StartRegistrationHandler(
             outputRecords
         )
     }
+
+    override fun getOwnerHoldingId(
+        state: RegistrationState?,
+        command: StartRegistration
+    ): net.corda.data.identity.HoldingIdentity? = state?.registeringMember
 
     private class InvalidRegistrationRequestException(reason: String) : CordaRuntimeException(reason)
 

@@ -6,7 +6,7 @@ import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.membership.PersistentMemberInfo
-import net.corda.data.membership.common.RegistrationStatus
+import net.corda.data.membership.common.v2.RegistrationStatus
 import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.data.membership.db.request.command.UpdateMemberAndRegistrationRequestToApproved
 import net.corda.data.membership.db.response.query.UpdateMemberAndRegistrationRequestResponse
@@ -25,9 +25,10 @@ import net.corda.virtualnode.toCorda
 internal class UpdateMemberAndRegistrationRequestToApprovedHandler(
     persistenceHandlerServices: PersistenceHandlerServices
 ) : BasePersistenceHandler<
-        UpdateMemberAndRegistrationRequestToApproved,
-        UpdateMemberAndRegistrationRequestResponse
-        >(persistenceHandlerServices) {
+    UpdateMemberAndRegistrationRequestToApproved,
+    UpdateMemberAndRegistrationRequestResponse
+    >(persistenceHandlerServices) {
+    override val operation = UpdateMemberAndRegistrationRequestToApproved::class.java
 
     private val keyValuePairListDeserializer: CordaAvroDeserializer<KeyValuePairList> by lazy {
         cordaAvroSerializationFactory.createAvroDeserializer(
