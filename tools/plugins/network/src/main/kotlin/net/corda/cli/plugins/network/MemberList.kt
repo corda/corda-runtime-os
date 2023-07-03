@@ -7,7 +7,8 @@ import net.corda.membership.rest.v1.MemberLookupRestResource
 import net.corda.membership.rest.v1.types.response.RestMemberInfo
 import picocli.CommandLine
 
-class NetworkPlugin : RestCommand(), CordaCliPlugin {
+@CommandLine.Command(name = "members", description = ["List members"])
+class MemberList : RestCommand(), CordaCliPlugin {
 
     @Suppress("LongParameterList")
     @CommandLine.Command(

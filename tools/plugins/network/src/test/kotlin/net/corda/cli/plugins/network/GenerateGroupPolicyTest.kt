@@ -1,4 +1,4 @@
-package net.corda.cli.plugins.mgm
+package net.corda.cli.plugins.network
 
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper

@@ -24,10 +24,24 @@ class NetworkPluginWrapper : Plugin() {
     @CommandLine.Command(
         name = "network",
         subcommands = [
-            OnBoard::class,
-            NetworkPlugin::class,],
+            MemberList::class,
+            GenerateGroupPolicy::class,
+            OnBoard::class
+        ],
         mixinStandardHelpOptions = true,
         description = ["Plugin for interacting with a network."]
     )
     class NetworkPlugin: CordaCliPlugin
+
+    @Extension
+    @CommandLine.Command(
+        name = "mgm",
+        subcommands = [
+            GenerateGroupPolicy::class,
+        ],
+        mixinStandardHelpOptions = true,
+        description = ["Plugin for membership operations."]
+    )
+    class MgmPlugin : CordaCliPlugin
 }
+
