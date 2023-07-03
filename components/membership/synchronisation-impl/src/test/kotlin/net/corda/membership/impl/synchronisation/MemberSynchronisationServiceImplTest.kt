@@ -1,11 +1,11 @@
 package net.corda.membership.impl.synchronisation
 
 import com.typesafe.config.ConfigFactory
-import net.corda.avro.serialization.CordaAvroDeserializer
-import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.core.toCorda
+import net.corda.avro.serialization.CordaAvroDeserializer
+import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.SecureHash
@@ -23,8 +23,19 @@ import net.corda.data.p2p.app.AppMessage
 import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
-import net.corda.lifecycle.*
+import net.corda.lifecycle.LifecycleCoordinator
+import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleCoordinatorName
+import net.corda.lifecycle.LifecycleEventHandler
+import net.corda.lifecycle.LifecycleStatus
+import net.corda.lifecycle.RegistrationHandle
+import net.corda.lifecycle.RegistrationStatusChangeEvent
+import net.corda.lifecycle.Resource
+import net.corda.lifecycle.StartEvent
+import net.corda.lifecycle.StopEvent
+import net.corda.lifecycle.TimerEvent
 import net.corda.membership.lib.GroupParametersFactory
+import net.corda.membership.lib.MemberInfoExtension.Companion.sessionInitiationKeys
 import net.corda.membership.lib.InternalGroupParameters
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.IS_MGM
@@ -66,11 +77,24 @@ import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.SoftAssertions.assertSoftly
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.*
+import org.mockito.kotlin.KArgumentCaptor
+import org.mockito.kotlin.any
+import org.mockito.kotlin.argThat
+import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.doAnswer
+import org.mockito.kotlin.doNothing
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.eq
+import org.mockito.kotlin.isNull
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
+import org.mockito.kotlin.times
+import org.mockito.kotlin.verify
+import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 import java.security.PublicKey
 import java.time.Instant
-import java.util.*
+import java.util.SortedMap
 import java.util.concurrent.CompletableFuture
 import kotlin.test.assertFailsWith
 import net.corda.data.membership.SignedGroupParameters as AvroGroupParameters
@@ -369,7 +393,11 @@ class MemberSynchronisationServiceImplTest {
 
     @Test
     fun `failed member signature verification will ask for sync again`() {
-        whenever(verifier.verify(eq(memberSignature), any(), any())).thenThrow(CordaRuntimeException("Mock failure"))
+        whenever(verifier.verify(
+            eq(memberInfo.sessionInitiationKeys),
+            eq(memberSignature),
+            any(),
+            any())).thenThrow(CordaRuntimeException("Mock failure"))
         postConfigChangedEvent()
         synchronisationService.start()
 
@@ -380,7 +408,11 @@ class MemberSynchronisationServiceImplTest {
 
     @Test
     fun `failed MGM signature verification will ask for sync again`() {
-        whenever(verifier.verify(eq(mgmSignature), any(), any())).thenThrow(CordaRuntimeException("Mock failure"))
+        whenever(verifier.verify(
+            eq(mgmInfo.sessionInitiationKeys),
+            eq(mgmSignature),
+            any(),
+            any())).thenThrow(CordaRuntimeException("Mock failure"))
         postConfigChangedEvent()
         synchronisationService.start()
 
@@ -391,7 +423,11 @@ class MemberSynchronisationServiceImplTest {
 
     @Test
     fun `failed MGM signature verification and create sync request will not return anything`() {
-        whenever(verifier.verify(eq(mgmSignature), any(), any())).thenThrow(CordaRuntimeException("Mock failure"))
+        whenever(verifier.verify(
+            eq(mgmInfo.sessionInitiationKeys),
+            eq(mgmSignature),
+            any(),
+            any())).thenThrow(CordaRuntimeException("Mock failure"))
         whenever(groupReader.lookup(any(), any())).doReturn(null)
         postConfigChangedEvent()
         synchronisationService.start()
@@ -405,7 +441,11 @@ class MemberSynchronisationServiceImplTest {
     fun `failed MGM signature verification and create sync request will schedule another request`() {
         val captureDelay = argumentCaptor<Long>()
         doNothing().whenever(coordinator).setTimer(any(), captureDelay.capture(), any())
-        whenever(verifier.verify(eq(mgmSignature), any(), any())).thenThrow(CordaRuntimeException("Mock failure"))
+        whenever(verifier.verify(
+            eq(mgmInfo.sessionInitiationKeys),
+            eq(mgmSignature),
+            any(),
+            any())).thenThrow(CordaRuntimeException("Mock failure"))
         whenever(groupReader.lookup(any(), any())).doReturn(null)
         postConfigChangedEvent()
         synchronisationService.start()
@@ -440,8 +480,8 @@ class MemberSynchronisationServiceImplTest {
 
         synchronisationService.processMembershipUpdates(updates)
 
-        verify(verifier).verify(memberSignature, memberSignatureSpec, MEMBER_CONTEXT_BYTES)
-        verify(verifier).verify(mgmSignature, mgmSignatureSpec, byteArrayOf(1, 2, 3))
+        verify(verifier).verify(memberInfo.sessionInitiationKeys, memberSignature, memberSignatureSpec, MEMBER_CONTEXT_BYTES)
+        verify(verifier).verify(mgmInfo.sessionInitiationKeys, mgmSignature, mgmSignatureSpec, byteArrayOf(1, 2, 3))
     }
 
     @Test

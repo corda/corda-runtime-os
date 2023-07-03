@@ -46,8 +46,11 @@ class VerifierTest {
     @Test
     fun `verify without key call the service with the correct arguments`() {
         val data = byteArrayOf(44, 1)
+        val publicKeys = (1..3).map {
+            mock<PublicKey>()
+        }
 
-        verifier.verify(signature, signatureSpec, data)
+        verifier.verify(publicKeys + publicKey, signature, signatureSpec, data)
 
         verify(signatureVerificationService).verify(
             eq(data),
@@ -78,6 +81,9 @@ class VerifierTest {
     @Test
     fun `verify without key fails if spec can not be found`() {
         val data = byteArrayOf(44, 1)
+        val publicKeys = (1..3).map {
+            mock<PublicKey>()
+        }
         val signature = CryptoSignatureWithKey(
             signature.publicKey,
             signature.bytes
@@ -85,7 +91,7 @@ class VerifierTest {
         val badSignatureSpec = CryptoSignatureSpec(null, null, null)
 
         assertThrows<CordaRuntimeException> {
-            verifier.verify(signature, badSignatureSpec, data)
+            verifier.verify(publicKeys + publicKey, signature, badSignatureSpec, data)
         }
     }
 
@@ -105,6 +111,9 @@ class VerifierTest {
 
     @Test
     fun `verify without key fails if signature verification service fails`() {
+        val publicKeys = (1..3).map {
+            mock<PublicKey>()
+        }
         val data = byteArrayOf(44, 1)
         whenever(
             signatureVerificationService.verify(
@@ -116,7 +125,7 @@ class VerifierTest {
         ).doThrow(CryptoSignatureException("Not verified"))
 
         assertThrows<CryptoSignatureException> {
-            verifier.verify(signature, signatureSpec, data)
+            verifier.verify(publicKeys + publicKey, signature, signatureSpec, data)
         }
     }
 
