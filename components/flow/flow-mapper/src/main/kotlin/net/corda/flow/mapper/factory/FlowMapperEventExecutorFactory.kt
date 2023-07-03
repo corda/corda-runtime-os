@@ -22,7 +22,6 @@ interface FlowMapperEventExecutorFactory {
         flowMapperEvent: FlowMapperEvent,
         state: FlowMapperState?,
         flowConfig: SmartConfig,
-        instant: Instant,
-        recordFactory: RecordFactory
+        instant: Instant = Instant.now()
     ): FlowMapperEventExecutor
 }

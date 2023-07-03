@@ -5,7 +5,6 @@ import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.state.mapper.FlowMapperState
 import net.corda.flow.mapper.factory.FlowMapperEventExecutorFactory
-import net.corda.flow.mapper.factory.RecordFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
@@ -28,9 +27,7 @@ import java.time.Instant
 class FlowMapperMessageProcessor(
     private val flowMapperEventExecutorFactory: FlowMapperEventExecutorFactory,
     private val flowConfig: SmartConfig,
-    private val instant: Instant,
-    private val recordFactory: RecordFactory
-) : StateAndEventProcessor<String, FlowMapperState, FlowMapperEvent> {
+    ) : StateAndEventProcessor<String, FlowMapperState, FlowMapperEvent> {
 
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -60,7 +57,7 @@ class FlowMapperMessageProcessor(
         return traceStateAndEventExecution(event, "Flow Mapper Event - $eventType") {
             eventProcessingTimer.recordCallable {
                 if (!isExpiredSessionEvent(value)) {
-                    val executor = flowMapperEventExecutorFactory.create(key, value, state, flowConfig, instant, recordFactory)
+                    val executor = flowMapperEventExecutorFactory.create(key, value, state, flowConfig)
                     val result = executor.execute()
                     StateAndEventProcessor.Response(result.flowMapperState, result.outputEvents)
                 } else {
