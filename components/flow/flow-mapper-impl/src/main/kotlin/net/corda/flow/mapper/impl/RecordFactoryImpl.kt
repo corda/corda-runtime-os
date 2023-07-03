@@ -1,14 +1,12 @@
 package net.corda.flow.mapper.impl
 
 import net.corda.avro.serialization.CordaAvroSerializationFactory
-import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.event.session.SessionAck
 import net.corda.data.flow.event.session.SessionError
-import net.corda.data.p2p.app.AppMessage
 import net.corda.flow.mapper.factory.RecordFactory
 import net.corda.flow.mapper.impl.executor.createOutboundRecord
 import net.corda.flow.mapper.impl.executor.getDestinationIdentity
@@ -29,7 +27,6 @@ class RecordFactoryImpl @Activate constructor(
     private val cordaAvroSerializationFactory: CordaAvroSerializationFactory,
     @Reference(service = LocallyHostedIdentitiesService::class)
     private val locallyHostedIdentitiesService: LocallyHostedIdentitiesService,
-    private val appMessageFactory: (SessionEvent, CordaAvroSerializer<SessionEvent>, SmartConfig) -> AppMessage
 ): RecordFactory {
     private val sessionEventSerializer = cordaAvroSerializationFactory.createAvroSerializer<SessionEvent> { }
 
@@ -65,7 +62,6 @@ class RecordFactoryImpl @Activate constructor(
                 ),
                 instant,
                 sessionEventSerializer,
-                appMessageFactory,
                 flowConfig,
                 sessionEvent.receivedSequenceNum,
                 outputTopic
@@ -95,7 +91,6 @@ class RecordFactoryImpl @Activate constructor(
                 sessionEvent.payload,
                 instant,
                 sessionEventSerializer,
-                appMessageFactory,
                 flowConfig,
                 sessionEvent.sequenceNum,
                 outputTopic
@@ -130,7 +125,6 @@ class RecordFactoryImpl @Activate constructor(
                 SessionAck(),
                 instant,
                 sessionEventSerializer,
-                appMessageFactory,
                 flowConfig,
                 sessionEvent.sequenceNum,
                 outputTopic

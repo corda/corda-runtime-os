@@ -77,7 +77,6 @@ fun generateAppMessage(
  * @param payload Flow event payload
  * @param instant Instant
  * @param sessionEventSerializer Serializer for session events
- * @param appMessageFactory AppMessage factory
  * @param flowConfig config
  * @param receivedSequenceNumber Received sequence number of the session event
  * @param outputTopic topic where the record should be sent
@@ -88,14 +87,13 @@ fun createOutboundRecord(
     payload: Any,
     instant: Instant,
     sessionEventSerializer: CordaAvroSerializer<SessionEvent>,
-    appMessageFactory: (SessionEvent, CordaAvroSerializer<SessionEvent>, SmartConfig) -> AppMessage,
     flowConfig: SmartConfig,
     receivedSequenceNumber: Int = sessionEvent.sequenceNum,
     outputTopic: String
 ): Record<*, *> {
     val sessionId = sessionEvent.sessionId
     return Record(
-        outputTopic, sessionId, appMessageFactory(
+        outputTopic, sessionId, generateAppMessage(
             SessionEvent(
                 MessageDirection.OUTBOUND,
                 instant,
