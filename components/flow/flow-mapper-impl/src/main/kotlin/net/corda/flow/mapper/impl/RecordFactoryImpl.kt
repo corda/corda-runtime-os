@@ -26,7 +26,7 @@ class RecordFactoryImpl @Activate constructor(
     @Reference(service = CordaAvroSerializationFactory::class)
     private val cordaAvroSerializationFactory: CordaAvroSerializationFactory,
     @Reference(service = LocallyHostedIdentitiesService::class)
-    private val locallyHostedIdentitiesService: LocallyHostedIdentitiesService,
+    private val locallyHostedIdentitiesService: LocallyHostedIdentitiesService
 ): RecordFactory {
     private val sessionEventSerializer = cordaAvroSerializationFactory.createAvroSerializer<SessionEvent> { }
 

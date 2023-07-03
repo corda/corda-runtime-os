@@ -28,18 +28,20 @@ import java.time.Instant
 @Component(service = [FlowMapperEventExecutorFactory::class])
 class FlowMapperEventExecutorFactoryImpl @Activate constructor(
     @Reference(service = CordaAvroSerializationFactory::class)
-    private val cordaAvroSerializationFactory: CordaAvroSerializationFactory
+    private val cordaAvroSerializationFactory: CordaAvroSerializationFactory,
+    @Reference(service = RecordFactory::class)
+    private val recordFactoryService: RecordFactory
 ) : FlowMapperEventExecutorFactory {
     private val sessionEventSerializer = cordaAvroSerializationFactory.createAvroSerializer<SessionEvent> { }
+    private val recordFactory = recordFactoryService
 
     override fun create(
         eventKey: String,
         flowMapperEvent: FlowMapperEvent,
         state: FlowMapperState?,
         flowConfig: SmartConfig,
-        instant: Instant,
-        recordFactory: RecordFactory
-    ): FlowMapperEventExecutor {
+        instant: Instant
+        ): FlowMapperEventExecutor {
         return when (val flowMapperEventPayload = flowMapperEvent.payload) {
             is SessionEvent -> {
                 when (val sessionPayload = flowMapperEventPayload.payload) {
