@@ -1,11 +1,5 @@
 package net.corda.crypto.impl
 
-import java.io.StringReader
-import java.io.StringWriter
-import java.security.Provider
-import java.security.PublicKey
-import java.security.SecureRandom
-import java.security.spec.X509EncodedKeySpec
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.cipher.suite.schemes.KeyScheme
 import net.corda.crypto.cipher.suite.schemes.KeySchemeCapability
@@ -24,8 +18,14 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter
 import org.bouncycastle.openssl.jcajce.JcaPEMWriter
 import org.bouncycastle.pqc.jcajce.provider.BouncyCastlePQCProvider
-import org.bouncycastle.util.io.pem.PemReader
+import org.bouncycastle.util.encoders.Base64
+import org.bouncycastle.util.io.pem.PemObject
 import org.slf4j.LoggerFactory
+import java.io.StringWriter
+import java.security.Provider
+import java.security.PublicKey
+import java.security.SecureRandom
+import java.security.spec.X509EncodedKeySpec
 
 private const val DECODE_PUBLIC_KEY_FROM_BYTE_ARRAY_OPERATION_NAME = "decodePublicKeyFromByteArray"
 private const val DECODE_PUBLIC_KEY_FROM_STRING_OPERATION_NAME = "decodePublicKeyFromString"
@@ -256,27 +256,55 @@ class CipherSchemeMetadataProvider : KeyEncodingService {
     private fun parsePemContent(pem: String): ByteArray? {
         logger.info("parse pem content starting")
         logger.info("parse pem content on ${pem}")
-        val r = StringReader(pem).use { strReader ->
-            logger.info("made string reader ${strReader}")
-            PemReader(strReader).use { pemReader ->
-                logger.info("made Pem reader ${pemReader}")
-                val pemObject = pemReader.readPemObject()
-                logger.info("pem object is ${pemObject} on ${pem}")
-                if (pemObject == null) throw IllegalArgumentException("Key object not found")
-                logger.info("content is ${pemObject.content}")
-                if (pemObject.content == null) {
-                    logger.info("content is null")
-                    throw IllegalArgumentException("Key content was null")
-                } 
-                logger.info("content not null")
-                val c = pemObject.content
-                logger.info("content  is ${c}")
-                c
+        val BEGIN = "-----BEGIN "
+        val HEADER_TERMINATOR = "-----"
+        val END = "-----END "
+        
+        var index = 0
+        var numLines = (pem.count { it == '\n' })+1
+        val lines = Array<String>(numLines){""}
+        var lineNumber = 0
+        while (index < pem.length) {
+            val c= pem[index]
+            if (c == '\n') {
+                lineNumber++
+            } else {
+                lines.set(lineNumber, lines.get(lineNumber)+c) // copies the string each time
             }
+            index ++
         }
-        logger.info("parse pem content done; $r")
-        return r
-    }
+        var line = 0
+        while (line < numLines) {
+            lines.set(line, lines.get(line).trim())
+            line++
+        }
+        var header = 0
+        while ( header < numLines && !(lines.get(header).startsWith(BEGIN) && lines.get(header).endsWith(HEADER_TERMINATOR))) header++
+        if (header == numLines) throw IllegalArgumentException("header not found")
+        var section = lines.get(header).substring(BEGIN.length, lines.get(header).length - HEADER_TERMINATOR.length).trim()
+        logger.info("Found PEM $section in $pem")
+        var footer = 0
+        while (footer < numLines && !(lines.get(footer).startsWith(END) && lines.get(footer).endsWith(HEADER_TERMINATOR))) footer++
+        if (footer == numLines) throw IllegalArgumentException("No candidate footer found, ")
+        val expectedFooter = END + section + HEADER_TERMINATOR
+        if (header > footer) throw IllegalArgumentException("Expceted footer after hreader")
+        if (lines.get(footer) != expectedFooter ) throw IllegalArgumentException("Expected footer missing; wanted ${expectedFooter}") 
+        val base64Content = lines.slice(header+1.. footer-1).joinToString("")
+        logger.info("Separated out ${base64Content.length} base 64 encoded characters")
+        val decodedContent = Base64.decode(base64Content)
+        logger.info("Separated out ${decodedContent.size} raw characters")
+        val pemObject = PemObject(section, emptyList<String>(), decodedContent)
+        logger.info("pem object is ${pemObject} on ${pem}")
+        logger.info("content is ${pemObject.content}")
+        if (pemObject.content == null) {
+            logger.info("content is null")
+            throw IllegalArgumentException("Key content was null")
+        } 
+        logger.info("content not null")
+        val c = pemObject.content
+        logger.info("content is ${c}")
+        return c
+}
 
     private fun normaliseAlgorithmIdentifier(id: AlgorithmIdentifier): AlgorithmIdentifier =
         if (id.parameters is DERNull) {
