@@ -142,21 +142,25 @@ internal class RedisStateAndEventConsumer<K : Any, S : Any, E : Any>(
         return future
     }
 
+    override fun updateInMemoryStatePostCommit(key: K, state: S?, clock: Clock) {
+        val keyBytes = avroSerializer.serialize(key)
+        if (state != null) {
+            val stateBytes = avroSerializer.serialize(state)
+            jedisCluster.set(keyBytes, stateBytes)
+            releaseLock(keyBytes!!)
+        }
+        else {
+            jedisCluster.del(keyBytes)
+            deleteLock(keyBytes!!)
+        }
+    }
+
     override fun updateInMemoryStatePostCommit(updatedStates: MutableMap<Int, MutableMap<K, S?>>, clock: Clock) {
         updatedStates.forEach { (_, states) ->
             for (entry in states) {
                 val key = entry.key
                 val value = entry.value
-                val keyBytes = avroSerializer.serialize(key)
-                if (value != null) {
-                    val stateBytes = avroSerializer.serialize(value)
-                    jedisCluster.set(keyBytes, stateBytes)
-                    releaseLock(keyBytes!!)
-                }
-                else {
-                    jedisCluster.del(keyBytes)
-                    deleteLock(keyBytes!!)
-                }
+                updateInMemoryStatePostCommit(key, value, clock)
             }
         }
     }

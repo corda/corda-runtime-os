@@ -392,6 +392,10 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
         updateStateInRedis(state.key, state.value)
     }
 
+    override fun updateInMemoryStatePostCommit(key: K, state: S?, clock: Clock) {
+        // Noop
+    }
+
     override fun updateInMemoryStatePostCommit(updatedStates: MutableMap<Int, MutableMap<K, S?>>, clock: Clock) {
         val updatedStatesByKey = mutableMapOf<K, S?>()
         updatedStates.forEach { (partitionId, states) ->

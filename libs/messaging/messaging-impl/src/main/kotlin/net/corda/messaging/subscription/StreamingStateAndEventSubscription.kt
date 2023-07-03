@@ -238,37 +238,13 @@ internal class StreamingStateAndEventSubscription<K : Any, S : Any, E : Any>(
      * @return false if the batch had to be abandoned due to a rebalance
      */
     private fun tryProcessBatchOfEvents(events: List<CordaConsumerRecord<K, E>>): Boolean {
-
-        val newEventsToProcess = mutableListOf<Record<K, E>>()
-
         log.debug { "Processing events(keys: ${events.joinToString { it.key.toString() }}, size: ${events.size})" }
         val eventsToProcess = ArrayDeque(events)
         try {
             while (eventsToProcess.isNotEmpty()) {
-                processorMeter.recordCallable {
-                    val event = eventsToProcess.removeFirst()
-                    try {
-                        val outputRecords = mutableListOf<Record<*, *>>()
-                        // Get the state
-                        val updatedStates: MutableMap<Int, MutableMap<K, S?>> = mutableMapOf()
-                        val state = stateAndEventConsumer.getInMemoryStateValue(event.key)
-                        val partitionMap = updatedStates.computeIfAbsent(event.partition) { mutableMapOf() }
-                        partitionMap.computeIfAbsent(event.key) { state }
-
-                        stateAndEventConsumer.resetPollInterval()
-                        processEvent(event, outputRecords, newEventsToProcess, updatedStates)
-                        producer.sendRecords(outputRecords.toCordaProducerRecords())
-                        eventsToProcess.addAll(newEventsToProcess.map {
-                            val ret = toCordaConsumerRecord(event, it)
-                            ret
-                        })
-                        newEventsToProcess.clear()
-                        stateAndEventConsumer.updateInMemoryStatePostCommit(updatedStates, clock)
-                        log.debug { "Processed event of key '${event.key}' successfully." }
-                    } finally {
-                        stateAndEventConsumer.releaseStateKey(event.key)
-                    }
-                }
+                val event = eventsToProcess.removeFirst()
+                processEvent(event)
+                log.debug { "Processed event of key '${event.key}' successfully." }
             }
         } catch (ex: StateAndEventConsumer.RebalanceInProgressException) {
             log.warn ("Abandoning processing of events(keys: ${events.joinToString { it.key.toString() }}, " +
@@ -301,55 +277,83 @@ internal class StreamingStateAndEventSubscription<K : Any, S : Any, E : Any>(
     @Suppress("UNCHECKED_CAST")
     private fun processEvent(
         event: CordaConsumerRecord<K, E>,
-        outputRecords: MutableList<Record<*, *>>,
-        recordsToProcess: MutableList<Record<K, E>>,
-        updatedStates: MutableMap<Int, MutableMap<K, S?>>,
     ) {
-        log.debug { "Processing event: $event" }
-        val key = event.key
-        val state = updatedStates[event.partition]?.get(event.key)
-        val partitionId = event.partition
-        val thisEventUpdates = getUpdatesForEvent(state, event)
-        val updatedState = thisEventUpdates?.updatedState
-        val (wakeups, outputEvents) = thisEventUpdates?.responseEvents?.partition {
-//            it.topic == event.topic && processor.eventValueClass.isInstance(it.value) && it.key == key
-            isWakeup(it)
-        } ?: Pair(emptyList(), emptyList())
-        val restResponses: List<Record<*, *>> = thisEventUpdates?.restRequests?.mapNotNull {
-            topicToRestClient[it.topic]?.publish(listOf(it))
-        }?.flatten() ?: listOf()
-        val eventsToProcess = wakeups + restResponses
-        recordsAvoidedCount.increment(eventsToProcess.size.toDouble())
+        val subsequentEvents = ArrayDeque(listOf(event))
+        while (subsequentEvents.isNotEmpty()) {
+            processorMeter.recordCallable {
+                val currentEvent = subsequentEvents.removeFirst()
+                stateAndEventConsumer.resetPollInterval()
+                log.debug { "Processing event: $currentEvent" }
+                try {
+                    val state = stateAndEventConsumer.getInMemoryStateValue(currentEvent.key)
+                    val currentEventUpdates = getUpdatesForEvent(state, currentEvent)
+                    val updatedState = currentEventUpdates?.updatedState
+                    // Get wake-up calls
+                    val (wakeups, outputEvents) = currentEventUpdates?.responseEvents?.partition {
+                        isWakeup(it)
+                    } ?: Pair(emptyList(), emptyList())
+                    // Get REST calls
+                    val (overRestEvents, overKafkaEvents) = outputEvents.partition {
+                        topicToRestClient.containsKey(it.topic)
+                    }
+                    // Execute REST calls
+                    val responseEvents = overRestEvents.mapNotNull {
+                        topicToRestClient[it.topic]?.publish(listOf(it))
+                    }.flatten()
+                    // Add subsequent events to be processed next in the queue
+                    val eventsToProcess = (wakeups + responseEvents) as List<Record<K, E>> // + restResponses
+                    subsequentEvents.addAll(eventsToProcess.map {
+                        val ret = toCordaConsumerRecord(currentEvent, it)
+                        ret
+                    })
+                    recordsAvoidedCount.increment(eventsToProcess.size.toDouble())
 
-        when {
-            thisEventUpdates == null -> {
-                log.warn(
-                    "Sending state and event on key ${event.key} for topic ${event.topic} to dead letter queue. " +
-                            "Processor failed to complete."
-                )
-                outputRecords.add(generateDeadLetterRecord(event, state))
-                updatedStates.computeIfAbsent(partitionId) { mutableMapOf() }[key] = null
-            }
+                    when {
+                        currentEventUpdates == null -> {
+                            log.warn(
+                                "Sending state and event on key ${currentEvent.key} for topic ${currentEvent.topic} to dead letter queue. " +
+                                        "Processor failed to complete."
+                            )
+                            producer.sendRecords(
+                                listOf(
+                                    generateDeadLetterRecord(
+                                        currentEvent,
+                                        state
+                                    )
+                                ).toCordaProducerRecords()
+                            )
+                            stateAndEventConsumer.updateInMemoryStatePostCommit(currentEvent.key, null, clock)
+                        }
 
-            thisEventUpdates.markForDLQ -> {
-                log.warn(
-                    "Sending state and event on key ${event.key} for topic ${event.topic} to dead letter queue. " +
-                            "Processor marked event for the dead letter queue"
-                )
-                outputRecords.add(generateDeadLetterRecord(event, state))
-                updatedStates.computeIfAbsent(partitionId) { mutableMapOf() }[key] = null
+                        currentEventUpdates.markForDLQ -> {
+                            log.warn(
+                                "Sending state and event on key ${currentEvent.key} for topic ${currentEvent.topic} to dead letter queue. " +
+                                        "Processor marked event for the dead letter queue"
+                            )
+                            producer.sendRecords(
+                                listOf(
+                                    generateDeadLetterRecord(
+                                        currentEvent,
+                                        state
+                                    )
+                                ).toCordaProducerRecords()
+                            )
+                            stateAndEventConsumer.updateInMemoryStatePostCommit(currentEvent.key, null, clock)
 
-                // In this case the processor may ask us to publish some output records regardless, so make sure these
-                // are outputted.
-                outputRecords.addAll(outputEvents)
-                recordsToProcess.addAll(eventsToProcess as List<Record<K, E>>)
-            }
+                            // In this case the processor may ask us to publish some output records regardless, so make sure these
+                            // are outputted.
+                            producer.sendRecords(overKafkaEvents.toCordaProducerRecords())
+                        }
 
-            else -> {
-                outputRecords.addAll(outputEvents)
-                updatedStates.computeIfAbsent(partitionId) { mutableMapOf() }[key] = updatedState
-                recordsToProcess.addAll(eventsToProcess as List<Record<K, E>>)
-                log.debug { "Completed event: $event" }
+                        else -> {
+                            producer.sendRecords(overKafkaEvents.toCordaProducerRecords())
+                            stateAndEventConsumer.updateInMemoryStatePostCommit(currentEvent.key, updatedState, clock)
+                            log.debug { "Completed event: $currentEvent" }
+                        }
+                    }
+                } finally {
+                    stateAndEventConsumer.releaseStateKey(currentEvent.key)
+                }
             }
         }
     }
