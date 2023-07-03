@@ -64,24 +64,6 @@ class SessionErrorExecutor(
                 flowMapperState.status = FlowMapperStateType.ERROR
                 val messageDirection = sessionEvent.messageDirection
                 if (messageDirection == MessageDirection.OUTBOUND) {
-                    /*FlowMapperResult(
-                        flowMapperState, listOf(
-                            createP2PRecord(
-                                sessionEvent,
-                                SessionError(
-                                    ExceptionEnvelope(
-                                        "FlowMapper-SessionError",
-                                        "Received SessionError with sessionId $sessionId"
-                                    )
-                                ),
-                                instant,
-                                sessionEventSerializer,
-                                appMessageFactory,
-                                flowConfig,
-                                sessionEvent.receivedSequenceNum
-                            )
-                        )
-                    )*/
                     val outputRecord = recordFactory.forwardError(
                         sessionEvent,
                         ExceptionEnvelope(
