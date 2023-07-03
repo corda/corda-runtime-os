@@ -194,9 +194,11 @@ class CipherSchemeMetadataProvider : KeyEncodingService {
             recordPublicKeyOperation(DECODE_PUBLIC_KEY_FROM_STRING_OPERATION_NAME) {
                 logger.info("doing parse on ${encodedKey}")
                 val pemContent = parsePemContent(encodedKey)
-                logger.info("got pem content ${pemContent}")
+                logger.info("got pem content ${pemContent} for ${encodedKey}")
+                if (pemContent == null) throw IllegalArgumentException("Unable to decode PEM")
                 val publicKeyInfo = SubjectPublicKeyInfo.getInstance(pemContent)
                 logger.info("got public key info {}", publicKeyInfo)
+                if (publicKeyInfo == null) throw IllegalArgumentException("Unable to extract public key (got null)")
                 val converter = getJcaPEMKeyConverter(publicKeyInfo)
                 logger.info("converted down")
                 val publicKey = converter.getPublicKey(publicKeyInfo)
@@ -249,7 +251,7 @@ class CipherSchemeMetadataProvider : KeyEncodingService {
             return strWriter.toString()
         }
 
-    private fun parsePemContent(pem: String): ByteArray {
+    private fun parsePemContent(pem: String): ByteArray? {
         logger.info("parse pem content starting")
         logger.info("parse pem content on ${pem}")
         val r = StringReader(pem).use { strReader ->
@@ -257,7 +259,7 @@ class CipherSchemeMetadataProvider : KeyEncodingService {
             PemReader(strReader).use { pemReader ->
                 logger.info("made Pem reader ${pemReader}")
                 val pemObject = pemReader.readPemObject()
-                logger.info("pem object is ${pemObject}")
+                logger.info("pem object is ${pemObject} on ${pem}")
                 if (pemObject == null) throw IllegalArgumentException("Key object not found")
                 logger.info("content is ${pemObject.content}")
                 if (pemObject.content == null) {

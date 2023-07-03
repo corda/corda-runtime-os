@@ -549,7 +549,7 @@ class CipherSchemeMetadataTests {
         )
     }
 
-    
+
     @Test
     fun `Should fail gracefully with a corrupted PEM file`() {
         assertThrows<IllegalArgumentException> {
@@ -560,7 +560,8 @@ class CipherSchemeMetadataTests {
 
     @Test
     fun `Should read a PEM public key`() {
-        val x= schemeMetadata.decodePublicKey("""-----BEGIN PUBLIC KEY-----
+        val x = schemeMetadata.decodePublicKey(
+            """-----BEGIN PUBLIC KEY-----
 MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAn1JXg82dS8G6C3CjH/J7
 MzC/JzVcNDkWNLEaV1uiDK0/lRl5xBvXcjrZDcvwD8ogm42elf6659T8DgbWlz4z
 In+lgfkdqqukSKXLVm9ul74wuwiV2HkAvk5nZf7LGsciQhXHqUy9dVqaQwhL2Vau
@@ -569,26 +570,40 @@ R35MJjJdAeMim9RuCBMrJnZwtWBOKswzCyqeW7nVjI56vBe1/I6VbahgLdnkj5+K
 XwIJUrEWKnle7VcnXiiwcksymIvFVXsZQdnAatDmVpNoJDwuCkDRBQB5/9JascFa
 3wIDAQAB
 -----END PUBLIC KEY-----
-        """.trimIndent())
+        """.trimIndent()
+        )
         assertThat(x).isNotNull()
     }
 
 
     @Test
-    fun `Should read a PEM public key 2`() {
-        val x= schemeMetadata.decodePublicKey("""-----BEGIN PUBLIC KEY-----
-MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAwfiSJUPr9jnIXMoumo1M
-LlZ5l8OwuNmsrmyL8rcze2TtJyWQS9z7IV5dQ7CNrTyh4u2tzsa8BK01yaq9dSLF
-hf2M9Mig85LdCEvOQcOS/QcVbj7O+SGQ6E3CI8QFzRwg0UeYOVXIIbrSD3k0kShO
-SSUB1LQ0n9D4MNw/CdfDtn79JrNNAIoJfDQxeRHZ36UvfPwdyup37IYahLxFkth3
-cffKo/AEFGpi5+jk9zofS61CMKvibV1LeCH9wozOdLBJGJHPIXbmIewnctf6tYNj
-yCD9izrhQM0yq0s0sWEe08khQE6oRdVA0N8gMA85O+A2LRMt8frwMmXrSjADiqHL
-KwIDAQAB
+    fun `Should read a PEM public RSA key 2`() {
+        val x = schemeMetadata.decodePublicKey(
+            """-----BEGIN PUBLIC KEY-----
+MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAt+HDfGNH6rFVBK1F0i0w
+0lmOH2qRnRqf0kN+DcwJ6a7xyR0g6wP/e1rOHdY5/ECYJwhGqkNcNx7h94LuJUQM
+FEbGMqxKxzLQmKWc1zPa6YEPj2ZDu4ZD3pqSo4dahWkNtWPHUCkdpPPbmWC9j13o
+2p4V/gEnYEJoOIElZAZHn7roUJZ2CC3/38wKlSssALuqx7tPTeCktDE9Ifv6YMh5
+q0Qm2XGpx/t98tLbwLxhDcCcZagSQksZRxbO0QJH49yCkRZl8BFPrqzl7aMJLK8d
+SIY/PBwi3RwQ5DFA0fyU90ckN6x40m35qX3f50xrQrRXIotZwh4cnN0RAX8XhJ6r
+QwIDAQAB
 -----END PUBLIC KEY-----
-        """.trimIndent())
+        """.trimIndent()
+        )
         assertThat(x).isNotNull()
     }
 
+    @Test
+    fun `Should read EC PEM public key`() {
+        val x = schemeMetadata.decodePublicKey(
+        """-----BEGIN PUBLIC KEY-----
+MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEehQFoKNOOBumyswOQQUtz2+zB5Ez
+TyvdvFTkFXdzl14/a3KAM4LNyaQmx3+lQxKzfSbkbkNAOst23rP2TP6Ogg==
+-----END PUBLIC KEY-----
+    """
+        )
+        assertThat(x).isNotNull()
+    }
 
     @ParameterizedTest
     @MethodSource("signingKeyPairs")
