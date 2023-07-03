@@ -17,6 +17,7 @@ import net.corda.utilities.debug
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig
 import org.slf4j.LoggerFactory
 import redis.clients.jedis.HostAndPort
+import redis.clients.jedis.Jedis
 import redis.clients.jedis.JedisCluster
 import java.time.Clock
 import java.time.Duration
@@ -56,6 +57,7 @@ internal class RedisStateAndEventConsumer<K : Any, S : Any, E : Any>(
         log.warn("Connecting to host ${it.host}, port ${it.port}")
     }
     private val jedisCluster = JedisCluster(Collections.singleton(hostAndPort), 5000, 5000, 2, null, null, GenericObjectPoolConfig(), false)
+//    private val jedisCluster = Jedis(hostAndPort.host, hostAndPort.port)
     private val maxPollInterval = config.processorTimeout.toMillis()
     private val initialProcessorTimeout = maxPollInterval / 4
     private var pollIntervalCutoff = 0L

@@ -16,6 +16,11 @@ import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.config.ResolvedSubscriptionConfig
+import net.corda.utilities.classload.executeWithThreadContextClassLoader
+import net.corda.utilities.executeWithStdErrSuppressed
+import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory
+import org.osgi.framework.FrameworkUtil
+import org.osgi.framework.wiring.BundleWiring
 import org.slf4j.LoggerFactory
 
 class RestSubscriptionImpl<K: Any, V: Any>(
@@ -27,7 +32,26 @@ class RestSubscriptionImpl<K: Any, V: Any>(
 ) : Subscription<K, V> {
 
     companion object {
-        private val javalin = Javalin.create().start(8080)
+        private val javalin = Javalin.create().also {
+            startServer(it, 8080)
+        }
+        private fun startServer(server: Javalin, port: Int) {
+            val bundle = FrameworkUtil.getBundle(WebSocketServletFactory::class.java)
+
+            if (bundle == null) {
+                server.start(port)
+            } else {
+                // We temporarily switch the context class loader to allow Javalin to find `WebSocketServletFactory`.
+                executeWithThreadContextClassLoader(bundle.adapt(BundleWiring::class.java).classLoader) {
+                    // Required because Javalin prints an error directly to stderr if it cannot find a logging
+                    // implementation via standard class loading mechanism. This mechanism is not appropriate for OSGi.
+                    // The logging implementation is found correctly in practice.
+                    executeWithStdErrSuppressed {
+                        server.start(port)
+                    }
+                }
+            }
+        }
     }
 
     private val logger = LoggerFactory.getLogger(config.clientId)
