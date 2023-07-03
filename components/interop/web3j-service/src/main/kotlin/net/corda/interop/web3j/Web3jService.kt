@@ -3,6 +3,7 @@ package net.corda.interop.web3j
 import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.interop.web3j.internal.EVMCommandProcessor
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
@@ -28,9 +29,9 @@ import org.osgi.service.component.annotations.Deactivate
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
 
-@Suppress("LongParameterList")
-@Component(service = [Web3jService::class], immediate = true)
-class Web3jService @Activate constructor(
+@Suppress("LongParameterList", "UNUSED_VARIABLE")
+@Component(service = [Web3JService::class], immediate = true)
+class Web3JService @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = ConfigurationReadService::class)
@@ -55,7 +56,7 @@ class Web3jService @Activate constructor(
         private const val CLEANUP_TASK = "CLEANUP_TASK"
     }
 
-    private val coordinator = coordinatorFactory.createCoordinator<Web3jService>(::eventHandler)
+    private val coordinator = coordinatorFactory.createCoordinator<Web3JService>(::eventHandler)
     private var publisher: Publisher? = null
 
     private fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
@@ -103,7 +104,7 @@ class Web3jService @Activate constructor(
         coordinator.createManagedResource("Web3JProcessor.subscription") {
             subscriptionFactory.createDurableSubscription(
                 SubscriptionConfig(GROUP_NAME, Schemas.P2P.P2P_HOSTED_IDENTITIES_TOPIC),
-                Web3jProcessor(),
+                EVMCommandProcessor(),
                 messagingConfig,
                 null
             )
