@@ -23,7 +23,6 @@ class FacadeServerDispatcherSpec {
     val expirationTimestamp = ZonedDateTime.now()
 
     val mockServer = mock<TokensFacade> {
-       // on { releaseReservedTokens(any()) } doReturn Unit
         on { reserveTokensV2(any(), any(), any()) } doReturn
                 TokenReservation(reservationRef, expirationTimestamp)
     }

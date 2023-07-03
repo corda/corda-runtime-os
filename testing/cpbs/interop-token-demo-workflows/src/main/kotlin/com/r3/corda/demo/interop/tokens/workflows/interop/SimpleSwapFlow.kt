@@ -106,10 +106,8 @@ class SimpleSwapFlow : ClientStartableFlow {
             val tokens: TokensFacade =
                 facadeService.getFacade(facadeId, TokensFacade::class.java, myAlias, payment.interopGroupId)
 
-            val responseObject = tokens.reserveTokensV3("USD", payment.toReserve, 1000L)
-            log.info("Interop remedy call finished")
-            val response : SimpleTokenReservation = responseObject
-            log.info("Interop call get $response")
+            val response= tokens.reserveTokensV3("USD", payment.toReserve, 1000L)
+            log.info("Interop call returned: $response")
 
             return jsonMarshallingService.format(IssueFlowResult(userResult, outputState.linearId.toString()))
         } catch (e: Exception) {
