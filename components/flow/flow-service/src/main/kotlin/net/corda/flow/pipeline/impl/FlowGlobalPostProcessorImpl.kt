@@ -50,17 +50,12 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
 
         val outputRecords = getSessionEvents(context, now) +
 //                getFlowMapperSessionCleanupEvents(context, now) +
-//                getExternalEvent(context, now) +
+                getExternalEvent(context, now) +
                 postProcessRetries(context)
-
-        val externalEvents = getExternalEvent(context, now)
 
         context.flowMetrics.flowEventCompleted(context.inputEvent.payload::class.java.name)
 
-        return context.copy(
-            outputRecords = context.outputRecords + outputRecords,
-            restOutputs = context.restOutputs + externalEvents
-        )
+        return context.copy(outputRecords = context.outputRecords + outputRecords)
     }
 
     private fun getSessionEvents(context: FlowEventContext<Any>, now: Instant): List<Record<*, FlowMapperEvent>> {
