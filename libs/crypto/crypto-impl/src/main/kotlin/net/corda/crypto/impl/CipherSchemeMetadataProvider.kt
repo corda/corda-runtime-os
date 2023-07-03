@@ -11,6 +11,7 @@ import net.corda.crypto.cipher.suite.schemes.KeyScheme
 import net.corda.crypto.cipher.suite.schemes.KeySchemeCapability
 import net.corda.crypto.cipher.suite.schemes.KeySchemeTemplate
 import net.corda.metrics.CordaMetrics
+import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.crypto.CordaOID.OID_COMPOSITE_KEY
 import net.corda.v5.crypto.KeySchemeCodes.COMPOSITE_KEY_CODE_NAME
@@ -211,7 +212,7 @@ class CipherSchemeMetadataProvider : KeyEncodingService {
             throw CryptoException("Failed to decode public key", e)
         }
     
-        logger.info("decode public key string finished [${encodedKey}]")
+        logger.info("decode public key string finished [${encodedKey}] as ${res}")
         return res
     }
 
@@ -251,6 +252,7 @@ class CipherSchemeMetadataProvider : KeyEncodingService {
             return strWriter.toString()
         }
 
+    @Suspendable
     private fun parsePemContent(pem: String): ByteArray? {
         logger.info("parse pem content starting")
         logger.info("parse pem content on ${pem}")
