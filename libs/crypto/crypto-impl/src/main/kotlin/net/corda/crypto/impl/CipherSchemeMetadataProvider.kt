@@ -26,6 +26,7 @@ import java.security.Provider
 import java.security.PublicKey
 import java.security.SecureRandom
 import java.security.spec.X509EncodedKeySpec
+import java.time.Duration
 
 private const val DECODE_PUBLIC_KEY_FROM_BYTE_ARRAY_OPERATION_NAME = "decodePublicKeyFromByteArray"
 private const val DECODE_PUBLIC_KEY_FROM_STRING_OPERATION_NAME = "decodePublicKeyFromString"
@@ -150,14 +151,13 @@ class CipherSchemeMetadataProvider : KeyEncodingService {
         algorithmMap[normaliseAlgorithmIdentifier(algorithm)]
             ?: throw IllegalArgumentException("Unrecognised algorithm: ${algorithm.algorithm.id}, with parameters=${algorithm.parameters}")
 
-    @Synchronized 
     private fun <T : Any> recordPublicKeyOperation(operationName: String, op: () -> T): T {
         logger.info("recordPublicKeyOperation start")
         logger.info("cipher scheme timer {}", CordaMetrics.Metric.Crypto.CipherSchemeTimer)
         val b = CordaMetrics.Metric.Crypto.CipherSchemeTimer.builder()
         logger.info("made builder {}", b)
         b.withTag(CordaMetrics.Tag.OperationName, operationName)
-        logger.info("tag seat")
+        logger.info("tag set")
         val built = b.build()
         logger.info("do build returned {}", built)
         val r = built.recordCallable {
@@ -170,50 +170,63 @@ class CipherSchemeMetadataProvider : KeyEncodingService {
         return r!! 
     }
 
+    private fun recordPublicKeyOperationDuration(operationName: String, duration: Duration) {
+        logger.info("recordPublicKeyOperation start")
+        logger.info("cipher scheme timer {}", CordaMetrics.Metric.Crypto.CipherSchemeTimer)
+        val b = CordaMetrics.Metric.Crypto.CipherSchemeTimer.builder()
+        logger.info("made builder {}", b)
+        b.withTag(CordaMetrics.Tag.OperationName, operationName)
+        logger.info("tag set")
+        val built = b.build()
+        logger.info("do build returned {}", built)
+       built.record(duration)
+    }
+
+
     override fun decodePublicKey(encodedKey: ByteArray): PublicKey {
-        logger.info("decode public key byte array start")
-        val res = try {
-            recordPublicKeyOperation(DECODE_PUBLIC_KEY_FROM_BYTE_ARRAY_OPERATION_NAME) {
-                val subjectPublicKeyInfo = SubjectPublicKeyInfo.getInstance(encodedKey)
-                val scheme = findKeyScheme(subjectPublicKeyInfo.algorithm)
-                val keyFactory = keyFactories[scheme]
-                keyFactory.generatePublic(X509EncodedKeySpec(encodedKey))
-            }
+        try {
+            val startTime = System.nanoTime()
+            val subjectPublicKeyInfo = SubjectPublicKeyInfo.getInstance(encodedKey)
+            val scheme = findKeyScheme(subjectPublicKeyInfo.algorithm)
+            val keyFactory = keyFactories[scheme]
+            val r = keyFactory.generatePublic(X509EncodedKeySpec(encodedKey))
+            val endTime = System.nanoTime() - startTime
+            recordPublicKeyOperationDuration(DECODE_PUBLIC_KEY_FROM_BYTE_ARRAY_OPERATION_NAME, Duration.ofNanos(endTime-startTime))
+            logger.info("decode public key byte array start $startTime end $endTime complete; $encodedKey -> $r")
+            return r
         } catch (e: RuntimeException) {
             throw e
         } catch (e: Throwable) {
             throw CryptoException("Failed to decode public key", e)
         }
-        logger.info("decode public key byte array complete")
-        return res
     }
 
     override fun decodePublicKey(encodedKey: String): PublicKey {
-        logger.info("decode public key string start disabled timing [${encodedKey}]")
+        try {
+            logger.info("decode public key string start [${encodedKey}]")
+            val startTime = System.nanoTime()
 
-        val res = try {
-            recordPublicKeyOperation(DECODE_PUBLIC_KEY_FROM_STRING_OPERATION_NAME) {
-                logger.info("doing parse on ${encodedKey}")
-                val pemContent = parsePemContent(encodedKey)
-                logger.info("got pem content ${pemContent} for ${encodedKey}")
-                if (pemContent == null) throw IllegalArgumentException("Unable to decode PEM")
-                val publicKeyInfo = SubjectPublicKeyInfo.getInstance(pemContent)
-                logger.info("got public key info {}", publicKeyInfo)
-                if (publicKeyInfo == null) throw IllegalArgumentException("Unable to extract public key (got null)")
-                val converter = getJcaPEMKeyConverter(publicKeyInfo)
-                logger.info("converted down")
-                val publicKey = converter.getPublicKey(publicKeyInfo)
-                logger.info("got public key")
-                toSupportedPublicKey(publicKey)
-            }
+            logger.info("doing parse on ${encodedKey}")
+            val pemContent = parsePemContent(encodedKey)
+            logger.info("got pem content ${pemContent} for ${encodedKey}")
+            if (pemContent == null) throw IllegalArgumentException("Unable to decode PEM")
+            val publicKeyInfo = SubjectPublicKeyInfo.getInstance(pemContent)
+            logger.info("got public key info {}", publicKeyInfo)
+            if (publicKeyInfo == null) throw IllegalArgumentException("Unable to extract public key (got null)")
+            val converter = getJcaPEMKeyConverter(publicKeyInfo)
+            logger.info("converted down")
+            val publicKey = converter.getPublicKey(publicKeyInfo)
+            logger.info("got public key")
+            val res = toSupportedPublicKey(publicKey)
+            val endTime = System.nanoTime()
+            logger.info("decode public key string started $startTime finished $endTime finished [${encodedKey}] as ${res}")
+            recordPublicKeyOperationDuration(DECODE_PUBLIC_KEY_FROM_STRING_OPERATION_NAME, Duration.ofNanos(endTime-startTime))
+            return res
         } catch (e: RuntimeException) {
             throw e
         } catch (e: Exception) {
             throw CryptoException("Failed to decode public key", e)
         }
-    
-        logger.info("decode public key string finished [${encodedKey}] as ${res}")
-        return res
     }
 
     override fun encodeAsString(publicKey: PublicKey): String = try {
