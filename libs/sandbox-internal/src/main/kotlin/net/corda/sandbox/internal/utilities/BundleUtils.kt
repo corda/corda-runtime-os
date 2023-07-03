@@ -23,7 +23,7 @@ internal class BundleUtils @Activate constructor(
     private val bundleContext: BundleContext
 ) {
     private val systemBundle = bundleContext.getBundle(SYSTEM_BUNDLE_ID)
-    private val arrayType = "\\[++(([BCDFIJSZ])|L(.+);)".toRegex()
+    private val arrayType = "\\[++(([BCDFIJSZ])|L([^;]++);)".toRegex()
 
     /** Determine which packages the system bundle exports by examining its capabilities. */
     private val systemPackageNames = unmodifiableSet(systemBundle.adapt(BundleWiring::class.java)
