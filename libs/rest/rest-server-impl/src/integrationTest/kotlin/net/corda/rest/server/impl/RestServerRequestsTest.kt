@@ -30,6 +30,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import java.time.Instant
 import java.time.ZonedDateTime
@@ -744,5 +745,25 @@ class RestServerRequestsTest : RestServerTestBase() {
             assertEquals(HttpStatus.SC_OK, createEntityResponse.responseStatus, "for $testBody")
             assertEquals(testBody, createEntityResponse.body, "for $testBody")
         }
+    }
+
+    @Test
+    @Disabled("Due to https://r3-cev.atlassian.net/browse/CORE-14538")
+    fun `Call update on test entity with percentage symbol`() {
+        val createEntityResponse = client.call(
+            PUT,
+            WebRequest<Any>(
+                "testentity",
+                """{ "updateParams" : { "id": "myId", "name": "TestName%", "amount" : 20 } }"""
+            ),
+            userName,
+            password
+        )
+
+        assertEquals(HttpStatus.SC_OK, createEntityResponse.responseStatus)
+        assertEquals(
+            "Updated using params: UpdateParams(id=myId, name=TestName%, amount=20)",
+            createEntityResponse.body
+        )
     }
 }

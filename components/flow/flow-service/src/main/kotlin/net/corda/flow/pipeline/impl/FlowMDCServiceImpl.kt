@@ -8,11 +8,14 @@ import net.corda.data.flow.state.checkpoint.Checkpoint
 import net.corda.data.flow.state.checkpoint.FlowState
 import net.corda.data.flow.state.external.ExternalEventStateType
 import net.corda.flow.pipeline.FlowMDCService
+import net.corda.flow.state.impl.FlowStackBasedContext
+import net.corda.flow.state.impl.FlowStackImpl
 import net.corda.utilities.MDC_CLIENT_ID
 import net.corda.utilities.MDC_EXTERNAL_EVENT_ID
 import net.corda.utilities.MDC_FLOW_ID
 import net.corda.utilities.MDC_SESSION_EVENT_ID
 import net.corda.utilities.MDC_VNODE_ID
+import net.corda.utilities.translateFlowContextToMDC
 import net.corda.virtualnode.toCorda
 import org.osgi.service.component.annotations.Component
 import org.slf4j.LoggerFactory
@@ -78,9 +81,17 @@ class FlowMDCServiceImpl : FlowMDCService {
             MDC_CLIENT_ID to startContext.requestId,
             MDC_FLOW_ID to flowId
         )
+
+        val platformProperties = state.flowState?.flowStackItems?.let { flowStackItems ->
+            FlowStackBasedContext(FlowStackImpl(flowStackItems)).flattenPlatformProperties()
+        } ?: emptyMap()
+
+        // Extract properties starting with `corda.logged`
+        val loggedContextProperties = translateFlowContextToMDC(platformProperties)
+
         setExternalEventIdIfNotComplete(flowState, mdcLogging)
         setSessionMDCFromEvent(event, mdcLogging)
-        return mdcLogging
+        return mdcLogging + loggedContextProperties
     }
 
     private fun setSessionMDCFromEvent(event: FlowEvent?, mdcLogging: MutableMap<String, String>) {

@@ -7,6 +7,7 @@ import net.corda.data.flow.state.mapper.FlowMapperStateType
 import net.corda.flow.mapper.FlowMapperResult
 import net.corda.flow.mapper.executor.FlowMapperEventExecutor
 import net.corda.messaging.api.records.Record
+import net.corda.metrics.CordaMetrics
 import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
 
@@ -23,6 +24,9 @@ class StartFlowExecutor(
 
     override fun execute(): FlowMapperResult {
         return if (flowMapperState == null) {
+            CordaMetrics.Metric.FlowMapperCreationCount.builder()
+                .withTag(CordaMetrics.Tag.FlowEvent, startRPCFlow::class.java.name)
+                .build().increment()
             val flowId = generateFlowId()
             val newState = FlowMapperState(flowId, null, FlowMapperStateType.OPEN)
             val flowEvent = FlowEvent(flowId, startRPCFlow)
@@ -31,6 +35,9 @@ class StartFlowExecutor(
                 mutableListOf(Record(outputTopic, flowId, flowEvent))
             )
         } else {
+            CordaMetrics.Metric.FlowMapperDeduplicationCount.builder()
+                .withTag(CordaMetrics.Tag.FlowEvent, startRPCFlow::class.java.name)
+                .build().increment()
             log.debug { "Duplicate StartRPCFlow event received. Key: $eventKey, Event: $startRPCFlow " }
             FlowMapperResult(flowMapperState, mutableListOf())
         }

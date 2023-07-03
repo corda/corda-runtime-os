@@ -100,7 +100,8 @@ class FlowRunnerImplTest {
             BOB_X500_HOLDING_IDENTITY.toCorda(),
             mock(),
             mock(),
-            emptyMap()
+            emptyMap(),
+            mock()
         )
         whenever(virtualNodeInfoReadService.get(any())).thenReturn(getMockVNodeInfo())
         whenever(cpiInfoReadService.get(any())).thenReturn(getMockCpiMetaData())
@@ -140,7 +141,14 @@ class FlowRunnerImplTest {
             )
         ).thenReturn(fiberFuture)
 
-        whenever(flowStack.pushWithContext(clientFlow, emptyKeyValuePairList(), platformContext.avro)).thenReturn(
+        whenever(
+            flowStack.pushWithContext(
+                eq(clientFlow),
+                eq(emptyKeyValuePairList()),
+                eq(platformContext.avro),
+                any()
+            )
+        ).thenReturn(
             flowStackItem
         )
 
@@ -176,7 +184,8 @@ class FlowRunnerImplTest {
         // content of the mapped local context is out of the scope of this test
         val localContextProperties = remoteToLocalContextMapper(
             remoteUserContextProperties = userContext.avro,
-            remotePlatformContextProperties = platformContext.avro
+            remotePlatformContextProperties = platformContext.avro,
+            mapOf("corda.account" to "account-zero")
         )
 
         val context = buildFlowEventContext<Any>(flowCheckpoint, sessionEvent)
@@ -198,9 +207,10 @@ class FlowRunnerImplTest {
 
         whenever(
             flowStack.pushWithContext(
-                initiatedFlow,
-                localContextProperties.userProperties,
-                localContextProperties.platformProperties
+                eq(initiatedFlow),
+                eq(localContextProperties.userProperties),
+                eq(localContextProperties.platformProperties),
+                any()
             )
         ).thenReturn(
             flowStackItem

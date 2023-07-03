@@ -35,6 +35,7 @@ import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.mockito.kotlin.mock
 
 class FlowCheckpointImplTest {
     private val flowConfig = ConfigFactory.empty()
@@ -283,7 +284,7 @@ class FlowCheckpointImplTest {
         flowCheckpoint.suspendedOn = "A"
         flowCheckpoint.waitingFor = waitingFor
         val flowStackItem =
-            flowCheckpoint.flowStack.pushWithContext(flow, userPropertiesLevel0.avro, platformPropertiesLevel0.avro)
+            flowCheckpoint.flowStack.pushWithContext(flow, userPropertiesLevel0.avro, platformPropertiesLevel0.avro, mock())
         flowCheckpoint.putSessionState(session1)
         flowCheckpoint.serializedFiber = serializedFiber
 
@@ -380,7 +381,7 @@ class FlowCheckpointImplTest {
         val checkpoint = setupAvroCheckpoint()
 
         val service = createFlowCheckpoint(checkpoint).flowStack
-        val flowStackItem = service.push(flow)
+        val flowStackItem = service.push(flow, mock())
         assertThat(service.peek()).isEqualTo(flowStackItem)
     }
 
@@ -391,8 +392,8 @@ class FlowCheckpointImplTest {
         val checkpoint = setupAvroCheckpoint()
 
         val service = createFlowCheckpoint(checkpoint).flowStack
-        val flowStackItem1 = service.push(flow1)
-        val flowStackItem2 = service.push(flow2)
+        val flowStackItem1 = service.push(flow1, mock())
+        val flowStackItem2 = service.push(flow2, mock())
 
         assertThat(flowStackItem1.flowName).isEqualTo(InitiatingFlowExample::class.qualifiedName)
         assertThat(flowStackItem1.isInitiatingFlow).isTrue
@@ -418,8 +419,8 @@ class FlowCheckpointImplTest {
         }
 
         val service = createFlowCheckpoint(checkpoint).flowStack
-        val flowStackItem1 = service.pushWithContext(flow1, context[0].avro, context[1].avro)
-        val flowStackItem2 = service.pushWithContext(flow2, context[2].avro, context[3].avro)
+        val flowStackItem1 = service.pushWithContext(flow1, context[0].avro, context[1].avro, mock())
+        val flowStackItem2 = service.pushWithContext(flow2, context[2].avro, context[3].avro, mock())
 
         assertThat(flowStackItem1.flowName).isEqualTo(InitiatingFlowExample::class.qualifiedName)
         assertThat(flowStackItem1.isInitiatingFlow).isTrue
@@ -704,7 +705,7 @@ class FlowCheckpointImplTest {
 
         flowCheckpoint.suspendedOn = "A"
         flowCheckpoint.waitingFor = waitingFor
-        val flowStackItem = flowCheckpoint.flowStack.push(flow)
+        val flowStackItem = flowCheckpoint.flowStack.push(flow, mock())
         flowCheckpoint.putSessionState(session1)
         flowCheckpoint.serializedFiber = fiber
 

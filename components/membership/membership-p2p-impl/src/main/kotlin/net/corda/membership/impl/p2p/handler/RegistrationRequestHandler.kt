@@ -38,7 +38,7 @@ internal class RegistrationRequestHandler(
         payload: ByteBuffer
     ): Record<String, RegistrationCommand>? {
         try {
-            logger.info("Received registration request. Issuing StartRegistration command.")
+            logger.info("Received registration request. Issuing QueueRegistration command.")
             val (registrationRequest, mgm) = decryptPayload(payload)
             val memberName = avroSchemaRegistry.deserialize<KeyValuePairList>(registrationRequest.memberContext.data)
                 .items
@@ -62,7 +62,7 @@ internal class RegistrationRequestHandler(
                 )
             )
         } catch (e: Exception) {
-            logger.warn("Could not create start registration command. Reason: ${e.message}", e)
+            logger.warn("Could not create QueueRegistration command. Reason: ${e.message}", e)
             return null
         }
     }

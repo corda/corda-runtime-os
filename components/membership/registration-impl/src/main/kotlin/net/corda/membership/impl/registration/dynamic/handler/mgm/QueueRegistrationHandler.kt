@@ -25,6 +25,8 @@ internal class QueueRegistrationHandler(
 
     override val commandType = QueueRegistration::class.java
 
+    override fun getOwnerHoldingId(state: RegistrationState?, command: QueueRegistration) = state?.mgm
+
     override fun invoke(state: RegistrationState?, key: String, command: QueueRegistration): RegistrationHandlerResult {
         val registrationId = command.memberRegistrationRequest.registrationId
         val outputCommand = try {

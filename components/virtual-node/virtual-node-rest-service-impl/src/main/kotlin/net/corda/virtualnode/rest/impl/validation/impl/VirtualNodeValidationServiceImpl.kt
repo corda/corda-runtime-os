@@ -131,7 +131,7 @@ internal class VirtualNodeValidationServiceImpl(
 
     private fun parseShortHash(virtualNodeShortId: String): ShortHash {
         return try {
-            ShortHash.of(virtualNodeShortId)
+            ShortHash.parse(virtualNodeShortId)
         } catch (e: ShortHashException) {
             throw BadRequestException("Invalid holding identity short hash${e.message?.let { ": $it" }}")
         }

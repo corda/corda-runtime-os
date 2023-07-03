@@ -110,7 +110,6 @@ import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.SoftAssertions
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
@@ -479,7 +478,6 @@ class DynamicMemberRegistrationServiceTest {
             }
         }
 
-        @Disabled
         @Test
         fun `registration request contains current serial for re-registration`() {
             val memberInfo = mock<MemberInfo> {

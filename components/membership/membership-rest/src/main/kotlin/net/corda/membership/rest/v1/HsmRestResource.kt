@@ -35,7 +35,7 @@ interface HsmRestResource : RestResource {
      * @param category The category of the HSM; can be the value 'ACCOUNTS', 'CI', 'LEDGER', 'NOTARY', 'SESSION_INIT',
      * 'TLS', or 'JWT_KEY'.
      *
-     * @return Information on the assigned HSM, or null if no HSM is assigned.
+     * @return Information on the assigned HSM, or throws `ResourceNotFoundException` if no HSM is assigned.
      */
     @HttpGET(
         path = "{tenantId}/{category}",
@@ -57,7 +57,7 @@ interface HsmRestResource : RestResource {
         @RestPathParameter(description = "The category of the HSM; can be the value 'ACCOUNTS', 'CI', 'LEDGER'," +
                 " 'NOTARY', 'SESSION_INIT', 'TLS', or 'JWT_KEY'")
         category: String
-    ): HsmAssociationInfo?
+    ): HsmAssociationInfo
 
     /**
      * The [assignSoftHsm] method enables you to assign a soft HSM to the tenant for the specified category. Unlike a

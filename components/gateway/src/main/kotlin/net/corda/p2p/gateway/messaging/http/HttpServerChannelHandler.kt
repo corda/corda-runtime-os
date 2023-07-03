@@ -21,7 +21,7 @@ import java.lang.IndexOutOfBoundsException
 class HttpServerChannelHandler(private val serverListener: HttpServerListener,
                                private val maxRequestSize: Long,
                                private val urlPath: String,
-                               private val logger: Logger): BaseHttpChannelHandler(serverListener, logger) {
+                               private val logger: Logger): BaseHttpChannelHandler(serverListener, logger, HandlerType.SERVER) {
 
     private var responseCode: HttpResponseStatus? = null
 

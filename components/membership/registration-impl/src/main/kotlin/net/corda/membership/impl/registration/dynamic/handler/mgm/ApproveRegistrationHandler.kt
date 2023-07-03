@@ -55,6 +55,11 @@ internal class ApproveRegistrationHandler(
 
     override val commandType = ApproveRegistration::class.java
 
+    override fun getOwnerHoldingId(
+        state: RegistrationState?,
+        command: ApproveRegistration
+    ) = state?.mgm
+
     override fun invoke(
         state: RegistrationState?,
         key: String,

@@ -204,6 +204,11 @@ internal class ProcessMemberVerificationResponseHandler(
         }
     }
 
+    override fun getOwnerHoldingId(
+        state: RegistrationState?,
+        command: ProcessMemberVerificationResponse
+    ) = state?.mgm
+
     private fun parsePreAuthToken(input: String): UUID {
         return try {
             UUID.fromString(input)

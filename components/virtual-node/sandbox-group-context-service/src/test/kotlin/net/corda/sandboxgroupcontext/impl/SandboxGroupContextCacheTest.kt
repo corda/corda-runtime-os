@@ -10,13 +10,17 @@ import net.corda.sandboxgroupcontext.service.impl.CloseableSandboxGroupContext
 import net.corda.sandboxgroupcontext.service.impl.SandboxGroupContextCacheImpl
 import net.corda.test.util.eventually
 import net.corda.test.util.identity.createTestHoldingIdentity
+import net.corda.test.util.metrics.EachTestCordaMetrics
+import net.corda.test.util.metrics.CORDA_METRICS_LOCK
 import net.corda.virtualnode.HoldingIdentity
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.RegisterExtension
 import org.junit.jupiter.api.fail
+import org.junit.jupiter.api.parallel.ResourceLock
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
@@ -33,6 +37,7 @@ import java.util.concurrent.CompletableFuture
 import kotlin.math.roundToInt
 
 @Suppress("ExplicitGarbageCollectionCall")
+@ResourceLock(CORDA_METRICS_LOCK)
 class SandboxGroupContextCacheTest {
     private companion object {
         private const val TIMEOUT = 60L
@@ -43,6 +48,10 @@ class SandboxGroupContextCacheTest {
             whenever(it.completion).doReturn(completable)
         }
     }
+
+    @Suppress("unused")
+    @RegisterExtension
+    private val metrics = EachTestCordaMetrics("Testing Sandboxes")
 
     private lateinit var idBob: HoldingIdentity
     private lateinit var idAlice: HoldingIdentity
@@ -59,8 +68,6 @@ class SandboxGroupContextCacheTest {
             sandboxGroupType = SandboxGroupType.FLOW,
             cpkFileChecksums = setOf(parseSecureHash("SHA-256:1234567890"))
         )
-
-        CordaMetrics.registry.clear()
     }
 
     @Test
@@ -113,8 +120,8 @@ class SandboxGroupContextCacheTest {
         eventually(duration = ofSeconds(TIMEOUT), waitBetween = ofSeconds(1)) {
             System.gc()
             verifyCacheMetrics(puts = count + 1, misses = count + 1, evictions = count)
+            verify(listener, times(count)).onEviction(any())
         }
-        verify(listener, times(count)).onEviction(any())
     }
 
     @Test
@@ -201,8 +208,9 @@ class SandboxGroupContextCacheTest {
 
         eventually(duration = ofSeconds(TIMEOUT)) {
             assertThat(cache.evictedContextsToBeClosed).isEqualTo(2)
+            verify(listener).onEviction(vNodeContext1)
+            verify(listener).onEviction(vNodeContext2)
         }
-        verify(listener, times(2)).onEviction(any())
 
         ref1 = null
         ref2 = null
@@ -220,7 +228,6 @@ class SandboxGroupContextCacheTest {
         }
     }
 
-    @Suppress("unused_value")
     @Test
     fun `when remove also close`() {
         val listener = mock<EvictionListener>()
@@ -231,15 +238,18 @@ class SandboxGroupContextCacheTest {
 
         var ref: SandboxGroupContext? = cache.get(vNodeContext1) { sandboxContext1 }
         assertThat(ref).isNotNull
+
+        assertThat(cache.evictedContextsToBeClosed).isEqualTo(0)
         val completion = cache.remove(vNodeContext1.copy())
             ?: fail("No sandbox for $vNodeContext1")
 
         eventually(duration = ofSeconds(TIMEOUT)) {
             assertThat(cache.evictedContextsToBeClosed).isEqualTo(1)
-            assertThat(completion.isDone).isFalse
+            verify(listener).onEviction(eq(vNodeContext1))
         }
-        verify(listener).onEviction(eq(vNodeContext1))
+        assertThat(completion.isDone).isFalse
 
+        @Suppress("unused_value")
         ref = null
 
         eventually(duration = ofSeconds(TIMEOUT)) {
@@ -355,10 +365,10 @@ class SandboxGroupContextCacheTest {
         val completion = cache.flush()
         eventually(duration = ofSeconds(TIMEOUT)) {
             assertThat(cache.evictedContextsToBeClosed).isEqualTo(2)
+            verify(listener).onEviction(vNodeContext1)
+            verify(listener).onEviction(vNodeContext2)
         }
         assertThat(completion.isDone).isFalse
-        verify(listener).onEviction(vNodeContext1)
-        verify(listener).onEviction(vNodeContext2)
 
         cache.get(vNodeContext3) { sandboxContext3 }
 
@@ -424,29 +434,29 @@ class SandboxGroupContextCacheTest {
         val cacheName = "sandbox-cache-${sandboxType}"
 
         val cachePuts = CordaMetrics.registry
-            .find("cache.puts")
-            .tags("cache", cacheName).meter()?.measure()?.first()?.value?.roundToInt()
+            .find("corda.cache.puts")
+            .tag("cache", cacheName).functionCounter()?.count()?.roundToInt()
         assertThat(cachePuts)
             .withFailMessage("Expected $cacheName puts from metrics to be $puts but was $cachePuts")
             .isEqualTo(puts)
 
         val cacheHits = CordaMetrics.registry
-            .find("cache.gets")
-            .tags("cache", cacheName, "result", "hit").meter()?.measure()?.first()?.value?.roundToInt()
+            .find("corda.cache.gets")
+            .tags("cache", cacheName, "result", "hit").functionCounter()?.count()?.roundToInt()
         assertThat(cacheHits)
             .withFailMessage("Expected $cacheName hits from metrics to be $hits but was $cacheHits")
             .isEqualTo(hits)
 
         val cacheMisses = CordaMetrics.registry
-            .find("cache.gets")
-            .tags("cache", cacheName, "result", "miss").meter()?.measure()?.first()?.value?.roundToInt()
+            .find("corda.cache.gets")
+            .tags("cache", cacheName, "result", "miss").functionCounter()?.count()?.roundToInt()
         assertThat(cacheMisses)
             .withFailMessage("Expected $cacheName misses from metrics to be $misses but was $cacheMisses")
             .isEqualTo(misses)
 
         val cacheEvictions = CordaMetrics.registry
-            .find("cache.evictions")
-            .tags("cache", cacheName).meter()?.measure()?.first()?.value?.roundToInt()
+            .find("corda.cache.evictions")
+            .tag("cache", cacheName).functionCounter()?.count()?.roundToInt()
         assertThat(cacheEvictions)
             .withFailMessage("Expected $cacheName evictions from metrics to be $evictions but was $cacheEvictions")
             .isEqualTo(evictions)

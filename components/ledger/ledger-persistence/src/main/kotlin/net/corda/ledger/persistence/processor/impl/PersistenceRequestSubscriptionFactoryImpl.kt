@@ -10,6 +10,7 @@ import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.persistence.common.EntitySandboxService
 import net.corda.persistence.common.ResponseFactory
+import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.schema.Schemas
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -18,6 +19,8 @@ import org.osgi.service.component.annotations.Reference
 @Component(service = [PersistenceRequestSubscriptionFactory::class])
 @Suppress("LongParameterList")
 class PersistenceRequestSubscriptionFactoryImpl @Activate constructor(
+    @Reference(service = CurrentSandboxGroupContext::class)
+    private val currentSandboxGroupContext: CurrentSandboxGroupContext,
     @Reference(service = SubscriptionFactory::class)
     private val subscriptionFactory: SubscriptionFactory,
     @Reference(service = EntitySandboxService::class)
@@ -35,6 +38,7 @@ class PersistenceRequestSubscriptionFactoryImpl @Activate constructor(
         val subscriptionConfig = SubscriptionConfig(GROUP_NAME, Schemas.Persistence.PERSISTENCE_LEDGER_PROCESSOR_TOPIC)
 
         val processor = PersistenceRequestProcessor(
+            currentSandboxGroupContext ,
             entitySandboxService,
             delegatedRequestHandlerSelector,
             responseFactory

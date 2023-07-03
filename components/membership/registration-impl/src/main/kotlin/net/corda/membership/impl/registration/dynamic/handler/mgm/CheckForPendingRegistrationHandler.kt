@@ -24,6 +24,8 @@ class CheckForPendingRegistrationHandler(
 
     override val commandType = CheckForPendingRegistration::class.java
 
+    override fun getOwnerHoldingId(state: RegistrationState?, command: CheckForPendingRegistration) = state?.mgm
+
     override fun invoke(state: RegistrationState?, key: String, command: CheckForPendingRegistration): RegistrationHandlerResult {
         val (outputState, outputCommand) = try {
             if(command.numberOfRetriesSoFar < MAX_RETRIES) {

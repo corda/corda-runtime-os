@@ -96,7 +96,7 @@ class TestMembershipPersistenceClientImpl @Activate constructor(
             override fun execute() = MembershipPersistenceResult.Success(groupParameters)
 
             override fun createAsyncCommands(): Collection<Record<*, *>> {
-                throw UnsupportedOperationException(UNIMPLEMENTED_FUNCTION)
+                return emptyList()
             }
         }
     }

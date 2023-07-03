@@ -1,25 +1,26 @@
 package net.corda.processors.crypto.internal
 
 import net.corda.configuration.read.ConfigChangedEvent
-import java.util.concurrent.atomic.AtomicInteger
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.cipher.suite.PlatformDigestService
-import net.corda.crypto.client.CryptoOpsClient
+import net.corda.crypto.config.impl.retrying
 import net.corda.crypto.config.impl.signingService
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.persistence.HSMStore
 import net.corda.crypto.persistence.db.model.CryptoEntities
 import net.corda.crypto.service.CryptoServiceFactory
-import net.corda.crypto.service.HSMRegistrationBusService
 import net.corda.crypto.service.HSMService
 import net.corda.crypto.service.impl.SigningServiceImpl
 import net.corda.crypto.service.impl.bus.CryptoFlowOpsBusProcessor
 import net.corda.crypto.service.impl.bus.CryptoOpsBusProcessor
+import net.corda.crypto.service.impl.bus.HSMRegistrationBusProcessor
 import net.corda.crypto.softhsm.SoftCryptoServiceProvider
 import net.corda.crypto.softhsm.impl.SigningRepositoryFactoryImpl
+import net.corda.data.crypto.wire.hsm.registration.HSMRegistrationRequest
+import net.corda.data.crypto.wire.hsm.registration.HSMRegistrationResponse
 import net.corda.data.crypto.wire.ops.rpc.RpcOpsRequest
 import net.corda.data.crypto.wire.ops.rpc.RpcOpsResponse
 import net.corda.db.connection.manager.DbConnectionManager
@@ -34,11 +35,11 @@ import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleStatus
-import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
+import net.corda.messaging.api.subscription.SubscriptionBase
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
@@ -49,14 +50,16 @@ import net.corda.schema.configuration.BootConfig.BOOT_CRYPTO
 import net.corda.schema.configuration.BootConfig.BOOT_DB
 import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
+import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.util.concurrent.atomic.AtomicInteger
 
-// An OSGi component, with no unit tests; instead, tested by using OGGi and mocked out databases in 
+// An OSGi component, with no unit tests; instead, tested by using OGGi and mocked out databases in
 // integration tests (CryptoProcessorTests), as well as in various kinds of end to end and other full
 // system tests.
 
@@ -71,16 +74,12 @@ class CryptoProcessorImpl @Activate constructor(
     private val hsmStore: HSMStore,
     @Reference(service = SoftCryptoServiceProvider::class)
     private val softCryptoServiceProvider: SoftCryptoServiceProvider,
-    @Reference(service = CryptoOpsClient::class)
-    private val cryptoOpsClient: CryptoOpsClient,
     @Reference(service = CryptoServiceFactory::class)
     private val cryptoServiceFactory: CryptoServiceFactory,
     @Reference(service = HSMService::class)
     private val hsmService: HSMService,
-    @Reference(service = HSMRegistrationBusService::class)
-    private val hsmRegistration: HSMRegistrationBusService,
     @Reference(service = JpaEntitiesRegistry::class)
-    private val entitiesRegistry: JpaEntitiesRegistry,
+    private val jpaEntitiesRegistry: JpaEntitiesRegistry,
     @Reference(service = DbConnectionManager::class)
     private val dbConnectionManager: DbConnectionManager,
     @Reference(service = VirtualNodeInfoReadService::class)
@@ -89,8 +88,6 @@ class CryptoProcessorImpl @Activate constructor(
     private val subscriptionFactory: SubscriptionFactory,
     @Reference(service = ExternalEventResponseFactory::class)
     private val externalEventResponseFactory: ExternalEventResponseFactory,
-    @Reference(service = JpaEntitiesRegistry::class)
-    private val jpaEntitiesRegistry: JpaEntitiesRegistry,
     @Reference(service = KeyEncodingService::class)
     private val keyEncodingService: KeyEncodingService,
     @Reference(service = LayeredPropertyMapFactory::class)
@@ -106,36 +103,38 @@ class CryptoProcessorImpl @Activate constructor(
             MESSAGING_CONFIG,
             CRYPTO_CONFIG
         )
+        const val FLOW_OPS_SUBSCRIPTION = "FLOW_OPS_SUBSCRIPTION"
+        const val RPC_OPS_SUBSCRIPTION = "RPC_OPS_SUBSCRIPTION"
+        const val HSM_REG_SUBSCRIPTION = "HSM_REG_SUBSCRIPTION"
     }
 
 
     init {
-        entitiesRegistry.register(CordaDb.Crypto.persistenceUnitName, CryptoEntities.classes)
-        entitiesRegistry.register(CordaDb.CordaCluster.persistenceUnitName, ConfigurationEntities.classes)
+        jpaEntitiesRegistry.register(CordaDb.Crypto.persistenceUnitName, CryptoEntities.classes)
+        jpaEntitiesRegistry.register(CordaDb.CordaCluster.persistenceUnitName, ConfigurationEntities.classes)
     }
 
     private val dependentComponents = DependentComponents.of(
         ::configurationReadService,
         ::hsmStore,
-        ::cryptoOpsClient,
         ::softCryptoServiceProvider,
         ::cryptoServiceFactory,
         ::hsmService,
-        ::hsmRegistration,
         ::dbConnectionManager,
         ::virtualNodeInfoReadService,
     )
 
-    private val lifecycleCoordinator =
-        coordinatorFactory.createCoordinator<CryptoProcessor>(dependentComponents, ::eventHandler)
+    // We are making the below coordinator visible to be able to test the processor as if it were a `Lifecycle`
+    // using `LifecycleTest` API
+    // TODO - can we remove VisibleForTesting here? and go back to lifecycleCorodinator being private
+    @get:VisibleForTesting
+    internal val lifecycleCoordinator = coordinatorFactory.createCoordinator<CryptoProcessor>(dependentComponents, ::eventHandler)
 
     @Volatile
     private var hsmAssociated: Boolean = false
 
     @Volatile
     private var dependenciesUp: Boolean = false
-
-    private var registration: RegistrationHandle? = null
 
     private val tmpAssignmentFailureCounter = AtomicInteger(0)
 
@@ -159,8 +158,8 @@ class CryptoProcessorImpl @Activate constructor(
         when (event) {
             is StartEvent -> {
                 logger.trace("Crypto processor starting")
-                registration?.close()
-                registration = coordinator.followStatusChangesByName(dependentComponents.coordinatorNames)
+                // No need to register coordinator to follow dependent components.
+                // This already happens in `coordinatorFactory.createCoordinator` above.
             }
             is StopEvent -> {
                 // Nothing to do
@@ -222,12 +221,12 @@ class CryptoProcessorImpl @Activate constructor(
             }
 
             is ConfigChangedEvent -> {
-                startBusProcessors(event)
+                startBusProcessors(event, coordinator)
             }
         }
     }
 
-    private fun startBusProcessors(event: ConfigChangedEvent) {
+    private fun startBusProcessors(event: ConfigChangedEvent, coordinator: LifecycleCoordinator) {
         val cryptoConfig = event.config.getConfig(CRYPTO_CONFIG)
 
         // first make the signing service object, which both processors will consume
@@ -245,38 +244,61 @@ class CryptoProcessorImpl @Activate constructor(
             config = cryptoConfig.signingService()
         )
 
-        // make both the processors
-        val flowOpsProcessor = CryptoFlowOpsBusProcessor(signingService, externalEventResponseFactory, event)
-        val rpcOpsProcessor = CryptoOpsBusProcessor(signingService, cryptoConfig)
+        // make the processors
+        val retryingConfig = cryptoConfig.retrying()
+        val flowOpsProcessor = CryptoFlowOpsBusProcessor(signingService, externalEventResponseFactory, retryingConfig)
+        val rpcOpsProcessor = CryptoOpsBusProcessor(signingService, retryingConfig)
+        val hsmRegistrationProcessor = HSMRegistrationBusProcessor(hsmService, retryingConfig)
 
-        // now make both the subscriptions
+        // now make and start the subscriptions
         val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
         val flowGroupName = "crypto.ops.flow"
-        val flowOpsSubscription = subscriptionFactory.createDurableSubscription(
-            subscriptionConfig = SubscriptionConfig(flowGroupName, Schemas.Crypto.FLOW_OPS_MESSAGE_TOPIC),
-            processor = flowOpsProcessor,
-            messagingConfig = messagingConfig,
-            partitionAssignmentListener = null
-        )
+        coordinator.createManagedResource(FLOW_OPS_SUBSCRIPTION) {
+            subscriptionFactory.createDurableSubscription(
+                subscriptionConfig = SubscriptionConfig(flowGroupName, Schemas.Crypto.FLOW_OPS_MESSAGE_TOPIC),
+                processor = flowOpsProcessor,
+                messagingConfig = messagingConfig,
+                partitionAssignmentListener = null
+            )
+        }
+        logger.trace("Starting processing on $flowGroupName ${Schemas.Crypto.FLOW_OPS_MESSAGE_TOPIC}")
+        coordinator.getManagedResource<SubscriptionBase>(FLOW_OPS_SUBSCRIPTION)!!.start()
+
         val rpcGroupName = "crypto.ops.rpc"
         val rpcClientName = "crypto.ops.rpc"
-        val rpcOpsSubscription = subscriptionFactory.createRPCSubscription(
-            rpcConfig = RPCConfig(
-                groupName = rpcGroupName,
-                clientName = rpcClientName,
-                requestTopic = Schemas.Crypto.RPC_OPS_MESSAGE_TOPIC,
-                requestType = RpcOpsRequest::class.java,
-                responseType = RpcOpsResponse::class.java
-            ),
-            responderProcessor = rpcOpsProcessor,
-            messagingConfig = messagingConfig
-        )
+        coordinator.createManagedResource(RPC_OPS_SUBSCRIPTION) {
+            subscriptionFactory.createRPCSubscription(
+                rpcConfig = RPCConfig(
+                    groupName = rpcGroupName,
+                    clientName = rpcClientName,
+                    requestTopic = Schemas.Crypto.RPC_OPS_MESSAGE_TOPIC,
+                    requestType = RpcOpsRequest::class.java,
+                    responseType = RpcOpsResponse::class.java
+                ),
+                responderProcessor = rpcOpsProcessor,
+                messagingConfig = messagingConfig
+            )
+        }
+        logger.trace("Starting processing on $rpcGroupName ${Schemas.Crypto.RPC_OPS_MESSAGE_TOPIC}")
+        coordinator.getManagedResource<SubscriptionBase>(RPC_OPS_SUBSCRIPTION)!!.start()
 
-        // and start the subscriptions
-        logger.trace("Starting processing on ${flowGroupName} ${Schemas.Crypto.FLOW_OPS_MESSAGE_TOPIC}")
-        flowOpsSubscription.start()
-        logger.trace("Starting processing on ${rpcGroupName} ${Schemas.Crypto.RPC_OPS_MESSAGE_TOPIC}")
-        rpcOpsSubscription.start()
+        val hsmRegGroupName = "crypto.hsm.rpc.registration"
+        val hsmRegClientName = "crypto.hsm.rpc.registration"
+        coordinator.createManagedResource(HSM_REG_SUBSCRIPTION) {
+            subscriptionFactory.createRPCSubscription(
+                rpcConfig = RPCConfig(
+                    groupName = hsmRegGroupName,
+                    clientName = hsmRegClientName,
+                    requestTopic = Schemas.Crypto.RPC_HSM_REGISTRATION_MESSAGE_TOPIC,
+                    requestType = HSMRegistrationRequest::class.java,
+                    responseType = HSMRegistrationResponse::class.java
+                ),
+                responderProcessor = hsmRegistrationProcessor,
+                messagingConfig = messagingConfig
+            )
+        }
+        logger.trace("Starting processing on $hsmRegGroupName ${Schemas.Crypto.RPC_HSM_REGISTRATION_MESSAGE_TOPIC}")
+        coordinator.getManagedResource<SubscriptionBase>(HSM_REG_SUBSCRIPTION)!!.start()
     }
 
     private fun setStatus(status: LifecycleStatus, coordinator: LifecycleCoordinator) {
@@ -317,4 +339,3 @@ class CryptoProcessorImpl @Activate constructor(
 
     class AssociateHSM : LifecycleEvent
 }
-
