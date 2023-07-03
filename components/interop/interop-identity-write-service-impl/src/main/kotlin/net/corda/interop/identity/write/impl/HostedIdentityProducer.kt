@@ -42,6 +42,7 @@ class HostedIdentityProducer(private val publisher: AtomicReference<Publisher?>)
         val hostedIdentity = HostedIdentityEntry(
             net.corda.data.identity.HoldingIdentity(identity.x500Name, identity.groupId),
             shortHash,
+            //TODO CORE-15168
             listOf(DUMMY_CERTIFICATE),
             HostedIdentitySessionKeyAndCert(DUMMY_PUBLIC_SESSION_KEY, null),
             emptyList()
