@@ -32,7 +32,6 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.TimerEvent
-import net.corda.membership.groupparams.writer.service.GroupParametersWriterService
 import net.corda.membership.lib.GroupParametersFactory
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_SUSPENDED
 import net.corda.membership.lib.MemberInfoExtension.Companion.id
@@ -92,7 +91,6 @@ class MemberSynchronisationServiceImpl internal constructor(
     private val clock: Clock,
     private val membershipPersistenceClient: MembershipPersistenceClient,
     private val groupParametersFactory: GroupParametersFactory,
-    private val groupParametersWriterService: GroupParametersWriterService,
 ) : MemberSynchronisationService {
     @Suppress("LongParameterList")
     @Activate
@@ -121,8 +119,6 @@ class MemberSynchronisationServiceImpl internal constructor(
         membershipPersistenceClient: MembershipPersistenceClient,
         @Reference(service = GroupParametersFactory::class)
         groupParametersFactory: GroupParametersFactory,
-        @Reference(service = GroupParametersWriterService::class)
-        groupParametersWriterService: GroupParametersWriterService,
     ) : this(
         publisherFactory,
         configurationReadService,
@@ -149,14 +145,13 @@ class MemberSynchronisationServiceImpl internal constructor(
         UTCClock(),
         membershipPersistenceClient,
         groupParametersFactory,
-        groupParametersWriterService,
     )
 
     /**
      * Private interface used for implementation swapping in response to lifecycle events.
      */
     private interface InnerSynchronisationService : AutoCloseable {
-        fun processMembershipUpdates(updates: ProcessMembershipUpdates)
+        fun processMembershipUpdates(updates: ProcessMembershipUpdates): List<Record<*, *>>
 
         fun cancelCurrentRequestAndScheduleNewOne(
             memberIdentity: HoldingIdentity,
@@ -168,6 +163,7 @@ class MemberSynchronisationServiceImpl internal constructor(
         val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
         const val PUBLICATION_TIMEOUT_SECONDS = 30L
+        const val RESEND_NOW_MAX_IN_MINUTES = 5L
         const val SERVICE = "MemberSynchronisationService"
 
         private val random by lazy {
@@ -285,12 +281,12 @@ class MemberSynchronisationServiceImpl internal constructor(
             return true
         }
 
-        override fun processMembershipUpdates(updates: ProcessMembershipUpdates) {
+        override fun processMembershipUpdates(updates: ProcessMembershipUpdates): List<Record<*, *>> {
             val viewOwningMember = updates.synchronisationMetaData.member.toCorda()
             val mgm = updates.synchronisationMetaData.mgm.toCorda()
             logger.debug { "Member $viewOwningMember received membership updates from $mgm." }
 
-            try {
+            return try {
                 cancelCurrentRequestAndScheduleNewOne(viewOwningMember, mgm)
                 val updateMembersInfo = updates.membershipPackage.memberships.memberships.map { update ->
                     verifier.verify(
@@ -358,26 +354,27 @@ class MemberSynchronisationServiceImpl internal constructor(
                 }
 
 
-                groupReader.lookup().firstOrNull { it.isMgm }?.let {
+                val persistRecords = groupReader.lookup().firstOrNull { it.isMgm }?.let {
                     val groupParameters = parseGroupParameters(
                         it,
                         updates.membershipPackage
                     )
-                    val latestGroupParameters =
                         membershipPersistenceClient
                             .persistGroupParameters(viewOwningMember, groupParameters)
-                            .getOrThrow()
-                    groupParametersWriterService.put(viewOwningMember, latestGroupParameters)
+                            .createAsyncCommands()
                 } ?: throw CordaRuntimeException(
                     "Could not find MGM info in the member list for member ${viewOwningMember.x500Name}"
                 )
-                publisher.publish(allRecords).first().get(PUBLICATION_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+                allRecords + persistRecords
             } catch (e: Exception) {
-                logger.warn("Failed to process membership updates received by ${viewOwningMember.x500Name}.", e)
-                // TODO - CORE-5813 - trigger sync protocol.
                 logger.warn(
-                    "Cannot recover from failure to process membership updates. ${viewOwningMember.x500Name}" +
-                            " cannot initiate sync protocol with MGM as this is not implemented."
+                    "Failed to process membership updates received by ${viewOwningMember.x500Name}. " +
+                        "Will trigger a fresh sync with MGM.",
+                    e,
+                )
+                createSynchroniseNowRequest(
+                    viewOwningMember,
+                    mgm,
                 )
             }
         }
@@ -426,6 +423,30 @@ class MemberSynchronisationServiceImpl internal constructor(
                 memberHash,
             )
         )
+    }
+
+    private fun createSynchroniseNowRequest(
+        viewOwningMember: HoldingIdentity,
+        mgm: HoldingIdentity
+    ): List<Record<*, *>> {
+        return try {
+            listOf(
+                createSynchronisationRequestMessage(
+                    groupReader = membershipGroupReaderProvider.getGroupReader(viewOwningMember),
+                    memberIdentity = viewOwningMember,
+                    mgm = mgm,
+                ),
+            )
+        } catch (e: Exception) {
+            logger.warn("Failed to trigger an immediate sync, will schedule one to be triggered later.", e)
+            coordinator.setTimer(
+                key = "SendSyncRequest-${viewOwningMember.fullHash}",
+                delay = TimeUnit.MINUTES.toMillis(RESEND_NOW_MAX_IN_MINUTES),
+            ) {
+                SendSyncRequest(viewOwningMember, mgm, it)
+            }
+            emptyList()
+        }
     }
 
     private fun handleEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {

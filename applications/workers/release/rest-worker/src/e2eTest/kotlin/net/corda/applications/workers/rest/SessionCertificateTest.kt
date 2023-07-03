@@ -21,6 +21,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 import java.nio.file.Path
 
+@Tag("MultiCluster")
 class SessionCertificateTest {
     @TempDir
     lateinit var tempDir: Path
@@ -55,7 +56,6 @@ class SessionCertificateTest {
     }
 
     @Test
-    @Tag("Unstable")
     fun `Create mgm and allow members to join the group`() {
         onboardMultiClusterGroup()
     }

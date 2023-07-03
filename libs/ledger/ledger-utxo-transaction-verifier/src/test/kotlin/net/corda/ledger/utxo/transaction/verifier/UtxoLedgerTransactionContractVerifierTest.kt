@@ -14,6 +14,7 @@ import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.TransactionState
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
+import net.corda.virtualnode.HoldingIdentity
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
@@ -30,6 +31,7 @@ class UtxoLedgerTransactionContractVerifierTest {
         val TX_ID_1 = SecureHashImpl("SHA", byteArrayOf(1, 1, 1, 1))
         val TX_ID_2 = SecureHashImpl("SHA", byteArrayOf(1, 1, 1, 1))
         val TX_ID_3 = SecureHashImpl("SHA", byteArrayOf(1, 1, 1, 1))
+        val holdingIdentity = HoldingIdentity(MemberX500Name("ALICE", "LDN", "GB"), "group")
     }
 
     private val transaction = mock<UtxoLedgerTransaction>()
@@ -58,7 +60,7 @@ class UtxoLedgerTransactionContractVerifierTest {
             )
         )
         whenever(transaction.outputStateAndRefs).thenReturn(listOf(validContractCState2))
-        verifyContracts(transactionFactory, transaction)
+        verifyContracts(transactionFactory, transaction, holdingIdentity)
         // Called once for each of 3 contracts
         verify(transactionFactory, times(3)).invoke()
         assertThat(MyValidContractA.EXECUTION_COUNT).isEqualTo(1)
@@ -80,7 +82,7 @@ class UtxoLedgerTransactionContractVerifierTest {
             )
         )
         whenever(transaction.outputStateAndRefs).thenReturn(listOf(invalidContractBState))
-        assertThatThrownBy { verifyContracts(transactionFactory, transaction) }
+        assertThatThrownBy { verifyContracts(transactionFactory, transaction, holdingIdentity) }
             .isExactlyInstanceOf(ContractVerificationException::class.java)
             .hasMessageContainingAll("I have failed", "Something is wrong here")
         // Called once for each of 4 contracts

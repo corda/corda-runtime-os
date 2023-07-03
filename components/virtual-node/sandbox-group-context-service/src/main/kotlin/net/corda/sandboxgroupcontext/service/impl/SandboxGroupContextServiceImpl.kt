@@ -24,6 +24,7 @@ import net.corda.sandboxgroupcontext.VirtualNodeContext
 import net.corda.sandboxgroupcontext.getObjectByKey
 import net.corda.sandboxgroupcontext.putObjectByKey
 import net.corda.sandboxgroupcontext.service.CacheControl
+import net.corda.sandboxgroupcontext.service.CacheEviction
 import net.corda.sandboxgroupcontext.service.EvictionListener
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.crypto.SecureHash
@@ -59,6 +60,9 @@ import java.util.SortedMap
 import java.util.TreeMap
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
+import kotlin.contracts.ExperimentalContracts
+import kotlin.contracts.InvocationKind
+import kotlin.contracts.contract
 
 typealias SatisfiedServiceReferences = Map<String, SortedMap<ServiceReference<*>, Any>>
 
@@ -72,7 +76,7 @@ typealias SatisfiedServiceReferences = Map<String, SortedMap<ServiceReference<*>
  * in EVERY process.
  */
 @Suppress("TooManyFunctions")
-@Component(service = [ SandboxGroupContextService::class ])
+@Component(service = [ SandboxGroupContextService::class, CacheEviction::class ])
 @RequireSandboxCrypto
 @RequireSandboxHooks
 @RequireCordaSystem
@@ -264,6 +268,9 @@ class SandboxGroupContextServiceImpl @Activate constructor(
                     .filterNot(MARKER_INTERFACES::contains)
                     .onEach { serviceType ->
                         serviceIndex.computeIfAbsent(serviceType) { HashSet() }.add(serviceRef)
+                    }.takeIfElse(emptyList()) {
+                        // Services are only "injectable" if this sandbox type supports injection.
+                        sandboxGroupType.hasInjection
                     }.mapNotNullTo(ArrayList()) { serviceType ->
                         if (systemFilter.match(serviceRef)) {
                             // We always load interfaces for system services.
@@ -794,6 +801,14 @@ private fun Bundle.loadMetadataService(serviceClassName: String, isMetadataServi
     } catch (_: ClassNotFoundException) {
     }
     return null
+}
+
+@OptIn(ExperimentalContracts::class)
+private inline fun <T> T.takeIfElse(otherwise: T, predicate: (T) -> Boolean): T {
+    contract {
+        callsInPlace(predicate, InvocationKind.EXACTLY_ONCE)
+    }
+    return if (predicate(this)) this else otherwise
 }
 
 private val ServiceReference<*>.serviceClassNames: Array<String>

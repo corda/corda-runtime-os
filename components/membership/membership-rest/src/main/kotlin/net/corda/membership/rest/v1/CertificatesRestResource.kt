@@ -154,14 +154,14 @@ interface CertificatesRestResource : RestResource {
     )
 
     /**
-     * The [getCertificateAliases] method enables you to get the virtual node certificate aliases..
+     * The [getCertificateAliases] method enables you to get the virtual node certificate aliases.
      *
      * @param usage The certificate usage. Can be:
      *     * 'p2p-tls' for a TLS certificate to be used in P2P communication.
      *     * 'p2p-session' for a session certificate to be used in P2P communication.
      *     * 'rest-tls' for a TLS certificate to be used in REST communication.
      *     * 'code-signer' for a certificate of the code signing service
-     * @param holdingIdentityId The holding identity of the virtual node that own the certificate.
+     * @param holdingIdentityId The holding identity of the virtual node that owns the certificate.
      * @return A list of the virtual node certificates aliases in the usage.
      */
     @HttpGET(
@@ -178,7 +178,7 @@ interface CertificatesRestResource : RestResource {
         )
         usage: String,
         @RestPathParameter(
-            description = "The certificate holding identity ID",
+            description = "Holding identity ID of the virtual node that owns the certificate.",
         )
         holdingIdentityId: String?,
     ): List<String>

@@ -3,6 +3,7 @@ package net.corda.membership.impl.registration.dynamic.handler.member
 import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
+import net.corda.data.identity.HoldingIdentity
 import net.corda.data.membership.command.registration.member.ProcessMemberVerificationRequest
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.p2p.VerificationResponse
@@ -70,4 +71,9 @@ internal class ProcessMemberVerificationRequestHandler(
             ) + commands
         )
     }
+
+    override fun getOwnerHoldingId(
+        state: RegistrationState?,
+        command: ProcessMemberVerificationRequest
+    ): HoldingIdentity = command.destination
 }

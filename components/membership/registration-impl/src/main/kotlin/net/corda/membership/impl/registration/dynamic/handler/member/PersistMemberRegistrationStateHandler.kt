@@ -1,5 +1,6 @@
 package net.corda.membership.impl.registration.dynamic.handler.member
 
+import net.corda.data.identity.HoldingIdentity
 import net.corda.data.membership.command.registration.member.PersistMemberRegistrationState
 import net.corda.data.membership.state.RegistrationState
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandler
@@ -28,4 +29,9 @@ internal class PersistMemberRegistrationStateHandler(
     }
 
     override val commandType = PersistMemberRegistrationState::class.java
+
+    override fun getOwnerHoldingId(
+        state: RegistrationState?,
+        command: PersistMemberRegistrationState
+    ): HoldingIdentity = command.member
 }

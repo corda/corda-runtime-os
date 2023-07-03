@@ -1,7 +1,6 @@
 package net.corda.messaging.subscription.factory
 
 import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.atomic.AtomicLong
 import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -39,6 +38,7 @@ import net.corda.schema.configuration.MessagingConfig.MAX_ALLOWED_MSG_SIZE
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import java.util.UUID
 
 /**
  * Kafka implementation of the Subscription Factory.
@@ -60,9 +60,6 @@ class CordaSubscriptionFactory @Activate constructor(
     @Reference(service = MessagingChunkFactory::class)
     private val messagingChunkFactory: MessagingChunkFactory,
 ) : SubscriptionFactory {
-
-    // Used to ensure that each subscription has a unique client.id
-    private val clientIdCounter = AtomicLong()
 
     override fun <K : Any, V : Any> createPubSubSubscription(
         subscriptionConfig: SubscriptionConfig,
@@ -193,7 +190,7 @@ class CordaSubscriptionFactory @Activate constructor(
             subscriptionType,
             subscriptionConfig,
             messagingConfig,
-            clientIdCounter.getAndIncrement()
+            UUID.randomUUID().toString()
         )
     }
 

@@ -43,7 +43,7 @@ class MembershipPackageFactoryTest {
     private val clock = TestClock(Instant.ofEpochMilli(100))
     private val groupParametersBytes = "test-group-parameters".toByteArray()
     private val groupParameters: InternalGroupParameters = mock {
-        on { bytes } doReturn groupParametersBytes
+        on { groupParameters } doReturn groupParametersBytes
     }
     private val pubKey: PublicKey = mock {
         on { encoded } doReturn "test-key".toByteArray()

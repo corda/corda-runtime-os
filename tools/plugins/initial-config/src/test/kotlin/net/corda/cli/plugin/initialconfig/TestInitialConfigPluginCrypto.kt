@@ -4,10 +4,8 @@ import com.github.stefanbirkner.systemlambda.SystemLambda
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigList
 import com.typesafe.config.ConfigObject
-import net.corda.crypto.config.impl.flowBusProcessor
 import net.corda.crypto.config.impl.hsm
-import net.corda.crypto.config.impl.hsmRegistrationBusProcessor
-import net.corda.crypto.config.impl.opsBusProcessor
+import net.corda.crypto.config.impl.retrying
 import net.corda.crypto.config.impl.signingService
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.secret.EncryptionSecretsServiceFactory
@@ -157,15 +155,15 @@ class TestInitialConfigPluginCrypto {
         assertEquals(20000L, softWorker.retrying.attemptTimeoutMills)
         assertEquals(3, softWorker.retrying.maxAttempts)
         wrappingKeyAssert(softWorker.wrappingKeys, smartConfigFactory)
-        val opsBusProcessor = config.opsBusProcessor()
+        val opsBusProcessor = config.retrying()
         assertEquals(3, opsBusProcessor.maxAttempts)
         assertEquals(1, opsBusProcessor.waitBetweenMills.size)
         assertEquals(200L, opsBusProcessor.waitBetweenMills[0])
-        val flowBusProcessor = config.flowBusProcessor()
+        val flowBusProcessor = config.retrying()
         assertEquals(3, flowBusProcessor.maxAttempts)
         assertEquals(1, flowBusProcessor.waitBetweenMills.size)
         assertEquals(200L, flowBusProcessor.waitBetweenMills[0])
-        val hsmRegistrationBusProcessor = config.hsmRegistrationBusProcessor()
+        val hsmRegistrationBusProcessor = config.retrying()
         assertEquals(3, hsmRegistrationBusProcessor.maxAttempts)
         assertEquals(1, hsmRegistrationBusProcessor.waitBetweenMills.size)
         assertEquals(200L, hsmRegistrationBusProcessor.waitBetweenMills[0])

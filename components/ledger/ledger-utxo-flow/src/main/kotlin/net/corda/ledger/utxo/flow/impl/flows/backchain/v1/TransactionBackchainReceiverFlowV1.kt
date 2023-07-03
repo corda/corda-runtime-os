@@ -1,6 +1,7 @@
 package net.corda.ledger.utxo.flow.impl.flows.backchain.v1
 
 import net.corda.ledger.common.data.transaction.TransactionStatus.UNVERIFIED
+import net.corda.ledger.utxo.flow.impl.UtxoLedgerMetricRecorder
 import net.corda.ledger.utxo.flow.impl.flows.backchain.TopologicalSort
 import net.corda.ledger.utxo.flow.impl.flows.backchain.dependencies
 import net.corda.ledger.utxo.flow.impl.persistence.TransactionExistenceStatus
@@ -28,6 +29,9 @@ class TransactionBackchainReceiverFlowV1(
 
     @CordaInject
     lateinit var utxoLedgerPersistenceService: UtxoLedgerPersistenceService
+
+    @CordaInject
+    lateinit var utxoLedgerMetricRecorder: UtxoLedgerMetricRecorder
 
     @Suspendable
     override fun call(): TopologicalSort {
@@ -91,6 +95,8 @@ class TransactionBackchainReceiverFlowV1(
         if (sortedTransactionIds.isNotEmpty()) {
             session.send(TransactionBackchainRequestV1.Stop)
         }
+
+        utxoLedgerMetricRecorder.recordTransactionBackchainLength(sortedTransactionIds.size)
 
         return sortedTransactionIds
     }
