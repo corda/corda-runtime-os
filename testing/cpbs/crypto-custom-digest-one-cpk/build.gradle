@@ -8,7 +8,7 @@ description 'Corda Crypto Custom Digest One'
 group 'com.example.crypto'
 
 cordapp {
-    targetPlatformVersion 50000 as Integer
+    targetPlatformVersion platformVersion.toInteger()
     workflow {
         name 'Custom Crypto Digest One CPK'
         versionId 1
