@@ -7,6 +7,10 @@ import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.base.annotations.Suspendable
 import org.slf4j.LoggerFactory
+import org.web3j.crypto.Credentials
+import org.web3j.protocol.Web3j
+import org.web3j.tx.RawTransactionManager
+import org.web3j.tx.gas.DefaultGasProvider
 
 class CalculatorFlow : ClientStartableFlow {
 
@@ -19,6 +23,9 @@ class CalculatorFlow : ClientStartableFlow {
 
     @CordaInject
     lateinit var jsonMarshallingService: JsonMarshallingService
+
+    @CordaInject
+    lateinit var web3j: Web3j
 
     @Suspendable
     override fun call(requestBody: ClientRequestBody): String {
@@ -36,6 +43,8 @@ class CalculatorFlow : ClientStartableFlow {
         }
         log.info("Calculation completed.")
 
+        val erc20 = ERC20.load("somestring", web3j, RawTransactionManager(web3j, Credentials.create("")), DefaultGasProvider())
+        println(erc20)
         return resultMessage
     }
 }

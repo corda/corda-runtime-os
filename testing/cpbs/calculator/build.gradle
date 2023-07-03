@@ -16,4 +16,5 @@ dependencies {
     cordaProvided platform("net.corda:corda-api:$cordaApiVersion")
     cordaProvided 'net.corda:corda-application'
     cordaProvided 'org.jetbrains.kotlin:kotlin-osgi-bundle'
+    cordaEmbedded 'org.web3j:core:4.9.8'
 }
