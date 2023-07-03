@@ -8,7 +8,6 @@ import net.corda.flow.application.services.interop.example.TokenReservation
 import net.corda.flow.application.services.interop.example.TokensFacade
 import net.corda.v5.application.interop.binding.BindsFacade
 import net.corda.v5.application.interop.binding.BindsFacadeMethod
-import net.corda.v5.application.interop.binding.InteropAction
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
@@ -23,28 +22,28 @@ import kotlin.reflect.jvm.javaMethod
 @BindsFacade("org.corda.interop/platform/tokens")
 interface MethodHasIncorrectName {
     @BindsFacadeMethod
-    fun getBananas(): InteropAction<Long>
+    fun getBananas(): Long
 }
 
 // Binding will fail because there is no method with the name given in the annotation
 @BindsFacade("org.corda.interop/platform/tokens")
 interface MethodIsAnnotatedWithIncorrectName {
     @BindsFacadeMethod("get-bananas")
-    fun getBalance(): InteropAction<Long>
+    fun getBalance(): Long
 }
 
 // Binding will fail because the method has too few parameters
 @BindsFacade("org.corda.interop/platform/tokens")
 interface MethodSignatureHasTooFewParameters {
     @BindsFacadeMethod
-    fun getBalance(): InteropAction<Long>
+    fun getBalance(): Long
 }
 
 // Binding will fail because the method has too many parameters
 @BindsFacade("org.corda.interop/platform/tokens")
 interface MethodSignatureHasTooManyParameters {
     @BindsFacadeMethod
-    fun getBalance(denomination: String, superogatoryParameter: UUID): InteropAction<Long>
+    fun getBalance(denomination: String, superogatoryParameter: UUID): Long
 }
 
 // Binding will fail because the return type must be wrapped with InteropAction

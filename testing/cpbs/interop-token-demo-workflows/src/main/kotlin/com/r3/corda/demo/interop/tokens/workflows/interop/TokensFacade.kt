@@ -58,7 +58,7 @@ interface TokensFacade {
 
     @BindsFacadeMethod
     @Suspendable
-    fun releaseReservedTokens(reservationRef: UUID): Unit
+    fun releaseReservedTokens(reservationRef: UUID)
 
     @BindsFacadeMethod
     @Suspendable
@@ -66,5 +66,5 @@ interface TokensFacade {
         reservationRef: UUID,
         transactionRef: UUID,
         recipient: String
-    ): Unit
+    )
 }
