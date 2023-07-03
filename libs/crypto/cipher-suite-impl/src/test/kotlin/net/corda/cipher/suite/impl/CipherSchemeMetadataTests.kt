@@ -592,6 +592,22 @@ QwIDAQAB
         )
         assertThat(x).isNotNull()
     }
+    @Test
+    fun `Should read a PEM public RSA key 3`() {
+        val x = schemeMetadata.decodePublicKey(
+            """-----BEGIN PUBLIC KEY-----
+MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAzTAoAv8KaBBXFnJbPQZI
+6WBDoeNkncZ1SemcCimD11aMWnps6NmBTzgztrzgsCkDjGogYYn1Nu8dkcY/h4BA
+HFsww5AoaOSCdGZogSRC44srsOYnzxlUrj0BrIE0cpX9OAEB2g6cnZDheTxdgEm4
+9e3wFbuRbepCYEyGo6wY5WAyZiY/Jl0Js9RnM2M9ktXdu/uDjC8jt3G3CJaZcrhV
+KCpMd9Q11HVILKW7X2kvv3s1fQKwNv+yrinFHVChSESVukx18e+raY0kikQIryu5
+K5uA8eHEWONoIowR5w+/SgkeYRZvWAVpy6yeuyh3Y5gAck0MK6RaFpkD4I2cSP0z
+4QIDAQAB
+-----END PUBLIC KEY-----
+        """.trimIndent()
+        )
+        assertThat(x).isNotNull()
+    }
 
     @Test
     fun `Should read EC PEM public key`() {
