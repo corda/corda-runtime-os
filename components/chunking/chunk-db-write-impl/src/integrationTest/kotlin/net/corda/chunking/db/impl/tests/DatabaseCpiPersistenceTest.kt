@@ -90,7 +90,7 @@ internal class DatabaseCpiPersistenceTest {
         emConfig
     )
     private val platformInfoProvider: PlatformInfoProvider = mock {
-        on { activePlatformVersion } doReturn 999
+        on { activePlatformVersion } doReturn 50000
         on { localWorkerSoftwareVersion } doReturn "5.0.0"
     }
     private val mgmPubKeyStr = "PUB-KEY"

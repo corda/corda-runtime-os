@@ -8,7 +8,7 @@ description 'Security Manager Two'
 group 'com.example.securitymanager'
 
 cordapp {
-    targetPlatformVersion = 999
+    targetPlatformVersion = 50000
     contract {
         name 'Security Manager Two CPK'
         versionId 1
