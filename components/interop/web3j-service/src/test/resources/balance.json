@@ -1,0 +1,16 @@
+{
+  "methodName": "balanceOf",
+  "transaction": "false",
+  "inputs": [
+    {
+      "name" : "account",
+      "type" : "address",
+      "value" : "0xABEA411aAE92270aA3a1B2CA2C58B30fc791d3Bd"
+    }
+  ],
+  "outputs": [
+    {
+      "type": "uint256"
+    }
+  ]
+}

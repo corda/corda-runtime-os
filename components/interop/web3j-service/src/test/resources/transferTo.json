@@ -1,0 +1,21 @@
+{
+  "methodName": "transfer",
+  "transaction": "true",
+  "inputs": [
+    {
+      "name": "to",
+      "type": "address",
+      "value": "0xABEA411aAE92270aA3a1B2CA2C58B30fc791d3Bd"
+    },
+    {
+      "name": "amount",
+      "type": "uint256",
+      "value": "100"
+    }
+  ],
+  "outputs": [
+    {
+      "type": "bool"
+    }
+  ]
+}

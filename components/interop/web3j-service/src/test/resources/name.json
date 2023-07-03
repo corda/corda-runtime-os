@@ -1,0 +1,10 @@
+{
+  "methodName": "name",
+  "transaction": "false",
+  "inputs": [],
+  "outputs": [
+    {
+      "type": "string"
+    }
+  ]
+}

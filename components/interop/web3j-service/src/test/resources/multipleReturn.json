@@ -1,0 +1,16 @@
+{
+  "methodName": "multipleReturn",
+  "transaction": "false",
+  "inputs": [],
+  "outputs": [
+    {
+      "type": "bool"
+    },
+    {
+      "type": "uint256"
+    },
+    {
+      "type": "string"
+    }
+  ]
+}

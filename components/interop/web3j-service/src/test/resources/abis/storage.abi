@@ -1,0 +1,198 @@
+{
+    "compiler": {
+        "version": "0.8.18+commit.87f61d96"
+    },
+    "language": "Solidity",
+    "output": {
+        "abi": [
+            {
+                "inputs": [],
+                "name": "retrieve",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "name",
+                        "type": "address"
+                    }
+                ],
+                "name": "retrieveStruct",
+                "outputs": [
+                    {
+                        "components": [
+                            {
+                                "internalType": "int256",
+                                "name": "x1",
+                                "type": "int256"
+                            },
+                            {
+                                "components": [
+                                    {
+                                        "internalType": "int256",
+                                        "name": "x2",
+                                        "type": "int256"
+                                    },
+                                    {
+                                        "components": [
+                                            {
+                                                "internalType": "int256",
+                                                "name": "x3",
+                                                "type": "int256"
+                                            },
+                                            {
+                                                "components": [
+                                                    {
+                                                        "internalType": "int256",
+                                                        "name": "x4",
+                                                        "type": "int256"
+                                                    }
+                                                ],
+                                                "internalType": "struct Storage.struct4",
+                                                "name": "struct4",
+                                                "type": "tuple"
+                                            }
+                                        ],
+                                        "internalType": "struct Storage.struct3",
+                                        "name": "struct3",
+                                        "type": "tuple"
+                                    }
+                                ],
+                                "internalType": "struct Storage.struct2",
+                                "name": "struct2",
+                                "type": "tuple"
+                            }
+                        ],
+                        "internalType": "struct Storage.struct1",
+                        "name": "",
+                        "type": "tuple"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "num",
+                        "type": "uint256"
+                    },
+                    {
+                        "components": [
+                            {
+                                "internalType": "int256",
+                                "name": "x1",
+                                "type": "int256"
+                            },
+                            {
+                                "components": [
+                                    {
+                                        "internalType": "int256",
+                                        "name": "x2",
+                                        "type": "int256"
+                                    },
+                                    {
+                                        "components": [
+                                            {
+                                                "internalType": "int256",
+                                                "name": "x3",
+                                                "type": "int256"
+                                            },
+                                            {
+                                                "components": [
+                                                    {
+                                                        "internalType": "int256",
+                                                        "name": "x4",
+                                                        "type": "int256"
+                                                    }
+                                                ],
+                                                "internalType": "struct Storage.struct4",
+                                                "name": "struct4",
+                                                "type": "tuple"
+                                            }
+                                        ],
+                                        "internalType": "struct Storage.struct3",
+                                        "name": "struct3",
+                                        "type": "tuple"
+                                    }
+                                ],
+                                "internalType": "struct Storage.struct2",
+                                "name": "struct2",
+                                "type": "tuple"
+                            }
+                        ],
+                        "internalType": "struct Storage.struct1",
+                        "name": "name",
+                        "type": "tuple"
+                    }
+                ],
+                "name": "store",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            }
+        ],
+        "devdoc": {
+            "custom:dev-run-script": "./scripts/deploy_with_ethers.ts",
+            "details": "Store & retrieve value in a variable",
+            "kind": "dev",
+            "methods": {
+                "retrieve()": {
+                    "details": "Return value ",
+                    "returns": {
+                        "_0": "value of 'number'"
+                    }
+                },
+                "store(uint256,(int256,(int256,(int256,(int256)))))": {
+                    "details": "Store value in variable",
+                    "params": {
+                        "num": "value to store"
+                    }
+                }
+            },
+            "title": "Storage",
+            "version": 1
+        },
+        "userdoc": {
+            "kind": "user",
+            "methods": {},
+            "version": 1
+        }
+    },
+    "settings": {
+        "compilationTarget": {
+            "contracts/1_Storage.sol": "Storage"
+        },
+        "evmVersion": "paris",
+        "libraries": {},
+        "metadata": {
+            "bytecodeHash": "ipfs"
+        },
+        "optimizer": {
+            "enabled": false,
+            "runs": 200
+        },
+        "remappings": []
+    },
+    "sources": {
+        "contracts/1_Storage.sol": {
+            "keccak256": "0xdc3cbb995f02a64efe2fe5960353c2b936e09c0f213ee70c9d30cc25d11ca2cb",
+            "license": "GPL-3.0",
+            "urls": [
+                "bzz-raw://5102f6026222a0b15219895288f561519afc59436433013337e62b3a9ab424b0",
+                "dweb:/ipfs/QmYqjHpVbSxAFYgndQEwKzxpmQknpHTvfs29fU7qa5mqPm"
+            ]
+        }
+    },
+    "version": 1
+}
